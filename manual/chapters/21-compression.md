@@ -147,14 +147,21 @@ $$
 H_0 \le \bar\ell_H < H_0 + 1 . \tag{21.4}
 $$
 
-*Proof.* Note that the tree of an optimal code is full (a node with one child could
-be replaced by the child, shortening the codewords below it), and hence its
-deepest level holds two sibling leaves. An optimal code therefore has the
-two least probable symbols as siblings at its deepest level, since swapping
-them with that pair does not lengthen it. Merging them turns an optimal code of $\sigma$
-symbols into a code of $\sigma - 1$ symbols whose average is less by the
-probability of the pair, which does not depend on the code; by induction on
-$\sigma$, the code built by the merges is optimal. As for (21.4), its lower bound is [Lemma 21.1](21-compression.md#lem-21-1), and its upper bound holds since the lengths $\lceil \log_2( 1 / P[ c ] ) \rceil$ satisfy (21.3) and
+*Proof.* We show by induction on $\sigma$ that the merges give an optimal
+code; for $\sigma \le 2$ the codewords have at most 1 bit. Let $x$ and $y$
+be the two least probable symbols. The tree of an optimal code is full (a
+node with one child could be replaced by the child, shortening the
+codewords below it), and hence its deepest level holds two sibling leaves;
+exchanging their symbols with $x$ and $y$ does not increase the average,
+since $x$ and $y$ are the least probable, and therefore some optimal code
+$T$ has $x$ and $y$ as sibling leaves. Replacing the two leaves with a leaf
+of a new symbol $z$ of probability $P[ x ] + P[ y ]$ gives a code $T'$ of
+$\sigma - 1$ symbols with $\bar\ell( T ) = \bar\ell( T' ) + P[ x ] + P[ y
+]$. The code $H$ of the merges is the code $H'$ of the merges on the
+$\sigma - 1$ symbols with $z$ in place of $x$ and $y$, whose leaf is split
+into the two, and $\bar\ell( H ) = \bar\ell( H' ) + P[ x ] + P[ y ]$ in
+the same way. By induction $\bar\ell( H' ) \le \bar\ell( T' )$, and hence
+$\bar\ell( H ) \le \bar\ell( T )$. As for (21.4), its lower bound is [Lemma 21.1](21-compression.md#lem-21-1), and its upper bound holds since the lengths $\lceil \log_2( 1 / P[ c ] ) \rceil$ satisfy (21.3) and
 have an average below $H_0 + 1$, and the optimum is no longer than they
 are. $\square$
 
@@ -218,12 +225,8 @@ $( v - \mathit{fc}[ l ] )$-th of length $l$. $\square$
 
 Hence the preamble of a canonical code is the lengths alone (cf. (21.5)). Also, we decode a codeword of $l$ bits by $l$ steps on two arrays that fit
 in the cache, instead of $l$ steps along the pointers of a tree, each a
-possible miss. Its code follows the pseudocode, with
-$\mathit{fc}[ 1 .. \ell_{\max} ]$ and the symbols by length in vectors:
-
-```cpp
---8<-- "generated/CanonicalHuffman-decode.cpp"
-```
+possible miss. The implementation follows the pseudocode, with
+$\mathit{fc}[ 1 .. \ell_{\max} ]$ and the symbols by length in vectors.
 
 Encoding a symbol is a lookup of its codeword and its length in
 $O( 1 )$ time ([Algorithm 21.3](21-compression.md#alg-21-3)), and the
@@ -323,11 +326,7 @@ Four lookups of at most 12 bits fit in the bits of a word after a refill,
 which leaves at least 57 bits to read, and the loop of the decoder
 therefore loads each word once every four lookups. Note that each lookup
 stores the 4 bytes of its entry, of which the next lookup overwrites those
-past its symbols:
-
-```cpp
---8<-- "generated/HuffmanCoder-lookups.cpp"
-```
+past its symbols.
 
 This loop runs while each stream has room for 12 more symbols, and the rest
 is decoded one symbol at a time with the table of the single symbols. A
@@ -448,11 +447,7 @@ $H - L > 3 M / 4 - M / 2$, and both are $M / 4$. Then
 $( H - L ) ( b - a ) / T > ( M / 4 ) / T \ge 1$ for $b > a$, and the two
 ends of (21.8) differ by at least 1. $\square$
 
-In the code, which is the pseudocode, the bits are emitted by `emit()`, which also writes the pending underflows.
-
-```cpp
---8<-- "generated/ArithmeticCoding-encode.cpp"
-```
+In the implementation, which follows the pseudocode, the bits are emitted by `emit()`, which also writes the pending underflows.
 
 At the end, `finish()` emits 01 or 10, with the pending bits, according to
 whether $L < M / 4$; this picks a point of the last interval whatever bits
@@ -581,11 +576,8 @@ states share one stream of words of 16 bits. In the encoder the division of
 (21.9) by $f_c$ is a multiplication by a reciprocal and a shift
 ([Granlund and Montgomery 1994](Z-bibliography.md#ref-granlund1994)),
 exact on the states below $2^{32}$. Its decoder is a table of the $M$ slots, which gives for each slot $j$ its symbol, $f_c$ and $j - c_c$. We may thus write a step of it as a mask, a lookup, a multiplication and an addition, and the
-word of 16 bits is read with no branch:
-
-```cpp
---8<-- "generated/Rans-step.cpp"
-```
+word of 16 bits is read with no branch, the pointer into the stream moving
+by 2 times the bit that tells whether the state fell below $2^{16}$.
 
 The tabled variant of `Tans.h` (tANS, the entropy coder of order 0 of
 Zstandard) makes the transitions of the state lookups, with no
@@ -783,15 +775,8 @@ $\delta$ of [Elias 1975](Z-bibliography.md#ref-elias1975).
 
 We write a codeword of up to 63 bits in one field of the stream,
 turned around so that its most significant bit is read first, and a longer
-one by its unary part and its binary part apart. Its decoder is `readUnary()` followed by `readBinary()` of the stream.
-
-```cpp
---8<-- "generated/IntegerCodes-encodeGamma.cpp"
-```
-
-```cpp
---8<-- "generated/IntegerCodes-decodeGamma.cpp"
-```
+one by its unary part and its binary part apart. Its decoder is `readUnary()` followed by `readBinary()` of the stream
+([§22.2](22-succinct.md#sec-22-2)).
 
 The code of [Golomb 1966](Z-bibliography.md#ref-golomb1966) of modulus $b$
 writes $x - 1 = q b + r$ as $U( q + 1 )$ followed by the remainder $r$ in
@@ -1050,12 +1035,7 @@ directly addressable codes by (21.17), and the access (21.16)
 A fixed width $b$ for all the levels (the second constructor) trades bits
 for fewer levels, i.e., for fewer ranks per access. With $b = 7$ the chunks
 are those of the variable-byte code, its continuation bits moved to a separate vector with rank. A chunk of 8 or 16 bits is read as its byte
-or its pair of bytes, one load that stays in its line of the cache, as the
-code of the access shows:
-
-```cpp
---8<-- "generated/DirectAccessCodes-access.cpp"
-```
+or its pair of bytes, one load that stays in its line of the cache.
 
 ## 21.9 The compressors of Lempel and Ziv {#sec-21-9}
 
@@ -1174,21 +1154,34 @@ those of rank above $r$ at most the prefix that $\mathit{NSV}( i )$
 shares. $\square$
 
 Both values of each place come from one scan of $\mathit{SA}$ with a
-stack of places that increase from the bottom. A place pops the larger
-ones, of which it is the next smaller value, and the top that remains is
-its previous smaller value; each place is pushed and popped once.
-
-```cpp
---8<-- "generated/LZ77Linear-psvNsv.cpp"
-```
+stack of places that increase from the bottom (lines 3 to 6 of
+[Algorithm 21.22](21-compression.md#alg-21-22) below). A place pops the
+larger ones, of which it is the next smaller value, and the top that
+remains is its previous smaller value; each place is pushed and popped
+once.
 
 <span id="thm-21-3"></span>**Theorem 21.3.** *`lz77ParseLinear()` gives
 the phrases of LZ77 with no window, with the lengths of `lz77Parse()`, in
 $O( n )$ time and two arrays of $n$ integers of 32 bits besides the text
 and the suffix array.*
 
-*Proof.* By [Lemma 21.8](21-compression.md#lem-21-8) the length of each
-phrase is that of the longest earlier copy. Also, the scan costs $O( n )$, and so does the suffix array of SA-IS
+*Proof.* We first show that lines 3 to 6 of
+[Algorithm 21.22](21-compression.md#alg-21-22) compute (21.18). After the
+scan of $\mathit{SA}[ 0 .. j ]$, the stack holds, from the bottom, the
+places of $\mathit{SA}[ 0 .. j ]$ that are smaller than every place
+scanned after them, in increasing order: this holds before the scan, and
+the place $x = \mathit{SA}[ j + 1 ]$ removes from the set exactly the
+places larger than $x$, which are at the top since the stack increases,
+and then enters it. A place $y$ popped by $x$ was smaller than every place
+scanned between them; hence $x$ is the first place after $y$ in the order
+of $\mathit{SA}$ that is smaller than $y$, i.e., $\mathit{NSV}( y )$. The
+top $z$ that remains is smaller than $x$, and every place $w$ scanned after
+$z$ and before $x$ is larger than $x$: otherwise $w$, or a place smaller
+than $w$ that popped it, would be in the stack above $z$; hence $z =
+\mathit{PSV}( x )$. A place that is never popped has no next smaller
+value, and one that finds the stack empty has no previous one. By
+[Lemma 21.8](21-compression.md#lem-21-8) the length of each phrase is then
+that of the longest earlier copy. Also, the scan costs $O( n )$, and so does the suffix array of SA-IS
 ([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)), which is
 freed before the parse. At the start $i$ of a phrase of length $\ell$ the
 two longest common prefixes are found by comparing symbols, at most
@@ -1265,16 +1258,10 @@ of $c$ in $L$, and they begin at the row $C[ c ]$ of $F$. $\square$
 Since $L[ \mathit{LF}( i ) ]$ is the symbol before $L[ i ]$ in $s$, the
 inverse transform starts from the row 0, which is $\$ s$ and ends with
 $s[ n - 1 ]$, and spells $s$ backward by $n$ steps of (21.20). This takes
-$O( n + \sigma )$ time, with the counts of $L$ taken in one scan. In the code we take the symbols of $L$ as the bytes plus 1 and the $\$$ is 0, and the
-LF-mapping is a counting sort of the rows by their last symbol:
-
-```cpp
---8<-- "generated/BurrowsWheeler-lfMapping.cpp"
-```
-
-```cpp
---8<-- "generated/BurrowsWheeler-inverseBwt.cpp"
-```
+$O( n + \sigma )$ time, with the counts of $L$ taken in one scan. The
+implementation takes the symbols of $L$ as the bytes plus 1 and the $\$$
+as 0, and computes the LF-mapping as a counting sort of the rows by their
+last symbol.
 
 Each step of the inverse is a random access to $\mathit{LF}$, i.e., a "likely" miss of the cache on a large text; the transform is cheap to invert
 in operations but not (necessarily) in accesses to the memory. On the
@@ -1388,12 +1375,8 @@ substring in the FM-index
 
 --8<-- "generated/FMIndex-extract.pseudo.md"
 
-The code of the search is the pseudocode, with $C[ c ]$ counting the
-$\$$ too:
-
-```cpp
---8<-- "generated/FMIndex-range.cpp"
-```
+The implementation of the search follows the pseudocode, with $C[ c ]$
+counting the $\$$ too.
 
 To locate the occurrences, the rows of the suffixes that start at a
 multiple of $\mu$ are marked, with their places. From any row, the
