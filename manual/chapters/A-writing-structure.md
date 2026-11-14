@@ -52,8 +52,9 @@ standard library in alphabetical order. Its guard is `#ifndef
 __ADS_MinStack`, followed by the comment `/* self-identification: #endif
 constant */`. A box `IMPLEMENTATION` precedes the line `#include
 "ADS/stack/impl/MinStack.tpp"`, and the box `End File MinStack.h` closes
-the file. As for the `.tpp`, it has the same boxes without the guard, and its
-`@file` comment is one sentence ("The operations of MinStack [see
+the file. As for the `.tpp`, it has no guard and only three boxes, that of its
+name, `IMPLEMENTATION` before the definitions and `End File MinStack.tpp`,
+and its `@file` comment is one sentence ("The operations of MinStack [see
 MinStack.h], with their contracts.").
 
 Inside the class, the members are named `f_` followed by the name of the text
@@ -289,10 +290,14 @@ The tests are programs of `test/`, grouped by their source: `ch01.cpp` to
 `ch19.cpp` for the chapters of Montresor's book, `ods_ints.cpp`,
 `ods_lists.cpp` and `ods_trees.cpp` for Morin's, `taocp.cpp` for Knuth's,
 `pearls_*.cpp` for Ferragina's and `exam_*.cpp` for the exams of the
-course. Furthermore, `beyond.cpp` tests what no book covers,
-`contract_<area>.cpp` the contracts and the axioms of an area, and
-`engineered*.cpp` (with a few programs by family, e.g., `heaps.cpp` and
-`hashing.cpp`) the engineered structures. A test is a function registered
+course (and `conclusion.cpp` for the conclusion of Montresor's book).
+Furthermore, `beyond.cpp` tests what no book covers, `lib_*.cpp` the
+problems that the library adds in an area (e.g., `lib_graphs.cpp`),
+`contract_<area>.cpp` the contracts and the axioms of an area,
+`interop.cpp` the standard interface of the containers, and
+`engineered*.cpp` (with a few programs by family, e.g., `heaps.cpp`,
+`hashing.cpp`, `join_trees.cpp`, `ordered.cpp` and `sorting.cpp`) the
+engineered structures. A test is a function registered
 with a name by the macro `ADS_TEST` of `test/ADSTest.h`. This header also
 gives `CHECK( c )`, whose failure names its file and line, `CHECK_THROWS(
 e , E )`, which checks that a precondition throws, and `scaled( n , small
@@ -301,11 +306,13 @@ coverage makes it small through `ADS_TEST_SMALL`).
 
 A test is named after its source, and that of `MinStack` is
 `ods-ex3.14.min-stack`, in `test/ods_lists.cpp`. It runs 4000 random
-operations, 60% of which are pushes of keys in $[ 0 , 50 )$, where equal
-minima occur often. A `std::vector` holds the same items, and after each
-operation the test compares with it the size, the top and `min()` (the
-latter against `std::min_element`). Then it pushes 0 to 99 in increasing
-order and checks that a single minimum is kept, i.e., the bound of
+operations, about 60% of which are pushes (all of them on an empty stack)
+of keys in $[ 0 , 50 )$, where equal minima occur often. A `std::vector`
+holds the same items, and the test compares with it the item that each
+`pop()` returns and, after each operation, the size, the top and `min()`
+(the latter against `std::min_element`). Then it pushes 0 to 99 in increasing
+order and checks by `minima()`, the size of $M$, that a single minimum is
+kept, i.e., the bound of
 [Lemma A.1](A-writing-structure.md#lem-A-1) at its best. Since the
 program is compiled with `ADS_CONTRACTS=3`, each operation also checks
 the invariant of [§A.3](A-writing-structure.md#sec-A-3).
@@ -411,8 +418,10 @@ MSVC by CMake only), by CMake and by the makefile, with and without the
 backends of GMP and of a CBLAS. Its job `sanitizers` runs all the tests
 under AddressSanitizer and UndefinedBehaviorSanitizer (`make test` with
 `-fsanitize=address,undefined` and `ADS_TEST_SMALL`). Other jobs run the
-concurrent structures under ThreadSanitizer, measure the coverage, and
-build the module by CMake and by the makefile; on a pull request, the
+concurrent structures under ThreadSanitizer (`threads`), measure the
+coverage, build the module by CMake and by the makefile, run the programs
+of MPI on 1 to 4 processes, and build the executors and the backends that
+are optional (`executors`, `backends`); on a pull request, the
 action of `code-style` also checks the formatting of the lines changed.
 
 A push is expected to leave the workflow green, and usually the cheapest way to
@@ -422,8 +431,8 @@ templates), and the same with `CXXFLAGS="-std=c++20 -O1 -g
 -fsanitize=address,undefined -fno-omit-frame-pointer -Wall -Wextra
 -DADS_TEST_SMALL"`, as the job does; a concurrent structure adds a run under
 ThreadSanitizer. Also, the files must keep their frame: no line may exceed 79
-columns, and the boxes must be aligned (a checker of the boxes, `boxscan.py`,
-must print nothing on the files changed). Then the documentation must build
+columns, and the boxes must be aligned, which a checker of the boxes, where one
+has it, verifies on the files changed (section 3 of `docs/STYLE.md`). Then the documentation must build
 with no warning by `bash docs/build.sh`, which also fails on a comment line
 that ends with a backslash. Section 3 of `docs/STYLE.md` adds the screenshots
 of the pseudocode on both sites, in the light and in the dark theme.
