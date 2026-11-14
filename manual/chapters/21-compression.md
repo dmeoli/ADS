@@ -1581,7 +1581,431 @@ occurrences.
 | `RIndex` | $O( r )$ words | $O( p )$ ranks on the runs, each with a predecessor search | $O( \mathit{occ} )$ predecessor searches |
 | `MoveRIndex` | $O( r )$ words, a few more per run | $O( p )$ steps of $O( 1 )$, plus the ranks for the intervals of another symbol | $O( \mathit{occ} )$, each in $O( 1 )$ |
 
-## 21.12 Discussion and references {#sec-21-12}
+## 21.12 The interface {#sec-21-12}
+
+We collect here, header by header, the declarations of the namespace `ADS`
+that a user calls in this chapter, without the contracts, the documentation
+and the members that only the implementation uses; each block points to the
+section that describes its functions, and the example at the end shows the
+main structures at work. The program of the example compiles against the
+headers as it stands, and its assertions hold.
+
+`ArithmeticCoding.h` ([§21.4](21-compression.md#sec-21-4)).
+
+```cpp
+template< class C >
+std::pair< Rational ,
+    Rational > arithmeticInterval( std::span< const C > text ,
+    const std::map< C , Rational > & prob );
+template< class C >
+std::string arithmeticCodeExact( std::span< const C > text ,
+    const std::map< C , Rational > & prob );
+template< class C >
+std::vector< C > arithmeticDecodeExact( const std::string & bits ,
+    std::size_t n , const std::map< C , Rational > & prob );
+class RangeEncoder { public:
+ explicit RangeEncoder( int w = 32 );
+ std::uint64_t maxTotal( void ) const;
+ void encode( std::uint64_t low , std::uint64_t high ,
+     std::uint64_t total );
+ std::vector< std::uint8_t > finish( void );
+ std::size_t bits( void ) const;
+ };
+class RangeDecoder { public:
+ explicit RangeDecoder( std::span< const std::uint8_t > bytes ,
+     int w = 32 );
+ std::uint64_t maxTotal( void ) const;
+ std::uint64_t target( std::uint64_t total ) const;
+ void consume( std::uint64_t low , std::uint64_t high ,
+     std::uint64_t total );
+ };
+template< class C >
+std::vector< std::uint8_t > arithmeticEncode( std::span< const C > text ,
+    const std::map< C , std::uint64_t > & counts , int w = 32 );
+template< class C >
+std::vector< C > arithmeticDecode( std::span< const std::uint8_t > code ,
+    std::size_t n , const std::map< C , std::uint64_t > & counts ,
+    int w = 32 );
+std::vector< std::uint8_t > adaptiveArithmeticEncode( std::span< const
+    std::uint32_t > x , std::uint32_t sigma );
+std::vector< std::uint32_t > adaptiveArithmeticDecode( std::span< const
+    std::uint8_t > code , std::size_t n , std::uint32_t sigma );
+std::vector< std::uint8_t > adaptiveArithmeticEncode( std::string_view s );
+std::string adaptiveArithmeticDecode( std::span< const std::uint8_t > code ,
+    std::size_t n );
+```
+
+`BinaryPacking.h` ([§21.8](21-compression.md#sec-21-8)).
+
+```cpp
+std::vector< std::uint8_t > binaryPack( std::span< const std::uint32_t > x ,
+    bool sorted = false );
+std::vector< std::uint32_t > binaryUnpack(
+    std::span< const std::uint8_t > in , std::size_t n ,
+    bool sorted = false );
+std::vector< std::uint8_t > patchedPack( std::span< const std::uint32_t > x ,
+    bool sorted = false );
+std::vector< std::uint32_t > patchedUnpack(
+    std::span< const std::uint8_t > in , std::size_t n ,
+    bool sorted = false );
+```
+
+`BurrowsWheeler.h` ([§21.10](21-compression.md#sec-21-10)).
+
+```cpp
+struct BWT {
+ std::string last;
+ std::size_t primary;
+ };
+BWT bwt( std::string_view s );
+std::vector< std::size_t > lfMapping( const BWT & b );
+std::string inverseBwt( const BWT & b );
+std::vector< std::uint8_t > moveToFront( std::string_view s ,
+    std::string_view alphabet );
+std::vector< std::uint8_t > moveToFront( std::string_view s );
+std::string inverseMoveToFront( const std::vector< std::uint8_t > & x ,
+    std::string_view alphabet );
+std::string inverseMoveToFront( const std::vector< std::uint8_t > & x );
+std::vector< std::pair< std::size_t ,
+    char > > runLengthEncode( std::string_view s );
+std::string runLengthDecode( const std::vector< std::pair< std::size_t ,
+    char > > & R );
+std::vector< std::uint32_t > zeroRunEncode( const std::vector< std::uint8_t
+    > & x );
+std::vector< std::uint8_t > zeroRunDecode( const std::vector< std::uint32_t
+    > & y );
+std::vector< std::uint8_t > bzipCompress( std::string_view s ,
+    std::size_t block = 900000 );
+std::string bzipDecompress( std::span< const std::uint8_t > code );
+```
+
+`CanonicalHuffman.h` ([§21.2](21-compression.md#sec-21-2)).
+
+```cpp
+template< class C , class F >
+std::map< C , int > huffmanLengths( const std::map< C , F > & freq );
+template< class C , class F >
+std::map< C , int > limitedLengths( const std::map< C , F > & freq ,
+    int L );
+template< class C > class CanonicalHuffman { public:
+ using symbol_type = C;
+ explicit CanonicalHuffman( const std::map< C , int > & lengths );
+ template< class F >
+ static CanonicalHuffman fromFrequencies( const std::map< C , F > & freq );
+ const std::map< C , int > & lengths( void ) const;
+ int maxLength( void ) const;
+ std::uint64_t firstCode( int l ) const;
+ std::string code( const C & c ) const;
+ void encode( const C & c , PackedBitWriter & w ) const;
+ std::vector< std::uint8_t > encode( std::span< const C > text ) const;
+ C decode( PackedBitReader & r ) const;
+ std::vector< C > decode( const std::vector< std::uint8_t > & bits ,
+     std::size_t n ) const;
+ };
+```
+
+`DirectAccessCodes.h` ([§21.8](21-compression.md#sec-21-8)).
+
+```cpp
+class DirectAccessCodes { public:
+ DirectAccessCodes( void ) = default;
+ explicit DirectAccessCodes( std::span< const std::uint64_t > x );
+ DirectAccessCodes( std::span< const std::uint64_t > x , int b );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::uint64_t access( std::size_t i ) const;
+ std::uint64_t operator[]( std::size_t i ) const;
+ std::vector< int > widths( void ) const;
+ std::size_t sizeInBits( void ) const;
+ using const_iterator = SubscriptIterator< DirectAccessCodes ,
+     std::uint64_t >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+```
+
+`Entropy.h` ([§21.1](21-compression.md#sec-21-1)).
+
+```cpp
+template< class C , class F >
+double entropy( const std::map< C , F > & freq );
+double entropy( std::string_view s );
+double entropy( std::string_view s , std::size_t k );
+```
+
+`FMIndex.h` ([§21.11](21-compression.md#sec-21-11)).
+
+```cpp
+class FMIndex { public:
+ explicit FMIndex( std::string_view s , std::size_t b = 64 ,
+     std::size_t mu = 32 );
+ std::size_t size( void ) const;
+ BWT transform( void ) const;
+ std::size_t rank( char c , std::size_t k ) const;
+ std::pair< std::size_t , std::size_t > range( std::string_view P ) const;
+ std::size_t count( std::string_view P ) const;
+ std::vector< std::size_t > locate( std::string_view P ) const;
+ std::string extract( std::size_t i , std::size_t j ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`HuffmanCoder.h` ([§21.3](21-compression.md#sec-21-3)).
+
+```cpp
+std::vector< std::uint8_t > huffmanCompress( std::span< const std::uint8_t
+    > in );
+std::vector< std::uint8_t > huffmanDecompress( std::span< const
+    std::uint8_t > in );
+std::array< std::uint8_t ,
+    256 > limitedHuffmanLengths( const std::array< std::uint64_t ,
+    256 > & f , int L );
+```
+
+`HuffmanFMIndex.h` ([§21.11](21-compression.md#sec-21-11)).
+
+```cpp
+template< class RS = RankSelect > class HuffmanFMIndex { public:
+ explicit HuffmanFMIndex( std::string_view s , std::size_t mu = 32 );
+ std::size_t size( void ) const;
+ std::pair< std::size_t , std::size_t > range( std::string_view P ) const;
+ std::size_t count( std::string_view P ) const;
+ std::vector< std::size_t > locate( std::string_view P ) const;
+ std::string extract( std::size_t i , std::size_t j ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`IntegerCodes.h` ([§21.7](21-compression.md#sec-21-7)).
+
+```cpp
+constexpr int binaryLength( std::uint64_t x );
+constexpr std::uint64_t signedToNatural( std::int64_t x );
+constexpr std::int64_t naturalToSigned( std::uint64_t y );
+std::vector< std::uint64_t > dGaps( const std::vector< std::uint64_t > & x
+    );
+std::vector< std::uint64_t > prefixSums( const std::vector< std::uint64_t >
+    & g );
+void encodeUnary( BitWriter & w , std::uint64_t x );
+std::uint64_t decodeUnary( BitReader & r );
+constexpr std::uint64_t unaryLength( std::uint64_t x );
+void encodeGamma( BitWriter & w , std::uint64_t x );
+std::uint64_t decodeGamma( BitReader & r );
+constexpr int gammaLength( std::uint64_t x );
+void encodeDelta( BitWriter & w , std::uint64_t x );
+std::uint64_t decodeDelta( BitReader & r );
+constexpr int deltaLength( std::uint64_t x );
+void encodeRice( BitWriter & w , std::uint64_t x , int k );
+std::uint64_t decodeRice( BitReader & r , int k );
+constexpr std::uint64_t riceLength( std::uint64_t x , int k );
+void encodeGolomb( BitWriter & w , std::uint64_t x , std::uint64_t b );
+std::uint64_t decodeGolomb( BitReader & r , std::uint64_t b );
+constexpr std::uint64_t golombLength( std::uint64_t x , std::uint64_t b );
+struct PForDeltaBlock {
+ int b = 1;
+ std::uint64_t base = 0;
+ BitVector slots;
+ std::vector< std::uint64_t > exceptions;
+ std::size_t size( void ) const;
+ std::size_t codeBits( void ) const;
+ };
+int pforDeltaWidth( const std::vector< std::uint64_t > & x ,
+    std::uint64_t base , double f = 0.9 );
+PForDeltaBlock encodePForDelta( const std::vector< std::uint64_t > & x ,
+    int b , std::uint64_t base = 0 );
+std::vector< std::uint64_t > decodePForDelta( const PForDeltaBlock & p );
+void encodeVByte( std::vector< std::uint8_t > & out , std::uint64_t x );
+std::uint64_t decodeVByte( const std::vector< std::uint8_t > & in ,
+    std::size_t & p );
+constexpr int vbyteLength( std::uint64_t x );
+void encodeDense( std::vector< std::uint32_t > & out , std::uint64_t x ,
+    std::uint32_t s , std::uint32_t c );
+std::uint64_t decodeDense( const std::vector< std::uint32_t > & in ,
+    std::size_t & p , std::uint32_t s , std::uint32_t c );
+constexpr int denseLength( std::uint64_t x , std::uint32_t s ,
+    std::uint32_t c );
+std::uint32_t denseOptimalS( const std::vector< std::uint64_t > & f ,
+    int bits = 8 );
+void encodeBounded( BitWriter & w , std::uint64_t x , std::uint64_t a ,
+    std::uint64_t b );
+std::uint64_t decodeBounded( BitReader & r , std::uint64_t a ,
+    std::uint64_t b );
+void encodeInterpolative( BitWriter & w ,
+    const std::vector< std::uint64_t > & x , std::uint64_t low ,
+    std::uint64_t hi );
+std::vector< std::uint64_t > decodeInterpolative( BitReader & r ,
+    std::size_t n , std::uint64_t low , std::uint64_t hi );
+```
+
+`LempelZiv.h` ([§21.9](21-compression.md#sec-21-9)).
+
+```cpp
+struct LZ77Phrase {
+ std::size_t distance , length;
+ std::optional< char > next;
+ };
+struct LZSSPhrase {
+ std::size_t distance , length;
+ char literal;
+ };
+struct LZ78Phrase {
+ std::size_t id;
+ char next;
+ };
+std::vector< LZ77Phrase > lz77Parse( std::string_view s ,
+    std::size_t w = std::numeric_limits< std::size_t >::max() );
+std::string lz77Decode( const std::vector< LZ77Phrase > & P );
+std::vector< LZSSPhrase > lzssParse( std::string_view s ,
+    std::size_t w = std::numeric_limits< std::size_t >::max() ,
+    std::size_t minLength = 1 );
+std::vector< LZSSPhrase > lzssParseHashed( std::string_view s ,
+    std::size_t w , std::size_t minLength = 3 ,
+    std::size_t maxChain = std::numeric_limits< std::size_t >::max() );
+std::string lzssDecode( const std::vector< LZSSPhrase > & P );
+std::vector< LZ78Phrase > lz78Parse( std::string_view s ,
+    std::size_t maxPhrases = std::numeric_limits< std::size_t >::max() );
+std::string lz78Decode( const std::vector< LZ78Phrase > & P ,
+    std::size_t maxPhrases = std::numeric_limits< std::size_t >::max() );
+std::vector< std::uint32_t > lzwEncode( std::string_view s );
+std::string lzwDecode( const std::vector< std::uint32_t > & I );
+```
+
+`LZ77Linear.h` ([§21.9](21-compression.md#sec-21-9)).
+
+```cpp
+std::vector< LZ77Phrase > lz77ParseLinear( std::string_view s );
+```
+
+`MoveRIndex.h` ([§21.11](21-compression.md#sec-21-11)).
+
+```cpp
+class MoveRIndex { public:
+ MoveRIndex( void );
+ explicit MoveRIndex( std::string_view s );
+ std::size_t size( void ) const;
+ std::size_t intervals( void ) const;
+ std::size_t count( std::string_view P ) const;
+ std::vector< std::size_t > locate( std::string_view P ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`PackedBits.h` ([§21.2](21-compression.md#sec-21-2)).
+
+```cpp
+class PackedBitWriter { public:
+ void put( bool b );
+ void put( std::uint64_t v , int k );
+ void put( const std::string & s );
+ std::size_t size( void ) const;
+ const std::vector< std::uint8_t > & bytes( void ) const;
+ };
+class PackedBitReader { public:
+ explicit PackedBitReader( std::span< const std::uint8_t > b );
+ bool get( void );
+ std::uint64_t get( int k );
+ std::size_t position( void ) const;
+ std::size_t size( void ) const;
+ };
+```
+
+`PPM.h` ([§21.6](21-compression.md#sec-21-6)).
+
+```cpp
+class PPMModel { public:
+ struct Step {
+  std::uint64_t low , high , total;
+  };
+ PPMModel( int order , std::uint32_t sigma = 256 );
+ int order( void ) const;
+ std::uint32_t sigma( void ) const;
+ std::map< std::uint32_t ,
+     std::uint64_t > counts( const std::vector< std::uint32_t > & ctx )
+     const;
+ std::vector< Step > steps( std::uint32_t c ) const;
+ void encode( std::uint32_t c , RangeEncoder & e ) const;
+ std::uint32_t decode( RangeDecoder & d ) const;
+ void update( std::uint32_t c );
+ };
+std::vector< std::uint8_t > ppmEncode( std::string_view s , int K );
+std::string ppmDecode( std::span< const std::uint8_t > code ,
+    std::size_t n , int K );
+```
+
+`Rans.h` ([§21.5](21-compression.md#sec-21-5)).
+
+```cpp
+std::vector< std::uint8_t > ransCompress( std::span< const std::uint8_t >
+    in );
+std::vector< std::uint8_t > ransDecompress( std::span< const std::uint8_t >
+    in );
+std::array< std::uint32_t ,
+    256 > scaleFrequencies( const std::array< std::uint64_t , 256 > & f ,
+    int b );
+```
+
+`RIndex.h` ([§21.11](21-compression.md#sec-21-11)).
+
+```cpp
+class RIndex { public:
+ RIndex( void );
+ explicit RIndex( std::string_view s );
+ std::size_t size( void ) const;
+ std::size_t runs( void ) const;
+ std::pair< std::size_t , std::size_t > range( std::string_view P ) const;
+ std::size_t count( std::string_view P ) const;
+ std::vector< std::size_t > locate( std::string_view P ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`StreamVByte.h` ([§21.8](21-compression.md#sec-21-8)).
+
+```cpp
+std::vector< std::uint8_t > streamVByteEncode( std::span< const
+    std::uint32_t > x );
+std::vector< std::uint32_t > streamVByteDecode( std::span< const
+    std::uint8_t > code , std::size_t n );
+```
+
+`Tans.h` ([§21.5](21-compression.md#sec-21-5)).
+
+```cpp
+std::vector< std::uint8_t > tansCompress( std::span< const std::uint8_t >
+    in );
+std::vector< std::uint8_t > tansDecompress( std::span< const std::uint8_t >
+    in );
+```
+
+
+```cpp
+#include "ADS/compression/CanonicalHuffman.h"
+#include "ADS/compression/FMIndex.h"
+#include "ADS/compression/Rans.h"
+#include <cassert>
+#include <string>
+
+int main( void )
+{
+ const std::string s = "abracadabra";
+ std::map< char , int > freq;
+ for( char c : s ) ++freq[ c ];
+ const auto code = ADS::CanonicalHuffman< char >::fromFrequencies( freq );
+ const std::vector< char > text( s.begin() , s.end() );
+ const auto bits = code.encode( std::span< const char >( text ) );
+ assert( code.decode( bits , text.size() ) == text );
+ const std::span< const std::uint8_t > bytes(
+                    reinterpret_cast< const std::uint8_t * >( s.data() ) ,
+                    s.size() );
+ const auto z = ADS::ransCompress( bytes );
+ const auto back = ADS::ransDecompress( z );
+ assert( std::string( back.begin() , back.end() ) == s );
+ const ADS::FMIndex fm( s );
+ assert( ( fm.count( "abra" ) == 2 ) && ( fm.extract( 0 , 4 ) == "abra" ) );
+ }
+```
+
+## 21.13 Discussion and references {#sec-21-13}
 
 The entropy and the bound of [Lemma 21.1](21-compression.md#lem-21-1) are
 those of [Shannon 1948](Z-bibliography.md#ref-shannon1948), the optimal
@@ -1627,7 +2051,7 @@ the decoder overlap. How much each of these choices may gain, against the
 plain forms of the book and against the implementations of reference, is
 measured by the campaign of Appendix B, and no number is given here.
 
-## 21.13 Exercises {#sec-21-13}
+## 21.14 Exercises {#sec-21-14}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).

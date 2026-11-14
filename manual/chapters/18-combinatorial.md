@@ -1160,7 +1160,97 @@ distance of about $n / t$ places, and hence (18.6) should run for a
 fraction of about $t / n$ of the words. We remark that the case $t = 64$ is treated apart, since
 $2^{64} - 1$ cannot be written as a shift of 1.
 
-## 18.9 Discussion and references {#sec-18-9}
+## 18.9 The interface {#sec-18-9}
+
+We collect here, header by header, the declarations of the namespace `ADS`
+that a user calls in this chapter, without the contracts, the documentation
+and the members that only the implementation uses; each block points to the
+section that describes its functions, and the example at the end shows the
+main structures at work. The program of the example compiles against the
+headers as it stands, and its assertions hold.
+
+`Bitwise.h` ([§18.1](18-combinatorial.md#sec-18-1)).
+
+```cpp
+using Word = std::uint64_t;
+constexpr int sidewaysSum( Word x );
+constexpr int ruler( Word x );
+constexpr int lambda( Word x );
+constexpr Word rightmostOne( Word x );
+constexpr Word smearRight( Word x );
+constexpr Word reverseBits( Word x );
+constexpr Word gray( Word x );
+constexpr Word grayInverse( Word g );
+constexpr Word nextSameWeight( Word x );
+constexpr Word interleave( std::uint32_t x , std::uint32_t y );
+constexpr std::pair< std::uint32_t , std::uint32_t > deinterleave( Word z );
+constexpr bool hasZeroByte( Word x );
+```
+
+`FastBitwise.h` ([§18.3](18-combinatorial.md#sec-18-3)).
+
+```cpp
+std::uint64_t popcount( const Word * w , std::size_t n );
+std::uint64_t popcountAnd( const Word * a , const Word * b ,
+    std::size_t n );
+Word pdep( Word x , Word mask );
+Word pext( Word x , Word mask );
+int select( Word x , int r );
+Word mortonEncode( std::uint32_t x , std::uint32_t y );
+std::pair< std::uint32_t , std::uint32_t > mortonDecode( Word z );
+```
+
+`FastGeneration.h` ([§18.4](18-combinatorial.md#sec-18-4)).
+
+```cpp
+template< class T , class F >
+long forEachPermutation( std::vector< T > & a , F && visit );
+template< class T , class F >
+long forEachPermutationLex( std::vector< T > & a , F && visit );
+template< class F > long forEachCombination( int n , int t , F && visit );
+constexpr Word nextCombination( Word x );
+template< class F >
+long forEachCombinationMask( int n , int t , F && visit );
+```
+
+`Generation.h` ([§18.4](18-combinatorial.md#sec-18-4)).
+
+```cpp
+using Tuple = std::vector< int >;
+template< class F >
+long mixedRadix( const std::vector< int > & m , F && visit );
+template< class F >
+long grayTuples( const std::vector< int > & m , F && visit );
+template< class F > long permutationsLex( Tuple a , F && visit );
+template< class F > long plainChanges( int n , F && visit );
+template< class F > long heapPermutations( int n , F && visit );
+template< class F > long combinationsLex( int n , int t , F && visit );
+template< class F > long revolvingDoor( int n , int t , F && visit );
+template< class F > long integerPartitions( int n , F && visit );
+template< class F > long setPartitions( int n , F && visit );
+template< class F > long nestedParentheses( int n , F && visit );
+```
+
+
+```cpp
+#include "ADS/combinatorial/Bitwise.h"
+#include "ADS/combinatorial/FastGeneration.h"
+#include "ADS/combinatorial/Generation.h"
+#include <cassert>
+
+int main( void )
+{
+ static_assert( ADS::sidewaysSum( 0xF0F0 ) == 8 );
+ static_assert( ADS::nextSameWeight( 0b0101'1100 ) == 0b0110'0011 );
+ long seen = ADS::combinationsLex( 5 , 3 , []( const ADS::Tuple & c ) {
+  assert( c[ 0 ] < c[ 1 ] && c[ 1 ] < c[ 2 ] ); } );    // C( 5 , 3 ) = 10
+ long upTo = ADS::forEachCombinationMask( 10 , 3 , []( ADS::Word x ) {
+  return( x == 0b111'0000 ); } );                      // stops there
+ assert( ( seen == 10 ) && ( upTo == 35 ) );
+ }
+```
+
+## 18.10 Discussion and references {#sec-18-10}
 
 The broadword tricks of [§18.2](18-combinatorial.md#sec-18-2) are collected
 in [Knuth 2011, §7.1.3](Z-bibliography.md#ref-knuth2011) and in [Warren
@@ -1189,7 +1279,7 @@ of `FastGeneration.h` with `std::next_permutation` and with those of
 `Generation.h`, and of `popcount()` with the scalar loop, belongs to the
 campaign of [Appendix B](B-benchmarks.md#app-B); we give no number here.
 
-## 18.10 Exercises {#sec-18-10}
+## 18.11 Exercises {#sec-18-11}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).

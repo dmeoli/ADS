@@ -921,7 +921,233 @@ system: the algorithms that use them read and write each file by long
 sequential scans, the pattern on which the cache and the read-ahead of the
 system usually work best.
 
-## 23.7 Discussion and references {#sec-23-7}
+## 23.7 The interface {#sec-23-7}
+
+We collect here, header by header, the declarations of the namespace `ADS`
+that a user calls in this chapter, without the contracts, the documentation
+and the members that only the implementation uses; each block points to the
+section that describes its functions, and the example at the end shows the
+main structures at work. The program of the example compiles against the
+headers as it stands, and its assertions hold.
+
+`BlockBTree.h` ([§23.3](23-external.md#sec-23-3)).
+
+```cpp
+enum class BTreePolicy { STANDARD , WIDE , THREE };
+template< std::totally_ordered K > class BlockBTree { public:
+ using Key = K;
+ using Item = K;
+ explicit BlockBTree( int B , BTreePolicy p = BTreePolicy::STANDARD ,
+     TwoLevelMemory * mem = nullptr );
+ std::optional< K > lowerBound( const K & x ) const;
+ bool contains( const K & x ) const;
+ bool insert( const K & x );
+ bool remove( const K & x );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ int order( void ) const;
+ int height( void ) const;
+ std::size_t internalNodes( void ) const;
+ std::uint64_t reads( void ) const;
+ std::uint64_t writes( void ) const;
+ void resetCounters( void );
+ std::size_t nodes( void ) const;
+ std::size_t restructures( void ) const;
+ std::size_t splits( void ) const;
+ std::size_t merges( void ) const;
+ std::size_t borrows( void ) const;
+ std::size_t peakNodes( void ) const;
+ std::size_t peakPath( void ) const;
+ std::vector< std::vector< std::vector< K > > > levels( void ) const;
+ void assign( const std::vector< std::vector< std::vector< K > > > & L );
+ template< class F > void forEach( F && f ) const;
+ };
+```
+
+`BlockStore.h` ([§23.1](23-external.md#sec-23-1)).
+
+```cpp
+template< class T > class BlockStore { public:
+ explicit BlockStore( TwoLevelMemory * mem = nullptr );
+ T readBlock( std::size_t i ) const;
+ void writeBlock( std::size_t i , const T & b );
+ std::size_t placeBlock( const T & b );
+ void freeBlock( std::size_t i );
+ const T & peek( std::size_t i ) const;
+ std::size_t blocks( void ) const;
+ std::uint64_t reads( void ) const;
+ std::uint64_t writes( void ) const;
+ void resetCounters( void );
+ };
+```
+
+`ExternalSorting.h` ([§23.4](23-external.md#sec-23-4)).
+
+```cpp
+std::uint64_t mergeSortIOs( std::size_t n , std::size_t M , std::size_t B ,
+    std::size_t k );
+std::uint64_t sortingLowerBound( std::size_t n , std::size_t M ,
+    std::size_t B );
+std::uint64_t permutingLowerBound( std::size_t n , std::size_t M ,
+    std::size_t B );
+template< class T , class C = std::less<> >
+void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
+    C less = C() );
+template< class T , class C = std::less<> , class Sel = LoserTree< T , C > >
+void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
+    C less = C() , bool snowPlow = false );
+template< class T , class R , class C = std::less<> >
+void distributionSort( const DiskFile< T > & in , DiskFile< T > & out ,
+    R & g , C less = C() );
+template< class T >
+void permuteBySorting( const DiskFile< T > & in ,
+    const DiskFile< std::size_t > & pi , DiskFile< T > & out );
+template< class T >
+void permuteDirect( const DiskFile< T > & in ,
+    const DiskFile< std::size_t > & pi , DiskFile< T > & out );
+```
+
+`ListRanking.h` ([§23.5](23-external.md#sec-23-5)).
+
+```cpp
+bool isList( const std::vector< std::size_t > & succ );
+std::vector< std::size_t > listRank( const std::vector< std::size_t > &
+    succ );
+std::vector< std::size_t > listRankPointerJumping( const std::vector<
+    std::size_t > & succ , std::size_t * rounds = nullptr );
+template< class R >
+std::vector< bool > randomIndependentSet( const std::vector< std::size_t >
+    & succ , R & g );
+std::vector< int > deterministicCoinTossing( const std::vector< std::size_t
+    > & succ , std::size_t * rounds = nullptr );
+std::vector< bool > independentSetOfColors( const std::vector< std::size_t
+    > & succ , const std::vector< int > & color );
+template< class R >
+std::vector< std::size_t > listRankIndependentSet( const std::vector<
+    std::size_t > & succ , R & g , bool deterministic = false ,
+    std::size_t * levels = nullptr );
+template< class T , class Op >
+void parallelStep( const DiskFile< T > & A ,
+    const DiskFile< std::pair< std::size_t , std::size_t > > & ops ,
+    Op op , DiskFile< T > & out );
+void externalPointerJumping( const DiskFile< std::size_t > & succ ,
+    DiskFile< std::size_t > & rank , std::size_t * rounds = nullptr );
+template< class R >
+void externalListRank( const DiskFile< std::size_t > & succ ,
+    DiskFile< std::size_t > & rank , R & g ,
+    std::size_t * levels = nullptr );
+```
+
+`RecordFile.h` ([§23.6](23-external.md#sec-23-6)).
+
+```cpp
+template< class T >
+requires std::is_trivially_copyable_v< T > class RecordFile { public:
+ static constexpr std::size_t defaultBuffer = sizeof( T ) >= ( std::size_t(
+     1 ) << 20 ) ? 1 : ( std::size_t( 1 ) << 20 ) / sizeof( T );
+ explicit RecordFile( std::filesystem::path path );
+ const std::filesystem::path & path( void ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ void append( const T * src , std::size_t n );
+ template< class F >
+ void forEach( F && f , std::size_t buffer = defaultBuffer ) const;
+ std::vector< T > readAll( void ) const;
+ void clear( void );
+ void remove( void );
+ };
+template< class T >
+requires std::is_trivially_copyable_v< T > class RecordWriter { public:
+ explicit RecordWriter( RecordFile< T > & file ,
+     std::size_t buffer = RecordFile< T >::defaultBuffer );
+ ~RecordWriter();
+ void push( const T & x );
+ void flush( void );
+ std::size_t pending( void ) const;
+ RecordFile< T > & file( void ) const;
+ };
+class TempDirectory { public:
+ explicit TempDirectory( const std::filesystem::path & parent = {} ,
+     const std::string & prefix = "ads-" );
+ ~TempDirectory();
+ const std::filesystem::path & path( void ) const;
+ std::filesystem::path operator/( const std::string & name ) const;
+ };
+```
+
+`TwoLevelMemory.h` ([§23.1](23-external.md#sec-23-1)).
+
+```cpp
+class TwoLevelMemory { public:
+ TwoLevelMemory( std::size_t B , std::size_t M );
+ std::size_t blockSize( void ) const;
+ std::size_t memorySize( void ) const;
+ std::size_t blocks( std::size_t n ) const;
+ std::uint64_t reads( void ) const;
+ std::uint64_t writes( void ) const;
+ std::uint64_t ios( void ) const;
+ void resetCounters( void );
+ void allocate( std::size_t k );
+ void release( std::size_t k );
+ std::size_t used( void ) const;
+ std::size_t peak( void ) const;
+ void countRead( void );
+ void countWrite( void );
+ };
+class MemoryLease { public:
+ MemoryLease( TwoLevelMemory & mem , std::size_t k );
+ ~MemoryLease();
+ std::size_t size( void ) const;
+ };
+template< class T > class DiskFile { public:
+ explicit DiskFile( TwoLevelMemory & mem );
+ DiskFile( TwoLevelMemory & mem , std::vector< T > items );
+ TwoLevelMemory & memory( void ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t blocks( void ) const;
+ std::size_t readBlock( std::size_t b , T * dest ) const;
+ void appendBlock( const T * src , std::size_t n );
+ void clear( void );
+ const std::vector< T > & contents( void ) const;
+ };
+template< class T > class DiskReader { public:
+ explicit DiskReader( const DiskFile< T > & f );
+ bool hasNext( void ) const;
+ const T & peek( void );
+ T next( void );
+ std::size_t position( void ) const;
+ const T & at( std::size_t i );
+ };
+template< class T > class DiskWriter { public:
+ explicit DiskWriter( DiskFile< T > & f );
+ ~DiskWriter();
+ void push( const T & x );
+ void close( void );
+ };
+```
+
+
+```cpp
+#include "ADS/external/BlockBTree.h"
+#include "ADS/external/ExternalSorting.h"
+#include "ADS/external/TwoLevelMemory.h"
+#include <cassert>
+
+int main( void )
+{
+ ADS::TwoLevelMemory mem( 4 , 16 );             // B = 4 , M = 16 items
+ ADS::DiskFile< int > in( mem , { 9 , 2 , 7 , 4 , 1 , 8 , 3 , 6 , 5 , 0 } );
+ ADS::DiskFile< int > out( mem );
+ ADS::multiwayMergeSort( in , out );
+ assert( std::ranges::is_sorted( out.contents() ) && ( mem.ios() > 0 ) );
+ ADS::BlockBTree< int > t( 3 );                 // B = 3 , in memory
+ for( int x : { 5 , 1 , 9 , 3 , 7 } ) t.insert( x );
+ assert( ( t.lowerBound( 4 ) == 5 ) && t.remove( 5 ) && ! t.contains( 5 ) );
+ }
+```
+
+## 23.8 Discussion and references {#sec-23-8}
 
 The external memory model is due to [Aggarwal and Vitter
 1988](Z-bibliography.md#ref-aggarwal1988), and it is also called the I/O
@@ -961,7 +1187,7 @@ comparison of the sorts and of the rankings, in I/Os and in time on a real
 disk, belongs here; it waits for a campaign of measures on an idle
 machine.
 
-## 23.8 Exercises {#sec-23-8}
+## 23.9 Exercises {#sec-23-9}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
