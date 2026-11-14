@@ -150,7 +150,27 @@ test-fastflow-order: | $(BUILD)
 	 -DADS_FASTFLOW_DEFINED_FIRST -fsyntax-only test/fastflow_order.cpp)
 	@echo "PASSED fastflow-order"
 
-test: $(addprefix test-,$(PROGRAMS)) $(MODBIN) test-fastflow-order
+# the wrong attachments of an observer, a test of the compiler [see
+# test/modification_attach.cpp]: each case must fail with the error of the
+# subject
+test-modification-attach: | $(BUILD)
+	@for c in 1 2 3 4; do \
+	  case $$c in \
+	   1) e='has an on() for none of the events' ;; \
+	   2) e='must be noexcept' ;; \
+	   3) e='requires an event that the structure' ;; \
+	   4) e='precedes one it depends on' ;; \
+	  esac; \
+	  if $(CXX) $(CXXFLAGS) $(INC) -DADS_ATTACH_CASE=$$c -fsyntax-only \
+	      test/modification_attach.cpp > $(BUILD)/attach_$$c.log 2>&1 || \
+	     ! grep -qF "$$e" $(BUILD)/attach_$$c.log; \
+	  then echo "FAILED modification-attach.$$c"; \
+	       cat $(BUILD)/attach_$$c.log; exit 1; fi; \
+	done
+	@echo "PASSED modification-attach"
+
+test: $(addprefix test-,$(PROGRAMS)) $(MODBIN) test-fastflow-order \
+      test-modification-attach
 	@failed=$$(cat $(addprefix $(BUILD)/,$(addsuffix .failed,$(PROGRAMS))) \
 	| awk '{s += $$1} END {print s + 0}'); \
 	$(if $(MODBIN),$(MODBIN) || failed=$$((failed + 1));) \

@@ -77,6 +77,29 @@ add_test(NAME fastflow-order
 set_tests_properties(fastflow-order PROPERTIES
         PASS_REGULAR_EXPRESSION "included after a header of FastFlow")
 
+# the wrong attachments of an observer, a test of the compiler [see
+# modification_attach.cpp]: each case must fail with the error of the
+# subject
+set(attach_errors
+    "has an on\\(\\) for none of the events"
+    "must be noexcept"
+    "requires an event that the structure"
+    "precedes one it depends on")
+foreach (c 1 2 3 4)
+    math(EXPR i "${c} - 1")
+    list(GET attach_errors ${i} err)
+    add_executable(modification_attach_${c} EXCLUDE_FROM_ALL
+                   modification_attach.cpp)
+    target_link_libraries(modification_attach_${c} PRIVATE ADS::ADS)
+    target_compile_definitions(modification_attach_${c} PRIVATE
+                               ADS_ATTACH_CASE=${c})
+    add_test(NAME modification-attach.${c}
+             COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
+                     --target modification_attach_${c} --config $<CONFIG>)
+    set_tests_properties(modification-attach.${c} PROPERTIES
+            PASS_REGULAR_EXPRESSION "${err}")
+endforeach ()
+
 # the module ads, imported in place of the headers [see module.cpp]
 if (ADS_BUILD_MODULE)
     add_executable(module module.cpp)

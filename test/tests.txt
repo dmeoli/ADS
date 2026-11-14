@@ -1824,6 +1824,18 @@ engineered_dynamic  link-cut-tree          link-cut tree contro un vettore di pa
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline
 
+# the typed modifications, their subjects and batches, beyond the book
+engineered_modification  mod-events          eventi, effetti, direzioni, inversi
+engineered_modification  mod-observer-parts  parti facoltative degli osservatori
+engineered_modification  mod-policies        NoObservers, Static, Dynamic, Both
+engineered_modification  mod-batch           lotti annidati, eventi in blocco
+engineered_modification  mod-coalesce        regole della coalescenza
+engineered_modification  mod-rollback        garanzia forte, rifiuti, UndoLog
+engineered_modification  mod-quiet           silenzi, Rebuilt e no_rebuild
+engineered_modification  mod-revisions       revisioni per tipo, versioni
+engineered_modification  mod-audit           audit e conteggi per osservatore
+engineered_modification  mod-shadow          Shadow contro il ricalcolo
+
 # the deterministic reservations and the parallel greedy algorithms
 engineered_speculative  speculative-for        prenotazioni deterministiche
 engineered_speculative  parallel-kruskal       Kruskal, filter-Kruskal, foresta
