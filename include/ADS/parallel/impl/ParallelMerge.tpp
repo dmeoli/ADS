@@ -30,7 +30,7 @@ std::vector< std::size_t > multisequenceSplit(
   total += hi[ i ] = std::size_t( R[ i ].second - R[ i ].first );
  ADS_PRE( r <= total );
  std::vector< std::size_t > cand;
- for( ;; ) {
+ for( ; ; ) {
   // the pivot: the weighted median of the middles of the windows, each
   // weighted by its width, so that at least a quarter of the total width
   // goes at each step
@@ -62,7 +62,6 @@ std::vector< std::size_t > multisequenceSplit(
    }
   const std::size_t m = mid( j );
   const auto & x = R[ j ].first[ std::ptrdiff_t( m ) ];
-//! [narrow]
   // the items before ( x , j , m ): <= x in the ranges before j, < x in
   // those after it
   std::size_t before = 0;
@@ -88,7 +87,6 @@ std::vector< std::size_t > multisequenceSplit(
    hi = c;
    hi[ j ] = m;
    }
-//! [narrow]
   }
  return( lo );
  }

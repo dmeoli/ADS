@@ -66,10 +66,9 @@ struct ThreadPool::BulkJob : Task {
  std::exception_ptr error;
  std::mutex lock;
 
-//! [work]
  /// claims calls until none is left
  void work( void ) noexcept {
-  for( ;; ) {
+  for( ; ; ) {
    const std::size_t i = next.fetch_add( 1 , std::memory_order_relaxed );
    if( i >= n )
     return;
@@ -93,7 +92,6 @@ struct ThreadPool::BulkJob : Task {
   j->work();
   j->out.fetch_sub( 1 , std::memory_order_release );
   }
-//! [work]
  };
 
 /// the task of invoke(): g, and whether it has returned
@@ -209,7 +207,7 @@ inline bool ThreadPool::claim( void )
 inline void ThreadPool::loop( std::size_t s )
 {
  tl_self = Self{ this , s };
- for( ;; ) {
+ for( ; ; ) {
   Task * t = nullptr;
   bool open = false;
   f_event.await( [ & ] {
@@ -255,7 +253,6 @@ void ThreadPool::bulk( std::size_t n , F && f )
   d.push( &j );
  f_event.notify();
  j.work();
-//! [takeBack]
  // the tokens nobody stole, from the bottom of the deque; below them only
  // the tasks of the calls that enclose this one
  std::size_t back = 0;
@@ -271,7 +268,6 @@ void ThreadPool::bulk( std::size_t n , F && f )
   }
  if( back > 0 )
   j.out.fetch_sub( back , std::memory_order_relaxed );
-//! [takeBack]
  unsigned k = 0;
  while( j.out.load( std::memory_order_acquire ) != 0 )
   if( ! help( e.slot() ) )

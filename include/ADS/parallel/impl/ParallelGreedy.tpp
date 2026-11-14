@@ -125,7 +125,6 @@ void greedyForest( X & ex , const std::vector< int > & ids ,
   std::vector< int > & ru , & rv;
   std::vector< char > & taken;
 
-//! [kruskalStep]
   bool reserve( std::size_t i ) {
    const auto [ u , v ] = ends( ids[ i ] );
    ru[ i ] = U.find( u );
@@ -153,7 +152,6 @@ void greedyForest( X & ex , const std::vector< int > & ids ,
     }
    return( false );
    }
-//! [kruskalStep]
   } step{ ids , ends , U , R , ru , rv , taken };
  speculativeFor( ex , step , 0 , k );
  for( std::size_t i = 0 ; i < k ; ++i )

@@ -92,8 +92,10 @@ $$
 T_p \le W / p + D . \tag{25.2}
 $$
 
-*Proof.* At each unit of time either all the $p$ threads work, which can
-happen at most $W / p$ times, or some thread is idle. In the second case all
+*Proof.* We split each task of time $t$ into a chain of $t$ tasks of unit
+time, which changes neither $W$ nor $D$, nor the greedy schedules. At each
+unit of time either all the $p$ threads work, which can happen at most
+$W / p$ times, or some thread is idle. In the second case all
 the ready tasks run. The first task of each longest path among the tasks
 left is ready, and therefore the depth of what is left decreases by 1, which
 can happen at most $D$ times. $\square$
@@ -144,6 +146,58 @@ options `ADS_WITH_FASTFLOW`, `ADS_WITH_OPENMP` (or the flag `-fopenmp`) and
 | `FastFlowExecutor` | $p$ workers, the caller waiting | a `ParallelFor` of FastFlow on $\max\{ n , p \}$ indices, chunks of 1 | by `bulk()` | in order on its thread |
 | `OpenMPExecutor` | $p$, the caller included | `omp parallel for`, dynamic chunks of 1 | by `bulk()` on 2 indices | as the runtime nests a region, by default in order |
 | `TBBExecutor` | an arena of $p$, the caller included | `parallel_for` of oneTBB, a task per index | `parallel_invoke` | as tasks of the arena |
+
+The two concepts, the executor that runs everything on the calling thread,
+and the fork and join that the patterns build on are declared as
+
+```cpp
+template< class E >
+concept Executor = requires( E & e , std::size_t n ,
+                             void ( & f )( std::size_t ) ) {
+ { e.concurrency() } -> std::convertible_to< std::size_t >;
+ e.bulk( n , f );
+ };
+
+template< class E >
+concept WorkerExecutor = Executor< E > &&
+ requires( E & e , std::size_t p , void ( & f )( std::size_t ) ,
+           typename E::lock_type & l ) {
+  e.run( p , f );
+  l.lock();
+  l.unlock();
+  { l.try_lock() } -> std::convertible_to< bool >;
+  };
+
+class Sequential {
+ public:
+ static constexpr std::size_t concurrency( void );
+ template< class F > static void bulk( std::size_t n , F && f );
+ template< class F , class G > static void invoke( F && f , G && g );
+ using lock_type = std::mutex;
+ template< class F > static void run( std::size_t p , F && f );
+ };
+
+template< Executor E , class F , class G >
+void parallelInvoke( E & ex , F && f , G && g );
+```
+
+and a recursive sum by fork and join reads, on any executor,
+
+```cpp
+ADS::ThreadPool pool;                        // p = the processors
+std::vector< long > v( 1 << 20 , 1 );
+std::function< long( std::size_t , std::size_t ) > sum =
+ [ & ]( std::size_t lo , std::size_t hi ) -> long {
+  if( hi - lo <= 4096 )
+   return( std::accumulate( v.begin() + lo , v.begin() + hi , 0L ) );
+  long a = 0 , b = 0;
+  const std::size_t m = lo + ( hi - lo ) / 2;
+  ADS::parallelInvoke( pool , [ & ]() { a = sum( lo , m ); } ,
+                              [ & ]() { b = sum( m , hi ); } );
+  return( a + b );
+  };
+long s = sum( 0 , v.size() );                // s is 1048576
+```
 
 <span id="alg-25-1"></span>**Algorithm 25.1.** The fork and join of two
 calls on any executor.
@@ -212,6 +266,24 @@ run it with their own deques empty. The caller and the two thieves then
 claim the calls of $J$ from its counter $\mathit{next}$, and the token
 left is taken back by the caller.](../figures/parallel-pool.svg){#fig-25-1}
 
+The public members of the pool are
+
+```cpp
+class ThreadPool {
+ public:
+ explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 );
+ std::size_t concurrency( void ) const;
+ template< class F > void bulk( std::size_t n , F && f );
+ template< class F , class G > void invoke( F && f , G && g );
+ using lock_type = std::mutex;
+ template< class F > void run( std::size_t p , F && f );
+ };
+```
+
+where $p = 0$ asks for the hardware threads of the machine, and `spin` is
+the time, in nanoseconds, during which an idle thread looks for work
+before it sleeps.
+
 <span id="alg-25-2"></span>**Algorithm 25.2.** The `bulk()` of `ThreadPool`:
 a job of tokens on the deques of Chase and Lev.
 
@@ -219,18 +291,10 @@ a job of tokens on the deques of Chase and Lev.
 
 The procedure $\mathrm{work}$ is the body of a token. When a call throws,
 its exception is kept and the counter is set to $n$, at which the other
-threads stop claiming:
-
-```cpp
---8<-- "generated/ThreadPool-work.cpp"
-```
-
-The take-back stops at the first task that is not a token of the job, and
-pushes it again:
-
-```cpp
---8<-- "generated/ThreadPool-takeBack.cpp"
-```
+threads stop claiming (line 13); a thief that runs a token gives it back
+by a decrement of $\mathit{out}$ with release, its last access to the job.
+The take-back of the lines 6 and 7 stops at the first task that is not a
+token of the job, and pushes it again.
 
 <span id="lem-25-3"></span>**Lemma 25.3.** *Each deque holds only the tokens
 of jobs whose `bulk()` has not returned and the pending calls of `invoke()`
@@ -287,34 +351,46 @@ call.
 
 --8<-- "generated/ThreadPool-invoke.pseudo.md"
 
-The pool schedules by work stealing, and the bound of [Blumofe and Leiserson
-1999](Z-bibliography.md#ref-blumofe1999) applies to the computations of fork
-and join that it runs.
+The pool schedules by work stealing, and we recall the classic bound on the
+scheduler of [Blumofe and Leiserson 1999](Z-bibliography.md#ref-blumofe1999)
+from which it derives; the bound is stated for an abstract scheduler, and
+we say after it which of its hypotheses the pool meets.
 
-<span id="thm-25-1"></span>**Theorem 25.1 (Blumofe and Leiserson).** *A
-computation of work $W$ and depth $D$ made of forks and joins, run by $p$
-threads each of which takes the tasks it made from the bottom of its deque
-and steals from the top of the deque of a random thread when it has none,
-runs in expected time $W / p + O( D )$, with $O( p D )$ steals in
-expectation.*
+<span id="thm-25-1"></span>**Theorem 25.1 (Blumofe and Leiserson).** *Let a
+fully strict computation (one in which each join waits only for the tasks
+forked by its own task) have work $W$, the number of its unit steps, and
+depth $D$, the number of the steps of its longest chain of dependences. Let
+it be run by $p$ processors, each of which pushes the tasks it forks at the
+bottom of its deque and takes them from there, and, when its deque is
+empty, makes steal attempts at the top of the deque of a victim chosen
+uniformly at random, independently of the other attempts, each attempt
+taking one step. Then the expected time is $W / p + O( D )$, and the
+expected number of the steal attempts is $O( p D )$.*
 
-*Proof.* (A sketch; the full argument is that of [Blumofe and Leiserson
-1999](Z-bibliography.md#ref-blumofe1999).) Charge each unit of time of each
-thread either to the work, when the thread runs a task, or to a steal
-attempt; the first charges sum to $W$. Consider the potential of the ready
-tasks, which weighs a task exponentially in the depth left below it. The
-task at the top of a deque carries a constant fraction of the potential of
-the deque, and therefore a round of $p$ steal attempts lowers the potential
-by a constant fraction with constant probability. Hence, $O( p D )$ attempts
-suffice in expectation, and the time is $( W + O( p D ) ) / p$. $\square$
+*Proof.* This is the bound on the time and on the steal attempts of the
+algorithm Work-Stealer of [Blumofe and Leiserson
+1999](Z-bibliography.md#ref-blumofe1999), proved there by a delay-sequence
+argument for fully strict computations under exactly the hypotheses above;
+a shorter proof by a potential, which weighs each ready task exponentially
+in the depth left below it and shows that $p$ consecutive attempts lower the
+potential by a constant fraction with constant probability, is that of
+[Arora et al. 2001](Z-bibliography.md#ref-arora2001) (their dedicated
+case). Each step of a processor is a step of work, at most $W$ in all, or a
+steal attempt, $O( p D )$ in expectation, and the $p$ processors run at
+once, whence the time $( W + O( p D ) ) / p$. $\square$
 
-A steal moves the oldest task, which in a fork and join is the largest.
-Hence, the steals are few when the parallelism is large, and most tasks run
-on the thread that made them, with their data in its cache. We expect Theorem 25.1 to
-hold for `invoke()` nested to any depth, since a thread that waits keeps
-stealing; we remark, however, that its proof assumes the scheduler of
-Blumofe and Leiserson, and we have not proved it for a waiting thread that
-runs any task it steals, as the leapfrogging does. The jobs of `bulk()`, instead, are flat loops on top of it,
+The computations of `invoke()` are fully strict, since `invoke( f , g )`
+joins only the $g$ that it forked, and the owner and the thieves use the
+two ends of the deque as the theorem wants. The pool departs from the
+hypotheses in two points: (i) a thread chooses its first victim by a
+generator xorshift, and on a failure tries the other threads in turn rather
+than at random; (ii) a thread that waits at a join steals and runs any task
+(the leapfrogging), whereas in the computation of the theorem it would stall
+or steal under the same rule. We therefore expect, and have not proved,
+that Theorem 25.1 holds for the pool. A steal moves the oldest task, which
+in a fork and join is the largest; hence, the steals are few when the
+parallelism is large, and most tasks run on the thread that made them,
+with their data in its cache. The jobs of `bulk()`, instead, are flat loops on top of it,
 balanced as in [Lemma 25.4](25-parallel.md#lem-25-4).
 
 ## 25.4 The executors of FastFlow, OpenMP and oneTBB {#sec-25-4}
@@ -338,10 +414,6 @@ resets the barrier whenever the number of workers changes from one call to
 the next, also while a worker of the previous call may still spin in it. In
 both cases the barrier would never be passed; the test
 `engineered_runtime.fastflow-bulk-sizes` checks both.
-
-```cpp
---8<-- "generated/FastFlowExecutor-bulk.cpp"
-```
 
 A `ParallelFor` does not nest, and therefore a call of `bulk()` made from
 inside a call runs its calls in order on that thread. Two habits of FastFlow
@@ -375,6 +447,14 @@ oneTBB with the simple partitioner, i.e., a task per index (the patterns of
 the library already cut the loop into blocks), and its `invoke()` is
 `parallel_invoke`, both in the arena; its calls nest as the tasks of oneTBB
 do.
+
+The three classes have the members of `ThreadPool` but for their
+constructors, `explicit FastFlowExecutor( std::size_t p = 0 , bool spin =
+true )`, `explicit OpenMPExecutor( std::size_t p = 0 )` and `explicit
+TBBExecutor( std::size_t p = 0 )`, and their `lock_type`
+(`FastFlowLock`, `OpenMPLock` and `tbb::spin_mutex`); `FastFlowExecutor`
+has no `invoke()`, so that `parallelInvoke()` runs its two calls by
+`bulk()` on two indices, as for any executor without it.
 
 <span id="alg-25-4"></span>**Algorithm 25.4.** The `bulk()` of
 `FastFlowExecutor`, `OpenMPExecutor` and `TBBExecutor`.
@@ -483,6 +563,15 @@ empty, `availableCpus()` falls back on
 executor pins its threads, since two programs pinned to the same processors
 would slow each other down, and the choice is left to the caller.
 
+The four functions of `Affinity.h` are
+
+```cpp
+const std::vector< int > & affinityCpus( void );
+unsigned availableCpus( void );
+bool pinThread( unsigned i );
+int currentCpu( void );
+```
+
 <span id="alg-25-7"></span>**Algorithm 25.7.** The binding of the calling
 thread to a processor.
 
@@ -511,6 +600,49 @@ it the call `f( i )` per index; the blocks are the calls of one `bulk()`,
 which the executor schedules as in [Lemma 25.2](25-parallel.md#lem-25-2) or
 as its runtime does.
 
+These patterns, and the scans below, are declared as
+
+```cpp
+inline constexpr std::size_t kGrain = 1024;
+
+std::pair< std::size_t , std::size_t > blocksOf( std::size_t first ,
+                                                 std::size_t last ,
+                                                 std::size_t grain = kGrain );
+template< Executor E , class F >
+void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
+                        F && f , std::size_t grain = kGrain );
+template< Executor E , class F >
+void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
+                  std::size_t grain = kGrain );
+template< Executor E , class T , class F , class Op >
+T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
+                  F && f , Op op , std::size_t grain = kGrain );
+template< Executor E , std::random_access_iterator I ,
+          std::random_access_iterator O , class T , class Op = std::plus<> >
+T parallelInclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
+                         Op op = Op() );
+template< Executor E , std::random_access_iterator I ,
+          std::random_access_iterator O , class T , class Op = std::plus<> >
+T parallelExclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
+                         Op op = Op() );
+```
+
+and they combine, e.g., into a loop, a sum and a sort on the same pool:
+
+```cpp
+ADS::ThreadPool pool( 4 );
+std::vector< double > x( 1000000 );
+ADS::parallelFor( pool , 0 , x.size() ,
+                  [ & ]( std::size_t i ) { x[ i ] = double( i % 1000 ); } );
+double s = ADS::parallelReduce( pool , 0 , x.size() , 0.0 ,
+ [ & ]( std::size_t lo , std::size_t hi ) {
+  double r = 0;
+  for( std::size_t i = lo ; i < hi ; ++i ) r += x[ i ];
+  return( r ); } ,
+ std::plus<>() );                           // s is 499500000
+ADS::sort( pool , x );                      // of ParallelSort.h
+```
+
 <span id="alg-25-8"></span>**Algorithm 25.8.** The blocks of a loop, the
 loop on the blocks and the loop on the indices.
 
@@ -519,10 +651,6 @@ loop on the blocks and the loop on the indices.
 --8<-- "generated/Executor-parallelForBlocks.pseudo.md"
 
 --8<-- "generated/Executor-parallelFor.pseudo.md"
-
-```cpp
---8<-- "generated/Executor-forBlocks.cpp"
-```
 
 `parallelReduce()` reduces each block by `f( lo , hi )` into a partial
 result, in parallel, and combines the partial results by $\oplus$ in the
@@ -603,11 +731,8 @@ exclusive scans by decoupled look-back ([Merrill and Garland
 --8<-- "generated/Executor-parallelExclusiveScan.pseudo.md"
 
 The look-back is the core of the scan; a tile whose call has failed
-publishes the flag 3, at which the tiles after it stop instead of waiting:
-
-```cpp
---8<-- "generated/Executor-lookBack.cpp"
-```
+publishes the flag 3, at which the tiles after it stop instead of waiting
+in the line 11 of [Algorithm 25.10](25-parallel.md#alg-25-10).
 
 <span id="lem-25-7"></span>**Lemma 25.7.** *The scan by decoupled look-back
 ends on any executor, also on one that runs its calls one after the other,
@@ -681,6 +806,19 @@ splits at the ranks 4 (dashed) and 9 (solid) of their stable merge, which
 bound three parts of the output (coloured alike); the two items 4 come from
 $R_1$ first.](../figures/parallel-merge.svg){#fig-25-3}
 
+The two functions are declared as
+
+```cpp
+template< std::random_access_iterator I , class C = std::less<> >
+std::vector< std::size_t > multisequenceSplit(
+ const std::vector< std::pair< I , I > > & R , std::size_t r ,
+ C less = C() );
+template< Executor E , std::random_access_iterator I ,
+          std::random_access_iterator O , class C = std::less<> >
+O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R ,
+                 O out , C less = C() );
+```
+
 <span id="alg-25-11"></span>**Algorithm 25.11.** The multisequence selection
 and the parallel merge ([Varman et al.
 1991](Z-bibliography.md#ref-varman1991)).
@@ -689,14 +827,10 @@ and the parallel merge ([Varman et al.
 
 --8<-- "generated/ParallelMerge-multiwayMerge.pseudo.md"
 
-```cpp
---8<-- "generated/ParallelMerge-narrow.cpp"
-```
-
 <span id="lem-25-9"></span>**Lemma 25.9.** *Each step of
 `multisequenceSplit()` removes at least a quarter of the total width of the
-windows; hence a split takes $O( \log( k N ) )$ steps, i.e., $O( k \log N
-\log( k N ) )$ comparisons.*
+windows; hence a split takes $O( \log N )$ steps, i.e., $O( k ( \log N +
+\log k ) \log N )$ comparisons.*
 
 *Proof.* Let $w$ be the total width, and order the windows by their middles
 $( R_i[ m_i ] , i )$. The median $j$ is the first window at which the widths
@@ -706,8 +840,11 @@ $i$ whose middle is not after $( x , j )$ has $R_i[ m_i ] \le x$ if $i < j$
 and $R_i[ m_i ] < x$ if $i > j$, and therefore its count is past $m_i$. Its
 $\mathit{lo}_i$ thus rises past the middle, and it loses at least half of
 its width. The other case is symmetric, with $\mathit{hi}_i$ falling to the
-middle for the windows from $j$ on. Each step costs $k$ binary searches and
-a sort of $k$ middles. $\square$
+middle for the windows from $j$ on. The total width starts at $N$, is an
+integer and shrinks by a factor of at least $3/4$ at each step, and it is
+0 after at most $\log_{4/3} N + 1$ steps. Each step costs $k$ binary
+searches, $O( k \log N )$ comparisons, and a sort of $k$ middles,
+$O( k \log k )$. $\square$
 
 The splits are found in parallel, one per part, and cost far less than the
 merge, which makes $O( N \log k )$ comparisons; with $B = 4 p$ parts the
@@ -726,6 +863,22 @@ procedure is the samplesort of [Sanders and Winkel
 2004](Z-bibliography.md#ref-sanders2004) as engineered in IPS4o ([Axtmann et
 al. 2022](Z-bibliography.md#ref-axtmann2022)), preceded by two surveys of
 the input ([Algorithm 25.12](25-parallel.md#alg-25-12)).
+
+The four sorts of `ParallelSort.h` are declared as
+
+```cpp
+template< Executor E , class T , class C = std::less<> >
+void sort( E & ex , std::vector< T > & A , C less = C() );
+template< Executor E , class T , class C = std::less<> >
+void stableSort( E & ex , std::vector< T > & A , C less = C() );
+template< Executor E , VectorKey T >
+void learnedSort( E & ex , std::vector< T > & A );
+template< Executor E , VectorKey T >
+void learnedStableSort( E & ex , std::vector< T > & A );
+```
+
+where `VectorKey` admits the integers and the floating point numbers
+([chapter 12](12-sort.md#ch-12)).
 
 <span id="alg-25-12"></span>**Algorithm 25.12.** The parallel sorts; the
 recursion of line 18 is at most 3 deep.
@@ -784,11 +937,9 @@ items per bucket; when the classifier compares, the bucket of each item is
 kept, and an item is classified once. The prefix sums of the counts in the
 order (bucket, block) give each block the place of its items of each bucket
 in a buffer of $n$ items, and a second parallel loop moves them there
-([Figure 25.4](25-parallel.md#fig-25-4)):
-
-```cpp
---8<-- "generated/ParallelSort-places.cpp"
-```
+([Figure 25.4](25-parallel.md#fig-25-4)); the prefix sums are those of the
+line 16 of [Algorithm 25.12](25-parallel.md#alg-25-12), computed on one
+thread over the $k B$ counts.
 
 ![Figure 25.4. The distribution of 12 items in
 $B = 3$ blocks into $k = 3$ buckets (the letter of an item is its bucket,
@@ -872,6 +1023,30 @@ on one thread ([Algorithm 25.15](25-parallel.md#alg-25-15)). These bounds
 are the diagonals of the merge path of [Merrill and Garland
 2016b](Z-bibliography.md#ref-merrill2016b), applied to whole rows.
 
+The products are declared as
+
+```cpp
+template< Executor E >
+void multiply( E & ex , const CsrMatrix & A , const double * x ,
+               double * y );
+template< Executor E >
+std::vector< double > multiply( E & ex , const CsrMatrix & A ,
+                                const std::vector< double > & x );
+template< Executor E , std::size_t C >
+void multiply( E & ex , const SellMatrix< C > & A , const double * x ,
+               double * y );
+template< Executor E , std::size_t C >
+std::vector< double > multiply( E & ex , const SellMatrix< C > & A ,
+                                const std::vector< double > & x );
+template< Executor E , class T >
+void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k ,
+           T alpha , const T * A , std::size_t lda , const T * B ,
+           std::size_t ldb , T beta , T * C , std::size_t ldc );
+template< Executor E , class T >
+DenseMatrix< T > multiply( E & ex , const DenseMatrix< T > & A ,
+                           const DenseMatrix< T > & B );
+```
+
 <span id="alg-25-15"></span>**Algorithm 25.15.** The product of a sparse
 matrix by rows by a vector, in place and as a new vector, and the same for a
 matrix by chunks of $C$ rows.
@@ -883,10 +1058,6 @@ matrix by chunks of $C$ rows.
 --8<-- "generated/ParallelNumeric-multiply-3.pseudo.md"
 
 --8<-- "generated/ParallelNumeric-multiply-4.pseudo.md"
-
-```cpp
---8<-- "generated/ParallelNumeric-pathRow.cpp"
-```
 
 <span id="lem-25-11"></span>**Lemma 25.11.** *Each part of the product of a
 `CsrMatrix` costs less than $( m + \mathit{nnz} ) / B + 1 + \ell$, where
@@ -952,11 +1123,9 @@ and a node of $L_\ell$ is at distance $\ell$ from $s$. `bfsDistances( ex , g
 2012](Z-bibliography.md#ref-beamer2012)). From the top down, the nodes of
 the frontier $L_\ell$ claim their neighbors not yet reached, by a
 compare-and-swap of the distance from $-1$ to $\ell + 1$. The nodes claimed
-by the blocks of the frontier are then gathered into the next frontier:
-
-```cpp
---8<-- "generated/ParallelGraph-claim.cpp"
-```
+by the blocks of the frontier are then gathered into the next frontier,
+each block keeping in a vector of its own the nodes that it claimed and
+the sum of their degrees, which gives $m_f$ for the next level.
 
 From the bottom up, each node not yet reached looks among the arcs into it
 for one whose tail is in the frontier, kept as a bitmap, and stops at the
@@ -970,6 +1139,18 @@ into each node, i.e., those of $g$ if it is unoriented and those of its
 transpose `gt` if it is oriented; with no transpose an oriented graph is
 visited from the top down only.
 
+The two algorithms on graphs are declared as
+
+```cpp
+template< Executor E , class W >
+std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g ,
+                                 int s ,
+                                 const StaticGraph< W > * gt = nullptr );
+template< Executor E , class W >
+std::vector< int > connectedComponents( E & ex ,
+                                        const StaticGraph< W > & g );
+```
+
 <span id="alg-25-17"></span>**Algorithm 25.17.** The visit in breadth that
 optimizes its direction ([Beamer, Asanović and Patterson
 2012](Z-bibliography.md#ref-beamer2012)).
@@ -978,7 +1159,10 @@ optimizes its direction ([Beamer, Asanović and Patterson
 
 <span id="lem-25-12"></span>**Lemma 25.12.** *Both directions build the
 level $L_{\ell + 1}$ of (25.7), whatever the order of the threads; hence
-`bfsDistances()` gives the distances of the sequential visit.*
+`bfsDistances()` gives the distances of the sequential visit. With $k$
+steps from the bottom up its work is $O( ( n + m ) ( 1 + k ) )$, and its
+depth is $O( D \log n )$ on a graph of eccentricity $D$ from $s$, but for
+the depth of the claims of a node of large degree.*
 
 *Proof.* From the top down, a node $v$ not yet reached with a neighbor in
 $L_\ell$ is claimed by some arc, since the claims fail only on the nodes
@@ -986,19 +1170,21 @@ already reached. The compare-and-swap succeeds for one claimant only, which
 writes $\ell + 1$ whoever it is, and a node of an earlier level keeps its
 distance. From the bottom up, a node not yet reached enters the level if and
 only if one of its arcs comes from the bitmap of $L_\ell$, which is fixed
-during the step. $\square$
+during the step. As to the costs, from the top down each node enters one
+frontier, and the arcs out of it are read once, at that step; the steps
+from the top down thus read $O( n + m )$ in all. A step from the bottom up
+scans all the $n$ nodes and reads at most all the $m$ arcs into them, hence
+$O( n + m )$ each and $O( ( n + m ) k )$ for $k$ of them. There are at most
+$D + 1$ levels, and each step is a parallel loop over the frontier or over
+the nodes, followed by the gathering of the blocks, a prefix sum of depth
+$O( \log n )$; the loop over the arcs of one node runs on one thread, whence
+the proviso on the degrees. $\square$
 
-The two directions differ in the arcs they read: from the top down the arcs
-out of the frontier, and from the bottom up those into the nodes not yet
-reached, up to their first hit. From the top down alone the work is $O( n + m )$,
-since each arc is read from its tail once. A step from the bottom up,
-instead, scans all the nodes and may read again the arcs into a node not
-yet reached; with $k$ such steps the work is therefore
-$O( ( n + m ) ( 1 + k ) )$ in the worst case, and the thresholds $\alpha$
-and $\beta$ keep $k$ to the few large levels where these steps read fewer
-arcs than the top down would. Each level costs a depth of $O( \log n )$ to
-gather its frontier, and the depth is therefore $O( D \log n )$ for a
-graph of diameter $D$.
+The two directions thus differ in the arcs they read: from the top down the
+arcs out of the frontier, and from the bottom up those into the nodes not
+yet reached, up to their first hit; the thresholds $\alpha$ and $\beta$
+keep $k$ to the few large levels where these steps read fewer arcs than the
+top down would.
 
 **The connected components.** `connectedComponents( ex , g )` labels each
 node with the least node of its component, on the concurrent union-find of
@@ -1054,11 +1240,22 @@ $$
 \mathit{PLCP}[ i ] \ge \mathit{PLCP}[ i - 1 ] - 1 . \tag{25.8}
 $$
 
+*Hence a scan of a range of $L$ consecutive suffixes of the text, which
+starts from $h = 0$ and resumes each comparison at $h - 1$, makes at most
+$2 L + \max_i \mathit{PLCP}[ i ]$ comparisons of symbols.*
+
 *Proof.* Let the suffixes $i - 1$ and $\Phi[ i - 1 ]$ share a prefix of $h >
-0$ symbols (for $h = 0$ the claim is trivial). Then the suffix $\Phi[ i - 1
-] + 1$ comes before $i$ in the order of the suffixes and shares $h - 1$
-symbols with it, and so do the suffixes between them in the order, $\Phi[ i
-]$ included. $\square$
+0$ symbols (for $h = 0$ the claim is trivial). Removing the first symbol,
+equal in both, keeps their order; hence the suffix $\Phi[ i - 1 ] + 1$ comes
+before $i$ in the order of the suffixes and shares $h - 1$ symbols with it.
+The suffixes that lie between two suffixes in the order share with both at
+least the prefix that these two share, and $\Phi[ i ]$, the suffix right
+before $i$, lies between $\Phi[ i - 1 ] + 1$ (included) and $i$; thus it
+shares at least $h - 1$ symbols with $i$. For the scan, each comparison
+either matches, and raises $h$ by 1, or fails, at most once per suffix;
+$h$ starts at 0, ends at most at $\max_i \mathit{PLCP}[ i ]$, and falls by
+at most 1 per suffix, so that the matches are at most
+$L + \max_i \mathit{PLCP}[ i ]$. $\square$
 
 By (25.8) a scan of $i$ in the order of the text can resume each comparison
 at $h - 1$. Since $h$ grows by at most $n$ in all and decreases by at most 1
@@ -1067,16 +1264,12 @@ per suffix, the scan makes $O( n )$ comparisons ([Kasai et al.
 $\Phi$, and at the end $\mathit{LCP}[ r - 1 ] = \mathit{PLCP}[ \mathit{SA}[
 r ] ]$, by parallel loops of scattered moves. In between, it cuts the scan
 into $4 p$ parts of the text, each scanned from $h = 0$ ([Algorithm
-25.19](25-parallel.md#alg-25-19)):
+25.19](25-parallel.md#alg-25-19)).
 
-```cpp
---8<-- "generated/ParallelText-scan.cpp"
-```
-
-Inequality (25.8) is then not used across the borders of the parts. This
-costs at most $\max_i \mathit{PLCP}[ i ]$ more comparisons per part, and
-leaves the result the same; the work is $O( n + p \max_i \mathit{PLCP}[ i ]
-)$, and on a text of one repeated symbol, whose lcp are as long as the text,
+Inequality (25.8) is then not used across the borders of the parts, which
+leaves the result the same; by [Lemma 25.14](25-parallel.md#lem-25-14),
+summed over the $4 p$ parts, the work is $O( n + p \max_i \mathit{PLCP}[ i
+] )$, and on a text of one repeated symbol, whose lcp are as long as the text,
 the parts gain nothing. Furthermore, the scan in the order of the text reads
 $\Phi[ i ]$ and $T[ \Phi[ i ] + h ]$ at random once per suffix, where the
 algorithm of Kasai reads the rank and the suffix array at random.
@@ -1085,6 +1278,20 @@ narrower type of index. Its comparisons take the first 4 symbols one by one,
 since most lcp are short, and then 8 at a time by a load of 8 bytes, the
 first different byte being found by the trailing zeros of the exclusive or;
 it also fetches the text at $\Phi[ i + 16 ]$ ahead of its use.
+
+The two functions are declared as
+
+```cpp
+template< Executor E , class S >
+std::vector< std::size_t > lcpArray( E & ex , const S & T ,
+                                     const std::vector< std::size_t > & SA );
+template< Executor E , class I >
+std::vector< I > lcpArrayPhi( E & ex , std::string_view T ,
+                              const std::vector< I > & SA );
+```
+
+the second for a text of bytes and a suffix array of indices of the type
+`I` ([chapter 15](15-string.md#ch-15)).
 
 <span id="alg-25-19"></span>**Algorithm 25.19.** The parallel LCP array by
 the permuted LCP ([Kärkkäinen, Manzini and Puglisi
@@ -1119,16 +1326,40 @@ parallel the reserves of a prefix of $r$ iterations not yet done, then their
 commits. It keeps the failed ones, in their order and by a parallel pack, at
 the head of the next prefix ([Algorithm 25.20](25-parallel.md#alg-25-20)).
 
+The loop, the concept of its step, the reservation of a place and the
+counts of a run are declared as
+
+```cpp
+template< class S >
+concept SpeculativeStep = requires( S & s , std::size_t i ) {
+ { s.reserve( i ) } -> std::convertible_to< bool >;
+ { s.commit( i ) } -> std::convertible_to< bool >;
+ };
+
+class Reservation {
+ public:
+ static constexpr std::size_t NONE =
+  std::numeric_limits< std::size_t >::max();
+ void reserve( std::size_t i ) noexcept;
+ bool check( std::size_t i ) const noexcept;
+ bool reserved( void ) const noexcept;
+ void reset( void ) noexcept;
+ bool checkReset( std::size_t i ) noexcept;
+ };
+
+struct SpeculativeCounts { long long rounds = 0; long long tried = 0; };
+
+template< Executor E , SpeculativeStep S >
+void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
+                     std::size_t g = 50 , SpeculativeCounts * c = nullptr );
+```
+
 <span id="alg-25-20"></span>**Algorithm 25.20.** The deterministic
 reservations ([Blelloch, Fineman, Gibbons and Shun
 2012](Z-bibliography.md#ref-blelloch2012a)); $r_{\mathrm{max}} = \lfloor (
 e - s ) / g \rfloor + 1$ for the grain $g$, 50 by default.
 
 --8<-- "generated/SpeculativeFor-speculativeFor.pseudo.md"
-
-```cpp
---8<-- "generated/SpeculativeFor-rounds.cpp"
-```
 
 <span id="lem-25-15"></span>**Lemma 25.15.** *Assume that (i) each
 $\mathrm{reserve}( i )$ reserves every place that $\mathrm{commit}( i )$
@@ -1186,7 +1417,9 @@ iterations tried, the failed ones counted again. With $W$ the work of the sequen
 the iterations tried again, the work is $O( W + R )$, and the depth is that
 of the rounds, each of depth $O( \log r )$ for the pack of the failures. A
 violated precondition (a round in which the least iteration fails) would
-make the loop run forever; the loop checks it, and stops. [Table
+make the loop run forever; the loop checks it by `ADS_PRE`, which throws
+`ADS::contract_violation` when the contracts are checked (from the level 1),
+and otherwise returns with the iterations of that round left undone. [Table
 25.4](25-parallel.md#tab-25-4) follows the rounds of the maximal matching of
 [§25.11](25-parallel.md#sec-25-11) on a small path.
 
@@ -1241,6 +1474,29 @@ $i$ in the order reserves the roots $r_u$ and $r_v$ of its ends in a
 union-find if they differ, and its commit hangs under the other root a root
 that it holds ([Algorithm 25.21](25-parallel.md#alg-25-21)).
 
+The algorithms of `ParallelGreedy.h` are declared as
+
+```cpp
+std::vector< int > randomOrder( int n , unsigned long long seed );
+template< Executor E , class W >
+std::vector< int > parallelKruskal(
+ E & ex , int n , const std::vector< WeightedEdge< W > > & A );
+template< Executor E , class W >
+std::vector< int > filterKruskal(
+ E & ex , int n , const std::vector< WeightedEdge< W > > & A );
+template< Executor E >
+std::vector< int > spanningForest(
+ E & ex , int n , const std::vector< std::pair< int , int > > & A );
+template< Executor E , class W >
+std::vector< int > maximalIndependentSet( E & ex ,
+                                          const StaticGraph< W > & g ,
+                                          const std::vector< int > & pi );
+template< Executor E >
+std::vector< int > maximalMatching(
+ E & ex , int n , const std::vector< std::pair< int , int > > & A ,
+ const std::vector< int > & pi );
+```
+
 <span id="alg-25-21"></span>**Algorithm 25.21.** The two steps of an edge in
 `parallelKruskal()` ([Montresor 2025,
 §14.3](Z-bibliography.md#ref-montresor2025), on the reservations of
@@ -1248,10 +1504,6 @@ that it holds ([Algorithm 25.21](25-parallel.md#alg-25-21)).
 2012](Z-bibliography.md#ref-blelloch2012a)).
 
 --8<-- "generated/ParallelGreedy-reserve.pseudo.md"
-
-```cpp
---8<-- "generated/ParallelGreedy-kruskalStep.cpp"
-```
 
 The commit of [Algorithm 25.21](25-parallel.md#alg-25-21) needs one of the
 two reservations, not both, and therefore does not meet the hypothesis of
@@ -1269,12 +1521,20 @@ it. Suppose that the links of a round close a cycle of roots $x_1 \to x_2
 that holds $x_j$ and reserved $x_{j+1}$. The root $x_{j+1}$ is held by
 $i_{j+1}$, which won the priority write against $i_j$; hence, $i_{j+1} <
 i_j$ for all $j$ cyclically, a contradiction. As to the second statement,
-let $i$ commit. No earlier iteration of its round reserved $r_u$ or $r_v$,
-since it would have won the root it reserved, and then $i$ would hold
-neither; the earlier iterations of the earlier rounds are done. Thus, $r_u
-\ne r_v$ also in the state of the sequential algorithm before $i$, which
-takes $e_i$ too. An iteration that finds $r_u = r_v$ is refused by the
-sequential algorithm as well. $\square$
+we argue by induction on the rounds, the forest before a round being that
+of the sequential algorithm before the least iteration of the round. Let
+$i$ commit holding, say, $r_u$ (the case of $r_v$ is symmetric). No
+iteration $j < i$ of the round reserved $r_u$, since it would hold it in
+place of $i$; hence no such $j$, whether it commits in this round or
+later, links the tree of $r_u$, and in the sequential algorithm the tree of
+$r_u$ before $i$ is the one at the start of the round, distinct from that
+of $r_v$. The sequential algorithm thus takes $e_i$, and links the two
+trees as the commit does. Conversely, the link of $i$ changes neither the
+decision of a $j < i$ that fails in this round, since the two roots of $j$
+differ from $r_u$ and the link only adds the tree of $r_u$ to that of $r_v$,
+nor that of an iteration after $i$, which the sequential algorithm decides
+after $i$ as well. An iteration that finds $r_u = r_v$ is refused by the
+sequential algorithm too, since the trees only merge. $\square$
 
 The union-find of the forests links the roots with no rank, and its `find()`
 halves the paths by writing a node to its grandparent. Its finds run only in
@@ -1336,11 +1596,9 @@ monotone, $a \le b \Rightarrow a \oplus w \le b \oplus w$, and
 non-decreasing, $a \oplus w \ge a$ for $w \ge 0$. The stepping algorithms of
 `ParallelShortestPaths.h` relax in parallel the *active* nodes whose
 distance is below a threshold, and lower the distance of a head by an atomic
-minimum:
-
-```cpp
---8<-- "generated/ParallelShortestPaths-writeMin.cpp"
-```
+minimum, `writeMin( x , v )`, which reads $x$ and, while $v$ is smaller than
+the value $x'$ last read, tries $\mathrm{CAS}( x , x' , v )$; it answers
+whether it lowered $x$, and a failed compare-and-swap reads the new $x'$.
 
 <span id="lem-25-17"></span>**Lemma 25.17.** *Start from $d( s ) = 0$ and
 $d( v ) = \infty$ elsewhere, with $s$ active, and repeat, in any order and
@@ -1381,6 +1639,18 @@ depth by $O( d L \log n + \log^2 n )$, $L$ the largest distance. With
 $\Delta$ at the least cost one has the algorithm of Dijkstra by buckets,
 with the least work and the most steps.
 
+The two stepping algorithms are declared as
+
+```cpp
+template< Executor E , Graph G >
+std::vector< typename G::Weight > deltaStepping( E & ex , const G & g ,
+                                                 int s ,
+                                                 typename G::Weight delta );
+template< Executor E , Graph G >
+std::vector< typename G::Weight > rhoStepping(
+ E & ex , const G & g , int s , std::size_t rho = std::size_t( 1 ) << 20 );
+```
+
 <span id="alg-25-24"></span>**Algorithm 25.24.** The $\Delta$-stepping
 ([Meyer and Sanders 2003](Z-bibliography.md#ref-meyer2003)) on the buckets
 of each thread of the GAP benchmark suite ([Beamer, Asanović and Patterson
@@ -1418,11 +1688,16 @@ starts only when the entries put back show that it pays.
 The threads of the $\Delta$-stepping are those of the calls of one `bulk()`
 of the executor, which run the whole computation and meet at a barrier that
 a call may join late: a thread that joins is counted at the next release, so
-that the barrier waits only for threads already in it.
+that the barrier waits only for threads already in it
+([Algorithm 25.25](25-parallel.md#alg-25-25)).
 
-```cpp
---8<-- "generated/ParallelShortestPaths-arrive.cpp"
-```
+<span id="alg-25-25"></span>**Algorithm 25.25.** The barrier of the
+$\Delta$-stepping, which a thread joins when the executor starts its call;
+$c$ is the number of the threads counted, $a$ that of those arrived, $q$
+that of those that joined since the last release, and $\gamma$ the
+generation.
+
+--8<-- "generated/ParallelShortestPaths-join.pseudo.md"
 
 <span id="lem-25-18"></span>**Lemma 25.18.** *The $\Delta$-stepping ends on
 any executor, also on one that runs the calls of its `bulk()` one after the
@@ -1441,7 +1716,7 @@ $\square$
 and Zhang 2021](Z-bibliography.md#ref-dong2021)) takes the $\rho$ active
 nodes of least distance, or all of them when they are no more than $\rho$,
 the threshold being estimated on a sample of 1024 of them ([Algorithm
-25.25](25-parallel.md#alg-25-25)). The steps thus have frontiers of about
+25.26](25-parallel.md#alg-25-26)). The steps thus have frontiers of about
 the same size whatever the scale of the costs. A node is active when its
 distance fell since its arcs were last relaxed, and it is made active once,
 by a flag. Then the prefix sums of the degrees cut the arcs of a step into
@@ -1454,7 +1729,7 @@ Bellman, Ford and Moore by rounds, and a smaller $\rho$ is needed there.
 Each step costs $O( \log n )$ depth for the gathering of its frontier, and
 therefore the steps should rather be few.
 
-<span id="alg-25-25"></span>**Algorithm 25.25.** The $\rho$-stepping ([Dong,
+<span id="alg-25-26"></span>**Algorithm 25.26.** The $\rho$-stepping ([Dong,
 Gu, Sun and Zhang 2021](Z-bibliography.md#ref-dong2021)).
 
 --8<-- "generated/ParallelShortestPaths-rhoStepping.pseudo.md"
@@ -1497,7 +1772,42 @@ whether a push may refuse messages, and the memory for $p$ workers.
 | `LaneChannels` | $k$ stores with release, no read-modify-write | the $p$ lanes in turn, a read of the count per block, $k$ calls | no | $p^2$ lanes of blocks |
 | `MeshChannels` | $k$ copies, one store of a tail | the $p$ queues of the worker, a load of a tail and a store of a head each, $k$ calls | yes, $c$ per pair | $p^2 c$ places |
 
-<span id="alg-25-26"></span>**Algorithm 25.26.** The push and the drain of
+The concept and the members that the four families share, here those of
+`MeshChannels`, are
+
+```cpp
+template< class C >
+concept ChannelFamily = requires( C & c , const C & k , std::size_t i ,
+                                  std::span< const typename C::Message > m ,
+                                  void ( & f )( typename C::Message && ) ) {
+ { k.size() } -> std::convertible_to< std::size_t >;
+ { c.tryPush( i , i , m ) } -> std::convertible_to< std::size_t >;
+ { c.drain( i , f ) } -> std::convertible_to< std::size_t >;
+ };
+
+template< class Msg >
+class MeshChannels {
+ public:
+ using Message = Msg;
+ static constexpr bool bounded = true;
+ explicit MeshChannels( std::size_t p , std::size_t c = 1024 );
+ std::size_t size( void ) const;
+ std::size_t tryPush( std::size_t from , std::size_t to ,
+                      std::span< const Msg > m );
+ template< class F > std::size_t drain( std::size_t me , F && f );
+ ChannelPort< MeshChannels > port( std::size_t i );
+ };
+```
+
+The other families, `LockedChannels< Msg , Lock = std::mutex >`,
+`InboxChannels< Msg >` and `LaneChannels< Msg , B = 256 >`, have
+`bounded` false and a constructor of $p$ only, and `ChannelPort` binds a
+family to the worker $i$, with `tryPush( to , m )`, `drain( f )` and
+`index()`. Finally, `DefaultChannels< Msg , E >` is the family that
+`ChannelsOf< E >` chooses for the executor `E`, `MeshChannels` unless an
+executor specializes it.
+
+<span id="alg-25-27"></span>**Algorithm 25.27.** The push and the drain of
 the four families: under a lock, on a stack of Treiber, on lanes, and on the
 mesh.
 
@@ -1566,9 +1876,20 @@ the results of its workers on a channel of feedback ([Aldinucci et al.
 then `onResult( r , emit )` on each result $r$, which returns false to stop
 the farm. Meanwhile the workers call `work( t )` on the tasks, and the farm
 returns when all the calls have returned ([Algorithm
-25.27](25-parallel.md#alg-25-27)).
+25.28](25-parallel.md#alg-25-28)).
 
-<span id="alg-25-27"></span>**Algorithm 25.27.** The farm with feedback on
+The farm is declared as
+
+```cpp
+template< class T , class R , WorkerExecutor E , class S , class O ,
+          class W >
+void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
+                   W && work );
+```
+
+with an overload for `FastFlowExecutor`, which runs the farm of FastFlow.
+
+<span id="alg-25-28"></span>**Algorithm 25.28.** The farm with feedback on
 the `run()` of an executor, and its emitter on a farm of FastFlow.
 
 --8<-- "generated/Farm-feedbackFarm.pseudo.md"
@@ -1645,7 +1966,7 @@ computation that starts from one process. [Mattern
 and received, by waves that read the counters of all the processes.
 
 `Mailbox.h` solves it for the $p$ workers of a `run()` on any family of
-channels ([Algorithm 25.28](25-parallel.md#alg-25-28)). A worker `me` sends
+channels ([Algorithm 25.29](25-parallel.md#alg-25-29)). A worker `me` sends
 by `send( me , to , x )`, which appends $x$ to its *outbox* for `to`, and
 pushes the outbox as a batch when it holds `batch` messages (64 by default).
 Then `flush( me )` pushes all its outboxes, and `poll( me , f )` drains its
@@ -1655,7 +1976,72 @@ computation has ended. `ownerOf( k , p )`, i.e., $h( k ) \bmod p$, is the
 worker that owns the key $k$ when the keys (the nodes of a search, the
 vertices of a graph) are spread by hashing.
 
-<span id="alg-25-28"></span>**Algorithm 25.28.** The operations of
+The public members of the mailbox, with the policies of the coalescing of
+[§25.15](25-parallel.md#sec-25-15), are
+
+```cpp
+template< class K , class H = std::hash< K > >
+std::size_t ownerOf( const K & k , std::size_t p , const H & h = H() );
+
+struct NoCoalescing {};
+template< class K , class M = void >
+struct CoalesceBy { using KeyOf = K; using Map = M; };
+
+template< class Msg , ChannelFamily Ch = MeshChannels< Msg > ,
+          class Co = NoCoalescing >
+class Mailbox {
+ public:
+ template< class ... A >
+ explicit Mailbox( std::size_t p , std::size_t batch = 64 , A && ... args );
+ std::size_t size( void ) const;
+ void send( std::size_t me , std::size_t to , Msg x );
+ bool flush( std::size_t me );
+ template< class F > std::size_t poll( std::size_t me , F && f );
+ bool quiescent( std::size_t me );
+ bool terminated( void ) const;
+ void stop( void );
+ bool stopped( void ) const;
+ void rearm( void );
+ template< class F > std::size_t leftovers( F && f );
+ std::uint64_t sent( std::size_t me ) const;
+ std::uint64_t batches( std::size_t me ) const;
+ std::uint64_t merged( std::size_t me ) const;
+ std::uint64_t received( std::size_t me ) const;
+ Ch & channels( void );
+ };
+```
+
+besides the `send()` with a merge, `rearm( active )`, `audit()` and
+`leftovers( me , f )` of [§25.15](25-parallel.md#sec-25-15) (the arguments
+`args` go to the constructor of the channels). A worker of `run()` works
+until `quiescent()` answers true, e.g., in a visit of a tree spread over
+the workers by `ownerOf()`, each node $v < 2^{16}$ having the children
+$2 v$ and $2 v + 1$:
+
+```cpp
+ADS::ThreadPool pool( 4 );
+ADS::Mailbox< unsigned > mb( 4 );
+std::atomic< long > nodes{ 0 };
+pool.run( 4 , [ & ]( std::size_t me ) {
+ std::vector< unsigned > S;
+ if( ADS::ownerOf( 1u , 4 ) == me ) S.push_back( 1 );
+ for( ; ; ) {
+  mb.poll( me , [ & ]( unsigned && v ) { S.push_back( v ); } );
+  if( S.empty() ) {
+   if( mb.quiescent( me ) ) break;          // terminated
+   continue;
+   }
+  const unsigned v = S.back();
+  S.pop_back();
+  ++nodes;
+  if( v < ( 1u << 16 ) )
+   for( unsigned c : { 2 * v , 2 * v + 1 } )
+    mb.send( me , ADS::ownerOf( c , 4 ) , c );
+  }
+ } );                                       // nodes is 131071
+```
+
+<span id="alg-25-29"></span>**Algorithm 25.29.** The operations of
 `Mailbox`; $O_{\mathit{to}}$ is the outbox of the worker for `to`,
 $N_{\mathit{to}}$ its threshold, at first $\mathit{batch}$, and $C$ the
 shared counter.
@@ -1689,14 +2075,6 @@ and the queue $Q_{01}$ (violet on the left) before and after the push of a
 batch of three messages, which adds 3 to the counter $C$ (3 at the start,
 all the workers active) before the messages enter the
 queue.](../figures/parallel-mailbox.svg){#fig-25-5}
-
-```cpp
---8<-- "generated/Mailbox-push.cpp"
-```
-
-```cpp
---8<-- "generated/Mailbox-quiescent.cpp"
-```
 
 <span id="lem-25-20"></span>**Lemma 25.20.** *At any time*
 
@@ -1796,7 +2174,7 @@ by quiescence before the next one starts. `rearm( active )`, called by one
 thread at the barrier, sets the activity of each worker `me` to `active(
 me )` and $C$ to the number of the active workers, and withdraws the stop;
 `rearm()` makes them all active, as the constructor does
-([Algorithm 25.29](25-parallel.md#alg-25-29)). The channels and the
+([Algorithm 25.30](25-parallel.md#alg-25-30)). The channels and the
 outboxes, i.e., the $p^2$ queues of the mesh with their buffers, are kept,
 so that a phase costs $O( p )$ instead of their construction. The
 precondition is the quiescence of the computation before: the outboxes are
@@ -1808,7 +2186,7 @@ before `rearm()`, and makes its first call of the next one after it. The
 counts of `sent()`, `batches()`, `merged()` and `received()` go on
 across the computations.
 
-<span id="alg-25-29"></span>**Algorithm 25.29.** `rearm()` of `Mailbox`,
+<span id="alg-25-30"></span>**Algorithm 25.30.** `rearm()` of `Mailbox`,
 with $\mathit{active}_{\mathit{me}}$ the activity of the worker
 $\mathit{me}$.
 
@@ -1843,7 +2221,7 @@ looks up the key `K()( x )` in a map `M` of the outbox (by default a
 key sent with a merge since the last push. If there is one, `merge(
 pending , x )` either merges $x$ into it and returns true, or returns
 false; in the second case, as when the key is not found, $x$ is appended
-and becomes the last of its key ([Algorithm 25.30](25-parallel.md#alg-25-30)).
+and becomes the last of its key ([Algorithm 25.31](25-parallel.md#alg-25-31)).
 A merge with no result always merges, and one probe of the map serves both
 the search and the update. Note that a push that the channel takes $j > 0$
 messages of shifts the rest of the outbox by $j$ places, and therefore
@@ -1852,17 +2230,13 @@ full queue of a mesh) keeps it. Last, `merged( me )` counts the messages
 merged; with `sent( me )` and the messages still in the outboxes, it
 accounts for the calls of `send()`.
 
-<span id="alg-25-30"></span>**Algorithm 25.30.** `send()` with a merge, with
+<span id="alg-25-31"></span>**Algorithm 25.31.** `send()` with a merge, with
 $S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and
 `audit()` of `Mailbox`.
 
 --8<-- "generated/Mailbox-send-2.pseudo.md"
 
 --8<-- "generated/Mailbox-audit.pseudo.md"
-
-```cpp
---8<-- "generated/Mailbox-send-merge.cpp"
-```
 
 <span id="lem-25-24"></span>**Lemma 25.24.** *Let the merges be made by
 `send()` with a merge whose function does not throw and does not change the
@@ -2021,57 +2395,63 @@ Each exercise names the test of the library that solves it (run it with
 1. Write the executor of the calling thread alone and check that the
    parallel algorithms give on it the results they give on a pool, also for
    empty and nested calls and for calls that throw. Test:
-   `engineered_parallel.parallel-executors`. 2. Cut a loop into blocks that
-   do not depend on the number of threads, and show that a reduction of
-   doubles by blocks gives the same result on all the executors; then write
-   the inclusive and exclusive scans by decoupled look-back and prove that
-   they end on an executor that runs its calls in order. Test:
-   `engineered_parallel.parallel-patterns`. 3. Run $p$ long-lived workers at
-   the same time on $p$ distinct threads, also when they start nested jobs,
-   and tell each worker whether it runs on the caller. Tests:
-   `engineered_runtime.worker-run`, `engineered_runtime.run-caller`. 4. Give
-   each executor a lock with `try_lock()` that never waits. Test:
-   `engineered_runtime.worker-locks`. 5. Run `bulk()` on FastFlow with fewer
-   indices than workers, and with a number of indices that changes from one
-   call to the next, without the barrier of FastFlow hanging. Tests:
+   `engineered_parallel.parallel-executors`.
+2. Cut a loop into blocks that do not depend on the number of threads, and
+   show that a reduction of doubles by blocks gives the same result on all
+   the executors; then write the inclusive and exclusive scans by decoupled
+   look-back and prove that they end on an executor that runs its calls in
+   order. Test: `engineered_parallel.parallel-patterns`.
+3. Run $p$ long-lived workers at the same time on $p$ distinct threads,
+   also when they start nested jobs, and tell each worker whether it runs
+   on the caller. Tests: `engineered_runtime.worker-run`,
+   `engineered_runtime.run-caller`.
+4. Give each executor a lock with `try_lock()` that never waits. Test:
+   `engineered_runtime.worker-locks`.
+5. Run `bulk()` on FastFlow with fewer indices than workers, and with a
+   number of indices that changes from one call to the next, without the
+   barrier of FastFlow hanging. Tests:
    `engineered_runtime.fastflow-bulk-sizes`,
-   `engineered_runtime.fastflow-loops`. 6. Bind the workers of a pool to the
-   processors given to the process, in their order, and leave the thread of
-   the caller as it was. Test: `engineered_search.affinity`. 7. Find the
-   split of $k$ sorted ranges at the rank $r$ of their stable merge in $O( k
-   \log N \log( k N ) )$ comparisons, and merge the ranges in parallel.
-   Test: `engineered_parallel.parallel-merge`. 8. Sort a vector in parallel
-   by a stable distribution into buckets, with the same result as the
-   sequential sorts, on inputs already sorted, in few runs, with few
-   distinct keys and with many; then distribute the numbers by a model of
-   their distribution function. Tests: `engineered_parallel.parallel-sort`,
-   `engineered_parallel.learned-parallel-sort`. 9. Multiply a sparse matrix
-   by a vector and two dense matrices in parallel, with the results of the
-   sequential products bit for bit. Test:
-   `engineered_parallel.parallel-numeric`. 10. Visit a graph in breadth in
-   both directions, and label the connected components with their least
-   nodes by the sampling of Afforest. Test:
-   `engineered_parallel.parallel-graph`. 11. Compute the LCP array of a text
-   in parallel from its permuted array. Test:
-   `engineered_parallel.parallel-lcp`. 12. Run a loop of dependent
-   iterations by deterministic reservations, with the result of the
-   sequential loop on all the executors. Test:
-   `engineered_speculative.speculative-for`. 13. Compute in parallel the
-   forest of Kruskal, of filter-Kruskal and of the greedy algorithm in the
-   order of the edges, and the greedy maximal independent set and maximal
-   matching in a given order. Tests:
-   `engineered_speculative.parallel-kruskal`,
-   `engineered_speculative.parallel-mis-matching`. 14. Compute the distances
-   of the algorithm of Dijkstra by the $\Delta$-stepping and by the
-   $\rho$-stepping. Test: `engineered_parallel.parallel-stepping`. 15.
-   Realize the four families of channels between workers with one interface.
-   Test: `engineered_runtime.channels`. 16. Write the farm with feedback on
-   the workers of any executor, with the indices of the master and of the
-   workers on fixed threads, and stop it from the master. Tests:
-   `engineered_runtime.feedback-farm`, `engineered_runtime.farm-indices`.
-   17. Detect the termination of a computation by messages with one shared
-   counter, with sends that never wait on bounded queues, and stop it with
-   each message handed exactly once. Tests:
-   `engineered_runtime.mailbox-termination`,
-   `engineered_runtime.mailbox-full`, `engineered_runtime.mailbox-stop`,
-   `engineered_runtime.owner-of`.
+   `engineered_runtime.fastflow-loops`.
+6. Bind the workers of a pool to the processors given to the process, in
+   their order, and leave the thread of the caller as it was. Test:
+   `engineered_search.affinity`.
+7. Find the split of $k$ sorted ranges at the rank $r$ of their stable
+   merge in $O( k ( \log N + \log k ) \log N )$ comparisons, and merge the
+   ranges in parallel. Test: `engineered_parallel.parallel-merge`.
+8. Sort a vector in parallel by a stable distribution into buckets, with
+   the same result as the sequential sorts, on inputs already sorted, in
+   few runs, with few distinct keys and with many; then distribute the
+   numbers by a model of their distribution function. Tests:
+   `engineered_parallel.parallel-sort`,
+   `engineered_parallel.learned-parallel-sort`.
+9. Multiply a sparse matrix by a vector and two dense matrices in parallel,
+   with the results of the sequential products bit for bit. Test:
+   `engineered_parallel.parallel-numeric`.
+10. Visit a graph in breadth in both directions, and label the connected
+    components with their least nodes by the sampling of Afforest. Test:
+    `engineered_parallel.parallel-graph`.
+11. Compute the LCP array of a text in parallel from its permuted array.
+    Test: `engineered_parallel.parallel-lcp`.
+12. Run a loop of dependent iterations by deterministic reservations, with
+    the result of the sequential loop on all the executors. Test:
+    `engineered_speculative.speculative-for`.
+13. Compute in parallel the forest of Kruskal, of filter-Kruskal and of the
+    greedy algorithm in the order of the edges, and the greedy maximal
+    independent set and maximal matching in a given order. Tests:
+    `engineered_speculative.parallel-kruskal`,
+    `engineered_speculative.parallel-mis-matching`.
+14. Compute the distances of the algorithm of Dijkstra by the
+    $\Delta$-stepping and by the $\rho$-stepping. Test:
+    `engineered_parallel.parallel-stepping`.
+15. Realize the four families of channels between workers with one
+    interface. Test: `engineered_runtime.channels`.
+16. Write the farm with feedback on the workers of any executor, with the
+    indices of the master and of the workers on fixed threads, and stop it
+    from the master. Tests: `engineered_runtime.feedback-farm`,
+    `engineered_runtime.farm-indices`.
+17. Detect the termination of a computation by messages with one shared
+    counter, with sends that never wait on bounded queues, and stop it with
+    each message handed exactly once. Tests:
+    `engineered_runtime.mailbox-termination`,
+    `engineered_runtime.mailbox-full`, `engineered_runtime.mailbox-stop`,
+    `engineered_runtime.owner-of`.

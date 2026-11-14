@@ -160,6 +160,34 @@ namespace ADS {
 ///     v , u ) ) ]
 /// \end{array}}
 /// \f]
+///
+/// The barrier of the lines 4, 7 and 9 in pseudocode, \f$ c \f$ the
+/// threads counted, \f$ a \f$ those arrived, \f$ q \f$ those that joined
+/// since the last release and \f$ \gamma \f$ the generation; a thread
+/// calls `join()` when the executor starts its call, and `arrive( s )` at
+/// each barrier, the last to arrive running \f$ s \f$ (e.g., the choice of
+/// \f$ c \f$ of the line 7):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{join}() \cr
+/// 2 & \quad \text{under the lock:}\ \textbf{if}\ \text{over}
+///     \ \textbf{then return false} \cr
+/// 3 & \quad \text{under the lock:}\ \textbf{if}\ \text{not started}
+///     \ \textbf{then}\ \text{start};\ c \gets 1;\ \textbf{return true} \cr
+/// 4 & \quad \text{under the lock:}\ q \gets q + 1;\ g \gets \gamma \cr
+/// 5 & \quad \text{wait while}\ \gamma = g\quad \triangleright
+///     \ \text{acquire};\ \textbf{return}\ \text{not over} \cr
+/// 6 & \textbf{procedure}\ \mathrm{arrive}( s ) \cr
+/// 7 & \quad g \gets \gamma\quad \triangleright\ \text{acquire} \cr
+/// 8 & \quad \textbf{if}\ \mathrm{fetchAndAdd}( a , 1 ) + 1 = c
+///     \ \textbf{then}\quad \triangleright\ \text{the last to arrive} \cr
+/// 9 & \qquad \text{under the lock:}\ c \gets c + q;\ q \gets 0;
+///     \ s();\ a \gets 0;\ \gamma \gets g + 1\quad \triangleright
+///     \ \text{release} \cr
+/// 10 & \quad \textbf{else}\ \text{wait while}\ \gamma = g\quad
+///     \triangleright\ \text{acquire}
+/// \end{array}}
+/// \f]
 /// \pre \f$ s \f$ is a node, the costs are not negative, \f$ \Delta > 0 \f$
 template< Executor E , Graph G >
 [[nodiscard]] std::vector< typename G::Weight > deltaStepping(

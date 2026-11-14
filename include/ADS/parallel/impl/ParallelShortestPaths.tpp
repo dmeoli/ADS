@@ -49,7 +49,6 @@ std::size_t arcsOf( const G & g , int u )
 /// start), a hook of the tests
 inline std::atomic< std::size_t > keepFrom{ 4096 };
 
-//! [writeMin]
 /// x set to v if v is smaller, atomically; whether it was
 template< class D >
 bool writeMin( D & x , D v )
@@ -61,7 +60,6 @@ bool writeMin( D & x , D v )
    return( true );
  return( false );
  }
-//! [writeMin]
 
 /// the vectors that f( b ) gives for the blocks b = 0 , ... , B - 1,
 /// concatenated in their order after the items of head
@@ -222,7 +220,6 @@ class JoinBarrier {
 
  /// the arrival of a thread: the last one counts the threads that joined,
  /// runs s() and releases the others
-//! [arrive]
  template< class S >
  void arrive( S && s ) {
   const std::uint32_t g = f_gen.load( std::memory_order_acquire );
@@ -239,7 +236,6 @@ class JoinBarrier {
   unsigned k = 0;
   while( f_gen.load( std::memory_order_acquire ) == g ) spinPause( k );
   }
-//! [arrive]
 
  /// the computation ends at the next release (called in s())
  void finish( void ) { f_done = true; }
@@ -409,9 +405,9 @@ std::vector< typename G::Weight > bucketStepping( E & ex , const G & g ,
                           v , b , std::memory_order_relaxed ) ) {}
    };
   std::vector< int > tmp;
-  for( ;; ) {
+  for( ; ; ) {
    if( phase == Phase::RELAX ) {
-    for( ;; ) {
+    for( ; ; ) {
      const std::size_t i0 = claim.v.fetch_add( kChunk ,
                                              std::memory_order_relaxed );
      if( i0 >= tail ) break;

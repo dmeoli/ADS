@@ -381,7 +381,6 @@ class Mailbox {
  /// channel takes a message.
  /// \pre as `send( me , to , x )`; `merge` does not throw and does not
  /// change the key of the message pending
-//! [send-merge]
  template< class F >
   requires( coalescing && merges< F > )
  void send( std::size_t me , std::size_t to , Msg x , F && merge ) {
@@ -409,7 +408,6 @@ class Mailbox {
   if( ( o.size() >= w.next[ to ] ) && ! stopped() )
    push( me , to );
   }
-//! [send-merge]
 
  /// the outboxes of `me` pushed, true if all of them are empty after it:
  /// a bounded family may refuse some messages, which stay in their outbox
@@ -511,7 +509,6 @@ class Mailbox {
  /// \end{array}}
  /// \f]
  /// \pre `me` is a worker
-//! [quiescent]
  bool quiescent( std::size_t me ) {
   ADS_PRE( me < size() );
   if( stopped() )
@@ -526,7 +523,6 @@ class Mailbox {
    }
   return( f_count.value.load( std::memory_order_acquire ) == 0 );
   }
-//! [quiescent]
 
  /// true once the computation has ended or the mailbox has stopped (any
  /// thread may ask)
@@ -568,7 +564,6 @@ class Mailbox {
  /// \pre the outboxes are empty, and the computation has ended (\f$ C = 0
  /// \f$) or the mailbox has stopped and `leftovers()` has emptied it
  /// (audit); no worker calls the mailbox meanwhile
-//! [rearm]
  template< class F >
   requires std::predicate< F & , std::size_t >
  void rearm( F && active ) {
@@ -583,7 +578,6 @@ class Mailbox {
   f_count.value.store( n , std::memory_order_release );
   f_stop.value.store( false , std::memory_order_release );
   }
-//! [rearm]
 
  /// `rearm()` above with all the workers active, as at the construction
  /// \pre as `rearm( active )`
@@ -607,7 +601,6 @@ class Mailbox {
  /// \end{array}}
  /// \f]
  /// \pre as `rearm()`, checked at the level of the audits
-//! [audit]
  template< class P >
   requires( std::predicate< P & , std::size_t > || std::predicate< P & > )
  void audit( [[maybe_unused]] P && pred ) {
@@ -622,7 +615,6 @@ class Mailbox {
     ADS_AUDIT( pred() );
    }
   }
-//! [audit]
 
  /// the calls `f( x )` on the messages left to `me`: those of its outboxes,
  /// for each destination in the order of their sends, then those of its
@@ -769,7 +761,6 @@ class Mailbox {
 
  /// the outbox of `me` for `to` pushed, as many messages as the channel
  /// takes; the next push when a batch more has come
-//! [push]
  void push( std::size_t me , std::size_t to ) {
   Worker & w = *f_worker[ me ];
   auto & o = w.out[ to ];
@@ -792,7 +783,6 @@ class Mailbox {
    }
   w.next[ to ] = o.size() + f_batch;
   }
-//! [push]
 
  Ch f_ch;                                  ///< the channels
  std::vector< std::unique_ptr< Worker > > f_worker;   ///< one per worker

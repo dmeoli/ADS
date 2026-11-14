@@ -413,7 +413,7 @@ class LaneChannels {
   ADS_PRE( me < size() );
   Box & b = *f_box[ me ];
   std::size_t n = 0;
-  for( ;; ) {
+  for( ; ; ) {
    const std::size_t k = b.queue.popInto( b.buffer , B );
    if( k == 0 )
     return( n );
