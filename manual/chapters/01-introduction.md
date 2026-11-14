@@ -538,11 +538,17 @@ time for an `insert()` or a `remove()` at the place $i$. Each of the two
 takes $\Theta( n )$ space, and $O( 1 )$ amortized time for the growth of its
 vector.*
 
-*Proof.* The costs of the scans and of the moves are evident, while a binary
-search keeps an interval of candidate places, which is halved at each
-comparison ([Lemma 1.5](01-introduction.md#lem-1-5)). Also, the vector is a
+*Proof.* In `ArrayUSet`, `find()` compares $x$ with at most the $n$ items
+of $A$, `insert()` makes one `find()` and one append, and `remove()` makes
+one `find()` and then moves at most one item and shortens $A$ by one, in
+$O( 1 )$ time. In `ArraySSet`, `lowerBound()` is a binary search, which
+keeps an interval of candidate places halved at each comparison
+([Lemma 1.5](01-introduction.md#lem-1-5)), and `find()` adds one test of
+equality; an `insert()` or a `remove()` at the place $i$ makes one binary
+search and moves the $n - i$ items after the place (fewer by one for a
+removal), as one block. Also, the vector is a
 `std::vector`, whose growth by a constant factor costs $O( 1 )$ amortized
-time per insertion ([Lemma 3.1](03-stack.md#lem-3-1)), and which never
+time per insertion ([Lemma 3.3](03-stack.md#lem-3-3)), and which never
 shrinks on a removal. $\square$
 
 A BAG is a USet of groups, as [Morin 2013, exercise
@@ -577,12 +583,17 @@ $G$ the table of the groups ([Morin 2013, exercise
 $G$ take $O( 1 )$ expected amortized time, then `insert()` and `remove()`
 of `Bag` take $O( 1 )$ expected amortized time, `find()` and `count()`
 $O( 1 )$ expected time, and `findAll( x )` $O( 1 + c )$ expected time,
-where $c$ is the number of items equal to $x$; the space is $O( n )$.*
+where $c$ is the number of items equal to $x$; the space is $O( n )$. After
+each operation no group is empty, and the groups hold $n$ items in all.*
 
-*Proof.* Each operation makes one search in $G$. Besides, `insert()` and
+*Proof.* The invariant holds on the empty bag; an `insert()` adds one item
+to a group, or a new group of one item, and increments $n$, while a
+`remove()` that finds a group removes one of its items, or the group
+itself when it has one item only, and decrements $n$. Each operation makes
+one search in $G$. Besides, `insert()` and
 `remove()` make at most one insertion or removal in $G$, and an append or a
 removal at the end of one vector, whose amortized cost is $O( 1 )$ ([Lemma
-3.1](03-stack.md#lem-3-1)); `findAll()` copies $c$ items. Finally, the groups
+3.3](03-stack.md#lem-3-3)); `findAll()` copies $c$ items. Finally, the groups
 hold $n$ items, and there are at most $n$ of them, each with its key in $G$.
 $\square$
 
@@ -711,14 +722,12 @@ $$
 
 for $n \ge 1$. Hence $\ln( n! ) = n \ln n - n + \frac{1}{2} \ln( 2 \pi n ) +
 \alpha( n )$, and $\log( n! ) = n \log n - n \log e + O( \log n )$, the form
-that gives the lower bound on the comparisons of a sort (chapter
-[12](12-sort.md#ch-12)). In fact, a sort by comparisons must distinguish the
-$n!$ orders of its input, and each comparison splits the orders still
-consistent with its outcomes into two sets, of which an adversary may keep
-the larger. After $j$ comparisons at least $\lceil n! / 2^j \rceil$ orders
-remain (the converse of [Lemma 1.5](01-introduction.md#lem-1-5)), and the
-sort therefore needs at least $\lceil \log( n! ) \rceil$ comparisons in the
-worst case. For integers $0 \le k \le n$, the binomial coefficient
+that gives the lower bound on the comparisons of a sort. A sort by
+comparisons must tell apart the $n!$ orders of its input, and each
+comparison has two outcomes; hence it needs at least
+$\lceil \log( n! ) \rceil$ comparisons in the worst case, which
+[Theorem 12.1](12-sort.md#thm-12-1) proves by the comparison tree of the
+sort. For integers $0 \le k \le n$, the binomial coefficient
 
 $$
 \binom{n}{k} = \frac{n!}{k! ( n - k )!} \tag{1.9}
@@ -764,9 +773,30 @@ O( 1 ) \subset O( \log n ) \subset O( n^b ) \subset O( n^b \log n )
 \subset O( n^{b'} ) \subset O( c^n ) , \tag{1.11}
 $$
 
-for constants $0 < b < b'$ and $c > 1$, compare the usual costs, and they
-hold also when multiplied by a positive function, e.g., by $n$, which gives $O(
-n ) \subset O( n \log n )$. With more than one variable, as in the $O( n +
+for constants $0 < b < b'$ and $c > 1$, compare the usual costs.
+
+<span id="lem-1-6"></span>**Lemma 1.6.** *Each inclusion of (1.11) is
+strict, and it still holds, strictly, when both of its sides are
+multiplied by the same positive function $h( n )$ (e.g., $h( n ) = n$ gives
+$O( n ) \subset O( n \log n )$).*
+
+*Proof.* For $\varepsilon > 0$ and $x \ge 1$ one has $\ln x = ( \ln
+x^\varepsilon ) / \varepsilon \le ( x^\varepsilon - 1 ) / \varepsilon <
+x^\varepsilon / \varepsilon$, since $\ln y \le y - 1$ for $y > 0$; hence
+$\log n / n^\varepsilon < 1 / ( \varepsilon \ln 2 )$ for $n \ge 1$, and
+by the same bound with $\varepsilon / 2$ the ratio tends to 0. Now let
+$f_1 , f_2$ be two consecutive functions of (1.11), say $f_1( n ) = n^b
+\log n$ and $f_2( n ) = n^{b'}$. We show that $f_1( n ) / f_2( n ) \to
+0$, which gives both $f_1 = O( f_2 )$ (hence $O( f_1 ) \subseteq O( f_2 )$,
+since $O( \cdot )$ is transitive) and $f_2 \notin O( f_1 )$. The ratios
+are $1 / \log n$, $\log n / n^b$, $1 / \log n$ and $\log n /
+n^{b' - b}$, which tend to 0 by the bound above with $\varepsilon = b$ and
+$\varepsilon = b' - b$; the last one is $n^{b'} / c^n = 2^{b' \log n - n
+\log c}$, whose exponent tends to $-\infty$, since $b' \log n / n \to
+0$. A positive factor $h( n )$ common to $f_1$ and $f_2$ leaves their ratio
+unchanged. $\square$
+
+With more than one variable, as in the $O( n +
 k )$ space of $k$ stacks of $n$ items in all ([§3.4](03-stack.md#sec-3-4)),
 $g = O( f )$ means that there are $c > 0$ and $z$ such that $g( n_1 ,
 \ldots , n_k ) \le c f( n_1 , \ldots , n_k )$ whenever $g( n_1 , \ldots ,
@@ -810,7 +840,7 @@ count written as a sum of *indicator variables*, each one 1 when an event
 happens and 0 otherwise, whose expected value is the probability of its
 event.
 
-<span id="lem-1-6"></span>**Lemma 1.6.** *Let the $n$ distinct items of a
+<span id="lem-1-7"></span>**Lemma 1.7.** *Let the $n$ distinct items of a
 vector be in an order drawn uniformly among the $n!$ orders, and let a scan
 keep the least item seen so far. The expected number of times that the
 least item changes (the first item included) is the harmonic number $H_n =
@@ -894,7 +924,7 @@ the products of their halves (after [Knuth 1998, Algorithm
 
 ![Figure 1.6. The product of two words on halves of 32 bits, as in (1.13): the four partial products at their shifts, the three halves summed into $\mathit{mid}$ in violet, and the two halves of $\mathit{mid}$ in orange: its low half, the bits 32 to 63 of the product, and its high half, the carry into the high word.](../figures/intro-product.svg){#fig-1-6}
 
-<span id="lem-1-7"></span>**Lemma 1.7.** *The computation of
+<span id="lem-1-8"></span>**Lemma 1.8.** *The computation of
 `wideProductHalves()` ([Algorithm 1.4](01-introduction.md#alg-1-4)) gives the product $a b$ exactly, i.e., its low
 word and its high word, with no overflow of an intermediate word.*
 
@@ -919,10 +949,38 @@ pair of words in two's complement. It is built from any integer by extending
 its sign, and it has the sums, the differences and the products of `__int128`
 (those modulo $2^{128}$, exact when the result fits), its equality and its
 order (the high words compared as signed and then the low ones as unsigned),
-and an explicit conversion to `long double`. Note that a sum carries 1 into
-the high word if and only if the sum of the low words, modulo $2^{64}$, is
-smaller than either of them, and that the product needs only the low words of
-the cross terms, since their high words fall beyond the bit 127. The random
+and an explicit conversion to `long double`.
+
+<span id="lem-1-9"></span>**Lemma 1.9.** *Let $a = a_h 2^{64} + a_l$ and
+$b = b_h 2^{64} + b_l$, with $0 \le a_h , a_l , b_h , b_l < 2^{64}$, be
+the two pairs of words of two values of `Int128`, which stand for $a$ and
+$b$ minus $2^{128}$ when the bit 63 of the high word is set. The low word of
+$a + b$ is $r_l = ( a_l + b_l ) \bmod 2^{64}$, and the carry into the high
+word is 1 if and only if $r_l < a_l$; the low word of $a - b$ is $( a_l -
+b_l ) \bmod 2^{64}$, with a borrow if and only if $a_l < b_l$; and
+$a b \bmod 2^{128} = a_l b_l + ( ( a_l b_h + a_h b_l ) \bmod 2^{64} )
+2^{64} \bmod 2^{128}$. Moreover, the order of the high words read as
+signed words, and then of the low words read as unsigned ones, is the order
+of the values.*
+
+*Proof.* Since $0 \le a_l + b_l < 2^{65}$, the sum of the low words is
+either below $2^{64}$, and then $r_l = a_l + b_l \ge a_l$, or at least
+$2^{64}$, and then $r_l = a_l + b_l - 2^{64} < a_l$, since $b_l < 2^{64}$;
+the carry is 1 exactly in the second case. In the same way, $a_l - b_l$ is
+negative, and is then increased by $2^{64}$, exactly when $a_l < b_l$. As
+for the product, $a b = a_l b_l + ( a_l b_h + a_h b_l ) 2^{64} + a_h b_h
+2^{128}$, and modulo $2^{128}$ the last term vanishes, while of the middle
+one only $( a_l b_h + a_h b_l ) \bmod 2^{64}$ counts; the low word and the
+part of $a_l b_l$ beyond it are those of `wideProduct()`
+([Lemma 1.8](01-introduction.md#lem-1-8) for its portable form). Finally,
+the value of a pair is $\hat{a}_h 2^{64} + a_l$, with $\hat{a}_h$ the high
+word read as a signed word, and $0 \le a_l < 2^{64}$. If $\hat{a}_h <
+\hat{b}_h$, then the value of $a$ is at most $\hat{b}_h 2^{64} - 2^{64} +
+a_l < \hat{b}_h 2^{64} \le$ the value of $b$; if the high words are equal,
+the order is that of the low words. $\square$
+
+The sums, the differences and the products are thus those of `__int128`,
+i.e., modulo $2^{128}$ and exact when the result fits. The random
 queue of chapter [4](04-queue.md#ch-4) uses `wideProduct()` (for its draw of
 an index), and the integers of any length of chapter
 [17](17-numeric.md#ch-17) use it, or `wideProductHalves()` under
@@ -999,7 +1057,7 @@ is 1, and 0 when `NDEBUG` is defined (as for `assert`).
 | `ADS_INVARIANT` | the invariant of a structure | usually $\Theta( n )$ | 3 |
 | `ADS_AUDIT` | a precondition or a postcondition | more than the operation | 3 |
 
-<span id="lem-1-8"></span>**Lemma 1.8.** *A check of cost $g( n )$ added to
+<span id="lem-1-10"></span>**Lemma 1.10.** *A check of cost $g( n )$ added to
 an operation of cost $t( n )$ makes it cost $O( t( n ) + g( n ) )$, which is
 $O( t( n ) )$ if and only if $g( n ) = O( t( n ) )$. Hence at the levels 1
 and 2 the bounds of the operations hold as stated, while at the level 3 a
@@ -1057,19 +1115,36 @@ rebuilt when it grows takes $O( 1 )$ expected amortized time (chapter
 1.4](01-introduction.md#lem-1-4)).
 
 We usually prove an amortized bound by a *potential*, i.e., a function $\Phi
-\ge 0$ of the state of the structure, equal to $0$ on the empty one. If each
-operation has the actual cost $c_i$ and changes the potential from
-$\Phi_{i-1}$ to $\Phi_i$, with $c_i + \Phi_i - \Phi_{i-1} \le f( n )$ for
-each $i$, then the $m$ operations cost $\sum_i c_i \le m f( n ) - \Phi_m +
-\Phi_0 \le m f( n )$, since the differences of $\Phi$ telescope. Consider a
-vector that starts empty with capacity $c = 0$, and doubles its capacity
-when it is full (from 0 to 1 at the first insertion), and its potential
-$\Phi = 2 n - c$ (with $n$ items, and $n \le c \le 2 n$ after the first
-insertion) pays for each doubling. Indeed, a doubling happens when $n = c
-\ge 1$ and moves $n$ items, while the potential drops from $n$ to $0$, and
-the insertion that follows costs 1 and raises the potential by 2, as any
-other insertion does (the first one costs 1 and leaves $\Phi = 1$); hence
-$f( n ) = 3$ (cf. [Lemma 3.1](03-stack.md#lem-3-1)). A worst-case bound is
+\ge 0$ of the state of the structure, equal to $0$ on the empty one, and
+then the $i$-th operation, of actual cost $c_i$, has the *amortized cost*
+$c_i + \Phi_i - \Phi_{i-1}$, where $\Phi_{i-1}$ and $\Phi_i$ are the
+potentials before and after it. Consider, for instance, a vector that
+starts empty with capacity $c = 0$, and doubles its capacity when it is
+full (from 0 to 1 at the first insertion), with the potential $\Phi = 2 n
+- c$ when it holds $n$ items.
+
+<span id="lem-1-11"></span>**Lemma 1.11.** *If each operation of every
+sequence that starts from the empty structure has amortized cost at most
+$f( n )$, then any $m$ such operations cost at most $m f( n )$ in all. On
+the vector that doubles, every sequence of $m$ insertions costs at most
+$3 m$, counting one per item written or moved, and $n \le c \le 2 n$ after
+the first insertion.*
+
+*Proof.* Summing the amortized costs, the differences of $\Phi$
+telescope, and $\sum_i c_i \le m f( n ) - \Phi_m + \Phi_0 \le m f( n )$,
+since $\Phi_m \ge 0 = \Phi_0$. On the vector, $n \le c \le 2 n$ holds
+after the first insertion, which leaves $n = c = 1$, and it is kept by
+each insertion: one that finds $n < c$ makes $n + 1 \le c$, and one that
+finds $n = c$ doubles $c$ to $2 n < 2 ( n + 1 )$; hence $\Phi \ge 0$. An
+insertion that finds $n < c$ costs 1 and raises $\Phi$ by 2, i.e., it has
+amortized cost 3. One that finds $n = c \ge 1$ moves the $n$ items and
+writes one, at the cost $n + 1$, while $\Phi$ goes from $2 n - n = n$ to
+$2 ( n + 1 ) - 2 n = 2$, i.e., the amortized cost is $n + 1 + 2 - n = 3$;
+the first insertion costs 1 and leaves $\Phi = 1$. The first part, with
+$f( n ) = 3$, gives the bound. $\square$
+
+The growth of `std::vector` by any constant factor $\gamma > 1$ behaves in
+the same way ([Lemma 3.3](03-stack.md#lem-3-3)). A worst-case bound is
 the strongest of the three, and the other two are accepted since they often
 (but not always) give "simpler" structures, or a lower cost on average, or
 both. An amortized bound suits a program that needs a bound on the total
@@ -1083,8 +1158,8 @@ We count the space of a structure in words. It comprises the space of its
 items and that of the data it adds (pointers, indices, capacities, the free
 places of a vector), and the latter is its *overhead*. Typically, a list
 with pointers takes one or two words per item besides the items, and a
-vector that doubles its capacity up to twice the words of its items (cf.
-[Lemma 3.1](03-stack.md#lem-3-1)). In chapter [2](02-sequence.md#ch-2) the
+vector that doubles its capacity up to twice the words of its items
+([Lemma 1.11](01-introduction.md#lem-1-11)). In chapter [2](02-sequence.md#ch-2) the
 rootish and tiered arrays bring the "wasted" free places down to $O(
 \sqrt{n} )$, and the blocked lists bring the overhead down to $O( b + n / b
 )$, with blocks of $b$ items. On the other hand, the succinct structures of
@@ -1179,11 +1254,23 @@ $i$ the place and $m$ the size of the table.
 
 --8<-- "generated/Iterators-SlotIterator-prev.pseudo.md"
 
-We remark that a whole visit examines each place once, in $\Theta( m )$ time,
-i.e., in $O( m / n )$ amortized time per item. This is $O( 1 )$ when the load
-$n / m$ is bounded from below by a constant, as in the hash tables that halve
-their table when they get "too empty"; a single step, however, may examine
-$\Theta( m )$ places.
+<span id="lem-1-12"></span>**Lemma 1.12.** *On a table of $m$ places, $n
+\ge 1$ of them occupied, a whole visit by `SlotIterator`, from the place 0
+to the end, tests each place once, and takes $\Theta( m )$ time, i.e.,
+$O( m / n )$ amortized time per item; a single step tests at most $m$
+places.*
+
+*Proof.* The constructor and each `next()` ([Algorithm
+1.6](01-introduction.md#alg-1-6)) only increase $i$, by one at each test
+of a place that is not occupied and by one at each step, and the visit
+stops at $i = m$; hence each of the places $0 , \ldots , m - 1$ is tested
+once, and the $n$ steps read $n$ items. A single step tests the places
+between two consecutive occupied ones, at most $m$. $\square$
+
+The bound is $O( 1 )$ per item when the load $n / m$ is bounded from below
+by a constant, as in the hash tables that halve their table when they get
+"too empty"; a single step, however, may test $\Theta( m )$ places, and
+`prev()`, which tests the places backward, behaves in the same way.
 
 `PathIterator` visits a binary tree in symmetric order keeping the
 path $\pi$ from the root to the current node, the end being the
@@ -1205,7 +1292,7 @@ since `prev()` is `next()` with the two children exchanged.
 
 ![Figure 1.8. A `PathIterator` on a binary search tree of seven nodes: on the node 3, with the path $\pi$ from the root in violet; after one step, which pops 3 and 2 and stops on 4, the node from whose left subtree it came; after another, which pushes the right child 6 of 4 and the leftmost node 5 below it.](../figures/intro-path.svg){#fig-1-8}
 
-<span id="lem-1-9"></span>**Lemma 1.9.** *The next node in symmetric order
+<span id="lem-1-13"></span>**Lemma 1.13.** *The next node in symmetric order
 is the leftmost node of the right subtree of the current node $x$ if $x$
 has a right child, and otherwise the lowest ancestor of $x$ whose left
 subtree contains $x$. A whole visit of a tree of $n$ nodes by `PathIterator`
@@ -1829,7 +1916,9 @@ N \cdot \mathrm{Inserted}( h , s ) \cdot \mathrm{Erased}( h , s ) & \to & N , \c
 \end{array} \tag{1.15}
 $$
 
-where the second rule holds for the key and the value, the third vanishes
+where the state $s$ of an item is its key and its value, the second rule
+holds for the key and the value, the product of the fifth runs over these
+two attributes (and has thus at most two factors), the third vanishes
 when $a = c$, and a change with $a = b$ (a touch) is dropped. The changes of
 different attributes of one handle commute. Note that the last rule applies
 only when the structure emits the changes that it needs; otherwise, the
@@ -1842,7 +1931,7 @@ the parallel Boost Graph Library ([Gregor and Lumsdaine
 GraphBLAS ([Davis 2019](Z-bibliography.md#ref-davis2019)). A structure with a
 rule of its own specializes `coalesce_traits`, as the graphs do.
 
-<span id="lem-1-10"></span>**Lemma 1.10.** *Let $B$ be a history of a
+<span id="lem-1-14"></span>**Lemma 1.14.** *Let $B$ be a history of a
 structure (a sequence of events each of which starts from the state that
 the previous ones leave) whose attributes have the reduction `last`, and $C$
 its net effect by (1.15). Then $C$ is a history that leads from the state
@@ -1987,7 +2076,7 @@ shortest paths ([§14.8](14-graph.md#sec-14-8)) and Prim's algorithm take
 either form; in the lazy one they keep, for each node, whether it is in
 the frontier, and they skip a copy of a node that is not.
 
-<span id="lem-1-11"></span>**Lemma 1.11.** *Let the priorities of the
+<span id="lem-1-15"></span>**Lemma 1.15.** *Let the priorities of the
 copies be the pairs $( d , v )$ of a distance and a node, where a copy of
 $v$ is inserted at each fall of its distance. Then the lazy frontier extracts
 the same nodes, in the same order and with the same counts, as a native
@@ -2168,7 +2257,7 @@ Each exercise names the test of the library that solves it (run it with
     changes through a subject policy, and check that a batch delivers the
     net effect of (1.15), that an observer that throws leaves the structure
     and the observers already told as they were, and that `UndoLog` brings
-    it back to a checkpoint ([Lemma 1.10](01-introduction.md#lem-1-10)).
+    it back to a checkpoint ([Lemma 1.14](01-introduction.md#lem-1-14)).
     Tests: `engineered_modification.mod-coalesce`,
     `engineered_modification.mod-rollback` and
     `engineered_modification.mod-batch`.
@@ -2176,7 +2265,7 @@ Each exercise names the test of the library that solves it (run it with
     handles, which lowers a key by a new insertion, and check that they
     give the distances, the trees, the order of extraction and the counts
     of a queue with handles, also with negative weights ([Lemma
-    1.11](01-introduction.md#lem-1-11)); then check the capability concepts,
+    1.15](01-introduction.md#lem-1-15)); then check the capability concepts,
     the opt-ins and the queries on the structures of the library, and the
     forwarding of the queries by `ObservedGraph` and by `Shadow`. Tests:
     `engineered_capabilities.cap-lazy-frontier`,
