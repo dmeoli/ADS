@@ -16,7 +16,9 @@
  *   straight-line code (the 5 swaps of the places 01, 02, 01, 02, 01 of Heap's
  *   method on 3 items), and the counters \f$ c_i \f$ of the iterative method
  *   drive only the places \f$ i \ge 3 \f$, i.e., once every 6 objects; the
- *   cost is \f$ \sum_{k \ge 1} 1 / k! = e - 1 \f$ swaps per object.
+ *   cost is one swap per object, as in any form of Heap's method, and the
+ *   steps of the counters fall from \f$ \sum_{k \ge 1} 1 / k! = e - 1 \f$
+ *   per object to \f$ \sum_{k \ge 3} 1 / k! = e - 5 / 2 < 0.22 \f$.
  * -  `forEachPermutationLex( a , visit )` visits the distinct permutations of
  *   the multiset \f$ a \f$ in lexicographic order (as `std::next_permutation`
  *   from \f$ a \f$ sorted): Knuth's Algorithm 7.2.1.2L for the places up to

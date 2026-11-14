@@ -1,0 +1,38 @@
+% Source for the figure of interleave() (sec. 18.2): the Morton codes of
+% the points of a grid of 4 x 4 in binary, the bits of x in the even places
+% and those of y in the odd ones (left), and the order of the codes on the
+% grid (right). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,x=11mm,y=11mm]
+  \foreach \x in {0,...,3}
+    \foreach \y in {0,...,3} {
+      \pgfmathtruncatemacro{\a}{mod(\x,2)}
+      \pgfmathtruncatemacro{\b}{mod(\y,2)}
+      \pgfmathtruncatemacro{\c}{int(\x/2)}
+      \pgfmathtruncatemacro{\d}{int(\y/2)}
+      \node[cell,minimum width=11mm,minimum height=11mm]
+        at (\x,\y) {\d\c\b\a};
+      \pgfmathtruncatemacro{\z}{\a+2*\b+4*\c+8*\d}
+      \node[cell,minimum width=11mm,minimum height=11mm] at (\x+5.5,\y) {};
+      \coordinate (p\z) at (\x+5.5,\y);
+    }
+  \draw[thick,black!70] (p0) \foreach \z in {1,...,15} { -- (p\z) };
+  \foreach \z in {0,...,15} \fill (p\z) circle (0.6mm);
+  \node[index,anchor=south west] at ($(p0)+(0.08,0.08)$) {0};
+  \node[index,anchor=north east] at ($(p15)+(-0.08,-0.08)$) {15};
+  \foreach \x in {0,...,3} {
+    \node[index] at (\x,-0.75) {$x = \x$};
+    \node[index] at (\x+5.5,-0.75) {$x = \x$};
+  }
+  \foreach \y in {0,...,3} {
+    \node[index,anchor=east] at (-0.65,\y) {$y = \y$};
+    \node[index,anchor=east] at (4.85,\y) {$y = \y$};
+  }
+\end{tikzpicture}
+\end{document}
