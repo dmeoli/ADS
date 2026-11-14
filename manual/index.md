@@ -76,5 +76,22 @@ library; the API reference generated from them; this manual.
 
 * **Part I — Foundations.**
     * [Chapter 3](chapters/03-stack.md#ch-3). Stacks.
+    * [Chapter 5](chapters/05-memory.md#ch-5). Memory management.
+* **Part II — Searching and ordering.**
+    * [Chapter 6](chapters/06-search.md#ch-6). Searching.
+    * [Chapter 10](chapters/10-set.md#ch-10). Sets and filters.
+    * [Chapter 11](chapters/11-mfset.md#ch-11). Disjoint sets.
+* **Part III — Algorithms.**
+    * [Chapter 13](chapters/13-algorithm.md#ch-13). Algorithm design.
+    * [Chapter 15](chapters/15-string.md#ch-15). Strings.
+    * [Chapter 16](chapters/16-geometry.md#ch-16). Geometry.
+    * [Chapter 17](chapters/17-numeric.md#ch-17). Numerical algorithms.
+    * [Chapter 18](chapters/18-combinatorial.md#ch-18). Combinatorial generation.
+    * [Chapter 19](chapters/19-backtrack.md#ch-19). Backtracking.
+    * [Chapter 20](chapters/20-complexity.md#ch-20). Complexity and intractable problems.
+* **Part IV — Engineering.**
+    * [Chapter 24](chapters/24-concurrent.md#ch-24). Concurrency.
+    * [Chapter 25](chapters/25-parallel.md#ch-25). Parallelism.
+    * [Chapter 26](chapters/26-distributed.md#ch-26). Distributed computing.
 
 Bibliography follows.

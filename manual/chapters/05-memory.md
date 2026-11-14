@@ -483,11 +483,11 @@ free list each and whose partly free slabs are on a list apart.
 1994](Z-bibliography.md#ref-bonwick1994)); $P$ is the current page of the
 class $c$ and $A_c$ the list of its other pages with free slots.
 
---8<-- "generated/PageHeap-alignas-local.pseudo.md"
+--8<-- "generated/PageHeap-local.pseudo.md"
 
---8<-- "generated/PageHeap-alignas-more.pseudo.md"
+--8<-- "generated/PageHeap-more.pseudo.md"
 
---8<-- "generated/PageHeap-alignas-give.pseudo.md"
+--8<-- "generated/PageHeap-give.pseudo.md"
 
 ```cpp
 --8<-- "generated/PageHeap-give.cpp"

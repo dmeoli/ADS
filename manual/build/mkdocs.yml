@@ -76,5 +76,22 @@ nav:
   - Front matter: index.md
   - Part I — Foundations:
       - 3. Stacks: chapters/03-stack.md
+      - 5. Memory management: chapters/05-memory.md
+  - Part II — Searching and ordering:
+      - 6. Searching: chapters/06-search.md
+      - 10. Sets and filters: chapters/10-set.md
+      - 11. Disjoint sets: chapters/11-mfset.md
+  - Part III — Algorithms:
+      - 13. Algorithm design: chapters/13-algorithm.md
+      - 15. Strings: chapters/15-string.md
+      - 16. Geometry: chapters/16-geometry.md
+      - 17. Numerical algorithms: chapters/17-numeric.md
+      - 18. Combinatorial generation: chapters/18-combinatorial.md
+      - 19. Backtracking: chapters/19-backtrack.md
+      - 20. Complexity and intractable problems: chapters/20-complexity.md
+  - Part IV — Engineering:
+      - 24. Concurrency: chapters/24-concurrent.md
+      - 25. Parallelism: chapters/25-parallel.md
+      - 26. Distributed computing: chapters/26-distributed.md
   - Back matter:
       - Bibliography: chapters/Z-bibliography.md

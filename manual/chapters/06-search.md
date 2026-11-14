@@ -237,7 +237,7 @@ a model that has a guaranteed error.
 
 --8<-- "generated/InterpolationSearch-interpolationSearch.pseudo.md"
 
-Two searches of [Knuth 1998, §6.2.1](Z-bibliography.md#ref-knuth1998)
+Two searches of [Knuth 1998, §6.2.1](Z-bibliography.md#ref-knuth1998v3)
 replace the division of the middle by additions
 ([Algorithm 6.6](06-search.md#alg-6-6)). First, the Fibonacci search
 (`fibonacciSearch()`, Algorithm 6.2.1F, after [Ferguson
@@ -257,7 +257,7 @@ $+\infty$ of the book, and are compared without reading the vector.
 
 <span id="alg-6-6"></span>**Algorithm 6.6.** The Fibonacci search and the
 uniform binary search ([Knuth 1998, Algorithms 6.2.1F, 6.2.1U and
-6.2.1C](Z-bibliography.md#ref-knuth1998)).
+6.2.1C](Z-bibliography.md#ref-knuth1998v3)).
 
 --8<-- "generated/KnuthSearches-fibonacciSearch.pseudo.md"
 
@@ -1068,7 +1068,7 @@ The binary search, the search by interpolation and the selection of
 Hoare are in [Montresor 2025, §1.2, §12.1 and
 §17.1](Z-bibliography.md#ref-montresor2025), the searches of Fibonacci and
 the uniform binary search in [Knuth 1998,
-§6.2.1](Z-bibliography.md#ref-knuth1998), and the unbounded searches in
+§6.2.1](Z-bibliography.md#ref-knuth1998v3), and the unbounded searches in
 [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976); the expected
 cost of the interpolation is that of [Perl et al.
 1978](Z-bibliography.md#ref-perl1978). [Khuong and Morin

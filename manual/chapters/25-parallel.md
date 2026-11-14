@@ -200,12 +200,12 @@ thread. Note that no task is allocated: the tasks of the pool are the tokens
 of the jobs and the pending calls of `invoke()`, both on the stacks of the
 threads that wait for them.
 
-<span id="fig-25-1"></span> ![Figure 25.1. The deques of a `ThreadPool` of
+![Figure 25.1. The deques of a `ThreadPool` of
 $p = 4$ threads after the caller (slot 0) has pushed the $h = 3$ tokens of a
 job $J$ of `bulk()` (shaded), and after two thieves have stolen one token
 each from the top; the caller and the two thieves then claim the calls of
 $J$ from its counter $\mathit{next}$, and the token left is taken back by
-the caller.](../figures/parallel-pool.svg)
+the caller.](../figures/parallel-pool.svg){#fig-25-1}
 
 <span id="alg-25-2"></span>**Algorithm 25.2.** The `bulk()` of `ThreadPool`:
 a job of tokens on the deques of Chase and Lev.
@@ -574,13 +574,13 @@ again from the cache ([Algorithm 25.10](25-parallel.md#alg-25-10), [Figure
 25.2](25-parallel.md#fig-25-2)). In all, the input is read from the memory
 once and the output written once, $2 n$ moves.
 
-<span id="fig-25-2"></span> ![Figure 25.2. The scan by decoupled look-back
+![Figure 25.2. The scan by decoupled look-back
 on six tiles, each with its flag (0 nothing, 1 the aggregate $a_c$, 2 the
 inclusive prefix $P_c$): the thread of the tile 4 (shaded) adds on the left
 the aggregates of the tiles 3, 2 and 1 and stops at the prefix of the tile
 0; then it publishes $P_4$. Meanwhile the tile 3 has published its prefix,
 at which the look-back of the tile 5 will stop at
-once.](../figures/parallel-scan.svg)
+once.](../figures/parallel-scan.svg){#fig-25-2}
 
 <span id="alg-25-10"></span>**Algorithm 25.10.** The inclusive and the
 exclusive scans by decoupled look-back ([Merrill and Garland
@@ -665,10 +665,10 @@ before $( x , j , m )$, those $\le x$ in the ranges $i < j$ and those $< x$
 in the ranges $i > j$. If they are fewer than $r$, $x$ and all of them go to
 the left, otherwise to the right.
 
-<span id="fig-25-3"></span> ![Figure 25.3. Three sorted ranges and the
+![Figure 25.3. Three sorted ranges and the
 splits at the ranks 4 (dashed) and 9 (solid) of their stable merge, which
 bound three parts of the output (shaded alike); the two items 4 come from
-$R_1$ first.](../figures/parallel-merge.svg)
+$R_1$ first.](../figures/parallel-merge.svg){#fig-25-3}
 
 <span id="alg-25-11"></span>**Algorithm 25.11.** The multisequence selection
 and the parallel merge ([Varman et al.
@@ -777,12 +777,12 @@ in a buffer of $n$ items, and a second parallel loop moves them there
 --8<-- "generated/ParallelSort-places.cpp"
 ```
 
-<span id="fig-25-4"></span> ![Figure 25.4. The distribution of 12 items in
+![Figure 25.4. The distribution of 12 items in
 $B = 3$ blocks into $k = 3$ buckets (the letter of an item is its bucket,
 its number its order in $A$): the counts of each block per bucket, their
 prefix sums in the order (bucket, block), which are the places of the first
 item of each block in each bucket, and the buffer after the
-moves.](../figures/parallel-distribute.svg)
+moves.](../figures/parallel-distribute.svg){#fig-25-4}
 
 <span id="lem-25-10"></span>**Lemma 25.10.** *The distribution is stable:
 two items of one bucket keep in the buffer the order they had in $A$.*
@@ -1623,13 +1623,13 @@ becomes passive, and subtracts 1. Note that the messages still in an outbox
 are not counted; their sender, however, is active, and it becomes passive
 only after it has pushed them.
 
-<span id="fig-25-5"></span> ![Figure 25.5. `MeshChannels` for $p = 3$
+![Figure 25.5. `MeshChannels` for $p = 3$
 workers, the queue $Q_{f t}$ of the sender $f$ to the receiver $t$ in the
 row $t$, and a `Mailbox` on it: the outbox of the worker 0 for the worker 1
 and the queue $Q_{01}$ (shaded on the left) before and after the push of a
 batch of three messages, which adds 3 to the counter $C$ (3 at the start,
 all the workers active) before the messages enter the
-queue.](../figures/parallel-mailbox.svg)
+queue.](../figures/parallel-mailbox.svg){#fig-25-5}
 
 ```cpp
 --8<-- "generated/Mailbox-push.cpp"

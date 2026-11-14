@@ -682,7 +682,7 @@ lexicographic order and $g( x , y )$ the sequence $( y )$ (with $c$ copies
 of $y$ for a point of multiplicity $c$); $\oplus$ is the merge of two
 sorted sequences, whose identity is the empty one. The augmentation of a
 node is then the sorted sequence of the ordinates of its subtree, as in the
-range tree of [Bentley 1980](Z-bibliography.md#ref-bentley1980), while the
+range tree of [Bentley 1980](Z-bibliography.md#ref-bentley1980dc), while the
 map orders the points by $x$ ([Figure 16.5](16-geometry.md#fig-16-5)).
 
 <span id="lem-16-10"></span>**Lemma 16.10.** *A `RangeTree` of $n$ points
@@ -712,7 +712,7 @@ and `lowest()` and `max()` in the others:
 
 <span id="alg-16-8"></span>**Algorithm 16.8.** The count of the points in
 a rectangle, on the range tree of [Bentley
-1980](Z-bibliography.md#ref-bentley1980) built as an augmented map.
+1980](Z-bibliography.md#ref-bentley1980dc) built as an augmented map.
 
 --8<-- "generated/RangeTree-count.pseudo.md"
 
@@ -783,7 +783,7 @@ would need the adaptive predicates of the robust geometric libraries, which
 ADS does not have.
 
 The range tree is from [Bentley 1979](Z-bibliography.md#ref-bentley1979)
-and [Bentley 1980](Z-bibliography.md#ref-bentley1980), the interval tree
+and [Bentley 1980](Z-bibliography.md#ref-bentley1980dc), the interval tree
 from [Edelsbrunner 1980](Z-bibliography.md#ref-edelsbrunner1980), and the
 priority search tree from [McCreight
 1985](Z-bibliography.md#ref-mccreight1985). Writing both structures as

@@ -7,8 +7,8 @@
 #                                                                             #
 # - <out>/<File>-<name>.cpp, the code between the markers //! [name] of a .h  #
 #   or .tpp (the markers of \snippet of Doxygen), dedented, without the       #
-#   contracts (ADS_PRE, ADS_POST, ADS_INVARIANT) and the [[maybe_unused]]     #
-#   copies that only they read, since the text states them;                   #
+#   contracts (ADS_PRE, ADS_POST, ADS_INVARIANT, ADS_AUDIT) and the          #
+#   [[maybe_unused]] copies that only they read, since the text states them;  #
 # - <out>/<File>-<name>.pseudo.md, each pseudocode of the comments (the      #
 #   \f[ \class{pseudocode}{...} \f] blocks of the conventions of             #
 #   docs/STYLE.md) as a display formula of the Markdown, named after its     #
@@ -16,6 +16,9 @@
 #   the comment), after <Class>- for a member function of a class not named  #
 #   as the file, with -2, -3, ... for the same name in the same header; the   #
 #   columns r@{\quad}l become rl, since KaTeX does not know @{}.              #
+#                                                                             #
+# Two headers with the same name in different folders could write the same   #
+# file: snarf.py stops with an error if they do.                              #
 #                                                                             #
 # Usage: python3 snarf.py <include folder> <out folder>                       #
 ###############################################################################
@@ -26,10 +29,12 @@ import sys
 
 MARK = re.compile(r"^\s*//! \[([A-Za-z0-9_-]+)\]\s*$")
 CONTRACT = re.compile(
-    r"^\s*(ADS_PRE|ADS_POST|ADS_INVARIANT)\s*\(|^\s*\[\[maybe_unused\]\]")
+    r"^\s*(ADS_PRE|ADS_POST|ADS_INVARIANT|ADS_AUDIT)\s*\(|"
+    r"^\s*\[\[maybe_unused\]\]")
 DOC = re.compile(r"^\s*///\s?(.*)$")
 NAME = re.compile(r"(operator\s*\S+?|~?[A-Za-z_]\w*)\s*\(")
-CLASS = re.compile(r"^(?:class|struct)\s+(\w+)[^;]*$")
+CLASS = re.compile(
+    r"^(?:class|struct)\s+(?:alignas\s*\([^)]*\)\s*)?(\w+)[^;]*$")
 FNAME = re.compile(
     r"\\textbf\{(?:function|procedure)\}\\?\s*\\mathrm\{(\w+)\}")
 
@@ -124,18 +129,26 @@ def pseudo_snippets(path):
 def main():
     src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
     dst.mkdir(parents=True, exist_ok=True)
+    written = {}
+
+    def write(out, text, path):
+        if out in written and written[out] != path:
+            sys.exit(f"{out}: written by {written[out]} and by {path}")
+        written[out] = path
+        out.write_text(text, encoding="utf-8")
+
     for path in sorted(src.rglob("*")):
         if path.suffix not in (".h", ".tpp"):
             continue
         for name, lines in code_snippets(path).items():
-            out = dst / f"{path.stem}-{name}.cpp"
-            out.write_text("\n".join(clean(lines)) + "\n", encoding="utf-8")
+            write(dst / f"{path.stem}-{name}.cpp",
+                  "\n".join(clean(lines)) + "\n", path)
         if path.suffix != ".h":
             continue
         for name, formula in pseudo_snippets(path).items():
-            out = dst / f"{path.stem}-{name}.pseudo.md"
             formula = formula.replace(r"{r@{\quad}l}", "{rl}")  # KaTeX
-            out.write_text("$$\n" + formula + "\n$$\n", encoding="utf-8")
+            write(dst / f"{path.stem}-{name}.pseudo.md",
+                  "$$\n" + formula + "\n$$\n", path)
 
 
 if __name__ == "__main__":

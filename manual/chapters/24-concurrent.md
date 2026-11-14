@@ -59,8 +59,7 @@ operations on a queue. The push of `b` ends before the pop starts, while
 the push of `a` overlaps both; the answer `b` of the pop is explained by
 the order of the points push(`b`), push(`a`), pop.
 
-<span id="fig-24-1"></span>
-![Figure 24.1. Three operations of three threads on a FIFO queue, each an interval from its invocation to its response, with its linearization point (the dot); the order of the points, push(b), push(a), pop, explains the answer b of the pop.](../figures/concurrent-linearizability.svg)
+![Figure 24.1. Three operations of three threads on a FIFO queue, each an interval from its invocation to its response, with its linearization point (the dot); the order of the points, push(b), push(a), pop, explains the answer b of the pop.](../figures/concurrent-linearizability.svg){#fig-24-1}
 
 We call an implementation *blocking* if a thread stopped in the middle of an
 operation (descheduled by the system, or simply "slow") may keep the other
@@ -180,8 +179,7 @@ index it copies; hence it can only make the queue look fuller or emptier
 than it is. [Figure 24.2](24-concurrent.md#fig-24-2) shows the vector
 before and after a push, with both copies stale and neither of them read.
 
-<span id="fig-24-2"></span>
-![Figure 24.2. An `SPSCQueue` of capacity 8 with the items `b`, `c`, `d`, before and after `push(e)`; the producer writes the place $t \bmod 8$ and then the tail, and the copies $\mathit{seen}_P$ of the head and $\mathit{seen}_C$ of the tail, both stale, are not read, since the queue looks neither full to the producer nor empty to the consumer.](../figures/concurrent-spsc.svg)
+![Figure 24.2. An `SPSCQueue` of capacity 8 with the items `b`, `c`, `d`, before and after `push(e)`; the producer writes the place $t \bmod 8$ and then the tail, and the copies $\mathit{seen}_P$ of the head and $\mathit{seen}_C$ of the tail, both stale, are not read, since the queue looks neither full to the producer nor empty to the consumer.](../figures/concurrent-spsc.svg){#fig-24-2}
 
 <span id="alg-24-1"></span>**Algorithm 24.1.** The push and the pop of
 `SPSCQueue` ([Lamport 1983](Z-bibliography.md#ref-lamport1983), with the
@@ -295,8 +293,7 @@ time. All the lanes form a list built by the push of Treiber of
 [§24.4](24-concurrent.md#sec-24-4), and they live as long as the queue,
 also when their producer is gone and its items are still to be taken.
 
-<span id="fig-24-3"></span>
-![Figure 24.3. An `MPSCQueue` with two lanes of blocks of 4 places; $f$ is the count of the items written in a block, the consumer reads from the place below its arrow and the producer writes at the place under its own; the first lane has a block that the consumer gave back, on the stack from which the producer takes its next block.](../figures/concurrent-mpsc.svg)
+![Figure 24.3. An `MPSCQueue` with two lanes of blocks of 4 places; $f$ is the count of the items written in a block, the consumer reads from the place below its arrow and the producer writes at the place under its own; the first lane has a block that the consumer gave back, on the stack from which the producer takes its next block.](../figures/concurrent-mpsc.svg){#fig-24-3}
 
 <span id="alg-24-2"></span>**Algorithm 24.2.** The operations of
 `MPSCQueue` (the list of bounded buffers of [Aldinucci et al.
@@ -362,8 +359,7 @@ $O( k )$ time for the $k$ messages taken, and the consumer never competes
 with the producers on single items. This inbox suits the messages that
 usually come in bursts, at the price of an allocation per message.
 
-<span id="fig-24-4"></span>
-![Figure 24.4. The stack of an `MPSCInbox` before and after `push(d)`, whose compare-and-swap links the new cell above the top it read, and after `take()`, which exchanges the top with nil and returns the messages reversed, in the order of sending.](../figures/concurrent-inbox.svg)
+![Figure 24.4. The stack of an `MPSCInbox` before and after `push(d)`, whose compare-and-swap links the new cell above the top it read, and after `take()`, which exchanges the top with nil and returns the messages reversed, in the order of sending.](../figures/concurrent-inbox.svg){#fig-24-4}
 
 <span id="alg-24-3"></span>**Algorithm 24.3.** The push and the take of
 `MPSCInbox` ([Treiber 1986](Z-bibliography.md#ref-treiber1986)).
@@ -416,8 +412,7 @@ and frees the place by storing $q + c$
 separate lines, and producers and consumers meet only at the places they
 share, with one read-modify-write per operation.
 
-<span id="fig-24-5"></span>
-![Figure 24.5. An `MPMCQueue` of capacity 4 with the items of the indices 5 and 6, before and after a push that claims the index 7: the place 3 held the sequence 7 (free for the index 7), and the push writes the item and then the sequence 8; the place 0 holds the sequence 8, i.e., it waits for the push of the index 8.](../figures/concurrent-mpmc.svg)
+![Figure 24.5. An `MPMCQueue` of capacity 4 with the items of the indices 5 and 6, before and after a push that claims the index 7: the place 3 held the sequence 7 (free for the index 7), and the push writes the item and then the sequence 8; the place 0 holds the sequence 8, i.e., it waits for the push of the index 8.](../figures/concurrent-mpmc.svg){#fig-24-5}
 
 <span id="alg-24-4"></span>**Algorithm 24.4.** The push and the pop of
 `MPMCQueue` ([Vyukov 2010](Z-bibliography.md#ref-vyukov2010)); $C[ i ]$ is
@@ -486,8 +481,7 @@ $[ t , b )$, at the places of their indices modulo the size of the vector
 of relaxed order, and their type must therefore be trivially copyable
 (e.g., an index or a pointer to a task).
 
-<span id="fig-24-6"></span>
-![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $[ t , b ) = [ 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the shaded cell is the place that the operation empties.](../figures/concurrent-deque.svg)
+![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $[ t , b ) = [ 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the shaded cell is the place that the operation empties.](../figures/concurrent-deque.svg){#fig-24-6}
 
 <span id="alg-24-5"></span>**Algorithm 24.5.** The operations of
 `WorkStealingDeque` ([Chase and Lev 2005](Z-bibliography.md#ref-chase2005),
@@ -595,8 +589,7 @@ of the parent of the larger ([Figure 24.7](24-concurrent.md#fig-24-7)). The
 compare-and-swap fails only if another thread hooked that root first, and
 it is then tried again from the roots found anew.
 
-<span id="fig-24-7"></span>
-![Figure 24.7. A `ConcurrentUnionFind` before and after `unite(6, 5)`: the splitting of `find(6)` gives 6 its grandparent 3, `find(5)` finds the root 0, and the larger root 3 is hooked under the smaller root 0; the shaded elements are those whose parent changed.](../figures/concurrent-unionfind.svg)
+![Figure 24.7. A `ConcurrentUnionFind` before and after `unite(6, 5)`: the splitting of `find(6)` gives 6 its grandparent 3, `find(5)` finds the root 0, and the larger root 3 is hooked under the smaller root 0; the shaded elements are those whose parent changed.](../figures/concurrent-unionfind.svg){#fig-24-7}
 
 <span id="alg-24-6"></span>**Algorithm 24.6.** The operations of
 `ConcurrentUnionFind`: the splitting and the linking by index of [Jayanti
@@ -705,8 +698,7 @@ compare-and-swap from an even value after a spin on plain loads, with the
 pause of the processor and, after 64 rounds, a yield to the system
 ([Figure 24.8](24-concurrent.md#fig-24-8)).
 
-<span id="fig-24-8"></span>
-![Figure 24.8. A `ConcurrentCuckooTable` of 16 buckets in 4 regions of 4 buckets, each with the version $v$ of its lock (odd, as that of the region 1, while a writer holds it); the two buckets $b_1$ and $b_2$ of a key lie in its region, so that an operation on the key takes one lock.](../figures/concurrent-cuckoo.svg)
+![Figure 24.8. A `ConcurrentCuckooTable` of 16 buckets in 4 regions of 4 buckets, each with the version $v$ of its lock (odd, as that of the region 1, while a writer holds it); the two buckets $b_1$ and $b_2$ of a key lie in its region, so that an operation on the key takes one lock.](../figures/concurrent-cuckoo.svg){#fig-24-8}
 
 An operation on a key takes one lock, that of its region. The cuckoo path
 of an insertion never leaves the region; it is searched in breadth, and its
@@ -904,8 +896,7 @@ the insertion takes effect when the tag of its word is written
 tags, since a tag would add a third miss to the two of a key found in its
 node.
 
-<span id="fig-24-9"></span>
-![Figure 24.9. The tags (upper row, 0 for a place free or not yet tagged) and the words (lower row) of a `ConcurrentFlatTable` of 12 places, before and after the insertion of a key $k$ whose place is 5: the insertion passes the places 5 to 7, which hold other keys, writes $k$ into the free place 8 by a compare-and-swap, and then its tag.](../figures/concurrent-flat.svg)
+![Figure 24.9. The tags (upper row, 0 for a place free or not yet tagged) and the words (lower row) of a `ConcurrentFlatTable` of 12 places, before and after the insertion of a key $k$ whose place is 5: the insertion passes the places 5 to 7, which hold other keys, writes $k$ into the free place 8 by a compare-and-swap, and then its tag.](../figures/concurrent-flat.svg){#fig-24-9}
 
 <span id="alg-24-8"></span>**Algorithm 24.8.** The insertion and the
 lookup of `ConcurrentFlatTable` (the folklore table of [Maier et al.
@@ -1007,7 +998,7 @@ $$
 cost $O( 1 )$ amortized time per insertion.*
 
 *Proof.* We take the two averages of linear probing ([Knuth 1998,
-§6.4](Z-bibliography.md#ref-knuth1998)), increasing in $\alpha$, taken at
+§6.4](Z-bibliography.md#ref-knuth1998v3)), increasing in $\alpha$, taken at
 $\alpha = 1/2$. A growth copies each word of the old vector once, and the
 sizes double; hence the copies are at most twice the insertions, as in
 [Lemma 24.6](24-concurrent.md#lem-24-6). $\square$
@@ -1060,8 +1051,7 @@ and no thread waits for a lock. With $n = 1$ the queue is exact, a
 priority queue under one lock, which is typically used for testing and for
 comparison.
 
-<span id="fig-24-10"></span>
-![Figure 24.10. A `MultiQueue` of four queues, each with its minimum $\mathit{top}$, read without locks, and its deletion buffer $D$ (the least pair on the right); a pop that draws the queues 1 and 3 takes the key 4 from the better one, while the keys 2 and 3 are in the other queues: its rank error is 2.](../figures/concurrent-multiqueue.svg)
+![Figure 24.10. A `MultiQueue` of four queues, each with its minimum $\mathit{top}$, read without locks, and its deletion buffer $D$ (the least pair on the right); a pop that draws the queues 1 and 3 takes the key 4 from the better one, while the keys 2 and 3 are in the other queues: its rank error is 2.](../figures/concurrent-multiqueue.svg){#fig-24-10}
 
 <span id="alg-24-9"></span>**Algorithm 24.9.** The push and the pop of
 `MultiQueue::Handle` ([Rihani et al. 2015](Z-bibliography.md#ref-rihani2015),
@@ -1215,8 +1205,7 @@ a fence. Only if there are waiters does it advance the epoch and set $w$ to
 the woken threads are still on their way, find no thread to wake and cost
 no system call.
 
-<span id="fig-24-11"></span>
-![Figure 24.11. The word of the epoch $e$ and of the waiters $w$ of an `EventCount`, and the copy $E$ of the epoch, after `prepareWait()` of a waiter, which then sleeps while $E = 5$, and after `notify()`, which advances the epoch, withdraws the waiter and wakes it.](../figures/concurrent-eventcount.svg)
+![Figure 24.11. The word of the epoch $e$ and of the waiters $w$ of an `EventCount`, and the copy $E$ of the epoch, after `prepareWait()` of a waiter, which then sleeps while $E = 5$, and after `notify()`, which advances the epoch, withdraws the waiter and wakes it.](../figures/concurrent-eventcount.svg){#fig-24-11}
 
 <span id="alg-24-10"></span>**Algorithm 24.10.** The operations of
 `EventCount` (after [Reed and Kanodia 1979](Z-bibliography.md#ref-reed1979));
@@ -1368,8 +1357,7 @@ takes the better of the two least pairs. A thief takes the heap whose least
 pair is not the least of the queue, and the owner thus keeps its best pair
 and its next pop ([Figure 24.12](24-concurrent.md#fig-24-12)).
 
-<span id="fig-24-12"></span>
-![Figure 24.12. A `StealablePriorityQueue` whose owner pushed the keys 1 to 8, dealt to its two heaps (in the order of a 4-ary heap); `serve()` moves into the offer the heap whose least key 2 is not the least of the queue, and a thief claims it by an exchange and deals its pairs to two heaps of its own.](../figures/concurrent-spq.svg)
+![Figure 24.12. A `StealablePriorityQueue` whose owner pushed the keys 1 to 8, dealt to its two heaps (in the order of a 4-ary heap); `serve()` moves into the offer the heap whose least key 2 is not the least of the queue, and a thief claims it by an exchange and deals its pairs to two heaps of its own.](../figures/concurrent-spq.svg){#fig-24-12}
 
 As to the price, a queue whose pairs a thief may take at any time makes its
 owner race the thieves at each pop. By the laws of order of [Attiya et al.
