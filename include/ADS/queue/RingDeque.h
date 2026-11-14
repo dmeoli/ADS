@@ -35,7 +35,7 @@
  * doubling moves them by `memcpy()`, where Morin's `ArrayDeque` builds its
  * new array by default and assigns the items one by one; the deque does not
  * shrink, so that a queue whose size oscillates never reallocates, where
- * Morin's resizes whenever \f$ 3 n \le m \f$.
+ * Morin's resizes whenever \f$ 3 n < m \f$.
  *
  * The contracts [see `Contract.h`]: `front()`, `back()` and the removals
  * need a deque that is not empty, and `operator[]` a rank below `size()`;
@@ -394,9 +394,9 @@ class RingDeque {
 
  /// the item of rank \f$ i \f$ moved to the rank \f$ ( i + r ) \bmod n \f$,
  /// for every \f$ i \f$: \f$ O( 1 ) \f$ time when the vector is full, the
- /// head alone moving, and \f$ O( 1 + \min\{ r , n - r \} ) \f$ otherwise,
- /// the items moved one by one from one end to the other (exercise 2.5 of
- /// Morin's book)
+ /// two counters alone moving, and \f$ O( 1 + \min\{ r , n - r \} ) \f$
+ /// otherwise, the items moved one by one from one end to the other
+ /// (exercise 2.5 of Morin's book)
  ///
  /// In pseudocode (Morin, exercise 2.5), \f$ r \f$ reduced modulo
  /// \f$ n \f$:

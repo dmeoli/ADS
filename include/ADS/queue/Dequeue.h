@@ -10,8 +10,8 @@
  *
  * The contracts [see `Contract.h`]: `removeHead()`, `removeTail()`,
  * `head()` and `tail()` need a dequeue that is not empty, and the insertions
- * ensure one that is not, with the item at the end where it was put. The
- * operations are defined in `Dequeue.tpp`.
+ * ensure one that is not. A removal copies the item, which the list reads
+ * before it removes its cell. The operations are defined in `Dequeue.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 4.9,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
