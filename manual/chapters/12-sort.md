@@ -45,6 +45,19 @@ stack. A sort *by comparisons* learns about the items only through `less`,
 and works therefore with any order. The sorts *by digits* (counting,
 pigeonhole and radix sorts) read the keys as integers or strings instead,
 and are not bound by the lower bound of [§12.2](12-sort.md#sec-12-2).
+Unless the text says otherwise, a sort of the library sorts a
+`std::vector` in place, with the comparator as its last parameter but the
+optional counters, e.g.,
+
+```cpp
+template< class T , class C = std::less<> >
+void sort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void stableSort( std::vector< T > & A , C less = C() );
+```
+
+so that `ADS::sort( A )` sorts $A$ in increasing order and
+`ADS::sort( A , std::greater<>() )` in decreasing order.
 [Table 12.1](12-sort.md#tab-12-1) fixes the symbols that the rest of the
 chapter uses.
 
@@ -464,7 +477,20 @@ sorted recursively and then merged ([Algorithm
 12.6](12-sort.md#alg-12-6)). The merge, `mergeParts()`, the Merge() of the
 book, writes into a vector $B$ allocated once by `mergeSort()` the smaller
 of the first items of the two halves, until one of them runs out, and then
-copies the merged items back.
+copies the merged items back. The recursion is `mergeSortRec()`, which
+the other two call:
+
+```cpp
+template< class T , class C = std::less<> >
+void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 ,
+                C less = C() );
+template< class T , class C = std::less<> >
+void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
+                   std::size_t start , std::size_t end , std::size_t cutoff ,
+                   C less = C() , long long * inv = nullptr );
+template< class T , class C = std::less<> >
+long long countInversions( std::vector< T > & A , C less = C() );
+```
 
 <span id="alg-12-6"></span>**Algorithm 12.6.** Merge Sort and its merge
 ([Montresor 2025, §2.7.3](Z-bibliography.md#ref-montresor2025)), with the
@@ -480,11 +506,7 @@ cutoff of section 2.8. The counter $\mathit{inv}$ is used by
 Its code follows the pseudocode. We remark that the test is `!
 less( A[ j ] , A[ i ] )`: an item of the left half goes first
 when the two are equal, which makes the merge, and hence the sort, stable,
-and that the items are moved, not copied:
-
-```cpp
---8<-- "generated/MergeSort-merge.cpp"
-```
+and that the items are moved, not copied.
 
 When the right half runs out first, the rest of the left one is copied to
 $B$. When the left one does, the rest of the right one is already in its
@@ -603,7 +625,8 @@ in the left part are exactly those larger than it (the smaller or equal
 ones were taken before it), i.e., $\mathit{mid} - i + 1$ items, each of
 which forms an inversion with it. $\square$
 
-The strand sort of `StrandSort.h` ([Knuth 1998,
+The strand sort of `StrandSort.h`, `strandSort( L , less , strands )`, which
+counts the strands in `*strands` if given ([Knuth 1998,
 §5.2.4](Z-bibliography.md#ref-knuth1998v3), exercise 12) is a variant of
 the natural merge sort on a `List`: a *strand*, i.e., the first item and
 every later one not smaller than the last item taken, is pulled out of the
@@ -654,9 +677,15 @@ first bit in which the midpoints of the two runs, as fractions of $n$,
 differ. The function `nodePower()` computes it from twice the midpoints, one
 bit at a time:
 
-```cpp
---8<-- "generated/RunSorts-nodePower.cpp"
-```
+--8<-- "generated/RunSorts-nodePower.pseudo.md"
+
+Here $l / 2 n$ and $r / 2 n$ are the two midpoints, and the test of line 3
+compares their $( k + 1 )$-th bits, which are $[ l \ge n ]$ and
+$[ r \ge n ]$ after the first $k$ bits have been removed by lines 4 and 5.
+The loop keeps $0 \le l < r < 2 n$, and each step doubles $r - l$ (the
+subtraction of line 4 leaves it unchanged); since the two bits differ as
+soon as $r - l \ge n$, the loop ends after at most
+$\lceil \log_2 n \rceil$ steps.
 
 The runs wait on a stack whose powers increase upwards, and a new boundary
 first merges the runs on the stack whose power is larger than its own. Hence
@@ -749,11 +778,7 @@ $x$ are smaller than it and those after it are not, and the two parts are
 then sorted recursively ([Algorithm 12.10](12-sort.md#alg-12-10)). It scans
 the part once, keeping $A[ \mathit{start} + 1 .. j ]$ the
 items smaller than $x$ seen so far. Each smaller item is swapped to the
-place $j + 1$:
-
-```cpp
---8<-- "generated/QuickSort-partition.cpp"
-```
+place $j + 1$.
 
 <span id="alg-12-10"></span>**Algorithm 12.10.** The partition and
 Quicksort ([Montresor 2025, §12.2](Z-bibliography.md#ref-montresor2025)).
@@ -967,11 +992,7 @@ value given. When two gas items are compared, one of them is frozen to the
 next value, the smallest still free, and the adversary prefers to freeze the
 item that was last compared with a frozen one, i.e., the candidate for the
 pivot, since a quicksort compares its pivot with all the other items of its
-part ([Algorithm 12.12](12-sort.md#alg-12-12)):
-
-```cpp
---8<-- "generated/QuicksortAdversary-QuicksortAdversary-less.cpp"
-```
+part ([Algorithm 12.12](12-sort.md#alg-12-12)).
 
 <span id="alg-12-12"></span>**Algorithm 12.12.** The comparator of the
 adversary ([McIlroy 1999](Z-bibliography.md#ref-mcilroy1999)); $v[ x ]$ is
@@ -1072,12 +1093,8 @@ blocks, as in the BlockQuicksort of [Edelkamp and Weiß
 2016](Z-bibliography.md#ref-edelkamp2016): the items to swap, i.e., those
 on the left that belong to the right and those on the right that belong to
 the left, are first collected, 64 at a time, as offsets by an increment with
-no branch,
-
-```cpp
---8<-- "generated/EngineeredQuickSorts-blocks.cpp"
-```
-
+no branch (the offset of the item $A[ i ]$ is written at the end of the
+buffer, and the end advances by the outcome of the comparison, 0 or 1),
 and then moved along a cycle, or swapped in pairs when the two blocks have
 as many (the first with the last, so that a part in reverse order leaves
 both its sides sorted, which the insertion sort above then finds in
@@ -1249,11 +1266,7 @@ $i = | \{ h : s_h \le x \} |$ by $\log_2 k$ steps
 $j \gets 2 j + [ t_j \le x ]$ from $j = 1$, and $i = j - k$ at the end
 ([Figure 12.6](12-sort.md#fig-12-6)): an addition per step and no branch,
 hence no comparison mispredicted. Also, four items go down the tree
-together, and their loads overlap:
-
-```cpp
---8<-- "generated/SampleSort-classify.cpp"
-```
+together, one level of the four at a time, and their loads overlap.
 
 ![Figure 12.6. The classification of `sampleSort()` with $k = 8$ buckets and the splitters $10 , 20 , \ldots , 70$ laid out as a tree in $t[ 1 .. 7 ]$ (the indices above the nodes): $x = 55$ follows $j \gets 2 j + [ t_j \le x ]$ along the nodes in violet and lands in the bucket $13 - 8 = 5$, the number of splitters not larger than 55.](../figures/sort-samplesort.svg){#fig-12-6}
 
@@ -1370,11 +1383,7 @@ swapping it with its larger child, when the subtrees of the children are
 max-heaps in $A[ 0 .. \mathit{dim} - 1 ]$. It is a loop, not the recursion
 of the book (exercise 10.4 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025)), so that the sort uses $O( 1 )$
-extra space:
-
-```cpp
---8<-- "generated/Heapsort-maxHeapRestore.cpp"
-```
+extra space.
 
 <span id="alg-12-18"></span>**Algorithm 12.18.** The restoration of a
 max-heap, its construction from the bottom up, and heapsort ([Montresor
@@ -1626,10 +1635,11 @@ the numbers: the sign bit flipped for a signed integer (exercise 11.13 of
 [Morin 2013](Z-bibliography.md#ref-morin-cpp), whose radix sort takes the
 unsigned integers only), and for a floating point number all the bits
 flipped if it is negative and the sign bit otherwise ([Herf
-2001](Z-bibliography.md#ref-herf2001)):
+2001](Z-bibliography.md#ref-herf2001)). The key is the unsigned integer
+of the width of the type, and it is declared as
 
 ```cpp
---8<-- "generated/RadixSort-radixKey.cpp"
+template< RadixKey T > auto radixKey( T x );
 ```
 
 <span id="lem-12-18"></span>**Lemma 12.18.** *For numbers of the same type,
@@ -1652,11 +1662,10 @@ numbers by bytes.
 --8<-- "generated/RadixSort-radixSort.pseudo.md"
 
 A pass scatters the items from one array into the other by the prefix sums
-of the counts of its byte, as in the stable counting sort above:
-
-```cpp
---8<-- "generated/RadixSort-scatter.cpp"
-```
+of the counts of its byte, as in the stable counting sort above: the
+count of each value of the byte becomes the place of the first item with
+that value, and each item, in order, goes to the place of its value, which
+then advances by one.
 
 Three refinements make the passes fewer and cheaper. A first sweep finds
 the bytes in which some keys differ, and only those make a pass; small keys
