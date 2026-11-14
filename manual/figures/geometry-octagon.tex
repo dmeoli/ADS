@@ -1,9 +1,9 @@
 % Source for the figure of convexHull() (sec. 16.2): 58 random points, the
 % octagon of their extreme points in the eight directions (faintest tint; 7
 % distinct vertices), the points strictly inside it, which the filter drops
-% (light), the ones it keeps (violet), and the hull (dashed). Written by a
-% script that applies the rules of ConvexHull.tpp. Build: make figures (in
-% ../build).
+% (light), the ones it keeps (violet), and the hull (dashed). The nodes are
+% in the order of the input, which decides the ties of the extreme points.
+% Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -14,7 +14,7 @@
 \tikzset{
   ext/.style={node-touched,minimum width=2.4mm,minimum height=2.4mm,
               rounded corners=0.5pt},
-  kept/.style={vertex-touched,minimum size=1.8mm},
+  kept/.style={point-touched,minimum size=1.8mm},
   drop/.style={point,minimum size=1.6mm}
 }
 \begin{document}

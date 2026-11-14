@@ -23,21 +23,23 @@
  *   angle that needs no arctangent (exercise 16.1);
  * - `convexHull()`, beyond the book, the engineered hull: the extreme points
  *   in the eight directions of the axes and of the diagonals (the minimum and
- *   the maximum of \f$ x \f$, \f$ y \f$, \f$ x + y \f$ and \f$ x - y \f$) are
- *   vertices of the hull, in counterclockwise order, and a point strictly
- *   inside their octagon (on the left of each of its edges, 8 cross products
- *   at most) is no vertex: one pass drops it (the heuristic of Akl and
- *   Toussaint). The \f$ k \f$ points left, each made a key of 64 bits
+ *   the maximum of \f$ x \f$, \f$ y \f$, \f$ x + y \f$ and \f$ x - y \f$) lie
+ *   on the boundary of the hull, in counterclockwise order (each is a vertex
+ *   unless a tie leaves it inside an edge), and a point strictly inside their
+ *   octagon (on the left of each of its edges, 8 cross products at most) is
+ *   no vertex: one pass drops it (the heuristic of Akl and Toussaint). The
+ *   \f$ k \f$ points left, each made a key of 64 bits
  *   \f$ ( x + 2^{31} ) 2^{32} + ( y + 2^{31} ) \f$, whose order is the one
- *   by \f$ x \f$ and then \f$ y \f$, are sorted by the radix sort of ADS [see
- *   `Sort.h`] in \f$ O( k ) \f$ (at most 8 passes of bytes), and the lower
- *   and the upper chain of the monotone chain of Andrew pop the points that
- *   make a turn not to the left, each point pushed and popped at most once,
- *   \f$ O( k ) \f$: in all \f$ O( n + k ) \f$, \f$ k \le n \f$; for points
- *   uniform in a square or in a disk the octagon leaves a vanishing fraction
- *   of them, and the expected time is \f$ O( n ) \f$ (Devroye and
- *   Toussaint). The vertices come in the order and from the point of
- *   `graham()`.
+ *   by \f$ x \f$ and then \f$ y \f$, are sorted by `sort()` [see `Sort.h`],
+ *   \f$ O( k \log k ) \f$, \f$ O( k ) \f$ when it takes the radix sort (at
+ *   most 8 passes of bytes), and the lower and the upper chain of the
+ *   monotone chain of Andrew pop the points that make a turn not to the
+ *   left, each point pushed and popped at most once, \f$ O( k ) \f$: in all
+ *   \f$ O( n + k \log k ) \f$, \f$ k \le n \f$; for points uniform in a
+ *   square the octagon leaves a vanishing fraction of them, and the expected
+ *   time is \f$ O( n ) \f$ (Devroye and Toussaint), whereas in a disk about
+ *   \f$ 1 - 2 \sqrt{2} / \pi \approx 10\% \f$ of them survive. The vertices
+ *   come in the order and from the point of `graham()`.
  *
  * The contracts [see `Contract.h`]: the pseudo-angle is in \f$ [ 0 , 4 ) \f$,
  * and the hulls are convex, counterclockwise, made of input points and
