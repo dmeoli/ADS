@@ -2719,6 +2719,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- PageHeap reserved one more place in the vector of its segments before
+  each new segment, so that the s-th segment copied the s - 1 addresses
+  before it, a quadratic cost in all; the room now doubles when the vector
+  is full, still reserved before the segment is allocated, fewer than 2 s
+  copies for s segments, as chapter 5 of the manual says; the test memory
+  page-heap-segments counts the allocations of the vector
+
 - UniqueQueue< T , FORGET_OLD >::enqueue() of an item already in the queue
   removed the old copy and called itself, which scanned the list a second
   time, up to 2 n - 1 comparisons; the item, now the only copy, goes to the

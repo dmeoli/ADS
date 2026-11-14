@@ -588,6 +588,7 @@ engineered_queues  stealable-pq-bound-threads bound minimo con i ladri
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura
 memory  size-class-allocator  allocatore per classi di misura
 memory  pool-raw-slots        posti del pool senza costruzione
+memory  page-heap-segments    segmenti dello heap di pagine, per raddoppio
 
 # the engineered paths of the rearrangements, beyond the book
 sequences  dutch-flag-branchless  bandiera olandese senza salti

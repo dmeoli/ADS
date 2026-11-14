@@ -672,10 +672,13 @@ current, and each operation on $A_c$ is the pop or the push of a stack.
 A page has $\lfloor ( 2^{16} - 64 ) / b \rfloor$ slots of $b$ bytes, and
 the rest is less than $b$. $\square$
 
-The vector of the segments grows by one place at a time, and the append of
-the $s$-th segment may thus copy the $s - 1$ addresses before it; this cost
-belongs to the allocation of a segment (cf. [Lemma 5.7](05-memory.md#lem-5-7)), and is
-negligible next to the 32 pages that each segment serves.
+The place of a new segment in the vector of the segments is reserved before
+the segment is allocated, so that the append that follows cannot fail and
+lose it; when the vector is full, its room doubles. Thus $s$ segments copy
+fewer than $2 s$ addresses in all, i.e., $O( 1 )$ amortized time per
+segment, a cost that belongs to the allocation of a segment (cf. [Lemma
+5.7](05-memory.md#lem-5-7)) and is negligible next to the 32 pages that
+each segment serves.
 
 `PoolResource<M>` serves the requests of $1 \le b \le M$ bytes aligned to
 $a \le 16$ (the test `pooled(b, a)`) from a `PageHeap` of $M / 8$
