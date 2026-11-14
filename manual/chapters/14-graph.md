@@ -929,8 +929,9 @@ alone makes the choices of [Lemma 14.9](14-graph.md#lem-14-9).*
 *Proof.* An open node has a number below $i$, and $i - 1$ counts the open
 nodes, which are at most the $c + 1$ names of the $N$ not closed, the
 closed ones being $N - 1 - c$; the closed nodes have the numbers
-$c + 1 , \ldots , N - 1$ of their components. Thus a closed node never
-lowers an open one, as the test $y \in S$ of
+$c + 1 , \ldots , N - 1$ of their components. The two ranges meet at most
+in $c + 1$, and the test $\mathit{rindex}[ v ] < \mathit{rindex}[ u ]$ is
+strict; thus a closed node never lowers an open one, as the test $y \in S$ of
 [Lemma 14.9](14-graph.md#lem-14-9) ensures, and a node of $S$ belongs to
 the component of the root $u$ if and only if its number is at least
 $\mathit{rindex}[ u ]$. $\square$
@@ -1243,11 +1244,14 @@ free tree in $O( n )$ time (the double sweep, proved by [Bulterman et al.
 2002](Z-bibliography.md#ref-bulterman2002)).*
 
 *Proof.* Let $x$ be the start, $a$ the farthest node from $x$, and $P$ a
-longest path, from $p$ to $q$. If the path from $x$ to $a$ meets $P$, at a
-node $y$, then $d( y , a ) \ge \max\{ d( y , p ) , d( y , q ) \}$ by the
-choice of $a$; thus replacing the end of $P$ farther from $a$ by $a$ gives a
-path no shorter, which ends at $a$. If it does not meet $P$, let $y$ be the
-node of $P$ nearest to $x$, and $z$ the node where the path from $x$ to $y$
+longest path, from $p$ to $q$, and $y$ the node of $P$ nearest to $x$,
+through which the path from $x$ to any node of $P$ passes. If the path from
+$x$ to $a$ meets $P$, it passes through $y$, and $d( x , a ) \ge d( x , p )$
+gives $d( y , a ) \ge d( y , p )$, and likewise $d( y , a ) \ge d( y , q )$.
+The path from $y$ to $a$ shares with $P$ at most a part of one of its two
+halves, say that towards $p$; then the path from $a$ to $q$ passes through
+$y$ and has length $d( a , y ) + d( y , q ) \ge d( y , p ) + d( y , q )$,
+i.e., it is a longest path that ends at $a$. If it does not meet $P$, let $z$ the node where the path from $x$ to $y$
 leaves the path from $x$ to $a$. Then $d( z , a ) \ge d( z , y ) + \max\{ d(
 y , p ) , d( y , q ) \}$, and again a longest path ends at $a$. $\square$
 
