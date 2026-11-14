@@ -32,6 +32,7 @@
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/Grid.h"
 #include "ADS/graph/GridGraph.h"
+#include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -923,6 +924,132 @@ ADS_TEST( "graph-builder" )
  CHECK_THROWS( B.addEdge( 0 , 3 , 0 ) , contract_violation );
  CHECK_THROWS( B.addEdge( -1 , 0 , 0 ) , contract_violation );
  CHECK_THROWS( GraphBuilder<>( -1 ) , contract_violation );
+ }
+
+/// whether the labels a and b of the nodes make the same partition, i.e.,
+/// a[ u ] = a[ v ] if and only if b[ u ] = b[ v ]
+bool samePartition( const std::vector< int > & a ,
+                    const std::vector< int > & b )
+{
+ if( a.size() != b.size() )
+  return( false );
+ std::vector< int > ab( a.size() + 1 , -1 ) , ba( a.size() + 1 , -1 );
+ for( std::size_t u = 0 ; u < a.size() ; ++u ) {
+  if( ( a[ u ] < 0 ) || ( b[ u ] < 0 ) || ( a[ u ] > int( a.size() ) ) ||
+      ( b[ u ] > int( a.size() ) ) )
+   return( false );
+  if( ab[ a[ u ] ] == -1 ) ab[ a[ u ] ] = b[ u ];
+  if( ba[ b[ u ] ] == -1 ) ba[ b[ u ] ] = a[ u ];
+  if( ( ab[ a[ u ] ] != b[ u ] ) || ( ba[ b[ u ] ] != a[ u ] ) )
+   return( false );
+  }
+ return( true );
+ }
+
+// the strongly connected components in one pass, Tarjan's and Pearce's,
+// against the closure on every oriented graph of up to 4 nodes and on
+// random ones of 5 to 7, and against scc() (Kosaraju) on large ones: the
+// same partition, numbered from 1 in a topological order of the graph of
+// the components (which the audits check); unoriented graphs, where they
+// are the connected components; a deleted node, numbered 0; parallel
+// arcs; paths and circuits of 10^6 nodes, which a recursion would not
+// survive
+ADS_TEST( "scc-one-pass" )
+{
+ auto check = [ & ]( const auto & h , int n ) {
+  std::vector< std::vector< bool > > R( n , std::vector< bool >( n ) );
+  for( int u : h.V() ) {
+   R[ u ][ u ] = true;
+   h.forEachAdj( u , [ & ]( int v ) { R[ u ][ v ] = true; } );
+   }
+  for( int k = 0 ; k < n ; ++k )
+   for( int u = 0 ; u < n ; ++u )
+    for( int v = 0 ; v < n ; ++v )
+     if( R[ u ][ k ] && R[ k ][ v ] )
+      R[ u ][ v ] = true;
+  const auto K = scc( h ) , T = sccTarjan( h ) , P = sccPearce( h );
+  for( int u : h.V() )
+   for( int v : h.V() ) {
+    const bool same = R[ u ][ v ] && R[ v ][ u ];
+    CHECK( ( T[ u ] == T[ v ] ) == same && ( P[ u ] == P[ v ] ) == same );
+    }
+  CHECK( samePartition( K , T ) && samePartition( K , P ) );
+  CHECK( *std::max_element( K.begin() , K.end() ) ==
+         *std::max_element( T.begin() , T.end() ) );
+  };
+ for( int n = 1 ; n <= 4 ; ++n ) {
+  std::vector< std::pair< int , int > > A;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = 0 ; v < n ; ++v )
+    if( u != v ) A.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << A.size() ) ; ++mask ) {
+   ListGraph<> h( n , true );
+   for( std::size_t i = 0 ; i < A.size() ; ++i )
+    if( mask & ( 1u << i ) ) h.insertEdge( A[ i ].first , A[ i ].second );
+   check( h , n );
+   }
+  }
+ std::mt19937 g( 11 );
+ for( int it = 0 ; it < 3000 ; ++it ) {
+  const int n = 5 + it % 3;
+  ListGraph<> h( n , true );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = 0 ; v < n ; ++v )
+    if( ( u != v ) && ( g() % 3 == 0 ) ) h.insertEdge( u , v );
+  if( it % 5 == 0 ) h.deleteNode( int( g() % unsigned( n ) ) );
+  check( h , n );
+  const auto T = sccTarjan( h ) , P = sccPearce( h );
+  for( int u = 0 ; u < n ; ++u )
+   CHECK( ( T[ u ] == 0 ) == ! h.hasNode( u ) && ( P[ u ] == 0 ) ==
+          ! h.hasNode( u ) );
+  }
+
+ // the edges: no node, no edge, an unoriented graph (its connected
+ // components), parallel arcs, the chain of 10^6 nodes (numbered along
+ // it) and the same chain closed
+ CHECK( sccTarjan( ListGraph<>( 0 ) ).empty() &&
+        sccPearce( ListGraph<>( 0 ) ).empty() );
+ auto e = sccPearce( ListGraph<>( 4 ) );
+ std::sort( e.begin() , e.end() );
+ CHECK( e == std::vector< int >( { 1 , 2 , 3 , 4 } ) );
+ ListGraph<> u( 6 , false );
+ u.insertEdge( 0 , 3 ); u.insertEdge( 3 , 5 ); u.insertEdge( 1 , 2 );
+ CHECK( samePartition( sccTarjan( u ) , cc( u ) ) &&
+        samePartition( sccPearce( u ) , cc( u ) ) );
+ const StaticGraph<> par( 3 , std::vector< std::pair< int , int > >( {
+                          { 0 , 1 } , { 0 , 1 } , { 1 , 0 } , { 1 , 2 } ,
+                          { 1 , 2 } } ) , true );
+ CHECK( sccTarjan( par ) == std::vector< int >( { 1 , 1 , 2 } ) &&
+        sccPearce( par ) == std::vector< int >( { 1 , 1 , 2 } ) );
+ const int N = 1000000;
+ std::vector< std::pair< int , int > > C;
+ for( int v = 0 ; v + 1 < N ; ++v )
+  C.emplace_back( v , v + 1 );
+ const StaticGraph<> chain( N , C , true );
+ const auto TC = sccTarjan( chain ) , PC = sccPearce( chain );
+ bool along = true;
+ for( int v = 0 ; v < N ; ++v )
+  along = along && ( TC[ v ] == v + 1 ) && ( PC[ v ] == v + 1 );
+ CHECK( along );
+ C.emplace_back( N - 1 , 0 );
+ const StaticGraph<> ring( N , C , true );
+ const auto TR = sccTarjan( ring ) , PR = sccPearce( ring );
+ CHECK( std::all_of( TR.begin() , TR.end() , []( int x ) { return( x == 1 ); }
+                     ) && TR == PR );
+
+ // random large graphs against Kosaraju: sparse ones, with many small
+ // components and a giant one, and denser ones
+ for( int it = 0 ; it < 4 ; ++it ) {
+  const int n = 100000 , m = ( it + 1 ) * n / 2 + n / 3;
+  std::vector< std::pair< int , int > > E;
+  while( int( E.size() ) < m ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b ) E.emplace_back( a , b );
+   }
+  const StaticGraph<> h( n , E , true );
+  const auto K = scc( h ) , T = sccTarjan( h ) , P = sccPearce( h );
+  CHECK( samePartition( K , T ) && samePartition( K , P ) );
+  }
  }
 
 }  // end( namespace )

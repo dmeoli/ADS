@@ -222,9 +222,80 @@
  node of largest finish time stays in its component, since an edge that
  leaves it in \f$ G^T \f$ can only enter a component already visited; the
  next visit, from the largest finish time left, does the same. Thus, `scc()`
- of `Visit.h` costs two visits, each \f$ \Theta( n + m ) \f$. The graph of
- the components is acyclic, and `unilaterallyConnected()` tests whether its
- topological order is unique.
+ of `Visit.h` costs two visits, each \f$ \Theta( n + m ) \f$, and the copy
+ of the transposed graph. The graph of the components is acyclic, and
+ `unilaterallyConnected()` tests whether its topological order is unique.
+
+ One visit in depth suffices, if the components are recognized as it
+ finishes them (Tarjan, beyond the book). The <em>root</em> of a component
+ \f$ C \f$ is its node \f$ r_C \f$ discovered first; by Lemma 2 every node
+ of \f$ C \f$ is a descendant of \f$ r_C \f$, since all of them are
+ undiscovered when \f$ r_C \f$ is discovered and reachable from it. The
+ visit pushes each node it discovers on a stack \f$ S \f$, and keeps
+ \f$ \mathit{low}[ u ] \f$, the least \f$ \mathit{dt} \f$ of a node of
+ \f$ S \f$ that the subtree of \f$ u \f$ reaches by its tree edges and one
+ more edge, \f$ \mathit{dt}[ u ] \f$ itself included.
+
+ <em>Lemma 4 (the roots of Tarjan).</em> When \f$ u \f$ finishes,
+ \f$ u \f$ is a root if and only if
+ \f$ \mathit{low}[ u ] = \mathit{dt}[ u ] \f$; the nodes above \f$ u \f$
+ on \f$ S \f$ are then exactly the nodes of its component.
+
+ Indeed, if \f$ u \f$ is not a root, the root \f$ r \f$ of its component
+ is a proper ancestor of \f$ u \f$, still open and on \f$ S \f$, and a
+ path from \f$ u \f$ to \f$ r \f$ leaves the subtree of \f$ u \f$ by an
+ edge \f$ ( x , y ) \f$ whose head \f$ y \f$ reaches \f$ r \f$; the
+ component of \f$ y \f$ is that of \f$ r \f$, which is not closed, so
+ that \f$ y \f$ is on \f$ S \f$ with \f$ \mathit{dt}[ y ] <
+ \mathit{dt}[ u ] \f$, and \f$ \mathit{low}[ u ] < \mathit{dt}[ u ] \f$.
+ Conversely, if \f$ \mathit{low}[ u ] < \mathit{dt}[ u ] \f$ the subtree
+ of \f$ u \f$ reaches a node \f$ y \f$ of \f$ S \f$ discovered before
+ \f$ u \f$; the nodes of \f$ S \f$ discovered before \f$ u \f$ are in
+ components still open, whose roots are ancestors of \f$ u \f$, so that
+ the root of the component of \f$ y \f$ reaches \f$ u \f$ by the tree and
+ is reached from \f$ u \f$ through \f$ y \f$: \f$ u \f$ is in a component
+ opened before it, and is not a root. Finally, when the root \f$ u \f$
+ finishes, the nodes above it on \f$ S \f$ are its descendants not yet
+ closed, and a descendant in another component would have a root between
+ \f$ u \f$ and itself, which has closed it before. The test of
+ \f$ y \in S \f$ is that \f$ y \f$ has no component yet, so that the
+ visit costs \f$ \Theta( n + m ) \f$ (`sccTarjan()` of `Visit.h`): each
+ node is pushed and popped once, and each edge examined once. When a
+ component closes, every component that it reaches is closed already;
+ hence the components close in the reverse of a topological order of their
+ graph, and `sccTarjan()` numbers them backwards, as `scc()` numbers them:
+ an edge from \f$ C \f$ to \f$ C' \ne C \f$ gives \f$ C < C' \f$.
+ The recursion is kept on a stack of the pairs (node, next edge), and the
+ adjacencies are read once into compressed rows, so that the cost holds on
+ every model of `Graph` and a path of \f$ 10^6 \f$ nodes does not overflow
+ the stack of the calls.
+
+ The visit of Tarjan keeps three integers per node (\f$ \mathit{dt} \f$,
+ \f$ \mathit{low} \f$ and the component); Pearce keeps one, and a bit
+ (`sccPearce()`). The integer \f$ \mathit{rindex}[ u ] \f$ starts as the
+ order of discovery and takes, instead of \f$ \mathit{low}[ u ] \f$, every
+ smaller \f$ \mathit{rindex} \f$ met, the bit recording whether it took
+ one; when \f$ u \f$ closes its component, its nodes take the number
+ \f$ c \f$ of the component, which counts down from \f$ N - 1 \f$, and
+ the counter \f$ i \f$ of the discoveries goes back by one per node
+ closed.
+
+ <em>Lemma 5 (one integer per node).</em> The numbers of the open nodes are
+ at most \f$ c + 1 \f$, and those of the closed ones at least
+ \f$ c + 1 \f$.
+
+ Indeed, an open node has a number below \f$ i \f$, and \f$ i - 1 \f$
+ counts the open nodes, which are at most the \f$ c + 1 \f$ names of the
+ \f$ N \f$ not closed, the closed ones being \f$ N - 1 - c \f$; the
+ closed nodes have the numbers \f$ c + 1 , \ldots , N - 1 \f$ of their
+ components. Hence a comparison of the numbers alone never lets a closed
+ node lower an open one, as the test \f$ y \in S \f$ of Lemma 4 does, and
+ a node of \f$ S \f$ belongs to the component of the root \f$ u \f$ if
+ and only if its number is at least \f$ \mathit{rindex}[ u ] \f$; the
+ visit makes the same choices as that of Tarjan, in the same time, with
+ \f$ N \f$ words and \f$ N \f$ bits besides the two stacks, and the
+ components numbered \f$ \mathit{rindex}[ u ] - c \f$ at the end come out
+ in the order of `sccTarjan()`.
 
  \section theory_graph_sp Shortest paths
 
@@ -354,7 +425,7 @@
  weight \f$ b \f$ of a corner falls on a different cell in the two models,
  and their shortest paths may differ.
 
- <em>Lemma 4 (the octile distance).</em> On a grid with no blocked cell and
+ <em>Lemma 6 (the octile distance).</em> On a grid with no blocked cell and
  eight moves of costs \f$ a \f$ and \f$ b \f$ with \f$ a \le b \le 2 a \f$,
  let \f$ M \f$ and \f$ \mu \f$ be the larger and the smaller of
  \f$ | r - r' | \f$ and \f$ | c - c' | \f$; the least cost of a path from
@@ -447,7 +518,7 @@
  opposite direction, with \f$ f( v , u ) = - f( u , v ) \f$, so that the
  residual network, made of the edges with \f$ c_f( u , v ) > 0 \f$, is at hand.
 
- <em>Theorem 5 (maximum flow, minimum cut).</em> The following are equivalent:
+ <em>Theorem 7 (maximum flow, minimum cut).</em> The following are equivalent:
  (i) \f$ f \f$ is a maximum flow; (ii) the residual network has no path from
  \f$ s \f$ to \f$ t \f$ (an augmenting path); (iii)
  \f$ | f | = c( S , V \setminus S ) \f$ for some cut with \f$ s \in S \f$ and
@@ -611,7 +682,7 @@
  net events of the edges in the order of their first event, then of the nodes
  deleted.
 
- <em>Lemma 6 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
+ <em>Lemma 8 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
  of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (8) gives.
  The graph obtained by replaying \f$ C \f$ on \f$ G \f$ is the one obtained by
  replaying \f$ B \f$, and \f$ |C| \le |B| \f$.
@@ -641,12 +712,12 @@
  repair (1) if one is repairable, and by the certificate (2) if all are
  harmless, in which case nothing is computed.
 
- <em>Lemma 7 (the batch test).</em> If each condition of the certificate
+ <em>Lemma 9 (the batch test).</em> If each condition of the certificate
  involves the weight of a single edge, and each event of \f$ P \f$ is tested
  on the certificate of the solution before \f$ P \f$, then the events of
  \f$ P \f$ found harmless leave the solution optimal all together.
 
- Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 6, so that
+ Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 8, so that
  each condition of the certificate is touched by at most one of them, and a
  harmless event keeps true the conditions that it touches; the conditions
  that no event touches stay as they were.
@@ -671,7 +742,7 @@
  gives no bound of them, while those of the other nodes are still the costs
  of their paths in \f$ T \f$, which no raised edge touches.
 
- <em>Lemma 8 (the increases).</em> Let \f$ A \f$ be the union of the
+ <em>Lemma 10 (the increases).</em> Let \f$ A \f$ be the union of the
  subtrees of \f$ T \f$ under the heads of the edges of \f$ T \f$ raised or
  deleted by \f$ P \f$. Set \f$ d[ x ] = \infty \f$ for \f$ x \in A \f$, then
  \f[
@@ -776,7 +847,7 @@
 
  For the maximum flow from \f$ s \f$ to \f$ t \f$ (`MaxFlowObserver`) the
  certificate is the side \f$ S \f$ of a minimum cut with
- \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 5. A new
+ \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 7. A new
  capacity \f$ c' \f$ of \f$ ( u , v ) \f$ with \f$ c' \ge f( u , v ) \f$ is
  harmless unless \f$ ( u , v ) \f$ leaves \f$ S \f$ and grows: the flow stays
  feasible, and the capacity of the cut neither falls below \f$ | f | \f$ (an
@@ -838,7 +909,7 @@
  \f$ u_i = \min_j c( i , j ) \f$ and \f$ v = 0 \f$, which satisfy (11)
  whatever the signs of the costs.
 
- <em>Lemma 9 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
+ <em>Lemma 11 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
  (11) with the pairs of \f$ M \f$ tight, and let the costs of the row
  \f$ i \f$ change. Removing the pair of \f$ i \f$ from \f$ M \f$ and setting
  \f[
@@ -885,7 +956,7 @@
  representations, and its use is the algebra of the graph [see
  `incidence()`], not the visits.
 
- <em>Lemma 10 (the universal sink).</em> A universal sink, a node with an
+ <em>Lemma 12 (the universal sink).</em> A universal sink, a node with an
  edge from each of the other \f$ n - 1 \f$ nodes and no edge out, is found or
  shown not to exist with at most \f$ 3 ( n - 1 ) \f$ calls of
  `hasEdge()`, \f$ O( n ) \f$ time on the adjacency matrix (exercise 12.10).
@@ -926,6 +997,9 @@
  \see M. Sharir, A strong-connectivity algorithm and its applications in
       data flow analysis, Computers & Mathematics with Applications 7(1),
       67-72, 1981, doi:10.1016/0898-1221(81)90008-0
+ \see D. J. Pearce, A space-efficient algorithm for finding strongly
+      connected components, Information Processing Letters 116(1), 47-52,
+      2016, doi:10.1016/j.ipl.2015.08.010
  \see R. Bellman, On a routing problem, Quarterly of Applied Mathematics
       16(1), 87-90, 1958, doi:10.1090/qam/102435
  \see E. W. Dijkstra, A note on two problems in connexion with graphs,

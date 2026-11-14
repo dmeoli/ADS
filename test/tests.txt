@@ -1724,6 +1724,7 @@ engineered_graph  grid-graph-huge     griglie di 2^31 - 1 celle senza overflow
 engineered_graph  grid-graph-cost-models  costo della cella entrata o lasciata
 engineered_graph  grid-map            mappe nel formato dei benchmark
 engineered_graph  graph-builder       grafo costruito per archi e congelato
+engineered_graph  scc-one-pass        componenti forti in una visita
 
 # the files of records on the disk, beyond the book
 engineered_external  record-file-empty          file assente, vuoto, tolto

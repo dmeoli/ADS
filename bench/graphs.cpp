@@ -39,8 +39,11 @@
  *   and the road networks;
  * - prim, prim() on a priority queue, on the unoriented graphs;
  * - kruskal, kruskal() on an MFSET, on the unoriented graphs;
- * - scc, scc(), the strongly connected components of the book, on the
- *   oriented graphs of n / 10 nodes;
+ * - scc, scc(), the strongly connected components of the book
+ *   (Kosaraju's two visits and the transposed graph), on the oriented
+ *   graphs of n / 10 nodes, and the visits of one pass, sccTarjan() and
+ *   sccPearce() on the StaticGraph, against strong_components() of the
+ *   Boost Graph Library (Tarjan's algorithm on its compressed rows);
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -106,6 +109,7 @@
  #include <boost/property_map/property_map.hpp>
  #include <boost/graph/compressed_sparse_row_graph.hpp>
  #include <boost/graph/grid_graph.hpp>
+ #include <boost/graph/strong_components.hpp>
  #include <boost/heap/d_ary_heap.hpp>
  #include <boost/heap/fibonacci_heap.hpp>
  #include <boost/heap/pairing_heap.hpp>
@@ -912,14 +916,23 @@ void kruskal( const std::string & c , int n0 , int r , unsigned seed )
   return( kruskalRun< ADS::MFSet >( n , E , k ) ); } );
  }
 
-/// scc() of the book on the graph g: the number of components
-template< class G >
-long long sccRun( const G & g , Counts & k )
+/// the components of scc of the graph g by one of scc() of the book,
+/// sccTarjan() and sccPearce(): the number of components
+template< class G , class F >
+long long sccRun( const G & g , Counts & k , F && scc )
 {
- const auto c = ADS::scc( g );
+ const auto c = scc( g );
  const long long K = c.empty() ? 0 : *std::max_element( c.begin() , c.end() );
  k = { { "components" , K } };
  return( K );
+ }
+
+/// scc() of the book on the graph g
+template< class G >
+long long sccRun( const G & g , Counts & k )
+{
+ return( sccRun( g , k , []( const auto & h ) { return( ADS::scc( h ) ); }
+                 ) );
  }
 
 void scc( const std::string & c , int n0 , int r , unsigned seed )
@@ -938,12 +951,29 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
   const BoostGraph< false > G( n , A , true );
   C( "Boost csr" , [ & ]( Counts & k ) { return( sccRun( G , k ) ); } );
   }
+ if( measured( { "Boost csr strong_components" } ) ) {
+  const BoostGraph< false > G( n , A , true );
+  C( "Boost csr strong_components" , [ & ]( Counts & k ) {
+   std::vector< unsigned > c( static_cast< std::size_t >( n ) );
+   const long long K = n == 0 ? 0 : (long long) boost::strong_components(
+                       G.g , boost::make_iterator_property_map( c.begin() ,
+                       boost::get( boost::vertex_index , G.g ) ) );
+   k = { { "components" , K } };
+   return( K ); } );
+  }
 #endif
- if( ! measured( { "ADS StaticGraph" } ) )
+ if( ! measured( { "ADS StaticGraph" , "ADS StaticGraph sccTarjan" ,
+                   "ADS StaticGraph sccPearce" } ) )
   return;
  const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
                                                       true ) );
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( sccRun( S , k ) ); } );
+ C( "ADS StaticGraph sccTarjan" , [ & ]( Counts & k ) {
+  return( sccRun( S , k , []( const auto & h ) {
+   return( ADS::sccTarjan( h ) ); } ) ); } );
+ C( "ADS StaticGraph sccPearce" , [ & ]( Counts & k ) {
+  return( sccRun( S , k , []( const auto & h ) {
+   return( ADS::sccPearce( h ) ); } ) ); } );
  }
 
 /// n random merges and n finds on the MFSET M

@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- sccTarjan() and sccPearce() in graph/Visit.h, the strongly connected
+  components by one visit in depth and no transposed graph (Tarjan's
+  algorithm, and Pearce's variant with one integer and one bit per node),
+  iterative on a stack of the pairs (node, next arc) and on the rows of
+  the graph read in place when it keeps them (detail::Rows of Graph.h),
+  numbered as scc() in a topological order of the graph of the components,
+  which scc() now ensures at the level of the audits; the lemmas of the
+  roots and of the single integer in the theory of the graphs, the test
+  engineered_graph scc-one-pass (every oriented graph of up to 4 nodes
+  against the closure, random large ones against Kosaraju, chains of 10^6
+  nodes) and the two visits and strong_components() of Boost in the
+  benchmark scc of bench/graphs.cpp
+
 - the manual (manual/), one chapter for each area of include/ADS on the
   plan of manual/OUTLINE.md, in Markdown built by Pandoc into
   manual/ADS-manual.pdf and by MkDocs into the folder manual of the site,
