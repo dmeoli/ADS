@@ -21,7 +21,8 @@
  * at the rank \f$ i \f$ in \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized
  * time (exercise 2.9). A balance is done in place: the \f$ t \f$ items at
  * the bottom of the larger stack go to the bottom of the other, which grows
- * by \f$ t < n / 2 \f$ places, before the larger one shrinks, i.e., the
+ * by \f$ t \le \lceil n / 2 \rceil \f$ places (fewer than \f$ n / 2 \f$
+ * unless it was empty), before the larger one shrinks, i.e., the
  * places of \f$ n + t \f$ items at the peak instead of those of
  * \f$ 2 n \f$, and \f$ n \f$ moves (see \ref theory_sequence_ods for why it
  * is not spread over the operations). A stack `S` has `size()`, `operator[]`,
@@ -239,13 +240,15 @@ class DualArrayDeque {
  ///
  /// In pseudocode (Morin, section 2.5, the deal in place beyond the book),
  /// \f$ G \f$ the larger stack, \f$ S \f$ the other one and
- /// \f$ t = |G| - m \f$:
+ /// \f$ t = \bigl| |F| - m \bigr| \f$, so that \f$ F \f$ is left with
+ /// \f$ m = \lfloor n / 2 \rfloor \f$ items:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{balance}() \cr
  /// 2 & \quad \textbf{if}\ 3 |F| < |B|\ \textbf{or}\ 3 |B| < |F|
  ///     \ \textbf{then} \cr
- /// 3 & \qquad m \gets \lfloor n / 2 \rfloor;\ t \gets |G| - m \cr
+ /// 3 & \qquad m \gets \lfloor n / 2 \rfloor;\ t \gets \bigl| |F| - m
+ ///     \bigr| \cr
  /// 4 & \qquad \text{push } t \text{ places on } S;\ \textbf{for}\ j \gets
  ///     |S| - 1\ \textbf{downto}\ 0\ \textbf{do} \cr
  /// 5 & \qquad\quad \textbf{if}\ j \ge t\ \textbf{then}\ S[ j ] \gets
