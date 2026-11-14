@@ -20,8 +20,8 @@
  * Patwary, Blair and Manne found the union by size or rank with halving
  * among the fastest variants, close to the splicing of Rem, which the
  * benchmark of this library finds slower up to \f$ 10^6 \f$ elements. It is
- * the union-find of the algorithms of Kruskal and of the connected
- * components.
+ * the union-find of the observer of the spanning forests [see
+ * `Reoptimization.h`], while `kruskal()` takes any MFSET with `merge()`.
  *
  * The contracts [see `Contract.h`]: \f$ n \ge 0 \f$, the elements are in
  * \f$ [ 0 , n ) \f$; the invariant is that the parents make a forest of
