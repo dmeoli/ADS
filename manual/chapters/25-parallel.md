@@ -149,6 +149,7 @@ The two concepts, the executor that runs everything on the calling thread,
 and the fork and join that the patterns build on are declared as
 
 ```cpp
+// declarations of <ADS/parallel/Executor.h>
 template< class E >
 concept Executor = requires( E & e , std::size_t n ,
                              void ( & f )( std::size_t ) ) {
@@ -265,6 +266,7 @@ left is taken back by the caller.](../figures/parallel-pool.svg){#fig-25-1}
 The public members of the pool are
 
 ```cpp
+// declarations of <ADS/parallel/ThreadPool.h>
 class ThreadPool {
  public:
  explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 );
@@ -558,6 +560,7 @@ would slow each other down, and the choice is left to the caller.
 The four functions of `Affinity.h` are
 
 ```cpp
+// declarations of <ADS/parallel/Affinity.h>
 const std::vector< int > & affinityCpus( void );
 unsigned availableCpus( void );
 bool pinThread( unsigned i );
@@ -595,6 +598,7 @@ as its runtime does.
 These patterns, and the scans below, are declared as
 
 ```cpp
+// declarations of <ADS/parallel/Executor.h>
 inline constexpr std::size_t kGrain = 1024;
 
 std::pair< std::size_t , std::size_t > blocksOf( std::size_t first ,
@@ -798,6 +802,7 @@ $R_1$ first.](../figures/parallel-merge.svg){#fig-25-3}
 The two functions are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelMerge.h>
 template< std::random_access_iterator I , class C = std::less<> >
 std::vector< std::size_t > multisequenceSplit(
  const std::vector< std::pair< I , I > > & R , std::size_t r ,
@@ -856,6 +861,7 @@ the input ([Algorithm 25.12](25-parallel.md#alg-25-12)).
 The four sorts of `ParallelSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelSort.h>
 template< Executor E , class T , class C = std::less<> >
 void sort( E & ex , std::vector< T > & A , C less = C() );
 template< Executor E , class T , class C = std::less<> >
@@ -1011,6 +1017,7 @@ are the diagonals of the merge path of [Merrill and Garland
 The products are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelNumeric.h>
 template< Executor E >
 void multiply( E & ex , const CsrMatrix & A , const double * x ,
                double * y );
@@ -1125,6 +1132,7 @@ visited from the top down only.
 The two algorithms on graphs are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelGraph.h>
 template< Executor E , class W >
 std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g ,
                                  int s ,
@@ -1264,6 +1272,7 @@ it also fetches the text at $\Phi[ i + 16 ]$ ahead of its use.
 The two functions are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelText.h>
 template< Executor E , class S >
 std::vector< std::size_t > lcpArray( E & ex , const S & T ,
                                      const std::vector< std::size_t > & SA );
@@ -1311,6 +1320,7 @@ The loop, the concept of its step, the reservation of a place and the
 counts of a run are declared as
 
 ```cpp
+// declarations of <ADS/parallel/SpeculativeFor.h>
 template< class S >
 concept SpeculativeStep = requires( S & s , std::size_t i ) {
  { s.reserve( i ) } -> std::convertible_to< bool >;
@@ -1457,6 +1467,7 @@ that it holds ([Algorithm 25.21](25-parallel.md#alg-25-21)).
 The algorithms of `ParallelGreedy.h` are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelGreedy.h>
 std::vector< int > randomOrder( int n , unsigned long long seed );
 template< Executor E , class W >
 std::vector< int > parallelKruskal(
@@ -1621,6 +1632,7 @@ with the least work and the most steps.
 The two stepping algorithms are declared as
 
 ```cpp
+// declarations of <ADS/parallel/ParallelShortestPaths.h>
 template< Executor E , Graph G >
 std::vector< typename G::Weight > deltaStepping( E & ex , const G & g ,
                                                  int s ,
@@ -1750,6 +1762,7 @@ The concept and the members that the four families share, here those of
 `MeshChannels`, are
 
 ```cpp
+// declarations of <ADS/parallel/Channels.h>
 template< class C >
 concept ChannelFamily = requires( C & c , const C & k , std::size_t i ,
                                   std::span< const typename C::Message > m ,
@@ -1853,6 +1866,7 @@ returns when all the calls have returned ([Algorithm
 The farm is declared as
 
 ```cpp
+// declarations of <ADS/parallel/Farm.h>
 template< class T , class R , WorkerExecutor E , class S , class O ,
           class W >
 void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
@@ -1950,6 +1964,7 @@ The public members of the mailbox, with the policies of the coalescing of
 [§25.15](25-parallel.md#sec-25-15), are
 
 ```cpp
+// declarations of <ADS/parallel/Mailbox.h>
 template< class K , class H = std::hash< K > >
 std::size_t ownerOf( const K & k , std::size_t p , const H & h = H() );
 

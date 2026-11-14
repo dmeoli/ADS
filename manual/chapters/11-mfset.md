@@ -104,13 +104,14 @@ a visit of all the elements.
 The class is declared as follows, in the namespace `ADS` as all those of the chapter.
 
 ```cpp
+// declarations of <ADS/mfset/ListMFSet.h>
 class ListMFSet {
  public:
  explicit ListMFSet( int n );
- int n() const;
+ int n( void ) const;
  int find( int x ) const;
  bool merge( int x , int y );
- long relabels() const;
+ long relabels( void ) const;
  const std::vector< int > & members( int x ) const;
  };
 ```
@@ -300,19 +301,20 @@ of [Table 11.1](11-mfset.md#tab-11-1).
 We declare `MFSet` and `components()` as follows; the example also uses the `UnionFind` of [§11.4](11-mfset.md#sec-11-4).
 
 ```cpp
+// declarations of <ADS/mfset/MFSet.h>
 class MFSet {
  public:
  enum class Union { NONE , RANK , SIZE };
  explicit MFSet( int n , Union u = Union::RANK , bool compress = true );
- int n() const;
- int count() const;
+ int n( void ) const;
+ int count( void ) const;
  int find( int x );
  bool merge( int x , int y );
  bool same( int x , int y );
  int parent( int x ) const;
  int rank( int x ) const;
  int size( int x ) const;
- long steps() const;
+ long steps( void ) const;
  };
 template< Graph G >
 MFSet components( const G & g );
@@ -361,6 +363,7 @@ ranks that bound their heights.
 Its declarations are the following.
 
 ```cpp
+// declarations of <ADS/mfset/UnionFind.h>
 enum class Union { SIZE , RANK };
 enum class Compression { HALVING , FULL };
 template< Union L = Union::SIZE , Compression C = Compression::HALVING >
@@ -368,8 +371,8 @@ class DisjointSets {
  public:
  explicit DisjointSets( int n = 0 );
  void reset( int n );
- int n() const;
- int count() const;
+ int n( void ) const;
+ int count( void ) const;
  int find( int x );
  bool merge( int x , int y );
  bool same( int x , int y );
@@ -417,11 +420,12 @@ are of type `std::uint32_t`, and the constructor requires $n < 2^{32}$.
 Its declarations are the following.
 
 ```cpp
+// declarations of <ADS/mfset/RemUnionFind.h>
 class RemUnionFind {
  public:
  explicit RemUnionFind( std::size_t n = 0 );
- std::size_t n() const;
- std::size_t count() const;
+ std::size_t n( void ) const;
+ std::size_t count( void ) const;
  std::uint32_t find( std::uint32_t x );
  bool merge( std::uint32_t x , std::uint32_t y );
  bool same( std::uint32_t x , std::uint32_t y );
@@ -517,17 +521,18 @@ undoes the last $k$ merges, one by default.
 The class, the operations of the offline connectivity and their function are declared as follows.
 
 ```cpp
+// declarations of <ADS/mfset/RollbackUnionFind.h>
 class RollbackUnionFind {
  public:
  explicit RollbackUnionFind( int n = 0 );
  void reset( int n );
- int n() const;
- int count() const;
+ int n( void ) const;
+ int count( void ) const;
  int find( int x ) const;
  bool merge( int x , int y );
  bool same( int x , int y ) const;
  int size( int x ) const;
- int checkpoint() const;
+ int checkpoint( void ) const;
  void undo( int k = 1 );
  void rollback( int t );
  };

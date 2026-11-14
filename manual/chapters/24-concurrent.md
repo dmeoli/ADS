@@ -190,6 +190,7 @@ and `tryPop()`, and both of them the batch operations and the wait of
 [§24.10](24-concurrent.md#sec-24-10); its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/SPSCQueue.h>
 template< class T >
 class SPSCQueue {
  public:
@@ -338,6 +339,7 @@ also when their producer is gone and its items are still to be taken.
 Its public members are those below; a producer pushes through its handle,
 
 ```cpp
+// declarations of <ADS/concurrent/MPSCQueue.h>
 template< class T , std::size_t B = 1024 >
 class MPSCQueue {
  public:
@@ -448,6 +450,7 @@ usually come in bursts, at the price of an allocation per message.
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/MPSCInbox.h>
 template< class T >
 class MPSCInbox {
  public:
@@ -518,6 +521,7 @@ share, with one read-modify-write per operation.
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/MPMCQueue.h>
 template< class T >
 class MPMCQueue {
  public:
@@ -602,6 +606,7 @@ of relaxed order, and their type must therefore be trivially copyable
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/WorkStealingDeque.h>
 template< class T >
 class WorkStealingDeque {
  public:
@@ -753,6 +758,7 @@ it is then tried again from the roots found anew.
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/ConcurrentUnionFind.h>
 class ConcurrentUnionFind {
  public:
  explicit ConcurrentUnionFind( std::size_t n );
@@ -907,6 +913,7 @@ locks and lock two buckets per move. Only the doubling, `reserve()`, `clear()`,
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/ConcurrentCuckooTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
           class Eq = std::equal_to< K > >
 class ConcurrentCuckooTable {
@@ -927,7 +934,8 @@ class ConcurrentCuckooTable {
  void clear( void );
  template< class F > void forEach( F && f );
  bool consistent( void ) const;
- static const bool optimistic;             // lookups without locks
+ static constexpr bool optimistic = refLockFree< K >() &&
+                                    refLockFree< V >();
  };
 ```
 
@@ -1171,21 +1179,20 @@ computed (each operation on a key $k$ has one, with the hash $h$ as a
 second argument), are
 
 ```cpp
+// declarations of <ADS/concurrent/ConcurrentFlatTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
           class Eq = std::equal_to< K > , class C = ZeroingClear >
 class ConcurrentFlatTable {
  public:
- static constexpr bool packed =             // the pair in one word
-  std::is_trivially_copyable_v< K > && std::is_trivially_copyable_v< V > &&
-  ( std::has_unique_object_representations_v< K > ||
-    std::is_floating_point_v< K > ) &&
-  ( sizeof( K ) + ( std::is_empty_v< V > ? 0 : sizeof( V ) ) <= 8 );
- static constexpr bool inlined =            // the pair in two words
-  ( ADS_FLAT_CAS16 != 0 ) && ! packed &&
-  std::is_trivially_copyable_v< K > && std::is_trivially_copyable_v< V > &&
-  ( std::has_unique_object_representations_v< K > ||
-    std::is_floating_point_v< K > ) &&
-  ( sizeof( K ) <= 8 ) && ( sizeof( V ) <= 8 );
+ static constexpr bool packed = std::is_trivially_copyable_v< K > &&
+                                std::is_trivially_copyable_v< V > &&
+                                plainKey() &&
+                                ( sizeof( K ) + valueBytes() <= 8 );
+ static constexpr bool inlined = ( ADS_FLAT_CAS16 != 0 ) && ! packed &&
+                                 std::is_trivially_copyable_v< K > &&
+                                 std::is_trivially_copyable_v< V > &&
+                                 plainKey() && ( sizeof( K ) <= 8 ) &&
+                                 ( sizeof( V ) <= 8 );
  struct Entry { const K key; V value; };
  using Ref = std::conditional_t< packed || inlined , V , Entry & >;
  explicit ConcurrentFlatTable( std::size_t n = 0 , H h = H() ,
@@ -1451,6 +1458,7 @@ only if the better queue is held.
 Its public members, and those of the handle of a thread, are
 
 ```cpp
+// declarations of <ADS/concurrent/MultiQueue.h>
 template< class K , class T , class Less = std::less< K > >
 class MultiQueue {
  public:
@@ -1653,6 +1661,7 @@ no system call.
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/EventCount.h>
 class EventCount {
  public:
  using Key = std::uint32_t;
@@ -1761,6 +1770,7 @@ to $S + 1$).
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/Backoff.h>
 class Backoff {
  public:
  explicit Backoff( int S = 6 );
@@ -1866,6 +1876,7 @@ another victim.
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/StealablePriorityQueue.h>
 template< class K , class T , class Less = std::less< K > ,
           class Bd = void , class BdLess = std::less<> >
 class StealablePriorityQueue {
@@ -1963,6 +1974,7 @@ offers waits for a thief.
 Its public members are
 
 ```cpp
+// declarations of <ADS/concurrent/StealablePriorityQueue.h>
 template< class K , class T , class Less = std::less< K > ,
           class Bd = void , class BdLess = std::less<> >
 class StealingFrontier {
@@ -1996,6 +2008,8 @@ search on it as follows, each worker $i$ popping from its queue (or
 stealing, inside `pop( i )`) until the frontier is empty everywhere:
 
 ```cpp
+#include "ADS/parallel/ThreadPool.h"
+
 ADS::ThreadPool pool( 4 );
 ADS::StealingFrontier< int , int > F( 4 );
 F.push( 0 , 0 , 1 );                        // the root, key 0, at worker 0

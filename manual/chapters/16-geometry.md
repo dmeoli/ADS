@@ -61,6 +61,7 @@ The functions convert the coordinates to `long long` before computing
 the predicates of this section are declared as
 
 ```cpp
+// declarations of <ADS/geometry/ConvexHull.h>
 struct Point { long x , y; };
 long long cross( const Point & a , const Point & b , const Point & c );
 bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
@@ -379,6 +380,7 @@ the start of this section, e.g., the 9 vertices of
 [Figure 16.2](16-geometry.md#fig-16-2) from $( 27 , 1 )$:
 
 ```cpp
+// declarations of <ADS/geometry/ConvexHull.h>
 std::vector< Point > convexHullBrute( std::vector< Point > P );
 std::vector< Point > graham( std::vector< Point > P );
 std::vector< Point > convexHull( const std::vector< Point > & P );
@@ -622,6 +624,7 @@ distance, and require $n \ge 2$ and the bounds of
 [Lemma 16.1](16-geometry.md#lem-16-1):
 
 ```cpp
+// declarations of <ADS/geometry/ClosestPair.h>
 std::int64_t squaredDistance( const Point & p , const Point & q );
 std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
 closestPair( const std::vector< Point > & P );       // and the other two
@@ -671,6 +674,7 @@ three static functions: `identity()`, which returns $\mathbf{0}$;
 The public members of the two classes are then
 
 ```cpp
+// declarations of <ADS/geometry/IntervalTree.h>
 template< std::totally_ordered T > class IntervalTree {
  public:
  using Interval = std::pair< T , T >;                // [ a , b ]

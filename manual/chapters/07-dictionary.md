@@ -196,6 +196,7 @@ increasing order.
 Below are the declarations of `DirectTable`, in the namespace `ADS` as all those of the chapter.
 
 ```cpp
+// declarations of <ADS/dictionary/DirectTable.h>
 template< class V >
 class DirectTable {
  public:
@@ -205,9 +206,9 @@ class DirectTable {
  std::optional< V > lookup( long k ) const;
  void insert( long k , const V & v );
  void remove( long k );
- std::size_t size() const;
- std::size_t capacity() const;
- class const_iterator;
+ std::size_t size( void ) const;
+ std::size_t capacity( void ) const;
+ using const_iterator = SlotIterator< DirectTable , Places >;
  };
 ```
 
@@ -238,6 +239,7 @@ insertion of `SortedArrayDictionary`.
 We declare `SortedArrayDictionary` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/SortedArrayDictionary.h>
 template< std::totally_ordered K , class V >
 class SortedArrayDictionary {
  public:
@@ -250,9 +252,9 @@ class SortedArrayDictionary {
  std::optional< std::pair< K , V > > lowerBound( const K & k ) const;
  const K * findKey( const K & k ) const;
  const K * lowerBoundKey( const K & k ) const;
- bool empty() const;
- std::size_t size() const;
- const std::vector< std::pair< K , V > > & pairs() const;
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ const std::vector< std::pair< K , V > > & pairs( void ) const;
  using const_iterator = const std::pair< K , V > *;
  };
 ```
@@ -336,6 +338,7 @@ bits in the middle of the 64 least significant bits of $i^2$.
 In C++, the functions of `HashFunctions.h` are declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/HashFunctions.h>
 unsigned bin_bit( std::string_view k , std::size_t j );
 std::uint64_t int_bin( std::string_view k );
 std::uint64_t hash_extraction( std::string_view k , int p ,
@@ -436,23 +439,24 @@ classes and check the three bounds exactly.
 Below are the declarations of the four universal classes.
 
 ```cpp
+// declarations of <ADS/dictionary/UniversalHashing.h>
 class CarterWegmanHash {
  public:
  explicit CarterWegmanHash( std::uint64_t m , std::uint64_t seed = 1 );
  CarterWegmanHash( std::uint64_t p , std::uint64_t a , std::uint64_t b ,
                    std::uint64_t m );
  std::uint64_t operator()( std::uint64_t k ) const;
- std::uint64_t p() const;
- std::uint64_t a() const;
- std::uint64_t b() const;
- std::uint64_t m() const;
+ std::uint64_t p( void ) const;
+ std::uint64_t a( void ) const;
+ std::uint64_t b( void ) const;
+ std::uint64_t m( void ) const;
  };
 class DotProductHash {
  public:
  DotProductHash( std::uint64_t m , int r , std::uint64_t seed = 1 );
  DotProductHash( std::uint64_t m , std::vector< std::uint64_t > a );
  std::uint64_t operator()( std::uint64_t k ) const;
- std::uint64_t universe() const;
+ std::uint64_t universe( void ) const;
  };
 class MultiplyShiftHash {
  public:
@@ -501,6 +505,7 @@ A table that grows and shrinks keeps the same $z$, and only $d$ changes.
 We declare `MultiplicativeHash` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/UniversalHashing.h>
 template< class K = std::uint64_t , class Code = std::hash< K > >
 class MultiplicativeHash {
  public:
@@ -510,7 +515,7 @@ class MultiplicativeHash {
                                          Code code = Code() );
  std::uint64_t operator()( const K & k ) const;
  std::size_t place( const K & k , std::size_t m ) const;
- std::uint64_t multiplier() const;
+ std::uint64_t multiplier( void ) const;
  };
 ```
 
@@ -592,6 +597,7 @@ it a `PlaceHash` too.
 In C++, `TabulationHash` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/RandomHashing.h>
 class TabulationHash {
  public:
  explicit TabulationHash( std::uint64_t seed = 1 );
@@ -646,13 +652,14 @@ in a table of positions already seen (cf. [Chapter 19](19-backtrack.md#ch-19)).
 Below are the declarations of the other tools of `RandomHashing.h`.
 
 ```cpp
+// declarations of <ADS/dictionary/RandomHashing.h>
 class SplitMix64 {
  public:
  using result_type = std::uint64_t;
  explicit constexpr SplitMix64( std::uint64_t seed = 0 );
- constexpr std::uint64_t operator()();
- static constexpr std::uint64_t min();
- static constexpr std::uint64_t max();
+ constexpr std::uint64_t operator()( void );
+ static constexpr std::uint64_t min( void );
+ static constexpr std::uint64_t max( void );
  };
 class ZobristTable {
  public:
@@ -783,11 +790,12 @@ $2^{32}$ times smaller for the same work per word.
 We declare the two hash codes as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/UniversalHashing.h>
 class CompoundHash {
  public:
  explicit CompoundHash( std::size_t r , std::uint64_t seed = 1 );
  std::uint64_t operator()( std::span< const std::uint64_t > x ) const;
- std::size_t parts() const;
+ std::size_t parts( void ) const;
  };
 class SequenceHash {
  public:
@@ -852,6 +860,7 @@ process 4 or 8 lanes at a time with the same result as the scalar code.
 In C++, the hashes of `FastHash.h` are declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/FastHash.h>
 struct Product128 { std::uint64_t lo , hi; };
 constexpr Product128 product128( std::uint64_t a , std::uint64_t b );
 constexpr std::uint64_t foldedProduct( std::uint64_t a , std::uint64_t b );
@@ -913,6 +922,7 @@ the values as numbers.
 Below are the declarations of the functions of `RowFingerprint.h`.
 
 ```cpp
+// declarations of <ADS/dictionary/RowFingerprint.h>
 std::uint64_t canonicalWord( double x );
 std::uint64_t rowFingerprint( std::span< const double > x ,
                               std::uint64_t seed = 0 );
@@ -964,6 +974,7 @@ are the lists, and $g$ is the load past which the table doubles.
 We declare `ChainedHashTable` as follows, followed by an example of use.
 
 ```cpp
+// declarations of <ADS/dictionary/ChainedHashTable.h>
 template< class K , class V , Chain C = Chain::FRONT ,
     class H = std::hash< K > >
 requires( C != Chain::SORTED || std::totally_ordered< K > )
@@ -980,15 +991,15 @@ class ChainedHashTable {
  void remove( const K & k );
  bool contains( const K & k ) const;
  const K * findKey( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
  template< class F > void forEach( F && f ) const;
  std::vector< K > chain( std::size_t i ) const;
- std::size_t probes() const;
- std::size_t restructures() const;
- std::size_t moved() const;
+ std::size_t probes( void ) const;
+ std::size_t restructures( void ) const;
+ std::size_t moved( void ) const;
  };
 ```
 
@@ -1070,6 +1081,7 @@ distinguishes the two cases.
 In C++, the functions of `TableSize.h` are declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/TableSize.h>
 bool is_prime( std::size_t n );
 std::size_t next_prime( std::size_t n );
 bool is_pow2( std::size_t n );
@@ -1151,6 +1163,7 @@ once, is checked on the key of the operation only past 1024 keys.
 Below are the declarations of `DLeftHashTable`.
 
 ```cpp
+// declarations of <ADS/dictionary/UniversalHashing.h>
 template< class K , class V , class H = std::hash< K > >
 class DLeftHashTable {
  public:
@@ -1163,9 +1176,9 @@ class DLeftHashTable {
  void insert( const K & k , const V & v );
  void remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- std::size_t maxLoad() const;
- int tables() const;
+ std::size_t size( void ) const;
+ std::size_t maxLoad( void ) const;
+ int tables( void ) const;
  };
 ```
 
@@ -1202,6 +1215,7 @@ are the places.
 We declare `OpenHashTable` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/OpenHashTable.h>
 template< class K , class V , class H = std::hash< K > >
 class OpenHashTable {
  public:
@@ -1215,17 +1229,17 @@ class OpenHashTable {
  void remove( const K & k );
  bool contains( const K & k ) const;
  const K * findKey( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
  template< class F > void forEach( F && f ) const;
  Slot slot( std::size_t i ) const;
  const K & keyAt( std::size_t i ) const;
- std::size_t probes() const;
- std::size_t restructures() const;
- std::size_t moved() const;
- class const_iterator;
+ std::size_t probes( void ) const;
+ std::size_t restructures( void ) const;
+ std::size_t moved( void ) const;
+ using const_iterator = SlotIterator< OpenHashTable , Places >;
  };
 ```
 
@@ -1479,6 +1493,7 @@ the index of the key $y$ in its own inspection.
 In C++, the two tables of Knuth are declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/KnuthHashing.h>
 template< class K , class V , class H = std::hash< K > >
 class CoalescedHashTable {
  public:
@@ -1486,9 +1501,9 @@ class CoalescedHashTable {
                               H h = H() );
  std::optional< V > lookup( const K & k ) const;
  void insert( const K & k , const V & v );
- std::size_t size() const;
- std::size_t probes() const;
- class const_iterator;
+ std::size_t size( void ) const;
+ std::size_t probes( void ) const;
+ using const_iterator = SlotIterator< CoalescedHashTable , Places >;
  };
 template< class K , class V , class H = std::hash< K > >
 class BrentHashTable {
@@ -1496,9 +1511,9 @@ class BrentHashTable {
  explicit BrentHashTable( std::size_t m , H h = H() );
  std::optional< V > lookup( const K & k ) const;
  void insert( const K & k , const V & v );
- std::size_t size() const;
- std::size_t probes() const;
- class const_iterator;
+ std::size_t size( void ) const;
+ std::size_t probes( void ) const;
+ using const_iterator = SlotIterator< BrentHashTable , Places >;
  };
 ```
 
@@ -1636,6 +1651,7 @@ the current one on, its lowest bit the current place.
 Below are the declarations of `FlatHashTable`, followed by an example of use.
 
 ```cpp
+// declarations of <ADS/dictionary/FlatHashTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
     class Eq = std::equal_to< K > >
 class FlatHashTable {
@@ -1657,13 +1673,13 @@ class FlatHashTable {
  std::pair< V * , bool > try_emplace( K && k , A && ... a );
  bool remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
- std::size_t deleted() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ std::size_t deleted( void ) const;
  void reserve( std::size_t n );
- void clear();
+ void clear( void );
  template< class F > void forEach( F && f ) const;
  template< class F > void forEach( F && f );
  void swap( FlatHashTable & o ) noexcept;
@@ -1719,6 +1735,7 @@ $g.\mathit{at}[ j ]$ the position of the place $j$ of the group $g$.
 We declare `DenseHashMap` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/DenseHashMap.h>
 template< class K , class V , class H = DefaultHash< K > ,
     class Eq = std::equal_to< K > >
 class DenseHashMap {
@@ -1740,15 +1757,15 @@ class DenseHashMap {
  std::pair< V * , bool > try_emplace( K && k , A && ... a );
  bool remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
- std::size_t deleted() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ std::size_t deleted( void ) const;
  void reserve( std::size_t n );
- void clear();
+ void clear( void );
  template< class F > void forEach( F && f ) const;
- const std::pair< K , V > * data() const;
+ const std::pair< K , V > * data( void ) const;
  void swap( DenseHashMap & o ) noexcept;
  using const_iterator = typename std::vector< std::pair< K ,
      V > >::const_iterator;
@@ -1792,6 +1809,7 @@ places, $m$ a power of 2.
 In C++, `PointerTable` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/PointerTable.h>
 template< class T , class Eq = StateEqual ,
     class A = std::allocator< std::byte > >
 class PointerTable {
@@ -1800,7 +1818,7 @@ class PointerTable {
                         const A & alloc = A() );
  PointerTable( const PointerTable & ) = default;
  PointerTable( PointerTable && o ) noexcept;
- void clear();
+ void clear( void );
  void reserve( std::size_t n );
  static constexpr std::size_t slotsFor( std::size_t n );
  template< class K , class Make >
@@ -1810,11 +1828,11 @@ class PointerTable {
  template< class K >
  T * find( const K & key , std::uint64_t hash ) const;
  void prefetch( std::uint64_t hash ) const;
- std::size_t size() const;
- std::size_t capacity() const;
- std::size_t bytes() const;
+ std::size_t size( void ) const;
+ std::size_t capacity( void ) const;
+ std::size_t bytes( void ) const;
  template< class F > void forEach( F && f ) const;
- class const_iterator;
+ using const_iterator = SlotIterator< PointerTable , Places >;
  };
 ```
 
@@ -1854,6 +1872,7 @@ $m = | E |$.
 Below are the declarations of `PositionIndex`.
 
 ```cpp
+// declarations of <ADS/dictionary/PositionIndex.h>
 template< class T , class H = FastHash< const T * > >
 class PositionIndex {
  public:
@@ -1867,11 +1886,11 @@ class PositionIndex {
  template< std::ranges::random_access_range R >
  void assign( const R & v );
  void renumber( std::span< const Position > E );
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
  void reserve( std::size_t n );
- void clear();
+ void clear( void );
  template< class F > void forEach( F && f ) const;
  void swap( PositionIndex & o ) noexcept;
  };
@@ -1911,6 +1930,7 @@ $\mathit{maxLoop} = 8 \lceil \log_2 m \rceil + 16$.
 We declare `CuckooHashTable` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/CuckooHashing.h>
 template< class K , class V , class H = std::hash< K > >
 class CuckooHashTable {
  public:
@@ -1923,12 +1943,12 @@ class CuckooHashTable {
  void insert( const K & k , const V & v );
  void remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- std::size_t capacity() const;
- std::size_t rehashes() const;
- std::size_t evictions() const;
- std::size_t stashed() const;
- class const_iterator;
+ std::size_t size( void ) const;
+ std::size_t capacity( void ) const;
+ std::size_t rehashes( void ) const;
+ std::size_t evictions( void ) const;
+ std::size_t stashed( void ) const;
+ using const_iterator = SlotIterator< CuckooHashTable , Places >;
  };
 ```
 
@@ -2036,6 +2056,7 @@ buckets in all.
 In C++, `BucketCuckooTable` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/BucketCuckooTable.h>
 template< class K , class V , class H = DefaultHash< K > ,
     class Eq = std::equal_to< K > >
 class BucketCuckooTable {
@@ -2050,13 +2071,13 @@ class BucketCuckooTable {
  bool insert( const K & k , const V & v );
  bool remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
- std::size_t rehashes() const;
- std::size_t moves() const;
- class const_iterator;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ std::size_t rehashes( void ) const;
+ std::size_t moves( void ) const;
+ using const_iterator = SlotIterator< BucketCuckooTable , Places >;
  };
 ```
 
@@ -2102,16 +2123,17 @@ is the number of the keys of $S$ with $h( k ) = j$.
 Below are the declarations of `PerfectHashTable`, followed by an example of use.
 
 ```cpp
+// declarations of <ADS/dictionary/PerfectHashing.h>
 class PerfectHashTable {
  public:
  using Key = std::uint64_t;
  explicit PerfectHashTable( const std::vector< std::uint64_t > & S ,
                             std::uint64_t seed = 1 );
  bool contains( std::uint64_t k ) const;
- std::size_t size() const;
- std::size_t space() const;
- std::size_t trials() const;
- class const_iterator;
+ std::size_t size( void ) const;
+ std::size_t space( void ) const;
+ std::size_t trials( void ) const;
+ using const_iterator = SlotIterator< PerfectHashTable , Places >;
  };
 ```
 
@@ -2226,6 +2248,7 @@ of degree 1 knowing its edge as the XOR of the edges on it.
 We declare `OrderedMinimalPerfectHash` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/PerfectHashing.h>
 template< class K >
 requires( std::integral< K > || std::convertible_to< const K & ,
           std::string_view > )
@@ -2236,9 +2259,9 @@ class OrderedMinimalPerfectHash {
                                      int r = 2 , double c = 0 ,
                                      std::uint64_t seed = 1 );
  std::size_t operator()( const K & k ) const;
- std::size_t size() const;
- std::size_t vertices() const;
- std::size_t trials() const;
+ std::size_t size( void ) const;
+ std::size_t vertices( void ) const;
+ std::size_t trials( void ) const;
  static std::optional< std::vector< std::uint32_t > > labelAcyclicGraph( std::size_t m ,
      const std::vector< std::size_t > & E ,
      const std::vector< std::size_t > & h , std::size_t n );
@@ -2335,6 +2358,7 @@ of the level $i$.
 In C++, `FingerprintPerfectHash` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/FingerprintPerfectHash.h>
 template< class T , class H = DefaultHash< T > >
 class FingerprintPerfectHash {
  public:
@@ -2343,10 +2367,10 @@ class FingerprintPerfectHash {
                                   double gamma = 2 ,
                                   std::uint64_t seed = 1 , H h = H() );
  std::size_t operator()( const T & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t bits() const;
- std::size_t levels() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t levels( void ) const;
  };
 ```
 
@@ -2396,6 +2420,7 @@ $k$, and $F$ the table of the free places below $n$.
 Below are the declarations of `MinimalPerfectHash`.
 
 ```cpp
+// declarations of <ADS/dictionary/MinimalPerfectHash.h>
 template< class T , class H = DefaultHash< T > >
 class MinimalPerfectHash {
  public:
@@ -2404,11 +2429,11 @@ class MinimalPerfectHash {
                               double lambda = 5 , double alpha = 0.99 ,
                               std::uint64_t seed = 1 , H h = H() );
  std::size_t operator()( const T & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t bits() const;
- std::size_t buckets() const;
- std::size_t trials() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t buckets( void ) const;
+ std::size_t trials( void ) const;
  };
 ```
 
@@ -2517,6 +2542,7 @@ the tables of the sizes.
 We declare `RecSplit` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/RecSplit.h>
 template< class T , unsigned L = 8 , class H = DefaultHash< T > >
 class RecSplit {
  public:
@@ -2525,11 +2551,11 @@ class RecSplit {
                     std::size_t b = 100 , std::uint64_t seed = 1 ,
                     H h = H() );
  std::size_t operator()( const T & k ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t bits() const;
- std::size_t buckets() const;
- std::size_t trials() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t buckets( void ) const;
+ std::size_t trials( void ) const;
  };
 ```
 
@@ -2642,6 +2668,7 @@ new node drawn as the number of trailing 1s of a random word plus one.
 In C++, `SkipList` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/SkipList.h>
 template< std::totally_ordered K , class V >
 class SkipList {
  public:
@@ -2655,9 +2682,9 @@ class SkipList {
  void insert( const K & k , const V & v );
  void remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
- int levels() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ int levels( void ) const;
  template< class F > void forEach( F && f ) const;
  const_iterator lowerBound( const K & k ) const;
  const K * findKey( const K & k ) const;
@@ -2885,6 +2912,7 @@ pass over it:
 Below are the declarations of `IndexedSkipList`, followed by an example of use.
 
 ```cpp
+// declarations of <ADS/dictionary/IndexedSkipList.h>
 template< std::totally_ordered K , class V >
 class IndexedSkipList {
  public:
@@ -2898,8 +2926,8 @@ class IndexedSkipList {
  void insert( const K & k , const V & v );
  void remove( const K & k );
  bool contains( const K & k ) const;
- std::size_t size() const;
- bool empty() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
  std::size_t rank( const K & k ) const;
  template< class F > void forEach( F && f ) const;
  const_iterator lowerBound( const K & k ) const;
@@ -3020,6 +3048,7 @@ shared with another key.
 We declare `Trie` and `RadixTree` as follows, followed by an example of use.
 
 ```cpp
+// declarations of <ADS/dictionary/Trie.h>
 template< class V >
 class Trie {
  public:
@@ -3029,10 +3058,10 @@ class Trie {
  void insert( std::string_view k , const V & v );
  void remove( std::string_view k );
  bool contains( std::string_view k ) const;
- std::size_t size() const;
+ std::size_t size( void ) const;
  std::vector< std::string > keysWithPrefix( std::string_view p ) const;
- std::size_t nodes() const;
- class const_iterator;
+ std::size_t nodes( void ) const;
+ using const_iterator = detail::TrieIterator< Node , V , false >;
  };
 template< class V >
 class RadixTree {
@@ -3043,10 +3072,10 @@ class RadixTree {
  void insert( std::string_view k , const V & v );
  void remove( std::string_view k );
  bool contains( std::string_view k ) const;
- std::size_t size() const;
+ std::size_t size( void ) const;
  std::vector< std::string > keysWithPrefix( std::string_view p ) const;
- std::size_t nodes() const;
- class const_iterator;
+ std::size_t nodes( void ) const;
+ using const_iterator = detail::TrieIterator< Node , V , true >;
  };
 ```
 
@@ -3124,6 +3153,7 @@ longest common prefix of $D[ i - 1 ]$ and $D[ i ]$.
 In C++, `PatriciaTrie` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/PatriciaTrie.h>
 class PatriciaTrie {
  public:
  explicit PatriciaTrie( std::vector< std::string > D );
@@ -3133,10 +3163,10 @@ class PatriciaTrie {
      std::size_t > prefixRange( std::string_view P ) const;
  std::size_t blindLeaf( std::string_view P ) const;
  bool contains( std::string_view P ) const;
- std::size_t size() const;
- std::size_t nodes() const;
+ std::size_t size( void ) const;
+ std::size_t nodes( void ) const;
  const std::string & string( std::size_t i ) const;
- std::vector< std::pair< std::size_t , int > > shape() const;
+ std::vector< std::pair< std::size_t , int > > shape( void ) const;
  using const_iterator = std::vector< std::string >::const_iterator;
  };
 ```
@@ -3213,6 +3243,7 @@ buckets of the coding on disk.
 Below are the declarations of `TwoLevelDictionary`.
 
 ```cpp
+// declarations of <ADS/dictionary/TwoLevelDictionary.h>
 class TwoLevelDictionary {
  public:
  explicit TwoLevelDictionary( FrontCodedDictionary F );
@@ -3221,9 +3252,9 @@ class TwoLevelDictionary {
  std::pair< std::size_t ,
      std::size_t > prefixRange( std::string_view P ) const;
  std::string access( std::size_t i ) const;
- std::size_t size() const;
- const PatriciaTrie & upper() const;
- const FrontCodedDictionary & lower() const;
+ std::size_t size( void ) const;
+ const PatriciaTrie & upper( void ) const;
+ const FrontCodedDictionary & lower( void ) const;
  using const_iterator = FrontCodedDictionary::const_iterator;
  };
 ```
@@ -3282,12 +3313,13 @@ leaf on the whole key.
 We declare `AdaptiveRadixTree` as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/AdaptiveRadixTree.h>
 template< class V >
 class AdaptiveRadixTree {
  public:
  using Key = std::string;
  using Value = V;
- AdaptiveRadixTree() = default;
+ AdaptiveRadixTree( void ) = default;
  AdaptiveRadixTree( const AdaptiveRadixTree & o );
  AdaptiveRadixTree( AdaptiveRadixTree && o ) noexcept;
  ~AdaptiveRadixTree();
@@ -3297,9 +3329,9 @@ class AdaptiveRadixTree {
  bool insert( std::string_view k , const V & v );
  bool remove( std::string_view k );
  bool contains( std::string_view k ) const;
- std::size_t size() const;
- bool empty() const;
- void clear();
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ void clear( void );
  void swap( AdaptiveRadixTree & o ) noexcept;
  template< class F > void forEach( F && f ) const;
  template< class F >
@@ -3432,20 +3464,21 @@ place and its degree, and $T$ the marks of the nodes where a string ends.
 In C++, `SuccinctPatriciaTrie` is declared as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/SuccinctPatriciaTrie.h>
 class SuccinctPatriciaTrie {
  public:
- SuccinctPatriciaTrie();
+ SuccinctPatriciaTrie( void );
  explicit SuccinctPatriciaTrie( const std::vector< std::string > & D );
- std::size_t size() const;
- bool empty() const;
- std::size_t nodes() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t nodes( void ) const;
  std::size_t lookup( std::string_view Q ) const;
  bool contains( std::string_view Q ) const;
  std::string access( std::size_t i ) const;
  std::size_t lexicographicPosition( std::string_view Q ) const;
  std::pair< std::size_t ,
      std::size_t > prefixRange( std::string_view P ) const;
- std::size_t bytes() const;
+ std::size_t bytes( void ) const;
  };
 ```
 
@@ -3576,30 +3609,29 @@ leftmost leaf.
 Below are the declarations of `BinaryTrie` and `SimpleBinaryTrie`.
 
 ```cpp
+// declarations of <ADS/dictionary/BinaryTrie.h>
 template< std::unsigned_integral U , class V = std::monostate ,
           int W = std::numeric_limits< U >::digits >
 requires TrieWidth< U , W >
-class BinaryTrie {
+class BinaryTrie : public detail::JumpTrie< U , V , W , false > {
  public:
+ using detail::JumpTrie< U , V , W , false >::JumpTrie;
  class const_iterator;
  using Key = U;
  using Item = U;
  using Value = V;
- BinaryTrie();
- BinaryTrie( BinaryTrie && o );
- ~BinaryTrie();
  const U * lowerBound( U x ) const;
  const U * find( U x ) const;
  std::optional< V > lookup( U x ) const;
  bool contains( U x ) const;
  bool insert( U x , const V & v = V() );
  bool remove( U x );
- std::size_t size() const;
- bool empty() const;
- std::size_t nodes() const;
- std::optional< U > min() const;
- std::optional< U > max() const;
- void clear();
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t nodes( void ) const;
+ std::optional< U > min( void ) const;
+ std::optional< U > max( void ) const;
+ void clear( void );
  const_iterator seek( U x ) const;
  };
 template< std::unsigned_integral U , class V = std::monostate ,
@@ -3610,7 +3642,7 @@ class SimpleBinaryTrie {
  using Key = U;
  using Item = U;
  using Value = V;
- SimpleBinaryTrie() = default;
+ SimpleBinaryTrie( void ) = default;
  SimpleBinaryTrie( SimpleBinaryTrie && o ) noexcept;
  ~SimpleBinaryTrie();
  const U * lowerBound( U x ) const;
@@ -3619,9 +3651,9 @@ class SimpleBinaryTrie {
  bool contains( U x ) const;
  bool insert( U x , const V & v = V() );
  bool remove( U x );
- std::size_t size() const;
- bool empty() const;
- std::size_t nodes() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t nodes( void ) const;
  template< class F > void forEach( F && f ) const;
  };
 ```
@@ -3742,30 +3774,30 @@ the prefix $p + 1$ from its entry.
 We declare the two x-fast tries as follows.
 
 ```cpp
+// declarations of <ADS/dictionary/XFastTrie.h>
 template< std::unsigned_integral U , class V = std::monostate ,
           int W = std::numeric_limits< U >::digits >
 requires TrieWidth< U , W >
-class XFastTrie {
+class XFastTrie : public detail::JumpTrie< U , V , W , true > {
+ using Base = detail::JumpTrie< U , V , W , true >;
  public:
+ using Base::Base;
  class const_iterator;
  using Key = U;
  using Item = U;
  using Value = V;
- XFastTrie();
- XFastTrie( XFastTrie && o );
- ~XFastTrie();
  const U * lowerBound( U x ) const;
  const U * find( U x ) const;
  std::optional< V > lookup( U x ) const;
  bool contains( U x ) const;
  bool insert( U x , const V & v = V() );
  bool remove( U x );
- std::size_t size() const;
- bool empty() const;
- std::size_t nodes() const;
- std::optional< U > min() const;
- std::optional< U > max() const;
- void clear();
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t nodes( void ) const;
+ std::optional< U > min( void ) const;
+ std::optional< U > max( void ) const;
+ void clear( void );
  const_iterator seek( U x ) const;
  const U * findNear( U x ) const;
  };
@@ -3778,7 +3810,7 @@ class ListXFastTrie {
  using Key = U;
  using Item = U;
  using Value = V;
- ListXFastTrie();
+ ListXFastTrie( void );
  ListXFastTrie( ListXFastTrie && o );
  ~ListXFastTrie();
  const U * lowerBound( U x ) const;
@@ -3788,9 +3820,9 @@ class ListXFastTrie {
  bool contains( U x ) const;
  bool insert( U x , const V & v = V() );
  bool remove( U x );
- std::size_t size() const;
- bool empty() const;
- std::size_t entries() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t entries( void ) const;
  const_iterator seek( U x ) const;
  };
 ```
@@ -3840,6 +3872,7 @@ representatives.
 In C++, `YFastTrie` is declared as follows, followed by an example of use.
 
 ```cpp
+// declarations of <ADS/dictionary/YFastTrie.h>
 template< std::unsigned_integral U , class V = std::monostate ,
     int W = std::numeric_limits< U >::digits >
 requires TrieWidth< U , W >
@@ -3857,9 +3890,9 @@ class YFastTrie {
  bool contains( U x ) const;
  bool insert( U x , const V & v = V() );
  bool remove( U x );
- std::size_t size() const;
- bool empty() const;
- std::size_t groups() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t groups( void ) const;
  template< class F > void forEach( F && f ) const;
  };
 ```
@@ -3969,6 +4002,7 @@ $\ell$ the item of $s$ in the list.
 Below are the declarations of `BitmapTrie`.
 
 ```cpp
+// declarations of <ADS/dictionary/BitmapTrie.h>
 template< class V = std::monostate >
 class BitmapTrie {
  public:
@@ -3976,7 +4010,7 @@ class BitmapTrie {
  using Key = std::string;
  using Item = std::string;
  using Value = V;
- BitmapTrie();
+ BitmapTrie( void );
  BitmapTrie( BitmapTrie && o );
  ~BitmapTrie();
  const std::string * lowerBound( std::string_view s ) const;
@@ -3985,9 +4019,9 @@ class BitmapTrie {
  bool contains( std::string_view s ) const;
  bool insert( std::string_view s , const V & v = V() );
  bool remove( std::string_view s );
- std::size_t size() const;
- bool empty() const;
- std::size_t nodes() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t nodes( void ) const;
  const_iterator seek( std::string_view s ) const;
  };
 ```

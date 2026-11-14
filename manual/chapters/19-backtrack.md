@@ -156,6 +156,8 @@ in the following lines, which print the six subsets of
 return 6:
 
 ```cpp
+#include "ADS/backtrack/Enumeration.h"
+
 long c = ADS::subsets( 4 , 2 , []( const std::vector< bool > & S ) {
  for( bool b : S ) std::cout << b;          // 1100 , 1010 , ... , 0011
  std::cout << '\n';
@@ -394,6 +396,7 @@ the indices of its options in the order in which they were chosen, until
 `visit` returns true; it returns the number of the solutions visited.
 
 ```cpp
+// declarations of <ADS/backtrack/DancingLinks.h>
 ExactCover( int primary , int secondary = 0 );
 int addOption( const std::vector< int > & items );   // its index
 template< class F > long solve( F && visit );
@@ -546,6 +549,7 @@ option (0, or no `colors`, for none) and the count of the nodes of the
 tree:
 
 ```cpp
+// declarations of <ADS/backtrack/FastExactCover.h>
 FastExactCover( int primary , int secondary = 0 );
 int addOption( const std::vector< int > & items ,
                const std::vector< int > & colors = {} );

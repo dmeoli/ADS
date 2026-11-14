@@ -205,6 +205,7 @@ most significant bit). Also, `widen()` reads the bits as the coefficients
 of a polynomial in $x = 2$. We declare the functions of the two headers as
 
 ```cpp
+// declarations of <ADS/numeric/BinaryInteger.h> <ADS/numeric/Polynomial.h>
 using Bits = std::vector< int >;
 inline Bits toBits( std::uint64_t x , std::size_t n = 0 );
 inline std::uint64_t fromBits( const Bits & b );
@@ -568,6 +569,7 @@ with `ADS_BIGINT_PORTABLE` defined; the macro `ADS_BIGINT_WIDE`, which
 records the choice as 128, 64 or 0, can also be set by hand. The class is
 
 ```cpp
+// declarations of <ADS/numeric/BigInteger.h>
 class BigInteger {
  public:
  using Limb = std::uint64_t;
@@ -705,6 +707,7 @@ is in lowest terms already, together with the unary `-`, the equality of
 the terms and the three-way comparison:
 
 ```cpp
+// declarations of <ADS/numeric/Rational.h>
 class Rational {
  public:
  Rational( BigInteger num = 0 , BigInteger den = 1 );
@@ -896,6 +899,8 @@ the table of (17.8) is the one of the book. We declare the functions of the
 three headers as
 
 ```cpp
+// declarations of <ADS/numeric/Combinatorics.h> <ADS/numeric/Catalan.h>
+//                  <ADS/numeric/MatrixChain.h>
 inline std::uint64_t binomial( int n , int k , long * calls = nullptr );
 inline std::vector< std::vector< std::uint64_t > > tartaglia( int n );
 inline std::uint64_t fibonacciTable( int n );
@@ -990,6 +995,7 @@ the products, the header has `transpose()` and `scale()` of a rectangular
 matrix:
 
 ```cpp
+// declarations of <ADS/numeric/Matrix.h>
 template< class T >
 using Matrix = std::vector< std::vector< T > >;
 template< class T >
@@ -1085,6 +1091,7 @@ Strassen and Winograd on `DenseMatrix` ([Higham
 In all, `DenseMatrix.h` declares
 
 ```cpp
+// declarations of <ADS/numeric/DenseMatrix.h>
 template< class T >
 class DenseMatrix {
  public:
@@ -1238,6 +1245,7 @@ the same, and the cost is higher by the length of those walks. Besides the
 ranges `rowEntries()` and `colEntries()`, the class is
 
 ```cpp
+// declarations of <ADS/numeric/SparseMatrix.h>
 class SparseMatrix {
  public:
  SparseMatrix( std::size_t m , std::size_t n );
@@ -1329,6 +1337,7 @@ $\mathit{nnz} / 256$ items fits the cache. Both passes are stable, and the
 result is that of [Lemma 17.12](17-numeric.md#lem-17-12). The class is
 
 ```cpp
+// declarations of <ADS/numeric/CsrMatrix.h>
 class CsrMatrix {
  public:
  using Triplet = std::tuple< std::size_t , std::size_t , double >;
@@ -1413,6 +1422,7 @@ a chunk in `chunkStart()`. The class also has `rows()`, `cols()`,
 the default $\sigma$ of the constructor is 256:
 
 ```cpp
+// declarations of <ADS/numeric/SellMatrix.h>
 template< std::size_t C = 4 >
 class SellMatrix {
  public:
@@ -1461,6 +1471,7 @@ $z$ entries, `clear()`, which keeps the memory, the spans `indices(i)` and
 `ind()` and `val()` that a solver takes:
 
 ```cpp
+// declarations of <ADS/numeric/DynamicCsr.h>
 template< class I = int , class V = double >
 class DynamicCsr {
  public:
@@ -1590,6 +1601,7 @@ of the entries written, i.e., $\mathit{beg}[ \mathit{nmajor} ]$. We
 declare them as
 
 ```cpp
+// declarations of <ADS/numeric/SparseAssembly.h>
 template< class I , class V >
 struct AssemblyWorkspace {
  template< class U >
@@ -1949,6 +1961,7 @@ come back reduced modulo $N$. We declare the functions of the two headers
 as
 
 ```cpp
+// declarations of <ADS/numeric/NumberTheory.h> <ADS/numeric/RSA.h>
 using U64 = std::uint64_t;
 inline U64 gcd( U64 s , U64 m );
 [[nodiscard]] constexpr U64 binaryGcd( U64 a , U64 b );
@@ -2310,6 +2323,7 @@ and at most $2^{32} - 1$ in number; a draw is `table(g)`, `size()` returns $n$, 
 the tests compare with $w_i / \sum_j w_j$. In `RandomNumbers.h` we declare
 
 ```cpp
+// declarations of <ADS/numeric/RandomNumbers.h>
 class LinearCongruential {
  public:
  using result_type = std::uint64_t;
@@ -2356,6 +2370,7 @@ std::vector< T > reservoirSampling( const std::vector< T > & S ,
 and in `RandomGenerators.h`
 
 ```cpp
+// declarations of <ADS/numeric/RandomGenerators.h>
 template< class G >
 concept FullWordGenerator =
  std::uniform_random_bit_generator< std::remove_reference_t< G > > &&
@@ -2588,6 +2603,7 @@ item of weight $w$ is $U^{1 / w}$. We declare the functions of
 `RandomSampling.h` as
 
 ```cpp
+// declarations of <ADS/numeric/RandomSampling.h>
 template< class R >
 std::vector< std::size_t > sampleBySwaps( std::size_t n , std::size_t N ,
                                           R & g );

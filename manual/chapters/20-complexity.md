@@ -1396,6 +1396,7 @@ headers as it stands, and its assertions hold.
 `Domino.h` ([§20.1](20-complexity.md#sec-20-1)).
 
 ```cpp
+// declarations of <ADS/complexity/Domino.h>
 struct Tile {
  int up , right , down , left;
  };
@@ -1410,6 +1411,7 @@ bool linearTiling( const std::vector< Tile > & D , long n );
 `EasyCases.h` ([§20.5](20-complexity.md#sec-20-5)).
 
 ```cpp
+// declarations of <ADS/complexity/EasyCases.h>
 int literalNode( int l );
 std::optional< std::vector< bool > > twoSat( const Cnf & F , int n );
 std::optional< std::vector< int > > twoColoring( const Adjacency & G );
@@ -1423,6 +1425,7 @@ int intervalClique( const std::vector< std::pair< long , long > > & I );
 `Nondeterminism.h` ([§20.2](20-complexity.md#sec-20-2)).
 
 ```cpp
+// declarations of <ADS/complexity/Nondeterminism.h>
 class Chooser { public:
  int choice( int k );
  template< class A > bool run( A && alg , long * runs = nullptr );
@@ -1433,6 +1436,7 @@ class Chooser { public:
 `Problems.h` ([§20.1](20-complexity.md#sec-20-1)).
 
 ```cpp
+// declarations of <ADS/complexity/Problems.h>
 using Adjacency = std::vector< std::vector< bool > >;
 using Clause = std::vector< int >;
 using Cnf = std::vector< Clause >;
@@ -1481,6 +1485,7 @@ std::optional< std::vector< long > > bribes( std::vector< long > M ,
 `Reductions.h` ([§20.4](20-complexity.md#sec-20-4)).
 
 ```cpp
+// declarations of <ADS/complexity/Reductions.h>
 int tileVar( int h , int i , int j , int n );
 std::pair< Adjacency ,
     int > dominoToClique( const std::vector< Tile > & D , int n );
@@ -1499,6 +1504,7 @@ std::vector< Point > sortToHull( const std::vector< long > & a );
 `Approximation.h` ([§20.7](20-complexity.md#sec-20-7)).
 
 ```cpp
+// declarations of <ADS/intractable/Approximation.h>
 std::vector< int > firstFit( const std::vector< long > & A , long k ,
     bool decreasing = false );
 template< class T >
@@ -1516,6 +1522,7 @@ Nodes vertexCoverApprox( const Adjacency & G );
 `BranchAndBound.h` ([§20.8](20-complexity.md#sec-20-8)).
 
 ```cpp
+// declarations of <ADS/intractable/BranchAndBound.h>
 enum class TspBound { BOOK , ONE_TREE };
 template< class T >
 T spanningTreeWeight( const std::vector< std::vector< T > > & D ,
@@ -1527,8 +1534,8 @@ T tspLowerBound( const std::vector< std::vector< T > > & D ,
     const Nodes & S , TspBound how = TspBound::BOOK );
 template< class T >
 std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
-    const Nodes & start =;
-, TspBound how = TspBound::BOOK , long * generated = nullptr );
+    const Nodes & start = {} , TspBound how = TspBound::BOOK ,
+    long * generated = nullptr );
 template< class T >
 std::pair< T ,
     Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
@@ -1547,6 +1554,7 @@ std::pair< long , Nodes > knapsackGreedy( const std::vector< long > & p ,
 `FifteenPuzzle.h` ([§20.10](20-complexity.md#sec-20-10)).
 
 ```cpp
+// declarations of <ADS/intractable/FifteenPuzzle.h>
 using Board = std::vector< int >;
 Board puzzleGoal( int n );
 int manhattan( const Board & B , int n );
@@ -1565,6 +1573,7 @@ std::optional< std::vector< Board > > solvePuzzle( const Board & B ,
 `Heuristics.h` ([§20.9](20-complexity.md#sec-20-9)).
 
 ```cpp
+// declarations of <ADS/intractable/Heuristics.h>
 template< class T >
 std::pair< std::vector< std::pair< int , int > > ,
     Nodes > greedyTsp( const std::vector< std::vector< T > > & D );
@@ -1600,6 +1609,7 @@ std::vector< int > dsatur( const Adjacency & G );
 `Pseudopolynomial.h` ([§20.6](20-complexity.md#sec-20-6)).
 
 ```cpp
+// declarations of <ADS/intractable/Pseudopolynomial.h>
 template< class Bits = std::vector< bool > >
 bool subsetSumDP( const std::vector< long > & A , long k ,
     std::vector< std::vector< bool > > * rows = nullptr );

@@ -1430,6 +1430,7 @@ headers as it stands, and its assertions hold.
 `BalancedParentheses.h` ([§22.8](22-succinct.md#sec-22-8)).
 
 ```cpp
+// declarations of <ADS/succinct/BalancedParentheses.h>
 class BalancedParentheses { public:
  static constexpr std::size_t nil = std::size_t( -1 );
  BalancedParentheses( void );
@@ -1449,6 +1450,7 @@ class BalancedParentheses { public:
 `BitStream.h` ([§22.2](22-succinct.md#sec-22-2)).
 
 ```cpp
+// declarations of <ADS/succinct/BitStream.h>
 class BitWriter { public:
  BitWriter( void ) = default;
  std::size_t size( void ) const;
@@ -1474,6 +1476,7 @@ class BitReader { public:
 `BitVector.h` ([§22.11](22-succinct.md#sec-22-11)).
 
 ```cpp
+// declarations of <ADS/succinct/BitVector.h>
 using Words = std::vector< Word , detail::LineAllocator< Word > >;
 constexpr int selectInWord( Word x , int k );
 template< class O , class T >
@@ -1505,6 +1508,7 @@ class BitVector { public:
 `BPTree.h` ([§22.8](22-succinct.md#sec-22-8)).
 
 ```cpp
+// declarations of <ADS/succinct/BPTree.h>
 class BPTree { public:
  static constexpr std::size_t nil = std::size_t( -1 );
  BPTree( void ) = default;
@@ -1527,6 +1531,7 @@ class BPTree { public:
 `BVGraph.h` ([§22.10](22-succinct.md#sec-22-10)).
 
 ```cpp
+// declarations of <ADS/succinct/BVGraph.h>
 class BVGraph { public:
  using List = std::vector< std::size_t >;
  using Interval = std::pair< std::size_t , std::size_t >;
@@ -1553,6 +1558,7 @@ class BVGraph { public:
 `CompactRankSelect.h` ([§22.1](22-succinct.md#sec-22-1)).
 
 ```cpp
+// declarations of <ADS/succinct/CompactRankSelect.h>
 class CompactRankSelect { public:
  CompactRankSelect( void );
  explicit CompactRankSelect( BitVector b );
@@ -1579,6 +1585,7 @@ class CompactRankSelect { public:
 `EliasFanoGraph.h` ([§22.10](22-succinct.md#sec-22-10)).
 
 ```cpp
+// declarations of <ADS/succinct/EliasFanoGraph.h>
 class EliasFanoGraph { public:
  EliasFanoGraph( void ) = default;
  explicit EliasFanoGraph( const std::vector< std::vector< std::size_t > > &
@@ -1596,6 +1603,7 @@ class EliasFanoGraph { public:
 `EliasFano.h` ([§22.6](22-succinct.md#sec-22-6)).
 
 ```cpp
+// declarations of <ADS/succinct/EliasFano.h>
 template< bool Lazy > class BasicEliasFano { public:
  BasicEliasFano( void ) = default;
  explicit BasicEliasFano( const std::vector< std::uint64_t > & x );
@@ -1624,6 +1632,7 @@ using LazyEliasFano = BasicEliasFano< true >;
 `HuffmanWaveletTree.h` ([§22.6](22-succinct.md#sec-22-6)).
 
 ```cpp
+// declarations of <ADS/succinct/HuffmanWaveletTree.h>
 template< class RS = RankSelect > class HuffmanWaveletTree { public:
  HuffmanWaveletTree( void ) = default;
  explicit HuffmanWaveletTree( std::span< const std::uint32_t > x ,
@@ -1649,6 +1658,7 @@ template< class RS = RankSelect > class HuffmanWaveletTree { public:
 `InterleavedRankSelect.h` ([§22.1](22-succinct.md#sec-22-1)).
 
 ```cpp
+// declarations of <ADS/succinct/InterleavedRankSelect.h>
 class InterleavedRankSelect { public:
  InterleavedRankSelect( void );
  explicit InterleavedRankSelect( const BitVector & b );
@@ -1668,6 +1678,7 @@ class InterleavedRankSelect { public:
 `JacobsonTree.h` ([§22.8](22-succinct.md#sec-22-8)).
 
 ```cpp
+// declarations of <ADS/succinct/JacobsonTree.h>
 class JacobsonTree { public:
  static constexpr std::size_t nil = std::size_t( -1 );
  JacobsonTree( void );
@@ -1687,6 +1698,7 @@ class JacobsonTree { public:
 `K2Tree.h` ([§22.10](22-succinct.md#sec-22-10)).
 
 ```cpp
+// declarations of <ADS/succinct/K2Tree.h>
 class K2Tree { public:
  using Edge = std::pair< std::size_t , std::size_t >;
  K2Tree( void ) = default;
@@ -1706,6 +1718,7 @@ class K2Tree { public:
 `LAVector.h` ([§22.6](22-succinct.md#sec-22-6)).
 
 ```cpp
+// declarations of <ADS/succinct/LAVector.h>
 class LAVector { public:
  LAVector( void ) = default;
  explicit LAVector( const std::vector< std::uint64_t > & x , int c = 7 );
@@ -1732,6 +1745,7 @@ class LAVector { public:
 `LoudsTree.h` ([§22.8](22-succinct.md#sec-22-8)).
 
 ```cpp
+// declarations of <ADS/succinct/LoudsTree.h>
 class LoudsTree { public:
  static constexpr std::size_t nil = std::size_t( -1 );
  LoudsTree( void );
@@ -1752,6 +1766,7 @@ class LoudsTree { public:
 `MoveStructure.h` ([§22.10](22-succinct.md#sec-22-10)).
 
 ```cpp
+// declarations of <ADS/succinct/MoveStructure.h>
 class MoveStructure { public:
  MoveStructure( void ) = default;
  MoveStructure( std::span< const std::uint64_t > p ,
@@ -1771,6 +1786,7 @@ class MoveStructure { public:
 `PackedArray.h` ([§22.2](22-succinct.md#sec-22-2)).
 
 ```cpp
+// declarations of <ADS/succinct/PackedArray.h>
 template< unsigned B , bool Saturate = false > class PackedArray { public:
  using Word = std::uint64_t;
  static constexpr std::size_t PER = 64 / B;
@@ -1810,6 +1826,7 @@ class TritArray { public:
 `PartitionedEliasFano.h` ([§22.6](22-succinct.md#sec-22-6)).
 
 ```cpp
+// declarations of <ADS/succinct/PartitionedEliasFano.h>
 class PartitionedEliasFano { public:
  PartitionedEliasFano( void ) = default;
  explicit PartitionedEliasFano( std::span< const std::uint64_t > x );
@@ -1834,6 +1851,7 @@ class PartitionedEliasFano { public:
 `RankSelect.h` ([§22.1](22-succinct.md#sec-22-1)).
 
 ```cpp
+// declarations of <ADS/succinct/RankSelect.h>
 struct RankSelectOptions {
  enum class Selects { NONE , ONES , ZEROS , BOTH };
  };
@@ -1869,6 +1887,7 @@ using LazyRankSelect = BasicRankSelect< true >;
 `RRRBitVector.h` ([§22.1](22-succinct.md#sec-22-1)).
 
 ```cpp
+// declarations of <ADS/succinct/RRRBitVector.h>
 class RRRBitVector { public:
  RRRBitVector( void );
  explicit RRRBitVector( const BitVector & b );
@@ -1887,14 +1906,21 @@ class RRRBitVector { public:
 `WaveletMatrix.h` ([§22.6](22-succinct.md#sec-22-6)).
 
 ```cpp
+// declarations of <ADS/succinct/WaveletMatrix.h>
 class WaveletMatrix { public:
  WaveletMatrix( void ) = default;
  explicit WaveletMatrix( std::span< const std::uint64_t > x , int w = 0 );
  template< Executor E >
  WaveletMatrix( E & ex , std::span< const std::uint64_t > x , int w = 0 );
- template< class U >   // U is std::uint8_t, std::uint16_t or std::uint32_t
+ template< class U >
+ requires( std::is_same_v< U , std::uint8_t > ||
+           std::is_same_v< U , std::uint16_t > ||
+           std::is_same_v< U , std::uint32_t > )
  explicit WaveletMatrix( std::span< const U > x , int w = 0 );
  template< Executor E , class U >
+ requires( std::is_same_v< U , std::uint8_t > ||
+           std::is_same_v< U , std::uint16_t > ||
+           std::is_same_v< U , std::uint32_t > )
  WaveletMatrix( E & ex , std::span< const U > x , int w = 0 );
  std::size_t size( void ) const;
  bool empty( void ) const;

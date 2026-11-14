@@ -219,6 +219,7 @@ In `ADS/queue/ArrayQueue.h`, the declarations of `ArrayQueue` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/queue/ArrayQueue.h>
 template< class T >
 class ArrayQueue {
  public:
@@ -279,6 +280,7 @@ In `ADS/queue/LinkedQueue.h`, the declarations of `LinkedQueue` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/queue/LinkedQueue.h>
 template< class T >
 class LinkedQueue {
  public:
@@ -342,6 +344,7 @@ In `ADS/queue/Dequeue.h`, the declarations of `Dequeue` that a user calls
 are
 
 ```cpp
+// declarations of <ADS/queue/Dequeue.h>
 template< class T >
 class Dequeue {
  public:
@@ -559,6 +562,7 @@ In `ADS/queue/RingDeque.h`, the declarations of `RingDeque` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/queue/RingDeque.h>
 template< class T >
 class RingDeque {
  public:
@@ -632,6 +636,7 @@ In `ADS/queue/UniqueQueue.h`, the declarations of `UniqueQueue` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/queue/UniqueQueue.h>
 template< std::equality_comparable T , Duplicate D = Duplicate::IGNORE_NEW >
 class UniqueQueue {
  public:
@@ -739,6 +744,7 @@ In `ADS/queue/RandomQueue.h`, the declarations of `RandomQueue` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/queue/RandomQueue.h>
 template< class T >
 class RandomQueue {
  public:
@@ -875,6 +881,7 @@ In `ADS/queue/MinQueue.h`, the declarations of `MinQueue` that a user calls
 are
 
 ```cpp
+// declarations of <ADS/queue/MinQueue.h>
 template< class T , class C = std::less<> >
 class MinQueue {
  public:
@@ -894,6 +901,7 @@ In `ADS/queue/MinDeque.h`, the declarations of `MinDeque` that a user calls
 are
 
 ```cpp
+// declarations of <ADS/queue/MinDeque.h>
 template< class T , class C = std::less<> >
 class MinDeque {
  public:
@@ -1122,6 +1130,7 @@ In `ADS/queue/RealTimeMinQueue.h`, the declarations of `RealTimeMinQueue`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/queue/RealTimeMinQueue.h>
 template< class T , class C = std::less<> >
 class RealTimeMinQueue {
  public:
@@ -1142,6 +1151,7 @@ In `ADS/queue/RealTimeMinDeque.h`, the declarations of `RealTimeMinDeque`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/queue/RealTimeMinDeque.h>
 template< std::copy_constructible T , class C = std::less<> >
 class RealTimeMinDeque {
  public:
@@ -1209,6 +1219,7 @@ takes a `RandomQueue`, emptied after all the lines are in (cf.
 In `ADS/queue/QueueAlgorithms.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/queue/QueueAlgorithms.h>
 template< Queue Q > void extractPositive( Q & q , Q & out );
 template< Queue Q > void copyPositive( Q & q , Q & out );
 ```

@@ -1171,6 +1171,7 @@ headers as it stands, and its assertions hold.
 `Bitwise.h` ([§18.1](18-combinatorial.md#sec-18-1)).
 
 ```cpp
+// declarations of <ADS/combinatorial/Bitwise.h>
 using Word = std::uint64_t;
 constexpr int sidewaysSum( Word x );
 constexpr int ruler( Word x );
@@ -1189,6 +1190,7 @@ constexpr bool hasZeroByte( Word x );
 `FastBitwise.h` ([§18.3](18-combinatorial.md#sec-18-3)).
 
 ```cpp
+// declarations of <ADS/combinatorial/FastBitwise.h>
 std::uint64_t popcount( const Word * w , std::size_t n );
 std::uint64_t popcountAnd( const Word * a , const Word * b ,
     std::size_t n );
@@ -1202,6 +1204,7 @@ std::pair< std::uint32_t , std::uint32_t > mortonDecode( Word z );
 `FastGeneration.h` ([§18.4](18-combinatorial.md#sec-18-4)).
 
 ```cpp
+// declarations of <ADS/combinatorial/FastGeneration.h>
 template< class T , class F >
 long forEachPermutation( std::vector< T > & a , F && visit );
 template< class T , class F >
@@ -1215,6 +1218,7 @@ long forEachCombinationMask( int n , int t , F && visit );
 `Generation.h` ([§18.4](18-combinatorial.md#sec-18-4)).
 
 ```cpp
+// declarations of <ADS/combinatorial/Generation.h>
 using Tuple = std::vector< int >;
 template< class F >
 long mixedRadix( const std::vector< int > & m , F && visit );

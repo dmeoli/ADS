@@ -1658,6 +1658,7 @@ headers as it stands, and its assertions hold.
 `ArithmeticCoding.h` ([§21.4](21-compression.md#sec-21-4)).
 
 ```cpp
+// declarations of <ADS/compression/ArithmeticCoding.h>
 template< class C >
 std::pair< Rational ,
     Rational > arithmeticInterval( std::span< const C > text ,
@@ -1703,6 +1704,7 @@ std::string adaptiveArithmeticDecode( std::span< const std::uint8_t > code ,
 `BinaryPacking.h` ([§21.8](21-compression.md#sec-21-8)).
 
 ```cpp
+// declarations of <ADS/compression/BinaryPacking.h>
 std::vector< std::uint8_t > binaryPack( std::span< const std::uint32_t > x ,
     bool sorted = false );
 std::vector< std::uint32_t > binaryUnpack(
@@ -1718,6 +1720,7 @@ std::vector< std::uint32_t > patchedUnpack(
 `BurrowsWheeler.h` ([§21.10](21-compression.md#sec-21-10)).
 
 ```cpp
+// declarations of <ADS/compression/BurrowsWheeler.h>
 struct BWT {
  std::string last;
  std::size_t primary;
@@ -1747,6 +1750,7 @@ std::string bzipDecompress( std::span< const std::uint8_t > code );
 `CanonicalHuffman.h` ([§21.2](21-compression.md#sec-21-2)).
 
 ```cpp
+// declarations of <ADS/compression/CanonicalHuffman.h>
 template< class C , class F >
 std::map< C , int > huffmanLengths( const std::map< C , F > & freq );
 template< class C , class F >
@@ -1772,6 +1776,7 @@ template< class C > class CanonicalHuffman { public:
 `DirectAccessCodes.h` ([§21.8](21-compression.md#sec-21-8)).
 
 ```cpp
+// declarations of <ADS/compression/DirectAccessCodes.h>
 class DirectAccessCodes { public:
  DirectAccessCodes( void ) = default;
  explicit DirectAccessCodes( std::span< const std::uint64_t > x );
@@ -1792,6 +1797,7 @@ class DirectAccessCodes { public:
 `Entropy.h` ([§21.1](21-compression.md#sec-21-1)).
 
 ```cpp
+// declarations of <ADS/compression/Entropy.h>
 template< class C , class F >
 double entropy( const std::map< C , F > & freq );
 double entropy( std::string_view s );
@@ -1801,6 +1807,7 @@ double entropy( std::string_view s , std::size_t k );
 `FMIndex.h` ([§21.11](21-compression.md#sec-21-11)).
 
 ```cpp
+// declarations of <ADS/compression/FMIndex.h>
 class FMIndex { public:
  explicit FMIndex( std::string_view s , std::size_t b = 64 ,
      std::size_t mu = 32 );
@@ -1818,6 +1825,7 @@ class FMIndex { public:
 `HuffmanCoder.h` ([§21.3](21-compression.md#sec-21-3)).
 
 ```cpp
+// declarations of <ADS/compression/HuffmanCoder.h>
 std::vector< std::uint8_t > huffmanCompress( std::span< const std::uint8_t
     > in );
 std::vector< std::uint8_t > huffmanDecompress( std::span< const
@@ -1830,6 +1838,7 @@ std::array< std::uint8_t ,
 `HuffmanFMIndex.h` ([§21.11](21-compression.md#sec-21-11)).
 
 ```cpp
+// declarations of <ADS/compression/HuffmanFMIndex.h>
 template< class RS = RankSelect > class HuffmanFMIndex { public:
  explicit HuffmanFMIndex( std::string_view s , std::size_t mu = 32 );
  std::size_t size( void ) const;
@@ -1844,6 +1853,7 @@ template< class RS = RankSelect > class HuffmanFMIndex { public:
 `IntegerCodes.h` ([§21.7](21-compression.md#sec-21-7)).
 
 ```cpp
+// declarations of <ADS/compression/IntegerCodes.h>
 constexpr int binaryLength( std::uint64_t x );
 constexpr std::uint64_t signedToNatural( std::int64_t x );
 constexpr std::int64_t naturalToSigned( std::uint64_t y );
@@ -1905,6 +1915,7 @@ std::vector< std::uint64_t > decodeInterpolative( BitReader & r ,
 `LempelZiv.h` ([§21.9](21-compression.md#sec-21-9)).
 
 ```cpp
+// declarations of <ADS/compression/LempelZiv.h>
 struct LZ77Phrase {
  std::size_t distance , length;
  std::optional< char > next;
@@ -1938,12 +1949,14 @@ std::string lzwDecode( const std::vector< std::uint32_t > & I );
 `LZ77Linear.h` ([§21.9](21-compression.md#sec-21-9)).
 
 ```cpp
+// declarations of <ADS/compression/LZ77Linear.h>
 std::vector< LZ77Phrase > lz77ParseLinear( std::string_view s );
 ```
 
 `MoveRIndex.h` ([§21.11](21-compression.md#sec-21-11)).
 
 ```cpp
+// declarations of <ADS/compression/MoveRIndex.h>
 class MoveRIndex { public:
  MoveRIndex( void );
  explicit MoveRIndex( std::string_view s );
@@ -1958,6 +1971,7 @@ class MoveRIndex { public:
 `PackedBits.h` ([§21.2](21-compression.md#sec-21-2)).
 
 ```cpp
+// declarations of <ADS/compression/PackedBits.h>
 class PackedBitWriter { public:
  void put( bool b );
  void put( std::uint64_t v , int k );
@@ -1977,6 +1991,7 @@ class PackedBitReader { public:
 `PPM.h` ([§21.6](21-compression.md#sec-21-6)).
 
 ```cpp
+// declarations of <ADS/compression/PPM.h>
 class PPMModel { public:
  struct Step {
   std::uint64_t low , high , total;
@@ -2000,6 +2015,7 @@ std::string ppmDecode( std::span< const std::uint8_t > code ,
 `Rans.h` ([§21.5](21-compression.md#sec-21-5)).
 
 ```cpp
+// declarations of <ADS/compression/Rans.h>
 std::vector< std::uint8_t > ransCompress( std::span< const std::uint8_t >
     in );
 std::vector< std::uint8_t > ransDecompress( std::span< const std::uint8_t >
@@ -2012,6 +2028,7 @@ std::array< std::uint32_t ,
 `RIndex.h` ([§21.11](21-compression.md#sec-21-11)).
 
 ```cpp
+// declarations of <ADS/compression/RIndex.h>
 class RIndex { public:
  RIndex( void );
  explicit RIndex( std::string_view s );
@@ -2027,6 +2044,7 @@ class RIndex { public:
 `StreamVByte.h` ([§21.8](21-compression.md#sec-21-8)).
 
 ```cpp
+// declarations of <ADS/compression/StreamVByte.h>
 std::vector< std::uint8_t > streamVByteEncode( std::span< const
     std::uint32_t > x );
 std::vector< std::uint32_t > streamVByteDecode( std::span< const
@@ -2036,6 +2054,7 @@ std::vector< std::uint32_t > streamVByteDecode( std::span< const
 `Tans.h` ([§21.5](21-compression.md#sec-21-5)).
 
 ```cpp
+// declarations of <ADS/compression/Tans.h>
 std::vector< std::uint8_t > tansCompress( std::span< const std::uint8_t >
     in );
 std::vector< std::uint8_t > tansDecompress( std::span< const std::uint8_t >

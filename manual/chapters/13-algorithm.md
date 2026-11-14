@@ -214,6 +214,7 @@ In the library the three solvers of the recurrences are declared as
 follows, `Growth` being the structure of (13.1):
 
 ```cpp
+// declarations of <ADS/algorithm/MasterTheorem.h> <ADS/algorithm/AkraBazzi.h>
 Growth master( double a , double b , double beta , double k = 0 );
 Growth linear( double a , double beta );
 double akraBazziExponent( const std::vector< std::pair< double ,
@@ -272,6 +273,7 @@ The counter is a vector of `int`, each 0 or 1, and the increment is
 declared as
 
 ```cpp
+// declarations of <ADS/algorithm/BinaryCounter.h>
 std::size_t add( std::vector< int > & A );
 ```
 
@@ -364,6 +366,7 @@ The three procedures have the same parameters, the number of the disks,
 the three pegs and the function that receives each move:
 
 ```cpp
+// declarations of <ADS/algorithm/Hanoi.h>
 template< class F >
 void hanoi_recursive( int n , int source , int dest , int middle ,
                       F && f );
@@ -469,6 +472,7 @@ Each part of a scheme is a callable given by the caller, and the schemes
 are declared as follows:
 
 ```cpp
+// declarations of <ADS/algorithm/Paradigms.h>
 template< class Z , class Next , class Last , class A , class O >
 auto enumerateSearch( Z z , Next && next , Last && last , A && a , O && o )
  -> std::optional< decltype( o( z ) ) >;
@@ -724,6 +728,8 @@ All the functions of the section return a `Segment< T >`, but
 `gcIndicator()` and `maxSubarraySum()`:
 
 ```cpp
+// declarations of <ADS/algorithm/MaximumSegments.h>
+//                  <ADS/algorithm/Subsequences.h>
 template< class T >
 Segment< T > maxSumSegmentCubic( const std::vector< T > & D );
 template< class T >
@@ -916,6 +922,8 @@ The functions of the section are declared as follows; a run or a segment
 is returned as the pair of its first place and of its length:
 
 ```cpp
+// declarations of <ADS/algorithm/SequenceQueries.h>
+//                  <ADS/optimization/SequenceProblems.h>
 template< class T , class C = std::less<> >
 std::vector< std::size_t >
 smallerToTheRight( const std::vector< T > & A , C less = C() );
@@ -926,6 +934,7 @@ template< class T , class Hash = std::hash< T >
 > std::pair< std::size_t , std::size_t >
 longestDistinctSegment( const std::vector< T > & A );
 template< class T >
+ requires( std::is_arithmetic_v< T > && ! std::is_same_v< T , bool > )
 std::optional< std::pair< T , T > >
 largestGap( std::vector< std::pair< T , T > > I );
 template< class T >
@@ -1055,6 +1064,7 @@ Both functions take the profits and the volumes as vectors of `long`;
 taken:
 
 ```cpp
+// declarations of <ADS/optimization/Knapsack.h>
 std::pair< long , std::vector< std::size_t > >
 knapsack( const std::vector< long > & p , const std::vector< long > & v ,
           long C );
@@ -1211,6 +1221,8 @@ The functions of the section are declared as follows, the counters
 being of the type `C`:
 
 ```cpp
+// declarations of <ADS/optimization/KnapsackVariants.h>
+//                  <ADS/optimization/CoinChange.h>
 template< class T , class V >
 std::pair< T , std::vector< std::size_t > >
 unboundedKnapsack( const std::vector< T > & p ,
@@ -1484,6 +1496,11 @@ return a pair give the optimum together with the places, or the colors,
 that attain it:
 
 ```cpp
+// declarations of <ADS/optimization/WeightedIntervals.h>
+//                  <ADS/optimization/HouseProblems.h>
+//                  <ADS/optimization/StockTrading.h>
+//                  <ADS/algorithm/Subsequences.h>
+//                  <ADS/optimization/SequenceProblems.h>
 template< class W >
 std::pair< std::vector< std::size_t > , W >
 maxinterval( const std::vector< WeightedInterval< W > > & I );
@@ -1750,10 +1767,15 @@ The functions of the section are declared as follows, the tree of
 of the two children of each key ($-1$ for none):
 
 ```cpp
+// declarations of <ADS/optimization/OptimalSearchTree.h>
+//                  <ADS/optimization/CoinGame.h>
+//                  <ADS/optimization/LinearPartition.h>
+//                  <ADS/optimization/GridPaths.h>
 template< class T > struct OptimalSearchTree {
  T cost;                       // the weighted path length
  int root;                     // the key at the root
- std::vector< int > left , right;
+ std::vector< int > left;
+ std::vector< int > right;
  };
 template< class T >
 T coinsInALine( const std::vector< T > & V );
@@ -2057,6 +2079,12 @@ test.
 The greedy algorithms of the section are declared as follows:
 
 ```cpp
+// declarations of <ADS/optimization/FractionalKnapsack.h>
+//                  <ADS/optimization/Intervals.h>
+//                  <ADS/optimization/IntervalCover.h>
+//                  <ADS/optimization/ShortestJobFirst.h>
+//                  <ADS/optimization/CoinChange.h>
+//                  <ADS/algorithm/SequenceQueries.h>
 std::vector< double >
 fractionalKnapsack( const std::vector< double > & p ,
                     const std::vector< double > & v , double C );
@@ -2082,6 +2110,7 @@ auto weightedCompletion( const std::vector< T > & t ,
                          const std::vector< W > & w ,
                          const std::vector< std::size_t > & A );
 template< class T , class W = T >
+ requires std::is_arithmetic_v< T >
 W lineAssignment( std::vector< T > H , std::vector< T > L );
 std::optional< std::vector< long > >
 greedyChange( std::vector< long > coins , long c );
@@ -2172,6 +2201,7 @@ The three algorithms take the generator `rng` of the caller and the
 number $K$ of the runs or of the samples:
 
 ```cpp
+// declarations of <ADS/algorithm/MonteCarlo.h>
 template< class F , class R >
 bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 template< class T , class R >

@@ -87,8 +87,10 @@ least item. Thus the realizations with handles share the interface of the
 book, e.g., for `HeapPriorityQueue<T,P>` of capacity $c$ (`capacity()`),
 
 ```cpp
-template< class T , std::totally_ordered P = int ,
-          int D = 2 > class HeapPriorityQueue {
+// declarations of <ADS/priority/HeapPriorityQueue.h>
+template< class T , std::totally_ordered P = int , int D = 2 >
+ requires( D >= 2 )
+class HeapPriorityQueue {
  public:
  using Handle = PriorityItem *;
  explicit HeapPriorityQueue( int n );
@@ -111,6 +113,7 @@ names of [Morin 2013](Z-bibliography.md#ref-morin-cpp) and of the standard
 library:
 
 ```cpp
+// declarations of <ADS/priority/DaryHeap.h>
 template< class T , class Better = std::less< T > , unsigned D = 4 ,
           bool BottomUp = false > class DaryHeap {
  public:
@@ -127,8 +130,8 @@ template< class T , class Better = std::less< T > , unsigned D = 4 ,
  void clear( void );
  template< std::input_iterator I , std::sentinel_for< I > S >
  void assign( I first , S last );
- static std::size_t parent( std::size_t i );
- static std::size_t child( std::size_t i , std::size_t j );
+ static constexpr std::size_t parent( std::size_t i );
+ static constexpr std::size_t child( std::size_t i , std::size_t j );
  };
 ```
 
@@ -246,6 +249,7 @@ item and updates the handle).
 The public members of `ListPriorityQueue` are the following:
 
 ```cpp
+// declarations of <ADS/priority/ListPriorityQueue.h>
 template< class T , std::totally_ordered P = int ,
           bool Sorted = true > class ListPriorityQueue {
  public:
@@ -287,6 +291,7 @@ since the tree does not cache its leftmost node).
 The public members of `TreePriorityQueue` are the following:
 
 ```cpp
+// declarations of <ADS/priority/TreePriorityQueue.h>
 template< class T ,
           std::totally_ordered P = int > class TreePriorityQueue {
  public:
@@ -685,6 +690,7 @@ moves it up or down by [Lemma 9.7](09-priority.md#lem-9-7)
 The public members of `IndexedDaryHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/IndexedDaryHeap.h>
 template< class K , unsigned D = 4 > class IndexedDaryHeap {
  public:
  struct Entry { K key; int id; };
@@ -766,6 +772,7 @@ by [Lemma 9.7](09-priority.md#lem-9-7). The other members, `contains()`,
 The public members of `IndexedHeapPair` are the following:
 
 ```cpp
+// declarations of <ADS/priority/IndexedHeapPair.h>
 template< class K , class Bd = K ,
           unsigned D = 4 > class IndexedHeapPair {
  public:
@@ -825,6 +832,7 @@ contents.
 The public members of `LinkedHeapPriorityQueue` are the following:
 
 ```cpp
+// declarations of <ADS/priority/LinkedHeapPriorityQueue.h>
 template< class T , std::totally_ordered P = int ,
           bool L = false > class LinkedHeapPriorityQueue {
  public:
@@ -878,6 +886,7 @@ of merges.
 The public members of `MeldableHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/MeldableHeap.h>
 template< class T , class Less = std::less< T > ,
           class A = std::allocator< T > > class MeldableHeap {
  public:
@@ -1028,6 +1037,7 @@ under the smaller, until all the degrees differ
 The public members of `FibonacciHeapPriorityQueue` are the following:
 
 ```cpp
+// declarations of <ADS/priority/FibonacciHeapPriorityQueue.h>
 template< class T ,
           std::totally_ordered P = int > class FibonacciHeapPriorityQueue {
  public:
@@ -1142,6 +1152,7 @@ the analysis is that of a self-adjusting structure.
 The public members of `PairingHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/PairingHeap.h>
 template< class T , std::totally_ordered P = int ,
           bool Aux = false > class PairingHeap {
  public:
@@ -1260,6 +1271,7 @@ old one.
 The public members of `RadixHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/RadixHeap.h>
 template< class T , std::integral K = std::uint32_t ,
           unsigned B = 4 > class RadixHeap {
  public:
@@ -1338,6 +1350,7 @@ around the circle.
 The public members of `DialQueue` are the following:
 
 ```cpp
+// declarations of <ADS/priority/DialQueue.h>
 template< class T , std::integral K = std::uint32_t > class DialQueue {
  public:
  explicit DialQueue( std::size_t c = 1023 );
@@ -1422,6 +1435,7 @@ the default compiles to the same code as before the policy existed (test
 The public members of `BucketQueue` are the following:
 
 ```cpp
+// declarations of <ADS/priority/BucketQueue.h>
 template< class T , std::integral K = int ,
           BucketTie Tie = LargestSecondKey > class BucketQueue {
  public:
@@ -1529,6 +1543,7 @@ other kind, is now out of order.
 The public members of `MinMaxHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/MinMaxHeap.h>
 template< class T , class Better = std::less< T > > class MinMaxHeap {
  public:
  explicit MinMaxHeap( Better better = Better() );
@@ -1569,6 +1584,7 @@ the two items of a node in one line of the cache.
 The public members of `IntervalHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/MinMaxHeap.h>
 template< class T , class Better = std::less< T > > class IntervalHeap {
  public:
  explicit IntervalHeap( Better better = Better() );
@@ -1665,6 +1681,7 @@ that ran out loses all its matches ([Figure 9.19](09-priority.md#fig-9-19)).
 The public members of `LoserTree` are the following:
 
 ```cpp
+// declarations of <ADS/priority/LoserTree.h>
 template< class T , class C = std::less<> > class LoserTree {
  public:
  explicit LoserTree( std::vector< std::optional< T > > keys ,
@@ -1739,6 +1756,7 @@ keys are won by the lower source, and a merge through the tree is stable.
 The public members of `FlatLoserTree` are the following:
 
 ```cpp
+// declarations of <ADS/priority/MultiwayMerge.h>
 template< class T , class C = std::less<> > class FlatLoserTree {
  public:
  explicit FlatLoserTree( std::size_t k , C less = C() );
@@ -1814,6 +1832,7 @@ buffers of the groups.
 The public members of `SequenceHeap` are the following:
 
 ```cpp
+// declarations of <ADS/priority/SequenceHeap.h>
 template< class T , class Better = std::less< T > > class SequenceHeap {
  public:
  explicit SequenceHeap( Better better = Better() );

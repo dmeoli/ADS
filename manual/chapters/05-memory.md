@@ -172,6 +172,7 @@ In `ADS/memory/Allocators.h`, the declarations of `BoundaryTagAllocator`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/memory/Allocators.h>
 class BoundaryTagAllocator {
  public:
   enum class Fit { FIRST , BEST , NEXT };
@@ -266,6 +267,7 @@ In `ADS/memory/Allocators.h`, the declarations of `BuddyAllocator` that a
 user calls are
 
 ```cpp
+// declarations of <ADS/memory/Allocators.h>
 class BuddyAllocator {
  public:
   explicit BuddyAllocator( int m );
@@ -349,6 +351,7 @@ all the objects and frees the blocks.
 In `ADS/memory/Arena.h`, the declarations of `Arena` that a user calls are
 
 ```cpp
+// declarations of <ADS/memory/Arena.h>
 template< class T , class A = std::allocator< T > >
 class Arena {
  public:
@@ -470,12 +473,13 @@ In `ADS/memory/ObjectPool.h`, the declarations of `ObjectPool` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/memory/ObjectPool.h>
 template< class T , class A = HugePageAllocator< T > >
 class ObjectPool {
  public:
   explicit ObjectPool( std::size_t n = std::size_t( 1 ) << 24 ,
        const A & alloc = A() );
-  void adopt( ObjectPool & other );
+  void adopt( ObjectPool & other ) noexcept;
   template< class... Args > T * make( Args &&... args );
   void free( T * x );
   T * allocate( void );
@@ -572,17 +576,18 @@ In `ADS/memory/SizeClassAllocator.h`, the declarations of
 `SizeClassAllocator` that a user calls are
 
 ```cpp
+// declarations of <ADS/memory/SizeClassAllocator.h>
 class SizeClassAllocator {
  public:
   static constexpr std::size_t LARGEST = 32768;
   static constexpr std::size_t PAGE = std::size_t( 1 ) << 16;
   SizeClassAllocator( void );
   void * allocate( std::size_t n );
-  void deallocate( void * p , std::size_t n );
+  void deallocate( void * p , std::size_t n ) noexcept;
   static unsigned sizeClass( std::size_t n );
   static std::size_t classSize( unsigned c );
   std::size_t bytes( void ) const;
-  void release( void );
+  void release( void ) noexcept;
   };
 ```
 
@@ -745,6 +750,7 @@ In `ADS/memory/PoolAllocator.h`, the declarations of `PoolResource` that a
 user calls are
 
 ```cpp
+// declarations of <ADS/memory/PoolAllocator.h>
 template< std::size_t M = 256 >
 class PoolResource {
  public:
@@ -770,18 +776,20 @@ class PoolResource {
 and those of `PoolAllocator` are
 
 ```cpp
+// declarations of <ADS/memory/PoolAllocator.h>
 template< class T , class R = PoolResource<> >
 class PoolAllocator {
  public:
   using value_type = T;
-  PoolAllocator( R & r );
-  PoolAllocator( void ) requires requires { R::global(); };
-  template< class U > PoolAllocator( const PoolAllocator< U , R > & o );
+  PoolAllocator( R & r ) noexcept;
+  PoolAllocator( void ) noexcept requires requires { R::global(); };
+  template< class U >
+  PoolAllocator( const PoolAllocator< U , R > & o ) noexcept;
   T * allocate( std::size_t n );
   void deallocate( T * p , std::size_t n );
-  R * resource( void ) const;
+  R * resource( void ) const noexcept;
   template< class U >
-  bool operator==( const PoolAllocator< U , R > & o ) const;
+  bool operator==( const PoolAllocator< U , R > & o ) const noexcept;
   };
 ```
 
@@ -902,6 +910,7 @@ In `ADS/memory/ConcurrentPool.h`, the declarations of
 `ConcurrentPoolResource` that a user calls are
 
 ```cpp
+// declarations of <ADS/memory/ConcurrentPool.h>
 template< std::size_t M = 256 >
 class ConcurrentPoolResource {
  public:
@@ -993,15 +1002,16 @@ In `ADS/memory/HugePageAllocator.h`, the declarations of
 `HugePageAllocator` that a user calls are
 
 ```cpp
+// declarations of <ADS/memory/HugePageAllocator.h>
 template< class T >
 class HugePageAllocator {
  public:
   static constexpr std::size_t PAGE = std::size_t( 1 ) << 21;
   HugePageAllocator( void );
   T * allocate( std::size_t n );
-  void deallocate( T * p , std::size_t n );
+  void deallocate( T * p , std::size_t n ) noexcept;
   template< class U >
-  bool operator==( const HugePageAllocator< U > & ) const;
+  bool operator==( const HugePageAllocator< U > & ) const noexcept;
   };
 ```
 
@@ -1128,6 +1138,7 @@ In `ADS/memory/CellHeap.h`, the declarations of `CellHeap` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/memory/CellHeap.h>
 class CellHeap {
  public:
   using Value = long;

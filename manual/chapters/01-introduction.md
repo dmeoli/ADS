@@ -113,7 +113,15 @@ in `ADS/ADT.h`, requires a type of the items, an observer `empty()` that
 gives a `bool`, and the operations `push()`, `pop()` and `top()`:
 
 ```cpp
---8<-- "generated/ADT-Stack.cpp"
+// declarations of <ADS/ADT.h>
+template< class S >
+concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
+ typename S::Item;
+ { cs.empty() } -> std::same_as< bool >;
+ s.push( v );
+ { s.pop() } -> std::convertible_to< typename S::Item >;
+ { cs.top() } -> std::convertible_to< typename S::Item >;
+ };
 ```
 
 A class models a concept by having its operations, with no declaration of
@@ -590,6 +598,7 @@ In `ADS/set/SetInterfaces.h`, the declarations of `ArrayUSet` and
 `ArraySSet` that a user calls are
 
 ```cpp
+// declarations of <ADS/set/SetInterfaces.h>
 template< class T , class Eq = std::equal_to<> >
 class ArrayUSet {
  public:
@@ -618,6 +627,7 @@ class ArraySSet {
 In `ADS/set/Bag.h`, the declarations of `Bag` that a user calls are
 
 ```cpp
+// declarations of <ADS/set/Bag.h>
 template< class T , class H = DefaultHash< T > ,
      class Eq = std::equal_to< T > >
 class Bag {

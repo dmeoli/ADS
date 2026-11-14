@@ -417,6 +417,7 @@ functions `findFirst()` and `findAll()` of `StringSearch.h` prepare the
 pattern and search once. The declarations of `StringMatching.h` are
 
 ```cpp
+// declarations of <ADS/string/StringMatching.h>
 inline std::vector< std::size_t > naiveMatching( std::string_view T ,
                                                  std::string_view P );
 inline std::vector< long > failure( std::string_view P );
@@ -445,6 +446,7 @@ inline std::vector< std::size_t > twoWay( std::string_view T ,
 and those of `StringSearch.h` are
 
 ```cpp
+// declarations of <ADS/string/StringSearch.h>
 class StringSearcher {
  public:
  static constexpr std::size_t npos = std::string_view::npos;
@@ -579,6 +581,7 @@ next call of `build()`; `size()` gives the number of patterns and
 `states()` that of the states, at most $M + 1$. The class is
 
 ```cpp
+// declarations of <ADS/string/AhoCorasick.h>
 class AhoCorasick {
  public:
  AhoCorasick( void );
@@ -830,6 +833,7 @@ counted on $T[ b .. ]$. The window costs $O( \ell_{\max} )$ time besides
 its occurrences. The class is
 
 ```cpp
+// declarations of <ADS/string/MultiSearch.h>
 class MultiSearcher {
  public:
  explicit MultiSearcher( const std::vector< std::string > & P );
@@ -940,6 +944,7 @@ value, and no alignment.
 We declare these functions, on any sequence `S` with `size()` and `[]`, as
 
 ```cpp
+// declarations of <ADS/string/ApproximateMatching.h>
 using Table = std::vector< std::vector< int > >;
 template< class S >
 Table matchingTable( const S & P , const S & T , bool edit = false );
@@ -1026,6 +1031,7 @@ array.
 We declare them as
 
 ```cpp
+// declarations of <ADS/string/LongestCommonSubsequence.h>
 template< class S >
 std::vector< std::vector< int > > lcsTable( const S & P , const S & T );
 template< class S >
@@ -1071,6 +1077,7 @@ score in the best entry. Each takes $\Theta( m n )$ time, and
 The declarations are
 
 ```cpp
+// declarations of <ADS/string/Alignment.h>
 enum class Alignment {
  GLOBAL ,
  SEMIGLOBAL ,
@@ -1154,6 +1161,7 @@ Each function has a template on the sequences, with
 `requires std::is_class_v< S >`, and an overload on `std::string`:
 
 ```cpp
+// declarations of <ADS/string/SubsequenceProblems.h>
 template< class S > requires std::is_class_v< S >
 [[nodiscard]] bool isInterleaving( const S & X , const S & Y , const S & Z );
 template< class S > requires std::is_class_v< S >
@@ -1352,6 +1360,7 @@ the common prefix and suffix are stripped. We summarize the computations
 of the section in [Table 15.4](15-string.md#tab-15-4), and declare them as
 
 ```cpp
+// declarations of <ADS/string/EditDistance.h>
 [[nodiscard]] inline std::size_t levenshtein( std::string_view a ,
                                               std::string_view b );
 [[nodiscard]] inline std::size_t levenshtein( std::string_view a ,
@@ -1647,6 +1656,7 @@ the alphabet $K$ for Skew and SA-IS, and the block $b$, named `m` in the
 header, for the scan); we list those on the bytes and the class:
 
 ```cpp
+// declarations of <ADS/string/SuffixArray.h>
 using Symbols = std::vector< std::size_t >;
 [[nodiscard]] inline Symbols toSymbols( std::string_view T );
 [[nodiscard]] inline std::vector< std::size_t > suffixArraySorting(
@@ -1967,6 +1977,7 @@ $\Phi$ and $\mathit{PLCP}$ share one array of $n$ integers.
 The declarations of `SuffixSorting.h` are
 
 ```cpp
+// declarations of <ADS/string/SuffixSorting.h>
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
            std::same_as< I , std::uint64_t > )
@@ -2123,6 +2134,7 @@ by default.
 In all, the class is
 
 ```cpp
+// declarations of <ADS/string/SuffixTree.h>
 class SuffixTree {
  public:
  static constexpr std::size_t npos = std::numeric_limits< std::size_t >::max();
@@ -2244,6 +2256,7 @@ mismatch, in $O( | T | \sigma )$.
 The class is
 
 ```cpp
+// declarations of <ADS/string/SuffixAutomaton.h>
 class SuffixAutomaton {
  public:
  SuffixAutomaton( void );
@@ -2365,6 +2378,7 @@ whose next symbol is empty at the end of the text, and
 The declarations of `SuffixApplications.h` are
 
 ```cpp
+// declarations of <ADS/string/SuffixApplications.h>
 struct CopyPhrase {
  std::size_t distance = 0;
  std::size_t length = 0;
@@ -2471,6 +2485,7 @@ query.
 The class is
 
 ```cpp
+// declarations of <ADS/string/LongestCommonExtension.h>
 template< class I = std::uint32_t >
  requires( std::same_as< I , std::uint32_t > ||
            std::same_as< I , std::uint64_t > )
@@ -2730,6 +2745,8 @@ $O( | Q | + \sum_i | \hat s_i | )$ for the bucket. We declare the three
 headers of the section as
 
 ```cpp
+// declarations of <ADS/string/PrefixSearch.h> <ADS/string/FrontCoding.h>
+//                  <ADS/string/RearCoding.h>
 [[nodiscard]] inline std::size_t lexicographicPosition(
                                        const std::vector< std::string > & A ,
                                        std::string_view Q );
@@ -2947,6 +2964,7 @@ We declare the functions of `Palindromes.h` on any sequence `S`, with an
 overload on `std::string` for each but the first, as
 
 ```cpp
+// declarations of <ADS/string/Palindromes.h>
 template< class S > requires std::is_class_v< S >
 [[nodiscard]] std::pair< std::size_t , std::size_t > longestPalindrome(
                                                               const S & s );
@@ -3032,6 +3050,7 @@ suffixes in $O( n^2 )$ time; the contracts check by it the factors of
 `lyndonFactorization()`. We declare them as
 
 ```cpp
+// declarations of <ADS/string/Lyndon.h>
 [[nodiscard]] inline bool isLyndon( std::string_view S );
 [[nodiscard]] inline std::vector< std::size_t > lyndonFactorization(
                                                         std::string_view S );
@@ -3079,6 +3098,7 @@ $\square$
 We declare the two functions as
 
 ```cpp
+// declarations of <ADS/string/Parentheses.h>
 [[nodiscard]] inline std::size_t longestBalancedSubsequence(
                      std::string_view s , char open = '(' , char close = ')' );
 [[nodiscard]] inline std::pair< std::size_t , std::size_t >
@@ -3104,6 +3124,7 @@ $O( n k \log n )$ worst-case time.
 The function has an overload on the strings:
 
 ```cpp
+// declarations of <ADS/string/Anagrams.h>
 template< class S , class Hash = std::hash< S > >
 [[nodiscard]] std::vector< std::vector< S > > anagramGroups(
                                              const std::vector< S > & words );
@@ -3126,6 +3147,7 @@ longer than $w$, and the words are read back from the table.
 The dictionary is a predicate, and the words are returned in order:
 
 ```cpp
+// declarations of <ADS/string/WordBreak.h>
 template< class F >
 std::optional< std::vector< std::string > > wordBreak(
                          const std::string & s , F && lookup ,
@@ -3155,6 +3177,7 @@ exponentially, and they are given modulo $2^{64}$.
 We declare them as
 
 ```cpp
+// declarations of <ADS/string/Segmentations.h>
 template< class S > requires std::is_class_v< S >
 [[nodiscard]] std::uint64_t countSegmentations(
                              const S & X , const std::vector< S > & words );
@@ -3211,6 +3234,7 @@ splits, each cut before those of its two pieces.
 The two functions, with an overload on `std::int64_t`, are
 
 ```cpp
+// declarations of <ADS/string/StringBreaking.h>
 template< class I >
 [[nodiscard]] I stringBreakingCost( const std::vector< I > & cuts ,
                                     std::type_identity_t< I > length );
@@ -3263,6 +3287,7 @@ compressors of the library use are in chapter 21.
 The three functions are
 
 ```cpp
+// declarations of <ADS/string/Huffman.h>
 template< class C , class F >
 std::map< C , std::string > huffman( const std::map< C , F > & freq );
 template< class C >

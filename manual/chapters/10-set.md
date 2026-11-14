@@ -99,18 +99,19 @@ We give the declarations of `ADS/set/BoolSet.h` below, in the namespace
 sets of the universe $[ 0 , 100 )$.
 
 ```cpp
+// declarations of <ADS/set/BoolSet.h>
 class BoolSet {
  public:
  using Item = long;
  explicit BoolSet( long N );
- std::size_t size() const;
- bool empty() const;
- long dim() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ long dim( void ) const;
  bool contains( long x ) const;
  void insert( long x );
  void remove( long x );
- std::optional< long > min() const;
- std::optional< long > max() const;
+ std::optional< long > min( void ) const;
+ std::optional< long > max( void ) const;
  template< class F > void forEach( F && f ) const;
  };
 BoolSet setUnion( const BoolSet & A , const BoolSet & B );
@@ -198,19 +199,20 @@ items of $B$ not in $A$, both with $n$ (or $m$) scans of the other list:
 We declare the class and its operations of two sets as follows.
 
 ```cpp
+// declarations of <ADS/set/ListSet.h>
 template< std::equality_comparable T >
 class ListSet {
  public:
  using Item = T;
- ListSet() = default;
+ ListSet( void ) = default;
  ListSet( std::initializer_list< T > items );
- std::size_t size() const;
- bool empty() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
  bool contains( const T & x ) const;
  void insert( const T & x );
  void insertNew( const T & x );
  void remove( const T & x );
- std::optional< T > min() const requires std::totally_ordered< T >;
+ std::optional< T > min( void ) const requires std::totally_ordered< T >;
  template< class F > void forEach( F && f ) const;
  using const_iterator = typename List< T >::const_iterator;
  };
@@ -280,22 +282,23 @@ The class also gives `list()`, i.e., the sorted LIST, read only.
 Its declarations are the following.
 
 ```cpp
+// declarations of <ADS/set/SortedListSet.h>
 template< std::totally_ordered T >
 class SortedListSet {
  public:
  using Item = T;
- SortedListSet() = default;
+ SortedListSet( void ) = default;
  SortedListSet( std::initializer_list< T > items );
- std::size_t size() const;
- bool empty() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
  bool contains( const T & x ) const;
  void insert( const T & x );
  void insertLast( const T & x );
  void remove( const T & x );
- std::optional< T > min() const;
- std::optional< T > max() const;
+ std::optional< T > min( void ) const;
+ std::optional< T > max( void ) const;
  template< class F > void forEach( F && f ) const;
- const List< T > & list() const;
+ const List< T > & list( void ) const;
  using const_iterator = typename List< T >::const_iterator;
  };
 template< class T >
@@ -364,6 +367,7 @@ of its keys, in the same order.
 We declare the adaptor and its three aliases as follows, and the example uses the set on the Red-Black tree as an `SSet`.
 
 ```cpp
+// declarations of <ADS/set/DictionarySet.h>
 template< class D >
 class DictionarySet {
  public:
@@ -371,8 +375,8 @@ class DictionarySet {
  template< class... A >
  requires std::constructible_from< D , A... >
  explicit DictionarySet( A &&... a );
- std::size_t size() const;
- bool empty() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
  bool contains( const Item & x ) const;
  bool insert( const Item & x );
  bool remove( const Item & x );
@@ -381,9 +385,9 @@ class DictionarySet {
  const Item * lowerBound( const Item & x ) const
   requires OrderedDictionary< D >;
  template< class F > void forEach( F && f ) const;
- const D & dictionary() const;
- auto begin() const requires std::ranges::forward_range< const D >;
- auto end() const requires std::ranges::forward_range< const D >;
+ const D & dictionary( void ) const;
+ auto begin( void ) const requires std::ranges::forward_range< const D >;
+ auto end( void ) const requires std::ranges::forward_range< const D >;
  };
 template< class T , class H = std::hash< T > >
 using ChainedHashSet = DictionarySet< ChainedHashTable< T , bool ,
@@ -435,6 +439,7 @@ in $A$.
 In `SetOperations.h` the concept and the four templates are declared as follows.
 
 ```cpp
+// declarations of <ADS/set/SetOperations.h>
 template< class S >
 concept IterableSet = Set< S > && std::copy_constructible< S > &&
                       requires( const S s ) {
@@ -476,14 +481,15 @@ list in $O( n )$ instead of the $O( n + m )$ of the table.
 Its class is declared as follows (its copy assignment is deleted).
 
 ```cpp
+// declarations of <ADS/set/LinkedHashSet.h>
 template< class T , class H = std::hash< T > >
 class LinkedHashSet {
  public:
  using Item = T;
- LinkedHashSet();
+ LinkedHashSet( void );
  LinkedHashSet( const LinkedHashSet & o );
- std::size_t size() const;
- bool empty() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
  bool contains( const T & x ) const;
  void insert( const T & x );
  void remove( const T & x );
@@ -511,14 +517,15 @@ which visit the items in the order of their `forEach()`.
 Its declarations follow; `distinct()` gives the number of the distinct items, and `size()` the sum of their multiplicities.
 
 ```cpp
+// declarations of <ADS/set/HashMultiset.h>
 template< class T , class H = std::hash< T > >
 class HashMultiset {
  public:
  using Item = T;
- HashMultiset();
- std::size_t size() const;
- std::size_t distinct() const;
- bool empty() const;
+ HashMultiset( void );
+ std::size_t size( void ) const;
+ std::size_t distinct( void ) const;
+ bool empty( void ) const;
  bool contains( const T & x ) const;
  std::size_t count( const T & x ) const;
  void insert( const T & x );
@@ -567,6 +574,7 @@ places, `size()`, `empty()` and `forEach()` the rest.
 Its declarations are the following.
 
 ```cpp
+// declarations of <ADS/set/SpaceEfficientSortedSet.h>
 template< std::totally_ordered T >
 requires std::semiregular< T >
 class SpaceEfficientSortedSet {
@@ -575,9 +583,9 @@ class SpaceEfficientSortedSet {
  explicit SpaceEfficientSortedSet( std::size_t b = 32 ,
                                    std::uint64_t seed = 1 );
  ~SpaceEfficientSortedSet();
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
  bool contains( const T & x ) const;
  const T * find( const T & x ) const;
  const T * lowerBound( const T & x ) const;
@@ -755,25 +763,26 @@ from an array builds the bitmap of $n$ sorted items, and the example makes
 a bitmap container of 5000 even integers.
 
 ```cpp
+// declarations of <ADS/set/RoaringBitmap.h>
 class RoaringBitmap {
  public:
  using Item = std::uint32_t;
  static constexpr std::uint32_t ARRAY = 4096;
- RoaringBitmap() = default;
+ RoaringBitmap( void ) = default;
  RoaringBitmap( const RoaringBitmap & o );
  RoaringBitmap( const std::uint32_t * a , std::size_t n );
  bool contains( std::uint32_t x ) const;
  bool insert( std::uint32_t x );
  bool remove( std::uint32_t x );
- std::size_t size() const;
- bool empty() const;
- void clear();
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ void clear( void );
  void swap( RoaringBitmap & o ) noexcept;
- std::size_t containers() const;
- std::size_t bitmaps() const;
- std::size_t bytes() const;
+ std::size_t containers( void ) const;
+ std::size_t bitmaps( void ) const;
+ std::size_t bytes( void ) const;
  template< class F > void forEach( F && f ) const;
- std::vector< std::uint32_t > items() const;
+ std::vector< std::uint32_t > items( void ) const;
  std::size_t rank( std::uint32_t x ) const;
  class const_iterator;
  const_iterator lowerBound( std::uint32_t x ) const;
@@ -949,16 +958,17 @@ list of $n$ items and one of $m \le n$ items ([Ferragina 2023, chapter
 We declare the functions of `SortedIntersection.h` as follows; the constructor of `PermutedBuckets` takes the list, the width $w$ of the universe, the length $L$ and the constants $a$ and $c$ of $\pi$; `intersect()` stores in `*scanned`, when given, the places scanned, and `values()` gives the list back.
 
 ```cpp
+// declarations of <ADS/set/SortedIntersection.h>
 class PermutedBuckets {
  public:
  PermutedBuckets( const std::vector< std::uint64_t > & A , unsigned w ,
                   std::size_t L , std::uint64_t a , std::uint64_t c );
- std::size_t size() const;
- std::size_t buckets() const;
+ std::size_t size( void ) const;
+ std::size_t buckets( void ) const;
  std::vector< std::uint64_t > intersect(
                            const PermutedBuckets & other ,
                            std::size_t * scanned = nullptr ) const;
- std::vector< std::uint64_t > values() const;
+ std::vector< std::uint64_t > values( void ) const;
  };
 template< class T , class C = std::less<> >
 std::vector< T > intersectMerge( const std::vector< T > & A ,
@@ -1043,6 +1053,7 @@ lengths, the merge with no branch otherwise.
 Both functions write the common items into `out`, returning their number, or return them in a vector; the example compares them with the doubling.
 
 ```cpp
+// declarations of <ADS/set/VectorIntersection.h>
 template< class T >
 std::size_t intersect( const T * a , std::size_t n , const T * b ,
                        std::size_t m , T * out );
@@ -1178,6 +1189,7 @@ power of 2, and $i h_2 \equiv j h_2 \pmod{m}$ then gives $i \equiv j$.
 We declare the class as follows; `falsePositiveRate()` gives (10.5) at the current number of keys, and `bits()` and `hashes()` give $m$ and $k$. Its example also uses the cuckoo filter of [§10.9](10-set.md#sec-10-9).
 
 ```cpp
+// declarations of <ADS/set/BloomFilter.h>
 template< class T , class H = std::hash< T > >
 class BloomFilter {
  public:
@@ -1185,9 +1197,9 @@ class BloomFilter {
  static BloomFilter forItems( std::size_t n , double p );
  void insert( const T & x );
  bool maybe( const T & x ) const;
- double falsePositiveRate() const;
- std::size_t bits() const;
- int hashes() const;
+ double falsePositiveRate( void ) const;
+ std::size_t bits( void ) const;
+ int hashes( void ) const;
  };
 ```
 
@@ -1264,6 +1276,7 @@ keys travel back, instead of the whole of $A$.
 We declare them as follows; `counters()` and `hashes()` give $m$ and $r$, and `ones()` the bits set of a partitioned filter.
 
 ```cpp
+// declarations of <ADS/set/BloomVariants.h>
 template< class T , class C = std::uint32_t , class H = std::hash< T > >
 class SpectralBloomFilter {
  public:
@@ -1272,9 +1285,9 @@ class SpectralBloomFilter {
  void remove( const T & x , C f = 1 );
  C count( const T & x ) const;
  bool maybe( const T & x ) const;
- std::size_t stuck() const;
- std::size_t counters() const;
- int hashes() const;
+ std::size_t stuck( void ) const;
+ std::size_t counters( void ) const;
+ int hashes( void ) const;
  };
 template< class T , class H = std::hash< T > >
 class PartitionedBloomFilter {
@@ -1282,8 +1295,8 @@ class PartitionedBloomFilter {
  PartitionedBloomFilter( std::size_t m , int r , H h = H() );
  void insert( const T & x );
  bool maybe( const T & x ) const;
- std::size_t ones() const;
- std::size_t bits() const;
+ std::size_t ones( void ) const;
+ std::size_t bits( void ) const;
  };
 double bloomFalsePositive( double m , double n , int r );
 int bloomBestHashes( double m , double n );
@@ -1346,6 +1359,7 @@ of the blocks (`unite()`), and serves as the spare of the prefix filter of
 Its constructor takes the number $n$ of the keys and the bits per key (10 by default); `insertHash()` and `maybeHash()` take a hash already computed, `blocks()` gives $B$, and `clear()` empties the filter.
 
 ```cpp
+// declarations of <ADS/set/BlockedBloomFilter.h>
 template< class T , class H = DefaultHash< T > >
 class BlockedBloomFilter {
  public:
@@ -1356,12 +1370,12 @@ class BlockedBloomFilter {
  void insertHash( std::uint64_t h );
  bool maybeHash( std::uint64_t h ) const;
  void unite( const BlockedBloomFilter & o );
- void clear();
- std::size_t size() const;
- bool empty() const;
- std::size_t bits() const;
- std::size_t blocks() const;
- double falsePositiveRate() const;
+ void clear( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t blocks( void ) const;
+ double falsePositiveRate( void ) const;
  };
 ```
 
@@ -1447,6 +1461,7 @@ another key may clear the fingerprint of a key of $S$, a false negative.
 Its parameter `F` is `std::uint8_t` or `std::uint16_t`, i.e., $f = 8$ or 16.
 
 ```cpp
+// declarations of <ADS/set/CuckooFilter.h>
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
 class CuckooFilter {
  public:
@@ -1457,12 +1472,12 @@ class CuckooFilter {
  bool insertHash( std::uint64_t h );
  bool removeHash( std::uint64_t h );
  bool maybeHash( std::uint64_t h ) const;
- void clear();
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
- std::size_t bits() const;
+ void clear( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ std::size_t bits( void ) const;
  };
 ```
 
@@ -1574,6 +1589,7 @@ that [Lemma 10.16](10-set.md#lem-10-16) bounds.
 Its declarations are the following.
 
 ```cpp
+// declarations of <ADS/set/PrefixFilter.h>
 template< class T , class H = DefaultHash< T > >
 class PrefixFilter {
  public:
@@ -1582,16 +1598,16 @@ class PrefixFilter {
  bool maybe( const T & x ) const;
  bool insertHash( std::uint64_t h );
  bool maybeHash( std::uint64_t h ) const;
- void clear();
- std::size_t size() const;
- bool empty() const;
- std::size_t capacity() const;
- double load() const;
- std::size_t bits() const;
- std::size_t bins() const;
- std::size_t spareSize() const;
- double expectedSpareSize() const;
- double falsePositiveRate() const;
+ void clear( void );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ double load( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t bins( void ) const;
+ std::size_t spareSize( void ) const;
+ double expectedSpareSize( void ) const;
+ double falsePositiveRate( void ) const;
  };
 ```
 
@@ -1742,6 +1758,7 @@ at least 64. It gives up with an exception after 1000 seeds, and
 Both static filters are declared as follows, `F` giving $b$ (or $r$) bits and `rows()` the $m$ rows; the example also builds the range filter of [§10.11](10-set.md#sec-10-11).
 
 ```cpp
+// declarations of <ADS/set/BinaryFuseFilter.h>
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
 requires( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) )
 class BinaryFuseFilter {
@@ -1749,25 +1766,26 @@ class BinaryFuseFilter {
  explicit BinaryFuseFilter( const std::vector< T > & keys ,
                             std::uint64_t seed = 1 , H h = H() );
  bool maybe( const T & x ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t bits() const;
- std::size_t trials() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t trials( void ) const;
  };
 ```
 
 ```cpp
+// declarations of <ADS/set/RibbonFilter.h>
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
 class RibbonFilter {
  public:
  explicit RibbonFilter( const std::vector< T > & keys ,
                         std::uint64_t seed = 1 , H h = H() );
  bool maybe( const T & x ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t bits() const;
- std::size_t rows() const;
- std::size_t trials() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t bits( void ) const;
+ std::size_t rows( void ) const;
+ std::size_t trials( void ) const;
  };
 ```
 
@@ -1899,6 +1917,7 @@ every query (`bucketWidth()` gives $s$, `buckets()` the kept buckets and
 Both range filters are declared as follows ($B = 16$ bits per key by default).
 
 ```cpp
+// declarations of <ADS/set/GrafiteFilter.h>
 template< RadixKey T = std::uint64_t >
 class GrafiteFilter {
  public:
@@ -1907,11 +1926,11 @@ class GrafiteFilter {
  bool mayContain( const T & a , const T & b ) const;
  bool maybe( const T & x ) const;
  double falsePositiveBound( double l ) const;
- std::size_t size() const;
- bool empty() const;
- std::size_t codes() const;
- std::uint64_t reduced() const;
- std::size_t sizeInBits() const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t codes( void ) const;
+ std::uint64_t reduced( void ) const;
+ std::size_t sizeInBits( void ) const;
  };
 template< RadixKey T = std::uint64_t >
 class BucketingFilter {
@@ -1919,9 +1938,9 @@ class BucketingFilter {
  explicit BucketingFilter( const std::vector< T > & keys , int B = 16 );
  bool mayContain( const T & a , const T & b ) const;
  bool maybe( const T & x ) const;
- std::uint64_t bucketWidth() const;
- std::size_t buckets() const;
- std::size_t sizeInBits() const;
+ std::uint64_t bucketWidth( void ) const;
+ std::size_t buckets( void ) const;
+ std::size_t sizeInBits( void ) const;
  };
 ```
 

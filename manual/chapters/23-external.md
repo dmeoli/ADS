@@ -1054,6 +1054,7 @@ headers as it stands, and its assertions hold.
 `BlockBTree.h` ([§23.3](23-external.md#sec-23-3)).
 
 ```cpp
+// declarations of <ADS/external/BlockBTree.h>
 enum class BTreePolicy { STANDARD , WIDE , THREE };
 template< std::totally_ordered K > class BlockBTree { public:
  using Key = K;
@@ -1088,6 +1089,7 @@ template< std::totally_ordered K > class BlockBTree { public:
 `BlockStore.h` ([§23.1](23-external.md#sec-23-1)).
 
 ```cpp
+// declarations of <ADS/external/BlockStore.h>
 template< class T > class BlockStore { public:
  explicit BlockStore( TwoLevelMemory * mem = nullptr );
  T readBlock( std::size_t i ) const;
@@ -1105,6 +1107,7 @@ template< class T > class BlockStore { public:
 `ExternalSorting.h` ([§23.4](23-external.md#sec-23-4)).
 
 ```cpp
+// declarations of <ADS/external/ExternalSorting.h>
 std::uint64_t mergeSortIOs( std::size_t n , std::size_t M , std::size_t B ,
     std::size_t k );
 std::uint64_t sortingLowerBound( std::size_t n , std::size_t M ,
@@ -1131,6 +1134,7 @@ void permuteDirect( const DiskFile< T > & in ,
 `ListRanking.h` ([§23.5](23-external.md#sec-23-5)).
 
 ```cpp
+// declarations of <ADS/external/ListRanking.h>
 bool isList( const std::vector< std::size_t > & succ );
 std::vector< std::size_t > listRank( const std::vector< std::size_t > &
     succ );
@@ -1162,6 +1166,7 @@ void externalListRank( const DiskFile< std::size_t > & succ ,
 `RecordFile.h` ([§23.6](23-external.md#sec-23-6)).
 
 ```cpp
+// declarations of <ADS/external/RecordFile.h>
 template< class T >
 requires std::is_trivially_copyable_v< T > class RecordFile { public:
  static constexpr std::size_t defaultBuffer = sizeof( T ) >= ( std::size_t(
@@ -1199,6 +1204,7 @@ class TempDirectory { public:
 `TwoLevelMemory.h` ([§23.1](23-external.md#sec-23-1)).
 
 ```cpp
+// declarations of <ADS/external/TwoLevelMemory.h>
 class TwoLevelMemory { public:
  TwoLevelMemory( std::size_t B , std::size_t M );
  std::size_t blockSize( void ) const;

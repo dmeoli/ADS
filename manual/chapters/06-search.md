@@ -319,6 +319,7 @@ vectors of $n$ items are the items of ranks $n - 1$ and $n$.
 In `ADS/search/BinarySearch.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/BinarySearch.h>
 template< class T , class F >
 long binarySearch( const std::vector< T > & A , const T & v , F && trace );
 template< class T >
@@ -342,6 +343,7 @@ std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
 In `ADS/search/MonotoneSearch.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/MonotoneSearch.h>
 template< std::integral I , class P >
 I exponentialSearch( P && p , I lo = I( 0 ) );
 template< class G , class P >
@@ -353,6 +355,7 @@ template< std::unsigned_integral U > bool isPerfectSquare( U n );
 In `ADS/search/InterpolationSearch.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/InterpolationSearch.h>
 template< class T , class F >
 long interpolationSearch( const std::vector< T > & A , const T & v ,
      F && trace );
@@ -363,6 +366,7 @@ long interpolationSearch( const std::vector< T > & A , const T & v );
 In `ADS/search/KnuthSearches.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/KnuthSearches.h>
 template< class T >
 long fibonacciSearch( const std::vector< T > & A , const T & v ,
      long * cmp = nullptr );
@@ -374,6 +378,7 @@ long uniformBinarySearch( const std::vector< T > & A , const T & v ,
 In `ADS/search/SortedSearches.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/SortedSearches.h>
 template< class T , class C = std::less<> >
 std::size_t rotatedMinimum( const std::vector< T > & A , C less = C() );
 template< class T >
@@ -519,6 +524,7 @@ In `ADS/search/StaticSearch.h`, the declarations of the functions and of
 `SPlusTree` that a user calls are
 
 ```cpp
+// declarations of <ADS/search/StaticSearch.h>
 template< class T , class C = std::less<> >
 std::size_t branchlessLowerBound( const std::vector< T > & A ,
      const T & v , C less = C() );
@@ -644,6 +650,7 @@ In `ADS/search/PGMIndex.h`, the declarations of `PGMIndex` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/search/PGMIndex.h>
 template< class K , std::size_t E = 64 , std::size_t R = 4 >
 requires std::is_arithmetic_v< K >
 class PGMIndex {
@@ -743,6 +750,7 @@ In `ADS/search/CompressedPGMIndex.h`, the declarations of
 `CompressedPGMIndex` that a user calls are
 
 ```cpp
+// declarations of <ADS/search/CompressedPGMIndex.h>
 template< class K , std::size_t E = 64 >
 requires std::is_arithmetic_v< K >
 class CompressedPGMIndex {
@@ -839,6 +847,7 @@ In `ADS/search/DynamicPGMIndex.h`, the declarations of `DynamicPGMIndex`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/search/DynamicPGMIndex.h>
 template< class K , class V , std::size_t E = 16 , std::size_t B = 8 ,
           std::size_t I = ( std::size_t( 1 ) << 24 ) >
 requires std::is_arithmetic_v< K >
@@ -970,6 +979,7 @@ about $2^{d / 2}$ evaluations, even for a randomized algorithm ([Aldous
 In `ADS/search/Minimum.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/Minimum.h>
 template< class T , class C = std::less<> >
 std::size_t argmin( const std::vector< T > & A , std::size_t start ,
      std::size_t end , C less = C() );
@@ -985,6 +995,7 @@ std::pair< T , T > minMaxDivide( const std::vector< T > & A ,
 In `ADS/search/LocalOptima.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/LocalOptima.h>
 template< class T , class C = std::less<> >
 std::size_t findPeak( const std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -1159,6 +1170,7 @@ rank $k$ in `ADS/search`.
 In `ADS/search/Selection.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/Selection.h>
 template< class T , class R = std::mt19937 >
 T selection( std::vector< T > & A , std::size_t k , R * rng = nullptr );
 template< class T >
@@ -1168,6 +1180,7 @@ T medianOfMedians( std::vector< T > & A , std::size_t k );
 In `ADS/search/NthElement.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/search/NthElement.h>
 template< std::random_access_iterator It , class C = std::less<> >
 void nthElement( It first , It nth , It last , C less = C() );
 template< class T , class C = std::less<> >
@@ -1363,6 +1376,7 @@ minima in `ADS/search`.
 In `ADS/search/RangeMinimum.h`, the function is declared as
 
 ```cpp
+// declarations of <ADS/search/RangeMinimum.h>
 template< class T , class Compare = std::less< T > >
 std::vector< std::size_t > cartesianTree( const std::vector< T > & A ,
                                           Compare less = {} );
@@ -1372,6 +1386,7 @@ In `ADS/search/RangeMinimum.h`, the declarations of `SparseTable` and
 `PlusMinusOneRangeMinimum` and `RangeMinimum` that a user calls are
 
 ```cpp
+// declarations of <ADS/search/RangeMinimum.h>
 template< class T , class Compare = std::less< T > >
 class SparseTable {
  public:
@@ -1405,6 +1420,7 @@ In `ADS/search/WordRangeMinimum.h`, the declarations of `WordRangeMinimum`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/search/WordRangeMinimum.h>
 template< class T , class Compare = std::less< T > >
 class WordRangeMinimum {
  public:

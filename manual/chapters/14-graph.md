@@ -101,6 +101,7 @@ building the vector; the concept `DynamicGraph` adds the four insertions and
 deletions:
 
 ```cpp
+// declarations of <ADS/graph/Graph.h>
 template< class G >
 concept Graph = requires( const G g , int u ) {
  { g.n() } -> std::convertible_to< int >;
@@ -171,6 +172,7 @@ costs $O( 1 )$ time. The public members of the class, beside those of
 `GraphNodes` ([§14.1](14-graph.md#sec-14-1)), are
 
 ```cpp
+// declarations of <ADS/graph/MatrixGraph.h>
 template< class W = std::monostate , class T = std::monostate >
 class MatrixGraph : public GraphNodes< T > {
  public:
@@ -377,6 +379,7 @@ the names as a view of `std::views::iota`. Besides the members of the
 concept `Graph`, which it models, the class has
 
 ```cpp
+// declarations of <ADS/graph/ArrayGraph.h>
 template< class W = std::monostate >
 class ArrayGraph {
  public:
@@ -423,6 +426,7 @@ $( u , v )$ and $( v , u )$, and parallel arcs are kept. [Figure
 members that `StaticGraph` adds to those of the concept `Graph` are
 
 ```cpp
+// declarations of <ADS/graph/StaticGraph.h>
 template< class W >
 struct WeightedArc {
  int to;
@@ -502,6 +506,7 @@ after those already there, even if parallel to one of them, and `reserve()`,
 `edges()`, `n()`, `m()` and `directed()` do what their names suggest:
 
 ```cpp
+// declarations of <ADS/graph/GraphBuilder.h>
 template< class W = std::monostate >
 class GraphBuilder {
  public:
@@ -570,6 +575,7 @@ n )$, and is checked only at the level of the audits). We remark that
 class is
 
 ```cpp
+// declarations of <ADS/graph/PointerGraph.h>
 template< class T , class W = int >
 class PointerGraph {
  public:
@@ -651,6 +657,7 @@ with the $+1$ and the $-1$ exchanged, in $O( m + n \, d^-( i ) )$. The
 class is
 
 ```cpp
+// declarations of <ADS/graph/IncidenceGraph.h>
 class IncidenceGraph {
  public:
  explicit IncidenceGraph( int n = 0 );
@@ -675,6 +682,7 @@ class IncidenceGraph {
 and the two functions of `Graph.h` are
 
 ```cpp
+// declarations of <ADS/graph/Graph.h>
 template< Graph G >
 std::vector< std::vector< int > > incidence( const G & g );
 
@@ -741,6 +749,7 @@ examined once from its tail. The function and the constants that the
 visits share are
 
 ```cpp
+// declarations of <ADS/graph/Visit.h>
 inline constexpr int INF = std::numeric_limits< int >::max();
 inline constexpr int NIL = -1;
 enum class Choice {
@@ -860,6 +869,7 @@ guard against a vector of parents that holds a cycle). We declare these
 functions as
 
 ```cpp
+// declarations of <ADS/graph/Visit.h>
 template< Graph G , class FN , class FE >
 void bfs( const G & g , int r , FN && node , FE && edge );
 
@@ -971,6 +981,7 @@ from $u$, `visitAll(edge)` from each node not yet discovered in increasing
 order, and `dt(u)` and `ft(u)` read the times:
 
 ```cpp
+// declarations of <ADS/graph/Visit.h>
 template< Graph G , class Pre , class Edge , class Post >
 void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
           Edge && edge , Post && post );
@@ -1121,6 +1132,7 @@ level of the audits both check that their order is topological when the
 graph is acyclic. We list their declarations:
 
 ```cpp
+// declarations of <ADS/graph/Visit.h>
 template< Graph G >
 bool hasCycle( const G & g );
 template< Graph G >
@@ -1270,6 +1282,7 @@ $10^6$ nodes does not overflow the stack of the calls. We list the declarations 
 the section:
 
 ```cpp
+// declarations of <ADS/graph/Visit.h>
 template< Graph G >
 ListGraph<> transpose( const G & g );
 template< Graph G >
@@ -1389,6 +1402,7 @@ that of a finite board near its corners.
 In `Grid.h` we declare
 
 ```cpp
+// declarations of <ADS/graph/Grid.h>
 using GridCell = std::pair< int , int >;
 inline constexpr std::array< GridCell , 4 > FOUR_MOVES = {
  GridCell( -1 , 0 ) , GridCell( 0 , -1 ) , GridCell( 1 , 0 ) ,
@@ -1495,6 +1509,7 @@ cells of cost 1 and the others blocked).
 In all, the class and the functions of `GridGraph.h` are
 
 ```cpp
+// declarations of <ADS/graph/GridGraph.h>
 enum class GridMoves {
  FOUR ,
  EIGHT
@@ -1771,6 +1786,7 @@ the time. $\square$
 We list the declarations of `Paths.h`:
 
 ```cpp
+// declarations of <ADS/graph/Paths.h>
 template< class G >
 using PathLength = typename detail::EdgeLength< G >::type;
 
@@ -1991,6 +2007,7 @@ cases the function returns no value. $\square$
 In `Properties.h` we declare
 
 ```cpp
+// declarations of <ADS/graph/Properties.h>
 template< Graph G >
 bool isTree( const G & g );
 template< Graph G >
@@ -2134,6 +2151,7 @@ path from $r$ must stay strictly within $\pm$`infinity<D>()`. The
 declarations are
 
 ```cpp
+// declarations of <ADS/graph/ShortestPaths.h>
 enum class Frontier {
  LIST ,
  HEAP ,
@@ -2384,6 +2402,7 @@ A deletion has no such update, since the paths that used the edge may need
 any other one. We declare the structure and the two functions as
 
 ```cpp
+// declarations of <ADS/graph/AllPairsShortestPaths.h>
 template< class D >
 struct AllPairs {
  std::vector< std::vector< D > > d;
@@ -2513,6 +2532,7 @@ in $A$, acyclic and as many as $n$ minus the components. The declarations
 of `MinimumSpanningTree.h` are
 
 ```cpp
+// declarations of <ADS/graph/MinimumSpanningTree.h>
 template< class W >
 struct WeightedEdge {
  int u ,
@@ -2757,6 +2777,7 @@ otherwise. Finally, the other functions of the class are the obvious ones:
 `MaxFlow.h`:
 
 ```cpp
+// declarations of <ADS/graph/MaxFlow.h>
 enum class Augment {
  FORD_FULKERSON ,
  EDMONDS_KARP ,
@@ -2914,6 +2935,7 @@ We remark that an increase of a capacity by 1 needs one augmenting path. The
 declarations of `FlowApplications.h` are
 
 ```cpp
+// declarations of <ADS/graph/FlowApplications.h>
 enum class CapacityDecrease {
  SLACK ,
  CYCLE ,
@@ -3209,6 +3231,7 @@ the nodes takes $\Theta( 2^n n )$.
 In `Matching.h` we declare
 
 ```cpp
+// declarations of <ADS/graph/Matching.h>
 inline std::vector< std::pair< int , int > > bipartiteBMatching(
                       const std::vector< std::vector< int > > & A , int nr ,
                       const std::vector< long long > & capL ,
@@ -3349,6 +3372,7 @@ SciPy by the algorithm of Crouse), and, as far as we know, none keeps the
 potentials for a warm start. The class is
 
 ```cpp
+// declarations of <ADS/graph/Assignment.h>
 template< class W = long long >
 requires std::is_arithmetic_v< W >
 class Assignment {
@@ -3505,6 +3529,7 @@ the Eulerian trail (Hierholzer's algorithm, beyond the book).
 In `EulerianCycle.h` we declare
 
 ```cpp
+// declarations of <ADS/graph/EulerianCycle.h>
 template< Graph G >
 std::optional< std::vector< int > > eulerianCycle( const G & g );
 template< Graph G >
@@ -3602,6 +3627,7 @@ its weight `w`, or `from` and `to` for `WeightChanged`, or the node `u`)
 and the members of the concept `Graph`,
 
 ```cpp
+// declarations of <ADS/graph/Observable.h>
 template< class W >
 using GraphModifications = mod::list< NodeInserted , NodeDeleted ,
                                       EdgeInserted< W > , EdgeDeleted< W > ,
@@ -4009,6 +4035,7 @@ costs, a pair with no edge is forbidden, and the observer gives the
 and the declarations are
 
 ```cpp
+// declarations of <ADS/graph/Reoptimization.h>
 struct Reopt {
  static constexpr int SCRATCH = 0;
  static constexpr int WARM = 1;

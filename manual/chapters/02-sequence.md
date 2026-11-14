@@ -282,6 +282,7 @@ In `ADS/sequence/ArraySequence.h`, the declarations of `ArraySequence` that
 a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/ArraySequence.h>
 template< class T >
 class ArraySequence {
  public:
@@ -344,10 +345,11 @@ In `ADS/sequence/SmallVector.h`, the declarations of `SmallVector` that a
 user calls are
 
 ```cpp
+// declarations of <ADS/sequence/SmallVector.h>
 template< class T , std::size_t N = 8 >
 class SmallVector {
  public:
-  SmallVector( void );
+  SmallVector( void ) noexcept;
   explicit SmallVector( std::size_t n , const T & x = T() );
   SmallVector( std::initializer_list< T > items );
   template< std::input_iterator I , std::sentinel_for< I > S >
@@ -556,6 +558,7 @@ In `ADS/sequence/DualArrayDeque.h`, the declarations of `DualArrayDeque`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/DualArrayDeque.h>
 template< class T , class S = std::vector< T > >
 class DualArrayDeque {
  public:
@@ -676,6 +679,7 @@ In `ADS/sequence/Treque.h`, the declarations of `Treque` that a user calls
 are
 
 ```cpp
+// declarations of <ADS/sequence/Treque.h>
 template< class T >
 class Treque {
  public:
@@ -702,6 +706,7 @@ In `ADS/sequence/ContiguousDeque.h`, the declarations of `ContiguousDeque`
 that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/ContiguousDeque.h>
 template< class T >
 class ContiguousDeque {
  public:
@@ -843,6 +848,7 @@ In `ADS/sequence/RootishArrayStack.h`, the declarations of
 `RootishArrayStack` that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/RootishArrayStack.h>
 template< class T >
 class RootishArrayStack {
  public:
@@ -952,6 +958,7 @@ In `ADS/sequence/TieredVector.h`, the declarations of `TieredVector` that a
 user calls are
 
 ```cpp
+// declarations of <ADS/sequence/TieredVector.h>
 template< class T >
 class TieredVector {
  public:
@@ -1033,6 +1040,7 @@ In `ADS/sequence/CubishArrayStack.h`, the declarations of
 `CubishArrayStack` that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/CubishArrayStack.h>
 template< class T >
 class CubishArrayStack {
  public:
@@ -1154,6 +1162,7 @@ In `ADS/sequence/SinglyList.h`, the declarations of `SinglyList` that a
 user calls are
 
 ```cpp
+// declarations of <ADS/sequence/SinglyList.h>
 template< class T >
 class SinglyList {
  public:
@@ -1300,6 +1309,7 @@ cells of one list in both cases.
 In `ADS/sequence/List.h`, the declarations of `List` that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/List.h>
 template< class T , bool Pooled = true >
 class List {
  public:
@@ -1409,6 +1419,7 @@ cells are scattered, while the radix sort reads them twice.
 In `ADS/sequence/ListSort.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/sequence/ListSort.h>
 template< class T , bool P , class C = std::less<> >
 void listSort( List< T , P > & L , C less = C() );
 ```
@@ -1460,6 +1471,7 @@ In `ADS/sequence/CursorList.h`, the declarations of `CursorSpace` and
 `CursorList` that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/CursorList.h>
 template< class T >
 class CursorSpace {
  public:
@@ -1622,6 +1634,7 @@ In `ADS/sequence/SEList.h`, the declarations of `SEList` that a user calls
 are
 
 ```cpp
+// declarations of <ADS/sequence/SEList.h>
 template< class T >
 class SEList {
  public:
@@ -1702,6 +1715,7 @@ In `ADS/sequence/XorList.h`, the declarations of the functions and of
 `XorList` that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/XorList.h>
 template< class T >
 class XorList {
  public:
@@ -1841,6 +1855,7 @@ In `ADS/sequence/SkipListSequence.h`, the declarations of
 `SkipListSequence` that a user calls are
 
 ```cpp
+// declarations of <ADS/sequence/SkipListSequence.h>
 template< class T >
 class SkipListSequence {
  public:
@@ -1912,6 +1927,7 @@ In `ADS/sequence/TreapList.h`, the declarations of `TreapList` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/sequence/TreapList.h>
 template< class T >
 class TreapList {
  public:
@@ -2040,6 +2056,7 @@ In `ADS/sequence/OrderMaintenanceList.h`, the declarations of
 is a constant handle of an element:
 
 ```cpp
+// declarations of <ADS/sequence/OrderMaintenanceList.h>
 template< class T >
 class OrderMaintenanceList {
  public:
@@ -2154,6 +2171,7 @@ same work by relinking the cells, with no copy of an item.
 In `ADS/sequence/SequenceAlgorithms.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/sequence/SequenceAlgorithms.h>
 template< Sequence S >
 long search( const S & s , const typename S::Item & v );
 template< Sequence S >
@@ -2221,6 +2239,7 @@ In `ADS/sequence/IndexedList.h`, whose concepts `IndexedList` and
 functions are declared as
 
 ```cpp
+// declarations of <ADS/sequence/IndexedList.h>
 template< class T > void rotateArray( std::span< T > a , std::size_t r );
 template< IndexedList L > void rotate( L & l , std::size_t r );
 ```
@@ -2336,6 +2355,7 @@ $O( n \log n )$, and the costs are summed in the type `W` of the template,
 In `ADS/sequence/Rearrangements.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/sequence/Rearrangements.h>
 template< class T , class F >
 std::pair< std::size_t ,
      std::size_t > dutchNationalFlag( std::vector< T > & A ,

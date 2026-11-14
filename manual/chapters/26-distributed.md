@@ -67,6 +67,7 @@ follows the algorithm on three processes.
 The sort is declared, in the namespace `ADS::distributed`, as
 
 ```cpp
+// declarations of <ADS/distributed/DistributedSort.h>
 template< Executor E , class T , class C = std::less<> >
 void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -77,6 +78,8 @@ the second running the local work on `Sequential`, and each process calls
 it on its part, e.g.,
 
 ```cpp
+#include "ADS/parallel/ThreadPool.h"
+
 int rank;
 MPI_Comm_rank( MPI_COMM_WORLD , &rank );
 std::vector< int > A( 1000 );
@@ -220,6 +223,7 @@ the class (which, as MPI writes into it, cannot be copied).
 The three classes of `MPIExecutor.h` have the public members
 
 ```cpp
+// declarations of <ADS/distributed/MPIExecutor.h>
 class MPIEnvironment {
  public:
  MPIEnvironment( int & argc , char ** & argv ,
@@ -273,6 +277,7 @@ The public members of `MPIMailbox<Msg>`, for a trivially copyable `Msg`,
 are
 
 ```cpp
+// declarations of <ADS/distributed/MPIMailbox.h>
 template< class Msg , bool = std::is_trivially_copyable_v< Msg > >
 class MPIMailbox {
  public:
@@ -384,6 +389,7 @@ The members of `MPIByteMailbox` are those of `MPIMailbox` but for the
 send and the default batch, of 65536 bytes:
 
 ```cpp
+// declarations of <ADS/distributed/MPIMailbox.h>
 class MPIByteMailbox {
  public:
  explicit MPIByteMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
@@ -402,6 +408,7 @@ static members below, which the library gives for `std::string` and for
 the vectors of trivially copyable items:
 
 ```cpp
+// declarations of <ADS/distributed/MPIMailbox.h>
 template< class Msg > struct MPICodec;
 template<>
 struct MPICodec< std::string > {

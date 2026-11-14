@@ -6063,7 +6063,7 @@ contracts. The blocks are written from the headers, and each class has been
 compiled with all its members.
 
 ```cpp
-// ADS/tree/Tree.h
+// declarations of <ADS/tree/Tree.h>
 template< class T > class Tree {
  public:
   using Item = T;
@@ -6095,7 +6095,7 @@ template< class T > auto preorder( Tree< T > * t );
 ```
 
 ```cpp
-// ADS/tree/CursorTree.h
+// declarations of <ADS/tree/CursorTree.h>
 template< class T > class CursorTree {
  public:
   using Item = T;
@@ -6126,7 +6126,7 @@ template< class T > class CursorTree {
 ```
 
 ```cpp
-// ADS/tree/ChildListTree.h
+// declarations of <ADS/tree/ChildListTree.h>
 template< class T > class ChildListTree {
  public:
   using Item = T;
@@ -6160,7 +6160,7 @@ template< class T > class ChildListTree {
 ```
 
 ```cpp
-// ADS/tree/ParentTree.h
+// declarations of <ADS/tree/ParentTree.h>
 class ParentTree {
  public:
   explicit ParentTree( int n );
@@ -6171,7 +6171,7 @@ class ParentTree {
 ```
 
 ```cpp
-// ADS/tree/PreorderArrayTree.h
+// declarations of <ADS/tree/PreorderArrayTree.h>
 template< class T > class PreorderArrayTree {
  public:
   using Item = T;
@@ -6196,7 +6196,7 @@ template< class T > class PreorderArrayTree {
 ```
 
 ```cpp
-// ADS/tree/BinaryTree.h
+// declarations of <ADS/tree/BinaryTree.h>
 template< class T > class BinaryTree {
  public:
   using Item = T;
@@ -6232,7 +6232,7 @@ template< class T > auto postorder( BinaryTree< T > * t );
 ```
 
 ```cpp
-// ADS/tree/CursorBinaryTree.h
+// declarations of <ADS/tree/CursorBinaryTree.h>
 template< class T > class CursorBinaryTree {
  public:
   using Item = T;
@@ -6260,7 +6260,7 @@ template< class T > class CursorBinaryTree {
 ```
 
 ```cpp
-// ADS/tree/ArrayBinaryTree.h
+// declarations of <ADS/tree/ArrayBinaryTree.h>
 template< class T > class ArrayBinaryTree {
  public:
   using Item = T;
@@ -6287,7 +6287,7 @@ template< class T > class ArrayBinaryTree {
 ```
 
 ```cpp
-// ADS/tree/ThreadedTree.h
+// declarations of <ADS/tree/ThreadedTree.h>
 template< std::totally_ordered K > class ThreadedTree {
  public:
   ThreadedTree( void );
@@ -6303,7 +6303,7 @@ template< std::totally_ordered K > class ThreadedTree {
 ```
 
 ```cpp
-// ADS/tree/ExpressionTree.h
+// declarations of <ADS/tree/ExpressionTree.h>
 BinaryTree< std::string > * expressionTree( std::string_view e );
 double evaluate( const BinaryTree< std::string > * t ,
     const std::map< std::string , double > & env = {} );
@@ -6312,7 +6312,7 @@ std::string infixForm( const BinaryTree< std::string > * t );
 ```
 
 ```cpp
-// ADS/tree/HeapByInsertion.h
+// declarations of <ADS/tree/HeapByInsertion.h>
 template< class T , class C = std::less<> > void maxHeapSiftUp(
     std::vector< T > & A , std::size_t i , C less = C() );
 template< class T , class C = std::less<> > void heapBuildByInsertion(
@@ -6320,7 +6320,7 @@ template< class T , class C = std::less<> > void heapBuildByInsertion(
 ```
 
 ```cpp
-// ADS/tree/BinaryTreeAlgorithms.h
+// declarations of <ADS/tree/BinaryTreeAlgorithms.h>
 template< class N > concept BinaryNode = std::is_pointer_v< N > && requires(
     N n ) { ... };
 template< class N > concept ParentBinaryNode = BinaryNode< N > && requires(
@@ -6368,7 +6368,7 @@ template< class T , class Compare = std::less< T > >
 ```
 
 ```cpp
-// ADS/tree/SearchTree.h
+// declarations of <ADS/tree/SearchTree.h>
 enum class Color : unsigned char { RED , BLACK };
 struct NotJoinable {
  public:
@@ -6418,14 +6418,13 @@ template< std::totally_ordered K , class V >
 ```
 
 ```cpp
-// ADS/tree/MeasuredSearchTree.h
+// declarations of <ADS/tree/MeasuredSearchTree.h>
 template< std::totally_ordered K , class V > class MeasuredSearchTree {
  public:
   using Key = K;
   using Value = V;
   MeasuredSearchTree( void ) = default;
-  MeasuredSearchTree( MeasuredSearchTree && other ) noexcept : f_root(
-      other.f_root ) , f_size( other.f_size );
+  MeasuredSearchTree( MeasuredSearchTree && other ) noexcept;
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   void insert( const K & k , const V & v );
   void remove( const K & k );
@@ -6447,7 +6446,7 @@ template< std::totally_ordered K , class V > class MeasuredSearchTree {
 ```
 
 ```cpp
-// ADS/tree/Treap.h
+// declarations of <ADS/tree/Treap.h>
 template< std::totally_ordered K , class V >
     class Treap : public Joinable< Treap< K , V > , TreapNodes< K , V > , K ,
     V > {
@@ -6478,12 +6477,12 @@ template< std::totally_ordered K , class V >
 ```
 
 ```cpp
-// ADS/tree/HashedTreap.h
+// declarations of <ADS/tree/HashedTreap.h>
 template< std::totally_ordered K , class V > class HashedTreap {
  public:
   using Key = K;
   using Value = V;
-  explicit HashedTreap( std::uint64_t seed = 1 ) : f_h( seed );
+  explicit HashedTreap( std::uint64_t seed = 1 );
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   void insert( const K & k , const V & v );
   void remove( const K & k );
@@ -6503,14 +6502,13 @@ template< std::totally_ordered K , class V > class HashedTreap {
 ```
 
 ```cpp
-// ADS/tree/FingerTreap.h
+// declarations of <ADS/tree/FingerTreap.h>
 template< std::totally_ordered K , class V > class FingerTreap {
  public:
   using Key = K;
   using Value = V;
-  explicit FingerTreap( std::uint64_t seed = 1 ) : f_g( seed );
-  FingerTreap( FingerTreap && other ) noexcept : f_root( other.f_root ) ,
-      f_size( other.f_size ) , f_g( other.f_g );
+  explicit FingerTreap( std::uint64_t seed = 1 );
+  FingerTreap( FingerTreap && other ) noexcept;
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   [[nodiscard]] std::optional< V > fingerLookup( const K & k );
   [[nodiscard]] std::optional< V > lookupFrom( const K & k , Finger f ) const;
@@ -6535,12 +6533,12 @@ template< std::totally_ordered K , class V > class FingerTreap {
 ```
 
 ```cpp
-// ADS/tree/RandomizedSearchTree.h
+// declarations of <ADS/tree/RandomizedSearchTree.h>
 template< std::totally_ordered K , class V > class RandomizedSearchTree {
  public:
   using Key = K;
   using Value = V;
-  explicit RandomizedSearchTree( std::uint64_t seed = 1 ) : f_g( seed );
+  explicit RandomizedSearchTree( std::uint64_t seed = 1 );
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   void insert( const K & k , const V & v );
   void remove( const K & k );
@@ -6562,7 +6560,7 @@ template< std::totally_ordered K , class V > class RandomizedSearchTree {
 ```
 
 ```cpp
-// ADS/tree/AVLTree.h
+// declarations of <ADS/tree/AVLTree.h>
 template< std::totally_ordered K , class V >
     class AVLTree : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > ,
     K , V > {
@@ -6591,7 +6589,7 @@ template< std::totally_ordered K , class V >
 ```
 
 ```cpp
-// ADS/tree/SplayTree.h
+// declarations of <ADS/tree/SplayTree.h>
 template< std::totally_ordered K , class V > class SplayTree {
  public:
   using Key = K;
@@ -6616,7 +6614,7 @@ template< std::totally_ordered K , class V > class SplayTree {
 ```
 
 ```cpp
-// ADS/tree/ScapegoatTree.h
+// declarations of <ADS/tree/ScapegoatTree.h>
 template< std::totally_ordered K , class V , bool StoredSizes = false >
     class ScapegoatTree {
  public:
@@ -6650,14 +6648,14 @@ template< std::totally_ordered K , class V , bool StoredSizes = false >
 ```
 
 ```cpp
-// ADS/tree/PartialRebuildingTree.h
+// declarations of <ADS/tree/PartialRebuildingTree.h>
 enum class RebuildPolicy { WEIGHT , COUNTDOWN , DYNAMITE };
 template< std::totally_ordered K , class V , RebuildPolicy P >
     class PartialRebuildingTree {
  public:
   using Key = K;
   using Value = V;
-  explicit PartialRebuildingTree( std::uint64_t seed = 1 ) : f_g( seed );
+  explicit PartialRebuildingTree( std::uint64_t seed = 1 );
   PartialRebuildingTree( PartialRebuildingTree && other ) noexcept;
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   void insert( const K & k , const V & v );
@@ -6689,15 +6687,13 @@ template< std::totally_ordered K , class V >
 ```
 
 ```cpp
-// ADS/tree/LeftLeaningRedBlackTree.h
+// declarations of <ADS/tree/LeftLeaningRedBlackTree.h>
 template< std::totally_ordered K , class V > class LeftLeaningRedBlackTree {
  public:
   using Key = K;
   using Value = V;
   LeftLeaningRedBlackTree( void ) = default;
-  LeftLeaningRedBlackTree(
-      LeftLeaningRedBlackTree && other ) noexcept : f_root( other.f_root ) ,
-      f_n( other.f_n );
+  LeftLeaningRedBlackTree( LeftLeaningRedBlackTree && other ) noexcept;
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   void insert( const K & k , const V & v );
   void remove( const K & k );
@@ -6720,7 +6716,7 @@ template< std::totally_ordered K , class V > class LeftLeaningRedBlackTree {
 ```
 
 ```cpp
-// ADS/tree/BTree.h
+// declarations of <ADS/tree/BTree.h>
 template< std::totally_ordered K , class V > class BTree {
  public:
   using Key = K;
@@ -6745,7 +6741,7 @@ template< std::totally_ordered K , class V > class BTree {
 ```
 
 ```cpp
-// ADS/tree/BPlusTree.h
+// declarations of <ADS/tree/BPlusTree.h>
 template< std::totally_ordered K , class V > class BPlusTree {
  public:
   using Key = K;
@@ -6774,7 +6770,7 @@ template< std::totally_ordered K , class V > class BPlusTree {
 ```
 
 ```cpp
-// ADS/tree/BTreeMap.h
+// declarations of <ADS/tree/BTreeMap.h>
 template< class K , class V , class Less = std::less< K > ,
     std::size_t B = 512 , bool R = false >
     requires std::default_initializable< K > && std::default_initializable< V >
@@ -6820,7 +6816,7 @@ template< class K , class V , class Less = std::less< K > ,
 ```
 
 ```cpp
-// ADS/tree/JoinAlgorithms.h
+// declarations of <ADS/tree/JoinAlgorithms.h>
 inline constexpr std::size_t kJoinGrain = 2048;
 template< class A > concept JoinAdaptor = requires( typename A::Node * t ,
     typename A::Node * & l , const typename A::Key & k ,
@@ -6933,7 +6929,7 @@ template< class T , class A , class Key , class Value > class Joinable {
 ```
 
 ```cpp
-// ADS/tree/JoinTree.h
+// declarations of <ADS/tree/JoinTree.h>
 struct AVLBalance {
  public:
  };
@@ -7019,7 +7015,7 @@ template< std::totally_ordered K , class V , class G >
 ```
 
 ```cpp
-// ADS/tree/LinkCutTree.h
+// declarations of <ADS/tree/LinkCutTree.h>
 template< class T = long long , class Op = std::plus< T > > class LinkCutTree {
  public:
   using Value = T;

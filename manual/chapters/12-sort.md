@@ -50,6 +50,7 @@ Unless stated otherwise, a sort of the library sorts a
 optional counters, e.g.,
 
 ```cpp
+// declarations of <ADS/sort/Sort.h>
 template< class T , class C = std::less<> >
 void sort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -277,6 +278,7 @@ and none is wasted on a prefix that is not one less than a power of 2.
 The functions of `KnuthSorts.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/KnuthSorts.h>
 template< class T , class C = std::less<> >
 void binaryInsertionSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -331,6 +333,7 @@ end ([Knuth 1998, §5.2.1](Z-bibliography.md#ref-knuth1998v3)).
 The functions of `SelectionSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/SelectionSort.h>
 template< class T , class C = std::less<> >
 void selectionSort( std::vector< T > & A , C less = C() );
 ```
@@ -344,6 +347,7 @@ Sort, and Insertion Sort with a sentinel ([Montresor 2025, §2.7.1 and
 The functions of `InsertionSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/InsertionSort.h>
 template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , std::size_t lo ,
                     std::size_t hi , C less = C() );
@@ -428,6 +432,7 @@ nested loop. All but the comb sort are stable
 The functions of `ExchangeSorts.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/ExchangeSorts.h>
 template< class T , class C = std::less<> >
 void bubbleSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -470,6 +475,7 @@ the passes do not undo each other, and the following property answers it.
 The functions of `ShellSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/ShellSort.h>
 std::vector< std::size_t > knuthGaps( std::size_t n );
 std::vector< std::size_t > shellGaps( std::size_t n );
 std::vector< std::size_t > hibbardGaps( std::size_t n );
@@ -550,6 +556,7 @@ copies the merged items back. The recursion is `mergeSortRec()`, which
 the other two call:
 
 ```cpp
+// declarations of <ADS/sort/MergeSort.h>
 template< class T , class C = std::less<> >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
                  std::size_t start , std::size_t mid , std::size_t end ,
@@ -722,6 +729,7 @@ going first on a tie, and it can report the number of its strands.
 The functions of `StrandSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/StrandSort.h>
 template< class T , class C = std::less<> >
 void strandSort( List< T > & L , C less = C() ,
                  std::size_t *strands = nullptr );
@@ -766,6 +774,7 @@ bit at a time:
 The functions of `RunSorts.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/RunSorts.h>
 template< class T , class C = std::less<> >
 void powerSort( std::vector< T > & A , C less = C() ,
                 std::size_t *runs = nullptr );
@@ -877,6 +886,7 @@ place $j + 1$.
 The functions of `QuickSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/QuickSort.h>
 template< class T , class C = std::less<> >
 std::size_t partition( std::vector< T > & A , std::size_t start ,
                        std::size_t end , C less = C() );
@@ -1113,6 +1123,7 @@ part ([Algorithm 12.12](12-sort.md#alg-12-12)).
 The public members of `QuicksortAdversary` are
 
 ```cpp
+// declarations of <ADS/sort/QuicksortAdversary.h>
 class QuicksortAdversary {
  public:
  explicit QuicksortAdversary( std::size_t n );
@@ -1198,6 +1209,7 @@ side to break the pattern that caused it.
 The functions of `EngineeredQuickSorts.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/EngineeredQuickSorts.h>
 template< class T , class C = std::less<> >
 void pdqSort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
@@ -1296,6 +1308,7 @@ describe its five parts in turn.
 The functions of `VectorQuickSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/VectorQuickSort.h>
 template< VectorKey T >
 void vectorQuickSort( std::vector< T > & A );
 template< VectorKey T >
@@ -1400,6 +1413,7 @@ takes any order; it is not stable.
 The functions of `SampleSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/SampleSort.h>
 template< class T , class C = std::less<> >
 void sampleSort( std::vector< T > & A , C less = C() );
 ```
@@ -1500,6 +1514,7 @@ guarantee.
 The functions of `LearnedSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/LearnedSort.h>
 template< VectorKey T >
 void learnedSort( std::vector< T > & A );
 ```
@@ -1552,6 +1567,7 @@ extra space.
 The functions of `Heapsort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/Heapsort.h>
 template< class T , class C = std::less<> >
 void maxHeapRestore( std::vector< T > & A , std::size_t i ,
                      std::size_t dim , C less = C() );
@@ -1712,6 +1728,7 @@ of the cost of the balance.
 The functions of `TreeSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/TreeSort.h>
 template< std::totally_ordered T >
 void treeSort( std::vector< T > & A , bool balanced = true );
 ```
@@ -1742,6 +1759,7 @@ time, and it is stable.
 The functions of `CountingSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/CountingSort.h>
 template< class T >
 void countingSort( std::vector< T > & A , std::size_t k );
 ```
@@ -1755,6 +1773,7 @@ Pigeonhole Sort ([Montresor 2025, §2.7.5 and exercise
 The functions of `PigeonholeSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/PigeonholeSort.h>
 template< class V >
 std::vector< std::pair< int , V > >
 pigeonholeSort( const std::vector< std::pair< int , V > > & A , int k );
@@ -1840,6 +1859,7 @@ flipped if it is negative and the sign bit otherwise ([Herf
 of the width of the type, and it is declared as
 
 ```cpp
+// declarations of <ADS/sort/RadixSort.h>
 template< RadixKey T >
 void radixSort( std::vector< T > & A );
 template< class T , class K >
@@ -1986,6 +2006,7 @@ long as a common prefix (which may be "long"). It sorts in place and is not stab
 The functions of `MultikeyQuickSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/MultikeyQuickSort.h>
 void multikeyQuickSort( std::vector< std::string > & A );
 ```
 
@@ -2022,6 +2043,7 @@ prefixes in a similar way.
 The functions of `StringSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/StringSort.h>
 void prefixKeySort( std::vector< std::string > & A );
 ```
 
@@ -2104,6 +2126,7 @@ decreasing, which is the test $i \mathbin{\&} k \ne 0$ of its pseudocode.
 The functions of `SortingNetworks.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/SortingNetworks.h>
 std::vector< Comparator > mergeExchangeNetwork( std::size_t n );
 std::vector< Comparator > bitonicNetwork( std::size_t n );
 template< class T , class C = std::less<> >
@@ -2198,6 +2221,7 @@ the two phases together, and the function can report the phases it made.
 The functions of `ExternalSort.h` are declared as
 
 ```cpp
+// declarations of <ADS/sort/ExternalSort.h>
 template< class T , class C = std::less<> >
 std::vector< std::vector< T > >
 replacementSelection( const std::vector< T > & input , std::size_t M ,

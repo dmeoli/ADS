@@ -128,6 +128,7 @@ In `ADS/stack/ArrayStack.h`, the declarations of `ArrayStack` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/stack/ArrayStack.h>
 template< class T >
 class ArrayStack {
  public:
@@ -175,6 +176,7 @@ In `ADS/stack/SequenceStack.h`, the declarations of `SequenceStack` that a
 user calls are
 
 ```cpp
+// declarations of <ADS/stack/SequenceStack.h>
 template< Sequence S >
 class SequenceStack {
  public:
@@ -286,6 +288,7 @@ In `ADS/stack/MultiStack.h`, the declarations of `MultiStack` that a user
 calls are
 
 ```cpp
+// declarations of <ADS/stack/MultiStack.h>
 template< class T >
 class MultiStack {
  public:
@@ -395,6 +398,7 @@ In `ADS/stack/MinStack.h`, the declarations of `MinStack` that a user calls
 are
 
 ```cpp
+// declarations of <ADS/stack/MinStack.h>
 template< class T , class C = std::less<> >
 class MinStack {
  public:
@@ -604,6 +608,7 @@ output separates the tokens by one space.
 In `ADS/stack/Expressions.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/stack/Expressions.h>
 long evalPostfix( std::string_view e );
 std::string toPostfixParenthesized( std::string_view e );
 std::string toPostfix( std::string_view e );
@@ -734,6 +739,7 @@ order, and the stack as it was.
 In `ADS/stack/StackAlgorithms.h`, the functions are declared as
 
 ```cpp
+// declarations of <ADS/stack/StackAlgorithms.h>
 bool isPalindrome( const std::string & s );
 template< Stack S > void sortStack( S & s );
 template< Stack S >
