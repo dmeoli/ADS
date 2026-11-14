@@ -10,7 +10,9 @@
  * and to carry their keys (e.g., \f$ f \f$, \f$ g \f$ and a pointer to the
  * node of a search), so that a comparison never follows a pointer; with
  * \f$ D = 4 \f$ the heap is half as deep as a binary one, the four children
- * of a node lie in one line of cache, and a push moves up half as many
+ * of a node are consecutive (with the root at 0 they start at \f$ 4 i + 1 \f$,
+ * and 16-byte items straddle two lines of 64 bytes, since the array is not
+ * shifted to align them), and a push moves up half as many
  * levels, at the price of \f$ D - 2 \f$ more comparisons per level on the way
  * down (the same in all, \f$ 4 \log_4 n = 2 \log_2 n \f$). With
  * `BottomUp`, `pop()` moves the hole of the root down to a leaf by the best

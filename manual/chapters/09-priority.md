@@ -69,8 +69,12 @@ three types `Item`, `Priority` and `Handle`, and its models are
 `ListPriorityQueue`, `TreePriorityQueue`, `HeapPriorityQueue`,
 `IndexedDaryHeap`, `FibonacciHeapPriorityQueue` and `PairingHeap`. The
 concept `PriorityQueue` drops the handles and `decrease()`, and reads the
-queue through customization points that also take the spelling of the
-standard library ([§1.14](01-introduction.md#sec-1-14)); hence
+queue through the customization points `queue_insert()`, `queue_min()` and
+`queue_deleteMin()`, which call the members of the book when the queue has
+them and otherwise the free functions of the same names found by the
+lookup of the arguments, and which also take the spelling of the standard
+library ([§1.14](01-introduction.md#sec-1-14)), with `queue_item_t<Q>` the
+type of its items; hence
 `LinkedHeapPriorityQueue`, `DaryHeap`, `BucketQueue`, `DialQueue`,
 `RadixHeap` and `std::priority_queue` model it as well. The algorithms that
 take a priority queue (the shortest paths and the minimum spanning trees of
@@ -79,7 +83,48 @@ decrease being a new insertion on a queue without handles. The *priority `Queue`
 §10](Z-bibliography.md#ref-morin-cpp) is the same type without handles and
 without `decrease()`: `add(x)` and `remove()`, which the heaps of plain
 items in this chapter call `push(x)` and `pop()`, with `top()` for the
-least item.
+least item. Thus the realizations with handles share the interface of the
+book, e.g., for `HeapPriorityQueue<T,P>` of capacity $c$ (`capacity()`),
+
+```cpp
+explicit HeapPriorityQueue( int c );
+bool empty( void ) const;
+int size( void ) const;
+const T & min( void ) const;
+const P & minPriority( void ) const;
+Handle insert( const T & x , const P & p );          // its handle
+T deleteMin( void );
+void decrease( Handle y , const P & p );             // p not above
+```
+
+while the heaps of plain items, e.g., `DaryHeap<T,Better,D>`, take the
+names of [Morin 2013](Z-bibliography.md#ref-morin-cpp) and of the standard
+library:
+
+```cpp
+explicit DaryHeap( Better better = Better() );
+void push( const T & x );
+const T & top( void ) const;
+T pop( void );
+T erase( std::size_t i );                            // the item at i
+std::vector< T > smallest( std::size_t k ) const;
+```
+
+For instance, a search A* that keeps its open nodes as triples
+$( f , g , v )$ with lazy deletion (the default `std::less` puts the least
+triple on top) reads
+
+```cpp
+ADS::DaryHeap< std::tuple< long , long , int > > open;  // least f first
+open.push( { 9 , 2 , 1 } );
+open.push( { 7 , 0 , 0 } );
+auto [ f , g , v ] = open.pop();                    // f == 7 , v == 0
+```
+
+The pairing heap and the Fibonacci heap also declare
+`enable_stable_references` true (cf. `Capabilities.h`,
+[§1.14](01-introduction.md#sec-1-14)), since their items stay in their
+nodes, which the handles point to.
 
 A queue without handles (`DaryHeap`, `MeldableHeap` without its handles,
 `MinMaxHeap`, `SequenceHeap` and the queues of integer keys) has no
@@ -425,11 +470,8 @@ level. Third, the vector is not shrunk when it is a third full, as in the
 book, so that a heap keeps the memory of its largest size and never copies
 its items to shrink. The walk down (the core of `pop()` and of the
 construction) compares the children with each other and the best of them
-with the item, $D$ comparisons per level:
-
-```cpp
---8<-- "generated/DaryHeap-DaryHeap-down.cpp"
-```
+with the item, $D$ comparisons per level (lines 4 to 7 of the pseudocode
+of `pop()` above).
 
 The choice of $D$ trades the comparisons of `pop()` against the levels
 that both operations walk, which is the analysis that [Morin 2013,
@@ -450,8 +492,13 @@ $D \ge 3$, since its derivative has the sign of $\ln D - 1$. $\square$
 This is why $D = 4$ is the default. A heap of four children per node is
 half as deep as a binary one: a push walks half as many levels, and a pop
 makes no more comparisons than in the binary heap. Furthermore, the four
-children of a node usually lie in one line of the cache when the items are
-small, and a level of the walk down then costs one miss at most ([LaMarca
+children of a node are consecutive, 64 bytes for items of 16 bytes, and
+they span at most two lines of the cache. Note that the code does not
+align them: the children of $i$ start at the place $4 i + 1$, i.e., at 16
+bytes past a multiple of 64 when the vector starts on a line, so that with
+items of 16 bytes they always straddle two lines; the analyses of the
+caches that count one miss per level shift the array by three places to
+align them ([LaMarca
 and Ladner 1996](Z-bibliography.md#ref-lamarca1996); [Larkin, Sen and
 Tarjan 2014](Z-bibliography.md#ref-larkin2014)). When the decreases
 dominate, as in the algorithm of Dijkstra with a heap that has
@@ -508,10 +555,6 @@ $x$ is not smaller than its parent, and (9.2) fails only between $x$ and
 its children: $x$ may come from another subtree, where it was larger than
 the items below $i$, and the walk down mends it as in `pop()`. $\square$
 
-```cpp
---8<-- "generated/DaryHeap-DaryHeap-erase.cpp"
-```
-
 [Figure 9.7](09-priority.md#fig-9-7) shows a heap with $D = 3$ and the
 case of the walk down. As for why `erase(i)` is of little use, the places
 of the items change at each operation and the heap gives no handle to
@@ -545,10 +588,6 @@ is not larger than it, and therefore the least item of $Q$ is the least
 item not yet given. A step removes one place from $Q$ and puts in at most
 $D$; hence $|Q| \le 1 + k ( D - 1 )$, and an operation of $Q$ costs
 $O( \log ( k D ) )$. $\square$
-
-```cpp
---8<-- "generated/DaryHeap-DaryHeap-smallest.cpp"
-```
 
 [Figure 9.8](09-priority.md#fig-9-8) shows the answer for $k = 4$ on the
 binary heap of [Figure 9.3](09-priority.md#fig-9-3), and the five places
@@ -687,7 +726,7 @@ the linked heap (test `beyond.linked-heap`). The nodes come from an
 `ObjectPool` of the queue, as in `HeapPriorityQueue` (test
 `heaps.linked-heap-pool`). Its view walks the tree in symmetric order by a
 `PathIterator`, to which the class `Shape` gives the root, the children
-and the contents of a node; this order is of no use but for visiting all
+(`left()` and `right()`) and the contents of a node (`read()`); this order is of no use but for visiting all
 the items.
 
 ## 9.6 The randomized meldable heap {#sec-9-6}
@@ -714,10 +753,6 @@ of merges.
 made a loop that hangs each node by the link that will hold it.
 
 --8<-- "generated/MeldableHeap-merge.pseudo.md"
-
-```cpp
---8<-- "generated/MeldableHeap-MeldableHeap-merge.cpp"
-```
 
 ![Figure 9.11. The two heaps $h_1$ and $h_2$ of [Morin 2013, Figure 10.4](Z-bibliography.md#ref-morin-cpp) and their merge with the coins right, left, right, right: $h_2$ goes down the right subtree of 4, takes the place of 50 below 8, and 50 goes down the right side of $h_2$, below 20 (violet the nodes of $h_1$ on the walk, orange those of $h_2$).](../figures/prio-meld-merge.svg){#fig-9-11}
 
@@ -777,10 +812,6 @@ $u$ and each node below $u$; the walk of the merge starts at the subtrees
 of $u$, with fewer than $n$ nodes.
 
 --8<-- "generated/MeldableHeap-erase.pseudo.md"
-
-```cpp
---8<-- "generated/MeldableHeap-MeldableHeap-erase.cpp"
-```
 
 The second least item ([Morin 2013, exercise
 10.9](Z-bibliography.md#ref-morin-cpp)) is the smaller of the two children
@@ -930,11 +961,7 @@ child-sibling. Each node points to its leftmost child and to its right
 sibling, and back to its left sibling (or to its parent, if it is the
 leftmost child); a node is thus cut from its tree in $O( 1 )$. Two trees
 are *linked* by making the root of larger priority the leftmost child of
-the other one, with one comparison.
-
-```cpp
---8<-- "generated/PairingHeap-PairingHeap-link.cpp"
-```
+the other one, with one comparison and $O( 1 )$ updates of the links.
 
 `insert()` links a tree of one node with the root, and `decrease()` cuts
 the node with its subtree (unless it is the leftmost child and still not
@@ -1144,14 +1171,15 @@ $S = 4$ in the layer itself and the others in a vector, scanned backward
 from a bound that only moves down between two pushes of a larger $g$. The
 lists of $g \ge D$ are *runs* while they are at most $R = 64$: a vector of
 pairs $( g , h )$, $h$ the head of the list of $g$, sorted by increasing
-$g$, whose last pair is the top of the layer. A push of a new $g \ge D$
-into a layer of $R$ runs turns the layer dense on all its $g$, by moving
+$g$, whose last pair is the top of the layer. A push of any $g \ge D$
+(new or not) into a layer of $R$ runs turns the layer dense on all its
+$g$, by moving
 the heads of the runs (not the items) into an array as long as the
 largest $g$. The layer stays dense until it empties; it then frees the
 array and is sparse again.
 
 The order among the items of one $f$ is a policy, the third parameter of
-`BucketQueue<T,K,Tie>`. `LargestSecondKey`, the default, is the order
+`BucketQueue<T,K,Tie>` (`Ties` in the class). `LargestSecondKey`, the default, is the order
 above, while `LeastSecondKey` takes the least $g$ first, and among equal
 pairs the last item pushed, i.e., the lexicographic order of the pairs
 $( f , g )$, which is that of the keys $( k_1 , k_2 )$ of LPA* ([Koenig,
@@ -1175,21 +1203,39 @@ the default compiles to the same code as before the policy existed (test
 ![Figure 9.17. A `BucketQueue`: the layers by $f$, the least in use $f = 5$ (violet), with its dense heads by $g$, and the layer $f = 7$ with two runs of $g \ge 256$; `top()` is the head of the list of the largest $g$ of the least layer, the last item pushed with that pair of keys.](../figures/prio-bucket.svg){#fig-9-17}
 
 <span id="lem-9-15"></span>**Lemma 9.15.** *Between two times at which a
-layer is empty, $m$ pushes into it and as many pops cost $O( m + D )$ if
-its items have at most $R$ distinct $g \ge D$, and $O( m + D + G )$
-otherwise, $G$ the largest $g$ pushed into it, i.e.,
-$O( 1 + ( D + G ) / R )$ per push in the second case.*
+layer is empty, let it receive $m$ pushes and as many pops, and let $u$
+be the sum, over the pushes into its dense lists, of the amount by which
+each push raises the bound of the scan ($g$ minus the bound, when
+positive, the bound being 0 at a push into the empty layer). Then the
+operations on the layer cost $O( m + u )$ if no push of a $g \ge D$ meets
+the layer with $R$ runs (which holds, e.g., when its items have fewer than
+$R$ distinct $g \ge D$), and $O( m + u + G )$ otherwise, $G$ the largest
+$g$ pushed into it. Furthermore, $u < D$ in the first case, and $u \le G$
+in the second, when all the pushes come before all the pops; with the
+pushes and the pops interleaved, $u$ may reach $\Theta( m D )$.*
 
 *Proof.* A push to the runs costs $O( 1 )$ when its $g$ is not below the
 last, and $O( \log R + R ) = O( 1 )$ otherwise, since $R$ is a constant and
-the shift moves at most $R$ runs. A pop takes the head of the last run in
-$O( 1 )$, and the dense lists of the $g < D$ cost at most $D$ for their
-scan between two fillings. Only the conversion and the array that follows
-it cost $\Theta( G )$, to allocate, to set and to scan down, and the
-conversion comes only with the $( R + 1 )$-th distinct $g \ge D$, i.e.,
-after more than $R$ pushes. $\square$
+the shift moves at most $R$ runs; a pop takes the head of the last run in
+$O( 1 )$. A step of the scan of the dense lists lowers the bound by one,
+the bound is never negative, and only a push raises it; hence the steps
+are at most $u$, and the rest of a push or a pop on the dense lists costs
+$O( 1 )$. The conversion and the array that follows it cost $\Theta( G )$
+more, to allocate and to set, and the conversion needs $R$ runs, i.e.,
+more than $R$ pushes. When the pushes come before the pops, the bound only
+grows while they last, from 0 to the largest $g$ of the dense lists, which
+is below $D$ without conversion and at most $G$ with it, and $u$ is that
+largest $g$. Finally, with $m / 2$ items of $g = 0$ pushed first, each
+round of a push of $g = D - 1$ and two pops raises the bound by $D - 1$
+and costs a scan of $D - 1$ steps at its second pop, which gives
+$\Theta( m D )$ over $m / 2$ rounds. $\square$
 
-A dense array by itself would cost $\Theta( G )$ at each filling of a layer,
+In particular, a layer that is filled and then emptied costs $O( m + D )$,
+or $O( m + D + G )$ after a conversion, i.e., $O( 1 + ( D + G ) / R )$ per
+push in the second case, which is the use of the least layer by a search
+A* that pops the nodes of one $f$ before it pushes any other of that $f$;
+the queue gives no such bound when it alternates pushes of large $g$ with
+pops in the same layer. A dense array by itself would cost $\Theta( G )$ at each filling of a layer,
 even of one item, which is the case of the least layer of a search whose
 nodes come in small batches. A binary heap per layer would cost
 $O( \log m )$ per operation, more than the dense lists on a layer of many
@@ -1343,10 +1389,6 @@ the matches on the path from its leaf to the root, each against the loser
 stored there.
 
 --8<-- "generated/LoserTree-replace.pseudo.md"
-
-```cpp
---8<-- "generated/LoserTree-LoserTree-replace.cpp"
-```
 
 ![Figure 9.19. A tree of losers of 8 players: the internal nodes hold the losers of their matches (player:key), the node above the root the winner p1. `replace(11)` gives p1 the key 11 and replays the three matches of its path: p1 beats p0 (12), loses to p3 (9), which in turn loses to p5 (7), the new winner (violet the path, orange the new key and the new winner).](../figures/prio-loser.svg){#fig-9-19}
 
