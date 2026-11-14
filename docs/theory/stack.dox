@@ -236,9 +236,9 @@
       Centrum, Amsterdam, 1961
  \see R. Sedgewick, Algorithms in C++, Parts 1-4, 3rd ed., Addison-Wesley,
       1998, section 4.3
- \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, exercises 1.2, 1.3, 1.4
-      and 3.14
+ \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+      https://opendatastructures.org/ods-cpp.pdf, exercises 1.2, 1.3, 1.4 and
+      3.14
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File stack.dox ----------------------------*/

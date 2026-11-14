@@ -48,9 +48,9 @@
  *      doi:10.1145/78973.78977
  * \see W. Pugh, A skip list cookbook, Technical report CS-TR-2286.1,
  *      University of Maryland, 1990 (the finger search)
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 4.2 and exercises 4.8 and 4.10,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 4.2 and exercises
+ *      4.8 and 4.10
  * \see G. L. Steele, D. Lea, C. H. Flood, Fast splittable pseudorandom
  *      number generators, Proceedings of OOPSLA 2014, 453-472, 2014,
  *      doi:10.1145/2660193.2660195 (SplitMix64)

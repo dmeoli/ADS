@@ -28,8 +28,8 @@
  * The contracts [see `Contract.h`]: a block read, written, freed or peeked
  * is in use. The operations are defined in `BlockStore.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 14.1
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 14.1
  * \see A. Aggarwal, J. S. Vitter, The input/output complexity of sorting
  *      and related problems, Communications of the ACM 31(9), 1116-1127,
  *      1988, doi:10.1145/48529.48535

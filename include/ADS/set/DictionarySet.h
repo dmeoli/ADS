@@ -30,8 +30,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 8.4 and 8.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, sections 1.2.3 and 1.2.4
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 1.2.3 and 1.2.4
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

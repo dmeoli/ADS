@@ -34,8 +34,8 @@
  * \f$ h + n \le c \f$. The operations are defined in
  * `ContiguousDeque.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 2.9
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.9
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

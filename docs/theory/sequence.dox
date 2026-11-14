@@ -908,9 +908,8 @@
  \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
       Addison-Wesley, 1997, sections 1.3.3 (the permutations) and 2.2.3
       (the available space list)
- \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, chapters 1, 2, 3, 4, 7
-      and 8
+ \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+      https://opendatastructures.org/ods-cpp.pdf, chapters 1, 2, 3, 4, 7 and 8
  \see A. Brodnik, S. Carlsson, E. D. Demaine, J. I. Munro, R. Sedgewick,
       Resizable arrays in optimal time and space, Algorithms and Data
       Structures (WADS 1999), Lecture Notes in Computer Science 1663,

@@ -43,9 +43,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercises 1.2, 1.3 and
- *      1.4
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercises 1.2, 1.3 and 1.4
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

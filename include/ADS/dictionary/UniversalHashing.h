@@ -95,8 +95,8 @@
  * \see J. L. Carter, M. N. Wegman, Universal classes of hash functions,
  *      Journal of Computer and System Sciences 18(2), 143-154, 1979,
  *      doi:10.1016/0022-0000(79)90044-8
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, sections 5.1.1 and 5.3
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 5.1.1 and 5.3
  * \see M. Dietzfelbinger, T. Hagerup, J. Katajainen, M. Penttonen, A
  *      reliable randomized algorithm for the closest-pair problem, Journal
  *      of Algorithms 25(1), 19-51, 1997, doi:10.1006/jagm.1997.0873

@@ -77,9 +77,9 @@
  *      in Computer Science 382, 393-402, 1989, doi:10.1007/3-540-51542-9_33
  * \see A. Andersson, General balanced trees, Journal of Algorithms 30(1),
  *      1-18, 1999, doi:10.1006/jagm.1998.0967
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 8.1 and exercises 8.3 to 8.7,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 8.1 and exercises
+ *      8.3 to 8.7
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

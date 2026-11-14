@@ -46,8 +46,8 @@
  *      arrays for rank-based sequences, Algorithms and Data Structures
  *      (WADS 1999), Lecture Notes in Computer Science 1663, 205-216, 1999,
  *      doi:10.1007/3-540-48447-7_21
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 2.13
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.13
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

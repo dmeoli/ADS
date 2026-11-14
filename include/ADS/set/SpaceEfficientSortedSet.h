@@ -46,9 +46,9 @@
  * each block but the last holds from \f$ b - 1 \f$ to \f$ b + 1 \f$ items. The
  * operations are defined in `SpaceEfficientSortedSet.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 3.3 and exercise 4.13,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 3.3 and exercise
+ *      4.13
  * \see W. Pugh, Skip lists: a probabilistic alternative to balanced trees,
  *      Communications of the ACM 33(6), 668-676, 1990,
  *      doi:10.1145/78973.78977

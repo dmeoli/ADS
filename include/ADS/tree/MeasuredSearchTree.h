@@ -32,9 +32,9 @@
  * level 3, is the order of the keys, the parents and the three measures of
  * every node. The operations are defined in `MeasuredSearchTree.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 6.2 and exercises 6.14 and 6.19,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 6.2 and exercises
+ *      6.14 and 6.19
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

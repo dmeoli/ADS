@@ -33,8 +33,8 @@
  * \see M. D. McIlroy, A killer adversary for quicksort, Software: Practice
  *      and Experience 29(4), 341-344, 1999,
  *      doi:10.1002/(SICI)1097-024X(19990410)29:4<341::AID-SPE237>3.0.CO;2-R
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 11.1.2 and
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 11.1.2 and
  *      exercises 11.3 to 11.6
  *
  * \author Donato Meoli \n

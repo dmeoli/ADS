@@ -48,8 +48,8 @@
  *      Resizable arrays in optimal time and space, Algorithms and Data
  *      Structures (WADS 1999), Lecture Notes in Computer Science 1663,
  *      37-48, 1999, doi:10.1007/3-540-48447-7_4
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 2.6
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 2.6
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

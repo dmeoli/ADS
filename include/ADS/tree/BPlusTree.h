@@ -52,8 +52,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 6.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap06.pdf
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 14.8
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 14.8
  * \see R. Bayer, E. M. McCreight, Organization and maintenance of large
  *      ordered indexes, Acta Informatica 1(3), 173-189, 1972,
  *      doi:10.1007/BF00288683

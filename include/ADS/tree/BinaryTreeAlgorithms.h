@@ -105,9 +105,9 @@
  *      Proceedings of the 4th Latin American Symposium on Theoretical
  *      Informatics (LATIN), LNCS 1776, 88-94, 2000,
  *      doi:10.1007/10719839_9
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 6.1 and exercises 6.4 to 6.14,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 6.1 and exercises
+ *      6.4 to 6.14
  * \see Q. F. Stout, B. L. Warren, Tree rebalancing in optimal time and
  *      space, Communications of the ACM 29(9), 902-908, 1986,
  *      doi:10.1145/6592.6599

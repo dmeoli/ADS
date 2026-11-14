@@ -20,7 +20,7 @@ call (the relation $a < b$ being `less(a,b)`). The headers of `ADS/sort`
 realize the sorts of [Montresor 2025](Z-bibliography.md#ref-montresor2025)
 (the elementary ones of its section 2.7, Quicksort of section 12.2, heapsort
 of section 10.1.4 and Shell Sort of section 15.1) and those of chapter 11 of
-[Morin 2013](Z-bibliography.md#ref-morin2013), with their exercises. Many
+[Morin 2013](Z-bibliography.md#ref-morin-cpp), with their exercises. Many
 more go beyond both books: the internal sorts of [Knuth
 1998](Z-bibliography.md#ref-knuth1998v3) that the textbooks leave out, the
 sorts engineered for the caches and for the vector registers of today,
@@ -117,7 +117,7 @@ equal items cannot be told apart, as integers or strings).
 
 Any sort by comparisons, run on $n$ distinct items with $n$ fixed, can be
 seen as a binary tree, the *comparison tree* (or decision tree) of
-[Morin 2013, §11.1.4](Z-bibliography.md#ref-morin2013). For a
+[Morin 2013, §11.1.4](Z-bibliography.md#ref-morin-cpp). For a
 deterministic sort the first comparison is always between the same two
 places. Its second comparison may depend on the outcome of the first, the third
 on the outcomes of the first two, and so on. Hence each internal node of
@@ -132,7 +132,7 @@ different permutations to be undone, a correct sort has a tree with at
 least $n!$ leaves. With fewer, two inputs that need different
 permutations reach the same leaf, and one of them comes out unsorted.
 [Figure 12.2](12-sort.md#fig-12-2) shows such a tree (that of figure 11.6
-of [Morin 2013](Z-bibliography.md#ref-morin2013)), with four leaves for
+of [Morin 2013](Z-bibliography.md#ref-morin-cpp)), with four leaves for
 the six orders of three items.
 
 ![Figure 12.1. The comparison tree of `insertionSort()` on $a[ 0 ] , a[ 1 ] , a[ 2 ]$: each internal node is a comparison, the left edge followed when the first item is smaller; a leaf $i < j < l$ is the order $a[ i ] < a[ j ] < a[ l ]$ that the sort has found. The six leaves are the $3!$ orders, and three comparisons are needed in the worst case.](../figures/sort-comparison-tree.svg){#fig-12-1}
@@ -141,7 +141,7 @@ the six orders of three items.
 
 In passing, the tree of [Figure 12.2](12-sort.md#fig-12-2) answers exercise
 11.10
-of [Morin 2013](Z-bibliography.md#ref-morin2013): besides $3 , 1 , 2$ and
+of [Morin 2013](Z-bibliography.md#ref-morin-cpp): besides $3 , 1 , 2$ and
 $3 , 2 , 1$, which reach the same leaf and of which the second is sorted
 wrongly, the pair $2 , 3 , 1$ and $3 , 1 , 2$ reaches it too, and
 $2 , 3 , 1$ comes out as $3 , 1 , 2$. We now prove the two facts on binary
@@ -203,7 +203,7 @@ inequality. $\square$
 
 A randomized sort, such as the quicksort with a random pivot, has no single
 tree, but it does not escape the bound either ([Morin 2013,
-§11.1.4](Z-bibliography.md#ref-morin2013)). We may regard it as a
+§11.1.4](Z-bibliography.md#ref-morin-cpp)). We may regard it as a
 deterministic sort with two inputs, the items and a sequence $b$ of random
 numbers from which it takes its choices. For each fixed $b$ it is a
 deterministic sort with a tree $\mathcal{T}( b )$, which, once the nodes
@@ -436,7 +436,7 @@ Sort is in place and iterative, but not stable, which rather limits its use on r
 
 Merge Sort (`mergeSort()` of `MergeSort.h`, [Montresor 2025,
 §2.7.3](Z-bibliography.md#ref-montresor2025); [Morin 2013,
-§11.1.1](Z-bibliography.md#ref-morin2013)) is the classical example of
+§11.1.1](Z-bibliography.md#ref-morin-cpp)) is the classical example of
 divide and conquer ([§13.4](13-algorithm.md#sec-13-4)): a part of at most
 one item is sorted, and a larger part is split into two halves, which are
 sorted recursively and then merged ([Algorithm
@@ -475,7 +475,7 @@ halves already in order, $A[ \mathit{mid} ] \le A[ \mathit{mid} + 1 ]$,
 which makes a sorted input cost $O( n )$. With the default cutoff 1 it is
 the plain sort of the book. [Figure 12.4](12-sort.md#fig-12-4) shows the
 sort on the vector of exercise 11.1 of [Morin
-2013](Z-bibliography.md#ref-morin2013).
+2013](Z-bibliography.md#ref-morin-cpp).
 
 ![Figure 12.4. `mergeSort()` on $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin 2013]): the vector after the merges of the parts of two, of four and of eight items; in each merged part the items that come from its left half are in violet, those from its right half in the light tint.](../figures/sort-mergesort.svg){#fig-12-4}
 
@@ -502,7 +502,7 @@ $$
 *Proof.* By [Lemma 12.6](12-sort.md#lem-12-6), the worst case satisfies
 $C( 1 ) = 0$ and $C( n ) \le C( \lceil n / 2 \rceil ) + C( \lfloor n / 2
 \rfloor ) + n - 1$. We show $C( n ) \le n \log_2 n$ by induction, as in
-[Morin 2013, §11.1.1](Z-bibliography.md#ref-morin2013). For $n$ even,
+[Morin 2013, §11.1.1](Z-bibliography.md#ref-morin-cpp). For $n$ even,
 $C( n ) \le n - 1 + 2 ( n / 2 ) \log_2 ( n / 2 ) = n \log_2 n - 1$. For
 $n$ odd, with $m = n / 2$, the two halves have $m + 1 / 2$ and $m - 1 / 2$
 items, and
@@ -525,7 +525,7 @@ per comparison and per move, and each level of the recursion moves each item
 twice. $\square$
 
 Indeed, the same bound follows from the tree of the recursion
-([Morin 2013, §11.1.1](Z-bibliography.md#ref-morin2013)): for $n$ a power
+([Morin 2013, §11.1.1](Z-bibliography.md#ref-morin-cpp)): for $n$ a power
 of 2, the level $i$ of the tree has $2^i$ parts of $n / 2^i$ items, whose
 merges cost $O( n )$ in all, and there are $\log_2 n$ levels. In
 [Figure 12.4](12-sort.md#fig-12-4) each row is a level. Compared with
@@ -545,7 +545,7 @@ list $R$, both halves are sorted, and the items of $R$ are inserted into $L$
 at their places; each item is thus copied once per level, since the abstract
 data type moves no cells between lists. The merge sort
 of a list that relinks its cells instead, with no auxiliary array
-(exercise 11.2 of [Morin 2013](Z-bibliography.md#ref-morin2013)), is
+(exercise 11.2 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)), is
 `listSort()` of `ListSort.h`, in [Chapter 2](02-sequence.md#ch-2), which
 merges the natural runs of the list as a binary counter.
 `countInversions()` counts the pairs $i < j$ with $A[ i ] > A[ j ]$
@@ -693,7 +693,7 @@ sort is `naturalMergeSort()` of `SequenceAlgorithms.h`, in
 
 Quicksort ([Hoare 1962](Z-bibliography.md#ref-hoare1962); [Montresor 2025,
 §12.2](Z-bibliography.md#ref-montresor2025); [Morin 2013,
-§11.1.2](Z-bibliography.md#ref-morin2013)) is the other classical sort by
+§11.1.2](Z-bibliography.md#ref-morin-cpp)) is the other classical sort by
 divide and conquer, which does its work before the recursion instead of
 after it: `partition()`, the perno() of the book, rearranges
 $A[ \mathit{start} .. \mathit{end} ]$ around the pivot $x = A[
@@ -729,13 +729,13 @@ with the first of the latter, which keeps both. At the end the pivot and
 $A[ j ]$ change places. $\square$
 
 [Table 12.4](12-sort.md#tab-12-4) follows `quickSort()` on the vector of
-exercise 11.1 of [Morin 2013](Z-bibliography.md#ref-morin2013), whose first
+exercise 11.1 of [Morin 2013](Z-bibliography.md#ref-morin-cpp), whose first
 item is its minimum: the first partition separates the pivot alone, a
 foretaste of the worst case discussed below.
 
 <span id="tab-12-4"></span>**Table 12.4.** `quickSort()` on
 $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin
-2013](Z-bibliography.md#ref-morin2013)): each call on a part of at least
+2013](Z-bibliography.md#ref-morin-cpp)): each call on a part of at least
 two items, its pivot, the part after the partition and the place $j$ of the
 pivot; 7 + 6 + 4 + 2 = 19 comparisons in all.
 
@@ -749,7 +749,7 @@ pivot; 7 + 6 + 4 + 2 = 19 comparisons in all.
 A partition costs $n - 1$ comparisons on a part of $n$ items, and the two
 sides may have anything from 0 to $n - 1$ items. On average, however, the
 pivot falls "near" the middle, as we now show. The analysis of [Morin 2013,
-§11.1.2](Z-bibliography.md#ref-morin2013) rests on the correspondence with
+§11.1.2](Z-bibliography.md#ref-morin-cpp) rests on the correspondence with
 the random binary search trees of [Chapter 8](08-tree.md#ch-8): on distinct
 items, the tree of the recursion of a quicksort whose pivot is equally
 likely to be any item of its part is a random binary search tree, the pivot
@@ -813,14 +813,14 @@ comparisons (cf. (12.4)) and a recursion $n - 1$ calls deep, which the
 stack of the program must hold.
 
 The count of the quicksort of [Morin 2013,
-§11.1.2](Z-bibliography.md#ref-morin2013) differs from (12.4) in a detail:
+§11.1.2](Z-bibliography.md#ref-morin-cpp) differs from (12.4) in a detail:
 its partition in three compares the $k$ items of a part with the pivot,
 the pivot included, and it returns at once on the parts of at most one
 item. Exercise 11.7 there proposes as its expectation
 $2 n H_n - n + H_n$, which is not right, as the next lemma shows.
 
 <span id="lem-12-10"></span>**Lemma 12.10.** *On $n \ge 2$ distinct keys,
-the quicksort of [Morin 2013](Z-bibliography.md#ref-morin2013), with a
+the quicksort of [Morin 2013](Z-bibliography.md#ref-morin-cpp), with a
 random pivot, makes in expectation*
 
 $$
@@ -843,7 +843,7 @@ $2 n H_n - n + H_n$ gives 5.5. In the library, the test
 `ods_ints.ods.ex11.7.quicksort-expectation` checks (12.5) on the recurrence
 up to $n = 2000$ and against the average of 4000 runs of that quicksort.
 The same analysis, with equal keys, gives the theorem of [Morin 2013,
-§11.1.2](Z-bibliography.md#ref-morin2013): a pivot that has duplicates takes
+§11.1.2](Z-bibliography.md#ref-morin-cpp): a pivot that has duplicates takes
 them all out of both sides, and equal keys can thus only lower the count.
 
 <span id="thm-12-6"></span>**Theorem 12.6.** *A quicksort with a random
@@ -896,7 +896,7 @@ and exercise 12.1](Z-bibliography.md#ref-montresor2025)).
 
 Every deterministic rule for the pivot has its killer inputs: the sorted
 vector for the first item (exercise 11.3 of [Morin
-2013](Z-bibliography.md#ref-morin2013)), and an input built by the
+2013](Z-bibliography.md#ref-morin-cpp)), and an input built by the
 adversary below for the middle item (exercise 11.4) or for any rule that
 does not look at the values (exercise 11.5). The adversary of [McIlroy
 1999](Z-bibliography.md#ref-mcilroy1999), `QuicksortAdversary` of
@@ -1045,7 +1045,7 @@ its recursion is bounded as in Algorithm 5.6. By
 average and $O( n \log k )$ on $k$ distinct keys, but $\Theta( n^2 )$ in the
 worst case, with a probability that vanishes with $n$ on any input, there
 being no fallback to heapsort. It is the quicksort of chapter 11 of
-[Morin 2013](Z-bibliography.md#ref-morin2013), whose partition keeps the
+[Morin 2013](Z-bibliography.md#ref-morin-cpp), whose partition keeps the
 larger items at the right end instead ([Algorithm
 12.14](12-sort.md#alg-12-14)).
 
@@ -1295,7 +1295,7 @@ for each $i > 0$, and hence its maximum in $A[ 0 ]$. It is the binary heap
 of [§9.3](09-priority.md#sec-9-3), with the order reversed. Heapsort
 ([Williams 1964](Z-bibliography.md#ref-williams1964); [Montresor 2025,
 §10.1.4](Z-bibliography.md#ref-montresor2025); [Morin 2013,
-§11.1.3](Z-bibliography.md#ref-morin2013)) builds such a heap in the vector
+§11.1.3](Z-bibliography.md#ref-morin-cpp)) builds such a heap in the vector
 and then extracts its maximum $n - 1$ times, each time into the place that
 the heap frees at its end ([Algorithm 12.18](12-sort.md#alg-12-18)).
 `maxHeapRestore(A, i, dim)` of `Heapsort.h` moves the item of $A[ i ]$ down,
@@ -1343,7 +1343,7 @@ $$
 
 since $\sum_{m \ge 1} m / 2^m = 2$ (the expected number of tosses of a fair
 coin up to the first head, as [Morin 2013,
-§11.1.3](Z-bibliography.md#ref-morin2013) remarks). $\square$
+§11.1.3](Z-bibliography.md#ref-morin-cpp) remarks). $\square$
 
 <span id="thm-12-7"></span>**Theorem 12.7.** *`heapsort()` sorts $n$ items
 in place in $O( n \log n )$ time, with at most $2 n \log_2 n + O( n )$
@@ -1358,7 +1358,7 @@ $2 n \log_2 n + O( n )$. The places freed at the end receive the maxima in
 decreasing order, and the vector ends sorted. $\square$
 
 [Figure 12.7](12-sort.md#fig-12-7) shows the sort on the vector of exercise
-11.1 of [Morin 2013](Z-bibliography.md#ref-morin2013). The sort of the book
+11.1 of [Morin 2013](Z-bibliography.md#ref-morin-cpp). The sort of the book
 of Morin builds a heap of the minimum, extracts into the end of the vector,
 which leaves it in decreasing order, and reverses it at the end. A max-heap
 spares the reversal. In its exercise 11.9 one should explain why the
@@ -1370,7 +1370,7 @@ $n / 2$ swaps once, and the max-heap avoids both. Furthermore, the bound of
 ![Figure 12.7. `heapsort()` on $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin 2013]): on the left the max-heap built by `heapBuild()`, on the right the same heap as a vector and the vector after the first 1, 2, 3 and 7 extractions; the maximum of the heap is in violet, and the sorted suffix, which the extractions fill from the right, in orange.](../figures/sort-heapsort.svg){#fig-12-7}
 
 <span id="lem-12-16"></span>**Lemma 12.16.** *The heapsort of [Morin
-2013](Z-bibliography.md#ref-morin2013) on a vector in increasing order, and
+2013](Z-bibliography.md#ref-morin-cpp) on a vector in increasing order, and
 `heapsort()` on a vector in decreasing order, make at least
 $2 n \log_2 n - O( n )$ comparisons (exercise 11.8 there).*
 
@@ -1424,7 +1424,7 @@ or parts of them, as indices into an array, and a statement such as
 $c[ a[ i ] ] \gets c[ a[ i ] ] + 1$ takes constant time but has as many
 outcomes as the array has places; their execution is therefore not a binary
 tree and [Theorem 12.1](12-sort.md#thm-12-1) does not apply ([Morin 2013,
-§11.2](Z-bibliography.md#ref-morin2013)). Counting Sort (`countingSort()` of
+§11.2](Z-bibliography.md#ref-morin-cpp)). Counting Sort (`countingSort()` of
 `CountingSort.h`, [Montresor 2025, §2.7.5](Z-bibliography.md#ref-montresor2025))
 sorts integers in $[ 0 , k )$: $B[ v ]$ counts the occurrences of $v$, and
 then each $v$ is written $B[ v ]$ times in order
@@ -1446,7 +1446,7 @@ Pigeonhole Sort ([Montresor 2025, §2.7.5 and exercise
 
 --8<-- "generated/PigeonholeSort-pigeonholeSort.pseudo.md"
 
-The counting sort of [Morin 2013, §11.2.1](Z-bibliography.md#ref-morin2013),
+The counting sort of [Morin 2013, §11.2.1](Z-bibliography.md#ref-morin-cpp),
 which carries the items along and is stable, is the pass of the radix sort
 below: the counts $c$ are turned into their prefix sums $c'$, i.e., $c'[ v
 ]$ becomes the number of keys not larger than $v$, and the items are
@@ -1483,7 +1483,7 @@ $0 , \ldots , j$.*
 different digits $j$ are in the order of those digits, and two with the
 same digit $j$ keep the order that they had, i.e., by the inductive
 hypothesis, the order of their digits $0 , \ldots , j - 1$. Equivalently
-([Morin 2013, §11.2.2](Z-bibliography.md#ref-morin2013)), if $x < y$ and
+([Morin 2013, §11.2.2](Z-bibliography.md#ref-morin-cpp)), if $x < y$ and
 their highest differing bit is $r$, the pass on the digit
 $\lfloor r / d \rfloor$ puts $x$ before $y$, and the later passes keep them
 so. $\square$
@@ -1506,7 +1506,7 @@ $O( n + 2^d ) = O( n )$ each. $\square$
 
 [Figure 12.9](12-sort.md#fig-12-9) shows the four passes on keys of 8 bits
 with digits of 2 bits, the data of figure 11.8 of [Morin
-2013](Z-bibliography.md#ref-morin2013).
+2013](Z-bibliography.md#ref-morin-cpp).
 
 ![Figure 12.9. The radix sort of eight keys of 8 bits by four stable passes on digits of 2 bits (the data of figure 11.8 of [Morin 2013]): after the pass $p$ the keys are sorted by their last $2 p$ bits, the digit of the pass in violet; the keys with the same digit keep the order of the column before.](../figures/sort-radix.svg){#fig-12-9}
 
@@ -1517,7 +1517,7 @@ bytes as digits, between the vector and a buffer
 keys of $w$ bytes, and no comparison. Its keys come from `radixKey()`,
 which makes the bits of a number an unsigned integer whose order is that of
 the numbers: the sign bit flipped for a signed integer (exercise 11.15 of
-[Morin 2013](Z-bibliography.md#ref-morin2013), whose radix sort takes the
+[Morin 2013](Z-bibliography.md#ref-morin-cpp), whose radix sort takes the
 unsigned integers only), and for a floating point number all the bits
 flipped if it is negative and the sign bit otherwise ([Herf
 2001](Z-bibliography.md#ref-herf2001)):
@@ -1535,7 +1535,7 @@ NaN at the two ends.*
 $[ -2^{w-1} , 2^{w-1} )$ onto $[ 0 , 2^w )$ by adding $2^{w-1}$, which keeps
 the order. A floating point number of IEEE 754 is a sign bit followed by a
 magnitude whose order as an unsigned integer is that of the absolute values
-([Morin 2013, §11.3](Z-bibliography.md#ref-morin2013)); setting the sign bit
+([Morin 2013, §11.3](Z-bibliography.md#ref-morin-cpp)); setting the sign bit
 of the positive numbers puts them above all the negative ones, and
 complementing the negative ones reverses their order and clears their sign
 bit (a larger magnitude gives a smaller key). $\square$
@@ -1937,7 +1937,7 @@ construction of the heap from the bottom up in $O( n )$ to [Floyd
 by comparisons, it appears to be folklore. The counting and the radix sorts go
 back to Seward (1954), and the radix sort to the machines that sorted
 punched cards one column at a time, as [Morin 2013,
-§11.3](Z-bibliography.md#ref-morin2013) recalls; that chapter of Morin is
+§11.3](Z-bibliography.md#ref-morin-cpp) recalls; that chapter of Morin is
 the model of [§12.2](12-sort.md#sec-12-2) to [§12.10](12-sort.md#sec-12-10),
 with its exercises. Our textbook sorts are those of
 [Montresor 2025](Z-bibliography.md#ref-montresor2025) and of [Ferragina
@@ -1988,37 +1988,37 @@ sequence heap and the heaps on which heapsort rests in
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`). We list first the exercises of chapter 11 of [Morin
-2013](Z-bibliography.md#ref-morin2013), in their order.
+2013](Z-bibliography.md#ref-morin-cpp), in their order.
 
 1. Illustrate the execution of merge sort and of heapsort on
    $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$, and give one possible execution of
    quicksort on the same vector ([Morin 2013, exercise
-   11.1](Z-bibliography.md#ref-morin2013); our
+   11.1](Z-bibliography.md#ref-morin-cpp); our
    [Figure 12.4](12-sort.md#fig-12-4), [Figure 12.7](12-sort.md#fig-12-7)
    and [Table 12.4](12-sort.md#tab-12-4)). Test:
    `ods_ints.ods11.1.sorts`.
 2. Sort a doubly linked list by merge sort with no auxiliary array, by
    relinking its cells, and check that each item keeps its cell and that
    the sort is stable ([Morin 2013, exercise
-   11.2](Z-bibliography.md#ref-morin2013)). Test:
+   11.2](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_ints.ods.ex11.2.list-merge-sort`.
 3. Give an input of length $n$ on which a quicksort with the first item as
    the pivot makes $\binom{n}{2}$ comparisons, one for the middle item as
    the pivot, one for any rule that does not look at the values, and a
    comparator that forces $\binom{n}{2}$ comparisons out of a quicksort
-   ([Morin 2013, exercises 11.3 to 11.6](Z-bibliography.md#ref-morin2013);
+   ([Morin 2013, exercises 11.3 to 11.6](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.11](12-sort.md#lem-12-11)). Test:
    `ods_ints.ods.ex11.6.quicksort-adversary`.
 4. Compute the expected comparisons of the quicksort of Morin's book
    exactly, and show that $2 n H_n - n + H_n$ is not their expectation
-   ([Morin 2013, exercise 11.7](Z-bibliography.md#ref-morin2013);
+   ([Morin 2013, exercise 11.7](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.10](12-sort.md#lem-12-10)). Test:
    `ods_ints.ods.ex11.7.quicksort-expectation`.
 5. Describe an input on which heapsort makes at least
    $2 n \log_2 n - O( n )$ comparisons, and explain why the reversal at the
    end of the heapsort of the book should not be replaced by a negated
    comparator ([Morin 2013, exercises 11.8 and
-   11.9](Z-bibliography.md#ref-morin2013);
+   11.9](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.16](12-sort.md#lem-12-16)). Test:
    `ods_ints.ods.ex11.8.heapsort-worst`.
 6. Find another pair of permutations of $1 , 2 , 3$ that the comparison
@@ -2026,14 +2026,14 @@ Each exercise names the test of the library that solves it (run it with
    that $\log_2 n! = n \log_2 n - O( n )$, that a binary tree with $k$
    leaves has height at least $\log_2 k$, and that a random leaf of it has
    expected depth at least $\log_2 k$ ([Morin 2013, exercises 11.10 to
-   11.13](Z-bibliography.md#ref-morin2013);
+   11.13](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.1](12-sort.md#lem-12-1) to
    [Lemma 12.3](12-sort.md#lem-12-3)). Exercise 11.14 of the book has no
    statement (its text is a comment in the source of the book). Test:
    `ods_ints.ods.ex11.10.comparison-tree`.
 7. Write a radix sort that sorts signed integers correctly, with the
    extremes of each width ([Morin 2013, exercise
-   11.15](Z-bibliography.md#ref-morin2013);
+   11.15](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.18](12-sort.md#lem-12-18)). Test:
    `ods_ints.ods.ex11.15.signed-radix-sort`.
 8. Sort by Selection Sort and by Insertion Sort, counting the comparisons

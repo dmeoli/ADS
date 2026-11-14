@@ -50,9 +50,9 @@
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  * \see A. V. Aho, J. E. Hopcroft, J. D. Ullman, Data Structures and
  *      Algorithms, Addison-Wesley, 1983, section 2.2
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 3.1 and
- *      exercises 3.1 to 3.5
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 3.1 and exercises
+ *      3.1 to 3.5
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

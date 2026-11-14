@@ -43,9 +43,9 @@
  *
  * \see C. Martínez, S. Roura, Randomized binary search trees, Journal of the
  *      ACM 45(2), 288-323, 1998, doi:10.1145/274787.274812
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 7.3 and exercise 7.14,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 7.3 and exercise
+ *      7.14
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

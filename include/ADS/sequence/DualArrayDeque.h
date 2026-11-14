@@ -43,9 +43,9 @@
  * that is not empty; the invariant is the balance of the two stacks, for
  * \f$ n \ge 2 \f$. The operations are defined in `DualArrayDeque.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 2.5 and
- *      exercises 2.6 and 2.10
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 2.5 and exercises
+ *      2.6 and 2.10
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

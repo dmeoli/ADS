@@ -54,8 +54,8 @@
  *      dynamic arrays, 25th Annual European Symposium on Algorithms (ESA
  *      2017), LIPIcs 87, 16:1-16:13, 2017,
  *      doi:10.4230/LIPIcs.ESA.2017.16
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercises 2.11 and 2.12
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercises 2.11 and 2.12
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -20,8 +20,8 @@
  * the invariant is that no group is empty and that the groups count
  * `size()` items. The operations are defined in `Bag.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 1.5
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 1.5
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

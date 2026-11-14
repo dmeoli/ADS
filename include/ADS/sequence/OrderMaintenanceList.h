@@ -54,8 +54,8 @@
  * \see P. F. Dietz, D. D. Sleator, Two algorithms for maintaining order in a
  *      list, Proceedings of the 19th ACM Symposium on Theory of Computing
  *      (STOC), 365-372, 1987, doi:10.1145/28395.28434
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, exercise 8.11, doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 8.11
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

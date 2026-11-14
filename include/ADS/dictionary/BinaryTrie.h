@@ -47,9 +47,9 @@
  * \f$ n \le 256 \f$, and at the leaf of the operation beyond. The
  * operations are defined in `BinaryTrie.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 13.1 and
- *      exercise 13.1
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 13.1 and exercise
+ *      13.1
  * \see E. Fredkin, Trie memory, Communications of the ACM 3(9), 490-499,
  *      1960, doi:10.1145/367390.367400
  * \see D. E. Willard, Log-logarithmic worst-case range queries are possible

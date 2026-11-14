@@ -77,9 +77,9 @@
  * and `size()`) is checked with no I/O at the level 3 while
  * \f$ n \le 1024 \f$. The operations are defined in `BlockBTree.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, chapter 14 and
- *      exercises 14.1 to 14.7
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, chapter 14 and exercises
+ *      14.1 to 14.7
  * \see R. Bayer, E. M. McCreight, Organization and maintenance of large
  *      ordered indexes, Acta Informatica 1(3), 173-189, 1972,
  *      doi:10.1007/BF00288683

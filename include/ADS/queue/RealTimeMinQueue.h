@@ -35,8 +35,8 @@
  * \see R. Hood, R. Melville, Real-time queue operations in pure LISP,
  *      Information Processing Letters 13(2), 50-54, 1981,
  *      doi:10.1016/0020-0190(81)90030-2
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 3.15
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 3.15
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -45,9 +45,9 @@
  * \see M. Pătraşcu, M. Thorup, The power of simple tabulation hashing,
  *      Journal of the ACM 59(3), 14:1-14:50, 2012,
  *      doi:10.1145/2220357.2220361
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, sections 7.2 and 7.3 and exercise 7.6,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 7.2 and 7.3 and
+ *      exercise 7.6
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

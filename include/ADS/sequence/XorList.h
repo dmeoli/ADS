@@ -32,9 +32,9 @@
  * from the first cell ends at the last one after `size()` cells, an
  * \f$ O( n ) \f$ check. The operations are defined in `XorList.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 3.4 and
- *      exercise 3.19
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 3.4 and exercise
+ *      3.19
  * \see P. Sinha, A memory-efficient doubly linked list, Linux Journal 129,
  *      2004
  *

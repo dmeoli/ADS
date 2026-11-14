@@ -63,9 +63,9 @@
  *      1993, doi:10.1007/3-540-57155-8_236
  * \see R. Sedgewick, Left-leaning red-black trees, Department of Computer
  *      Science, Princeton University, 2008
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, chapter 9 and exercises 9.1 to 9.11,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, chapter 9 and exercises 9.1
+ *      to 9.11
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

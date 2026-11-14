@@ -52,9 +52,9 @@
  * each block, none empty, and that the blocks count `size()` items, an
  * \f$ O( n / b ) \f$ check. The operations are defined in `SEList.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 3.3 and
- *      exercises 3.17 and 3.18
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 3.3 and exercises
+ *      3.17 and 3.18
  * \see Z. Shao, J. H. Reppy, A. W. Appel, Unrolling lists, Proceedings of
  *      the 1994 ACM Conference on LISP and Functional Programming, 185-195,
  *      1994, doi:10.1145/182409.182453

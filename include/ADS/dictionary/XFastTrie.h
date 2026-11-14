@@ -64,9 +64,9 @@
  * level 3 while \f$ n \le 256 \f$, and around the key of the operation
  * beyond. The operations are defined in `XFastTrie.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 13.2 and
- *      exercises 13.2 and 13.4
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 13.2 and exercises
+ *      13.2 and 13.4
  * \see D. E. Willard, Log-logarithmic worst-case range queries are possible
  *      in space Theta(N), Information Processing Letters 17(2), 81-84,
  *      1983, doi:10.1016/0020-0190(83)90075-3

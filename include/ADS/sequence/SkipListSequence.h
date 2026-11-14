@@ -43,9 +43,9 @@
  *
  * \see W. Pugh, A skip list cookbook, Technical report CS-TR-2286.1,
  *      University of Maryland, 1990 (the widths of the links)
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 4.3 and exercises 4.11 and 4.12,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 4.3 and exercises
+ *      4.11 and 4.12
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

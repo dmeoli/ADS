@@ -39,9 +39,9 @@
  * \f$ -1 \f$ and one \f$ +1 \f$ per column) is checked on the columns that
  * an operation writes. The operations are defined in `IncidenceGraph.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 12.1 and
- *      exercise 12.2
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 12.1 and exercise
+ *      12.2
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

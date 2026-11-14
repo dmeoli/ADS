@@ -459,8 +459,8 @@
       Vengroff, J. S. Vitter, External-memory graph algorithms,
       Proceedings of the 6th ACM-SIAM Symposium on Discrete Algorithms
       (SODA), 139-149, 1995
- \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, chapter 14
+ \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+      https://opendatastructures.org/ods-cpp.pdf, chapter 14
  \see S. Huddleston, K. Mehlhorn, A new data structure for representing
       sorted lists, Acta Informatica 17(2), 157-184, 1982,
       doi:10.1007/BF00288968

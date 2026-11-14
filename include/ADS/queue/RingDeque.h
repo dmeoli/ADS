@@ -44,9 +44,9 @@
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 2.2.2 (the circular queue)
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, sections 2.3 and 2.4
- *      and exercises 2.6, 2.7 and 2.8
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 2.3 and 2.4 and
+ *      exercises 2.6, 2.7 and 2.8
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

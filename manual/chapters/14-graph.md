@@ -29,7 +29,7 @@ also describes the observers that keep a shortest path tree, a minimum
 spanning forest, a maximum flow and an assignment optimal through such
 changes, often by a test of the certificate of the previous solution alone.
 The adjacency matrix, the lists of adjacency, the matrix of incidence and
-the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin2013)
+the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 are all here, with each of his exercises solved on the code of the library
 ([§14.15](14-graph.md#sec-14-15)).
 
@@ -41,7 +41,7 @@ edges. An edge of an *oriented* graph is an ordered pair $( u , v )$, which
 An edge of an *unoriented* graph is instead an unordered pair $[ u , v ]$,
 which the library stores as the two pairs $( u , v )$ and $( v , u )$
 ([Montresor 2025, §9.2](Z-bibliography.md#ref-montresor2025)). Thus, in the
-terms of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin2013), an
+terms of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp), an
 unoriented graph is one in which $( i , j )$ is an edge if and only if $( j
 , i )$ is. There are no loops $( u , u )$, and hence $0 \le m \le n ( n - 1
 )$. A graph is said to be *sparse* when $m$ is of the order of $n$ and
@@ -57,7 +57,7 @@ another form the *connected components*, and those reachable from one
 another along the orientation the *strongly connected components*. [Figure
 14.1](14-graph.md#fig-14-1) shows the oriented graph of twelve nodes that
 the first sections of the chapter use as their example (the graph of [Morin
-2013, figure 12.1](Z-bibliography.md#ref-morin2013)).
+2013, figure 12.1](Z-bibliography.md#ref-morin-cpp)).
 
 ![Figure 14.1. An oriented graph of twelve nodes; a line with two heads stands for the two edges $( u , v )$ and $( v , u )$, so that only $( 1 , 6 )$ and $( 5 , 2 )$ have no reverse.](../figures/graph-running.svg){#fig-14-1}
 
@@ -67,7 +67,7 @@ $[ 0 , \mathrm{bound}() )$: `insertNode()` gives the next name, and
 by the nodes (the distances or the parents of a visit, say) has
 $\mathrm{bound}() \ge n$ places, while $n$ itself is `n()`, i.e., the size
 of `V()`. Any other datum of a node is kept in such a vector, as
-[Morin 2013, chapter 12](Z-bibliography.md#ref-morin2013) also suggests,
+[Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp) also suggests,
 or in its *label*, of a type `T`. Also, the edges may have a *weight* (a
 cost, a length, a capacity) of a type `W`; both types are `std::monostate`
 when there is none. [Table 14.1](14-graph.md#tab-14-1) collects the symbols
@@ -89,7 +89,7 @@ of the headers of `ADS/graph`.
 The GRAPH of [Montresor 2025, §9.2](Z-bibliography.md#ref-montresor2025) has
 the operations `insertNode()`, `insertEdge(u,v)`, `deleteNode(u)`,
 `deleteEdge(u,v)`, `adj(u)`, `V()` and `n()`, and the interface of [Morin
-2013, chapter 12](Z-bibliography.md#ref-morin2013) adds `hasEdge(i,j)`,
+2013, chapter 12](Z-bibliography.md#ref-morin-cpp) adds `hasEdge(i,j)`,
 `outEdges(i)` and `inEdges(i)`. Of these, the library calls the last two
 `adj(u)` and `inAdj(u)`, and its realizations give all of them where they
 make sense. However, the algorithms require much less. Indeed, the concept
@@ -127,7 +127,7 @@ The adjacency matrix of a graph of $n$ nodes is the $n \times n$ matrix
 $M$ whose entry $M[ u ][ v ]$ is the weight of $( u , v )$, or empty when
 there is no such edge (the infinity of
 [Montresor 2025, §9.3](Z-bibliography.md#ref-montresor2025), or the false
-of the boolean matrix of [Morin 2013, §12.1](Z-bibliography.md#ref-morin2013)).
+of the boolean matrix of [Morin 2013, §12.1](Z-bibliography.md#ref-morin-cpp)).
 `MatrixGraph<W,T>` keeps it as a vector of rows of `std::optional<W>`,
 with $\mathrm{bound}()$ rows and columns. Its invariants are that there is
 no entry on the diagonal nor in the rows and the columns of the names not
@@ -144,7 +144,7 @@ costs $O( 1 )$ time.
 
 <span id="alg-14-1"></span>**Algorithm 14.1.** The insertion of an edge
 in `MatrixGraph`, and the nodes with an edge to $u$ (the `inEdges(i)` of
-[Morin 2013, §12.1](Z-bibliography.md#ref-morin2013)).
+[Morin 2013, §12.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/MatrixGraph-insertEdge.pseudo.md"
 
@@ -179,7 +179,7 @@ new column one place in each of the $n$ rows). $\square$
 Its main defect is the space: $n^2$ places for any number of edges, i.e.,
 $n^2$ optional weights (at least $n^2$ bytes even without weights), where
 a matrix of bits would take $n^2 / w$ words of $w$ bits
-([Morin 2013, §12.1](Z-bibliography.md#ref-morin2013)). On a dense graph
+([Morin 2013, §12.1](Z-bibliography.md#ref-morin-cpp)). On a dense graph
 this is no waste, and a matrix is usually preferable whenever `hasEdge()`
 dominates; e.g., the universal sink of [§14.7](14-graph.md#sec-14-7) is
 found by at most $3 ( n - 1 )$ entries read out of the $n^2$
@@ -209,7 +209,7 @@ incidence, belong to the same algebraic view, and are described in
 The lists of adjacency take the view of the nodes: for each node $u$ a list
 holds its adjacent nodes, i.e., every $v$ with $( u , v ) \in E$ ([Montresor
 2025, §9.4](Z-bibliography.md#ref-montresor2025); [Morin 2013,
-§12.2](Z-bibliography.md#ref-morin2013)). `ListGraph<W,T>` keeps a vector of
+§12.2](Z-bibliography.md#ref-morin-cpp)). `ListGraph<W,T>` keeps a vector of
 $\mathrm{bound}()$ lists, each a `List` of [chapter 2](02-sequence.md#ch-2)
 of pairs (the adjacent node, the weight of the edge), the nodes of a list in
 the order in which their edges were inserted. Its invariant is that the
@@ -219,11 +219,11 @@ in the lists of both its ends with the same weight. An insertion or a
 deletion checks it on the lists of the two ends, in $O( d \log d )$ for $d$
 adjacent nodes. [Figure 14.3](14-graph.md#fig-14-3) shows the lists of the
 graph of [Figure 14.1](14-graph.md#fig-14-1), in the order of [Morin 2013,
-figure 12.4](Z-bibliography.md#ref-morin2013).
+figure 12.4](Z-bibliography.md#ref-morin-cpp).
 
 ![Figure 14.3. The lists of adjacency of the graph of Figure 14.1: `insertEdge(8, 5)` scans the list of 8 (in violet) for an edge to 5 and, finding none, appends one at its tail (in orange).](../figures/graph-lists.svg){#fig-14-3}
 
-In [Morin 2013, §12.2](Z-bibliography.md#ref-morin2013) the insertion
+In [Morin 2013, §12.2](Z-bibliography.md#ref-morin-cpp) the insertion
 appends to the list in $O( 1 )$, and leaves to the caller the precondition
 that the edge is not there. Instead, the insertion of `ListGraph` searches
 the list first, and an edge already there only gets its new weight
@@ -233,7 +233,7 @@ make the same search, while `adj(u)` copies the list.
 
 <span id="alg-14-2"></span>**Algorithm 14.2.** The insertion of an edge
 in `ListGraph`, and the nodes with an edge to $u$ in an oriented graph (the
-`inEdges(i)` of [Morin 2013, §12.2](Z-bibliography.md#ref-morin2013)).
+`inEdges(i)` of [Morin 2013, §12.2](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/ListGraph-insertEdge.pseudo.md"
 
@@ -270,7 +270,7 @@ $O( 1 )$. Also, `inAdj()` of an oriented graph scans each list once, and
 that of an unoriented graph copies and sorts the list of $u$. A new node
 appends an empty list to the vector, $O( 1 )$ amortized. $\square$
 
-[Morin 2013, §12.2](Z-bibliography.md#ref-morin2013) ends with four design
+[Morin 2013, §12.2](Z-bibliography.md#ref-morin-cpp) ends with four design
 choices of a representation by lists, and the library takes each of them
 somewhere. First, the list may be a linked list (`ListGraph`), an array
 (`ArrayGraph` and `StaticGraph`, in [§14.4](14-graph.md#sec-14-4)) or a
@@ -423,7 +423,7 @@ n )$, and is checked only at the level of the audits).
 The matrix of incidence of an oriented graph is the $n \times m$ matrix $A$
 with a column per edge, and $A_{i,e} = -1$ if the node $i$ is the source of
 the edge $e$, $+1$ if it is its target, and 0 otherwise ([Morin 2013,
-exercise 12.2](Z-bibliography.md#ref-morin2013);
+exercise 12.2](Z-bibliography.md#ref-morin-cpp);
 [Montresor 2025, §9.3](Z-bibliography.md#ref-montresor2025), where an
 unoriented edge has 1 at both ends). `incidence(g)` of `Graph.h` builds it
 from any graph, with the edges in the order of `V()` and of `adj()` and an
@@ -437,7 +437,7 @@ nonzero entry.
 --8<-- "generated/Graph-adjFromIncidence.pseudo.md"
 
 `IncidenceGraph` is the oriented graph kept on this matrix, which solves the
-second part of [Morin 2013, exercise 12.2](Z-bibliography.md#ref-morin2013).
+second part of [Morin 2013, exercise 12.2](Z-bibliography.md#ref-morin-cpp).
 Here the matrix is stored by columns, one column of $n$ bytes
 (`std::int8_t`) per edge; thus `bytes()` is $n m$, and `entry(i, e)` reads
 $A_{i,e}$. Its nodes are $0 , \ldots , n - 1$, and it models the concept
@@ -457,7 +457,7 @@ with the $+1$ and the $-1$ exchanged, in $O( m + n \, d^-( i ) )$.
 
 <span id="alg-14-5"></span>**Algorithm 14.5.** The search of an edge and
 the adjacent nodes in `IncidenceGraph` ([Morin 2013, exercise
-12.2](Z-bibliography.md#ref-morin2013)).
+12.2](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/IncidenceGraph-hasEdge.pseudo.md"
 
@@ -549,13 +549,13 @@ $\mathrm{bound}()$ places (the marks, the distances, the parents) before
 they start. Hence the bound of a call is $\Theta( n + n_r + m_r )$, i.e.,
 $\Theta( n + m )$ in the worst case. Instead, the finer bound of [Lemma
 14.3](14-graph.md#lem-14-3), which [Morin 2013,
-§12.4](Z-bibliography.md#ref-morin2013) states for his visits as $O( n_r +
+§12.4](Z-bibliography.md#ref-morin-cpp) states for his visits as $O( n_r +
 m_r )$, holds for the loop of the visit. It is the one that matters when a
 sequence of visits shares its marks, as `cc()` and the other functions that
 start a visit from each node not yet reached do. The visits in breadth and
 in depth below are cases of the generic visit. Therefore each costs $\Theta(
 n + m )$ on lists or vectors of adjacency ([Morin 2013, Theorems 12.3 and
-12.4](Z-bibliography.md#ref-morin2013)), but $\Theta( n^2 )$ on the
+12.4](Z-bibliography.md#ref-morin-cpp)), but $\Theta( n^2 )$ on the
 adjacency matrix, whose rows are read whole.
 
 ### 14.5.2 The visit in breadth {#sec-14-5-2}
@@ -649,12 +649,12 @@ A frame is popped (the return of the recursion) when its position reaches
 the end of its list, and a new frame is pushed (the call) when the edge
 examined leads to a node not visited. Hence the previsits, the edges and the
 postvisits come in the order of the recursion. This is not the case for the
-second visit of [Morin 2013, §12.3.2](Z-bibliography.md#ref-morin2013),
+second visit of [Morin 2013, §12.3.2](Z-bibliography.md#ref-morin-cpp),
 which keeps only nodes on its stack and replaces a node popped by all its
 neighbours. There the last neighbour pushed is visited first: on the edges
 $( 0 , 1 )$, $( 0 , 2 )$, $( 1 , 2 )$ it visits $0 , 2 , 1$ where the
 recursion visits $0 , 1 , 2$ ([Morin 2013, exercise
-12.9](Z-bibliography.md#ref-morin2013)). A stack of pairs (the node, the
+12.9](Z-bibliography.md#ref-morin-cpp)). A stack of pairs (the node, the
 position in its list) makes the two orders the same. Since the frames copy
 the list of their node, the stack holds $O( n + m )$ words in the worst
 case, against the $O( n )$ of the stack of nodes (which, however, may hold a
@@ -731,7 +731,7 @@ while $i$ is still on the stack, i.e., it is a back edge. $\square$
 
 [Figure 14.9](14-graph.md#fig-14-9) draws the second part of the proof,
 which is the argument of [Morin 2013,
-§12.3.2](Z-bibliography.md#ref-morin2013). `hasCycle(g)` runs the visits of
+§12.3.2](Z-bibliography.md#ref-morin-cpp). `hasCycle(g)` runs the visits of
 `DfsSchema` from each node not yet discovered and returns true at the first
 back edge. We remark that on an unoriented graph each edge, met again from
 its other end, is a back edge in the sense of (14.3). Hence `hasCycle()` is
@@ -1301,7 +1301,7 @@ one at a time ([King and Smith-Thomas 1982](Z-bibliography.md#ref-king1982)).
 <span id="lem-14-13"></span>**Lemma 14.13.** *A universal sink is found,
 or shown not to exist, with at most $3 ( n - 1 )$ calls of `hasEdge()`,
 i.e., $O( n )$ time on the adjacency matrix ([Morin 2013, exercise
-12.10](Z-bibliography.md#ref-morin2013)).*
+12.10](Z-bibliography.md#ref-morin-cpp)).*
 
 *Proof.* The test of $( c , j )$ rules out $c$ if the edge is there, since
 a sink has no edge out, and $j$ otherwise, since the sink has an edge from
@@ -2586,7 +2586,7 @@ The representations of [§14.2](14-graph.md#sec-14-2) to
 [§14.4](14-graph.md#sec-14-4) and the visits of
 [§14.5](14-graph.md#sec-14-5) are those of [Montresor 2025, chapter
 9](Z-bibliography.md#ref-montresor2025) and of [Morin 2013, chapter
-12](Z-bibliography.md#ref-morin2013). The lists of adjacency were presented
+12](Z-bibliography.md#ref-morin-cpp). The lists of adjacency were presented
 by [Hopcroft and Tarjan 1973](Z-bibliography.md#ref-hopcroft1973graph) as an
 alternative to the adjacency matrix, more common at the time. Together with
 the visit in depth they are at the core of the planarity test of [Hopcroft
@@ -2660,7 +2660,7 @@ on an idle machine, and this section will then give its numbers.
 
 ## 14.15 Exercises {#sec-14-15}
 
-The exercises of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin2013)
+The exercises of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 use the unoriented graph of [Figure 14.18](14-graph.md#fig-14-18) (the
 Petersen graph). Its lists of adjacency, in increasing order, are those of
 [Table 14.5](14-graph.md#tab-14-5). Its adjacency matrix has a 1 in the
@@ -2680,7 +2680,7 @@ graph of [Figure 14.18](14-graph.md#fig-14-18).
 <span id="tab-14-6"></span>**Table 14.6.** The matrix of incidence of the
 graph of [Figure 14.18](14-graph.md#fig-14-18) given by `incidence()`, a
 column per edge, met from its smaller end; in the oriented matrix of
-[Morin 2013, exercise 12.2](Z-bibliography.md#ref-morin2013) each column
+[Morin 2013, exercise 12.2](Z-bibliography.md#ref-morin-cpp) each column
 $[ u , v ]$ becomes two, $( u , v )$ with $-1$ in the row $u$ and $+1$ in
 the row $v$, and its reverse.
 
@@ -2704,22 +2704,22 @@ Each exercise names the test of the library that solves it (run it with
    [Figure 14.18](14-graph.md#fig-14-18), and realize the two
    representations with the operations `insertEdge()`, `deleteEdge()`,
    `hasEdge()`, `adj()` and `inAdj()` ([Morin 2013, exercise
-   12.1](Z-bibliography.md#ref-morin2013)). Test:
+   12.1](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_ints.ods12.1.adjacency`.
 2. Draw the matrix of incidence of the same graph, and design, analyze
    and implement the representation of a graph by its matrix of incidence,
    with the space and the cost of each operation of the interface
-   ([Morin 2013, exercise 12.2](Z-bibliography.md#ref-morin2013);
+   ([Morin 2013, exercise 12.2](Z-bibliography.md#ref-morin-cpp);
    [§14.4.3](14-graph.md#sec-14-4-3)). Test:
    `ods_ints.ods.ex12.2.incidence-matrix`.
 3. Illustrate the visits in breadth and in depth from 0 of the graph of
    [Figure 14.18](14-graph.md#fig-14-18) ([Morin 2013, exercise
-   12.3](Z-bibliography.md#ref-morin2013)); the figure is the solution.
+   12.3](Z-bibliography.md#ref-morin-cpp)); the figure is the solution.
    Test: `ods_ints.ods12.3.visits`.
 4. Test whether an unoriented graph is connected, compute the labels of
    its connected components and a spanning forest, and test whether an
    oriented graph is strongly connected, each in $O( n + m )$ time
-   ([Morin 2013, exercises 12.4 to 12.7](Z-bibliography.md#ref-morin2013)):
+   ([Morin 2013, exercises 12.4 to 12.7](Z-bibliography.md#ref-morin-cpp)):
    the graph is connected if `cc()` gives one component, the parents of
    `distance()` from one node of each component are the $n - c$ edges of a
    spanning forest for $c$ components, and the graph is strongly connected
@@ -2727,15 +2727,15 @@ Each exercise names the test of the library that solves it (run it with
    node $r$ in $G$ and in its transpose). Test:
    `ods_ints.ods.ex12.4.components`.
 5. Compute the length of the shortest path from $r$ to every node
-   ([Morin 2013, exercise 12.8](Z-bibliography.md#ref-morin2013);
+   ([Morin 2013, exercise 12.8](Z-bibliography.md#ref-morin-cpp);
    [Lemma 14.4](14-graph.md#lem-14-4)). Test: `ods_ints.ods12.3.visits`.
 6. Give a graph on which the visit in depth by recursion and the visit by
    a stack of nodes visit the nodes in different orders, and write the
    second so that it visits them in the order of the first ([Morin 2013,
-   exercise 12.9](Z-bibliography.md#ref-morin2013);
+   exercise 12.9](Z-bibliography.md#ref-morin-cpp);
    [§14.5.3](14-graph.md#sec-14-5-3)). Test: `ods_ints.ods12.3.visits`.
 7. Decide in $O( n )$ time whether a graph on an adjacency matrix has a
-   universal sink ([Morin 2013, exercise 12.10](Z-bibliography.md#ref-morin2013);
+   universal sink ([Morin 2013, exercise 12.10](Z-bibliography.md#ref-morin-cpp);
    [Lemma 14.13](14-graph.md#lem-14-13)). Tests:
    `ods_ints.ods.ex12.10.universal-sink`, `lib_graphs.universal-sink`.
 8. Compare the memory of the adjacency matrix and of the lists with $d$

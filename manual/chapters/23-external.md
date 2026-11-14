@@ -13,7 +13,7 @@ links may pay one block per link. The headers of `ADS/external` simulate
 the model of [Aggarwal and Vitter 1988](Z-bibliography.md#ref-aggarwal1988),
 and thus the blocks moved by a run are counted and compared with the bounds
 ([§23.1](23-external.md#sec-23-1)). On it they build the store of blocks
-and the B-tree of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin2013)
+and the B-tree of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
 ([§23.2](23-external.md#sec-23-2) and [§23.3](23-external.md#sec-23-3)),
 and the algorithms of [Ferragina 2023](Z-bibliography.md#ref-ferragina2023),
 chapters 4, List Ranking, and 5, Sorting Atomic Items: the sorts with their
@@ -124,7 +124,7 @@ area and their I/Os.
 | permutation of $n$ items | $\Theta( \min\{ n , \mathrm{sort}( n ) \} )$ | `permuteDirect()` or `permuteBySorting()` |
 | ranking of a list of $n$ items | $\Theta( \mathrm{sort}( n ) )$ | `externalListRank()` |
 
-The data structures of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin2013)
+The data structures of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
 need less memory than the algorithms: a constant number of blocks and a
 stack of height $O( \log_B n )$, i.e., $O( B + \log_B n )$ items. In most
 cases the term $B$ dominates; for instance, $B \ge \log_B n$ holds with
@@ -133,7 +133,7 @@ $B = 32$ for all $n \le 2^{160}$.
 ## 23.2 The block store {#sec-23-2}
 
 The devices of the external memory differ in their block size and in their
-system calls. [Morin 2013, §14.1](Z-bibliography.md#ref-morin2013) hides
+system calls. [Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp) hides
 them behind a *block store*, a collection of blocks identified by their
 indices, with four operations: `readBlock(i)` returns the content of the
 block $i$, `writeBlock(i, b)` writes $b$ in it, `placeBlock(b)` stores $b$
@@ -151,7 +151,7 @@ counters count the I/Os too, and the structures on the blocks share one
 count with the algorithms on the files.
 
 <span id="alg-23-2"></span>**Algorithm 23.2.** The placement of a new
-block ([Morin 2013, §14.1](Z-bibliography.md#ref-morin2013)).
+block ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BlockStore-placeBlock.pseudo.md"
 
@@ -164,7 +164,7 @@ block ([Morin 2013, §14.1](Z-bibliography.md#ref-morin2013)).
 A block is copied when it is read and when it is written, as it would be
 between the disk and the memory ([Figure 23.2](23-external.md#fig-23-2)).
 Thus, a structure keeps between two I/Os a copy of the block of its own, which a test of the internal memory can count. The code of
-[Morin 2013, §14.1](Z-bibliography.md#ref-morin2013) differs in three
+[Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp) differs in three
 points. First, its blocks are pointers to the nodes; hence a node changed
 after its read is changed on the disk with no write, which hides I/Os that
 a test of the model would count. Second, it does not count the I/Os.
@@ -180,7 +180,7 @@ in use.
 A B-tree generalizes the binary search trees of [chapter 8](08-tree.md#ch-8)
 to nodes of many keys, so that a node fills a block and a search reads few
 blocks ([Bayer and McCreight 1972](Z-bibliography.md#ref-bayer1972);
-[Morin 2013, §14.2](Z-bibliography.md#ref-morin2013)); the 2-4 trees are
+[Morin 2013, §14.2](Z-bibliography.md#ref-morin-cpp)); the 2-4 trees are
 the case $B = 2$. For an integer $B \ge 2$, a *B-tree* is a tree whose
 leaves are all at the same depth and whose internal nodes but the root have
 from $B$ to $2 B$ children. A node with $k$ children holds $k - 1$ keys,
@@ -210,7 +210,7 @@ bytes when $B = 256$. `BlockBTree<K>` keeps its nodes as the blocks of a
 `BlockStore`, each `Node` a vector of keys and a vector of the indices of
 its children (none for a leaf), for any key type with a total order (the
 aliases `Key` and `Item`); the code of [Morin 2013,
-§14.2](Z-bibliography.md#ref-morin2013) keeps arrays of $2 B$ keys and
+§14.2](Z-bibliography.md#ref-morin-cpp) keeps arrays of $2 B$ keys and
 marks the empty places by a null key instead. The tree stores the index of
 its root, its parameter $B$ (`order()`) and its number of keys (`size()`,
 `empty()`). Its invariant, i.e., the order of the keys, their number in
@@ -223,14 +223,14 @@ key is $x$ the search ends; otherwise it remembers the key, the last one
 $\ge x$ met so far, and goes on in the child $i$ of $u$. At a leaf it
 returns the key remembered, i.e., the smallest key $\ge x$, or nothing
 ([Algorithm 23.3](23-external.md#alg-23-3)). This is `lowerBound(x)`, the
-`find(x)` of the SSet of [Morin 2013, §14.2.1](Z-bibliography.md#ref-morin2013),
+`find(x)` of the SSet of [Morin 2013, §14.2.1](Z-bibliography.md#ref-morin-cpp),
 and `contains(x)` tests its result; [Figure 23.3](23-external.md#fig-23-3)
 shows a search that finds its key and one that does not. The result is a
 copy of the key, since the blocks of the external memory are copied into
 the internal one, not pointed to.
 
 <span id="alg-23-3"></span>**Algorithm 23.3.** The search in a B-tree
-([Morin 2013, §14.2.1](Z-bibliography.md#ref-morin2013)).
+([Morin 2013, §14.2.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BlockBTree-lowerBound.pseudo.md"
 
@@ -251,7 +251,7 @@ $O( \log_B n ) \cdot O( \log B ) = O( \log n )$. $\square$
 
 The binary search of a node halves the range at each probe
 ([Figure 23.4](23-external.md#fig-23-4)); [Morin 2013,
-§14.2.1](Z-bibliography.md#ref-morin2013) writes it on an array of $2 B$
+§14.2.1](Z-bibliography.md#ref-morin-cpp) writes it on an array of $2 B$
 places padded with null keys, `place()` on the vector of the keys of the
 node, with `std::lower_bound`.
 
@@ -265,23 +265,23 @@ is *split*: its $B$ smallest keys stay in it, its $B - 1$ largest keys go
 to a new node, and the key between them goes up to the parent, which also
 adopts the new node. The split may leave the parent with $2 B$ keys, and so
 on up to the root, which may split and give a new root of one key
-([Morin 2013, §14.2.2](Z-bibliography.md#ref-morin2013)). A split writes
+([Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp)). A split writes
 three nodes: the node, the new one and the parent. This is why the nodes of
 a B-tree keep no pointer to their parent: with one, the $B$ children
 adopted by the new node would have to be rewritten too, i.e., $B + 3$ more
 I/Os per split instead of 3.
 
-The code of [Morin 2013, §14.2.2](Z-bibliography.md#ref-morin2013) is
+The code of [Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp) is
 recursive, and its recursion holds a node per level while it goes back up.
 `insert(x)` keeps instead the path as the indices of its blocks and of the
 children taken, and reads a parent again on the way up only when a split
 reaches it ([Algorithm 23.4](23-external.md#alg-23-4)). It returns false,
 with no write, if $x$ is already there.
 [Figure 23.5](23-external.md#fig-23-5) shows the two insertions of
-[Morin 2013, exercise 14.1](Z-bibliography.md#ref-morin2013).
+[Morin 2013, exercise 14.1](Z-bibliography.md#ref-morin-cpp).
 
 <span id="alg-23-4"></span>**Algorithm 23.4.** The insertion in a B-tree
-([Morin 2013, §14.2.2](Z-bibliography.md#ref-morin2013)), with the path
+([Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp)), with the path
 kept instead of the nodes.
 
 --8<-- "generated/BlockBTree-insert.pseudo.md"
@@ -295,7 +295,7 @@ kept instead of the nodes.
 ### 23.3.3 Removal {#sec-23-3-3}
 
 The removal of $x$ is reduced to the removal of a key from a leaf
-([Morin 2013, §14.2.3](Z-bibliography.md#ref-morin2013)). If $x$ is in a
+([Morin 2013, §14.2.3](Z-bibliography.md#ref-morin-cpp)). If $x$ is in a
 leaf, it is taken out of it. If it is in an internal node $t$, its
 successor $y$, the first key of the leftmost leaf of the subtree to the
 right of $x$, is taken out of that leaf and replaces $x$ in $t$. A leaf
@@ -314,10 +314,10 @@ if $x$ is in an internal node, on to the leftmost leaf of its right subtree
 ([Algorithm 23.5](23-external.md#alg-23-5)). The node $t$ of $x$ gets $y$
 when the restructurings on the way up reach it, and by one more read and
 write if they stop below it. [Figure 23.6](23-external.md#fig-23-6) shows
-the two removals of [Morin 2013, exercise 14.2](Z-bibliography.md#ref-morin2013).
+the two removals of [Morin 2013, exercise 14.2](Z-bibliography.md#ref-morin-cpp).
 
 <span id="alg-23-5"></span>**Algorithm 23.5.** The removal from a B-tree
-([Morin 2013, §14.2.3](Z-bibliography.md#ref-morin2013)), with the path
+([Morin 2013, §14.2.3](Z-bibliography.md#ref-morin-cpp)), with the path
 kept instead of the nodes.
 
 --8<-- "generated/BlockBTree-remove.pseudo.md"
@@ -367,7 +367,7 @@ $k$ consecutive children into $k'$ (beyond the book).
 
 We remark that the borrow of `BlockBTree` takes place when the sibling has
 $B$ keys or more, as the text of [Morin 2013,
-§14.2.3](Z-bibliography.md#ref-morin2013) states, whereas his code merges
+§14.2.3](Z-bibliography.md#ref-morin-cpp) states, whereas his code merges
 unless the sibling has more than $B$. A restructuring writes the $k'$
 children and the parent, and reads the $k - 1$ children not yet in memory;
 it frees the blocks of the children it drops, or places the new ones.
@@ -395,7 +395,7 @@ rare.
 
 <span id="lem-23-4"></span>**Lemma 23.4.** *From the empty tree, $m$
 insertions and removals make at most $3 m / 2$ splits, merges and borrows
-([Morin 2013, Lemma 14.1](Z-bibliography.md#ref-morin2013)). Also, a
+([Morin 2013, Lemma 14.1](Z-bibliography.md#ref-morin-cpp)). Also, a
 sequence of two insertions and two removals at a leaf of $2 B - 2$ keys
 makes a split, a borrow and a merge, and therefore $\Theta( m )$ is reached for
 any $B$.*
@@ -420,8 +420,8 @@ merges them back into a leaf of $2 B - 2$ keys. $\square$
 
 [Figure 23.8](23-external.md#fig-23-8) draws the credits on the trees of
 the insertion of 21 and of the removal of 4 of [Morin 2013, figures 14.5
-and 14.6](Z-bibliography.md#ref-morin2013), as [Morin 2013, exercise
-14.5](Z-bibliography.md#ref-morin2013) requires. The insertion creates no
+and 14.6](Z-bibliography.md#ref-morin-cpp), as [Morin 2013, exercise
+14.5](Z-bibliography.md#ref-morin-cpp) requires. The insertion creates no
 credit, since the root that gets the last key has one key before; the
 removal pays its merge by the credits of the two leaves of one key, and its
 borrow by the credit of the parent in underflow and one new credit, the
@@ -437,7 +437,7 @@ per operation because each restructuring leaves its nodes at one key from a
 bound. The enumeration `BTreePolicy` names the rules of the book (`STANDARD`,
 the default) and two variants that leave each
 node they touch at $\Omega( B )$ keys from both of its bounds
-([Morin 2013, exercises 14.6 and 14.7](Z-bibliography.md#ref-morin2013)).
+([Morin 2013, exercises 14.6 and 14.7](Z-bibliography.md#ref-morin-cpp)).
 With `WIDE` a node holds from $B - 1$ to $3 B - 1$ keys: a node of $3 B$
 keys is split into two of about $1.5 B$, and a node in underflow is merged
 with its sibling whenever the two have at most $2.5 B$ keys, before it is
@@ -478,7 +478,7 @@ $3 B - 1$ keys, and so needs a larger block for the same $B$.
 <span id="lem-23-6"></span>**Lemma 23.6.** *A B-tree of $n$ keys whose
 root is not a leaf has at most $( ( n + 1 ) / B + B - 3 ) / ( B - 1 )$
 internal nodes, i.e., $O( n / B^2 )$ ([Morin 2013, exercise
-14.3](Z-bibliography.md#ref-morin2013)).*
+14.3](Z-bibliography.md#ref-morin-cpp)).*
 
 *Proof.* With $L$ leaves and $I$ internal nodes, the internal nodes hold
 $L - 1$ keys (one fewer than their children, which are the $I + L - 1$
@@ -495,11 +495,11 @@ B-trees often perform better than their bound suggests. `internalNodes()`
 counts them, and `height()` gives the number of levels (1 for a root that
 is a leaf).
 
-The introduction of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin2013)
+The introduction of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
 claims an internal memory of $O( B + \log_B n )$, but the recursion of his
 code holds a node per level while it goes back up, i.e.,
 $\Theta( B \log_B n )$ words ([Morin 2013, exercise
-14.4](Z-bibliography.md#ref-morin2013)). `BlockBTree` keeps the path as
+14.4](Z-bibliography.md#ref-morin-cpp)). `BlockBTree` keeps the path as
 pairs of indices, $O( \log_B n )$ words, and at most five nodes counted in
 memory at once: the node, its parent and the at most three children whose
 keys a restructuring gathers (the node among them). A parent is read again
@@ -928,7 +928,7 @@ their bounds are those of the policies of
 [§23.3.6](23-external.md#sec-23-3-6). The B+-trees, whose keys are all in
 the leaves and whose leaves form a list, are realized in the internal
 memory by `BPlusTree.h` ([chapter 8](08-tree.md#ch-8)), which also solves
-[Morin 2013, exercise 14.8](Z-bibliography.md#ref-morin2013) with its
+[Morin 2013, exercise 14.8](Z-bibliography.md#ref-morin-cpp) with its
 removal and its `findRange()`. When only the operations of an unsorted set
 are needed, the external hashing of [Jensen and Pagh
 2008](Z-bibliography.md#ref-jensen2008) gives them in $O( 1 )$ expected
@@ -954,32 +954,32 @@ Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
 
 1. Realize a store of blocks whose reads and writes are counted, which
-   reuses the freed blocks ([Morin 2013, §14.1](Z-bibliography.md#ref-morin2013);
+   reuses the freed blocks ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp);
    [§23.2](23-external.md#sec-23-2)). Test: `ods_ints.ods14.1.block-store`.
 2. Realize a B-tree on the store of blocks, with the search of the
    smallest key $\ge x$, the insertion and the removal in
    $O( \log_B n )$ I/Os, for the rules of the book and the two variants
-   ([Morin 2013, §14.2](Z-bibliography.md#ref-morin2013);
+   ([Morin 2013, §14.2](Z-bibliography.md#ref-morin-cpp);
    [§23.3](23-external.md#sec-23-3)). Test: `ods_ints.ods14.2.b-tree`.
 3. Show what happens when the keys 1.5 and then 7.5 are added to the tree
    of [Figure 23.3](23-external.md#fig-23-3), and when the keys 3 and then 4
    are removed from it ([Morin 2013, exercises 14.1 and
-   14.2](Z-bibliography.md#ref-morin2013)); Figures
+   14.2](Z-bibliography.md#ref-morin-cpp)); Figures
    [23.5](23-external.md#fig-23-5) and [23.6](23-external.md#fig-23-6) are
    the solution. Test: `ods_ints.ods.ex14.1.figure`.
 4. Find the largest number of internal nodes of a B-tree of $n$ keys
-   ([Morin 2013, exercise 14.3](Z-bibliography.md#ref-morin2013);
+   ([Morin 2013, exercise 14.3](Z-bibliography.md#ref-morin-cpp);
    [Lemma 23.6](23-external.md#lem-23-6)). Test:
    `ods_ints.ods.ex14.3.internal-nodes`.
 5. Show that the recursive insertion and removal hold
    $\Theta( B \log_B n )$ words of internal memory, and reduce it to
    $O( B + \log_B n )$ ([Morin 2013, exercise
-   14.4](Z-bibliography.md#ref-morin2013); [§23.3.7](23-external.md#sec-23-3-7)).
+   14.4](Z-bibliography.md#ref-morin-cpp); [§23.3.7](23-external.md#sec-23-3-7)).
    Test: `ods_ints.ods.ex14.4.memory`.
 6. Draw the credits of the proof of [Lemma 23.4](23-external.md#lem-23-4)
    on the trees of an insertion and of a removal, and check that three new
    credits per operation pay the splits, the merges and the borrows
-   ([Morin 2013, exercise 14.5](Z-bibliography.md#ref-morin2013));
+   ([Morin 2013, exercise 14.5](Z-bibliography.md#ref-morin-cpp));
    [Figure 23.8](23-external.md#fig-23-8) is the solution. Test:
    `ods_ints.ods.ex14.6.restructures`.
 7. Design B-trees whose nodes have from $B$ to $3 B$ children, merging
@@ -987,12 +987,12 @@ Each exercise names the test of the library that solves it (run it with
    with up to three nodes, and show that they make $O( m / B )$
    restructurings in $m$ operations, while the rules of the book make
    $\Theta( m )$ ([Morin 2013, exercises 14.6 and
-   14.7](Z-bibliography.md#ref-morin2013); [Lemma 23.5](23-external.md#lem-23-5)).
+   14.7](Z-bibliography.md#ref-morin-cpp); [Lemma 23.5](23-external.md#lem-23-5)).
    Test: `ods_ints.ods.ex14.6.restructures`.
 8. Realize a B+-tree, with its removal, the search of the smallest key
    $\ge x$ and the report of the keys in $( x , y ]$, and explain why its
    duplicated keys cost little for a large $B$ ([Morin 2013, exercise
-   14.8](Z-bibliography.md#ref-morin2013); [chapter 8](08-tree.md#ch-8)).
+   14.8](Z-bibliography.md#ref-morin-cpp); [chapter 8](08-tree.md#ch-8)).
    Test: `ods_ints.ods.ex14.8.bplus-tree`.
 9. Simulate the two-level memory, with its counters of the I/Os and the
    memory leased by the buffers, and check the cost of a scan and of the

@@ -24,8 +24,8 @@
  * that is not empty; `pop()` ensures one item less. The operations are
  * defined in `RandomQueue.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 2.3
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.3
  * \see D. Lemire, Fast random integer generation in an interval, ACM
  *      Transactions on Modeling and Computer Simulation 29(1), 3:1-3:12,
  *      2019, doi:10.1145/3230636

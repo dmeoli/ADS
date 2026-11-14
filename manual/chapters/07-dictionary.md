@@ -14,12 +14,12 @@
 We are concerned in this chapter with the DICTIONARY, i.e., a finite map
 from a set of keys to a set of values that is searched by key, and with
 its ordered variant, the SORTED SET of [Morin 2013,
-§1.2.4](Z-bibliography.md#ref-morin2013), which also answers for a key
+§1.2.4](Z-bibliography.md#ref-morin-cpp), which also answers for a key
 $x$ with the smallest key not smaller than $x$. The headers of
 `ADS/dictionary` realize the first one on a vector indexed by the key and
 on a sorted vector ([§7.2](07-dictionary.md#sec-7-2)), and on the hash
 tables of [Montresor 2025, chapter 7](Z-bibliography.md#ref-montresor2025)
-and of [Morin 2013, chapter 5](Z-bibliography.md#ref-morin2013), with
+and of [Morin 2013, chapter 5](Z-bibliography.md#ref-morin-cpp), with
 their lists of overflow ([§7.4](07-dictionary.md#sec-7-4)) and their open
 addressing ([§7.5](07-dictionary.md#sec-7-5)), after the hash functions
 on which all of them rest ([§7.3](07-dictionary.md#sec-7-3)). Beyond the
@@ -28,10 +28,10 @@ full group of places at once ([§7.6](07-dictionary.md#sec-7-6)), the
 cuckoo hashing, whose searches look at two places in the worst case
 ([§7.7](07-dictionary.md#sec-7-7)), and the perfect hashing of a static
 set ([§7.8](07-dictionary.md#sec-7-8)). The ordered dictionaries follow:
-the skip lists of [Morin 2013, chapter 4](Z-bibliography.md#ref-morin2013)
+the skip lists of [Morin 2013, chapter 4](Z-bibliography.md#ref-morin-cpp)
 ([§7.9](07-dictionary.md#sec-7-9)), the digital search trees of strings
 ([§7.10](07-dictionary.md#sec-7-10)) and those of the integers of $w$
-bits of [Morin 2013, chapter 13](Z-bibliography.md#ref-morin2013)
+bits of [Morin 2013, chapter 13](Z-bibliography.md#ref-morin-cpp)
 ([§7.11](07-dictionary.md#sec-7-11)), whose searches take a time that
 depends on the length of the key rather than on the number of keys. The
 three chapters of Morin are covered section by section, with each of his
@@ -61,7 +61,7 @@ and the concept `Dictionary` of `ADS/ADT.h` requires the three operations.
 Most realizations also have `contains(k)`, `size()` and the iterators of
 the standard library on their pairs, and the engineered ones a `find(k)`
 that returns a pointer to the value, to change it in place. The USET of
-[Morin 2013, §1.2.3](Z-bibliography.md#ref-morin2013) is a dictionary
+[Morin 2013, §1.2.3](Z-bibliography.md#ref-morin-cpp) is a dictionary
 whose values are not used, and his SSET adds `find(x)`, the smallest key
 $y \ge x$ (the *successor* of $x$), which the ordered realizations of this
 chapter call `lowerBound(x)`, after `std::lower_bound`, since their
@@ -362,7 +362,7 @@ small classes and check the three bounds exactly.
 
 ### 7.3.3 Multiplicative hashing on $2^d$ places {#sec-7-3-3}
 
-The tables of [Morin 2013, chapter 5](Z-bibliography.md#ref-morin2013)
+The tables of [Morin 2013, chapter 5](Z-bibliography.md#ref-morin-cpp)
 keep $m = 2^d$ places, $d$ the *dimension* of the table, and take the
 place of a key from the high bits of a random function of its hash code
 $x$ of $w$ bits, rather than from $x \bmod m$. The *multiplicative
@@ -396,7 +396,7 @@ A table that grows and shrinks keeps the same $z$, and only $d$ changes.
 
 The analysis rests on a fact of number theory, by which the
 products of a fixed odd number by the odd numbers modulo $2^w$ are again
-all the odd numbers ([Morin 2013, Lemma 5.3](Z-bibliography.md#ref-morin2013)).
+all the odd numbers ([Morin 2013, Lemma 5.3](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-2"></span>**Lemma 7.2.** *Let $O$ be the set of the odd
 integers in $\{ 1 , \ldots , 2^w - 1 \}$, and $q , i \in O$. Then exactly
@@ -412,7 +412,7 @@ zeros as $z - z'$, fewer than $w$. $\square$
 Hence, if $z$ is uniform on $O$, so is $z q \bmod 2^w$ for each odd $q$:
 its lowest bit is 1 and its other $w - 1$ bits are uniform and
 independent. This gives the bound on the collisions ([Morin 2013,
-Lemma 5.1](Z-bibliography.md#ref-morin2013)).
+Lemma 5.1](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-3"></span>**Lemma 7.3.** *For two distinct words
 $x \ne y$ of $w$ bits and $z$ uniform on the odd words,
@@ -432,7 +432,7 @@ $2^{-( d - 1 )} = 2 / 2^d$. If $r < w - d$, the top $d$ bits are uniform,
 all 0 or all 1 with probability $2 / 2^d$. $\square$
 
 The bound of [Lemma 7.3](07-dictionary.md#lem-7-3) is twice the $1 / 2^d$ of a random function, and it
-cannot be improved ([Morin 2013, exercise 5.3](Z-bibliography.md#ref-morin2013)):
+cannot be improved ([Morin 2013, exercise 5.3](Z-bibliography.md#ref-morin-cpp)):
 for $x = 2^{w-d-2}$ and $y = 3 x$, the products $z x \bmod 2^w$ and
 $3 z x \bmod 2^w$ depend only on the $d + 2$ lowest bits $z'$ of $z$, the
 two hashes being $\lfloor z' / 4 \rfloor$ and
@@ -442,7 +442,7 @@ test `ods_ints.ods5.1.multiplicative-hash` counts the collisions of this
 pair on $2^{17}$ random multipliers. For a fixed $z$ and $n = 2^d$ with
 $d \le w / 2$, on the other hand, $n$ keys share a hash already by the
 pigeonhole principle, $2^w$ keys going to $2^d$ places
-([Morin 2013, exercise 5.2](Z-bibliography.md#ref-morin2013)), and they
+([Morin 2013, exercise 5.2](Z-bibliography.md#ref-morin-cpp)), and they
 can be named: with $z^{-1}$ the inverse of the odd $z$ modulo $2^w$, the
 keys $x_j = z^{-1} j \bmod 2^w$, $j = 0 , \ldots , 2^d - 1$, have the
 products $z x_j \bmod 2^w = j < 2^{w-d}$, which all hash to 0 (the test
@@ -465,7 +465,7 @@ the hash being the XOR of the words of the characters. `TabulationHash`
 takes $w = 64$ and $r = 8$, i.e., 8 tables of 256 words drawn from a seed
 (16 KB, which stay in the cache of level 2), and its `place(x, m)` takes
 the top $d$ bits of the hash on $m = 2^d$ places, as the `LinearHashTable`
-of [Morin 2013, §5.2.3](Z-bibliography.md#ref-morin2013) does, which makes
+of [Morin 2013, §5.2.3](Z-bibliography.md#ref-morin-cpp) does, which makes
 it a `PlaceHash` too.
 
 --8<-- "generated/RandomHashing-TabulationHash-tabulation.pseudo.md"
@@ -521,7 +521,7 @@ in a table of positions already seen (cf. [Chapter 19](19-backtrack.md#ch-19)).
 
 The tables work on keys of $w$ bits, and a key that is not an integer (a
 string, an array, an object of several parts) must first be mapped to such
-a *hash code* ([Morin 2013, §5.3](Z-bibliography.md#ref-morin2013)). A
+a *hash code* ([Morin 2013, §5.3](Z-bibliography.md#ref-morin-cpp)). A
 mapping of hash codes should have two properties: equal objects have equal
 codes, and hence a key stored in a table is found by an equal one, and
 distinct objects have equal codes with probability close to $1 / 2^w$, so
@@ -555,7 +555,7 @@ and $s$ give on 128 bits and the two crossed products only on their low 64
 bits; hence, (7.5) costs $r + 3$ products of words.
 
 <span id="thm-7-1"></span>**Theorem 7.1.** *([Morin 2013, Theorem
-5.3](Z-bibliography.md#ref-morin2013).) If $x_0 , \ldots , x_{r-1}$ and
+5.3](Z-bibliography.md#ref-morin-cpp).) If $x_0 , \ldots , x_{r-1}$ and
 $y_0 , \ldots , y_{r-1}$ are words of $w$ bits with $x_i \ne y_i$ for at
 least one $i$, then
 $\Pr[ h( x_0 , \ldots , x_{r-1} ) = h( y_0 , \ldots , y_{r-1} ) ] \le
@@ -577,7 +577,7 @@ cases give $1 / 2^w + 2 / 2^w$. $\square$
 The method needs a random word per part, and the arrays and the strings,
 whose length varies, take instead the polynomials over a prime field, which
 behave as the ordinary ones ([Morin 2013, Theorem
-5.4](Z-bibliography.md#ref-morin2013)).
+5.4](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-4"></span>**Lemma 7.4.** *Let $p$ be a prime and
 $f( z ) = x_0 + x_1 z + \cdots + x_{r-1} z^{r-1}$ a polynomial with
@@ -600,7 +600,7 @@ $$
 
 whose last term is an end marker: $p - 1$ is the item $x_r$ of the
 sequence, different from every other item ([Morin 2013,
-§5.3.3](Z-bibliography.md#ref-morin2013)).
+§5.3.3](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="thm-7-2"></span>**Theorem 7.2.** *Let $p$ be a prime and two
 distinct sequences of items in $\{ 0 , \ldots , p - 2 \}$, of lengths $r$
@@ -626,7 +626,7 @@ collision probability of $2 / 2^{60}$ more (two distinct arrays, the
 longer of $r$ words, collide with probability at most
 $2 / 2^{60} + r / p$), while the bytes of a string are taken as they are
 ($r / p$). Against the code of [Morin 2013,
-§5.3](Z-bibliography.md#ref-morin2013), which has $w = 32$, the prime
+§5.3](Z-bibliography.md#ref-morin-cpp), which has $w = 32$, the prime
 $2^{32} - 5$ and a division, the words are of 64 bits and the bounds are
 $2^{32}$ times smaller for the same work per word.
 
@@ -637,12 +637,12 @@ $2^{32}$ times smaller for the same work per word.
 ```
 
 The reduction modulo a Mersenne prime is the identity of [Morin 2013,
-exercise 5.10](Z-bibliography.md#ref-morin2013): with $x = a 2^w + b$ and
+exercise 5.10](Z-bibliography.md#ref-morin-cpp): with $x = a 2^w + b$ and
 $2^w \equiv 1 \pmod{2^w - 1}$, one has $x \equiv a + b$, and $a + b < x$
 while $x \ge 2^w$. Hence $x \bmod ( 2^w - 1 )$ is the fixed point of
 $x \gets ( x \bmod 2^w ) + ( x \operatorname{div} 2^w )$, taken to 0 if it
 is $2^w - 1$, the two lines after the product in the code above. The other
-exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin2013) on the
+exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin-cpp) on the
 hash codes ask why the easy combinations fail, and the answers are short.
 A code that reads only the characters of even place, as the early
 `String.hashCode()` of Java did on long strings, gives one code to the
@@ -736,7 +736,7 @@ of the values as numbers.
 
 In the table with lists of overflow ([Montresor 2025,
 §7.2.1](Z-bibliography.md#ref-montresor2025); [Morin 2013,
-§5.1](Z-bibliography.md#ref-morin2013)), which goes back to an internal
+§5.1](Z-bibliography.md#ref-morin-cpp)), which goes back to an internal
 memorandum of IBM of 1953 and to [Peterson 1957](Z-bibliography.md#ref-peterson1957),
 the place $i$ of a vector $T$ of $m$ places holds the list of the pairs
 whose keys have $H( k ) = i$. `ChainedHashTable` keeps each list in the
@@ -808,7 +808,7 @@ test `ch07.ex7.10` measures it, and `ch07.sec7.3.complexity` compares the
 averages of (7.7) with those measured. The multiplicative hashing of
 [§7.3.3](07-dictionary.md#sec-7-3-3) gives a bound of the same kind for
 each set of keys, without (7.2) ([Morin 2013,
-Lemma 5.2](Z-bibliography.md#ref-morin2013)).
+Lemma 5.2](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-6"></span>**Lemma 7.6.** *In a table of $m \ge n$ lists
 with the multiplicative hashing (7.4), the expected length of the list of
@@ -859,14 +859,14 @@ the defaults are 4 times apart, as the test `ch07.sec7.4.restructure`
 checks on such a sequence. `restructures()` and `moved()` count the
 restructurings and the pairs they moved. With a `PlaceHash`, $g = 1$ and
 $s = 1 / 3$, the table is the `ChainedHashTable` of [Morin 2013,
-§5.1](Z-bibliography.md#ref-morin2013), its lists in the `List` of ADS
+§5.1](Z-bibliography.md#ref-morin-cpp), its lists in the `List` of ADS
 instead of an array each: after a restructuring the load is about
 $1 / 2$ or $2 / 3$, the lists are shorter ($1 + \alpha \le 2$ cells per
 unsuccessful search) at the price of a table up to twice as large, and
 [Lemma 7.6](07-dictionary.md#lem-7-6) and [Lemma 7.7](07-dictionary.md#lem-7-7) give the theorem of the book.
 
 <span id="thm-7-3"></span>**Theorem 7.3.** *([Morin 2013, Theorem
-5.1](Z-bibliography.md#ref-morin2013).) The `ChainedHashTable` with the
+5.1](Z-bibliography.md#ref-morin-cpp).) The `ChainedHashTable` with the
 multiplicative hashing, $g = 1$ and $s = 1 / 3$, realizes the USET (and
 the DICTIONARY): ignoring the restructurings, `insert()`, `remove()` and
 `lookup()` take $O( 1 )$ expected time each, and any sequence of $q$
@@ -1060,7 +1060,7 @@ With a `PlaceHash`, the places of the inspection come from $H_0( k )$
 alone; hence, the double hashing degenerates into the linear inspection,
 and the table with the linear inspection, the tabulation hashing of
 [§7.3.4](07-dictionary.md#sec-7-3-4) and the restructuring is the
-`LinearHashTable` of [Morin 2013, §5.2](Z-bibliography.md#ref-morin2013).
+`LinearHashTable` of [Morin 2013, §5.2](Z-bibliography.md#ref-morin-cpp).
 His table rebuilds when the full and deleted places, $q$ in his notation,
 exceed $m / 2$, on the smallest $2^d \ge 3 n$ places, and halves when
 $n < m / 8$. Ours sizes the new table on the doubling or on the keys, as
@@ -1073,7 +1073,7 @@ assumption that [§7.3.4](07-dictionary.md#sec-7-3-4) justifies for the
 tabulation hashing.
 
 <span id="lem-7-10"></span>**Lemma 7.10.** *([Morin 2013, Lemma
-5.4](Z-bibliography.md#ref-morin2013), with the full formula of
+5.4](Z-bibliography.md#ref-morin-cpp), with the full formula of
 Stirling.) Let $q \le m / 2$ keys have independent places, uniform on
 $m$ places. The probability $p_k$ that a run of length $k$, $0 < k < q$,
 starts at a given place is at most*
@@ -1100,7 +1100,7 @@ since $( 1 + 1 / x )^x \le e$ for $x > 0$. $\square$
 
 The book replaces $r!$ by $( r / e )^r$ and loses the factor
 $O( 1 / \sqrt{k} )$, which (7.9) keeps ([Morin 2013, exercise
-5.4](Z-bibliography.md#ref-morin2013)); for $k = q$ the probability is
+5.4](Z-bibliography.md#ref-morin-cpp)); for $k = q$ the probability is
 $( q / m )^q \le 2^{-q}$ directly. A search for an absent key starts at a
 random place, and if the place belongs to a run of length $k$ it costs
 $O( 1 + k )$. A run of length $k$ is counted by each of its $k$ places, so
@@ -1112,14 +1112,14 @@ search as much as the insertion that placed its key, and a removal as a
 search; with [Lemma 7.7](07-dictionary.md#lem-7-7) for the rebuilds, this is the theorem of the book.
 
 <span id="thm-7-4"></span>**Theorem 7.4.** *([Morin 2013, Theorem
-5.2](Z-bibliography.md#ref-morin2013).) The `OpenHashTable` with the
+5.2](Z-bibliography.md#ref-morin-cpp).) The `OpenHashTable` with the
 linear inspection, the restructuring and independent uniform places
 realizes the USET: ignoring the rebuilds, `insert()`, `remove()` and
 `lookup()` take $O( 1 )$ expected time each, and any sequence of $q$
 insertions and removals from an empty table spends $O( q )$ time in all
 the rebuilds.*
 
-Three exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin2013)
+Three exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin-cpp)
 ask for an explanation. The student numbers of a class of first year
 students differ in their last two digits, which spread them over 100
 places, while their first two digits are those of the year of their
@@ -1929,7 +1929,7 @@ The skip list of [Pugh 1990](Z-bibliography.md#ref-pugh1990) is a sorted
 list of the keys with express lanes, whose balance comes from random
 levels rather than from rotations: it realizes the SORTED SET with every
 operation in $O( \log n )$ expected time, and, with the widths of the
-links, the search by rank ([Morin 2013, chapter 4](Z-bibliography.md#ref-morin2013)).
+links, the search by rank ([Morin 2013, chapter 4](Z-bibliography.md#ref-morin-cpp)).
 The expectations of this section are over the random levels, which the
 code draws from a `SplitMix64` seeded at the construction, and hence a run is
 reproducible.
@@ -1963,17 +1963,17 @@ The next result, proved in [§7.9.3](07-dictionary.md#sec-7-9-3),
 shows that the path is short.
 
 <span id="lem-7-17"></span>**Lemma 7.17.** *([Morin 2013, Lemma
-4.1](Z-bibliography.md#ref-morin2013).) The expected length of the search
+4.1](Z-bibliography.md#ref-morin-cpp).) The expected length of the search
 path of any key in a skip list of $n$ keys is at most
 $2 \log_2 n + O( 1 ) = O( \log n )$.*
 
-![Figure 7.20. A `SkipList` of the keys 0 to 6 with 1, 1, 4, 3, 6, 2, 2 levels (the heights of [Morin 2013, Figure 4.1](Z-bibliography.md#ref-morin2013) plus one), and the search of 4: the boxes where the search stays on each level and the links it follows (in violet), the node 4 found, and $U = [ 3 , 3 , 3 , 2 , \mathit{head} , \mathit{head} ]$ for the levels 0 to 5.](../figures/dictionary-skiplist.svg){#fig-7-20}
+![Figure 7.20. A `SkipList` of the keys 0 to 6 with 1, 1, 4, 3, 6, 2, 2 levels (the heights of [Morin 2013, Figure 4.1](Z-bibliography.md#ref-morin-cpp) plus one), and the search of 4: the boxes where the search stays on each level and the links it follows (in violet), the node 4 found, and $U = [ 3 , 3 , 3 , 2 , \mathit{head} , \mathit{head} ]$ for the levels 0 to 5.](../figures/dictionary-skiplist.svg){#fig-7-20}
 
 ### 7.9.2 The skip list as a sorted set {#sec-7-9-2}
 
 `SkipList` realizes the DICTIONARY, and the SSET of Morin (his
 `SkiplistSSet`) by `lowerBound(x)`, the smallest key not smaller than $x$
-([Morin 2013, §4.2](Z-bibliography.md#ref-morin2013)). Its search,
+([Morin 2013, §4.2](Z-bibliography.md#ref-morin-cpp)). Its search,
 `before(k)`, follows the search path of $k$, dropping a level just before
 passing $k$, and returns the node after the last one met on the level 0
 together with $U$ ([Algorithm 7.20](07-dictionary.md#alg-7-20)). `lookup()`
@@ -1981,14 +1981,14 @@ and `contains()` compare that node with $k$, and `lowerBound()` returns it.
 The search of Morin compares $k$ again with the node that stopped it on the
 level above whenever the link it drops to on the next level leads to that
 same node, i.e., when $u.\mathit{next}[ r ] = u.\mathit{next}[ r - 1 ]$
-([Morin 2013, exercise 4.8](Z-bibliography.md#ref-morin2013)). Ours keeps
+([Morin 2013, exercise 4.8](Z-bibliography.md#ref-morin-cpp)). Ours keeps
 in $s$ the last node found not smaller than $k$, and drops a level with no
 comparison when the next link leads to it, so that $k$ is compared once
 with each node.
 
 <span id="alg-7-20"></span>**Algorithm 7.20.** The search of `SkipList`
 ([Pugh 1990](Z-bibliography.md#ref-pugh1990), with [Morin 2013, exercise
-4.8](Z-bibliography.md#ref-morin2013)); $x.\mathit{next}[ l ]$ is the
+4.8](Z-bibliography.md#ref-morin-cpp)); $x.\mathit{next}[ l ]$ is the
 successor of $x$ on the level $l$, and the head is a node with no key.
 
 --8<-- "generated/SkipList-before.pseudo.md"
@@ -1999,14 +1999,14 @@ successor of $x$ on the level $l$, and the head is a node with no key.
 
 [Figure 7.21](07-dictionary.md#fig-7-21) follows the searches of 2.5 and of
 5.5 on the list of [Figure 7.20](07-dictionary.md#fig-7-20) ([Morin 2013,
-exercise 4.1](Z-bibliography.md#ref-morin2013)). The search of 2.5 meets
+exercise 4.1](Z-bibliography.md#ref-morin-cpp)). The search of 2.5 meets
 the node 4 on the level 5 and drops with no further comparison on the level
 4. On the level 3 it moves to 2, and from there it drops to the level 0,
 comparing 2.5 only with 3 on the level 2. The search of 5.5 moves to 4 on
 the level 5, drops along the nil links of 4 down to the level 1 with no
 comparison, moves to 5, and stops before 6.
 
-![Figure 7.21. The searches of 2.5 and of 5.5 in the `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) ([Morin 2013, exercise 4.1](Z-bibliography.md#ref-morin2013)): the boxes where they stay and the links they follow (in violet); the first ends before 3 with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, the second before 6 with $U = [ 5 , 5 , 4 , 4 , 4 , 4 ]$.](../figures/dictionary-skiplist-paths.svg){#fig-7-21}
+![Figure 7.21. The searches of 2.5 and of 5.5 in the `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) ([Morin 2013, exercise 4.1](Z-bibliography.md#ref-morin-cpp)): the boxes where they stay and the links they follow (in violet); the first ends before 3 with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, the second before 6 with $U = [ 5 , 5 , 4 , 4 , 4 , 4 ]$.](../figures/dictionary-skiplist-paths.svg){#fig-7-21}
 
 The number of levels of a new node is drawn as the number of trailing 1s
 of a random word plus one, i.e., $\ell$ with probability $2^{-\ell}$, cut
@@ -2020,9 +2020,9 @@ A removal unlinks the node from each of its levels after `before(k)`, i.e.,
 after $U[ l ]$, and drops the levels left empty. The vector $U$ is the
 *stack* of Morin, and [Figure 7.22](07-dictionary.md#fig-7-22) shows the
 insertion of 0.5 with 2 levels and then of 3.5 with 3 levels ([Morin 2013,
-exercise 4.2](Z-bibliography.md#ref-morin2013)), [Figure 7.23](07-dictionary.md#fig-7-23)
+exercise 4.2](Z-bibliography.md#ref-morin-cpp)), [Figure 7.23](07-dictionary.md#fig-7-23)
 the removal of 1 and then of 3 ([Morin 2013, exercise
-4.3](Z-bibliography.md#ref-morin2013)).
+4.3](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="alg-7-21"></span>**Algorithm 7.21.** The insertion of
 `SkipList` ([Pugh 1990](Z-bibliography.md#ref-pugh1990)), the level of a
@@ -2038,9 +2038,9 @@ new node drawn as the number of trailing 1s of a random word plus one.
 --8<-- "generated/SkipList-remove.cpp"
 ```
 
-![Figure 7.22. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `insert(0.5)` with $\ell = 2$ ($U = [ 0 , \mathit{head} , \ldots ]$), and then after `insert(3.5)` with $\ell = 3$ ($U = [ 3 , 3 , 3 , 2 , \mathit{head} , \mathit{head} ]$), the case of [Morin 2013, Figure 4.3](Z-bibliography.md#ref-morin2013) and of his exercise 4.2: the new node in orange, the nodes of $U$ whose links change, and those links, in violet.](../figures/dictionary-skiplist-insert.svg){#fig-7-22}
+![Figure 7.22. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `insert(0.5)` with $\ell = 2$ ($U = [ 0 , \mathit{head} , \ldots ]$), and then after `insert(3.5)` with $\ell = 3$ ($U = [ 3 , 3 , 3 , 2 , \mathit{head} , \mathit{head} ]$), the case of [Morin 2013, Figure 4.3](Z-bibliography.md#ref-morin-cpp) and of his exercise 4.2: the new node in orange, the nodes of $U$ whose links change, and those links, in violet.](../figures/dictionary-skiplist-insert.svg){#fig-7-22}
 
-![Figure 7.23. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `remove(1)`, which redirects the link of 0 on the level 0 to 2, and then after `remove(3)`, with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, which redirects the links of 2 on the levels 0, 1 and 2 to 4 ([Morin 2013, exercise 4.3](Z-bibliography.md#ref-morin2013)); the links changed and their nodes in violet.](../figures/dictionary-skiplist-remove.svg){#fig-7-23}
+![Figure 7.23. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `remove(1)`, which redirects the link of 0 on the level 0 to 2, and then after `remove(3)`, with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, which redirects the links of 2 on the levels 0, 1 and 2 to 4 ([Morin 2013, exercise 4.3](Z-bibliography.md#ref-morin-cpp)); the links changed and their nodes in violet.](../figures/dictionary-skiplist-remove.svg){#fig-7-23}
 
 The contracts check that `insert()` leaves the key there and `remove()`
 takes it away, and the invariant, that each level is sorted and a sublist
@@ -2052,12 +2052,12 @@ but it can be moved. Each step of a search, an insertion or a removal
 takes constant time, and [Lemma 7.17](07-dictionary.md#lem-7-17) gives the theorem of the book.
 
 <span id="thm-7-5"></span>**Theorem 7.5.** *([Morin 2013, Theorem
-4.1](Z-bibliography.md#ref-morin2013).) `SkipList` realizes the SSET (and
+4.1](Z-bibliography.md#ref-morin-cpp).) `SkipList` realizes the SSET (and
 the DICTIONARY), with `insert()`, `remove()`, `lookup()` and
 `lowerBound()` in $O( \log n )$ expected time each.*
 
 An insertion or a removal also changes few links ([Morin 2013, exercise
-4.6](Z-bibliography.md#ref-morin2013)).
+4.6](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-18"></span>**Lemma 7.18.** *An insertion or a removal of
 a key changes 4 links in expectation, 2 for a removal.*
@@ -2071,7 +2071,7 @@ $\square$
 ### 7.9.3 The analysis {#sec-7-9-3}
 
 We now prove [Lemma 7.17](07-dictionary.md#lem-7-17), and bound the size and the height of a skip list,
-following [Morin 2013, §4.4](Z-bibliography.md#ref-morin2013); the proofs
+following [Morin 2013, §4.4](Z-bibliography.md#ref-morin-cpp); the proofs
 rest on a simple fact about the tosses of a coin.
 
 <span id="lem-7-19"></span>**Lemma 7.19.** *Let $T$ be the number of tosses
@@ -2113,13 +2113,13 @@ n / 2^r \le E[ h ] + \log_2 n + 3 \le 2 \log_2 n + 5$ by [Lemma 7.20](07-diction
 $\square$
 
 <span id="thm-7-6"></span>**Theorem 7.6.** *([Morin 2013, Theorem
-4.3](Z-bibliography.md#ref-morin2013).) A skip list of $n$ keys takes
+4.3](Z-bibliography.md#ref-morin-cpp).) A skip list of $n$ keys takes
 $O( n )$ expected space, and the expected length of the search path of any
 key is at most $2 \log_2 n + O( 1 )$.*
 
 The analysis carries over to a promotion with any probability $p$,
 $0 < p < 1$, instead of $1 / 2$ ([Morin 2013, exercise
-4.7](Z-bibliography.md#ref-morin2013)).
+4.7](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-21"></span>**Lemma 7.21.** *If each key is promoted from
 a level to the next with probability $p$, the expected height is
@@ -2143,7 +2143,7 @@ The gain of $p = 1 / e$ is rather small, and the cost of drawing a level with
 probability $1 / e$, instead of counting the trailing 1s of a word, does
 not repay it in our view; the code keeps $p = 1 / 2$. The saving of the
 comparisons of [Algorithm 7.20](07-dictionary.md#alg-7-20) can be counted
-in the same model ([Morin 2013, exercise 4.8](Z-bibliography.md#ref-morin2013)).
+in the same model ([Morin 2013, exercise 4.8](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-22"></span>**Lemma 7.22.** *With the promotion probability
 $p$, the search of [Algorithm 7.20](07-dictionary.md#alg-7-20) compares the
@@ -2170,7 +2170,7 @@ a word, e.g., for the strings.
 
 A *finger* is the sequence of the nodes where a search path goes down, $U$
 above; it points out the path to a node of $L_0$ ([Morin 2013, exercise
-4.10](Z-bibliography.md#ref-morin2013)). `fingerLookup(k)` keeps the finger
+4.10](Z-bibliography.md#ref-morin-cpp)). `fingerLookup(k)` keeps the finger
 $F$ of the previous `fingerLookup()`, $F[ l ]$ the last node before the
 previous key on the level $l$ (the head counting as $-\infty$): it climbs
 the finger from the bottom while the node of the level is not before $k$
@@ -2182,7 +2182,7 @@ back to the head ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
 
 <span id="alg-7-22"></span>**Algorithm 7.22.** The finger search of
 `SkipList` ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b); [Morin 2013,
-exercise 4.10](Z-bibliography.md#ref-morin2013)).
+exercise 4.10](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/SkipList-fingerLookup.pseudo.md"
 
@@ -2215,7 +2215,7 @@ in between.
 
 The *width* of a link of the level $r$ is the number of links of $L_0$
 below it, i.e., the difference of the ranks of its two ends, a link of the
-level 0 having width 1 ([Morin 2013, §4.3](Z-bibliography.md#ref-morin2013)
+level 0 having width 1 ([Morin 2013, §4.3](Z-bibliography.md#ref-morin-cpp)
 calls it the length of the edge; [Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
 If a search stands at a node of rank $j$ and follows a link of width $w$,
 it reaches the node of rank $j + w$. A search by key that sums the widths
@@ -2223,7 +2223,7 @@ of the links it follows thus knows the rank of the node where it stands,
 and a search by rank goes along a level while the widths summed stay below
 the rank. `IndexedSkipList` is the skip list of Pugh whose links carry
 their widths, an SSET that also reaches a key by its rank (`select(i)`, the
-`get(i)` of [Morin 2013, exercise 4.9](Z-bibliography.md#ref-morin2013))
+`get(i)` of [Morin 2013, exercise 4.9](Z-bibliography.md#ref-morin-cpp))
 and gives the rank of a key (`rank(k)`, the number of keys smaller than
 $k$), both in $O( \log n )$ expected time. The ranks are shifted by one,
 the head at 0 and the nil at $n + 1$; hence, the widths of each level sum
@@ -2233,7 +2233,7 @@ Morin gives no code for it, and `SkipListSequence` of
 [Chapter 2](02-sequence.md#ch-2) is his `SkiplistList`, which uses the
 same widths for a sequence searched by index.
 
-![Figure 7.24. The `IndexedSkipList` of the keys 0 to 6 of [Figure 7.20](07-dictionary.md#fig-7-20) with the width of each link (the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin2013), and the links to the nil), each level summing to $n + 1 = 8$, and `select(3)` (in violet): it moves from the head to 2 on the level 3 ($j = 3$) and from 2 to 3 on the level 2 ($j = 4$), and returns the key 3.](../figures/dictionary-skiplist-widths.svg){#fig-7-24}
+![Figure 7.24. The `IndexedSkipList` of the keys 0 to 6 of [Figure 7.20](07-dictionary.md#fig-7-20) with the width of each link (the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin-cpp), and the links to the nil), each level summing to $n + 1 = 8$, and `select(3)` (in violet): it moves from the head to 2 on the level 3 ($j = 3$) and from 2 to 3 on the level 2 ($j = 4$), and returns the key 3.](../figures/dictionary-skiplist-widths.svg){#fig-7-24}
 
 <span id="alg-7-23"></span>**Algorithm 7.23.** The search by rank and the
 insertion of `IndexedSkipList` ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b));
@@ -2290,18 +2290,18 @@ $n$. $\square$
 
 [Figure 7.25](07-dictionary.md#fig-7-25) applies the two operations to the
 list of [Figure 7.24](07-dictionary.md#fig-7-24): the removal of the key of
-rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin2013), his
+rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin-cpp), his
 `remove(2)`) and the insertion at the rank 3 of a node of 5 levels ([Morin
-2013, exercise 4.5](Z-bibliography.md#ref-morin2013), his `add(3,x)` with
+2013, exercise 4.5](Z-bibliography.md#ref-morin-cpp), his `add(3,x)` with
 a height of 4, the splice of his Figures 4.6 and 4.7), which in
 `IndexedSkipList` is the insertion of a key between 2 and 3, here 2.5;
 `SkipListSequence` makes the same changes by index. It also has
 `truncate(i)` and `absorb(l)` ([Morin 2013, exercises 4.11 and
-4.12](Z-bibliography.md#ref-morin2013)), described in
+4.12](Z-bibliography.md#ref-morin-cpp)), described in
 [Chapter 2](02-sequence.md#ch-2) with the theorem of the `SkiplistList`
-([Morin 2013, Theorem 4.2](Z-bibliography.md#ref-morin2013)).
+([Morin 2013, Theorem 4.2](Z-bibliography.md#ref-morin-cpp)).
 
-![Figure 7.25. The widths of the `IndexedSkipList` of [Figure 7.24](07-dictionary.md#fig-7-24) after the removal of the key of rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin2013)) and after the insertion of the key 2.5 at the rank 3 with $\ell = 5$ ([Morin 2013, exercise 4.5](Z-bibliography.md#ref-morin2013)): the new node in orange, the links whose width or end changed in violet.](../figures/dictionary-skiplist-rank.svg){#fig-7-25}
+![Figure 7.25. The widths of the `IndexedSkipList` of [Figure 7.24](07-dictionary.md#fig-7-24) after the removal of the key of rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin-cpp)) and after the insertion of the key 2.5 at the rank 3 with $\ell = 5$ ([Morin 2013, exercise 4.5](Z-bibliography.md#ref-morin-cpp)): the new node in orange, the links whose width or end changed in violet.](../figures/dictionary-skiplist-rank.svg){#fig-7-25}
 
 ### 7.9.6 Applications and the comparison with the trees {#sec-7-9-6}
 
@@ -2309,7 +2309,7 @@ Every substring of a text is a prefix of one of its suffixes, so that an
 SSET of the suffixes, each a view of the text from its first character
 (i.e., an integer), finds a substring $q$ as the first suffix not smaller
 than $q$, when $q$ is a prefix of it ([Morin 2013, exercise
-4.14](Z-bibliography.md#ref-morin2013)). Each keystroke costs
+4.14](Z-bibliography.md#ref-morin-cpp)). Each keystroke costs
 $O( | q | \log n )$ expected time, the comparisons of a search being of
 $| q |$ characters at most, and the test
 `ods_trees.ods-ex4.14.substring-search` runs such a search after each
@@ -2317,7 +2317,7 @@ character typed. A suffix array ([Manber and Myers
 1993](Z-bibliography.md#ref-manber1993); [§15.5](15-string.md#sec-15-5))
 holds the same suffixes in $n$ words with no links, while the SSET allows
 changes of the text. The space-efficient SSET of [Morin 2013, exercise
-4.13](Z-bibliography.md#ref-morin2013), which stores the keys in blocks of
+4.13](Z-bibliography.md#ref-morin-cpp), which stores the keys in blocks of
 a space-efficient list and the blocks in a skip list, is
 `SpaceEfficientSortedSet` of `ADS/set` ([Chapter 10](10-set.md#ch-10)).
 
@@ -2326,14 +2326,14 @@ node to the same node on the level below, is a binary tree once the right
 links into a node below its top level are dropped (that node is reached
 from above): the right link and the down link are the two children of a
 pair (node, level), and the search follows a path of it as in a binary
-search tree ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin2013),
+search tree ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp),
 [Figure 7.26](07-dictionary.md#fig-7-26); cf. [Chapter 8](08-tree.md#ch-8)).
 It uses its links better, however: a binary search tree of $n$ nodes has
 $2 n$ links of which $n + 1$ are nil, while a skip list has $2 n$ links in
 expectation ([Lemma 7.20](07-dictionary.md#lem-7-20)) of which only those at the end of each level,
 $O( \log n )$, are nil.
 
-![Figure 7.26. A skip list of the keys 1 to 4 with 1, 3, 1, 2 levels, the links that enter a node below its top level drawn faint, and the binary tree of the pairs (node, level) that the other links make ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin2013)): the down link is the left child, the kept right link the right child.](../figures/dictionary-skiplist-tree.svg){#fig-7-26}
+![Figure 7.26. A skip list of the keys 1 to 4 with 1, 3, 1, 2 levels, the links that enter a node below its top level drawn faint, and the binary tree of the pairs (node, level) that the other links make ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp)): the down link is the left child, the kept right link the right child.](../figures/dictionary-skiplist-tree.svg){#fig-7-26}
 
 ## 7.10 Tries of strings {#sec-7-10}
 
@@ -2675,7 +2675,7 @@ place and its degree, and $T$ the marks of the nodes where a string ends.
 
 We return to the SORTED SET, now with keys that are integers of $w$ bits,
 $x \in \{ 0 , \ldots , 2^w - 1 \}$, each with a value
-([Morin 2013, chapter 13](Z-bibliography.md#ref-morin2013)). Three
+([Morin 2013, chapter 13](Z-bibliography.md#ref-morin-cpp)). Three
 structures follow, each built on the previous one: the binary trie performs
 the three operations in $O( w )$ time, which is not much, since a set of
 $n \le 2^w$ keys has $\log n \le w$ and each comparison-based SSET of the
@@ -2700,7 +2700,7 @@ significant one, and whether $x < 2^w$.
 leaves are all at depth $w$, each integer being the path from the root to a
 leaf that turns to the child 0 at the depth $i$ if the bit $i$ of the key,
 counted from the most significant one, is 0, and to the child 1 otherwise
-([Morin 2013, §13.1](Z-bibliography.md#ref-morin2013), after
+([Morin 2013, §13.1](Z-bibliography.md#ref-morin-cpp), after
 [Fredkin 1960](Z-bibliography.md#ref-fredkin1960)). A node at depth $i$
 thus stands for a prefix of $i$ bits. The two children of a node serve
 twice: the leaves have no children, and they use the two pointers as the
@@ -2710,7 +2710,7 @@ one child also keeps a *jump pointer*, to the smallest leaf below it if its
 child 0 is missing, and to the largest if its child 1 is missing
 ([Figure 7.32](07-dictionary.md#fig-7-32)).
 
-![Figure 7.32. The `BinaryTrie` of the keys 3, 9, 12, 13 of $w = 4$ bits ([Morin 2013, Figures 13.1 and 13.2](Z-bibliography.md#ref-morin2013)), each node labeled by its prefix: the jump pointers of the nodes with one child (dashed), to the smallest leaf below when the child 0 is missing and to the largest when the child 1 is, and the doubly linked list of the leaves between the two ends of the dummy.](../figures/dictionary-binarytrie.svg){#fig-7-32}
+![Figure 7.32. The `BinaryTrie` of the keys 3, 9, 12, 13 of $w = 4$ bits ([Morin 2013, Figures 13.1 and 13.2](Z-bibliography.md#ref-morin-cpp)), each node labeled by its prefix: the jump pointers of the nodes with one child (dashed), to the smallest leaf below when the child 0 is missing and to the largest when the child 1 is, and the doubly linked list of the leaves between the two ends of the dummy.](../figures/dictionary-binarytrie.svg){#fig-7-32}
 
 A search of $x$ follows its path down to the deepest node $u$ of the path
 (`deepest()`), at depth $i$. If $i = w$, $u$ is the leaf of $x$; otherwise
@@ -2724,7 +2724,7 @@ The time is that of the walk down, $O( w )$.
 
 <span id="alg-7-29"></span>**Algorithm 7.29.** The successor, the
 insertion and the removal of `BinaryTrie` ([Morin 2013,
-§13.1](Z-bibliography.md#ref-morin2013)); $u$ is the deepest node of the
+§13.1](Z-bibliography.md#ref-morin-cpp)); $u$ is the deepest node of the
 path of $x$, at depth $i$, $c$ the bit $i$ of $x$, and $\ell$ the leaf of
 $x$.
 
@@ -2738,7 +2738,7 @@ $x$.
 --8<-- "generated/BinaryTrie-JumpTrie-successor.cpp"
 ```
 
-![Figure 7.33. The paths of `lowerBound(5)` and of `lowerBound(8)` in the trie of [Figure 7.32](07-dictionary.md#fig-7-32) ([Morin 2013, Figure 13.3](Z-bibliography.md#ref-morin2013)), in violet: 5 = 0101 leaves the trie at `0***`, whose child 1 is missing, and follows its jump pointer to the largest leaf below, 3, and the list to 9; 8 = 1000 leaves it at `100*`, whose child 0 is missing, and follows its jump pointer to the smallest leaf below, 9.](../figures/dictionary-binarytrie-find.svg){#fig-7-33}
+![Figure 7.33. The paths of `lowerBound(5)` and of `lowerBound(8)` in the trie of [Figure 7.32](07-dictionary.md#fig-7-32) ([Morin 2013, Figure 13.3](Z-bibliography.md#ref-morin-cpp)), in violet: 5 = 0101 leaves the trie at `0***`, whose child 1 is missing, and follows its jump pointer to the largest leaf below, 3, and the list to 9; 8 = 1000 leaves it at `100*`, whose child 0 is missing, and follows its jump pointer to the smallest leaf below, 9.](../figures/dictionary-binarytrie-find.svg){#fig-7-33}
 
 An insertion has more to do. It follows the path of $x$ down to the deepest
 node $u$; it creates the rest of the path, down to a new leaf of $x$. It
@@ -2762,12 +2762,12 @@ takes $O( w )$ time.
 --8<-- "generated/BinaryTrie-JumpTrie-remove.cpp"
 ```
 
-![Figure 7.34. The trie of [Figure 7.32](07-dictionary.md#fig-7-32) after `insert(2)` and `insert(15)` ([Morin 2013, Figure 13.4](Z-bibliography.md#ref-morin2013)): the new nodes `0010`, `111*` and `1111` in orange, and the jump pointers that change in violet, that of `00**` now to 2 and the new one of `111*` to 15, while those of `001*` and `11**` disappear, since these nodes now have both children.](../figures/dictionary-binarytrie-add.svg){#fig-7-34}
+![Figure 7.34. The trie of [Figure 7.32](07-dictionary.md#fig-7-32) after `insert(2)` and `insert(15)` ([Morin 2013, Figure 13.4](Z-bibliography.md#ref-morin-cpp)): the new nodes `0010`, `111*` and `1111` in orange, and the jump pointers that change in violet, that of `00**` now to 2 and the new one of `111*` to 15, while those of `001*` and `11**` disappear, since these nodes now have both children.](../figures/dictionary-binarytrie-add.svg){#fig-7-34}
 
-![Figure 7.35. The trie of [Figure 7.32](07-dictionary.md#fig-7-32) after `remove(9)` ([Morin 2013, Figure 13.5](Z-bibliography.md#ref-morin2013)): the nodes `1001`, `100*` and `10**` go away (in the faintest tint), and `1***`, left with the child 1 only, takes the jump pointer to its smallest leaf 12 (in violet).](../figures/dictionary-binarytrie-remove.svg){#fig-7-35}
+![Figure 7.35. The trie of [Figure 7.32](07-dictionary.md#fig-7-32) after `remove(9)` ([Morin 2013, Figure 13.5](Z-bibliography.md#ref-morin-cpp)): the nodes `1001`, `100*` and `10**` go away (in the faintest tint), and `1***`, left with the child 1 only, takes the jump pointer to its smallest leaf 12 (in violet).](../figures/dictionary-binarytrie-remove.svg){#fig-7-35}
 
 <span id="thm-7-7"></span>**Theorem 7.7.** *([Morin 2013, Theorem
-13.1](Z-bibliography.md#ref-morin2013).) `BinaryTrie` realizes the SSET of
+13.1](Z-bibliography.md#ref-morin-cpp).) `BinaryTrie` realizes the SSET of
 the integers of $w$ bits, with `insert()`, `remove()` and `lowerBound()`
 in $O( w )$ time each, in $O( n w )$ space: the trie has at most
 $n w + 1$ nodes.*
@@ -2789,7 +2789,7 @@ $O( n w )$ time at the contract level 3 while $n \le 256$, and at the leaf
 of the operation beyond (`consistent()`).
 
 `SimpleBinaryTrie` is the trie of [Morin 2013, exercise
-13.1](Z-bibliography.md#ref-morin2013), with neither the list nor the jump
+13.1](Z-bibliography.md#ref-morin-cpp), with neither the list nor the jump
 pointers, its internal nodes being two pointers each and its leaves also a
 key and a value. A search that falls off the trie keeps, on its walk down,
 the child 1 of the deepest node where the path of $x$ goes to the child 0
@@ -2802,7 +2802,7 @@ nodes of its path left with no child, both in $O( w )$ time, and
 `BinaryTrie`, at the price of the walk down to the leftmost leaf.
 
 <span id="alg-7-30"></span>**Algorithm 7.30.** The successor in
-`SimpleBinaryTrie` ([Morin 2013, exercise 13.1](Z-bibliography.md#ref-morin2013)).
+`SimpleBinaryTrie` ([Morin 2013, exercise 13.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTrie-SimpleBinaryTrie-lowerBound.pseudo.md"
 
@@ -2810,13 +2810,13 @@ nodes of its path left with no child, both in $O( w )$ time, and
 --8<-- "generated/BinaryTrie-SimpleBinaryTrie-lowerBound.cpp"
 ```
 
-![Figure 7.36. The `SimpleBinaryTrie` of 3, 9, 12, 13, with neither list nor jump pointers, and `lowerBound(5)` in violet ([Morin 2013, exercise 13.1](Z-bibliography.md#ref-morin2013)): the walk of 0101 leaves the trie at `0***`; $a$ = `1***` is the child 1 of the deepest node where the path went to the child 0 while the child 1 is there, and the leftmost walk from $a$ reaches 9.](../figures/dictionary-simpletrie.svg){#fig-7-36}
+![Figure 7.36. The `SimpleBinaryTrie` of 3, 9, 12, 13, with neither list nor jump pointers, and `lowerBound(5)` in violet ([Morin 2013, exercise 13.1](Z-bibliography.md#ref-morin-cpp)): the walk of 0101 leaves the trie at `0***`; $a$ = `1***` is the child 1 of the deepest node where the path went to the child 0 while the child 1 is there, and the leftmost walk from $a$ reaches 9.](../figures/dictionary-simpletrie.svg){#fig-7-36}
 
 ### 7.11.2 The x-fast trie {#sec-7-11-2}
 
 The search of the binary trie is almost over once it reaches the deepest
 node $u$ of the path of $x$, and `XFastTrie` finds $u$ by a binary search on
-the depth instead of a walk ([Morin 2013, §13.2](Z-bibliography.md#ref-morin2013),
+the depth instead of a walk ([Morin 2013, §13.2](Z-bibliography.md#ref-morin-cpp),
 after [Willard 1983](Z-bibliography.md#ref-willard1983)). It is a
 `BinaryTrie` with, for each depth $i = 1 , \ldots , w$, a hash table
 $t[ i ]$ from the prefixes of $i$ bits to their nodes (`TrieTables`, and
@@ -2841,7 +2841,7 @@ side of the bit $\ell$ of $x$, and hence all its keys are on the other side,
 all larger than $x$ if that bit is 0 and all smaller if it is 1. Also, the keys outside its subtree are either below or above all of its keys, since
 they differ from $x$ in a bit before the place $\ell$. $\square$
 
-![Figure 7.37. The `XFastTrie` of 3, 9, 12, 13, with the hash table $t[ i ]$ of the prefixes of each depth, and `lowerBound(14)`, 14 = 1110 ([Morin 2013, Figure 13.6](Z-bibliography.md#ref-morin2013)): the binary search on the depth finds 11 in $t[ 2 ]$ and not 111 in $t[ 3 ]$, the node `11**` follows its jump pointer to 13, and the list ends there, so that no key is not smaller than 14 (in violet); beside it, the entries (smallest, largest key) of $t[ 2 ]$ in `ListXFastTrie`.](../figures/dictionary-xfast.svg){#fig-7-37}
+![Figure 7.37. The `XFastTrie` of 3, 9, 12, 13, with the hash table $t[ i ]$ of the prefixes of each depth, and `lowerBound(14)`, 14 = 1110 ([Morin 2013, Figure 13.6](Z-bibliography.md#ref-morin-cpp)): the binary search on the depth finds 11 in $t[ 2 ]$ and not 111 in $t[ 3 ]$, the node `11**` follows its jump pointer to 13, and the list ends there, so that no key is not smaller than 14 (in violet); beside it, the entries (smallest, largest key) of $t[ 2 ]$ in `ListXFastTrie`.](../figures/dictionary-xfast.svg){#fig-7-37}
 
 ```cpp
 --8<-- "generated/BinaryTrie-JumpTrie-deepest.cpp"
@@ -2852,7 +2852,7 @@ remove the entries of the nodes they create and free; they change $O( w )$
 nodes and entries, in $O( w )$ expected time.
 
 <span id="thm-7-8"></span>**Theorem 7.8.** *([Morin 2013, Theorem
-13.2](Z-bibliography.md#ref-morin2013).) `XFastTrie` realizes the SSET of
+13.2](Z-bibliography.md#ref-morin-cpp).) `XFastTrie` realizes the SSET of
 the integers of $w$ bits, with `insert()` and `remove()` in $O( w )$
 expected time and `lowerBound()` in $O( \log w )$ expected time, in
 $O( n w )$ space.*
@@ -2865,7 +2865,7 @@ lookups of the binary search depend on each other; hence, the latency of
 each one is what counts.
 
 `ListXFastTrie` is the x-fast trie of [Morin 2013, exercise
-13.2](Z-bibliography.md#ref-morin2013), with no trie at all: the keys are a
+13.2](Z-bibliography.md#ref-morin-cpp), with no trie at all: the keys are a
 doubly linked list in increasing order, and the table $t[ i ]$ maps each
 prefix of $i$ bits to the smallest and the largest key with that prefix
 (an `Entry`), which are all that [Lemma 7.29](07-dictionary.md#lem-7-29) needs. The binary search finds
@@ -2879,7 +2879,7 @@ expected time, and `entries()` counts the entries of the tables.
 
 <span id="alg-7-31"></span>**Algorithm 7.31.** The successor, the
 insertion and the removal of `ListXFastTrie` ([Morin 2013, exercise
-13.2](Z-bibliography.md#ref-morin2013)); $t[ i ]( p )$ is the entry of the
+13.2](Z-bibliography.md#ref-morin-cpp)); $t[ i ]( p )$ is the entry of the
 prefix $p$ of depth $i$, and $\ell$ the key $x$ in the list.
 
 --8<-- "generated/XFastTrie-ListXFastTrie-lowerBound.pseudo.md"
@@ -2893,7 +2893,7 @@ prefix $p$ of depth $i$, and $\ell$ the key $x$ in the list.
 ```
 
 Both tries also have `findNear(x)`, the search of [Morin 2013, exercise
-13.4](Z-bibliography.md#ref-morin2013), whose time depends on the distance
+13.4](Z-bibliography.md#ref-morin-cpp), whose time depends on the distance
 $d( x )$ between $x$ and its successor ($2^w$ if there is none) rather than
 on $w$ ([Algorithm 7.32](07-dictionary.md#alg-7-32)).
 
@@ -2923,7 +2923,7 @@ $p + 1$ covers.
 
 <span id="alg-7-32"></span>**Algorithm 7.32.** The search near the
 successor of `XFastTrie` ([Morin 2013, exercise
-13.4](Z-bibliography.md#ref-morin2013)); $t[ i ]( p )$ is the node of the
+13.4](Z-bibliography.md#ref-morin-cpp)); $t[ i ]( p )$ is the node of the
 prefix $p$ of depth $i$, or nil. `ListXFastTrie` reads the smallest key of
 the prefix $p + 1$ from its entry.
 
@@ -2943,7 +2943,7 @@ The x-fast trie is exponentially faster than the binary trie in its
 searches, but its updates are not, and its space is $O( n w )$. The two
 defects are related, since $n$ insertions that build a structure of size
 $n w$ take at least that time. `YFastTrie` ([Morin 2013,
-§13.3](Z-bibliography.md#ref-morin2013), after
+§13.3](Z-bibliography.md#ref-morin-cpp), after
 [Willard 1983](Z-bibliography.md#ref-willard1983)) stores in an
 `XFastTrie` only a random sample of the keys, the *representatives*, each
 key being one with probability $1 / w$ independently of the others, and
@@ -2954,7 +2954,7 @@ larger one included, form a *group*, kept in a `Treap` (the alias `Group`) ([Cha
 trie. Each key has a group, the one of the smallest representative not
 smaller than it ([Figure 7.38](07-dictionary.md#fig-7-38)).
 
-![Figure 7.38. The representatives of a `YFastTrie` with $w = 4$ (the leaves of its x-fast trie, with 15 = $2^w - 1$ always there, in the faintest tint) over their groups ([Morin 2013, Figures 13.7 to 13.9](Z-bibliography.md#ref-morin2013)): the keys 0 1 3 4 5 8 9 10 11 13; after `insert(2)` and `insert(6)`, where the coin of 6 comes up heads, so that 6 becomes a representative and splits its group (2, 6 and the new representative in orange); and after `remove(1)` and `remove(9)`, where the removed representative 9 lets its key 8 join the group of 15 (in violet).](../figures/dictionary-yfast.svg){#fig-7-38}
+![Figure 7.38. The representatives of a `YFastTrie` with $w = 4$ (the leaves of its x-fast trie, with 15 = $2^w - 1$ always there, in the faintest tint) over their groups ([Morin 2013, Figures 13.7 to 13.9](Z-bibliography.md#ref-morin-cpp)): the keys 0 1 3 4 5 8 9 10 11 13; after `insert(2)` and `insert(6)`, where the coin of 6 comes up heads, so that 6 becomes a representative and splits its group (2, 6 and the new representative in orange); and after `remove(1)` and `remove(9)`, where the removed representative 9 lets its key 8 join the group of 15 (in violet).](../figures/dictionary-yfast.svg){#fig-7-38}
 
 A search of $x$ finds in the x-fast trie the smallest representative not
 smaller than $x$, in $O( \log w )$ expected time, and then the smallest key
@@ -2971,7 +2971,7 @@ the x-fast trie $O( w )$, with probability $1 / w$.
 
 <span id="alg-7-33"></span>**Algorithm 7.33.** The successor, the
 insertion and the removal of `YFastTrie` ([Morin 2013,
-§13.3](Z-bibliography.md#ref-morin2013)); $X$ is the x-fast trie of the
+§13.3](Z-bibliography.md#ref-morin-cpp)); $X$ is the x-fast trie of the
 representatives.
 
 --8<-- "generated/YFastTrie-lowerBound.pseudo.md"
@@ -2996,7 +2996,7 @@ The size of the groups rests on two coin experiments
 ([Figure 7.39](07-dictionary.md#fig-7-39)).
 
 <span id="lem-7-31"></span>**Lemma 7.31.** *([Morin 2013, Lemma
-13.1](Z-bibliography.md#ref-morin2013).) The group of a key $x$ of a
+13.1](Z-bibliography.md#ref-morin-cpp).) The group of a key $x$ of a
 y-fast trie has $n_x$ keys with $E[ n_x ] \le 2 w - 1$.*
 
 *Proof.* Let $x_1 < \cdots < x_i = x < \cdots < x_n$ be the keys. The keys
@@ -3009,7 +3009,7 @@ tails, after the heads of $x_{i-k-1}$, and hence $k$ is the number of tails
 before the first heads of the same experiment, of expectation at most
 $w - 1$. Hence $E[ n_x ] = E[ j ] + E[ k ] \le 2 w - 1$. $\square$
 
-![Figure 7.39. The coins of the keys around $x$ in a `YFastTrie` ([Morin 2013, Figure 13.10](Z-bibliography.md#ref-morin2013)): the group of $x$ runs from the key after the last heads before $x$ ($k$ keys before $x$) to the first heads from $x$ on ($j$ keys from $x$ on), so that $n_x = j + k$; the heads in violet.](../figures/dictionary-yfast-sample.svg){#fig-7-39}
+![Figure 7.39. The coins of the keys around $x$ in a `YFastTrie` ([Morin 2013, Figure 13.10](Z-bibliography.md#ref-morin-cpp)): the group of $x$ runs from the key after the last heads before $x$ ($k$ keys before $x$) to the first heads from $x$ on ($j$ keys from $x$ on), so that $n_x = j + k$; the heads in violet.](../figures/dictionary-yfast-sample.svg){#fig-7-39}
 
 By the inequality of Jensen, $E[ \log n_x ] \le \log E[ n_x ]$; hence, the
 operations on a treap of $n_x$ keys take $O( \log w )$ expected time. The
@@ -3018,7 +3018,7 @@ $O( w )$, $O( 1 )$ in expectation, and so do the removals of the
 representatives.
 
 <span id="thm-7-9"></span>**Theorem 7.9.** *([Morin 2013, Theorem
-13.3](Z-bibliography.md#ref-morin2013).) `YFastTrie` realizes the SSET of
+13.3](Z-bibliography.md#ref-morin-cpp).) `YFastTrie` realizes the SSET of
 the integers of $w$ bits, with `insert()`, `remove()` and `lowerBound()`
 in $O( \log w )$ expected time each (amortized for the first two, the x-fast
 trie changing its tables), in $O( n + w )$ space.*
@@ -3039,7 +3039,7 @@ time at the contract level 3 while $n \le 256$.
 ### 7.11.4 The binary trie of strings {#sec-7-11-4}
 
 `BitmapTrie` is the trie of [Morin 2013, exercise
-13.3](Z-bibliography.md#ref-morin2013), which extends the binary trie from
+13.3](Z-bibliography.md#ref-morin-cpp), which extends the binary trie from
 strings of $w$ bits to strings of bytes of any length: a SORTED SET of
 strings, each with a value, whose `lowerBound(s)` (the smallest string not
 smaller than $s$ in the lexicographic order of the bytes, a prefix before
@@ -3058,7 +3058,7 @@ with no hashing, and the next child after $c$ is the next bit set, which a
 hash table could not give (`has()`, `rank()`, `child()`, `after()` and
 `before()` are these primitives).
 
-![Figure 7.40. The `BitmapTrie` of `car`, `cat`, `cow`, `do` ([Morin 2013, exercise 13.3](Z-bibliography.md#ref-morin2013)), each node with the smallest and the largest string below it and the strings in a doubly linked list; the node `c` enlarged, with its bitmap of 256 bits (the bytes `a` to `p` shown) and the array of its children sorted by byte; `lowerBound(cb)` finds no child for `b`, the next bit set is `o`, of rank 1, and the smallest string below `co`, `cow`, is the result (in violet).](../figures/dictionary-bitmaptrie.svg){#fig-7-40}
+![Figure 7.40. The `BitmapTrie` of `car`, `cat`, `cow`, `do` ([Morin 2013, exercise 13.3](Z-bibliography.md#ref-morin-cpp)), each node with the smallest and the largest string below it and the strings in a doubly linked list; the node `c` enlarged, with its bitmap of 256 bits (the bytes `a` to `p` shown) and the array of its children sorted by byte; `lowerBound(cb)` finds no child for `b`, the next bit set is `o`, of rank 1, and the smallest string below `co`, `cow`, is the result (in violet).](../figures/dictionary-bitmaptrie.svg){#fig-7-40}
 
 A search that stops at the node $u$ of depth $i$, whose child of $s_i$ is
 missing, returns the smallest string below the next child of $u$, if there
@@ -3081,7 +3081,7 @@ level 3 while there are at most 256 strings.
 
 <span id="alg-7-34"></span>**Algorithm 7.34.** The successor, the
 insertion and the removal of `BitmapTrie` ([Morin 2013, exercise
-13.3](Z-bibliography.md#ref-morin2013)); $u.\mathit{min}$ and
+13.3](Z-bibliography.md#ref-morin-cpp)); $u.\mathit{min}$ and
 $u.\mathit{max}$ are the smallest and the largest string below $u$, and
 $\ell$ the item of $s$ in the list.
 
@@ -3185,7 +3185,7 @@ space.
 ## 7.13 Exercises {#sec-7-13}
 
 Each exercise names the test of the library that solves it (run it with
-`ctest -R <name>`). The exercises of [Morin 2013](Z-bibliography.md#ref-morin2013)
+`ctest -R <name>`). The exercises of [Morin 2013](Z-bibliography.md#ref-morin-cpp)
 are numbered as in the book; those that ask to illustrate an operation are
 solved by the figures of this chapter, and the others by the lemmas and the
 code cited.
@@ -3223,9 +3223,9 @@ code cited.
    `pearls_hashing.universal-chaining`.
 9. Show that, for any multiplier $z$ of the multiplicative hashing and
    $n = 2^d$ with $d \le w / 2$, there are $n$ keys with the same hash, and
-   name them given $z$ ([Morin 2013, exercise 5.2](Z-bibliography.md#ref-morin2013));
+   name them given $z$ ([Morin 2013, exercise 5.2](Z-bibliography.md#ref-morin-cpp));
    prove that the bound $2 / 2^d$ of [Lemma 7.3](07-dictionary.md#lem-7-3) is reached by $x = 2^{w-d-2}$
-   and $y = 3 x$ ([Morin 2013, exercise 5.3](Z-bibliography.md#ref-morin2013)).
+   and $y = 3 x$ ([Morin 2013, exercise 5.3](Z-bibliography.md#ref-morin-cpp)).
    Solved in [§7.3.3](07-dictionary.md#sec-7-3-3); test:
    `ods_ints.ods5.1.multiplicative-hash`.
 10. Explain why the hash code that reads only the characters of even place,
@@ -3233,7 +3233,7 @@ code cited.
     function of two words into one, have large sets of objects with one
     code; explain why
     $( x \bmod 2^w ) + ( x \operatorname{div} 2^w ) \equiv x
-    \pmod{2^w - 1}$ ([Morin 2013, exercises 5.6 to 5.10](Z-bibliography.md#ref-morin2013)).
+    \pmod{2^w - 1}$ ([Morin 2013, exercises 5.6 to 5.10](Z-bibliography.md#ref-morin-cpp)).
     Solved in [§7.3.5](07-dictionary.md#sec-7-3-5); test:
     `ods_ints.ods5.3.hash-codes`.
 11. Hash the states of a search by the tables of Zobrist, updating the hash
@@ -3274,15 +3274,15 @@ code cited.
 20. Show that a sequence that alternates an insertion and a removal at the
     threshold restructures the table only once with the thresholds 4 times
     apart ([Lemma 7.7](07-dictionary.md#lem-7-7)). Test: `ch07.sec7.4.restructure`.
-21. Realize the table of [Morin 2013, §5.1](Z-bibliography.md#ref-morin2013)
+21. Realize the table of [Morin 2013, §5.1](Z-bibliography.md#ref-morin-cpp)
     with the multiplicative hashing on $2^d$ lists, which doubles past the
     load 1 and halves below $1 / 3$ ([Theorem 7.3](07-dictionary.md#thm-7-3)), and show that the keys
     $k \cdot 2^{20}$ spread over it while $h( k ) \bmod m$ would put them in
     one list. Explain whether the first two or the last two digits of the
     student numbers of a class of first year students make a better hash
-    ([Morin 2013, exercise 5.1](Z-bibliography.md#ref-morin2013)), and how
+    ([Morin 2013, exercise 5.1](Z-bibliography.md#ref-morin-cpp)), and how
     the keys of a table with a fixed hash can be chosen to make its searches
-    linear ([Morin 2013, exercise 5.11](Z-bibliography.md#ref-morin2013)).
+    linear ([Morin 2013, exercise 5.11](Z-bibliography.md#ref-morin-cpp)).
     Solved in [§7.5](07-dictionary.md#sec-7-5); test:
     `ods_ints.ods5.1.chained-hash-table`.
 22. Insert, remove and insert again the keys of the exercise in a table of
@@ -3301,13 +3301,13 @@ code cited.
 25. Show that the triangular inspection visits every place of a table of
     $2^p$ places ([Lemma 7.9](07-dictionary.md#lem-7-9)), and realize the double hashing with a second
     function. Test: `beyond.hashing`.
-26. Realize the `LinearHashTable` of [Morin 2013, §5.2](Z-bibliography.md#ref-morin2013)
+26. Realize the `LinearHashTable` of [Morin 2013, §5.2](Z-bibliography.md#ref-morin-cpp)
     with the tabulation hashing ([Theorem 7.4](07-dictionary.md#thm-7-4)); reprove [Lemma 7.10](07-dictionary.md#lem-7-10) with the
     full formula of Stirling ([Morin 2013, exercise
-    5.4](Z-bibliography.md#ref-morin2013)); and explain why storing a key in
+    5.4](Z-bibliography.md#ref-morin-cpp)); and explain why storing a key in
     the first nil place, skipping the deleted ones, makes $O( n )$
     operations take $\Theta( n^2 )$ time ([Morin 2013, exercise
-    5.5](Z-bibliography.md#ref-morin2013)). Solved in
+    5.5](Z-bibliography.md#ref-morin-cpp)). Solved in
     [§7.5](07-dictionary.md#sec-7-5); test: `ods_ints.ods5.2.linear-hash-table`.
 27. Realize the coalesced hashing with a cellar and the double hashing with
     the insertion of Brent, whose successful searches take fewer than 2.5
@@ -3348,45 +3348,45 @@ code cited.
     and `hashing.recsplit`.
 38. Illustrate the searches of 2.5 and of 5.5, the insertions of 0.5 with a
     height of 1 and of 3.5 with a height of 2, and the removals of 1 and of
-    3 on the skip list of [Morin 2013, Figure 4.1](Z-bibliography.md#ref-morin2013)
-    ([Morin 2013, exercises 4.1 to 4.3](Z-bibliography.md#ref-morin2013));
+    3 on the skip list of [Morin 2013, Figure 4.1](Z-bibliography.md#ref-morin-cpp)
+    ([Morin 2013, exercises 4.1 to 4.3](Z-bibliography.md#ref-morin-cpp));
     show that an insertion or a removal changes a constant number of links
-    in expectation ([Morin 2013, exercise 4.6](Z-bibliography.md#ref-morin2013)).
+    in expectation ([Morin 2013, exercise 4.6](Z-bibliography.md#ref-morin-cpp)).
     Solved by [Figure 7.21](07-dictionary.md#fig-7-21),
     [Figure 7.22](07-dictionary.md#fig-7-22),
     [Figure 7.23](07-dictionary.md#fig-7-23) and [Lemma 7.18](07-dictionary.md#lem-7-18); test:
     `ods_trees.ods4.2.skiplist-sset`.
 39. Illustrate `remove(2)` and `add(3,x)` with a height of 4 on the skip
-    list with the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin2013)
-    ([Morin 2013, exercises 4.4 and 4.5](Z-bibliography.md#ref-morin2013)),
+    list with the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin-cpp)
+    ([Morin 2013, exercises 4.4 and 4.5](Z-bibliography.md#ref-morin-cpp)),
     and realize the skip list with the access by rank ([Morin 2013,
-    exercise 4.9](Z-bibliography.md#ref-morin2013)). Solved by
+    exercise 4.9](Z-bibliography.md#ref-morin-cpp)). Solved by
     [Figure 7.25](07-dictionary.md#fig-7-25) and [Lemma 7.24](07-dictionary.md#lem-7-24); tests:
     `ods_trees.ods-ex4.9.rank-skiplist` and `ods_trees.ods4.3.skiplist-list`.
 40. Promote the keys with a probability $p$ instead of $1 / 2$: bound the
     search path, the height and the nodes, and find the best $p$ ([Morin
-    2013, exercise 4.7](Z-bibliography.md#ref-morin2013)). Solved by
+    2013, exercise 4.7](Z-bibliography.md#ref-morin-cpp)). Solved by
     [Lemma 7.21](07-dictionary.md#lem-7-21); test: `ods_trees.ods4.2.skiplist-sset`.
 41. Remove the redundant comparisons of the search of a skip list, and
     count the comparisons of the new search ([Morin 2013, exercise
-    4.8](Z-bibliography.md#ref-morin2013)). Solved by [Lemma 7.22](07-dictionary.md#lem-7-22); test:
+    4.8](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma 7.22](07-dictionary.md#lem-7-22); test:
     `ods_trees.ods-ex4.8.no-redundant-comparisons`.
 42. Realize the finger search of a skip list, in $O( 1 + \log r )$ expected
-    time ([Morin 2013, exercise 4.10](Z-bibliography.md#ref-morin2013)).
+    time ([Morin 2013, exercise 4.10](Z-bibliography.md#ref-morin-cpp)).
     Solved by [Lemma 7.23](07-dictionary.md#lem-7-23); test: `ods_trees.ods-ex4.10.finger-search`.
 43. Truncate a `SkiplistList` at a position and absorb another one, in
     $O( \log n )$ time ([Morin 2013, exercises 4.11 and
-    4.12](Z-bibliography.md#ref-morin2013)), in [Chapter 2](02-sequence.md#ch-2).
+    4.12](Z-bibliography.md#ref-morin-cpp)), in [Chapter 2](02-sequence.md#ch-2).
     Test: `ods_trees.ods-ex4.11.truncate-absorb`.
 44. Design the space-efficient SSET on a space-efficient list of blocks
-    ([Morin 2013, exercise 4.13](Z-bibliography.md#ref-morin2013)), in
+    ([Morin 2013, exercise 4.13](Z-bibliography.md#ref-morin-cpp)), in
     [Chapter 10](10-set.md#ch-10). Test: `ods_trees.ods-ex4.13.sesset`.
 45. Search the substrings of a text interactively by an SSET of its
-    suffixes ([Morin 2013, exercise 4.14](Z-bibliography.md#ref-morin2013)).
+    suffixes ([Morin 2013, exercise 4.14](Z-bibliography.md#ref-morin-cpp)).
     Test: `ods_trees.ods-ex4.14.substring-search`.
 46. Explain how removing some links of a skip list leaves a binary tree
     similar to a binary search tree, and why the skip list uses its links
-    better ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin2013)).
+    better ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp)).
     Solved in [§7.9.6](07-dictionary.md#sec-7-9-6) and by
     [Figure 7.26](07-dictionary.md#fig-7-26); tests: `taocp.balanced-trees`
     and `ods_trees.ods4.2.skiplist-sset`.
@@ -3406,20 +3406,20 @@ code cited.
     Test: `ods_ints.ods13.1.binary-trie`.
 52. Design a binary trie with neither the list nor the jump pointers whose
     `find(x)` still runs in $O( w )$ time ([Morin 2013, exercise
-    13.1](Z-bibliography.md#ref-morin2013)). Test:
+    13.1](Z-bibliography.md#ref-morin-cpp)). Test:
     `ods_ints.ods.ex13.1.simple-binary-trie`.
 53. Realize the x-fast trie ([Theorem 7.8](07-dictionary.md#thm-7-8)), and design one with no binary
     trie, only a doubly linked list and $w + 1$ hash tables ([Morin 2013,
-    exercise 13.2](Z-bibliography.md#ref-morin2013)). Tests:
+    exercise 13.2](Z-bibliography.md#ref-morin-cpp)). Tests:
     `ods_ints.ods13.2.x-fast-trie` and `ods_ints.ods.ex13.2.list-x-fast-trie`.
 54. Extend the binary trie to the strings of any length, with the
     operations in time proportional to the length of the string ([Morin
-    2013, exercise 13.3](Z-bibliography.md#ref-morin2013)). Test:
+    2013, exercise 13.3](Z-bibliography.md#ref-morin-cpp)). Test:
     `ods_ints.ods.ex13.3.bitmap-trie`.
 55. Modify the search of an x-fast trie so that it runs in
     $O( 1 + \log d( x ) )$ and in $O( 1 + \log \log d( x ) )$ expected time,
     $d( x )$ the distance of $x$ from its successor ([Morin 2013, exercise
-    13.4](Z-bibliography.md#ref-morin2013)). Solved by [Lemma 7.30](07-dictionary.md#lem-7-30); test:
+    13.4](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma 7.30](07-dictionary.md#lem-7-30); test:
     `ods_ints.ods.ex13.4.find-near`.
 56. Realize the y-fast trie ([Theorem 7.9](07-dictionary.md#thm-7-9) and [Lemma 7.31](07-dictionary.md#lem-7-31)). Test:
     `ods_ints.ods13.3.y-fast-trie`.

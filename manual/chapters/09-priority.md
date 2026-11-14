@@ -33,7 +33,7 @@ priority queue built for the caches of a real machine
 ([§9.12](09-priority.md#sec-9-12)), and [§9.13](09-priority.md#sec-9-13)
 compares the realizations on what each one is meant for. Our first two
 heaps, the binary heap and the meldable heap, follow
-[Morin 2013, chapter 10](Z-bibliography.md#ref-morin2013) section by
+[Morin 2013, chapter 10](Z-bibliography.md#ref-morin-cpp) section by
 section, with all the exercises of that chapter, and the heaps with
 decrease-key follow [Montresor 2025, §10.1 and
 §11.5](Z-bibliography.md#ref-montresor2025).
@@ -70,7 +70,7 @@ priority queue (the shortest paths and the minimum spanning trees of
 `ListPriorityQueue`, `TreePriorityQueue`, `HeapPriorityQueue`,
 `LinkedHeapPriorityQueue`, `IndexedDaryHeap`, `FibonacciHeapPriorityQueue`
 and `PairingHeap`. The *priority `Queue`* of [Morin 2013,
-§10](Z-bibliography.md#ref-morin2013) is the same type without handles and
+§10](Z-bibliography.md#ref-morin-cpp) is the same type without handles and
 without `decrease()`: `add(x)` and `remove()`, which the heaps of plain
 items in this chapter call `push(x)` and `pop()`, with `top()` for the
 least item.
@@ -208,7 +208,7 @@ place of a node then determines the places of its parent and of its
 children. We name the layout after Eytzinger, who used it in 1590 for
 the family trees of the princes of Europe ([Eytzinger
 1590](Z-bibliography.md#ref-eytzinger1590); [Morin 2013,
-§10.1](Z-bibliography.md#ref-morin2013)), and it is shown in
+§10.1](Z-bibliography.md#ref-morin-cpp)), and it is shown in
 [Figure 9.2](09-priority.md#fig-9-2).
 
 ![Figure 9.2. The layout of Eytzinger of a complete binary tree of 15 nodes: the node in the place $i$ of the vector $A$ has its children in the places $2 i + 1$ and $2 i + 2$ (in orange for $i = 1$) and its parent in the place $\lfloor ( i - 1 ) / 2 \rfloor$; the path from the root to the node 1 is in violet.](../figures/prio-eytzinger.svg){#fig-9-2}
@@ -320,7 +320,7 @@ priorities in the order of the vector, against which the tests compare the
 figures of the book.
 
 We can now summarize the binary heap in the form of [Morin 2013, Theorem
-10.1](Z-bibliography.md#ref-morin2013).
+10.1](Z-bibliography.md#ref-morin-cpp).
 
 <span id="thm-9-1"></span>**Theorem 9.1.** *A binary heap realizes the
 priority queue with `push()` and `pop()` in $O( \log n )$ time and `top()`
@@ -367,7 +367,7 @@ of a heap in order costs $\Omega( n \log n )$ comparisons (cf.
 information than that of a sorted vector, which is also why a heap can be
 kept up to date with a logarithmic number of comparisons per operation.
 
-Two exercises of [Morin 2013, §10.3](Z-bibliography.md#ref-morin2013)
+Two exercises of [Morin 2013, §10.3](Z-bibliography.md#ref-morin-cpp)
 illustrate a binary heap. We solve them in
 [Figure 9.5](09-priority.md#fig-9-5) and
 [Figure 9.6](09-priority.md#fig-9-6), on the heaps that end
@@ -389,18 +389,18 @@ never follows a pointer. Also, the vector of a large heap is on huge pages
 (cf. [chapter 5](05-memory.md#ch-5)), and a walk from the root to a leaf
 does not miss the translation buffer at each level. With
 $D = 2$ it is the `BinaryHeap` of [Morin 2013,
-§10.1](Z-bibliography.md#ref-morin2013), with any $D$ it is the `DaryHeap`
-of [Morin 2013, exercise 10.5](Z-bibliography.md#ref-morin2013), and its
+§10.1](Z-bibliography.md#ref-morin-cpp), with any $D$ it is the `DaryHeap`
+of [Morin 2013, exercise 10.5](Z-bibliography.md#ref-morin-cpp), and its
 static functions `parent(i)` and `child(i,j)` are the formulae of
 [Lemma 9.1](09-priority.md#lem-9-1), which solve [Morin 2013, exercise
-10.4](Z-bibliography.md#ref-morin2013).
+10.4](Z-bibliography.md#ref-morin-cpp).
 
 --8<-- "generated/DaryHeap-push.pseudo.md"
 
 --8<-- "generated/DaryHeap-pop.pseudo.md"
 
 Our code differs from that of [Morin 2013,
-§10.1](Z-bibliography.md#ref-morin2013) in three points, each of which
+§10.1](Z-bibliography.md#ref-morin-cpp) in three points, each of which
 saves work on a real machine. First, the walks move a *hole* instead of
 swapping the item at each level: the item is kept aside, each step copies
 one item into the hole and moves the hole, and the item is written once
@@ -419,7 +419,7 @@ with the item, $D$ comparisons per level:
 
 The choice of $D$ trades the comparisons of `pop()` against the levels
 that both operations walk, which is the analysis that [Morin 2013,
-exercise 10.5](Z-bibliography.md#ref-morin2013) is about.
+exercise 10.5](Z-bibliography.md#ref-morin-cpp) is about.
 
 <span id="lem-9-5"></span>**Lemma 9.5.** *A `push()` into a $D$-ary heap of
 $n$ items makes at most $\log_D( ( D - 1 ) n + 1 )$ comparisons, and a
@@ -474,7 +474,7 @@ followed by a push of a similar key. Both walks are checked by the test
 `std::priority_queue`.
 
 Beyond the book, `DaryHeap` solves three exercises of [Morin 2013,
-§10.3](Z-bibliography.md#ref-morin2013), which we take in his order. We begin with the removal of the
+§10.3](Z-bibliography.md#ref-morin-cpp), which we take in his order. We begin with the removal of the
 item in a given place, `erase(i)` (exercise 10.3).
 
 --8<-- "generated/DaryHeap-erase.pseudo.md"
@@ -542,7 +542,7 @@ the exercise is the last item that `smallest(k)` gives.
 ![Figure 9.8. The 4 least items of the binary heap of [Figure 9.3](09-priority.md#fig-9-3), 4, 6, 8 and 9, in violet, and the places left in the heap $Q$ of `smallest(4)`, in orange: each of them is a child of an item given, and the least of them, 16, would be the fifth item.](../figures/prio-smallest.svg){#fig-9-8}
 
 The merge of $k$ sorted lists of [Morin 2013, exercise
-10.11](Z-bibliography.md#ref-morin2013) is another use of the heap of
+10.11](Z-bibliography.md#ref-morin-cpp) is another use of the heap of
 plain items. A heap of the pairs (first item, list) gives the next item of
 the merge at each `pop()`, which is followed by a `push()` of the next item
 of the same list. Since the heap holds at most $k$ pairs, the merge of $n$
@@ -674,7 +674,7 @@ rebuilding it, in linear time, and one may well need such merges (e.g., in
 the algorithms that join the queues of two components). `MeldableHeap<T,Less,A>` is the randomized
 meldable heap of [Gambin and Malinowski
 1998](Z-bibliography.md#ref-gambin1998), as [Morin 2013,
-§10.2](Z-bibliography.md#ref-morin2013) presents it: a heap-ordered binary
+§10.2](Z-bibliography.md#ref-morin-cpp) presents it: a heap-ordered binary
 tree of nodes with pointers, of any shape, whose only structural operation
 is the merge of two such trees. Given the roots $h_1$ and $h_2$, the merge
 keeps the smaller root on top (say $h_1$, after exchanging the two if
@@ -687,7 +687,7 @@ that `push()` returned. Each of these operations makes a constant number
 of merges.
 
 <span id="alg-9-3"></span>**Algorithm 9.3.** The merge of `MeldableHeap`
-([Morin 2013, §10.2](Z-bibliography.md#ref-morin2013)), its recursion
+([Morin 2013, §10.2](Z-bibliography.md#ref-morin-cpp)), its recursion
 made a loop that hangs each node by the link that will hold it.
 
 --8<-- "generated/MeldableHeap-merge.pseudo.md"
@@ -696,7 +696,7 @@ made a loop that hangs each node by the link that will hold it.
 --8<-- "generated/MeldableHeap-MeldableHeap-merge.cpp"
 ```
 
-![Figure 9.11. The two heaps $h_1$ and $h_2$ of [Morin 2013, Figure 10.4](Z-bibliography.md#ref-morin2013) and their merge with the coins right, left, right, right: $h_2$ goes down the right subtree of 4, takes the place of 50 below 8, and 50 goes down the right side of $h_2$, below 20 (violet the nodes of $h_1$ on the walk, orange those of $h_2$).](../figures/prio-meld-merge.svg){#fig-9-11}
+![Figure 9.11. The two heaps $h_1$ and $h_2$ of [Morin 2013, Figure 10.4](Z-bibliography.md#ref-morin-cpp) and their merge with the coins right, left, right, right: $h_2$ goes down the right subtree of 4, takes the place of 50 below 8, and 50 goes down the right side of $h_2$, below 20 (violet the nodes of $h_1$ on the walk, orange those of $h_2$).](../figures/prio-meld-merge.svg){#fig-9-11}
 
 Our analysis rests on the length of a random walk in a binary tree: a walk
 that starts at the root, goes at each step to the left or to the right
@@ -706,7 +706,7 @@ one can bound its length independently of the shape of the tree.
 <span id="lem-9-9"></span>**Lemma 9.9.** *In a binary tree of $n$ nodes,
 the expected length of a random walk from the root is at most
 $\log_2( n + 1 )$ ([Morin 2013, Lemma
-10.1](Z-bibliography.md#ref-morin2013)).*
+10.1](Z-bibliography.md#ref-morin-cpp)).*
 
 *Proof.* By induction on $n$; for $n = 0$ the walk has length
 $0 = \log_2 1$. With $n_1$ and $n_2 = n - 1 - n_1$ nodes in the two
@@ -721,7 +721,7 @@ $$
 by the concavity of the logarithm, $( \log a + \log b ) / 2 \le \log ( ( a
 + b ) / 2 )$. $\square$
 
-A second proof, also in [Morin 2013, §10.2](Z-bibliography.md#ref-morin2013),
+A second proof, also in [Morin 2013, §10.2](Z-bibliography.md#ref-morin-cpp),
 goes through the entropy. A binary tree of $n$ nodes has $n + 1$ external
 nodes (the empty subtrees), and the walk ends at the external node $i$, of
 depth $d_i$, with probability $p_i = 2^{-d_i}$; hence its expected length
@@ -730,7 +730,7 @@ distribution over $n + 1$ outcomes, which is at most $\log_2( n + 1 )$.
 
 <span id="lem-9-10"></span>**Lemma 9.10.** *The merge of two heaps of $n_1$
 and $n_2$ nodes takes $O( \log n_1 + \log n_2 )$ expected time, whatever
-their shapes ([Morin 2013, Lemma 10.2](Z-bibliography.md#ref-morin2013)).*
+their shapes ([Morin 2013, Lemma 10.2](Z-bibliography.md#ref-morin-cpp)).*
 
 *Proof.* Each step of the merge takes one step of a random walk in one of
 the two heaps, the one whose root is not on top, and the merge ends as soon
@@ -742,13 +742,13 @@ at most $\log_2( n_1 + 1 ) + \log_2( n_2 + 1 )$ by
 <span id="thm-9-2"></span>**Theorem 9.2.** *`MeldableHeap` realizes the
 priority queue with `push()`, `pop()`, `meld()` and `erase()` in
 $O( \log n )$ expected time and `top()` in $O( 1 )$ ([Morin 2013, Theorem
-10.2](Z-bibliography.md#ref-morin2013)).*
+10.2](Z-bibliography.md#ref-morin-cpp)).*
 
 *Proof.* Each of the four operations makes one merge of two trees of at
 most $n$ nodes ([Lemma 9.10](09-priority.md#lem-9-10)). $\square$
 
 The removal of the node $u$ of a handle ([Morin 2013, exercise
-10.8](Z-bibliography.md#ref-morin2013)) merges the two subtrees of $u$ and
+10.8](Z-bibliography.md#ref-morin-cpp)) merges the two subtrees of $u$ and
 hangs the result where $u$ was, since the order holds between the parent of
 $u$ and each node below $u$; the walk of the merge starts at the subtrees
 of $u$, with fewer than $n$ nodes.
@@ -760,9 +760,9 @@ of $u$, with fewer than $n$ nodes.
 ```
 
 The second least item ([Morin 2013, exercise
-10.9](Z-bibliography.md#ref-morin2013)) is the smaller of the two children
+10.9](Z-bibliography.md#ref-morin-cpp)) is the smaller of the two children
 of the root, which `secondTop()` gives in $O( 1 )$. The $k$ least items in
-order ([Morin 2013, exercise 10.10](Z-bibliography.md#ref-morin2013))
+order ([Morin 2013, exercise 10.10](Z-bibliography.md#ref-morin-cpp))
 come from `smallest(k)`, the algorithm of
 [Lemma 9.8](09-priority.md#lem-9-8) on the nodes instead of the places.
 Its heap of nodes holds at most $k + 1$ of them, since each step takes one
@@ -772,7 +772,7 @@ and puts two, and it costs $O( k \log k )$ time without changing the heap.
 --8<-- "generated/MeldableHeap-smallest.pseudo.md"
 
 This code differs from that of [Morin 2013,
-§10.2](Z-bibliography.md#ref-morin2013) in four points. First, the merge
+§10.2](Z-bibliography.md#ref-morin-cpp) in four points. First, the merge
 is a loop, with no recursion, which hangs each node by a pointer to the
 link that will hold it. A heap of $10^6$ items pushed in increasing order
 (whose expected depth is logarithmic, but whose worst depth is not) thus
@@ -785,7 +785,7 @@ and two heaps meld only if their allocators are equal: each node must go
 back to the allocator that gave it. Fourth, the items are moved, not
 copied, into the nodes and out of them.
 
-Two exercises of [Morin 2013, §10.3](Z-bibliography.md#ref-morin2013)
+Two exercises of [Morin 2013, §10.3](Z-bibliography.md#ref-morin-cpp)
 illustrate the meldable heap with a coin; we solve them in
 [Figure 9.12](09-priority.md#fig-9-12), with the coins written in its
 caption. Since the shape of the heap depends on the coins, the
@@ -1260,7 +1260,7 @@ a NaN, which has no place in the order, has one among the keys.
 The merge of $k$ sorted sequences extracts at each step the least of
 their first items. A heap of the $k$ first items does it with a `pop()` and
 a `push()`, up to $2 \log_2 k$ comparisons, as in [Morin 2013, exercise
-10.11](Z-bibliography.md#ref-morin2013) ([§9.4](09-priority.md#sec-9-4)).
+10.11](Z-bibliography.md#ref-morin-cpp) ([§9.4](09-priority.md#sec-9-4)).
 The *tree of losers* of a tournament ([Knuth 1998,
 §5.4.1](Z-bibliography.md#ref-knuth1998v3)) does it with half as many.
 `LoserTree<T,C>` has the $k$ players (the sequences) as the leaves of a
@@ -1502,7 +1502,7 @@ as the structure of heapsort, and its construction in linear time to
 [Floyd 1964](Z-bibliography.md#ref-floyd1964); the representation of a
 complete tree in a vector goes back to [Eytzinger
 1590](Z-bibliography.md#ref-eytzinger1590), as [Morin 2013,
-§10.3](Z-bibliography.md#ref-morin2013) recalls. The $d$-ary heap and the
+§10.3](Z-bibliography.md#ref-morin-cpp) recalls. The $d$-ary heap and the
 choice of $d$ for the shortest paths are due to [Johnson
 1975](Z-bibliography.md#ref-johnson1975b), the walk from the bottom up to
 [Floyd 1964](Z-bibliography.md#ref-floyd1964) and [Wegener
@@ -1518,7 +1518,7 @@ other meldable heaps are the leftist heaps ([Knuth 1998,
 [Sleator and Tarjan 1986](Z-bibliography.md#ref-sleator1986), and the
 Fibonacci and pairing heaps of [§9.7](09-priority.md#sec-9-7) and
 [§9.8](09-priority.md#sec-9-8), none of which is as simple as the
-randomized one ([Morin 2013, §10.3](Z-bibliography.md#ref-morin2013)). As for the heaps with decrease-key, the
+randomized one ([Morin 2013, §10.3](Z-bibliography.md#ref-morin-cpp)). As for the heaps with decrease-key, the
 Fibonacci heap is due to [Fredman and Tarjan
 1987](Z-bibliography.md#ref-fredman1987), the pairing heap to [Fredman,
 Sedgewick, Sleator and Tarjan 1986](Z-bibliography.md#ref-fredman1986),
@@ -1551,57 +1551,57 @@ reappear in [chapter 12](12-sort.md#ch-12).
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`). The first eleven are those of [Morin 2013,
-§10.3](Z-bibliography.md#ref-morin2013), in his order.
+§10.3](Z-bibliography.md#ref-morin-cpp), in his order.
 
 1. Illustrate the insertion of 7 and then of 3 into the binary heap that
    ends [Figure 9.3](09-priority.md#fig-9-3) ([Morin 2013, exercise
-   10.1](Z-bibliography.md#ref-morin2013)); the solution is
+   10.1](Z-bibliography.md#ref-morin-cpp)); the solution is
    [Figure 9.5](09-priority.md#fig-9-5). Test:
    `ods_ints.ods10.1.binary-heap`.
 2. Illustrate the next two removals, of 6 and of 8, from the binary heap
    that ends [Figure 9.4](09-priority.md#fig-9-4) ([Morin 2013, exercise
-   10.2](Z-bibliography.md#ref-morin2013)); the solution is
+   10.2](Z-bibliography.md#ref-morin-cpp)); the solution is
    [Figure 9.6](09-priority.md#fig-9-6). Test:
    `ods_ints.ods10.1.binary-heap`.
 3. Remove the item in the place $i$ of a binary heap in $O( \log n )$
    time, and explain why the operation is of little use ([Morin 2013,
-   exercise 10.3](Z-bibliography.md#ref-morin2013);
+   exercise 10.3](Z-bibliography.md#ref-morin-cpp);
    [Lemma 9.7](09-priority.md#lem-9-7)). Test:
    `ods_ints.ods.ex10.3.remove-place`.
 4. Give the places of the parent and of the $d$ children of the place $i$
    in the layout of Eytzinger of a complete $d$-ary tree ([Morin 2013,
-   exercise 10.4](Z-bibliography.md#ref-morin2013);
+   exercise 10.4](Z-bibliography.md#ref-morin-cpp);
    [Lemma 9.1](09-priority.md#lem-9-1)). Tests:
    `ods_ints.ods.ex10.3.remove-place`, `ch10.ex10.5`.
 5. Realize the $d$-ary heap, analyze its operations and compare it with
    the binary heap ([Morin 2013, exercise
-   10.5](Z-bibliography.md#ref-morin2013);
+   10.5](Z-bibliography.md#ref-morin-cpp);
    [Lemma 9.5](09-priority.md#lem-9-5)). Tests:
    `ods_ints.ods.ex10.5.dary-heap`, `ch10.ex10.6`.
 6. Illustrate the insertion of 17 and then of 82 into the meldable heap
    $h_1$ of [Figure 9.11](09-priority.md#fig-9-11), with a coin for the
-   random bits ([Morin 2013, exercise 10.6](Z-bibliography.md#ref-morin2013));
+   random bits ([Morin 2013, exercise 10.6](Z-bibliography.md#ref-morin-cpp));
    a solution is in [Figure 9.12](09-priority.md#fig-9-12). Test:
    `ods_ints.ods10.2.meldable-heap`.
 7. Illustrate the next two removals, of 4 and of 8, from the same heap
-   ([Morin 2013, exercise 10.7](Z-bibliography.md#ref-morin2013)); a
+   ([Morin 2013, exercise 10.7](Z-bibliography.md#ref-morin-cpp)); a
    solution is in [Figure 9.12](09-priority.md#fig-9-12). Test:
    `ods_ints.ods10.2.meldable-heap`.
 8. Remove the node $u$ from a meldable heap in $O( \log n )$ expected time
-   ([Morin 2013, exercise 10.8](Z-bibliography.md#ref-morin2013)). Test:
+   ([Morin 2013, exercise 10.8](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_ints.ods10.2.meldable-heap`.
 9. Find the second least item of a binary heap and of a meldable heap in
    constant time ([Morin 2013, exercise
-   10.9](Z-bibliography.md#ref-morin2013)). Tests:
+   10.9](Z-bibliography.md#ref-morin-cpp)). Tests:
    `ods_ints.ods.ex10.3.remove-place`, `ods_ints.ods10.2.meldable-heap`.
 10. Find the $k$-th least item of a binary heap or of a meldable heap in
     $O( k \log k )$ time, with the help of a second heap ([Morin 2013,
-    exercise 10.10](Z-bibliography.md#ref-morin2013);
+    exercise 10.10](Z-bibliography.md#ref-morin-cpp);
     [Lemma 9.8](09-priority.md#lem-9-8)). Test:
     `ods_ints.ods.ex10.10.k-smallest`.
 11. Merge $k$ sorted lists of $n$ items in all into one sorted list in
     $O( n \log k )$ time with a heap ([Morin 2013, exercise
-    10.11](Z-bibliography.md#ref-morin2013)); compare with the merge of the
+    10.11](Z-bibliography.md#ref-morin-cpp)); compare with the merge of the
     $k$ lists one after the other, $O( n k )$. Tests:
     `ods_ints.ods.ex10.11.k-way-merge`, `ch10.ex10.3`,
     `exam_collezionia.collezioni-10-heap-1-7-2`.

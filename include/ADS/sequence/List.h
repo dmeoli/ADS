@@ -65,9 +65,9 @@
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  * \see B. Stroustrup, The C++ Programming Language, 4th ed., Addison-Wesley,
  *      2013, section 17.5 (copy and move)
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 3.2 and
- *      exercises 3.5 to 3.13
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 3.2 and exercises
+ *      3.5 to 3.13
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

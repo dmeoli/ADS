@@ -70,8 +70,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 9.5 and
  *      18, https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 12.10
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 12.10
  * \see D. Konig, Grafok es matrixok, Matematikai es Fizikai Lapok 38,
  *      116-119, 1931
  * \see R. Seidel, On the all-pairs-shortest-path problem in unweighted

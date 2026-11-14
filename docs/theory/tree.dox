@@ -1097,9 +1097,8 @@
  \see R. E. Tarjan, R. F. Werneck, Dynamic trees in practice, ACM Journal
       of Experimental Algorithmics 14, article 4.5, 2009,
       doi:10.1145/1498698.1594231
- \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, chapters 6 to 9 and
-      14
+ \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+      https://opendatastructures.org/ods-cpp.pdf, chapters 6 to 9 and 14
  \see C. Martínez, S. Roura, Randomized binary search trees, Journal of the
       ACM 45(2), 288-323, 1998, doi:10.1145/274787.274812
  \see M. Pătraşcu, M. Thorup, The power of simple tabulation hashing,

@@ -43,9 +43,9 @@
  *
  * \see R. Seidel, C. R. Aragon, Randomized search trees, Algorithmica
  *      16(4-5), 464-497, 1996, doi:10.1007/BF01940876
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 7.2 and exercises 7.9 and 7.10,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 7.2 and exercises
+ *      7.9 and 7.10
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

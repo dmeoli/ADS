@@ -63,9 +63,9 @@
  *      267-285, 1982, doi:10.1007/BF00264354
  * \see M. H. Overmars, The Design of Dynamic Data Structures, Lecture Notes
  *      in Computer Science 156, Springer, 1983, doi:10.1007/BFb0014927
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, chapter 8 and exercises 8.8 to 8.10,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, chapter 8 and exercises 8.8
+ *      to 8.10
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

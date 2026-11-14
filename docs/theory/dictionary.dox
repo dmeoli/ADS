@@ -670,10 +670,11 @@
  keeps instead, on its walk down, the child 1 of the deepest node where
  the path of \f$ x \f$ goes to the child 0 while the child 1 is there, the
  root of the nearest larger keys, whose leftmost leaf it reaches in
- \f$ O( w ) \f$ more steps. `ListXFastTrie` (exercise 13.2) has no trie at all: its tables map
- each prefix to the smallest and the largest key that have it, which are all
- that the lemma needs, and a removal moves the smallest key of a prefix to
- the next key in the list, the keys of a prefix being consecutive in it.
+ \f$ O( w ) \f$ more steps. `ListXFastTrie` (exercise 13.2) has no trie at
+ all: its tables map each prefix to the smallest and the largest key that
+ have it, which are all that the lemma needs, and a removal moves the
+ smallest key of a prefix to the next key in the list, the keys of a prefix
+ being consecutive in it.
 
  <em>Lemma 12 (the search near the successor).</em> Let \f$ d( x ) \f$ be the
  difference between the successor of \f$ x \f$ and \f$ x \f$, \f$ 2^w \f$ if
@@ -876,8 +877,8 @@
  \see M. A. Martínez-Prieto, N. R. Brisaboa, R. Cánovas, F. Claude,
       G. Navarro, Practical compressed string dictionaries, Information
       Systems 56, 73-108, 2016, doi:10.1016/j.is.2015.08.008
- \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, chapters 4, 5 and 13
+ \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+      https://opendatastructures.org/ods-cpp.pdf, chapters 4, 5 and 13
  \see D. E. Willard, Log-logarithmic worst-case range queries are possible
       in space Theta(N), Information Processing Letters 17(2), 81-84,
       1983, doi:10.1016/0020-0190(83)90075-3

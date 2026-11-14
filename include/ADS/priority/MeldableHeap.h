@@ -40,9 +40,9 @@
  * while \f$ n \le 256 \f$. The operations are defined in
  * `MeldableHeap.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 10.2 and
- *      exercises 10.8 to 10.10
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 10.2 and exercises
+ *      10.8 to 10.10
  * \see A. Gambin, A. Malinowski, Randomized meldable priority queues,
  *      Proceedings of SOFSEM'98, Lecture Notes in Computer Science 1521,
  *      344-349, 1998, doi:10.1007/3-540-49477-4_26

@@ -93,7 +93,7 @@ modify it.
 <span id="rem-3-1"></span>**Remark 3.1.** The capacity of `ArrayStack` is
 fixed since this is the realization of [Montresor 2025,
 §4.3.2](Z-bibliography.md#ref-montresor2025). The realization of [Morin
-2013, §2.1](Z-bibliography.md#ref-morin2013) instead resizes the vector to
+2013, §2.1](Z-bibliography.md#ref-morin-cpp) instead resizes the vector to
 $2 n$ places when it is full and when $3 n$ does not exceed its capacity,
 which costs $O( 1 )$ amortized time per operation by an argument like that
 of [Lemma 3.1](03-stack.md#lem-3-1); `std::vector` with `push_back` and
@@ -329,7 +329,7 @@ is that of the dynamic storage allocation of [Knuth 1997,
 §2.2.3](Z-bibliography.md#ref-knuth1997). The amortized analysis of the
 enlargements is that of [Tarjan 1985](Z-bibliography.md#ref-tarjan1985),
 and it returns with the sequences that grow and shrink ([Morin 2013,
-§2.1](Z-bibliography.md#ref-morin2013)). The evaluation of the postfix
+§2.1](Z-bibliography.md#ref-morin-cpp)). The evaluation of the postfix
 expressions with a stack goes back to the compilers of the late fifties
 ([Samelson and Bauer 1960](Z-bibliography.md#ref-samelson1960)), and the
 shunting-yard algorithm to the first Algol 60 compiler ([Dijkstra

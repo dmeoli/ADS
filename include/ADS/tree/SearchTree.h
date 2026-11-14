@@ -79,9 +79,8 @@
  * \see R. E. Tarjan, Data Structures and Network Algorithms, SIAM, 1983,
  *      chapter 4 (the join of the Red-Black trees),
  *      doi:10.1137/1.9781611970265
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, sections 1.2.4 and
- *      6.2.1
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 1.2.4 and 6.2.1
  * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Just join for parallel
  *      ordered sets, Proceedings of the 28th ACM Symposium on Parallelism
  *      in Algorithms and Architectures (SPAA), 253-264, 2016,

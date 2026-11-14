@@ -42,9 +42,9 @@
  * level 3 while there are at most 256 strings. The operations are defined
  * in `BitmapTrie.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 13.1 and
- *      exercise 13.3
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 13.1 and exercise
+ *      13.3
  * \see E. Fredkin, Trie memory, Communications of the ACM 3(9), 490-499,
  *      1960, doi:10.1145/367390.367400
  * \see P. Bagwell, Ideal hash trees, Technical Report, EPFL, 2001

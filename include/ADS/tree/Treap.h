@@ -49,9 +49,9 @@
  *      Architectures (SPAA), 16-26, 1998, doi:10.1145/277651.277660
  * \see J. Vuillemin, A unifying look at data structures, Communications of
  *      the ACM 23(4), 229-239, 1980, doi:10.1145/358841.358852
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, section 7.2 and exercises 7.8, 7.10, 7.12 and 7.13,
- *      doi:10.15215/aupress/9781927356388.01
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 7.2 and exercises
+ *      7.8, 7.10, 7.12 and 7.13
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

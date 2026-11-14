@@ -38,8 +38,8 @@
  * the count of the keys) is checked in \f$ O( n ) \f$ time at the level 3
  * while \f$ n \le 256 \f$. The operations are defined in `YFastTrie.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, section 13.3
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, section 13.3
  * \see D. E. Willard, Log-logarithmic worst-case range queries are possible
  *      in space Theta(N), Information Processing Letters 17(2), 81-84,
  *      1983, doi:10.1016/0020-0190(83)90075-3

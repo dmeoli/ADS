@@ -62,9 +62,9 @@
  * \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
  *      to Algorithms, 3rd ed., MIT Press, 2009, section 17.4 (dynamic
  *      tables, the contraction at a quarter)
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, sections 2.1 and 2.2
- *      and exercises 2.1 and 2.2
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 2.1 and 2.2 and
+ *      exercises 2.1 and 2.2
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

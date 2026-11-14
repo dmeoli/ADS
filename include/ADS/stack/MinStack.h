@@ -22,8 +22,8 @@
  * their top is the least item, an \f$ O( n ) \f$ check. The operations are
  * defined in `MinStack.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, exercise 3.14
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 3.14
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -1270,8 +1270,8 @@
  \see K. Hanauer, M. Henzinger, C. Schulz, Recent advances in fully
       dynamic graph algorithms - a quick reference guide, ACM Journal of
       Experimental Algorithmics 27, 1-45, 2022, doi:10.1145/3555806
- \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, chapter 12
+ \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+      https://opendatastructures.org/ods-cpp.pdf, chapter 12
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File graph.dox ----------------------------*/

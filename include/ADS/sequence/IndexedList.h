@@ -29,8 +29,8 @@
  * rotations ensure that the items are where they should be (an audit). The
  * algorithms are defined in `IndexedList.tpp`.
  *
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, doi:10.15215/aupress/9781927356388.01, sections 1.2.1 and 1.2.2
+ * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
+ *      https://opendatastructures.org/ods-cpp.pdf, sections 1.2.1 and 1.2.2
  *      and exercises 2.5 and 2.6
  * \see J. Bentley, Programming Pearls, 2nd ed., Addison-Wesley, 2000,
  *      section 2.3 (the rotation by reversals and by cycles)

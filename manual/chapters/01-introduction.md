@@ -185,10 +185,10 @@ what a structure does, and an *implementation* (or realization) how it does
 it. There are typically several realizations of one interface, which differ
 in the cost of the operations, and choosing among them is the first
 decision in the use of a library ([Morin 2013,
-§1.2](Z-bibliography.md#ref-morin2013)). ADS has the interfaces of two
+§1.2](Z-bibliography.md#ref-morin-cpp)). ADS has the interfaces of two
 textbooks. Those of [Montresor 2025](Z-bibliography.md#ref-montresor2025)
 name the operations as its pseudocode does, and are the concepts of
-`ADS/ADT.h`. Those of [Morin 2013, §1.2](Z-bibliography.md#ref-morin2013)
+`ADS/ADT.h`. Those of [Morin 2013, §1.2](Z-bibliography.md#ref-morin-cpp)
 read the sequences by rank and the sets through the items they find, and
 are the concepts of `ADS/sequence/IndexedList.h` and
 `ADS/set/SetInterfaces.h`. [Table 1.1](01-introduction.md#tab-1-1) lists
@@ -199,7 +199,7 @@ executors of `ADS/parallel/Executor.h`) with their areas.
 <span id="tab-1-1"></span>**Table 1.1.** The concepts of the interfaces of
 chapter 1, their operations and the chapters of their realizations; M is
 [Montresor 2025](Z-bibliography.md#ref-montresor2025), O is [Morin
-2013](Z-bibliography.md#ref-morin2013).
+2013](Z-bibliography.md#ref-morin-cpp).
 
 | Concept | Interface | Operations | Source | Chapters |
 |-----------|------------|------------------------------|-------|-------|
@@ -216,7 +216,7 @@ chapter 1, their operations and the chapters of their realizations; M is
 ### 1.3.1 Stacks, queues and deques {#sec-1-3-1}
 
 A queue, in the wide sense of [Morin 2013,
-§1.2.1](Z-bibliography.md#ref-morin2013), is a collection to which items are
+§1.2.1](Z-bibliography.md#ref-morin-cpp), is a collection to which items are
 added and from which the next item is removed. Its *queueing discipline*
 decides which item is the next one. A first in, first out discipline (FIFO) removes the items in the order in which they were added, and gives
 the QUEUE of (1.2). A last in, first out discipline (LIFO) removes the
@@ -234,7 +234,7 @@ and `pop_front()` give a stack, and `push_back()` with `pop_front()` a
 queue.
 
 A stack is the "natural" structure of the nested computations, and [Morin 2013,
-exercises 1.2 and 1.3](Z-bibliography.md#ref-morin2013) make this precise.
+exercises 1.2 and 1.3](Z-bibliography.md#ref-morin-cpp) make this precise.
 A *Dyck word* is a sequence $w_1 , \ldots , w_n$ of $+1$ and $-1$ whose
 prefix sums $s_j = w_1 + \cdots + w_j$ are never negative. If we read $+1$ as a
 $\mathrm{push}$ and $-1$ as a $\mathrm{pop}$, $w$ becomes a sequence of
@@ -257,7 +257,7 @@ $\square$
 
 <span id="alg-1-1"></span>**Algorithm 1.1.** The Dyck words and the
 matched strings of brackets by a stack ([Morin 2013, exercises 1.2 and
-1.3](Z-bibliography.md#ref-morin2013)).
+1.3](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/StackAlgorithms-isDyckWord.pseudo.md"
 
@@ -307,7 +307,7 @@ $\mathrm{empty}( s ) = \mathrm{finished}( \mathrm{head}( s ) )$, which makes
 index of a vector, the address of a cell, a cursor in a vector of cells),
 and so does the cost of each operation, while (1.4) holds on all of them.
 
-The LIST of [Morin 2013, §1.2.2](Z-bibliography.md#ref-morin2013) reaches
+The LIST of [Morin 2013, §1.2.2](Z-bibliography.md#ref-morin-cpp) reaches
 the items by their *rank* instead. Its `get( i )` and `set( i , x )` read
 and write $x_i$. Its `add( i , x )` sets $x_{j+1} \gets x_j$ for $j = n - 1
 , \ldots , i$, then $x_i \gets x$ and $n \gets n + 1$, and its `remove( i
@@ -338,7 +338,7 @@ the first four of them, together with `TieredVector`, `SEList` and
 `XorList`. A test, `ods_lists.ods-1.2.interfaces`, checks these models at
 compile time and runs one function template on all the lists. Furthermore, the header
 has two rotations of a LIST, `rotateArray()` and `rotate()`, which
-solve [Morin 2013, exercises 2.5 and 2.6](Z-bibliography.md#ref-morin2013)
+solve [Morin 2013, exercises 2.5 and 2.6](Z-bibliography.md#ref-morin-cpp)
 and are described with the sequences in chapter [2](02-sequence.md#ch-2).
 
 ![Figure 1.1. A LIST of six items read by rank, `l[2]` reading `c` (in violet), and the same list after `insert(2, x)`, which writes `x` at the rank 2 (in orange) and moves the items from the rank 2 on by one rank; a DEQUE changes the two ends only.](../figures/intro-list.svg){#fig-1-1}
@@ -378,7 +378,7 @@ k )` removes $k$. Its axioms are those of (1.6) with `lookup()` in place of
 `contains()`, and both `lookup()` and `remove()` are total, i.e., the key
 need not be there.
 
-The USet of [Morin 2013, §1.2.3](Z-bibliography.md#ref-morin2013) has
+The USet of [Morin 2013, §1.2.3](Z-bibliography.md#ref-morin-cpp) has
 `size()` and three more operations. Its `insert( x )` (Morin's `add( x )`)
 adds $x$ unless an item equal to $x$ is there, and returns whether it did;
 `remove( x )` returns whether it removed an item equal to $x$; and `find(
@@ -387,7 +387,7 @@ without being identical. Suppose that a pair $( k , v )$ is equal to
 another when the keys are equal. Stored in a USet, it is found by
 $\mathrm{find}( ( k , \cdot ) )$ with any value, and the USet then serves
 as a dictionary. The SSet of [Morin 2013,
-§1.2.4](Z-bibliography.md#ref-morin2013) keeps items of a total order, and
+§1.2.4](Z-bibliography.md#ref-morin-cpp) keeps items of a total order, and
 adds the *successor search* of the least item $y \ge x$. This search is
 meaningful even when no item equals $x$; it is Morin's `find( x )` of an
 SSet, and `lowerBound( x )` in ADS, where `find( x )` keeps the meaning it
@@ -402,7 +402,7 @@ these operations. Both `insert()` and `remove()` give a `bool`, while `find()` a
 `lowerBound()` give something convertible to a pointer to a constant item,
 nil when there is none; `SSet` refines `USet`, i.e., an `SSet` is also a
 `USet`. Finally, a BAG is a USet that keeps all the items equal to one
-another ([Morin 2013, exercise 1.5](Z-bibliography.md#ref-morin2013)). Its
+another ([Morin 2013, exercise 1.5](Z-bibliography.md#ref-morin-cpp)). Its
 `insert( x )` always adds $x$, `find( x )` gives one of the items equal to
 $x$, and `findAll( x )` gives them all. Its realization `Bag` models
 `USet`, with an `insert()` that is always true
@@ -411,7 +411,7 @@ $x$, and `findAll( x )` gives them all. Its realization `Bag` models
 ## 1.4 Reference realizations {#sec-1-4}
 
 The simplest realizations of the USet and of the SSet keep the items in a
-vector, as [Morin 2013, exercise 1.6](Z-bibliography.md#ref-morin2013)
+vector, as [Morin 2013, exercise 1.6](Z-bibliography.md#ref-morin-cpp)
 suggests. They are rather "slow", but they are short enough to be evidently
 correct,
 and the tests use them as oracles for the faster ones. `ArrayUSet` keeps
@@ -426,7 +426,7 @@ gaps ([Figure 1.2](01-introduction.md#fig-1-2) and
 
 <span id="alg-1-2"></span>**Algorithm 1.2.** The removal from an
 `ArrayUSet` and the insertion into an `ArraySSet` ([Morin 2013, exercises
-1.6 and 1.7](Z-bibliography.md#ref-morin2013)).
+1.6 and 1.7](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/SetInterfaces-ArrayUSet-remove.pseudo.md"
 
@@ -444,7 +444,7 @@ not move it at all when the item removed is the last one.
 at the level 3 ([§1.7](01-introduction.md#sec-1-7)); both classes give their
 vector, read-only, by `items()`. Hence we can make `lowerBound(
 x )` a binary search, which [Morin 2013, exercise
-1.7](Z-bibliography.md#ref-morin2013) suggests among the improvements of
+1.7](Z-bibliography.md#ref-morin-cpp) suggests among the improvements of
 the realization on a vector, and `find( x )` is a `lowerBound( x )`
 followed by a test of equality. We search for the place of an insertion in
 the same way. Then we move the items after that place by one place, as a
@@ -475,7 +475,7 @@ comparison ([Lemma 1.5](01-introduction.md#lem-1-5)). Also, the vector is a
 time per insertion ([Lemma 3.1](03-stack.md#lem-3-1)). $\square$
 
 A BAG is a USet of groups, as [Morin 2013, exercise
-1.5](Z-bibliography.md#ref-morin2013) suggests. `Bag` keeps the number $n$
+1.5](Z-bibliography.md#ref-morin-cpp) suggests. `Bag` keeps the number $n$
 of its items and a hash table $G$ (a `FlatHashTable`, chapter
 [7](07-dictionary.md#ch-7)) from an item to the vector of the items equal to
 it, in the order of their insertions. Its invariant is that no group is
@@ -493,7 +493,7 @@ and `empty()`, which take $O( 1 )$ time.
 
 <span id="alg-1-3"></span>**Algorithm 1.3.** The operations of `Bag`, with
 $G$ the table of the groups ([Morin 2013, exercise
-1.5](Z-bibliography.md#ref-morin2013)).
+1.5](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/Bag-insert.pseudo.md"
 
@@ -644,7 +644,7 @@ k )$ space of $k$ stacks of $n$ items in all ([§3.4](03-stack.md#sec-3-4)),
 $g = O( f )$ means that there are $c > 0$ and $z$ such that $g( n_1 ,
 \ldots , n_k ) \le c f( n_1 , \ldots , n_k )$ whenever $g( n_1 , \ldots ,
 n_k ) \ge z$. This agrees with (1.10) when $f$ increases, while other texts
-define it otherwise ([Morin 2013, §1.3.3](Z-bibliography.md#ref-morin2013)).
+define it otherwise ([Morin 2013, §1.3.3](Z-bibliography.md#ref-morin-cpp)).
 
 Two costs of the same order cannot be ranked by their orders, since the
 constants hidden by (1.10) depend on the machine. Two costs of different
@@ -711,7 +711,7 @@ their seeds.
 
 We count the costs in the *word-RAM* with words of $w$ bits ([Hagerup
 1998](Z-bibliography.md#ref-hagerup1998); [Morin 2013,
-§1.4](Z-bibliography.md#ref-morin2013)). This is a random access machine
+§1.4](Z-bibliography.md#ref-morin-cpp)). This is a random access machine
 ([Cook and Reckhow 1973](Z-bibliography.md#ref-cook1973)) whose memory is a
 sequence of cells of one word each, any of which is read or written in
 constant time. All the operations on words take constant time, i.e., the
@@ -794,7 +794,7 @@ of messages) in chapters [24](24-concurrent.md#ch-24) to
 ## 1.7 Correctness, time and space {#sec-1-7}
 
 Three properties of a realization matter ([Morin 2013,
-§1.5](Z-bibliography.md#ref-morin2013)). The first is *correctness*, i.e.,
+§1.5](Z-bibliography.md#ref-morin-cpp)). The first is *correctness*, i.e.,
 that it realizes its interface; the second is the *time* of its operations,
 and the third its *space*, both of which should be as small as possible.
 Of course, the three may conflict, since a structure may be faster in more space, or
@@ -882,7 +882,7 @@ the operation.
 ### 1.7.2 Running times {#sec-1-7-2}
 
 We meet three kinds of bounds on the running time ([Morin 2013,
-§1.5](Z-bibliography.md#ref-morin2013)). A *worst-case* bound $f( n )$ holds
+§1.5](Z-bibliography.md#ref-morin-cpp)). A *worst-case* bound $f( n )$ holds
 for each single operation, which never takes longer. An *amortized* bound
 $f( n )$ holds on average over each sequence of operations: any sequence of
 $m$ operations that starts from an empty structure takes at most $m f( n )$
@@ -1079,7 +1079,7 @@ The library has two levels, written to be read and used side by side. At the
 *textbook* level, ADS realizes each structure in the form of a textbook. Our
 main one is [Montresor 2025](Z-bibliography.md#ref-montresor2025), whose
 exercises are tests of the library, followed by [Morin
-2013](Z-bibliography.md#ref-morin2013), [Knuth
+2013](Z-bibliography.md#ref-morin-cpp), [Knuth
 1997](Z-bibliography.md#ref-knuth1997), [Sedgewick
 1998](Z-bibliography.md#ref-sedgewick1998) and [Cormen et al.
 2022](Z-bibliography.md#ref-cormen2022) for what that book does not cover.
@@ -1197,7 +1197,7 @@ solved by a test of the library, close the chapter.
 
 In [Table 1.4](01-introduction.md#tab-1-4) we give the costs of the operations
 of the realizations of the LIST, of the USet and of the SSet that
-correspond to those of [Morin 2013, §1.7](Z-bibliography.md#ref-morin2013),
+correspond to those of [Morin 2013, §1.7](Z-bibliography.md#ref-morin-cpp),
 as their headers state them and their chapters prove them. [Table
 1.5](01-introduction.md#tab-1-5) then maps each class of the library to the
 chapter that describes it, one row per header, and [Table
@@ -1216,7 +1216,7 @@ their files `impl/` to hold the operations on their nodes.
 
 <span id="tab-1-4"></span>**Table 1.4.** The costs of the realizations of the
 LIST, of the USet and of the SSet that correspond to those of [Morin 2013,
-§1.7](Z-bibliography.md#ref-morin2013); A marks an amortized bound, E an
+§1.7](Z-bibliography.md#ref-morin-cpp); A marks an amortized bound, E an
 expected one, $b$ is the size of a block and $w$ the length of a word, and
 for the USet and the SSet the realizations are those of the DICTIONARY on
 the same representation.
@@ -1549,7 +1549,7 @@ the concepts of C++20 rest is that of [Musser and Stepanov
 1989](Z-bibliography.md#ref-musser1989), and the design of libraries of
 concepts that of [Sutton and Stroustrup
 2012](Z-bibliography.md#ref-sutton2012). The interfaces LIST, USet and SSet
-of [Morin 2013, §1.2](Z-bibliography.md#ref-morin2013) are simplified
+of [Morin 2013, §1.2](Z-bibliography.md#ref-morin-cpp) are simplified
 versions of those of the Java Collections Framework; ADS names them as the
 standard library of C++ does. Our contracts follow [Hoare
 1969](Z-bibliography.md#ref-hoare1969) and [Meyer
@@ -1576,7 +1576,7 @@ Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
 
 1. Solve the nine problems on the lines of a text of [Morin 2013, exercise
-   1.1](Z-bibliography.md#ref-morin2013), each with the interface it calls
+   1.1](Z-bibliography.md#ref-morin-cpp), each with the interface it calls
    for. They are (i) the lines in the reverse order, with a stack; (ii) the
    blocks of 50 lines each reversed, keeping at most 50 lines, with a stack
    of 50 places; (iii) at each blank line, the line 42 lines before it,
@@ -1589,29 +1589,29 @@ Each exercise names the test of the library that solves it (run it with
    random queue. Test: `ods_lists.ods-ex1.1.lines`.
 2. Describe the relation between the Dyck words and the operations
    `push()` and `pop()` of a stack ([Morin 2013, exercise
-   1.2](Z-bibliography.md#ref-morin2013); [Lemma
+   1.2](Z-bibliography.md#ref-morin-cpp); [Lemma
    1.2](01-introduction.md#lem-1-2)). Test: `ods_lists.ods-ex1.2.dyck`.
 3. Decide with a stack whether a string of $n$ brackets `()`, `[]` and
    `{}` is matched, in $O( n )$ time ([Morin 2013, exercise
-   1.3](Z-bibliography.md#ref-morin2013)). Test:
+   1.3](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex1.3.matched`.
 4. Reverse the order of the items of a stack that has only `push()` and
    `pop()`, using a queue and nothing else ([Morin 2013, exercise
-   1.4](Z-bibliography.md#ref-morin2013)). Test:
+   1.4](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex1.4.reverse-stack`.
 5. Using a USet, realize a BAG, whose `find( x )` gives an item equal to
    $x$ and whose `findAll( x )` gives all of them ([Morin 2013, exercise
-   1.5](Z-bibliography.md#ref-morin2013)). Test: `ods_lists.ods-ex1.5.bag`.
+   1.5](Z-bibliography.md#ref-morin-cpp)). Test: `ods_lists.ods-ex1.5.bag`.
 6. Write simple realizations of the LIST, of the USet and of the SSet on a
    vector, to be used as oracles for the faster ones ([Morin 2013, exercise
-   1.6](Z-bibliography.md#ref-morin2013)). Test:
+   1.6](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex1.6.reference-sets`; the LIST on a vector is the
    `ArraySequence` of chapter [2](02-sequence.md#ch-2), checked by
    `ods_lists.ods-2.1.array-stack`.
 7. Improve the realizations of the previous exercise, i.e., the `find()`
    of the SSet by a binary search, and the insertions and the removals by
    moving the items as one block ([Morin 2013, exercise
-   1.7](Z-bibliography.md#ref-morin2013)). Test:
+   1.7](Z-bibliography.md#ref-morin-cpp)). Test:
    `ods_lists.ods-ex1.6.reference-sets`, which checks `ArraySSet` against
    `std::set`. Furthermore, the faster LISTs of chapter [2](02-sequence.md#ch-2), whose
    insertions and removals take $O( 1 + \min\{ i , n - i \} )$ amortized
