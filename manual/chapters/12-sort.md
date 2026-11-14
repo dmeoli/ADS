@@ -359,9 +359,11 @@ right and to the left, and a turtle thus reaches the front in one pass.
 `oddEvenSort()`, the odd-even transposition sort of [Habermann
 1972](Z-bibliography.md#ref-habermann1972), compares the pairs
 $( 2 i , 2 i + 1 )$ and then the pairs $( 2 i + 1 , 2 i + 2 )$ in turns.
-Within a round the comparisons are independent, which makes it a sort for $n$
-processors on a line, and $n$ rounds suffice (it can report the rounds it
-made). `combSort()` of [Dobosiewicz 1980](Z-bibliography.md#ref-dobosiewicz1980)
+Within a phase the comparisons are independent, which makes it a sort for $n$
+processors on a line; $n$ phases suffice ([Habermann
+1972](Z-bibliography.md#ref-habermann1972)), i.e., $\lceil n / 2 \rceil$ rounds
+of an even and an odd phase, and the function makes one more round, with no
+swap, to find the vector sorted (it can report the rounds it made). `combSort()` of [Dobosiewicz 1980](Z-bibliography.md#ref-dobosiewicz1980)
 compares the items at a gap that shrinks by the factor $1.3$ at each pass
 ($g \gets \lfloor 10 g / 13 \rfloor$), which moves the turtles far, and
 ends as a bubble sort with gap 1. It is near $O( n \log n )$ in practice,
@@ -1185,7 +1187,7 @@ goes three-way in one pass. The keys equal to $p$ are not written, and the
 gap they leave between the two sides is filled with $p$ at the end;
 meanwhile the minimum and the maximum of each side are kept, and a side of
 one key is thus done. Elsewhere a second pass puts the keys equal to $p$ apart. Hence
-$k$ distinct keys take $O( n \log k )$. Past $2 \lfloor \log_2 n \rfloor$
+$k$ distinct keys take $O( n \log k )$. Past $2 ( \lfloor \log_2 n \rfloor + 1 )$
 levels a part is sorted by heapsort, as in the introsort of [Musser
 1997](Z-bibliography.md#ref-musser1997), which bounds the worst case by $O(
 n \log n )$. From 4096 integers on AVX-512, if a sample of 64 keys spans
@@ -1256,7 +1258,7 @@ together, and their loads overlap:
 ![Figure 12.6. The classification of `sampleSort()` with $k = 8$ buckets and the splitters $10 , 20 , \ldots , 70$ laid out as a tree in $t[ 1 .. 7 ]$ (the indices above the nodes): $x = 55$ follows $j \gets 2 j + [ t_j \le x ]$ along the nodes in violet and lands in the bucket $13 - 8 = 5$, the number of splitters not larger than 55.](../figures/sort-samplesort.svg){#fig-12-6}
 
 The number of buckets aims at buckets of 16 items after the last level:
-$k = 2^\ell$ with $\ell = \lfloor \log_2 ( n / 16 ) \rfloor$ if it is at most
+$k = 2^\ell$ with $\ell = \lfloor \log_2 ( n / 16 ) \rfloor$ (but at least 1) if it is at most
 8, half of it (rounded up) if at most 16 (two levels then split alike),
 and 8 otherwise. If the sample has equal splitters, they are kept once and
 each bucket $i > 0$ is split into the items equal to $s_i$, which are done,
@@ -1435,23 +1437,53 @@ avoids both. Furthermore, the bound of
 
 ![Figure 12.7. `heapsort()` on $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin 2013]): on the left the max-heap built by `heapBuild()`, on the right the same heap as a vector and the vector after the first 1, 2, 3 and 7 extractions; the maximum of the heap is in violet, and the sorted suffix, which the extractions fill from the right, in orange.](../figures/sort-heapsort.svg){#fig-12-7}
 
-<span id="lem-12-16"></span>**Lemma 12.16.** *The heapsort of [Morin
-2013](Z-bibliography.md#ref-morin-cpp) on a vector in increasing order, and
-`heapsort()` on a vector in decreasing order, make at least
-$2 n \log_2 n - O( n )$ comparisons (exercise 11.8 there).*
+<span id="lem-12-16"></span>**Lemma 12.16.** *For each $n$ there is an
+input of $n$ distinct items on which `heapsort()` makes at least
+$2 n \log_2 n - O( n )$ comparisons, and likewise for the heapsort of
+[Morin 2013](Z-bibliography.md#ref-morin-cpp), with the order reversed
+(exercise 11.8 there).*
 
-*Proof (incomplete).* The vector is already a heap of the kind of the
-sort, and the construction moves nothing. At each extraction the item moved
-to the root is the last leaf, and each level it sinks costs two
-comparisons, while a heap of $i$ items has $\lfloor \log_2 i \rfloor$
-levels below the root, with $\sum_{i \le n} 2 \lfloor \log_2 i \rfloor
-\ge 2 \log_2 n! - 2 n = 2 n \log_2 n - O( n )$ by [Lemma
-12.3](12-sort.md#lem-12-3). The item does not always sink to the bottom
-level, though (on the decreasing input of `heapsort()` it may stop several
-levels above it), and the lemma needs the levels missed over all the
-extractions to be $O( n )$. We have not proved this step: we only measured
-it, about $0.66 \, n$ levels missed for $n$ up to $2 \cdot 10^4$, and the
-test below checks the resulting count. $\square$
+*Proof.* We build the input by running the sort backwards, as a max-heap
+$H_n$ that `heapBuild()` leaves as it is (no item is larger than its
+parent), so that the sort replays the extractions chosen below. Let $H_1$
+be one item, and let $H_{i-1}$, a max-heap of $i - 1$ items, be built.
+Its least item $x$ lies in a leaf $p$, at the depth
+$k \ge \lfloor \log_2 ( i - 1 ) \rfloor - 1$, since the leaves of a heap
+lie on its last two levels; let $v_0 , \ldots , v_k = p$ be the path from
+the root to $p$. The heap $H_i$ has a new item $M$, larger than all the
+others, at the root, the item of $v_{j-1}$ in $H_{i-1}$ at $v_j$ for
+$1 \le j \le k$, the item $x$ at the new last place $i - 1$, and the items
+of $H_{i-1}$ elsewhere. It is a max-heap: along the path each item moved
+down lies under one not smaller, the children of $v_j$ off the path were
+already below the item now at $v_j$, and $x$, the least item, is under
+any parent. The extraction from $H_i$ swaps $M$ with $x$, and then
+`maxHeapRestore()` on $i - 1$ items finds at each $v_j$, $j < k$, that the
+larger child is $v_{j+1}$, since its item was the parent in $H_{i-1}$ of
+the other child, and that it is larger than $x$, a descendant of it in
+$H_{i-1}$; at $p$, a leaf, it stops. Hence the extraction leaves
+$H_{i-1}$, and it makes at least $2 k - 1$ comparisons (two at each $v_j$,
+$j < k$, but at most one node with a single child). Summing over
+$i = 2 , \ldots , n$, with [Lemma 12.3](12-sort.md#lem-12-3),
+
+$$
+\sum_{m=1}^{n-1} \bigl( 2 \lfloor \log_2 m \rfloor - 3 \bigr) \ge
+2 \log_2 ( n - 1 )! - 5 n = 2 n \log_2 n - O( n ) .
+$$
+
+The heapsort of Morin, on a min-heap with the result reversed, is the same
+with the order of the items reversed. $\square$
+
+On this input the sort phase walks almost to the bottom of the heap at
+each extraction. The average over the inputs is of the same order:
+[Schaffer and Sedgewick 1993](Z-bibliography.md#ref-schaffer1993), who
+analyse the heapsort of Williams with Floyd's construction, i.e., our
+`heapsort()`, show that it makes about $2 n \log_2 n$ comparisons on
+average, and about $n \log_2 n$ in the variant of Floyd that sinks the
+item to the bottom and then lifts it (the bottom-up heapsort below). The
+inputs in order, increasing for the sort of Morin and decreasing for
+`heapsort()`, are heaps already, and their sifts stop somewhat above the
+bottom: we measured about $0.66 \, n$ levels missed in all for $n$ up to
+$2 \cdot 10^4$, which the count of the test below includes.
 
 The test `ods_ints.ods.ex11.8.heapsort-worst` checks the count against
 $2 n \log_2 n - 4 n$ for both sorts, on $n$ up to $10^5$. The heap of
