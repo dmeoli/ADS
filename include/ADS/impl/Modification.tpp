@@ -723,8 +723,8 @@ void coalesceRun( std::span< const variant_t< L > > R ,
    if( key )
     at.emplace( *key , c );
    }
-  std::visit( [ & ]( const auto & e ) { pushNet< L >( chains[ c ].net , e ); } ,
-              x );
+  std::visit( [ & ]( const auto & e ) {
+   pushNet< L >( chains[ c ].net , e ); } , x );
   }
  for( auto & ch : chains )
   for( auto & y : ch.net )

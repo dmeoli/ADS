@@ -625,7 +625,9 @@ struct Direct {
  /// `o.mask()`
  template< class O >
   requires masked< O >
- static std::uint64_t mask( const O & o ) { return( std::uint64_t( o.mask() ) ); }
+ static std::uint64_t mask( const O & o ) {
+  return( std::uint64_t( o.mask() ) );
+  }
  };
 
 /// the observer `O` called through the adapter `A`, an argument of `Static`
@@ -1631,6 +1633,24 @@ class Batch {
 
  /// closes the batch: the outermost one sends the events, coalesced;
  /// idempotent
+ ///
+ /// In pseudocode (beyond the book), with \f$ d \f$ the depth of the
+ /// batches, \f$ B \f$ the events collected and \f$ M_o \f$ the kinds that
+ /// the observer \f$ o \f$ wants:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{close}() \cr
+ /// 2 & \quad d \gets d - 1;\ \textbf{if}\ d > 0\ \textbf{then}
+ ///     \ \textbf{return} \cr
+ /// 3 & \quad C \gets \mathrm{coalesce}( B );\ B \gets \emptyset \cr
+ /// 4 & \quad \textbf{foreach}\ \text{observer } o\ \textbf{do} \cr
+ /// 5 & \qquad C_o \gets \text{the events of } C \text{ whose kind is in }
+ ///     M_o \cr
+ /// 6 & \qquad \textbf{if}\ C_o \ne \emptyset\ \textbf{then}
+ ///     \ o.\mathrm{group\_begin}();\ o.\mathrm{on}( C_o );
+ ///     \ o.\mathrm{group\_end}()
+ /// \end{array}}
+ /// \f]
  void close( void ) {
   if( f_s ) {
    S * s = std::exchange( f_s , nullptr );

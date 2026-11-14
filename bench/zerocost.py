@@ -3,13 +3,13 @@
 #                               zerocost.py                                   #
 #                                                                             #
 # The check that a structure which tells its changes costs nothing when no    #
-# one listens, by counts and by code, never by times: it compiles            #
+# one listens, by counts and by code, never by times: it compiles             #
 # bench/zerocost.cpp and bench/zerocost_asm.cpp with each compiler (g++ and   #
 # clang++ when found) at -O2, counts by callgrind the instructions of one     #
 # change of each variant (those of n and 2 n changes, the difference over n), #
 # twice for the plain variant (the two counts must be equal), disassembles    #
 # the functions of zerocost_asm.cpp by objdump and compares each with its     #
-# reference byte by byte, relocations included, and prints the table in      #
+# reference byte by byte, relocations included, and prints the table in       #
 # Markdown. The counts do not depend on the load of the machine.              #
 #                                                                             #
 #   python3 bench/zerocost.py [ --cxx g++ clang++ ] [ -n 100000 ]             #

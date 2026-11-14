@@ -213,7 +213,9 @@ struct KindSpan {
  std::vector< std::vector< Ins > > runs;
  std::vector< Era > erased;
  void on( const Ins & e ) { runs.push_back( { e } ); }
- void on( std::span< const Ins > s ) { runs.emplace_back( s.begin() , s.end() ); }
+ void on( std::span< const Ins > s ) {
+  runs.emplace_back( s.begin() , s.end() );
+  }
  void on( const Era & e ) noexcept { erased.push_back( e ); }
  };
 
@@ -297,7 +299,8 @@ struct SumIncremental {
 
 /// the sum of the values of the live items, from the last values seen
 struct SumScratch {
- std::vector< std::optional< int > > v = std::vector< std::optional< int > >( 8 );
+ std::vector< std::optional< int > > v =
+  std::vector< std::optional< int > >( 8 );
  bool broken = false;
  void on( const Ins & e ) { v[ std::size_t( e.h ) ] = e.value; }
  void on( const Era & e ) noexcept { v[ std::size_t( e.h ) ].reset(); }
@@ -347,14 +350,16 @@ ADS_TEST( "mod-events" )
  static_assert( mod::effects_of< int > == mod::effect::all );
  static_assert( mod::role_of< Ins > == mod::Role::Insert );
  static_assert( mod::role_of< int > == mod::Role::Other );
- static_assert( mod::must_not_throw< Era > && mod::must_not_throw< mod::Rebuilt > );
+ static_assert( mod::must_not_throw< Era > &&
+                mod::must_not_throw< mod::Rebuilt > );
  static_assert( mod::must_not_throw< mod::Replaced< mod::Cost > > );
  static_assert( mod::must_not_throw< mod::BulkErased< int > > );
  static_assert( ! mod::must_not_throw< Ins > && ! mod::must_not_throw< KC > );
  static_assert( sizeof( mod::Inserted< int , int > ) == 2 * sizeof( int ) );
  static_assert( mod::index_v< KC , Events > == 2 );
  static_assert( mod::index_v< double , Events > == Events::size );
- static_assert( mod::contains_v< Sh , Events > && ! mod::contains_v< int , Events > );
+ static_assert( mod::contains_v< Sh , Events > &&
+                ! mod::contains_v< int , Events > );
  static_assert( std::is_same_v< mod::variant_t< mod::list< int , char > > ,
                                 std::variant< int , char > > );
  static_assert( mod::invertible< Ins > && mod::invertible< Sh > );
@@ -399,7 +404,8 @@ ADS_TEST( "mod-observer-parts" )
  static_assert( mod::groups< Grouped > && mod::groups< PlainGrouped > &&
                 ! mod::groups< Rec > );
  static_assert( mod::refuses< Refuser , KC > && ! mod::refuses< Rec , KC > );
- static_assert( mod::auditable< Auditor , KN > && ! mod::auditable< Rec , KN > );
+ static_assert( mod::auditable< Auditor , KN > &&
+                ! mod::auditable< Rec , KN > );
  static_assert( mod::masked< Masked > && ! mod::masked< Rec > );
  static_assert( mod::lazy< SumScratch > && ! mod::lazy< Rec > );
  static_assert( mod::observer_of< Rec , Events > &&
