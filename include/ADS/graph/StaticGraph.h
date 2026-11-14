@@ -77,13 +77,6 @@
 #include <variant>
 #include <vector>
 
-/// a hint to bring the line of \f$ p \f$ into the cache, or nothing
-#if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_GRAPH_PREFETCH( p ) __builtin_prefetch( ( const void * )( p ) )
-#else
- #define ADS_GRAPH_PREFETCH( p ) ( ( void ) 0 )
-#endif
-
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/

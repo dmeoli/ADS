@@ -138,6 +138,17 @@ struct StdQueue {
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+// StaticGraph.h defines no macro of its own: the hint of prefetch that it
+// defined, used nowhere and not guarded, is gone
+ADS_TEST( "static-graph-macros" )
+{
+#if defined( ADS_GRAPH_PREFETCH )
+ CHECK( false );
+#else
+ CHECK( true );
+#endif
+ }
+
 // the graph in compressed rows against ArrayGraph: the rows sorted by
 // head, parallel edges kept, an unoriented edge both ways, the transpose,
 // a relabelling by bfsOrder() that keeps the degrees, the empty graph, an

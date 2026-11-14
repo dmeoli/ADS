@@ -2555,6 +2555,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- StaticGraph.h defined the macro ADS_GRAPH_PREFETCH, not guarded by #ifndef
+  and used by no code of the library; with no measure to argue a prefetch in
+  the scans of the rows, it is removed, and the chapter of the manual no
+  longer describes it; the test engineered_graph static-graph-macros
+
 - the postcondition of RemUnionFind::merge(), find( x ) == find( y ) at the
   level 2, halved the paths as a side effect, so that the contracts changed
   the forest that they checked; it now climbs to the roots without changing
