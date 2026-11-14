@@ -18,6 +18,15 @@
  * defined. They are details of the implementation, out of the API
  * reference, and their arithmetic is on the theory page of the area.
  *
+ * Two attributes have the same fate: `ADS_NO_UNIQUE_ADDRESS`, the
+ * `[[no_unique_address]]` of C++20 under the name that MSVC honours
+ * (`[[msvc::no_unique_address]]`, since MSVC accepts the standard spelling
+ * and ignores it), so that an empty member takes no storage with every
+ * compiler; and `ADS_COLD_PATH`, a function that is never inlined and is
+ * laid out away from the hot code (`[[gnu::cold, gnu::noinline]]`, the
+ * `noinline` of MSVC), which keeps the rare path of an operation, e.g.,
+ * the notification of its observers, out of the code of the common one.
+ *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
  *         Università di Pisa \n
@@ -45,6 +54,23 @@
 #if defined( _MSC_VER ) && !defined( __clang__ )
  #include <cstdlib>
  #include <intrin.h>
+#endif
+
+/// an empty member that takes no storage, with every compiler
+#if defined( _MSC_VER ) && !defined( __clang__ )
+ #define ADS_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+ #define ADS_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
+
+/// a function of a rare path: never inlined, laid out away from the hot
+/// code
+#if defined( __GNUC__ ) || defined( __clang__ )
+ #define ADS_COLD_PATH [[gnu::cold , gnu::noinline]]
+#elif defined( _MSC_VER )
+ #define ADS_COLD_PATH __declspec( noinline )
+#else
+ #define ADS_COLD_PATH
 #endif
 
 /*--------------------------------------------------------------------------*/
