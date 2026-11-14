@@ -396,6 +396,7 @@ beyond  sequence-order      ordine di una sequenza
 beyond  sequence-sorting    natural merge sort, bubble sort
 beyond  sequence-merge-dedup fusione ed eliminazione dei duplicati
 beyond  stack-algorithms    palindromi, ordinamento di una pila
+beyond  stack-sort-passes   ordinamento di una pila in n - 1 passate
 beyond  string-matching     ricerca ingenua e KMP
 beyond  list-exercises      esercizi su liste
 beyond  even-odd-strings    stringhe pari e dispari

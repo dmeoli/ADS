@@ -2555,6 +2555,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- sortStack() made n passes, while the lemma of chapter 3 of the manual and
+  of the theory of the stacks proves that n - 1 sort the stack, the last one
+  redundant; it now makes n - 1, as its pseudocode, the header, the theory
+  and the chapter say; the test beyond stack-sort-passes counts the pushes
+
 - ArrayQueue had the implicit move constructor and assignment of its
   members, so that a queue moved from kept its size and its capacity with no
   vector, empty() false and dequeue() and top() reading through a null

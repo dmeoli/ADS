@@ -11,8 +11,8 @@
  *   recursion: a pass pops two items, pushes back the larger, makes a pass
  *   on the rest recursively and pushes the smaller on top, so that the
  *   largest item sinks to the bottom and the smaller ones rise by one place;
- *   \f$ n \f$ passes sort the stack, the least on top, in
- *   \f$ O( n^2 ) \f$;
+ *   \f$ n - 1 \f$ passes sort the stack, the least on top, in
+ *   \f$ \Theta( n^2 ) \f$;
  * - `removeGreater()`, which removes the items larger than \f$ k \f$
  *   keeping the order of the others, with an auxiliary stack;
  * - `forEachBottomUp()`, which visits the items from the bottom to the top
@@ -103,7 +103,7 @@ inline bool isPalindrome( const std::string & s );
 
 /// sorts \f$ s \f$ with the least item on top
 ///
-/// In pseudocode (section 4.3.1, the bubble sort on a stack), \f$ n \f$
+/// In pseudocode (section 4.3.1, the bubble sort on a stack), \f$ n - 1 \f$
 /// passes, each carrying the largest item it meets to the bottom:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
@@ -116,7 +116,7 @@ inline bool isPalindrome( const std::string & s );
 ///     \cr
 /// 6 & \quad \mathrm{pass}( s );\ \mathrm{push}( s , \min( a , b ) ) \cr
 /// 7 & \textbf{procedure}\ \mathrm{sortStack}( s ) \cr
-/// 8 & \quad \textbf{for}\ k \gets 1\ \textbf{to}\ n\ \textbf{do}
+/// 8 & \quad \textbf{for}\ k \gets 1\ \textbf{to}\ n - 1\ \textbf{do}
 ///     \ \mathrm{pass}( s )
 /// \end{array}}
 /// \f]

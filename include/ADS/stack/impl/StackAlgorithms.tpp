@@ -129,7 +129,7 @@ template< Stack S >
 void sortStack( S & s )
 {
  const long n = detail::stackSize( s );
- for( long k = n ; k > 0 ; --k ) detail::sinkPass( s );
+ for( long k = n ; k > 1 ; --k ) detail::sinkPass( s );   // n - 1 passes
  ADS_AUDIT( detail::risingFromTop( detail::stackItems( s ) ) &&
             ( detail::stackSize( s ) == n ) );
  }
