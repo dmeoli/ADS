@@ -141,7 +141,7 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `MPSCQueue` | many producers, one consumer | wait-free push but for the allocation of a block | $O( 1 )$ amortized, no read-modify-write but per block |
 | `MPSCInbox` | many producers, one consumer | lock-free push, wait-free take | one CAS per push, one exchange per take, plus $O( k )$ |
 | `MPMCQueue` | many producers, many consumers | lock-free but for a thread stopped between claim and publication | one CAS per operation without contention |
-| `WorkStealingDeque` | one owner, many thieves | wait-free push, lock-free take and steal | $O( 1 )$ amortized for the owner, a CAS only on the last item; one per steal |
+| `WorkStealingDeque` | one owner, many thieves | wait-free calls, a steal may fail (abort); retried steals lock-free | $O( 1 )$ amortized for the owner, a CAS only on the last item; one per steal |
 | `ConcurrentUnionFind` | any | lock-free | $O( \log_{2 + m / n} n )$ amortized on one thread |
 | `ConcurrentCuckooTable` | any | blocking (a lock per region), lookups without locks for atomic keys and values | $O( 1 )$ expected, $O( 1 )$ amortized for the doublings |
 | `ConcurrentFlatTable` | any | wait-free lookups but across a growth, insertions blocking only during a growth | $O( 1 )$ expected, $O( 1 )$ amortized for the growths; no removals |
@@ -168,8 +168,7 @@ writes the head $h$; each index is thus an atomic written with release and
 read with acquire, and no lock is needed (the queue of [Lamport
 1983](Z-bibliography.md#ref-lamport1983)). The queue is full when
 $t - h = c$ and empty when $h = t$. Since the indices only grow and are
-reduced
-by the mask at each access, and the two tests therefore hold also when the
+reduced by the mask at each access, the two tests hold also when the
 integers wrap around. Each thread keeps besides a copy of the index of the
 other one, $\mathit{seen}_P \le h$ for the producer and
 $\mathit{seen}_C \le t$ for the consumer, and reads the index again only
@@ -252,8 +251,8 @@ are raw memory with a line of padding at each end, and the first and the last
 items share no line with other data. Second, a consumer that is right
 behind a "streaming" producer, and looks again at once, would take from it
 at each item the lines of the tail and of the item it is writing. When the
-last pop took an item and the consumer finds fewer than
-$\min( 64 , c / 2 )$ new ones, it therefore waits 64 pauses of the
+last pop took an item and the consumer finds some new ones, but fewer than
+$\min( 64 , c / 2 )$, it therefore waits 64 pauses of the
 processor for a batch before it takes them (the backtracking of B-Queue,
 [Wang et al. 2013](Z-bibliography.md#ref-wang2013)). Then the lines travel
 once per batch. After a pop that found no item, instead, the consumer takes
@@ -321,8 +320,9 @@ problem (cf. [Lemma 24.3](24-concurrent.md#lem-24-3)).
 <span id="lem-24-2"></span>**Lemma 24.2.** *A lane of `MPSCQueue` that has
 held at most $m$ items at once keeps at most $\lceil m / B \rceil + 1$
 blocks. A push costs $O( 1 )$ time and no read-modify-write, but for the
-push that fills a block, which costs an exchange, or an allocation when
-the lane has fewer blocks than it needs.*
+push that finds its block full, which costs at most an exchange (none when
+its spare stack has a block), or an allocation when the lane has fewer
+blocks than it needs.*
 
 *Proof.* At any moment the blocks of a lane in use are those from the block
 of the consumer to that of the producer, which hold the items present; they
@@ -331,7 +331,8 @@ partly empty. A block out of them lies in one of the two stacks of blocks
 to reuse, and a producer allocates a block only when both stacks are empty,
 i.e., when all the blocks of the lane are in use. Hence the lane never
 holds more blocks than the largest number in use at once. A push writes its
-item and a count, two plain stores, unless it fills the block; then it
+item and a count, two stores with no read-modify-write, unless it finds
+its block full; then it
 takes a block from its spare stack, or all the stack given back by an
 exchange, or a new block. $\square$
 
@@ -565,18 +566,23 @@ Thus `push()` and `take()` cost $O( 1 )$ time and no read-modify-write but
 when `take()` reaches the last item, and `steal()` costs one
 compare-and-swap. All three operations are linearizable: a push at its store of
 the bottom, a take at its store of $b - 1$ (or at its compare-and-swap on
-the last item), and a steal at its compare-and-swap. `push()` is
-wait-free, while `take()` and `steal()` are lock-free; a thief fails only
-when another thread took the item it wanted, and `steal()` then returns
-false, so that the caller may try another victim. This deque is that of the
+the last item), and a steal at its compare-and-swap, provided that the
+sequential specification lets a steal fail (an *abort*, as in [Chase and
+Lev 2005](Z-bibliography.md#ref-chase2005)). Indeed, a thief fails when
+another thread took the item it wanted, also while other items remain, and
+`steal()` then returns false, so that the caller may try another victim.
+Each call of the three operations runs a constant number of steps (but for
+the doubling of a push), and is in this sense wait-free; a thief that
+retries until it gets an item is only lock-free, since every failure of
+its compare-and-swap is the success of another thread. This deque is that of the
 pool of threads of [chapter 25](25-parallel.md#ch-25). Its argument returns in
 [§24.11](24-concurrent.md#sec-24-11), where the queues of a search are
 stolen without making their owner race for each item.
 
 ## 24.6 A union-find shared by threads {#sec-24-6}
 
-`ConcurrentUnionFind` realizes the MFSET of chapter
-11 on the elements $0 , \ldots , n - 1$, for threads
+`ConcurrentUnionFind` realizes the MFSET of
+[chapter 11](11-mfset.md#ch-11) on the elements $0 , \ldots , n - 1$, for threads
 that unite and find at once ([Jayanti and Tarjan
 2021](Z-bibliography.md#ref-jayanti2021)). It keeps a forest of parents
 $p[ 0 .. n - 1 ]$, a root being its own parent, each parent an atomic word
@@ -668,15 +674,15 @@ a somewhat weaker bound, logarithmic rather than nearly constant. The randomized
 linking of [Jayanti and Tarjan 2021](Z-bibliography.md#ref-jayanti2021)
 hooks by a random order of the elements instead of their indices. It bounds
 the expected work on $p$ threads by $O( m ( \alpha( n , m / ( n p ) ) +
-\log( n p / m + 1 ) ) )$, but its labels are not the least elements. Neither
-the constructor nor `size()` is concurrent with the other operations, and $n < 2^{31}$, since the parents
-are words of 32 bits.
+\log( n p / m + 1 ) ) )$, but its labels are not the least elements. The
+constructor is not concurrent with the other operations (`size()` gives
+the constant $n$), and $n < 2^{31}$, since the parents are words of 32
+bits.
 
 ## 24.7 A cuckoo table under locks per region {#sec-24-7}
 
 `ConcurrentCuckooTable` is the cuckoo hashing with buckets of 4 places and
-tags of 8 bits of `BucketCuckooTable` (chapter
-7), made concurrent with one lock per *region* of
+tags of 8 bits of `BucketCuckooTable` ([chapter 7](07-dictionary.md#ch-7)), made concurrent with one lock per *region* of
 buckets and, for keys and values that the processor reads atomically,
 lookups that take no lock at all. A key of hash $h$ has two buckets: $b_1$,
 given by the top bits of $h$, and
@@ -823,8 +829,9 @@ $R = 256$ and $\alpha = 0.9$), and therefore the fullest region of a large
 table reaches 0.98 at a mean load of about 0.88 to 0.92. A restriction
 of the choices to a part of the table (there, a page) is also
 studied by [Dietzfelbinger, Mitzenmacher and Rink
-2011](Z-bibliography.md#ref-dietzfelbinger2011). As in [Lemma 24.6](24-concurrent.md#lem-24-6) (cf. also
-[Lemma 24.14](24-concurrent.md#lem-24-14)), the doublings cost $O( 1 )$ amortized per insertion, by the argument of [Lemma 24.6](24-concurrent.md#lem-24-6). A doubling that
+2011](Z-bibliography.md#ref-dietzfelbinger2011). The doublings cost $O( 1 )$ amortized per insertion, by the argument of
+[Lemma 24.6](24-concurrent.md#lem-24-6) (cf. also
+[Lemma 24.14](24-concurrent.md#lem-24-14)). A doubling that
 would leave a table of at least 256 places less than 1/16 full throws
 `std::length_error`, which happens only when more than 8 keys share both
 buckets at every size (e.g., by equal hashes), and leaves the table
@@ -1008,7 +1015,12 @@ $\alpha = 1/2$. A growth copies each word of the old vector once, and the
 sizes double; hence the copies are at most twice the insertions, as in
 [Lemma 24.6](24-concurrent.md#lem-24-6). $\square$
 
-Most of the places of (24.5) lie on one line of 8 words, which the lookup
+We remark that the load may pass $1/2$ before a growth, since each of the
+64 counters triggers the sum only once per period of $2^{\min( \max( l -
+10 , 0 ) , 10 )}$ of its insertions: between two sums the pairs grow by
+less than $64 \cdot 2^{l - 10} = 2^l / 16$, and hence $\alpha < 9/16$,
+where the two averages of (24.5) are below 1.65 and 3.12. Most of the
+places of (24.5) lie on one line of 8 words, which the lookup
 fetches while it reads the tags, and a key that is there typically costs
 about one miss. An insertion is blocking only during a growth, and the
 lookups never are; a lookup is thus wait-free when the table does not grow.
@@ -1053,7 +1065,8 @@ queues otherwise), and takes its minimum
 ([Figure 24.10](24-concurrent.md#fig-24-10)). Let there be $n = q p$
 queues. At most $p - 1$ of them are held by other threads, and a queue
 drawn at random is held with probability less than $1 / q$; hence a lock is
-taken after at most $q / ( q - 1 )$ draws on average (2 for the default $q = 2$),
+taken after at most $q / ( q - 1 )$ draws on average (2 for $q = 2$, i.e., the $n = 2 p$
+queues that the header suggests),
 and no thread waits for a lock. With $n = 1$ the queue is exact, a
 priority queue under one lock, which is typically used for testing and for
 comparison.
@@ -1174,7 +1187,8 @@ of $m$ pairs, and the lines of $D$ and $I$ usually stay in the cache of the
 thread.
 The stickiness has no theory yet: the measures of [Williams et al.
 2021](Z-bibliography.md#ref-williams2021) show rank errors that grow about
-linearly in $s$, which is why $s$ is a parameter, 1 for the bounds above.
+linearly in $s$, which is why $s$ is a parameter of the constructor (16 by default, given
+by `stickiness()`); the bounds above are those of $s = 1$.
 Furthermore, `pushAll()` puts a range of pairs into one queue under one
 lock. A thread that makes several pairs at once (e.g., the successors of a
 node) thus takes one lock instead of one per pair, at the price of a
@@ -1273,8 +1287,12 @@ modifications.
 
 Finally, `await( p )` packs the loop of [Algorithm 24.10](24-concurrent.md#alg-24-10). It returns when
 `p()` is true, $p$ being called by the waiting thread only (which may thus
-take the item in $p$). It first looks again and again for 20 $\mu$s (a
-parameter), with a pause of the processor between the looks. An item that
+take the item in $p$). It first looks again and again for 20 $\mu$s (the parameter
+`spin`, in nanoseconds), with a pause of the processor between the looks
+and a read of the clock every 64 looks; then it waits by
+`prepareWait()`, `cancelWait()` and `commitWait()` as above. Also,
+`waiters()` gives the number $w$ of the waiters announced, a relaxed
+read. An item that
 comes within that time costs no sleep and no wake-up, each of which takes
 about the time of a system call and of a switch of threads. We use it in
 the queues of [§24.3](24-concurrent.md#sec-24-3) and
@@ -1289,23 +1307,28 @@ the last `reset()` runs $2^k$ pauses of the processor (`pause` on x86,
 `yield` on AArch64) while $k \le S$, and from then on it yields the
 processor to the system. Note that `spinning()` is true when the next call
 still spins; a waiter can then move on to sleep, e.g., on an `EventCount`,
-once it yields. With $S = 6$ (the default) the spinning lasts $2^7 - 1 = 127$
-pauses, a few microseconds.
+once it yields. With $S = 6$ (the default; the constructor requires $0 \le S \le 16$)
+the spinning lasts $2^7 - 1 = 127$ pauses, a few microseconds, and
+`step()` gives the number $k$ of the calls since the last `reset()` (up
+to $S + 1$).
 
 --8<-- "generated/Backoff-pause.pseudo.md"
 
 <span id="lem-24-18"></span>**Lemma 24.18.** *A thread that looks at a
-condition before each call of `pause()`, from a `reset()`, makes its look
-$k + 1$ after $2^{k + 1} - 1$ pauses, for $k \le S$; hence a condition
-that becomes true after $t < 2^{S + 1} - 1$ pauses is seen after fewer than
-$2 t + 1$ pauses, with $O( \log t )$ looks.*
+condition before each call of `pause()` and once after the last one, from
+a `reset()`, makes its look $j \ge 1$ after $2^{j - 1} - 1$ pauses, for
+$j \le S + 2$; hence a condition that becomes true after
+$0 < t \le 2^{S + 1} - 1$ pauses is seen after fewer than $2 t + 1$ pauses,
+with $O( \log t )$ looks.*
 
-*Proof.* The calls $0 , \ldots , k$ run
-$1 + 2 + \cdots + 2^k = 2^{k + 1} - 1$ pauses. If the condition becomes
-true after $t$ pauses, and the last look that saw it false was the look
-$k + 1$, after $T = 2^{k + 1} - 1 < t$ pauses, the next look comes after
-$2^{k + 2} - 1 = 2 T + 1 < 2 t + 1$ pauses; the looks are $k + 2$, i.e.,
-$O( \log t )$. $\square$
+*Proof.* The look $j$ follows the calls $0 , \ldots , j - 2$, which run
+$1 + 2 + \cdots + 2^{j - 2} = 2^{j - 1} - 1$ pauses while $j - 2 \le S$.
+If the condition becomes true after $t > 0$ pauses, the look 1, after no
+pause, sees it false; let the last look that sees it false be the look
+$j$, after $T = 2^{j - 1} - 1 < t$ pauses. Since
+$t \le 2^{S + 1} - 1$, we have $j \le S + 1$, and the next look comes
+after $2^j - 1 = 2 T + 1 < 2 t + 1$ pauses; the looks are $j + 1 \le
+\log_2 ( t + 1 ) + 2$, i.e., $O( \log t )$. $\square$
 
 The looks of $p$ threads at one line thus thin out geometrically, while the
 delay added to a wait is less than the wait itself (plus one pause), and a
