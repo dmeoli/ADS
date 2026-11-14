@@ -16,6 +16,7 @@
 
 namespace ADS {
 
+//! [subsets]
 template< class F >
 long subsets( int n , int k , F && f )
 {
@@ -40,6 +41,7 @@ long subsets( int n , int k , F && f )
  rec( rec , 0 , 0 );
  return( count );
  }
+//! [subsets]
 
 namespace detail {
 

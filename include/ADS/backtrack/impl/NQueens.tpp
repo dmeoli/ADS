@@ -16,6 +16,7 @@
 
 namespace ADS {
 
+//! [nQueens]
 template< class F >
 long nQueens( int n , F && f )
 {
@@ -44,6 +45,7 @@ long nQueens( int n , F && f )
  rec( rec , 0 , 0 , 0 , 0 );
  return( count );
  }
+//! [nQueens]
 
 inline bool admissible( const std::vector< int > & Q )
 {

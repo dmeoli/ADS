@@ -1,0 +1,22 @@
+% Source for the figure of RoaringBitmap (sec. 10.5): the chunks K of the
+% containers, an array container, a bitmap container and the array that
+% insert(5 * 2^16 + 7) changes. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (0,8mm) {$K$};
+  \foreach \k/\v in {0/0,1/2,2/5} \node[cell] (k\k) at (0,-\k*10mm) {\v};
+  \node[node,minimum width=24mm,anchor=west] (c0) at (14mm,0) {3 17 900};
+  \node[node,minimum width=24mm,anchor=west] (c1) at (14mm,-10mm) {1024 words};
+  \node[node-added,minimum width=24mm,anchor=west] (c2) at (14mm,-20mm) {0 7 65535};
+  \foreach \k in {0,1,2} \draw[ptr] (k\k.east) -- (c\k.west);
+  \node[index,anchor=west] at (41mm,0) {array, 3 items};
+  \node[index,anchor=west] at (41mm,-10mm) {bitmap, 5000 items};
+  \node[index,anchor=west] at (41mm,-20mm) {array, 7 inserted};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,25 @@
+% Source for the figure of BlockedBloomFilter (sec. 10.8): a block of 256
+% bits as 8 words of 32 bits, and the 8 bits that a key sets, one per word,
+% the top 5 bits of h_0 s_i. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    b/.style={cell,minimum width=2.2mm,minimum height=3mm,rounded corners=0.5pt,line width=0.5pt}]
+  \foreach \w/\p in {0/5,1/30,2/12,3/0,4/21,5/17,6/9,7/26} {
+    \node[index,anchor=east] at (-2mm,-\w*4mm) {word \w};
+    \foreach \i in {0,...,31} {
+      \ifnum\i=\p
+        \node[b,fill=adsAdded] at (\i*2.2mm,-\w*4mm) {};
+      \else
+        \node[b] at (\i*2.2mm,-\w*4mm) {};
+      \fi }
+  }
+  \node[index] at (0,3.5mm) {0};
+  \node[index] at (31*2.2mm,3.5mm) {31};
+\end{tikzpicture}
+\end{document}

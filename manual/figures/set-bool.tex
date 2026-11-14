@@ -1,0 +1,22 @@
+% Source for the figure of BoolSet (sec. 10.2): the bits of the set
+% {1, 3, 4, 9, 14} of dimension N = 16 in a word, before and after
+% insert(6), and the scan of forEach() by the lowest bit set.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{0/cell,1/cell,0/cell,1/cell,1/cell,0/cell,0/cell,0/cell,0/cell,1/cell,0/cell,0/cell,0/cell,0/cell,1/cell,0/cell}
+  \node[var,anchor=west] at ($(a-15.east)+(4mm,0)$) {size 5};
+  \node[var,anchor=east] at (-6mm,-13mm) {\texttt{insert(6)}};
+  \cells{b}{0,-13mm}{0/cell,1/cell,0/cell,1/cell,1/cell,0/cell,1/added,0/cell,0/cell,1/cell,0/cell,0/cell,0/cell,0/cell,1/cell,0/cell}
+  \node[var,anchor=west] at ($(b-15.east)+(4mm,0)$) {size 6};
+  \foreach \i in {0,...,15} \node[index,below=1.6mm of b-\i] {\i};
+  \draw[ptr] ($(b-6.north)+(0,5mm)$) -- (b-6.north);
+\end{tikzpicture}
+\end{document}

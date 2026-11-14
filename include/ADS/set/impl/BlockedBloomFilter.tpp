@@ -48,6 +48,7 @@ struct BlockMask {
   _mm256_store_si256( p , _mm256_or_si256( _mm256_load_si256( p ) , m ) );
   }
 #else
+//! [BlockMask]
  std::uint32_t m[ 8 ];
 
  explicit BlockMask( std::uint32_t h ) {
@@ -66,6 +67,7 @@ struct BlockMask {
   for( int i = 0 ; i < 8 ; ++i )
    w[ i ] |= m[ i ];
   }
+//! [BlockMask]
 #endif
  };
 

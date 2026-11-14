@@ -642,6 +642,7 @@ inline void RoaringBitmap::rekey( void )
  for( std::size_t i = 0 ; i < f_B.size() ; ++i ) f_K[ i ] = f_B[ i ].key;
  }
 
+//! [find]
 inline std::size_t RoaringBitmap::find( std::uint16_t key ) const
 {
  std::size_t n = f_K.size();                // the first chunk not smaller,
@@ -655,6 +656,7 @@ inline std::size_t RoaringBitmap::find( std::uint16_t key ) const
   }
  return( std::size_t( base - f_K.data() ) + ( *base < key ? 1 : 0 ) );
  }
+//! [find]
 
 inline bool RoaringBitmap::contains( std::uint32_t x ) const
 {

@@ -1,0 +1,25 @@
+% Source for the figure of BinaryFuseFilter (sec. 10.10): the array F cut
+% into segments of L = 4 places, and the 3 places of a key in 3
+% consecutive segments; the key is maybe in S when the XOR of the three
+% fingerprints is its own. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \cells{f}{0,0}{/cell,/cell,/cell,/cell,/cell,/touched,/cell,/cell,/cell,/cell,/cell,/touched,/cell,/touched,/cell,/cell,/cell,/cell,/cell,/cell}
+  \foreach \i in {0,...,19} \node[index,below=1.6mm of f-\i] {\i};
+  \foreach \s in {0,...,4} {
+    \draw[line width=1.4pt,draw=adsInk] ($(f-0.north west)+(\s*29.6mm,1.5mm)$) -- ($(f-0.south west)+(\s*29.6mm,-1.5mm)$);
+    \node[index] at ($(f-0.north west)+(\s*29.6mm+14.8mm,-15mm)$) {segment \s};
+  }
+  \draw[line width=1.4pt,draw=adsInk] ($(f-19.north east)+(0,1.5mm)$) -- ($(f-19.south east)+(0,-1.5mm)$);
+  \node[var] (k) at ($(f-11.north)+(0,20mm)$) {$F[ h_0 ] \oplus F[ h_1 ] \oplus F[ h_2 ] = f( h )$};
+  \foreach \i/\l in {5/h_0,11/h_1,13/h_2} {
+    \draw[ptr] (k.south) -- ($(f-\i.north)+(0,8mm)$) -- (f-\i.north);
+  }
+\end{tikzpicture}
+\end{document}

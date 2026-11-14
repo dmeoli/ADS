@@ -102,6 +102,7 @@ bool GrafiteFilter< T >::meets( std::uint64_t x , std::uint64_t y ) const
 
 /*--------------------------------------------------------------------------*/
 
+//! [mayContain]
 template< RadixKey T >
 bool GrafiteFilter< T >::mayContain( const T & a , const T & b ) const
 {
@@ -119,6 +120,7 @@ bool GrafiteFilter< T >::mayContain( const T & a , const T & b ) const
  return( meets( code( x ) , code( c - 1 ) ) ||
          meets( code( c ) , code( y ) ) );
  }
+//! [mayContain]
 
 template< RadixKey T >
 bool GrafiteFilter< T >::maybe( const T & x ) const

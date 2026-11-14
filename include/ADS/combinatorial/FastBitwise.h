@@ -8,15 +8,15 @@
  *
  * -  `popcount( w , n )` counts the 1 bits of \f$ n \f$ words by the method of
  *   Harley and Seal: 16 vectors at a time are added by a tree of carry-save
- *   adders, each a full adder of three vectors of bits in two operations (one
- *   ternary logic each on AVX-512), and only the vector of the sixteens is
- *   counted, so that a block of 16 vectors costs one count instead of 16; a
- *   vector is counted by the instruction of the processor if it has one
- *   (AVX-512 VPOPCNTDQ), and otherwise by the table of the 16 nibbles in a
- *   shuffle of bytes and the sums of 8 bytes by `psadbw` (Mula, Kurz and
- *   Lemire). The arrays shorter than a block, and every array on a machine
- *   without AVX2, are counted by the population count of the processor in four
- *   independent sums;
+ *   adders, each a full adder of three vectors of bits in two operations of
+ *   ternary logic on AVX-512 and in five logical operations on AVX2, and
+ *   only the vector of the sixteens is counted, so that a block of 16
+ *   vectors costs one count instead of 16; a vector is counted by the
+ *   instruction of the processor if it has one (AVX-512 VPOPCNTDQ), and
+ *   otherwise by the table of the 16 nibbles in a shuffle of bytes and the
+ *   sums of 8 bytes by `psadbw` (Mula, Kurz and Lemire). The arrays shorter
+ *   than a block, and every array on a machine without AVX2, are counted by
+ *   the population count of the processor in four independent sums;
  * -  `popcountAnd( a , b , n )` the 1 bits of the intersection of two arrays
  *   in the same way, the size of the intersection of two sets of bits;
  * -  `pdep()` and `pext()` scatter the low bits of \f$ x \f$ to the 1 bits of

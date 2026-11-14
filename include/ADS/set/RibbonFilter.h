@@ -88,7 +88,7 @@
  * \f$ \log n \f$, and the build takes
  * \f[ m = n ( 1 + \varepsilon ) \;, \qquad \varepsilon =
  *     \max\bigl( 0.01 \,,\, 0.0083 \log_2 n - 0.025 \bigr) \;, \f]
- * rounded up to a multiple of 64 and at least 64: about \f$ 9 \% \f$ at
+ * rounded up to a multiple of 64 and at least 64: about \f$ 11 \% \f$ at
  * \f$ 10^5 \f$ keys and \f$ 14 \% \f$ at \f$ 10^6 \f$, i.e., 8.9 and 9.1
  * bits per key for \f$ r = 8 \f$. If the system has no solution the build
  * draws a new seed, and after every 4 failures adds \f$ 2 \% \f$ of

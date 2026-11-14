@@ -1,0 +1,27 @@
+% Source for the figure of ListSet and SortedListSet (sec. 10.3): an
+% insertion into the unsorted list at its head, and into the sorted list
+% after a scan to the first larger item. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,node distance=6mm]
+  \node[var,anchor=east] (l1) at (-4mm,0) {\texttt{ListSet}};
+  \node[node-added] (n0) at (6mm,0) {5};
+  \node[node,right=of n0] (n1) {9};
+  \node[node,right=of n1] (n2) {2};
+  \node[node,right=of n2] (n3) {7};
+  \foreach \i/\j in {0/1,1/2,2/3} \draw[ptr] (n\i) -- (n\j);
+  \node[index,anchor=west] at ($(n3.east)+(4mm,0)$) {\texttt{insert(5)}: at the head, after a scan for 5};
+  \node[var,anchor=east] at (-4mm,-14mm) {\texttt{SortedListSet}};
+  \node[node] (m0) at (6mm,-14mm) {2};
+  \node[node,right=of m0] (m1) {7};
+  \node[node-added,right=of m1] (m2) {8};
+  \node[node,right=of m2] (m3) {9};
+  \foreach \i/\j in {0/1,1/2,2/3} \draw[ptr] (m\i) -- (m\j);
+  \node[index,anchor=west] at ($(m3.east)+(4mm,0)$) {\texttt{insert(8)}: before the first item not smaller};
+\end{tikzpicture}
+\end{document}

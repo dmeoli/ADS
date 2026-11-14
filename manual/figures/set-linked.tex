@@ -1,0 +1,30 @@
+% Source for the figure of LinkedHashSet (sec. 10.4): the list of the order
+% of insertion and the chained table that maps each item to its position;
+% the item d inserted last is appended to the list and indexed.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,node distance=6mm]
+  \node[var,anchor=east] at (-4mm,0) {order};
+  \node[node] (a) at (6mm,0) {c};
+  \node[node,right=of a] (b) {a};
+  \node[node,right=of b] (c) {b};
+  \node[node-added,right=of c] (d) {d};
+  \foreach \i/\j in {a/b,b/c,c/d} \draw[ptr] (\i) -- (\j);
+  \foreach \i/\k in {a/1,b/2,c/3,d/4} \node[index,below=1.5mm of \i] {$p_\k$};
+  \node[var,anchor=east] at (-4mm,-18mm) {table};
+  \foreach \k in {0,...,4} \node[cell] (t\k) at (6mm,-18mm-\k*9mm) {};
+  \foreach \k in {0,...,4} \node[index,anchor=east] at ($(t\k.west)+(-1.5mm,0)$) {\k};
+  \node[node,minimum width=12mm,right=6mm of t1] (ka) {a, $p_2$};
+  \node[node,minimum width=12mm,right=6mm of t3] (kc) {c, $p_1$};
+  \node[node,minimum width=12mm,right=6mm of kc] (kb) {b, $p_3$};
+  \node[node-added,minimum width=12mm,right=6mm of t4] (kd) {d, $p_4$};
+  \draw[ptr] (t1.center) -- (ka); \draw[ptr] (t3.center) -- (kc);
+  \draw[ptr] (kc) -- (kb); \draw[ptr] (t4.center) -- (kd);
+\end{tikzpicture}
+\end{document}

@@ -50,6 +50,7 @@ long mixedRadix( const std::vector< int > & m , F && visit )
   }
  }
 
+//! [grayTuples]
 template< class F >
 long grayTuples( const std::vector< int > & m , F && visit )
 {
@@ -79,6 +80,7 @@ long grayTuples( const std::vector< int > & m , F && visit )
    }
   }
  }
+//! [grayTuples]
 
 template< class F >
 long permutationsLex( Tuple a , F && visit )
@@ -133,6 +135,7 @@ long plainChanges( int n , F && visit )
   }
  }
 
+//! [heapPermutations]
 template< class F >
 long heapPermutations( int n , F && visit )
 {
@@ -154,6 +157,7 @@ long heapPermutations( int n , F && visit )
   }
  return( count );
  }
+//! [heapPermutations]
 
 template< class F >
 long combinationsLex( int n , int t , F && visit )

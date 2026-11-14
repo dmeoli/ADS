@@ -1,0 +1,35 @@
+% Source for the figure of CuckooFilter (sec. 10.9): 8 buckets of 4
+% places; the fingerprint t of a key goes to b_1 = 1 or b_2 = 6, both full,
+% and evicts u from the bucket 1 to its other bucket 3.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \side/\x/\lab in {L/0/before,R/48mm/after} {
+    \node[var] at (\x+14mm,7mm) {\lab};
+    \foreach \b in {0,...,7} \node[index,anchor=east] at (\x-5mm,-\b*7mm) {\b};
+  }
+  \cells{l0}{0,0}{a/cell,/free,/free,/free}
+  \cells{l1}{0,-7mm}{c/cell,u/cell,e/cell,g/cell}
+  \cells{l2}{0,-14mm}{h/cell,/free,/free,/free}
+  \cells{l3}{0,-21mm}{k/cell,/free,/free,/free}
+  \cells{l4}{0,-28mm}{/free,/free,/free,/free}
+  \cells{l5}{0,-35mm}{m/cell,p/cell,/free,/free}
+  \cells{l6}{0,-42mm}{q/cell,r/cell,s/cell,v/cell}
+  \cells{l7}{0,-49mm}{w/cell,/free,/free,/free}
+  \cells{r0}{48mm,0}{a/cell,/free,/free,/free}
+  \cells{r1}{48mm,-7mm}{c/cell,t/added,e/cell,g/cell}
+  \cells{r2}{48mm,-14mm}{h/cell,/free,/free,/free}
+  \cells{r3}{48mm,-21mm}{k/cell,u/touched,/free,/free}
+  \cells{r4}{48mm,-28mm}{/free,/free,/free,/free}
+  \cells{r5}{48mm,-35mm}{m/cell,p/cell,/free,/free}
+  \cells{r6}{48mm,-42mm}{q/cell,r/cell,s/cell,v/cell}
+  \cells{r7}{48mm,-49mm}{w/cell,/free,/free,/free}
+  \node[index,anchor=west] at (80mm,-14mm) {$t$ in place of $u$, $u$ moved to the bucket 3};
+\end{tikzpicture}
+\end{document}

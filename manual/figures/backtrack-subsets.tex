@@ -1,0 +1,54 @@
+% Source for the figure of subsets() (sec. 19.2): the tree of the choices
+% of the 2-subsets of 4 items, each place in (1) or out (0); the shaded
+% leaves are the solutions, the grey nodes are pruned. Build: make figures
+% (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    n/.style={vertex,minimum size=3.6mm},
+    sol/.style={n,fill=adsPrimary},
+    cut/.style={n,fill=adsFree},
+    e/.style={font=\scriptsize\ttfamily,text=adsInk!55,inner sep=2pt},
+    level distance=12mm,edge from parent/.style={edge,draw=adsInk!45},
+    level 1/.style={sibling distance=56mm},
+    level 2/.style={sibling distance=28mm},
+    level 3/.style={sibling distance=14mm},
+    level 4/.style={sibling distance=8mm}]
+  \node[n] {}
+    child { node[n] {}
+      child { node[sol] (s1) {} edge from parent node[e,left] {1} }
+      child { node[n] {}
+        child { node[sol] (s2) {} edge from parent node[e,left] {1} }
+        child { node[n] {}
+          child { node[sol] (s3) {} edge from parent node[e,left] {1} }
+          child { node[cut] {} edge from parent node[e,right] {0} }
+          edge from parent node[e,right] {0} }
+        edge from parent node[e,right] {0} }
+      edge from parent node[e,above left] {1} }
+    child { node[n] {}
+      child { node[n] {}
+        child { node[sol] (s4) {} edge from parent node[e,left] {1} }
+        child { node[n] {}
+          child { node[sol] (s5) {} edge from parent node[e,left] {1} }
+          child { node[cut] {} edge from parent node[e,right] {0} }
+          edge from parent node[e,right] {0} }
+        edge from parent node[e,left] {1} }
+      child { node[n] {}
+        child { node[n] {}
+          child { node[sol] (s6) {} edge from parent node[e,left] {1} }
+          child { node[cut] {} edge from parent node[e,right] {0} }
+          edge from parent node[e,left] {1} }
+        child { node[cut] {} edge from parent node[e,right] {0} }
+        edge from parent node[e,right] {0} }
+      edge from parent node[e,above right] {0} };
+  \foreach \s/\t in {s1/1100,s2/1010,s3/1001,s4/0110,s5/0101,s6/0011}
+    \node[index,below=1.5mm of \s] {\t};
+  \foreach \i in {0,...,4}
+    \node[index,anchor=east] at (-64mm,-\i*12mm) {$i = \i$};
+\end{tikzpicture}
+\end{document}
