@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- eulerianTrail() in graph/EulerianCycle.h, the Eulerian trail of an
+  oriented or unoriented graph, closed when there is a cycle and open
+  otherwise (from the node of excess 1, or from an odd node), with an
+  overload that starts it from a given node, and isEulerianTrail(); the
+  walk of Hierholzer on the incidences of the nodes, an unoriented edge
+  with one mark of use for its two arcs, in O( n + m ) with no visit for
+  the connection of the edges (a walk shorter than m tells it);
+  eulerianCycle() and isEulerianCycle() now take unoriented graphs too;
+  Euler's lemma for trails in the theory of the graphs, the test
+  engineered_graph euler-trails (every graph of up to 4 or 5 nodes and
+  random multigraphs against a backtracking, walks of 10^6 edges) and the
+  benchmark euler of bench/graphs.cpp
+
 - sccTarjan() and sccPearce() in graph/Visit.h, the strongly connected
   components by one visit in depth and no transposed graph (Tarjan's
   algorithm, and Pearce's variant with one integer and one bit per node),

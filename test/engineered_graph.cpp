@@ -29,6 +29,7 @@
 #include "ADSTest.h"
 
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/Grid.h"
 #include "ADS/graph/GridGraph.h"
@@ -52,6 +53,7 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <functional>
 #include <queue>
 #include <random>
 #include <set>
@@ -1049,6 +1051,152 @@ ADS_TEST( "scc-one-pass" )
   const StaticGraph<> h( n , E , true );
   const auto K = scc( h ) , T = sccTarjan( h ) , P = sccPearce( h );
   CHECK( samePartition( K , T ) && samePartition( K , P ) );
+  }
+ }
+
+/// whether the m edges E, oriented or not, have a trail that uses each of
+/// them once from s (any start if s = -1), closed if asked, by backtracking
+bool trailExists( int n , const std::vector< std::pair< int , int > > & E ,
+                  bool directed , int s , bool closed )
+{
+ if( E.empty() )
+  return( true );
+ std::vector< bool > used( E.size() , false );
+ std::function< bool( int , int , std::size_t ) > go = [ & ]( int start ,
+                                                    int u , std::size_t k ) {
+  if( k == E.size() )
+   return( ! closed || ( u == start ) );
+  for( std::size_t e = 0 ; e < E.size() ; ++e ) {
+   if( used[ e ] )
+    continue;
+   int v = -1;
+   if( E[ e ].first == u ) v = E[ e ].second;
+   else if( ! directed && ( E[ e ].second == u ) ) v = E[ e ].first;
+   if( v < 0 )
+    continue;
+   used[ e ] = true;
+   const bool ok = go( start , v , k + 1 );
+   used[ e ] = false;
+   if( ok )
+    return( true );
+   }
+  return( false );
+  };
+ for( int a = 0 ; a < n ; ++a )
+  if( ( ( s == -1 ) || ( s == a ) ) && go( a , a , 0 ) )
+   return( true );
+ return( false );
+ }
+
+// the Eulerian trails, open and closed, of oriented and unoriented graphs
+// against a backtracking on every graph of up to 4 nodes (oriented) and 5
+// (unoriented) and on random multigraphs of parallel edges: eulerianTrail()
+// with and without a start, eulerianCycle(), isEulerianTrail() on what
+// they give; the walks on random Eulerian graphs of 10^5 nodes and 10^6
+// edges, and on paths of 10^6 nodes, open and closed, oriented or not
+ADS_TEST( "euler-trails" )
+{
+ using EL = std::vector< std::pair< int , int > >;
+ auto check = [ & ]( const auto & h , int n , const EL & E , bool d ) {
+  const auto T = eulerianTrail( h );
+  CHECK( T.has_value() == trailExists( n , E , d , -1 , false ) );
+  if( T ) CHECK( isEulerianTrail( h , *T ) );
+  const auto C = eulerianCycle( h );
+  CHECK( C.has_value() == trailExists( n , E , d , -1 , true ) );
+  if( C ) CHECK( isEulerianCycle( h , *C ) && isEulerianTrail( h , *C ) );
+  if( C && ! E.empty() ) CHECK( T && T->front() == T->back() );
+  for( int s = 0 ; s < n ; ++s ) {
+   const auto S = eulerianTrail( h , s );
+   CHECK( S.has_value() == ( trailExists( n , E , d , s , false ) &&
+          ( E.empty() || std::any_of( E.begin() , E.end() , [ & ]( auto e ) {
+           return( e.first == s || ( ! d && e.second == s ) ); } ) ) ) );
+   if( S ) CHECK( isEulerianTrail( h , *S ) &&
+                  ( S->empty() || S->front() == s ) );
+   }
+  };
+ for( bool d : { true , false } )
+  for( int n = 1 ; n <= ( d ? 4 : 5 ) ; ++n ) {
+   EL A;
+   for( int u = 0 ; u < n ; ++u )
+    for( int v = d ? 0 : u + 1 ; v < n ; ++v )
+     if( u != v ) A.emplace_back( u , v );
+   for( unsigned mask = 0 ; mask < ( 1u << A.size() ) ; ++mask ) {
+    ListGraph<> h( n , d );
+    EL E;
+    for( std::size_t i = 0 ; i < A.size() ; ++i )
+     if( mask & ( 1u << i ) ) {
+      h.insertEdge( A[ i ].first , A[ i ].second );
+      E.push_back( A[ i ] );
+      }
+    check( h , n , E , d );
+    }
+   }
+ std::mt19937 g( 17 );
+ for( int it = 0 ; it < 3000 ; ++it ) {
+  const bool d = it % 2 == 0;
+  const int n = 2 + it % 3 , m = int( g() % 7 );
+  EL E;
+  while( int( E.size() ) < m ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b ) E.emplace_back( a , b );
+   }
+  const StaticGraph<> h( n , E , d );
+  check( h , n , E , d );
+  }
+
+ // the edges: an isolated node beside a cycle, a start with no edge, the
+ // unoriented triangle with a tail (the trail from an odd node), the
+ // checkers on a wrong trail, a repeated edge and a reversed arc
+ ListGraph<> u( 5 , false );
+ u.insertEdge( 0 , 1 ); u.insertEdge( 1 , 2 ); u.insertEdge( 2 , 0 );
+ CHECK( eulerianCycle( u ) && eulerianCycle( u )->size() == 4 );
+ CHECK( ! eulerianTrail( u , 4 ) && eulerianTrail( u , 1 ) );
+ u.insertEdge( 2 , 3 );
+ CHECK( ! eulerianCycle( u ) && ! eulerianTrail( u , 0 ) );
+ const auto ut = eulerianTrail( u );
+ CHECK( ut && ut->front() == 2 && ut->back() == 3 );
+ CHECK( eulerianTrail( u , 3 ) && eulerianTrail( u , 3 )->back() == 2 );
+ CHECK( isEulerianTrail( u , { 3 , 2 , 1 , 0 , 2 } ) &&
+        ! isEulerianTrail( u , { 3 , 2 , 1 , 0 } ) &&
+        ! isEulerianTrail( u , { 3 , 2 , 1 , 2 , 0 } ) &&
+        ! isEulerianCycle( u , { 3 , 2 , 1 , 0 , 2 } ) );
+ ListGraph<> a( 3 , true );
+ a.insertEdge( 0 , 1 ); a.insertEdge( 1 , 2 );
+ CHECK( eulerianTrail( a ) == std::vector< int >( { 0 , 1 , 2 } ) );
+ CHECK( ! eulerianTrail( a , 1 ) && ! isEulerianTrail( a , { 2 , 1 , 0 } ) );
+
+ // large: random closed walks glued into an Eulerian graph, then one edge
+ // removed (an open trail between its ends); paths of 10^6 nodes
+ for( bool d : { true , false } ) {
+  const int n = 100000 , m = 1000000;
+  EL E;
+  int at = 0;
+  while( int( E.size() ) < m - 1 ) {
+   const int v = int( g() % unsigned( n ) );
+   if( v != at ) { E.emplace_back( at , v ); at = v; }
+   }
+  if( at != 0 ) E.emplace_back( at , 0 );
+  const StaticGraph<> h( n , E , d );
+  const auto C = eulerianCycle( h );
+  CHECK( C && C->size() == E.size() + 1 && isEulerianCycle( h , *C ) );
+  const auto [ x , y ] = E[ E.size() / 2 ];
+  E.erase( E.begin() + E.size() / 2 );
+  const StaticGraph<> o( n , E , d );
+  const auto T = eulerianTrail( o );
+  CHECK( T && T->size() == E.size() + 1 && isEulerianTrail( o , *T ) &&
+         ! eulerianCycle( o ) );
+  CHECK( ( T->front() == y && T->back() == x ) ||
+         ( ! d && T->front() == x && T->back() == y ) );
+  EL P;
+  const int N = 1000000;
+  for( int v = 0 ; v + 1 < N ; ++v ) P.emplace_back( v , v + 1 );
+  const StaticGraph<> path( N , P , d );
+  const auto pt = eulerianTrail( path , 0 );
+  CHECK( pt && int( pt->size() ) == N && pt->back() == N - 1 );
+  P.emplace_back( N - 1 , 0 );
+  const StaticGraph<> ring( N , P , d );
+  CHECK( eulerianCycle( ring ) && int( eulerianCycle( ring )->size() ) ==
+         N + 1 );
   }
  }
 

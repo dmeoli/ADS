@@ -156,7 +156,7 @@ concept Reoptimizable = GraphObserver< R , W > &&
 
 /// the queue of the events and the counts that the observers share
 ///
-/// In pseudocode (beyond the book; Lemma 9 of \ref theory_graph_dynamic
+/// In pseudocode (beyond the book; Lemma 10 of \ref theory_graph_dynamic
 /// proves it correct), the query of every observer, with \f$ Q \f$ the
 /// queue and \f$ \rho \f$ the ratio of `setRecomputeRatio()`:
 /// \f[
@@ -273,7 +273,7 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight > {
  ///
  /// In pseudocode (the algorithms of Ramalingam and Reps for the decreases
  /// and the increases, in the batch form of Bauer and Wagner, beyond the
- /// book; it is correct by Lemma 10 of \ref theory_graph_dynamic), the
+ /// book; it is correct by Lemma 11 of \ref theory_graph_dynamic), the
  /// events \f$ P \f$ coalesced, \f$ T \f$ the tree and \f$ d \f$ the
  /// distances before them:
  /// \f[

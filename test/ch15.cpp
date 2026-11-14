@@ -394,8 +394,8 @@ ADS_TEST( "ex15.2" )
 
 // the Eulerian cycle: each edge once, closed; none if a node has more
 // edges out than in or the edges are in two components; no node, isolated
-// nodes, a long cycle, isEulerianCycle() on wrong cycles, and the
-// precondition
+// nodes, a long cycle, isEulerianCycle() on wrong cycles, and an
+// unoriented graph with no edge
 ADS_TEST( "ex15.3" )
 {
  ListGraph<> g( 5 , true );
@@ -443,8 +443,7 @@ ADS_TEST( "ex15.3" )
  CHECK( ! isEulerianCycle( tri , { 0 , 1 , 0 , 0 } ) );
  CHECK( ! isEulerianCycle( tri , {} ) && ! isEulerianCycle( h , {} ) );
  CHECK( isEulerianCycle( ListGraph<>( 2 , true ) , {} ) );
- CHECK_THROWS( eulerianCycle( ListGraph<>( 2 , false ) ) ,
-               contract_violation );
+ CHECK( eulerianCycle( ListGraph<>( 2 , false ) )->empty() );
  }
 
 // the matrix with given sums of rows and columns exists if and only if the

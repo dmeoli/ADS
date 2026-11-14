@@ -44,6 +44,10 @@
  *   graphs of n / 10 nodes, and the visits of one pass, sccTarjan() and
  *   sccPearce() on the StaticGraph, against strong_components() of the
  *   Boost Graph Library (Tarjan's algorithm on its compressed rows);
+ * - euler, eulerianTrail(), the walk of Hierholzer, on a random closed walk
+ *   of 4 n distinct edges among n nodes, oriented and not ("walk" and
+ *   "uwalk"), the same code on the three families of graphs (the Boost
+ *   Graph Library has no Eulerian trail);
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -92,6 +96,7 @@
 
 #include "Bench.h"
 
+#include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
@@ -976,6 +981,71 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
    return( ADS::sccPearce( h ) ); } ) ); } );
  }
 
+/// a closed walk of m distinct edges among n nodes, oriented or not, each
+/// step to a random node by an edge not yet used: an Eulerian graph
+Input closedWalk( int n , std::size_t m , bool directed ,
+                  std::mt19937_64 & g )
+{
+ Input I{ n , {} , directed };
+ std::set< std::pair< int , int > > used;
+ auto key = [ & ]( int u , int v ) {
+  return( directed ? std::pair( u , v ) : std::pair( std::min( u , v ) ,
+                                                     std::max( u , v ) ) );
+  };
+ int at = 0;
+ for( ;; ) {
+  const bool close = ( I.E.size() + 1 >= m ) && ( at != 0 ) &&
+                     ! used.count( key( at , 0 ) );
+  const int v = close ? 0 : int( g() % unsigned( n ) );
+  if( ( v == at ) || used.count( key( at , v ) ) )
+   continue;
+  used.insert( key( at , v ) );
+  I.E.emplace_back( at , v , 1 );
+  at = v;
+  if( ( at == 0 ) && ( I.E.size() >= m ) )
+   return( I );
+  }
+ }
+
+/// eulerianTrail() on the graph g: a digest of the trail
+template< class G >
+long long eulerRun( const G & g , Counts & k )
+{
+ const auto T = ADS::eulerianTrail( g );
+ long long s = 0;
+ if( T )
+  for( std::size_t i = 0 ; i < T->size() ; ++i )
+   s += ( long long )( i % 7 + 1 ) * ( ( *T )[ i ] + 1 );
+ k = { { "nodes" , T ? (long long) T->size() : -1 } };
+ return( s );
+ }
+
+void euler( const std::string & c , int n , int r , unsigned seed )
+{
+ if( n < 3 )
+  return;
+ std::mt19937_64 g( seed + unsigned( n ) );
+ const Input I = closedWalk( n , 4 * std::size_t( n ) , c == "walk" , g );
+ const auto A = arcs( I );
+ Cell C( "euler" , c , std::size_t( n ) , I.E.size() , r );
+ if( measured( { "std vector" , "std vector A/A" } ) ) {
+  const StdGraph< false > G( n , A , I.directed );
+  for( const char * who : { "std vector" , "std vector A/A" } )
+   C( who , [ & ]( Counts & k ) { return( eulerRun( G , k ) ); } );
+  }
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost csr" } ) ) {
+  const BoostGraph< false > G( n , A , I.directed );
+  C( "Boost csr" , [ & ]( Counts & k ) { return( eulerRun( G , k ) ); } );
+  }
+#endif
+ if( ! measured( { "ADS StaticGraph" } ) )
+  return;
+ const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
+                                                      I.directed ) );
+ C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( eulerRun( S , k ) ); } );
+ }
+
 /// n random merges and n finds on the MFSET M
 template< class M >
 long long setsRun( int n , const std::vector< std::pair< int , int > > & U ,
@@ -1102,6 +1172,9 @@ int main( int argc , char ** argv )
   if( want( "scc" ) )
    for( const char * c : { "gnm4" , "road" , "rmat" } )
     scc( c , n / 10 , r , o.seed );
+  if( want( "euler" ) )
+   for( const char * c : { "walk" , "uwalk" } )
+    euler( c , n , r , o.seed );
   if( want( "union-find" ) )
    unionFind( n , r , o.seed );
   for( const char * b : { "grid-bfs" , "grid-dijkstra" } )

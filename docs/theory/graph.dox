@@ -625,16 +625,42 @@
  lower bounds are sent, a maximum flow from a new source to a new sink balances
  the excess left at each node.
 
- \section theory_graph_euler Eulerian cycles and other properties
+ \section theory_graph_euler Eulerian trails and other properties
 
- By the theorem of Euler, an oriented graph has a closed path that uses each
- edge exactly once if and only if every node has as many entering edges as
- leaving ones and the edges lie in one component, the orientation ignored.
- Under these conditions a walk along unused edges can only stop at its
- start, and the algorithm of Hierholzer (`eulerianCycle()` of
- `EulerianCycle.h`) splices into the walk the closed walks found from its
- nodes, with a stack, in \f$ O( n + m ) \f$, since each edge is followed
- once.
+ A trail is a path that uses each edge exactly once, and an Eulerian cycle
+ a closed trail. Let the excess \f$ x( u ) \f$ of a node of an oriented
+ graph be the number of the edges leaving it minus that of the edges
+ entering it, and call a node of an unoriented graph odd when its degree
+ is.
+
+ <em>Lemma 8 (Euler).</em> Let the edges of \f$ G \f$ lie in one
+ component, the orientation ignored. An oriented \f$ G \f$ has an
+ Eulerian cycle if and only if \f$ x( u ) = 0 \f$ for every node, and an
+ open trail if and only if one node \f$ s \f$ has \f$ x( s ) = 1 \f$, one
+ node \f$ t \f$ has \f$ x( t ) = - 1 \f$ and the others have excess 0,
+ the trail going from \f$ s \f$ to \f$ t \f$; an unoriented \f$ G \f$
+ has an Eulerian cycle if and only if no node is odd, and an open trail if
+ and only if exactly two nodes are odd, the trail joining them. Without the
+ connection, there is no trail.
+
+ Indeed, a trail enters and leaves each node it passes through, which
+ gives the conditions; and, under them, a walk along unused edges from
+ \f$ s \f$ (from any node with an edge, if all are balanced) can stop only
+ at \f$ t \f$ (at its start), since every other node it enters has an
+ unused edge to leave by. The algorithm of Hierholzer (`eulerianTrail()`
+ and `eulerianCycle()` of `EulerianCycle.h`) keeps the walk on a stack: a
+ node with an unused edge pushes its other end, and a node with none is
+ popped and written, so that the closed walks found from the nodes of the
+ walk are spliced into it, and the trail comes out backwards. Each edge is
+ followed once, and a cursor per node never goes back; an unoriented edge
+ is listed at both its ends with one mark of use, the cursor skipping the
+ edges used from the other end, so that the walk costs
+ \f$ O( n + m ) \f$. The walk uses every edge reachable from its start,
+ and, under the conditions on the excesses, all of them when they lie in
+ one component, since a balanced component is strongly connected (with the
+ edge \f$ ( t , s ) \f$ added in the open case); a walk of fewer than
+ \f$ m \f$ edges thus tells that the edges are not connected, which needs
+ no other visit.
 
  Several other headers decide properties by the visits above, with the bound of
  a visit unless their comments say otherwise. A free tree has \f$ m = n - 1 \f$
@@ -682,7 +708,7 @@
  net events of the edges in the order of their first event, then of the nodes
  deleted.
 
- <em>Lemma 8 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
+ <em>Lemma 9 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
  of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (8) gives.
  The graph obtained by replaying \f$ C \f$ on \f$ G \f$ is the one obtained by
  replaying \f$ B \f$, and \f$ |C| \le |B| \f$.
@@ -712,12 +738,12 @@
  repair (1) if one is repairable, and by the certificate (2) if all are
  harmless, in which case nothing is computed.
 
- <em>Lemma 9 (the batch test).</em> If each condition of the certificate
+ <em>Lemma 10 (the batch test).</em> If each condition of the certificate
  involves the weight of a single edge, and each event of \f$ P \f$ is tested
  on the certificate of the solution before \f$ P \f$, then the events of
  \f$ P \f$ found harmless leave the solution optimal all together.
 
- Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 8, so that
+ Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 9, so that
  each condition of the certificate is touched by at most one of them, and a
  harmless event keeps true the conditions that it touches; the conditions
  that no event touches stay as they were.
@@ -742,7 +768,7 @@
  gives no bound of them, while those of the other nodes are still the costs
  of their paths in \f$ T \f$, which no raised edge touches.
 
- <em>Lemma 10 (the increases).</em> Let \f$ A \f$ be the union of the
+ <em>Lemma 11 (the increases).</em> Let \f$ A \f$ be the union of the
  subtrees of \f$ T \f$ under the heads of the edges of \f$ T \f$ raised or
  deleted by \f$ P \f$. Set \f$ d[ x ] = \infty \f$ for \f$ x \in A \f$, then
  \f[
@@ -909,7 +935,7 @@
  \f$ u_i = \min_j c( i , j ) \f$ and \f$ v = 0 \f$, which satisfy (11)
  whatever the signs of the costs.
 
- <em>Lemma 11 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
+ <em>Lemma 12 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
  (11) with the pairs of \f$ M \f$ tight, and let the costs of the row
  \f$ i \f$ change. Removing the pair of \f$ i \f$ from \f$ M \f$ and setting
  \f[
@@ -956,7 +982,7 @@
  representations, and its use is the algebra of the graph [see
  `incidence()`], not the visits.
 
- <em>Lemma 12 (the universal sink).</em> A universal sink, a node with an
+ <em>Lemma 13 (the universal sink).</em> A universal sink, a node with an
  edge from each of the other \f$ n - 1 \f$ nodes and no edge out, is found or
  shown not to exist with at most \f$ 3 ( n - 1 ) \f$ calls of
  `hasEdge()`, \f$ O( n ) \f$ time on the adjacency matrix (exercise 12.10).
