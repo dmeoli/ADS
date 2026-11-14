@@ -1575,19 +1575,20 @@ but still counted.
 An insertion that goes past a full group sets the bit $\beta$ of its key in
 the overflow of that group, and a search stops at the first group whose
 overflow lacks $\beta$, after the places of that group whose fingerprint
-matches; a search for an absent key thus reads, in the common case, one
-group of 16 bytes (one line of the cache) and never touches the pairs.
+matches. A search for an absent key thus reads, in the common case, one
+group of 16 bytes (one line of the cache), and it never touches the
+pairs.
 `remove()` empties the place with no deleted mark. However, the bits of
 overflow stay set until the next rebuild, and the searches keep going past
-their group; we therefore call *counted* an empty place of a group whose
+their group. We therefore call *counted* an empty place of a group whose
 overflow is not 0, since it still counts as full. A removal adds 1 to a
 bound $d$ of the places counted with no load from memory (whether its place
 is counted would take a read of the control bytes), and an insertion into
 a counted place subtracts 1. Let $b( m ) = m - \lfloor m / 8 \rfloor$, the
 $7 m / 8$ of the pseudocode rounded up. When $n + d$ reaches $b( m )$, the
-places counted are counted exactly (`deleted()`, in $O( m / 15 )$ time),
-and the table is rebuilt only if fewer than $m / 16$ places are then left
-below $b( m )$: twice as large if the pairs exceed $b( m ) / 2$, and of the
+places counted are counted exactly (`deleted()`, in $O( m / 15 )$ time).
+After this count the table is rebuilt only if fewer than $m / 16$ places
+are left below $b( m )$: twice as large if the pairs exceed $b( m ) / 2$, and of the
 same size otherwise, in which case only the bits of overflow and the places
 counted go away. These rules keep each inspection finite, as we now show.
 
@@ -1601,16 +1602,17 @@ insertion finds an empty place, within one visit of each group.*
 whose overflow is not 0, since an insertion that sets the first bit of a
 group finds the group full, with no empty place to count. Hence $D$ grows
 by at most 1 at a removal, while $d$ grows by 1; an insertion into a
-counted place lowers both by 1, a recount sets $d = D$ and a rebuild sets
-both to 0, so that $D \le d$. A removal leaves $n + d$ unchanged. An
+counted place lowers both by 1. A recount sets $d = D$, a rebuild sets both
+to 0, and therefore $D \le d$. A removal leaves $n + d$ unchanged. An
 insertion that neither recounts nor rebuilds finds $n + d < b( m )$, and
 one after a recount finds $n + d + m / 16 < b( m )$; both raise $n + d$ by
 at most 1. Finally, a rebuild at the same size leaves at most $b( m ) / 2$
 pairs, and a doubling at most $b( m ) + 1 \le b( 2 m )$, with $d = 0$.
 Thus the full places and those counted are at most $n + D \le b( m ) < m$
 (a table with places has at least 24 of them, and one with none searches a
-static group with no key and the overflow 0), and some place is neither
-full nor counted, i.e., it is empty and its group has the overflow 0. The
+static group with no key and the overflow 0). Some place is therefore
+neither full nor counted, i.e., it is empty and its group has the overflow
+0. The
 triangular order visits all the $G$ groups ([Lemma
 7.9](07-dictionary.md#lem-7-9)), and a search stops at that group at the
 latest, an insertion at its empty place. $\square$
@@ -1631,19 +1633,18 @@ finds, a search compares at most $8 s / 255 < 1 / 2$ keys in
 expectation.*
 
 *Proof.* A search goes past a group only if the bit of its key is set in
-the overflow of the group, and an insertion only if the group is full; in
-both cases the group has no place that is neither full nor counted. By
+the overflow of the group, and an insertion only if the group is full.
+In both cases the group has no place that is neither full nor counted. By
 [Lemma 7.11](07-dictionary.md#lem-7-11) there are at most
-$F \le ( n + D ) / s \le b( m ) / s < 7 G / 8 + 1 / 8$ such groups, and
-therefore $F \le 7 G / 8$, since $F$ is an integer and $G \ge 2$ is a
-power of 2. The permutation of an absent key, or of the key of an
+$F \le ( n + D ) / s \le b( m ) / s < 7 G / 8 + 1 / 8$ such groups.
+Since $F$ is an integer and $G \ge 2$ is a power of 2, $F \le 7 G / 8$. The permutation of an absent key, or of the key of an
 insertion, is independent of the table, and its first $i$ groups are all
 among the $F$ with probability
 $\frac{F}{G} \cdot \frac{F - 1}{G - 1} \cdots \le ( 7 / 8 )^i$; hence it
 inspects at most $\sum_{i \ge 0} ( 7 / 8 )^i = 8$ groups in expectation.
 The insertion of a key of the table set its bit in each group that it went
 past, and the bit stays until the next rebuild, which inserts the key
-again; hence the search of the key, and its removal, inspect the groups of
+again. Hence the search of the key, and its removal, inspect the groups of
 that insertion, at most 8 in expectation. Finally, each of the at most $s$
 full places of a group inspected holds a key whose fingerprint equals that
 of the key searched with probability $1 / 255$, and summing over at most 8
@@ -1657,13 +1658,13 @@ amortized time.*
 
 *Proof.* A removal leaves $n + d$ unchanged, and an insertion raises it by
 at most 1. A recount costs $O( m )$, and when it does not rebuild it leaves
-$n + d + m / 16 < b( m )$; the next recount thus comes at least $m / 16$
+$n + d + m / 16 < b( m )$. Thus, the next recount comes at least $m / 16$
 insertions later, which pay for it. A rebuild into $m'$ places costs
 $O( m' )$ and leaves $d = 0$ and at most $b( m' ) / 2 + 2$ pairs: at most
 $b( m ) / 2$ at the same size $m' = m$, and at most
 $b( m ) + 1 \le b( 2 m ) / 2 + 2$ after a doubling. The next rebuild needs
 $n + d \ge b( m' )$ again, i.e., at least $b( m' ) / 2 - 2 \ge m' / 4$
-more insertions (since $m' \ge 24$), which pay for it. The second part then
+more insertions (since $m' \ge 24$), which pay for it. Finally, the second part
 follows from [Lemma 7.12](07-dictionary.md#lem-7-12). $\square$
 
 Some details of the engineering may be worth remarking, each of which the
@@ -1689,8 +1690,8 @@ by the mask of its full places, and skip the empty groups whole up to a
 sentinel group after the last. Hence, a step tests no bound ([Algorithm
 7.9](07-dictionary.md#alg-7-9)). `erase(it)` removes a pair and returns the
 iterator on the next one. A removal moves no other pair and keeps the
-iterators valid but the one on the removed pair, while an insertion of a
-new key that rebuilds the table invalidates them all. `reserve(n)` makes
+iterators valid but the one on the removed pair. Instead, an insertion of
+a new key that rebuilds the table invalidates them all. `reserve(n)` makes
 room for $n$ pairs, `clear()` keeps the places, and `capacity()`, `load()`,
 `forEach()` and `swap()` have their usual meaning.
 `try_emplace(k, a...)` is the search of `insert()` followed, when $k$ is
@@ -1908,7 +1909,7 @@ there. Its `NONE` is the position of an absent key, `contains()` checks
 whether an address is indexed, and `assign(v)` indexes an entire vector of
 pointers, $v[ i ]$ at the position $i$. Besides the operations of a
 dictionary, `renumber(E)` takes the sorted positions $E$ just erased from
-the vector, and in one pass over the table it drops the objects that were
+the vector. In one pass over the table, it drops the objects that were
 there and moves each other position $p$ to $p - \mathrm{rank}( p )$, where
 $\mathrm{rank}( p ) = | \{ e \in E : e < p \} |$ ([Algorithm
 7.12](07-dictionary.md#alg-7-12), [Figure
@@ -1943,7 +1944,7 @@ objects erased before it, i.e., by $\mathrm{rank}( p )$. For $p < N$, the
 erased positions below $p$ are those of the words $w_0 , \ldots , w_{j-1}$,
 $j = \lfloor p / 64 \rfloor$, which $r_j$ counts, and those of $w_j$ below
 the bit $p \bmod 64$, which the population count of
-$w_j \bmod 2^{p \bmod 64}$ counts (line 8); for $p \ge N$ all of $E$ is
+$w_j \bmod 2^{p \bmod 64}$ counts (line 8). For $p \ge N$, all of $E$ is
 below $p$ (line 5). An object goes to $D$ exactly when the bit of its
 position is 1, i.e., when its position is in $E$, and the removals come
 after the visit, which they therefore do not disturb. Building $B$ and the
@@ -2036,8 +2037,8 @@ class CuckooHashTable {
 The walk of the evictions (the loop of the insertion above) starts when the
 two places of the new key are full, and moves the key in hand to the other
 place of the key it evicts; in the cuckoo graph it follows the edges of the
-keys it moves, and whether it ends depends on the shape of the component
-of the new key.
+keys it moves. Whether it ends depends on the shape of the component of
+the new key.
 
 <span id="lem-7-15"></span>**Lemma 7.15.** *The keys can be placed if and
 only if each connected component of the cuckoo graph has at most one
@@ -2054,7 +2055,7 @@ place, since its $e - 1$ old keys lie in its $v \ge e$ places. The walk
 starts at the place $h_1$ of the new key, and as long as it meets no place
 twice it follows a path, which ends if it reaches an empty place.
 Otherwise it meets a place already visited and closes the only cycle of the
-component; from there each key that it evicts goes back to the place it
+component. From there each key that it evicts goes back to the place it
 had before the walk, and the walk retraces its path back to $h_1$, where
 it evicts the new key to $h_2$. From $h_2$ it follows a path that meets no
 place of the first part, since this would close a second cycle, and it ends
@@ -2067,12 +2068,13 @@ bounds that follow do not depend on the two tables of their scheme.
 
 <span id="lem-7-16"></span>**Lemma 7.16.** *Let the $n$ keys have their two
 places independent and uniform on the $m$ places, with $m \ge 2 c n$ for
-some $c > 1$, and let $x = 1 / c$. Then (i) for two places $i$ and $j$
+some $c > 1$, and let $x = 1 / c$. We have the following. (i) For two
+places $i$ and $j$
 (possibly equal) and $L \ge 1$, the cuckoo graph has a path (a cycle, if
 $i = j$) of $L$ edges from $i$ to $j$ with probability at most
-$x^L / m$; (ii) the component of a place has fewer than $c / ( c - 1 )$
+$x^L / m$. (ii) The component of a place has fewer than $c / ( c - 1 )$
 places in expectation, and an insertion that does not fail makes fewer
-than $4 c / ( c - 1 )$ evictions in expectation; (iii) the graph has a
+than $4 c / ( c - 1 )$ evictions in expectation. (iii) The graph has a
 cycle with probability at most $1 / ( c - 1 )$, and a component with two
 cycles with probability at most $4 x / ( ( 1 - x )^3 m )$.*
 
@@ -2096,8 +2098,8 @@ cycles contains a connected subgraph with one edge more than its $v$
 places, made either of two cycles joined by a path (possibly with no edge)
 or of three paths between two places. Such a subgraph is fixed by at most
 $( v + 2 )^2$ choices of the lengths of its cycles and paths, which add up
-to $v + 1$, by its $v$ places, at most $m^v$, and by its $v + 1$ keys, at
-most $n^{v+1}$; its probability is thus at most
+to $v + 1$. It is also fixed by its $v$ places, at most $m^v$ choices, and
+by its $v + 1$ keys, at most $n^{v+1}$. Its probability is thus at most
 $\sum_{v \ge 1} ( v + 2 )^2 m^v n^{v+1} ( 2 / m^2 )^{v+1} \le
 \frac{1}{m} \sum_{j \ge 1} ( j + 1 )^2 x^j =
 \frac{x ( 4 - 3 x + x^2 )}{( 1 - x )^3 m}$, and $4 - 3 x + x^2 < 4$.
@@ -2689,7 +2691,7 @@ expectation is $1 / p$; the function $y - \log_2 y$ of $y = 1 / p$ is
 convex on $[ 1 , \varphi^2 ]$, and therefore at most
 $\max\{ 1 , \varphi^2 - 2 \log_2 \varphi \} < 1.24$. $\square$
 
-The bound is tight within 0.06 bits for small $p$, and the code is never
+The bound is tight within 0.06 bits for small $p$. Also, the code is never
 longer than the entropy of $X$ by more than 1.563 bits. By [Lemma
 7.21](07-dictionary.md#lem-7-21), a tree of $m$ keys with $t$ nodes with a
 seed thus takes at most $1.563 t + \log_2 ( m^m / m! ) \le 1.563 t + m
@@ -2903,11 +2905,11 @@ class SkipList {
 ![Figure 7.23. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `remove(1)`, which redirects the link of 0 on the level 0 to 2, and then after `remove(3)`, with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, which redirects the links of 2 on the levels 0, 1 and 2 to 4 ([Morin 2013, exercise 4.3](Z-bibliography.md#ref-morin-cpp)); the links changed and their nodes in violet.](../figures/dictionary-skiplist-remove.svg){#fig-7-23}
 
 Its contracts check that `insert()` leaves the key there and `remove()`
-takes it away, and the invariant, that each level is sorted and a sublist
+takes it away. They also check the invariant, that each level is sorted and a sublist
 of the level below, in $O( n \log n )$ time at the contract level 3.
 `forEach()` and the forward iterators visit the pairs along the level 0 in
 increasing order, and `size()`, `empty()` and `levels()` have the obvious
-meaning; the list cannot be copied, since its nodes are linked by pointers,
+meaning. The list cannot be copied, since its nodes are linked by pointers,
 but it can be moved. Each step of a search, an insertion or a removal takes
 constant time, and [Lemma 7.23](07-dictionary.md#lem-7-23) gives the
 theorem of the book.
@@ -3234,7 +3236,7 @@ also, the keys with a given prefix are the marked nodes below the node of
 the prefix, in lexicographic order ([Knuth 1998,
 §6.3](Z-bibliography.md#ref-knuth1998v3)). Headers of this section go
 from the trie of the textbooks to the compact, the blind, the adaptive and
-the succinct tries; the search by prefix on sorted arrays and the front
+the succinct tries. The search by prefix on sorted arrays and the front
 coding are in [§15.6](15-string.md#sec-15-6).
 
 ### 7.10.1 The trie and the compact trie {#sec-7-10-1}
@@ -3323,11 +3325,11 @@ at most $2 n$ nodes besides the root, however long the keys are.*
 
 *Proof.* Marked nodes are $n$. An unmarked node other than the root has
 at least two children, and the leaves are all marked. In a tree the
-children of all the nodes are the nodes less the root, and hence the
-internal nodes $u$ satisfy $\sum_u ( c( u ) - 1 ) = \lambda - 1$, $c( u )$
-the children of $u$ and $\lambda$ the leaves; since each term is at least
-0, and at least 1 for an unmarked node other than the root, there are at
-most $\lambda - 1 \le n - 1$ such nodes. $\square$
+children of all the nodes are the nodes less the root. Hence the internal
+nodes $u$ satisfy $\sum_u ( c( u ) - 1 ) = \lambda - 1$, where $c( u )$
+is the number of the children of $u$ and $\lambda$ that of the leaves.
+Each term is at least 0, and at least 1 for an unmarked node other than
+the root; there are thus at most $\lambda - 1 \le n - 1$ such nodes. $\square$
 
 ### 7.10.2 The blind search of the Patricia trie {#sec-7-10-2}
 
@@ -3349,7 +3351,7 @@ lengths of the nodes, possibly skipping characters that do not match, until
 a leaf or a node with no edge for $P$, and takes a leaf below it
 (`blindLeaf()`). It computes the longest common prefix $\ell$ of $P$ and of
 the string $s$ of that leaf. Finally, it finds on the path the edge $( u ,
-v )$ where $\ell$ falls, $| u | \le \ell < | v |$, and the position of $P$
+v )$ where $\ell$ falls, $| u | \le \ell < | v |$. Then the position of $P$
 is among the children of $u$, by the character $P[ \ell ]$, if $\ell = | u
 |$, and otherwise just before or just after the strings below $v$, by the
 comparison of $P[ \ell ]$ with $s[ \ell ]$.
@@ -3441,7 +3443,7 @@ anchors costs $O( ( p / B ) \log n_a )$ transfers instead. When even the
 trie does not fit in memory, the string B-tree of [Ferragina and Grossi
 1999](Z-bibliography.md#ref-ferragina1999) splits it into Patricia tries of
 a block each, linked as a B-tree, for $O( ( p + N_{\mathit{occ}} ) / B +
-\log_B n )$ transfers, and the cache-oblivious version of [Bender et al.
+\log_B n )$ transfers; also, the cache-oblivious version of [Bender et al.
 2006](Z-bibliography.md#ref-bender2006) drops $B$ from the code. `upper()`
 and `lower()` give the two levels, `access(i)` decodes the string $i$ from
 its bucket, and `anchorsOf()` extracts the anchors of a coding.
@@ -3597,8 +3599,8 @@ free slots, cut from blocks that double up to 2 MB. Hence, a leaf costs no
 call to the allocator. Its invariant, checked at the contract level 3 on
 the trees of up to 2048 keys, requires that the keys of the leaves extend
 the paths that lead to them. It also requires that each node but the root
-branches or ends a key, that the bytes of a node are sorted and its layout
-the one of its count, and that the leaves are `size()`.
+branches or ends a key, and that the bytes of a node are sorted and its
+layout the one of its count. Finally, the leaves must be `size()`.
 
 ### 7.10.4 The Patricia trie in succinct space {#sec-7-10-4}
 
@@ -3937,9 +3939,9 @@ prefix of $i$ bits to the smallest and the largest key with that prefix (an
 The binary search finds $\ell$ as above, and the entry gives the successor
 directly. An insertion links the new key before its successor and widens
 the entries of its $w$ prefixes. A removal replaces the smallest key of
-a prefix by the next one in the list and the largest by the previous one,
-the keys of a prefix being consecutive in the list ([Algorithm
-7.31](07-dictionary.md#alg-7-31)). `find()`, `lookup()` and `contains()`
+a prefix by the next one in the list and the largest by the previous one;
+this is correct since the keys of a prefix are consecutive in the list
+([Algorithm 7.31](07-dictionary.md#alg-7-31)). `find()`, `lookup()` and `contains()`
 look at $t[ w ]$ alone, in $O( 1 )$ expected time, `seek(x)` gives the
 iterator on the successor, as in `XFastTrie`, and `entries()` counts the
 entries of the tables.
