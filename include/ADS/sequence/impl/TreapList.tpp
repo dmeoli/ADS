@@ -41,7 +41,6 @@ void TreapList< T >::rotateLeft( Ptr & t )
 template< class T >
 auto TreapList< T >::nodeAt( std::size_t i ) const -> Node *
 {
- //! [get]
  Node * t = f_root.get();
  for( std::size_t l ; i != ( l = sz( t->left ) ) ; )
   if( i < l ) t = t->left.get();
@@ -50,7 +49,6 @@ auto TreapList< T >::nodeAt( std::size_t i ) const -> Node *
    t = t->right.get();
    }
  return( t );
- //! [get]
  }
 
 template< class T >
@@ -70,7 +68,6 @@ void TreapList< T >::set( std::size_t i , const T & v )
 template< class T >
 void TreapList< T >::add( Ptr & t , std::size_t i , const T & v )
 {
- //! [add]
  if( ! t ) {
   t = std::make_unique< Node >( Node{ v , f_g() , 1 , nullptr , nullptr } );
   return;
@@ -85,7 +82,6 @@ void TreapList< T >::add( Ptr & t , std::size_t i , const T & v )
   update( t );
   if( t->right->priority > t->priority ) rotateLeft( t );
   }
- //! [add]
  }
 
 template< class T >
@@ -99,7 +95,6 @@ void TreapList< T >::add( std::size_t i , const T & v )
 template< class T >
 T TreapList< T >::remove( Ptr & t , std::size_t i )
 {
- //! [remove]
  const std::size_t l = sz( t->left );
  if( ( i == l ) && ( ! t->left || ! t->right ) ) {   // one child at most
   T v = std::move( t->item );
@@ -121,7 +116,6 @@ T TreapList< T >::remove( Ptr & t , std::size_t i )
  T v = ( i < l ) ? remove( t->left , i ) : remove( t->right , i - l - 1 );
  update( t );
  return( v );
- //! [remove]
  }
 
 template< class T >
@@ -136,7 +130,6 @@ T TreapList< T >::remove( std::size_t i )
 template< class T >
 auto TreapList< T >::split( Ptr t , std::size_t i ) -> std::pair< Ptr , Ptr >
 {
- //! [split]
  if( ! t )
   return( std::pair< Ptr , Ptr >( nullptr , nullptr ) );
  if( i <= sz( t->left ) ) {
@@ -149,13 +142,11 @@ auto TreapList< T >::split( Ptr t , std::size_t i ) -> std::pair< Ptr , Ptr >
  t->right = std::move( a );
  update( t );
  return( std::pair< Ptr , Ptr >( std::move( t ) , std::move( b ) ) );
- //! [split]
  }
 
 template< class T >
 auto TreapList< T >::join( Ptr a , Ptr b ) -> Ptr
 {
- //! [join]
  if( ! a ) return( b );
  if( ! b ) return( a );
  if( a->priority > b->priority ) {
@@ -166,7 +157,6 @@ auto TreapList< T >::join( Ptr a , Ptr b ) -> Ptr
  b->left = join( std::move( a ) , std::move( b->left ) );
  update( b );
  return( b );
- //! [join]
  }
 
 template< class T >

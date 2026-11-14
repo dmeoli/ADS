@@ -92,7 +92,6 @@ inline long BoundaryTagAllocator::allocate( long n )
  return( a + 1 );                           // the first word of the user
  }
 
-//! [boundary-free]
 inline void BoundaryTagAllocator::free( long a )
 {
  long p = a - 1;
@@ -114,7 +113,6 @@ inline void BoundaryTagAllocator::free( long a )
  link( p );
  ADS_AUDIT( tiled() );
  }
-//! [boundary-free]
 
 inline long BoundaryTagAllocator::freeWords( void ) const
 {
@@ -187,7 +185,6 @@ inline long BuddyAllocator::allocate( long n )
  return( a );
  }
 
-//! [buddy-free]
 inline void BuddyAllocator::free( long a )
 {
  const auto it = f_used.find( a );
@@ -205,7 +202,6 @@ inline void BuddyAllocator::free( long a )
  f_free[ k ].insert( a );
  ADS_AUDIT( merged() );
  }
-//! [buddy-free]
 
 inline long BuddyAllocator::freeWords( void ) const
 {

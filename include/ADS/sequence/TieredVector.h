@@ -354,6 +354,28 @@ class TieredVector {
 
  /// \f$ x \f$ at the index \f$ i \f$, the items before \f$ i \f$ one place
  /// back
+ ///
+ /// In pseudocode, \f$ w \f$ the place of \f$ x \f$ counted from the
+ /// first place of \f$ B_0 \f$, the gap included:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insertFront}( i , x ) \cr
+ /// 2 & \quad \textbf{if}\ g = 0\ \textbf{then}\ \text{add an empty}
+ ///     \text{ block at the front};\ g \gets b \cr
+ /// 3 & \quad w \gets g + i - 1;\ k \gets \lfloor w / b \rfloor \cr
+ /// 4 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ k - 1\ \textbf{do}
+ ///     \quad \triangleright\ \text{the first item of } B_{j+1}
+ ///     \text{ to the back of } B_j \cr
+ /// 5 & \qquad B_j.\mathit{off} \gets B_j.\mathit{off} + 1;\ B_j[
+ ///     B_j.\mathit{off} + b - 1 ] \gets B_{j+1}[ B_{j+1}.\mathit{off} ]
+ ///     \cr
+ /// 6 & \quad s \gets g \text{ if } k = 0 \text{, and 1 otherwise};
+ ///     \ \text{move the items of } B_k \text{ at the places } s ..
+ ///     w \bmod b \text{ one place back} \cr
+ /// 7 & \quad B_k[ B_k.\mathit{off} + w \bmod b ] \gets x;\ g \gets g -
+ ///     1;\ n \gets n + 1
+ /// \end{array}}
+ /// \f]
  void insertFront( std::size_t i , T && x );
 
  /// removes the item at the index \f$ i \f$, the items before it one place

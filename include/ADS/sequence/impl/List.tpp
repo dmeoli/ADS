@@ -216,13 +216,11 @@ typename List< T , Pooled >::Pos
 List< T , Pooled >::position( std::size_t i ) const
 {
  ADS_PRE( i <= f_size );
- //! [position]
  Pos p;
  if( i < f_size / 2 )                       // from the front
   for( p = f_sentinel.succ ; i > 0 ; --i ) p = p->succ;
  else                                       // from the back
   for( p = sentinel() , i = f_size - i ; i > 0 ; --i ) p = p->pred;
- //! [position]
  return( p );
  }
 
@@ -275,13 +273,11 @@ void List< T , Pooled >::checkSize( void ) const
 template< class T , bool Pooled >
 bool List< T , Pooled >::isPalindrome( void ) const
 {
- //! [isPalindrome]
  Pos p = f_sentinel.succ , q = f_sentinel.pred;
  for( std::size_t k = f_size / 2 ; k > 0 ; --k , p = p->succ , q = q->pred )
   if( !( p->value == q->value ) )
    return( false );
  return( true );
- //! [isPalindrome]
  }
 
 template< class T , bool Pooled >
@@ -303,9 +299,7 @@ void List< T , Pooled >::rotate( std::size_t r )
  r %= f_size;
  if( r == 0 )
   return;
- //! [rotate]
  relink( sentinel() , position( f_size - r ) );   // the sentinel moves
- //! [rotate]
  ADS_INVARIANT( linked() );
  }
 
@@ -323,7 +317,6 @@ List< T , Pooled > List< T , Pooled >::truncate( std::size_t i )
    u = remove( u );
    }
  else {
-  //! [truncate]
   Pos last = f_sentinel.pred;
   u->pred->succ = sentinel();               // this list ends before u
   f_sentinel.pred = u->pred;
@@ -333,7 +326,6 @@ List< T , Pooled > List< T , Pooled >::truncate( std::size_t i )
   last->succ = L.sentinel();
   L.f_size = f_size - i;
   f_size = i;
-  //! [truncate]
   }
  ADS_POST( f_size == i );
  ADS_INVARIANT( linked() && L.linked() );
@@ -348,7 +340,6 @@ void List< T , Pooled >::absorb( List & l2 )
   return;
  if constexpr( Pooled )
   f_pool.adopt( l2.f_pool );                // the cells change pool
- //! [absorb]
  Pos a = l2.f_sentinel.succ , b = l2.f_sentinel.pred;
  a->pred = f_sentinel.pred;
  f_sentinel.pred->succ = a;
@@ -356,7 +347,6 @@ void List< T , Pooled >::absorb( List & l2 )
  f_sentinel.pred = b;
  l2.f_sentinel.succ = l2.f_sentinel.pred = l2.sentinel();
  f_size += std::exchange( l2.f_size , 0 );
- //! [absorb]
  ADS_INVARIANT( linked() && l2.linked() );
  }
 
@@ -365,7 +355,6 @@ List< T , Pooled > List< T , Pooled >::deal( void )
 {
  [[maybe_unused]] const std::size_t n = f_size;
  List L;
- //! [deal]
  for( Pos p = f_sentinel.succ ;
       ( p != sentinel() ) && ( p->succ != sentinel() ) ; p = p->succ ) {
   Pos q = p->succ;                          // of odd rank
@@ -379,7 +368,6 @@ List< T , Pooled > List< T , Pooled >::deal( void )
    ++L.f_size;
    }
   }
- //! [deal]
  ADS_POST( ( f_size == ( n + 1 ) / 2 ) && ( L.f_size == n / 2 ) );
  ADS_INVARIANT( linked() && L.linked() );
  return( L );
@@ -389,13 +377,11 @@ template< class T , bool Pooled >
 void List< T , Pooled >::reverse( void )
 {
  const auto old = detail::snapshot( *this );
- //! [reverse]
  Pos p = sentinel();
  do {                                       // the two links of each cell
   std::swap( p->pred , p->succ );           // exchanged, the sentinel's too
   p = p->pred;                              // the old successor
   } while( p != sentinel() );
- //! [reverse]
  ADS_AUDIT( ( [ & ] {
   Pos a = f_sentinel.succ , b = old->f_sentinel.pred;
   for( ; a != sentinel() ; a = a->succ , b = b->pred )
@@ -413,11 +399,9 @@ void List< T , Pooled >::takeFirst( List & l2 )
   l2.remove( l2.f_sentinel.succ );
   }
  else {
-  //! [takeFirst]
   relink( l2.f_sentinel.succ , sentinel() );
   --l2.f_size;
   ++f_size;
-  //! [takeFirst]
   }
  }
 
@@ -443,7 +427,6 @@ List< T , Pooled > List< T , Pooled >::merge( List & l1 , List & l2 ,
   l2.f_sentinel.succ = l2.f_sentinel.pred = l2.sentinel();
   }
  else {
-  //! [merge]
   while( ! l1.empty() && ! l2.empty() )
    if( less( l2.f_sentinel.succ->value , l1.f_sentinel.succ->value ) )
     L.takeFirst( l2 );
@@ -451,7 +434,6 @@ List< T , Pooled > List< T , Pooled >::merge( List & l1 , List & l2 ,
     L.takeFirst( l1 );
   L.absorb( l1 );
   L.absorb( l2 );
-  //! [merge]
   }
  ADS_AUDIT( ( [ & ] {
   for( Pos p = L.f_sentinel.succ ; ( p != L.sentinel() ) &&
@@ -471,7 +453,6 @@ List< T , Pooled >::sortChain( Cell * a , std::size_t k , C & less )
   if( a ) a->succ = nullptr;
   return( a );
   }
- //! [sortChain]
  Cell * b = a;                              // the second half, by a walk
  for( std::size_t j = k / 2 ; j > 0 ; --j ) b = b->succ;
  b = sortChain( b , k - k / 2 , less );     // b first: a still reaches it
@@ -482,7 +463,6 @@ List< T , Pooled >::sortChain( Cell * a , std::size_t k , C & less )
   if( less( b->value , a->value ) ) { t->succ = b; t = b; b = b->succ; }
   else { t->succ = a; t = a; a = a->succ; }
  t->succ = a ? a : b;
- //! [sortChain]
  return( head.succ );
  }
 

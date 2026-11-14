@@ -79,7 +79,6 @@ inline bool isPalindrome( const std::string & s )
 
 inline bool isDyckWord( std::span< const int > w )
 {
- //! [isDyckWord]
  std::size_t h = 0;                         // the size of the stack
  for( int c : w ) {
   ADS_PRE( ( c == 1 ) || ( c == -1 ) );
@@ -88,12 +87,10 @@ inline bool isDyckWord( std::span< const int > w )
   else --h;
   }
  return( true );
- //! [isDyckWord]
  }
 
 inline bool isMatched( std::string_view s )
 {
- //! [isMatched]
  ArrayStack< char > S( s.size() );
  for( char c : s )
   switch( c ) {
@@ -104,7 +101,6 @@ inline bool isMatched( std::string_view s )
    default: ADS_PRE( false );
    }
  return( S.empty() );
- //! [isMatched]
  }
 
 template< Stack S , Queue Q >
@@ -114,11 +110,9 @@ void reverseWithQueue( S & s )
   if constexpr( ADS_CONTRACTS >= 3 ) return( detail::stackItems( s ) );
   else return( std::vector< typename S::Item >() );
   }();
- //! [reverseWithQueue]
  Q q;
  while( ! s.empty() ) q.enqueue( s.pop() );
  while( ! q.empty() ) s.push( q.dequeue() );
- //! [reverseWithQueue]
  ADS_AUDIT( ( [ & ] {
   auto now = detail::stackItems( s );
   return( std::equal( now.begin() , now.end() , old.rbegin() ,

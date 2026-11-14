@@ -185,15 +185,16 @@ queue, as (4.1) requires. $\square$
 
 Our code computes the modulo of (4.2) without a division. Since $h < m$
 and $n \le m$, the sum $h + n$ is below $2 m$, and its remainder is the sum
-itself, or the sum minus $m$ when it reaches $m$. In the same way,
-advancing $h$ is an increment followed by a comparison:
+itself, or the sum minus $m$ when it reaches $m$; in the same way, the
+advance of $h$ in line 3 of `dequeue()` is an increment followed by a
+comparison with $m$. For instance, with the header
+`ADS/queue/ArrayQueue.h`,
 
 ```cpp
---8<-- "generated/ArrayQueue-enqueue.cpp"
-```
-
-```cpp
---8<-- "generated/ArrayQueue-dequeue.cpp"
+ADS::ArrayQueue< int > Q( 6 );             // m = 6, n = 0
+for( int v : { 1 , 2 , 3 } ) Q.enqueue( v );
+int f = Q.dequeue();                       // f is 1, and n = 2
+bool b = Q.contains( 3 );                  // true
 ```
 
 The item of `dequeue()` is moved out of its place, as in `ArrayStack`.
@@ -213,6 +214,25 @@ in the same way when $3 n$ does not exceed its size. By the argument of
 [Lemma 3.1](03-stack.md#lem-3-1), this costs $O( 1 )$ amortized time per
 operation. In the library, the variant that grows is `RingDeque`
 ([§4.5](04-queue.md#sec-4-5)), at both ends.
+
+In `ADS/queue/ArrayQueue.h`, the declarations of `ArrayQueue` that a user
+calls are
+
+```cpp
+template< class T >
+class ArrayQueue {
+ public:
+  using Item = T;
+  explicit ArrayQueue( std::size_t dim );
+  bool empty( void ) const;
+  const T & top( void ) const;
+  T dequeue( void );
+  void enqueue( const T & v );
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  bool contains( const T & v ) const;
+  };
+```
 
 ## 4.3 A queue on a linked list {#sec-4-3}
 
@@ -241,18 +261,10 @@ item.
 
 In the code, the test of line 3 of `enqueue()` (whether the new cell is
 linked from the front or from the last cell) becomes a single assignment
-through a reference. Its cells come from an `ObjectPool` of the queue
-([§5.5](05-memory.md#sec-5-5)):
-
-```cpp
---8<-- "generated/LinkedQueue-enqueue.cpp"
-```
-
-```cpp
---8<-- "generated/LinkedQueue-dequeue.cpp"
-```
-
-The cell freed by a `dequeue()` is the one that the next `enqueue()` takes.
+through a reference to the pointer to change. Its cells come from an
+`ObjectPool` of the queue ([§5.5](05-memory.md#sec-5-5)), which gives the
+new cell of line 2 of `enqueue()`, and to which `dequeue()` gives back the
+cell it unlinks, after moving its item out. The cell freed by a `dequeue()` is the one that the next `enqueue()` takes.
 A queue in a steady state (as many insertions as removals) therefore calls
 no allocator, and its cells usually stay in the cache (at least when the
 queue is "small"). Besides, the class gives `size()` in $O( 1 )$ time, the
@@ -262,6 +274,24 @@ by cell, in $O( n )$ time; a move takes the cells and the pool in $O( 1 )$
 time, and leaves the queue moved from empty and usable. Its contracts check
 the preconditions of (4.1), and that `enqueue(v)` leaves $v$ at the front
 when the queue was empty.
+
+In `ADS/queue/LinkedQueue.h`, the declarations of `LinkedQueue` that a user
+calls are
+
+```cpp
+template< class T >
+class LinkedQueue {
+ public:
+  using Item = T;
+  LinkedQueue( void );
+  bool empty( void ) const;
+  void enqueue( const T & v );
+  T dequeue( void );
+  const T & top( void ) const;
+  std::size_t size( void ) const;
+  bool operator==( const LinkedQueue & o ) const;
+  };
+```
 
 ## 4.4 A deque on a bidirectional list {#sec-4-4}
 
@@ -307,6 +337,26 @@ the algorithm of Pape and D'Esopo ([Pape
 1974](Z-bibliography.md#ref-pape1974)), which puts a node at the tail the
 first time it is reached and at the head afterwards
 ([§14.8.1](14-graph.md#sec-14-8-1)).
+
+In `ADS/queue/Dequeue.h`, the declarations of `Dequeue` that a user calls
+are
+
+```cpp
+template< class T >
+class Dequeue {
+ public:
+  using Item = T;
+  bool empty( void ) const;
+  void insertHead( const T & v );
+  void insertTail( const T & v );
+  T removeHead( void );
+  T removeTail( void );
+  const T & head( void ) const;
+  const T & tail( void ) const;
+  void push_back( const T & v );
+  void push_front( const T & v );
+  };
+```
 
 ## 4.5 A deque on a circular vector that doubles {#sec-4-5}
 
@@ -368,22 +418,10 @@ $t$ are the counters of the front and of the back.
 --8<-- "generated/RingDeque-emplace_front.pseudo.md"
 
 In the common case an insertion is a test, a construction in place and an
-increment. The growth is a call out of line, behind a branch marked as
-unlikely:
-
-```cpp
---8<-- "generated/RingDeque-emplace_back.cpp"
-```
-
-```cpp
---8<-- "generated/RingDeque-relocate.cpp"
-```
-
-```cpp
---8<-- "generated/RingDeque-growFront.cpp"
-```
-
-The new item is built in a temporary before the growth, since the argument
+increment, i.e., the lines 2 and 6 of `emplace_back()`. The growth of the
+lines 3 to 5 is a call out of line, behind a branch marked as unlikely, and
+for an insertion at the front it puts the new item at the last place of the
+new vector, as described above. The new item is built in a temporary before the growth, since the argument
 of `push_back()` may be an item of the same deque (say,
 `d.push_back( d.front() )`), which the growth moves and destroys; the
 temporary is then moved into its place. Each of the removals `pop_front()` and
@@ -442,18 +480,24 @@ front side.
 
 <span id="alg-4-5"></span>**Algorithm 4.5.** The insertion and the
 removal at a rank of `RingDeque` (the `add(i,x)` and `remove(i)` of the
-`ArrayDeque` of [Morin 2013, §2.4](Z-bibliography.md#ref-morin-cpp)); $D[
-0 .. n - 1 ]$ are the items by rank.
+`ArrayDeque` of [Morin 2013, §2.4](Z-bibliography.md#ref-morin-cpp)), and
+the moves of the loops of line 4 of `insert()` and line 6 of `erase()` by
+runs ([Morin 2013, exercise 2.6](Z-bibliography.md#ref-morin-cpp)); $D[
+0 .. n - 1 ]$ are the items by rank, the item $D[ k ]$ at the place
+$( h + k ) \bmod m$ of the vector $A$, and $\ell$ the length of a run.
 
 --8<-- "generated/RingDeque-insert.pseudo.md"
 
 --8<-- "generated/RingDeque-erase.pseudo.md"
 
+--8<-- "generated/RingDeque-shiftDown.pseudo.md"
+
 <span id="lem-4-3"></span>**Lemma 4.3.** *`insert(i, v)` moves at most
 $\min\{ i , n - i \} + 2$ items, and takes
 $O( 1 + \min\{ i , n - i \} )$ amortized time; `erase(i)` moves
 $\min\{ i , n - 1 - i \}$ items, and takes $O( 1 + \min\{ i , n - i
-\} )$ time.*
+\} )$ time. Each of their loops moves its items in at most three runs of
+places contiguous in the vector.*
 
 *Proof.* For $i < \lfloor n / 2 \rfloor$, `insert()` moves the front item
 to a new place and $i - 1$ items, and then writes $v$; since then $i <
@@ -464,33 +508,26 @@ moves; here $n - i \le \min\{ i , n - i \} + 1$, because $i \ge \lfloor n
 way, `erase()` moves $i$ items when $i < \lfloor n / 2 \rfloor$, and $n -
 1 - i$ otherwise, which is then at most $i$. Only an insertion at an end may
 grow the vector, and its cost is amortized by
-[Lemma 4.2](04-queue.md#lem-4-2). $\square$
+[Lemma 4.2](04-queue.md#lem-4-2). As for the runs, consider `shiftDown()`
+(the argument for its mirror is the same). The places $d$ of its
+destinations are the residues modulo $m$ of the $\mathit{hi} -
+\mathit{lo} < n \le m$ consecutive integers $h + \mathit{lo} , \ldots , h
++ \mathit{hi} - 1$; at most $m$ consecutive integers contain at most one
+multiple of $m$, and $d$ passes from $m - 1$ to 0 only at a multiple of $m$
+that is not the first of them, hence at most once. The same holds for
+the places $s = ( d + 1 ) \bmod m$ of the sources, which are the residues
+of $\mathit{hi} - \mathit{lo} \le m$ consecutive integers. By line 5, a
+run ends either at $\mathit{hi}$ or where $d$ or $s$ is about to pass from
+$m - 1$ to 0, i.e., at most at two places besides the last; hence there are
+at most three runs. $\square$
 
-The moves of the two sides are made on runs of places that are contiguous
-in the vector, as [Morin 2013, exercise 2.6](Z-bibliography.md#ref-morin-cpp)
-asks. Indeed, the ranks $\mathit{lo} , \ldots , \mathit{hi}$ of the items to
-move occupy at most two pieces of the vector, and the places one rank away at
-most two more. A run stops at the first end of the vector that either the
-source or the destination meets, and there are therefore three runs at
-most, each moved by one `std::move` (one `memmove()` for the items that
-can be copied bit by bit):
-
-```cpp
---8<-- "generated/RingDeque-shiftDown.cpp"
-```
-
-The function `shiftUp()` is the mirror, by `std::move_backward`, and
-`insert()` and `erase()` are short on top of the two:
-
-```cpp
---8<-- "generated/RingDeque-insert.cpp"
-```
-
-```cpp
---8<-- "generated/RingDeque-erase.cpp"
-```
-
-The argument $v$ of `insert()` is copied before anything moves, since it
+The moves of the two sides are thus made on runs of places that are
+contiguous in the vector, as [Morin 2013,
+exercise 2.6](Z-bibliography.md#ref-morin-cpp) asks: each run of line 6 of
+`shiftDown()` is one `std::move` (one `memmove()` for the items that can be
+copied bit by bit), and `shiftUp()`, which makes the moves of line 7 of
+`insert()` and line 3 of `erase()`, is the mirror, by
+`std::move_backward`. The argument $v$ of `insert()` is copied before anything moves, since it
 may be an item of the deque; the insertions at the ranks 0 and $n$ are
 those at the ends.
 
@@ -509,10 +546,6 @@ $r$ reduced modulo $n$.
 
 --8<-- "generated/RingDeque-rotate.pseudo.md"
 
-```cpp
---8<-- "generated/RingDeque-rotate.cpp"
-```
-
 On a `RingDeque`, the function `rotate(l, r)` of
 `ADS/sequence/IndexedList.h` calls this member; on the lists that have no
 `rotate()` it follows the $\gcd( n , r )$ cycles of the permutation by
@@ -521,6 +554,42 @@ On a `RingDeque`, the function `rotate(l, r)` of
 a rank below $n$, that `insert(i, v)` and `erase(i)` receive $i \le n$
 and $i < n$, and the invariant that the number of places is 0 or a power
 of 2 not smaller than $n$.
+
+In `ADS/queue/RingDeque.h`, the declarations of `RingDeque` that a user
+calls are
+
+```cpp
+template< class T >
+class RingDeque {
+ public:
+  RingDeque( void );
+  RingDeque( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  void reserve( std::size_t n );
+  T & front( void );
+  const T & front( void ) const;
+  T & back( void );
+  const T & back( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  void push_back( const T & v );
+  void push_back( T && v );
+  void push_front( const T & v );
+  void push_front( T && v );
+  template< class ... Args > T & emplace_back( Args && ... args );
+  template< class ... Args > T & emplace_front( Args && ... args );
+  void pop_front( void );
+  void pop_back( void );
+  void clear( void );
+  void insert( std::size_t i , const T & v );
+  void erase( std::size_t i );
+  void rotate( std::size_t r );
+  void shrink_to_fit( void );
+  bool operator==( const RingDeque & o ) const;
+  };
+```
 
 ## 4.6 A queue with no duplicates {#sec-4-6}
 
@@ -559,6 +628,23 @@ second structure. We kept the specification of [Montresor 2025,
 §4.3](Z-bibliography.md#ref-montresor2025), in which the items need only an
 equality.
 
+In `ADS/queue/UniqueQueue.h`, the declarations of `UniqueQueue` that a user
+calls are
+
+```cpp
+template< std::equality_comparable T , Duplicate D = Duplicate::IGNORE_NEW >
+class UniqueQueue {
+ public:
+  using Item = T;
+  bool empty( void ) const;
+  void enqueue( const T & v );
+  T dequeue( void );
+  const T & top( void ) const;
+  bool contains( const T & v ) const;
+  std::size_t size( void ) const;
+  };
+```
+
 ## 4.7 A random queue {#sec-4-7}
 
 The `RandomQueue` of [Morin 2013, exercise
@@ -579,23 +665,25 @@ $A[ 0 .. n - 1 ]$ are the items.
 
 --8<-- "generated/RandomQueue-pop.pseudo.md"
 
-```cpp
---8<-- "generated/RandomQueue-pop.cpp"
-```
-
 <span id="lem-4-4"></span>**Lemma 4.4.** *Whatever the sequence of
 operations before it, a `pop()` on a queue of $n$ items returns each of
 them with probability $1 / n$, provided that the draw of the place is
-uniform and independent of the previous ones.*
+uniform and independent of the previous ones. Hence $n$ pops after $n$
+pushes of distinct items give them in each of the $n!$ orders with
+probability $1 / n!$.*
 
 *Proof.* The place $j$ is drawn uniformly among the $n$ places, each of
 which holds one of the items, and the draw does not depend on how the
-items came to be in those places. $\square$
+items came to be in those places. For the second claim, a given order
+$x_1 , \ldots , x_n$ comes out if the $k$-th pop returns $x_k$, for each
+$k$; given the first $k - 1$ pops, this has probability $1 / ( n - k + 1
+)$ by the first claim, applied to the $n - k + 1$ items left, and the
+product of these conditional probabilities is $1 / n!$. $\square$
 
 The order of the vector thus never matters, and the exchange with the last
 place, which changes it, is harmless; `sample()` reads an item drawn in the
-same way, without removing it. Emptying a queue after $n$ pushes gives the
-items in a uniform random order. This is the shuffle of [Fisher and Yates
+same way, without removing it. Emptying a queue after $n$ pushes thus
+gives the items in a uniformly random order. This is the shuffle of [Fisher and Yates
 1938](Z-bibliography.md#ref-fisher1938) in the form of [Durstenfeld
 1964](Z-bibliography.md#ref-durstenfeld1964), where the place drawn is
 exchanged with the last one, which then leaves.
@@ -614,10 +702,6 @@ case it draws another word ([Algorithm 4.9](04-queue.md#alg-4-9)).
 in $[ 0 , n )$ ([Lemire 2019](Z-bibliography.md#ref-lemire2019)).
 
 --8<-- "generated/RandomQueue-uniform.pseudo.md"
-
-```cpp
---8<-- "generated/RandomQueue-uniform.cpp"
-```
 
 <span id="lem-4-5"></span>**Lemma 4.5.** *If the words $w$ are uniform
 in $[ 0 , 2^{64} )$, `uniform(n)` returns each $h \in [ 0 , n )$ with
@@ -651,6 +735,27 @@ biased). Also, the class has `size()`, `empty()`, `clear()` and `items()`,
 the vector of the items in no order. Its contracts check that `pop()` and
 `sample()` find the queue not empty, and that `uniform(n)` receives $n > 0$.
 
+In `ADS/queue/RandomQueue.h`, the declarations of `RandomQueue` that a user
+calls are
+
+```cpp
+template< class T >
+class RandomQueue {
+ public:
+  using Item = T;
+  explicit RandomQueue( std::uint64_t seed = 1 );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void push( const T & x );
+  void push( T && x );
+  T pop( void );
+  const T & sample( void );
+  std::size_t uniform( std::size_t n );
+  void clear( void );
+  const std::vector< T > & items( void ) const;
+  };
+```
+
 ## 4.8 Queues and deques with the minimum {#sec-4-8}
 
 The `MinQueue` and the `MinDeque` of [Morin 2013, exercises 3.15 and
@@ -681,13 +786,10 @@ $O( 1 )$ time (cf. `min()` below).
 
 --8<-- "generated/MinQueue-dequeue.pseudo.md"
 
-```cpp
---8<-- "generated/MinQueue-transfer.cpp"
-```
-
-```cpp
---8<-- "generated/MinQueue-min.cpp"
-```
+The loop of line 2 is the move of $I$ to $O$, item by item, and `min()`
+returns the minimum of the stack that is not empty, when the other one is,
+and otherwise the lesser of the two minima, i.e., the one of $O$ unless
+that of $I$ is less than it.
 
 <span id="lem-4-6"></span>**Lemma 4.6.** *The items of a `MinQueue`
 leave it in the order in which they entered; any sequence of $s$
@@ -701,7 +803,9 @@ item is the top of $O$, or the bottom of $I$ when $O$ is empty (the item
 that `top()` reads). Each item is pushed on $I$ once, popped from $I$ and
 pushed on $O$ at most once, and popped from $O$ at most once: these are
 four operations of the stacks per item, and the $s$ operations enqueue at
-most $s$ items. Every item is in one of the two stacks, whose minima are
+most $s$ items. Since each operation of a `MinStack` costs $O( 1 )$
+amortized time ([§3.5](03-stack.md#sec-3-5)), the $4 s$ operations of the
+stacks take $O( s )$ time. Every item is in one of the two stacks, whose minima are
 their least items. $\square$
 
 The bound is on the sequence, not on the operation. A `dequeue()` that finds
@@ -734,15 +838,18 @@ items of the stack $s$ from its bottom.
 
 --8<-- "generated/MinDeque-deal.pseudo.md"
 
-```cpp
---8<-- "generated/MinDeque-deal.cpp"
-```
+<span id="lem-4-7"></span>**Lemma 4.7.** *A deal does not change the
+order of the items of a `MinDeque`. Any sequence of $s$ operations on a
+`MinDeque` from the empty deque takes $O( s )$ time, and `min()` returns
+the least item in $O( 1 )$ time.*
 
-<span id="lem-4-7"></span>**Lemma 4.7.** *Any sequence of $s$ operations
-on a `MinDeque` from the empty deque takes $O( s )$ time, and `min()`
-returns the least item in $O( 1 )$ time.*
-
-*Proof.* Let a deal of $k$ items cost at most $c k$, for a constant $c$
+*Proof.* Let a deal move the items $s_0 , \ldots , s_{k-1}$ of $B$ (from
+its bottom) to the empty $F$, the other case being symmetric. In the order
+of the deque, these items are $s_0 , \ldots , s_{k-1}$, since $F$ is
+empty. After line 3 of `deal()`, $F$ holds $s_0 , \ldots , s_{h-1}$ from
+its top down, and after line 4, $B$ holds $s_h , \ldots , s_{k-1}$ from its
+bottom up; read as above, the deque is still $s_0 , \ldots , s_{k-1}$. As
+for the cost, let a deal of $k$ items cost at most $c k$, for a constant $c$
 (it pops $k$ items and pushes $k$), and let $\Phi = c \, | \, |F| - |B| \,
 |$, which is 0 for the empty deque and never negative. An operation that
 does not deal costs $O( 1 )$ and changes $\Phi$ by $c$ at most. A deal is
@@ -763,6 +870,47 @@ classes also have `size()`, `empty()` and `clear()`, and `MinDeque` reads
 its ends by `front()` and `back()` (the bottom of the other stack when a
 side is empty). In both, the contracts check that the removals, the reads
 and `min()` find the structure not empty.
+
+In `ADS/queue/MinQueue.h`, the declarations of `MinQueue` that a user calls
+are
+
+```cpp
+template< class T , class C = std::less<> >
+class MinQueue {
+ public:
+  using Item = T;
+  explicit MinQueue( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void enqueue( const T & x );
+  T dequeue( void );
+  const T & top( void ) const;
+  const T & min( void ) const;
+  void clear( void );
+  };
+```
+
+In `ADS/queue/MinDeque.h`, the declarations of `MinDeque` that a user calls
+are
+
+```cpp
+template< class T , class C = std::less<> >
+class MinDeque {
+ public:
+  using Item = T;
+  explicit MinDeque( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void push_front( const T & x );
+  void push_back( const T & x );
+  T pop_front( void );
+  T pop_back( void );
+  const T & front( void ) const;
+  const T & back( void ) const;
+  const T & min( void ) const;
+  void clear( void );
+  };
+```
 
 ## 4.9 The minimum in constant worst-case time {#sec-4-9}
 
@@ -785,11 +933,13 @@ the work that fills them starts. Its live cells are the range
 $[ \mathit{lo} , \mathit{hi} )$, and a cell holds an item and the place of
 the least item among those of the places from 0 up to it. Hence the minimum of
 the array is read at the cell of its top, and a push builds a cell on
-top with its least place:
-
-```cpp
---8<-- "generated/RealTimeMinQueue-MinArray-push.cpp"
-```
+top with its least place, that of the cell below unless the new item is
+less than the item there (the function `push()` of
+[Algorithm 4.12](04-queue.md#alg-4-12), where $\mu( i )$ is the least
+place of the cell $i$). By induction on the pushes, the least place of
+each cell is that of a least item among the places from 0 up to it, as
+long as no cell has been removed from the bottom (in the queue and in the
+deque, an array that receives pushes has had no such removal).
 
 A cell is removed from the top by `pop()`, and from the bottom by
 `popBottom()`, which destroys it and advances $\mathit{lo}$. However, the least
@@ -813,22 +963,21 @@ at a time.
 
 ![Figure 4.10. A rotation of `RealTimeMinQueue` (the queue `a`, ..., `f` before, `a` the front), each array drawn from its bottom (left) to its top: `enqueue(g)` makes $|R| = |F| + 1$, freezes $R$ as $R'$ and moves three items of it to the new front $N$ (in orange); the next `dequeue()` returns `a`, moves `d`, `c`, `b` and finds the moves of $F$ at its top, so that $N$ becomes the front.](../figures/queue-rtqueue.svg){#fig-4-10}
 
-<span id="alg-4-12"></span>**Algorithm 4.12.** The removal of
-`RealTimeMinQueue` and the moves of a rotation ([Hood and Melville
-1981](Z-bibliography.md#ref-hood1981)).
+<span id="alg-4-12"></span>**Algorithm 4.12.** The push on an array
+with the minimum, the removal of `RealTimeMinQueue` and the moves of a
+rotation ([Hood and Melville 1981](Z-bibliography.md#ref-hood1981)), and
+the minimum of the queue; $r_0$ is the size of $R'$ when the rotation
+started.
+
+--8<-- "generated/RealTimeMinQueue-MinArray-push.pseudo.md"
 
 --8<-- "generated/RealTimeMinQueue-dequeue.pseudo.md"
 
-```cpp
---8<-- "generated/RealTimeMinQueue-dequeue.cpp"
-```
+--8<-- "generated/RealTimeMinQueue-min.pseudo.md"
 
-```cpp
---8<-- "generated/RealTimeMinQueue-steps.cpp"
-```
-
-Ending the rotation costs no move, and it is checked even when the
-three moves are spent; hence $F$ is never left empty with the rotation
+The insertion `enqueue()` runs the lines 3 and 4 of `dequeue()` after its
+push on $R$. Ending the rotation (line 10) costs no move, and the code
+checks it even when the three moves are spent; hence $F$ is never left empty with the rotation
 still going on. A rotation allocates its arrays when it starts, $N$
 with $|F| + |R'|$ cells and the new back with $|F| + |R'| + 2$. Its old
 front, whose cells have all been moved or removed by then, is freed when
@@ -840,7 +989,7 @@ ends, which happens within $\lceil ( 2 f + 1 ) / 3 \rceil$ operations
 (the one that starts it included); at the end $|R| \le |F|$, and the arrays
 allocated at the start are large enough until the next rotation. Hence
 every operation of `RealTimeMinQueue` takes $O( 1 )$ time in the worst
-case.*
+case, and `min()` returns the least item.*
 
 *Proof.* The moves are at most the $f + 1$ of $R'$ and the $f$ of $F$ (fewer
 if some items of $F$ are removed first), three per operation, and hence at
@@ -860,20 +1009,19 @@ made after the start, at most $\lceil ( 2 f + 1 ) / 3 \rceil - 1 - d < 2 f +
 soon as $|R| = |F| + 1 \le 2 f + 2$, within the $2 f + 3$ cells of the back.
 Every operation thus makes one push or one pop, three moves, and at most one
 start and one end, each of which allocates or frees arrays with no live
-cells. $\square$
-
-The least item is the least of the minima of the four parts, $F$, $R'$, $N$
-and the back, each read at the cell of its top. The minimum of $F$ needs
-some care, since the least place of its top cell may be a cell already
-moved to $N$. In fact, the items of $F$ go to $N$ from its bottom, in
-order, after the $|R'|$ items of the frozen back; the item of the place $a$
-of $F$ is therefore at the place $|R'| + a$ of $N$. A minimum of $F$ found
-in $N$ is counted twice (in $F$ and in $N$), which does not change the
-least of the four.
-
-```cpp
---8<-- "generated/RealTimeMinQueue-min.cpp"
-```
+cells. As for `min()`, the items of the queue are those of the four parts
+$F$, $R'$, $N$ and $R$. The last three never lose a cell at the bottom, and
+the minimum of each is read at its top by the induction given with the
+arrays. The array $F$ has the live places from 0 when the rotation starts,
+since it is then the $N$ of the previous rotation, or the first front; the
+items of $F$ go to $N$ from its bottom, in order, after the $r_0$ items of
+$R'$, and the item of the place $a$ of $F$ is therefore at the place
+$r_0 + a$ of $N$. Hence the least place $a$ of the top of $F$ gives a least
+item among the live items of $F$ and those moved to $N$, read in $F$ or in
+$N$ by line 4 of `min()`; this item is in the queue, and no live item of
+$F$ is less than it. The least of the candidates of lines 4 and 5 is thus
+a least item of the queue (an item moved to $N$ may be counted twice, which
+does not change the least). $\square$
 
 Furthermore, the class visits the items from the front to the back by
 `forEach(f)`, in $O( n )$ time; the order is the top of $F$ down to its
@@ -906,28 +1054,20 @@ twelve cells at a time.
 <span id="alg-4-13"></span>**Algorithm 4.13.** The rebuild of
 `RealTimeMinDeque` (the global rebuilding of [Overmars
 1983](Z-bibliography.md#ref-overmars1983), after [Gajewska and Tarjan
-1986](Z-bibliography.md#ref-gajewska1986)).
+1986](Z-bibliography.md#ref-gajewska1986)), the test that starts it, and
+the removal that keeps the prefixes of the copies.
 
 --8<-- "generated/RealTimeMinDeque-rebuild.pseudo.md"
 
-The code of the test that starts a rebuild, of the start, of the copies and
-of the removal that keeps the prefixes is the following:
+--8<-- "generated/RealTimeMinDeque-due.pseudo.md"
 
-```cpp
---8<-- "generated/RealTimeMinDeque-due.cpp"
-```
+--8<-- "generated/RealTimeMinDeque-pop.pseudo.md"
 
-```cpp
---8<-- "generated/RealTimeMinDeque-start.cpp"
-```
-
-```cpp
---8<-- "generated/RealTimeMinDeque-steps.cpp"
-```
-
-```cpp
---8<-- "generated/RealTimeMinDeque-pop.cpp"
-```
+The start of a rebuild, before line 2 of `rebuild()`, takes for $G$ the
+side with more items (the front when the two are equal), computes $n_0$
+and $t$, and allocates the two new arrays; for $n_0 < 32$ it runs the
+steps until the rebuild ends, and frees the old arrays at once. In the
+code, the loop of line 3 checks the end of line 7 before it spends a copy.
 
 <span id="lem-4-9"></span>**Lemma 4.9.** *Let a rebuild start with $n_0
 \ge 32$ items. Then it ends within $n_0 / 11 + 2$ operations, during which
@@ -978,6 +1118,49 @@ time.
 Its contracts check the preconditions of the removals, and the invariant
 that a rebuild never reads a cell that a removal has destroyed.
 
+In `ADS/queue/RealTimeMinQueue.h`, the declarations of `RealTimeMinQueue`
+that a user calls are
+
+```cpp
+template< class T , class C = std::less<> >
+class RealTimeMinQueue {
+ public:
+  using Item = T;
+  explicit RealTimeMinQueue( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void enqueue( const T & x );
+  T dequeue( void );
+  const T & top( void ) const;
+  const T & min( void ) const;
+  template< class F > void forEach( F && f ) const;
+  void clear( void );
+  };
+```
+
+In `ADS/queue/RealTimeMinDeque.h`, the declarations of `RealTimeMinDeque`
+that a user calls are
+
+```cpp
+template< std::copy_constructible T , class C = std::less<> >
+class RealTimeMinDeque {
+ public:
+  using Item = T;
+  explicit RealTimeMinDeque( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void push_front( const T & x );
+  void push_back( const T & x );
+  T pop_front( void );
+  T pop_back( void );
+  const T & front( void ) const;
+  const T & back( void ) const;
+  const T & min( void ) const;
+  template< class F > void forEach( F && f ) const;
+  void clear( void );
+  };
+```
+
 ## 4.10 Algorithms on a queue {#sec-4-10}
 
 The functions of `ADS/queue/QueueAlgorithms.h` act on a queue through
@@ -1022,6 +1205,13 @@ each `enqueue()` beyond it solves it (on a `RingDeque`, the vector stops at
 two queues, filled in turn. Finally, writing the lines in a random order
 takes a `RandomQueue`, emptied after all the lines are in (cf.
 [Lemma 4.4](04-queue.md#lem-4-4)).
+
+In `ADS/queue/QueueAlgorithms.h`, the functions are declared as
+
+```cpp
+template< Queue Q > void extractPositive( Q & q , Q & out );
+template< Queue Q > void copyPositive( Q & q , Q & out );
+```
 
 ## 4.11 Engineered variants {#sec-4-11}
 

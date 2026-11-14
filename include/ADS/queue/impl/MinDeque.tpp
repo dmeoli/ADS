@@ -19,7 +19,6 @@ namespace ADS {
 template< class T , class C >
 void MinDeque< T , C >::deal( MinStack< T , C > & s , MinStack< T , C > & t )
 {
- //! [deal]
  std::vector< T > a;                        // s from the bottom
  a.reserve( s.size() );
  while( ! s.empty() )
@@ -30,7 +29,6 @@ void MinDeque< T , C >::deal( MinStack< T , C > & s , MinStack< T , C > & t )
   t.push( std::move( a[ k - h + i ] ) );
  for( std::size_t i = k - h ; i > 0 ; --i )   // s_h .. s_{k-1} on s
   s.push( std::move( a[ i - 1 ] ) );
- //! [deal]
  }
 
 template< class T , class C >

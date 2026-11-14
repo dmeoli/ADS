@@ -201,7 +201,6 @@ class alignas( 64 ) PageHeap {
  /// \end{array}}
  /// \f]
  /// \pre \f$ g \f$ is `pageOf( p )`, a page of the heap
- //! [give]
  void give( Page * g , void * p ) {
   Free * const f = static_cast< Free * >( p );
   f->next = g->free;
@@ -213,7 +212,6 @@ class alignas( 64 ) PageHeap {
    f_class[ g->c ].avail = g;
    }
   }
- //! [give]
 
  /// the number of the slots given and not freed
  [[nodiscard]] std::size_t live( void ) const { return( f_live ); }

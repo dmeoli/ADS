@@ -61,12 +61,10 @@ template< class T >
 std::size_t RootishArrayStack< T >::block( std::size_t i )
 {
  // (1), then the least b with ( b + 1 ) ( b + 2 ) / 2 > i by a correction
- //! [block]
  auto b = std::size_t( std::ceil( ( -3.0 +
                         std::sqrt( 9.0 + 8.0 * double( i ) ) ) / 2.0 ) );
  while( ( b > 0 ) && ( b * ( b + 1 ) / 2 > i ) ) --b;
  while( ( b + 1 ) * ( b + 2 ) / 2 <= i ) ++b;
- //! [block]
  return( b );
  }
 
@@ -115,14 +113,12 @@ void RootishArrayStack< T >::grow( void )
 template< class T >
 void RootishArrayStack< T >::shrink( void )
 {
- //! [shrink]
  for( std::size_t r = f_blocks.size() ;
       ( r > 0 ) && ( ( r < 2 ? 0 : ( r - 2 ) * ( r - 1 ) / 2 ) >= f_n ) ;
       --r ) {
   std::allocator< T >().deallocate( f_blocks.back() , r );
   f_blocks.pop_back();
   }
- //! [shrink]
  }
 
 template< class T >
@@ -153,12 +149,10 @@ void RootishArrayStack< T >::insert( std::size_t i , const T & x )
   }
  [[maybe_unused]] const std::size_t n = f_n;
  T y = x;                                   // x may be an item
- //! [insert]
  emplace_back( std::move( ( *this )[ f_n - 1 ] ) );
  for( std::size_t k = f_n - 2 ; k > i ; --k )
   *place( k ) = std::move( *place( k - 1 ) );
  *place( i ) = std::move( y );
- //! [insert]
  ADS_POST( f_n == n + 1 );
  ADS_INVARIANT( fits() );
  }
@@ -168,13 +162,11 @@ void RootishArrayStack< T >::erase( std::size_t i )
 {
  ADS_PRE( i < f_n );
  [[maybe_unused]] const std::size_t n = f_n;
- //! [erase]
  for( std::size_t k = i ; k + 1 < f_n ; ++k )
   *place( k ) = std::move( *place( k + 1 ) );
  place( f_n - 1 )->~T();
  --f_n;
  shrink();
- //! [erase]
  ADS_POST( f_n == n - 1 );
  ADS_INVARIANT( fits() );
  }

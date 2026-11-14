@@ -99,7 +99,6 @@ void * ConcurrentPoolResource< M >::refill( Heap & h , std::size_t c )
  return( h.pages.more( c ) );
  }
 
-//! [give]
 template< std::size_t M >
 inline void ConcurrentPoolResource< M >::give( void * p , std::size_t c )
 {
@@ -124,9 +123,7 @@ inline void ConcurrentPoolResource< M >::give( void * p , std::size_t c )
  if( ++b.n == BATCH )
   send( b , c );
  }
-//! [give]
 
-//! [send]
 template< std::size_t M >
 void ConcurrentPoolResource< M >::send( Batch & b , std::size_t c )
 {
@@ -141,7 +138,6 @@ void ConcurrentPoolResource< M >::send( Batch & b , std::size_t c )
  b.head = b.tail = nullptr;
  b.n = 0;
  }
-//! [send]
 
 template< std::size_t M >
 template< std::size_t b , std::size_t a >

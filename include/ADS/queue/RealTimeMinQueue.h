@@ -142,17 +142,29 @@ class MinArray {
   }
 
  /// \f$ x \f$ in a new cell on top, with the least place by `less`
+ ///
+ /// In pseudocode, \f$ \mu( i ) \f$ the least place of the cell
+ /// \f$ i \f$, on an array whose cells are live from the place 0:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{push}( x ) \cr
+ /// 2 & \quad a[ \mathit{hi} ] \gets x;\ \mu( \mathit{hi} ) \gets
+ ///     \mathit{hi} \cr
+ /// 3 & \quad \textbf{if}\ \mathit{hi} > \mathit{lo}\ \textbf{and not}
+ ///     \ x < a[ \mu( \mathit{hi} - 1 ) ]\ \textbf{then}\ \mu(
+ ///     \mathit{hi} ) \gets \mu( \mathit{hi} - 1 ) \cr
+ /// 4 & \quad \mathit{hi} \gets \mathit{hi} + 1
+ /// \end{array}}
+ /// \f]
  template< class U >
  void push( U && x , const C & less ) {
   ADS_PRE( f_hi < f_cap );
-  //! [MinArray-push]
   std::construct_at( f_a + f_hi , Cell{ T( std::forward< U >( x ) ) ,
                                         f_hi } );
   if( ( f_hi > f_lo ) &&
       ! less( f_a[ f_hi ].item , at( least( f_hi - 1 ) ) ) )
    f_a[ f_hi ].m = least( f_hi - 1 );
   ++f_hi;
-  //! [MinArray-push]
   }
 
  /// the top cell destroyed
@@ -266,6 +278,24 @@ class RealTimeMinQueue {
  [[nodiscard]] const T & top( void ) const;
 
  /// the least item, the least of the minima of the parts
+ ///
+ /// In pseudocode, \f$ r_0 \f$ the size of \f$ R' \f$ when the
+ /// rotation started, and \f$ \mu \f$ the least place of a cell:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{min}() \cr
+ /// 2 & \quad X \gets \emptyset \cr
+ /// 3 & \quad \textbf{if}\ F \ne \emptyset\ \textbf{then}
+ ///     \ a \gets \mu( \text{the top of } F ) \cr
+ /// 4 & \qquad \textbf{if}\ a \text{ is a live place of } F
+ ///     \ \textbf{then}\ X \gets \{ F[ a ] \}\ \textbf{else}\ X \gets
+ ///     \{ N[ r_0 + a ] \} \cr
+ /// 5 & \quad \textbf{foreach}\ P \in \{ R' , N , R \}\ \textbf{do}
+ ///     \ \textbf{if}\ P \ne \emptyset\ \textbf{then}\ X \gets X
+ ///     \cup \{ \min P \} \cr
+ /// 6 & \quad \textbf{return}\ \text{the least item of } X
+ /// \end{array}}
+ /// \f]
  /// \pre the queue is not empty
  [[nodiscard]] const T & min( void ) const;
 

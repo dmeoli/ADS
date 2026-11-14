@@ -145,6 +145,20 @@ class RootishArrayStack {
  [[nodiscard]] std::size_t blocks( void ) const { return( f_blocks.size() ); }
 
  /// the block of the rank \f$ i \f$, (1)
+ ///
+ /// In pseudocode, the root in floating point corrected by two loops:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{block}( i ) \cr
+ /// 2 & \quad b \gets \lceil ( -3 + \sqrt{ 9 + 8 i } ) / 2 \rceil
+ ///     \quad \triangleright\ \text{in } \mathtt{double} \cr
+ /// 3 & \quad \textbf{while}\ b > 0\ \textbf{and}\ b ( b + 1 ) / 2 > i
+ ///     \ \textbf{do}\ b \gets b - 1 \cr
+ /// 4 & \quad \textbf{while}\ ( b + 1 ) ( b + 2 ) / 2 \le i
+ ///     \ \textbf{do}\ b \gets b + 1 \cr
+ /// 5 & \quad \textbf{return}\ b
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] static std::size_t block( std::size_t i );
 
  /// the item of rank \f$ i \f$, in the block \f$ b( i ) \f$ of (1)

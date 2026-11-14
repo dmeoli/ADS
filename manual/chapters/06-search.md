@@ -145,11 +145,7 @@ ends after at most $\lfloor \log_2 n \rfloor + 1 = \lceil \log_2 ( n + 1 ) \rcei
 comparisons with $\mathit{lo} = \mathit{hi}$, which is the answer by (6.2). $\square$
 
 Its contracts check (6.2) at the result, and that the range is sorted, an
-audit that costs $O( n )$ against the $O( \log n )$ of the search:
-
-```cpp
---8<-- "generated/BinarySearch-lowerBound.cpp"
-```
+audit that costs $O( n )$ against the $O( \log n )$ of the search.
 
 When the answer $h$ is near the start, or the length of the vector is not
 known, the search of [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)
@@ -163,7 +159,7 @@ follows runs on the places $2^{k-1}$ to $2^k - 2$, $2^{k-1} - 1$ of them,
 since the place $2^k - 1$ is already known to hold an item not smaller
 than $v$, and so costs at most $k - 1$ more comparisons
 ([Algorithm 6.3](06-search.md#alg-6-3) and
-[Figure 6.2](06-search.md#fig-6-2)); when the doubling passes the end of
+[Figure 6.2](06-search.md#fig-6-2)). When the doubling passes the end of
 the vector before the place $2^k - 1$, the probes are $k$ and the binary
 search runs on fewer places. In all, for $h \ge 1$, at most
 
@@ -320,6 +316,78 @@ vectors of $n$ items are the items of ranks $n - 1$ and $n$.
 
 --8<-- "generated/SortedSearches-kthOfTwoSorted.pseudo.md"
 
+In `ADS/search/BinarySearch.h`, the functions are declared as
+
+```cpp
+template< class T , class F >
+long binarySearch( const std::vector< T > & A , const T & v , F && trace );
+template< class T >
+long binarySearch( const std::vector< T > & A , const T & v );
+template< class T >
+BinaryTree< T > * decisionTree( const std::vector< T > & A );
+template< class T , class C = std::less<> >
+std::size_t lowerBound( const std::vector< T > & A , const T & v ,
+     std::size_t lo , std::size_t hi , C less = C() );
+template< class T , class C = std::less<> >
+std::size_t lowerBound( const std::vector< T > & A , const T & v ,
+     C less = C() );
+template< class T , class C = std::less<> >
+std::size_t upperBound( const std::vector< T > & A , const T & v ,
+     C less = C() );
+template< class T , class C = std::less<> >
+std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
+     C less = C() );
+```
+
+In `ADS/search/MonotoneSearch.h`, the functions are declared as
+
+```cpp
+template< std::integral I , class P >
+I exponentialSearch( P && p , I lo = I( 0 ) );
+template< class G , class P >
+std::size_t unboundedSearch( G && get , P && pred );
+template< std::unsigned_integral U > U integerSqrt( U n );
+template< std::unsigned_integral U > bool isPerfectSquare( U n );
+```
+
+In `ADS/search/InterpolationSearch.h`, the functions are declared as
+
+```cpp
+template< class T , class F >
+long interpolationSearch( const std::vector< T > & A , const T & v ,
+     F && trace );
+template< class T >
+long interpolationSearch( const std::vector< T > & A , const T & v );
+```
+
+In `ADS/search/KnuthSearches.h`, the functions are declared as
+
+```cpp
+template< class T >
+long fibonacciSearch( const std::vector< T > & A , const T & v ,
+     long * cmp = nullptr );
+template< class T >
+long uniformBinarySearch( const std::vector< T > & A , const T & v ,
+     long * cmp = nullptr );
+```
+
+In `ADS/search/SortedSearches.h`, the functions are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+std::size_t rotatedMinimum( const std::vector< T > & A , C less = C() );
+template< class T >
+requires( std::is_arithmetic_v< T > && ! std::is_same_v< T , bool > )
+std::size_t closestValue( const std::vector< T > & A , const T & x );
+template< class T , class S >
+std::optional< std::pair< std::size_t ,
+     std::size_t > > pairWithSum( const std::vector< T > & A ,
+     const S & x );
+template< class T , class C = std::less<> >
+T kthOfTwoSorted( const std::vector< T > & X ,
+     const std::vector< T > & Y , std::size_t k , C less = C() );
+```
+
 ## 6.3 Searches laid out for the memory {#sec-6-3}
 
 On a modern processor the comparisons of a binary search typically cost less
@@ -343,10 +411,6 @@ part still to examine is $A[ b .. b + \ell - 1 ]$, and $[ \cdot ]$ is 1
 when its condition holds and 0 otherwise.
 
 --8<-- "generated/StaticSearch-branchlessLowerBound.pseudo.md"
-
-```cpp
---8<-- "generated/StaticSearch-branchlessLowerBound.cpp"
-```
 
 <span id="lem-6-3"></span>**Lemma 6.3.** *On a sorted vector of $n > 0$
 items, `branchlessLowerBound()` returns $\mathrm{lowerBound}( v )$ after
@@ -415,11 +479,7 @@ to the leaves, $H - 1$.
 --8<-- "generated/CountLess-greaterBits.pseudo.md"
 
 A search is thus a loop of counts, one per level, and `upperBound()` counts
-the keys not larger than $v$ instead:
-
-```cpp
---8<-- "generated/StaticSearch-search.cpp"
-```
+the keys not larger than $v$ instead.
 
 Besides the two bounds, the tree answers `contains()` by `lowerBound()`,
 reads the item of a place by `operator[]`, and gives `size()`, `empty()`
@@ -439,7 +499,7 @@ Its space is on huge pages when it reaches 2 MB (cf.
 [§5.9](05-memory.md#sec-5-9)), and a search therefore misses the TLB at
 most once. In two points the S+ tree differs from the B-tree layout of [Khuong and Morin
 2017](Z-bibliography.md#ref-khuong2017): the leaves are the
-array itself, the inner keys only routing the search, and a node is
+sorted array, the inner keys only routing the search, and a node is
 searched by a count instead of a search. The layout of Eytzinger (a heap
 order of the items) also reads one line for the last 4 levels of the
 binary search, and with the prefetch of the 16 descendants 4 levels down
@@ -454,6 +514,32 @@ of lines and pages and searched a block with SIMD comparisons. In a lookup
 among the classic, the compressed and the learned indexes of integers, the
 comparative study of [Bellomo et al. 2025](Z-bibliography.md#ref-bellomo2025)
 finds the B-trees with SIMD searches the fastest.
+
+In `ADS/search/StaticSearch.h`, the declarations of the functions and of
+`SPlusTree` that a user calls are
+
+```cpp
+template< class T , class C = std::less<> >
+std::size_t branchlessLowerBound( const std::vector< T > & A ,
+     const T & v , C less = C() );
+template< class T , class Less = std::less< T > , std::size_t Bytes = 64 >
+requires std::is_trivially_copyable_v< T >
+class SPlusTree {
+ public:
+  using Item = T;
+  static constexpr std::size_t B = sizeof( T ) <= Bytes ? std::max<
+       std::size_t >( Bytes / sizeof( T ) , 2 ) : 2;
+  SPlusTree( void );
+  explicit SPlusTree( const std::vector< T > & A , Less less = Less() );
+  std::size_t lowerBound( const T & v ) const;
+  std::size_t upperBound( const T & v ) const;
+  bool contains( const T & v ) const;
+  const T & operator[]( std::size_t i ) const;
+  std::size_t size( void ) const;
+  bool empty( void ) const;
+  int height( void ) const;
+  };
+```
 
 ## 6.4 The PGM-index {#sec-6-4}
 
@@ -543,11 +629,7 @@ that their misses overlap, and is searched by a binary search with no
 branch. On repeated keys, whose places a line cannot all approximate, the
 answer may be out of the window, and the search then goes on past it by
 galloping, at a cost logarithmic in the distance. Since the items are a copy
-on huge pages, the window adds no miss of the TLB:
-
-```cpp
---8<-- "generated/PGMIndex-lowerBound.cpp"
-```
+on huge pages, the window adds no miss of the TLB.
 
 Like the S+ tree, the index answers `contains()`, `operator[]`, `size()`,
 `empty()` and `height()` (its levels), and also gives `segments()`, the
@@ -557,6 +639,28 @@ regular keys is far smaller than $n / ( 2 \epsilon )$: on keys in
 arithmetic progression, one segment covers them all. This is the point of
 a learned index, whose space depends on the regularity of the keys more
 than on their number.
+
+In `ADS/search/PGMIndex.h`, the declarations of `PGMIndex` that a user
+calls are
+
+```cpp
+template< class K , std::size_t E = 64 , std::size_t R = 4 >
+requires std::is_arithmetic_v< K >
+class PGMIndex {
+ public:
+  using Item = K;
+  PGMIndex( void );
+  explicit PGMIndex( const std::vector< K > & A );
+  std::size_t lowerBound( const K & v ) const;
+  bool contains( const K & v ) const;
+  const K & operator[]( std::size_t i ) const;
+  std::size_t size( void ) const;
+  bool empty( void ) const;
+  std::size_t segments( void ) const;
+  int height( void ) const;
+  std::size_t bytes( void ) const;
+  };
+```
 
 ## 6.5 The compressed PGM-index {#sec-6-5}
 
@@ -600,7 +704,7 @@ as a distance from its first place of at most $\epsilon + 1$ (at most
 $\epsilon$ with the exact slope, one more for its rounding). The first
 places of the segments, increasing, are kept by Elias-Fano (cf.
 [§22.6](22-succinct.md#sec-22-6)), and their first keys whole, searched by
-a PGM-index of their own (with $\epsilon = \epsilon_r = 4$) in place of the
+a separate PGM-index (with $\epsilon = \epsilon_r = 4$) in place of the
 levels above ([Algorithm 6.11](06-search.md#alg-6-11)). With $m$ segments
 and $\sigma$ slopes, this takes
 
@@ -634,6 +738,28 @@ construction checks each segment, and gives its own slope (appended to the
 table) to one whose line misses a point by more than $\epsilon + 1$. Besides
 `lowerBound()`, the class has the same accessors as `PGMIndex` but
 `height()`, and gives the number of its slopes by `slopes()`.
+
+In `ADS/search/CompressedPGMIndex.h`, the declarations of
+`CompressedPGMIndex` that a user calls are
+
+```cpp
+template< class K , std::size_t E = 64 >
+requires std::is_arithmetic_v< K >
+class CompressedPGMIndex {
+ public:
+  using Item = K;
+  CompressedPGMIndex( void );
+  explicit CompressedPGMIndex( std::vector< K > A );
+  std::size_t lowerBound( const K & v ) const;
+  bool contains( const K & v ) const;
+  const K & operator[]( std::size_t i ) const;
+  std::size_t size( void ) const;
+  bool empty( void ) const;
+  std::size_t segments( void ) const;
+  std::size_t slopes( void ) const;
+  std::size_t bytes( void ) const;
+  };
+```
 
 ## 6.6 The dynamic PGM-index {#sec-6-6}
 
@@ -700,7 +826,7 @@ a blocked filter of Bloom of its keys (cf. [§10.8](10-set.md#sec-10-8)),
 ([O'Neil et al. 1996](Z-bibliography.md#ref-oneil1996); [Dayan et al.
 2017](Z-bibliography.md#ref-dayan2017)). A lookup of a key that is not
 there thus reads one line of cache per level instead of searching each,
-and one that is there reads a line per newer level and searches its own
+and one that is there reads a line per newer level and searches only its
 (false positives aside). The filter of a level takes the keys that a merge
 brings in, and is built again, for twice the keys, only when it is full;
 the filters thus add a constant number of insertions into a filter per key
@@ -708,6 +834,34 @@ and level to the cost of [Lemma 6.7](06-search.md#lem-6-7). The number of
 distinct keys is not kept, since it would cost a lookup per insertion.
 Instead, `entries()` counts the pairs stored, tombstones and older pairs included,
 and `levels()` the levels below the buffer, empty or not.
+
+In `ADS/search/DynamicPGMIndex.h`, the declarations of `DynamicPGMIndex`
+that a user calls are
+
+```cpp
+template< class K , class V , std::size_t E = 16 , std::size_t B = 8 ,
+          std::size_t I = ( std::size_t( 1 ) << 24 ) >
+requires std::is_arithmetic_v< K >
+class DynamicPGMIndex {
+ public:
+  using key_type = K;
+  using mapped_type = V;
+  static constexpr std::size_t kBuffer = 128;
+  static constexpr std::size_t kIndexed = I;
+  static constexpr std::size_t kFiltered = std::size_t( 1 ) << 12;
+  DynamicPGMIndex( void );
+  explicit DynamicPGMIndex( const std::vector< std::pair< K , V > > & P );
+  void insert( const K & k , const V & v );
+  void erase( const K & k );
+  const V * find( const K & k ) const;
+  bool contains( const K & k ) const;
+  std::optional< std::pair< K , V > > lowerBound( const K & k ) const;
+  template< class F >
+  void forEach( const K & lo , const K & hi , F && f ) const;
+  std::size_t entries( void ) const;
+  std::size_t levels( void ) const;
+  };
+```
 
 ## 6.7 The minimum and the local optima {#sec-6-7}
 
@@ -805,13 +959,39 @@ $n - 1$ of the maximum, and $\Omega( \log n )$ are needed in the worst
 case; `localMinimum()` of a vector is the same search with the order
 reversed. On a binary tree, the walk down to a child smaller than the
 current node (the left one first) gives a local minimum, a node smaller
-than its parent and not larger than its children, in $O( h )$ comparisons,
+than its parent and no larger than its children, in $O( h )$ comparisons,
 $h$ the height. The same idea works in two dimensions, where a peak of an
 $n \times n$ matrix costs $\Theta( n )$ probes by the search on the middle
 row and the middle column alternately. On general graphs, however, no such
 bound exists, since a local minimum on the hypercube of dimension $d$ needs
 about $2^{d / 2}$ evaluations, even for a randomized algorithm ([Aldous
 1983](Z-bibliography.md#ref-aldous1983)).
+
+In `ADS/search/Minimum.h`, the functions are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+std::size_t argmin( const std::vector< T > & A , std::size_t start ,
+     std::size_t end , C less = C() );
+template< class T , class C = std::less<> >
+const T & min( const std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+std::pair< T , T > minMax( const std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+std::pair< T , T > minMaxDivide( const std::vector< T > & A ,
+     C less = C() );
+```
+
+In `ADS/search/LocalOptima.h`, the functions are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+std::size_t findPeak( const std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+std::size_t localMinimum( const std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+BinaryTree< T > * localMinimum( BinaryTree< T > * t , C less = C() );
+```
 
 ## 6.8 The selection {#sec-6-8}
 
@@ -900,10 +1080,13 @@ Below 600 items the pivot is the median of three, and a range of at most
 
 <span id="alg-6-16"></span>**Algorithm 6.16.** The engineered selection
 (the selection of [Hoare 1961](Z-bibliography.md#ref-hoare1961) with the
-sample of [Floyd and Rivest 1975](Z-bibliography.md#ref-floyd1975)); the
-range is $A[ 0 .. n - 1 ]$ and $k$ the place `nth`.
+sample of [Floyd and Rivest 1975](Z-bibliography.md#ref-floyd1975)), and
+its partition of Lomuto with no branch; the range is $A[ 0 .. n - 1 ]$ and
+$k$ the place `nth`.
 
 --8<-- "generated/NthElement-nthElement.pseudo.md"
+
+--8<-- "generated/NthElement-selectLomuto.pseudo.md"
 
 The partition suits the order of the range, which 64 items taken at a
 stride reveal. On a random order (more than 16 turns, i.e., a rise followed
@@ -917,9 +1100,24 @@ quicksort), while the partition of Hoare mispredicts half of its
 comparisons on random items. The loop is unrolled by 4, so that it does not
 depend on the alignment of one jump.
 
-```cpp
---8<-- "generated/NthElement-selectLomuto.cpp"
-```
+<span id="lem-6-11"></span>**Lemma 6.11.** *`selectLomuto()` makes $n -
+1$ comparisons and returns a place $q$ such that $A[ q ] = p$, the items
+before $q$ are smaller than $p$ (not larger, when the equal items go
+left), and those after $q$ are not.*
+
+*Proof.* Call an item *left* when the test of line 5 holds for it. We
+show that after the iteration $i$ of line 3 the items of $A[ 1 .. \ell -
+1 ]$ are left and those of $A[ \ell .. i ]$ are not, with $1 \le \ell \le
+i + 1$; this holds before the first iteration, with $\ell = 1$ and an
+empty second range. Line 4 exchanges $x = A[ i ]$ with $A[ \ell ]$, which
+is an item that is not left when $\ell < i$, and $x$ itself when $\ell =
+i$. If $x$ is left, line 5 extends the first range by the place $\ell$
+that now holds $x$, and the item moved to the place $i$ is not left; if
+$x$ is not left, it stays at the place $\ell$, the first of the second
+range. After the last iteration, $A[ 1 .. \ell - 1 ]$ are left and
+$A[ \ell .. n - 1 ]$ are not; line 6 moves $p$ to the place $q = \ell -
+1$ and the left item there, if $q > 0$, to the place 0. Each iteration
+makes one comparison, and there are $n - 1$ of them. $\square$
 
 On a range in some order (an organ pipe, a few runs) the partition is the
 scheme of Hoare, whose branches are then predicted and which writes only
@@ -935,15 +1133,14 @@ it, a later pivot equal to it is known to be the smallest with no pass.
 Finally, each round charges the items of its part to a budget of $4 n$
 items, which a random order hardly ever exhausts (by (6.12), the rounds of
 a random range of more than 600 items partition about $1.5 n$ items at
-most),
-and a round whose part the rest of the budget does not cover takes as its
+most). A round whose part the rest of the budget does not cover takes as its
 pivot the median of the medians, whose rounds cost (6.11). Hence the other
 rounds partition at most $4 n$ items in all, and their samples, selected
-recursively within their own budgets, hold $O( m^{2/3} )$ items of a part
+recursively within their budgets, hold $O( m^{2/3} )$ items of a part
 of $m > 600$, i.e., less than $m / 16$. By induction on $n$, the selection
 therefore takes $O( n )$ time in the worst case, as the selection of
-[Musser 1997](Z-bibliography.md#ref-musser1997) does by the same device;
-against the adversary of [McIlroy 1999](Z-bibliography.md#ref-mcilroy1999),
+[Musser 1997](Z-bibliography.md#ref-musser1997) does by the same device.
+Against the adversary of [McIlroy 1999](Z-bibliography.md#ref-mcilroy1999),
 which fixes the order of the items while they are compared, the
 comparisons stay below $16 n$ from $n = 2^{12}$ to $2^{18}$ (the test
 `ordered.nth-element-adversary`), where a budget counted in rounds let them
@@ -958,6 +1155,24 @@ rank $k$ in `ADS/search`.
 | `selection()` | at random, or the first item | $O( n )$ expected by (6.10), $\Theta( n^2 )$ in the worst case |
 | `medianOfMedians()` | the median of the medians of the groups of 5 | $O( n )$ in the worst case, by (6.11) |
 | `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case |
+
+In `ADS/search/Selection.h`, the functions are declared as
+
+```cpp
+template< class T , class R = std::mt19937 >
+T selection( std::vector< T > & A , std::size_t k , R * rng = nullptr );
+template< class T >
+T medianOfMedians( std::vector< T > & A , std::size_t k );
+```
+
+In `ADS/search/NthElement.h`, the functions are declared as
+
+```cpp
+template< std::random_access_iterator It , class C = std::less<> >
+void nthElement( It first , It nth , It last , C less = C() );
+template< class T , class C = std::less<> >
+T nthElement( std::vector< T > & A , std::size_t k , C less = C() );
+```
 
 ## 6.9 Range minima {#sec-6-9}
 
@@ -990,7 +1205,7 @@ minimum of $A$ as its root, and the Cartesian trees of the parts on its
 left and on its right as its subtrees. `cartesianTree()` builds it, as the
 parent of each place ($n$ for the root), in $O( n )$ time with a stack that
 holds its right spine, each item being pushed and popped once
-([Algorithm 6.18](06-search.md#alg-6-18)); equal items go to the right.
+([Algorithm 6.18](06-search.md#alg-6-18)). Equal items go to the right.
 
 <span id="alg-6-18"></span>**Algorithm 6.18.** The Cartesian tree of $A$
 ([Vuillemin 1980](Z-bibliography.md#ref-vuillemin1980)), the stack $S$
@@ -998,11 +1213,7 @@ holding the right spine of the tree of $A[ 0 .. i - 1 ]$.
 
 --8<-- "generated/RangeMinimum-cartesianTree.pseudo.md"
 
-```cpp
---8<-- "generated/RangeMinimum-cartesianTree.cpp"
-```
-
-<span id="lem-6-11"></span>**Lemma 6.11.** *$\mathrm{RMQ}( i , j )$ is the
+<span id="lem-6-12"></span>**Lemma 6.12.** *$\mathrm{RMQ}( i , j )$ is the
 lowest common ancestor of $i$ and $j$ in the Cartesian tree of $A$, i.e.,
 the node of least depth among those that the Euler tour of the tree visits
 between the first visits of $i$ and $j$ ([Bender and Farach-Colton
@@ -1058,7 +1269,7 @@ The bound $O( n )$ was first reached by [Harel and Tarjan
 1984](Z-bibliography.md#ref-harel1984) on the lowest common ancestors,
 with a far more involved structure; [Fischer and Heun
 2011](Z-bibliography.md#ref-fischer2011) need only $2 n + o( n )$ bits
-besides $A$, by describing each block by its own Cartesian tree, which
+besides $A$, by describing each block by its Cartesian tree, which
 removes the Euler tour and its factor 2. In practice the constant factors
 of the reduction are large, and the sparse table, the simplest of the
 three, is often faster on the arrays that fit in a cache. All the
@@ -1082,7 +1293,7 @@ $j$, which pops the items larger than the new one and pushes it
 
 ![Figure 6.9. A block of 8 items (64 in `WordRangeMinimum`) and the mask of the place 6 by (6.14), whose set bits are the places 2 and 6 of the minima from the right of the items 0 to 6; the leftmost minimum of the items 3 to 6 is the lowest set bit at or above 3, i.e., the place 6.](../figures/search-word.svg){#fig-6-9}
 
-<span id="lem-6-12"></span>**Lemma 6.12.** *Inside a block, the leftmost
+<span id="lem-6-13"></span>**Lemma 6.13.** *Inside a block, the leftmost
 minimum of $A[ i .. j ]$ is the place of the lowest set bit of
 $\mathit{mask}[ j ]$ at or above $i$, i.e.,
 $b + \mathrm{ctz}( \mathit{mask}[ j ] \wedge \neg ( 2^{i-b} - 1 ) )$.*
@@ -1100,15 +1311,11 @@ between, that of the two entries of a sparse table on the minima of the
 blocks that cover them, the leftmost of the smallest of three
 ([Algorithm 6.20](06-search.md#alg-6-20)). For each place, the minima of the suffixes and
 of the prefixes are kept, with their offsets in the block
-side by side, and so are the minima in the table; a query thus makes at
+side by side, and so are the minima in the table. A query thus makes at
 most five reads of the memory, independent of one another, and never reads
 the array. Both answers (in one block and across blocks) are computed, and
 one is chosen by a conditional move, which a random range would otherwise
-mispredict half of the times:
-
-```cpp
---8<-- "generated/WordRangeMinimum-query.cpp"
-```
+mispredict half of the times.
 
 <span id="alg-6-20"></span>**Algorithm 6.20.** The range minima by the
 stacks in a word (after [Baumstark et al.
@@ -1152,6 +1359,62 @@ minima in `ADS/search`.
 | `PlusMinusOneRangeMinimum` | $O( n )$ | $O( 1 )$, on steps of $\pm 1$ | Bender and Farach-Colton 2000 |
 | `RangeMinimum` | $O( n )$ | $O( 1 )$ | Bender and Farach-Colton 2000 |
 | `WordRangeMinimum` | $O( n )$, about 22 bytes per item of 32 bits | $O( 1 )$, five reads at most | Baumstark et al. 2017 |
+
+In `ADS/search/RangeMinimum.h`, the function is declared as
+
+```cpp
+template< class T , class Compare = std::less< T > >
+std::vector< std::size_t > cartesianTree( const std::vector< T > & A ,
+                                          Compare less = {} );
+```
+
+In `ADS/search/RangeMinimum.h`, the declarations of `SparseTable` and
+`PlusMinusOneRangeMinimum` and `RangeMinimum` that a user calls are
+
+```cpp
+template< class T , class Compare = std::less< T > >
+class SparseTable {
+ public:
+  SparseTable( void );
+  explicit SparseTable( std::vector< T > A , Compare less = {} );
+  std::size_t query( std::size_t i , std::size_t j ) const;
+  std::size_t size( void ) const;
+  const T & operator[]( std::size_t i ) const;
+  };
+class PlusMinusOneRangeMinimum {
+ public:
+  PlusMinusOneRangeMinimum( void );
+  explicit PlusMinusOneRangeMinimum( std::vector< long > D );
+  std::size_t query( std::size_t i , std::size_t j ) const;
+  std::size_t size( void ) const;
+  std::size_t blockSize( void ) const;
+  };
+template< class T , class Compare = std::less< T > >
+class RangeMinimum {
+ public:
+  RangeMinimum( void );
+  explicit RangeMinimum( std::vector< T > A , Compare less = {} );
+  std::size_t query( std::size_t i , std::size_t j ) const;
+  std::size_t size( void ) const;
+  const T & operator[]( std::size_t i ) const;
+  const std::vector< std::size_t > & eulerTour( void ) const;
+  };
+```
+
+In `ADS/search/WordRangeMinimum.h`, the declarations of `WordRangeMinimum`
+that a user calls are
+
+```cpp
+template< class T , class Compare = std::less< T > >
+class WordRangeMinimum {
+ public:
+  WordRangeMinimum( void );
+  explicit WordRangeMinimum( std::vector< T > A , Compare less = {} );
+  std::size_t query( std::size_t i , std::size_t j ) const;
+  std::size_t size( void ) const;
+  const T & operator[]( std::size_t i ) const;
+  };
+```
 
 ## 6.10 The searches compared {#sec-6-10}
 

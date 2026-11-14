@@ -20,7 +20,6 @@ template< class T >
 std::size_t RandomQueue< T >::uniform( std::size_t n )
 {
  ADS_PRE( n > 0 );
- //! [uniform]
  const std::uint64_t s = n;
  std::uint64_t h;
  std::uint64_t l = detail::wideProduct( f_g() , s , h );
@@ -29,7 +28,6 @@ std::size_t RandomQueue< T >::uniform( std::size_t n )
   while( l < t )
    l = detail::wideProduct( f_g() , s , h );
   }
- //! [uniform]
  return( std::size_t( h ) );
  }
 
@@ -38,13 +36,11 @@ T RandomQueue< T >::pop( void )
 {
  ADS_PRE( ! f_A.empty() );
  [[maybe_unused]] const std::size_t n = f_A.size();
- //! [pop]
  const std::size_t j = uniform( f_A.size() );
  if( j + 1 != f_A.size() )
   std::swap( f_A[ j ] , f_A.back() );
  T x = std::move( f_A.back() );
  f_A.pop_back();
- //! [pop]
  ADS_POST( f_A.size() == n - 1 );
  return( x );
  }

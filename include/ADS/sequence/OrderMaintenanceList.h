@@ -168,10 +168,8 @@ class OrderMaintenanceList {
  /// \pre \f$ a \f$ and \f$ b \f$ are elements of this list
  [[nodiscard]] bool testBefore( Element a , Element b ) const {
   ADS_PRE( a && b && a->bucket && b->bucket );
-  //! [testBefore]
   return( a->bucket == b->bucket ? a->label < b->label
                                  : a->bucket->label < b->bucket->label );
-  //! [testBefore]
   }
 
  /// the item of \f$ e \f$

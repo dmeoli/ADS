@@ -49,7 +49,6 @@ auto OrderMaintenanceList< T >::addAfter( Element e , const T & v )
  -> Element
 {
  ADS_PRE( ! e || e->bucket );
- //! [addAfter]
  Node * u = new Node{ v };
  Bucket * b;
  if( e ) {                                  // after e, in its bucket
@@ -83,7 +82,6 @@ auto OrderMaintenanceList< T >::addAfter( Element e , const T & v )
   relabelBucket( b );
  if( b->size > B )
   split( b );
- //! [addAfter]
  ADS_INVARIANT( valid( u->bucket ) );
  return( u );
  }
@@ -141,7 +139,6 @@ void OrderMaintenanceList< T >::split( Bucket * b )
 template< class T >
 void OrderMaintenanceList< T >::addBucketAfter( Bucket * b , Bucket * c )
 {
- //! [addBucketAfter]
  const std::uint64_t L = b->label , hi = b->next ? b->next->label : kU;
  auto link = [ & ]( void ) {
   c->prev = b;
@@ -178,7 +175,6 @@ void OrderMaintenanceList< T >::addBucketAfter( Bucket * b , Bucket * c )
  Bucket * x = first;
  for( std::size_t k = 0 ; k < m ; ++k , x = x->next )
   x->label = lo + k * gap;
- //! [addBucketAfter]
  ++f_relabels;
  f_work += m;
  }

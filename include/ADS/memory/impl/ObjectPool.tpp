@@ -100,7 +100,6 @@ inline T * ObjectPool< T , A >::allocate( void )
  return( reinterpret_cast< T * >( slot()->object ) );
  }
 
-//! [slot]
 template< class T , class A >
 inline typename ObjectPool< T , A >::Slot * ObjectPool< T , A >::slot( void )
 {
@@ -123,7 +122,6 @@ inline typename ObjectPool< T , A >::Slot * ObjectPool< T , A >::slot( void )
  ++f_size;
  return( s );
  }
-//! [slot]
 
 template< class T , class A >
 template< class... Args >

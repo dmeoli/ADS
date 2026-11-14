@@ -65,7 +65,6 @@ void ContiguousDeque< T >::swap( ContiguousDeque & o ) noexcept
 template< class T >
 void ContiguousDeque< T >::rebuild( void )
 {
- //! [rebuild]
  const std::size_t c = 3 * f_n + 8 , h = ( c - f_n ) / 2;
  if constexpr( std::is_trivially_copyable_v< T > )
   if( f_A && ( c <= f_c ) && ( 9 * f_n + 24 >= f_c ) ) {   // in place
@@ -88,7 +87,6 @@ void ContiguousDeque< T >::rebuild( void )
  f_A = B;
  f_c = c;
  f_h = h;
- //! [rebuild]
  ADS_INVARIANT( fits() );
  }
 
@@ -133,7 +131,6 @@ void ContiguousDeque< T >::insert( std::size_t i , const T & x )
   }
  [[maybe_unused]] const std::size_t n = f_n;
  T y = x;
- //! [insert]
  if( i < f_n / 2 ) {                        // the front i items back by one
   if( f_h == 0 ) rebuild();
   T * a = f_A + f_h;
@@ -150,7 +147,6 @@ void ContiguousDeque< T >::insert( std::size_t i , const T & x )
   a[ i ] = std::move( y );
   }
  ++f_n;
- //! [insert]
  ADS_POST( f_n == n + 1 );
  ADS_INVARIANT( fits() );
  }
@@ -160,7 +156,6 @@ void ContiguousDeque< T >::erase( std::size_t i )
 {
  ADS_PRE( i < f_n );
  [[maybe_unused]] const std::size_t n = f_n;
- //! [erase]
  T * a = f_A + f_h;
  if( i < f_n / 2 ) {
   std::move_backward( a , a + i , a + i + 1 );
@@ -172,7 +167,6 @@ void ContiguousDeque< T >::erase( std::size_t i )
   a[ f_n - 1 ].~T();
   }
  --f_n;
- //! [erase]
  if( f_c > 9 * f_n + 24 )
   rebuild();
  ADS_POST( f_n == n - 1 );

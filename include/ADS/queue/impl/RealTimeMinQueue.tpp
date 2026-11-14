@@ -63,13 +63,11 @@ T RealTimeMinQueue< T , C >::dequeue( void )
 {
  ADS_PRE( ! empty() );
  [[maybe_unused]] const std::size_t n = f_n;
- //! [dequeue]
  T x = std::move( f_F.at( f_F.hi() - 1 ) );
  f_F.pop();
  --f_n;
  if( f_rot ) steps( 3 );
  startIfDue();                             // also at the end of one
- //! [dequeue]
  ADS_POST( f_n == n - 1 );
  return( x );
  }
@@ -91,7 +89,6 @@ void RealTimeMinQueue< T , C >::startIfDue( void )
 template< class T , class C >
 void RealTimeMinQueue< T , C >::steps( int k )
 {
- //! [steps]
  for( ; ; --k ) {
   if( f_Rf.size() > 0 ) {                   // the frozen back, from its top
    if( k == 0 ) return;
@@ -112,7 +109,6 @@ void RealTimeMinQueue< T , C >::steps( int k )
    return;
    }
   }
- //! [steps]
  }
 
 template< class T , class C >
@@ -127,7 +123,6 @@ template< class T , class C >
 const T & RealTimeMinQueue< T , C >::min( void ) const
 {
  ADS_PRE( ! empty() );
- //! [min]
  const T * best = nullptr;
  auto take = [ & ]( const T & x ) {
   if( ! best || f_less( x , *best ) ) best = &x;
@@ -140,7 +135,6 @@ const T & RealTimeMinQueue< T , C >::min( void ) const
  if( f_N.size() > 0 ) take( f_N.min() );
  if( f_R.size() > 0 ) take( f_R.min() );
  return( *best );
- //! [min]
  }
 
 template< class T , class C >

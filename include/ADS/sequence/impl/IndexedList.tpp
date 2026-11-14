@@ -25,7 +25,6 @@ void rotateArray( std::span< T > a , std::size_t r )
  r %= n;
  const auto old = detail::snapshot( std::vector< T >( a.begin() ,
                                                       a.end() ) );
- //! [rotateArray]
  auto reverse = [ & ]( std::size_t i , std::size_t j ) {   // a[ i .. j )
   for( ; ( i + 1 < j ) ; ++i , --j )
    std::swap( a[ i ] , a[ j - 1 ] );
@@ -33,7 +32,6 @@ void rotateArray( std::span< T > a , std::size_t r )
  reverse( 0 , n );
  reverse( 0 , r );
  reverse( r , n );
- //! [rotateArray]
  ADS_AUDIT( ( [ & ] {
   for( std::size_t i = 0 ; i < n ; ++i )
    if( ! detail::equal( ( *old )[ i ] , a[ ( i + r ) % n ] ) )
@@ -57,7 +55,6 @@ void rotate( L & l , std::size_t r )
   std::vector< T > old;
   if constexpr( ADS_CONTRACTS >= 3 )
    for( std::size_t i = 0 ; i < n ; ++i ) old.push_back( l[ i ] );
-  //! [rotate]
   const std::size_t c = std::gcd( n , r );
   for( std::size_t s = 0 ; ( r > 0 ) && ( s < c ) ; ++s ) {
    T x = std::move( l[ s ] );               // the cycle of s, backwards
@@ -70,7 +67,6 @@ void rotate( L & l , std::size_t r )
     }
    l[ j ] = std::move( x );
    }
-  //! [rotate]
   ADS_AUDIT( ( [ & ] {
    for( std::size_t i = 0 ; i < n ; ++i )
     if( ! detail::equal( old[ i ] , l[ ( i + r ) % n ] ) )

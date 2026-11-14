@@ -162,7 +162,23 @@ namespace ADS {
 /// where the partition is that of Lomuto with no branch on a part with
 /// many turns, that of Hoare on a part in some order, and puts the items
 /// equal to the pivot on its left when the pivot is the smallest item of
-/// the part.
+/// the part. The partition of Lomuto with no branch, the pivot \f$ p \f$
+/// in \f$ A[ 0 ] \f$ and \f$ [ \cdot ] \f$ 1 when its condition holds
+/// and 0 otherwise, is
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{selectLomuto}( A[ 0 .. n - 1 ] ) \cr
+/// 2 & \quad p \gets A[ 0 ];\ \ell \gets 1 \cr
+/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n - 1\ \textbf{do}
+///     \quad \triangleright\ \text{unrolled by 4} \cr
+/// 4 & \qquad x \gets A[ i ];\ A[ i ] \gets A[ \ell ];\ A[ \ell ]
+///     \gets x \cr
+/// 5 & \qquad \ell \gets \ell + [ x < p ]\quad \triangleright
+///     \ [ \textbf{not}\ p < x ] \text{ when the equal items go left} \cr
+/// 6 & \quad \text{exchange } A[ 0 ] \text{ and } A[ \ell - 1 ];
+///     \ \textbf{return}\ \ell - 1
+/// \end{array}}
+/// \f]
 /// \pre \f$ \mathit{first} \le \mathit{nth} < \mathit{last} \f$, or
 ///      \f$ \mathit{first} = \mathit{last} \f$
 /// \post the items before `nth` are not larger than it, those after it not

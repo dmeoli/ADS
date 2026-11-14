@@ -92,6 +92,19 @@ namespace detail {
 
 /// the check of the condition `cond`, a contract of the kind `kind`, when
 /// `ADS_CONTRACTS` is at least `level`: `contract_violation` if it is false
+///
+/// In pseudocode, the test of the level made at compile time:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{check}( \mathit{level} ,
+///     \mathit{kind} , \mathit{cond} ) \cr
+/// 2 & \quad \textbf{if}\ \mathtt{ADS\_CONTRACTS} \ge \mathit{level}
+///     \ \textbf{then}\quad \triangleright\ \mathtt{if\ constexpr} \cr
+/// 3 & \qquad \textbf{if not}\ \mathit{cond}\ \textbf{then}
+///     \ \mathrm{violated}( \mathit{kind} , \text{the text of }
+///     \mathit{cond} , \text{the function, the file, the line} )
+/// \end{array}}
+/// \f]
 //! [check]
 #define ADS_CONTRACT_CHECK( level , kind , cond )                         \
  do {                                                                     \

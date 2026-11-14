@@ -150,7 +150,6 @@ ArraySequence< T >::insert( Pos p , I first , S last )
  const Pos k = c.f_size;
  if( k == 0 )
   return( p );
- //! [insertAll]
  if( f_size + k > f_capacity ) {   // one resize for the k items
   Pos m = f_capacity ? f_capacity : 1;
   while( m < f_size + k ) m *= 2;
@@ -160,7 +159,6 @@ ArraySequence< T >::insert( Pos p , I first , S last )
                      f_A.get() + f_size + k );
  std::move( c.f_A.get() , c.f_A.get() + k , f_A.get() + p );
  f_size += k;
- //! [insertAll]
  ADS_POST( f_size == n + k );
  ADS_AUDIT( same( *old , 0 , 0 , p ) && same( *old , p , p + k , n - p ) );
  ADS_INVARIANT( fits() );
