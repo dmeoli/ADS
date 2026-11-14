@@ -1,0 +1,42 @@
+% Source for the figure of heapsort() on 1, 7, 4, 6, 2, 8, 3, 5 (sec. 12.4,
+% exercise 11.1 of Morin's book): the max-heap built by heapBuild(), as a
+% tree and as a vector, and the vector after each extraction.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    level distance=11mm,
+    level 1/.style={sibling distance=26mm},
+    level 2/.style={sibling distance=13mm},
+    level 3/.style={sibling distance=10mm},
+    edge from parent/.style={edge,draw}]
+  \node[vertex] at (0,0) {8}
+    child { node[vertex] {7}
+      child { node[vertex] {6} child { node[vertex] {5} } child[missing] {} }
+      child { node[vertex] {2} } }
+    child { node[vertex] {4}
+      child { node[vertex] {1} }
+      child { node[vertex] {3} } };
+  \begin{scope}[xshift=48mm,yshift=4mm]
+  \node[var,anchor=east] at (-5mm,0) {input};
+  \cells{a}{0,0}{1/cell,7/cell,4/cell,6/cell,2/cell,8/cell,3/cell,5/cell}
+  \indices{a}{8}
+  \node[var,anchor=east] at (-5mm,-8.5mm) {heap};
+  \cells{b}{0,-8.5mm}{8/touched,7/cell,4/cell,6/cell,2/cell,1/cell,3/cell,5/cell}
+  \node[var,anchor=east] at (-5mm,-17mm) {1};
+  \cells{c}{0,-17mm}{7/touched,6/cell,4/cell,5/cell,2/cell,1/cell,3/cell,8/added}
+  \node[var,anchor=east] at (-5mm,-25.5mm) {2};
+  \cells{d}{0,-25.5mm}{6/touched,5/cell,4/cell,3/cell,2/cell,1/cell,7/added,8/added}
+  \node[var,anchor=east] at (-5mm,-34mm) {3};
+  \cells{e}{0,-34mm}{5/touched,3/cell,4/cell,1/cell,2/cell,6/added,7/added,8/added}
+  \node[var,anchor=east] at (-5mm,-42.5mm) {7};
+  \cells{f}{0,-42.5mm}{1/added,2/added,3/added,4/added,5/added,6/added,7/added,8/added}
+  \end{scope}
+\end{tikzpicture}
+\end{document}

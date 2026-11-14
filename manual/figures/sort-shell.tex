@@ -1,0 +1,24 @@
+% Source for the figure of shellSort() with the gaps 4 and 1 on twelve
+% items (sec. 12.2): the subsequences of gap 4, the vector 4-sorted, and
+% the vector sorted by the last pass. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {input};
+  \cells{a}{0,0}{9/touched,3/cell,7/cell,1/cell,8/touched,2/cell,11/cell,5/cell,0/touched,10/cell,4/cell,6/cell}
+  \node[var,anchor=west] at (90mm,0) {34 inversions};
+  \node[var,anchor=east] at (-6mm,-12mm) {$h = 4$};
+  \cells{b}{0,-12mm}{0/touched,2/cell,4/cell,1/cell,8/touched,3/cell,7/cell,5/cell,9/touched,10/cell,11/cell,6/cell}
+  \node[var,anchor=west] at (90mm,-12mm) {12 inversions};
+  \node[var,anchor=east] at (-6mm,-24mm) {$h = 1$};
+  \cells{c}{0,-24mm}{0/cell,1/cell,2/cell,3/cell,4/cell,5/cell,6/cell,7/cell,8/cell,9/cell,10/cell,11/cell}
+  \node[var,anchor=west] at (90mm,-24mm) {0 inversions};
+  \foreach \i/\j in {0/4,4/8} \draw[edge-touched] (a-\i.north) .. controls +(0,4mm) and +(0,4mm) .. (a-\j.north);
+\end{tikzpicture}
+\end{document}

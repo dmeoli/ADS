@@ -1,0 +1,32 @@
+% Source for the figure of the classification of sampleSort() with k = 8
+% buckets (sec. 12.9): the splitters as a tree in t[ 1 .. 7 ], and the
+% path of x = 55 by j <- 2 j + [ t_j <= x ]. Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    level distance=12mm,
+    level 1/.style={sibling distance=40mm},
+    level 2/.style={sibling distance=20mm},
+    edge from parent/.style={edge,draw}]
+  \node[vertex-touched] (t1) {40}
+    child { node[vertex] {20} child { node[vertex] {10} } child { node[vertex] {30} } }
+    child { node[vertex-touched] (t3) {60}
+      child { node[vertex-touched] (t6) {50} edge from parent[edge-touched] }
+      child { node[vertex] {70} }
+      edge from parent[edge-touched] };
+  \foreach \v/\i in {t1/1,t3/3,t6/6} \node[index,above left=0.2mm of \v] {\i};
+  \cells{b}{-26mm,-37mm}{/free,/free,/free,/free,/free,55/added,/free,/free}
+  \foreach \i in {0,...,7} \node[index,below=1.4mm of b-\i] {\i};
+  \draw[ptr] (t6.south) -- (b-5.north);
+  \node[var,anchor=west] at (34mm,-4mm) {$j = 1$: $40 \le 55$, $j \gets 3$};
+  \node[var,anchor=west] at (34mm,-10mm) {$j = 3$: $60 > 55$, $j \gets 6$};
+  \node[var,anchor=west] at (34mm,-16mm) {$j = 6$: $50 \le 55$, $j \gets 13$};
+  \node[var,anchor=west] at (34mm,-22mm) {bucket $13 - 8 = 5$};
+\end{tikzpicture}
+\end{document}

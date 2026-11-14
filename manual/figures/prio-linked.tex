@@ -1,0 +1,45 @@
+% Source for LinkedHeapPriorityQueue (sec. 9.5)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (h7-0) at (0.00mm,0.00mm) {1};
+\node[vertex] (h7-1) at (-26.00mm,-12.00mm) {2};
+\node[vertex-touched] (h7-2) at (26.00mm,-12.00mm) {3};
+\node[vertex] (h7-3) at (-39.00mm,-24.00mm) {4};
+\node[vertex] (h7-4) at (-13.00mm,-24.00mm) {5};
+\node[vertex-touched] (h7-5) at (13.00mm,-24.00mm) {6};
+\node[vertex] (h7-6) at (39.00mm,-24.00mm) {7};
+\node[vertex] (h7-7) at (-45.50mm,-36.00mm) {8};
+\node[vertex] (h7-8) at (-32.50mm,-36.00mm) {9};
+\node[vertex] (h7-9) at (-19.50mm,-36.00mm) {10};
+\node[vertex] (h7-10) at (-6.50mm,-36.00mm) {11};
+\node[vertex] (h7-11) at (6.50mm,-36.00mm) {12};
+\node[vertex-added] (h7-12) at (19.50mm,-36.00mm) {13};
+\begin{scope}[on background layer]
+\draw[edge-touched] (h7-5) -- (h7-12);
+\draw[edge] (h7-5) -- (h7-11);
+\draw[edge] (h7-4) -- (h7-10);
+\draw[edge] (h7-4) -- (h7-9);
+\draw[edge] (h7-3) -- (h7-8);
+\draw[edge] (h7-3) -- (h7-7);
+\draw[edge] (h7-2) -- (h7-6);
+\draw[edge-touched] (h7-2) -- (h7-5);
+\draw[edge] (h7-1) -- (h7-4);
+\draw[edge] (h7-1) -- (h7-3);
+\draw[edge-touched] (h7-0) -- (h7-2);
+\draw[edge] (h7-0) -- (h7-1);
+\end{scope}
+\node[var] at (16.0mm,-4.5mm) {1};
+\node[var] at (16.5mm,-16.5mm) {0};
+\node[var] at (19.2mm,-28.5mm) {1};
+\node[var,anchor=west] at (-52mm,-46mm) {$13 = 1101_2$: after the leading 1, right, left, right};
+\end{tikzpicture}
+\end{document}

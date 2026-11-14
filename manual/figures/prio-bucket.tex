@@ -1,0 +1,33 @@
+% Source for BucketQueue (sec. 9.9)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[var,anchor=east] at (-2mm,0) {layers};
+\node[touched,minimum width=10mm] (f5) at (8mm,0) {$f = 5$};
+\node[free,minimum width=10mm] (f6) at (38mm,0) {$f = 6$};
+\node[cell,minimum width=10mm] (f7) at (68mm,0) {$f = 7$};
+\node[cell,minimum width=10mm] (f8) at (98mm,0) {$f = 8$};
+\node[cell] (d0) at (-4.0mm,-12.0mm) {0};
+\node[free] (d1) at (3.4mm,-12.0mm) {1};
+\node[cell] (d2) at (10.8mm,-12.0mm) {2};
+\node[touched] (d3) at (18.2mm,-12.0mm) {3};
+\node[index] at (5mm,-19.5mm) {dense heads by $g$};
+\node[node-touched] (c1) at (16mm,-28mm) {x}; \node[node] (c2) at (16mm,-38mm) {y};
+\node[node] (c3) at (0mm,-28mm) {z};
+\draw[ptr] (d3) -- (c1); \draw[ptr] (c1) -- (c2); \draw[ptr] (d0) -- (c3);
+\node[cell,minimum width=14mm] (r0) at (64mm,-12mm) {300}; \node[touched,minimum width=14mm] (r1) at (78.6mm,-12mm) {512};
+\node[index] at (71mm,-19.5mm) {runs $( g , h )$, $g \ge 256$};
+\node[node] (e1) at (64mm,-28mm) {u}; \node[node-touched] (e2) at (79mm,-28mm) {v}; \node[node] (e3) at (79mm,-38mm) {w};
+\draw[ptr] (r0) -- (e1); \draw[ptr] (r1) -- (e2); \draw[ptr] (e2) -- (e3);
+\draw[ptr] (f5) -- (d1.north); \draw[ptr] (f7) -- ($(r0.north)!0.5!(r1.north)$);
+\node[var,anchor=west] at (-12mm,9mm) {\texttt{top()}: the least $f$ in use, then its largest $g$, the last item pushed};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,32 @@
+% Source for the figure of a comparison tree of three items with four
+% leaves, which sorts some inputs wrongly (sec. 12.2). Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    level distance=15mm,
+    level 1/.style={sibling distance=56mm},
+    level 2/.style={sibling distance=30mm},
+    edge from parent/.style={edge,draw},
+    lt/.style={font=\scriptsize,text=adsInk!70,fill=white,inner sep=1pt}]
+  \node[node-touched] (r) {a[0] : a[2]}
+    child { node[node] {a[0] : a[1]}
+      child { node[node] {a[1] : a[2]}
+        child { node[cell,minimum width=15mm] {0 < 1 < 2}
+                edge from parent node[lt,left] {$<$} }
+        child { node[cell,minimum width=15mm] {0 < 2 < 1}
+                edge from parent node[lt,right] {$>$} }
+        edge from parent node[lt,left] {$<$} }
+      child { node[cell,minimum width=15mm] {1 < 0 < 2}
+              edge from parent node[lt,right] {$>$} }
+      edge from parent node[lt,left] {$<$} }
+    child { node[touched,minimum width=15mm] (w) {1 < 2 < 0}
+            edge from parent[edge-touched] node[lt,right] {$>$} };
+  \node[var,below=3mm of w,align=center] {3,1,2: right\\ 3,2,1 and 2,3,1: wrong};
+\end{tikzpicture}
+\end{document}

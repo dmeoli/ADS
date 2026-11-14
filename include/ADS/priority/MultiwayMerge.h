@@ -285,15 +285,14 @@ class FlatLoserTree {
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{multiwayMerge}( R , \mathit{out} ) \cr
 /// 2 & \quad \textbf{if}\  \text{one range has items }\ \textbf{then}
-///     \textbf{return}\ \text{its copy} \cr
+///     \ \textbf{return}\ \text{its copy} \cr
 /// 3 & \quad \textbf{if}\  \text{two ranges have items }\ \textbf{then}
-///     \textbf{return}\ \text{their merge} \cr
-/// 4 & \quad \textbf{if}\  \text{the items are not contiguous and copied }
-///     \text{as bytes }\ \textbf{then}\ \textbf{return}\ \text{the merge}
-///     \text{ by a FlatLoserTree} \cr
-/// 5 & \quad \textbf{if}\  \text{3 or 4 ranges of items of more than 16 }
-///     \text{bytes }\ \textbf{then}\ \textbf{return}\ \text{the merge by }
-///     \text{the least heads of the pairs} \cr
+///     \ \textbf{return}\ \text{their merge} \cr
+/// 4 & \quad \textbf{if not}\ \text{contiguous items copied as bytes}
+///     \ \textbf{then return}\ \text{the merge by a FlatLoserTree} \cr
+/// 5 & \quad \textbf{if}\ \text{3 or 4 ranges of items over 16 bytes}
+///     \ \textbf{then return}\ \text{the merge by the least heads of pairs}
+///     \cr
 /// 6 & \quad T \gets \text{a tree of mergers, the halves of the ranges}
 ///     \text{ below each node} \cr
 /// 7 & \quad \mathrm{fill}( \text{the root of } T , \mathit{out} , n );

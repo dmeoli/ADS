@@ -1,0 +1,98 @@
+% Source for LoserTree (sec. 9.11)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[var,anchor=west] at (-4.0mm,8.0mm) {the losers at the internal nodes, the winner p1 above the root};
+\node[node-touched,minimum width=13mm] (L0) at (56.0mm,0.0mm) {p1:5};
+\node[node,minimum width=12mm] (L1) at (56.0mm,-10.0mm) {p5:7};
+\node[node,minimum width=12mm] (L2) at (28.0mm,-20.0mm) {p3:9};
+\node[node,minimum width=12mm] (L3) at (84.0mm,-20.0mm) {p6:15};
+\node[node,minimum width=12mm] (L4) at (14.0mm,-30.0mm) {p0:12};
+\node[node,minimum width=12mm] (L5) at (42.0mm,-30.0mm) {p2:30};
+\node[node,minimum width=12mm] (L6) at (70.0mm,-30.0mm) {p4:21};
+\node[node,minimum width=12mm] (L7) at (98.0mm,-30.0mm) {p7:40};
+\node[vertex] (L8) at (7.0mm,-40.0mm) {12};
+\node[index,below=1.2mm of L8] {p0};
+\node[vertex-touched] (L9) at (21.0mm,-40.0mm) {5};
+\node[index,below=1.2mm of L9] {p1};
+\node[vertex] (L10) at (35.0mm,-40.0mm) {30};
+\node[index,below=1.2mm of L10] {p2};
+\node[vertex] (L11) at (49.0mm,-40.0mm) {9};
+\node[index,below=1.2mm of L11] {p3};
+\node[vertex] (L12) at (63.0mm,-40.0mm) {21};
+\node[index,below=1.2mm of L12] {p4};
+\node[vertex] (L13) at (77.0mm,-40.0mm) {7};
+\node[index,below=1.2mm of L13] {p5};
+\node[vertex] (L14) at (91.0mm,-40.0mm) {15};
+\node[index,below=1.2mm of L14] {p6};
+\node[vertex] (L15) at (105.0mm,-40.0mm) {40};
+\node[index,below=1.2mm of L15] {p7};
+\begin{scope}[on background layer]
+\draw[edge] (L1) -- (L2);
+\draw[edge] (L1) -- (L3);
+\draw[edge] (L2) -- (L4);
+\draw[edge] (L2) -- (L5);
+\draw[edge] (L3) -- (L6);
+\draw[edge] (L3) -- (L7);
+\draw[edge] (L4) -- (L8);
+\draw[edge] (L4) -- (L9);
+\draw[edge] (L5) -- (L10);
+\draw[edge] (L5) -- (L11);
+\draw[edge] (L6) -- (L12);
+\draw[edge] (L6) -- (L13);
+\draw[edge] (L7) -- (L14);
+\draw[edge] (L7) -- (L15);
+\draw[edge] (L0) -- (L1);
+\end{scope}
+\node[var,anchor=west] at (-4.0mm,-52.0mm) {\texttt{replace(11)}: three matches on the path of p1, the new winner p5};
+\node[node-added,minimum width=13mm] (L0) at (56.0mm,-60.0mm) {p5:7};
+\node[node-touched,minimum width=12mm] (L1) at (56.0mm,-70.0mm) {p3:9};
+\node[node-touched,minimum width=12mm] (L2) at (28.0mm,-80.0mm) {p1:11};
+\node[node,minimum width=12mm] (L3) at (84.0mm,-80.0mm) {p6:15};
+\node[node-touched,minimum width=12mm] (L4) at (14.0mm,-90.0mm) {p0:12};
+\node[node,minimum width=12mm] (L5) at (42.0mm,-90.0mm) {p2:30};
+\node[node,minimum width=12mm] (L6) at (70.0mm,-90.0mm) {p4:21};
+\node[node,minimum width=12mm] (L7) at (98.0mm,-90.0mm) {p7:40};
+\node[vertex] (L8) at (7.0mm,-100.0mm) {12};
+\node[index,below=1.2mm of L8] {p0};
+\node[vertex-added] (L9) at (21.0mm,-100.0mm) {11};
+\node[index,below=1.2mm of L9] {p1};
+\node[vertex] (L10) at (35.0mm,-100.0mm) {30};
+\node[index,below=1.2mm of L10] {p2};
+\node[vertex] (L11) at (49.0mm,-100.0mm) {9};
+\node[index,below=1.2mm of L11] {p3};
+\node[vertex] (L12) at (63.0mm,-100.0mm) {21};
+\node[index,below=1.2mm of L12] {p4};
+\node[vertex] (L13) at (77.0mm,-100.0mm) {7};
+\node[index,below=1.2mm of L13] {p5};
+\node[vertex] (L14) at (91.0mm,-100.0mm) {15};
+\node[index,below=1.2mm of L14] {p6};
+\node[vertex] (L15) at (105.0mm,-100.0mm) {40};
+\node[index,below=1.2mm of L15] {p7};
+\begin{scope}[on background layer]
+\draw[edge-touched] (L1) -- (L2);
+\draw[edge] (L1) -- (L3);
+\draw[edge-touched] (L2) -- (L4);
+\draw[edge] (L2) -- (L5);
+\draw[edge] (L3) -- (L6);
+\draw[edge] (L3) -- (L7);
+\draw[edge] (L4) -- (L8);
+\draw[edge-touched] (L4) -- (L9);
+\draw[edge] (L5) -- (L10);
+\draw[edge] (L5) -- (L11);
+\draw[edge] (L6) -- (L12);
+\draw[edge] (L6) -- (L13);
+\draw[edge] (L7) -- (L14);
+\draw[edge] (L7) -- (L15);
+\draw[edge-touched] (L0) -- (L1);
+\end{scope}
+\end{tikzpicture}
+\end{document}

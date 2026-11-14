@@ -1,0 +1,78 @@
+% Source for Morin exercise 10.1 (sec. 9.3)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex] (h10-0) at (0.00mm,0.00mm) {4};
+\node[vertex] (h10-1) at (-24.00mm,-10.50mm) {9};
+\node[vertex-touched] (h10-2) at (24.00mm,-10.50mm) {6};
+\node[vertex] (h10-3) at (-36.00mm,-21.00mm) {17};
+\node[vertex] (h10-4) at (-12.00mm,-21.00mm) {26};
+\node[vertex] (h10-5) at (12.00mm,-21.00mm) {8};
+\node[vertex-added] (h10-6) at (36.00mm,-21.00mm) {7};
+\node[vertex] (h10-7) at (-42.00mm,-31.50mm) {19};
+\node[vertex] (h10-8) at (-30.00mm,-31.50mm) {69};
+\node[vertex] (h10-9) at (-18.00mm,-31.50mm) {32};
+\node[vertex] (h10-10) at (-6.00mm,-31.50mm) {93};
+\node[vertex] (h10-11) at (6.00mm,-31.50mm) {55};
+\node[vertex] (h10-12) at (18.00mm,-31.50mm) {50};
+\node[vertex-touched] (h10-13) at (30.00mm,-31.50mm) {16};
+\begin{scope}[on background layer]
+\draw[edge-touched] (h10-6) -- (h10-13);
+\draw[edge] (h10-5) -- (h10-12);
+\draw[edge] (h10-5) -- (h10-11);
+\draw[edge] (h10-4) -- (h10-10);
+\draw[edge] (h10-4) -- (h10-9);
+\draw[edge] (h10-3) -- (h10-8);
+\draw[edge] (h10-3) -- (h10-7);
+\draw[edge-touched] (h10-2) -- (h10-6);
+\draw[edge] (h10-2) -- (h10-5);
+\draw[edge] (h10-1) -- (h10-4);
+\draw[edge] (h10-1) -- (h10-3);
+\draw[edge] (h10-0) -- (h10-2);
+\draw[edge] (h10-0) -- (h10-1);
+\end{scope}
+\node[var,anchor=west] at (-50.0mm,7.0mm) {\texttt{push(7)}: 7 swapped with 16, stops below 6};
+\cells{a11}{-48.10mm,-42.00mm}{4/cell,9/cell,6/touched,17/cell,26/cell,8/cell,7/added,19/cell,69/cell,32/cell,93/cell,55/cell,50/cell,16/touched}
+\node[vertex-added] (h12-0) at (0.00mm,-66.00mm) {3};
+\node[vertex] (h12-1) at (-24.00mm,-76.50mm) {9};
+\node[vertex-touched] (h12-2) at (24.00mm,-76.50mm) {4};
+\node[vertex] (h12-3) at (-36.00mm,-87.00mm) {17};
+\node[vertex] (h12-4) at (-12.00mm,-87.00mm) {26};
+\node[vertex] (h12-5) at (12.00mm,-87.00mm) {8};
+\node[vertex-touched] (h12-6) at (36.00mm,-87.00mm) {6};
+\node[vertex] (h12-7) at (-42.00mm,-97.50mm) {19};
+\node[vertex] (h12-8) at (-30.00mm,-97.50mm) {69};
+\node[vertex] (h12-9) at (-18.00mm,-97.50mm) {32};
+\node[vertex] (h12-10) at (-6.00mm,-97.50mm) {93};
+\node[vertex] (h12-11) at (6.00mm,-97.50mm) {55};
+\node[vertex] (h12-12) at (18.00mm,-97.50mm) {50};
+\node[vertex] (h12-13) at (30.00mm,-97.50mm) {16};
+\node[vertex-touched] (h12-14) at (42.00mm,-97.50mm) {7};
+\begin{scope}[on background layer]
+\draw[edge-touched] (h12-6) -- (h12-14);
+\draw[edge] (h12-6) -- (h12-13);
+\draw[edge] (h12-5) -- (h12-12);
+\draw[edge] (h12-5) -- (h12-11);
+\draw[edge] (h12-4) -- (h12-10);
+\draw[edge] (h12-4) -- (h12-9);
+\draw[edge] (h12-3) -- (h12-8);
+\draw[edge] (h12-3) -- (h12-7);
+\draw[edge-touched] (h12-2) -- (h12-6);
+\draw[edge] (h12-2) -- (h12-5);
+\draw[edge] (h12-1) -- (h12-4);
+\draw[edge] (h12-1) -- (h12-3);
+\draw[edge-touched] (h12-0) -- (h12-2);
+\draw[edge] (h12-0) -- (h12-1);
+\end{scope}
+\node[var,anchor=west] at (-50.0mm,-59.0mm) {\texttt{push(3)}: up from the place 14 to the root};
+\cells{a13}{-51.80mm,-108.00mm}{3/added,9/cell,4/touched,17/cell,26/cell,8/cell,6/touched,19/cell,69/cell,32/cell,93/cell,55/cell,50/cell,16/cell,7/touched}
+\end{tikzpicture}
+\end{document}

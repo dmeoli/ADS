@@ -242,10 +242,11 @@
  the worst case and the equal keys. The pivot as the median of three, or of
  three medians of three (the ninther of Tukey), lowers the constant of (5) to
  about \f$ 1.188 \f$ and makes the sorted inputs a good case
- (`quickSortTuned()`, `pdqSort()`). The introsort of Musser (inside
- `pdqSort()`) bounds the depth of the recursion by
- \f$ 2 \lfloor \log_2 n \rfloor \f$ and sorts a part that goes deeper by
- heapsort, so that the worst case is \f$ O( n \log n ) \f$;
+ (`quickSortTuned()`, `pdqSort()`). The introsort of Musser bounds the
+ depth of the recursion by \f$ 2 \lfloor \log_2 n \rfloor \f$ and sorts a
+ part that goes deeper by heapsort (`vectorQuickSort()`); `pdqSort()` allows
+ instead \f$ \lfloor \log_2 n \rfloor + 1 \f$ partitions with a side below
+ \f$ n / 8 \f$, and the worst case is \f$ O( n \log n ) \f$ in both;
  recurring on the smaller side and looping on the larger keeps the stack within
  \f$ \log_2 n \f$ parts, since each recursive call at least halves the part. A
  partition by three ways keeps the items equal to the pivot apart

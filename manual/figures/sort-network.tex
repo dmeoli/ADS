@@ -1,0 +1,73 @@
+% Source for the figure of the bitonic sorter of Batcher for n = 8, as
+% bitonicNetwork() builds it (sec. 12.11): the wires, and the comparators
+% of the six rounds. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    dot/.style={circle,fill=adsPrimary,minimum size=1.6mm}]
+  \foreach \i in {0,...,7} {
+    \draw[edge] (0,-\i*5mm) -- (122mm,-\i*5mm);
+    \node[index,anchor=east] at (-1.5mm,-\i*5mm) {\i};
+  }
+  \draw[edge-touched,->] (6mm,0mm) -- (6mm,-5mm);
+  \node[dot] at (6mm,0mm) {};
+  \draw[edge-touched,->] (6mm,-15mm) -- (6mm,-10mm);
+  \node[dot] at (6mm,-15mm) {};
+  \draw[edge-touched,->] (6mm,-20mm) -- (6mm,-25mm);
+  \node[dot] at (6mm,-20mm) {};
+  \draw[edge-touched,->] (6mm,-35mm) -- (6mm,-30mm);
+  \node[dot] at (6mm,-35mm) {};
+  \node[var] at (6mm,6mm) {1};
+  \draw[edge-touched,->] (16mm,0mm) -- (16mm,-10mm);
+  \node[dot] at (16mm,0mm) {};
+  \draw[edge-touched,->] (16mm,-30mm) -- (16mm,-20mm);
+  \node[dot] at (16mm,-30mm) {};
+  \draw[edge-touched,->] (20mm,-5mm) -- (20mm,-15mm);
+  \node[dot] at (20mm,-5mm) {};
+  \draw[edge-touched,->] (20mm,-35mm) -- (20mm,-25mm);
+  \node[dot] at (20mm,-35mm) {};
+  \node[var] at (18mm,6mm) {2};
+  \draw[edge-touched,->] (30mm,0mm) -- (30mm,-5mm);
+  \node[dot] at (30mm,0mm) {};
+  \draw[edge-touched,->] (30mm,-10mm) -- (30mm,-15mm);
+  \node[dot] at (30mm,-10mm) {};
+  \draw[edge-touched,->] (30mm,-25mm) -- (30mm,-20mm);
+  \node[dot] at (30mm,-25mm) {};
+  \draw[edge-touched,->] (30mm,-35mm) -- (30mm,-30mm);
+  \node[dot] at (30mm,-35mm) {};
+  \node[var] at (30mm,6mm) {3};
+  \draw[edge-touched,->] (40mm,0mm) -- (40mm,-20mm);
+  \node[dot] at (40mm,0mm) {};
+  \draw[edge-touched,->] (44mm,-5mm) -- (44mm,-25mm);
+  \node[dot] at (44mm,-5mm) {};
+  \draw[edge-touched,->] (48mm,-10mm) -- (48mm,-30mm);
+  \node[dot] at (48mm,-10mm) {};
+  \draw[edge-touched,->] (52mm,-15mm) -- (52mm,-35mm);
+  \node[dot] at (52mm,-15mm) {};
+  \node[var] at (46mm,6mm) {4};
+  \draw[edge-touched,->] (62mm,0mm) -- (62mm,-10mm);
+  \node[dot] at (62mm,0mm) {};
+  \draw[edge-touched,->] (62mm,-20mm) -- (62mm,-30mm);
+  \node[dot] at (62mm,-20mm) {};
+  \draw[edge-touched,->] (66mm,-5mm) -- (66mm,-15mm);
+  \node[dot] at (66mm,-5mm) {};
+  \draw[edge-touched,->] (66mm,-25mm) -- (66mm,-35mm);
+  \node[dot] at (66mm,-25mm) {};
+  \node[var] at (64mm,6mm) {5};
+  \draw[edge-touched,->] (76mm,0mm) -- (76mm,-5mm);
+  \node[dot] at (76mm,0mm) {};
+  \draw[edge-touched,->] (76mm,-10mm) -- (76mm,-15mm);
+  \node[dot] at (76mm,-10mm) {};
+  \draw[edge-touched,->] (76mm,-20mm) -- (76mm,-25mm);
+  \node[dot] at (76mm,-20mm) {};
+  \draw[edge-touched,->] (76mm,-30mm) -- (76mm,-35mm);
+  \node[dot] at (76mm,-30mm) {};
+  \node[var] at (76mm,6mm) {6};
+\end{tikzpicture}
+\end{document}

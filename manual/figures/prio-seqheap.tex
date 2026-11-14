@@ -1,0 +1,36 @@
+% Source for SequenceHeap (sec. 9.12)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[node-added,minimum width=22.0mm,minimum height=6mm] (I) at (0.0mm,0.0mm) {I (heap, $m$)};
+\node[node-touched,minimum width=22.0mm,minimum height=6mm] (D) at (0.0mm,-14.0mm) {D (sorted)};
+\node[node,minimum width=18.0mm,minimum height=6mm] (B1) at (40.0mm,-14.0mm) {buffer 1};
+\node[node,minimum width=18.0mm,minimum height=6mm] (B2) at (80.0mm,-14.0mm) {buffer 2};
+\node[node,minimum width=18.0mm,minimum height=6mm] (Bb) at (120.0mm,-14.0mm) {bulk buffer};
+\node[node,minimum width=5.0mm,minimum height=6mm] (s10) at (33.0mm,-32.0mm) {};
+\node[node,minimum width=5.0mm,minimum height=6mm] (s20) at (73.0mm,-32.0mm) {};
+\node[node,minimum width=5.0mm,minimum height=6mm] (s11) at (40.0mm,-32.0mm) {};
+\node[node,minimum width=5.0mm,minimum height=6mm] (s21) at (80.0mm,-32.0mm) {};
+\node[node,minimum width=5.0mm,minimum height=6mm] (s12) at (47.0mm,-32.0mm) {};
+\node[node,minimum width=5.0mm,minimum height=6mm] (s22) at (87.0mm,-32.0mm) {};
+\node[var] at (40mm,-42mm) {group 1: $\le k$ runs of $\le m$};
+\node[var] at (80mm,-48mm) {group 2: runs of $\le m k$};
+\node[node,minimum width=18.0mm,minimum height=6mm] (bulk) at (120.0mm,-32.0mm) {bulk};
+\node[var] at (120mm,-42mm) {quicksort};
+\draw[ptr] (I) -- node[var,right] {flush} (D);
+\draw[ptr] (B1) -- (D); \draw[ptr] (B2) .. controls +(0,6mm) and +(0,6mm) .. (D.north east); \draw[ptr] (Bb) .. controls +(0,10mm) and +(0,10mm) .. (D.north east);
+\draw[ptr] (s11.north) -- (B1.south);
+\draw[ptr] (s21.north) -- (B2.south);
+\draw[ptr] (bulk) -- (Bb);
+\draw[ptr] (s12.east) -- node[var,above] {merge} (s20.west);
+\node[var,anchor=west] at (-12mm,10mm) {the best item: the better of the top of I and the first of D};
+\end{tikzpicture}
+\end{document}

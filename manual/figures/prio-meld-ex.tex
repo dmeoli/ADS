@@ -1,0 +1,102 @@
+% Source for Morin exercises 10.6 and 10.7 (sec. 9.6)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t4-4) at (0.00mm,-28.50mm) {19};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t4-3) at (6.60mm,-19.00mm) {17};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t4-2) at (13.20mm,-9.50mm) {9};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t4-5) at (19.80mm,-19.00mm) {26};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t4-1) at (26.40mm,0.00mm) {4};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t4-9) at (33.00mm,-38.00mm) {55};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t4-8) at (39.60mm,-28.50mm) {50};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t4-7) at (46.20mm,-19.00mm) {17};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t4-6) at (52.80mm,-9.50mm) {8};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t4-10) at (59.40mm,-19.00mm) {16};
+\begin{scope}[on background layer]
+\draw[edge] (t4-3) -- (t4-4);
+\draw[edge] (t4-2) -- (t4-3);
+\draw[edge] (t4-1) -- (t4-2);
+\draw[edge] (t4-2) -- (t4-5);
+\draw[edge] (t4-8) -- (t4-9);
+\draw[edge] (t4-7) -- (t4-8);
+\draw[edge-touched] (t4-6) -- (t4-7);
+\draw[edge-touched] (t4-1) -- (t4-6);
+\draw[edge] (t4-6) -- (t4-10);
+\end{scope}
+\node[var,anchor=west] at (-3.0mm,7.0mm) {\texttt{push(17)}: right, left, left};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-4) at (75.00mm,-28.50mm) {19};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-3) at (81.60mm,-19.00mm) {17};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t5-2) at (88.20mm,-9.50mm) {9};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t5-6) at (94.80mm,-28.50mm) {82};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t5-5) at (101.40mm,-19.00mm) {26};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t5-1) at (108.00mm,0.00mm) {4};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-10) at (114.60mm,-38.00mm) {55};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-9) at (121.20mm,-28.50mm) {50};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-8) at (127.80mm,-19.00mm) {17};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-7) at (134.40mm,-9.50mm) {8};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t5-11) at (141.00mm,-19.00mm) {16};
+\begin{scope}[on background layer]
+\draw[edge] (t5-3) -- (t5-4);
+\draw[edge] (t5-2) -- (t5-3);
+\draw[edge-touched] (t5-1) -- (t5-2);
+\draw[edge-touched] (t5-5) -- (t5-6);
+\draw[edge-touched] (t5-2) -- (t5-5);
+\draw[edge] (t5-9) -- (t5-10);
+\draw[edge] (t5-8) -- (t5-9);
+\draw[edge] (t5-7) -- (t5-8);
+\draw[edge] (t5-1) -- (t5-7);
+\draw[edge] (t5-7) -- (t5-11);
+\end{scope}
+\node[var,anchor=west] at (72.0mm,7.0mm) {\texttt{push(82)}: left, right, left};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t6-4) at (0.00mm,-80.50mm) {55};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t6-3) at (6.60mm,-71.00mm) {50};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t6-2) at (13.20mm,-61.50mm) {17};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t6-1) at (19.80mm,-52.00mm) {8};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t6-8) at (26.40mm,-90.00mm) {19};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t6-7) at (33.00mm,-80.50mm) {17};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t6-6) at (39.60mm,-71.00mm) {16};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t6-5) at (46.20mm,-61.50mm) {9};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t6-10) at (52.80mm,-80.50mm) {82};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t6-9) at (59.40mm,-71.00mm) {26};
+\begin{scope}[on background layer]
+\draw[edge] (t6-3) -- (t6-4);
+\draw[edge] (t6-2) -- (t6-3);
+\draw[edge] (t6-1) -- (t6-2);
+\draw[edge] (t6-7) -- (t6-8);
+\draw[edge-touched] (t6-6) -- (t6-7);
+\draw[edge-touched] (t6-5) -- (t6-6);
+\draw[edge-touched] (t6-1) -- (t6-5);
+\draw[edge] (t6-9) -- (t6-10);
+\draw[edge] (t6-5) -- (t6-9);
+\end{scope}
+\node[var,anchor=west] at (-3.0mm,-45.0mm) {\texttt{pop()} of 4: right, left, left};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t7-4) at (75.00mm,-80.50mm) {19};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t7-3) at (81.60mm,-71.00mm) {17};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t7-2) at (88.20mm,-61.50mm) {16};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t7-7) at (94.80mm,-90.00mm) {55};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t7-6) at (101.40mm,-80.50mm) {50};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t7-5) at (108.00mm,-71.00mm) {17};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t7-1) at (114.60mm,-52.00mm) {9};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t7-9) at (121.20mm,-71.00mm) {82};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t7-8) at (127.80mm,-61.50mm) {26};
+\begin{scope}[on background layer]
+\draw[edge] (t7-3) -- (t7-4);
+\draw[edge] (t7-2) -- (t7-3);
+\draw[edge-touched] (t7-1) -- (t7-2);
+\draw[edge] (t7-6) -- (t7-7);
+\draw[edge] (t7-5) -- (t7-6);
+\draw[edge-touched] (t7-2) -- (t7-5);
+\draw[edge] (t7-8) -- (t7-9);
+\draw[edge] (t7-1) -- (t7-8);
+\end{scope}
+\node[var,anchor=west] at (72.0mm,-45.0mm) {\texttt{pop()} of 8: left, right};
+\end{tikzpicture}
+\end{document}

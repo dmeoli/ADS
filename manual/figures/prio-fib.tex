@@ -1,0 +1,56 @@
+% Source for FibonacciHeapPriorityQueue (sec. 9.7)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (a3) at (0.0mm,0.0mm) {3};
+\node[vertex] (a17) at (30.0mm,0.0mm) {17};
+\node[vertex] (a23) at (42.0mm,0.0mm) {23};
+\node[vertex] (a7) at (54.0mm,0.0mm) {7};
+\node[vertex] (a18) at (-10.0mm,-11.0mm) {18};
+\node[vertex] (a52) at (0.0mm,-11.0mm) {52};
+\node[vertex] (a38) at (10.0mm,-11.0mm) {38};
+\node[vertex] (a39) at (-10.0mm,-22.0mm) {39};
+\node[vertex] (a41) at (10.0mm,-22.0mm) {41};
+\node[vertex] (a30) at (30.0mm,-11.0mm) {30};
+\begin{scope}[on background layer]
+\draw[edge] (a3) -- (a18);
+\draw[edge] (a3) -- (a52);
+\draw[edge] (a3) -- (a38);
+\draw[edge] (a18) -- (a39);
+\draw[edge] (a38) -- (a41);
+\draw[edge] (a17) -- (a30);
+\draw[edge] (a3) -- (a17) -- (a23) -- (a7); \draw[edge] (a7.north) .. controls +(0,8mm) and +(0,8mm) .. (a3.north);
+\end{scope}
+\node[var] at (0,7.5mm) {$\mathit{min}$};
+\node[var,anchor=west] at (-14.0mm,14.0mm) {before \texttt{deleteMin()}, the roots in a circular list};
+\node[vertex] (b52) at (85.0mm,0.0mm) {52};
+\node[vertex-touched] (b7) at (111.0mm,0.0mm) {7};
+\node[vertex-added] (b23) at (99.0mm,-11.0mm) {23};
+\node[vertex-added] (b17) at (111.0mm,-11.0mm) {17};
+\node[vertex-added] (b18) at (125.0mm,-11.0mm) {18};
+\node[vertex] (b30) at (111.0mm,-22.0mm) {30};
+\node[vertex] (b39) at (119.0mm,-22.0mm) {39};
+\node[vertex-added] (b38) at (131.0mm,-22.0mm) {38};
+\node[vertex] (b41) at (131.0mm,-33.0mm) {41};
+\begin{scope}[on background layer]
+\draw[edge-touched] (b7) -- (b23);
+\draw[edge-touched] (b7) -- (b17);
+\draw[edge-touched] (b7) -- (b18);
+\draw[edge] (b17) -- (b30);
+\draw[edge] (b18) -- (b39);
+\draw[edge-touched] (b18) -- (b38);
+\draw[edge] (b38) -- (b41);
+\draw[edge] (b52) -- (b7);
+\end{scope}
+\node[var] at (111.0mm,7.5mm) {$\mathit{min}$};
+\node[var,anchor=west] at (87.0mm,14.0mm) {after the consolidation};
+\end{tikzpicture}
+\end{document}

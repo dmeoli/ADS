@@ -21,6 +21,7 @@ std::size_t partition( std::vector< T > & A , std::size_t start ,
                        std::size_t end , C less )
 {
  ADS_PRE( ( start <= end ) && ( end < A.size() ) );
+//! [partition]
  const T x = A[ start ];
  std::size_t j = start;
  for( std::size_t i = start + 1 ; i <= end ; ++i )
@@ -28,6 +29,7 @@ std::size_t partition( std::vector< T > & A , std::size_t start ,
    std::swap( A[ i ] , A[ ++j ] );
  A[ start ] = A[ j ];
  A[ j ] = x;
+//! [partition]
  const auto below = [ & ]( const T & a ) { return( less( a , x ) ); };
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( std::all_of( A.begin() + start , A.begin() + j , below ) &&

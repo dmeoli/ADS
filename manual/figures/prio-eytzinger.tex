@@ -1,0 +1,50 @@
+% Source for the layout of Eytzinger (sec. 9.3)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (h1-0) at (0.00mm,0.00mm) {0};
+\node[vertex-touched] (h1-1) at (-29.50mm,-12.00mm) {1};
+\node[vertex] (h1-2) at (29.50mm,-12.00mm) {2};
+\node[vertex-added] (h1-3) at (-44.25mm,-24.00mm) {3};
+\node[vertex-added] (h1-4) at (-14.75mm,-24.00mm) {4};
+\node[vertex] (h1-5) at (14.75mm,-24.00mm) {5};
+\node[vertex] (h1-6) at (44.25mm,-24.00mm) {6};
+\node[vertex] (h1-7) at (-51.62mm,-36.00mm) {7};
+\node[vertex] (h1-8) at (-36.88mm,-36.00mm) {8};
+\node[vertex] (h1-9) at (-22.12mm,-36.00mm) {9};
+\node[vertex] (h1-10) at (-7.38mm,-36.00mm) {10};
+\node[vertex] (h1-11) at (7.38mm,-36.00mm) {11};
+\node[vertex] (h1-12) at (22.12mm,-36.00mm) {12};
+\node[vertex] (h1-13) at (36.88mm,-36.00mm) {13};
+\node[vertex] (h1-14) at (51.62mm,-36.00mm) {14};
+\begin{scope}[on background layer]
+\draw[edge] (h1-6) -- (h1-14);
+\draw[edge] (h1-6) -- (h1-13);
+\draw[edge] (h1-5) -- (h1-12);
+\draw[edge] (h1-5) -- (h1-11);
+\draw[edge] (h1-4) -- (h1-10);
+\draw[edge] (h1-4) -- (h1-9);
+\draw[edge] (h1-3) -- (h1-8);
+\draw[edge] (h1-3) -- (h1-7);
+\draw[edge] (h1-2) -- (h1-6);
+\draw[edge] (h1-2) -- (h1-5);
+\draw[edge-touched] (h1-1) -- (h1-4);
+\draw[edge-touched] (h1-1) -- (h1-3);
+\draw[edge] (h1-0) -- (h1-2);
+\draw[edge-touched] (h1-0) -- (h1-1);
+\end{scope}
+\cells{a}{-51.8mm,-50mm}{0/touched,1/touched,2/cell,3/added,4/added,5/cell,6/cell,7/cell,8/cell,9/cell,10/cell,11/cell,12/cell,13/cell,14/cell}
+\node[var,anchor=east] at (-56mm,-50mm) {$A$};
+\draw[ptr] (a-1.south) .. controls +(0,-7mm) and +(0,-7mm) .. (a-3.south);
+\draw[ptr] (a-1.south) .. controls +(0,-9mm) and +(0,-9mm) .. (a-4.south);
+\node[var,anchor=west] at (-20mm,-60mm) {the children $2 i + 1$ and $2 i + 2$ of $i = 1$};
+\end{tikzpicture}
+\end{document}

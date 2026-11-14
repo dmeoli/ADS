@@ -27,6 +27,7 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
   return( std::is_sorted( A.begin() + start , A.begin() + mid + 1 , less ) &&
           std::is_sorted( A.begin() + mid + 1 , A.begin() + end + 1 ,
                           less ) ); } ) );
+//! [merge]
  std::size_t i = start , j = mid + 1 , k = start;
  while( ( i <= mid ) && ( j <= end ) )
   if( ! less( A[ j ] , A[ i ] ) )              // A[ i ] <= A[ j ]
@@ -40,6 +41,7 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
   B[ k++ ] = std::move( A[ i++ ] );
  for( std::size_t t = start ; t < k ; ++t )
   A[ t ] = std::move( B[ t ] );
+//! [merge]
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   return( std::is_sorted( A.begin() + start , A.begin() + end + 1 ,
                           less ) ); } ) );

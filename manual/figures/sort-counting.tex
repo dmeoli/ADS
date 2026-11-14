@@ -1,0 +1,33 @@
+% Source for the figure of the stable counting sort by one digit, the pass
+% of radixSort(), on the 20 keys in [ 0 , 10 ) of figure 11.7 of Morin's
+% book (sec. 12.7): the input a, the counts c, their prefix sums c' and
+% the output b. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    s/.style={cell,minimum width=6.4mm},
+    t/.style={touched,minimum width=6.4mm},
+    o/.style={added,minimum width=6.4mm}]
+  \newcommand{\rowof}[3]{\foreach \v/\st [count=\i from 0] in {#3}
+     \node[\st] (#1-\i) at ($(#2)+(\i*6.8mm,0)$) {\v};}
+  \node[var,anchor=east] at (-5mm,0) {$a$};
+  \rowof{a}{0,0}{7/s,2/s,9/s,0/s,1/s,2/s,0/s,9/s,7/s,4/s,4/s,6/s,9/s,1/s,0/s,9/s,3/s,2/s,5/s,9/t}
+  \foreach \i in {0,...,19} \node[index,above=1.4mm of a-\i] {\i};
+  \node[var,anchor=east] at (-5mm,-13mm) {$c$};
+  \rowof{c}{0,-13mm}{3/s,2/s,3/s,1/s,2/s,1/s,1/s,2/s,0/s,5/s}
+  \foreach \i in {0,...,9} \node[index,above=1.4mm of c-\i] {\i};
+  \node[var,anchor=east] at (-5mm,-24mm) {$c'$};
+  \rowof{d}{0,-24mm}{3/s,5/s,8/s,9/s,11/s,12/s,13/s,15/s,15/s,20/t}
+  \node[var,anchor=east] at (-5mm,-37mm) {$b$};
+  \rowof{b}{0,-37mm}{0/s,0/s,0/s,1/s,1/s,2/s,2/s,2/s,3/s,4/s,4/s,5/s,6/s,7/s,7/s,9/s,9/s,9/s,9/s,9/o}
+  \foreach \i in {0,...,19} \node[index,above=1.4mm of b-\i] {\i};
+  \draw[ptr] (a-19.south) .. controls +(0,-8mm) and +(8mm,4mm) .. (d-9.north east);
+  \draw[ptr] (d-9.east) .. controls +(52mm,0) and +(14mm,0) .. (b-19.east);
+\end{tikzpicture}
+\end{document}
