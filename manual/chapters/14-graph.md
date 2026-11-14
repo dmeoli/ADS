@@ -1330,7 +1330,7 @@ prototype and its cost ([Montresor 2025, §11.3 to
 | priority queue on an unsorted list | `LIST` | [Dijkstra 1959](Z-bibliography.md#ref-dijkstra1959) | $O( n^2 )$ | correct, a node possibly extracted more than once |
 | binary heap | `HEAP` | [Johnson 1977](Z-bibliography.md#ref-johnson1977) | $O( m \log n )$ | as above |
 | Fibonacci heap | `FIBONACCI` | [Fredman and Tarjan 1987](Z-bibliography.md#ref-fredman1987) | $O( m + n \log n )$ | as above |
-| queue | `QUEUE` | Bellman, [Ford 1956](Z-bibliography.md#ref-ford1956) and [Moore 1959](Z-bibliography.md#ref-moore1959) | $O( n m )$ | a negative cycle detected |
+| queue | `QUEUE` | Bellman, [Ford 1956](Z-bibliography.md#ref-ford1956b) and [Moore 1959](Z-bibliography.md#ref-moore1959) | $O( n m )$ | a negative cycle detected |
 | stack | `STACK` | | exponential in the worst case | no negative cycle allowed |
 | deque | `DEQUE` | Pape and D'Esopo ([Pape 1974](Z-bibliography.md#ref-pape1974)) | exponential in the worst case | no negative cycle allowed |
 
@@ -1548,7 +1548,7 @@ the arrays.
 equivalent: (i) $f$ is a maximum flow; (ii) the residual network has no
 path from $s$ to $t$ (an augmenting path); (iii)
 $\lvert f \rvert = c( S , V \setminus S )$ for some cut with $s \in S$ and
-$t \notin S$ ([Ford and Fulkerson 1956](Z-bibliography.md#ref-ford1956b);
+$t \notin S$ ([Ford and Fulkerson 1956](Z-bibliography.md#ref-ford1956);
 [Montresor 2025, Theorem 15.1](Z-bibliography.md#ref-montresor2025)).*
 
 *Proof.* The value of a flow is at most the capacity of any cut, since all
@@ -1582,7 +1582,7 @@ of a visit in breadth) $O( n^2 m )$.*
 
 *Proof.* Each augmentation adds at least 1 to the flow and costs a visit,
 which gives the first bound, a function of the values of the capacities
-([Ford and Fulkerson 1956](Z-bibliography.md#ref-ford1956b)). A shortest
+([Ford and Fulkerson 1956](Z-bibliography.md#ref-ford1956)). A shortest
 augmenting path never decreases the distances in edges from $s$ in the
 residual network, since the edges it adds go back by one level. The
 critical edge of an augmentation (the one that saturates) can be critical
@@ -2084,7 +2084,7 @@ weight with $d[ u ] + w' < d[ v ]$, or a decrease of an edge of $T$, is
 repairable. Indeed, $d$ is still the cost of real paths, an upper bound of
 the distances, and the prototype started with $S$ made of the tails of all
 such edges, instead of $S = \{ r \}$, makes it exact (the algorithm of
-[Ramalingam and Reps 1996](Z-bibliography.md#ref-ramalingam1996b) for the
+[Ramalingam and Reps 1996](Z-bibliography.md#ref-ramalingam1996) for the
 decreases). This takes $O( ( n_\delta + m_\delta ) \log n_\delta )$ with
 nonnegative weights, $n_\delta$ and $m_\delta$ the nodes whose distance
 falls and their edges. An increase or the deletion of an edge $( u , v )$ of
@@ -2301,7 +2301,7 @@ The shortest paths follow the prototype of [Montresor 2025, chapter
 algorithms of [Dijkstra 1959](Z-bibliography.md#ref-dijkstra1959), [Johnson
 1977](Z-bibliography.md#ref-johnson1977), [Fredman and Tarjan
 1987](Z-bibliography.md#ref-fredman1987), Bellman, [Ford
-1956](Z-bibliography.md#ref-ford1956) and [Moore
+1956](Z-bibliography.md#ref-ford1956b) and [Moore
 1959](Z-bibliography.md#ref-moore1959), and [Pape
 1974](Z-bibliography.md#ref-pape1974). Also, the optimality conditions are
 those of [Bellman 1958](Z-bibliography.md#ref-bellman1958), and the shortest
@@ -2310,7 +2310,7 @@ paths between all the pairs those of [Floyd
 [Warshall 1962](Z-bibliography.md#ref-warshall1962). The minimum spanning
 trees are those of [Kruskal 1956](Z-bibliography.md#ref-kruskal1956) and
 [Prim 1957](Z-bibliography.md#ref-prim1957), and the flows those of [Ford
-and Fulkerson 1956](Z-bibliography.md#ref-ford1956b), [Edmonds and Karp
+and Fulkerson 1956](Z-bibliography.md#ref-ford1956), [Edmonds and Karp
 1972](Z-bibliography.md#ref-edmonds1972) and [Dinic
 1970](Z-bibliography.md#ref-dinic1970). Finally, the push-relabel is that of
 [Goldberg and Tarjan 1988](Z-bibliography.md#ref-goldberg1988) with the
@@ -2331,7 +2331,7 @@ The observers of [§14.13](14-graph.md#sec-14-13) are, in the terms of
 [Ramalingam and Reps 1996](Z-bibliography.md#ref-ramalingam1996a),
 algorithms whose cost is measured on the part of the solution that changes.
 In particular, the shortest paths follow [Ramalingam and Reps
-1996](Z-bibliography.md#ref-ramalingam1996b) in the batch form of [Bauer and
+1996](Z-bibliography.md#ref-ramalingam1996) in the batch form of [Bauer and
 Wagner 2009](Z-bibliography.md#ref-bauer2009), the forest the sensitivity
 analysis of [Tarjan 1982](Z-bibliography.md#ref-tarjan1982) on the dynamic
 trees of [Sleator and Tarjan 1983](Z-bibliography.md#ref-sleator1983), and
