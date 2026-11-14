@@ -1,0 +1,84 @@
+% Source for the figure of RootishArrayStack (sec. 2.6): the blocks of 1,
+% 2, 3 and 4 places, with the global indices of the places, on the data of
+% Morin's Figure 2.5. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {initial};
+  \node[cell] (r0-0) at (0.00mm,0.00mm) {a};
+  \node[cell] (r0-1) at (11.40mm,0.00mm) {b};
+  \node[cell] (r0-2) at (18.80mm,0.00mm) {c};
+  \node[cell] (r0-3) at (30.20mm,0.00mm) {d};
+  \node[cell] (r0-4) at (37.60mm,0.00mm) {e};
+  \node[cell] (r0-5) at (45.00mm,0.00mm) {f};
+  \node[cell] (r0-6) at (56.40mm,0.00mm) {g};
+  \node[cell] (r0-7) at (63.80mm,0.00mm) {h};
+  \node[free] (r0-8) at (71.20mm,0.00mm) {};
+  \node[free] (r0-9) at (78.60mm,0.00mm) {};
+  \node[var,anchor=west] at (87.10mm,0.00mm) {$r = 4$, $n = 8$};
+  \node[var,anchor=east] at (-5.00mm,-11.00mm) {\texttt{add(2,x)}};
+  \node[cell] (r1-0) at (0.00mm,-11.00mm) {a};
+  \node[cell] (r1-1) at (11.40mm,-11.00mm) {b};
+  \node[added] (r1-2) at (18.80mm,-11.00mm) {x};
+  \node[touched] (r1-3) at (30.20mm,-11.00mm) {c};
+  \node[touched] (r1-4) at (37.60mm,-11.00mm) {d};
+  \node[touched] (r1-5) at (45.00mm,-11.00mm) {e};
+  \node[touched] (r1-6) at (56.40mm,-11.00mm) {f};
+  \node[touched] (r1-7) at (63.80mm,-11.00mm) {g};
+  \node[touched] (r1-8) at (71.20mm,-11.00mm) {h};
+  \node[free] (r1-9) at (78.60mm,-11.00mm) {};
+  \node[var,anchor=west] at (87.10mm,-11.00mm) {$r = 4$, $n = 9$};
+  \node[var,anchor=east] at (-5.00mm,-22.00mm) {\texttt{remove(1)}};
+  \node[cell] (r2-0) at (0.00mm,-22.00mm) {a};
+  \node[touched] (r2-1) at (11.40mm,-22.00mm) {x};
+  \node[touched] (r2-2) at (18.80mm,-22.00mm) {c};
+  \node[touched] (r2-3) at (30.20mm,-22.00mm) {d};
+  \node[touched] (r2-4) at (37.60mm,-22.00mm) {e};
+  \node[touched] (r2-5) at (45.00mm,-22.00mm) {f};
+  \node[touched] (r2-6) at (56.40mm,-22.00mm) {g};
+  \node[touched] (r2-7) at (63.80mm,-22.00mm) {h};
+  \node[free] (r2-8) at (71.20mm,-22.00mm) {};
+  \node[free] (r2-9) at (78.60mm,-22.00mm) {};
+  \node[var,anchor=west] at (87.10mm,-22.00mm) {$r = 4$, $n = 8$};
+  \node[var,anchor=east] at (-5.00mm,-33.00mm) {\texttt{remove(7)}};
+  \node[cell] (r3-0) at (0.00mm,-33.00mm) {a};
+  \node[cell] (r3-1) at (11.40mm,-33.00mm) {x};
+  \node[cell] (r3-2) at (18.80mm,-33.00mm) {c};
+  \node[cell] (r3-3) at (30.20mm,-33.00mm) {d};
+  \node[cell] (r3-4) at (37.60mm,-33.00mm) {e};
+  \node[cell] (r3-5) at (45.00mm,-33.00mm) {f};
+  \node[cell] (r3-6) at (56.40mm,-33.00mm) {g};
+  \node[free] (r3-7) at (63.80mm,-33.00mm) {};
+  \node[free] (r3-8) at (71.20mm,-33.00mm) {};
+  \node[free] (r3-9) at (78.60mm,-33.00mm) {};
+  \node[var,anchor=west] at (87.10mm,-33.00mm) {$r = 4$, $n = 7$};
+  \node[var,anchor=east] at (-5.00mm,-44.00mm) {\texttt{remove(6)}};
+  \node[cell] (r4-0) at (0.00mm,-44.00mm) {a};
+  \node[cell] (r4-1) at (11.40mm,-44.00mm) {x};
+  \node[cell] (r4-2) at (18.80mm,-44.00mm) {c};
+  \node[cell] (r4-3) at (30.20mm,-44.00mm) {d};
+  \node[cell] (r4-4) at (37.60mm,-44.00mm) {e};
+  \node[cell] (r4-5) at (45.00mm,-44.00mm) {f};
+  \node[free] (r4-6) at (56.40mm,-44.00mm) {};
+  \node[free] (r4-7) at (63.80mm,-44.00mm) {};
+  \node[free] (r4-8) at (71.20mm,-44.00mm) {};
+  \node[free] (r4-9) at (78.60mm,-44.00mm) {};
+  \node[var,anchor=west] at (87.10mm,-44.00mm) {$r = 4$, $n = 6$};
+  \node[index,below=1.6mm of r4-0] {0};
+  \node[index,below=1.6mm of r4-1] {1};
+  \node[index,below=1.6mm of r4-2] {2};
+  \node[index,below=1.6mm of r4-3] {3};
+  \node[index,below=1.6mm of r4-4] {4};
+  \node[index,below=1.6mm of r4-5] {5};
+  \node[index,below=1.6mm of r4-6] {6};
+  \node[index,below=1.6mm of r4-7] {7};
+  \node[index,below=1.6mm of r4-8] {8};
+  \node[index,below=1.6mm of r4-9] {9};
+\end{tikzpicture}
+\end{document}

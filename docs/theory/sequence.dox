@@ -400,18 +400,18 @@
      (2.6)</td><td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + n - i ) \f$</td>
      <td>\f$ O( \sqrt{n} ) \f$</td></tr>
  <tr><td><tt>DualArrayDeque</tt> on <tt>RootishArrayStack</tt></td>
-     <td>exercise 2.10</td><td>\f$ O( 1 ) \f$</td>
+     <td>exercise 2.9</td><td>\f$ O( 1 ) \f$</td>
      <td>\f$ O( 1 + \mu ) \f$</td><td>\f$ O( \sqrt{n} ) \f$</td></tr>
- <tr><td><tt>Treque</tt></td><td>exercise 2.4</td><td>\f$ O( 1 ) \f$</td>
+ <tr><td><tt>Treque</tt></td><td>exercise 2.3</td><td>\f$ O( 1 ) \f$</td>
      <td>\f$ O( 1 + \min\{ \mu , | n / 2 - i | \} ) \f$</td>
      <td>those of two <tt>RingDeque</tt></td></tr>
- <tr><td><tt>ContiguousDeque</tt></td><td>exercise 2.9</td>
+ <tr><td><tt>ContiguousDeque</tt></td><td>exercise 2.8</td>
      <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + \mu ) \f$</td>
      <td>\f$ \le 8 n + 24 \f$ places</td></tr>
- <tr><td><tt>TieredVector</tt></td><td>exercises 2.11, 2.12</td>
+ <tr><td><tt>TieredVector</tt></td><td>exercises 2.10, 2.11</td>
      <td>\f$ O( 1 ) \f$</td><td>\f$ O( 1 + \min\{ \mu , \sqrt{n} \} ) \f$
      </td><td>\f$ O( \sqrt{n} ) \f$</td></tr>
- <tr><td><tt>CubishArrayStack</tt></td><td>exercise 2.13</td>
+ <tr><td><tt>CubishArrayStack</tt></td><td>exercise 2.12</td>
      <td>\f$ O( 1 ) \f$</td><td>\f$ O( n^{1/3} ) \f$</td>
      <td>\f$ O( n^{2/3} ) \f$</td></tr>
  <tr><td><tt>SinglyList</tt></td><td><tt>SLList</tt> (3.1)</td>
@@ -435,12 +435,13 @@
 
  `ArraySequence` is the `ArrayStack` of Morin: Lemma 2 above is the lemma of
  his section 2.1.2, with the halving at a quarter where Morin halves at a
- third, which changes the constant only. Exercise 2.1 asks where the extra item
- of the array is after a removal: in the place \f$ n \f$, the item that the
- shift moved out of it, which in C++ is the husk left by a move, alive until an
- insertion or a resize overwrites it; it keeps its resources only if its move
- does not take them (a `std::string` or a `std::vector` gives them away).
- Exercise 2.2 asks for `addAll( i , c )`: \f$ k \f$ calls of
+ third, which changes the constant only. Exercise 2.1 of the Java edition of
+ the book asks where the extra item of the array is after a removal: in the
+ place \f$ n \f$, the item that the shift moved out of it, which in C++ is the
+ husk left by a move, alive until an insertion or a resize overwrites it; it
+ keeps its resources only if its move does not take them (a `std::string` or
+ a `std::vector` gives them away).
+ Exercise 2.1 asks for `addAll( i , c )`: \f$ k \f$ calls of
  \f$ \mathrm{add}( i , x ) \f$ move the \f$ n - i \f$ items after \f$ i \f$
  \f$ k \f$ times, \f$ \Theta( k ( n - i ) ) \f$, while one shift by \f$ k \f$
  places after one resize moves them once, \f$ O( n - i + k ) \f$ (the range
@@ -450,13 +451,13 @@
  consecutive places of a circular vector, an insertion at the rank \f$ i \f$
  moving the \f$ \min\{ i , n - i \} \f$ items of the shorter side by one
  place. The capacity is a power of 2, so that the place of the rank
- \f$ i \f$ is \f$ ( h + i ) \mathbin{\&} ( m - 1 ) \f$ (exercise 2.8: the
+ \f$ i \f$ is \f$ ( h + i ) \mathbin{\&} ( m - 1 ) \f$ (exercise 2.7: the
  bitwise and in place of a division), and the shifts move the runs of
  items contiguous in the vector, three at most, by `std::move()`, i.e., by
- `memmove()` for the items trivially copyable (exercise 2.7, the
+ `memmove()` for the items trivially copyable (exercise 2.6, the
  `System.arraycopy()` of the Java edition). `rotate( r )` moves
  \f$ \min\{ r , n - r \} \f$ items from one end to the other, and none when
- the vector is full, where moving the head is enough (exercise 2.6).
+ the vector is full, where moving the head is enough (exercise 2.5).
 
  <em>Lemma 7 (the balance of two stacks, section 2.5.1 of Morin).</em> Let the
  `DualArrayDeque` hold its \f$ n \f$ items in two stacks \f$ F \f$ and
@@ -477,7 +478,7 @@
  \f$ |F| - i \le n \le 4 ( n - i ) \f$ otherwise, and the same for
  \f$ B \f$.
 
- The `Treque` of exercise 2.4 splits the items in the middle instead, into
+ The `Treque` of exercise 2.3 splits the items in the middle instead, into
  two circular deques \f$ L \f$ and \f$ R \f$ whose sizes differ by one at
  most, kept so by one item moved from the back of one to the front of the
  other after each operation: an operation at \f$ i < |L| \f$ shifts
@@ -487,7 +488,7 @@
  \f$ O( 1 + \min\{ i , n - i , | n / 2 - i | \} ) \f$ with no amortization
  but that of the doublings.
 
- The `ContiguousDeque` of exercise 2.9 keeps the items in one contiguous
+ The `ContiguousDeque` of exercise 2.8 keeps the items in one contiguous
  piece \f$ A[ h .. h + n - 1 ] \f$ of a vector of \f$ c \f$ places, with no
  modular arithmetic; when an operation needs a place beyond an end, the
  items are put in the middle of \f$ 3 n + 8 \f$ places, at least
@@ -582,7 +583,7 @@
  deque that needs \f$ O( 1 ) \f$ in the worst case at the ends is the
  linked `Dequeue`, which allocates one cell per insertion.
 
- <em>Lemma 9 (the tiered vector with a gap, exercises 2.11 and 2.12).</em>
+ <em>Lemma 9 (the tiered vector with a gap, exercises 2.10 and 2.11).</em>
  Let a `TieredVector` keep its items in blocks of \f$ b \f$ places,
  \f$ b^2 / 4 \le n \le 4 b^2 \f$, all full but the first, with
  \f$ g < b \f$ places free at its front, and the last; let an insertion or a
@@ -606,11 +607,11 @@
  front only when the gap is 0, after which \f$ b \f$ insertions at the
  front come before the next one, and inserting the pointer to it in front
  of the \f$ n / b \f$ others costs \f$ O( n / b ) = O( b ) \f$, i.e.,
- \f$ O( 1 ) \f$ amortized. The bound of exercise 2.11,
+ \f$ O( 1 ) \f$ amortized. The bound of exercise 2.10,
  \f$ O( 1 + \min\{ \sqrt{n} , n - i \} ) \f$, is (7) without the shifts
  toward the front.
 
- <em>Lemma 10 (the cubish array, exercise 2.13).</em> Let
+ <em>Lemma 10 (the cubish array, exercise 2.12).</em> Let
  `CubishArrayStack` keep its items in leaves of \f$ b \f$ places,
  \f$ b^3 / 8 \le n \le 8 b^3 \f$, gathered into middle blocks of
  \f$ b^2 \f$ items, all full but the last, each middle block being a
@@ -748,7 +749,7 @@
  insertions by one `memmove()`, as `ArraySSet` does; the other
  realizations of the table above are the answers of chapters 2 and 3.
 
- `rotateArray()` (exercise 2.5) rotates an array by three reversals: with
+ `rotateArray()` (exercise 2.4) rotates an array by three reversals: with
  \f$ a = X Y \f$, \f$ |Y| = r \f$, the reversal of the whole gives
  \f$ Y^R X^R \f$, and reversing each part gives \f$ Y X \f$, i.e., each item
  \f$ r \f$ places on, with \f$ n \f$ swaps at most. `rotate()` on an

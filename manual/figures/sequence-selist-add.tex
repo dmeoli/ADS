@@ -1,0 +1,69 @@
+% Source for the figure of the insertion into SEList (sec. 2.12), b = 3:
+% the three cases of add(1, x), (a) room within b blocks, (b) the end of
+% the list reached, (c) b full blocks spread into b + 1 blocks, each row
+% before and after. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{sc/.style={cell,minimum width=5.6mm},
+         st/.style={touched,minimum width=5.6mm},
+         sa/.style={added,minimum width=5.6mm},
+         sf/.style={free,minimum width=5.6mm}}
+% \blk{name}{x}{y}{item/style list}: a block of places 6 mm apart;
+% \nblock{name} marks a new block with a bar under it
+\newcommand{\blk}[4]{%
+  \foreach \v/\s [count=\i from 0] in {#4}
+    \node[\s] (#1-\i) at (#2+\i*6mm,#3) {\v};}
+\newcommand{\dotsat}[2]{\node[nullptr] at (#1,#2) {\dots};}
+\newcommand{\nblock}[1]{%
+  \draw[edge-added] ($(#1-0.south west)+(0.4mm,-1.2mm)$) --
+    node[index,below=1.2mm] {new block}
+    ($(#1-3.south east)+(-0.4mm,-1.2mm)$);}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \def\xa{0mm}\def\xb{29mm}\def\xc{58mm}\def\xd{87mm}
+  % (a)
+  \node[var,anchor=east] at (-11.5mm,0) {(a) before};
+  \dotsat{-6.5mm}{0}
+  \blk{a0}{\xa}{0}{a/sc,b/sc,c/sc,d/sc}
+  \blk{a1}{\xb}{0}{e/sc,f/sc,g/sc,h/sc}
+  \blk{a2}{\xc}{0}{i/sc,j/sc,/sf,/sf}
+  \dotsat{82.5mm}{0}
+  \node[var,anchor=east] at (-11.5mm,-9mm) {\texttt{add(1, x)}};
+  \dotsat{-6.5mm}{-9mm}
+  \blk{b0}{\xa}{-9mm}{a/sc,x/sa,b/sc,c/sc}
+  \blk{b1}{\xb}{-9mm}{d/st,e/sc,f/sc,g/sc}
+  \blk{b2}{\xc}{-9mm}{h/st,i/sc,j/sc,/sf}
+  \dotsat{82.5mm}{-9mm}
+  % (b)
+  \node[var,anchor=east] at (-11.5mm,-24mm) {(b) before};
+  \dotsat{-6.5mm}{-24mm}
+  \blk{c0}{\xa}{-24mm}{a/sc,b/sc,c/sc,d/sc}
+  \blk{c1}{\xb}{-24mm}{e/sc,f/sc,g/sc,h/sc}
+  \node[var,anchor=east] at (-11.5mm,-33mm) {\texttt{add(1, x)}};
+  \dotsat{-6.5mm}{-33mm}
+  \blk{d0}{\xa}{-33mm}{a/sc,x/sa,b/sc,c/sc}
+  \blk{d1}{\xb}{-33mm}{d/st,e/sc,f/sc,g/sc}
+  \blk{d2}{\xc}{-33mm}{h/st,/sf,/sf,/sf}
+  \nblock{d2}
+  % (c)
+  \node[var,anchor=east] at (-11.5mm,-52mm) {(c) before};
+  \dotsat{-6.5mm}{-52mm}
+  \blk{e0}{\xa}{-52mm}{a/sc,b/sc,c/sc,d/sc}
+  \blk{e1}{\xb}{-52mm}{e/sc,f/sc,g/sc,h/sc}
+  \blk{e2}{\xc}{-52mm}{i/sc,j/sc,k/sc,l/sc}
+  \dotsat{82.5mm}{-52mm}
+  \node[var,anchor=east] at (-11.5mm,-61mm) {\texttt{add(1, x)}};
+  \dotsat{-6.5mm}{-61mm}
+  \blk{f0}{\xa}{-61mm}{a/sc,x/sa,b/sc,c/sc}
+  \blk{f1}{\xb}{-61mm}{d/st,e/sc,f/sc,/sf}
+  \blk{f2}{\xc}{-61mm}{g/st,h/st,i/sc,/sf}
+  \blk{f3}{\xd}{-61mm}{j/st,k/st,l/st,/sf}
+  \dotsat{111.5mm}{-61mm}
+  \nblock{f3}
+\end{tikzpicture}
+\end{document}

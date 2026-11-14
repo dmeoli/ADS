@@ -1,0 +1,110 @@
+% Source for the figure of RingDeque used as a queue (sec. 2.3): 8 places
+% used circularly, the arrow over h, the place of the front, on the data
+% of Morin's Figure 2.2. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {initial};
+  \node[free] (r0-0) at (0.00mm,0.00mm) {};
+  \node[free] (r0-1) at (7.40mm,0.00mm) {};
+  \node[cell] (r0-2) at (14.80mm,0.00mm) {a};
+  \node[cell] (r0-3) at (22.20mm,0.00mm) {b};
+  \node[cell] (r0-4) at (29.60mm,0.00mm) {c};
+  \node[free] (r0-5) at (37.00mm,0.00mm) {};
+  \node[free] (r0-6) at (44.40mm,0.00mm) {};
+  \node[free] (r0-7) at (51.80mm,0.00mm) {};
+  \draw[ptr] ($(r0-2.north)+(0,4mm)$) -- (r0-2.north);
+  \node[var,anchor=west] at (59.00mm,0.00mm) {$h = 2$, $n = 3$};
+  \node[var,anchor=east] at (-5.00mm,-14.00mm) {\texttt{add(d)}};
+  \node[free] (r1-0) at (0.00mm,-14.00mm) {};
+  \node[free] (r1-1) at (7.40mm,-14.00mm) {};
+  \node[cell] (r1-2) at (14.80mm,-14.00mm) {a};
+  \node[cell] (r1-3) at (22.20mm,-14.00mm) {b};
+  \node[cell] (r1-4) at (29.60mm,-14.00mm) {c};
+  \node[added] (r1-5) at (37.00mm,-14.00mm) {d};
+  \node[free] (r1-6) at (44.40mm,-14.00mm) {};
+  \node[free] (r1-7) at (51.80mm,-14.00mm) {};
+  \draw[ptr] ($(r1-2.north)+(0,4mm)$) -- (r1-2.north);
+  \node[var,anchor=west] at (59.00mm,-14.00mm) {$h = 2$, $n = 4$};
+  \node[var,anchor=east] at (-5.00mm,-28.00mm) {\texttt{add(e)}};
+  \node[free] (r2-0) at (0.00mm,-28.00mm) {};
+  \node[free] (r2-1) at (7.40mm,-28.00mm) {};
+  \node[cell] (r2-2) at (14.80mm,-28.00mm) {a};
+  \node[cell] (r2-3) at (22.20mm,-28.00mm) {b};
+  \node[cell] (r2-4) at (29.60mm,-28.00mm) {c};
+  \node[cell] (r2-5) at (37.00mm,-28.00mm) {d};
+  \node[added] (r2-6) at (44.40mm,-28.00mm) {e};
+  \node[free] (r2-7) at (51.80mm,-28.00mm) {};
+  \draw[ptr] ($(r2-2.north)+(0,4mm)$) -- (r2-2.north);
+  \node[var,anchor=west] at (59.00mm,-28.00mm) {$h = 2$, $n = 5$};
+  \node[var,anchor=east] at (-5.00mm,-42.00mm) {\texttt{remove()}};
+  \node[free] (r3-0) at (0.00mm,-42.00mm) {};
+  \node[free] (r3-1) at (7.40mm,-42.00mm) {};
+  \node[free] (r3-2) at (14.80mm,-42.00mm) {};
+  \node[cell] (r3-3) at (22.20mm,-42.00mm) {b};
+  \node[cell] (r3-4) at (29.60mm,-42.00mm) {c};
+  \node[cell] (r3-5) at (37.00mm,-42.00mm) {d};
+  \node[cell] (r3-6) at (44.40mm,-42.00mm) {e};
+  \node[free] (r3-7) at (51.80mm,-42.00mm) {};
+  \draw[ptr] ($(r3-3.north)+(0,4mm)$) -- (r3-3.north);
+  \node[var,anchor=west] at (59.00mm,-42.00mm) {$h = 3$, $n = 4$};
+  \node[var,anchor=east] at (-5.00mm,-56.00mm) {\texttt{add(f)}};
+  \node[free] (r4-0) at (0.00mm,-56.00mm) {};
+  \node[free] (r4-1) at (7.40mm,-56.00mm) {};
+  \node[free] (r4-2) at (14.80mm,-56.00mm) {};
+  \node[cell] (r4-3) at (22.20mm,-56.00mm) {b};
+  \node[cell] (r4-4) at (29.60mm,-56.00mm) {c};
+  \node[cell] (r4-5) at (37.00mm,-56.00mm) {d};
+  \node[cell] (r4-6) at (44.40mm,-56.00mm) {e};
+  \node[added] (r4-7) at (51.80mm,-56.00mm) {f};
+  \draw[ptr] ($(r4-3.north)+(0,4mm)$) -- (r4-3.north);
+  \node[var,anchor=west] at (59.00mm,-56.00mm) {$h = 3$, $n = 5$};
+  \node[var,anchor=east] at (-5.00mm,-70.00mm) {\texttt{add(g)}};
+  \node[added] (r5-0) at (0.00mm,-70.00mm) {g};
+  \node[free] (r5-1) at (7.40mm,-70.00mm) {};
+  \node[free] (r5-2) at (14.80mm,-70.00mm) {};
+  \node[cell] (r5-3) at (22.20mm,-70.00mm) {b};
+  \node[cell] (r5-4) at (29.60mm,-70.00mm) {c};
+  \node[cell] (r5-5) at (37.00mm,-70.00mm) {d};
+  \node[cell] (r5-6) at (44.40mm,-70.00mm) {e};
+  \node[cell] (r5-7) at (51.80mm,-70.00mm) {f};
+  \draw[ptr] ($(r5-3.north)+(0,4mm)$) -- (r5-3.north);
+  \node[var,anchor=west] at (59.00mm,-70.00mm) {$h = 3$, $n = 6$};
+  \node[var,anchor=east] at (-5.00mm,-84.00mm) {\texttt{add(h)}};
+  \node[cell] (r6-0) at (0.00mm,-84.00mm) {g};
+  \node[added] (r6-1) at (7.40mm,-84.00mm) {h};
+  \node[free] (r6-2) at (14.80mm,-84.00mm) {};
+  \node[cell] (r6-3) at (22.20mm,-84.00mm) {b};
+  \node[cell] (r6-4) at (29.60mm,-84.00mm) {c};
+  \node[cell] (r6-5) at (37.00mm,-84.00mm) {d};
+  \node[cell] (r6-6) at (44.40mm,-84.00mm) {e};
+  \node[cell] (r6-7) at (51.80mm,-84.00mm) {f};
+  \draw[ptr] ($(r6-3.north)+(0,4mm)$) -- (r6-3.north);
+  \node[var,anchor=west] at (59.00mm,-84.00mm) {$h = 3$, $n = 7$};
+  \node[var,anchor=east] at (-5.00mm,-98.00mm) {\texttt{remove()}};
+  \node[cell] (r7-0) at (0.00mm,-98.00mm) {g};
+  \node[cell] (r7-1) at (7.40mm,-98.00mm) {h};
+  \node[free] (r7-2) at (14.80mm,-98.00mm) {};
+  \node[free] (r7-3) at (22.20mm,-98.00mm) {};
+  \node[cell] (r7-4) at (29.60mm,-98.00mm) {c};
+  \node[cell] (r7-5) at (37.00mm,-98.00mm) {d};
+  \node[cell] (r7-6) at (44.40mm,-98.00mm) {e};
+  \node[cell] (r7-7) at (51.80mm,-98.00mm) {f};
+  \draw[ptr] ($(r7-4.north)+(0,4mm)$) -- (r7-4.north);
+  \node[var,anchor=west] at (59.00mm,-98.00mm) {$h = 4$, $n = 6$};
+  \node[index,below=1.6mm of r7-0] {0};
+  \node[index,below=1.6mm of r7-1] {1};
+  \node[index,below=1.6mm of r7-2] {2};
+  \node[index,below=1.6mm of r7-3] {3};
+  \node[index,below=1.6mm of r7-4] {4};
+  \node[index,below=1.6mm of r7-5] {5};
+  \node[index,below=1.6mm of r7-6] {6};
+  \node[index,below=1.6mm of r7-7] {7};
+\end{tikzpicture}
+\end{document}

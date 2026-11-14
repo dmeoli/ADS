@@ -18,10 +18,10 @@
  *
  * Two rotations come with them: `rotateArray()`, the item \f$ a[ i ] \f$ of
  * an array moved to \f$ a[ ( i + r ) \bmod n ] \f$ by three reversals
- * (exercise 2.5 of Morin), \f$ n \f$ swaps at most and no memory, and
+ * (exercise 2.4 of Morin), \f$ n \f$ swaps at most and no memory, and
  * `rotate()`, the same on an `IndexedList`, which calls the `rotate()` of
  * the list when it has one (\f$ O( 1 + \min\{ r , n - r \} ) \f$ on
- * `RingDeque`, `DualArrayDeque` and `List`, exercises 2.6 and 3.8) and
+ * `RingDeque`, `DualArrayDeque` and `List`, exercises 2.5 and 3.8) and
  * otherwise follows the \f$ \gcd( n , r ) \f$ cycles of the permutation by
  * `operator[]`, \f$ n + \gcd( n , r ) \f$ moves.
  *
@@ -31,7 +31,7 @@
  *
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
  *      https://opendatastructures.org/ods-cpp.pdf, sections 1.2.1 and 1.2.2
- *      and exercises 2.5 and 2.6
+ *      and exercises 2.4 and 2.5
  * \see J. Bentley, Programming Pearls, 2nd ed., Addison-Wesley, 2000,
  *      section 2.3 (the rotation by reversals and by cycles)
  *
@@ -105,7 +105,7 @@ concept IndexedDeque = requires( D d , const typename D::value_type & x ) {
 /// every \f$ i \f$, by three reversals: \f$ n \f$ swaps at most and
 /// \f$ O( 1 ) \f$ space
 ///
-/// In pseudocode (Morin, exercise 2.5, by Bentley's reversals), with
+/// In pseudocode (Morin, exercise 2.4, by Bentley's reversals), with
 /// \f$ r \f$ reduced modulo \f$ n \f$, the last \f$ r \f$ items becoming the
 /// first ones:
 /// \f[
@@ -124,7 +124,7 @@ void rotateArray( std::span< T > a , std::size_t r );
 /// \f$ ( i + r ) \bmod n \f$: the `rotate()` of the list if it has one,
 /// the cycles of the permutation otherwise, \f$ n + \gcd( n , r ) \f$ moves
 ///
-/// In pseudocode (Morin, exercise 2.6, by Bentley's cycles), \f$ r \f$
+/// In pseudocode (Morin, exercise 2.5, by Bentley's cycles), \f$ r \f$
 /// reduced modulo \f$ n \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}

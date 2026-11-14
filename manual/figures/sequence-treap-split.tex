@@ -1,0 +1,52 @@
+% Source for the figure of TreapList (sec. 2.15): truncate(3) on the implicit
+% treap of the items a to g, the path that the split at index 3 follows and
+% the two treaps it leaves, each vertex with the size of its subtree.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{sz/.style={index,anchor=north,yshift=-1mm}}
+% \vx[style]{name}{x}{depth}{item}{size}: a vertex, the size of its subtree
+% under it
+\newcommand{\vx}[6][vertex]{%
+  \node[#1] (#2) at (#3*9mm,-#4*12mm) {#5};
+  \node[sz] at (#2.south) {#6};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=west] at (-4mm,9mm) {before};
+  \vx{a}{0}{2}{a}{1}
+  \vx[vertex-touched]{b}{1}{1}{b}{3}
+  \vx[vertex-touched]{c}{2}{2}{c}{1}
+  \vx[vertex-touched]{d}{3}{0}{d}{7}
+  \vx{e}{4}{2}{e}{1}
+  \vx{f}{5}{1}{f}{3}
+  \vx{g}{6}{2}{g}{1}
+  \draw[edge-touched] (d) -- (b);
+  \draw[edge-touched] (b) -- (c);
+  \draw[edge] (b) -- (a);
+  \draw[edge] (d) -- (f);
+  \draw[edge] (f) -- (e);
+  \draw[edge] (f) -- (g);
+  \begin{scope}[xshift=76mm]
+    \node[var,anchor=west] at (-4mm,9mm) {\texttt{truncate(3)}};
+    \vx{a}{0}{1}{a}{1}
+    \vx[vertex-touched]{b}{1}{0}{b}{3}
+    \vx{c}{2}{1}{c}{1}
+    \draw[edge] (b) -- (a);
+    \draw[edge] (b) -- (c);
+    \vx[vertex-touched]{d}{4.2}{0}{d}{4}
+    \vx{e}{5.2}{2}{e}{1}
+    \vx{f}{6.2}{1}{f}{3}
+    \vx{g}{7.2}{2}{g}{1}
+    \node[nullptr] (nl) at (3.4*9mm,-12mm) {nil};
+    \draw[guide] (d) -- (nl);
+    \draw[edge] (d) -- (f);
+    \draw[edge] (f) -- (e);
+    \draw[edge] (f) -- (g);
+  \end{scope}
+\end{tikzpicture}
+\end{document}

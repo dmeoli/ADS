@@ -1,0 +1,78 @@
+% Source for the figure of TieredVector with a gap (sec. 2.7), with blocks
+% of 4 places for the figure: each block is circular and drawn in rank
+% order, g is the number of free places before the first item; an
+% insertion moves the shorter side, and a new block opens at the front
+% when the gap is used up. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    sc/.style={cell,minimum width=6mm},st/.style={touched,minimum width=6mm},
+    sa/.style={added,minimum width=6mm},sf/.style={free,minimum width=6mm}]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {initial};
+  \node[sf] (r0-0) at (29.60mm,0.00mm) {};
+  \node[sc] (r0-1) at (36.00mm,0.00mm) {a};
+  \node[sc] (r0-2) at (42.40mm,0.00mm) {b};
+  \node[sc] (r0-3) at (48.80mm,0.00mm) {c};
+  \node[sc] (r0-4) at (59.20mm,0.00mm) {d};
+  \node[sc] (r0-5) at (65.60mm,0.00mm) {e};
+  \node[sc] (r0-6) at (72.00mm,0.00mm) {f};
+  \node[sc] (r0-7) at (78.40mm,0.00mm) {g};
+  \node[sc] (r0-8) at (88.80mm,0.00mm) {h};
+  \node[sc] (r0-9) at (95.20mm,0.00mm) {i};
+  \node[sc] (r0-10) at (101.60mm,0.00mm) {j};
+  \node[sf] (r0-11) at (108.00mm,0.00mm) {};
+  \node[var,anchor=west,align=left] at (116.00mm,0.00mm) {$n = 10$\\$g = 1$};
+  \node[var,anchor=east] at (-5.00mm,-11.00mm) {\texttt{insert(5,x)}};
+  \node[sf] (r1-0) at (29.60mm,-11.00mm) {};
+  \node[sc] (r1-1) at (36.00mm,-11.00mm) {a};
+  \node[sc] (r1-2) at (42.40mm,-11.00mm) {b};
+  \node[sc] (r1-3) at (48.80mm,-11.00mm) {c};
+  \node[sc] (r1-4) at (59.20mm,-11.00mm) {d};
+  \node[sc] (r1-5) at (65.60mm,-11.00mm) {e};
+  \node[sa] (r1-6) at (72.00mm,-11.00mm) {x};
+  \node[st] (r1-7) at (78.40mm,-11.00mm) {f};
+  \node[st] (r1-8) at (88.80mm,-11.00mm) {g};
+  \node[sc] (r1-9) at (95.20mm,-11.00mm) {h};
+  \node[sc] (r1-10) at (101.60mm,-11.00mm) {i};
+  \node[sc] (r1-11) at (108.00mm,-11.00mm) {j};
+  \node[var,anchor=west,align=left] at (116.00mm,-11.00mm) {$n = 11$\\$g = 1$};
+  \node[var,anchor=east] at (-5.00mm,-22.00mm) {\texttt{insert(1,y)}};
+  \node[st] (r2-0) at (29.60mm,-22.00mm) {a};
+  \node[sa] (r2-1) at (36.00mm,-22.00mm) {y};
+  \node[sc] (r2-2) at (42.40mm,-22.00mm) {b};
+  \node[sc] (r2-3) at (48.80mm,-22.00mm) {c};
+  \node[sc] (r2-4) at (59.20mm,-22.00mm) {d};
+  \node[sc] (r2-5) at (65.60mm,-22.00mm) {e};
+  \node[sc] (r2-6) at (72.00mm,-22.00mm) {x};
+  \node[sc] (r2-7) at (78.40mm,-22.00mm) {f};
+  \node[sc] (r2-8) at (88.80mm,-22.00mm) {g};
+  \node[sc] (r2-9) at (95.20mm,-22.00mm) {h};
+  \node[sc] (r2-10) at (101.60mm,-22.00mm) {i};
+  \node[sc] (r2-11) at (108.00mm,-22.00mm) {j};
+  \node[var,anchor=west,align=left] at (116.00mm,-22.00mm) {$n = 12$\\$g = 0$};
+  \node[var,anchor=east] at (-5.00mm,-33.00mm) {\texttt{insert(0,z)}};
+  \node[sf] (r3-0) at (0.00mm,-33.00mm) {};
+  \node[sf] (r3-1) at (6.40mm,-33.00mm) {};
+  \node[sf] (r3-2) at (12.80mm,-33.00mm) {};
+  \node[sa] (r3-3) at (19.20mm,-33.00mm) {z};
+  \node[sc] (r3-4) at (29.60mm,-33.00mm) {a};
+  \node[sc] (r3-5) at (36.00mm,-33.00mm) {y};
+  \node[sc] (r3-6) at (42.40mm,-33.00mm) {b};
+  \node[sc] (r3-7) at (48.80mm,-33.00mm) {c};
+  \node[sc] (r3-8) at (59.20mm,-33.00mm) {d};
+  \node[sc] (r3-9) at (65.60mm,-33.00mm) {e};
+  \node[sc] (r3-10) at (72.00mm,-33.00mm) {x};
+  \node[sc] (r3-11) at (78.40mm,-33.00mm) {f};
+  \node[sc] (r3-12) at (88.80mm,-33.00mm) {g};
+  \node[sc] (r3-13) at (95.20mm,-33.00mm) {h};
+  \node[sc] (r3-14) at (101.60mm,-33.00mm) {i};
+  \node[sc] (r3-15) at (108.00mm,-33.00mm) {j};
+  \node[var,anchor=west,align=left] at (116.00mm,-33.00mm) {$n = 13$\\$g = 3$};
+\end{tikzpicture}
+\end{document}

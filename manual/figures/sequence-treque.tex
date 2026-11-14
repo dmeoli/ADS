@@ -1,0 +1,65 @@
+% Source for the figure of Treque (sec. 2.5): the two circular deques L and
+% R, each drawn in rank order, through an insertion, an erasure followed
+% by a balance and an insertion at the front.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {initial};
+  \node[cell] (L0-0) at (0.00mm,0.00mm) {a};
+  \node[cell] (L0-1) at (7.40mm,0.00mm) {b};
+  \node[cell] (L0-2) at (14.80mm,0.00mm) {c};
+  \node[cell] (L0-3) at (22.20mm,0.00mm) {d};
+  \node[free] (L0-4) at (29.60mm,0.00mm) {};
+  \node[cell] (R0-0) at (43.00mm,0.00mm) {e};
+  \node[cell] (R0-1) at (50.40mm,0.00mm) {f};
+  \node[cell] (R0-2) at (57.80mm,0.00mm) {g};
+  \node[cell] (R0-3) at (65.20mm,0.00mm) {h};
+  \node[free] (R0-4) at (72.60mm,0.00mm) {};
+  \node[var,anchor=west] at (81.10mm,0.00mm) {$n = 8$};
+  \node[var,anchor=east] at (-5.00mm,-11.00mm) {\texttt{insert(4,x)}};
+  \node[cell] (L1-0) at (0.00mm,-11.00mm) {a};
+  \node[cell] (L1-1) at (7.40mm,-11.00mm) {b};
+  \node[cell] (L1-2) at (14.80mm,-11.00mm) {c};
+  \node[cell] (L1-3) at (22.20mm,-11.00mm) {d};
+  \node[free] (L1-4) at (29.60mm,-11.00mm) {};
+  \node[added] (R1-0) at (43.00mm,-11.00mm) {x};
+  \node[cell] (R1-1) at (50.40mm,-11.00mm) {e};
+  \node[cell] (R1-2) at (57.80mm,-11.00mm) {f};
+  \node[cell] (R1-3) at (65.20mm,-11.00mm) {g};
+  \node[cell] (R1-4) at (72.60mm,-11.00mm) {h};
+  \node[var,anchor=west] at (81.10mm,-11.00mm) {$n = 9$};
+  \node[var,anchor=east] at (-5.00mm,-22.00mm) {\texttt{erase(1)}};
+  \node[cell] (L2-0) at (0.00mm,-22.00mm) {a};
+  \node[touched] (L2-1) at (7.40mm,-22.00mm) {c};
+  \node[touched] (L2-2) at (14.80mm,-22.00mm) {d};
+  \node[touched] (L2-3) at (22.20mm,-22.00mm) {x};
+  \node[free] (L2-4) at (29.60mm,-22.00mm) {};
+  \node[cell] (R2-0) at (43.00mm,-22.00mm) {e};
+  \node[cell] (R2-1) at (50.40mm,-22.00mm) {f};
+  \node[cell] (R2-2) at (57.80mm,-22.00mm) {g};
+  \node[cell] (R2-3) at (65.20mm,-22.00mm) {h};
+  \node[free] (R2-4) at (72.60mm,-22.00mm) {};
+  \node[var,anchor=west] at (81.10mm,-22.00mm) {$n = 8$};
+  \node[var,anchor=east] at (-5.00mm,-33.00mm) {\texttt{insert(0,y)}};
+  \node[added] (L3-0) at (0.00mm,-33.00mm) {y};
+  \node[cell] (L3-1) at (7.40mm,-33.00mm) {a};
+  \node[cell] (L3-2) at (14.80mm,-33.00mm) {c};
+  \node[cell] (L3-3) at (22.20mm,-33.00mm) {d};
+  \node[cell] (L3-4) at (29.60mm,-33.00mm) {x};
+  \node[cell] (R3-0) at (43.00mm,-33.00mm) {e};
+  \node[cell] (R3-1) at (50.40mm,-33.00mm) {f};
+  \node[cell] (R3-2) at (57.80mm,-33.00mm) {g};
+  \node[cell] (R3-3) at (65.20mm,-33.00mm) {h};
+  \node[free] (R3-4) at (72.60mm,-33.00mm) {};
+  \node[var,anchor=west] at (81.10mm,-33.00mm) {$n = 9$};
+  \node[var] at ($(L0-2)+(0,7.5mm)$) {$L$};
+  \node[var] at ($(R0-2)+(0,7.5mm)$) {$R$};
+\end{tikzpicture}
+\end{document}

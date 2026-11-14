@@ -1,0 +1,62 @@
+% Source for the figure of the removal from SEList (sec. 2.12), b = 3: the
+% three cases of remove(1), (a) a block with more than b - 1 items within b
+% blocks, (b) the end of the list reached, (c) b blocks of b - 1 items
+% gathered into b - 1 blocks, each row before and after. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{sc/.style={cell,minimum width=5.6mm},
+         st/.style={touched,minimum width=5.6mm},
+         sa/.style={added,minimum width=5.6mm},
+         sf/.style={free,minimum width=5.6mm}}
+% \blk{name}{x}{y}{item/style list}: a block of places 6 mm apart
+\newcommand{\blk}[4]{%
+  \foreach \v/\s [count=\i from 0] in {#4}
+    \node[\s] (#1-\i) at (#2+\i*6mm,#3) {\v};}
+\newcommand{\dotsat}[2]{\node[nullptr] at (#1,#2) {\dots};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \def\xa{0mm}\def\xb{29mm}\def\xc{58mm}
+  % (a)
+  \node[var,anchor=east] at (-11.5mm,0) {(a) before};
+  \dotsat{-6.5mm}{0}
+  \blk{a0}{\xa}{0}{a/sc,b/sc,/sf,/sf}
+  \blk{a1}{\xb}{0}{c/sc,d/sc,/sf,/sf}
+  \blk{a2}{\xc}{0}{e/sc,f/sc,g/sc,/sf}
+  \dotsat{82.5mm}{0}
+  \node[var,anchor=east] at (-11.5mm,-9mm) {\texttt{remove(1)}};
+  \dotsat{-6.5mm}{-9mm}
+  \blk{b0}{\xa}{-9mm}{a/sc,c/st,/sf,/sf}
+  \blk{b1}{\xb}{-9mm}{d/sc,e/st,/sf,/sf}
+  \blk{b2}{\xc}{-9mm}{f/sc,g/sc,/sf,/sf}
+  \dotsat{82.5mm}{-9mm}
+  % (b)
+  \node[var,anchor=east] at (-11.5mm,-24mm) {(b) before};
+  \dotsat{-6.5mm}{-24mm}
+  \blk{c0}{\xa}{-24mm}{a/sc,b/sc,/sf,/sf}
+  \blk{c1}{\xb}{-24mm}{c/sc,d/sc,/sf,/sf}
+  \blk{c2}{\xc}{-24mm}{e/sc,f/sc,/sf,/sf}
+  \node[var,anchor=east] at (-11.5mm,-33mm) {\texttt{remove(1)}};
+  \dotsat{-6.5mm}{-33mm}
+  \blk{d0}{\xa}{-33mm}{a/sc,c/st,/sf,/sf}
+  \blk{d1}{\xb}{-33mm}{d/sc,e/st,/sf,/sf}
+  \blk{d2}{\xc}{-33mm}{f/sc,/sf,/sf,/sf}
+  % (c)
+  \node[var,anchor=east] at (-11.5mm,-48mm) {(c) before};
+  \dotsat{-6.5mm}{-48mm}
+  \blk{e0}{\xa}{-48mm}{a/sc,b/sc,/sf,/sf}
+  \blk{e1}{\xb}{-48mm}{c/sc,d/sc,/sf,/sf}
+  \blk{e2}{\xc}{-48mm}{e/sc,f/sc,/sf,/sf}
+  \dotsat{82.5mm}{-48mm}
+  \node[var,anchor=east] at (-11.5mm,-57mm) {\texttt{remove(1)}};
+  \dotsat{-6.5mm}{-57mm}
+  \blk{f0}{\xa}{-57mm}{a/sc,c/st,d/st,/sf}
+  \blk{f1}{\xb}{-57mm}{e/st,f/st,/sf,/sf}
+  \dotsat{53.5mm}{-57mm}
+\end{tikzpicture}
+\end{document}

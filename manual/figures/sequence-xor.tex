@@ -1,0 +1,36 @@
+% Source for the figure of XorList (sec. 2.13): four nodes, each with its
+% item (upper row) and its one link word, the exclusive or of the
+% addresses of its neighbours (lower row, 0 at the ends), and the pointers
+% first and last, which reverse() exchanges. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{wcell/.style={cell,minimum width=16mm}}
+% \xrow{name}{y}: the four nodes a b c d with their link words
+\newcommand{\xrow}[2]{%
+  \foreach \v/\w [count=\i from 0] in
+      {a/{\texttt{0} $\oplus$ \texttt{b}},b/{\texttt{a} $\oplus$ \texttt{c}},
+       c/{\texttt{b} $\oplus$ \texttt{d}},d/{\texttt{c} $\oplus$ \texttt{0}}} {
+    \node[wcell] (#1-\i) at (\i*22mm,#2) {\v};
+    \node[wcell] (#1w-\i) at (\i*22mm,#2-7.4mm) {\w};}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-12mm,-3.7mm) {initial};
+  \xrow{r}{0}
+  \node[var] (f0) at ($(r-0)+(0,11mm)$) {first};
+  \node[var] (l0) at ($(r-3)+(0,11mm)$) {last};
+  \draw[ptr] (f0) -- (r-0.north);
+  \draw[ptr] (l0) -- (r-3.north);
+  \node[var,anchor=east] at (-12mm,-33.7mm) {\texttt{reverse()}};
+  \xrow{s}{-30mm}
+  \node[var] (f1) at ($(s-3)+(0,11mm)$) {first};
+  \node[var] (l1) at ($(s-0)+(0,11mm)$) {last};
+  \draw[arc-touched] (f1) -- (s-3.north);
+  \draw[arc-touched] (l1) -- (s-0.north);
+\end{tikzpicture}
+\end{document}

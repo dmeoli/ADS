@@ -1,0 +1,46 @@
+% Source for the figure of the sum 1 + 2 + ... + r (sec. 2.6), r = 5: two
+% staircases of 1, 2, ..., r squares fill a rectangle of r(r+1) squares,
+% as in Morin's Figure 2.6. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[cell] at (0.00mm,0.00mm) {};
+  \node[touched] at (0.00mm,7.40mm) {};
+  \node[touched] at (0.00mm,14.80mm) {};
+  \node[touched] at (0.00mm,22.20mm) {};
+  \node[touched] at (0.00mm,29.60mm) {};
+  \node[touched] at (0.00mm,37.00mm) {};
+  \node[cell] at (7.40mm,0.00mm) {};
+  \node[cell] at (7.40mm,7.40mm) {};
+  \node[touched] at (7.40mm,14.80mm) {};
+  \node[touched] at (7.40mm,22.20mm) {};
+  \node[touched] at (7.40mm,29.60mm) {};
+  \node[touched] at (7.40mm,37.00mm) {};
+  \node[cell] at (14.80mm,0.00mm) {};
+  \node[cell] at (14.80mm,7.40mm) {};
+  \node[cell] at (14.80mm,14.80mm) {};
+  \node[touched] at (14.80mm,22.20mm) {};
+  \node[touched] at (14.80mm,29.60mm) {};
+  \node[touched] at (14.80mm,37.00mm) {};
+  \node[cell] at (22.20mm,0.00mm) {};
+  \node[cell] at (22.20mm,7.40mm) {};
+  \node[cell] at (22.20mm,14.80mm) {};
+  \node[cell] at (22.20mm,22.20mm) {};
+  \node[touched] at (22.20mm,29.60mm) {};
+  \node[touched] at (22.20mm,37.00mm) {};
+  \node[cell] at (29.60mm,0.00mm) {};
+  \node[cell] at (29.60mm,7.40mm) {};
+  \node[cell] at (29.60mm,14.80mm) {};
+  \node[cell] at (29.60mm,22.20mm) {};
+  \node[cell] at (29.60mm,29.60mm) {};
+  \node[touched] at (29.60mm,37.00mm) {};
+  \node[var,anchor=north] at (14.80mm,-6mm) {$r$};
+  \node[var,anchor=east] at (-6mm,18.50mm) {$r + 1$};
+\end{tikzpicture}
+\end{document}

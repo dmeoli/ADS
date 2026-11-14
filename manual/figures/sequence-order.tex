@@ -1,0 +1,45 @@
+% Source for the figure of OrderMaintenanceList (sec. 2.15.1): the two levels
+% of labels, on a universe of 16 labels for the buckets and 16 local labels
+% (the code uses 2^63): three buckets before and after addAfter(b, x), and
+% the comparison of testBefore(x, e). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  bk/.style={cell,minimum width=9mm,minimum height=5mm,
+              font=\scriptsize\ttfamily},
+  bk-touched/.style={touched,minimum width=9mm,minimum height=5mm,
+                     font=\scriptsize\ttfamily\bfseries}}
+% \bucket{x,y}{label style}{label}{items}{k}: a bucket of k+1 items at x,y,
+% its label above and the local label of each item under it (items:
+% text/style/local)
+\newcommand{\bucket}[5]{%
+  \foreach \v/\s/\k [count=\i from 0] in {#4} {
+    \node[\s] (c\i) at ($(#1)+(\i*7.4mm,0)$) {\v};
+    \node[index,below=1.6mm of c\i] {\k};}
+  \node[#2] at ($(#1)+(#5*3.7mm,8mm)$) {#3};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \bucket{0,0}{bk}{2}{a/cell/0,b/cell/4,c/cell/8}{2}
+  \bucket{38mm,0}{bk}{7}{d/cell/2,e/cell/10}{1}
+  \bucket{62mm,0}{bk}{12}{f/cell/8}{0}
+  \begin{scope}[yshift=-22mm]
+    \node[var,anchor=east] at (-6mm,0) {\texttt{addAfter(b,x)}};
+    \bucket{0,0}{bk}{2}{a/cell/0,b/touched/4,x/added/6,c/touched/8}{3}
+    \bucket{38mm,0}{bk}{7}{d/cell/2,e/cell/10}{1}
+    \bucket{62mm,0}{bk}{12}{f/cell/8}{0}
+  \end{scope}
+  \begin{scope}[yshift=-44mm]
+    \node[var,anchor=east] at (-6mm,0) {\texttt{testBefore(x,e)}};
+    \bucket{0,0}{bk-touched}{2}{a/cell/0,b/cell/4,x/cell/6,c/cell/8}{3}
+    \bucket{38mm,0}{bk-touched}{7}{d/cell/2,e/cell/10}{1}
+    \bucket{62mm,0}{bk}{12}{f/cell/8}{0}
+    \node[var,anchor=west] at (72mm,0) {$2 < 7$: \texttt{true}};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

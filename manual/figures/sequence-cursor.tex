@@ -1,0 +1,43 @@
+% Source for the figure of CursorList (sec. 2.11): two lists and the free
+% list in one CursorSpace, each place with its item (upper row) and the
+% cursor of the next place (lower row), before and after m.push_front(x),
+% m.push_front(y) and the removal of b from l. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before
+  \node[var,anchor=east] at (-12mm,-3.7mm) {before};
+  \cells{A}{0,0}{-/free,a/cell,b/cell,c/cell,/free,/free,/free,/free,/free}
+  \cells{B}{0,-7.4mm}{-/free,2/cell,3/cell,0/cell,5/free,6/free,7/free,8/free,0/free}
+  \node[index,anchor=east] at (-4.5mm,0) {item};
+  \node[index,anchor=east] at (-4.5mm,-7.4mm) {next};
+  \indicesbelow{B}{9}
+  \node[var] (lf0) at ($(A-1)+(0,11mm)$) {l.first};
+  \node[var] (fr0) at ($(A-4)+(0,11mm)$) {free};
+  \draw[ptr] (lf0) -- (A-1.north);
+  \draw[ptr] (fr0) -- (A-4.north);
+  \node[var,anchor=west] at (70mm,-3.7mm) {$\mathit{l.first} = 1$, $\mathit{free} = 4$};
+  % after
+  \node[var,anchor=east] at (-12mm,-43.7mm) {after};
+  \cells{C}{0,-40mm}{-/free,a/touched,/free,c/cell,x/added,y/added,/free,/free,/free}
+  \cells{D}{0,-47.4mm}{-/free,3/touched,6/free,0/cell,0/added,4/added,7/free,8/free,0/free}
+  \node[index,anchor=east] at (-4.5mm,-40mm) {item};
+  \node[index,anchor=east] at (-4.5mm,-47.4mm) {next};
+  \indicesbelow{D}{9}
+  \node[var] (lf1) at ($(C-1)+(0,16mm)$) {l.first};
+  \node[var] (fr1) at ($(C-2)+(0,9mm)$) {free};
+  \node[var] (mf1) at ($(C-5)+(0,11mm)$) {m.first};
+  \draw[ptr] (lf1) -- (C-1.north);
+  \draw[ptr] (fr1) -- (C-2.north);
+  \draw[ptr] (mf1) -- (C-5.north);
+  \node[var,anchor=west] at (70mm,-43.7mm)
+    {$\mathit{l.first} = 1$, $\mathit{m.first} = 5$, $\mathit{free} = 2$};
+\end{tikzpicture}
+\end{document}

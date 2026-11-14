@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * A double ended queue with no modular arithmetic, beyond the book: the
- * variant of the `ArrayDeque` of Morin's book asked by its exercise 2.9, the
+ * variant of the `ArrayDeque` of Morin's book asked by its exercise 2.8, the
  * \f$ n \f$ items in order in one contiguous piece \f$ A[ h .. h + n - 1 ] \f$
  * of a vector of \f$ c \f$ places, so that the item of rank \f$ i \f$ is
  * \f$ A[ h + i ] \f$, the iterators are pointers and `data()` gives the
@@ -35,7 +35,7 @@
  * `ContiguousDeque.tpp`.
  *
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
- *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.9
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.8
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -162,7 +162,7 @@ class ContiguousDeque {
  /// side by one place, in \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized
  /// time
  ///
- /// In pseudocode (Morin, exercise 2.9), \f$ A[ 0 .. c - 1 ] \f$ the vector:
+ /// In pseudocode (Morin, exercise 2.8), \f$ A[ 0 .. c - 1 ] \f$ the vector:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( i , x ) \cr
@@ -184,7 +184,7 @@ class ContiguousDeque {
  /// side by one place, in \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized
  /// time
  ///
- /// In pseudocode (Morin, exercise 2.9):
+ /// In pseudocode (Morin, exercise 2.8):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{erase}( i ) \cr
@@ -247,7 +247,7 @@ class ContiguousDeque {
  /// the items in the middle of a vector of \f$ 3 n + 8 \f$ places, the
  /// same one if it is large enough and the items are trivially copyable
  ///
- /// In pseudocode (Morin, exercise 2.9):
+ /// In pseudocode (Morin, exercise 2.8):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{rebuild}() \cr

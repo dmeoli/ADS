@@ -1,0 +1,80 @@
+% Source for the figure of IndexedSkipList (sec. 2.14): the skip list of
+% figure skip-widths after remove(3) (Morin's Figure 4.8), the search path
+% and the links whose width changes; the column of the removed node is left
+% empty. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+% The layout shared by the skip-list figures of the chapter: column c at
+% x = 14c mm (the head in column 0), level l at y = 8l mm.
+%   \slmark{name}{l}{style}       the box of level l of a column in another
+%                                 style (given before the column);
+%   \slcol{c}{name}{text}{top}{i} a column of boxes of levels 0 .. top,
+%                                 text in the bottom box, index i under it;
+%   \slhead{top}                  the head, a column of levels 0 .. top;
+%   \slnil{c}{top}                the nil markers in column c;
+%   \sllink[style]{u}{v}{l}{w}    the link of level l from u to v, with its
+%                                 width w above the middle (style is arc,
+%                                 arc-touched or arc-added);
+%   \sllevels{top}                the labels L0 .. Ltop at the left.
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  nilm/.style={nullptr,inner sep=0.8mm},
+  wd-arc/.style={index,anchor=south,above=0.7mm},
+  wd-arc-touched/.style={wd-arc,text=adsPrimary,
+                         font=\scriptsize\ttfamily\bfseries},
+  wd-arc-added/.style={wd-arc,text=adsAdded,
+                       font=\scriptsize\ttfamily\bfseries}}
+\newcommand{\slmark}[3]{\expandafter\xdef\csname slS#1-#2\endcsname{#3}}
+\newcommand{\slcol}[5]{%
+  \foreach \l in {0,...,#4}{%
+    \ifcsname slS#2-\l\endcsname
+      \edef\st{\csname slS#2-\l\endcsname}\else\def\st{lvl}\fi
+    \node[\st] (#2-\l) at (#1*14mm,\l*8mm) {\ifnum\l=0 #3\fi};}
+  \node[index,below=1.6mm of #2-0] {#5};}
+\newcommand{\slhead}[1]{%
+  \slcol{0}{h}{}{#1}{}%
+  \node[var,below=1.2mm of h-0] {head};}
+\newcommand{\slnil}[2]{%
+  \foreach \l in {0,...,#2}
+    \node[nilm,anchor=west] (nil-\l) at (#1*14mm-4mm,\l*8mm) {nil};}
+\newcommand{\sllink}[5][arc]{%
+  \draw[#1] (#2-#4.east) -- (#3-#4.west)
+    node[midway,wd-#1] {#5};}
+\newcommand{\sllevels}[1]{%
+  \foreach \l in {0,...,#1}
+    \node[var,anchor=east] at (-6mm,\l*8mm) {$L_{\l}$};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \l in {3,4,5} {\slmark{h}{\l}{lvl-touched}}
+  \foreach \l in {0,...,3} {\slmark{n2}{\l}{lvl-touched}}
+  \sllevels{5}
+  \slhead{5}
+  \slcol{1}{n0}{0}{0}{0}
+  \slcol{2}{n1}{1}{0}{1}
+  \slcol{3}{n2}{2}{3}{2}
+  \slcol{5}{n4}{4}{5}{3}
+  \slcol{6}{n5}{5}{1}{4}
+  \slcol{7}{n6}{6}{1}{5}
+  \slnil{8}{5}
+  \sllink{h}{n0}{0}{1}  \sllink{n0}{n1}{0}{1}  \sllink{n1}{n2}{0}{1}
+  \sllink[arc-touched]{n2}{n4}{0}{1}  \sllink{n4}{n5}{0}{1}
+  \sllink{n5}{n6}{0}{1} \sllink{n6}{nil}{0}{1}
+  \sllink{h}{n2}{1}{3}  \sllink[arc-touched]{n2}{n4}{1}{1}
+  \sllink{n4}{n5}{1}{1} \sllink{n5}{n6}{1}{1}  \sllink{n6}{nil}{1}{1}
+  \sllink{h}{n2}{2}{3}  \sllink[arc-touched]{n2}{n4}{2}{1}
+  \sllink{n4}{nil}{2}{3}
+  \sllink[arc-touched]{h}{n2}{3}{3}  \sllink[arc-touched]{n2}{n4}{3}{1}
+  \sllink{n4}{nil}{3}{3}
+  \sllink[arc-touched]{h}{n4}{4}{4}  \sllink{n4}{nil}{4}{3}
+  \sllink[arc-touched]{h}{n4}{5}{4}  \sllink{n4}{nil}{5}{3}
+  \node[var,anchor=west] at ($(nil-0.east)+(3mm,0)$) {$n = 6$};
+  \node[var,anchor=west] at (-10mm,48mm) {\texttt{remove(3)}};
+\end{tikzpicture}
+\end{document}

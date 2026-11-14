@@ -1,0 +1,28 @@
+% Source for the figure of List (sec. 2.10): a circular doubly linked list
+% with a sentinel, each node with its next link (above) and its prev link
+% (below), the next of the last node and the prev of the sentinel closing
+% the circle. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[node] (n0) at (0,0) {};
+  \node[var,below=3mm of n0] {sentinel};
+  \foreach \v [count=\i] in {a,b,c,d,e}
+    \node[node] (n\i) at (\i*17mm,0) {\v};
+  \foreach \i [evaluate=\i as \j using int(\i+1)] in {0,...,4} {
+    \draw[arc] ($(n\i.east)+(0,1.5mm)$) -- ($(n\j.west)+(0,1.5mm)$);
+    \draw[arc] ($(n\j.west)+(0,-1.5mm)$) -- ($(n\i.east)+(0,-1.5mm)$);}
+  \draw[arc,rounded corners=3mm] ($(n5.east)+(0,1.5mm)$) -- ++(9mm,0)
+    |- (-14mm,10mm) |- ($(n0.west)+(0,1.5mm)$);
+  \draw[arc,rounded corners=3mm] ($(n0.west)+(0,-1.5mm)$) -- ++(-6mm,0)
+    |- (94mm,-14mm) |- ($(n5.east)+(0,-1.5mm)$);
+  \node[index,above=1mm] at (42.5mm,10mm) {next};
+  \node[index,below=1mm] at (42.5mm,-14mm) {prev};
+\end{tikzpicture}
+\end{document}
