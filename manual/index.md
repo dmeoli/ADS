@@ -108,4 +108,4 @@ library; the API reference generated from them; this manual.
     * [Appendix A](chapters/A-writing-structure.md#app-A). Writing a new structure.
     * [Appendix B](chapters/B-benchmarks.md#app-B). The benchmarks.
 
-Bibliography follows.
+Glossary and bibliography follow.

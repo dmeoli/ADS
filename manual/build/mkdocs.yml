@@ -108,4 +108,5 @@ nav:
       - Appendix A Writing a new structure: chapters/A-writing-structure.md
       - Appendix B The benchmarks: chapters/B-benchmarks.md
   - Back matter:
+      - Glossary: chapters/Y-glossary.md
       - Bibliography: chapters/Z-bibliography.md

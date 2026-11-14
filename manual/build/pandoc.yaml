@@ -38,6 +38,7 @@ input-files:
   - ../chapters/26-distributed.md
   - ../chapters/A-writing-structure.md
   - ../chapters/B-benchmarks.md
+  - ../chapters/Y-glossary.md
   - ../chapters/Z-bibliography.md
 
 # Resolve ../figures/NAME.svg (rewritten to .pdf by the filter below).
