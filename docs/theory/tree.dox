@@ -858,15 +858,20 @@
  which the test of exercise 8.4 sees in the work of the rebuilds.
 
  The insertions of \f$ 1 , \ldots , n \f$ make rebuilds of
- \f$ \Omega( n \log n ) \f$ nodes in all (exercise 8.3): every insertion adds
- the largest key at the end of the right spine, and once the spine below a
- node holds a fraction \f$ 1 / b \f$ more than its share the node is
- rebuilt; a rebuild of \f$ s \f$ nodes leaves the right subtree with
- \f$ s / 2 \f$, so that the next \f$ \Theta( s ) \f$ insertions trigger it
- again, and summing over the levels of the right spine, each of
- \f$ \log_b n \f$ levels rebuilds \f$ \Theta( n ) \f$ nodes over the whole
- sequence (the test measures \f$ \Theta( n \log n ) \f$ with a ratio within
- a factor 2 for \f$ n \f$ from \f$ 2^8 \f$ to \f$ 2^{12} \f$). The sizes
+ \f$ \Omega( n \log n ) \f$ nodes in all (exercise 8.3), which is proved
+ for the rule of Morin with \f$ \sqrt{2} < b < 2 \f$: each key is added at
+ the end of the right spine, whose length is at least
+ \f$ \log_2 ( t + 1 ) - 1 \f$ after \f$ t \f$ insertions, so that a key
+ starts below that many nodes of the spine, and ends below at most
+ \f$ \log_b n - \log_2 ( n - x + 2 ) + 2 \f$ of them; a rebuild of
+ \f$ s \f$ nodes takes at most \f$ s \, b / ( b - 1 ) \f$ of these nodes
+ away, since the sizes shrink by \f$ b \f$ below the scapegoat, and the
+ sum gives at least
+ \f$ \frac{b - 1}{b} ( ( 2 - 1 / \log_2 b ) n \log_2 n - 3.9 n ) \f$ nodes
+ rebuilt. For the rule of Galperin and Rivest, and for
+ \f$ b \le \sqrt{2} \f$, it is measured, not proved: the test measures
+ \f$ \Theta( n \log n ) \f$ with a ratio within a factor 2 for \f$ n \f$
+ from \f$ 2^8 \f$ to \f$ 2^{12} \f$. The sizes
  recomputed at each step cost \f$ \sum_i n_{u_i} \f$ along the climb, at
  most \f$ b / ( b - 1 ) \cdot n_w \f$ by the growth of the sizes below the
  scapegoat (exercise 8.5 reduces it to \f$ n_w \f$, counting only the other
@@ -925,16 +930,14 @@
  explodes with probability \f$ 1 / s \f$, at a cost \f$ s \f$, i.e.,
  \f$ O( 1 ) \f$ expected per node and per operation; by Lemma 11, a node
  rebuilt with \f$ s \f$ nodes goes past \f$ \frac34 \f$ only after
- \f$ s / 3 \f$ operations, during which its size stays below \f$ 4 s / 3 \f$,
- so that it survives them with probability at most
- \f$ ( 1 - \frac{3}{4 s} )^{s / 3} \le e^{-1/4} \f$. Along a path from the
- root, the sizes shrink by \f$ \frac43 \f$ at each node that is not past
- \f$ \frac34 \f$, which happens at each node with probability at least
- \f$ 1 - e^{-1/4} \f$; the expected depth is then \f$ O( \log n ) \f$, and an
- operation costs \f$ O( \log n ) \f$ in expectation. This is a sketch: the
- events of the nodes of a path are not independent, and the bound needs
- them to be dominated by independent ones, which the explosions, drawn
- afresh at each operation, give.
+ \f$ k > s / 3 \f$ operations through it, and it survives them with
+ probability at most \f$ \prod_{t=1}^{k} ( 1 - 1 / ( s + t ) ) = s / ( s + k )
+ < 3 / 4 \f$. If each edge of a path is bad (the child past \f$ \frac34 \f$)
+ with probability at most \f$ 3 / 4 \f$ given the nodes above it, the
+ expected depth is at most \f$ 4 \log_{4/3} n + O( 1 ) \f$, and an operation
+ costs \f$ O( \log n ) \f$ in expectation. This conditional bound is
+ assumed, not proved: the node at a given depth, and the time of its last
+ rebuild, depend on the same explosions.
 
  The order maintenance of exercise 8.11 is in the area of the sequences
  (`OrderMaintenanceList.h`): labels that encode the paths of a tree change
@@ -975,9 +978,12 @@
  9.4), and sequences of operations build them (exercise 9.6): the
  insertions of \f$ n , n - 1 , \ldots , 1 \f$ in decreasing order build in
  `LeftLeaningRedBlackTree` a tree of height exactly \f$ 2 \log_2 n - 3 \f$
- for \f$ n = 2^k \f$, as measured for \f$ k = 6 \f$ to 16 and checked by
- the test for \f$ 6 \le k \le 12 \f$, which is \f$ 2 \log_2 n - O( 1 ) \f$
- for arbitrarily large \f$ n \f$. The other sequences measured, the
+ for \f$ n = 2^k \f$, \f$ k \ge 3 \f$, and at least
+ \f$ 2 \log_2 ( n + 3 ) - 2 \log_2 3 - 2 \f$ for every \f$ n \f$: the left
+ spine of the 2-4 tree is a counter whose digits, the keys of its nodes, are
+ 2 or 3 below the root, so that each of its nodes but possibly the root
+ adds a red node to the leftmost path (the test checks it for
+ \f$ 6 \le k \le 12 \f$). The other sequences measured, the
  insertions in increasing order and random insertions and removals, stayed
  no higher for \f$ n \ge 256 \f$.
  `pushBlack()` splits a

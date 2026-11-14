@@ -31,8 +31,9 @@
  * and 4 nodes perfectly balanced still have height 2; but this subtree
  * cannot arise, since its other leaf would already be at the depth of the
  * new one. The class keeps the rule as an option, its height checked by the
- * invariant (and no sequence of the tests, 600000 random ones on 4 to 32
- * keys with \f$ b \f$ from 1.3 to 1.8, broke it). A
+ * invariant; the test \f$ i = 0 \f$ of its climb, which takes the root when
+ * no node qualifies, is never met (Lemma 8.1 of Morin), and guards only
+ * against the rounding of \f$ b \cdot s( u ) \f$. A
  * removal rebuilds the whole tree when \f$ q > 2 n \f$. A search takes
  * \f$ O( \log n ) \f$ in the worst case, and an insertion or a removal
  * \f$ O( \log n ) \f$ amortized (Lemma 8.3 and Theorem 8.1 of Morin, whose
