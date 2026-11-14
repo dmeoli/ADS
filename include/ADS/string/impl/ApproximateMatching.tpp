@@ -20,7 +20,6 @@ namespace ADS {
 template< class S >
 Table matchingTable( const S & P , const S & T , bool edit )
 {
-//! [table]
  const std::size_t m = P.size() , n = T.size();
  Table DP( m + 1 , std::vector< int >( n + 1 , 0 ) );
  for( std::size_t i = 1 ; i <= m ; ++i ) DP[ i ][ 0 ] = int( i );
@@ -30,7 +29,6 @@ Table matchingTable( const S & P , const S & T , bool edit )
    DP[ i ][ j ] = std::min( { DP[ i - 1 ][ j - 1 ] +
                               ( P[ i - 1 ] == T[ j - 1 ] ? 0 : 1 ) ,
                               DP[ i - 1 ][ j ] + 1 , DP[ i ][ j - 1 ] + 1 } );
-//! [table]
  return( DP );
  }
 
@@ -55,7 +53,6 @@ std::size_t occurrence( const Table & DP , const S & P , const S & T ,
 {
  ADS_PRE( ( DP.size() == P.size() + 1 ) && ( j <= T.size() ) &&
           ( DP[ 0 ].size() == T.size() + 1 ) );
-//! [occurrence]
  std::size_t i = P.size();
  while( i > 0 ) {
   if( ( j > 0 ) && ( DP[ i ][ j ] == DP[ i - 1 ][ j - 1 ] +
@@ -67,7 +64,6 @@ std::size_t occurrence( const Table & DP , const S & P , const S & T ,
   else
    --j;                                      // T[ j - 1 ] not in P
   }
-//! [occurrence]
  ADS_POST( j <= T.size() );
  return( j );
  }

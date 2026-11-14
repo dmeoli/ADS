@@ -237,7 +237,6 @@ int universalSink( const G & g )
  const std::vector< int > N = g.V();
  if( N.empty() )
   return( NIL );
-//! [universalSink-graph]
  int c = N[ 0 ];
  for( std::size_t j = 1 ; j < N.size() ; ++j )
   if( g.hasEdge( c , N[ j ] ) )   // c has an edge out
@@ -245,7 +244,6 @@ int universalSink( const G & g )
  for( const int j : N )
   if( ( j != c ) && ( g.hasEdge( c , j ) || ! g.hasEdge( j , c ) ) )
    return( NIL );
-//! [universalSink-graph]
  return( c );
  }
 

@@ -60,7 +60,6 @@ inline bool IncidenceGraph::columnOk( int e ) const
 
 inline int IncidenceGraph::column( int i , int j ) const
 {
-//! [IncidenceGraph-column]
  const std::size_t n = std::size_t( f_n );
  for( int e = 0 ; e < f_m ; ++e ) {
   const std::int8_t * c = f_A.data() + std::size_t( e ) * n;
@@ -68,7 +67,6 @@ inline int IncidenceGraph::column( int i , int j ) const
    return( e );
   }
  return( f_m );
-//! [IncidenceGraph-column]
  }
 
 inline void IncidenceGraph::insertEdge( int i , int j )
@@ -90,13 +88,11 @@ inline void IncidenceGraph::deleteEdge( int i , int j )
  const int e = column( i , j );
  if( e == f_m )
   return;
-//! [IncidenceGraph-deleteEdge]
  const std::size_t n = std::size_t( f_n );
  std::copy_n( f_A.data() + std::size_t( f_m - 1 ) * n , n ,
               f_A.data() + std::size_t( e ) * n );
  f_A.resize( f_A.size() - n );
  --f_m;
-//! [IncidenceGraph-deleteEdge]
  ADS_INVARIANT( ( e == f_m ) || columnOk( e ) );
  }
 
@@ -110,12 +106,10 @@ template< class F >
 void IncidenceGraph::forEachAdj( int i , F && f ) const
 {
  ADS_PRE( hasNode( i ) );
-//! [IncidenceGraph-adj]
  const std::size_t n = std::size_t( f_n );
  for( int e = 0 ; e < f_m ; ++e )
   if( f_A[ std::size_t( e ) * n + std::size_t( i ) ] == -1 )
    f( find( e , 1 ) );
-//! [IncidenceGraph-adj]
  }
 
 inline std::vector< int > IncidenceGraph::adj( int i ) const

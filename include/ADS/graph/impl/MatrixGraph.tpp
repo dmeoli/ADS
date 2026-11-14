@@ -42,13 +42,11 @@ template< class W , class T >
 void MatrixGraph< W , T >::insertEdge( int u , int v , const W & w )
 {
  B::edge( u , v );
-//! [insertEdge]
  if( ! f_M[ u ][ v ] )
   ++B::f_m;
  f_M[ u ][ v ] = w;
  if( ! B::f_directed )
   f_M[ v ][ u ] = w;
-//! [insertEdge]
  ADS_POST( hasEdge( u , v ) );
  ADS_INVARIANT( consistentAt( u ) && consistentAt( v ) );
  }

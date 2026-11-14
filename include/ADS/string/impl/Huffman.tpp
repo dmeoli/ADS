@@ -39,7 +39,6 @@ std::map< C , std::string > huffman( const std::map< C , F > & freq )
  ADS_PRE( ! freq.empty() );
  ADS_PRE( std::all_of( freq.begin() , freq.end() , []( const auto & e ) {
   return( !( e.second < F( 0 ) ) ); } ) );
-//! [merge]
  struct Node { int left , right; C c; };
  std::vector< Node > T;                         // the nodes of the tree
  HeapPriorityQueue< int , F > Q( int( 2 * freq.size() ) );
@@ -55,7 +54,6 @@ std::map< C , std::string > huffman( const std::map< C , F > & freq )
   T.push_back( { c1 , c2 , C() } );              // a virtual character
   Q.insert( int( T.size() ) - 1 , f1 + f2 );
   }
-//! [merge]
  std::map< C , std::string > code;
  auto walk = [ & ]( auto & self , int x , const std::string & s ) -> void {
   if( T[ x ].left < 0 ) {

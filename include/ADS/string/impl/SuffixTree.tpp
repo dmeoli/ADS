@@ -108,7 +108,6 @@ inline void SuffixTree::buildMcCreight( void )
  auto getLink = [ & ]( std::size_t u ) {
   return( u < link.size() ? link[ u ] : npos );
   };
-//! [mccreight]
  attachLeaf( 0 , 0 );
  std::size_t h = 0;                  // the locus of head_{i-1}
  for( std::size_t i = 1 ; i < N ; ++i ) {
@@ -148,7 +147,6 @@ inline void SuffixTree::buildMcCreight( void )
   attachLeaf( u , i );
   h = u;
   }
-//! [mccreight]
  }
 
 inline void SuffixTree::buildFromSuffixArray( const Symbols & T ,
@@ -158,7 +156,6 @@ inline void SuffixTree::buildFromSuffixArray( const Symbols & T ,
  const std::vector< std::size_t > SA = suffixArraySais( T , K ) ,
                                   LCP = lcpArray( T , SA );
  std::size_t last = attachLeaf( 0 , n );         // the terminator first
-//! [fromsa]
  for( std::size_t r = 0 ; r < n ; ++r ) {
   const std::size_t l = r == 0 ? 0 : LCP[ r - 1 ];
   std::size_t x = last;
@@ -167,7 +164,6 @@ inline void SuffixTree::buildFromSuffixArray( const Symbols & T ,
   const std::size_t u = f_N[ p ].depth == l ? p : split( p , x , l );
   last = attachLeaf( u , SA[ r ] );
   }
-//! [fromsa]
  }
 
 inline std::vector< std::size_t > SuffixTree::preorder( void ) const

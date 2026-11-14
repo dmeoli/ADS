@@ -71,7 +71,6 @@ void SellMatrix< C >::multiply( const double * x , double * y ) const
  multiply( x , y , 0 , f_start.size() - 1 );
  }
 
-//! [multiply]
 template< std::size_t C >
 void SellMatrix< C >::multiply( const double * x , double * y ,
                                 std::size_t first , std::size_t last ) const
@@ -94,7 +93,6 @@ void SellMatrix< C >::multiply( const double * x , double * y ,
    if( perm[ c * C + l ] < m ) y[ perm[ c * C + l ] ] = s[ l ];
   }
  }
-//! [multiply]
 
 template< std::size_t C >
 std::vector< double > SellMatrix< C >::multiply(

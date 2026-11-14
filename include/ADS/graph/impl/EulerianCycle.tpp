@@ -84,7 +84,6 @@ struct EulerEdges {
   std::vector< bool > used( m , false );
   std::vector< int > S = { s } , C;
   C.reserve( m + 1 );
-//! [eulerianTrail-walk]
   while( ! S.empty() ) {
    const int u = S.back();
    std::size_t & i = next[ u ];
@@ -99,7 +98,6 @@ struct EulerEdges {
     S.pop_back();
     }
    }
-//! [eulerianTrail-walk]
   std::reverse( C.begin() , C.end() );
   return( C );
   }

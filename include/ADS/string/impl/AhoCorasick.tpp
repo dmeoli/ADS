@@ -78,7 +78,6 @@ inline void AhoCorasick::build( void )
  const std::size_t S = f_go.size();
  f_fail.assign( S , 0 );
  f_out.assign( S , 0 );
-//! [build]
  // breadth first: the failure of a state comes before its children
  std::vector< std::uint32_t > queue;
  queue.reserve( S );
@@ -97,7 +96,6 @@ inline void AhoCorasick::build( void )
     }
    }
   }
-//! [build]
  f_built = true;
  }
 
@@ -105,7 +103,6 @@ template< class F >
 void AhoCorasick::scan( std::string_view T , F && report ) const
 {
  ADS_PRE( f_built );
-//! [scan]
  std::uint32_t s = 0;
  for( std::size_t j = 0 ; j < T.size() ; ++j ) {
   s = f_go[ s ][ static_cast< unsigned char >( T[ j ] ) ];
@@ -113,7 +110,6 @@ void AhoCorasick::scan( std::string_view T , F && report ) const
        q = f_out[ q ] )
    for( const std::uint32_t id : f_ends[ q ] ) report( j , id );
   }
-//! [scan]
  }
 
 inline std::vector< std::pair< std::size_t , std::size_t > >

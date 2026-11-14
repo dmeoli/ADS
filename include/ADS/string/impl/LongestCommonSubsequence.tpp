@@ -83,7 +83,6 @@ template< class S >
 S lcs( const S & P , const S & T )
 {
  const auto DP = lcsTable( P , T );
-//! [readback]
  S out;
  for( std::size_t i = P.size() , j = T.size() ; ( i > 0 ) && ( j > 0 ) ; )
   if( P[ i - 1 ] == T[ j - 1 ] ) {
@@ -95,7 +94,6 @@ S lcs( const S & P , const S & T )
   else
    --j;
  std::reverse( out.begin() , out.end() );
-//! [readback]
  ADS_POST( int( out.size() ) == DP[ P.size() ][ T.size() ] );
  ADS_AUDIT( detail::isSubsequence( out , P ) &&
             detail::isSubsequence( out , T ) );

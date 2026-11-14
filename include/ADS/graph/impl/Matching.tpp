@@ -150,7 +150,6 @@ struct CardinalityBlossom {
  void augment( int x , int y ) {
   mate[ y ] = x;
   St.assign( 1 , { x , y } );
-//! [maxCardinalityMatching-augment]
   while( ! St.empty() ) {
    auto [ v , w ] = St.back();
    St.pop_back();
@@ -172,7 +171,6 @@ struct CardinalityBlossom {
      }
     }
    }
-//! [maxCardinalityMatching-augment]
   }
 
  /// the search from the free node r: true if the matching grew, false if
@@ -182,7 +180,6 @@ struct CardinalityBlossom {
   Q.assign( 1 , r );
   label[ r ] = EVEN;
   bool grown = false;
-//! [maxCardinalityMatching-search]
   for( std::size_t q = 0 ; ( q < Q.size() ) && ! grown ; ++q ) {
    const int x = Q[ q ];
    for( std::size_t i = A.first( x ) ; i < A.last( x ) ; ++i ) {
@@ -213,7 +210,6 @@ struct CardinalityBlossom {
      }
     }
    }
-//! [maxCardinalityMatching-search]
   for( int v : touched ) {
    if( ! grown )
     dead[ v ] = true;
@@ -594,7 +590,6 @@ struct WeightedBlossom {
      assignLabel( v , 1 , -1 );
    bool augmented = false;
    for( ; ; ) {
-//! [maxWeightMatching-scan]
     while( ! queue.empty() && ! augmented ) {
      const int v = queue.back();
      queue.pop_back();
@@ -637,11 +632,9 @@ struct WeightedBlossom {
        }
       }
      }
-//! [maxWeightMatching-scan]
     if( augmented )
      break;
     // the change of the duals, by the least of the four bounds
-//! [maxWeightMatching-delta]
     int type = -1 , edge = -1 , blossom = -1;
     W delta( 0 );
     if( ! maxCardinality ) {
@@ -687,7 +680,6 @@ struct WeightedBlossom {
       if( label[ b ] == 1 ) dual[ b ] += delta;
       else if( label[ b ] == 2 ) dual[ b ] -= delta;
       }
-//! [maxWeightMatching-delta]
     if( type == 1 )
      break;
     if( type == 4 ) {
