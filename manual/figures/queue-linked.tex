@@ -1,0 +1,47 @@
+% Source for the figure of LinkedQueue (sec. 4.3): the singly linked list
+% with its front and back before and after enqueue(d) and dequeue().
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \r/\y/\lab in {0/0/before,1/-15mm/{\texttt{enqueue(d)}},2/-30mm/{\texttt{dequeue()}}}
+    \node[var,anchor=east] at (-6mm,\y) {\lab};
+  % before
+  \node[var,inner sep=1.5pt] (f0) at (0,0) {$\mathit{front}$};
+  \node[node] (a0) at (18mm,0) {a};
+  \node[node] (b0) at (32mm,0) {b};
+  \node[node] (c0) at (46mm,0) {c};
+  \node[nullptr,inner sep=1.5pt] (n0) at (59mm,0) {nil};
+  \node[var,inner sep=1.5pt] (k0) at (46mm,8mm) {$\mathit{back}$};
+  \draw[ptr] (f0) -- (a0); \draw[ptr] (a0) -- (b0); \draw[ptr] (b0) -- (c0);
+  \draw[ptr] (c0) -- (n0); \draw[ptr] (k0) -- (c0);
+  % enqueue(d)
+  \node[var,inner sep=1.5pt] (f1) at (0,-15mm) {$\mathit{front}$};
+  \node[node] (a1) at (18mm,-15mm) {a};
+  \node[node] (b1) at (32mm,-15mm) {b};
+  \node[node-touched] (c1) at (46mm,-15mm) {c};
+  \node[node-added] (d1) at (60mm,-15mm) {d};
+  \node[nullptr,inner sep=1.5pt] (n1) at (73mm,-15mm) {nil};
+  \node[var,inner sep=1.5pt] (k1) at (60mm,-7mm) {$\mathit{back}$};
+  \draw[ptr] (f1) -- (a1); \draw[ptr] (a1) -- (b1); \draw[ptr] (b1) -- (c1);
+  \draw[arc-added] (c1) -- (d1); \draw[ptr] (d1) -- (n1);
+  \draw[arc-added] (k1) -- (d1);
+  % dequeue()
+  \node[var,inner sep=1.5pt] (f2) at (0,-30mm) {$\mathit{front}$};
+  \node[node-touched] (a2) at (18mm,-38mm) {a};
+  \node[node] (b2) at (32mm,-30mm) {b};
+  \node[node] (c2) at (46mm,-30mm) {c};
+  \node[node] (d2) at (60mm,-30mm) {d};
+  \node[nullptr,inner sep=1.5pt] (n2) at (73mm,-30mm) {nil};
+  \node[var,inner sep=1.5pt] (k2) at (60mm,-22mm) {$\mathit{back}$};
+  \draw[arc-touched] (f2) -- (b2); \draw[ptr] (b2) -- (c2);
+  \draw[ptr] (c2) -- (d2); \draw[ptr] (d2) -- (n2); \draw[ptr] (k2) -- (d2);
+  \node[var,anchor=west] at (24mm,-38mm) {returned, its cell back to the pool};
+\end{tikzpicture}
+\end{document}

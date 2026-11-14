@@ -1,0 +1,33 @@
+% Source for the figure of ArrayQueue (sec. 4.2): the circular vector of
+% m = 6 places under the operations of the figure of the ArrayQueue of
+% Morin's book, until the vector is full. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{r0}{0,0}{/free,/free,a/cell,b/cell,c/cell,/free}
+  \node[var,anchor=west] at (48mm,0) {$h = 2$, $n = 3$};
+  \node[var,anchor=east] at (-6mm,-11mm) {\texttt{enqueue(d)}};
+  \cells{r1}{0,-11mm}{/free,/free,a/cell,b/cell,c/cell,d/added}
+  \node[var,anchor=west] at (48mm,-11mm) {$h = 2$, $n = 4$};
+  \node[var,anchor=east] at (-6mm,-22mm) {\texttt{enqueue(e)}};
+  \cells{r2}{0,-22mm}{e/added,/free,a/cell,b/cell,c/cell,d/cell}
+  \node[var,anchor=west] at (48mm,-22mm) {$h = 2$, $n = 5$};
+  \node[var,anchor=east] at (-6mm,-33mm) {\texttt{dequeue()}};
+  \cells{r3}{0,-33mm}{e/cell,/free,a/touched,b/cell,c/cell,d/cell}
+  \node[var,anchor=west] at (48mm,-33mm) {$h = 3$, $n = 4$, returns \texttt{a}};
+  \node[var,anchor=east] at (-6mm,-44mm) {\texttt{enqueue(f)}};
+  \cells{r4}{0,-44mm}{e/cell,f/added,/free,b/cell,c/cell,d/cell}
+  \node[var,anchor=west] at (48mm,-44mm) {$h = 3$, $n = 5$};
+  \node[var,anchor=east] at (-6mm,-55mm) {\texttt{enqueue(g)}};
+  \cells{r5}{0,-55mm}{e/cell,f/cell,g/added,b/cell,c/cell,d/cell}
+  \node[var,anchor=west] at (48mm,-55mm) {$h = 3$, $n = 6 = m$, full};
+  \indices{r0}{6}
+\end{tikzpicture}
+\end{document}

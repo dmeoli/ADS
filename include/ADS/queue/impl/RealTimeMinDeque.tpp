@@ -109,10 +109,12 @@ const T & RealTimeMinDeque< T , C >::min( void ) const
 template< std::copy_constructible T , class C >
 bool RealTimeMinDeque< T , C >::due( void ) const
 {
+ //! [due]
  const std::size_t a = f_A[ 0 ].size() , b = f_A[ 1 ].size();
  return( ( std::max( a , b ) > 3 * std::min( a , b ) + 1 ) ||
          ( 2 * a >= f_A[ 0 ].capacity() ) ||
          ( 2 * b >= f_A[ 1 ].capacity() ) );
+ //! [due]
  }
 
 template< std::copy_constructible T , class C >

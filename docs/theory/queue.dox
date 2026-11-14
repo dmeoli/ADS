@@ -272,7 +272,7 @@
  the rebuild, so that \f$ k \f$ operations finish them once
  \f$ 12 k \ge n_0 + k \f$, i.e., \f$ k \le n_0 / 11 + 1 \f$ after the
  operation that starts it. At the start of a rebuild by the sizes,
- \f$ m = ( n_0 - 2 ) / 4 \ge 7.5 \f$, more than the removals from
+ \f$ m \ge ( n_0 - 4 ) / 4 \ge 7 \f$, more than the removals from
  \f$ S \f$, and \f$ G \f$ keeps \f$ \lceil n_0 / 2 \rceil \f$ items above
  its bottom \f$ t \f$, more than the removals from it; a rebuild by the
  room starts with sides that differ by a factor 3 at most, and the half of

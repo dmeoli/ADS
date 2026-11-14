@@ -1,0 +1,30 @@
+% Source for the figure of MinQueue (sec. 4.8): the two stacks with their
+% minima before and after dequeue(), which moves the stack I to O.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {$I$};
+  \cells{i0}{0,0}{4/cell,6/cell,2/cell,7/cell,5/cell}
+  \node[var,anchor=east] at (-6mm,-8mm) {minima of $I$};
+  \cells{m0}{0,-8mm}{4/cell,2/cell}
+  \node[var,anchor=east] at (-6mm,-17mm) {$O$};
+  \node[var,anchor=west] at (0,-17mm) {empty};
+  \node[var,anchor=west] at (42mm,-8mm) {before, $\min = 2$};
+  \node[var,anchor=east] at (-6mm,-31mm) {$I$};
+  \node[var,anchor=west] at (0,-31mm) {empty};
+  \node[var,anchor=east] at (-6mm,-40mm) {$O$};
+  \cells{o1}{0,-40mm}{5/added,7/added,2/added,6/added,4/touched}
+  \node[var,anchor=east] at (-6mm,-48mm) {minima of $O$};
+  \cells{m1}{0,-48mm}{5/added,2/added}
+  \node[var,anchor=west] at (42mm,-40mm) {\texttt{dequeue()}: returns \texttt{4}, $\min = 2$};
+  \node[index] at ($(i0-0.north)+(0,2.5mm)$) {bottom};
+  \node[index] at ($(i0-4.north)+(0,2.5mm)$) {top};
+\end{tikzpicture}
+\end{document}

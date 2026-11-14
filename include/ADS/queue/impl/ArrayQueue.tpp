@@ -40,10 +40,12 @@ T ArrayQueue< T >::dequeue( void )
 {
  ADS_PRE( f_size > 0 );
  [[maybe_unused]] const std::size_t n = f_size;
+ //! [dequeue]
  T t = std::move( f_A[ f_head ] );
  if( ++f_head == f_capacity )             // the place after, with no
   f_head = 0;                               // division
  --f_size;
+ //! [dequeue]
  ADS_POST( f_size == n - 1 );
  ADS_INVARIANT( fits() );
  return( t );
@@ -54,11 +56,13 @@ void ArrayQueue< T >::enqueue( const T & v )
 {
  ADS_PRE( f_size < f_capacity );
  [[maybe_unused]] const std::size_t n = f_size;
+ //! [enqueue]
  std::size_t t = f_head + f_size;           // the place of the back
  if( t >= f_capacity )
   t -= f_capacity;
  f_A[ t ] = v;
  ++f_size;
+ //! [enqueue]
  ADS_POST( f_size == n + 1 );
  ADS_INVARIANT( fits() );
  }

@@ -1,0 +1,33 @@
+% Source for the figure of the operations by rank of RingDeque (sec. 4.5):
+% the operations of the figure of the ArrayDeque of Morin's book on 16
+% places, and insert(0,w). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{r0}{0,0}{a/cell,b/cell,c/cell,d/cell,e/cell,f/cell,g/cell,h/cell,/free,/free,/free,/free,/free,/free,/free,/free}
+  \indices{r0}{16}
+  \node[var,anchor=west] at (121mm,0) {$h = 0$, $n = 8$};
+  \node[var,anchor=east] at (-6mm,-11mm) {\texttt{erase(2)}};
+  \cells{r1}{0,-11mm}{/free,a/touched,b/touched,d/cell,e/cell,f/cell,g/cell,h/cell,/free,/free,/free,/free,/free,/free,/free,/free}
+  \node[var,anchor=west] at (121mm,-11mm) {$h = 1$, $n = 7$};
+  \node[var,anchor=east] at (-6mm,-22mm) {\texttt{insert(4,x)}};
+  \cells{r2}{0,-22mm}{/free,a/cell,b/cell,d/cell,e/cell,x/added,f/touched,g/touched,h/touched,/free,/free,/free,/free,/free,/free,/free}
+  \node[var,anchor=west] at (121mm,-22mm) {$h = 1$, $n = 8$};
+  \node[var,anchor=east] at (-6mm,-33mm) {\texttt{insert(3,y)}};
+  \cells{r3}{0,-33mm}{a/touched,b/touched,d/touched,y/added,e/cell,x/cell,f/cell,g/cell,h/cell,/free,/free,/free,/free,/free,/free,/free}
+  \node[var,anchor=west] at (121mm,-33mm) {$h = 0$, $n = 9$};
+  \node[var,anchor=east] at (-6mm,-44mm) {\texttt{insert(4,z)}};
+  \cells{r4}{0,-44mm}{a/cell,b/cell,d/cell,y/cell,z/added,e/touched,x/touched,f/touched,g/touched,h/touched,/free,/free,/free,/free,/free,/free}
+  \node[var,anchor=west] at (121mm,-44mm) {$h = 0$, $n = 10$};
+  \node[var,anchor=east] at (-6mm,-55mm) {\texttt{insert(0,w)}};
+  \cells{r5}{0,-55mm}{a/cell,b/cell,d/cell,y/cell,z/cell,e/cell,x/cell,f/cell,g/cell,h/cell,/free,/free,/free,/free,/free,w/added}
+  \node[var,anchor=west] at (121mm,-55mm) {$h = 15$, $n = 11$};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,29 @@
+% Source for the figure of RealTimeMinDeque (sec. 4.9): a rebuild of six
+% items, the two stacks drawn back to back in the order of the deque.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[guide] (33.3mm,5mm) -- (33.3mm,-31mm);
+  \node[var] at (18.5mm,9mm) {$F$, top on the left};
+  \node[var] at (55.5mm,9mm) {$B$, top on the right};
+  \node[var,anchor=east] at (-6mm,0) {start};
+  \cells{a}{29.6mm,0}{f0/cell}
+  \cells{b}{37mm,0}{b0/touched,b1/touched,b2/cell,b3/cell,b4/cell}
+  \node[var,anchor=west] at (78mm,0) {$|B| = 5 > 3 |F| + 1$, $t = 2$};
+  \node[var,anchor=east] at (-6mm,-12mm) {copies};
+  \cells{c}{14.8mm,-12mm}{f0/added,b0/added,b1/added}
+  \cells{d}{37mm,-12mm}{b2/added,/free,/free}
+  \node[var,anchor=west] at (78mm,-12mm) {$S'$ complete, $c_G = 3$};
+  \node[var,anchor=east] at (-6mm,-24mm) {end};
+  \cells{e}{14.8mm,-24mm}{f0/cell,b0/cell,b1/cell}
+  \cells{g}{37mm,-24mm}{b2/cell,b3/cell,b4/cell}
+  \node[var,anchor=west] at (78mm,-24mm) {the new arrays replace the old};
+\end{tikzpicture}
+\end{document}

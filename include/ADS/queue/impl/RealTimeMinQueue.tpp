@@ -127,6 +127,7 @@ template< class T , class C >
 const T & RealTimeMinQueue< T , C >::min( void ) const
 {
  ADS_PRE( ! empty() );
+ //! [min]
  const T * best = nullptr;
  auto take = [ & ]( const T & x ) {
   if( ! best || f_less( x , *best ) ) best = &x;
@@ -139,6 +140,7 @@ const T & RealTimeMinQueue< T , C >::min( void ) const
  if( f_N.size() > 0 ) take( f_N.min() );
  if( f_R.size() > 0 ) take( f_R.min() );
  return( *best );
+ //! [min]
  }
 
 template< class T , class C >

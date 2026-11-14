@@ -1,0 +1,30 @@
+% Source for the figure of the growth of RingDeque (sec. 4.5): a full
+% vector of 8 places whose front is at the place 5, and the vector of 16
+% places after push_back(i) and, from the same state, after push_front(z).
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{d/touched,e/touched,f/touched,g/touched,h/touched,a/touched,b/touched,c/touched}
+  \indices{a}{8}
+  \draw[guide] ($(a-0.south west)+(0,-1.2mm)$) -- ($(a-4.south east)+(0,-1.2mm)$);
+  \draw[guide] ($(a-5.south west)+(0,-1.2mm)$) -- ($(a-7.south east)+(0,-1.2mm)$);
+  \node[index] at ($(a-2.south)+(0,-4.5mm)$) {second piece};
+  \node[index] at ($(a-6.south)+(0,-4.5mm)$) {first piece};
+  \node[var,anchor=west] at (63mm,0) {$n = m = 8$, $h \mathbin{\&} 7 = 5$};
+  \node[var,anchor=east] at (-6mm,-17mm) {\texttt{push\_back(i)}};
+  \cells{b}{0,-17mm}{a/cell,b/cell,c/cell,d/cell,e/cell,f/cell,g/cell,h/cell,i/added,/free,/free,/free,/free,/free,/free,/free}
+  \indicesbelow{b}{16}
+  \node[var,anchor=east] at (-6mm,-32mm) {\texttt{push\_front(z)}};
+  \cells{c}{0,-32mm}{a/cell,b/cell,c/cell,d/cell,e/cell,f/cell,g/cell,h/cell,/free,/free,/free,/free,/free,/free,/free,z/added}
+  \node[var,anchor=north] at ($(c-15.south)+(0,-1.5mm)$) {front};
+  \node[var,anchor=north] at ($(c-4.south)+(0,-1.5mm)$) {$h = 15$, $t = 24$};
+\end{tikzpicture}
+\end{document}
