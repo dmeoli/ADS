@@ -491,6 +491,7 @@ taocp  sat-solvers           DPLL e CDCL
 # the engineered structures, beyond the book
 engineered  bucket-queue         coda a bucket su due livelli
 engineered  bucket-queue-sparse  coda a bucket, g grandi in liste rade
+engineered  bucket-queue-lexicographic coda a bucket, f e poi g minimi (LPA*)
 engineered  dary-heap            heap d-ario di elementi semplici
 engineered  flat-hash-table      tabella con byte di controllo a gruppi
 engineered  pointer-table        tabella di puntatori, ispezione lineare
@@ -508,6 +509,7 @@ engineered  concurrent-cuckoo-threads cuckoo concorrente, su più thread
 engineered  concurrent-flat-table cammino lineare concorrente, un thread
 engineered  concurrent-flat-table-threads cammino lineare, su più thread
 engineered  concurrent-flat-table-words parole di 64 bit, CAS di 16 byte
+engineered  concurrent-flat-table-epochs clear() in O(1) per epoche, più thread
 
 # the engineered combinatorial algorithms, beyond the book
 engineered_combinatorial  fast-bitwise     Harley-Seal, pdep, select
@@ -1791,6 +1793,7 @@ engineered_runtime  farm-indices         indici dei lavoratori e del master
 engineered_runtime  mailbox-termination  terminazione su alberi a caso
 engineered_runtime  mailbox-stop         arresto e messaggi rimasti, una volta
 engineered_runtime  mailbox-full         invii che non aspettano, code piene
+engineered_runtime  mailbox-rearm        una casella per più calcoli, barriere
 engineered_runtime  stealing-frontier    ricerca best-first con i furti
 engineered_runtime  stealing-frontier-stop arresto, eccezioni e coppie rimaste
 engineered_runtime  stealing-frontier-bound potatura per bound minimo e drain
@@ -1845,6 +1848,7 @@ engineered_speculative  parallel-mis-matching  insieme indipendente, abbinamento
 # the structures of the searches in large spaces of states, beyond the book
 engineered_search  pointer-table-presize  tabella presizzata, pagine enormi
 engineered_search  indexed-heap-erase     heap indicizzato: increase, erase
+engineered_search  indexed-heap-grow      heap indicizzato: grow degli id
 engineered_search  pairing-heap-erase     pairing heap: erase, increase, update
 engineered_search  indexed-heap-pair      coppia di heap, chiave e limite
 engineered_search  ordered-frontier       B+-albero come frontiera ordinata

@@ -98,6 +98,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/search/CountLess.h"
 
@@ -241,7 +242,7 @@ class WordRangeMinimum {
  std::vector< Place , HugePageAllocator< Place > > f_P;   ///< the places
  std::vector< Min , HugePageAllocator< Min > > f_S;       ///< the table
  std::size_t f_blocks = 0;               ///< the blocks, a row of `f_S`
- [[no_unique_address]] Compare f_less;   ///< the order
+ ADS_NO_UNIQUE_ADDRESS Compare f_less;   ///< the order
 
  };  // end( class WordRangeMinimum )
 

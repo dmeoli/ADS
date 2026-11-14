@@ -51,10 +51,10 @@ inline std::atomic< unsigned > flatThreadIds{ 0 };
 
 /*------------------------------- THE WORDS --------------------------------*/
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class C >
 template< class X >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::bits( const X & x ,
-                                                           std::size_t at )
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::bits( const X & x ,
+                                                               std::size_t at )
 {
  std::uint64_t w = 0;
  std::memcpy( reinterpret_cast< unsigned char * >( &w ) + at , &x ,
@@ -62,9 +62,9 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::bits( const X & x ,
  return( w );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::pack( const K & k ,
-                                                           const V & v )
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::pack( const K & k ,
+                                                               const V & v )
 {
  if constexpr( valueBytes() == 0 ) {
   (void) v;
@@ -74,16 +74,16 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::pack( const K & k ,
   return( bits( k , 0 ) | bits( v , sizeof( K ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-K ConcurrentFlatTable< K , V , H , Eq >::keyOf( std::uint64_t w )
+template< class K , class V , class H , class Eq , class C >
+K ConcurrentFlatTable< K , V , H , Eq , C >::keyOf( std::uint64_t w )
 {
  K k;
  std::memcpy( &k , &w , sizeof( K ) );
  return( k );
  }
 
-template< class K , class V , class H , class Eq >
-V ConcurrentFlatTable< K , V , H , Eq >::valueOf( std::uint64_t w )
+template< class K , class V , class H , class Eq , class C >
+V ConcurrentFlatTable< K , V , H , Eq , C >::valueOf( std::uint64_t w )
 {
  if constexpr( valueBytes() == 0 ) {
   (void) w;
@@ -97,16 +97,16 @@ V ConcurrentFlatTable< K , V , H , Eq >::valueOf( std::uint64_t w )
   }
  }
 
-template< class K , class V , class H , class Eq >
-V ConcurrentFlatTable< K , V , H , Eq >::inValue( std::uint64_t w )
+template< class K , class V , class H , class Eq , class C >
+V ConcurrentFlatTable< K , V , H , Eq , C >::inValue( std::uint64_t w )
 {
  V v;
  std::memcpy( &v , &w , sizeof( V ) );
  return( v );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::cas16(
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::cas16(
                                 std::atomic< std::uint64_t > * p ,
                                 std::uint64_t & k0 , std::uint64_t & v0 ,
                                 std::uint64_t k1 , std::uint64_t v1 )
@@ -129,15 +129,15 @@ bool ConcurrentFlatTable< K , V , H , Eq >::cas16(
 #endif
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::mark( void )
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::mark( void )
 {
  // a byte 1 in the place of the first byte of the key, which is 0
  return( bits( static_cast< unsigned char >( 1 ) , 0 ) );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::zeroKey( const K & k )
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::zeroKey( const K & k )
 {
  if constexpr( packed || inlined )
   return( bits( k , 0 ) == 0 );
@@ -147,25 +147,23 @@ bool ConcurrentFlatTable< K , V , H , Eq >::zeroKey( const K & k )
   }
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t ConcurrentFlatTable< K , V , H , Eq >::home( std::uint64_t h ,
-                                                         const Table & T )
+template< class K , class V , class H , class Eq , class C >
+std::size_t ConcurrentFlatTable< K , V , H , Eq , C >::home( std::uint64_t h ,
+                                                             const Table & T )
 {
  return( std::size_t( h >> ( 64 - T.lg ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint8_t ConcurrentFlatTable< K , V , H , Eq >::tag( std::uint64_t h )
+template< class K , class V , class H , class Eq , class C >
+std::uint8_t ConcurrentFlatTable< K , V , H , Eq , C >::tag( std::uint64_t h )
 {
  // bits other than the top ones, which give the place
  return( std::uint8_t( 0x80 | ( ( h >> 24 ) & 0x7F ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint8_t ConcurrentFlatTable< K , V , H , Eq >::tagged( Table & T ,
-                                                            std::size_t i ,
-                                                            std::uint64_t w )
- const
+template< class K , class V , class H , class Eq , class C >
+std::uint8_t ConcurrentFlatTable< K , V , H , Eq , C >::
+ tagged( Table & T , std::size_t i , std::uint64_t w ) const
 {
  // the same value whoever writes it, after the word, with release: a
  // tag read with acquire shows the word it tags
@@ -184,15 +182,16 @@ std::uint8_t ConcurrentFlatTable< K , V , H , Eq >::tagged( Table & T ,
  return( u );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::print( std::uint64_t h )
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::
+ print( std::uint64_t h )
 {
  // the low bits, independent of the top ones that give the place
  return( h & 0xFFFFFF );
  }
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::node( std::uint64_t i ) const
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::node( std::uint64_t i ) const
  -> Node *
 {
  // the segment j holds the nodes from 2^12 ( 2^j - 1 ), 2^( 12 + j ) of
@@ -202,10 +201,10 @@ auto ConcurrentFlatTable< K , V , H , Eq >::node( std::uint64_t i ) const
  return( f_seg[ j ].load( std::memory_order_acquire ) + ( i - base ) );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::holds( std::uint64_t w ,
-                                                   const K & k ,
-                                                   std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::holds( std::uint64_t w ,
+                                                       const K & k ,
+                                                       std::uint64_t h ) const
 {
  if constexpr( packed || inlined ) {
   (void) h;
@@ -219,8 +218,8 @@ bool ConcurrentFlatTable< K , V , H , Eq >::holds( std::uint64_t w ,
   }
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::hashOf(
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::hashOf(
                                                    std::uint64_t w ) const
 {
  if constexpr( packed || inlined )
@@ -231,8 +230,8 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::hashOf(
 
 /*------------------------------- THE VECTORS ------------------------------*/
 
-template< class K , class V , class H , class Eq >
-ConcurrentFlatTable< K , V , H , Eq >::Table::Table( int l )
+template< class K , class V , class H , class Eq , class C >
+ConcurrentFlatTable< K , V , H , Eq , C >::Table::Table( int l , Stamp e )
  : lg( l ) ,
    W( HugePageAllocator< std::atomic< std::uint64_t > >().allocate(
        kWords << l ) ) ,
@@ -244,8 +243,21 @@ ConcurrentFlatTable< K , V , H , Eq >::Table::Table( int l )
   G = HugePageAllocator< std::atomic< std::uint64_t > >().allocate(
        groups() );
   std::uninitialized_value_construct_n( G , groups() );
+  if constexpr( epochs ) {                // every group in use
+   E = new std::atomic< Stamp >[ groups() ];
+   for( std::size_t g = 0 ; g < groups() ; ++g )
+    E[ g ].store( e , std::memory_order_relaxed );
+   }
+  else
+   (void) e;
   }
  catch( ... ) {
+  if constexpr( epochs )                  // the stamps refused
+   if( G ) {
+    std::destroy_n( G , groups() );
+    HugePageAllocator< std::atomic< std::uint64_t > >().deallocate(
+                                                        G , groups() );
+    }
   std::destroy_n( W , kWords * places() );
   HugePageAllocator< std::atomic< std::uint64_t > >().deallocate(
                                                   W , kWords * places() );
@@ -253,9 +265,11 @@ ConcurrentFlatTable< K , V , H , Eq >::Table::Table( int l )
   }
  }
 
-template< class K , class V , class H , class Eq >
-ConcurrentFlatTable< K , V , H , Eq >::Table::~Table()
+template< class K , class V , class H , class Eq , class C >
+ConcurrentFlatTable< K , V , H , Eq , C >::Table::~Table()
 {
+ if constexpr( epochs )
+  delete[] E;
  std::destroy_n( G , groups() );
  HugePageAllocator< std::atomic< std::uint64_t > >().deallocate( G ,
                                                                  groups() );
@@ -264,9 +278,9 @@ ConcurrentFlatTable< K , V , H , Eq >::Table::~Table()
                                                  W , kWords * places() );
  }
 
-template< class K , class V , class H , class Eq >
-ConcurrentFlatTable< K , V , H , Eq >::ConcurrentFlatTable( std::size_t n ,
-                                                            H h , Eq eq )
+template< class K , class V , class H , class Eq , class C >
+ConcurrentFlatTable< K , V , H , Eq , C >::ConcurrentFlatTable( std::size_t n ,
+                                                                H h , Eq eq )
  : f_S( std::make_unique< Stripe[] >( kStripes ) ) ,
    f_id( detail::flatTableIds.fetch_add( 1 , std::memory_order_relaxed ) +
          1 ) ,
@@ -279,19 +293,22 @@ ConcurrentFlatTable< K , V , H , Eq >::ConcurrentFlatTable( std::size_t n ,
  const int lg = std::max( kLeast , int( std::bit_width(
                                     std::max< std::size_t >( 2 * n , 1 ) -
                                     1 ) ) );
- f_cur = std::make_unique< Table >( lg );
+ if constexpr( epochs )
+  f_epoch = 1;
+ f_cur = std::make_unique< Table >( lg , now() );
  f_table.store( f_cur.get() , std::memory_order_release );
  nodes( n );
  }
 
-template< class K , class V , class H , class Eq >
-ConcurrentFlatTable< K , V , H , Eq >::~ConcurrentFlatTable()
+template< class K , class V , class H , class Eq , class C >
+ConcurrentFlatTable< K , V , H , Eq , C >::~ConcurrentFlatTable()
 {
  if constexpr( ! packed && ! inlined ) {
   const Table & T = *f_cur;
-  for( std::size_t i = 0 ; i < T.places() ; ++i )
-   if( const std::uint64_t w = T.W[ i ].load( std::memory_order_relaxed ) )
-    node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->~Node();
+  if constexpr( ! epochs )                // else trivially destructible
+   for( std::size_t i = 0 ; i < T.places() ; ++i )
+    if( const std::uint64_t w = T.W[ i ].load( std::memory_order_relaxed ) )
+     node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->~Node();
   for( int j = 0 ; j < kSegs ; ++j )
    if( Node * p = f_seg[ j ].load( std::memory_order_relaxed ) )
     HugePageAllocator< Node >().deallocate( p , std::size_t( 1 ) <<
@@ -299,8 +316,9 @@ ConcurrentFlatTable< K , V , H , Eq >::~ConcurrentFlatTable()
   }
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::hash( const K & k ) const
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::
+ hash( const K & k ) const
 {
  if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( k ) ) );
@@ -310,15 +328,15 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::hash( const K & k ) const
 
 /*------------------------------- THE NODES --------------------------------*/
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::slabs( void ) -> Slab *
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::slabs( void ) -> Slab *
 {
  thread_local Slab s[ 4 ];
  return( s );
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::segment( int j , bool touch )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::segment( int j , bool touch )
 {
  // on huge pages when large, so that the nodes are faulted in 2 MB at a
  // time, and faulted at once if asked; the thread that loses the race
@@ -335,8 +353,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::segment( int j , bool touch )
   HugePageAllocator< Node >().deallocate( p , m );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::claim( void )
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::claim( void )
 {
  const std::uint64_t id = f_id.load( std::memory_order_relaxed );
  Slab * S = slabs();
@@ -367,8 +385,8 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::claim( void )
  return( b );
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::consume( std::uint64_t i )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::consume( std::uint64_t i )
 {
  const std::uint64_t id = f_id.load( std::memory_order_relaxed );
  Slab * S = slabs();
@@ -381,8 +399,9 @@ void ConcurrentFlatTable< K , V , H , Eq >::consume( std::uint64_t i )
 
 /*------------------------------- THE GROWTH -------------------------------*/
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::stripe( void ) const -> Stripe &
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::
+ stripe( void ) const -> Stripe &
 {
  thread_local const unsigned t = detail::flatThreadIds.fetch_add(
                                   1 , std::memory_order_relaxed );
@@ -390,8 +409,8 @@ auto ConcurrentFlatTable< K , V , H , Eq >::stripe( void ) const -> Stripe &
  }
 
 //! [enter]
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::enter( Stripe & s ) -> Table *
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::enter( Stripe & s ) -> Table *
 {
  // the protocol of Dekker: the counter raised, then the flag read, both
  // sequentially consistent, against the flag raised, then the counters
@@ -406,8 +425,8 @@ auto ConcurrentFlatTable< K , V , H , Eq >::enter( Stripe & s ) -> Table *
  }
 //! [enter]
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::copy( Table & T , Table & N )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::copy( Table & T , Table & N )
 {
  const std::size_t m = N.places() - 1;
  for( ; ; ) {
@@ -416,8 +435,7 @@ void ConcurrentFlatTable< K , V , H , Eq >::copy( Table & T , Table & N )
    return;
   const std::size_t e = std::min( T.places() , ( b + 1 ) * kBlock );
   for( std::size_t i = b * kBlock ; i < e ; ++i ) {
-   const std::uint64_t w = T.W[ kWords * i ].load(
-                            std::memory_order_acquire );
+   const std::uint64_t w = wordAt( T , i );
    if( w == 0 )
     continue;
    for( std::size_t j = home( hashOf( w ) , N ) ; ; j = ( j + 1 ) & m ) {
@@ -441,8 +459,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::copy( Table & T , Table & N )
   }
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::help( void )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::help( void )
 {
  // the copy of the vector in use, once its next one is published; the
  // vectors replaced stay, so that a stale one has all its blocks claimed
@@ -458,8 +476,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::help( void )
   }
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::grow( Table * T , int lg )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::grow( Table * T , int lg )
 {
  bool e = false;
  if( ! f_grow.compare_exchange_strong( e , true ,
@@ -480,7 +498,7 @@ void ConcurrentFlatTable< K , V , H , Eq >::grow( Table * T , int lg )
     std::this_thread::yield();
  std::unique_ptr< Table > N;
  try {
-  N = std::make_unique< Table >( lg );
+  N = std::make_unique< Table >( lg , now() );
   f_old.reserve( f_old.size() + 1 );
   }
  catch( ... ) {                           // the table as it was
@@ -502,8 +520,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::grow( Table * T , int lg )
  f_grow.store( false , std::memory_order_release );
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::period( int lg )
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::period( int lg )
 {
  // a sum of the 64 counters misses on up to 64 lines: once per 1024
  // insertions of a counter in a large vector, more often in a small one,
@@ -511,8 +529,8 @@ std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::period( int lg )
  return( std::uint64_t( 1 ) << std::clamp( lg - 10 , 0 , 10 ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t ConcurrentFlatTable< K , V , H , Eq >::counted( void ) const
+template< class K , class V , class H , class Eq , class C >
+std::size_t ConcurrentFlatTable< K , V , H , Eq , C >::counted( void ) const
 {
  std::uint64_t n = 0;
  for( int i = 0 ; i < kStripes ; ++i )
@@ -522,9 +540,9 @@ std::size_t ConcurrentFlatTable< K , V , H , Eq >::counted( void ) const
 
 /*------------------------------ THE LOOKUPS -------------------------------*/
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::locate( const K & k ,
-                                                    std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::locate( const K & k ,
+                                                        std::uint64_t h ) const
  -> const std::atomic< std::uint64_t > *
 {
  ADS_AUDIT( hash( k ) == h );
@@ -539,7 +557,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::locate( const K & k ,
    const std::size_t m = T->places() - 1;
    for( std::size_t i = home( h , *T ) , r = 0 ; r <= m ;
         i = ( i + 1 ) & m , ++r ) {
-    const std::uint64_t w = T->W[ i ].load( std::memory_order_acquire );
+    const std::uint64_t w = wordAt( *T , i );
     if( w == 0 )
      break;
     if( holds( w , k , h ) )
@@ -561,7 +579,9 @@ auto ConcurrentFlatTable< K , V , H , Eq >::locate( const K & k ,
   detail::prefetch( T->W + kWords * i0 );
   for( std::size_t gi = i0 >> 3 , r = 0 ; r <= q ; gi = ( gi + 1 ) & q ,
        ++r ) {
-   const std::uint64_t w8 = T->G[ gi ].load( std::memory_order_acquire );
+   // a group out of use is free
+   const std::uint64_t w8 = live( *T , gi ) ?
+                            T->G[ gi ].load( std::memory_order_acquire ) : 0;
    std::uint64_t stop = detail::zeroBytes64( w8 ) & below;
    std::uint64_t hit = detail::zeroBytes64( w8 ^ t ) & below;
    if( stop )                             // the places before the free one
@@ -584,16 +604,17 @@ auto ConcurrentFlatTable< K , V , H , Eq >::locate( const K & k ,
   }
  }
 
-template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentFlatTable< K , V , H , Eq >::lookup(
+template< class K , class V , class H , class Eq , class C >
+std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::lookup(
                                      const K & k , std::uint64_t h ) const
 {
  const auto * p = locate( k , h );
  return( p ? p->load( std::memory_order_acquire ) : 0 );
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::prefetch( std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::
+ prefetch( std::uint64_t h ) const
 {
  const Table * T = f_table.load( std::memory_order_acquire );
  const std::size_t i = home( h , *T );
@@ -602,8 +623,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::prefetch( std::uint64_t h ) const
  detail::prefetch( T->W + kWords * i );
  }
 
-template< class K , class V , class H , class Eq >
-std::optional< V > ConcurrentFlatTable< K , V , H , Eq >::find(
+template< class K , class V , class H , class Eq , class C >
+std::optional< V > ConcurrentFlatTable< K , V , H , Eq , C >::find(
                                      const K & k , std::uint64_t h ) const
 {
  if constexpr( inlined ) {
@@ -623,29 +644,29 @@ std::optional< V > ConcurrentFlatTable< K , V , H , Eq >::find(
                                             1 ) ) - 1 )->e.value ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::optional< V > ConcurrentFlatTable< K , V , H , Eq >::find(
+template< class K , class V , class H , class Eq , class C >
+std::optional< V > ConcurrentFlatTable< K , V , H , Eq , C >::find(
                                                    const K & k ) const
 {
  return( find( k , hash( k ) ) );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::contains( const K & k ,
-                                                      std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::
+ contains( const K & k , std::uint64_t h ) const
 {
  return( locate( k , h ) != nullptr );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::contains( const K & k ) const
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::contains( const K & k ) const
 {
  return( locate( k , hash( k ) ) != nullptr );
  }
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::entry( const K & k ,
-                                                   std::uint64_t h ) const
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::entry( const K & k ,
+                                                       std::uint64_t h ) const
  -> Entry * requires( ! packed && ! inlined )
 {
  const std::uint64_t w = lookup( k , h );
@@ -656,10 +677,10 @@ auto ConcurrentFlatTable< K , V , H , Eq >::entry( const K & k ,
 
 /*------------------------------ THE INSERTION -----------------------------*/
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
-                                                          std::uint64_t h ,
-                                                          const V & v )
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::findOrInsert( const K & k ,
+                                                              std::uint64_t h ,
+                                                              const V & v )
  -> std::pair< Ref , bool >
 {
  if constexpr( inlined )
@@ -675,9 +696,9 @@ auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
   }
  }
 
-template< class K , class V , class H , class Eq >
-std::pair< K , bool > ConcurrentFlatTable< K , V , H , Eq >::findOrInsertKey(
-                                        const K & k , std::uint64_t h )
+template< class K , class V , class H , class Eq , class C >
+std::pair< K , bool > ConcurrentFlatTable< K , V , H , Eq , C >::
+ findOrInsertKey( const K & k , std::uint64_t h )
  requires( packed && ( valueBytes() == 0 ) )
 {
  const auto [ w , in ] = placeWord( k , h , V{} );
@@ -686,8 +707,8 @@ std::pair< K , bool > ConcurrentFlatTable< K , V , H , Eq >::findOrInsertKey(
  return( std::pair< K , bool >( keyOf( w ) , in ) );
  }
 
-template< class K , class V , class H , class Eq >
-std::pair< std::uint64_t , bool > ConcurrentFlatTable< K , V , H , Eq >::
+template< class K , class V , class H , class Eq , class C >
+std::pair< std::uint64_t , bool > ConcurrentFlatTable< K , V , H , Eq , C >::
  placeWord( const K & k , std::uint64_t h , const V & v )
 {
  ADS_AUDIT( hash( k ) == h );
@@ -710,6 +731,7 @@ std::pair< std::uint64_t , bool > ConcurrentFlatTable< K , V , H , Eq >::
   const std::size_t m = T->places() - 1;
   bool crowded = false;
   for( std::size_t i = home( h , *T ) , r = 0 ; ; i = ( i + 1 ) & m ) {
+   renew( *T , i >> 3 );
    std::uint64_t x = T->W[ i ].load( std::memory_order_acquire );
    if( x == 0 ) {
     std::uint64_t w = 0;
@@ -765,10 +787,10 @@ std::pair< std::uint64_t , bool > ConcurrentFlatTable< K , V , H , Eq >::
   }
  }
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::placeInline( const K & k ,
-                                                         std::uint64_t h ,
-                                                         const V & v )
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::placeInline( const K & k ,
+                                                             std::uint64_t h ,
+                                                             const V & v )
  -> std::pair< Ref , bool >
 {
  Stripe & s = stripe();
@@ -787,6 +809,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::placeInline( const K & k ,
   bool crowded = false;
   for( std::size_t i = home( h , *T ) , r = 0 ; ; i = ( i + 1 ) & m ) {
    std::atomic< std::uint64_t > * p = T->W + 2 * i;
+   renew( *T , i >> 3 );
    std::uint64_t x = p[ 0 ].load( std::memory_order_acquire );
    if( x == 0 ) {
     std::uint64_t y = 0;
@@ -819,24 +842,24 @@ auto ConcurrentFlatTable< K , V , H , Eq >::placeInline( const K & k ,
   }
  }
 
-template< class K , class V , class H , class Eq >
-auto ConcurrentFlatTable< K , V , H , Eq >::findOrInsert( const K & k ,
-                                                          const V & v )
+template< class K , class V , class H , class Eq , class C >
+auto ConcurrentFlatTable< K , V , H , Eq , C >::findOrInsert( const K & k ,
+                                                              const V & v )
  -> std::pair< Ref , bool >
 {
  return( findOrInsert( k , hash( k ) , v ) );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::insert( const K & k ,
-                                                    const V & v )
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::insert( const K & k ,
+                                                        const V & v )
 {
  return( findOrInsert( k , hash( k ) , v ).second );
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class C >
 template< class F >
-bool ConcurrentFlatTable< K , V , H , Eq >::update( const K & k , F && f )
+bool ConcurrentFlatTable< K , V , H , Eq , C >::update( const K & k , F && f )
  requires( packed || inlined )
 {
  const std::uint64_t h = hash( k );
@@ -868,7 +891,7 @@ bool ConcurrentFlatTable< K , V , H , Eq >::update( const K & k , F && f )
  for( std::size_t i = home( h , *T ) , r = 0 ; r <= m ;
       i = ( i + 1 ) & m , ++r ) {
   std::atomic< std::uint64_t > * p = T->W + kWords * i;
-  std::uint64_t x = p[ 0 ].load( std::memory_order_acquire );
+  std::uint64_t x = wordAt( *T , i );
   if( x == 0 )
    break;
   if( f_eq( keyOf( x ) , k ) ) {
@@ -892,26 +915,26 @@ bool ConcurrentFlatTable< K , V , H , Eq >::update( const K & k , F && f )
 
 /*------------------------------ THE WHOLE -------------------------------- */
 
-template< class K , class V , class H , class Eq >
-std::size_t ConcurrentFlatTable< K , V , H , Eq >::size( void ) const
+template< class K , class V , class H , class Eq , class C >
+std::size_t ConcurrentFlatTable< K , V , H , Eq , C >::size( void ) const
 {
  return( counted() );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t ConcurrentFlatTable< K , V , H , Eq >::capacity( void ) const
+template< class K , class V , class H , class Eq , class C >
+std::size_t ConcurrentFlatTable< K , V , H , Eq , C >::capacity( void ) const
 {
  return( f_table.load( std::memory_order_acquire )->places() );
  }
 
-template< class K , class V , class H , class Eq >
-std::size_t ConcurrentFlatTable< K , V , H , Eq >::rehashes( void ) const
+template< class K , class V , class H , class Eq , class C >
+std::size_t ConcurrentFlatTable< K , V , H , Eq , C >::rehashes( void ) const
 {
  return( f_rehashes.load( std::memory_order_relaxed ) );
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::nodes( std::size_t n )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::nodes( std::size_t n )
 {
  // the segments of the first n nodes and of the reservations of 64 threads
  if constexpr( ! packed && ! inlined ) {
@@ -924,8 +947,8 @@ void ConcurrentFlatTable< K , V , H , Eq >::nodes( std::size_t n )
   (void) n;
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::reserve( std::size_t n )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::reserve( std::size_t n )
 {
  nodes( n );
  const int lg = int( std::bit_width( std::max< std::size_t >( 2 * n , 1 ) -
@@ -935,20 +958,37 @@ void ConcurrentFlatTable< K , V , H , Eq >::reserve( std::size_t n )
   grow( T , lg );
  }
 
-template< class K , class V , class H , class Eq >
-void ConcurrentFlatTable< K , V , H , Eq >::clear( void )
+template< class K , class V , class H , class Eq , class C >
+void ConcurrentFlatTable< K , V , H , Eq , C >::clear( void )
 {
  Table & T = *f_cur;
- for( std::size_t i = 0 ; i < T.places() ; ++i )
-  if( const std::uint64_t w = T.W[ kWords * i ].load(
-                               std::memory_order_relaxed ) ) {
-   if constexpr( ! packed && ! inlined )
-    node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->~Node();
-   for( std::size_t j = 0 ; j < kWords ; ++j )
-    T.W[ kWords * i + j ].store( 0 , std::memory_order_relaxed );
+ if constexpr( epochs ) {
+  // every group out of use at once; at the mark, the whole vector written
+  // and the epochs again from 1, so that no stamp equals a new epoch
+  if( Stamp( f_epoch + 1 ) != kBusy )
+   ++f_epoch;
+  else {
+   f_epoch = 1;
+   for( std::size_t i = 0 ; i < kWords * T.places() ; ++i )
+    T.W[ i ].store( 0 , std::memory_order_relaxed );
+   for( std::size_t g = 0 ; g < T.groups() ; ++g ) {
+    T.G[ g ].store( 0 , std::memory_order_relaxed );
+    T.E[ g ].store( f_epoch , std::memory_order_relaxed );
+    }
    }
- for( std::size_t g = 0 ; g < T.groups() ; ++g )
-  T.G[ g ].store( 0 , std::memory_order_relaxed );
+  }
+ else {
+  for( std::size_t i = 0 ; i < T.places() ; ++i )
+   if( const std::uint64_t w = T.W[ kWords * i ].load(
+                                std::memory_order_relaxed ) ) {
+    if constexpr( ! packed && ! inlined )
+     node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->~Node();
+    for( std::size_t j = 0 ; j < kWords ; ++j )
+     T.W[ kWords * i + j ].store( 0 , std::memory_order_relaxed );
+    }
+  for( std::size_t g = 0 ; g < T.groups() ; ++g )
+   T.G[ g ].store( 0 , std::memory_order_relaxed );
+  }
  f_zero[ 0 ].store( 0 , std::memory_order_relaxed );
  f_zero[ 1 ].store( 0 , std::memory_order_relaxed );
  for( int i = 0 ; i < kStripes ; ++i )
@@ -961,9 +1001,9 @@ void ConcurrentFlatTable< K , V , H , Eq >::clear( void )
  f_old.clear();
  }
 
-template< class K , class V , class H , class Eq >
+template< class K , class V , class H , class Eq , class C >
 template< class F >
-void ConcurrentFlatTable< K , V , H , Eq >::forEach( F && f ) const
+void ConcurrentFlatTable< K , V , H , Eq , C >::forEach( F && f ) const
 {
  if constexpr( packed )
   if( const std::uint64_t x = f_zero[ 0 ].load( std::memory_order_acquire ) )
@@ -973,8 +1013,7 @@ void ConcurrentFlatTable< K , V , H , Eq >::forEach( F && f ) const
    f( keyOf( 0 ) , inValue( f_zero[ 1 ].load( std::memory_order_acquire ) ) );
  const Table & T = *f_table.load( std::memory_order_acquire );
  for( std::size_t i = 0 ; i < T.places() ; ++i )
-  if( const std::uint64_t w = T.W[ kWords * i ].load(
-                               std::memory_order_acquire ) ) {
+  if( const std::uint64_t w = wordAt( T , i ) ) {
    if constexpr( packed )
     f( keyOf( w ) , valueOf( w ) );
    else if constexpr( inlined )
@@ -988,9 +1027,66 @@ void ConcurrentFlatTable< K , V , H , Eq >::forEach( F && f ) const
    }
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::reached( const Table & T ,
-                                                     std::size_t i ) const
+template< class K , class V , class H , class Eq , class C >
+inline bool ConcurrentFlatTable< K , V , H , Eq , C >::live( const Table & T ,
+                                                            std::size_t g )
+ const
+{
+ if constexpr( epochs )
+  return( T.E[ g ].load( std::memory_order_acquire ) == f_epoch );
+ else {
+  (void) T; (void) g;
+  return( true );
+  }
+ }
+
+//! [renew]
+template< class K , class V , class H , class Eq , class C >
+inline void ConcurrentFlatTable< K , V , H , Eq , C >::renew( Table & T ,
+                                                             std::size_t g )
+ const
+{
+ // the group taken by a compare-and-swap of its stamp to the mark, its
+ // words and tags written 0, then the epoch stored with release, which a
+ // lookup reads with acquire before the tags or the words of the group
+ if constexpr( epochs ) {
+  for( int n = 0 ; ; ) {
+   Stamp e = T.E[ g ].load( std::memory_order_acquire );
+   if( e == f_epoch )
+    return;
+   if( ( e != kBusy ) &&
+       T.E[ g ].compare_exchange_strong( e , kBusy ,
+                                         std::memory_order_acquire ) ) {
+    for( std::size_t i = 8 * kWords * g ; i < 8 * kWords * ( g + 1 ) ; ++i )
+     T.W[ i ].store( 0 , std::memory_order_relaxed );
+    T.G[ g ].store( 0 , std::memory_order_relaxed );
+    T.E[ g ].store( f_epoch , std::memory_order_release );
+    return;
+    }
+   if( ++n < 64 )                         // renewed by another thread
+    detail::spinPause();
+   else
+    std::this_thread::yield();
+   }
+  }
+ else {
+  (void) T; (void) g;
+  }
+ }
+//! [renew]
+
+template< class K , class V , class H , class Eq , class C >
+inline std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::wordAt(
+                                     const Table & T , std::size_t i ) const
+{
+ if( ! live( T , i >> 3 ) )
+  return( 0 );
+ return( T.W[ kWords * i ].load( std::memory_order_acquire ) );
+ }
+
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::reached( const Table & T ,
+                                                         std::size_t i ) const
 {
  const std::size_t m = T.places() - 1;
  const std::uint64_t w = T.W[ kWords * i ].load(
@@ -1000,8 +1096,7 @@ bool ConcurrentFlatTable< K , V , H , Eq >::reached( const Table & T ,
   if( ( w >> kFp ) != print( h ) )
    return( false );
  for( std::size_t j = home( h , T ) ; j != i ; j = ( j + 1 ) & m ) {
-  const std::uint64_t x = T.W[ kWords * j ].load(
-                           std::memory_order_acquire );
+  const std::uint64_t x = wordAt( T , j );
   if( x == 0 )
    return( false );                       // a free place in between
   bool twice;
@@ -1015,17 +1110,16 @@ bool ConcurrentFlatTable< K , V , H , Eq >::reached( const Table & T ,
  return( true );
  }
 
-template< class K , class V , class H , class Eq >
-bool ConcurrentFlatTable< K , V , H , Eq >::consistent( void ) const
+template< class K , class V , class H , class Eq , class C >
+bool ConcurrentFlatTable< K , V , H , Eq , C >::consistent( void ) const
 {
  const Table & T = *f_table.load( std::memory_order_acquire );
  if( ( &T != f_cur.get() ) || f_grow.load( std::memory_order_acquire ) )
   return( false );
  std::size_t n = f_zero[ 0 ].load( std::memory_order_acquire ) ? 1 : 0;
  for( std::size_t i = 0 ; i < T.places() ; ++i ) {
-  const std::uint64_t w = T.W[ kWords * i ].load(
-                           std::memory_order_acquire );
-  const std::uint8_t g = T.tagAt( i );
+  const std::uint64_t w = wordAt( T , i );
+  const std::uint8_t g = live( T , i >> 3 ) ? T.tagAt( i ) : 0;
   if constexpr( kTagged )
    if( w == 0 ? ( g != 0 ) : ( g != tag( hashOf( w ) ) ) )
     return( false );                      // the tag of every place

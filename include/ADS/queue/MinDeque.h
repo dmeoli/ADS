@@ -44,6 +44,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/stack/MinStack.h"
 
 #include <cstddef>
@@ -149,7 +150,7 @@ class MinDeque {
 
  MinStack< T , C > f_F;   ///< the front, the first item on top
  MinStack< T , C > f_B;   ///< the back, the last item on top
- [[no_unique_address]] C f_less;   ///< the order
+ ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
 
  };  // end( class MinDeque )
 

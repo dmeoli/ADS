@@ -67,6 +67,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/queue/RealTimeMinQueue.h"
 
 #include <algorithm>
@@ -230,7 +231,7 @@ class RealTimeMinDeque {
  std::size_t f_t = 0;                ///< the bottom of G passing to S
  std::size_t f_n = 0;                ///< the items
  bool f_rb = false;                  ///< a rebuild is going on
- [[no_unique_address]] C f_less;     ///< the order
+ ADS_NO_UNIQUE_ADDRESS C f_less;     ///< the order
 
  };  // end( class RealTimeMinDeque )
 

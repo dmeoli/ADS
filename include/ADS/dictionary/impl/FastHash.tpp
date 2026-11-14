@@ -79,7 +79,8 @@ inline constexpr auto kStripeK = []( void ) {
 constexpr Product128 product128( std::uint64_t a , std::uint64_t b )
 {
 #if defined( __SIZEOF_INT128__ )
- const unsigned __int128 p = static_cast< unsigned __int128 >( a ) * b;
+ __extension__ typedef unsigned __int128 U128;   // not ISO C++
+ const U128 p = static_cast< U128 >( a ) * b;
  return( Product128{ std::uint64_t( p ) , std::uint64_t( p >> 64 ) } );
 #else
  if( ! std::is_constant_evaluated() ) {

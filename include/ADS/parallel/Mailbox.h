@@ -40,6 +40,20 @@
  * stopped by a limit can go back to its frontier, where they bound the
  * optimum.
  *
+ * A mailbox serves a sequence of computations separated by barriers, e.g.,
+ * the phases of an episode of an incremental search, or its episodes:
+ * `rearm()` makes it ready for the next one once the last has ended (or
+ * has been stopped and its messages recovered by `leftovers()`), all the
+ * workers active again, or those that `active( me )` tells, so that the
+ * channels and the outboxes, \f$ p^2 \f$ queues in the mesh, are made
+ * once. The barrier is the caller's: `rearm()` runs in one thread while no
+ * worker calls the mailbox, after every worker has returned from its last
+ * call and before any makes its first of the next computation (in the
+ * completion function of a `std::barrier`, or between two `run()` of the
+ * executor), which orders its writes with the calls of all the workers.
+ * The counts of `sent()`, `batches()` and `received()` go on across the
+ * computations.
+ *
  * The termination is detected by counting: a counter \f$ C \f$ shared by the
  * workers holds the number of the workers <em>active</em> (all of them at
  * the start) plus the number of the messages pushed and not yet drained. A
@@ -63,7 +77,10 @@
  * found messages, and becomes active only by receiving (its own work comes
  * from the messages, or it was there from the start), or after `stop()`;
  * `leftovers()` is called when no worker calls the mailbox any more; `f`
- * does not throw; a mailbox serves one computation.
+ * does not throw; a mailbox serves one computation between two calls of
+ * `rearm()`, which needs the last one ended or stopped, the outboxes
+ * empty and, after a stop, the inboxes drained by `leftovers()` (an audit,
+ * which drains them).
  *
  * \see E. W. Dijkstra, C. S. Scholten, Termination detection for diffusing
  *      computations, Information Processing Letters 11(1), 1-4, 1980,
@@ -96,6 +113,7 @@
 #include "ADS/parallel/Channels.h"
 
 #include <atomic>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -326,6 +344,47 @@ class Mailbox {
   return( f_stop.value.load( std::memory_order_acquire ) );
   }
 
+ /// the mailbox ready for the next computation, with the workers for
+ /// which `active( me )` is true active and the others passive: the counter
+ /// set to the number of the active ones, the stop withdrawn, the channels
+ /// and the outboxes kept; called by one thread at a barrier, while no
+ /// worker calls the mailbox
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{rearm}( \mathit{active} ) \cr
+ /// 2 & \quad \textbf{foreach}\ \text{worker}\ \mathit{me}\ \textbf{do}
+ ///     \ \mathit{active}_{\mathit{me}} \gets \mathit{active}(
+ ///     \mathit{me} ) \cr
+ /// 3 & \quad C \gets |\{ \mathit{me} : \mathit{active}_{\mathit{me}}
+ ///     \}|;\ \text{stopped} \gets \textbf{false}
+ /// \end{array}}
+ /// \f]
+ /// \pre the outboxes are empty, and the computation has ended (\f$ C = 0
+ /// \f$) or the mailbox has stopped and `leftovers()` has emptied it
+ /// (audit); no worker calls the mailbox meanwhile
+//! [rearm]
+ template< class F >
+  requires std::predicate< F & , std::size_t >
+ void rearm( F && active ) {
+  ADS_PRE( rearmable() );
+  ADS_AUDIT( drained() );
+  std::int64_t n = 0;
+  for( std::size_t me = 0 ; me < size() ; ++me ) {
+   Worker & w = *f_worker[ me ];
+   w.active = bool( active( me ) );
+   n += w.active;
+   }
+  f_count.value.store( n , std::memory_order_release );
+  f_stop.value.store( false , std::memory_order_release );
+  }
+//! [rearm]
+
+ /// `rearm()` above with all the workers active, as at the construction
+ /// \pre as `rearm( active )`
+ void rearm( void ) { rearm( []( std::size_t ) { return( true ); } ); }
+
  /// the calls `f( x )` on the messages left to `me`: those of its outboxes,
  /// for each destination in the order of their sends, then those of its
  /// inbox; their number. Called after the workers have returned from
@@ -422,6 +481,26 @@ class Mailbox {
  struct alignas( 128 ) Flag {
   std::atomic< bool > value{ false };      ///< set by stop()
   };
+
+ /// whether the computation has ended or stopped and no outbox holds a
+ /// message, \f$ O( p ) \f$
+ [[nodiscard]] bool rearmable( void ) const {
+  for( const auto & w : f_worker )
+   for( const std::size_t to : w->dirty )
+    if( ! w->out[ to ].empty() )
+     return( false );
+  return( stopped() ||
+          ( f_count.value.load( std::memory_order_acquire ) == 0 ) );
+  }
+
+ /// whether no inbox holds a message; drains them, so that it is only
+ /// asked where they must be empty
+ [[nodiscard]] bool drained( void ) {
+  std::size_t n = 0;
+  for( std::size_t me = 0 ; me < size() ; ++me )
+   n += f_ch.drain( me , []( Msg && ) {} );
+  return( n == 0 );
+  }
 
  /// the outbox of `me` for `to` pushed, as many messages as the channel
  /// takes; the next push when a batch more has come

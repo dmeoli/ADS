@@ -43,6 +43,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/stack/MinStack.h"
 
 #include <cstddef>
@@ -123,7 +124,7 @@ class MinQueue {
 
  MinStack< T , C > f_I;   ///< the back, the last item on top
  MinStack< T , C > f_O;   ///< the front, the first item on top
- [[no_unique_address]] C f_less;   ///< the order
+ ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
 
  };  // end( class MinQueue )
 

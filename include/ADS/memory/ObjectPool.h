@@ -53,6 +53,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/memory/HugePageAllocator.h"
 
 #include <algorithm>
@@ -207,7 +208,7 @@ class ObjectPool {
  Block * f_last = nullptr;  ///< the last block, which leads to the others
  std::size_t f_n;           ///< the slots of the largest block
  std::size_t f_size = 0;    ///< the objects alive
- [[no_unique_address]] SlotAlloc f_alloc;   ///< the allocator of the blocks
+ ADS_NO_UNIQUE_ADDRESS SlotAlloc f_alloc;   ///< the allocator of the blocks
 
  };  // end( class ObjectPool )
 

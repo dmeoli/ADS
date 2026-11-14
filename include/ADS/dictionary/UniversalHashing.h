@@ -129,6 +129,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/FastHash.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/numeric/NumberTheory.h"
@@ -341,7 +342,7 @@ class MultiplicativeHash {
 
  private:
  std::uint64_t f_z;                ///< the odd multiplier
- [[no_unique_address]] Code f_code;   ///< the hash code of the keys
+ ADS_NO_UNIQUE_ADDRESS Code f_code;   ///< the hash code of the keys
  };
 
 /*--------------------------------------------------------------------------*/

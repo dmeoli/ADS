@@ -86,6 +86,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/tree/JoinAlgorithms.h"
 
@@ -215,7 +216,7 @@ class JoinTree
   /// the height plus 1 (AVL), the black height times 2 plus 1 if red
   /// (Red-Black), the priority (treap)
   std::uint64_t meta = 0;
-  [[no_unique_address]] AugValue aug{};   ///< the augmented value
+  ADS_NO_UNIQUE_ADDRESS AugValue aug{};   ///< the augmented value
   K key;                        ///< the key
   V value;                      ///< the value
   };

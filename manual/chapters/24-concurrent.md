@@ -144,7 +144,7 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `WorkStealingDeque` | one owner, many thieves | wait-free calls, a steal may fail (abort); retried steals lock-free | $O( 1 )$ amortized for the owner, a CAS only on the last item; one per steal |
 | `ConcurrentUnionFind` | any | lock-free | $O( \log_{2 + m / n} n )$ amortized on one thread |
 | `ConcurrentCuckooTable` | any | blocking (a lock per region), lookups without locks for atomic keys and values | $O( 1 )$ expected, $O( 1 )$ amortized for the doublings |
-| `ConcurrentFlatTable` | any | wait-free lookups but across a growth, insertions blocking only during a growth | $O( 1 )$ expected, $O( 1 )$ amortized for the growths; no removals |
+| `ConcurrentFlatTable` | any | wait-free lookups but across a growth, insertions blocking only during a growth (and the renewal of a group, with epochs) | $O( 1 )$ expected, $O( 1 )$ amortized for the growths; no removals; `clear()` $O( 1 )$ amortized with epochs |
 | `MultiQueue` | any, by a handle each | blocking (a lock per queue, taken at the first try) | $O( \log m )$ amortized, $q / ( q - 1 )$ draws expected; relaxed |
 | `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; two exchanges per steal |
 | `EventCount` | any | a waiter sleeps, a notifier never waits | a fence and a read when nobody waits |
@@ -1040,6 +1040,42 @@ by its bytes. In a set of pointers to objects compared as the objects, the
 threads that insert at once pointers to equal objects therefore all get the
 pointer of the one that inserted it; this is the intrusive set of the nodes
 of a parallel search.
+
+`clear()` writes 0 to every place, in time linear in the capacity, which a
+table cleared often and filled little in between (the restarts of an
+incremental search) pays at each clear. With the policy `EpochClear<S>`,
+the fifth template parameter (`ZeroingClear`, the default, leaves the table
+as above), `clear()` takes $O( 1 )$ amortized time instead. Each group of 8
+places has a stamp of the unsigned type $S$ (32 bits by default, i.e., half
+a byte per place), and the group is in use only if its stamp is the epoch
+of the table, which `clear()` raises, so that all the groups fall out of
+use at once. A lookup reads the tags of a group, or a word of a table
+without tags, only if the stamp of its group is the epoch, and a group out
+of use is free, where the lookup stops. An insertion that reaches a group
+out of use renews it first: it takes the group by a compare-and-swap of its
+stamp to a mark, writes 0 to its words and tags, and stores the epoch with
+release.
+
+```cpp
+--8<-- "generated/ConcurrentFlatTable-renew.cpp"
+```
+
+The other insertions that reach the group meanwhile wait for that store, a
+few words long, while the lookups see the group free until then, which is
+right, since no insertion of the new epoch has taken effect in it; once the
+stamp is the epoch, the group is a group of a new vector, and [Lemma
+24.12](24-concurrent.md#lem-24-12) holds for it unchanged. A renewal runs
+within the critical section of its insertion, so that by [Lemma
+24.13](24-concurrent.md#lem-24-13) no growth runs with it; the copy of a
+growth takes only the groups in use, into a vector whose groups all have
+the epoch. The stamps of the old epochs are less than the epoch, and when
+the epoch would reach the mark, the largest value of $S$, `clear()` writes
+0 to the whole vector and starts again from the epoch 1: once per $2^{|S|}
+- 2$ clears, so that no stamp left from an old epoch can equal a new one.
+Of course, the pairs of a table in nodes are then dropped with no
+destructor, their nodes reused by the next epoch, and the policy therefore
+requires keys and values trivially destructible; `epoch()` gives the epoch
+(test `engineered.concurrent-flat-table-epochs`).
 
 ## 24.9 Relaxed priority queues {#sec-24-9}
 

@@ -66,6 +66,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/RandomHashing.h"
 
 #include <algorithm>
@@ -257,11 +258,11 @@ class MeldableHeap {
 
  Node * f_root = nullptr;                    ///< the root
  std::size_t f_n = 0;                        ///< the number of items
- [[no_unique_address]] Less f_less;          ///< the order
+ ADS_NO_UNIQUE_ADDRESS Less f_less;          ///< the order
  SplitMix64 f_g;                             ///< the coins
  std::uint64_t f_bits = 0;                   ///< the coins in hand
  int f_left = 0;                             ///< how many are left
- [[no_unique_address]] NodeAlloc f_alloc;    ///< the allocator
+ ADS_NO_UNIQUE_ADDRESS NodeAlloc f_alloc;    ///< the allocator
 
  };  // end( class MeldableHeap )
 

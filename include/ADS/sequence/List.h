@@ -88,6 +88,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/memory/ObjectPool.h"
 
 #include <cstddef>
@@ -575,7 +576,7 @@ class List {
  mutable Cell f_sentinel;   ///< the sentinel, i.e., the list
  std::size_t f_size = 0;    ///< the number of items
  /// the cells
- [[no_unique_address]]
+ ADS_NO_UNIQUE_ADDRESS
  std::conditional_t< Pooled , ObjectPool< Cell > , Plain > f_pool;
 
  };  // end( class List )

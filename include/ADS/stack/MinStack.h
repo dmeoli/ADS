@@ -44,6 +44,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -143,7 +144,7 @@ class MinStack {
 
  std::vector< T > f_A;   ///< the items, the top at the back
  std::vector< T > f_M;   ///< the minima, not increasing from the bottom
- [[no_unique_address]] C f_less;   ///< the order
+ ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
 
  };  // end( class MinStack )
 

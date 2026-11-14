@@ -136,6 +136,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/combinatorial/Bitwise.h"
 #include "ADS/parallel/Executor.h"
 #include "ADS/succinct/BitVector.h"
@@ -506,7 +507,7 @@ class BasicRankSelect : public RankSelectOptions {
   mutable std::atomic< bool > ready[ 2 ] = { false , false };
   };
  struct None {};
- [[no_unique_address]] std::conditional_t< Lazy , Once , None > f_once;
+ ADS_NO_UNIQUE_ADDRESS std::conditional_t< Lazy , Once , None > f_once;
 
  };  // end( class BasicRankSelect )
 

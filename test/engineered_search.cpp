@@ -212,6 +212,63 @@ ADS_TEST( "indexed-heap-erase" )
  CHECK( B.empty() && ! B.contains( 1 ) );
  }
 
+// the ids of the indexed heap raised by grow() while it holds items, one by
+// one as a search numbers its nodes and by jumps, from an empty range:
+// against a map of the keys, the items kept and the new ids absent, then
+// pushed, decreased and popped; 2^16 ids added one at a time to a heap
+// that holds them all; grow() to the same range keeps all, below it
+// violates the contract, and reset() still empties the heap
+ADS_TEST( "indexed-heap-grow" )
+{
+ IndexedDaryHeap< int > H;
+ CHECK( H.ids() == 0 && H.empty() );
+ std::map< int , int > K;                        // id -> key
+ std::mt19937 g( 11 );
+ for( int n = 0 ; n < 20000 ; ) {
+  const int m = g() % 5 ? n + 1 : n + 1 + int( g() % 300 );
+  H.grow( m );
+  CHECK( H.ids() == m && H.size() == K.size() );
+  for( int id = n ; id < m ; ++id )
+   CHECK( ! H.contains( id ) );
+  n = m;
+  const int id = n - 1 , k = int( g() % 1000 );
+  H.push( id , k );                              // the new id
+  K[ id ] = k;
+  const int o = int( g() % unsigned( n ) );      // an old one
+  if( H.contains( o ) ) {
+   const int d = std::min( K[ o ] , int( g() % 1000 ) );
+   H.decrease( o , d );
+   K[ o ] = d;
+   }
+  if( g() % 3 == 0 ) {
+   const auto e = H.pop();
+   CHECK( K.count( e.id ) && K[ e.id ] == e.key );
+   K.erase( e.id );
+   }
+  if( ! K.empty() ) {
+   int b = K.begin()->second;
+   for( const auto & e : K ) b = std::min( b , e.second );
+   CHECK( H.top().key == b );
+   }
+  }
+ for( const auto & e : K )
+  CHECK( H.contains( e.first ) && H.key( e.first ) == e.second );
+ IndexedDaryHeap< int > G( 1 );                  // one id at a time
+ G.push( 0 , 5 );
+ constexpr int N = 1 << 16;
+ for( int n = 2 ; n <= N ; ++n ) {
+  G.grow( n );
+  G.push( n - 1 , n % 2 ? -n : n );
+  }
+ CHECK( G.size() == std::size_t( N ) && G.top().key == -( N - 1 ) );
+ CHECK( G.key( 0 ) == 5 && G.key( N - 1 ) == N );
+ G.grow( G.ids() );                              // the same range
+ CHECK( G.size() == std::size_t( N ) && G.ids() == N );
+ CHECK_THROWS( G.grow( 5 ) , contract_violation );
+ G.reset( 3 );
+ CHECK( G.empty() && G.ids() == 3 && ! G.contains( 2 ) );
+ }
+
 // the pairing heap, two-pass and auxiliary, against a set of ( priority ,
 // id ) on random insertions, deletions of the minimum, decreases,
 // increases, updates and erasures by handle; the erasure of the root, of

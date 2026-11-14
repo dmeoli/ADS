@@ -802,6 +802,9 @@ export namespace ADS {
 
  // ADS/concurrent/ConcurrentFlatTable.h
  using ADS::ConcurrentFlatTable;
+ using ADS::EpochClear;
+ using ADS::FlatClear;
+ using ADS::ZeroingClear;
 
  // ADS/concurrent/ConcurrentUnionFind.h
  using ADS::ConcurrentUnionFind;
@@ -1611,6 +1614,9 @@ export namespace ADS {
 
  // ADS/priority/BucketQueue.h
  using ADS::BucketQueue;
+ using ADS::BucketTie;
+ using ADS::LargestSecondKey;
+ using ADS::LeastSecondKey;
 
  // ADS/priority/DaryHeap.h
  using ADS::DaryHeap;

@@ -1790,6 +1790,45 @@ drains the channels on the thread that called `run()`, which the end of the
 run orders after the operations of the workers, and hands each message of
 the first two places once. $\square$
 
+A mailbox also serves a sequence of computations separated by barriers,
+e.g., the phases of an episode of an incremental search, each of which ends
+by quiescence before the next one starts. `rearm( active )`, called by one
+thread at the barrier, sets the activity of each worker `me` to `active(
+me )` and $C$ to the number of the active workers, and withdraws the stop;
+`rearm()` makes them all active, as the constructor does
+([Algorithm 25.29](25-parallel.md#alg-25-29)). The channels and the
+outboxes, i.e., the $p^2$ queues of the mesh with their buffers, are kept,
+so that a phase costs $O( p )$ instead of their construction. The
+precondition is the quiescence of the computation before: the outboxes are
+empty, and either $C = 0$ or the mailbox has stopped and `leftovers()` has
+emptied it (an audit drains the inboxes to check it). The barrier is the
+caller's, e.g., the completion function of a `std::barrier` or the end of
+a `run()`: every worker returns from its last call of the computation
+before `rearm()`, and makes its first call of the next one after it. The
+counts of `sent()`, `batches()` and `received()` go on across the
+computations.
+
+<span id="alg-25-29"></span>**Algorithm 25.29.** `rearm()` of `Mailbox`,
+with $\mathit{active}_{\mathit{me}}$ the activity of the worker
+$\mathit{me}$.
+
+--8<-- "generated/Mailbox-rearm.pseudo.md"
+
+<span id="lem-25-23"></span>**Lemma 25.23.** *Let `rearm()` be called at a
+barrier under its precondition. Then [Lemma 25.20](25-parallel.md#lem-25-20)
+and [Lemma 25.22](25-parallel.md#lem-25-22) hold for the computation that
+follows it, with $A$ the workers made active.*
+
+*Proof.* Under the precondition no message exists: the outboxes are empty,
+and the channels are empty too, since $C = 0$ gives $M = 0$ by (25.10),
+while after a stop `leftovers()` has drained them. Hence, after `rearm()`,
+$M = 0$ and $C = A$, and (25.10) holds with equality, as at the
+construction. The barrier orders the writes of `rearm()` before every
+operation of the next computation, which thus starts from the state of a
+new mailbox with $A$ active workers; the arguments of the two lemmas do not
+depend on how many workers are active at the start, provided each worker
+that has work from the start is among them. $\square$
+
 ## 25.16 Discussion and references {#sec-25-16}
 
 The model of work and depth and the greedy bound go back to [Graham

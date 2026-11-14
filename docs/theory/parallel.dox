@@ -897,6 +897,28 @@
  the end of the run orders after every operation of the workers), hands
  each of the first two kinds once.
 
+ A mailbox serves a sequence of computations separated by barriers (the
+ phases of an episode of an incremental search, or its episodes):
+ `rearm()`, called by one thread at the barrier, sets the activity of each
+ worker as asked and \f$ C \f$ to the number of the active workers, and
+ withdraws the stop, keeping the channels and the outboxes, so that a
+ phase costs \f$ O( p ) \f$ instead of the construction of the
+ \f$ p^2 \f$ queues of the mesh.
+
+ <em>Lemma 11 (the rearm).</em> Let `rearm()` be called at a barrier, with
+ the outboxes empty and either \f$ C = 0 \f$ or the mailbox stopped and
+ emptied by `leftovers()`. Then Lemmas 8 and 10 hold for the computation
+ that follows, with \f$ A \f$ the workers made active.
+
+ Indeed, no message exists at the call: the outboxes are empty, and the
+ channels too, since \f$ C = 0 \f$ gives \f$ M = 0 \f$ by (10), while after
+ a stop `leftovers()` has drained them. After `rearm()`, \f$ M = 0 \f$ and
+ \f$ C = A \f$, so that (10) holds with equality, as at the construction,
+ and the barrier orders the writes of `rearm()` before every operation of
+ the next computation; the arguments of Lemmas 8 and 10 do not depend on
+ how many workers are active at the start, provided every worker with work
+ from the start is among them.
+
  \section theory_parallel_refs References
 
  \see U. Drepper, What every programmer should know about memory, Red

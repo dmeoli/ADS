@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <barrier>
 #include <chrono>
 #include <cstdint>
 #include <mutex>
@@ -832,6 +833,100 @@ void mailboxFamily( A ... args )
   }
  }
 
+/// the random trees of the seeds 1 , 2 , ... explored one after the other
+/// by p threads on one mailbox of the channels C with batches of b
+/// messages, a phase per tree, separated by a std::barrier whose
+/// completion checks the phase and rearms the mailbox for the next: all the
+/// workers active, or only the owner of the root; every third phase is
+/// stopped by the worker 0 after a few nodes, and its messages recovered by
+/// leftovers() before the mailbox is rearmed
+template< class C , class ... A >
+void mailboxPhases( std::size_t p , std::size_t b , A ... args )
+{
+ const std::uint32_t d = 11;
+ const int phases = 12;
+ Mailbox< Node , C > mb( p , b , args... );
+ std::atomic< std::uint64_t > done{ 0 } , sends{ 0 } , sendSum{ 0 } ,
+                              polls{ 0 } , pollSum{ 0 };
+ int phase = 0 , bad = 0;
+ auto stopped = []( int t ) { return( t % 3 == 2 ); };
+ auto seed = []( int t ) { return( std::uint64_t( t + 1 ) ); };
+ auto check = [ & ]( void ) noexcept {      // the phase, by one thread
+  std::uint64_t left = 0 , leftSum = 0;
+  mb.leftovers( [ & ]( Node && v ) {
+   ++left;
+   leftSum += mix( v.key ); } );
+  if( stopped( phase ) )
+   bad += ! mb.stopped() || ( sends != polls + left ) ||
+          ( sendSum != pollSum + leftSum );
+  else
+   bad += mb.stopped() || ( left != 0 ) || ( sends != polls ) ||
+          ( sendSum != pollSum ) || ( done != treeSize( d , seed( phase ) ) );
+  done = sends = sendSum = polls = pollSum = 0;
+  const std::size_t owner = ownerOf( seed( ++phase ) , p );
+  if( phase % 2 )
+   mb.rearm( [ & ]( std::size_t me ) { return( me == owner ); } );
+  else
+   mb.rearm();
+  bad += mb.stopped() || mb.terminated();
+  };
+ std::barrier sync( std::ptrdiff_t( p ) , check );
+ std::vector< std::thread > T;
+ for( std::size_t me = 0 ; me < p ; ++me )
+  T.emplace_back( [ & , me ] {
+   for( int t = 0 ; t < phases ; ++t ) {
+    std::vector< Node > stack;
+    if( ownerOf( seed( t ) , p ) == me )
+     stack.push_back( Node{ seed( t ) , 0 } );
+    std::uint64_t n = 0 , s = 0 , k = 0 , ks = 0 , x = 0;
+    long work = 0;
+    unsigned spin = 0;
+    auto take = [ & ]( Node && v ) {
+     ++k;
+     ks += mix( v.key );
+     stack.push_back( v );
+     };
+    for( ;; ) {
+     mb.poll( me , take );
+     if( ! stack.empty() && ! mb.stopped() ) {
+      for( int j = 0 ; ( j < 16 ) && ! stack.empty() ; ++j ) {
+       const Node v = stack.back();
+       stack.pop_back();
+       ++x;
+       if( ( me == 0 ) && stopped( t ) && ( ++work == 40 ) )
+        mb.stop();
+       children( v , d , seed( t ) , [ & ]( Node c ) {
+        const std::size_t o = ownerOf( c.key , p );
+        if( o == me )
+         stack.push_back( c );
+        else {
+         ++n;
+         s += mix( c.key );
+         mb.send( me , o , c );
+         }
+        } );
+       }
+      spin = 0;
+      continue;
+      }
+     if( mb.quiescent( me ) )
+      break;
+     detail::spinPause( spin );
+     }
+    done += x;
+    sends += n;
+    sendSum += s;
+    polls += k;
+    pollSum += ks;
+    sync.arrive_and_wait();
+    }
+   } );
+ for( auto & t : T )
+  t.join();
+ CHECK( bad == 0 );
+ CHECK( phase == phases );
+ }
+
 }  // end( namespace )
 
 // the termination of the trees on every family, and on every executor with
@@ -913,6 +1008,54 @@ ADS_TEST( "mailbox-full" )
   CHECK( got[ i ] == i );
  CHECK( mb.received( 1 ) == 8 );
  CHECK( mb.leftovers( []( std::uint64_t && ) {} ) == 0 );
+ }
+
+// one mailbox for a sequence of computations: the phases of mailboxPhases
+// on every family, 1 to 4 threads, batches of 1 and 16, the mesh also of
+// capacity 2; then, on one thread, rearm() refused while an outbox holds a
+// message, while a worker is active, and after a stop with messages in an
+// inbox that leftovers() has not taken (the audit), and accepted after the
+// end, with the workers active and passive as asked
+ADS_TEST( "mailbox-rearm" )
+{
+ for( std::size_t p : { 1 , 2 , 4 } )
+  for( std::size_t b : { 1 , 16 } ) {
+   mailboxPhases< LockedChannels< Node > >( p , b );
+   mailboxPhases< InboxChannels< Node > >( p , b );
+   mailboxPhases< LaneChannels< Node > >( p , b );
+   mailboxPhases< MeshChannels< Node > >( p , b , std::size_t( 2 ) );
+   mailboxPhases< MeshChannels< Node > >( p , b , std::size_t( 1024 ) );
+   }
+ Mailbox< std::uint64_t > mb( 2 , 4 );
+ auto none = []( std::uint64_t && ) {};
+ mb.send( 0 , 1 , 7 );                        // in the outbox
+ CHECK_THROWS( mb.rearm() , contract_violation );
+ CHECK( ! mb.quiescent( 0 ) );                // pushed, 0 passive
+ CHECK_THROWS( mb.rearm() , contract_violation );   // 1 active
+ CHECK( mb.poll( 1 , none ) == 1 );
+ CHECK( mb.quiescent( 1 ) && mb.quiescent( 0 ) && mb.terminated() );
+ mb.rearm( []( std::size_t me ) { return( me == 1 ); } );
+ CHECK( ! mb.terminated() && ! mb.quiescent( 0 ) );   // 0 passive
+ mb.send( 1 , 0 , 8 );
+ CHECK( mb.flush( 1 ) && ! mb.quiescent( 0 ) );
+ CHECK( mb.poll( 0 , none ) == 1 );          // 0 active by receiving
+ CHECK( ! mb.quiescent( 0 ) );
+ CHECK( mb.quiescent( 1 ) && mb.terminated() );
+ mb.rearm();
+ mb.send( 0 , 1 , 9 );
+ CHECK( mb.flush( 0 ) );
+ mb.stop();                                   // 9 left in the inbox of 1
+ CHECK_THROWS( mb.rearm() , contract_violation );
+ mb.rearm();                                  // the audit took it
+ CHECK( ! mb.stopped() && ( mb.leftovers( none ) == 0 ) );
+ mb.send( 1 , 0 , 10 );
+ mb.stop();
+ CHECK( mb.leftovers( none ) == 1 );          // from the outbox of 1
+ mb.rearm();
+ CHECK( ! mb.stopped() && ! mb.terminated() && ! mb.quiescent( 0 ) );
+ CHECK( mb.quiescent( 1 ) && mb.terminated() );
+ CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.sent( 1 ) == 1 ) &&
+        ( mb.received( 0 ) == 1 ) && ( mb.received( 1 ) == 1 ) );
  }
 
 // the owners of the keys: in range, all of them used, one worker

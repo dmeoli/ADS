@@ -449,6 +449,23 @@
  at once, and the places of a vector are twice as many words, all on the
  line of their key.
 
+ A table cleared often and filled little in between (the restarts of an
+ incremental search) pays at each `clear()` the capacity of its vector.
+ With the policy `EpochClear` each group of 8 places has a stamp, and the
+ group is in use only if its stamp is the epoch of the table, which
+ `clear()` raises in \f$ O( 1 ) \f$: a lookup takes a group out of use as
+ free, and an insertion that reaches one renews it, taking it by a
+ compare-and-swap of its stamp to a mark, writing 0 to its words and tags,
+ and storing the epoch with release. The other insertions there wait for
+ the store, while the lookups see the group free, which is right since no
+ insertion of the new epoch has taken effect in it; once stamped, the group
+ is that of a new vector, and Lemma 5 holds for it unchanged. The renewal
+ runs within the critical section of an insertion, so that no growth runs
+ with it (Lemma 6), and a growth copies only the groups in use. When the
+ epoch would reach the mark, the largest stamp, `clear()` writes the whole
+ vector and starts again from 1, once per \f$ 2^{|S|} - 2 \f$ clears for
+ stamps of \f$ |S| \f$ bits, so that no old stamp equals a new epoch.
+
  \section theory_concurrent_mq Relaxed priority queues
 
  A priority queue shared by \f$ p \f$ threads under one lock serializes

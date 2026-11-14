@@ -109,6 +109,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/search/CountLess.h"
 
@@ -294,7 +295,7 @@ class SPlusTree {
  std::vector< std::size_t > f_off;      ///< the first item of each level
  std::size_t f_items = 0;               ///< the items of the levels
  std::size_t f_n = 0;                   ///< the items
- [[no_unique_address]] Less f_less;     ///< the order of the items
+ ADS_NO_UNIQUE_ADDRESS Less f_less;     ///< the order of the items
 
  };  // end( class SPlusTree )
 

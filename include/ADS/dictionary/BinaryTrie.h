@@ -75,6 +75,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/memory/ObjectPool.h"
 
@@ -427,7 +428,7 @@ class JumpTrie {
  Node * f_dummy = nullptr;                 ///< the head of the list
  std::size_t f_n = 0;                      ///< the number of keys
  std::size_t f_nodes = 1;                  ///< the number of nodes
- [[no_unique_address]] TrieTables< U , Node , W , Hashed > f_t;  ///< tables
+ ADS_NO_UNIQUE_ADDRESS TrieTables< U , Node , W , Hashed > f_t;  ///< tables
 
  };  // end( class JumpTrie )
 

@@ -63,6 +63,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <concepts>
@@ -172,7 +173,7 @@ class ArrayUSet {
  private:
 
  std::vector< T > f_A;            ///< the items
- [[no_unique_address]] Eq f_eq;   ///< the equality
+ ADS_NO_UNIQUE_ADDRESS Eq f_eq;   ///< the equality
 
  };  // end( class ArrayUSet )
 
@@ -237,7 +238,7 @@ class ArraySSet {
  [[nodiscard]] bool sorted( void ) const;
 
  std::vector< T > f_A;            ///< the items, increasing
- [[no_unique_address]] C f_less;  ///< the order
+ ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
 
  };  // end( class ArraySSet )
 

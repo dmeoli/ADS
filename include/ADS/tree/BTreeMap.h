@@ -128,6 +128,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/memory/ObjectPool.h"
 #include "ADS/search/CountLess.h"
 
@@ -509,7 +510,7 @@ class BTreeMap {
   Inner * next = nullptr;          ///< the node after, on its level
   std::uint32_t n = 0;             ///< the keys, the children - 1
   /// the pairs below each child, if R
-  [[no_unique_address]] std::conditional_t< R ,
+  ADS_NO_UNIQUE_ADDRESS std::conditional_t< R ,
                          std::array< std::size_t , I + 1 > , None > cnt;
   };
 
@@ -606,7 +607,7 @@ class BTreeMap {
  Leaf * f_last = nullptr;          ///< the rightmost leaf
  std::size_t f_size = 0;           ///< the pairs
  int f_height = 0;                 ///< the levels
- [[no_unique_address]] Less f_less;   ///< the order of the keys
+ ADS_NO_UNIQUE_ADDRESS Less f_less;   ///< the order of the keys
  ObjectPool< Leaf > f_leaves;      ///< the slots of the leaves
  ObjectPool< Inner > f_inners;     ///< the slots of the internal nodes
 

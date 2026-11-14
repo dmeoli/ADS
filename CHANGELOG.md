@@ -40,6 +40,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changes compared byte for byte by objdump, with g++ and clang++, for the
   plain structure and for each subject policy
 
+- the policy of clear() of concurrent/ConcurrentFlatTable.h, its fifth
+  template parameter: ZeroingClear, the default, writes every place as
+  before (the same code), and EpochClear< S > makes clear() O( 1 )
+  amortized for a table cleared often and filled little in between (the
+  restarts of an incremental search): a stamp of S per group of 8 places
+  (32 bits by default), the group in use only if its stamp is the epoch
+  that clear() raises, the lookups taking a group out of use as free and
+  an insertion renewing it by a compare-and-swap of its stamp, the growths
+  copying only the groups in use, and the whole vector written once per
+  2^|S| - 2 clears, when the epoch wraps; keys and values trivially
+  destructible; epoch(), the concept FlatClear, the test engineered
+  concurrent-flat-table-epochs (rounds of insertions and clears against a
+  map in the three layouts and as a set, stamps of 8 bits that wrap, and
+  2 to 8 threads that race to renew the same groups while a reader checks
+  that no key of the round before is found), a paragraph of the theory of
+  the concurrent structures and section 24.8 of the manual
+
+- the policy of the ties of priority/BucketQueue.h, its third template
+  parameter: LargestSecondKey, the default, the least f and then the
+  largest g first as before (the same code, function by function), and
+  LeastSecondKey, the least f and then the least g first, the
+  lexicographic order of the keys ( k1 , k2 ) of LPA* and D* Lite, by the
+  mirror image of the structure (the bound of the dense lists scanned
+  forward, the runs kept by decreasing g, the dense lists of a layer before
+  its runs), where a search had to push the complement of k2 against a
+  bound; the concept BucketTie, the test engineered
+  bucket-queue-lexicographic (ties, the dense lists before the runs, the
+  conversion of a layer of R runs, the keys of LPA* against a sort, random
+  operations against a set), a paragraph of the theory of the priority
+  queues and section 9.9 of the manual
+
+- grow( n ) in priority/IndexedDaryHeap.h, which raises the range of the
+  ids fixed by the constructor or by reset( n ) keeping the items, in O( 1 )
+  amortized time per new id (the vector of the places at least doubles),
+  for a search that numbers its nodes as it generates them; the test
+  engineered_search indexed-heap-grow and section 9.5 of the manual
+
+- rearm() and rearm( active ) in parallel/Mailbox.h, which make one
+  mailbox serve a sequence of computations separated by barriers (the
+  phases of an episode of an incremental search, or its episodes): called
+  by one thread at the barrier, once the computation before has ended, or
+  has been stopped and emptied by leftovers(), they set the workers active
+  (all of them, or those for which active( me ) is true), the deficit
+  counter to their number and the stop off, and keep the channels and the
+  outboxes, so that a phase costs O( p ) instead of the construction of
+  the p^2 queues of the mesh; the precondition is checked (the outboxes
+  empty, the counter at 0 or the mailbox stopped) and, at the level of the
+  audits, the inboxes empty; Lemma 11 of the theory of the parallel
+  algorithms, section 25.15 of the manual, and the test engineered_runtime
+  mailbox-rearm (phases on every family separated by a std::barrier whose
+  completion rearms the mailbox, some with only the owner of the root
+  active and some stopped, and the refusals of the precondition)
+
 - maxWeightMatching() in graph/Matching.h is now the primal-dual algorithm
   of Edmonds on the blossoms in O( n^3 ) (Gabow and Lawler, in the form of
   Galil's survey), with integer arithmetic for integer weights and, with
@@ -2595,6 +2648,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   multiplies its polynomials by multiplyKaratsuba()
 
 ### Fixed
+
+- the products of 128 bits of FastHash.tpp, FlatHashTable.tpp,
+  NumberTheory.tpp and MultiwayMerge.tpp name unsigned __int128 by a
+  typedef marked __extension__, as Portable.h does, so that a build with
+  -Wall -Wextra -Wpedantic gives no warning, where it gave 114
 
 - sortStack() made n passes, while the lemma of chapter 3 of the manual and
   of the theory of the stacks proves that n - 1 sort the stack, the last one

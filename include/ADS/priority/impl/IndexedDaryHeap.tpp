@@ -32,6 +32,17 @@ void IndexedDaryHeap< K , D >::reset( int n )
  }
 
 template< class K , unsigned D >
+void IndexedDaryHeap< K , D >::grow( int n )
+{
+ ADS_PRE( n >= ids() );
+ const auto m = std::size_t( n );
+ if( m > f_pos.capacity() )                 // doubled, whatever the library
+  f_pos.reserve( std::max( m , 2 * f_pos.capacity() ) );
+ f_pos.resize( m , -1 );
+ ADS_INVARIANT( ordered() );
+ }
+
+template< class K , unsigned D >
 inline bool IndexedDaryHeap< K , D >::contains( int id ) const
 {
  ADS_PRE( ( id >= 0 ) && ( id < ids() ) );

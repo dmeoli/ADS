@@ -57,6 +57,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -295,7 +296,7 @@ class RealTimeMinQueue {
  std::size_t f_i = 0;        ///< the places of \f$ F \f$ moved
  std::size_t f_n = 0;        ///< the items
  bool f_rot = false;         ///< a rotation is going on
- [[no_unique_address]] C f_less;   ///< the order
+ ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
 
  };  // end( class RealTimeMinQueue )
 
