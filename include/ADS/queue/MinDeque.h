@@ -14,7 +14,8 @@
  * that \f$ \Omega( k ) \f$ operations come before another deal, and with the
  * potential \f$ \Phi = 2 \, | |F| - |B| | \f$ each operation costs
  * \f$ O( 1 ) \f$ amortized. The least item is the lesser of the minima of
- * the two stacks.
+ * the two stacks. `RealTimeMinDeque` [see `RealTimeMinDeque.h`] spreads
+ * the deals over the operations, for \f$ O( 1 ) \f$ in the worst case.
  *
  * The contracts [see `Contract.h`]: the removals, `front()`, `back()` and
  * `min()` need a deque that is not empty; the insertions ensure one item

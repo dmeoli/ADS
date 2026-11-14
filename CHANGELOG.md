@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- RealTimeMinQueue and RealTimeMinDeque, the queue and the deque with the
+  minimum of exercises 3.15 and 3.16 of Morin in O( 1 ) worst-case time
+  per operation, next to the amortized MinQueue and MinDeque: the queue by
+  the rotation of Hood and Melville on arrays with the place of the least
+  item, three moves per operation, the deque by the global rebuilding of
+  Overmars as Gajewska and Tarjan apply it to deques with heap order,
+  twelve copies per operation and the old arrays destroyed as many cells
+  per operation afterwards; the arrays are allocated with their final
+  size, so that no operation copies, moves or destroys more than a
+  constant number of items; the theory of the queues proves both bounds,
+  and the tests ods-ex3.15.real-time-min-queue and
+  ods-ex3.16.real-time-min-deque check them against std::deque and count
+  the copies and the moves of each operation
+
 - every dictionary of the library is a set of Morin through one adaptor,
   DictionarySet: the concepts KeyedDictionary (findKey( k ), the address
   of the key k held, nil if none) and OrderedDictionary (lowerBoundKey( k ),

@@ -27,6 +27,8 @@
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/queue/MinDeque.h"
 #include "ADS/queue/MinQueue.h"
+#include "ADS/queue/RealTimeMinDeque.h"
+#include "ADS/queue/RealTimeMinQueue.h"
 #include "ADS/queue/RandomQueue.h"
 #include "ADS/queue/RingDeque.h"
 #include "ADS/sequence/ArraySequence.h"
@@ -194,6 +196,7 @@ static_assert( SSet< ArraySSet< int > > );
 static_assert( USet< Bag< int > > );
 static_assert( Stack< MinStack< int > > );
 static_assert( Queue< MinQueue< int > > );
+static_assert( Queue< RealTimeMinQueue< int > > );
 
 ADS_TEST( "ods-1.2.interfaces" )
 {
@@ -985,6 +988,118 @@ ADS_TEST( "ods-ex3.15.min-queue" )
   if( ! r.empty() ) CHECK( q.min() == *std::min_element( r.begin() ,
                                                          r.end() ) );
   }
+ }
+
+/// an item that counts its copies and its moves, to bound the work of an
+/// operation
+struct Counted {
+ int v;
+ static inline long made = 0;
+ Counted( int x ) : v( x ) {}
+ Counted( const Counted & o ) : v( o.v ) { ++made; }
+ Counted( Counted && o ) noexcept : v( o.v ) { ++made; }
+ Counted & operator=( const Counted & o ) { v = o.v; ++made; return( *this ); }
+ Counted & operator=( Counted && o ) noexcept {
+  v = o.v;
+  ++made;
+  return( *this );
+  }
+ friend bool operator<( const Counted & a , const Counted & b ) {
+  return( a.v < b.v );
+  }
+ };
+
+ADS_TEST( "ods-ex3.15.real-time-min-queue" )
+{
+ // the queue of exercise 3.15 in O( 1 ) worst-case time: against
+ // std::deque, and no operation copies or moves more than a few items,
+ // also in the runs of enqueues and of dequeues that make the amortized
+ // one move the whole back at once
+ RealTimeMinQueue< Counted > q;
+ std::deque< int > r;
+ std::mt19937_64 g( 59 );
+ long most = 0;
+ for( int t = 0 ; t < 60000 ; ++t ) {
+  const int phase = ( t / 5000 ) % 3;      // enqueues, mixed, dequeues
+  const bool in = r.empty() || ( phase == 0 ) ||
+                  ( ( phase == 1 ) && ( g() % 10 < 6 ) );
+  const long before = Counted::made;
+  if( in ) {
+   const int x = int( g() % 1000 );
+   q.enqueue( Counted( x ) );
+   r.push_back( x );
+   }
+  else {
+   CHECK( q.top().v == r.front() );
+   CHECK( q.dequeue().v == r.front() );
+   r.pop_front();
+   }
+  most = std::max( most , Counted::made - before );
+  CHECK( q.size() == r.size() );
+  if( ! r.empty() ) CHECK( q.min().v == *std::min_element( r.begin() ,
+                                                           r.end() ) );
+  if( t % 4999 == 0 ) {
+   std::vector< int > all;
+   q.forEach( [ & ]( const Counted & x ) { all.push_back( x.v ); } );
+   CHECK( std::equal( all.begin() , all.end() , r.begin() , r.end() ) );
+   RealTimeMinQueue< Counted > c( q );
+   CHECK( ( c.size() == q.size() ) &&
+          ( r.empty() || ( c.min().v == q.min().v ) ) );
+   }
+  }
+ CHECK( most <= 8 );
+ q.clear();
+ CHECK( q.empty() );
+ CHECK_THROWS( q.dequeue() , contract_violation );
+ }
+
+ADS_TEST( "ods-ex3.16.real-time-min-deque" )
+{
+ // the deque of exercise 3.16 in O( 1 ) worst-case time: against
+ // std::deque, with runs at one end that keep one side empty, and no
+ // operation copies or moves more than a few items
+ RealTimeMinDeque< Counted > d;
+ std::deque< int > r;
+ std::mt19937_64 g( 60 );
+ long most = 0;
+ for( int t = 0 ; t < 80000 ; ++t ) {
+  const int phase = ( t / 4000 ) % 4;
+  const bool atFront = ( phase == 0 ) ? true : ( phase == 1 ) ? false
+                                                             : g() % 2;
+  const bool in = r.empty() || ( phase < 2 ? ( g() % 10 < 7 )
+                                           : ( phase == 2 ) ? g() % 2
+                                                            : g() % 10 < 3 );
+  const long before = Counted::made;
+  if( in ) {
+   const int x = int( g() % 1000 );
+   if( atFront ) { d.push_front( Counted( x ) ); r.push_front( x ); }
+   else { d.push_back( Counted( x ) ); r.push_back( x ); }
+   }
+  else if( atFront ) {
+   CHECK( d.pop_front().v == r.front() );
+   r.pop_front();
+   }
+  else {
+   CHECK( d.pop_back().v == r.back() );
+   r.pop_back();
+   }
+  most = std::max( most , Counted::made - before );
+  CHECK( d.size() == r.size() );
+  if( ! r.empty() )
+   CHECK( ( d.min().v == *std::min_element( r.begin() , r.end() ) ) &&
+          ( d.front().v == r.front() ) && ( d.back().v == r.back() ) );
+  if( t % 3999 == 0 ) {
+   std::vector< int > all;
+   d.forEach( [ & ]( const Counted & x ) { all.push_back( x.v ); } );
+   CHECK( std::equal( all.begin() , all.end() , r.begin() , r.end() ) );
+   }
+  }
+ CHECK( most <= 64 );
+ RealTimeMinDeque< Counted > e( d );
+ CHECK( e.size() == d.size() );
+ d.clear();
+ CHECK( d.empty() );
+ CHECK_THROWS( d.pop_front() , contract_violation );
  }
 
 ADS_TEST( "ods-ex3.16.min-deque" )

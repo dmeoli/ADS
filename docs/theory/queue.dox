@@ -85,6 +85,14 @@
  <tr><td><tt>MinDeque</tt></td><td>two stacks with the minimum, back to
      back</td><td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$ amortized at
      both ends, <tt>min()</tt> in \f$ O( 1 ) \f$</td><td>none</td></tr>
+ <tr><td><tt>RealTimeMinQueue</tt></td><td>two arrays with the minimum,
+     the back moved to the front by the rotation of Hood and
+     Melville</td><td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$ in the
+     worst case, <tt>min()</tt> in \f$ O( 1 ) \f$</td><td>none</td></tr>
+ <tr><td><tt>RealTimeMinDeque</tt></td><td>two arrays with the minimum,
+     back to back, rebuilt globally</td><td>\f$ \Theta( n ) \f$</td>
+     <td>\f$ O( 1 ) \f$ in the worst case at both ends, <tt>min()</tt> in
+     \f$ O( 1 ) \f$</td><td>none</td></tr>
  </table>
 
  A singly linked list is a queue when the items enter after its last cell and
@@ -189,7 +197,7 @@
  stack, which bounds the total work by \f$ 4 m \f$ operations of the
  stacks. The worst case of one operation is \f$ \Theta( n ) \f$, which the
  real-time queue of Hood and Melville removes by spreading the reversal
- over the operations.
+ over the operations (see \ref theory_queue_minimum).
 
  <em>Lemma 2 (two stacks make a deque, exercise 3.16).</em> Let `MinDeque`
  keep a stack \f$ F \f$ with the front on top and a stack \f$ B \f$ with the
@@ -205,6 +213,81 @@
  follows it changes it by 2 more at most), so that the drop of
  \f$ \Phi \f$ pays for it. As for the queue, the least item is the lesser
  of the minima of the two stacks.
+
+ \subsection theory_queue_minimum The minimum in constant worst-case time
+
+ Lemmas 1 and 2 bound sequences, not operations: one `dequeue()` of
+ `MinQueue` may move the whole back, one removal of `MinDeque` deal a whole
+ side. `RealTimeMinQueue` and `RealTimeMinDeque` spread that work over the
+ operations that precede the moment it is needed, on arrays that hold in
+ each cell the place of the least item at or below it, allocated with
+ their final size when the work starts and emptied one cell at a time, so
+ that no operation copies, moves or destroys more than a constant number
+ of items (an allocation counted as \f$ O( 1 ) \f$).
+
+ <em>Lemma 3 (the rotation of Hood and Melville).</em> Let
+ `RealTimeMinQueue` keep the front \f$ F \f$ and the back \f$ R \f$, and
+ start a rotation when \f$ |R| = |F| + 1 \f$: \f$ R \f$ is frozen, a new
+ back takes the insertions, and a new front \f$ N \f$ is built from the
+ bottom, by three moves per operation, first the frozen back from its top
+ and then \f$ F \f$ from its bottom, while the removals take the top of
+ \f$ F \f$; when the moves of \f$ F \f$ meet its top, \f$ N \f$ is the
+ front. Then the front never empties during a rotation, every operation
+ costs \f$ O( 1 ) \f$ in the worst case, and the back has at most
+ \f$ |F| + 1 \f$ items when the next rotation starts.
+
+ Indeed, with \f$ f = |F| \f$ at the start, the operation that starts the
+ rotation and the \f$ k \f$ after it make \f$ 3 ( k + 1 ) \f$ moves and at
+ most \f$ k \f$ removals, and the \f$ f + 1 \f$ moves of the back are done
+ for \f$ k \ge ( f + 1 ) / 3 - 1 \f$, when \f$ F \f$ still has
+ \f$ f - k > 0 \f$ items; the moves of \f$ F \f$ go up from its bottom and
+ the removals down from its top, so that they meet, after at most
+ \f$ \lceil ( 2 f + 1 ) / 3 \rceil \f$ operations in all. \f$ N \f$ holds
+ then the remaining items of \f$ F \f$ above those of the frozen back, in
+ the order of the queue, \f$ 2 f + 1 - d \f$ of them after \f$ d \f$
+ removals, while the new back holds at most the
+ \f$ \lceil ( 2 f + 1 ) / 3 \rceil - d \f$ insertions, fewer; hence the
+ next rotation starts again with \f$ |R| = |F| + 1 \f$, and the arrays
+ allocated at the start, of \f$ f + |R| \f$ and \f$ f + |R| + 2 \f$ cells,
+ are large enough. The least item is the least of the minima of the parts:
+ \f$ F \f$ (whose least place, if it has moved, is found in \f$ N \f$ at the
+ same offset after the frozen back), the frozen back, \f$ N \f$ and the new
+ back, each in \f$ O( 1 ) \f$ by the place of its top cell.
+
+ <em>Lemma 4 (the global rebuilding of a deque).</em> Let
+ `RealTimeMinDeque` keep the stacks \f$ F \f$ and \f$ B \f$ as `MinDeque`
+ does, and start a rebuild when one side \f$ G \f$ has \f$ 3 m + 2 \f$
+ items, \f$ m \f$ those of the other side \f$ S \f$, or a side fills half
+ its array: two arrays of \f$ 2 n_0 + 16 \f$ cells take copies, twelve per
+ operation, of the \f$ t = |G| - \lceil n_0 / 2 \rceil \f$ bottom items of
+ \f$ G \f$ and of \f$ S \f$ for the new \f$ S \f$, and of the rest of
+ \f$ G \f$ for the new \f$ G \f$, as prefixes that a removal shortens by
+ one when it goes below their end. Then, for \f$ n_0 \ge 32 \f$, the
+ rebuild ends within \f$ n_0 / 11 + 2 \f$ operations, during which no side
+ empties and \f$ G \f$ keeps its \f$ t \f$ bottom items, every operation
+ costs \f$ O( 1 ) \f$ in the worst case, and the next rebuild comes
+ \f$ \Omega( n_0 ) \f$ operations later.
+
+ Indeed, the copies are at most \f$ n_0 \f$ plus one per insertion during
+ the rebuild, so that \f$ k \f$ operations finish them once
+ \f$ 12 k \ge n_0 + k \f$, i.e., \f$ k \le n_0 / 11 + 1 \f$ after the
+ operation that starts it. At the start of a rebuild by the sizes,
+ \f$ m = ( n_0 - 2 ) / 4 \ge 7.5 \f$, more than the removals from
+ \f$ S \f$, and \f$ G \f$ keeps \f$ \lceil n_0 / 2 \rceil \f$ items above
+ its bottom \f$ t \f$, more than the removals from it; a rebuild by the
+ room starts with sides that differ by a factor 3 at most, and the half of
+ the arrays that is free holds the insertions. Since the old stacks keep
+ all their cells below the tops, their minima stay right, and the
+ operations act on them as on `MinDeque` with no deal. When the prefixes
+ reach the tops the new arrays replace the old ones, each side with about
+ \f$ n_0 / 2 \f$ items, within \f$ n_0 / 11 + 2 \f$ of it, and with room for
+ \f$ n_0 + 8 \f$ before half; a new rebuild needs \f$ |G| - 3 |S| \f$ to
+ grow from about \f$ - n_0 \f$ to 2, by 3 at most per operation, or a side
+ to grow by about \f$ n_0 / 2 \f$, i.e., \f$ \Omega( n_0 ) \f$ operations,
+ more than the \f$ ( 2 n_0 + n_0 / 11 + 2 ) / 12 \f$ that destroy the old
+ arrays, twelve cells per operation. A deque of fewer than 32 items is
+ rebuilt at once, in \f$ O( 1 ) \f$. The items are copied, since the old
+ stacks stay in use during the rebuild, while the queue moves them.
 
  \section theory_queue_refs References
 
@@ -223,6 +306,12 @@
  \see R. Hood, R. Melville, Real-time queue operations in pure LISP,
       Information Processing Letters 13(2), 50-54, 1981,
       doi:10.1016/0020-0190(81)90030-2
+ \see H. Gajewska, R. E. Tarjan, Deques with heap order, Information
+      Processing Letters 22(4), 197-200, 1986,
+      doi:10.1016/0020-0190(86)90028-1
+ \see M. H. Overmars, The Design of Dynamic Data Structures, Lecture
+      Notes in Computer Science 156, Springer, 1983,
+      doi:10.1007/BFb0014927
  \see D. Lemire, Fast random integer generation in an interval, ACM
       Transactions on Modeling and Computer Simulation 29(1), 3:1-3:12,
       2019, doi:10.1145/3230636
