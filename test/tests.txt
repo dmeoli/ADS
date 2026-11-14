@@ -1902,6 +1902,7 @@ ods_ints  ods.ex14.8.bplus-tree             Morin es. 14.8, B+-albero
 
 # the skip lists and the search trees of Morin, Open Data Structures,
 # chapters 4 and 6 to 9, with their exercises, beyond the book
+ods_trees  ods1.2.dictionary-sets              USet and SSet of each dictionary
 ods_trees  ods4.2.skiplist-sset                section 4.2, SkiplistSSet
 ods_trees  ods-ex4.8.no-redundant-comparisons  no comparison repeated
 ods_trees  ods-ex4.10.finger-search            finger search

@@ -10,12 +10,28 @@
  * `forEach()` in \f$ O( n ) \f$, in order. Their operations of two sets are
  * the generic ones [see `SetOperations.h`].
  *
+ * It is also the one adaptor that makes every dictionary of the library a
+ * set of Morin [see `SetInterfaces.h`], beyond the book: on a
+ * `KeyedDictionary`, whose `findKey( k )` gives the address of the key
+ * \f$ k \f$ it holds, it is a `USet`, `find( x )` being that address, and
+ * on an `OrderedDictionary`, whose `lowerBoundKey( k )` gives the address
+ * of the smallest key not smaller than \f$ k \f$, it is an `SSet`, with
+ * `lowerBound( x )`; the hash tables are of the first kind, and the search
+ * trees, the skip lists, the B-trees and the sorted array of the second.
+ * `insert()` and `remove()` say whether they changed the set, by the
+ * answer of the dictionary when its own `insert()` and `remove()` give
+ * one, and otherwise by one search more. The dictionary is `mutable`,
+ * since the searches of a splay tree move its nodes while the set they
+ * hold stays the same, and `find()` of a `USet` is constant.
+ *
  * The contracts [see `Contract.h`]: after `insert()` the item is there and
  * after `remove()` it is not; the dictionary keeps its own invariant. The
  * operations are defined in `DictionarySet.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 8.4 and 8.5,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap08.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, sections 1.2.3 and 1.2.4
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -39,6 +55,7 @@
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
+#include "ADS/set/SetInterfaces.h"
 #include "ADS/set/SetOperations.h"
 #include "ADS/tree/SearchTree.h"
 
@@ -62,8 +79,8 @@ namespace ADS {
 /*-------------------------- CLASS DictionarySet ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a set on a DICTIONARY `D` with the values `bool` and a
-/// `forEach( f( k , v ) )`, an item being a key
+/// a set on a DICTIONARY `D`, an item being a key: a `USet` of Morin if
+/// `D` is a `KeyedDictionary`, an `SSet` if it is an `OrderedDictionary`
 template< class D >
 class DictionarySet {
 
@@ -86,7 +103,9 @@ class DictionarySet {
  /// whether \f$ x \f$ is a key of the dictionary
  [[nodiscard]] bool contains( const Item & x ) const;
 
- /// \f$ x \f$ into the set, as the key of the value true
+ /// \f$ x \f$ into the set, as the key of the value true (or of the value
+ /// made by default, for values that are not `bool`); true if it was not
+ /// there
  ///
  /// In pseudocode (section 8.4), \f$ D \f$ the dictionary:
  /// \f[
@@ -96,7 +115,7 @@ class DictionarySet {
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is in the set
- void insert( const Item & x );
+ bool insert( const Item & x );
 
  /// \f$ x \f$ out of the set, the key removed from the dictionary
  ///
@@ -108,7 +127,18 @@ class DictionarySet {
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is not in the set
- void remove( const Item & x );
+ bool remove( const Item & x );
+
+ /// the address of the item equal to \f$ x \f$, nil if none, by
+ /// `findKey()` of the dictionary: the `find( x )` of a USet of Morin
+ [[nodiscard]] const Item * find( const Item & x ) const
+  requires KeyedDictionary< D >;
+
+ /// the address of the smallest item not smaller than \f$ x \f$, nil if
+ /// none, by `lowerBoundKey()` of the dictionary: the `find( x )` of an
+ /// SSet of Morin
+ [[nodiscard]] const Item * lowerBound( const Item & x ) const
+  requires OrderedDictionary< D >;
 
  /// `f( x )` on the items, in the order of the dictionary
  template< class F >
@@ -125,19 +155,22 @@ class DictionarySet {
  /// the iterator on the first key of the dictionary
  [[nodiscard]] auto begin( void ) const
   requires std::ranges::forward_range< const D > {
-  return( KeyIterator( std::ranges::begin( f_d ) ) );
+  return( KeyIterator( std::ranges::begin( std::as_const( f_d ) ) ) );
   }
 
  /// the iterator past the last key of the dictionary
  [[nodiscard]] auto end( void ) const
   requires std::ranges::forward_range< const D > {
-  return( KeyIterator( std::ranges::end( f_d ) ) );
+  return( KeyIterator( std::ranges::end( std::as_const( f_d ) ) ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
 
- D f_d;   ///< the dictionary of the items
+ /// the value of a new key: true, or made by default
+ [[nodiscard]] static typename D::Value mark( void );
+
+ mutable D f_d;   ///< the dictionary of the items, which a search may move
 
  };  // end( class DictionarySet )
 

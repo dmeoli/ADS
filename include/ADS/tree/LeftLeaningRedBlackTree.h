@@ -227,6 +227,16 @@ class LeftLeaningRedBlackTree {
  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
   const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the pairs of \f$ t \f$ appended and \f$ t \f$ left empty, in
  /// \f$ O( h + h_t ) \f$ time (exercises 9.10 and 9.11 of Morin)
  ///
@@ -364,6 +374,9 @@ class LeftLeaningRedBlackTree {
 
  /// the order, the parents and the three properties
  [[nodiscard]] bool valid( void ) const;
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Link * lowerBoundNode( const K & k ) const;
 
  Link * f_root = nullptr;     ///< the root
  std::size_t f_n = 0;         ///< the number of keys

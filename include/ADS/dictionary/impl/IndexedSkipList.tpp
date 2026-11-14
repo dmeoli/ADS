@@ -247,6 +247,22 @@ bool IndexedSkipList< K , V >::valid( void ) const
  return( true );
  }
 
+template< std::totally_ordered K , class V >
+const K * IndexedSkipList< K , V >::findKey( const K & k ) const
+{
+ Node * update[ kMax ];
+ std::size_t rank[ kMax ];
+ const Node * n = before( k , update , rank );
+ return( n ? &n->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * IndexedSkipList< K , V >::lowerBoundKey( const K & k ) const
+{
+ const const_iterator it = lowerBound( k );
+ return( it == end() ? nullptr : &( *it ).first );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

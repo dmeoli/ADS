@@ -134,8 +134,8 @@ void RandomizedSearchTree< K , V >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V >
-auto RandomizedSearchTree< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+auto RandomizedSearchTree< K , V >::lowerBoundNode( const K & k ) const
+ -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root.get() ; t ; )
@@ -145,9 +145,31 @@ auto RandomizedSearchTree< K , V >::lowerBound( const K & k ) const
    if( !( k < t->key ) ) break;
    t = t->left.get();
    }
- return( best ? std::optional< std::pair< K , V > >(
-                 std::pair< K , V >( best->key , best->value ) )
-              : std::nullopt );
+ return( best );
+ }
+
+template< std::totally_ordered K , class V >
+auto RandomizedSearchTree< K , V >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( b->key , b->value ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V >
+const K * RandomizedSearchTree< K , V >::findKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * RandomizedSearchTree< K , V >::lowerBoundKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V >

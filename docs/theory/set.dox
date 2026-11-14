@@ -174,6 +174,21 @@
  place of a change by one block move, which is what exercise 1.7 asks to
  improve first.
 
+ The dictionaries of the library are sets of Morin through one adaptor,
+ `DictionarySet`, rather than each by members of its own: their
+ `lowerBound()` gives a pair or an iterator, as a map does, while the
+ interfaces of Morin return the item. Each hash table gives `findKey( k )`,
+ the address of the key \f$ k \f$ it holds (a `KeyedDictionary`), and each
+ search tree, skip list, B-tree and the sorted array give also
+ `lowerBoundKey( k )`, the address of the smallest key not smaller than
+ \f$ k \f$ (an `OrderedDictionary`), both at the cost of a search; over the
+ first `DictionarySet` is a USET, over the second an SSET, and the tries of
+ the integers are SSETs by themselves. Its `insert()` and `remove()` take
+ the answer of the dictionary when it gives one, and otherwise search once
+ more, a constant factor; a splay tree, whose searches splay the node
+ found, sits in the adaptor as a `mutable` member, so that the constant
+ `find()` of a USET keeps the amortized bound of the splay.
+
  The bag of exercise 1.5 keeps items equal to one another, all of them:
  `Bag` is a USET of groups, a hash table from an item to the vector of the
  items equal to it in the order of their insertions, so that `insert()`,

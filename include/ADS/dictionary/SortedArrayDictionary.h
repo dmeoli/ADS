@@ -111,6 +111,24 @@ class SortedArrayDictionary {
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 
+ /// true if the key \f$ k \f$ is there, by the binary search of `lookup()`
+ [[nodiscard]] bool contains( const K & k ) const;
+
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find( x )` of an SSet of Morin), in \f$ O( \log n ) \f$ time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k ) const;
+
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
+ /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log n ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the next change
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// true if there are no keys
  [[nodiscard]] bool empty( void ) const;
 

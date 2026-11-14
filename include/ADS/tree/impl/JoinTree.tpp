@@ -414,6 +414,49 @@ bool JoinTree< K , V , B , G >::valid( void ) const
  return( ok );
  }
 
+template< std::totally_ordered K , class V , class B , class G >
+ requires Augmentation< G , K , V >
+auto JoinTree< K , V , B , G >::lowerBoundNode( const K & k ) const
+ -> const Node *
+{
+ const Node * best = nullptr;
+ for( const Node * t = f_root ; t ; )
+  if( t->key < k ) t = t->right;
+  else {
+   best = t;
+   if( !( k < t->key ) ) break;
+   t = t->left;
+   }
+ return( best );
+ }
+
+template< std::totally_ordered K , class V , class B , class G >
+ requires Augmentation< G , K , V >
+auto JoinTree< K , V , B , G >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( b->key , b->value ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V , class B , class G >
+ requires Augmentation< G , K , V >
+const K * JoinTree< K , V , B , G >::findKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V , class B , class G >
+ requires Augmentation< G , K , V >
+const K * JoinTree< K , V , B , G >::lowerBoundKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? &b->key : nullptr );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

@@ -288,6 +288,49 @@ bool BTree< K , V >::valid( const Node * x , const K * lo , const K * hi ,
  return( true );
  }
 
+template< std::totally_ordered K , class V >
+auto BTree< K , V >::lowerBoundPlace( const K & key ) const
+ -> std::pair< const Node * , std::size_t >
+{
+ std::pair< const Node * , std::size_t > best( nullptr , 0 );
+ for( const Node * x = f_root.get() ; x ; ) {
+  const std::size_t i = place( x , key );
+  if( i < x->k.size() ) {                 // a candidate, smaller than those
+   best = { x , i };                      // above it
+   if( !( key < x->k[ i ] ) )
+    break;
+   }
+  if( x->leaf() )
+   break;
+  x = x->c[ i ].get();
+  }
+ return( best );
+ }
+
+template< std::totally_ordered K , class V >
+auto BTree< K , V >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const auto [ x , i ] = lowerBoundPlace( k );
+ return( x ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( x->k[ i ] , x->v[ i ] ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V >
+const K * BTree< K , V >::findKey( const K & k ) const
+{
+ const auto [ x , i ] = lowerBoundPlace( k );
+ return( ( x && !( k < x->k[ i ] ) ) ? &x->k[ i ] : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * BTree< K , V >::lowerBoundKey( const K & k ) const
+{
+ const auto [ x , i ] = lowerBoundPlace( k );
+ return( x ? &x->k[ i ] : nullptr );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

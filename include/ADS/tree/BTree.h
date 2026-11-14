@@ -205,6 +205,21 @@ class BTree {
  /// whether the key \f$ k \f$ is there, `lookup()` above
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find( x )` of an SSet of Morin), in \f$ O( t \log_t n ) \f$ time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k ) const;
+
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( t \log_t n )
+ /// \f$ time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( t \log_t n ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -384,6 +399,11 @@ class BTree {
  /// the order, the sizes and the depth of the leaves, \f$ O( n ) \f$
  bool valid( const Node * x , const K * lo , const K * hi , int d ,
              int & leafDepth , bool root ) const;
+
+ /// the node and the place of the smallest key not smaller than `key`,
+ /// nil if none: the last place not past the end met on the descent
+ [[nodiscard]] std::pair< const Node * , std::size_t > lowerBoundPlace(
+  const K & key ) const;
 
  int f_t;                          ///< the minimum degree
  std::unique_ptr< Node > f_root;   ///< the root

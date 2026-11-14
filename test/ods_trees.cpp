@@ -25,22 +25,29 @@
 #include "ADS/dictionary/IndexedSkipList.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
+#include "ADS/dictionary/SortedArrayDictionary.h"
 #include "ADS/sequence/OrderMaintenanceList.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SkipListSequence.h"
 #include "ADS/sequence/TreapList.h"
+#include "ADS/set/DictionarySet.h"
 #include "ADS/set/SpaceEfficientSortedSet.h"
 #include "ADS/tree/AVLTree.h"
+#include "ADS/tree/BPlusTree.h"
+#include "ADS/tree/BTree.h"
+#include "ADS/tree/BTreeMap.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
 #include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/FingerTreap.h"
 #include "ADS/tree/HashedTreap.h"
+#include "ADS/tree/JoinTree.h"
 #include "ADS/tree/LeftLeaningRedBlackTree.h"
 #include "ADS/tree/MeasuredSearchTree.h"
 #include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/RandomizedSearchTree.h"
 #include "ADS/tree/ScapegoatTree.h"
 #include "ADS/tree/SearchTree.h"
+#include "ADS/tree/SplayTree.h"
 #include "ADS/tree/Treap.h"
 
 #include <algorithm>
@@ -112,6 +119,137 @@ void differential( D & d , int steps , int m , unsigned seed , int every = 97 )
    CHECK( pairs( d ) == pairs( ref ) );
   }
  CHECK( pairs( d ) == pairs( ref ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- CHAPTER 1 ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// every ordered dictionary of the library is an SSet of Morin through
+// DictionarySet, and every hash table a USet
+template< class D >
+using SetOf = DictionarySet< D >;
+
+static_assert( SSet< SetOf< BinarySearchTree< int , bool > > > );
+static_assert( SSet< SetOf< RedBlackTree< int , bool > > > );
+static_assert( SSet< SetOf< Treap< int , bool > > > );
+static_assert( SSet< SetOf< AVLTree< int , bool > > > );
+static_assert( SSet< SetOf< SplayTree< int , bool > > > );
+static_assert( SSet< SetOf< ScapegoatTree< int , bool > > > );
+static_assert( SSet< SetOf< ScapegoatTree< int , bool , true > > > );
+static_assert( SSet< SetOf< LeftLeaningRedBlackTree< int , bool > > > );
+static_assert( SSet< SetOf< RandomizedSearchTree< int , bool > > > );
+static_assert( SSet< SetOf< MeasuredSearchTree< int , bool > > > );
+static_assert( SSet< SetOf< JoinAVLTree< int , bool > > > );
+static_assert( SSet< SetOf< JoinRedBlackTree< int , bool > > > );
+static_assert( SSet< SetOf< WeightBalancedTree< int , bool > > > );
+static_assert( SSet< SetOf< JoinTreap< int , bool > > > );
+static_assert( SSet< SetOf< FingerTreap< int , bool > > > );
+static_assert( SSet< SetOf< HashedTreap< int , bool > > > );
+static_assert( SSet< SetOf< WeightRebuildTree< int , bool > > > );
+static_assert( SSet< SetOf< CountdownTree< int , bool > > > );
+static_assert( SSet< SetOf< DynamiteTree< int , bool > > > );
+static_assert( SSet< SetOf< SkipList< int , bool > > > );
+static_assert( SSet< SetOf< IndexedSkipList< int , bool > > > );
+static_assert( SSet< SetOf< BTree< int , bool > > > );
+static_assert( SSet< SetOf< BTreeMap< int , bool > > > );
+static_assert( SSet< SetOf< BPlusTree< int , bool > > > );
+static_assert( SSet< SetOf< SortedArrayDictionary< int , bool > > > );
+static_assert( USet< ChainedHashSet< int > > &&
+               ! SSet< ChainedHashSet< int > > );
+static_assert( USet< OpenHashSet< int > > && ! SSet< OpenHashSet< int > > );
+
+/// random insertions and removals on the set `S` and on a `std::set`, the
+/// answers of `insert()`, `remove()`, `find()` and, for an SSet,
+/// `lowerBound()` checked against each other at every step
+template< class S >
+void setDifferential( S & s , unsigned seed )
+{
+ std::mt19937 g( seed );
+ std::set< int > ref;
+ for( int t = 0 ; t < 4000 ; ++t ) {
+  const int k = int( g() % 600 );
+  if( g() % 3 )
+   CHECK( s.insert( k ) == ref.insert( k ).second );
+  else
+   CHECK( s.remove( k ) == ( ref.erase( k ) == 1 ) );
+  CHECK( s.size() == ref.size() );
+  const int x = int( g() % 602 ) - 1;
+  const int * f = s.find( x );
+  CHECK( ref.contains( x ) ? ( f && ( *f == x ) ) : ! f );
+  if constexpr( SSet< S > ) {
+   const int * p = s.lowerBound( x );
+   const auto it = ref.lower_bound( x );
+   CHECK( ( it == ref.end() ) ? ! p : ( p && ( *p == *it ) ) );
+   }
+  }
+ std::vector< int > all;
+ s.forEach( [ & ]( const int & x ) { all.push_back( x ); } );
+ if constexpr( SSet< S > )
+  CHECK( all == std::vector< int >( ref.begin() , ref.end() ) );
+ else {
+  std::sort( all.begin() , all.end() );
+  CHECK( all == std::vector< int >( ref.begin() , ref.end() ) );
+  }
+ }
+
+ADS_TEST( "ods1.2.dictionary-sets" )
+{
+ // sections 1.2.3 and 1.2.4: the USet and the SSet of every dictionary
+ unsigned seed = 11;
+ auto run = [ & ]< class D >( auto... a ) {
+  SetOf< D > s( a... );
+  setDifferential( s , seed++ );
+  };
+ run.operator()< BinarySearchTree< int , bool > >();
+ run.operator()< RedBlackTree< int , bool > >();
+ run.operator()< Treap< int , bool > >();
+ run.operator()< AVLTree< int , bool > >();
+ run.operator()< SplayTree< int , bool > >();
+ run.operator()< ScapegoatTree< int , bool > >();
+ run.operator()< ScapegoatTree< int , bool , true > >();
+ run.operator()< LeftLeaningRedBlackTree< int , bool > >();
+ run.operator()< RandomizedSearchTree< int , bool > >();
+ run.operator()< MeasuredSearchTree< int , bool > >();
+ run.operator()< JoinAVLTree< int , bool > >();
+ run.operator()< JoinRedBlackTree< int , bool > >();
+ run.operator()< WeightBalancedTree< int , bool > >();
+ run.operator()< JoinTreap< int , bool > >();
+ run.operator()< FingerTreap< int , bool > >();
+ run.operator()< HashedTreap< int , bool > >();
+ run.operator()< WeightRebuildTree< int , bool > >();
+ run.operator()< CountdownTree< int , bool > >();
+ run.operator()< DynamiteTree< int , bool > >();
+ run.operator()< SkipList< int , bool > >();
+ run.operator()< IndexedSkipList< int , bool > >();
+ run.operator()< BTree< int , bool > >( 2 );
+ run.operator()< BTreeMap< int , bool > >();
+ run.operator()< BPlusTree< int , bool > >( 4 );
+ run.operator()< SortedArrayDictionary< int , bool > >();
+ run.operator()< ChainedHashTable< int , bool > >( 16 );
+ run.operator()< OpenHashTable< int , bool > >( 16 , Probing::linear() ,
+                                                  true );
+ // the values that are not bool, and a splay tree searched through a
+ // constant set
+ SetOf< Treap< int , std::string > > T;
+ CHECK( T.insert( 3 ) && ! T.insert( 3 ) && ( T.dictionary().lookup( 3 ) ==
+                                             std::string() ) );
+ SetOf< SplayTree< int , bool > > Y;
+ for( int i = 0 ; i < 100 ; i += 2 ) Y.insert( i );
+ const auto & C = Y;
+ CHECK( ( *C.lowerBound( 31 ) == 32 ) && ! C.find( 31 ) &&
+        ( *C.find( 40 ) == 40 ) && ! C.lowerBound( 99 ) );
+ // the keys found by the dictionaries themselves
+ SkipList< int , int > S;
+ BTreeMap< int , int > M;
+ for( int i = 0 ; i < 50 ; ++i ) {
+  S.insert( 3 * i , i );
+  M.insert( 3 * i , i );
+  }
+ CHECK( ( *S.lowerBoundKey( 4 ) == 6 ) && ! S.findKey( 4 ) &&
+        ( *S.findKey( 6 ) == 6 ) && ! S.lowerBoundKey( 148 ) );
+ CHECK( ( *M.lowerBoundKey( 4 ) == 6 ) && ! M.findKey( 4 ) &&
+        ( *M.findKey( 6 ) == 6 ) && ! M.lowerBoundKey( 148 ) );
  }
 
 /*--------------------------------------------------------------------------*/

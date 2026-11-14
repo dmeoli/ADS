@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- every dictionary of the library is a set of Morin through one adaptor,
+  DictionarySet: the concepts KeyedDictionary (findKey( k ), the address
+  of the key k held, nil if none) and OrderedDictionary (lowerBoundKey( k ),
+  the address of the smallest key not smaller than k) in SetInterfaces.h,
+  findKey() and lowerBoundKey() in SearchTree, Treap, AVLTree, SplayTree,
+  ScapegoatTree, LeftLeaningRedBlackTree, RandomizedSearchTree,
+  MeasuredSearchTree, JoinTree, FingerTreap, HashedTreap,
+  PartialRebuildingTree, SkipList, IndexedSkipList, BTree, BTreeMap,
+  BPlusTree and SortedArrayDictionary, findKey() in ChainedHashTable and
+  OpenHashTable, and lowerBound() with its value in the trees that had none
+  (AVLTree, SplayTree, JoinTree, BTree, SortedArrayDictionary); SplayTree
+  takes also contains() and a lowerBound() that splays the key found, and
+  SortedArrayDictionary contains(); DictionarySet over the first kind is a
+  USet, over the second an SSet, its insert() and remove() say whether they
+  changed the set, its values need not be bool, and it holds the
+  dictionary mutable, so that the constant find() of a set on a splay tree
+  splays; the test ods1.2.dictionary-sets asserts the concept for each and
+  checks each against std::set
+
 - SearchTree, the binary search tree and the red-black tree of the book,
   takes the successor search of Morin's sorted set (section 6.2.1):
   lowerBoundNode( x ), the node of the smallest key not smaller than x,

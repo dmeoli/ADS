@@ -165,8 +165,8 @@ void PartialRebuildingTree< K , V , P >::remove( const K & k )
  }
 
 template< std::totally_ordered K , class V , RebuildPolicy P >
-auto PartialRebuildingTree< K , V , P >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+auto PartialRebuildingTree< K , V , P >::lowerBoundNode( const K & k ) const
+ -> const Node *
 {
  const Node * best = nullptr;
  for( const Node * t = f_root ; t ; )
@@ -176,9 +176,32 @@ auto PartialRebuildingTree< K , V , P >::lowerBound( const K & k ) const
    if( !( k < t->key ) ) break;
    t = t->left;
    }
- return( best ? std::optional< std::pair< K , V > >(
-                 std::pair< K , V >( best->key , best->value ) )
-              : std::nullopt );
+ return( best );
+ }
+
+template< std::totally_ordered K , class V , RebuildPolicy P >
+auto PartialRebuildingTree< K , V , P >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? std::optional< std::pair< K , V > >(
+              std::pair< K , V >( b->key , b->value ) )
+           : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V , RebuildPolicy P >
+const K * PartialRebuildingTree< K , V , P >::findKey( const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
+ }
+
+template< std::totally_ordered K , class V , RebuildPolicy P >
+const K * PartialRebuildingTree< K , V , P >::lowerBoundKey(
+ const K & k ) const
+{
+ const Node * b = lowerBoundNode( k );
+ return( b ? &b->key : nullptr );
  }
 
 template< std::totally_ordered K , class V , RebuildPolicy P >

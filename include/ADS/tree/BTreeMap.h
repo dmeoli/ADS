@@ -416,6 +416,16 @@ class BTreeMap {
  /// \f$ k \f$ in the leaf reached by the descent of `lookup()`
  [[nodiscard]] const_iterator lowerBound( const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log_b n ) \f$
+ /// nodes: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
+ /// until the key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( \log_b n ) \f$ nodes: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the next change
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the first pair whose key is larger than \f$ k \f$, the place after the
  /// keys not larger than \f$ k \f$ in the leaf reached by the descent of
  /// `lookup()`

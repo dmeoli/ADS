@@ -358,6 +358,20 @@ void BPlusTree< K , V >::destroy( Node * u )
  delete u;
  }
 
+template< std::totally_ordered K , class V >
+const K * BPlusTree< K , V >::findKey( const K & k ) const
+{
+ const Node * f = leaf( k );
+ const auto i = std::lower_bound( f->k.begin() , f->k.end() , k );
+ return( ( i != f->k.end() ) && ( *i == k ) ? &*i : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * BPlusTree< K , V >::lowerBoundKey( const K & k ) const
+{
+ return( lowerBound( k ) );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

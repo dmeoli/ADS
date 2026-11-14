@@ -90,6 +90,36 @@ bool SortedArrayDictionary< K , V >::sorted( void ) const
  return( true );
  }
 
+template< std::totally_ordered K , class V >
+bool SortedArrayDictionary< K , V >::contains( const K & k ) const
+{
+ return( findKey( k ) != nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+auto SortedArrayDictionary< K , V >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const std::size_t i = place( k );
+ return( i < f_A.size() ? std::optional< std::pair< K , V > >( f_A[ i ] )
+                        : std::nullopt );
+ }
+
+template< std::totally_ordered K , class V >
+const K * SortedArrayDictionary< K , V >::findKey( const K & k ) const
+{
+ const std::size_t i = place( k );
+ return( ( i < f_A.size() ) && !( k < f_A[ i ].first ) ? &f_A[ i ].first
+                                                       : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * SortedArrayDictionary< K , V >::lowerBoundKey( const K & k ) const
+{
+ const std::size_t i = place( k );
+ return( i < f_A.size() ? &f_A[ i ].first : nullptr );
+ }
+
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )

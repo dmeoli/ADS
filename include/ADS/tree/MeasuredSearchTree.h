@@ -174,6 +174,16 @@ class MeasuredSearchTree {
  [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
   const K & k ) const;
 
+ /// the address of the key \f$ k \f$, nil if absent, in \f$ O( h ) \f$ time:
+ /// the `find( x )` of a USet of Morin [see `DictionarySet`]; valid until the
+ /// key is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
+ /// in \f$ O( h ) \f$ time: the `find( x )` of an SSet of Morin [see
+ /// `DictionarySet`]; valid until the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the pairs whose keys are not larger than \f$ x \f$, in increasing order,
  /// by `lessOrEqual()`, in \f$ O( n' + h ) \f$ time for \f$ n' \f$ pairs (the
  /// `getLE(x)` of exercise 6.14 of Morin)
@@ -252,6 +262,9 @@ class MeasuredSearchTree {
 
  /// the measures exact everywhere and the keys in order, \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
+
+ /// the node of the smallest key not smaller than \f$ k \f$, nil if none
+ [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
  Node * f_root = nullptr;     ///< the root
  std::size_t f_size = 0;      ///< the number of keys

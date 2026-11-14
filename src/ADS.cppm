@@ -1901,6 +1901,8 @@ export namespace ADS {
  // ADS/set/SetInterfaces.h
  using ADS::ArraySSet;
  using ADS::ArrayUSet;
+ using ADS::KeyedDictionary;
+ using ADS::OrderedDictionary;
  using ADS::SSet;
  using ADS::USet;
 

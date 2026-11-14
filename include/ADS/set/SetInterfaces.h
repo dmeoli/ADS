@@ -16,6 +16,14 @@
  *   ordered, with `lowerBound( x )`, the address of the least item not
  *   smaller than \f$ x \f$ or nil (Morin's `find( x )` of an `SSet`, the
  *   successor search);
+ * - `KeyedDictionary` and `OrderedDictionary`, the dictionaries that show
+ *   their keys as a set: `findKey( k )` the address of the key \f$ k \f$
+ *   they hold, and `lowerBoundKey( k )` that of the smallest key not
+ *   smaller than \f$ k \f$, both nil if none; `DictionarySet` over the
+ *   first is a `USet` and over the second an `SSet` [see
+ *   `DictionarySet.h`], the one way in which every hash table, search
+ *   tree, skip list and B-tree of the library, whose `lowerBound()` gives
+ *   a pair or an iterator, is a set of Morin;
  * - `ArrayUSet`, a `USet` on a vector in no order: `find()` scans it in
  *   \f$ O( n ) \f$, `remove()` moves the last item into the place freed in
  *   \f$ O( 1 ) \f$ after the scan;
@@ -87,6 +95,27 @@ template< class S >
 concept SSet = USet< S > &&
  requires( const S cs , const typename S::Item & x ) {
  { cs.lowerBound( x ) } -> std::convertible_to< const typename S::Item * >;
+ };
+
+/// a dictionary that gives the address of the key equal to the one asked,
+/// on which `DictionarySet` is a `USet`; the search may change the
+/// dictionary (a splay tree), not the set of its keys
+template< class D >
+concept KeyedDictionary = requires( D d , const typename D::Key & k ,
+                                    const typename D::Value & v ) {
+ typename D::Key;
+ typename D::Value;
+ { d.findKey( k ) } -> std::convertible_to< const typename D::Key * >;
+ d.insert( k , v );
+ d.remove( k );
+ };
+
+/// a `KeyedDictionary` that gives the address of the smallest key not
+/// smaller than the one asked, on which `DictionarySet` is an `SSet`
+template< class D >
+concept OrderedDictionary = KeyedDictionary< D > &&
+ requires( D d , const typename D::Key & k ) {
+ { d.lowerBoundKey( k ) } -> std::convertible_to< const typename D::Key * >;
  };
 
 /*--------------------------------------------------------------------------*/

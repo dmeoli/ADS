@@ -310,8 +310,8 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
  }
 
 template< std::totally_ordered K , class V >
-auto LeftLeaningRedBlackTree< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+auto LeftLeaningRedBlackTree< K , V >::lowerBoundNode( const K & k ) const
+ -> const Link *
 {
  const Link * best = nullptr;
  for( const Link * t = f_root ; t ; )
@@ -321,10 +321,33 @@ auto LeftLeaningRedBlackTree< K , V >::lowerBound( const K & k ) const
    if( !( k < key( t ) ) ) break;
    t = t->left;
    }
+ return( best );
+ }
+
+template< std::totally_ordered K , class V >
+auto LeftLeaningRedBlackTree< K , V >::lowerBound( const K & k ) const
+ -> std::optional< std::pair< K , V > >
+{
+ const Link * best = lowerBoundNode( k );
  if( ! best )
   return( std::nullopt );
  const Node * b = static_cast< const Node * >( best );
  return( std::pair< K , V >( b->key , b->value ) );
+ }
+
+template< std::totally_ordered K , class V >
+const K * LeftLeaningRedBlackTree< K , V >::findKey( const K & k ) const
+{
+ const Link * b = lowerBoundNode( k );
+ return( ( b && !( k < key( b ) ) ) ? &key( b ) : nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+const K * LeftLeaningRedBlackTree< K , V >::lowerBoundKey(
+ const K & k ) const
+{
+ const Link * b = lowerBoundNode( k );
+ return( b ? &key( b ) : nullptr );
  }
 
 template< std::totally_ordered K , class V >
