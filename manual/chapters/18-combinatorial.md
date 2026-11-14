@@ -70,8 +70,7 @@ bytes into the top one ([Figure 18.1](18-combinatorial.md#fig-18-1)).
 
 --8<-- "generated/Bitwise-sidewaysSum.pseudo.md"
 
-<span id="fig-18-1"></span>
-![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (shaded) is the sum of the two bytes.](../figures/combinatorial-sideways.svg)
+![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (shaded) is the sum of the two bytes.](../figures/combinatorial-sideways.svg){#fig-18-1}
 
 <span id="lem-18-1"></span>**Lemma 18.1.** *For any word $x$,
 `sidewaysSum(x)` returns $\nu( x )$, with 12 operations on words and no
@@ -164,8 +163,7 @@ word of $t$ ones with a constant number of operations
 
 --8<-- "generated/Bitwise-nextSameWeight.pseudo.md"
 
-<span id="fig-18-2"></span>
-![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (shaded).](../figures/combinatorial-gosper.svg)
+![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (shaded).](../figures/combinatorial-gosper.svg){#fig-18-2}
 
 <span id="lem-18-3"></span>**Lemma 18.3.** *For $x \ne 0$, with
 $u = x \,\&\, -x$ and $v = x + u$, the next larger word with as many 1 bits
@@ -211,8 +209,7 @@ copy and a mask, and the gather undoes the steps in the reverse order.
 
 --8<-- "generated/Bitwise-interleave.pseudo.md"
 
-<span id="fig-18-3"></span>
-![Figure 18.3. The Morton codes of the points of a grid of $4 \times 4$ (left, in binary, $y_1 x_1 y_0 x_0$) and their order on the grid, from 0 to 15 (right).](../figures/combinatorial-morton.svg)
+![Figure 18.3. The Morton codes of the points of a grid of $4 \times 4$ (left, in binary, $y_1 x_1 y_0 x_0$) and their order on the grid, from 0 to 15 (right).](../figures/combinatorial-morton.svg){#fig-18-3}
 
 **A zero byte.** `hasZeroByte()` decides whether one of the 8 bytes of a
 word is 0 with four operations and a comparison, which is the test that

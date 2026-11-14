@@ -85,8 +85,7 @@ items by backtrack ([Montresor 2025,
 
 --8<-- "generated/Enumeration-subsets.pseudo.md"
 
-<span id="fig-19-1"></span>
-![Figure 19.1. The tree of the calls of `subsets( 4 , 2 , f )`: each edge sets a place in (1) or out (0), the shaded nodes are the solutions, with their vectors, and the grey ones are pruned by line 3, since the items left cannot reach $k = 2$.](../figures/backtrack-subsets.svg)
+![Figure 19.1. The tree of the calls of `subsets( 4 , 2 , f )`: each edge sets a place in (1) or out (0), the shaded nodes are the solutions, with their vectors, and the grey ones are pruned by line 3, since the items left cannot reach $k = 2$.](../figures/backtrack-subsets.svg){#fig-19-1}
 
 [Figure 19.1](19-backtrack.md#fig-19-1) shows the tree of the calls for
 $n = 4$ and $k = 2$; the solutions come in the decreasing order of their
@@ -361,8 +360,7 @@ the one right after the removal of $x$ (by induction on their number). The
 neighbors of $x$ are then again $L[ x ]$ and $R[ x ]$, which (19.2) did not
 touch. $\square$
 
-<span id="fig-19-2"></span>
-![Figure 19.2. The dance of [Lemma 19.5](19-backtrack.md#lem-19-5): the node `x` before its removal, after it (its links, dashed, still point to its old neighbors), and after its reinsertion.](../figures/backtrack-dance.svg)
+![Figure 19.2. The dance of [Lemma 19.5](19-backtrack.md#lem-19-5): the node `x` before its removal, after it (its links, dashed, still point to its old neighbors), and after its reinsertion.](../figures/backtrack-dance.svg){#fig-19-2}
 
 Covering an item $i$ takes it off the list of the items and *hides* each
 option that contains it, i.e., takes the other nodes of the option off
@@ -431,8 +429,7 @@ entry and a decrement of $\mathrm{size}( x )$, in $O( 1 )$
 ([Figure 19.3](19-backtrack.md#fig-19-3)), and the active items form a
 sparse set too, with the place $\mathrm{pos}( x )$ of each.
 
-<span id="fig-19-3"></span>
-![Figure 19.3. The segment of $\mathit{set}( x )$ before and after the option `o2` leaves it: a swap with the last active entry, `o4`, and the decrement of $\mathrm{size}( x )$; the entries after the bar are inactive, and the order of the active ones has changed.](../figures/backtrack-sparse.svg)
+![Figure 19.3. The segment of $\mathit{set}( x )$ before and after the option `o2` leaves it: a swap with the last active entry, `o4`, and the decrement of $\mathrm{size}( x )$; the entries after the bar are inactive, and the order of the active ones has changed.](../figures/backtrack-sparse.svg){#fig-19-3}
 
 <span id="lem-19-7"></span>**Lemma 19.7.** *Let the sizes of the active
 items be saved at a level of the search. After any sequence of removals by
