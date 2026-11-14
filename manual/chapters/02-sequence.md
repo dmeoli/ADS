@@ -271,10 +271,6 @@ $C[ 0 .. k - 1 ]$ holds the items.
 
 --8<-- "generated/ArraySequence-insertAll.pseudo.md"
 
-```cpp
---8<-- "generated/ArraySequence-insertAll.cpp"
-```
-
 Furthermore, the class gives `data()`, `operator[]`, `size()`, `capacity()`
 (the $c$ of the analysis), `push_back()` for `std::back_inserter`, `==`,
 and the iterators of the standard library, which are pointers since the
@@ -351,10 +347,6 @@ $D[ k ]$ is the item of rank $k$.
 --8<-- "generated/RingDeque-insert.pseudo.md"
 
 --8<-- "generated/RingDeque-erase.pseudo.md"
-
-```cpp
---8<-- "generated/RingDeque-insert.cpp"
-```
 
 ![Figure 2.4. The operations of Morin's figure of the `ArrayDeque` (§2.4) on a `RingDeque`: the star marks the doubling from $m = 8$ to $m = 16$, which moves the items in rank order to the front of the new vector, after which the shift of the front side puts `a` in the place 15; the items added are in orange, the items that each operation moves (the shorter side) in violet, and the free places in the faintest tint.](../figures/sequence-ringdeque.svg){#fig-2-4}
 
@@ -470,10 +462,6 @@ Each item moves once, $n$ moves in all; since $t \le \lceil n / 2 \rceil$
 to the other. It takes $O( 1 + \min\{ r , n - r \} )$ amortized time ([Morin
 2013, exercise 2.5](Z-bibliography.md#ref-morin-cpp)).
 
-```cpp
---8<-- "generated/DualArrayDeque-balance.cpp"
-```
-
 <span id="alg-2-7"></span>**Algorithm 2.7.** The rotation of a
 `DualArrayDeque` by $r$ ranks.
 
@@ -530,10 +518,6 @@ i.e., $\min\{ i - n / 2 , n - i \}$ up to a constant. Together they are $O(
 between two ends, in $O( 1 )$ amortized time, and it restores $\bigl| |L| -
 |R| \bigr| \le 1$, which an operation breaks by one at most. $\square$
 
-```cpp
---8<-- "generated/Treque-balance.cpp"
-```
-
 The `ContiguousDeque` of [Morin 2013, exercise
 2.8](Z-bibliography.md#ref-morin-cpp) does without modular arithmetic. Its
 items are in order in one contiguous piece $A[ h .. h + n - 1 ]$ of a vector
@@ -589,10 +573,6 @@ contiguous deque pays the rebuilds that the circular vector avoids when it
 is used as a queue, and it saves the mask of each access and the split of
 the items into two pieces.
 
-```cpp
---8<-- "generated/ContiguousDeque-rebuild.cpp"
-```
-
 ## 2.6 The rootish array stack {#sec-2-6}
 
 A vector that doubles wastes up to $c - n$ places, i.e., up to $3 n$ after a
@@ -628,12 +608,14 @@ built in them when inserted and destroyed when removed.
 
 <span id="alg-2-10"></span>**Algorithm 2.10.** The insertion and the
 removal of `RootishArrayStack` ([Morin 2013,
-§2.6](Z-bibliography.md#ref-morin-cpp)); $B_0 , \ldots , B_{r-1}$ are the
-blocks.
+§2.6](Z-bibliography.md#ref-morin-cpp)), and the block of a rank by
+(2.6); $B_0 , \ldots , B_{r-1}$ are the blocks.
 
 --8<-- "generated/RootishArrayStack-insert.pseudo.md"
 
 --8<-- "generated/RootishArrayStack-erase.pseudo.md"
+
+--8<-- "generated/RootishArrayStack-block.pseudo.md"
 
 ![Figure 2.8. The operations of Morin's figure of the `RootishArrayStack` (§2.6) on ours: the blocks of 1, 2, 3 and 4 places with the ranks 0 to 9 below them, through `add(2,x)`, `remove(1)`, `remove(7)` and `remove(6)`, with $r$ and $n$ at the right; the item added is in orange, the items shifted by an operation in violet and the free places in the faintest tint, and the empty last block is kept, since $( r - 2 ) ( r - 1 ) / 2 = 3 < n$.](../figures/sequence-rootish.svg){#fig-2-8}
 
@@ -677,14 +659,11 @@ no floating point, by a table of the square roots of the integers below
 $2^{16}$ and a table of the logarithms, after a lemma that bounds the error
 of the approximate root they give. `RootishArrayStack::block()` takes the
 square root of a `double` instead, and it corrects the result by the two
-comparisons with $b ( b + 1 ) / 2$ and $( b + 1 ) ( b + 2 ) / 2$.
+comparisons with $b ( b + 1 ) / 2$ and $( b + 1 ) ( b + 2 ) / 2$
+([Algorithm 2.10](02-sequence.md#alg-2-10)).
 
-```cpp
---8<-- "generated/RootishArrayStack-block.cpp"
-```
-
-<span id="lem-2-8"></span>**Lemma 2.8.** *For any rank $i < 2^{52}$, the
-code above returns the block $b$ with $b ( b + 1 ) / 2 \le i < ( b + 1 ) ( b
+<span id="lem-2-8"></span>**Lemma 2.8.** *For any rank $i < 2^{52}$,
+`block( i )` returns the block $b$ with $b ( b + 1 ) / 2 \le i < ( b + 1 ) ( b
 + 2 ) / 2$, i.e., (2.6), after at most one step of each correction.*
 
 *Proof.* The two loops stop only when both inequalities hold, and the blocks
@@ -731,17 +710,16 @@ into the blocks of the new $b$ when $n$ leaves $[ b^2 / 4 , 4 b^2 ]$.
 
 <span id="alg-2-11"></span>**Algorithm 2.11.** The insertion and the
 removal of `TieredVector` with the shifts toward the back ([Goodrich and
-Kloss 1999](Z-bibliography.md#ref-goodrich1999)); $B_j$ is the block $j$,
-$B_j.\mathit{off}$ its offset, the places taken modulo $b$, and the gap $g
-= 0$ (with a gap, the indices are those of $g + i$).
+Kloss 1999](Z-bibliography.md#ref-goodrich1999)), and the insertion with
+the shifts toward the front; $B_j$ is the block $j$, $B_j.\mathit{off}$
+its offset, the places taken modulo $b$, and the gap $g = 0$ in the first
+two (with a gap, the indices are those of $g + i$).
 
 --8<-- "generated/TieredVector-insert.pseudo.md"
 
 --8<-- "generated/TieredVector-erase.pseudo.md"
 
-```cpp
---8<-- "generated/TieredVector-insertFront.cpp"
-```
+--8<-- "generated/TieredVector-insertFront.pseudo.md"
 
 ![Figure 2.10. A `TieredVector` with blocks of $b = 4$ places (each circular, drawn in rank order) and a gap of $g$ free places before the first item, through `insert(5,x)`, `insert(1,y)` and `insert(0,z)`, with $n$ and $g$ at the right: `insert(5,x)` shifts toward the back (`g` passes to the front of the third block and `f` moves one place on, both in violet), `insert(1,y)` moves `a` into the gap (in violet), and `insert(0,z)` finds no gap left and opens a new block at the front with $g = 3$; the items added are in orange.](../figures/sequence-tiered.svg){#fig-2-10}
 
@@ -816,10 +794,6 @@ with $b = 2$).
 middle blocks.
 
 --8<-- "generated/CubishArrayStack-insert.pseudo.md"
-
-```cpp
---8<-- "generated/CubishArrayStack-insert.cpp"
-```
 
 ![Figure 2.11. The middle blocks $M_0$, $M_1$, $M_2$ of a `CubishArrayStack` with $b = 2$, each made of leaves of 2 places, before and after `insert(1,x)`: $M_1$ passes `h` to the front of $M_2$ and $M_0$ passes `d` to the front of $M_1$ (`d` and `h` in violet), then `x` (in orange) is inserted at the rank 1 of $M_0$, shifting `b` and `c` (in violet); the free places of the leaves are in the faintest tint.](../figures/sequence-cubish.svg){#fig-2-11}
 
@@ -943,10 +917,6 @@ the reversal in place of `SinglyList` ([Morin 2013, exercises 3.2 and
 
 --8<-- "generated/SinglyList-reverse.pseudo.md"
 
-```cpp
---8<-- "generated/SinglyList-reverse.cpp"
-```
-
 ## 2.10 The doubly linked list {#sec-2-10}
 
 `List` is the LIST of [Montresor 2025,
@@ -1042,10 +1012,6 @@ sentinel.
 In particular, the truncation shows how little a list with a sentinel
 needs: the four links that cross the cut are rewritten, and the sizes are
 those of the two parts.
-
-```cpp
---8<-- "generated/List-truncate.cpp"
-```
 
 These operations move cells from a list to another, which a list of cells
 from `new` does by relinking them, as Morin's does. Between pooled lists,
@@ -1247,10 +1213,6 @@ $b$ blocks at most and the shifts of $O( b )$ items in a block, and
 [Lemma 2.15](02-sequence.md#lem-2-15) for the spreads and the gathers.
 $\square$
 
-```cpp
---8<-- "generated/SEList-spread.cpp"
-```
-
 Unlike Morin's, the first and the last block of `SEList` may hold any
 number of items from 1 to $b + 1$. `push_back()` adds a block when the last
 one is full and `pop_back()` drops it when it is empty, and the same holds
@@ -1322,10 +1284,6 @@ at the front of `XorList` ([Sinha 2004](Z-bibliography.md#ref-sinha2004)).
 --8<-- "generated/XorList-pushFront.pseudo.md"
 
 --8<-- "generated/XorList-popFront.pseudo.md"
-
-```cpp
---8<-- "generated/XorList-push_front.cpp"
-```
 
 ![Figure 2.18. An `XorList` of four cells `a b c d`, each with its item and one word of links, the exclusive or of the addresses of its neighbors (0 at the ends), and the pointers to the first and the last cell; after `reverse()` the cells are unchanged, and only the two pointers, in violet, are exchanged.](../figures/sequence-xor.svg){#fig-2-18}
 
@@ -1488,10 +1446,6 @@ $t$, 0 for nil.
 
 --8<-- "generated/TreapList-join.pseudo.md"
 
-```cpp
---8<-- "generated/TreapList-split.cpp"
-```
-
 ![Figure 2.25. `truncate(3)` on the implicit treap of the items `a` to `g` in symmetric order, with the size of each subtree under its vertex: on the left, the split at the index 3 follows the path `d`, `b`, `c` (in violet); on the right are the two treaps it leaves, rooted at `b` (the ranks 0 to 2) and at `d` (the rest, its left child now nil, dashed), `d` and `b`, whose sizes are rewritten, in violet.](../figures/sequence-treap-split.svg){#fig-2-25}
 
 Morin gives no code for it. In ours, a node holds the item, a priority, a
@@ -1604,10 +1558,6 @@ insertion is at most 8 after $2^{17}$ insertions, and at most one more than
 after $2^{12}$. `first()`, `next()`, `value()` and `size()` read the list,
 and an element (of the type `Element`, a pointer to its node) stays valid
 until it is removed. The test of the order is two comparisons of words:
-
-```cpp
---8<-- "generated/OrderMaintenanceList-testBefore.cpp"
-```
 
 ## 2.16 Algorithms on sequences {#sec-2-16}
 
@@ -1733,10 +1683,6 @@ the three reversals swap $\lfloor n / 2 \rfloor + \lfloor r / 2 \rfloor +
 r ) \bmod n$ has $\gcd( n , r )$ cycles, each of $n / \gcd( n , r )$ items,
 and following a cycle moves each of its items once, plus one move to save
 its first item. $\square$
-
-```cpp
---8<-- "generated/IndexedList-rotate.cpp"
-```
 
 A rotation by cycles reads and writes each item once (cf. [Lemma
 2.21](02-sequence.md#lem-2-21)), through `operator[]`, but it jumps by $r$
