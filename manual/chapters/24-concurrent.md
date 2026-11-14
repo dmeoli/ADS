@@ -20,7 +20,7 @@ result of a sequential structure of the earlier chapters; its cost,
 however, depends on how the threads meet in memory more than on the number
 of its operations.
 
-The structure of the chapter is as follows. In
+We organize the chapter as follows. In
 [§24.1](24-concurrent.md#sec-24-1) we fix the model of the threads and of
 the memory, and the meaning of correct and of nonblocking, on which every
 later claim rests; [§24.2](24-concurrent.md#sec-24-2) summarizes the
@@ -39,7 +39,7 @@ we describe them where they are used.
 
 ## 24.1 The model of the threads and of the memory {#sec-24-1}
 
-A *shared object* is a structure whose operations are called by several
+We call *shared object* a structure whose operations are called by several
 threads, each thread being a sequence of calls. An operation takes time,
 from its *invocation* to its *response*, and two operations of two threads
 may overlap. A sequential specification (e.g., the axioms of the QUEUE of
@@ -79,8 +79,7 @@ answers false otherwise (in the code it also writes the value found into
 $e$).
 
 The memory is that of C++, which the headers use through `std::atomic`
-([Boehm and Adve 2008](Z-bibliography.md#ref-boehm2008)). A *data race* is
-a pair of accesses of two threads to one location, one of them a write,
+([Boehm and Adve 2008](Z-bibliography.md#ref-boehm2008)). We call *data race* a pair of accesses of two threads to one location, one of them a write,
 neither of them atomic and neither ordered before the other. A program with
 a data race has no defined meaning, and a word that two threads may access
 at once is therefore always an atomic. Each atomic access carries an
@@ -101,8 +100,7 @@ of the other; only $S$ excludes it. Several lemmas below (the last item of
 a deque, the growth of a hash table, the sleep of a waiter) rest on this
 pattern, and we prove them by placing four accesses in $S$.
 
-We now recall two facts of the hardware that decide the costs. A write to a line of cache
-takes the line away from the caches of the other cores, which then miss on
+We now recall two facts of the hardware that decide the costs. Indeed, a write to a line of cache takes the line away from the caches of the other cores, which then miss on
 it. Two words written by two threads on one line (*false sharing*) make the
 line travel at each write; the headers therefore put each such word on a
 separate line, often on a pair of lines, since many processors of the x86
@@ -146,10 +144,10 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `ConcurrentCuckooTable` | any | blocking (a lock per region), lookups without locks for atomic keys and values | $O( 1 )$ expected, $O( 1 )$ amortized for the doublings |
 | `ConcurrentFlatTable` | any | wait-free lookups but across a growth, insertions blocking only during a growth (and the renewal of a group, with epochs) | $O( 1 )$ expected, $O( 1 )$ amortized for the growths; no removals; `clear()` $O( 1 )$ amortized with epochs |
 | `MultiQueue` | any, by a handle each | blocking (a lock per queue, taken at the first try) | $O( \log m )$ amortized, $q / ( q - 1 )$ draws expected; relaxed |
-| `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; two exchanges per steal |
+| `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; one exchange per steal |
 | `EventCount` | any | a waiter sleeps, a notifier never waits | a fence and a read when nobody waits |
 
-The queues of one producer or of one consumer are cheaper than the general
+We remark that the queues of one producer or of one consumer are cheaper than the general
 one because each of their indices has a single writer. Such an index is
 written by plain stores with release and read by loads with acquire, and no
 read-modify-write is needed; many writers of one index, instead, must agree
@@ -159,6 +157,13 @@ an operation writes only words that no other thread writes, and they pay a
 read-modify-write only where two threads may really want the same thing
 (e.g., the last item of a deque, a free place of a table, or an offer of a
 queue that is stolen, cf. [§24.11](24-concurrent.md#sec-24-11)).
+
+Each structure exposes its template parameters as member types, `Item` for
+the items of the queues and of the deque, `Key` and `Item` for the pairs of
+the priority queues (and, in `StealablePriorityQueue`, `Entry` for the
+pair kept and `Bound` for its bound, see
+[§24.11](24-concurrent.md#sec-24-11)), and `Key` and `Value` for the
+tables; we name them in the following sections only where they matter.
 
 ## 24.3 Queues of one producer {#sec-24-3}
 
@@ -179,6 +184,50 @@ than it is. [Figure 24.2](24-concurrent.md#fig-24-2) shows the vector
 before and after a push, with both copies stale and neither of them read.
 
 ![Figure 24.2. An `SPSCQueue` of capacity 8 with the items `b`, `c`, `d`, before and after `push(e)`; the producer writes the place $t \bmod 8$ and then the tail, and the copies $\mathit{seen}_P$ of the head and $\mathit{seen}_C$ of the tail, both stale, are not read, since the queue looks neither full to the producer nor empty to the consumer.](../figures/concurrent-spsc.svg){#fig-24-2}
+
+The class gives the producer `push()` and `emplace()`, the consumer `pop()`
+and `tryPop()`, and both of them the batch operations and the wait of
+[§24.10](24-concurrent.md#sec-24-10); its public members are
+
+```cpp
+template< class T >
+class SPSCQueue {
+ public:
+ explicit SPSCQueue( std::size_t capacity );
+ bool push( const T & v );
+ bool push( T && v );
+ template< class ... Args > bool emplace( Args && ... args );
+ std::optional< T > pop( void );
+ bool tryPop( T & x );
+ template< class It > std::size_t pushMany( It first , std::size_t n );
+ template< class F >
+ std::size_t consume( F && f , std::size_t n = std::size_t( -1 ) );
+ void notify( void ) noexcept;
+ void waitPop( T & x );
+ std::size_t size( void ) const;
+ std::size_t capacity( void ) const;
+ };
+```
+
+and two threads use it as follows, the producer with `push()`, which
+answers false on a full queue, and the consumer with `waitPop()`:
+
+```cpp
+ADS::SPSCQueue< int > Q( 1024 );             // c = 1024
+std::thread producer( [ & ]() {
+ for( int i = 0 ; i < 100 ; ++i ) {
+  while( ! Q.push( i ) ) {}                 // full: try again
+  Q.notify();
+  }
+ } );
+long sum = 0;
+for( int i = 0 ; i < 100 ; ++i ) {
+ int x;
+ Q.waitPop( x );                            // the items 0, 1, ..., 99
+ sum += x;
+ }
+producer.join();                            // sum is 4950
+```
 
 <span id="alg-24-1"></span>**Algorithm 24.1.** The push and the pop of
 `SPSCQueue` ([Lamport 1983](Z-bibliography.md#ref-lamport1983), with the
@@ -228,18 +277,11 @@ the head a pop removes the first item, which it has read; the order of
 these points is the order of the operations of the sequential
 queue. $\square$
 
-The code follows [Algorithm 24.1](24-concurrent.md#alg-24-1) line by line. Here the item is built in
-place,
-and the comparison with the copy comes first, so that the common case reads
-no line that the other thread writes:
-
-```cpp
---8<-- "generated/SPSCQueue-emplace.cpp"
-```
-
-```cpp
---8<-- "generated/SPSCQueue-tryPop.cpp"
-```
+The implementation follows [Algorithm 24.1](24-concurrent.md#alg-24-1)
+line by line; it builds the item in place, and it compares the index with
+the copy before it reads the index of the other thread (lines 3 to 5 of
+`emplace()`), so that the common case reads no line that the other thread
+writes.
 
 Two "details" of engineering change the time of a queue between two cores
 several times over, without changing its argument. First, the two indices
@@ -275,8 +317,7 @@ throws.
 `MPSCQueue` serves many producers and one consumer, and is unbounded. Each
 producer has a *lane*, i.e., a queue of one producer and one consumer, and
 the producers never compete with one another. Its consumer takes the lanes
-in turn, and drains the one it is on before it moves to the next. A lane is
-a list of blocks of $B$ places (1024 by default, a power of 2), after the
+in turn, and drains the one it is on before it moves to the next. We build a lane as a list of blocks of $B$ places (1024 by default, a power of 2), after the
 list of bounded buffers of [Aldinucci et al.
 2012](Z-bibliography.md#ref-aldinucci2012). Each producer writes the places
 of its last block in order and publishes, after each item, their count $f$
@@ -294,6 +335,47 @@ also when their producer is gone and its items are still to be taken.
 
 ![Figure 24.3. An `MPSCQueue` with two lanes of blocks of 4 places; $f$ is the count of the items written in a block, the consumer reads from the place below its arrow and the producer writes at the place under its own; the first lane has a block that the consumer gave back, on the stack from which the producer takes its next block.](../figures/concurrent-mpsc.svg){#fig-24-3}
 
+Its public members are those below; a producer pushes through its handle,
+
+```cpp
+template< class T , std::size_t B = 1024 >
+class MPSCQueue {
+ public:
+ class Producer {
+  public:
+  template< class ... Args > void emplace( Args && ... args );
+  void push( const T & v );
+  void push( T && v );
+  void notify( void );
+  };
+ Producer producer( void );
+ bool tryPop( T & x );
+ std::size_t popInto( T * out , std::size_t n );
+ void waitPop( T & x );
+ std::size_t waitPopInto( T * out , std::size_t n );
+ bool empty( void );
+ };
+```
+
+e.g., four threads that each send 1000 items to one consumer:
+
+```cpp
+ADS::MPSCQueue< int > Q;
+std::vector< std::thread > T;
+for( int k = 0 ; k < 4 ; ++k )
+ T.emplace_back( [ & , k ]() {
+  auto P = Q.producer();                    // one lane per handle
+  for( int i = 0 ; i < 1000 ; ++i ) P.push( 1000 * k + i );
+  P.notify();
+  } );
+int x , got = 0;
+while( got < 4000 ) {
+ Q.waitPop( x );                            // in order within each lane
+ ++got;
+ }
+for( auto & t : T ) t.join();
+```
+
 <span id="alg-24-2"></span>**Algorithm 24.2.** The operations of
 `MPSCQueue` (the list of bounded buffers of [Aldinucci et al.
 2012](Z-bibliography.md#ref-aldinucci2012), the wait for a batch of [Wang
@@ -306,15 +388,14 @@ et al. 2013](Z-bibliography.md#ref-wang2013), and the stack of [Treiber
 
 --8<-- "generated/MPSCQueue-producer.pseudo.md"
 
-Each lane is a queue of Lamport whose block holds the count of its items in
+We may thus see each lane as a queue of Lamport whose block holds the count of its items in
 place of the tail, and [Lemma 24.1](24-concurrent.md#lem-24-1) applies (cf. (24.1)) to it place by place: the item is
 written before its count is published, and the consumer reads the count
 with acquire before the items. A block is reused by its producer only after
 the consumer has read all its $B$ items and has pushed it, with release, on
 the stack of the blocks given back. Its producer takes that stack by an
 exchange with acquire, and therefore (24.1) holds for each place of a block
-across its reuses. This stack has one pusher, the
-consumer, and one taker, which takes it all at once; it has thus no ABA
+across its reuses. We observe that this stack has one pusher, the consumer, and one taker, which takes it all at once; it has thus no ABA
 problem (cf. [Lemma 24.3](24-concurrent.md#lem-24-3)).
 
 <span id="lem-24-2"></span>**Lemma 24.2.** *A lane of `MPSCQueue` that has
@@ -364,6 +445,22 @@ usually come in bursts, at the price of an allocation per message.
 
 ![Figure 24.4. The stack of an `MPSCInbox` before and after `push(d)`, whose compare-and-swap links the new cell above the top it read, and after `take()`, which exchanges the top with nil and returns the messages reversed, in the order of sending.](../figures/concurrent-inbox.svg){#fig-24-4}
 
+Its public members are
+
+```cpp
+template< class T >
+class MPSCInbox {
+ public:
+ void push( T v );
+ std::vector< T > take( void );
+ std::vector< T > waitTake( void );
+ bool empty( void ) const;
+ };
+```
+
+where `waitTake()` is the `take()` that sleeps until a message comes, on
+the event count of [§24.10](24-concurrent.md#sec-24-10).
+
 <span id="alg-24-3"></span>**Algorithm 24.3.** The push and the take of
 `MPSCInbox` ([Treiber 1986](Z-bibliography.md#ref-treiber1986)).
 
@@ -371,18 +468,16 @@ usually come in bursts, at the price of an allocation per message.
 
 --8<-- "generated/MPSCInbox-take.pseudo.md"
 
-```cpp
---8<-- "generated/MPSCInbox-push.cpp"
-```
-
 <span id="lem-24-3"></span>**Lemma 24.3.** *Let the cells of a stack of
 Treiber be pushed one at a time, by a compare-and-swap whose new value is a
 cell of the pushing thread, and be taken only all at once, by an exchange.
 Then the ABA problem does not occur: each successful push links its cell
 above the true top, and each take returns all the cells pushed before it
-that are not yet taken.*
+that are not yet taken. Moreover, the push is lock-free, and the take is
+wait-free and costs one exchange and $O( k )$ time for the $k$ cells it
+returns.*
 
-*Proof.* The ABA problem needs a compare-and-swap whose expected value was
+*Proof.* We recall that the ABA problem needs a compare-and-swap whose expected value was
 read before the cell it names was removed and put back. Here we have only
 one compare-and-swap, that of a push, whose expected value is the top read by
 the pusher. If it succeeds, the top is that value at that instant, whatever
@@ -393,19 +488,22 @@ successor of the top. No cell is ever popped singly. An exchange is one
 atomic step, and the cells it returns are those of the pushes that
 precede it in the order of the modifications of $\mathit{top}$. Finally, a
 push publishes its cell with release and the take reads the top with acquire,
-and therefore the contents of the cells are seen. $\square$
+and therefore the contents of the cells are seen. The compare-and-swap of a
+push fails only if the top changed after the pusher read it, i.e., only if
+another push or a take succeeded in between, and some thread thus completes
+an operation at each failure; a take runs one exchange and then reverses
+the $k$ cells it got, which no other thread can reach any more. $\square$
 
 The same argument holds for the list of the lanes of `MPSCQueue` and for
-its stacks of blocks given back. A push is lock-free but not wait-free,
-since a pusher may lose every round to other pushers; a take is wait-free.
+its stacks of blocks given back. A push is not wait-free, however, since a
+pusher may lose every round to other pushers.
 
 `MPMCQueue` is the bounded queue of many producers and many consumers of
 [Vyukov 2010](Z-bibliography.md#ref-vyukov2010), on a circular vector of $c$
 places. Each place carries a *sequence* number besides the room of an item:
 the place of the index $i$ holds the sequence $i$ when it waits for the
 push of $i$, $i + 1$ when it holds the item of $i$, and $i + c$ when that
-item has been taken and the place waits for the push of $i + c$. A producer
-reads the tail $p$ and the sequence $s$ of its place. If $s = p$ it claims
+item has been taken and the place waits for the push of $i + c$. We let a producer read the tail $p$ and the sequence $s$ of its place. If $s = p$ it claims
 the index by $\mathrm{CAS}( t , p , p + 1 )$, builds the item and publishes
 it by storing the sequence $p + 1$ with release; if $s < p$ the queue is
 full; and if $s > p$ another producer took $p$, and it reads the tail
@@ -417,6 +515,26 @@ share, with one read-modify-write per operation.
 
 ![Figure 24.5. An `MPMCQueue` of capacity 4 with the items of the indices 5 and 6, before and after a push that claims the index 7: the place 3 held the sequence 7 (free for the index 7), and the push writes the item and then the sequence 8; the place 0 holds the sequence 8, i.e., it waits for the push of the index 8.](../figures/concurrent-mpmc.svg){#fig-24-5}
 
+Its public members are
+
+```cpp
+template< class T >
+class MPMCQueue {
+ public:
+ explicit MPMCQueue( std::size_t capacity );
+ template< class ... Args > bool emplace( Args && ... args );
+ bool push( const T & v );
+ bool push( T && v );
+ bool tryPop( T & x );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ };
+```
+
+where `push()` answers false on a full queue and `tryPop()` on an empty
+one, and `size()` is exact only when no operation runs.
+
 <span id="alg-24-4"></span>**Algorithm 24.4.** The push and the pop of
 `MPMCQueue` ([Vyukov 2010](Z-bibliography.md#ref-vyukov2010)); $C[ i ]$ is
 the place $i \bmod c$ and $C[ i ].s$ its sequence.
@@ -425,11 +543,7 @@ the place $i \bmod c$ and $C[ i ].s$ its sequence.
 
 --8<-- "generated/MPMCQueue-tryPop.pseudo.md"
 
-```cpp
---8<-- "generated/MPMCQueue-emplace.cpp"
-```
-
-We remark that the code compares the sequence with the index on their difference, taken as
+We remark that the implementation compares the sequence with the index on their difference, taken as
 a signed integer; the test thus holds across the wrap-around of the
 integers, as the tests of `SPSCQueue` do.
 
@@ -458,8 +572,7 @@ compare-and-swap and its publication holds up the threads that come round
 to its place, which find a sequence that means neither "free" nor "full". For
 the same reason a pop may answer that the queue is empty while a push that
 has claimed its index has not yet published it, which is consistent with a
-linearization point of the push at its publication. The rings of [Nikolaev
-2019](Z-bibliography.md#ref-nikolaev2019), with a cycle per place, are
+linearization point of the push at its publication. We remark that the rings of [Nikolaev 2019](Z-bibliography.md#ref-nikolaev2019), with a cycle per place, are
 lock-free in the strict sense, at the price of a somewhat more complex
 protocol. In [chapter 25](25-parallel.md#ch-25) the farm takes its tasks from an `MPMCQueue`; there
 such a stop happens only when the system deschedules a thread, and it then
@@ -477,7 +590,7 @@ of this schedule is in [chapter 25](25-parallel.md#ch-25)). `WorkStealingDeque` 
 [Chase and Lev 2005](Z-bibliography.md#ref-chase2005). Its owner thread
 pushes and takes at the bottom, and any other thread steals from the top,
 without locks, on a circular vector of $2^k$ places that the owner doubles
-when it is full. The bottom $b$ is written by the owner only, and the top
+when it is full. In it, the bottom $b$ is written by the owner only, and the top
 $t$, which only grows, only by a compare-and-swap; the items are those of
 $[ t , b )$, at the places of their indices modulo the size of the vector
 ([Figure 24.6](24-concurrent.md#fig-24-6)). Its items are kept in atomics
@@ -485,6 +598,25 @@ of relaxed order, and their type must therefore be trivially copyable
 (e.g., an index or a pointer to a task).
 
 ![Figure 24.6. A `WorkStealingDeque` of 8 places with the items `a`, `b`, `c` in $[ t , b ) = [ 2 , 5 )$, after `take()` of the owner, which takes `c` at the bottom, and after `steal()` of a thief, which takes `a` at the top; the violet cell is the place that the operation empties.](../figures/concurrent-deque.svg){#fig-24-6}
+
+Its public members are
+
+```cpp
+template< class T >
+class WorkStealingDeque {
+ public:
+ explicit WorkStealingDeque( std::size_t capacity = 1024 );
+ void push( T x );                          // the owner
+ std::optional< T > take( void );           // the owner
+ bool steal( T & x );                       // any thief
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ };
+```
+
+in which `push()` doubles the vector when it is full, so that only `take()`
+and `steal()` may fail, the latter also when it loses a race.
 
 <span id="alg-24-5"></span>**Algorithm 24.5.** The operations of
 `WorkStealingDeque` ([Chase and Lev 2005](Z-bibliography.md#ref-chase2005),
@@ -528,18 +660,13 @@ does. In each case at most one compare-and-swap of $t$ from the same value
 succeeds, and when both threads race one of them wins. $\square$
 
 We remark that with release and acquire only both threads could read the old
-value of the word written by the other, and both take the item. In the
-code, the two sequentially consistent pairs are these:
+value of the word written by the other, and both take the item. The two sequentially consistent pairs are the store of
+the bottom and the load of the top of `take()` (lines 2 and 3 of its
+pseudocode in [Algorithm 24.5](24-concurrent.md#alg-24-5)) and the loads
+of the top and of the bottom of `steal()` (its line 2); the other accesses
+are relaxed, or acquire for the vector.
 
-```cpp
---8<-- "generated/WorkStealingDeque-take.cpp"
-```
-
-```cpp
---8<-- "generated/WorkStealingDeque-steal.cpp"
-```
-
-A thief reads the item before the compare-and-swap that claims it, from the
+We note that a thief reads the item before the compare-and-swap that claims it, from the
 vector that it reads after the bottom; the owner publishes a new vector with
 release before it publishes a bottom that needs it. A doubling copies the
 items of $[ t , b )$ to the same indices of the new vector, and a thief that
@@ -564,17 +691,41 @@ $2^{j + 1} c_0$. $\square$
 
 Thus `push()` and `take()` cost $O( 1 )$ time and no read-modify-write but
 when `take()` reaches the last item, and `steal()` costs one
-compare-and-swap. All three operations are linearizable: a push at its store of
-the bottom, a take at its store of $b - 1$ (or at its compare-and-swap on
-the last item), and a steal at its compare-and-swap, provided that the
-sequential specification lets a steal fail (an *abort*, as in [Chase and
-Lev 2005](Z-bibliography.md#ref-chase2005)). Indeed, a thief fails when
-another thread took the item it wanted, also while other items remain, and
-`steal()` then returns false, so that the caller may try another victim.
-Each call of the three operations runs a constant number of steps (but for
-the doubling of a push), and is in this sense wait-free; a thief that
-retries until it gets an item is only lock-free, since every failure of
-its compare-and-swap is the success of another thread. This deque is that of the
+compare-and-swap. The sequential specification against which the deque is
+correct lets a steal fail (an *abort*, as in [Chase and Lev
+2005](Z-bibliography.md#ref-chase2005)): a thief fails when another thread
+took the item it wanted, also while other items remain, and `steal()` then
+returns false, so that the caller may try another victim.
+
+<span id="lem-24-7"></span>**Lemma 24.7.** *`WorkStealingDeque` is
+linearizable with respect to a deque whose steal may abort, with the point
+of a push at its store of the bottom, that of a take at its store of
+$b - 1$ (at its compare-and-swap on the last item, at its load of the top
+when it finds the deque empty), and that of a steal at its
+compare-and-swap (at its load of the bottom when it finds the deque empty).
+Each call runs a constant number of steps, but for the copy of a doubling;
+a thief that retries until it gets an item is lock-free.*
+
+*Proof.* We observe first that the items present at any instant are those of $[ t , b )$ by the
+values of $t$ and $b$ in the order of their modifications, and the points
+above are the instants at which these values change, or are read. A push
+writes its item before its store of $b + 1$ and becomes the new bottom
+item there. A take with more than one item left takes $b - 1$, which no
+thief can reach, since a thief claims only $t < b - 1$ by its
+compare-and-swap of $t$ after it read the new bottom (it read $b$ after
+$t$, cf. [Lemma 24.5](24-concurrent.md#lem-24-5)); on the last item, take
+and steal race by a compare-and-swap of $t$, and [Lemma
+24.5](24-concurrent.md#lem-24-5) gives that exactly the winner takes it, if
+anyone reads it there. A successful steal takes the item $t$ at the
+instant at which $t$ grows, which is the top item of the sequential deque
+then; a failed one changes nothing, and is an abort. Each operation is a
+fixed sequence of loads, stores and at most one compare-and-swap, with no
+loop but the copy of a doubling. A compare-and-swap of $t$ fails only
+because another one on $t$ succeeded, i.e., another operation completed;
+hence a thief that retries completes, or some other thread does, at each
+of its failures. $\square$
+
+This deque is that of the
 pool of threads of [chapter 25](25-parallel.md#ch-25). Its argument returns in
 [§24.11](24-concurrent.md#sec-24-11), where the queues of a search are
 stolen without making their owner race for each item.
@@ -599,6 +750,24 @@ it is then tried again from the roots found anew.
 
 ![Figure 24.7. A `ConcurrentUnionFind` before and after `unite(6, 5)`: the splitting of `find(6)` gives 6 its grandparent 3, `find(5)` finds the root 0, and the larger root 3 is hooked under the smaller root 0; the violet elements are those whose parent changed.](../figures/concurrent-unionfind.svg){#fig-24-7}
 
+Its public members are
+
+```cpp
+class ConcurrentUnionFind {
+ public:
+ explicit ConcurrentUnionFind( std::size_t n );
+ std::size_t size( void ) const;
+ std::int32_t find( std::int32_t x );
+ std::int32_t parent( std::int32_t x ) const;
+ void compress( std::int32_t x );
+ bool unite( std::int32_t x , std::int32_t y );
+ bool sameSet( std::int32_t x , std::int32_t y );
+ };
+```
+
+where `unite()` answers whether it joined two sets, and `parent()` reads
+$p[ x ]$ without changing it.
+
 <span id="alg-24-6"></span>**Algorithm 24.6.** The operations of
 `ConcurrentUnionFind`: the splitting and the linking by index of [Jayanti
 and Tarjan 2021](Z-bibliography.md#ref-jayanti2021).
@@ -614,7 +783,7 @@ and Tarjan 2021](Z-bibliography.md#ref-jayanti2021).
 We now show that the correctness rests on an invariant of the order of the
 elements, which no interleaving of the operations can break.
 
-<span id="lem-24-7"></span>**Lemma 24.7.** *If a root $x$ is hooked only
+<span id="lem-24-8"></span>**Lemma 24.8.** *If a root $x$ is hooked only
 under a root $y < x$, by $\mathrm{CAS}( p[ x ] , x , y )$, and a parent
 $p[ x ]$ is otherwise only replaced by an ancestor of $x$, then at every
 moment*
@@ -637,45 +806,66 @@ root), which excludes a cycle and makes the root the least element of its
 tree. `compress()` sets $p[ x ]$ from $u$ to the root found from $u$, an
 ancestor of $x$, and the same argument applies. $\square$
 
-```cpp
---8<-- "generated/ConcurrentUnionFind-find.cpp"
-```
+<span id="lem-24-9"></span>**Lemma 24.9.** *`ConcurrentUnionFind` is
+lock-free and linearizable: a `find()` takes effect at the read that finds a
+root, a `unite()` at its successful hook (or, when it answers false, at the
+read of its second `find()` that found the same root), and a `sameSet()`
+at the read by which its second `find()` found the root of $y$, whether it
+answers true or false.*
 
-```cpp
---8<-- "generated/ConcurrentUnionFind-unite.cpp"
-```
+*Proof.* A failed compare-and-swap of a splitting only leaves a longer
+path, and it fails because another thread changed $p[ x ]$, by a hook or by
+a splitting, both successful steps; a failed hook means that another
+thread hooked $x$ first. Each loop of the operations thus repeats only
+after a successful step of another thread, and since by [Lemma
+24.8](24-concurrent.md#lem-24-8) every path decreases strictly, a thread
+that runs alone ends after a finite number of steps; this is lock-freedom.
+A root, once hooked, is never a root again, and the parents only move up
+the trees, so that the sets only merge. At the read that finds a root $r$
+from $x$, $r$ is the root of the tree of $x$, hence the answer of the
+sequential `find()` then. A successful hook of $x$ under $y$ merges the two
+sets at that instant, which is the effect of the sequential `unite()`; a
+`unite()` that answers false read at that instant the same root from both
+elements. A `sameSet()` that answers true read the root of $y$ equal to a
+root of $x$ found before; since sets only merge, $x$ and $y$ are in one set
+at the second read. One that answers false found the root $r_y \ne r_x$ of
+$y$ and then saw the root $r_x$ of $x$ still a root (line 5 of its
+pseudocode); since a root that is hooked never becomes a root again, $r_x$
+was a root at the read that found $r_y$, and two distinct roots then
+headed the trees of $x$ and of $y$, i.e., two distinct sets. If $r_x$ is no
+longer a root, the loop starts again, after a successful hook of another
+thread. Each hook uses the orders acquire
+and release, and a thread that follows a parent thus sees the writes that
+preceded the hook. $\square$
 
-A failed compare-and-swap of a splitting only leaves a longer path, and a
-failed hook means that another thread hooked $x$ first, which is progress;
-hence the structure is lock-free. All the operations are linearizable. A
-`unite()` takes effect at its successful hook (or, when it answers false,
-at the second `find()` that found the same root), and a `find()` at the
-read that finds a root. A `sameSet()` that answers false takes effect at
-its second `find()`, provided that the root of $x$ is still a root after
-it, which the pseudocode checks. Each hook uses the orders acquire and
-release, and therefore a thread that follows a parent sees the writes that
-preceded the hook. After the compression of all the
+After the compression of all the
 elements, with no union running, `parent( x )` is the label of the set of
 $x$, the least element; the parallel connected components of [chapter 25](25-parallel.md#ch-25)
 use it in this way.
 
-<span id="lem-24-8"></span>**Lemma 24.8.** *On one thread,
+<span id="lem-24-10"></span>**Lemma 24.10.** *On one thread,
 `ConcurrentUnionFind` performs $m \ge n$ operations on $n$ elements in
 $O( m \log_{2 + m / n} n )$ steps.*
 
-*Proof.* On one thread the compare-and-swaps all succeed, and the structure
-is the union-find with the linking by index and the path splitting, whose
-bound is that of [Tarjan and van Leeuwen
-1984](Z-bibliography.md#ref-tarjan1984) for any linking that does not depend
-on the sizes. $\square$
+*Proof.* On one thread every compare-and-swap succeeds, since no other
+thread changes a parent between the read and the swap. Then `find()` is the
+find with path splitting, and `unite()` is two finds followed by a link of
+one root under the other, chosen by the indices only, i.e., the linking
+that [Tarjan and van Leeuwen 1984](Z-bibliography.md#ref-tarjan1984) call
+naive (it ignores the sizes and the ranks); `sameSet()` is two finds, and
+each operation thus makes at most two finds and one link. For path
+splitting with naive linking, Tarjan and van Leeuwen prove that $m'$ finds
+and at most $n - 1$ links on $n$ elements, $m' \ge n$, take
+$O( m' \log_{1 + m' / n} n )$ steps. Here $m' \le 2 m$, and for $m \ge n$
+we have $1 + m / n \ge 2$, whence $\log( 2 + m / n ) \le \log_2 3 \cdot
+\log( 1 + m / n )$ and $\log_{1 + 2m / n} n \le \log_{1 + m / n} n \le
+\log_2 3 \cdot \log_{2 + m / n} n$; the bound follows. $\square$
 
 The linking by index has the advantage of canonical labels, at the price of
-a somewhat weaker bound, logarithmic rather than nearly constant. The randomized
-linking of [Jayanti and Tarjan 2021](Z-bibliography.md#ref-jayanti2021)
+a somewhat weaker bound, logarithmic rather than nearly constant. We remark that the randomized linking of [Jayanti and Tarjan 2021](Z-bibliography.md#ref-jayanti2021)
 hooks by a random order of the elements instead of their indices. It bounds
 the expected work on $p$ threads by $O( m ( \alpha( n , m / ( n p ) ) +
-\log( n p / m + 1 ) ) )$, but its labels are not the least elements. The
-constructor is not concurrent with the other operations (`size()` gives
+\log( n p / m + 1 ) ) )$, but its labels are not the least elements. Note also that the constructor is not concurrent with the other operations (`size()` gives
 the constant $n$), and $n < 2^{31}$, since the parents are words of 32
 bits.
 
@@ -697,8 +887,7 @@ cuckoo hashing of [Fan, Andersen and Kaminsky
 2013](Z-bibliography.md#ref-fan2013)), and $R = 2^r$ the buckets of a
 region. Thus one can compute the other bucket of a key from its bucket and
 its tag, and both lie in the same region. The $B$ buckets form $P = \min( 2048 ,
-\max( 1 , B / 256 ) )$ regions of $R = B / P$ buckets each. A region has
-one lock, i.e., a counter of versions (on a separate line), odd while the
+\max( 1 , B / 256 ) )$ regions of $R = B / P$ buckets each. We give a region one lock, i.e., a counter of versions (on a separate line), odd while the
 lock is held (the lock striping of [Herlihy and Shavit
 2008, chapter 13](Z-bibliography.md#ref-herlihy2008), with a stripe per
 region instead of a stripe of scattered buckets). A lock is taken by a
@@ -714,6 +903,49 @@ keys are moved, under that lock only, with no state to check again. By
 contrast, [Li et al. 2014](Z-bibliography.md#ref-li2014) search without
 locks and lock two buckets per move. Only the doubling, `reserve()`, `clear()`,
 `forEach()` and `consistent()` take more locks.
+
+Its public members are
+
+```cpp
+template< class K , class V , class H = DefaultHash< K > ,
+          class Eq = std::equal_to< K > >
+class ConcurrentCuckooTable {
+ public:
+ explicit ConcurrentCuckooTable( std::size_t n = 0 , H h = H() ,
+                                 Eq eq = Eq() );
+ std::optional< V > find( const K & k ) const;
+ bool contains( const K & k ) const;
+ bool insert( const K & k , const V & v );
+ bool insertOrAssign( const K & k , const V & v );
+ template< class F > bool update( const K & k , F && f );
+ bool erase( const K & k );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ std::size_t rehashes( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ template< class F > void forEach( F && f );
+ bool consistent( void ) const;
+ static const bool optimistic;             // lookups without locks
+ };
+```
+
+and several threads count words in it as follows, `update()` applying its
+function to the value under the lock of the region:
+
+```cpp
+ADS::ConcurrentCuckooTable< std::uint64_t , int > C( 1 << 16 );
+auto count = [ & ]( std::uint64_t w ) {
+ if( ! C.update( w , []( int & c ) { ++c; } ) )
+  if( ! C.insert( w , 1 ) )                 // inserted meanwhile
+   C.update( w , []( int & c ) { ++c; } );
+ };
+auto work = [ & ]() { for( int i = 0 ; i < 1000 ; ++i ) count( i % 7 ); };
+std::thread a( work ) , b( work );
+a.join();
+b.join();                                   // C.find( 0 ) holds 286
+```
 
 <span id="alg-24-7"></span>**Algorithm 24.7.** The lookup and the insertion
 of `ConcurrentCuckooTable`: the seqlock of [Boehm
@@ -733,7 +965,7 @@ version of the region $R$ and $n_R$ the number of its pairs.
 We prove the table correct by an argument on the locks, one on the lookups
 without locks and one on the doubling.
 
-<span id="lem-24-9"></span>**Lemma 24.9.** *The locks of
+<span id="lem-24-11"></span>**Lemma 24.11.** *The locks of
 `ConcurrentCuckooTable` cannot deadlock.*
 
 *Proof.* An operation on a key holds one lock and waits for no other while
@@ -755,7 +987,7 @@ otherwise it tries again, and it takes the lock after 4 tries. A writer makes th
 issues a release fence before its relaxed stores, and makes the version
 even again by a store with release.
 
-<span id="lem-24-10"></span>**Lemma 24.10.** *A lookup without locks that
+<span id="lem-24-12"></span>**Lemma 24.12.** *A lookup without locks that
 reads the same even version $v$ before and after its reads returns a state
 of the region of its key, i.e., what a lookup under the lock would have
 returned at the moment of its first read of the version.*
@@ -773,10 +1005,6 @@ that made the version $v$, by writers that had all released the lock, and
 no writer held it in between; the reads see one state of the region. No
 access is a data race, since all of them are atomic. $\square$
 
-```cpp
---8<-- "generated/ConcurrentCuckooTable-peek.cpp"
-```
-
 A lookup without locks thus costs no read-modify-write and no store to a
 shared line. Furthermore, the tables replaced by a doubling are kept until the table is
 destroyed, since a reader may still be on one; with $B_0 < \cdots < B_k$
@@ -790,7 +1018,7 @@ most $L = 5$ moves that ends in a bucket with a free place, and moves the
 keys of the path from its end, each into its other bucket, which (24.3)
 computes from its tag only.
 
-<span id="lem-24-11"></span>**Lemma 24.11.** *A search in breadth over
+<span id="lem-24-13"></span>**Lemma 24.13.** *A search in breadth over
 buckets of $b$ places that looks at $M$ places finds a path of at most*
 
 $$
@@ -812,8 +1040,7 @@ as long as half the places it looks at ([Li et al.
 2014](Z-bibliography.md#ref-li2014)). $\square$
 
 The search stops at $L = 5$, or at 1024 buckets, all in the region, whose
-tags form a block of $8 R$ bytes. The table doubles when a region would
-pass the load 0.98, or when no path is found. The thread that doubles it
+tags form a block of $8 R$ bytes. We double the table when a region would pass the load 0.98, or when no path is found. The thread that doubles it
 takes all the locks in use, and those of the new regions too before the new
 table is seen; then it checks that no other thread has doubled the table in
 the meantime, and places each pair again in the new table
@@ -821,17 +1048,15 @@ the meantime, and places each pair again in the new table
 places per bucket, the cuckoo hashing of $n$ random keys succeeds with high
 probability while $n / ( 4 B ) < 0.9803$, the threshold of the
 4-orientability of the random graphs ([Cain, Sanders and Wormald
-2007](Z-bibliography.md#ref-cain2007)), here in each region. A region of $4
-R$ places holds a binomial number of the $n$ keys, of mean $\mu = n / P$
+2007](Z-bibliography.md#ref-cain2007)), here in each region. Now, a region of $4 R$ places holds a binomial number of the $n$ keys, of mean $\mu = n / P$
 and standard deviation $\sqrt{ \mu ( 1 - 1 / P ) }$. This is a relative
 deviation of about $1 / \sqrt{ 4 R \alpha }$ at the load $\alpha$ (3.3% for
 $R = 256$ and $\alpha = 0.9$), and therefore the fullest region of a large
 table reaches 0.98 at a mean load of about 0.88 to 0.92. A restriction
 of the choices to a part of the table (there, a page) is also
 studied by [Dietzfelbinger, Mitzenmacher and Rink
-2011](Z-bibliography.md#ref-dietzfelbinger2011). The doublings cost $O( 1 )$ amortized per insertion, by the argument of
-[Lemma 24.6](24-concurrent.md#lem-24-6) (cf. also
-[Lemma 24.14](24-concurrent.md#lem-24-14)). A doubling that
+2011](Z-bibliography.md#ref-dietzfelbinger2011). The cost of the doublings is in [Lemma 24.14](24-concurrent.md#lem-24-14)
+below. A doubling that
 would leave a table of at least 256 places less than 1/16 full throws
 `std::length_error`, which happens only when more than 8 keys share both
 buckets at every size (e.g., by equal hashes), and leaves the table
@@ -840,17 +1065,46 @@ unchanged.
 A lookup touches two buckets. It fetches ahead, at once, the tags of both
 and the line of the places of the first, and the misses overlap (the 4
 places of a bucket share a line of cache when their size is a power of 2 up
-to 64 bytes). Those of the second bucket, where fewer keys usually are, are read only when a tag matches there. The tags and the places of a
-table of 2 MB or more lie on transparent huge pages, and the random
+to 64 bytes). Those of the second bucket, where fewer keys usually are, are read only when a tag matches there. Also, the tags and the places of a table of 2 MB or more lie on transparent huge pages, and the random
 accesses then miss the TLB once per 2 MB instead of once per 4 KB ([Navarro et
 al. 2002](Z-bibliography.md#ref-navarro2002)). With uniform keys two
 operations contend for a lock with probability $1 / P$. Each region counts
 its pairs under its lock, and `size()` is the sum of $P$ counters read
-without locks, exact when no operation runs and otherwise an estimate. The
-operations of a single key are linearizable at the moment they hold the
-lock of its region, or at the second read of the version for a lookup
-without locks. Also, `forEach()` visits the pairs of one moment, since it
-holds all the locks. Besides these operations, `contains( k )` is the
+without locks, exact when no operation runs and otherwise an estimate.
+
+<span id="lem-24-14"></span>**Lemma 24.14.** *The operations of
+`ConcurrentCuckooTable` on a single key are linearizable, at an instant at
+which they hold the lock of the region of the key in the table in use, or at
+the second read of the version for a lookup without locks; `forEach()`
+visits the pairs of one instant; and if each doubling to $2 B$ buckets
+follows at least $\epsilon B$ insertions since the previous doubling, for a
+constant $\epsilon > 0$, the doublings cost $O( 1 / \epsilon )$ amortized
+time per insertion.*
+
+*Proof.* An operation that holds the lock of the region of its key in the
+table in use is alone on the two buckets of the key, which lie in that
+region by (24.3), and a doubling, which takes all the locks, cannot run
+meanwhile; its effect is therefore that of the sequential operation at any
+instant within its critical section. An operation that finds, after taking
+the lock, that the table was replaced releases it and starts again on the
+new table, and it has had no effect. A lookup without locks returns, by
+[Lemma 24.12](24-concurrent.md#lem-24-12), the state of the region at its
+first read of the version, which no writer changed before the second read;
+any instant between the two reads is thus a point. `forEach()` holds all
+the locks while it visits, so that no operation takes effect meanwhile. A
+doubling to $2 B$ buckets places again the at most $4 B$ pairs present, in
+$O( B )$ time, which we charge to the at least $\epsilon B$ insertions
+since the previous doubling, $O( 1 / \epsilon )$ each; every insertion is
+charged by one doubling only. $\square$
+
+The hypothesis of the last claim is not a property of the code but of the
+keys: a doubling halves the load, to at most $0.49$, and with random hashes
+the fullest region of a large table reaches $0.98$ only at a mean load of
+about $0.88$ (see above), i.e., after about $0.39 \cdot 4 B$ insertions,
+while keys that share both buckets make the doublings come with no
+insertion, until the table throws `std::length_error`.
+
+Also, besides these operations, `contains( k )` is the
 lookup that returns only whether $k$ is there, `insertOrAssign( k , v )`
 is the insertion that, for a key found, assigns $v$ to its value before
 the unlock, and `rehashes()` counts the doublings of the table.
@@ -871,7 +1125,7 @@ the key or inserts it with the value $v$; in both cases it returns the pair
 that the table holds. The threads that reach the same state at once thus
 agree on one pair, and only one of them is told that it inserted it.
 
-A word is 0 when its place is free; it is written once, by a
+We let a word be 0 when its place is free; it is written once, by a
 compare-and-swap from 0, and it is never changed afterwards but by
 `update()`. We distinguish the forms in which the pairs are kept, chosen by
 their types and by the processor when compiling. (i) When the key and the value are
@@ -887,12 +1141,15 @@ words, the key and the value, written together by that instruction
 pair lies with its hash, and 24 bits of the hash; a lookup follows the
 index only when those bits match, which happens once in $2^{24}$ times for
 another key. Nodes never move, and the pair returned is a reference to
-the node, valid as long as the table. The nodes are cut from segments of
+the node, valid as long as the table; the member type `Ref` is what an
+operation returns of a pair, i.e., a copy of the value in the forms (i)
+and (ii) and a reference to the node (of the type `Entry`) in the form
+(iii). The nodes are cut from segments of
 $2^{12} , 2^{13} , \ldots$ nodes, of which each thread reserves 64 at a
 time; an insertion thus takes no lock, and calls the allocator once per 64
 nodes at most.
 
-The place of a key of hash $h$ is $\lfloor h / 2^{64 - l} \rfloor$, and the
+Here the place of a key of hash $h$ is $\lfloor h / 2^{64 - l} \rfloor$, and the
 key is looked for from there on, cyclically, up to its word or to a word 0.
 When the pairs lie in the words, each place has besides a *tag* of a byte,
 0 or 7 bits of the hash of its key with the high bit set, as the metadata
@@ -904,11 +1161,57 @@ cache usually keeps. A tag is written, with release, after the word it
 tags, and always with the same value, by the insertion that wrote the word
 or by any insertion that passes the place while it looks for a place;
 the insertion takes effect when the tag of its word is written
-([Figure 24.9](24-concurrent.md#fig-24-9)). The pairs in nodes have no
-tags, since a tag would add a third miss to the two of a key found in its
+([Figure 24.9](24-concurrent.md#fig-24-9)). We give the pairs in nodes no tags, since a tag would add a third miss to the two of a key found in its
 node.
 
 ![Figure 24.9. The tags (upper row, 0 for a place free or not yet tagged) and the words (lower row) of a `ConcurrentFlatTable` of 12 places, before and after the insertion of a key $k$ whose place is 5: the insertion passes the places 5 to 7, which hold other keys, writes $k$ into the free place 8 by a compare-and-swap, and then its tag.](../figures/concurrent-flat.svg){#fig-24-9}
+
+Its public members, but for the variants that take the hash already
+computed (each operation on a key $k$ has one, with the hash $h$ as a
+second argument), are
+
+```cpp
+template< class K , class V , class H = DefaultHash< K > ,
+          class Eq = std::equal_to< K > , class C = ZeroingClear >
+class ConcurrentFlatTable {
+ public:
+ static constexpr bool packed =             // the pair in one word
+  std::is_trivially_copyable_v< K > && std::is_trivially_copyable_v< V > &&
+  ( std::has_unique_object_representations_v< K > ||
+    std::is_floating_point_v< K > ) &&
+  ( sizeof( K ) + ( std::is_empty_v< V > ? 0 : sizeof( V ) ) <= 8 );
+ static constexpr bool inlined =            // the pair in two words
+  ( ADS_FLAT_CAS16 != 0 ) && ! packed &&
+  std::is_trivially_copyable_v< K > && std::is_trivially_copyable_v< V > &&
+  ( std::has_unique_object_representations_v< K > ||
+    std::is_floating_point_v< K > ) &&
+  ( sizeof( K ) <= 8 ) && ( sizeof( V ) <= 8 );
+ struct Entry { const K key; V value; };
+ using Ref = std::conditional_t< packed || inlined , V , Entry & >;
+ explicit ConcurrentFlatTable( std::size_t n = 0 , H h = H() ,
+                               Eq eq = Eq() );
+ std::uint64_t hash( const K & k ) const;
+ std::pair< Ref , bool > findOrInsert( const K & k , const V & v );
+ bool insert( const K & k , const V & v );
+ std::optional< V > find( const K & k ) const;
+ bool contains( const K & k ) const;
+ void prefetch( std::uint64_t h ) const;
+ template< class F > bool update( const K & k , F && f )
+  requires( packed || inlined );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ std::size_t rehashes( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ std::uint64_t epoch( void ) const;
+ template< class F > void forEach( F && f ) const;
+ bool consistent( void ) const;
+ };
+```
+
+besides `findOrInsertKey( k , h )` of a `packed` set and `entry( k , h )`,
+the node of a key of a table that is neither `packed` nor `inlined`.
 
 <span id="alg-24-8"></span>**Algorithm 24.8.** The insertion and the
 lookup of `ConcurrentFlatTable` (the folklore table of [Maier et al.
@@ -924,7 +1227,7 @@ The lookups take no lock, write no word, and check no version, since a word
 or a tag, once written, stays. We now show why they are
 correct while insertions run.
 
-<span id="lem-24-12"></span>**Lemma 24.12.** *Let the words and the tags of
+<span id="lem-24-15"></span>**Lemma 24.15.** *Let the words and the tags of
 a vector be written only from 0, once each, and only while the vector is in
 use, and let an insertion write the tags of the places it passes before it
 writes its own. Let a lookup of $k$ in the vector $T$ read the tag 0 at the
@@ -958,20 +1261,17 @@ of Dekker over 64 counters on separate lines, as in the growth of [Maier et
 al. 2019](Z-bibliography.md#ref-maier2019) that synchronizes the threads. A
 thread adds 1 to its counter and then reads the flag $g$ of the growth,
 while the thread that grows the table raises $g$ and then reads the
-counters:
+counters (lines 3 and 4, and 16 and 17, of `findOrInsert()` in [Algorithm
+24.8](24-concurrent.md#alg-24-8)).
 
-```cpp
---8<-- "generated/ConcurrentFlatTable-enter.cpp"
-```
-
-<span id="lem-24-13"></span>**Lemma 24.13.** *Let a writer raise its
+<span id="lem-24-16"></span>**Lemma 24.16.** *Let a writer raise its
 counter and then read the flag $g$, and the thread that grows the table
 raise $g$ and then read the counters, all these accesses sequentially
 consistent; and let a writer that reads $g$ raised lower its counter and
 retry after the growth. Then no word of a vector is written once its copy
 has begun.*
 
-*Proof.* The four accesses lie in the single order $S$. If the read of $g$
+*Proof.* We place the four accesses in the single order $S$. If the read of $g$
 by the writer follows the raise of $g$, the writer backs off. Otherwise the
 read of $g$ precedes the raise, and hence the raise of the counter of the
 writer precedes the read of the counters by the grower. Then the grower
@@ -987,8 +1287,7 @@ counter, instead of waiting. Each word is placed at the first free place of
 its sequence in the new vector, which no other thread reads yet, and the
 new vector is published, with release, once all the blocks are copied.
 Meanwhile the lookups never wait: they read the old vector, which no longer
-changes, until the new one is in use. The counters of the threads also
-count the pairs, in their upper 48 bits, and an insertion counts its pair
+changes, until the new one is in use. We let the counters of the threads also count the pairs, in their upper 48 bits, and an insertion counts its pair
 in the same read-modify-write by which it leaves. Their sum, which reads 64
 lines, is taken once per 1024 insertions of a counter (more often in a
 vector of less than $2^{20}$ places). An insertion that reads more than 128
@@ -996,7 +1295,7 @@ words also grows the table, if it is at least one eighth full. A table less
 full than that, which typically only keys of equal hash make so "crowded", is read on
 to its first free place instead.
 
-<span id="lem-24-14"></span>**Lemma 24.14.** *With the load $\alpha$ of the
+<span id="lem-24-17"></span>**Lemma 24.17.** *With the load $\alpha$ of the
 table at most $1/2$ and random hashes, a lookup reads on average*
 
 $$
@@ -1006,27 +1305,36 @@ $$
 \tag{24.5}
 $$
 
-*places when it succeeds and when it fails, respectively, and the growths
-cost $O( 1 )$ amortized time per insertion.*
+*places when it succeeds and when it fails, respectively. The growths that
+the load triggers cost $O( 1 )$ amortized time per insertion, at most
+$18 / 7$ copies of a word each, provided that the load stays below $9/16$.*
 
-*Proof.* We take the two averages of linear probing ([Knuth 1998,
-§6.4](Z-bibliography.md#ref-knuth1998v3)), increasing in $\alpha$, taken at
-$\alpha = 1/2$. A growth copies each word of the old vector once, and the
-sizes double; hence the copies are at most twice the insertions, as in
-[Lemma 24.6](24-concurrent.md#lem-24-6). $\square$
+*Proof.* We recall that the two averages are those of linear probing with random hashes
+([Knuth 1998, §6.4](Z-bibliography.md#ref-knuth1998v3)), increasing in
+$\alpha$, taken at $\alpha = 1/2$. A growth from $2^l$ places copies the at
+most $( 9/16 ) 2^l$ words in use, each once. The previous growth left a
+load of at most $( 9/16 ) / 2 = 9/32$ in the vector of $2^l$ places, and a
+growth triggered by the load happens only when the pairs pass $2^l / 2$;
+hence at least $( 1/2 - 9/32 ) 2^l = ( 7/32 ) 2^l$ insertions lie between
+the two, and the copies are at most $( 9/16 ) / ( 7/32 ) = 18/7$ per
+insertion. $\square$
 
 We remark that the load may pass $1/2$ before a growth, since each of the
 64 counters triggers the sum only once per period of $2^{\min( \max( l -
 10 , 0 ) , 10 )}$ of its insertions: between two sums the pairs grow by
 less than $64 \cdot 2^{l - 10} = 2^l / 16$, and hence $\alpha < 9/16$,
-where the two averages of (24.5) are below 1.65 and 3.12. Most of the
+which is the proviso of [Lemma 24.17](24-concurrent.md#lem-24-17), and
+where the two averages of (24.5) are below 1.65 and 3.12. A growth for a
+crowded insertion (more than 128 words read at a load of at least $1/8$)
+is outside the lemma: with random hashes it is rare, and with keys of
+equal hash it may follow the previous growth with few insertions. Most of the
 places of (24.5) lie on one line of 8 words, which the lookup
 fetches while it reads the tags, and a key that is there typically costs
-about one miss. An insertion is blocking only during a growth, and the
-lookups never are; a lookup is thus wait-free when the table does not grow.
+about one miss. The progress of the operations is that of [Lemma
+24.18](24-concurrent.md#lem-24-18) below.
 Where the pairs are `inlined`, the copy of a growth moves the two words of
 a place at once, and a lookup reads the key with acquire and then the value
-from the same line. [Lemma 24.12](24-concurrent.md#lem-24-12) then holds unchanged for the key, since
+from the same line. [Lemma 24.15](24-concurrent.md#lem-24-15) then holds unchanged for the key, since
 `update()` changes the value by the same instruction and never the key; the
 lookup reads a value written with that key, or a later one of `update()`.
 We remark that `clear()`, `forEach()` and `consistent()` may not run with
@@ -1041,11 +1349,30 @@ threads that insert at once pointers to equal objects therefore all get the
 pointer of the one that inserted it; this is the intrusive set of the nodes
 of a parallel search.
 
+<span id="lem-24-18"></span>**Lemma 24.18.** *A lookup of
+`ConcurrentFlatTable` never waits, and it ends after a number of its steps
+bounded by the places of the vector times one plus the growths that
+complete while it runs; an insertion waits only for a growth that runs, or
+for the renewal of a group by another insertion.*
+
+*Proof.* A lookup reads the vector in use and its words, never a lock or a
+counter, and in one vector it reads at most all its places before it finds
+the key or a free place (the vector is never full, since it grows at half
+of its places). It starts over only when it finds the vector replaced,
+i.e., after a growth completed; each start reads at most the places of the
+vector then in use. An insertion that finds the flag $g$ raised helps the
+copy, whose blocks it claims by a counter, and waits only for the blocks
+claimed by the other threads and for the publication of the new vector;
+outside a growth it runs the probe of a lookup and one compare-and-swap per
+free place it tries, which fails only when another insertion wrote that
+place, and it then reads on. With the policy `EpochClear` described next, it may also wait for the
+store of the epoch of a group that another insertion renews. $\square$
+
 `clear()` writes 0 to every place, in time linear in the capacity, which a
 table cleared often and filled little in between (the restarts of an
 incremental search) pays at each clear. With the policy `EpochClear<S>`,
 the fifth template parameter (`ZeroingClear`, the default, leaves the table
-as above), `clear()` takes $O( 1 )$ amortized time instead. Each group of 8
+as above; the concept `FlatClear` admits these two policies only), `clear()` takes $O( 1 )$ amortized time instead. Each group of 8
 places has a stamp of the unsigned type $S$ (32 bits by default, i.e., half
 a byte per place), and the group is in use only if its stamp is the epoch
 of the table, which `clear()` raises, so that all the groups fall out of
@@ -1054,19 +1381,17 @@ without tags, only if the stamp of its group is the epoch, and a group out
 of use is free, where the lookup stops. An insertion that reaches a group
 out of use renews it first: it takes the group by a compare-and-swap of its
 stamp to a mark, writes 0 to its words and tags, and stores the epoch with
-release.
+release:
 
-```cpp
---8<-- "generated/ConcurrentFlatTable-renew.cpp"
-```
+--8<-- "generated/ConcurrentFlatTable-renew.pseudo.md"
 
 The other insertions that reach the group meanwhile wait for that store, a
 few words long, while the lookups see the group free until then, which is
 right, since no insertion of the new epoch has taken effect in it; once the
 stamp is the epoch, the group is a group of a new vector, and [Lemma
-24.12](24-concurrent.md#lem-24-12) holds for it unchanged. A renewal runs
+24.15](24-concurrent.md#lem-24-15) holds for it unchanged. A renewal runs
 within the critical section of its insertion, so that by [Lemma
-24.13](24-concurrent.md#lem-24-13) no growth runs with it; the copy of a
+24.16](24-concurrent.md#lem-24-16) no growth runs with it; the copy of a
 growth takes only the groups in use, into a vector whose groups all have
 the epoch. The stamps of the old epochs are less than the epoch, and when
 the epoch would reach the mark, the largest value of $S$, `clear()` writes
@@ -1079,7 +1404,7 @@ requires keys and values trivially destructible; `epoch()` gives the epoch
 
 ## 24.9 Relaxed priority queues {#sec-24-9}
 
-A priority queue shared by $p$ threads under one lock serializes them. A
+We observe that a priority queue shared by $p$ threads under one lock serializes them. A
 *relaxed* priority queue returns instead a pair that need not be the least:
 the *rank* of a popped pair is 1 plus the number of the pairs present with
 a smaller key, and its *rank error* the rank less 1, which is 0 for an exact
@@ -1091,23 +1416,78 @@ the buffers of [Williams, Sanders and Dementiev
 2021](Z-bibliography.md#ref-williams2021), on pairs $( k , x )$ of a key
 (an integer or a real, the least first by `less`) and an item.
 
-The $n$ queues are sequential priority queues, each with a separate lock
+In it, the $n$ queues are sequential priority queues, each with a separate lock
 and with the key of its minimum, $\mathit{top}_j$, kept apart in an atomic
 word that the other threads read without the lock. A push puts the pair in
 a random queue whose lock it takes at the first try, and draws another one
 when the lock is held. A pop reads the minima of two distinct random
 queues, locks the queue with the smaller one if it is free (draws two other
 queues otherwise), and takes its minimum
-([Figure 24.10](24-concurrent.md#fig-24-10)). Let there be $n = q p$
-queues. At most $p - 1$ of them are held by other threads, and a queue
-drawn at random is held with probability less than $1 / q$; hence a lock is
-taken after at most $q / ( q - 1 )$ draws on average (2 for $q = 2$, i.e., the $n = 2 p$
-queues that the header suggests),
-and no thread waits for a lock. With $n = 1$ the queue is exact, a
-priority queue under one lock, which is typically used for testing and for
-comparison.
+([Figure 24.10](24-concurrent.md#fig-24-10)). With $n = 1$ the queue is
+exact, a priority queue under one lock, which is typically used for testing
+and for comparison.
+
+<span id="lem-24-19"></span>**Lemma 24.19.** *Let there be $n = q p$ queues,
+$q > 1$, used by $p$ threads, and let each draw of a queue be uniform and
+independent of the locks held. Then a push takes a lock after fewer than
+$q / ( q - 1 )$ draws in expectation (2 for $q = 2$, i.e., the $n = 2 p$
+queues that the header suggests), and no thread waits for a lock.*
+
+*Proof.* A thread that draws holds no lock, and each of the other $p - 1$
+threads holds at most one; hence at most $p - 1$ of the $n$ queues are
+held at each draw, and a draw finds a held lock with probability at most
+$( p - 1 ) / ( q p ) < 1 / q$. The number of draws up to the first free
+lock is thus dominated by a geometric variable of success probability
+$1 - 1 / q$, whose mean is $q / ( q - 1 )$. A held lock is never waited
+for: the thread draws again instead. $\square$
+
+The independence of the draws from the locks is that of the generator of
+each handle, which no other thread reads; a pop draws two queues per
+round and takes a lock with at least the same probability, since it fails
+only if the better queue is held.
 
 ![Figure 24.10. A `MultiQueue` of four queues, each with its minimum $\mathit{top}$, read without locks, and its deletion buffer $D$ (the least pair on the right); a pop that draws the queues 1 and 3 takes the key 4 from the better one, while the keys 2 and 3 are in the other queues: its rank error is 2.](../figures/concurrent-multiqueue.svg){#fig-24-10}
+
+Its public members, and those of the handle of a thread, are
+
+```cpp
+template< class K , class T , class Less = std::less< K > >
+class MultiQueue {
+ public:
+ struct Entry { K key; T item; };
+ class Handle {
+  public:
+  void push( K k , T x );
+  template< class It > void pushAll( It first , It last );
+  std::optional< Entry > tryPop( void );
+  };
+ explicit MultiQueue( std::size_t n , unsigned s = 16 ,
+                      std::uint64_t seed = 1 , Less less = Less() );
+ Handle handle( void );
+ std::size_t queues( void ) const;
+ unsigned stickiness( void ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ bool consistent( void ) const;
+ };
+```
+
+where $s$ is the stickiness and `tryPop()` answers nothing only when the
+queues it looked at were empty; the constant `decrease_key` of the class
+declares, in the vocabulary of [§1.14](01-introduction.md#sec-1-14), that
+a key is lowered lazily, by a new pair. Each thread takes its own handle:
+
+```cpp
+ADS::MultiQueue< int , int > M( 8 );        // n = 8 queues
+std::vector< std::thread > T;
+for( int k = 0 ; k < 4 ; ++k )
+ T.emplace_back( [ & , k ]() {
+  auto h = M.handle();
+  for( int i = 0 ; i < 100 ; ++i ) h.push( 4 * i + k , i );
+  while( auto e = h.tryPop() ) {}          // small keys first, roughly
+  } );
+for( auto & t : T ) t.join();
+```
 
 <span id="alg-24-9"></span>**Algorithm 24.9.** The push and the pop of
 `MultiQueue::Handle` ([Rihani et al. 2015](Z-bibliography.md#ref-rihani2015),
@@ -1195,16 +1575,17 @@ We adopt two devices of [Williams et al.
 for $s$ operations (the *stickiness*), and their lines stay in its cache;
 it draws two others after $s$ operations or when a lock is held. A push
 goes to one of the two at random, a pop to the better one. Also, each queue
-is an 8-ary heap behind two buffers of 16 pairs. The deletion buffer $D$ is
-sorted by decreasing keys and holds the least pairs of the queue, and a pop
+is an 8-ary heap behind two buffers of 16 pairs. We keep the deletion buffer $D$ sorted by decreasing keys; it holds the least pairs of the queue, and a pop
 takes its pair from its end without moving the others. The insertion buffer
 $I$ is unsorted; a push fills it, and it goes into the heap only when it is
 full or when $D$ runs out.
 
-<span id="lem-24-15"></span>**Lemma 24.15.** *In each queue, let $D$ be
+<span id="lem-24-20"></span>**Lemma 24.20.** *In each queue, let $D$ be
 empty only if the queue is, and let no pair of $I$ or of the heap $H$ be
 less than a pair of $D$. Then the least pair of $D$ is the least of the
-queue, and the push and the pop of [Algorithm 24.9](24-concurrent.md#alg-24-9) keep both properties.*
+queue, and the push and the pop of [Algorithm 24.9](24-concurrent.md#alg-24-9) keep both properties,
+at a cost of $O( \log m )$ amortized time per operation on a queue of $m$
+pairs.*
 
 *Proof.* We note that the first statement is the second property. A push of a pair not
 greater than the greatest of $D$ puts it into $D$. Then the greatest of a
@@ -1214,14 +1595,19 @@ $I$ and $H$ are empty, and the pairs of a full $I$ go into $H$; neither
 move changes the two properties. A pop takes the least of $D$ and, if $D$ becomes empty, moves
 $I$ into $H$ and the least $\min( 16 , |H| )$ pairs of $H$ into $D$, which
 are not greater than the rest of $H$; $D$ is then empty only if $H$
-is. $\square$
+is. As to the cost, a push or a pop changes $D$ or $I$ in $O( b )$ time,
+$b = 16$; a full $I$ goes into $H$ by $b$ pushes, in $O( b \log m )$ time,
+at most once per $b$ pairs put into $I$, and $D$ is refilled by at most $b$
+pops of $H$, in $O( b \log m )$ time, at most once per $b$ pairs taken from
+$D$, but for the refills of fewer than $b$ pairs, which happen only when
+$H$ empties and cost $O( |H| \log m )$, charged to the pairs that entered
+$H$. $\square$
 
 Each queue is therefore exact, the relaxation is only in the choice of the
 queue, and [Theorem 24.1](24-concurrent.md#thm-24-1) applies unchanged. Its heap is touched by batches
-of 16 pairs, at a cost of $O( \log m )$ amortized per operation on a queue
-of $m$ pairs, and the lines of $D$ and $I$ usually stay in the cache of the
+of 16 pairs, and the lines of $D$ and $I$ usually stay in the cache of the
 thread.
-The stickiness has no theory yet: the measures of [Williams et al.
+We know of no theory of the stickiness yet: the measures of [Williams et al.
 2021](Z-bibliography.md#ref-williams2021) show rank errors that grow about
 linearly in $s$, which is why $s$ is a parameter of the constructor (16 by default, given
 by `stickiness()`); the bounds above are those of $s = 1$.
@@ -1252,7 +1638,7 @@ epoch $e$ and the number $w$ of the waiters, the two halves of one word of
 64 bits (on a separate line). It also holds a copy $E$ of the epoch of 32
 bits, the size of a futex, on which the waiters sleep. A waiter announces
 itself and reads the epoch in one read-modify-write (`prepareWait()`, which
-adds 1 to $w$), and looks at the condition once more. If the condition is
+adds 1 to $w$ and returns $e$, of the member type `Key`), and looks at the condition once more. If the condition is
 still false, it sleeps while $E = e$ (`commitWait( e )`, by
 `std::atomic::wait`); otherwise it withdraws (`cancelWait( e )`). A
 notifier makes the condition true, and then `notify()` reads the word after
@@ -1263,6 +1649,34 @@ the woken threads are still on their way, find no thread to wake and cost
 no system call.
 
 ![Figure 24.11. The word of the epoch $e$ and of the waiters $w$ of an `EventCount`, and the copy $E$ of the epoch, after `prepareWait()` of a waiter, which then sleeps while $E = 5$, and after `notify()`, which advances the epoch, withdraws the waiter and wakes it.](../figures/concurrent-eventcount.svg){#fig-24-11}
+
+Its public members are
+
+```cpp
+class EventCount {
+ public:
+ using Key = std::uint32_t;
+ Key prepareWait( void ) noexcept;
+ void cancelWait( Key k ) noexcept;
+ void commitWait( Key k ) noexcept;
+ void notify( void ) noexcept;
+ template< class P > void await( P && p , std::int64_t spin = 20000 );
+ std::uint32_t waiters( void ) const noexcept;
+ };
+```
+
+and a thread waits for a flag that another one raises as follows:
+
+```cpp
+ADS::EventCount E;
+std::atomic< bool > ready{ false };
+std::thread w( [ & ]() {
+ E.await( [ & ]() { return( ready.load() ); } );   // spins, then sleeps
+ } );
+ready.store( true );                        // the condition first,
+E.notify();                                 // then the notification
+w.join();
+```
 
 <span id="alg-24-10"></span>**Algorithm 24.10.** The operations of
 `EventCount` (after [Reed and Kanodia 1979](Z-bibliography.md#ref-reed1979));
@@ -1279,7 +1693,7 @@ of the epoch.
 
 --8<-- "generated/EventCount-await.pseudo.md"
 
-The fences are asymmetric where the system has them, as `membarrier(2)` on
+We make the fences asymmetric where the system has them, as `membarrier(2)` on
 Linux ([Ladan-Mozes, Lee and Vyukov
 2011](Z-bibliography.md#ref-ladanmozes2011)). A waiter, which is about to
 sleep anyway, runs the heavy fence, a system call that makes each running
@@ -1289,7 +1703,7 @@ costs the read of a line that stays shared. A full fence, instead, would
 wait at each item for the stores of the item to reach the caches of the
 other threads. Elsewhere both fences are full ones.
 
-<span id="lem-24-16"></span>**Lemma 24.16.** *Let the read-modify-write of
+<span id="lem-24-21"></span>**Lemma 24.21.** *Let the read-modify-write of
 the waiter be followed by a full fence, and the write that makes the
 condition true be followed by a full fence before the notifier reads the
 waiters. Then a waiter does not sleep through a notification of a
@@ -1304,10 +1718,6 @@ word; then either the waiter has not yet compared $E$ with $e$, and finds
 it changed, or it sleeps on $E = e$ and is woken by the notification that
 follows the change. A "spurious" wake-up only makes the waiter look
 again. $\square$
-
-```cpp
---8<-- "generated/EventCount-notify.cpp"
-```
 
 We need one more detail to keep the lemma true with several notifiers. Two notifiers
 that advanced the epoch of the word to $e - 1$ and to $e$ may reach $E$ in
@@ -1348,9 +1758,22 @@ the spinning lasts $2^7 - 1 = 127$ pauses, a few microseconds, and
 `step()` gives the number $k$ of the calls since the last `reset()` (up
 to $S + 1$).
 
+Its public members are
+
+```cpp
+class Backoff {
+ public:
+ explicit Backoff( int S = 6 );
+ void pause( void ) noexcept;
+ void reset( void ) noexcept;
+ bool spinning( void ) const noexcept;
+ int step( void ) const noexcept;
+ };
+```
+
 --8<-- "generated/Backoff-pause.pseudo.md"
 
-<span id="lem-24-17"></span>**Lemma 24.17.** *A thread that looks at a
+<span id="lem-24-22"></span>**Lemma 24.22.** *A thread that looks at a
 condition before each call of `pause()` and once after the last one, from
 a `reset()`, makes its look $j \ge 1$ after $2^{j - 1} - 1$ pauses, for
 $j \le S + 2$; hence a condition that becomes true after
@@ -1378,7 +1801,7 @@ A best-first search on $p$ workers (e.g., a branch-and-bound by bounds, or
 an A* search) may keep its OPEN in one queue shared by all, exact under a
 lock or relaxed as the MultiQueue of [§24.9](24-concurrent.md#sec-24-9).
 Alternatively, it may keep a queue per worker, from which the idle workers
-steal. The second choice keeps the order of each worker exact. A search
+steal. We adopt the second choice, which keeps the order of each worker exact. A search
 needs this when it counts the nodes of each worker against a limit, or when
 it wants the same run from the same steals. It loses the global order,
 however, and a worker may expand a node worse than the best of another
@@ -1414,7 +1837,7 @@ processor, and the randomized priority queue of [Sanders
 1998](Z-bibliography.md#ref-sanders1998) spreads its items at random over
 the processors.
 
-The queue therefore deals its pairs to two 4-ary heaps $H_0$ and $H_1$ of
+We therefore let the queue deal its pairs to two 4-ary heaps $H_0$ and $H_1$ of
 its owner, which no other thread reads. A push goes into the smaller heap,
 and into each in turn when they are as large. Hence the pairs pushed one
 after the other (e.g., the children of a node) go to both heaps, and either
@@ -1440,6 +1863,36 @@ costs no read-modify-write and no fence. A thief, in exchange, waits
 (hopefully briefly) for the next operation of the owner, as long as a `Backoff` spins, before it tries
 another victim.
 
+Its public members are
+
+```cpp
+template< class K , class T , class Less = std::less< K > ,
+          class Bd = void , class BdLess = std::less<> >
+class StealablePriorityQueue {
+ public:
+ static constexpr bool bounded = ! std::is_void_v< Bd >;
+ using Bound = std::conditional_t< bounded , Bd ,
+                                   detail::SpqNoBound >;
+ using Entry = detail::SpqEntry< K , T , Bd >;    // key, (bound,) item
+ explicit StealablePriorityQueue( Less less = Less() ,
+                                  BdLess bl = BdLess() );
+ void push( K k , T x ) requires( ! bounded );
+ void push( K k , Bound b , T x ) requires bounded;
+ std::optional< Bound > minBound( void ) const requires bounded;
+ std::optional< Entry > pop( void );        // the owner
+ const Entry & top( void );                 // the owner
+ void serve( void );                        // the owner
+ std::size_t steal( StealablePriorityQueue & v );   // a thief, into v
+ template< class F > std::size_t drain( F && f );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ bool stealable( void ) const;
+ bool offering( void ) const;
+ std::pair< std::size_t , std::size_t > halves( void ) const;
+ bool consistent( void ) const;
+ };
+```
+
 <span id="alg-24-11"></span>**Algorithm 24.11.** The operations of
 `StealablePriorityQueue`; $O$ is the offer, $k_O$ its least key and
 $\mathit{offered}$ the knowledge of the owner that it made it.
@@ -1457,15 +1910,14 @@ whose least local key is greater than $k_O$ (or whose heaps are empty)
 takes the offer back by the same exchange, and whoever of the two threads
 exchanges first gets all of it.
 
-<span id="lem-24-18"></span>**Lemma 24.18.** *Let the owner take the offer
+<span id="lem-24-23"></span>**Lemma 24.23.** *Let the owner take the offer
 back, by an exchange with null, before a pop whose two heaps are empty or
 whose least key is greater than $k_O$. Then each pop of the owner returns a
 pair of least key among those that the owner holds at the moment of the
 pop, the pairs of an offer not yet claimed included.*
 
 *Proof.* We first note that the heaps of the owner change only by its
-operations. The offer,
-once published, does not change until one exchange takes it, by a thief or
+operations. Now, the offer, once published, does not change until one exchange takes it, by a thief or
 by the owner and never by both, since the exchanges on one word are totally
 ordered and only the first one finds the pointer. If the least local key is
 not greater than $k_O$, the local pair is a least pair of all, whether a
@@ -1476,16 +1928,27 @@ when it popped. $\square$
 
 Each pop is thus exact at the moment of its exchange, or of its last change
 of the heaps. Otherwise, the only pairs that leave the owner are those of an
-offer, a choice of the owner that keeps its least pair. For $m$ pairs we
-have the following costs. A push and a pop cost $O( \log m )$ on a 4-ary heap of about $m / 2$ pairs,
-half as deep as a binary heap, plus a load of the flag. Answering a thief
-costs $O( 1 )$, i.e., the store of a pointer. An exception arises when the
-two heaps differ by more than a factor of 4 (the heap left after a
-steal, before the pushes refill the other); the owner then deals all its
-pairs again to two heaps, in $O( m )$. A steal costs the thief two
-exchanges and the deal of the $s$ pairs taken to its two heaps, in
-$O( s )$ by the construction of Floyd. A pair is copied only by a deal, and
-the pairs of an offer move with their heap, by its pointer.
+offer, a choice of the owner that keeps its least pair.
+
+<span id="lem-24-24"></span>**Lemma 24.24.** *For an owner that holds $m$
+pairs, a push and a pop cost $O( \log m )$ time and a load of the flag
+`hungry`, besides the answer to a thief that they may give; the answer
+costs $O( 1 )$ time, or $O( m )$ when the heap $j$ to offer is unbalanced
+($5 | H_j | < m$ or $5 | H_j | > 4 m$) and the owner first deals the $m$
+pairs again; and a steal of $s$
+pairs costs the thief one exchange, a store of the flag `hungry`, and
+$O( s )$ time.*
+
+*Proof.* Each heap holds at most $m$ pairs, and a push or a pop sifts one
+pair along a path of a 4-ary heap, of length $O( \log_4 m )$; the choice of
+the heap and the reading of the flag are $O( 1 )$. A deal puts the $m$
+pairs in turn into two vectors and makes each a heap by the construction
+of Floyd, which costs time linear in its size. Answering a thief is the
+store of a pointer to a heap with release, and the heap moves with its
+pointer, with no copy of a pair. A thief raises the flag by a relaxed
+store, claims the offer by one exchange and, if it got it, moves the heap
+into its own, with no copy, and deals its $s$ pairs to its two heaps, again
+by Floyd's construction. $\square$
 
 `StealingFrontier` holds the queues of $p$ workers, one per call $f( i )$ of
 the `run( p , f )` of an executor (see [chapter 25](25-parallel.md#ch-25)). Its `pop( i )` returns
@@ -1497,13 +1960,63 @@ returns no pair only when no worker holds one, or after `stop()`
 `StealablePriorityQueue` learns from `offering()` whether one of its
 offers waits for a thief.
 
+Its public members are
+
+```cpp
+template< class K , class T , class Less = std::less< K > ,
+          class Bd = void , class BdLess = std::less<> >
+class StealingFrontier {
+ public:
+ using Queue = StealablePriorityQueue< K , T , Less , Bd , BdLess >;
+ using Entry = typename Queue::Entry;
+ using Bound = typename Queue::Bound;
+ explicit StealingFrontier( std::size_t p , std::uint64_t seed = 1 ,
+                            Less less = Less() , BdLess bl = BdLess() );
+ std::size_t workers( void ) const;
+ Queue & queue( std::size_t i );
+ void push( std::size_t i , K k , T x ) requires( ! Queue::bounded );
+ void push( std::size_t i , K k , Bound b , T x )
+  requires Queue::bounded;
+ std::optional< Bound > minBound( std::size_t i ) const
+  requires Queue::bounded;
+ template< class F > std::size_t drain( std::size_t i , F && f );
+ void serve( std::size_t i );
+ std::optional< Entry > pop( std::size_t i );
+ void stop( void );
+ bool stopped( void ) const;
+ bool terminated( void ) const;
+ std::size_t steals( void ) const;
+ template< class E , class F > void run( E & ex , F && f );
+ template< class F > std::size_t leftovers( F && f );
+ };
+```
+
+and $p$ workers of the pool of [§25.3](25-parallel.md#sec-25-3) run a
+search on it as follows, each worker $i$ popping from its queue (or
+stealing, inside `pop( i )`) until the frontier is empty everywhere:
+
+```cpp
+ADS::ThreadPool pool( 4 );
+ADS::StealingFrontier< int , int > F( 4 );
+F.push( 0 , 0 , 1 );                        // the root, key 0, at worker 0
+std::atomic< long > nodes{ 0 };
+F.run( pool , [ & ]( std::size_t i ) {
+ while( auto e = F.pop( i ) ) {             // nothing once terminated
+  ++nodes;
+  if( e->item < 1000 )                      // two children
+   for( int c : { 2 * e->item , 2 * e->item + 1 } )
+    F.push( i , e->key + 1 , c );
+  }
+ } );                                       // nodes is 1999
+```
+
 <span id="alg-24-12"></span>**Algorithm 24.12.** The pop of a worker of
 `StealingFrontier`; $C$ is the counter of the workers at work and of the
 thieves trying, $p$ at the start.
 
 --8<-- "generated/StealablePriorityQueue-StealingFrontier-pop.pseudo.md"
 
-<span id="lem-24-19"></span>**Lemma 24.19.** *In `StealingFrontier`, let
+<span id="lem-24-25"></span>**Lemma 24.25.** *In `StealingFrontier`, let
 the counter $C$ start at $p$, and let a worker subtract 1 when its pop finds
 its heaps and its offer empty. Let a thief add 1 before the exchange that
 claims an offer and subtract 1 if the exchange fails, and let only a worker
@@ -1554,11 +2067,35 @@ towards the root. A pop moves the last pair $z$ down from the root along a
 path $P$. A node off $P$ on the path of the old last leaf lost $z$ only; it
 keeps its $\mu$ if $\mu$ is less than the bound of $z$, and so do all those
 above it off $P$. The rest of that path, and then $P$ from its end up, get
-(24.9) again. Each operation thus costs $O( \log m )$, and a read of $\mu(
-0 )$ costs $O( 1 )$.
+(24.9) again.
 
-We remark that two alternatives cost more on both kinds of bounds. The first keeps the
-bounds of the pushes and those of the pops in two multisets, the least
+<span id="lem-24-26"></span>**Lemma 24.26.** *A heap of $m$ pairs that keeps
+its least bound by scans spends $O( c )$ expected time on the scans per pop
+when the pair popped carries the least bound with probability at most
+$c / m$. A heap that keeps $\mu$ satisfies (24.9) at every node after each
+push and each pop, which cost $O( \log m )$ time, and $\mu( 0 )$ is its least
+bound.*
+
+*Proof.* A scan reads the $m$ pairs, and it runs only when the pop takes a
+pair of the least bound, whence $O( m \cdot c / m )$ expected per pop. By
+induction on the depth, (24.9) at every node makes $\mu( i )$ the least
+bound of the subtree of $i$, and $\mu( 0 )$ that of the heap. A push
+changes the pairs only on the path from the new leaf to the place $i$ of
+the new pair: the nodes below $i$ on that path hold the pairs of their
+parents, and recomputing (24.9) from the leaf up restores it there, since
+their children are already right; above $i$, each subtree gained the bound
+$b$ only, and $\mu$ becomes $\min\{ \mu , b \}$, which stops changing at
+the first node where $\mu \le b$, since $\mu$ does not increase towards the
+root. A pop removes the last leaf, whose pair $z$ moves down from the root
+along a path $P$; off $P$, only the nodes on the path of the old last leaf
+lost a pair, $z$, and their $\mu$ changes only if it was the bound of $z$,
+in which case recomputing (24.9) from below restores it; the nodes of $P$
+are recomputed from the end of $P$ up. Each recomputation reads at most 5
+values, along $O( 1 )$ paths of length $O( \log_4 m )$. $\square$
+
+A read of $\mu( 0 )$ thus costs $O( 1 )$.
+
+We remark that two alternatives cost more on both kinds of bounds. We discard both. The first keeps the bounds of the pushes and those of the pops in two multisets, the least
 bound being the least of the first once their equal tops are taken out; it
 adds a push into one of them per operation, on heaps that grow with the
 pops until they are made again. The second keeps a heap by the bounds,
@@ -1567,7 +2104,7 @@ and an update of the index at each move of a pair.
 
 --8<-- "generated/StealablePriorityQueue-minBound.pseudo.md"
 
-<span id="lem-24-20"></span>**Lemma 24.20.** *Let the owner keep, when it
+<span id="lem-24-27"></span>**Lemma 24.27.** *Let the owner keep, when it
 makes an offer, the least bound $b_O$ of the heap that it moves into the
 offer. Let `minBound()` return the least of the least bounds of its heaps
 that are not empty and, if the offer that it made is still there at an
@@ -1580,7 +2117,7 @@ no pop takes a pair of that bound, a push lowers it when its bound is less,
 a scan computes it, and $\mu( 0 )$ is it by (24.9). The pairs of an offer
 are fixed from its publication until an exchange takes it, and $b_O$ is
 their least bound. At the load, the offer is either still there, and then
-its pairs are of the owner (cf. [Lemma 24.18](24-concurrent.md#lem-24-18): a thief that claims it later
+its pairs are of the owner (cf. [Lemma 24.23](24-concurrent.md#lem-24-23): a thief that claims it later
 takes pairs that the owner held at the load), or claimed, and then its
 pairs belong to the thief from its exchange on. $\square$
 
@@ -1610,9 +2147,9 @@ For the memory of C++ we follow [Boehm and Adve
 with the total order of the sequentially consistent operations and the
 fences.
 
-The queue of one producer and one consumer goes back to [Lamport
+We take the queue of one producer and one consumer from [Lamport
 1983](Z-bibliography.md#ref-lamport1983), and its engineering for the
-caches to [Lee et al. 2010](Z-bibliography.md#ref-lee2010) and to B-Queue
+caches from [Lee et al. 2010](Z-bibliography.md#ref-lee2010) and from B-Queue
 ([Wang et al. 2013](Z-bibliography.md#ref-wang2013)). Our lanes of blocks
 recycled are those of the unbounded queues of FastFlow ([Aldinucci et al.
 2012](Z-bibliography.md#ref-aldinucci2012)), and the stack of the inbox is
@@ -1624,7 +2161,7 @@ sense. Work stealing uses the deque of [Chase and Lev
 2005](Z-bibliography.md#ref-chase2005), with the orders of memory proved
 correct by [Lê et al. 2013](Z-bibliography.md#ref-le2013); the schedule of
 [Blumofe and Leiserson 1999](Z-bibliography.md#ref-blumofe1999) rests on
-it. The union-find is that of [Jayanti and Tarjan
+it. We take the union-find from [Jayanti and Tarjan
 2021](Z-bibliography.md#ref-jayanti2021), with the analysis of the
 sequential splitting of [Tarjan and van Leeuwen
 1984](Z-bibliography.md#ref-tarjan1984).

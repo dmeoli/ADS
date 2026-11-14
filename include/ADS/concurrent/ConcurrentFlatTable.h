@@ -729,6 +729,26 @@ class ConcurrentFlatTable {
  /// the group g of T in use, renewed by this thread or by another, which
  /// this one waits for, if its stamp is older; within the critical section
  /// of an insertion
+ ///
+ /// In pseudocode (beyond the book), \f$ E_g \f$ the stamp of the group
+ /// \f$ g \f$, \f$ \epsilon \f$ the epoch of the table and \f$ \beta \f$
+ /// the mark of a group being renewed:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{renew}( T , g ) \cr
+ /// 2 & \quad \textbf{loop} \cr
+ /// 3 & \qquad e \gets E_g\quad \triangleright\ \text{acquire} \cr
+ /// 4 & \qquad \textbf{if}\ e = \epsilon\ \textbf{then return} \cr
+ /// 5 & \qquad \textbf{if}\ e \ne \beta\ \textbf{and}\ \mathrm{CAS}( E_g ,
+ ///     e , \beta )\ \textbf{then} \cr
+ /// 6 & \qquad\quad \text{write 0 to the words and to the tags of } g
+ ///     \cr
+ /// 7 & \qquad\quad E_g \gets \epsilon\quad \triangleright\ \text{release};
+ ///     \ \textbf{return} \cr
+ /// 8 & \qquad \text{a pause, or a yield after 64 of them}\quad
+ ///     \triangleright\ \text{renewed by another thread}
+ /// \end{array}}
+ /// \f]
  void renew( Table & T , std::size_t g ) const;
 
  /// the first word of the place i of T, read with acquire, 0 if its group

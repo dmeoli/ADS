@@ -18,7 +18,6 @@ namespace ADS {
 
 namespace detail {
 
-//! [pathRow]
 /// the first i in [ 0 , m ] with i + start[ i ] >= t, start non-decreasing
 inline std::size_t pathRow( const std::size_t * start , std::size_t m ,
                             std::size_t t )
@@ -33,7 +32,6 @@ inline std::size_t pathRow( const std::size_t * start , std::size_t m ,
   }
  return( lo );
  }
-//! [pathRow]
 
 }  // end( namespace detail )
 

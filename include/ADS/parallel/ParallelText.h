@@ -170,7 +170,6 @@ std::vector< std::size_t > lcpArray( E & ex , const S & T ,
  const std::size_t B = std::min( n , 4 * ex.concurrency() );
  parallelFor( ex , 0 , B , [ & ]( std::size_t b ) {
   const std::size_t i0 = n * b / B , i1 = n * ( b + 1 ) / B;
-//! [scan]
   std::size_t h = 0;
   for( std::size_t i = i0 ; i < i1 ; ++i ) {
    const std::size_t j = P[ i ];
@@ -184,7 +183,6 @@ std::vector< std::size_t > lcpArray( E & ex , const S & T ,
    P[ i ] = h;
    if( h > 0 ) --h;
    }
-//! [scan]
   } , 1 );
  std::vector< std::size_t > LCP( n - 1 );
  parallelFor( ex , 0 , n - 1 , [ & ]( std::size_t r ) {

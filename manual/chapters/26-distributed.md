@@ -64,6 +64,29 @@ sizes of the pieces), and merges the $P$ sorted pieces that it receives by
 must be trivially copyable. [Figure 26.1](26-distributed.md#fig-26-1)
 follows the algorithm on three processes.
 
+The sort is declared, in the namespace `ADS::distributed`, as
+
+```cpp
+template< Executor E , class T , class C = std::less<> >
+void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void sort( MPI_Comm comm , std::vector< T > & A , C less = C() );
+```
+
+the second running the local work on `Sequential`, and each process calls
+it on its part, e.g.,
+
+```cpp
+int rank;
+MPI_Comm_rank( MPI_COMM_WORLD , &rank );
+std::vector< int > A( 1000 );
+std::mt19937 g( static_cast< unsigned >( rank ) );
+for( int & x : A ) x = int( g() % 100000 );
+ADS::ThreadPool pool;
+ADS::distributed::sort( pool , MPI_COMM_WORLD , A );
+// A is sorted, and no item of the rank r exceeds one of the rank r + 1
+```
+
 <span id="alg-26-1"></span>**Algorithm 26.1.** Sort by regular sampling
 ([Shi and Schaeffer 1992](Z-bibliography.md#ref-shi1992)), on an executor
 $\mathit{ex}$ inside each process, and without one.
@@ -89,7 +112,7 @@ line 10 sends the single item equal to the splitter $j$ (if any) to the
 piece $j$; hence the process $j$ receives the items $x$ with
 $s_j \le x < s_{j + 1}$, where $s_0 = - \infty$ and $s_P = + \infty$.
 Since $s_j$ and $s_{j + 1}$ are the samples of the places $j ( P - 1 )$
-and $( j + 1 ) ( P - 1 )$ of $S$, the interval holds exactly $P - 1$
+and $( j + 1 ) ( P - 1 )$ of $S$, the interval holds $P - 1$
 samples. Let $t_i$ be those of the process $i$, so that
 $\sum_i t_i = P - 1$. The samples of the process $i$ are its items of the
 places $w , 2 w , \ldots , ( P - 1 ) w$, with $w = n / P^2$, and the
@@ -109,14 +132,11 @@ fail, since the items of one key all fall in one interval; `sort()`
 therefore cuts the items equal to a run of $k$ equal splitters into
 $k + 1$ parts whose sizes differ by at most one, the lowest part
 being the smallest (line 10), and a key repeated many times is
-thus spread over as many processes as it fills. Also, the merge keeps the result sorted, since the parts of the run are of equal items.
-
-```cpp
---8<-- "generated/DistributedSort-cuts.cpp"
-```
+thus spread over as many processes as it fills. Also, the merge keeps the result
+sorted, since the parts of the run are of equal items.
 
 A process with no items takes no samples (as its flag, gathered first, records), and the splitters come from the samples of the others; when no process
-has items, all the cuts are at the end. Finally, the last loop makes the
+has items, all the cuts are at the end. Finally, the loop of line 11 makes the
 cuts nondecreasing. It is a safeguard, which leaves them unchanged when `less`
 is a strict weak order: the cut of a splitter $x$ lies between the first
 item equal to $x$ and the place after the last one, and within a run of
@@ -167,7 +187,7 @@ messages per level over $\ell$ levels; ADS does not realize them.
 `MPI_Init_thread()` at the funneled level unless it is already started,
 and ends it by `MPI_Finalize()` if it started it; the funneled level (only
 the thread that started MPI calls it) suffices for the mailbox, and another
-level may be asked by the third argument of the constructor, `level()`
+level may be requested by the third argument of the constructor, `level()`
 giving the one that MPI provides (or `MPI_THREAD_SINGLE`, if the object did
 not start MPI). The object cannot be copied, since MPI ends once.
 `MPIExecutor` holds a communicator (`MPI_COMM_WORLD` by default, given back
@@ -197,6 +217,37 @@ all the processes must start the same number of them, and destroy the
 object after the last one has completed, which are the preconditions of
 the class (which, as MPI writes into it, cannot be copied).
 
+The three classes of `MPIExecutor.h` have the public members
+
+```cpp
+class MPIEnvironment {
+ public:
+ MPIEnvironment( int & argc , char ** & argv ,
+                 int level = MPI_THREAD_FUNNELED );
+ int level( void ) const;
+ };
+
+class MPIExecutor {
+ public:
+ explicit MPIExecutor( MPI_Comm comm = MPI_COMM_WORLD );
+ std::size_t rank( void ) const;
+ std::size_t size( void ) const;
+ MPI_Comm comm( void ) const;
+ template< class F > void run( F && f ) const;
+ void barrier( void ) const;
+ };
+
+template< class T >
+class DistributedMin {
+ public:
+ explicit DistributedMin( MPI_Comm comm = MPI_COMM_WORLD );
+ bool start( T v );
+ std::optional< T > test( void );
+ T wait( void );
+ bool inFlight( void ) const;
+ };
+```
+
 <span id="alg-26-2"></span>**Algorithm 26.2.** Start of a reduction of
 `DistributedMin`.
 
@@ -217,6 +268,56 @@ $k$ messages of $b$ bytes then cost $\alpha + \beta k b$ instead of
 $k ( \alpha + \beta b )$. Its price is the latency of a single message,
 which grows by the time its batch takes to fill; `flush()` sends the
 outboxes that are not empty, and cuts it.
+
+The public members of `MPIMailbox<Msg>`, for a trivially copyable `Msg`,
+are
+
+```cpp
+template< class Msg , bool = std::is_trivially_copyable_v< Msg > >
+class MPIMailbox {
+ public:
+ explicit MPIMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
+                      std::size_t batch = 256 );
+ std::size_t rank( void ) const;
+ std::size_t size( void ) const;
+ void send( std::size_t to , const Msg & x );
+ void flush( void );
+ template< class F > std::size_t poll( F && f );
+ bool quiescent( void );
+ void stop( void );
+ bool stopped( void ) const;
+ bool terminated( void ) const;
+ template< class F > std::size_t leftovers( F && f );
+ std::uint64_t sent( void ) const;
+ std::uint64_t batches( void ) const;
+ std::uint64_t received( void ) const;
+ std::uint64_t waves( void ) const;
+ MPI_Comm comm( void ) const;
+ };
+```
+
+and a process works on it as a worker of `run()` does on `Mailbox`:
+
+```cpp
+ADS::MPIMailbox< std::uint32_t > mb;        // on MPI_COMM_WORLD
+std::vector< std::uint32_t > S;
+if( mb.rank() == 0 ) S.push_back( 1 );
+long nodes = 0;
+for( ; ; ) {
+ mb.poll( [ & ]( std::uint32_t v ) { S.push_back( v ); } );
+ if( S.empty() ) {
+  if( mb.quiescent() ) break;               // terminated everywhere
+  continue;
+  }
+ const std::uint32_t v = S.back();
+ S.pop_back();
+ ++nodes;
+ if( v < ( 1u << 12 ) )
+  for( std::uint32_t c : { 2 * v , 2 * v + 1 } )
+   mb.send( c % mb.size() , c );
+ }
+// the nodes of all the processes sum to 8191
+```
 
 <span id="alg-26-3"></span>**Algorithm 26.3.** Send, post, flush and poll
 of `MPIMailbox`; $s$ and $r$ count the messages sent and received by the
@@ -262,7 +363,7 @@ packed into a batch until it holds `batch` bytes (65536 by default),
 of a type that is not trivially copyable is an `MPIByteMailbox` whose
 bytes are those of `MPICodec<Msg>`, the customization point that encodes
 a message (`encode( x , out )` appends its bytes to `out`) and decodes it
-(`decode( b )` rebuilds it from exactly those bytes), given for `std::string` and for the vectors of
+(`decode( b )` rebuilds it from those bytes), given for `std::string` and for the vectors of
 trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The bytes $b$ that `poll(f)`
 of `MPIByteMailbox` passes to `f(t, b)` are valid during the call, at an
 offset multiple of 8 of a buffer that `new` allocated (hence aligned for
@@ -278,6 +379,36 @@ duplicate), the alias `Message` of `Msg`, and the counters `sent()`,
 their buffers.
 
 ![Figure 26.3. Two records of a batch of `MPIByteMailbox`: a message of tag 7 and 5 bytes, padded to 8, and an empty message of tag 2.](../figures/distributed-records.svg){#fig-26-3}
+
+The members of `MPIByteMailbox` are those of `MPIMailbox` but for the
+send and the default batch, of 65536 bytes:
+
+```cpp
+class MPIByteMailbox {
+ public:
+ explicit MPIByteMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
+                          std::size_t batch = 65536 );
+ void send( std::size_t to , std::uint32_t t ,
+            std::span< const std::byte > b );
+ void flush( void );
+ template< class F > std::size_t poll( F && f );
+ bool quiescent( void );
+ template< class F > std::size_t leftovers( F && f );
+ };
+```
+
+and a codec of a type `Msg` that is not trivially copyable has the two
+static members below, which the library gives for `std::string` and for
+the vectors of trivially copyable items:
+
+```cpp
+template< class Msg > struct MPICodec;
+template<>
+struct MPICodec< std::string > {
+ static void encode( const std::string & x , std::vector< std::byte > & out );
+ static std::string decode( std::span< const std::byte > b );
+ };
+```
 
 <span id="alg-26-4"></span>**Algorithm 26.4.** Send and poll of
 `MPIByteMailbox`.
@@ -348,8 +479,10 @@ known $O( \alpha \log P )$ after it happens, with no message per message
 sent (the acknowledgments of [Dijkstra and Scholten
 1980](Z-bibliography.md#ref-dijkstra1980)) and no process that coordinates
 the waves. We remark that a single wave would not do: a message sent by a
-process before its contribution and received by another after the contribution of the latter is counted in $S$ but not in $R$, while one received before
-and sent after is counted in neither, and the two errors may cancel.
+process before its contribution and received by another after the
+contribution of the latter is counted in $S$ but not in $R$, while one sent
+after the contribution of its sender and received before that of its
+receiver is counted in $R$ but not in $S$, and the two errors may cancel.
 [Table 26.1](26-distributed.md#tab-26-1) follows the waves on a small
 computation.
 
@@ -364,12 +497,10 @@ arrives; the test (26.2) fails at the second wave and holds at the third.
 | 2 | $( 1 , 0 )$ | $( 0 , 1 )$ | $( 1 , 1 )$ | $S_2 = 1 \ne R_1 = 0$ |
 | 3 | $( 1 , 0 )$ | $( 0 , 1 )$ | $( 1 , 1 )$ | $S_3 = 1 = R_2$: end |
 
-At the core of the test is the function `wave()`, which `quiescent()` calls
-after it has flushed the outboxes:
-
-```cpp
---8<-- "generated/MPIMailbox-wave.cpp"
-```
+The test is the private function `wave()`, i.e., the lines 3 to 9 of
+[Algorithm 26.5](26-distributed.md#alg-26-5), which `quiescent()` calls
+after it has flushed the outboxes (line 2); once it has answered true it
+answers true at every later call, without a new wave.
 
 **The stop.** A process may also end the whole computation before its
 termination (e.g., by a limit on the work, or by a bound that closes the

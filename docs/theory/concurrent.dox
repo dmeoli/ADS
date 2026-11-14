@@ -154,8 +154,8 @@
      thieves</td>
      <td>wait-free for the owner, lock-free steal that waits a bounded time
          for an answer</td>
-     <td>\f$ O( \log m ) \f$ for the owner, no read-modify-write; two
-         exchanges per steal, \f$ O( 1 ) \f$ or \f$ O( m ) \f$ for the
+     <td>\f$ O( \log m ) \f$ for the owner, no read-modify-write; one
+         exchange per steal, \f$ O( 1 ) \f$ or \f$ O( m ) \f$ for the
          answer of the owner</td></tr>
  <tr><td><tt>EventCount</tt></td><td>any</td>
      <td>a waiter sleeps, a notifier never waits</td>
@@ -709,7 +709,7 @@
  \f$ O( 1 ) \f$, the store of a pointer, unless the two heaps differ by more
  than a factor of 4 (the heap left after a steal, before the pushes refill
  the other), when the owner deals all its pairs again to two heaps in
- \f$ O( m ) \f$; the steal two exchanges for the thief and the deal of the
+ \f$ O( m ) \f$; the steal one exchange for the thief and the deal of the
  \f$ s \f$ pairs taken to its own two heaps, \f$ O( s ) \f$, by the heap
  construction of Floyd. A pair is copied only by a deal; the pairs of an
  offer move with their heap, by its pointer.

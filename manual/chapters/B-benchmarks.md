@@ -21,7 +21,7 @@ enters a benchmark.
 
 ## B.1 The programs {#sec-B-1}
 
-There are 45 programs in `bench/`, one per family of structures or of
+There are 45 programs of timing in `bench/`, one per family of structures or of
 algorithms, each a file `bench/<name>.cpp` built as `bench-<name>` (by
 `make bench`, or with the CMake option `-DADS_BENCHMARKS=ON`, which builds
 all of them but `compression`, `succinct` and `mpi`). Each
@@ -30,6 +30,13 @@ cell and what the clock excludes. It also lists the competitors,
 each with the macro or the variable of the makefile that compiles it in
 when its library is found. [Table B.1](B-benchmarks.md#tab-B-1)
 summarizes them, with the chapter whose comparison each program measures.
+The two further sources `bench/zerocost.cpp` and `bench/zerocost_asm.cpp`
+measure no time; the script `bench/zerocost.py` compiles them at `-O2` with
+each compiler found, counts by callgrind the instructions of one change of
+a structure that publishes its changes, and compares the machine code of each
+change with that of the plain structure byte by byte, so that the claim of
+[§1.13](01-introduction.md#sec-1-13) that a change nobody listens to costs no instruction is checked by counts and by code, which do not depend on the load
+of the machine.
 
 Two auxiliary headers serve the programs. One is `bench/Bench.h`, with the
 timing, the options and the output that all of them share
@@ -50,7 +57,7 @@ library is given to `make bench`, as stated in the `@file` comment of the
 program), and the chapter where its comparison belongs.
 
 | Program | What it measures | Compared with | Chapter |
-|----------------|---------------------------|------------------------------|-----------|
+|--------|--------------|----------------|------|
 | `allocators` | `PoolAllocator` in the node containers and in `std::allocate_shared`, also freed by another thread | `std::allocator`, `std::pmr` pools, `boost::fast_pool_allocator`, (mimalloc) | [§5.11](05-memory.md#sec-5-11) |
 | `arrays` | lower bound in sorted arrays, selection by rank, range minima | `std::lower_bound`, Eytzinger layout, `std::nth_element`, (PGM-index, miniselect, sdsl-lite) | [§6.10](06-search.md#sec-6-10) |
 | `assembly` | sparse matrices by columns from triplets, rows of cuts appended and removed | `std::map`, a vector of rows, (Eigen) | [§17.11](17-numeric.md#sec-17-11) |
@@ -221,9 +228,9 @@ of two threads (`concurrent` and `allocators`) run on `CORE` and on `CORE2`, by
 default the core after `CORE`, and `concurrent` pins its two threads to the
 first two processors that the process may use. As for the parallel programs
 (`parallel`, `joins`, `greedy` and `runtime`), they run on the cores of
-`PCORES` (by default `CORE` alone), at 1, 2, 4, and so on threads up to
+`PCORES` (by default only `CORE`), at 1, 2, 4, and so on threads up to
 their number (and at most 128); the lines that the GAP benchmark suite
-prints by itself inside `parallel` are left out. With `ISOLATE=1`, the
+prints directly inside `parallel` are left out. With `ISOLATE=1`, the
 default, each structure of each benchmark runs in a separate process
 (`ISOLATE=0` runs each benchmark in one process). To
 this aim, `run.sh` first obtains from the binary the labels of its structures
@@ -367,7 +374,7 @@ against the parallel libraries, against the same algorithm of ADS on the
 executors of FastFlow, OpenMP and oneTBB, and against the sequential
 algorithm. A cell enters the summary only if both runs measured it with a
 positive time; hence a result marked $-1$ as wrong
-([§B.2](B-benchmarks.md#sec-B-2)) is left out, rather than counted. Its rows go in this appendix, and those of the structures
+([§B.2](B-benchmarks.md#sec-B-2)) is left out of the summary. Its rows go in this appendix, and those of the structures
 of a chapter also go in the section of that chapter that Table B.1
 names. The other is the table of a single benchmark, which
 `bench/tables.py` writes from one file, with one row per structure and

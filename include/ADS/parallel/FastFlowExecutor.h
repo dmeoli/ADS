@@ -265,7 +265,6 @@ class FastFlowExecutor {
     f( i );
    return;
    }
-//! [bulk]
   std::lock_guard< std::mutex > g( f_lock );
   detail::FirstError error;
   // at least one index per worker, those from n doing nothing
@@ -283,7 +282,6 @@ class FastFlowExecutor {
    tl_inside = false;
    } , long( f_p ) );
   error.rethrow();
-//! [bulk]
   }
 
  /// the lock of the data shared by the workers of `run()`

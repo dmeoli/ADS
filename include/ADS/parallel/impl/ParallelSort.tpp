@@ -396,7 +396,6 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
     ++c[ cls( A[ i ] ) ];
   std::copy( c.begin() , c.end() , cnt.begin() + std::ptrdiff_t( j * k ) );
   } );
-//! [places]
  // the places, in the order ( bucket , block )
  std::vector< std::size_t > start( k + 1 , 0 );
  {
@@ -411,7 +410,6 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
    }
   start[ k ] = s;
   }
-//! [places]
  if constexpr( counting )
   if( exact && ! outside.load() ) {
    // the buckets filled with their keys
@@ -492,7 +490,7 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
  std::atomic< std::size_t > next{ first };
  ex.bulk( std::min( p , k - first ) , [ & ]( std::size_t ) {
   std::vector< T > v;
-  for( ;; ) {
+  for( ; ; ) {
    const std::size_t r = next.fetch_add( 1 , std::memory_order_relaxed );
    if( r >= k )
     return;

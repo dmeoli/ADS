@@ -136,10 +136,13 @@ namespace ADS::distributed {
 ///     x \cr
 /// 10 & \qquad \mathit{cut}[ j ] \gets \mathit{lo} + \lfloor ( \mathit{hi} -
 ///     \mathit{lo} ) ( j - f + 1 ) / ( l - f + 1 ) \rfloor \cr
-/// 11 & \quad \text{send } A[ \mathit{cut}[ j ] .. \mathit{cut}[ j + 1 ] - 1 ]
+/// 11 & \quad \textbf{for}\ j \gets 1\ \textbf{to}\ P\ \textbf{do}
+///     \ \mathit{cut}[ j ] \gets \max\{ \mathit{cut}[ j ] ,
+///     \mathit{cut}[ j - 1 ] \}\quad \triangleright\ \text{a safeguard} \cr
+/// 12 & \quad \text{send } A[ \mathit{cut}[ j ] .. \mathit{cut}[ j + 1 ] - 1 ]
 ///     \text{ to the process } j \text{, for each } j\quad \triangleright
 ///     \ \mathrm{MPI\_Alltoallv} \cr
-/// 12 & \quad A \gets \mathrm{multiwayMerge}( \mathit{ex} , \text{the } P
+/// 13 & \quad A \gets \mathrm{multiwayMerge}( \mathit{ex} , \text{the } P
 ///     \text{ pieces received} )
 /// \end{array}}
 /// \f]
@@ -248,7 +251,6 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
    S.insert( S.end() , all.begin() + std::ptrdiff_t( q * ( p - 1 ) ) ,
              all.begin() + std::ptrdiff_t( ( q + 1 ) * ( p - 1 ) ) );
  ADS::sort( S , less );
- //! [cuts]
  // the cuts: piece j of this process holds its items strictly between
  // the splitters j and j + 1 (none below the first piece, none above the
  // last), and the items equal to a run of k equal splitters are cut into
@@ -282,7 +284,6 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
   }
  for( std::size_t j = 1 ; j <= p ; ++j )
   cut[ j ] = std::max( cut[ j ] , cut[ j - 1 ] );
- //! [cuts]
  using detail::Count;
  using detail::Displacement;
  using detail::fits;
