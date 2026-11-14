@@ -1,0 +1,32 @@
+% Source for the figure of MPSCQueue (sec. 24.3): two lanes of blocks of 4
+% places, each block with the count f of the items written, the places of
+% the consumer (below) and of the producer (above), and a block that the
+% consumer gave back to the first lane, on its stack of blocks to reuse.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {lane 1};
+  \cells{B}{0,0}{e/cell,f/cell,g/cell,/free}
+  \node[index,anchor=west] at ($(B-3.east)+(2mm,0)$) {$f = 3$};
+  \node[var] (out1) at ($(B-0)+(0,-12mm)$) {consumer};
+  \draw[ptr] (out1) -- (B-0.south);
+  \node[var] (in1) at ($(B-3)+(0,11mm)$) {producer};
+  \draw[ptr] (in1) -- (B-3.north);
+  \node[var,inner sep=1.5pt] (gv) at (52mm,0) {given};
+  \cells{A}{66mm,0}{/free,/free,/free,/free}
+  \draw[ptr] (gv) -- (A-0.west);
+  \node[var,anchor=east] at (-6mm,-30mm) {lane 2};
+  \cells{C}{0,-30mm}{/free,p/cell,q/cell,/free}
+  \node[index,anchor=west] at ($(C-3.east)+(2mm,0)$) {$f = 3$};
+  \node[var] (out2) at ($(C-1)+(0,-12mm)$) {consumer};
+  \draw[ptr] (out2) -- (C-1.south);
+  \node[var] (in2) at ($(C-3)+(0,11mm)$) {producer};
+  \draw[ptr] (in2) -- (C-3.north);
+\end{tikzpicture}
+\end{document}

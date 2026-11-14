@@ -106,8 +106,10 @@
  * \ref theory_concurrent_flat).
  *
  * Each operation of a key is linearizable: a lookup at the read of the
- * word that holds the key or of the free place, an insertion at its
- * compare-and-swap or at the read of the word that holds the key.
+ * word that holds the key or of the free place (of its tag, when the
+ * places have tags), an insertion that adds its key at the write of the
+ * tag of its word (at its compare-and-swap when the places have no tags),
+ * and one that finds its key at the read of the word that holds it.
  * `clear()`, `forEach()` and `consistent()` may not run with other
  * operations. The hash of a key is \f$ h( k ) \f$, taken as it is if `H`
  * declares `is_avalanching` [see `FastHash.h`] and mixed by `hashWord()`

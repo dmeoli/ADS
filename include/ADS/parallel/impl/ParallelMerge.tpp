@@ -62,6 +62,7 @@ std::vector< std::size_t > multisequenceSplit(
    }
   const std::size_t m = mid( j );
   const auto & x = R[ j ].first[ std::ptrdiff_t( m ) ];
+//! [narrow]
   // the items before ( x , j , m ): <= x in the ranges before j, < x in
   // those after it
   std::size_t before = 0;
@@ -87,6 +88,7 @@ std::vector< std::size_t > multisequenceSplit(
    hi = c;
    hi[ j ] = m;
    }
+//! [narrow]
   }
  return( lo );
  }

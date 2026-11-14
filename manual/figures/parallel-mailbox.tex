@@ -1,0 +1,41 @@
+% Source for the figure of Mailbox on MeshChannels (sec. 25.13): three
+% workers, the outbox of the worker 0 for the worker 1, the queue of the
+% pair (0, 1) of the mesh and the shared counter C, before and after the
+% push of a batch of three messages. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % the mesh of p = 3 workers: the queue Q_{f,t} in the row t, column f
+  \node[var] at (14mm,10mm) {sender $f$};
+  \foreach \f in {0,1,2} \node[index] at (\f*14mm,5mm) {\f};
+  \node[var,anchor=east] at (-12mm,-7mm) {receiver $t$};
+  \foreach \t in {0,1,2} {
+    \node[index] at (-8mm,-\t*7mm) {\t};
+    \foreach \f in {0,1,2}
+      \node[cell,minimum width=12mm,font=\small] (q\f\t) at (\f*14mm,-\t*7mm)
+        {$Q_{\f\t}$};
+  }
+  \node[cell,minimum width=12mm,font=\small,fill=adsTouched] at (0,-7mm)
+    {$Q_{01}$};
+  % before and after the push
+  \begin{scope}[xshift=62mm]
+  \node[var,anchor=west] at (0,8mm) {before $\mathrm{push}( 0 , 1 )$};
+  \node[var,anchor=east] at (13mm,0) {$O_{0 \to 1}$};
+  \cells{a}{20mm,0}{x/cell,y/cell,z/cell}
+  \node[var,anchor=east] at (13mm,-8mm) {$Q_{01}$};
+  \cells{b}{20mm,-8mm}{/free,/free,/free,/free}
+  \node[var,anchor=west] at (50mm,-4mm) {$C = 3$};
+  \node[var,anchor=west] at (0,-18mm) {after it};
+  \node[var,anchor=east] at (13mm,-26mm) {$O_{0 \to 1}$};
+  \cells{c}{20mm,-26mm}{/free,/free,/free}
+  \node[var,anchor=east] at (13mm,-34mm) {$Q_{01}$};
+  \cells{d}{20mm,-34mm}{x/touched,y/touched,z/touched,/free}
+  \node[var,anchor=west] at (50mm,-30mm) {$C = 6$};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

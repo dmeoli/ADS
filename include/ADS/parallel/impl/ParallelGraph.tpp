@@ -129,6 +129,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
    std::int64_t sc = 0;
    const std::size_t i1 = std::min( F.size() , ( b + 1 ) * size );
    for( std::size_t i = b * size ; i < i1 ; ++i ) {
+//! [claim]
     const int u = F[ i ];
     for( int k = off[ u ] ; k < off[ u + 1 ] ; ++k ) {
      const int v = G::head( arc[ k ] );
@@ -142,6 +143,7 @@ std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
       }
      }
     }
+//! [claim]
    part[ b ] = sc;
    return( L ); } );
   scout = std::accumulate( part.begin() , part.end() , std::int64_t( 0 ) );

@@ -1,0 +1,36 @@
+% Source for the figure of ConcurrentUnionFind (sec. 24.6): a forest of
+% parents before unite(6, 5) and after it, the splitting of find(6) having
+% given 6 its grandparent 3 and the root 3 hooked under the root 0. Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    el/.style={draw,circle,minimum size=6.5mm,font=\small\ttfamily},
+    elt/.style={el,fill=adsTouched}]
+  \node[var] at (14mm,9mm) {before};
+  \node[el] (a0) at (0,0) {0};
+  \node[el] (a2) at (-6mm,-12mm) {2};
+  \node[el] (a5) at (6mm,-12mm) {5};
+  \node[el] (a3) at (28mm,0) {3};
+  \node[el] (a4) at (28mm,-12mm) {4};
+  \node[el] (a6) at (28mm,-24mm) {6};
+  \draw[ptr] (a2) -- (a0); \draw[ptr] (a5) -- (a0);
+  \draw[ptr] (a4) -- (a3); \draw[ptr] (a6) -- (a4);
+  \draw[ptr] (44mm,-12mm) -- node[above=1.5mm,font=\small\ttfamily]
+    {unite(6,5)} (66mm,-12mm);
+  \node[var] at (88mm,9mm) {after};
+  \node[el] (b0) at (84mm,0) {0};
+  \node[el] (b2) at (72mm,-12mm) {2};
+  \node[el] (b5) at (84mm,-12mm) {5};
+  \node[elt] (b3) at (96mm,-12mm) {3};
+  \node[el] (b4) at (90mm,-24mm) {4};
+  \node[elt] (b6) at (102mm,-24mm) {6};
+  \draw[ptr] (b2) -- (b0); \draw[ptr] (b5) -- (b0);
+  \draw[ptr] (b3) -- (b0); \draw[ptr] (b4) -- (b3); \draw[ptr] (b6) -- (b3);
+\end{tikzpicture}
+\end{document}

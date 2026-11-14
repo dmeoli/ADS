@@ -1,0 +1,28 @@
+% Source for the figure of ConcurrentFlatTable (sec. 24.8): the tags (upper
+% row) and the words (lower row) of a vector of 12 places, before and after
+% the insertion of a key k whose place is 5: the insertion passes the
+% places 5 to 7 and writes the word, then the tag, of the place 8. Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {tags};
+  \node[var,anchor=east] at (-4mm,-7mm) {words};
+  \cells{G}{0,0}{0/free,0/free,b3/cell,0/free,0/free,a1/cell,c7/cell,9e/cell,0/free,0/free,0/free,0/free}
+  \cells{W}{0,-7mm}{0/free,0/free,u/cell,0/free,0/free,x/cell,y/cell,z/cell,0/free,0/free,0/free,0/free}
+  \node[var] (h1) at ($(G-5)+(0,11mm)$) {place of $k$};
+  \draw[ptr] (h1) -- (G-5.north);
+  \node[var,anchor=west] at (87mm,-3.5mm) {before};
+  \node[var,anchor=east] at (-4mm,-24mm) {tags};
+  \node[var,anchor=east] at (-4mm,-31mm) {words};
+  \cells{H}{0,-24mm}{0/free,0/free,b3/cell,0/free,0/free,a1/cell,c7/cell,9e/cell,d5/touched,0/free,0/free,0/free}
+  \cells{V}{0,-31mm}{0/free,0/free,u/cell,0/free,0/free,x/cell,y/cell,z/cell,k/touched,0/free,0/free,0/free}
+  \indices{V}{12}
+  \node[var,anchor=west] at (87mm,-27.5mm) {after inserting $k$};
+\end{tikzpicture}
+\end{document}

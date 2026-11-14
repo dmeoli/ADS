@@ -328,6 +328,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::fetch( const Table & T ,
  detail::prefetch( &T.B[ b1 ] );
  }
 
+//! [peek]
 template< class K , class V , class H , class Eq >
 int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
                                                    std::uint64_t h ,
@@ -380,6 +381,7 @@ int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
  (void) out;
  return( 2 );
  }
+//! [peek]
 
 template< class K , class V , class H , class Eq >
 std::optional< V > ConcurrentCuckooTable< K , V , H , Eq >::find(

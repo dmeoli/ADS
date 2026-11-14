@@ -58,6 +58,25 @@ class ScratchRoom {
 
  /// a block of at least \f$ b \f$ bytes, aligned to a huge page, and its
  /// size in `got`
+ ///
+ /// In pseudocode (a cache of one entry, beyond the book), \f$ K \f$ the
+ /// block kept and \f$ |K| \f$ its bytes:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{take}( b ) \cr
+ /// 2 & \quad \text{under the lock: }\ \textbf{if}\ K \ne \textbf{nil}
+ ///     \ \textbf{and}\ |K| \ge b\ \textbf{then}\ \textbf{return}
+ ///     \ K \text{, and } K \gets \textbf{nil} \cr
+ /// 3 & \quad \textbf{return}\ \text{a new block of } b \text{ bytes on }
+ ///     \text{huge pages} \cr
+ /// 4 & \textbf{procedure}\ \mathrm{give}( P ) \cr
+ /// 5 & \quad \text{under the lock: }\ \textbf{if}\ K = \textbf{nil}
+ ///     \ \textbf{or}\ |K| < |P|\ \textbf{then}\ \text{swap } P
+ ///     \text{ and } K \cr
+ /// 6 & \quad \textbf{if}\ P \ne \textbf{nil}\ \textbf{then}
+ ///     \ \text{free } P
+ /// \end{array}}
+ /// \f]
  static std::byte * take( std::size_t b , std::size_t & got ) {
   {
    std::lock_guard< std::mutex > g( slot().lock );

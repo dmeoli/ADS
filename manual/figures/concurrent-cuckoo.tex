@@ -1,0 +1,28 @@
+% Source for the figure of ConcurrentCuckooTable (sec. 24.7): a table of 16
+% buckets in 4 regions of 4 buckets, each region with the version of its
+% lock (odd while held); the two buckets of a key lie in its region.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \cells{B}{0,0}{/cell,/cell,/cell,/cell,/cell,/touched,/cell,/touched,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell}
+  \indices{B}{16}
+  \foreach \a/\b/\r/\v in {0/3/0/6,4/7/1/9,8/11/2/4,12/15/3/12} {
+    \draw[decorate,decoration={brace,amplitude=2mm}]
+      ($(B-\a.north west)+(0.5mm,1.5mm)$) --
+      ($(B-\b.north east)+(-0.5mm,1.5mm)$)
+      node[midway,above=3.5mm,var] {region \r, $v = \v$};
+  }
+  \node[var] (b1) at ($(B-5)+(0,-15mm)$) {$b_1$};
+  \node[var] (b2) at ($(B-7)+(0,-15mm)$) {$b_2$};
+  \draw[ptr] (b1) -- ($(B-5.south)+(0,-4.5mm)$);
+  \draw[ptr] (b2) -- ($(B-7.south)+(0,-4.5mm)$);
+  \node[var,anchor=west] at ($(B-8)+(0,-15mm)$) {$b_2 = b_1 \oplus 2$, in the region of $b_1$};
+\end{tikzpicture}
+\end{document}

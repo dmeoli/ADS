@@ -601,12 +601,20 @@ class StealablePriorityQueue {
  ///     \triangleright\ \text{acquire} \cr
  /// 4 & \quad \textbf{return}\ b\quad \triangleright\ \textbf{nil}
  ///     \text{ if there is no pair} \cr
- /// 5 & \textbf{function}\ \beta( H )\quad \triangleright\ I \text{ the}
- ///     \text{ bounds pushed, } R \text{ those popped} \cr
- /// 6 & \quad \textbf{while}\ R \ne \emptyset\ \textbf{and}
- ///     \ \min I = \min R\ \textbf{do}\ \mathrm{pop}( I );
- ///     \ \mathrm{pop}( R ) \cr
- /// 7 & \quad \textbf{return}\ \min I
+ /// 5 & \textbf{function}\ \beta( H )\quad \triangleright\ \ell
+ ///     \text{ the least bound known, } \mu \text{ those of the}
+ ///     \text{ subtrees} \cr
+ /// 6 & \quad \textbf{if}\ \mu \text{ is kept}\ \textbf{then return}
+ ///     \ \mu( 0 ) \cr
+ /// 7 & \quad \textbf{if}\ \ell \text{ is known}\ \textbf{then return}
+ ///     \ \ell\quad \triangleright\ \text{no pop took a pair of bound }
+ ///     \ell \cr
+ /// 8 & \quad \ell \gets \text{the least bound of the pairs of } H
+ ///     \text{, by a scan} \cr
+ /// 9 & \quad \textbf{if}\ |H| \ge 64\ \textbf{and}\ \text{the pairs}
+ ///     \text{ scanned} > 16 ( \text{pops} + |H| ) + 2^{16}\ \textbf{then}
+ ///     \ \text{build } \mu \cr
+ /// 10 & \quad \textbf{return}\ \ell
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::optional< Bound > minBound( void ) const

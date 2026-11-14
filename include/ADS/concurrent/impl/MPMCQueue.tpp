@@ -35,6 +35,7 @@ MPMCQueue< T >::~MPMCQueue()
  std::allocator< Cell >().deallocate( f_cell , capacity() );
  }
 
+//! [emplace]
 template< class T >
 template< class ... Args >
 bool MPMCQueue< T >::emplace( Args && ... args )
@@ -59,6 +60,7 @@ bool MPMCQueue< T >::emplace( Args && ... args )
    p = f_tail.load( std::memory_order_relaxed );
   }
  }
+//! [emplace]
 
 template< class T >
 bool MPMCQueue< T >::tryPop( T & x )

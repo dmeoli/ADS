@@ -389,6 +389,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::stripe( void ) const -> Stripe &
  return( f_S[ t % kStripes ] );
  }
 
+//! [enter]
 template< class K , class V , class H , class Eq >
 auto ConcurrentFlatTable< K , V , H , Eq >::enter( Stripe & s ) -> Table *
 {
@@ -403,6 +404,7 @@ auto ConcurrentFlatTable< K , V , H , Eq >::enter( Stripe & s ) -> Table *
   help();
   }
  }
+//! [enter]
 
 template< class K , class V , class H , class Eq >
 void ConcurrentFlatTable< K , V , H , Eq >::copy( Table & T , Table & N )

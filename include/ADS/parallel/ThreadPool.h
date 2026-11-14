@@ -58,10 +58,12 @@
  *
  * With work \f$ W \f$ and depth \f$ D \f$, the work stealing runs in
  * expected time \f$ W / p + O( D ) \f$ (Blumofe and Leiserson), and a job of
- * `bulk()` of \f$ n \f$ calls of equal cost \f$ c \f$ in
- * \f$ \lceil n / p \rceil c + O( \log p ) \f$ after the wake-up, since its
- * \f$ h \f$ tokens are stolen one at a time; a steal costs one
- * compare-and-swap, a claim one fetch-and-add on the line of the job.
+ * `bulk()` of \f$ n \f$ calls of equal cost \f$ c \f$ in at most
+ * \f$ n c / p + c + ( p - 1 ) \sigma / 2 \f$ after the wake-up,
+ * \f$ \sigma \f$ the time of a steal, since its \f$ h \f$ tokens are
+ * stolen one at a time from the top of one deque and each thief claims
+ * calls as soon as it holds one; a steal costs one compare-and-swap, a
+ * claim one fetch-and-add on the line of the job.
  *
  * The contracts [see `Contract.h`]: \f$ p \ge 1 \f$; the pool outlives the
  * calls; an exception thrown by \f$ f \f$ in `bulk()` stops the claims and

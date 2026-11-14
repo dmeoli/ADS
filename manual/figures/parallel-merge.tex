@@ -1,0 +1,33 @@
+% Source for the figure of the multisequence selection (sec. 25.6): three
+% sorted ranges, the splits at the ranks r = 4 and r = 9 of their stable
+% merge, and the three parts of the output that they bound. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-7mm,0) {$R_1$};
+  \cells{P}{0,0}{1/touched,4/touched,7/cell,9/cell,12/free}
+  \node[var,anchor=east] at (-7mm,-10mm) {$R_2$};
+  \cells{Q}{0,-10mm}{2/touched,4/touched,8/cell}
+  \node[var,anchor=east] at (-7mm,-20mm) {$R_3$};
+  \cells{S}{0,-20mm}{5/cell,6/cell,10/free,11/free}
+  % the split at r = 4: ( 2 , 2 , 0 )
+  \draw[very thick,dashed] ($(P-1.north east)+(0,2.5mm)$) -- ($(P-1.south east)+(0,-2.5mm)$);
+  \draw[very thick,dashed] ($(Q-1.north east)+(0,2.5mm)$) -- ($(Q-1.south east)+(0,-2.5mm)$);
+  \draw[very thick,dashed] ($(S-0.north west)+(0,2.5mm)$) -- ($(S-0.south west)+(0,-2.5mm)$);
+  % the split at r = 9: ( 4 , 3 , 2 )
+  \draw[very thick] ($(P-3.north east)+(0,2.5mm)$) -- ($(P-3.south east)+(0,-2.5mm)$);
+  \draw[very thick] ($(Q-2.north east)+(0,2.5mm)$) -- ($(Q-2.south east)+(0,-2.5mm)$);
+  \draw[very thick] ($(S-1.north east)+(0,2.5mm)$) -- ($(S-1.south east)+(0,-2.5mm)$);
+  \node[var,anchor=west] at (42mm,0) {$s( 4 ) = ( 2 , 2 , 0 )$};
+  \node[var,anchor=west] at (42mm,-10mm) {$s( 9 ) = ( 4 , 3 , 2 )$};
+  \node[var,anchor=east] at (-7mm,-34mm) {output};
+  \cells{O}{0,-34mm}{1/touched,2/touched,4/touched,4/touched,5/cell,6/cell,7/cell,8/cell,9/cell,10/free,11/free,12/free}
+  \indices{O}{12}
+\end{tikzpicture}
+\end{document}

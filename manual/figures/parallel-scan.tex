@@ -1,0 +1,40 @@
+% Source for the figure of the scan by decoupled look-back (sec. 25.5):
+% the flags and the values of six tiles when the thread of the tile 4
+% looks back, and after it has published its inclusive prefix. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{tl/.style={draw,minimum width=16mm,minimum height=8mm,
+                    font=\small,outer sep=0pt},
+         tlT/.style={tl,fill=adsTouched},
+         tlF/.style={tl,fill=adsFree,text=black!45}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {look-back};
+  \node[var,anchor=east] at (-4mm,-18mm) {published};
+  \node[tl] (t0) at (8mm,0mm) {2: $P_0$};
+  \node[tl] (t1) at (24mm,0mm) {1: $a_1$};
+  \node[tl] (t2) at (40mm,0mm) {1: $a_2$};
+  \node[tl] (t3) at (56mm,0mm) {1: $a_3$};
+  \node[tlT] (t4) at (72mm,0mm) {1: $a_4$};
+  \node[tlF] (t5) at (88mm,0mm) {0};
+  \node[tl] (u0) at (8mm,-18mm) {2: $P_0$};
+  \node[tl] (u1) at (24mm,-18mm) {1: $a_1$};
+  \node[tl] (u2) at (40mm,-18mm) {1: $a_2$};
+  \node[tl] (u3) at (56mm,-18mm) {2: $P_3$};
+  \node[tlT] (u4) at (72mm,-18mm) {2: $P_4$};
+  \node[tl] (u5) at (88mm,-18mm) {1: $a_5$};
+  \foreach \i in {0,...,5} \node[index,below=1.2mm of u\i] {\i};
+  \draw[ptr] (t4.north) to[bend right=50] (t3.north);
+  \draw[ptr] (t3.north) to[bend right=50] (t2.north);
+  \draw[ptr] (t2.north) to[bend right=50] (t1.north);
+  \draw[ptr] (t1.north) to[bend right=50] (t0.north);
+  \node[var,anchor=west] at (100mm,0)
+    {$e = P_0 \oplus a_1 \oplus a_2 \oplus a_3$};
+  \node[var,anchor=west] at (100mm,-18mm) {$P_4 = e \oplus a_4$};
+\end{tikzpicture}
+\end{document}
