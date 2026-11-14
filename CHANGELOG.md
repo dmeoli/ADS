@@ -2555,6 +2555,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- gallopSearch() ran its binary search on [ lo , min( hi + 1 , n ) ), the
+  place hi included although the doubling had already found A[ hi ] >= v,
+  one comparison too many (7 instead of 6 on a vector of 11 items and the
+  answer 4); the binary search now leaves it out, and the cost is at most 2
+  ceil( log2( h + 1 ) ) comparisons for h >= 1 and 1 for h = 0, as the
+  header, the theory of the searches, the chapter of the manual and its
+  figure now say; the test ch12 ex12.9.gallop-comparisons
+
 - CellHeap::addRoot() took a free cell as a root, whose marking would then
   walk the free list; its precondition is now a cell of the heap in use, as
   for car(), cdr(), setCar() and setCdr(), stated in the header, the theory

@@ -32,6 +32,7 @@
 #include "ADS/sort/QuickSort.h"
 
 #include <algorithm>
+#include <bit>
 #include <cmath>
 #include <complex>
 #include <functional>
@@ -693,6 +694,35 @@ ADS_TEST( "ex12.8" )
   const LL k1 = c * ( a + b ) , k2 = a * ( d - c ) , k3 = b * ( c + d );
   CHECK( k1 - k3 == a * c - b * d && k1 + k2 == a * d + b * c );
   }
+ }
+
+// the comparisons of the galloping search: the binary search leaves out
+// the place where the doubling stopped, already compared, so that the
+// answer h costs at most 2 ceil( log2( h + 1 ) ) comparisons (1 for h = 0),
+// 6 on the example of the reviewers (h = 4), for every h of vectors of
+// 1 to 300 items, the answer past the end included
+ADS_TEST( "ex12.9.gallop-comparisons" )
+{
+ long c = 0;
+ auto count = [ & ]( int a , int b ) { c += ! checkingContract();
+                                       return( a < b ); };
+ const Ints A = { 3 , 8 , 12 , 20 , 31 , 40 , 44 , 51 , 60 , 72 , 85 };
+ CHECK( gallopSearch( A , 31 , count ) == 4 && c == 6 );
+ c = 0;
+ CHECK( gallopSearch( A , 40 , count ) == 5 && c == 6 );
+ bool within = true;
+ for( int n = 1 ; n <= 300 ; ++n ) {
+  Ints V( n );
+  for( int i = 0 ; i < n ; ++i ) V[ i ] = 2 * i;
+  for( int v = -1 ; v <= 2 * n ; ++v ) {
+   c = 0;
+   const std::size_t h = gallopSearch( V , v , count );
+   const long bound = h == 0 ? 1 :
+                      2 * long( std::bit_width( std::size_t( h ) ) );
+   within = within && ( h == lowerBound( V , v ) ) && ( c <= bound );
+   }
+  }
+ CHECK( within );
  }
 
 // the zeros before the ones: a binary search for the first 1 in O( log n )

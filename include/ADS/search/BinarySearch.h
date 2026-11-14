@@ -29,7 +29,8 @@
  * the number of occurrences of \f$ v \f$ (exercise 12.13). `gallopSearch()`
  * looks for the first place of an item not smaller than \f$ v \f$ by
  * doubling a bound before the binary search, in \f$ O( \log h ) \f$ time if
- * that place is \f$ h \f$ (exercise 12.9).
+ * that place is \f$ h \f$, at most \f$ 2 \lceil \log_2 ( h + 1 ) \rceil \f$
+ * comparisons for \f$ h \ge 1 \f$ (exercise 12.9).
  *
  * The contracts [see `Contract.h`]: the vector must be sorted, an audit
  * checked at the level 3 since it costs \f$ O( n ) \f$ against the
@@ -182,7 +183,9 @@ std::size_t upperBound( const std::vector< T > & A , const T & v ,
 
 /// the first place \f$ h \f$ of an item not smaller than \f$ v \f$, found by
 /// looking at the places \f$ 0 , 1 , 3 , 7 , \ldots \f$ and then by a binary
-/// search, \f$ O( \log h ) \f$
+/// search that leaves out the last place looked at, at most
+/// \f$ 2 \lceil \log_2 ( h + 1 ) \rceil \f$ comparisons for \f$ h \ge 1 \f$
+/// and 1 for \f$ h = 0 \f$
 ///
 /// In pseudocode (exercise 12.9, the unbounded search of Bentley and Yao):
 /// \f[
@@ -194,7 +197,8 @@ std::size_t upperBound( const std::vector< T > & A , const T & v ,
 /// 4 & \qquad \mathit{lo} \gets \mathit{hi} + 1;\ \mathit{hi} \gets
 ///     \mathit{hi} + s;\ s \gets 2 s \cr
 /// 5 & \quad \textbf{return}\ \mathrm{lowerBound}( A , v , \mathit{lo} ,
-///     \min\{ \mathit{hi} + 1 , n \} )
+///     \min\{ \mathit{hi} , n \} )\quad \triangleright\ A[ \mathit{hi} ]
+///     \ge v \text{ if } \mathit{hi} < n
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is sorted

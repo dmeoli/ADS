@@ -137,7 +137,8 @@ std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
   hi += step;
   step *= 2;
   }
- return( lowerBound( A , v , lo , std::min( hi + 1 , A.size() ) , less ) );
+ // A[ hi ] >= v is known when hi < n: the binary search leaves it out
+ return( lowerBound( A , v , lo , std::min( hi , A.size() ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -159,22 +159,25 @@ of [Montresor 2025](Z-bibliography.md#ref-montresor2025), and
 probes at the places $0 , 1 , 3 , 7 , \ldots , 2^k - 1$ stop at the first
 $k$ with $A[ 2^k - 1 ] \ge v$, i.e., $k = \lceil \log_2 ( h + 1 ) \rceil$,
 after $k + 1$ comparisons. In `gallopSearch()` the binary search that
-follows runs on the places $2^{k-1}$ to $2^k - 1$, $2^{k-1}$ of them, and
-costs at most $k$ more comparisons, since its range includes the place
-$2^k - 1$ already compared ([Algorithm 6.3](06-search.md#alg-6-3) and
-[Figure 6.2](06-search.md#fig-6-2)); in all, for $h \ge 1$, at most
+follows runs on the places $2^{k-1}$ to $2^k - 2$, $2^{k-1} - 1$ of them,
+since the place $2^k - 1$ is already known to hold an item not smaller
+than $v$, and so costs at most $k - 1$ more comparisons
+([Algorithm 6.3](06-search.md#alg-6-3) and
+[Figure 6.2](06-search.md#fig-6-2)); when the doubling passes the end of
+the vector before the place $2^k - 1$, the probes are $k$ and the binary
+search runs on fewer places. In all, for $h \ge 1$, at most
 
 $$
-2 \lceil \log_2 ( h + 1 ) \rceil + 1 \tag{6.3}
+2 \lceil \log_2 ( h + 1 ) \rceil \tag{6.3}
 $$
 
-comparisons (2 for $h = 0$), which depend on the answer but not on $n$.
+comparisons (1 for $h = 0$), which depend on the answer but not on $n$.
 [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976) also show that
 applying the same idea to the search of $k$ gives
 $\log_2 h + \log_2 \log_2 h + \cdots$ comparisons, close to the lower
 bound $\log_2 h$.
 
-![Figure 6.2. `gallopSearch()` for $v = 40$, each probe numbered above in its order: the probes at the places 0, 1, 3 and 7 double the bound until $A[ 7 ] \ge v$, and the binary search on the places 4 to 7 (the brace) probes the places 6, 5 and 4 and finds the answer $h = 5$; it never probes the place 7, which the last doubling has compared already, so that the 7 comparisons are those of (6.3) with $k = 3$.](../figures/search-gallop.svg){#fig-6-2}
+![Figure 6.2. `gallopSearch()` for $v = 40$, each probe numbered above in its order: the probes at the places 0, 1, 3 and 7 double the bound until $A[ 7 ] \ge v$, and the binary search on the places 4 to 6 (the brace), which leaves out the place 7 compared by the last doubling, probes the places 5 and 4 and finds the answer $h = 5$, so that the 6 comparisons are those of (6.3) with $k = 3$.](../figures/search-gallop.svg){#fig-6-2}
 
 <span id="alg-6-3"></span>**Algorithm 6.3.** The searches with a bound that
 doubles ([Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)): on a
@@ -189,9 +192,9 @@ on a sequence of unknown length.
 
 `exponentialSearch()` finds the least $i \ge \mathit{lo}$ at which a
 predicate $p$, false and then true, holds (the method $B_1$ of Bentley and
-Yao). Its binary search leaves out the last probe, whose $p$ is known to be
-true, and hence makes at most $k - 1$ evaluations after the $k + 1$ of the
-probes, within the bound $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$
+Yao). Its binary search too leaves out the last probe, whose $p$ is known
+to be true, and hence makes at most $k - 1$ evaluations after the $k + 1$ of
+the probes, within the bound $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$
 of its header. Its probes are cut at the largest value of the type of the
 integers, which they never overflow, and the middle of its binary search is
 computed on the unsigned distance. `unboundedSearch()` applies it to a

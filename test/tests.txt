@@ -222,6 +222,7 @@ ch12  ex12.6             Esercizio 12.6, ricerca in matrice ordinata
 ch12  ex12.7             Esercizio 12.7, torneo di tennis
 ch12  ex12.8             Esercizio 12.8, prodotto di numeri complessi
 ch12  ex12.9             Esercizio 12.9, conta gli zeri
+ch12  ex12.9.gallop-comparisons Esercizio 12.9, confronti della ricerca a galoppo
 ch12  ex12.10            Esercizio 12.10, minimo in una matrice
 ch12  ex12.11            Esercizio 12.11, chi manca?
 ch12  ex12.12            Esercizio 12.12, massimo in sequenza unimodale
