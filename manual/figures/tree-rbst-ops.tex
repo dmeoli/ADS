@@ -1,0 +1,106 @@
+% RandomizedSearchTree on the keys of tree-treap, the sizes beside the
+% nodes: (a) the subtree of 5, where insert(4.5) puts the new key at the root
+% with probability 1/7; (b) after it, by the split of that subtree at 4.5;
+% (c) remove(3) from (a), one outcome of the join of the two subtrees of 3.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (v20-0) at (0mm,-22mm) {0};
+  \node[index,anchor=south east] at ($(v20-0.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v20-1) at (10mm,-11mm) {1};
+  \node[index,anchor=south east] at ($(v20-1.north west)+(0.4mm,-0.4mm)$) {3};
+  \node[vertex] (v20-2) at (20mm,-22mm) {2};
+  \node[index,anchor=south west] at ($(v20-2.north east)+(-0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v20-3) at (30mm,0mm) {3};
+  \node[index,anchor=south west] at ($(v20-3.north east)+(-0.4mm,-0.4mm)$) {10};
+  \node[vertex-touched] (v20-4) at (40mm,-22mm) {4};
+  \node[index,anchor=south east] at ($(v20-4.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex-touched] (v20-5) at (60mm,-11mm) {5};
+  \node[index,anchor=south west] at ($(v20-5.north east)+(-0.4mm,-0.4mm)$) {6};
+  \node[vertex-touched] (v20-6) at (70mm,-44mm) {6};
+  \node[index,anchor=south east] at ($(v20-6.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex-touched] (v20-7) at (80mm,-33mm) {7};
+  \node[index,anchor=south east] at ($(v20-7.north west)+(0.4mm,-0.4mm)$) {3};
+  \node[vertex-touched] (v20-8) at (90mm,-44mm) {8};
+  \node[index,anchor=south west] at ($(v20-8.north east)+(-0.4mm,-0.4mm)$) {1};
+  \node[vertex-touched] (v20-9) at (100mm,-22mm) {9};
+  \node[index,anchor=south west] at ($(v20-9.north east)+(-0.4mm,-0.4mm)$) {4};
+  \draw[edge] (v20-3) -- (v20-1);
+  \draw[edge] (v20-1) -- (v20-0);
+  \draw[edge] (v20-1) -- (v20-2);
+  \draw[edge] (v20-3) -- (v20-5);
+  \draw[edge-touched] (v20-5) -- (v20-4);
+  \draw[edge-touched] (v20-5) -- (v20-9);
+  \draw[edge-touched] (v20-9) -- (v20-7);
+  \draw[edge-touched] (v20-7) -- (v20-6);
+  \draw[edge-touched] (v20-7) -- (v20-8);
+  \node[var,anchor=east] at (-8mm,0) {(a)};
+  \node[vertex] (v21-0) at (0mm,-84mm) {0};
+  \node[index,anchor=south east] at ($(v21-0.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v21-1) at (10mm,-73mm) {1};
+  \node[index,anchor=south east] at ($(v21-1.north west)+(0.4mm,-0.4mm)$) {3};
+  \node[vertex] (v21-2) at (20mm,-84mm) {2};
+  \node[index,anchor=south west] at ($(v21-2.north east)+(-0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v21-3) at (30mm,-62mm) {3};
+  \node[index,anchor=south west] at ($(v21-3.north east)+(-0.4mm,-0.4mm)$) {11};
+  \node[vertex] (v21-4) at (40mm,-84mm) {4};
+  \node[index,anchor=south east] at ($(v21-4.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex-added] (v21-4d5) at (50mm,-73mm) {4.5};
+  \node[index,anchor=south west] at ($(v21-4d5.north east)+(-0.4mm,-0.4mm)$) {7};
+  \node[vertex] (v21-5) at (60mm,-84mm) {5};
+  \node[index,anchor=south west] at ($(v21-5.north east)+(-0.4mm,-0.4mm)$) {5};
+  \node[vertex] (v21-6) at (70mm,-117mm) {6};
+  \node[index,anchor=south east] at ($(v21-6.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v21-7) at (80mm,-106mm) {7};
+  \node[index,anchor=south east] at ($(v21-7.north west)+(0.4mm,-0.4mm)$) {3};
+  \node[vertex] (v21-8) at (90mm,-117mm) {8};
+  \node[index,anchor=south west] at ($(v21-8.north east)+(-0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v21-9) at (100mm,-95mm) {9};
+  \node[index,anchor=south west] at ($(v21-9.north east)+(-0.4mm,-0.4mm)$) {4};
+  \draw[edge] (v21-3) -- (v21-1);
+  \draw[edge] (v21-1) -- (v21-0);
+  \draw[edge] (v21-1) -- (v21-2);
+  \draw[edge-added] (v21-3) -- (v21-4d5);
+  \draw[edge-added] (v21-4d5) -- (v21-4);
+  \draw[edge-added] (v21-4d5) -- (v21-5);
+  \draw[edge] (v21-5) -- (v21-9);
+  \draw[edge] (v21-9) -- (v21-7);
+  \draw[edge] (v21-7) -- (v21-6);
+  \draw[edge] (v21-7) -- (v21-8);
+  \node[var,anchor=east] at (-8mm,-62mm) {(b)};
+  \node[vertex] (v22-0) at (0mm,-148mm) {0};
+  \node[index,anchor=south east] at ($(v22-0.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex-touched] (v22-1) at (10mm,-137mm) {1};
+  \node[index,anchor=south east] at ($(v22-1.north west)+(0.4mm,-0.4mm)$) {4};
+  \node[vertex-touched] (v22-2) at (20mm,-148mm) {2};
+  \node[index,anchor=south west] at ($(v22-2.north east)+(-0.4mm,-0.4mm)$) {2};
+  \node[vertex] (v22-4) at (40mm,-159mm) {4};
+  \node[index,anchor=south west] at ($(v22-4.north east)+(-0.4mm,-0.4mm)$) {1};
+  \node[vertex-touched] (v22-5) at (60mm,-126mm) {5};
+  \node[index,anchor=south west] at ($(v22-5.north east)+(-0.4mm,-0.4mm)$) {9};
+  \node[vertex] (v22-6) at (70mm,-159mm) {6};
+  \node[index,anchor=south east] at ($(v22-6.north west)+(0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v22-7) at (80mm,-148mm) {7};
+  \node[index,anchor=south east] at ($(v22-7.north west)+(0.4mm,-0.4mm)$) {3};
+  \node[vertex] (v22-8) at (90mm,-159mm) {8};
+  \node[index,anchor=south west] at ($(v22-8.north east)+(-0.4mm,-0.4mm)$) {1};
+  \node[vertex] (v22-9) at (100mm,-137mm) {9};
+  \node[index,anchor=south west] at ($(v22-9.north east)+(-0.4mm,-0.4mm)$) {4};
+  \draw[edge-added] (v22-5) -- (v22-1);
+  \draw[edge] (v22-1) -- (v22-0);
+  \draw[edge] (v22-1) -- (v22-2);
+  \draw[edge-added] (v22-2) -- (v22-4);
+  \draw[edge] (v22-5) -- (v22-9);
+  \draw[edge] (v22-9) -- (v22-7);
+  \draw[edge] (v22-7) -- (v22-6);
+  \draw[edge] (v22-7) -- (v22-8);
+  \node[var,anchor=east] at (-8mm,-126mm) {(c)};
+\end{tikzpicture}
+\end{document}

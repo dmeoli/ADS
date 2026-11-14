@@ -1,0 +1,67 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex,minimum size=5mm] (aoll) at (4.30mm,-20.00mm) {};
+  \node[vertex,minimum size=5mm] (aol) at (12.90mm,-10.00mm) {};
+  \node[vertex,minimum size=5mm] (aolr) at (21.50mm,-20.00mm) {};
+  \node[vertex,minimum size=5mm] (aolrr) at (30.10mm,-30.00mm) {};
+  \node[vertex,minimum size=5mm] (ao) at (38.70mm,0.00mm) {};
+  \node[vertex,minimum size=5mm] (aorl) at (47.30mm,-20.00mm) {};
+  \node[vertex,minimum size=5mm] (aor) at (55.90mm,-10.00mm) {};
+  \node[vertex,minimum size=5mm] (aorrl) at (64.50mm,-30.00mm) {};
+  \node[vertex,minimum size=5mm] (aorr) at (73.10mm,-20.00mm) {};
+  \draw[edge] (aol) -- (aoll);
+  \draw[edge] (ao) -- (aol);
+  \draw[edge] (aol) -- (aolr);
+  \draw[edge] (aolr) -- (aolrr);
+  \draw[edge] (aor) -- (aorl);
+  \draw[edge] (ao) -- (aor);
+  \draw[edge] (aorr) -- (aorrl);
+  \draw[edge] (aor) -- (aorr);
+  \node[var] at (38.70mm,-46.00mm) {(a)};
+  \node[vertex,minimum size=5mm] (boll) at (100.00mm,-20.00mm) {};
+  \node[vertex,minimum size=5mm] (bol) at (108.60mm,-10.00mm) {};
+  \node[vertex,minimum size=5mm] (bolr) at (117.20mm,-20.00mm) {};
+  \node[vertex,minimum size=5mm] (bolrr) at (125.80mm,-30.00mm) {};
+  \node[vertex,minimum size=5mm] (bo) at (134.40mm,0.00mm) {};
+  \node[vertex,minimum size=5mm] (borl) at (143.00mm,-20.00mm) {};
+  \node[vertex,minimum size=5mm] (bor) at (151.60mm,-10.00mm) {};
+  \node[vertex,minimum size=5mm] (borrl) at (160.20mm,-30.00mm) {};
+  \node[vertex,minimum size=5mm] (borr) at (168.80mm,-20.00mm) {};
+  \draw[edge] (bol) -- (boll);
+  \draw[edge] (bo) -- (bol);
+  \draw[edge] (bol) -- (bolr);
+  \draw[edge] (bolr) -- (bolrr);
+  \draw[edge] (bor) -- (borl);
+  \draw[edge] (bo) -- (bor);
+  \draw[edge] (borr) -- (borrl);
+  \draw[edge] (bor) -- (borr);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxolll) at (95.70mm,-30.00mm) {};
+  \draw[edge] (boll) -- (bxolll);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxollr) at (104.30mm,-30.00mm) {};
+  \draw[edge] (boll) -- (bxollr);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxolrl) at (112.90mm,-30.00mm) {};
+  \draw[edge] (bolr) -- (bxolrl);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxolrrl) at (121.50mm,-40.00mm) {};
+  \draw[edge] (bolrr) -- (bxolrrl);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxolrrr) at (130.10mm,-40.00mm) {};
+  \draw[edge] (bolrr) -- (bxolrrr);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxorll) at (138.70mm,-30.00mm) {};
+  \draw[edge] (borl) -- (bxorll);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxorlr) at (147.30mm,-30.00mm) {};
+  \draw[edge] (borl) -- (bxorlr);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxorrll) at (155.90mm,-40.00mm) {};
+  \draw[edge] (borrl) -- (bxorrll);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxorrlr) at (164.50mm,-40.00mm) {};
+  \draw[edge] (borrl) -- (bxorrlr);
+  \node[free,minimum width=3.6mm,minimum height=3.6mm] (bxorrr) at (173.10mm,-30.00mm) {};
+  \draw[edge] (borr) -- (bxorrr);
+  \node[var] at (134.40mm,-46.00mm) {(b)};
+\end{tikzpicture}
+\end{document}

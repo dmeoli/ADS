@@ -1,0 +1,48 @@
+% The probability that the key i is on the search path for x in a random
+% binary search tree on 0..n-1: (a) x a key, (b) x between two keys
+% (Morin, figure 7.4). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[index] at (0mm,7mm) {$0$};
+  \node[index] at (11.5mm,7mm) {$1$};
+  \node[index] at (23mm,7mm) {$\cdots$};
+  \node[index] at (34.5mm,7mm) {$x-1$};
+  \node[index] at (46mm,7mm) {$x$};
+  \node[index] at (57.5mm,7mm) {$x+1$};
+  \node[index] at (69mm,7mm) {$\cdots$};
+  \node[index] at (80.5mm,7mm) {$n-1$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a0) at (0mm,0mm) {$\frac{1}{x+1}$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a1) at (11.5mm,0mm) {$\frac{1}{x}$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a2) at (23mm,0mm) {$\cdots$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a3) at (34.5mm,0mm) {$\frac{1}{2}$};
+  \node[touched,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a4) at (46mm,0mm) {$1$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a5) at (57.5mm,0mm) {$\frac{1}{2}$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a6) at (69mm,0mm) {$\cdots$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (a7) at (80.5mm,0mm) {$\frac{1}{n-x}$};
+  \node[var,anchor=east] at (-8mm,0) {(a)};
+  \node[index] at (0mm,-14mm) {$0$};
+  \node[index] at (11.5mm,-14mm) {$1$};
+  \node[index] at (23mm,-14mm) {$\cdots$};
+  \node[index] at (34.5mm,-14mm) {$\lfloor x\rfloor$};
+  \node[index] at (46mm,-14mm) {$\lceil x\rceil$};
+  \node[index] at (57.5mm,-14mm) {$\cdots$};
+  \node[index] at (69mm,-14mm) {$n-2$};
+  \node[index] at (80.5mm,-14mm) {$n-1$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b0) at (0mm,-21mm) {$\frac{1}{\lfloor x\rfloor+1}$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b1) at (11.5mm,-21mm) {$\frac{1}{\lfloor x\rfloor}$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b2) at (23mm,-21mm) {$\cdots$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b3) at (34.5mm,-21mm) {$1$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b4) at (46mm,-21mm) {$1$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b5) at (57.5mm,-21mm) {$\cdots$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b6) at (69mm,-21mm) {$\cdots$};
+  \node[cell,minimum width=10.9mm,minimum height=8mm,font=\footnotesize] (b7) at (80.5mm,-21mm) {$\frac{1}{n-\lceil x\rceil}$};
+  \node[var,anchor=east] at (-8mm,-21mm) {(b)};
+\end{tikzpicture}
+\end{document}

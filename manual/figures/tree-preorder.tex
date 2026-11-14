@@ -1,0 +1,23 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,0.00mm) {value};
+  \cells{X0}{0.00mm,0.00mm}{a/cell,b/touched,e/cell,f/cell,c/cell,g/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-7.40mm) {parent};
+  \cells{X1}{0.00mm,-7.40mm}{-1/cell,0/cell,1/cell,1/cell,0/cell,4/cell}
+  \foreach \i in {0,...,5} \node[index,above=1.6mm of X0-\i] {\i};
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-24.00mm) {value};
+  \cells{Y0}{0.00mm,-24.00mm}{a/cell,b/touched,x/added,y/added,e/cell,f/cell,c/cell,g/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-31.40mm) {parent};
+  \cells{Y1}{0.00mm,-31.40mm}{-1/cell,0/cell,1/added,2/added,1/cell,1/cell,0/cell,6/touched}
+  \foreach \i in {0,...,7} \node[index,above=1.6mm of Y0-\i] {\i};
+  \node[var,anchor=west] at (48.00mm,-3.70mm) {before};
+  \node[var,anchor=west] at (63.00mm,-27.70mm) {\texttt{insertChild(1,t)}};
+\end{tikzpicture}
+\end{document}

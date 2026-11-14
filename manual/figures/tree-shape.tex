@@ -1,0 +1,25 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (S-oll) at (0.00mm,-22.00mm) {2};
+  \node[vertex] (S-ol) at (11.00mm,-11.00mm) {1};
+  \node[vertex] (S-o) at (22.00mm,0.00mm) {0};
+  \node[vertex] (S-or) at (33.00mm,-11.00mm) {3};
+  \node[vertex] (S-orr) at (44.00mm,-22.00mm) {4};
+  \draw[edge] (S-ol) -- (S-oll);
+  \draw[edge] (S-or) -- (S-orr);
+  \draw[edge] (S-o) -- (S-ol);
+  \draw[edge] (S-o) -- (S-or);
+  \node[index,anchor=west] at ([xshift=1mm]S-o.east) {11};
+  \node[index,anchor=west] at ([xshift=1mm]S-ol.east) {10};
+  \node[index,anchor=west] at ([xshift=1mm]S-oll.east) {00};
+  \node[index,anchor=west] at ([xshift=1mm]S-or.east) {01};
+  \node[var,anchor=west] at (60.00mm,-11.00mm) {$c = 11\,10\,00\,01$};
+\end{tikzpicture}
+\end{document}

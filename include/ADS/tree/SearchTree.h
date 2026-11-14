@@ -537,7 +537,8 @@ class SearchTree
  Link * max( Link * T ) const;
 
  /// \f$ u \f$ becomes the child of \f$ p \f$ on the side of \f$ x \f$; the
- /// sentinel takes the parent too, as `balanceDelete()` reads it
+ /// sentinel is never written, and `balanceDelete()` is given the parent
+ /// of a child that may be the sentinel
  void link( Link * p , Link * u , const K & x );
 
  Link * insertNode( Link * T , const K & x , const V & v );

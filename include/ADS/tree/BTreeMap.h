@@ -349,8 +349,9 @@ class BTreeMap {
  /// 4 & \qquad g \gets \lceil |\mathit{level}| / ( I + 1 ) \rceil \cr
  /// 5 & \qquad \mathit{level} \gets g \text{ internal nodes, each with }
  ///     \text{the next nodes of } \mathit{level} \text{ as children,} \cr
- /// 6 & \qquad\quad \text{as many to each as evenly as possible, and the }
- ///     \text{largest key below each child but the last as a bound} \cr
+ /// 6 & \qquad\quad \text{as evenly as possible, and the largest key }
+ ///     \text{below each child} \cr
+ /// & \qquad\quad \text{but the last as a bound} \cr
  /// 7 & \quad \mathit{root} \gets \text{the node of } \mathit{level}
  /// \end{array}}
  /// \f]
@@ -416,14 +417,14 @@ class BTreeMap {
  /// \f$ k \f$ in the leaf reached by the descent of `lookup()`
  [[nodiscard]] const_iterator lowerBound( const K & k ) const;
 
- /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log_b n ) \f$
- /// nodes: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
- /// until the key is removed
+ /// the address of the key \f$ k \f$, nil if absent, in
+ /// \f$ O( ( L + I ) \log n ) \f$ time: the `find( x )` of a USet of Morin
+ /// [see `DictionarySet`]; valid until the key is removed
  [[nodiscard]] const K * findKey( const K & k ) const;
 
  /// the address of the smallest key not smaller than \f$ k \f$, nil if none,
- /// in \f$ O( \log_b n ) \f$ nodes: the `find( x )` of an SSet of Morin [see
- /// `DictionarySet`]; valid until the next change
+ /// in \f$ O( ( L + I ) \log n ) \f$ time: the `find( x )` of an SSet of
+ /// Morin [see `DictionarySet`]; valid until the next change
  [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
 
  /// the first pair whose key is larger than \f$ k \f$, the place after the

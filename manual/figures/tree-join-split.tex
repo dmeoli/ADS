@@ -1,0 +1,60 @@
+% Source for the figure of split (sec. 8.12): above, the AVL tree of
+% figure tree-join-avl and the path of split(T, 7), from 8 down to 7;
+% below, the two trees that the joins on the way back make, l of the keys
+% smaller than 7 and r of those larger, and the node of 7 alone. Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,x=9mm,y=-11mm]
+  \node[vertex-touched] (b8) at (2.4,0) {8};
+  \node[vertex-touched] (b4) at (0,1) {4};
+  \node[vertex] (b15) at (4.8,1) {15};
+  \node[vertex] (b2) at (-1.2,2) {2};
+  \node[vertex-touched] (b6) at (1.2,2) {6};
+  \node[vertex] (b9) at (3.8,2) {9};
+  \node[vertex] (b20) at (5.8,2) {20};
+  \node[vertex] (b1) at (-1.85,3) {1};
+  \node[vertex] (b3) at (-0.55,3) {3};
+  \node[vertex] (b5) at (0.55,3) {5};
+  \node[vertex-touched] (b7) at (1.85,3) {7};
+  \node[vertex] (b10) at (4.45,3) {10};
+  \node[vertex] (b22) at (6.45,3) {22};
+  \draw[edge-touched] (b8) -- (b4); \draw[edge] (b8) -- (b15);
+  \draw[edge] (b4) -- (b2); \draw[edge-touched] (b4) -- (b6);
+  \draw[edge] (b15) -- (b9); \draw[edge] (b15) -- (b20);
+  \draw[edge] (b2) -- (b1); \draw[edge] (b2) -- (b3);
+  \draw[edge] (b6) -- (b5); \draw[edge-touched] (b6) -- (b7);
+  \draw[edge] (b9) -- (b10); \draw[edge] (b20) -- (b22);
+  \node[var] at (2.4,-0.75) {$T$, $\mathrm{split}( T , 7 )$};
+  \begin{scope}[yshift=-50mm]
+  \node[vertex-added] (l4) at (0,0) {4};
+  \node[vertex] (l2) at (-1,1) {2};
+  \node[vertex-added] (l6) at (1,1) {6};
+  \node[vertex] (l1) at (-1.6,2) {1};
+  \node[vertex] (l3) at (-0.4,2) {3};
+  \node[vertex] (l5) at (0.4,2) {5};
+  \draw[edge-added] (l4) -- (l2); \draw[edge-added] (l4) -- (l6);
+  \draw[edge] (l2) -- (l1); \draw[edge] (l2) -- (l3);
+  \draw[edge-added] (l6) -- (l5);
+  \node[vertex-touched] (m7) at (2.4,1) {7};
+  \node[vertex-added] (r15) at (5.2,0) {15};
+  \node[vertex-added] (r9) at (4.2,1) {9};
+  \node[vertex] (r20) at (6.2,1) {20};
+  \node[vertex-added] (r8) at (3.6,2) {8};
+  \node[vertex] (r10) at (4.8,2) {10};
+  \node[vertex] (r22) at (6.8,2) {22};
+  \draw[edge-added] (r15) -- (r9); \draw[edge] (r15) -- (r20);
+  \draw[edge-added] (r9) -- (r8); \draw[edge] (r9) -- (r10);
+  \draw[edge] (r20) -- (r22);
+  \node[var] at (0,-0.75) {$l$};
+  \node[var] at (2.4,0.25) {$b$};
+  \node[var] at (5.2,-0.75) {$r$};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

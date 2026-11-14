@@ -1,0 +1,57 @@
+% Source for the figure of the splays of a path (sec. 8.8), by SplayTree:
+% the keys 1 to 7 inserted in increasing order leave a path, lookup(1)
+% halves the depths of the nodes on its path, and lookup(4) follows; the
+% node accessed in violet. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (7.20mm,-40.00mm) -- (0.00mm,-48.00mm);
+  \draw[edge] (14.40mm,-32.00mm) -- (7.20mm,-40.00mm);
+  \draw[edge] (21.60mm,-24.00mm) -- (14.40mm,-32.00mm);
+  \draw[edge] (28.80mm,-16.00mm) -- (21.60mm,-24.00mm);
+  \draw[edge] (36.00mm,-8.00mm) -- (28.80mm,-16.00mm);
+  \draw[edge] (43.20mm,0.00mm) -- (36.00mm,-8.00mm);
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a0) at (0.00mm,-48.00mm) {1};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a1) at (7.20mm,-40.00mm) {2};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a2) at (14.40mm,-32.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a3) at (21.60mm,-24.00mm) {4};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a4) at (28.80mm,-16.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a5) at (36.00mm,-8.00mm) {6};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a6) at (43.20mm,0.00mm) {7};
+  \node[var,anchor=west] at (0mm,6mm) {\texttt{insert(1..7)}};
+  \draw[edge] (98.00mm,-8.00mm) -- (105.20mm,-16.00mm);
+  \draw[edge] (83.60mm,-16.00mm) -- (90.80mm,-24.00mm);
+  \draw[edge] (69.20mm,-24.00mm) -- (76.40mm,-32.00mm);
+  \draw[edge] (83.60mm,-16.00mm) -- (69.20mm,-24.00mm);
+  \draw[edge] (98.00mm,-8.00mm) -- (83.60mm,-16.00mm);
+  \draw[edge] (62.00mm,0.00mm) -- (98.00mm,-8.00mm);
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b0) at (62.00mm,0.00mm) {1};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b1) at (69.20mm,-24.00mm) {2};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b2) at (76.40mm,-32.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b3) at (83.60mm,-16.00mm) {4};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b4) at (90.80mm,-24.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b5) at (98.00mm,-8.00mm) {6};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b6) at (105.20mm,-16.00mm) {7};
+  \node[var,anchor=west] at (62mm,6mm) {\texttt{lookup(1)}};
+  \draw[edge] (160.00mm,-8.00mm) -- (167.20mm,-16.00mm);
+  \draw[edge] (160.00mm,-8.00mm) -- (152.80mm,-16.00mm);
+  \draw[edge] (145.60mm,0.00mm) -- (160.00mm,-8.00mm);
+  \draw[edge] (131.20mm,-16.00mm) -- (138.40mm,-24.00mm);
+  \draw[edge] (124.00mm,-8.00mm) -- (131.20mm,-16.00mm);
+  \draw[edge] (145.60mm,0.00mm) -- (124.00mm,-8.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c0) at (124.00mm,-8.00mm) {1};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c1) at (131.20mm,-16.00mm) {2};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c2) at (138.40mm,-24.00mm) {3};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c3) at (145.60mm,0.00mm) {4};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c4) at (152.80mm,-16.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c5) at (160.00mm,-8.00mm) {6};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c6) at (167.20mm,-16.00mm) {7};
+  \node[var,anchor=west] at (124mm,6mm) {\texttt{lookup(4)}};
+\end{tikzpicture}
+\end{document}

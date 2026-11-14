@@ -1,0 +1,68 @@
+% Exercise 6.12 of Morin's book, by BinarySearchTree: add(3.5) and then
+% add(4.5) on the tree of his figure 6.5; the path of each search in
+% violet, the new leaf in orange. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (79.20mm,-20.00mm) -- (86.40mm,-30.00mm);
+  \draw[edge] (79.20mm,-20.00mm) -- (72.00mm,-30.00mm);
+  \draw[edge] (64.80mm,-10.00mm) -- (79.20mm,-20.00mm);
+  \draw[edge] (57.60mm,-20.00mm) -- (50.40mm,-30.00mm);
+  \draw[edge] (64.80mm,-10.00mm) -- (57.60mm,-20.00mm);
+  \draw[edge] (43.20mm,0.00mm) -- (64.80mm,-10.00mm);
+  \draw[edge] (28.80mm,-20.00mm) -- (36.00mm,-30.00mm);
+  \draw[edge-added] (21.60mm,-30.00mm) -- (14.40mm,-40.00mm);
+  \draw[edge-touched] (28.80mm,-20.00mm) -- (21.60mm,-30.00mm);
+  \draw[edge-touched] (7.20mm,-10.00mm) -- (28.80mm,-20.00mm);
+  \draw[edge] (7.20mm,-10.00mm) -- (0.00mm,-20.00mm);
+  \draw[edge-touched] (43.20mm,0.00mm) -- (7.20mm,-10.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a0) at (0.00mm,-20.00mm) {1};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a1) at (7.20mm,-10.00mm) {3};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a2) at (14.40mm,-40.00mm) {3.5};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a3) at (21.60mm,-30.00mm) {4};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a4) at (28.80mm,-20.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a5) at (36.00mm,-30.00mm) {6};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a6) at (43.20mm,0.00mm) {7};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a7) at (50.40mm,-30.00mm) {8};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a8) at (57.60mm,-20.00mm) {9};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a9) at (64.80mm,-10.00mm) {11};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a10) at (72.00mm,-30.00mm) {12};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a11) at (79.20mm,-20.00mm) {13};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a12) at (86.40mm,-30.00mm) {14};
+  \node[var,anchor=west] at (0mm,7mm) {\texttt{add(3.5)}};
+  \draw[edge] (199.20mm,-20.00mm) -- (206.40mm,-30.00mm);
+  \draw[edge] (199.20mm,-20.00mm) -- (192.00mm,-30.00mm);
+  \draw[edge] (184.80mm,-10.00mm) -- (199.20mm,-20.00mm);
+  \draw[edge] (177.60mm,-20.00mm) -- (170.40mm,-30.00mm);
+  \draw[edge] (184.80mm,-10.00mm) -- (177.60mm,-20.00mm);
+  \draw[edge] (163.20mm,0.00mm) -- (184.80mm,-10.00mm);
+  \draw[edge] (148.80mm,-20.00mm) -- (156.00mm,-30.00mm);
+  \draw[edge-added] (134.40mm,-30.00mm) -- (141.60mm,-40.00mm);
+  \draw[edge] (134.40mm,-30.00mm) -- (127.20mm,-40.00mm);
+  \draw[edge-touched] (148.80mm,-20.00mm) -- (134.40mm,-30.00mm);
+  \draw[edge-touched] (120.00mm,-10.00mm) -- (148.80mm,-20.00mm);
+  \draw[edge] (120.00mm,-10.00mm) -- (112.80mm,-20.00mm);
+  \draw[edge-touched] (163.20mm,0.00mm) -- (120.00mm,-10.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b0) at (112.80mm,-20.00mm) {1};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b1) at (120.00mm,-10.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b2) at (127.20mm,-40.00mm) {3.5};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b3) at (134.40mm,-30.00mm) {4};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b4) at (141.60mm,-40.00mm) {4.5};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b5) at (148.80mm,-20.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b6) at (156.00mm,-30.00mm) {6};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b7) at (163.20mm,0.00mm) {7};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b8) at (170.40mm,-30.00mm) {8};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b9) at (177.60mm,-20.00mm) {9};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b10) at (184.80mm,-10.00mm) {11};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b11) at (192.00mm,-30.00mm) {12};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b12) at (199.20mm,-20.00mm) {13};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b13) at (206.40mm,-30.00mm) {14};
+  \node[var,anchor=west] at (112.80000000000001mm,7mm) {\texttt{add(4.5)}};
+\end{tikzpicture}
+\end{document}

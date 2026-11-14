@@ -1,0 +1,55 @@
+% The operations of LeftLeaningRedBlackTree that change colours: pushBlack
+% and pullBlack, which split and merge a 2-4 node, and flipLeft and
+% flipRight, a rotation with the exchange of the colours of the two nodes
+% (red nodes in orange, subtrees as squares). % Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (7.00mm,0.00mm) -- (0.00mm,-10.00mm);
+  \draw[edge] (7.00mm,0.00mm) -- (14.00mm,-10.00mm);
+  \node[vertex] (pu) at (7.00mm,0.00mm) {u};
+  \node[vertex-added] (pa) at (0.00mm,-10.00mm) {a};
+  \node[vertex-added] (pb) at (14.00mm,-10.00mm) {b};
+
+  \draw[ptr] (19mm,-3.8mm) -- (37mm,-3.8mm);
+  \draw[ptr] (37mm,-6.2mm) -- (19mm,-6.2mm);
+  \node[index,above=2.6mm] at (28.0mm,-5mm) {\texttt{pushBlack(u)}};
+  \node[index,below=2.6mm] at (28.0mm,-5mm) {\texttt{pullBlack(u)}};
+  \draw[edge] (49.00mm,0.00mm) -- (42.00mm,-10.00mm);
+  \draw[edge] (49.00mm,0.00mm) -- (56.00mm,-10.00mm);
+  \node[vertex-added] (qu) at (49.00mm,0.00mm) {u};
+  \node[vertex] (qa) at (42.00mm,-10.00mm) {a};
+  \node[vertex] (qb) at (56.00mm,-10.00mm) {b};
+
+  \draw[edge] (79.00mm,0.00mm) -- (72.00mm,-10.00mm);
+  \draw[edge] (79.00mm,0.00mm) -- (93.00mm,-10.00mm);
+  \draw[edge] (93.00mm,-10.00mm) -- (86.00mm,-20.00mm);
+  \draw[edge] (93.00mm,-10.00mm) -- (100.00mm,-20.00mm);
+  \node[vertex] (ru) at (79.00mm,0.00mm) {u};
+  \node[free] (rA) at (72.00mm,-10.00mm) {A};
+  \node[vertex-added] (rw) at (93.00mm,-10.00mm) {w};
+  \node[free] (rB) at (86.00mm,-20.00mm) {B};
+  \node[free] (rC) at (100.00mm,-20.00mm) {C};
+
+  \draw[ptr] (104mm,-3.8mm) -- (122mm,-3.8mm);
+  \draw[ptr] (122mm,-6.2mm) -- (104mm,-6.2mm);
+  \node[index,above=2.6mm] at (113.0mm,-5mm) {\texttt{flipLeft(u)}};
+  \node[index,below=2.6mm] at (113.0mm,-5mm) {\texttt{flipRight(w)}};
+  \draw[edge] (147.00mm,0.00mm) -- (133.00mm,-10.00mm);
+  \draw[edge] (133.00mm,-10.00mm) -- (126.00mm,-20.00mm);
+  \draw[edge] (133.00mm,-10.00mm) -- (140.00mm,-20.00mm);
+  \draw[edge] (147.00mm,0.00mm) -- (154.00mm,-10.00mm);
+  \node[vertex] (vw) at (147.00mm,0.00mm) {w};
+  \node[vertex-added] (vu) at (133.00mm,-10.00mm) {u};
+  \node[free] (vA) at (126.00mm,-20.00mm) {A};
+  \node[free] (vB) at (140.00mm,-20.00mm) {B};
+  \node[free] (vC) at (154.00mm,-10.00mm) {C};
+
+\end{tikzpicture}
+\end{document}

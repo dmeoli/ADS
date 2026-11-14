@@ -101,7 +101,8 @@ namespace ADS {
 /*-------------------------- CLASS BPlusTree -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// a B+-tree of order \f$ m \f$, without the removal
+/// a B+-tree of order \f$ m \f$, with the removal of exercise 14.8 of
+/// Morin's book
 template< std::totally_ordered K , class V >
 class BPlusTree {
 

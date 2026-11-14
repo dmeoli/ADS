@@ -39,11 +39,13 @@ ThreadedTree< K >::~ThreadedTree()
 template< std::totally_ordered K >
 auto ThreadedTree< K >::successor( const Node * x ) const -> const Node *
 {
+ //! [successor]
  if( x->rthread )
   return( x->right );
  const Node * y = x->right;                 // the leftmost of the right
  while( ! y->lthread ) y = y->left;         // subtree
  return( y );
+ //! [successor]
  }
 
 template< std::totally_ordered K >

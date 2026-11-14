@@ -1,0 +1,41 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,0.00mm) {value};
+  \cells{X0}{0.00mm,0.00mm}{a/cell,b/cell,c/cell,e/cell,f/cell,g/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-7.40mm) {parent};
+  \cells{X1}{0.00mm,-7.40mm}{-1/cell,0/cell,0/cell,1/cell,1/cell,2/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-14.80mm) {child};
+  \cells{X2}{0.00mm,-14.80mm}{1/cell,3/cell,5/cell,-1/cell,-1/cell,-1/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-22.20mm) {sibling};
+  \cells{X3}{0.00mm,-22.20mm}{-1/cell,2/cell,-1/cell,4/cell,-1/cell,-1/cell}
+  \foreach \i in {0,...,5} \node[index,above=1.6mm of X0-\i] {\i};
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-40.00mm) {value};
+  \cells{Y0}{0.00mm,-40.00mm}{a/cell,/free,c/cell,/free,/free,g/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-47.40mm) {parent};
+  \cells{Y1}{0.00mm,-47.40mm}{-1/cell,/free,0/cell,/free,/free,2/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-54.80mm) {child};
+  \cells{Y2}{0.00mm,-54.80mm}{2/touched,/free,5/cell,/free,/free,-1/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-62.20mm) {sibling};
+  \cells{Y3}{0.00mm,-62.20mm}{-1/cell,4/free,-1/cell,-1/free,3/free,-1/cell}
+  \foreach \i in {0,...,5} \node[index,above=1.6mm of Y0-\i] {\i};
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-80.00mm) {value};
+  \cells{Z0}{0.00mm,-80.00mm}{a/cell,d/added,c/cell,/free,/free,g/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-87.40mm) {parent};
+  \cells{Z1}{0.00mm,-87.40mm}{-1/cell,0/added,0/cell,/free,/free,2/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-94.80mm) {child};
+  \cells{Z2}{0.00mm,-94.80mm}{1/added,-1/added,5/cell,/free,/free,-1/cell}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-102.20mm) {sibling};
+  \cells{Z3}{0.00mm,-102.20mm}{-1/cell,2/added,-1/cell,-1/free,3/free,-1/cell}
+  \foreach \i in {0,...,5} \node[index,above=1.6mm of Z0-\i] {\i};
+  \node[var,anchor=west] at (52.00mm,-11.00mm) {before};
+  \node[var,anchor=west] at (52.00mm,-51.00mm) {\texttt{remove(1)}, $\mathit{free} = 1$};
+  \node[var,anchor=west] at (52.00mm,-91.00mm) {\texttt{insertChild(0,d)}, $\mathit{free} = 4$};
+\end{tikzpicture}
+\end{document}

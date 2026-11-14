@@ -19,15 +19,20 @@
  * otherwise the sizes would shrink by \f$ b \f$ at each level below it.
  * This is the rule of Galperin and Rivest (`HEIGHT`, the default); the
  * rule of Morin (`WEIGHT`), the first ancestor with \f$ s( u ) > s( w ) / b
- * \f$, rebuilds the smallest unbalanced subtree, but the argument of section
+ * \f$, rebuilds the smallest unbalanced subtree. The argument of section
  * 8.1 of Morin for it, that the subtree of a scapegoat is not complete and
- * so loses a level, does not cover every case: if \f$ w \f$ has one child,
- * whose two children are leaves, one of them the new one, then
- * \f$ s( w ) = 4 \f$, the child holds \f$ 3 > \frac23 \cdot 4 \f$ of them,
- * and 4 nodes perfectly balanced still have height 2. No sequence of the
- * tests (600000 random ones, on 4 to 32 keys and \f$ b \f$ from 1.3 to 1.8)
- * reached a tree that the rule of Morin left too high, and the class keeps
- * it as an option, its height checked by the invariant. A
+ * so loses a level, leaves one step unstated: the new leaf is the only node
+ * at its depth \f$ d \f$, since the tree was at most \f$ \log_b q < d \f$
+ * high before, so that the subtree of \f$ w \f$ had height at most
+ * \f$ d - \mathrm{depth}( w ) - 1 \f$ and, not being complete, fewer than
+ * \f$ 2^{d - \mathrm{depth}( w )} - 1 \f$ nodes. "Not complete" alone does
+ * not suffice: a node \f$ w \f$ with one child, whose two children are
+ * leaves, has \f$ s( w ) = 4 \f$, a child of \f$ 3 > \frac23 \cdot 4 \f$,
+ * and 4 nodes perfectly balanced still have height 2; but this subtree
+ * cannot arise, since its other leaf would already be at the depth of the
+ * new one. The class keeps the rule as an option, its height checked by the
+ * invariant (and no sequence of the tests, 600000 random ones on 4 to 32
+ * keys with \f$ b \f$ from 1.3 to 1.8, broke it). A
  * removal rebuilds the whole tree when \f$ q > 2 n \f$. A search takes
  * \f$ O( \log n ) \f$ in the worst case, and an insertion or a removal
  * \f$ O( \log n ) \f$ amortized (Lemma 8.3 and Theorem 8.1 of Morin, whose
@@ -141,6 +146,20 @@ struct Rebuild {
   }
 
  /// the balanced tree of \f$ B[ i .. j ) \f$, its root returned
+ ///
+ /// In pseudocode (section 8.1 of Morin), \f$ B \f$ the nodes of the
+ /// subtree in symmetric order:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{fromArray}( B , i , j ) \cr
+ /// 2 & \quad \textbf{if}\ i \ge j\ \textbf{then return nil} \cr
+ /// 3 & \quad m \gets i + \lfloor ( j - i - 1 ) / 2 \rfloor;\ u \gets B[ m ]
+ ///     \cr
+ /// 4 & \quad u.\mathit{left} \gets \mathrm{fromArray}( B , i , m );
+ ///     \ u.\mathit{right} \gets \mathrm{fromArray}( B , m + 1 , j ) \cr
+ /// 5 & \quad \textbf{return}\ u
+ /// \end{array}}
+ /// \f]
  template< class N , class Set >
  static N * fromArray( N * const * B , std::size_t i , std::size_t j ,
                        Set & set ) {
@@ -156,10 +175,32 @@ struct Rebuild {
  /// the subtree of \f$ u \f$ threaded by its right links in symmetric
  /// order before the list \f$ r \f$, its head returned (exercise 8.7 of
  /// Morin)
+ ///
+ /// In pseudocode (exercise 8.7 of Morin), the list linked by the right
+ /// links and \f$ h \f$ its head, advanced by `fromList()`:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{toList}( u , r ) \cr
+ /// 2 & \quad \textbf{while}\ u \ne \textbf{nil}\ \textbf{do} \cr
+ /// 3 & \qquad u.\mathit{right} \gets \mathrm{toList}( u.\mathit{right} , r
+ ///     );\ r \gets u \cr
+ /// 4 & \qquad l \gets u.\mathit{left};\ u.\mathit{left} \gets
+ ///     \textbf{nil};\ u \gets l \cr
+ /// 5 & \quad \textbf{return}\ r \cr
+ /// 6 & \textbf{function}\ \mathrm{fromList}( s , h ) \cr
+ /// 7 & \quad \textbf{if}\ s = 0\ \textbf{then return nil} \cr
+ /// 8 & \quad l \gets \mathrm{fromList}( \lfloor ( s - 1 ) / 2 \rfloor , h
+ ///     );\ u \gets h;\ h \gets h.\mathit{right} \cr
+ /// 9 & \quad u.\mathit{left} \gets l;\ u.\mathit{right} \gets
+ ///     \mathrm{fromList}( s - 1 - \lfloor ( s - 1 ) / 2 \rfloor , h ) \cr
+ /// 10 & \quad \textbf{return}\ u
+ /// \end{array}}
+ /// \f]
+ //! [toList]
  template< class N >
  static N * toList( N * u , N * r ) {
-  while( u ) {                              // the right spine by a loop,
-   r = toList( u->right , r );              // the left subtrees by
+  while( u ) {                              // the left spine by a loop,
+   r = toList( u->right , r );              // the right subtrees by
    u->right = r;                            // recursion
    r = u;
    N * l = u->left;
@@ -168,9 +209,11 @@ struct Rebuild {
    }
   return( r );
   }
+ //! [toList]
 
  /// the balanced tree of the first \f$ s \f$ nodes of the list \f$ h \f$,
  /// which is advanced past them
+ //! [fromList]
  template< class N , class Set >
  static N * fromList( std::size_t s , N * & h , Set & set ) {
   if( s == 0 ) return( nullptr );
@@ -182,6 +225,7 @@ struct Rebuild {
   set( u , s );
   return( u );
   }
+ //! [fromList]
 
  /// the number of nodes of the subtree of \f$ u \f$, by the stack
  /// \f$ S \f$, emptied first
@@ -281,6 +325,19 @@ class ScapegoatTree {
  /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ amortized
  /// time: the removal of a binary search tree, then the whole tree rebuilt
  /// if \f$ q > 2 n \f$, and \f$ q \gets n \f$
+ ///
+ /// In pseudocode (section 8.1 of Morin):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( k ) \cr
+ /// 2 & \quad \textbf{if}\ k \text{ is not there}\ \textbf{then return}
+ ///     \cr
+ /// 3 & \quad \text{the removal of a binary search tree};\ n \gets n - 1
+ ///     \cr
+ /// 4 & \quad \textbf{if}\ 2 n < q\ \textbf{then}\ \mathrm{rebuild}(
+ ///     \mathit{root} );\ q \gets n
+ /// \end{array}}
+ /// \f]
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
 

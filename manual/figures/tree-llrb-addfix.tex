@@ -1,0 +1,89 @@
+% A round of addFixup(u) of LeftLeaningRedBlackTree, u red: (a) w breaks
+% the left-leaning property, (b) u and w red under g whose right child
+% is black, (c) the same with g's right child red (red nodes in orange).
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (7.00mm,0.00mm) -- (0.00mm,-10.00mm);
+  \draw[edge] (7.00mm,0.00mm) -- (21.00mm,-10.00mm);
+  \draw[edge] (21.00mm,-10.00mm) -- (14.00mm,-20.00mm);
+  \draw[edge] (21.00mm,-10.00mm) -- (28.00mm,-20.00mm);
+  \node[vertex] (aw) at (7.00mm,0.00mm) {w};
+  \node[free] (aA) at (0.00mm,-10.00mm) {A};
+  \node[vertex-added] (au) at (21.00mm,-10.00mm) {u};
+  \node[free] (aB) at (14.00mm,-20.00mm) {B};
+  \node[free] (aC) at (28.00mm,-20.00mm) {C};
+  \node[var,anchor=west] at (-3.0mm,8.0mm) {(a) $w.\mathit{left}$ black};
+  \draw[ptr] (32mm,-5mm) -- (44mm,-5mm);
+  \node[index,above=0.8mm] at (38.0mm,-5mm) {\texttt{flipLeft(w)}};
+  \draw[edge] (69.00mm,0.00mm) -- (55.00mm,-10.00mm);
+  \draw[edge] (55.00mm,-10.00mm) -- (48.00mm,-20.00mm);
+  \draw[edge] (55.00mm,-10.00mm) -- (62.00mm,-20.00mm);
+  \draw[edge] (69.00mm,0.00mm) -- (76.00mm,-10.00mm);
+  \node[vertex] (bu) at (69.00mm,0.00mm) {u};
+  \node[vertex-added] (bw) at (55.00mm,-10.00mm) {w};
+  \node[free] (bA) at (48.00mm,-20.00mm) {A};
+  \node[free] (bB) at (62.00mm,-20.00mm) {B};
+  \node[free] (bC) at (76.00mm,-10.00mm) {C};
+  \node[var,anchor=west] at (45.0mm,8.0mm) {then $u \gets w$};
+  \draw[edge] (109.00mm,0.00mm) -- (95.00mm,-10.00mm);
+  \draw[edge] (109.00mm,0.00mm) -- (116.00mm,-10.00mm);
+  \draw[edge] (95.00mm,-10.00mm) -- (88.00mm,-20.00mm);
+  \draw[edge] (95.00mm,-10.00mm) -- (102.00mm,-20.00mm);
+  \node[vertex] (cg) at (109.00mm,0.00mm) {g};
+  \node[vertex-added] (cw) at (95.00mm,-10.00mm) {w};
+  \node[vertex] (cs) at (116.00mm,-10.00mm) {s};
+  \node[vertex-added] (cu) at (88.00mm,-20.00mm) {u};
+  \node[vertex] (cc) at (102.00mm,-20.00mm) {c};
+  \node[var,anchor=west] at (85.0mm,8.0mm) {(b) $g.\mathit{right}$ black};
+  \draw[ptr] (124mm,-5mm) -- (134mm,-5mm);
+  \node[index,above=0.8mm] at (129.0mm,-5mm) {\texttt{flipRight(g)}};
+  \draw[edge] (152.00mm,0.00mm) -- (138.00mm,-10.00mm);
+  \draw[edge] (152.00mm,0.00mm) -- (166.00mm,-10.00mm);
+  \draw[edge] (166.00mm,-10.00mm) -- (159.00mm,-20.00mm);
+  \draw[edge] (166.00mm,-10.00mm) -- (173.00mm,-20.00mm);
+  \node[vertex] (dw) at (152.00mm,0.00mm) {w};
+  \node[vertex-added] (du) at (138.00mm,-10.00mm) {u};
+  \node[vertex-added] (dg) at (166.00mm,-10.00mm) {g};
+  \node[vertex] (dc) at (159.00mm,-20.00mm) {c};
+  \node[vertex] (ds) at (173.00mm,-20.00mm) {s};
+  \node[var,anchor=west] at (135.0mm,8.0mm) {done};
+  \draw[edge] (51.00mm,-40.00mm) -- (37.00mm,-50.00mm);
+  \draw[edge] (51.00mm,-40.00mm) -- (65.00mm,-50.00mm);
+  \draw[edge] (37.00mm,-50.00mm) -- (30.00mm,-60.00mm);
+  \draw[edge] (37.00mm,-50.00mm) -- (44.00mm,-60.00mm);
+  \draw[edge] (65.00mm,-50.00mm) -- (58.00mm,-60.00mm);
+  \draw[edge] (65.00mm,-50.00mm) -- (72.00mm,-60.00mm);
+  \node[vertex] (eg) at (51.00mm,-40.00mm) {g};
+  \node[vertex-added] (ew) at (37.00mm,-50.00mm) {w};
+  \node[vertex-added] (es) at (65.00mm,-50.00mm) {s};
+  \node[vertex-added] (eu) at (30.00mm,-60.00mm) {u};
+  \node[vertex] (ec) at (44.00mm,-60.00mm) {c};
+  \node[vertex] (ex) at (58.00mm,-60.00mm) {x};
+  \node[vertex] (ey) at (72.00mm,-60.00mm) {y};
+  \node[var,anchor=west] at (27.0mm,-32.0mm) {(c) $g.\mathit{right}$ red};
+  \draw[ptr] (80mm,-45mm) -- (92mm,-45mm);
+  \node[index,above=0.8mm] at (86.0mm,-45mm) {\texttt{pushBlack(g)}};
+  \draw[edge] (119.00mm,-40.00mm) -- (105.00mm,-50.00mm);
+  \draw[edge] (119.00mm,-40.00mm) -- (133.00mm,-50.00mm);
+  \draw[edge] (105.00mm,-50.00mm) -- (98.00mm,-60.00mm);
+  \draw[edge] (105.00mm,-50.00mm) -- (112.00mm,-60.00mm);
+  \draw[edge] (133.00mm,-50.00mm) -- (126.00mm,-60.00mm);
+  \draw[edge] (133.00mm,-50.00mm) -- (140.00mm,-60.00mm);
+  \node[vertex-added] (fg) at (119.00mm,-40.00mm) {g};
+  \node[vertex] (fw) at (105.00mm,-50.00mm) {w};
+  \node[vertex] (fs) at (133.00mm,-50.00mm) {s};
+  \node[vertex-added] (fu) at (98.00mm,-60.00mm) {u};
+  \node[vertex] (fc) at (112.00mm,-60.00mm) {c};
+  \node[vertex] (fx) at (126.00mm,-60.00mm) {x};
+  \node[vertex] (fy) at (140.00mm,-60.00mm) {y};
+  \node[var,anchor=west] at (95.0mm,-32.0mm) {the round again with $u = g$};
+\end{tikzpicture}
+\end{document}

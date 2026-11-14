@@ -72,7 +72,7 @@
  * - The traversals of chapter 6 of Morin and their exercises:
  *   `nextPreorder()`, `nextInorder()` and `nextPostorder()` give the node
  *   after a given one in each visit by the links to the parents
- *   (exercise 6.8), each node met $ O( 1 ) $ times over a whole visit;
+ *   (exercise 6.8), each node met \f$ O( 1 ) \f$ times over a whole visit;
  *   `subtreeSize()` and `subtreeHeight()` count a subtree by the walk of
  *   section 6.1.2 with no recursion and no stack (exercises 6.4 and 6.5);
  *   `isSizeBalanced()` tests that the two subtrees of each node differ by
@@ -418,13 +418,16 @@ template< ParentBinaryNode N >
 template< ParentBinaryNode N >
 [[nodiscard]] N nextPostorder( N u );
 
-/// the first node of the previsit, of the invisit and of the postvisit of
-/// the subtree of \f$ u \f$, by the walks of `nextPostorder()`
+/// the first node of the invisit of the subtree of \f$ u \f$, its leftmost
+/// node, from which `nextInorder()` starts; \f$ O( h ) \f$ time
 /// \pre \f$ u \f$ is not nil
 template< BinaryNode N >
 [[nodiscard]] N firstInorder( N u );
 
-/// the first node of the postvisit of the subtree of \f$ u \f$
+/// the first node of the postvisit of the subtree of \f$ u \f$, reached by
+/// going left when possible and right otherwise, from which
+/// `nextPostorder()` starts; \f$ O( h ) \f$ time (the first node of the
+/// previsit is \f$ u \f$ itself)
 /// \pre \f$ u \f$ is not nil
 template< BinaryNode N >
 [[nodiscard]] N firstPostorder( N u );

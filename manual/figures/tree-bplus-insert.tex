@@ -1,0 +1,53 @@
+% Figure 6.7 of the book by BPlusTree of order m = 3: the tree after the
+% insertions of 10, 12, 13, 15, 8, 11, 9 (state (e) of the test
+% ch06.sec6.3.bplus-figure), and insert(6), which splits a leaf and then
+% the root; the nodes written in orange, the arrows the list of the
+% leaves. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (24.2mm,0mm) {10};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (29.8mm,0mm) {12};
+  \draw[edge] (21.4mm,-3mm) -- (8.4mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-13mm) {8};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-13mm) {9};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (14mm,-13mm) {10};
+  \draw[edge] (27mm,-3mm) -- (28.4mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-13mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.2mm,-13mm) {12};
+  \draw[edge] (32.6mm,-3mm) -- (45.6mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (42.8mm,-13mm) {13};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (48.4mm,-13mm) {15};
+  \draw[arc] (17.6mm,-13mm) -- (22mm,-13mm);
+  \draw[arc] (34.8mm,-13mm) -- (39.2mm,-13mm);
+  \node[var,anchor=east] at (-4mm,0mm) {before};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.4mm,-29mm) {10};
+  \draw[edge] (28.6mm,-32mm) -- (14.2mm,-39mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (14.2mm,-42mm) {8};
+  \draw[edge] (11.4mm,-45mm) -- (5.6mm,-52mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-55mm) {6};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-55mm) {8};
+  \draw[edge] (17mm,-45mm) -- (22.8mm,-52mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (20mm,-55mm) {9};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-55mm) {10};
+  \draw[edge] (34.2mm,-32mm) -- (48.6mm,-39mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (48.6mm,-42mm) {12};
+  \draw[edge] (45.8mm,-45mm) -- (40mm,-52mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (37.2mm,-55mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (42.8mm,-55mm) {12};
+  \draw[edge] (51.4mm,-45mm) -- (57.2mm,-52mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (54.4mm,-55mm) {13};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (60mm,-55mm) {15};
+  \draw[arc] (12mm,-55mm) -- (16.4mm,-55mm);
+  \draw[arc] (29.2mm,-55mm) -- (33.6mm,-55mm);
+  \draw[arc] (46.4mm,-55mm) -- (50.8mm,-55mm);
+  \node[var,anchor=east] at (-4mm,-29mm) {\texttt{insert(6)}};
+\end{tikzpicture}
+\end{document}

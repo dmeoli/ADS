@@ -1,0 +1,118 @@
+% The trees of partial rebuilding of exercises 8.8 and 8.9 of Morin, by
+% PartialRebuildingTree: the insertion of 6 into the WeightRebuildTree
+% of 0, ..., 5 (beside each node its size) and that of 9 into the
+% CountdownTree of 0, ..., 8 (beside each node its size and its timer),
+% before and after the rebuild. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (8.40mm,0.00mm) -- (0.00mm,-10.00mm);
+  \draw[edge] (25.20mm,-10.00mm) -- (16.80mm,-20.00mm);
+  \draw[edge-touched] (8.40mm,0.00mm) -- (25.20mm,-10.00mm);
+  \draw[edge] (25.20mm,-10.00mm) -- (33.60mm,-20.00mm);
+  \draw[edge] (33.60mm,-20.00mm) -- (42.00mm,-30.00mm);
+  \draw[edge] (42.00mm,-30.00mm) -- (50.40mm,-40.00mm);
+  \node[vertex] (a0) at (0.00mm,-10.00mm) {0};
+  \node[index,anchor=east] at (-3.90mm,-7.20mm) {1};
+  \node[vertex-touched] (a1) at (8.40mm,0.00mm) {1};
+  \node[index,anchor=west] at (12.30mm,2.80mm) {7};
+  \node[vertex] (a2) at (16.80mm,-20.00mm) {2};
+  \node[index,anchor=east] at (12.90mm,-17.20mm) {1};
+  \node[vertex] (a3) at (25.20mm,-10.00mm) {3};
+  \node[index,anchor=west] at (29.10mm,-7.20mm) {5};
+  \node[vertex] (a4) at (33.60mm,-20.00mm) {4};
+  \node[index,anchor=west] at (37.50mm,-17.20mm) {3};
+  \node[vertex] (a5) at (42.00mm,-30.00mm) {5};
+  \node[index,anchor=west] at (45.90mm,-27.20mm) {2};
+  \node[vertex-added] (a6) at (50.40mm,-40.00mm) {6};
+  \node[index,anchor=west] at (54.30mm,-37.20mm) {1};
+  \node[var,anchor=west] at (-3mm,8mm) {\texttt{WeightRebuildTree}, \texttt{insert(6)}: $3 \cdot 5 > 2 \cdot 7$ at the root};
+  \draw[edge] (98.40mm,-10.00mm) -- (90.00mm,-20.00mm);
+  \draw[edge] (115.20mm,0.00mm) -- (98.40mm,-10.00mm);
+  \draw[edge] (98.40mm,-10.00mm) -- (106.80mm,-20.00mm);
+  \draw[edge] (132.00mm,-10.00mm) -- (123.60mm,-20.00mm);
+  \draw[edge] (115.20mm,0.00mm) -- (132.00mm,-10.00mm);
+  \draw[edge] (132.00mm,-10.00mm) -- (140.40mm,-20.00mm);
+  \node[vertex-added] (b0) at (90.00mm,-20.00mm) {0};
+  \node[index,anchor=east] at (86.10mm,-17.20mm) {1};
+  \node[vertex-added] (b1) at (98.40mm,-10.00mm) {1};
+  \node[index,anchor=east] at (94.50mm,-7.20mm) {3};
+  \node[vertex-added] (b2) at (106.80mm,-20.00mm) {2};
+  \node[index,anchor=west] at (110.70mm,-17.20mm) {1};
+  \node[vertex-added] (b3) at (115.20mm,0.00mm) {3};
+  \node[index,anchor=west] at (119.10mm,2.80mm) {7};
+  \node[vertex-added] (b4) at (123.60mm,-20.00mm) {4};
+  \node[index,anchor=east] at (119.70mm,-17.20mm) {1};
+  \node[vertex-added] (b5) at (132.00mm,-10.00mm) {5};
+  \node[index,anchor=west] at (135.90mm,-7.20mm) {3};
+  \node[vertex-added] (b6) at (140.40mm,-20.00mm) {6};
+  \node[index,anchor=west] at (144.30mm,-17.20mm) {1};
+  \node[var,anchor=west] at (87mm,8mm) {the tree rebuilt, the sizes set};
+  \draw[edge] (8.40mm,-70.00mm) -- (0.00mm,-80.00mm);
+  \draw[edge] (25.20mm,-60.00mm) -- (8.40mm,-70.00mm);
+  \draw[edge] (8.40mm,-70.00mm) -- (16.80mm,-80.00mm);
+  \draw[edge] (50.40mm,-70.00mm) -- (33.60mm,-80.00mm);
+  \draw[edge] (33.60mm,-80.00mm) -- (42.00mm,-90.00mm);
+  \draw[edge] (25.20mm,-60.00mm) -- (50.40mm,-70.00mm);
+  \draw[edge] (50.40mm,-70.00mm) -- (58.80mm,-80.00mm);
+  \draw[edge] (58.80mm,-80.00mm) -- (67.20mm,-90.00mm);
+  \draw[edge] (67.20mm,-90.00mm) -- (75.60mm,-100.00mm);
+  \node[vertex] (c0) at (0.00mm,-80.00mm) {0};
+  \node[index,anchor=east] at (-3.90mm,-77.20mm) {1/0};
+  \node[vertex] (c1) at (8.40mm,-70.00mm) {1};
+  \node[index,anchor=east] at (4.50mm,-67.20mm) {3/1};
+  \node[vertex] (c2) at (16.80mm,-80.00mm) {2};
+  \node[index,anchor=west] at (20.70mm,-77.20mm) {1/0};
+  \node[vertex-touched] (c3) at (25.20mm,-60.00mm) {3};
+  \node[index,anchor=west] at (29.10mm,-57.20mm) {10/0};
+  \node[vertex] (c4) at (33.60mm,-80.00mm) {4};
+  \node[index,anchor=east] at (29.70mm,-77.20mm) {2/0};
+  \node[vertex] (c5) at (42.00mm,-90.00mm) {5};
+  \node[index,anchor=west] at (45.90mm,-87.20mm) {1/0};
+  \node[vertex] (c6) at (50.40mm,-70.00mm) {6};
+  \node[index,anchor=west] at (54.30mm,-67.20mm) {6/1};
+  \node[vertex] (c7) at (58.80mm,-80.00mm) {7};
+  \node[index,anchor=west] at (62.70mm,-77.20mm) {3/0};
+  \node[vertex] (c8) at (67.20mm,-90.00mm) {8};
+  \node[index,anchor=west] at (71.10mm,-87.20mm) {2/0};
+  \node[vertex-added] (c9) at (75.60mm,-100.00mm) {9};
+  \node[index,anchor=west] at (79.50mm,-97.20mm) {1/0};
+  \node[var,anchor=west] at (-3mm,-50mm) {\texttt{CountdownTree}, \texttt{insert(9)}: the timer of the root runs out};
+  \draw[edge] (98.40mm,-70.00mm) -- (90.00mm,-80.00mm);
+  \draw[edge] (123.60mm,-60.00mm) -- (98.40mm,-70.00mm);
+  \draw[edge] (98.40mm,-70.00mm) -- (106.80mm,-80.00mm);
+  \draw[edge] (106.80mm,-80.00mm) -- (115.20mm,-90.00mm);
+  \draw[edge] (148.80mm,-70.00mm) -- (132.00mm,-80.00mm);
+  \draw[edge] (132.00mm,-80.00mm) -- (140.40mm,-90.00mm);
+  \draw[edge] (123.60mm,-60.00mm) -- (148.80mm,-70.00mm);
+  \draw[edge] (148.80mm,-70.00mm) -- (157.20mm,-80.00mm);
+  \draw[edge] (157.20mm,-80.00mm) -- (165.60mm,-90.00mm);
+  \node[vertex-added] (d0) at (90.00mm,-80.00mm) {0};
+  \node[index,anchor=east] at (86.10mm,-77.20mm) {1/0};
+  \node[vertex-added] (d1) at (98.40mm,-70.00mm) {1};
+  \node[index,anchor=east] at (94.50mm,-67.20mm) {4/1};
+  \node[vertex-added] (d2) at (106.80mm,-80.00mm) {2};
+  \node[index,anchor=west] at (110.70mm,-77.20mm) {2/0};
+  \node[vertex-added] (d3) at (115.20mm,-90.00mm) {3};
+  \node[index,anchor=west] at (119.10mm,-87.20mm) {1/0};
+  \node[vertex-added] (d4) at (123.60mm,-60.00mm) {4};
+  \node[index,anchor=west] at (127.50mm,-57.20mm) {10/3};
+  \node[vertex-added] (d5) at (132.00mm,-80.00mm) {5};
+  \node[index,anchor=east] at (128.10mm,-77.20mm) {2/0};
+  \node[vertex-added] (d6) at (140.40mm,-90.00mm) {6};
+  \node[index,anchor=west] at (144.30mm,-87.20mm) {1/0};
+  \node[vertex-added] (d7) at (148.80mm,-70.00mm) {7};
+  \node[index,anchor=west] at (152.70mm,-67.20mm) {5/1};
+  \node[vertex-added] (d8) at (157.20mm,-80.00mm) {8};
+  \node[index,anchor=west] at (161.10mm,-77.20mm) {2/0};
+  \node[vertex-added] (d9) at (165.60mm,-90.00mm) {9};
+  \node[index,anchor=west] at (169.50mm,-87.20mm) {1/0};
+  \node[var,anchor=west] at (87mm,-50mm) {the tree rebuilt, the timers set to $\lfloor s / 3 \rfloor$};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,122 @@
+% Exercise 9.2 of Morin: 13, 3.5 and 3.3 inserted in turn into the tree
+% of his figure 9.11 by LeftLeaningRedBlackTree, as the code leaves it
+% after each insertion; red nodes in orange. Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (6.00mm,-20.00mm) -- (0.00mm,-30.00mm);
+  \draw[edge] (18.00mm,-10.00mm) -- (6.00mm,-20.00mm);
+  \draw[edge] (6.00mm,-20.00mm) -- (12.00mm,-30.00mm);
+  \draw[edge] (30.00mm,0.00mm) -- (18.00mm,-10.00mm);
+  \draw[edge] (18.00mm,-10.00mm) -- (24.00mm,-20.00mm);
+  \draw[edge] (42.00mm,-20.00mm) -- (36.00mm,-30.00mm);
+  \draw[edge] (54.00mm,-10.00mm) -- (42.00mm,-20.00mm);
+  \draw[edge] (42.00mm,-20.00mm) -- (48.00mm,-30.00mm);
+  \draw[edge] (30.00mm,0.00mm) -- (54.00mm,-10.00mm);
+  \draw[edge] (66.00mm,-20.00mm) -- (60.00mm,-30.00mm);
+  \draw[edge] (54.00mm,-10.00mm) -- (66.00mm,-20.00mm);
+  \node[vertex] (x01) at (0.00mm,-30.00mm) {1};
+  \node[vertex-added] (x02) at (6.00mm,-20.00mm) {2};
+  \node[vertex] (x03) at (12.00mm,-30.00mm) {3};
+  \node[vertex] (x04) at (18.00mm,-10.00mm) {4};
+  \node[vertex] (x05) at (24.00mm,-20.00mm) {5};
+  \node[vertex] (x06) at (30.00mm,0.00mm) {6};
+  \node[vertex] (x07) at (36.00mm,-30.00mm) {7};
+  \node[vertex-added] (x08) at (42.00mm,-20.00mm) {8};
+  \node[vertex] (x09) at (48.00mm,-30.00mm) {9};
+  \node[vertex] (x010) at (54.00mm,-10.00mm) {10};
+  \node[vertex-added] (x011) at (60.00mm,-30.00mm) {11};
+  \node[vertex] (x012) at (66.00mm,-20.00mm) {12};
+  \node[var,anchor=west] at (-3mm,8mm) {the tree};
+  \draw[edge] (100.00mm,-20.00mm) -- (94.00mm,-30.00mm);
+  \draw[edge] (112.00mm,-10.00mm) -- (100.00mm,-20.00mm);
+  \draw[edge] (100.00mm,-20.00mm) -- (106.00mm,-30.00mm);
+  \draw[edge] (124.00mm,0.00mm) -- (112.00mm,-10.00mm);
+  \draw[edge] (112.00mm,-10.00mm) -- (118.00mm,-20.00mm);
+  \draw[edge] (136.00mm,-20.00mm) -- (130.00mm,-30.00mm);
+  \draw[edge] (148.00mm,-10.00mm) -- (136.00mm,-20.00mm);
+  \draw[edge] (136.00mm,-20.00mm) -- (142.00mm,-30.00mm);
+  \draw[edge] (124.00mm,0.00mm) -- (148.00mm,-10.00mm);
+  \draw[edge] (160.00mm,-20.00mm) -- (154.00mm,-30.00mm);
+  \draw[edge] (148.00mm,-10.00mm) -- (160.00mm,-20.00mm);
+  \draw[edge] (160.00mm,-20.00mm) -- (166.00mm,-30.00mm);
+  \node[vertex] (x11) at (94.00mm,-30.00mm) {1};
+  \node[vertex-added] (x12) at (100.00mm,-20.00mm) {2};
+  \node[vertex] (x13) at (106.00mm,-30.00mm) {3};
+  \node[vertex] (x14) at (112.00mm,-10.00mm) {4};
+  \node[vertex] (x15) at (118.00mm,-20.00mm) {5};
+  \node[vertex] (x16) at (124.00mm,0.00mm) {6};
+  \node[vertex] (x17) at (130.00mm,-30.00mm) {7};
+  \node[vertex-added] (x18) at (136.00mm,-20.00mm) {8};
+  \node[vertex] (x19) at (142.00mm,-30.00mm) {9};
+  \node[vertex] (x110) at (148.00mm,-10.00mm) {10};
+  \node[vertex-added] (x111) at (154.00mm,-30.00mm) {11};
+  \node[vertex] (x112) at (160.00mm,-20.00mm) {12};
+  \node[vertex-added] (x113) at (166.00mm,-30.00mm) {13};
+  \node[var,anchor=west] at (91mm,8mm) {\texttt{insert(13)}: a 2-4 node of degree 4};
+  \draw[edge] (6.00mm,-78.00mm) -- (0.00mm,-88.00mm);
+  \draw[edge] (24.00mm,-68.00mm) -- (6.00mm,-78.00mm);
+  \draw[edge] (18.00mm,-88.00mm) -- (12.00mm,-98.00mm);
+  \draw[edge] (6.00mm,-78.00mm) -- (18.00mm,-88.00mm);
+  \draw[edge] (36.00mm,-58.00mm) -- (24.00mm,-68.00mm);
+  \draw[edge] (24.00mm,-68.00mm) -- (30.00mm,-78.00mm);
+  \draw[edge] (48.00mm,-78.00mm) -- (42.00mm,-88.00mm);
+  \draw[edge] (60.00mm,-68.00mm) -- (48.00mm,-78.00mm);
+  \draw[edge] (48.00mm,-78.00mm) -- (54.00mm,-88.00mm);
+  \draw[edge] (36.00mm,-58.00mm) -- (60.00mm,-68.00mm);
+  \draw[edge] (72.00mm,-78.00mm) -- (66.00mm,-88.00mm);
+  \draw[edge] (60.00mm,-68.00mm) -- (72.00mm,-78.00mm);
+  \draw[edge] (72.00mm,-78.00mm) -- (78.00mm,-88.00mm);
+  \node[vertex] (x21) at (0.00mm,-88.00mm) {1};
+  \node[vertex-added] (x22) at (6.00mm,-78.00mm) {2};
+  \node[vertex-added] (x23) at (12.00mm,-98.00mm) {3};
+  \node[vertex] (x23p5) at (18.00mm,-88.00mm) {3.5};
+  \node[vertex] (x24) at (24.00mm,-68.00mm) {4};
+  \node[vertex] (x25) at (30.00mm,-78.00mm) {5};
+  \node[vertex] (x26) at (36.00mm,-58.00mm) {6};
+  \node[vertex] (x27) at (42.00mm,-88.00mm) {7};
+  \node[vertex-added] (x28) at (48.00mm,-78.00mm) {8};
+  \node[vertex] (x29) at (54.00mm,-88.00mm) {9};
+  \node[vertex] (x210) at (60.00mm,-68.00mm) {10};
+  \node[vertex-added] (x211) at (66.00mm,-88.00mm) {11};
+  \node[vertex] (x212) at (72.00mm,-78.00mm) {12};
+  \node[vertex-added] (x213) at (78.00mm,-88.00mm) {13};
+  \node[var,anchor=west] at (-3mm,-50mm) {\texttt{insert(3.5)}: \texttt{flipLeft(3)}};
+  \draw[edge] (100.00mm,-78.00mm) -- (94.00mm,-88.00mm);
+  \draw[edge] (124.00mm,-68.00mm) -- (100.00mm,-78.00mm);
+  \draw[edge] (112.00mm,-88.00mm) -- (106.00mm,-98.00mm);
+  \draw[edge] (100.00mm,-78.00mm) -- (112.00mm,-88.00mm);
+  \draw[edge] (112.00mm,-88.00mm) -- (118.00mm,-98.00mm);
+  \draw[edge] (136.00mm,-58.00mm) -- (124.00mm,-68.00mm);
+  \draw[edge] (124.00mm,-68.00mm) -- (130.00mm,-78.00mm);
+  \draw[edge] (148.00mm,-78.00mm) -- (142.00mm,-88.00mm);
+  \draw[edge] (160.00mm,-68.00mm) -- (148.00mm,-78.00mm);
+  \draw[edge] (148.00mm,-78.00mm) -- (154.00mm,-88.00mm);
+  \draw[edge] (136.00mm,-58.00mm) -- (160.00mm,-68.00mm);
+  \draw[edge] (172.00mm,-78.00mm) -- (166.00mm,-88.00mm);
+  \draw[edge] (160.00mm,-68.00mm) -- (172.00mm,-78.00mm);
+  \draw[edge] (172.00mm,-78.00mm) -- (178.00mm,-88.00mm);
+  \node[vertex] (x31) at (94.00mm,-88.00mm) {1};
+  \node[vertex-added] (x32) at (100.00mm,-78.00mm) {2};
+  \node[vertex-added] (x33) at (106.00mm,-98.00mm) {3};
+  \node[vertex] (x33p3) at (112.00mm,-88.00mm) {3.3};
+  \node[vertex-added] (x33p5) at (118.00mm,-98.00mm) {3.5};
+  \node[vertex] (x34) at (124.00mm,-68.00mm) {4};
+  \node[vertex] (x35) at (130.00mm,-78.00mm) {5};
+  \node[vertex] (x36) at (136.00mm,-58.00mm) {6};
+  \node[vertex] (x37) at (142.00mm,-88.00mm) {7};
+  \node[vertex-added] (x38) at (148.00mm,-78.00mm) {8};
+  \node[vertex] (x39) at (154.00mm,-88.00mm) {9};
+  \node[vertex] (x310) at (160.00mm,-68.00mm) {10};
+  \node[vertex-added] (x311) at (166.00mm,-88.00mm) {11};
+  \node[vertex] (x312) at (172.00mm,-78.00mm) {12};
+  \node[vertex-added] (x313) at (178.00mm,-88.00mm) {13};
+  \node[var,anchor=west] at (91mm,-50mm) {\texttt{insert(3.3)}: \texttt{flipLeft(3)}, \texttt{flipRight(3.5)}};
+\end{tikzpicture}
+\end{document}

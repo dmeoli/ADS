@@ -11,11 +11,12 @@
  * usual. The climb and the descent take \f$ O( 1 + \log r ) \f$ expected time,
  * \f$ r \f$ the keys between \f$ k \f$ and the key of \f$ u \f$: the lowest
  * common ancestor of the two nodes in a treap is the node of largest priority
- * among the \f$ r + 1 \f$ keys between them, and the expected depth of a node
- * below it, within that range, is \f$ O( \log r ) \f$ (Lemma 7.1 of Morin
- * applied to the range), which is the argument of Seidel and Aragon for their
- * finger searches. `fingerLookup()` keeps the node of the last search as the
- * finger (part 3 of the exercise), so that a sequence of searches of keys
+ * among the \f$ r + 2 \f$ keys from one to the other, and the expected
+ * number of the ancestors of either node below it is \f$ O( \log r ) \f$,
+ * those outside that range included (as in the proof of Lemma 7.1 of Morin),
+ * which is the argument of Seidel and Aragon for their finger searches.
+ * `fingerLookup()` keeps the node of the last search as the finger (part 3
+ * of the exercise), so that a sequence of searches of keys
  * near each other costs \f$ O( 1 + \log r ) \f$ each instead of
  * \f$ O( \log n ) \f$; `lookupFrom()` starts from a node given by `finger()`
  * (part 2). `select()` and `rank()` read the sizes (exercise 7.10).

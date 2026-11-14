@@ -1,0 +1,51 @@
+% Removal of 9 from the treap of tree-treap: (a) the search path,
+% (b) the node with one child replaced by it. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-0) at (0mm,-20mm) {0,91};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-1) at (11mm,-10mm) {1,94};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-2) at (22mm,-20mm) {2,1};
+  \node[node-touched,minimum width=9mm,font=\scriptsize\ttfamily] (n5-3) at (33mm,0mm) {3,99};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-4) at (44mm,-20mm) {4,86};
+  \node[node-touched,minimum width=9mm,font=\scriptsize\ttfamily] (n5-5) at (55mm,-10mm) {5,89};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-6) at (66mm,-40mm) {6,58};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-7) at (77mm,-30mm) {7,78};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n5-8) at (88mm,-40mm) {8,51};
+  \node[node-touched,minimum width=9mm,font=\scriptsize\ttfamily] (n5-9) at (99mm,-20mm) {9,83};
+  \draw[edge] (n5-3) -- (n5-1);
+  \draw[edge] (n5-1) -- (n5-0);
+  \draw[edge] (n5-1) -- (n5-2);
+  \draw[edge-touched] (n5-3) -- (n5-5);
+  \draw[edge] (n5-5) -- (n5-4);
+  \draw[edge-touched] (n5-5) -- (n5-9);
+  \draw[edge] (n5-9) -- (n5-7);
+  \draw[edge] (n5-7) -- (n5-6);
+  \draw[edge] (n5-7) -- (n5-8);
+  \node[var,anchor=east] at (-6mm,0mm) {(a)};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-0) at (0mm,-70mm) {0,91};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-1) at (11mm,-60mm) {1,94};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-2) at (22mm,-70mm) {2,1};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-3) at (33mm,-50mm) {3,99};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-4) at (44mm,-70mm) {4,86};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-5) at (55mm,-60mm) {5,89};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-6) at (66mm,-80mm) {6,58};
+  \node[node-touched,minimum width=9mm,font=\scriptsize\ttfamily] (n6-7) at (77mm,-70mm) {7,78};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n6-8) at (88mm,-80mm) {8,51};
+  \draw[edge] (n6-3) -- (n6-1);
+  \draw[edge] (n6-1) -- (n6-0);
+  \draw[edge] (n6-1) -- (n6-2);
+  \draw[edge] (n6-3) -- (n6-5);
+  \draw[edge] (n6-5) -- (n6-4);
+  \draw[edge-touched] (n6-5) -- (n6-7);
+  \draw[edge] (n6-7) -- (n6-6);
+  \draw[edge] (n6-7) -- (n6-8);
+  \node[var,anchor=east] at (-6mm,-50mm) {(b)};
+\end{tikzpicture}
+\end{document}

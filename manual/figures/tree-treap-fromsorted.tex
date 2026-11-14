@@ -1,0 +1,33 @@
+% fromSorted() on the keys of tree-treap: (a) the tree of 0, 1, 2 and the
+% stack S of its right spine, (b) after 3, of the largest priority, which pops
+% the whole spine and takes it as its left subtree. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n18-0) at (0mm,-10mm) {0,91};
+  \node[node-touched,minimum width=9mm,font=\scriptsize\ttfamily] (n18-1) at (11mm,0mm) {1,94};
+  \node[node-touched,minimum width=9mm,font=\scriptsize\ttfamily] (n18-2) at (22mm,-10mm) {2,1};
+  \draw[edge] (n18-1) -- (n18-0);
+  \draw[edge-touched] (n18-1) -- (n18-2);
+  \node[var,anchor=east] at (-8mm,0) {(a)};
+  \node[var,anchor=east] at (52mm,0) {$S$};
+  \node[touched,minimum width=9mm,font=\scriptsize\ttfamily] at (56mm,0) {1,94};
+  \node[touched,minimum width=9mm,font=\scriptsize\ttfamily] at (66mm,0) {2,1};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n19-0) at (0mm,-50mm) {0,91};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n19-1) at (11mm,-40mm) {1,94};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n19-2) at (22mm,-50mm) {2,1};
+  \node[node-added,minimum width=9mm,font=\scriptsize\ttfamily] (n19-3) at (33mm,-30mm) {3,99};
+  \draw[edge-added] (n19-3) -- (n19-1);
+  \draw[edge] (n19-1) -- (n19-0);
+  \draw[edge] (n19-1) -- (n19-2);
+  \node[var,anchor=east] at (-8mm,-30mm) {(b)};
+  \node[var,anchor=east] at (52mm,-30mm) {$S$};
+  \node[added,minimum width=9mm,font=\scriptsize\ttfamily] at (56mm,-30mm) {3,99};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,43 @@
+% fingerFind(6, u) in a FingerTreap from the node u of 4 (in orange):
+% the climb to 5, the first ancestor whose interval [lo,hi] holds 6, then
+% the descent 5, 9, 7, 6. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (v23-0) at (0mm,-22mm) {0};
+  \node[index,anchor=south east] at ($(v23-0.north west)+(0.4mm,-0.4mm)$) {$[0,0]$};
+  \node[vertex] (v23-1) at (12mm,-11mm) {1};
+  \node[index,anchor=south east] at ($(v23-1.north west)+(0.4mm,-0.4mm)$) {$[0,2]$};
+  \node[vertex] (v23-2) at (24mm,-22mm) {2};
+  \node[index,anchor=south west] at ($(v23-2.north east)+(-0.4mm,-0.4mm)$) {$[2,2]$};
+  \node[vertex] (v23-3) at (36mm,0mm) {3};
+  \node[index,anchor=south west] at ($(v23-3.north east)+(-0.4mm,-0.4mm)$) {$[0,9]$};
+  \node[vertex-added] (v23-4) at (48mm,-22mm) {4};
+  \node[index,anchor=south east] at ($(v23-4.north west)+(0.4mm,-0.4mm)$) {$[4,4]$};
+  \node[vertex-touched] (v23-5) at (60mm,-11mm) {5};
+  \node[index,anchor=south west] at ($(v23-5.north east)+(-0.4mm,-0.4mm)$) {$[4,9]$};
+  \node[vertex-touched] (v23-6) at (72mm,-44mm) {6};
+  \node[index,anchor=south east] at ($(v23-6.north west)+(0.4mm,-0.4mm)$) {$[6,6]$};
+  \node[vertex-touched] (v23-7) at (84mm,-33mm) {7};
+  \node[index,anchor=south east] at ($(v23-7.north west)+(0.4mm,-0.4mm)$) {$[6,8]$};
+  \node[vertex] (v23-8) at (96mm,-44mm) {8};
+  \node[index,anchor=south west] at ($(v23-8.north east)+(-0.4mm,-0.4mm)$) {$[8,8]$};
+  \node[vertex-touched] (v23-9) at (108mm,-22mm) {9};
+  \node[index,anchor=south west] at ($(v23-9.north east)+(-0.4mm,-0.4mm)$) {$[6,9]$};
+  \draw[edge] (v23-3) -- (v23-1);
+  \draw[edge] (v23-1) -- (v23-0);
+  \draw[edge] (v23-1) -- (v23-2);
+  \draw[edge] (v23-3) -- (v23-5);
+  \draw[edge-added] (v23-5) -- (v23-4);
+  \draw[edge-touched] (v23-5) -- (v23-9);
+  \draw[edge-touched] (v23-9) -- (v23-7);
+  \draw[edge-touched] (v23-7) -- (v23-6);
+  \draw[edge] (v23-7) -- (v23-8);
+\end{tikzpicture}
+\end{document}

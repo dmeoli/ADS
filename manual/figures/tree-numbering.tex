@@ -1,0 +1,83 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex,minimum size=5.8mm] (N0-oll) at (0.00mm,-22.00mm) {2};
+  \node[vertex,minimum size=5.8mm] (N0-ol) at (4.60mm,-11.00mm) {1};
+  \node[vertex,minimum size=5.8mm] (N0-olrl) at (9.20mm,-33.00mm) {4};
+  \node[vertex,minimum size=5.8mm] (N0-olr) at (13.80mm,-22.00mm) {3};
+  \node[vertex,minimum size=5.8mm] (N0-olrr) at (18.40mm,-33.00mm) {5};
+  \node[vertex,minimum size=5.8mm] (N0-o) at (23.00mm,0.00mm) {0};
+  \node[vertex,minimum size=5.8mm] (N0-orll) at (27.60mm,-33.00mm) {8};
+  \node[vertex,minimum size=5.8mm] (N0-orl) at (32.20mm,-22.00mm) {7};
+  \node[vertex,minimum size=5.8mm] (N0-or) at (36.80mm,-11.00mm) {6};
+  \node[vertex,minimum size=5.8mm] (N0-orrl) at (41.40mm,-33.00mm) {10};
+  \node[vertex,minimum size=5.8mm] (N0-orr) at (46.00mm,-22.00mm) {9};
+  \node[vertex,minimum size=5.8mm] (N0-orrr) at (50.60mm,-33.00mm) {11};
+  \draw[edge] (N0-olr) -- (N0-olrl);
+  \draw[edge] (N0-olr) -- (N0-olrr);
+  \draw[edge] (N0-ol) -- (N0-oll);
+  \draw[edge] (N0-ol) -- (N0-olr);
+  \draw[edge] (N0-orl) -- (N0-orll);
+  \draw[edge] (N0-orr) -- (N0-orrl);
+  \draw[edge] (N0-orr) -- (N0-orrr);
+  \draw[edge] (N0-or) -- (N0-orl);
+  \draw[edge] (N0-or) -- (N0-orr);
+  \draw[edge] (N0-o) -- (N0-ol);
+  \draw[edge] (N0-o) -- (N0-or);
+  \node[var,anchor=center] at (25.30mm,-42.00mm) {previsit};
+  \node[vertex,minimum size=5.8mm] (N1-oll) at (60.60mm,-22.00mm) {0};
+  \node[vertex,minimum size=5.8mm] (N1-ol) at (65.20mm,-11.00mm) {4};
+  \node[vertex,minimum size=5.8mm] (N1-olrl) at (69.80mm,-33.00mm) {1};
+  \node[vertex,minimum size=5.8mm] (N1-olr) at (74.40mm,-22.00mm) {3};
+  \node[vertex,minimum size=5.8mm] (N1-olrr) at (79.00mm,-33.00mm) {2};
+  \node[vertex,minimum size=5.8mm] (N1-o) at (83.60mm,0.00mm) {11};
+  \node[vertex,minimum size=5.8mm] (N1-orll) at (88.20mm,-33.00mm) {5};
+  \node[vertex,minimum size=5.8mm] (N1-orl) at (92.80mm,-22.00mm) {6};
+  \node[vertex,minimum size=5.8mm] (N1-or) at (97.40mm,-11.00mm) {10};
+  \node[vertex,minimum size=5.8mm] (N1-orrl) at (102.00mm,-33.00mm) {7};
+  \node[vertex,minimum size=5.8mm] (N1-orr) at (106.60mm,-22.00mm) {9};
+  \node[vertex,minimum size=5.8mm] (N1-orrr) at (111.20mm,-33.00mm) {8};
+  \draw[edge] (N1-olr) -- (N1-olrl);
+  \draw[edge] (N1-olr) -- (N1-olrr);
+  \draw[edge] (N1-ol) -- (N1-oll);
+  \draw[edge] (N1-ol) -- (N1-olr);
+  \draw[edge] (N1-orl) -- (N1-orll);
+  \draw[edge] (N1-orr) -- (N1-orrl);
+  \draw[edge] (N1-orr) -- (N1-orrr);
+  \draw[edge] (N1-or) -- (N1-orl);
+  \draw[edge] (N1-or) -- (N1-orr);
+  \draw[edge] (N1-o) -- (N1-ol);
+  \draw[edge] (N1-o) -- (N1-or);
+  \node[var,anchor=center] at (85.90mm,-42.00mm) {postvisit};
+  \node[vertex,minimum size=5.8mm] (N2-oll) at (121.20mm,-22.00mm) {0};
+  \node[vertex,minimum size=5.8mm] (N2-ol) at (125.80mm,-11.00mm) {1};
+  \node[vertex,minimum size=5.8mm] (N2-olrl) at (130.40mm,-33.00mm) {2};
+  \node[vertex,minimum size=5.8mm] (N2-olr) at (135.00mm,-22.00mm) {3};
+  \node[vertex,minimum size=5.8mm] (N2-olrr) at (139.60mm,-33.00mm) {4};
+  \node[vertex,minimum size=5.8mm] (N2-o) at (144.20mm,0.00mm) {5};
+  \node[vertex,minimum size=5.8mm] (N2-orll) at (148.80mm,-33.00mm) {6};
+  \node[vertex,minimum size=5.8mm] (N2-orl) at (153.40mm,-22.00mm) {7};
+  \node[vertex,minimum size=5.8mm] (N2-or) at (158.00mm,-11.00mm) {8};
+  \node[vertex,minimum size=5.8mm] (N2-orrl) at (162.60mm,-33.00mm) {9};
+  \node[vertex,minimum size=5.8mm] (N2-orr) at (167.20mm,-22.00mm) {10};
+  \node[vertex,minimum size=5.8mm] (N2-orrr) at (171.80mm,-33.00mm) {11};
+  \draw[edge] (N2-olr) -- (N2-olrl);
+  \draw[edge] (N2-olr) -- (N2-olrr);
+  \draw[edge] (N2-ol) -- (N2-oll);
+  \draw[edge] (N2-ol) -- (N2-olr);
+  \draw[edge] (N2-orl) -- (N2-orll);
+  \draw[edge] (N2-orr) -- (N2-orrl);
+  \draw[edge] (N2-orr) -- (N2-orrr);
+  \draw[edge] (N2-or) -- (N2-orl);
+  \draw[edge] (N2-or) -- (N2-orr);
+  \draw[edge] (N2-o) -- (N2-ol);
+  \draw[edge] (N2-o) -- (N2-or);
+  \node[var,anchor=center] at (146.50mm,-42.00mm) {invisit};
+\end{tikzpicture}
+\end{document}

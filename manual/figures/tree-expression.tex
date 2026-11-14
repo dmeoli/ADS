@@ -1,0 +1,38 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (A0-o) at (0.00mm,0.00mm) {5};
+  \node[vertex] (A1-ol) at (12.00mm,-11.00mm) {9};
+  \node[vertex-touched] (A1-o) at (20.00mm,0.00mm) {+};
+  \node[vertex] (A1-or) at (28.00mm,-11.00mm) {8};
+  \draw[edge] (A1-o) -- (A1-ol);
+  \draw[edge] (A1-o) -- (A1-or);
+  \node[vertex] (A2-ol) at (40.00mm,-11.00mm) {4};
+  \node[vertex-touched] (A2-o) at (48.00mm,0.00mm) {*};
+  \node[vertex] (A2-or) at (56.00mm,-11.00mm) {6};
+  \draw[edge] (A2-o) -- (A2-ol);
+  \draw[edge] (A2-o) -- (A2-or);
+  \node[var,anchor=center] at (26.00mm,-22.00mm) {after \texttt{5 9 8 + 4 6 *}};
+  \node[vertex] (B0-o) at (70.00mm,0.00mm) {5};
+  \node[vertex] (B1-oll) at (82.00mm,-22.00mm) {9};
+  \node[vertex] (B1-ol) at (90.00mm,-11.00mm) {+};
+  \node[vertex] (B1-olr) at (98.00mm,-22.00mm) {8};
+  \node[vertex-added] (B1-o) at (106.00mm,0.00mm) {*};
+  \node[vertex] (B1-orl) at (114.00mm,-22.00mm) {4};
+  \node[vertex] (B1-or) at (122.00mm,-11.00mm) {*};
+  \node[vertex] (B1-orr) at (130.00mm,-22.00mm) {6};
+  \draw[edge] (B1-ol) -- (B1-oll);
+  \draw[edge] (B1-ol) -- (B1-olr);
+  \draw[edge] (B1-or) -- (B1-orl);
+  \draw[edge] (B1-or) -- (B1-orr);
+  \draw[edge-added] (B1-o) -- (B1-ol);
+  \draw[edge-added] (B1-o) -- (B1-or);
+  \node[var,anchor=center] at (98.00mm,-34.00mm) {after the next \texttt{*}};
+\end{tikzpicture}
+\end{document}

@@ -50,6 +50,7 @@ void SplayTree< K , V >::destroy( Node * t )
 template< std::totally_ordered K , class V >
 auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
 {
+ //! [splay]
  if( ! t )
   return( t );
  // the two parts and the links where they grow, the right child of the
@@ -92,6 +93,7 @@ auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
  t->left = L;
  t->right = R;
  return( t );
+ //! [splay]
  }
 
 template< std::totally_ordered K , class V >

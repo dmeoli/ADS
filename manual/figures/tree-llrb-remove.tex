@@ -1,0 +1,98 @@
+% Exercise 9.3 of Morin: 11, 9 and 5 removed in turn from the tree of
+% his figure 9.11 by LeftLeaningRedBlackTree, as the code leaves it
+% after each removal; red nodes in orange. Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (6.00mm,-20.00mm) -- (0.00mm,-30.00mm);
+  \draw[edge] (18.00mm,-10.00mm) -- (6.00mm,-20.00mm);
+  \draw[edge] (6.00mm,-20.00mm) -- (12.00mm,-30.00mm);
+  \draw[edge] (30.00mm,0.00mm) -- (18.00mm,-10.00mm);
+  \draw[edge] (18.00mm,-10.00mm) -- (24.00mm,-20.00mm);
+  \draw[edge] (42.00mm,-20.00mm) -- (36.00mm,-30.00mm);
+  \draw[edge] (54.00mm,-10.00mm) -- (42.00mm,-20.00mm);
+  \draw[edge] (42.00mm,-20.00mm) -- (48.00mm,-30.00mm);
+  \draw[edge] (30.00mm,0.00mm) -- (54.00mm,-10.00mm);
+  \draw[edge] (66.00mm,-20.00mm) -- (60.00mm,-30.00mm);
+  \draw[edge] (54.00mm,-10.00mm) -- (66.00mm,-20.00mm);
+  \node[vertex] (x01) at (0.00mm,-30.00mm) {1};
+  \node[vertex-added] (x02) at (6.00mm,-20.00mm) {2};
+  \node[vertex] (x03) at (12.00mm,-30.00mm) {3};
+  \node[vertex] (x04) at (18.00mm,-10.00mm) {4};
+  \node[vertex] (x05) at (24.00mm,-20.00mm) {5};
+  \node[vertex] (x06) at (30.00mm,0.00mm) {6};
+  \node[vertex] (x07) at (36.00mm,-30.00mm) {7};
+  \node[vertex-added] (x08) at (42.00mm,-20.00mm) {8};
+  \node[vertex] (x09) at (48.00mm,-30.00mm) {9};
+  \node[vertex] (x010) at (54.00mm,-10.00mm) {10};
+  \node[vertex-added] (x011) at (60.00mm,-30.00mm) {11};
+  \node[vertex] (x012) at (66.00mm,-20.00mm) {12};
+  \node[var,anchor=west] at (-3mm,8mm) {the tree};
+  \draw[edge] (100.00mm,-20.00mm) -- (94.00mm,-30.00mm);
+  \draw[edge] (112.00mm,-10.00mm) -- (100.00mm,-20.00mm);
+  \draw[edge] (100.00mm,-20.00mm) -- (106.00mm,-30.00mm);
+  \draw[edge] (124.00mm,0.00mm) -- (112.00mm,-10.00mm);
+  \draw[edge] (112.00mm,-10.00mm) -- (118.00mm,-20.00mm);
+  \draw[edge] (136.00mm,-20.00mm) -- (130.00mm,-30.00mm);
+  \draw[edge] (148.00mm,-10.00mm) -- (136.00mm,-20.00mm);
+  \draw[edge] (136.00mm,-20.00mm) -- (142.00mm,-30.00mm);
+  \draw[edge] (124.00mm,0.00mm) -- (148.00mm,-10.00mm);
+  \draw[edge] (148.00mm,-10.00mm) -- (154.00mm,-20.00mm);
+  \node[vertex] (x11) at (94.00mm,-30.00mm) {1};
+  \node[vertex-added] (x12) at (100.00mm,-20.00mm) {2};
+  \node[vertex] (x13) at (106.00mm,-30.00mm) {3};
+  \node[vertex] (x14) at (112.00mm,-10.00mm) {4};
+  \node[vertex] (x15) at (118.00mm,-20.00mm) {5};
+  \node[vertex] (x16) at (124.00mm,0.00mm) {6};
+  \node[vertex] (x17) at (130.00mm,-30.00mm) {7};
+  \node[vertex-added] (x18) at (136.00mm,-20.00mm) {8};
+  \node[vertex] (x19) at (142.00mm,-30.00mm) {9};
+  \node[vertex] (x110) at (148.00mm,-10.00mm) {10};
+  \node[vertex] (x112) at (154.00mm,-20.00mm) {12};
+  \node[var,anchor=west] at (91mm,8mm) {\texttt{remove(11)}: a red leaf spliced};
+  \draw[edge] (6.00mm,-78.00mm) -- (0.00mm,-88.00mm);
+  \draw[edge] (18.00mm,-68.00mm) -- (6.00mm,-78.00mm);
+  \draw[edge] (6.00mm,-78.00mm) -- (12.00mm,-88.00mm);
+  \draw[edge] (30.00mm,-58.00mm) -- (18.00mm,-68.00mm);
+  \draw[edge] (18.00mm,-68.00mm) -- (24.00mm,-78.00mm);
+  \draw[edge] (42.00mm,-78.00mm) -- (36.00mm,-88.00mm);
+  \draw[edge] (48.00mm,-68.00mm) -- (42.00mm,-78.00mm);
+  \draw[edge] (30.00mm,-58.00mm) -- (48.00mm,-68.00mm);
+  \draw[edge] (48.00mm,-68.00mm) -- (54.00mm,-78.00mm);
+  \node[vertex] (x21) at (0.00mm,-88.00mm) {1};
+  \node[vertex-added] (x22) at (6.00mm,-78.00mm) {2};
+  \node[vertex] (x23) at (12.00mm,-88.00mm) {3};
+  \node[vertex] (x24) at (18.00mm,-68.00mm) {4};
+  \node[vertex] (x25) at (24.00mm,-78.00mm) {5};
+  \node[vertex] (x26) at (30.00mm,-58.00mm) {6};
+  \node[vertex-added] (x27) at (36.00mm,-88.00mm) {7};
+  \node[vertex] (x28) at (42.00mm,-78.00mm) {8};
+  \node[vertex] (x210) at (48.00mm,-68.00mm) {10};
+  \node[vertex] (x212) at (54.00mm,-78.00mm) {12};
+  \node[var,anchor=west] at (-3mm,-50mm) {\texttt{remove(9)}: case 3 of \texttt{removeFixup}};
+  \draw[edge] (100.00mm,-68.00mm) -- (94.00mm,-78.00mm);
+  \draw[edge] (118.00mm,-58.00mm) -- (100.00mm,-68.00mm);
+  \draw[edge] (112.00mm,-78.00mm) -- (106.00mm,-88.00mm);
+  \draw[edge] (100.00mm,-68.00mm) -- (112.00mm,-78.00mm);
+  \draw[edge] (130.00mm,-78.00mm) -- (124.00mm,-88.00mm);
+  \draw[edge] (136.00mm,-68.00mm) -- (130.00mm,-78.00mm);
+  \draw[edge] (118.00mm,-58.00mm) -- (136.00mm,-68.00mm);
+  \draw[edge] (136.00mm,-68.00mm) -- (142.00mm,-78.00mm);
+  \node[vertex] (x31) at (94.00mm,-78.00mm) {1};
+  \node[vertex] (x32) at (100.00mm,-68.00mm) {2};
+  \node[vertex-added] (x33) at (106.00mm,-88.00mm) {3};
+  \node[vertex] (x34) at (112.00mm,-78.00mm) {4};
+  \node[vertex] (x36) at (118.00mm,-58.00mm) {6};
+  \node[vertex-added] (x37) at (124.00mm,-88.00mm) {7};
+  \node[vertex] (x38) at (130.00mm,-78.00mm) {8};
+  \node[vertex] (x310) at (136.00mm,-68.00mm) {10};
+  \node[vertex] (x312) at (142.00mm,-78.00mm) {12};
+  \node[var,anchor=west] at (91mm,-50mm) {\texttt{remove(5)}: case 1, then case 3};
+\end{tikzpicture}
+\end{document}

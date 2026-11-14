@@ -348,6 +348,7 @@ class LeftLeaningRedBlackTree {
   }
  void rotateLeft( Link * u );
  void rotateRight( Link * u );
+ //! [flips]
  static void pushBlack( Link * u ) {
   --u->colour;
   ++u->left->colour;
@@ -366,6 +367,7 @@ class LeftLeaningRedBlackTree {
   std::swap( u->colour , u->left->colour );
   rotateRight( u );
   }
+ //! [flips]
  void addFixup( Link * u );
  void removeFixup( Link * u );
  Link * removeCase2( Link * u );

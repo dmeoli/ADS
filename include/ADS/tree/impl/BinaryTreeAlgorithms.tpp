@@ -272,6 +272,7 @@ BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
  ADS_PRE( pre.size() == in.size() );
  if( pre.empty() ) return( nullptr );
  std::unique_ptr< BinaryTree< T > > root( new BinaryTree< T >( pre[ 0 ] ) );
+ //! [fromPreorderInorder]
  std::vector< BinaryTree< T > * > S( 1 , root.get() );   // right subtree open
  std::size_t j = 0;                                      // the next of in
  for( std::size_t i = 1 ; i < pre.size() ; ++i ) {
@@ -288,6 +289,7 @@ BinaryTree< T > * fromPreorderInorder( const std::vector< T > & pre ,
   else S.back()->insertLeft( t.get() );
   S.push_back( t.release() );               // now owned by root
   }
+ //! [fromPreorderInorder]
  ADS_PRE( [ & ]() {                         // the invisit is in
   std::size_t k = 0;
   for( auto * u : inorder( root.get() ) )
@@ -379,6 +381,7 @@ template< class N , class G >
 void walkSubtree( N r , G && g )
 {
  if( ! r ) return;
+ //! [walkSubtree]
  const N top = nodeParent( r );
  N u = r , prev = top;
  long d = 0;
@@ -398,6 +401,7 @@ void walkSubtree( N r , G && g )
   prev = u;
   u = next;
   }
+ //! [walkSubtree]
  }
 
 }  // end( namespace detail )

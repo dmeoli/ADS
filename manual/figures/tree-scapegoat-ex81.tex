@@ -1,0 +1,60 @@
+% Exercise 8.1 of Morin: 1.5 and then 1.6 inserted into his scapegoat
+% tree of 10 nodes, which ScapegoatTree leaves with no rebuild under
+% either rule. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (6.60mm,-40.00mm) -- (0.00mm,-50.00mm);
+  \draw[edge] (19.80mm,-30.00mm) -- (6.60mm,-40.00mm);
+  \draw[edge] (6.60mm,-40.00mm) -- (13.20mm,-50.00mm);
+  \draw[edge] (39.60mm,-20.00mm) -- (19.80mm,-30.00mm);
+  \draw[edge] (33.00mm,-40.00mm) -- (26.40mm,-50.00mm);
+  \draw[edge] (19.80mm,-30.00mm) -- (33.00mm,-40.00mm);
+  \draw[edge] (46.20mm,-10.00mm) -- (39.60mm,-20.00mm);
+  \draw[edge] (52.80mm,0.00mm) -- (46.20mm,-10.00mm);
+  \draw[edge] (52.80mm,0.00mm) -- (59.40mm,-10.00mm);
+  \draw[edge] (59.40mm,-10.00mm) -- (66.00mm,-20.00mm);
+  \node[vertex] (p00) at (0.00mm,-50.00mm) {0};
+  \node[vertex] (p01) at (6.60mm,-40.00mm) {1};
+  \node[vertex-added] (p01p5) at (13.20mm,-50.00mm) {1.5};
+  \node[vertex] (p02) at (19.80mm,-30.00mm) {2};
+  \node[vertex] (p03) at (26.40mm,-50.00mm) {3};
+  \node[vertex] (p04) at (33.00mm,-40.00mm) {4};
+  \node[vertex] (p05) at (39.60mm,-20.00mm) {5};
+  \node[vertex] (p06) at (46.20mm,-10.00mm) {6};
+  \node[vertex] (p07) at (52.80mm,0.00mm) {7};
+  \node[vertex] (p08) at (59.40mm,-10.00mm) {8};
+  \node[vertex] (p09) at (66.00mm,-20.00mm) {9};
+  \node[var,anchor=west] at (-2mm,8mm) {\texttt{insert(1.5)}: depth $5 \le \log_{3/2} 11 \approx 5.91$};
+  \draw[edge] (102.60mm,-40.00mm) -- (96.00mm,-50.00mm);
+  \draw[edge] (122.40mm,-30.00mm) -- (102.60mm,-40.00mm);
+  \draw[edge] (102.60mm,-40.00mm) -- (109.20mm,-50.00mm);
+  \draw[edge] (109.20mm,-50.00mm) -- (115.80mm,-60.00mm);
+  \draw[edge] (142.20mm,-20.00mm) -- (122.40mm,-30.00mm);
+  \draw[edge] (135.60mm,-40.00mm) -- (129.00mm,-50.00mm);
+  \draw[edge] (122.40mm,-30.00mm) -- (135.60mm,-40.00mm);
+  \draw[edge] (148.80mm,-10.00mm) -- (142.20mm,-20.00mm);
+  \draw[edge] (155.40mm,0.00mm) -- (148.80mm,-10.00mm);
+  \draw[edge] (155.40mm,0.00mm) -- (162.00mm,-10.00mm);
+  \draw[edge] (162.00mm,-10.00mm) -- (168.60mm,-20.00mm);
+  \node[vertex] (p10) at (96.00mm,-50.00mm) {0};
+  \node[vertex] (p11) at (102.60mm,-40.00mm) {1};
+  \node[vertex] (p11p5) at (109.20mm,-50.00mm) {1.5};
+  \node[vertex-added] (p11p6) at (115.80mm,-60.00mm) {1.6};
+  \node[vertex] (p12) at (122.40mm,-30.00mm) {2};
+  \node[vertex] (p13) at (129.00mm,-50.00mm) {3};
+  \node[vertex] (p14) at (135.60mm,-40.00mm) {4};
+  \node[vertex] (p15) at (142.20mm,-20.00mm) {5};
+  \node[vertex] (p16) at (148.80mm,-10.00mm) {6};
+  \node[vertex] (p17) at (155.40mm,0.00mm) {7};
+  \node[vertex] (p18) at (162.00mm,-10.00mm) {8};
+  \node[vertex] (p19) at (168.60mm,-20.00mm) {9};
+  \node[var,anchor=west] at (94mm,8mm) {\texttt{insert(1.6)}: depth $6 \le \log_{3/2} 12 \approx 6.13$};
+\end{tikzpicture}
+\end{document}

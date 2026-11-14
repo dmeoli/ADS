@@ -1,0 +1,79 @@
+% Exercise 7.1 of Morin, first half: 4.5 with his priority 7 (93 here) into
+% the treap of tree-treap, step by step. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-0) at (0mm,-20mm) {0,91};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-1) at (11mm,-10mm) {1,94};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-2) at (22mm,-20mm) {2,1};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-3) at (33mm,0mm) {3,99};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-4) at (44mm,-20mm) {4,86};
+  \node[node-added,minimum width=9mm,font=\scriptsize\ttfamily] (n7-4d5) at (55mm,-30mm) {4.5,93};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-5) at (66mm,-10mm) {5,89};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-6) at (77mm,-40mm) {6,58};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-7) at (88mm,-30mm) {7,78};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-8) at (99mm,-40mm) {8,51};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n7-9) at (110mm,-20mm) {9,83};
+  \draw[edge] (n7-3) -- (n7-1);
+  \draw[edge] (n7-1) -- (n7-0);
+  \draw[edge] (n7-1) -- (n7-2);
+  \draw[edge] (n7-3) -- (n7-5);
+  \draw[edge] (n7-5) -- (n7-4);
+  \draw[edge] (n7-4) -- (n7-4d5);
+  \draw[edge] (n7-5) -- (n7-9);
+  \draw[edge] (n7-9) -- (n7-7);
+  \draw[edge] (n7-7) -- (n7-6);
+  \draw[edge] (n7-7) -- (n7-8);
+  \node[var,anchor=east] at (-6mm,0mm) {(a)};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-0) at (0mm,-74mm) {0,91};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-1) at (11mm,-64mm) {1,94};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-2) at (22mm,-74mm) {2,1};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-3) at (33mm,-54mm) {3,99};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-4) at (44mm,-84mm) {4,86};
+  \node[node-added,minimum width=9mm,font=\scriptsize\ttfamily] (n8-4d5) at (55mm,-74mm) {4.5,93};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-5) at (66mm,-64mm) {5,89};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-6) at (77mm,-94mm) {6,58};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-7) at (88mm,-84mm) {7,78};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-8) at (99mm,-94mm) {8,51};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n8-9) at (110mm,-74mm) {9,83};
+  \draw[edge] (n8-3) -- (n8-1);
+  \draw[edge] (n8-1) -- (n8-0);
+  \draw[edge] (n8-1) -- (n8-2);
+  \draw[edge] (n8-3) -- (n8-5);
+  \draw[edge] (n8-5) -- (n8-4d5);
+  \draw[edge] (n8-4d5) -- (n8-4);
+  \draw[edge] (n8-5) -- (n8-9);
+  \draw[edge] (n8-9) -- (n8-7);
+  \draw[edge] (n8-7) -- (n8-6);
+  \draw[edge] (n8-7) -- (n8-8);
+  \node[var,anchor=east] at (-6mm,-54mm) {(b)};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-0) at (0mm,-128mm) {0,91};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-1) at (11mm,-118mm) {1,94};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-2) at (22mm,-128mm) {2,1};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-3) at (33mm,-108mm) {3,99};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-4) at (44mm,-128mm) {4,86};
+  \node[node-added,minimum width=9mm,font=\scriptsize\ttfamily] (n9-4d5) at (55mm,-118mm) {4.5,93};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-5) at (66mm,-128mm) {5,89};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-6) at (77mm,-158mm) {6,58};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-7) at (88mm,-148mm) {7,78};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-8) at (99mm,-158mm) {8,51};
+  \node[node,minimum width=9mm,font=\scriptsize\ttfamily] (n9-9) at (110mm,-138mm) {9,83};
+  \draw[edge] (n9-3) -- (n9-1);
+  \draw[edge] (n9-1) -- (n9-0);
+  \draw[edge] (n9-1) -- (n9-2);
+  \draw[edge] (n9-3) -- (n9-4d5);
+  \draw[edge] (n9-4d5) -- (n9-4);
+  \draw[edge] (n9-4d5) -- (n9-5);
+  \draw[edge] (n9-5) -- (n9-9);
+  \draw[edge] (n9-9) -- (n9-7);
+  \draw[edge] (n9-7) -- (n9-6);
+  \draw[edge] (n9-7) -- (n9-8);
+  \node[var,anchor=east] at (-6mm,-108mm) {(c)};
+\end{tikzpicture}
+\end{document}

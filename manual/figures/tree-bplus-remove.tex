@@ -1,0 +1,46 @@
+% Exercise 14.8 of Morin's book on the B+-tree of figure tree-bplus-insert
+% (m = 3, at least 2 keys in a leaf and 2 children in an internal node):
+% remove(9) merges two leaves and then two internal nodes, and the root
+% gives way to its only child; remove(11) borrows the key 10 from the left
+% sibling, the separator becoming 8. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (24.2mm,0mm) {10};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (29.8mm,0mm) {12};
+  \draw[edge] (21.4mm,-3mm) -- (8.4mm,-10mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-13mm) {6};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-13mm) {8};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (14mm,-13mm) {10};
+  \draw[edge] (27mm,-3mm) -- (28.4mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-13mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.2mm,-13mm) {12};
+  \draw[edge] (32.6mm,-3mm) -- (45.6mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (42.8mm,-13mm) {13};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (48.4mm,-13mm) {15};
+  \draw[arc] (17.6mm,-13mm) -- (22mm,-13mm);
+  \draw[arc] (34.8mm,-13mm) -- (39.2mm,-13mm);
+  \node[var,anchor=east] at (-4mm,0mm) {\texttt{remove(9)}};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (20mm,-29mm) {8};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-29mm) {12};
+  \draw[edge] (17.2mm,-32mm) -- (5.6mm,-39mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-42mm) {6};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-42mm) {8};
+  \draw[edge] (22.8mm,-32mm) -- (22.8mm,-39mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (20mm,-42mm) {10};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-42mm) {12};
+  \draw[edge] (28.4mm,-32mm) -- (40mm,-39mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (37.2mm,-42mm) {13};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (42.8mm,-42mm) {15};
+  \draw[arc] (12mm,-42mm) -- (16.4mm,-42mm);
+  \draw[arc] (29.2mm,-42mm) -- (33.6mm,-42mm);
+  \node[var,anchor=east] at (-4mm,-29mm) {\texttt{remove(11)}};
+\end{tikzpicture}
+\end{document}

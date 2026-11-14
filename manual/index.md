@@ -76,11 +76,14 @@ library; the API reference generated from them; this manual.
 
 * **Part I — Foundations.**
     * [Chapter 1](chapters/01-introduction.md#ch-1). Introduction.
+    * [Chapter 2](chapters/02-sequence.md#ch-2). Sequences.
     * [Chapter 3](chapters/03-stack.md#ch-3). Stacks.
+    * [Chapter 4](chapters/04-queue.md#ch-4). Queues and deques.
     * [Chapter 5](chapters/05-memory.md#ch-5). Memory management.
 * **Part II — Searching and ordering.**
     * [Chapter 6](chapters/06-search.md#ch-6). Searching.
     * [Chapter 7](chapters/07-dictionary.md#ch-7). Hashing and dictionaries.
+    * [Chapter 8](chapters/08-tree.md#ch-8). Trees.
     * [Chapter 9](chapters/09-priority.md#ch-9). Priority queues.
     * [Chapter 10](chapters/10-set.md#ch-10). Sets and filters.
     * [Chapter 11](chapters/11-mfset.md#ch-11). Disjoint sets.
@@ -101,5 +104,8 @@ library; the API reference generated from them; this manual.
     * [Chapter 24](chapters/24-concurrent.md#ch-24). Concurrency.
     * [Chapter 25](chapters/25-parallel.md#ch-25). Parallelism.
     * [Chapter 26](chapters/26-distributed.md#ch-26). Distributed computing.
+* **Appendices.**
+    * [Appendix A](chapters/A-writing-structure.md#app-A). Writing a new structure.
+    * [Appendix B](chapters/B-benchmarks.md#app-B). The benchmarks.
 
 Bibliography follows.

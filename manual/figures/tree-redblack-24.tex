@@ -1,0 +1,158 @@
+% Red-black trees and their 2-4 trees: the red-black tree of black height
+% 3 of Morin's figures 9.4 and 9.5 (his nodes have no keys: here 0..11 in
+% symmetric order), which is not left-leaning, and the tree of his figure
+% 9.11 on which exercises 9.1 to 9.3 are set, as LeftLeaningRedBlackTree
+% builds it; red nodes in orange, the nil leaves of the 2-4 trees as small
+% empty squares. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (7.00mm,-20.00mm) -- (0.00mm,-30.00mm);
+  \draw[edge] (21.00mm,-10.00mm) -- (7.00mm,-20.00mm);
+  \draw[edge] (7.00mm,-20.00mm) -- (14.00mm,-30.00mm);
+  \draw[edge] (42.00mm,0.00mm) -- (21.00mm,-10.00mm);
+  \draw[edge] (35.00mm,-20.00mm) -- (28.00mm,-30.00mm);
+  \draw[edge] (21.00mm,-10.00mm) -- (35.00mm,-20.00mm);
+  \draw[edge] (56.00mm,-10.00mm) -- (49.00mm,-20.00mm);
+  \draw[edge] (42.00mm,0.00mm) -- (56.00mm,-10.00mm);
+  \draw[edge] (70.00mm,-20.00mm) -- (63.00mm,-30.00mm);
+  \draw[edge] (56.00mm,-10.00mm) -- (70.00mm,-20.00mm);
+  \draw[edge] (70.00mm,-20.00mm) -- (77.00mm,-30.00mm);
+  \node[vertex-added] (m0) at (0.00mm,-30.00mm) {0};
+  \node[vertex] (m1) at (7.00mm,-20.00mm) {1};
+  \node[vertex-added] (m2) at (14.00mm,-30.00mm) {2};
+  \node[vertex] (m3) at (21.00mm,-10.00mm) {3};
+  \node[vertex-added] (m4) at (28.00mm,-30.00mm) {4};
+  \node[vertex] (m5) at (35.00mm,-20.00mm) {5};
+  \node[vertex] (m6) at (42.00mm,0.00mm) {6};
+  \node[vertex] (m7) at (49.00mm,-20.00mm) {7};
+  \node[vertex] (m8) at (56.00mm,-10.00mm) {8};
+  \node[vertex] (m9) at (63.00mm,-30.00mm) {9};
+  \node[vertex-added] (m10) at (70.00mm,-20.00mm) {10};
+  \node[vertex] (m11) at (77.00mm,-30.00mm) {11};
+  \draw[edge] (161.70mm,-29.00mm) -- (161.70mm,-34.00mm);
+  \draw[edge] (157.50mm,-29.00mm) -- (157.50mm,-34.00mm);
+  \draw[edge] (154.20mm,-16.00mm) -- (159.60mm,-23.00mm);
+  \draw[edge] (150.30mm,-29.00mm) -- (150.30mm,-34.00mm);
+  \draw[edge] (146.10mm,-29.00mm) -- (146.10mm,-34.00mm);
+  \draw[edge] (148.20mm,-16.00mm) -- (148.20mm,-23.00mm);
+  \draw[edge] (138.90mm,-29.00mm) -- (138.90mm,-34.00mm);
+  \draw[edge] (134.70mm,-29.00mm) -- (134.70mm,-34.00mm);
+  \draw[edge] (142.20mm,-16.00mm) -- (136.80mm,-23.00mm);
+  \draw[edge] (134.18mm,-3.00mm) -- (148.20mm,-10.00mm);
+  \draw[edge] (127.50mm,-29.00mm) -- (127.50mm,-34.00mm);
+  \draw[edge] (123.30mm,-29.00mm) -- (123.30mm,-34.00mm);
+  \draw[edge] (119.10mm,-29.00mm) -- (119.10mm,-34.00mm);
+  \draw[edge] (117.15mm,-16.00mm) -- (123.30mm,-23.00mm);
+  \draw[edge] (111.30mm,-29.00mm) -- (111.30mm,-34.00mm);
+  \draw[edge] (107.10mm,-29.00mm) -- (107.10mm,-34.00mm);
+  \draw[edge] (102.90mm,-29.00mm) -- (102.90mm,-34.00mm);
+  \draw[edge] (98.70mm,-29.00mm) -- (98.70mm,-34.00mm);
+  \draw[edge] (111.15mm,-16.00mm) -- (105.00mm,-23.00mm);
+  \draw[edge] (128.18mm,-3.00mm) -- (114.15mm,-10.00mm);
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (98.70mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (102.90mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (107.10mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (111.30mm,-35.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (99.00mm,-26.00mm) {0};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (105.00mm,-26.00mm) {1};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (111.00mm,-26.00mm) {2};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (119.10mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (123.30mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (127.50mm,-35.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (120.30mm,-26.00mm) {4};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (126.30mm,-26.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (114.15mm,-13.00mm) {3};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (134.70mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (138.90mm,-35.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (136.80mm,-26.00mm) {7};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (146.10mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (150.30mm,-35.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (148.20mm,-26.00mm) {9};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (157.50mm,-35.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (161.70mm,-35.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (159.60mm,-26.00mm) {11};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (145.20mm,-13.00mm) {8};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (151.20mm,-13.00mm) {10};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (131.18mm,0.00mm) {6};
+  \node[var,anchor=west] at (-3mm,8mm) {(a) a red-black tree of black height 3, not left-leaning at 8};
+  \node[var,anchor=west] at (93mm,8mm) {(b) its 2-4 tree, of height 3};
+  \draw[edge] (7.00mm,-74.00mm) -- (0.00mm,-84.00mm);
+  \draw[edge] (21.00mm,-64.00mm) -- (7.00mm,-74.00mm);
+  \draw[edge] (7.00mm,-74.00mm) -- (14.00mm,-84.00mm);
+  \draw[edge] (35.00mm,-54.00mm) -- (21.00mm,-64.00mm);
+  \draw[edge] (21.00mm,-64.00mm) -- (28.00mm,-74.00mm);
+  \draw[edge] (49.00mm,-74.00mm) -- (42.00mm,-84.00mm);
+  \draw[edge] (63.00mm,-64.00mm) -- (49.00mm,-74.00mm);
+  \draw[edge] (49.00mm,-74.00mm) -- (56.00mm,-84.00mm);
+  \draw[edge] (35.00mm,-54.00mm) -- (63.00mm,-64.00mm);
+  \draw[edge] (77.00mm,-74.00mm) -- (70.00mm,-84.00mm);
+  \draw[edge] (63.00mm,-64.00mm) -- (77.00mm,-74.00mm);
+  \node[vertex] (p1) at (0.00mm,-84.00mm) {1};
+  \node[vertex-added] (p2) at (7.00mm,-74.00mm) {2};
+  \node[vertex] (p3) at (14.00mm,-84.00mm) {3};
+  \node[vertex] (p4) at (21.00mm,-64.00mm) {4};
+  \node[vertex] (p5) at (28.00mm,-74.00mm) {5};
+  \node[vertex] (p6) at (35.00mm,-54.00mm) {6};
+  \node[vertex] (p7) at (42.00mm,-84.00mm) {7};
+  \node[vertex-added] (p8) at (49.00mm,-74.00mm) {8};
+  \node[vertex] (p9) at (56.00mm,-84.00mm) {9};
+  \node[vertex] (p10) at (63.00mm,-64.00mm) {10};
+  \node[vertex-added] (p11) at (70.00mm,-84.00mm) {11};
+  \node[vertex] (p12) at (77.00mm,-74.00mm) {12};
+  \draw[edge] (163.50mm,-83.00mm) -- (163.50mm,-88.00mm);
+  \draw[edge] (159.30mm,-83.00mm) -- (159.30mm,-88.00mm);
+  \draw[edge] (155.10mm,-83.00mm) -- (155.10mm,-88.00mm);
+  \draw[edge] (152.85mm,-70.00mm) -- (159.30mm,-77.00mm);
+  \draw[edge] (147.90mm,-83.00mm) -- (147.90mm,-88.00mm);
+  \draw[edge] (143.70mm,-83.00mm) -- (143.70mm,-88.00mm);
+  \draw[edge] (146.85mm,-70.00mm) -- (145.80mm,-77.00mm);
+  \draw[edge] (136.50mm,-83.00mm) -- (136.50mm,-88.00mm);
+  \draw[edge] (132.30mm,-83.00mm) -- (132.30mm,-88.00mm);
+  \draw[edge] (140.85mm,-70.00mm) -- (134.40mm,-77.00mm);
+  \draw[edge] (132.23mm,-57.00mm) -- (146.85mm,-64.00mm);
+  \draw[edge] (125.10mm,-83.00mm) -- (125.10mm,-88.00mm);
+  \draw[edge] (120.90mm,-83.00mm) -- (120.90mm,-88.00mm);
+  \draw[edge] (117.60mm,-70.00mm) -- (123.00mm,-77.00mm);
+  \draw[edge] (113.70mm,-83.00mm) -- (113.70mm,-88.00mm);
+  \draw[edge] (109.50mm,-83.00mm) -- (109.50mm,-88.00mm);
+  \draw[edge] (111.60mm,-70.00mm) -- (111.60mm,-77.00mm);
+  \draw[edge] (102.30mm,-83.00mm) -- (102.30mm,-88.00mm);
+  \draw[edge] (98.10mm,-83.00mm) -- (98.10mm,-88.00mm);
+  \draw[edge] (105.60mm,-70.00mm) -- (100.20mm,-77.00mm);
+  \draw[edge] (126.23mm,-57.00mm) -- (111.60mm,-64.00mm);
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (98.10mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (102.30mm,-89.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (100.20mm,-80.00mm) {1};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (109.50mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (113.70mm,-89.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (111.60mm,-80.00mm) {3};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (120.90mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (125.10mm,-89.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (123.00mm,-80.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (108.60mm,-67.00mm) {2};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (114.60mm,-67.00mm) {4};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (132.30mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (136.50mm,-89.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (134.40mm,-80.00mm) {7};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (143.70mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (147.90mm,-89.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (145.80mm,-80.00mm) {9};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (155.10mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (159.30mm,-89.30mm) {};
+  \node[free,minimum width=2.6mm,minimum height=2.6mm] at (163.50mm,-89.30mm) {};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (156.30mm,-80.00mm) {11};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (162.30mm,-80.00mm) {12};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (143.85mm,-67.00mm) {8};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (149.85mm,-67.00mm) {10};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (129.23mm,-54.00mm) {6};
+  \node[var,anchor=west] at (-3mm,-46mm) {(c) the left-leaning red-black tree of Morin's exercises};
+  \node[var,anchor=west] at (93mm,-46mm) {(d) its 2-4 tree (exercise 9.1)};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,37 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[node] (Aa) at (30.0mm,0.0mm) {a};
+  \node[node] (Ab) at (10.0mm,-14.0mm) {b};
+  \node[node] (Ac) at (40.0mm,-14.0mm) {c};
+  \node[node] (Ae) at (0.0mm,-28.0mm) {e};
+  \node[node] (Af) at (20.0mm,-28.0mm) {f};
+  \node[node] (Ag) at (40.0mm,-28.0mm) {g};
+  \draw[arc] (Aa.south) -- (Ab.north);
+  \draw[arc] (Ab.south) -- (Ae.north);
+  \draw[arc] (Ac.south) -- (Ag.north);
+  \draw[arc] (Ab.east) -- (Ac.west);
+  \draw[arc] (Ae.east) -- (Af.west);
+  \node[node] (Ba) at (104.0mm,0.0mm) {a};
+  \node[node-added] (Bd) at (70.0mm,-14.0mm) {d};
+  \node[node] (Bb) at (90.0mm,-14.0mm) {b};
+  \node[node] (Bc) at (118.0mm,-14.0mm) {c};
+  \node[node] (Be) at (80.0mm,-28.0mm) {e};
+  \node[node] (Bf) at (100.0mm,-28.0mm) {f};
+  \node[node] (Bg) at (118.0mm,-28.0mm) {g};
+  \draw[arc-added] (Ba.south) -- (Bd.north);
+  \draw[arc] (Bb.south) -- (Be.north);
+  \draw[arc] (Bc.south) -- (Bg.north);
+  \draw[arc] (Bb.east) -- (Bc.west);
+  \draw[arc] (Be.east) -- (Bf.west);
+  \draw[arc-added] (Bd.east) -- (Bb.west);
+  \node[var,anchor=center] at (25.00mm,-40.00mm) {before};
+  \node[var,anchor=center] at (94.00mm,-40.00mm) {\texttt{a.insertChild(d)}};
+\end{tikzpicture}
+\end{document}

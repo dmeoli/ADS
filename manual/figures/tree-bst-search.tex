@@ -1,0 +1,63 @@
+% Source for the figures of the search in a binary search tree (sec. 8.5),
+% on the tree of Morin's figure 6.5: find(6) and find(10), the nodes and
+% the edges of the path in violet. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (72.00mm,-20.00mm) -- (79.20mm,-30.00mm);
+  \draw[edge] (72.00mm,-20.00mm) -- (64.80mm,-30.00mm);
+  \draw[edge] (57.60mm,-10.00mm) -- (72.00mm,-20.00mm);
+  \draw[edge] (50.40mm,-20.00mm) -- (43.20mm,-30.00mm);
+  \draw[edge] (57.60mm,-10.00mm) -- (50.40mm,-20.00mm);
+  \draw[edge] (36.00mm,0.00mm) -- (57.60mm,-10.00mm);
+  \draw[edge-touched] (21.60mm,-20.00mm) -- (28.80mm,-30.00mm);
+  \draw[edge] (21.60mm,-20.00mm) -- (14.40mm,-30.00mm);
+  \draw[edge-touched] (7.20mm,-10.00mm) -- (21.60mm,-20.00mm);
+  \draw[edge] (7.20mm,-10.00mm) -- (0.00mm,-20.00mm);
+  \draw[edge-touched] (36.00mm,0.00mm) -- (7.20mm,-10.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a0) at (0.00mm,-20.00mm) {1};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a1) at (7.20mm,-10.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a2) at (14.40mm,-30.00mm) {4};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a3) at (21.60mm,-20.00mm) {5};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a4) at (28.80mm,-30.00mm) {6};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a5) at (36.00mm,0.00mm) {7};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a6) at (43.20mm,-30.00mm) {8};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a7) at (50.40mm,-20.00mm) {9};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a8) at (57.60mm,-10.00mm) {11};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a9) at (64.80mm,-30.00mm) {12};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a10) at (72.00mm,-20.00mm) {13};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a11) at (79.20mm,-30.00mm) {14};
+  \node[var,anchor=west] at (0mm,7mm) {\texttt{find(6)}};
+  \draw[edge] (177.60mm,-20.00mm) -- (184.80mm,-30.00mm);
+  \draw[edge] (177.60mm,-20.00mm) -- (170.40mm,-30.00mm);
+  \draw[edge] (163.20mm,-10.00mm) -- (177.60mm,-20.00mm);
+  \draw[edge] (156.00mm,-20.00mm) -- (148.80mm,-30.00mm);
+  \draw[edge-touched] (163.20mm,-10.00mm) -- (156.00mm,-20.00mm);
+  \draw[edge-touched] (141.60mm,0.00mm) -- (163.20mm,-10.00mm);
+  \draw[edge] (127.20mm,-20.00mm) -- (134.40mm,-30.00mm);
+  \draw[edge] (127.20mm,-20.00mm) -- (120.00mm,-30.00mm);
+  \draw[edge] (112.80mm,-10.00mm) -- (127.20mm,-20.00mm);
+  \draw[edge] (112.80mm,-10.00mm) -- (105.60mm,-20.00mm);
+  \draw[edge] (141.60mm,0.00mm) -- (112.80mm,-10.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b0) at (105.60mm,-20.00mm) {1};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b1) at (112.80mm,-10.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b2) at (120.00mm,-30.00mm) {4};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b3) at (127.20mm,-20.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b4) at (134.40mm,-30.00mm) {6};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b5) at (141.60mm,0.00mm) {7};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b6) at (148.80mm,-30.00mm) {8};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b7) at (156.00mm,-20.00mm) {9};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b8) at (163.20mm,-10.00mm) {11};
+  \node[var,anchor=west] at ($(b8.east)+(0.8mm,0)$) {$z$};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b9) at (170.40mm,-30.00mm) {12};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b10) at (177.60mm,-20.00mm) {13};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b11) at (184.80mm,-30.00mm) {14};
+  \node[var,anchor=west] at (105.60000000000001mm,7mm) {\texttt{find(10)}};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,36 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (B-o) at (36.00mm,0.00mm) {0};
+  \node[vertex] (B-ol) at (9.00mm,-11.00mm) {1};
+  \node[vertex] (B-or) at (54.00mm,-11.00mm) {2};
+  \node[vertex] (B-oll) at (0.00mm,-22.00mm) {3};
+  \node[vertex] (B-olr) at (18.00mm,-22.00mm) {4};
+  \node[vertex] (B-orl) at (45.00mm,-22.00mm) {5};
+  \node[vertex] (B-orr) at (72.00mm,-22.00mm) {6};
+  \node[vertex] (B-olrr) at (27.00mm,-33.00mm) {7};
+  \node[vertex] (B-orrl) at (63.00mm,-33.00mm) {8};
+  \draw[edge] (B-olr) -- (B-olrr);
+  \draw[edge] (B-ol) -- (B-oll);
+  \draw[edge] (B-ol) -- (B-olr);
+  \draw[edge] (B-orr) -- (B-orrl);
+  \draw[edge] (B-or) -- (B-orl);
+  \draw[edge] (B-or) -- (B-orr);
+  \draw[edge] (B-o) -- (B-ol);
+  \draw[edge] (B-o) -- (B-or);
+  \draw[guide] (-8.0mm,-5.5mm) -- (80.0mm,-5.5mm);
+  \node[index,anchor=west] at (82.0mm,0.0mm) {level 0};
+  \draw[guide] (-8.0mm,-16.5mm) -- (80.0mm,-16.5mm);
+  \node[index,anchor=west] at (82.0mm,-11.0mm) {level 1};
+  \draw[guide] (-8.0mm,-27.5mm) -- (80.0mm,-27.5mm);
+  \node[index,anchor=west] at (82.0mm,-22.0mm) {level 2};
+  \draw[guide] (-8.0mm,-38.5mm) -- (80.0mm,-38.5mm);
+  \node[index,anchor=west] at (82.0mm,-33.0mm) {level 3};
+\end{tikzpicture}
+\end{document}
