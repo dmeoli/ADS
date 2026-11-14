@@ -163,21 +163,26 @@
  a stack with no other structure: a pass pops two items, pushes back the
  larger, makes a recursive pass on the rest and pushes the smaller on top.
 
- <em>Lemma 2 (the sort of a stack by passes).</em> A pass carries the
- largest item of the stack to its bottom and leaves the others in their
- order, but for the swaps of the pairs met along the way; hence after the
- pass \f$ i \f$ the \f$ i \f$ largest items are at the bottom in order, and
- \f$ n \f$ passes sort the stack, the least item on top, with
- \f$ O( n^2 ) \f$ operations.
+ <em>Lemma 2 (the sort of a stack by passes).</em> A pass on the items
+ \f$ x_1 , \ldots , x_k \f$ from the top leaves
+ \f$ \min( c_j , x_{j+1} ) \f$ at the place \f$ j \f$ from the top and
+ \f$ c_k \f$ at the bottom, where \f$ c_j = \max\{ x_1 , \ldots , x_j \} \f$;
+ hence it carries a largest item to the bottom, after the pass \f$ i \f$
+ the \f$ i \f$ largest items are at the bottom in order, and \f$ n - 1 \f$
+ passes sort the stack, the least item on top. The \f$ n \f$ passes of
+ `sortStack()` take \f$ \Theta( n^2 ) \f$ operations on every input.
 
- Indeed, by induction on the size, the larger of the two items popped is
- pushed back and the recursive pass carries the largest of the rest, which
- is at least as large, to the bottom, while the smaller of the two is pushed
- last, one place above where it was; an item of the bottom \f$ i - 1 \f$,
- already larger than all the others, is never moved above them. Each pass
- costs \f$ O( n ) \f$ and makes \f$ O( n ) \f$ recursive calls, and the
- small items rise by one place per pass, as in the bubble sort, of which
- this is the version on a stack (see \ref theory_sequence_sort).
+ Indeed, by induction on the levels of the recursion, the level \f$ j \f$
+ finds \f$ c_j \f$ on top, pushes back
+ \f$ \max( c_j , x_{j+1} ) = c_{j+1} \f$ for the level below and pushes
+ \f$ \min( c_j , x_{j+1} ) \f$ when that level returns. If the bottom
+ items \f$ x_{p+1} \le \cdots \le x_k \f$ are the largest, then
+ \f$ c_j = x_j \f$ for \f$ j > p \f$: the pass leaves them in place and
+ puts the largest of the others just above them. Each pass goes down to
+ the bottom with \f$ O( 1 ) \f$ operations per level, whatever the order,
+ and the small items rise by at most one place per pass, as in the bubble
+ sort, of which this is the version on a stack (see
+ \ref theory_sequence_sort).
 
  \section theory_stack_ods The stacks of Morin's book
 

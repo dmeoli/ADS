@@ -69,7 +69,8 @@
      sentinel</td><td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$ at both
      ends</td><td>none</td></tr>
  <tr><td><tt>RingDeque</tt></td><td>a circular vector of \f$ 2^j \f$ places
-     that doubles</td><td>fewer than \f$ 2 n + 8 \f$ places</td>
+     that doubles</td><td>fewer than \f$ 2 N + 8 \f$ places, \f$ N \f$ the
+     most items held</td>
      <td>\f$ O( 1 ) \f$ amortized at both ends, \f$ O( 1 ) \f$ by
      rank</td><td>none</td></tr>
  <tr><td><tt>UniqueQueue</tt></td><td>a bidirectional list, with no

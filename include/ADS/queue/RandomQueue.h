@@ -5,8 +5,8 @@
  * The random queue of exercise 2.2 of Morin's book, beyond the book: a bag
  * in which `push()` puts an item and `pop()` takes one out chosen uniformly
  * at random among those inside, both in \f$ O( 1 ) \f$ amortized time. The
- * items are the first \f$ n \f$ places of a vector that doubles [see
- * `ArraySequence.h`]; `pop()` draws a place \f$ j \f$ uniform in
+ * items are the first \f$ n \f$ places of a `std::vector`, which grows by
+ * a constant factor; `pop()` draws a place \f$ j \f$ uniform in
  * \f$ [ 0 , n ) \f$, swaps it with the last one and removes the last one,
  * so that the order of the vector never matters and nothing moves but two
  * items. The place is drawn by the multiplication of Lemire, the high half

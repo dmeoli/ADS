@@ -182,10 +182,6 @@ of each node differ by at most 1, which bounds its height by about $1.44
 fixes their meaning, such as $\mathrm{pop}( \mathrm{push}( S , v ) ) = S$
 for the STACK ([§1.2](01-introduction.md#sec-1-2)).
 
-**B+-tree.** The B-tree of order $m$ that keeps the values in the leaves
-only, its internal nodes holding separators, with the leaves linked in a
-list in both directions ([§8.11.2](08-tree.md#sec-8-11-2)).
-
 **Back.** The end of a queue at which the items are added ([Chapter
 4](04-queue.md#ch-4)).
 
@@ -350,6 +346,10 @@ tree is shallow and a search reads few nodes; in the main memory a node
 fills a few lines of cache, on the disk a block
 ([§8.11](08-tree.md#sec-8-11)).
 
+**B+-tree.** The B-tree of order $m$ that keeps the values in the leaves
+only, its internal nodes holding separators, with the leaves linked in a
+list in both directions ([§8.11.2](08-tree.md#sec-8-11-2)).
+
 **B-tree of minimum degree $t$.** The B-tree in which each node but the
 root holds between $t - 1$ and $2 t - 1$ keys, and an internal node one
 child more than its keys ([§8.11.1](08-tree.md#sec-8-11-1)).
@@ -368,7 +368,8 @@ merging two free buddies back ([§5.3](05-memory.md#sec-5-3)).
 
 **Bulk operation.** An operation on a whole set of keys at once (a union,
 an intersection, a difference, a batch of insertions), realized on the
-join-based trees by divide and conquer ([§8.12.4](08-tree.md#sec-8-12-4)).
+join-based trees by divide and conquer ([§8.12](08-tree.md#sec-8-12)
+and [§8.12.4](08-tree.md#sec-8-12-4)).
 
 **Burrows and Wheeler transform.** The permutation of a text that writes
 the last column of the sorted rotations of the text with a terminator,
@@ -377,7 +378,7 @@ which groups the symbols of equal contexts and can be inverted
 
 **Butterfly.** The step of the fast Fourier transform that combines the
 transforms $E_k$ and $O_k$ of the even and odd halves into the outputs $E_k
-\pm \omega^k O_k$ ([§17.2](17-numeric.md#sec-17-2)).
+\pm \omega^k O_k$ ([§17.3](17-numeric.md#sec-17-3)).
 
 **Cache-oblivious.** Said of an algorithm that is efficient in the
 external-memory model without knowing the size $B$ of a block and $M$ of
@@ -540,6 +541,10 @@ each a disjunction of literals ([§19.7](19-backtrack.md#sec-19-7)).
 reachable from one another with the orientation of the edges ignored
 ([§14.1](14-graph.md#sec-14-1)).
 
+**Consolidation.** The step of the removal of the minimum of a Fibonacci
+heap that links two roots of equal degree, the larger under the smaller,
+until all the degrees differ ([§9.7](09-priority.md#sec-9-7)).
+
 **Constructive specification.** The semantic part of a specification given
 as the precondition and the postcondition of each operation, in terms of a
 type already known ([§1.2](01-introduction.md#sec-1-2)).
@@ -567,7 +572,7 @@ i.e., a convex polygon whose vertices are some of the points
 
 **Coordinated scan.** A sorted file of requests read together with the file
 that answers them, which costs only the scans of the two files
-([§23.2](23-external.md#sec-23-2)).
+([§23.1](23-external.md#sec-23-1)).
 
 **Correctness.** The property of a realization that it realizes its
 interface, checked in ADS by the contracts and the tests
@@ -693,12 +698,15 @@ each character of these prefixes a bounded number of times
 1$ pivots drawn from a sample into $k$ buckets, each sorted recursively
 ([§23.4.3](23-external.md#sec-23-4-3)).
 
-**Divide and conquer.** The scheme that splits an instance into smaller
-instances of the same problem, solves them recursively and combines their
-solutions ([§13.4](13-algorithm.md#sec-13-4)).
+**Divide and conquer.** The scheme (divide et impera) that splits an
+instance into smaller instances of the same problem, solves them
+recursively and combines their solutions
+([§13.4](13-algorithm.md#sec-13-4)).
 
-**Division hashing.** The hash function $H( k ) = k \bmod m$, with $m$
-usually a prime not close to a power of 2
+**Division hashing.** The hash function $H( k ) = \mathrm{int}(
+\mathrm{bin}( k ) ) \bmod m$, which reads the characters of the key as the
+digits of a number and takes the remainder at each step of the rule of
+Horner, with $m$ best a prime far from a power of 2
 ([§7.3.1](07-dictionary.md#sec-7-3-1)).
 
 **Double black.** The temporary colour of the removal from a left-leaning
@@ -889,12 +897,17 @@ more tasks from them ([§25.14](25-parallel.md#sec-25-14)).
 **Fast Fourier transform.** The evaluation of a polynomial of degree less
 than $N$ at the $N$ roots of unity in $\Theta( N \log N )$ operations, by
 splitting its coefficients into the even and the odd ones; it multiplies
-polynomials and integers ([§17.2](17-numeric.md#sec-17-2)).
+polynomials and integers ([§17.3](17-numeric.md#sec-17-3)).
 
 **Fibonacci heap.** The heap of Fredman and Tarjan, a list of heap-ordered
 trees with cuts, cascading cuts and consolidation, which decreases a
 priority in $O( 1 )$ and removes the minimum in $O( \log n )$ amortized
 time ([§9.7](09-priority.md#sec-9-7)).
+
+**Fibonacci tree.** The AVL tree of height $h$ with the fewest nodes, whose
+root has a Fibonacci tree of height $h - 1$ on one side and one of height
+$h - 2$ on the other; it is also the worst case of the removal
+([§8.7](08-tree.md#sec-8-7)).
 
 **FIFO.** The discipline of a queue, first in, first out: the item removed
 is the first one added ([Chapter 4](04-queue.md#ch-4)).
@@ -988,6 +1001,12 @@ as the length of the prefix it shares with the previous string followed by
 the rest, with some anchors stored whole
 ([§15.6.2](15-string.md#sec-15-6-2)).
 
+**Frontier.** In the prototype of the shortest paths, the structure that
+holds the nodes whose edges have to be checked again; a priority queue, a
+queue, a stack or a deque in its place gives the algorithms of Dijkstra, of
+Bellman, Ford and Moore, and of Pape and D'Esopo
+([§14.8.1](14-graph.md#sec-14-8-1)).
+
 **Galloping.** An exponential search followed by a binary one, by which a
 merge skips the items of one run that come before the next item of the
 other ([§12.5](12-sort.md#sec-12-5)).
@@ -1078,6 +1097,11 @@ from the universe of the keys to the places of a table
 **Hash table.** A dictionary that keeps its keys in a vector of $m$ places
 chosen by a hash function, resolving the collisions by chaining or by open
 addressing ([§7.4](07-dictionary.md#sec-7-4)).
+
+**Hashing by multiplication.** The hash function $H( k ) = \lfloor m \,
+\mathrm{frac}( C i ) \rfloor$ of a key read as the integer $i$, which works
+with any $m$ and, for $C = ( \sqrt{5} - 1 ) / 2$, spreads the consecutive
+keys most evenly ([§7.3.1](07-dictionary.md#sec-7-3-1)).
 
 **Header (allocation).** Some words of a block that the allocator reads,
 such as its size; a sized deallocation needs none
@@ -1225,7 +1249,7 @@ it ([§8.12](08-tree.md#sec-8-12)).
 
 **Join-based tree.** A balanced search tree whose insertions, removals and
 set operations are all written on the join of its balancing scheme (AVL,
-red-black, weight balance or treap) ([§8.12.1](08-tree.md#sec-8-12-1)).
+red-black, weight balance or treap) ([§8.12](08-tree.md#sec-8-12)).
 
 **Jump pointer.** In a binary trie, the pointer of an internal node with
 one child to the smallest or the largest leaf below it
@@ -1286,6 +1310,9 @@ is the last one added ([Chapter 3](03-stack.md#ch-3)).
 the descendants of the parent; a path from a root crosses at most $\log_2
 n$ of them ([§8.13.4](08-tree.md#sec-8-13-4)).
 
+**Limb.** A digit of a `BigInteger`, i.e., a word of 64 bits read as a
+digit in the base $2^{64}$ ([§17.1](17-numeric.md#sec-17-1)).
+
 **Linear congruential generator.** The generator of pseudorandom numbers
 $x_{i+1} = ( a x_i + c ) \bmod m$ ([§17.9](17-numeric.md#sec-17-9)).
 
@@ -1301,6 +1328,12 @@ random variables, independent or not
 **Linearizable.** Said of a run of a shared object in which each operation
 seems to take effect at one instant between its invocation and its response
 (its linearization point), with the responses of the sequential object
+([§24.1](24-concurrent.md#sec-24-1)).
+
+**Linearization point.** The instant between the invocation and the
+response of an operation of a shared object at which it seems to take
+effect; a run is linearizable when the responses are those of the
+sequential object on the operations taken in the order of their points
 ([§24.1](24-concurrent.md#sec-24-1)).
 
 **Link by index.** The rule of a union-find that hangs the root of smaller
@@ -1547,7 +1580,7 @@ polynomial time ([§20.4](20-complexity.md#sec-20-4)).
 
 **Number theoretic transform.** The fast Fourier transform modulo a prime
 with roots of unity of large order, which multiplies polynomials with
-integer coefficients exactly ([§17.2](17-numeric.md#sec-17-2)).
+integer coefficients exactly ([§17.3](17-numeric.md#sec-17-3)).
 
 **Object pool.** An arena that also frees single objects, putting their
 slots on a free list that the next allocations reuse
@@ -1688,6 +1721,11 @@ each subtree of $s$ nodes is the node of rank $\lfloor ( s - 1 ) / 2
 **Period.** An integer $p > 0$ such that $P[ i ] = P[ i + p ]$ wherever
 both sides are defined ([§15.1](15-string.md#sec-15-1)).
 
+**Permuted buckets.** The intersection of sorted lists of Sanders and
+Transier, which maps the universe by the invertible permutation $( a x + c )
+\bmod 2^w$, $a$ odd, and splits each list into buckets of about $L$ items
+by the top bits of the images ([§10.6](10-set.md#sec-10-6)).
+
 **PGM-index.** The learned index of Ferragina and Vinciguerra, which covers
 the points $( A[ i ] , i )$ of a sorted vector by segments within a given
 error and searches the segments recursively ([§6.4](06-search.md#sec-6-4)).
@@ -1823,7 +1861,8 @@ the keys of a uniformly random permutation into an empty tree, whose
 expected depth of a node is $O( \log n )$ ([§8.6.1](08-tree.md#sec-8-6-1)).
 
 **Random queue.** A bag from which `pop()` removes an item chosen uniformly
-at random, in $O( 1 )$ amortized time ([§4.7](04-queue.md#sec-4-7)).
+at random, by a draw with no bias, in $O( 1 )$ amortized time for `push()`
+and $O( 1 )$ expected time for `pop()` ([§4.7](04-queue.md#sec-4-7)).
 
 **Randomized binary search tree.** The search tree of Martínez and Roura,
 which keeps the distribution of a random binary search tree under any
@@ -1885,6 +1924,12 @@ path to a leaf, which bounds its height by $2 \log_2( n + 1 )$
 **Reduced costs.** The costs $c( i , j ) - u_i - v_j$ of an assignment
 problem with respect to the dual variables $u$ and $v$, nonnegative at a
 dual feasible solution ([§14.11.3](14-graph.md#sec-14-11-3)).
+
+**Reference list.** In the codes of Boldi and Vigna for the graphs of the
+Web, the list, among the $W$ previous ones, that shares the most successors
+with the list being coded, which is then written as a copy list of the
+reference (in copy blocks), the extra nodes as intervals and the residuals
+([§22.10](22-succinct.md#sec-22-10)).
 
 **Reflected Gray order.** The order of the tuples of a mixed radix in which
 two consecutive tuples differ by $\pm 1$ in one place
@@ -2116,8 +2161,9 @@ uses their parts as indices, and is therefore not bound by the lower bound
 of the comparisons ([§12.1](12-sort.md#sec-12-1)).
 
 **Sort by passes.** The bubble sort on a stack, made with the operations of
-the stack and the recursion only: each pass carries the largest item to the
-bottom, and $n$ passes sort the stack in $O( n^2 )$ operations
+the stack and the recursion only: each pass carries a largest item to the
+bottom, $n - 1$ passes sort the stack, and the $n$ passes of `sortStack()`
+take $\Theta( n^2 )$ operations on every input
 ([§3.7](03-stack.md#sec-3-7)).
 
 **Sorting by regular sampling.** The distributed sort of Shi and Schaeffer
@@ -2161,6 +2207,12 @@ fewer cells ([§10.10](10-set.md#sec-10-10)).
 and the axioms (or contracts) of an abstract data type
 ([§1.2](01-introduction.md#sec-1-2)).
 
+**Spectral test.** The test of a linear congruential generator that looks
+at its structure rather than at its output: its pairs $( X_k , X_{k+1} )$
+lie on parallel lines at the distance $1 / \nu_2$, where $\nu_2$ is the
+length of the shortest nonzero vector of a lattice
+([§17.9](17-numeric.md#sec-17-9)).
+
 **Speedup.** The ratio $T_1 / T_p$ of the time on one thread to the time on
 $p$ threads, at most $p$; it is linear when it is $\Theta( p )$
 ([§25.1](25-parallel.md#sec-25-1)).
@@ -2188,6 +2240,10 @@ the parent ([§8.10.1](08-tree.md#sec-8-10-1)).
 **Splitter.** One of the $k - 1$ keys drawn from a sample by which
 samplesort distributes the items into $k$ buckets
 ([§12.8](12-sort.md#sec-12-8)).
+
+**Stabbing query.** The search of the intervals of a set that contain a
+point $x$, which an interval tree answers
+([§16.4.1](16-geometry.md#sec-16-4-1)).
 
 **Stable sort.** A sort in which equal items keep the order that they had
 in the input ([§12.1](12-sort.md#sec-12-1)).
@@ -2352,6 +2408,10 @@ either end and near the middle, made of two deques
 being a prefix of $d$ characters and the children indexed by the next
 character ([§7.10](07-dictionary.md#sec-7-10)).
 
+**Trit.** A value of three states; five of them fit in one byte as a
+number in base 3, at most $3^5 - 1 = 242$
+([§22.7](22-succinct.md#sec-22-7)).
+
 **Turtle.** A small item near the end of a vector, which a bubble sort
 moves one place to the left per pass ([§12.3](12-sort.md#sec-12-3)).
 
@@ -2372,6 +2432,10 @@ sequence, and searches only the blocks that may hold an item
 **Two-Way search.** The search of a pattern of Crochemore and Perrin at a
 critical factorization, in linear time and $O( 1 )$ extra space
 ([§15.2.1](15-string.md#sec-15-2-1)).
+
+**Uniform hashing.** The model of the analysis of open addressing, in which
+the inspection of each key is a random permutation of the places,
+independent of the others ([§7.5](07-dictionary.md#sec-7-5)).
 
 **Union by rank.** The rule of a union-find that hangs the root of lower
 rank under the other, the rank growing by 1 only on a tie
@@ -2462,6 +2526,11 @@ list jumps over, by which the skip list reaches the items by rank
 **With high probability.** Said of a bound that holds with probability at
 least $1 - n^{-c}$ for a constant $c > 0$
 ([§1.5.4](01-introduction.md#sec-1-5-4)).
+
+**Witness.** A base that shows an odd number $n$ composite, since it
+violates the condition that every base satisfies when $n$ is prime, or
+shares a factor with $n$; the test of Miller and Rabin looks for one among
+$K$ random bases ([§17.8](17-numeric.md#sec-17-8)).
 
 **Word.** An unsigned integer of 64 bits treated as a set of the places of
 its 1 bits, with the bit $x_k$ in the place $k$
