@@ -87,14 +87,23 @@ least item. Thus the realizations with handles share the interface of the
 book, e.g., for `HeapPriorityQueue<T,P>` of capacity $c$ (`capacity()`),
 
 ```cpp
-explicit HeapPriorityQueue( int c );
-bool empty( void ) const;
-int size( void ) const;
-const T & min( void ) const;
-const P & minPriority( void ) const;
-Handle insert( const T & x , const P & p );          // its handle
-T deleteMin( void );
-void decrease( Handle y , const P & p );             // p not above
+template< class T , std::totally_ordered P = int ,
+          int D = 2 > class HeapPriorityQueue {
+ public:
+ using Handle = PriorityItem *;
+ explicit HeapPriorityQueue( int n );
+ bool empty( void ) const;
+ int size( void ) const;
+ int capacity( void ) const;
+ const T & min( void ) const;
+ const P & minPriority( void ) const;
+ T deleteMin( void );
+ Handle insert( const T & x , const P & p );
+ void decrease( Handle y , const P & p );
+ std::vector< P > priorities( void ) const;
+ static int parent( int i );
+ static int child( int i , int j );
+ };
 ```
 
 while the heaps of plain items, e.g., `DaryHeap<T,Better,D>`, take the
@@ -102,12 +111,25 @@ names of [Morin 2013](Z-bibliography.md#ref-morin-cpp) and of the standard
 library:
 
 ```cpp
-explicit DaryHeap( Better better = Better() );
-void push( const T & x );
-const T & top( void ) const;
-T pop( void );
-T erase( std::size_t i );                            // the item at i
-std::vector< T > smallest( std::size_t k ) const;
+template< class T , class Better = std::less< T > , unsigned D = 4 ,
+          bool BottomUp = false > class DaryHeap {
+ public:
+ explicit DaryHeap( Better better = Better() );
+ void push( const T & x );
+ const T & top( void ) const;
+ T pop( void );
+ T erase( std::size_t i );
+ const T * secondTop( void ) const;
+ std::vector< T > smallest( std::size_t k ) const;
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ void assign( I first , S last );
+ static std::size_t parent( std::size_t i );
+ static std::size_t child( std::size_t i , std::size_t j );
+ };
 ```
 
 For instance, a search A* that keeps its open nodes as triples
@@ -221,6 +243,22 @@ item and updates the handle).
 
 ![Figure 9.1. The two lists of `ListPriorityQueue` with the pairs (priority, item) (2,a), (5,c), (7,b), (9,d), before and after `insert(e,4)`: the sorted list inserts the new cell (orange) before the first cell of larger priority, the unsorted one at its head; the least item is in violet.](../figures/prio-list.svg){#fig-9-1}
 
+The public members of `ListPriorityQueue` are the following:
+
+```cpp
+template< class T , std::totally_ordered P = int ,
+          bool Sorted = true > class ListPriorityQueue {
+ public:
+ using Handle = typename List< Pair >::Pos;
+ bool empty( void ) const;
+ int size( void ) const;
+ const T & min( void ) const;
+ T deleteMin( void );
+ Handle insert( const T & x , const P & p );
+ void decrease( Handle & y , const P & p );
+ };
+```
+
 <span id="alg-9-1"></span>**Algorithm 9.1.** The operations of
 `ListPriorityQueue` ([Montresor 2025,
 §10.1.1](Z-bibliography.md#ref-montresor2025)); $L$ is the list.
@@ -245,6 +283,22 @@ the node, removes it and inserts it again with the new priority. Since the least
 item is the leftmost node and the height of the tree is
 $O( \log n )$, each operation takes $O( \log n )$ time (`min()` included,
 since the tree does not cache its leftmost node).
+
+The public members of `TreePriorityQueue` are the following:
+
+```cpp
+template< class T ,
+          std::totally_ordered P = int > class TreePriorityQueue {
+ public:
+ using Handle = long;
+ bool empty( void ) const;
+ int size( void ) const;
+ const T & min( void ) const;
+ T deleteMin( void );
+ Handle insert( const T & x , const P & p );
+ void decrease( Handle y , const P & p );
+ };
+```
 
 --8<-- "generated/TreePriorityQueue-insert.pseudo.md"
 
@@ -628,6 +682,36 @@ requires. Finally, `erase(id)` puts the last item in the place of the id and
 moves it up or down by [Lemma 9.7](09-priority.md#lem-9-7)
 ([Figure 9.9](09-priority.md#fig-9-9)).
 
+The public members of `IndexedDaryHeap` are the following:
+
+```cpp
+template< class K , unsigned D = 4 > class IndexedDaryHeap {
+ public:
+ struct Entry { K key; int id; };
+ using Handle = int;
+ explicit IndexedDaryHeap( int n = 0 );
+ void reset( int n );
+ void grow( int n );
+ int ids( void ) const;
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ bool contains( int id ) const;
+ const K & key( int id ) const;
+ void push( int id , const K & k );
+ void decrease( int id , const K & k );
+ void increase( int id , const K & k );
+ void update( int id , const K & k );
+ void erase( int id );
+ bool pushOrDecrease( int id , const K & k );
+ const Entry & top( void ) const;
+ Entry pop( void );
+ void clear( void );
+ Handle insert( int id , const K & k );
+ int min( void ) const;
+ int deleteMin( void );
+ };
+```
+
 --8<-- "generated/IndexedDaryHeap-push.pseudo.md"
 
 --8<-- "generated/IndexedDaryHeap-decrease.pseudo.md"
@@ -679,6 +763,33 @@ by [Lemma 9.7](09-priority.md#lem-9-7). The other members, `contains()`,
 `key()`, `size()`, `ids()`, `reset(n)` and `clear()`, are those of
 `IndexedDaryHeap`, read or applied to both heaps.
 
+The public members of `IndexedHeapPair` are the following:
+
+```cpp
+template< class K , class Bd = K ,
+          unsigned D = 4 > class IndexedHeapPair {
+ public:
+ explicit IndexedHeapPair( int n = 0 );
+ void reset( int n );
+ int ids( void ) const;
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ bool contains( int id ) const;
+ const K & key( int id ) const;
+ const Bd & bound( int id ) const;
+ void push( int id , const K & k , const Bd & b );
+ void update( int id , const K & k , const Bd & b );
+ void erase( int id );
+ int top( void ) const;
+ const K & topKey( void ) const;
+ const Bd & minBound( void ) const;
+ int minBoundId( void ) const;
+ int pop( void );
+ int popMinBound( void );
+ void clear( void );
+ };
+```
+
 --8<-- "generated/IndexedHeapPair-pop.pseudo.md"
 
 --8<-- "generated/IndexedHeapPair-popMinBound.pseudo.md"
@@ -710,6 +821,22 @@ there is no `decrease()`, which would need a handle that follows the
 contents.
 
 ![Figure 9.10. A linked heap of 12 nodes numbered by levels from 1, and the new leaf of an `insert()`, the node $13 = 1101_2$, reached from the root by the bits after the leading 1, i.e., right, left, right (violet the path, orange the new node).](../figures/prio-linked.svg){#fig-9-10}
+
+The public members of `LinkedHeapPriorityQueue` are the following:
+
+```cpp
+template< class T , std::totally_ordered P = int ,
+          bool L = false > class LinkedHeapPriorityQueue {
+ public:
+ LinkedHeapPriorityQueue( void );
+ bool empty( void ) const;
+ int size( void ) const;
+ const T & min( void ) const;
+ const P & minPriority( void ) const;
+ void insert( const T & x , const P & p );
+ T deleteMin( void );
+ };
+```
 
 --8<-- "generated/LinkedHeapPriorityQueue-insert.pseudo.md"
 
@@ -747,6 +874,29 @@ subtrees of the root, `meld(o)` merges a whole heap `o` into this one,
 leaving `o` empty. Finally, `erase(h)` removes the node of the handle $h$
 that `push()` returned. Each of these operations makes a constant number
 of merges.
+
+The public members of `MeldableHeap` are the following:
+
+```cpp
+template< class T , class Less = std::less< T > ,
+          class A = std::allocator< T > > class MeldableHeap {
+ public:
+ using Handle = Node *;
+ explicit MeldableHeap( Less less = Less() , std::uint64_t seed = 1 ,
+                        const A & alloc = A() );
+ Handle push( T x );
+ const T & top( void ) const;
+ const T * secondTop( void ) const;
+ T pop( void );
+ T erase( Handle h );
+ void meld( MeldableHeap & o );
+ std::vector< T > smallest( std::size_t k ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ void clear( void );
+ static const T & get( Handle h );
+ };
+```
 
 <span id="alg-9-3"></span>**Algorithm 9.3.** The merge of `MeldableHeap`
 ([Morin 2013, §10.2](Z-bibliography.md#ref-morin-cpp)), its recursion
@@ -875,6 +1025,24 @@ removes the least root, moves its children among the roots, and then
 under the smaller, until all the degrees differ
 ([Figure 9.13](09-priority.md#fig-9-13)).
 
+The public members of `FibonacciHeapPriorityQueue` are the following:
+
+```cpp
+template< class T ,
+          std::totally_ordered P = int > class FibonacciHeapPriorityQueue {
+ public:
+ using Handle = Node *;
+ FibonacciHeapPriorityQueue( void );
+ bool empty( void ) const;
+ int size( void ) const;
+ const T & min( void ) const;
+ const P & minPriority( void ) const;
+ Handle insert( const T & x , const P & p );
+ T deleteMin( void );
+ void decrease( Handle x , const P & p );
+ };
+```
+
 <span id="alg-9-4"></span>**Algorithm 9.4.** The operations of
 `FibonacciHeapPriorityQueue` ([Fredman and Tarjan
 1987](Z-bibliography.md#ref-fredman1987)).
@@ -970,6 +1138,27 @@ removes the root and joins its children by two passes. Its first pass links
 them in pairs from the left, and its second links the results from the
 right into one tree ([Figure 9.14](09-priority.md#fig-9-14)). No balance is kept, and hence
 the analysis is that of a self-adjusting structure.
+
+The public members of `PairingHeap` are the following:
+
+```cpp
+template< class T , std::totally_ordered P = int ,
+          bool Aux = false > class PairingHeap {
+ public:
+ using Handle = Node *;
+ PairingHeap( void );
+ bool empty( void ) const;
+ int size( void ) const;
+ const T & min( void ) const;
+ const P & minPriority( void ) const;
+ Handle insert( const T & x , const P & p );
+ T deleteMin( void );
+ void decrease( Handle x , const P & p );
+ T erase( Handle x );
+ void increase( Handle x , const P & p );
+ void update( Handle x , const P & p );
+ };
+```
 
 <span id="alg-9-5"></span>**Algorithm 9.5.** The operations of
 `PairingHeap` ([Fredman et al. 1986](Z-bibliography.md#ref-fredman1986);
@@ -1068,6 +1257,25 @@ for it, all in rows below $r$. The other buckets, all of larger index, keep thei
 a row $r' \ge r$ agrees with the new $\ell$ on the same digits as with the
 old one.
 
+The public members of `RadixHeap` are the following:
+
+```cpp
+template< class T , std::integral K = std::uint32_t ,
+          unsigned B = 4 > class RadixHeap {
+ public:
+ void push( const T & x , K k );
+ const T & top( void );
+ K topKey( void );
+ K peekKey( void ) const;
+ T pop( void );
+ template< class F >
+ void extractBelow( K limit , F && f );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void clear( void );
+ };
+```
+
 --8<-- "generated/RadixHeap-push.pseudo.md"
 
 --8<-- "generated/RadixHeap-pop.pseudo.md"
@@ -1126,6 +1334,23 @@ an overflow, which is a `RadixHeap` ([Figure 9.16](09-priority.md#fig-9-16)).
 A bit per bucket records whether it is in use, so that the next key in use is
 found by a scan of $N / 64$ words at most, from the bucket of $\ell$
 around the circle.
+
+The public members of `DialQueue` are the following:
+
+```cpp
+template< class T , std::integral K = std::uint32_t > class DialQueue {
+ public:
+ explicit DialQueue( std::size_t c = 1023 );
+ void push( const T & x , K k );
+ const T & top( void );
+ K topKey( void );
+ T pop( void );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void clear( void );
+ std::size_t window( void ) const;
+ };
+```
 
 --8<-- "generated/DialQueue-push.pseudo.md"
 
@@ -1193,6 +1418,25 @@ has runs, before its runs. The costs of [Lemma 9.15](09-priority.md#lem-9-15)
 hold for both, and
 the default compiles to the same code as before the policy existed (test
 `engineered.bucket-queue-lexicographic`).
+
+The public members of `BucketQueue` are the following:
+
+```cpp
+template< class T , std::integral K = int ,
+          BucketTie Tie = LargestSecondKey > class BucketQueue {
+ public:
+ struct Entry { T item; K f , g; };
+ void push( const T & x , K f , K g );
+ const T & top( void );
+ K topF( void );
+ K topG( void );
+ T pop( void );
+ Entry popEntry( void );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void clear( void );
+ };
+```
 
 --8<-- "generated/BucketQueue-push.pseudo.md"
 
@@ -1282,6 +1526,24 @@ compared with its up to 2 children and 4 grandchildren. When it lands on a
 grandchild, it is swapped with its parent there if this parent, of the
 other kind, is now out of order.
 
+The public members of `MinMaxHeap` are the following:
+
+```cpp
+template< class T , class Better = std::less< T > > class MinMaxHeap {
+ public:
+ explicit MinMaxHeap( Better better = Better() );
+ void push( const T & x );
+ const T & min( void ) const;
+ const T & max( void ) const;
+ T popMin( void );
+ T popMax( void );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ };
+```
+
 --8<-- "generated/MinMaxHeap-push.pseudo.md"
 
 --8<-- "generated/MinMaxHeap-popMin.pseudo.md"
@@ -1303,6 +1565,24 @@ form a heap for the best item, the $\mathit{hi}$ a heap for the worst, and
 the root holds both ends. A walk of either kind costs at most two
 comparisons per level, on a tree of half the height of a binary heap, with
 the two items of a node in one line of the cache.
+
+The public members of `IntervalHeap` are the following:
+
+```cpp
+template< class T , class Better = std::less< T > > class IntervalHeap {
+ public:
+ explicit IntervalHeap( Better better = Better() );
+ void push( const T & x );
+ const T & min( void ) const;
+ const T & max( void ) const;
+ T popMin( void );
+ T popMax( void );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ };
+```
 
 --8<-- "generated/MinMaxHeap-IntervalHeap-push.pseudo.md"
 
@@ -1382,6 +1662,21 @@ node 0 the overall winner, i.e., the player of least key and, among equal
 keys, of least index. A merge through the tree is thus stable; a player
 that ran out loses all its matches ([Figure 9.19](09-priority.md#fig-9-19)).
 
+The public members of `LoserTree` are the following:
+
+```cpp
+template< class T , class C = std::less<> > class LoserTree {
+ public:
+ explicit LoserTree( std::vector< std::optional< T > > keys ,
+                     C less = C() );
+ std::size_t players( void ) const;
+ bool empty( void ) const;
+ std::size_t winner( void ) const;
+ const T & top( void ) const;
+ void replace( std::optional< T > key );
+ };
+```
+
 --8<-- "generated/LoserTree-build.pseudo.md"
 
 When the winner gets its next key, or runs out, `replace()` replays only
@@ -1441,6 +1736,23 @@ of the winner, $\log_2 K = \lceil \log_2 k \rceil$ matches; `sources()`,
 `empty()`, `winner()` and `top()` read the tree. As in `LoserTree`, equal
 keys are won by the lower source, and a merge through the tree is stable.
 
+The public members of `FlatLoserTree` are the following:
+
+```cpp
+template< class T , class C = std::less<> > class FlatLoserTree {
+ public:
+ explicit FlatLoserTree( std::size_t k , C less = C() );
+ std::size_t sources( void ) const;
+ void start( std::size_t s , const T & x );
+ void build( void );
+ bool empty( void ) const;
+ std::size_t winner( void ) const;
+ const T & top( void ) const;
+ void replaceTop( const T & x );
+ void exhaustTop( void );
+ };
+```
+
 --8<-- "generated/MultiwayMerge-FlatLoserTree-build.pseudo.md"
 
 --8<-- "generated/MultiwayMerge-FlatLoserTree-replaceTop.pseudo.md"
@@ -1498,6 +1810,21 @@ items each, and a buffer of its best items, refilled by merging its
 sequences; when a group is full, its sequences and the buffer of the group
 $i + 1$ are merged into one sequence that joins the group $i + 1$. Finally, the deletion buffer is refilled by merging the
 buffers of the groups.
+
+The public members of `SequenceHeap` are the following:
+
+```cpp
+template< class T , class Better = std::less< T > > class SequenceHeap {
+ public:
+ explicit SequenceHeap( Better better = Better() );
+ void push( const T & x );
+ const T & top( void );
+ T pop( void );
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void clear( void );
+ };
+```
 
 --8<-- "generated/SequenceHeap-push.pseudo.md"
 

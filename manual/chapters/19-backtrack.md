@@ -683,7 +683,7 @@ cancelled it is unit, with $\lnot p$ free; hence it forces $\lnot p$ there,
 and the assignment of the conflict cannot occur again. The search is
 complete, and `solve()` ends with SAT or UNSAT when no bound of conflicts is
 given.* (With a bound `maxConflicts`, the third value of the enumeration
-`Result`, UNKNOWN, says that the conflicts allowed are over.)
+`Result`, UNKNOWN, is returned when the conflicts allowed are over.)
 
 *Proof.* Resolution preserves the models, and each step resolves the
 clause at hand with a clause of the formula or a learned one, which are
