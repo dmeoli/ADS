@@ -32,8 +32,8 @@
  * check: a node is smaller by the priority and the parent, which may make it
  * fit a smaller class of the allocator; the price is a hash of 8 lookups in a
  * table of 16 KB, two per level climbed by the new node, which stops at the
- * first parent of larger priority (fewer than 2 rotations on average), and
- * two per rotation of a removal.
+ * first parent of larger priority (fewer than 2 rotations on average with
+ * independent priorities), and two per rotation of a removal.
  *
  * The contracts [see `Contract.h`]: `insert()` ensures that the key is there
  * and `remove()` that it is not; the invariant is the order of the keys and
