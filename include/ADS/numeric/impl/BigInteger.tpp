@@ -27,24 +27,15 @@ namespace detail {
 __extension__ typedef unsigned __int128 UInt128;
 #endif
 
-/// a b = hi 2^64 + lo, lo returned: one instruction where the compiler
-/// has it, else the four products of the halves (Algorithm 4.3.1M)
-inline std::uint64_t mulWide( std::uint64_t a , std::uint64_t b ,
-                              std::uint64_t & hi )
+/// a b = hi 2^64 + lo, lo returned: wideProduct() of Portable.h, or its
+/// products of the halves of 32 bits when ADS_BIGINT_WIDE is 0
+inline std::uint64_t digitProduct( std::uint64_t a , std::uint64_t b ,
+                                   std::uint64_t & hi )
 {
-#if ADS_BIGINT_WIDE == 128
- const UInt128 p = UInt128( a ) * b;
- hi = std::uint64_t( p >> 64 );
- return( std::uint64_t( p ) );
-#elif ADS_BIGINT_WIDE == 64
- return( _umul128( a , b , &hi ) );
+#if ADS_BIGINT_WIDE == 0
+ return( wideProductHalves( a , b , hi ) );
 #else
- constexpr std::uint64_t M = 0xFFFFFFFFULL;
- const std::uint64_t a0 = a & M , a1 = a >> 32 , b0 = b & M , b1 = b >> 32 ,
-                     p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
-                     mid = ( p00 >> 32 ) + ( p01 & M ) + ( p10 & M );
- hi = a1 * b1 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
- return( ( mid << 32 ) | ( p00 & M ) );
+ return( wideProduct( a , b , hi ) );
 #endif
  }
 
@@ -53,7 +44,7 @@ inline std::uint64_t mulAdd( std::uint64_t a , std::uint64_t b ,
                              std::uint64_t c , std::uint64_t d ,
                              std::uint64_t & hi )
 {
- std::uint64_t lo = mulWide( a , b , hi );
+ std::uint64_t lo = digitProduct( a , b , hi );
  lo += c;
  hi += lo < c;
  lo += d;
@@ -466,7 +457,7 @@ inline BigInteger::Mag BigInteger::mulNTT( const Limb * a , std::size_t na ,
                       y = ( x1 + p1 * t2 ) % p3 ,
                       t3 = detail::Ntt3::mul( std::uint32_t(
                                 ( c3[ k ] + p3 - y ) % p3 ) , i123 );
-  Limb hi , lo = detail::mulWide( p12 , t3 , hi );
+  Limb hi , lo = detail::digitProduct( p12 , t3 , hi );
   const Limb s = x1 + p1 * t2;              // below 2^63
   lo += s;
   hi += lo < s;
@@ -726,7 +717,7 @@ inline std::pair< BigInteger::Mag , BigInteger::Mag > BigInteger::divModMag(
    }
   while( ! big ) {
    Limb hi;
-   const Limb lo = detail::mulWide( qh , v2 , hi );
+   const Limb lo = detail::digitProduct( qh , v2 , hi );
    if( ( hi < rh ) || ( ( hi == rh ) && ( lo <= x[ j + n - 2 ] ) ) ) break;
    --qh;
    rh += v1;

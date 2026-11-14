@@ -1547,7 +1547,9 @@ ADS_TEST( "big-integer-words" )
    const U64 a = x[ i ] , b = x[ j ];
    const auto [ h , l ] = mulRef( a , b );
    U64 hi , c = 0;
-   CHECK( detail::mulWide( a , b , hi ) == l && hi == h );
+   CHECK( detail::digitProduct( a , b , hi ) == l && hi == h );
+   U64 hh;
+   CHECK( detail::wideProductHalves( a , b , hh ) == l && hh == h );
    const U64 lo = detail::mulAdd( a , b , M , M , hi );   // never overflows
    const U64 l2 = l + M , l3 = l2 + M;
    CHECK( lo == l3 && hi == h + ( l2 < l ) + ( l3 < l2 ) );

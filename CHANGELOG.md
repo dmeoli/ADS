@@ -2555,6 +2555,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- BigInteger.tpp had its own mulWide(), a copy of wideProduct() of
+  Portable.h with the same three paths; the integers of any length now take
+  their products of digits from Portable.h, whose computation on the halves
+  of 32 bits is wideProductHalves(), kept for ADS_BIGINT_PORTABLE, as
+  Portable.h, the theory of the library and chapters 1 and 17 of the manual
+  say; the test taocp big-integer-words checks both against the products on
+  digits of 16 bits
+
 - SEList rounded the places of a block up to a power of 2, std::bit_ceil( b
   + 1 ), so that its space n + O( b + n / b ) held only when b + 1 was a
   power of 2 (a block of b = 64 had 128 places for at most 65 items); a

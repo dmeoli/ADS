@@ -512,12 +512,12 @@ from the most significant one) complete the arithmetic, and
 [Algorithm 17.6](17-numeric.md#alg-17-6) with no backend, with which the
 audits of `toString()` and of the constructor compare. Finally, the
 product of two words of 64 bits into 128, on which the school, the short
-division and the steps of Lehmer rest, is that of the compiler: by
-default, the type `unsigned __int128` where it exists, the intrinsics of
-MSVC on x64 otherwise, and four products of halves of 32 bits where
-neither is available (or with `ADS_BIGINT_PORTABLE` defined); the macro
-`ADS_BIGINT_WIDE`, which records the choice as 128, 64 or 0, can also be
-set by hand.
+division and the steps of Lehmer rest, is `wideProduct()` of `Portable.h`
+([§1.6](01-introduction.md#sec-1-6)): the type `unsigned __int128` where
+it exists, the intrinsics of MSVC on x64 otherwise, and four products of
+halves of 32 bits (`wideProductHalves()`) where neither is available, or
+with `ADS_BIGINT_PORTABLE` defined; the macro `ADS_BIGINT_WIDE`, which
+records the choice as 128, 64 or 0, can also be set by hand.
 
 ## 17.4 Rational numbers {#sec-17-4}
 
