@@ -229,12 +229,12 @@ struct Edge {
  };
 
 /// the largest weight of a set of edges no two with an end in common (a
-/// matching) of a graph of n nodes: maxWeightMatching() of the library, a
-/// backtracking that leaves the first free node alone or matches it to
-/// each free neighbour, cutting the branches that cannot beat the best
-/// matching found; the text recurs only on the edges of the last node
-/// reached and repeats the recursive call outside the test of the free
-/// ends, which takes edges on used nodes
+/// matching) of a graph of n nodes: branchAndBoundMatching() of the
+/// library, a backtracking that leaves the first free node alone or
+/// matches it to each free neighbour, cutting the branches that cannot
+/// beat the best matching found; the text recurs only on the edges of the
+/// last node reached and repeats the recursive call outside the test of
+/// the free ends, which takes edges on used nodes
 /// \pre the ends are distinct nodes and the weights are positive
 long long univoco( int n , const std::vector< Edge > & E )
 {
@@ -243,7 +243,7 @@ long long univoco( int n , const std::vector< Edge > & E )
   ADS_PRE( e.w > 0 );
   T.emplace_back( e.u , e.v , e.w );
   }
- return( maxWeightMatching( n , T ).first );
+ return( branchAndBoundMatching( n , T ).first );
  }
 
 /*---------------------- greedy 8, 2016-01-07, Cover -----------------------*/

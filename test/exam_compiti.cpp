@@ -627,12 +627,12 @@ std::vector< int > connectedOrder( const G & g )
 using WeightedEdge = std::tuple< int , int , long >;
 
 /// univoco(): a set of edges of the graph of n nodes, no two with a
-/// common end, of the largest weight, and the weight: maxWeightMatching()
-/// of the library, a backtracking that leaves the first free node alone or
-/// matches it to each free neighbour, cutting the branches that cannot
-/// beat the best set found. The text branches on the edges of a node u and
-/// recurses on the other end, which misses the sets whose edges do not
-/// form a path from u
+/// common end, of the largest weight, and the weight:
+/// branchAndBoundMatching() of the library, a backtracking that leaves the
+/// first free node alone or matches it to each free neighbour, cutting the
+/// branches that cannot beat the best set found. The text branches on the
+/// edges of a node u and recurses on the other end, which misses the sets
+/// whose edges do not form a path from u
 /// \pre the ends of each edge are distinct nodes in [ 0 , n ), weights
 ///      positive
 /// \post no two edges with a common end
@@ -641,7 +641,7 @@ inline std::pair< long , std::vector< std::size_t > > maxMatching(
 {
  for( const auto & e : E )
   ADS_PRE( std::get< 2 >( e ) > 0 );
- return( maxWeightMatching( n , E ) );
+ return( branchAndBoundMatching( n , E ) );
  }
 
 /*------ 2015-11-05 A2 and A4, difference in a subtree and two values ------*/

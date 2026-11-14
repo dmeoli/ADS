@@ -222,9 +222,80 @@
  node of largest finish time stays in its component, since an edge that
  leaves it in \f$ G^T \f$ can only enter a component already visited; the
  next visit, from the largest finish time left, does the same. Thus, `scc()`
- of `Visit.h` costs two visits, each \f$ \Theta( n + m ) \f$. The graph of
- the components is acyclic, and `unilaterallyConnected()` tests whether its
- topological order is unique.
+ of `Visit.h` costs two visits, each \f$ \Theta( n + m ) \f$, and the copy
+ of the transposed graph. The graph of the components is acyclic, and
+ `unilaterallyConnected()` tests whether its topological order is unique.
+
+ One visit in depth suffices, if the components are recognized as it
+ finishes them (Tarjan, beyond the book). The <em>root</em> of a component
+ \f$ C \f$ is its node \f$ r_C \f$ discovered first; by Lemma 2 every node
+ of \f$ C \f$ is a descendant of \f$ r_C \f$, since all of them are
+ undiscovered when \f$ r_C \f$ is discovered and reachable from it. The
+ visit pushes each node it discovers on a stack \f$ S \f$, and keeps
+ \f$ \mathit{low}[ u ] \f$, the least \f$ \mathit{dt} \f$ of a node of
+ \f$ S \f$ that the subtree of \f$ u \f$ reaches by its tree edges and one
+ more edge, \f$ \mathit{dt}[ u ] \f$ itself included.
+
+ <em>Lemma 4 (the roots of Tarjan).</em> When \f$ u \f$ finishes,
+ \f$ u \f$ is a root if and only if
+ \f$ \mathit{low}[ u ] = \mathit{dt}[ u ] \f$; the nodes above \f$ u \f$
+ on \f$ S \f$ are then exactly the nodes of its component.
+
+ Indeed, if \f$ u \f$ is not a root, the root \f$ r \f$ of its component
+ is a proper ancestor of \f$ u \f$, still open and on \f$ S \f$, and a
+ path from \f$ u \f$ to \f$ r \f$ leaves the subtree of \f$ u \f$ by an
+ edge \f$ ( x , y ) \f$ whose head \f$ y \f$ reaches \f$ r \f$; the
+ component of \f$ y \f$ is that of \f$ r \f$, which is not closed, so
+ that \f$ y \f$ is on \f$ S \f$ with \f$ \mathit{dt}[ y ] <
+ \mathit{dt}[ u ] \f$, and \f$ \mathit{low}[ u ] < \mathit{dt}[ u ] \f$.
+ Conversely, if \f$ \mathit{low}[ u ] < \mathit{dt}[ u ] \f$ the subtree
+ of \f$ u \f$ reaches a node \f$ y \f$ of \f$ S \f$ discovered before
+ \f$ u \f$; the nodes of \f$ S \f$ discovered before \f$ u \f$ are in
+ components still open, whose roots are ancestors of \f$ u \f$, so that
+ the root of the component of \f$ y \f$ reaches \f$ u \f$ by the tree and
+ is reached from \f$ u \f$ through \f$ y \f$: \f$ u \f$ is in a component
+ opened before it, and is not a root. Finally, when the root \f$ u \f$
+ finishes, the nodes above it on \f$ S \f$ are its descendants not yet
+ closed, and a descendant in another component would have a root between
+ \f$ u \f$ and itself, which has closed it before. The test of
+ \f$ y \in S \f$ is that \f$ y \f$ has no component yet, so that the
+ visit costs \f$ \Theta( n + m ) \f$ (`sccTarjan()` of `Visit.h`): each
+ node is pushed and popped once, and each edge examined once. When a
+ component closes, every component that it reaches is closed already;
+ hence the components close in the reverse of a topological order of their
+ graph, and `sccTarjan()` numbers them backwards, as `scc()` numbers them:
+ an edge from \f$ C \f$ to \f$ C' \ne C \f$ gives \f$ C < C' \f$.
+ The recursion is kept on a stack of the pairs (node, next edge), and the
+ adjacencies are read once into compressed rows, so that the cost holds on
+ every model of `Graph` and a path of \f$ 10^6 \f$ nodes does not overflow
+ the stack of the calls.
+
+ The visit of Tarjan keeps three integers per node (\f$ \mathit{dt} \f$,
+ \f$ \mathit{low} \f$ and the component); Pearce keeps one, and a bit
+ (`sccPearce()`). The integer \f$ \mathit{rindex}[ u ] \f$ starts as the
+ order of discovery and takes, instead of \f$ \mathit{low}[ u ] \f$, every
+ smaller \f$ \mathit{rindex} \f$ met, the bit recording whether it took
+ one; when \f$ u \f$ closes its component, its nodes take the number
+ \f$ c \f$ of the component, which counts down from \f$ N - 1 \f$, and
+ the counter \f$ i \f$ of the discoveries goes back by one per node
+ closed.
+
+ <em>Lemma 5 (one integer per node).</em> The numbers of the open nodes are
+ at most \f$ c + 1 \f$, and those of the closed ones at least
+ \f$ c + 1 \f$.
+
+ Indeed, an open node has a number below \f$ i \f$, and \f$ i - 1 \f$
+ counts the open nodes, which are at most the \f$ c + 1 \f$ names of the
+ \f$ N \f$ not closed, the closed ones being \f$ N - 1 - c \f$; the
+ closed nodes have the numbers \f$ c + 1 , \ldots , N - 1 \f$ of their
+ components. Hence a comparison of the numbers alone never lets a closed
+ node lower an open one, as the test \f$ y \in S \f$ of Lemma 4 does, and
+ a node of \f$ S \f$ belongs to the component of the root \f$ u \f$ if
+ and only if its number is at least \f$ \mathit{rindex}[ u ] \f$; the
+ visit makes the same choices as that of Tarjan, in the same time, with
+ \f$ N \f$ words and \f$ N \f$ bits besides the two stacks, and the
+ components numbered \f$ \mathit{rindex}[ u ] - c \f$ at the end come out
+ in the order of `sccTarjan()`.
 
  \section theory_graph_sp Shortest paths
 
@@ -354,7 +425,7 @@
  weight \f$ b \f$ of a corner falls on a different cell in the two models,
  and their shortest paths may differ.
 
- <em>Lemma 4 (the octile distance).</em> On a grid with no blocked cell and
+ <em>Lemma 6 (the octile distance).</em> On a grid with no blocked cell and
  eight moves of costs \f$ a \f$ and \f$ b \f$ with \f$ a \le b \le 2 a \f$,
  let \f$ M \f$ and \f$ \mu \f$ be the larger and the smaller of
  \f$ | r - r' | \f$ and \f$ | c - c' | \f$; the least cost of a path from
@@ -447,7 +518,7 @@
  opposite direction, with \f$ f( v , u ) = - f( u , v ) \f$, so that the
  residual network, made of the edges with \f$ c_f( u , v ) > 0 \f$, is at hand.
 
- <em>Theorem 5 (maximum flow, minimum cut).</em> The following are equivalent:
+ <em>Theorem 7 (maximum flow, minimum cut).</em> The following are equivalent:
  (i) \f$ f \f$ is a maximum flow; (ii) the residual network has no path from
  \f$ s \f$ to \f$ t \f$ (an augmenting path); (iii)
  \f$ | f | = c( S , V \setminus S ) \f$ for some cut with \f$ s \in S \f$ and
@@ -554,16 +625,166 @@
  lower bounds are sent, a maximum flow from a new source to a new sink balances
  the excess left at each node.
 
- \section theory_graph_euler Eulerian cycles and other properties
+ A matching of a graph that is not bipartite is beyond the flows: a
+ network has no orientation that turns its paths into the alternating
+ paths of a general graph. Let \f$ M \f$ be a matching; a node is
+ <em>free</em> if no edge of \f$ M \f$ touches it, and a path is
+ <em>alternating</em> if its edges are in turn out of \f$ M \f$ and in it,
+ <em>augmenting</em> if it is alternating and joins two free nodes; its
+ symmetric difference with \f$ M \f$ is a matching with one edge more.
 
- By the theorem of Euler, an oriented graph has a closed path that uses each
- edge exactly once if and only if every node has as many entering edges as
- leaving ones and the edges lie in one component, the orientation ignored.
- Under these conditions a walk along unused edges can only stop at its
- start, and the algorithm of Hierholzer (`eulerianCycle()` of
- `EulerianCycle.h`) splices into the walk the closed walks found from its
- nodes, with a stack, in \f$ O( n + m ) \f$, since each edge is followed
- once.
+ <em>Lemma 8 (Berge).</em> A matching is of largest size if and only if no
+ path augments it.
+
+ Indeed, if \f$ | M' | > | M | \f$, the symmetric difference of the two is
+ made of paths and of even cycles in which the edges of \f$ M \f$ and of
+ \f$ M' \f$ alternate, and one of its paths has more edges of
+ \f$ M' \f$ than of \f$ M \f$: it augments \f$ M \f$.
+
+ A search for such a path from a free node \f$ r \f$ grows an alternating
+ tree: the nodes at an even distance from \f$ r \f$ along the tree are
+ <em>even</em>, the others <em>odd</em>, each odd node having its mate as
+ its only child. An edge from an even node to a free node not in the tree
+ ends an augmenting path, and one to a matched node not in the tree adds it
+ and its mate; an edge between two even nodes closes an odd cycle, a
+ <em>blossom</em>, whose node nearest to \f$ r \f$, its <em>base</em>, is
+ even and is the only node of the cycle matched outside it, if at all.
+
+ <em>Lemma 9 (Edmonds).</em> Let \f$ G / C \f$ be the graph in which the
+ blossom \f$ C \f$ is shrunk to one node, and \f$ M / C \f$ the matching
+ left. Then \f$ M \f$ has an augmenting path in \f$ G \f$ if and only if
+ \f$ M / C \f$ has one in \f$ G / C \f$.
+
+ Indeed, a path of \f$ G / C \f$ through the shrunk node enters it by an
+ edge to some node of \f$ C \f$, and goes on from the base: one of the two
+ ways around the cycle from that node to the base has an even number of
+ edges and alternates, and lifts the path to \f$ G \f$. Conversely, an
+ augmenting path of \f$ G \f$ either misses \f$ C \f$ or can be cut at
+ its first node in \f$ C \f$ after the stem from \f$ r \f$ to the base
+ is exchanged with the matching, which keeps the sizes and makes the base
+ free; the part before the cut is then augmenting in \f$ G / C \f$.
+
+ So the search shrinks each blossom it closes, every node of the cycle
+ becoming even (the odd ones are then searched too), and stops at the first
+ augmenting path, which it lifts through the blossoms, or with a tree in
+ which every edge from an even node goes to an odd one. Such a tree is
+ <em>Hungarian</em>: no augmenting path can ever use its nodes, since its
+ odd nodes cover all the edges of its even nodes, and so they are left out
+ of every later search, a free root that failed never being reached again.
+ `maxCardinalityMatching()` of `Matching.h` keeps the blossoms as the sets
+ of a union-find with the union by rank and the halving of the paths, the
+ representative of a set storing its base; the base common to two even
+ nodes is found by walking from both towards the root one step at a time,
+ which costs no more than twice the cycle shrunk. For each odd node that
+ a blossom makes even it records the edge \f$ ( a , b ) \f$ that closed
+ the blossom, its own side first, as the labels of Gabow do: the path from
+ such a node to the root goes back along the path of \f$ a \f$ down to
+ \f$ a \f$ and then follows that of \f$ b \f$, and the augmentation
+ rematches the two parts in turn, each stopping at the node whose mate it
+ has changed already. A search examines each edge of its tree at most twice
+ and merges each node once, i.e., it costs
+ \f$ O( m \, \alpha( m , n ) ) \f$ besides the walks, which are paid by
+ the merges; at most \f$ n / 2 \f$ searches succeed and each node is the
+ root of at most one that fails, so that the whole costs
+ \f$ O( n m \, \alpha( m , n ) ) \f$, i.e., \f$ O( n m ) \f$ for every
+ practical \f$ n \f$ and within the \f$ O( n^3 ) \f$ of the
+ implementation of Gabow. Gabow and Tarjan remove the factor
+ \f$ \alpha \f$ with a union-find for the trees of the search, and
+ Micali and Vazirani reach \f$ O( m \sqrt{n} ) \f$ by augmenting along a
+ maximal set of the shortest disjoint paths at once, as Hopcroft and Karp
+ do on bipartite graphs, at the price of a much more delicate search.
+
+ With a weight \f$ w( e ) \f$ on each edge, a matching of largest total
+ weight is a linear program over the matchings, whose polytope Edmonds
+ described: the vectors \f$ x \ge 0 \f$ with
+ \f$ x( \delta( v ) ) \le 1 \f$ at each node and
+ \f$ x( E( B ) ) \le ( | B | - 1 ) / 2 \f$ on each set \f$ B \f$ of an
+ odd number of nodes. Its dual has a variable \f$ y_v \ge 0 \f$ per node
+ and \f$ z_B \ge 0 \f$ per odd set, and asks
+ \f[
+   \pi( e ) = y_u + y_v - 2 w( e ) + 2 \sum_{B \ni u , v} z_B \ge 0
+   \quad \forall e = [ u , v ] \in E ,
+ \f]
+ with the duals doubled so that integer weights keep them integer.
+
+ <em>Theorem 10 (Edmonds).</em> A matching \f$ M \f$ is of largest weight
+ if there are duals as above such that (i) \f$ \pi( e ) = 0 \f$ on every
+ edge of \f$ M \f$, (ii) \f$ y_v = 0 \f$ at every free node, and (iii)
+ every odd set with \f$ z_B > 0 \f$ holds \f$ ( | B | - 1 ) / 2 \f$ edges
+ of \f$ M \f$.
+
+ Indeed, the conditions are the complementary slackness of the two
+ programs: for any matching \f$ M' \f$, summing \f$ \pi( e ) \ge 0 \f$
+ over its edges gives \f$ 2 w( M' ) \le \sum_v y_v + \sum_B z_B ( | B | -
+ 1 ) \f$, a bound that (i), (ii) and (iii) turn into an equality for
+ \f$ M \f$. Among the matchings of largest size, condition (ii) is dropped
+ and the \f$ y_v \f$ may be shifted by a constant, the free nodes having
+ the least dual.
+
+ `maxWeightMatching()` of `Matching.h` keeps the three conditions but
+ (ii), which it approaches: every \f$ y_v \f$ starts at the largest weight
+ and the matching empty, and the free nodes, whose duals are always equal
+ and the least, are the roots of the trees grown on the edges of slack 0
+ alone, the blossoms with \f$ z_B > 0 \f$ being the odd sets of (iii).
+ When no tight edge extends a tree, the duals change by \f$ \delta \f$:
+ down on the outer nodes \f$ S \f$ and up on the inner ones \f$ T \f$,
+ up on the outer blossoms and down on the inner ones, which keeps the slack
+ of every edge of a tree, and \f$ \delta \f$ is the least of the free
+ duals (then (ii) holds and the matching is optimal), of the slacks from
+ \f$ S \f$ to a node out of the trees, of half the slacks between two
+ outer blossoms, and of the duals of the inner blossoms, one of which is
+ then expanded. Each change thus makes an edge tight or a blossom
+ expandable, and a stage, which ends at the first augmentation, has
+ \f$ O( n ) \f$ of them, since every event of the four kinds either grows
+ the trees, or shrinks or expands a blossom, all of which happen
+ \f$ O( n ) \f$ times before an augmentation. The least slack towards
+ each outer blossom is kept per blossom and merged when blossoms are
+ shrunk, so that a change of the duals costs \f$ O( n ) \f$, and a stage
+ \f$ O( n^2 + m ) \f$; with at most \f$ n / 2 \f$ augmentations, the whole
+ costs \f$ O( n^3 ) \f$, the bound of Gabow and Lawler that Galil surveys.
+ With integer weights the slack between two outer nodes is even, so that
+ \f$ \delta \f$ stays integer, and at the end the duals certify the
+ optimum by Theorem 10, which the audits check. Gabow reaches
+ \f$ O( n m + n^2 \log n ) \f$ with mergeable heaps of the slacks and
+ the nearest common ancestors of the blossoms, a structure whose constants
+ pay off only on large sparse graphs.
+
+ \section theory_graph_euler Eulerian trails and other properties
+
+ A trail is a path that uses each edge exactly once, and an Eulerian cycle
+ a closed trail. Let the excess \f$ x( u ) \f$ of a node of an oriented
+ graph be the number of the edges leaving it minus that of the edges
+ entering it, and call a node of an unoriented graph odd when its degree
+ is.
+
+ <em>Lemma 11 (Euler).</em> Let the edges of \f$ G \f$ lie in one
+ component, the orientation ignored. An oriented \f$ G \f$ has an
+ Eulerian cycle if and only if \f$ x( u ) = 0 \f$ for every node, and an
+ open trail if and only if one node \f$ s \f$ has \f$ x( s ) = 1 \f$, one
+ node \f$ t \f$ has \f$ x( t ) = - 1 \f$ and the others have excess 0,
+ the trail going from \f$ s \f$ to \f$ t \f$; an unoriented \f$ G \f$
+ has an Eulerian cycle if and only if no node is odd, and an open trail if
+ and only if exactly two nodes are odd, the trail joining them. Without the
+ connection, there is no trail.
+
+ Indeed, a trail enters and leaves each node it passes through, which
+ gives the conditions; and, under them, a walk along unused edges from
+ \f$ s \f$ (from any node with an edge, if all are balanced) can stop only
+ at \f$ t \f$ (at its start), since every other node it enters has an
+ unused edge to leave by. The algorithm of Hierholzer (`eulerianTrail()`
+ and `eulerianCycle()` of `EulerianCycle.h`) keeps the walk on a stack: a
+ node with an unused edge pushes its other end, and a node with none is
+ popped and written, so that the closed walks found from the nodes of the
+ walk are spliced into it, and the trail comes out backwards. Each edge is
+ followed once, and a cursor per node never goes back; an unoriented edge
+ is listed at both its ends with one mark of use, the cursor skipping the
+ edges used from the other end, so that the walk costs
+ \f$ O( n + m ) \f$. The walk uses every edge reachable from its start,
+ and, under the conditions on the excesses, all of them when they lie in
+ one component, since a balanced component is strongly connected (with the
+ edge \f$ ( t , s ) \f$ added in the open case); a walk of fewer than
+ \f$ m \f$ edges thus tells that the edges are not connected, which needs
+ no other visit.
 
  Several other headers decide properties by the visits above, with the bound of
  a visit unless their comments say otherwise. A free tree has \f$ m = n - 1 \f$
@@ -611,7 +832,7 @@
  net events of the edges in the order of their first event, then of the nodes
  deleted.
 
- <em>Lemma 6 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
+ <em>Lemma 12 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
  of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (8) gives.
  The graph obtained by replaying \f$ C \f$ on \f$ G \f$ is the one obtained by
  replaying \f$ B \f$, and \f$ |C| \le |B| \f$.
@@ -641,12 +862,12 @@
  repair (1) if one is repairable, and by the certificate (2) if all are
  harmless, in which case nothing is computed.
 
- <em>Lemma 7 (the batch test).</em> If each condition of the certificate
+ <em>Lemma 13 (the batch test).</em> If each condition of the certificate
  involves the weight of a single edge, and each event of \f$ P \f$ is tested
  on the certificate of the solution before \f$ P \f$, then the events of
  \f$ P \f$ found harmless leave the solution optimal all together.
 
- Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 6, so that
+ Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 12, so that
  each condition of the certificate is touched by at most one of them, and a
  harmless event keeps true the conditions that it touches; the conditions
  that no event touches stay as they were.
@@ -671,7 +892,7 @@
  gives no bound of them, while those of the other nodes are still the costs
  of their paths in \f$ T \f$, which no raised edge touches.
 
- <em>Lemma 8 (the increases).</em> Let \f$ A \f$ be the union of the
+ <em>Lemma 14 (the increases).</em> Let \f$ A \f$ be the union of the
  subtrees of \f$ T \f$ under the heads of the edges of \f$ T \f$ raised or
  deleted by \f$ P \f$. Set \f$ d[ x ] = \infty \f$ for \f$ x \in A \f$, then
  \f[
@@ -776,7 +997,7 @@
 
  For the maximum flow from \f$ s \f$ to \f$ t \f$ (`MaxFlowObserver`) the
  certificate is the side \f$ S \f$ of a minimum cut with
- \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 5. A new
+ \f$ | f | = c( S , V \setminus S ) \f$, by (iii) of Theorem 7. A new
  capacity \f$ c' \f$ of \f$ ( u , v ) \f$ with \f$ c' \ge f( u , v ) \f$ is
  harmless unless \f$ ( u , v ) \f$ leaves \f$ S \f$ and grows: the flow stays
  feasible, and the capacity of the cut neither falls below \f$ | f | \f$ (an
@@ -838,7 +1059,7 @@
  \f$ u_i = \min_j c( i , j ) \f$ and \f$ v = 0 \f$, which satisfy (11)
  whatever the signs of the costs.
 
- <em>Lemma 9 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
+ <em>Lemma 15 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
  (11) with the pairs of \f$ M \f$ tight, and let the costs of the row
  \f$ i \f$ change. Removing the pair of \f$ i \f$ from \f$ M \f$ and setting
  \f[
@@ -885,7 +1106,7 @@
  representations, and its use is the algebra of the graph [see
  `incidence()`], not the visits.
 
- <em>Lemma 10 (the universal sink).</em> A universal sink, a node with an
+ <em>Lemma 16 (the universal sink).</em> A universal sink, a node with an
  edge from each of the other \f$ n - 1 \f$ nodes and no edge out, is found or
  shown not to exist with at most \f$ 3 ( n - 1 ) \f$ calls of
  `hasEdge()`, \f$ O( n ) \f$ time on the adjacency matrix (exercise 12.10).
@@ -926,6 +1147,9 @@
  \see M. Sharir, A strong-connectivity algorithm and its applications in
       data flow analysis, Computers & Mathematics with Applications 7(1),
       67-72, 1981, doi:10.1016/0898-1221(81)90008-0
+ \see D. J. Pearce, A space-efficient algorithm for finding strongly
+      connected components, Information Processing Letters 116(1), 47-52,
+      2016, doi:10.1016/j.ipl.2015.08.010
  \see R. Bellman, On a routing problem, Quarterly of Applied Mathematics
       16(1), 87-90, 1958, doi:10.1090/qam/102435
  \see E. W. Dijkstra, A note on two problems in connexion with graphs,
@@ -991,6 +1215,31 @@
       algorithm for the assignment problem with changing costs, technical
       report CMU-RI-TR-07-27, Robotics Institute, Carnegie Mellon
       University, 2007
+ \see C. Berge, Two theorems in graph theory, Proceedings of the National
+      Academy of Sciences 43(9), 842-844, 1957, doi:10.1073/pnas.43.9.842
+ \see J. Edmonds, Paths, trees, and flowers, Canadian Journal of
+      Mathematics 17, 449-467, 1965, doi:10.4153/CJM-1965-045-4
+ \see H. N. Gabow, An efficient implementation of Edmonds' algorithm for
+      maximum matching on graphs, Journal of the ACM 23(2), 221-234, 1976,
+      doi:10.1145/321941.321942
+ \see H. N. Gabow, R. E. Tarjan, A linear-time algorithm for a special
+      case of disjoint set union, Journal of Computer and System Sciences
+      30(2), 209-221, 1985, doi:10.1016/0022-0000(85)90014-5
+ \see J. Edmonds, Maximum matching and a polyhedron with 0,1-vertices,
+      Journal of Research of the National Bureau of Standards 69B,
+      125-130, 1965, doi:10.6028/jres.069B.013
+ \see E. L. Lawler, Combinatorial Optimization: Networks and Matroids,
+      Holt, Rinehart and Winston, 1976, chapter 6
+ \see Z. Galil, Efficient algorithms for finding maximum matching in
+      graphs, ACM Computing Surveys 18(1), 23-38, 1986,
+      doi:10.1145/6462.6502
+ \see H. N. Gabow, Data structures for weighted matching and nearest
+      common ancestors with linking, Proceedings of the 1st ACM-SIAM
+      Symposium on Discrete Algorithms, 434-443, 1990
+ \see S. Micali, V. V. Vazirani, An O(sqrt(|V|) |E|) algorithm for finding
+      maximum matching in general graphs, Proceedings of the 21st Annual
+      Symposium on Foundations of Computer Science, 17-27, 1980,
+      doi:10.1109/SFCS.1980.12
  \see S. Even, R. E. Tarjan, Network flow and testing graph connectivity,
       SIAM Journal on Computing 4(4), 507-518, 1975, doi:10.1137/0204043
  \see D. B. Johnson, Finding all the elementary circuits of a directed

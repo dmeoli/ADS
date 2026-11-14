@@ -39,8 +39,22 @@
  *   and the road networks;
  * - prim, prim() on a priority queue, on the unoriented graphs;
  * - kruskal, kruskal() on an MFSET, on the unoriented graphs;
- * - scc, scc(), the strongly connected components of the book, on the
- *   oriented graphs of n / 10 nodes;
+ * - scc, scc(), the strongly connected components of the book
+ *   (Kosaraju's two visits and the transposed graph), on the oriented
+ *   graphs of n / 10 nodes, and the visits of one pass, sccTarjan() and
+ *   sccPearce() on the StaticGraph, against strong_components() of the
+ *   Boost Graph Library (Tarjan's algorithm on its compressed rows);
+ * - euler, eulerianTrail(), the walk of Hierholzer, on a random closed walk
+ *   of 4 n distinct edges among n nodes, oriented and not ("walk" and
+ *   "uwalk"), the same code on the three families of graphs (the Boost
+ *   Graph Library has no Eulerian trail);
+ * - matching, maxCardinalityMatching(), the blossoms of Edmonds, on the
+ *   unoriented graphs (G( n , 4 n ), grids, R-MAT), against
+ *   edmonds_maximum_cardinality_matching() of the Boost Graph Library on
+ *   its adjacency_list;
+ * - wmatching, maxWeightMatching(), the primal-dual blossoms, on G( n , 4 n )
+ *   unoriented with n / 50 nodes and costs in [ 1 , 10^5 ], against
+ *   maximum_weighted_matching() of the Boost Graph Library;
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -89,7 +103,9 @@
 
 #include "Bench.h"
 
+#include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GridGraph.h"
+#include "ADS/graph/Matching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -106,6 +122,10 @@
  #include <boost/property_map/property_map.hpp>
  #include <boost/graph/compressed_sparse_row_graph.hpp>
  #include <boost/graph/grid_graph.hpp>
+ #include <boost/graph/adjacency_list.hpp>
+ #include <boost/graph/max_cardinality_matching.hpp>
+ #include <boost/graph/maximum_weighted_matching.hpp>
+ #include <boost/graph/strong_components.hpp>
  #include <boost/heap/d_ary_heap.hpp>
  #include <boost/heap/fibonacci_heap.hpp>
  #include <boost/heap/pairing_heap.hpp>
@@ -912,14 +932,23 @@ void kruskal( const std::string & c , int n0 , int r , unsigned seed )
   return( kruskalRun< ADS::MFSet >( n , E , k ) ); } );
  }
 
-/// scc() of the book on the graph g: the number of components
-template< class G >
-long long sccRun( const G & g , Counts & k )
+/// the components of scc of the graph g by one of scc() of the book,
+/// sccTarjan() and sccPearce(): the number of components
+template< class G , class F >
+long long sccRun( const G & g , Counts & k , F && scc )
 {
- const auto c = ADS::scc( g );
+ const auto c = scc( g );
  const long long K = c.empty() ? 0 : *std::max_element( c.begin() , c.end() );
  k = { { "components" , K } };
  return( K );
+ }
+
+/// scc() of the book on the graph g
+template< class G >
+long long sccRun( const G & g , Counts & k )
+{
+ return( sccRun( g , k , []( const auto & h ) { return( ADS::scc( h ) ); }
+                 ) );
  }
 
 void scc( const std::string & c , int n0 , int r , unsigned seed )
@@ -938,12 +967,175 @@ void scc( const std::string & c , int n0 , int r , unsigned seed )
   const BoostGraph< false > G( n , A , true );
   C( "Boost csr" , [ & ]( Counts & k ) { return( sccRun( G , k ) ); } );
   }
+ if( measured( { "Boost csr strong_components" } ) ) {
+  const BoostGraph< false > G( n , A , true );
+  C( "Boost csr strong_components" , [ & ]( Counts & k ) {
+   std::vector< unsigned > c( static_cast< std::size_t >( n ) );
+   const long long K = n == 0 ? 0 : (long long) boost::strong_components(
+                       G.g , boost::make_iterator_property_map( c.begin() ,
+                       boost::get( boost::vertex_index , G.g ) ) );
+   k = { { "components" , K } };
+   return( K ); } );
+  }
 #endif
- if( ! measured( { "ADS StaticGraph" } ) )
+ if( ! measured( { "ADS StaticGraph" , "ADS StaticGraph sccTarjan" ,
+                   "ADS StaticGraph sccPearce" } ) )
   return;
  const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
                                                       true ) );
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( sccRun( S , k ) ); } );
+ C( "ADS StaticGraph sccTarjan" , [ & ]( Counts & k ) {
+  return( sccRun( S , k , []( const auto & h ) {
+   return( ADS::sccTarjan( h ) ); } ) ); } );
+ C( "ADS StaticGraph sccPearce" , [ & ]( Counts & k ) {
+  return( sccRun( S , k , []( const auto & h ) {
+   return( ADS::sccPearce( h ) ); } ) ); } );
+ }
+
+/// a closed walk of m distinct edges among n nodes, oriented or not, each
+/// step to a random node by an edge not yet used: an Eulerian graph
+Input closedWalk( int n , std::size_t m , bool directed ,
+                  std::mt19937_64 & g )
+{
+ Input I{ n , {} , directed };
+ std::set< std::pair< int , int > > used;
+ auto key = [ & ]( int u , int v ) {
+  return( directed ? std::pair( u , v ) : std::pair( std::min( u , v ) ,
+                                                     std::max( u , v ) ) );
+  };
+ int at = 0;
+ for( ;; ) {
+  const bool close = ( I.E.size() + 1 >= m ) && ( at != 0 ) &&
+                     ! used.count( key( at , 0 ) );
+  const int v = close ? 0 : int( g() % unsigned( n ) );
+  if( ( v == at ) || used.count( key( at , v ) ) )
+   continue;
+  used.insert( key( at , v ) );
+  I.E.emplace_back( at , v , 1 );
+  at = v;
+  if( ( at == 0 ) && ( I.E.size() >= m ) )
+   return( I );
+  }
+ }
+
+/// eulerianTrail() on the graph g: a digest of the trail
+template< class G >
+long long eulerRun( const G & g , Counts & k )
+{
+ const auto T = ADS::eulerianTrail( g );
+ long long s = 0;
+ if( T )
+  for( std::size_t i = 0 ; i < T->size() ; ++i )
+   s += ( long long )( i % 7 + 1 ) * ( ( *T )[ i ] + 1 );
+ k = { { "nodes" , T ? (long long) T->size() : -1 } };
+ return( s );
+ }
+
+void euler( const std::string & c , int n , int r , unsigned seed )
+{
+ if( n < 3 )
+  return;
+ std::mt19937_64 g( seed + unsigned( n ) );
+ const Input I = closedWalk( n , 4 * std::size_t( n ) , c == "walk" , g );
+ const auto A = arcs( I );
+ Cell C( "euler" , c , std::size_t( n ) , I.E.size() , r );
+ if( measured( { "std vector" , "std vector A/A" } ) ) {
+  const StdGraph< false > G( n , A , I.directed );
+  for( const char * who : { "std vector" , "std vector A/A" } )
+   C( who , [ & ]( Counts & k ) { return( eulerRun( G , k ) ); } );
+  }
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost csr" } ) ) {
+  const BoostGraph< false > G( n , A , I.directed );
+  C( "Boost csr" , [ & ]( Counts & k ) { return( eulerRun( G , k ) ); } );
+  }
+#endif
+ if( ! measured( { "ADS StaticGraph" } ) )
+  return;
+ const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , edgesOf( I , A ) ,
+                                                      I.directed ) );
+ C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( eulerRun( S , k ) ); } );
+ }
+
+/// maxCardinalityMatching() on the graph g: the size of the matching
+template< class G >
+long long matchingRun( const G & g , Counts & k )
+{
+ long long s = 0;
+ for( int v : ADS::maxCardinalityMatching( g ) )
+  s += v != ADS::NIL;
+ k = { { "matched" , s } };
+ return( s / 2 );
+ }
+
+void matching( const std::string & c , int n0 , int r , unsigned seed )
+{
+ const Input I = make( c , n0 , false , seed );
+ const int n = I.n;
+ const auto A = arcs( I );
+ const auto E = edgesOf( I , A );
+ Cell C( "matching" , c , std::size_t( n ) , E.size() , r );
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost adjacency_list edmonds" } ) ) {
+  using BG = boost::adjacency_list< boost::vecS , boost::vecS ,
+                                    boost::undirectedS >;
+  BG G( static_cast< std::size_t >( n ) );
+  for( const auto & [ u , v , w ] : E )
+   boost::add_edge( std::size_t( u ) , std::size_t( v ) , G );
+  C( "Boost adjacency_list edmonds" , [ & ]( Counts & k ) {
+   std::vector< std::size_t > mate( static_cast< std::size_t >( n ) );
+   boost::edmonds_maximum_cardinality_matching( G , mate.data() );
+   const long long s = (long long) boost::matching_size( G , mate.data() );
+   k = { { "matched" , 2 * s } };
+   return( s ); } );
+  }
+#endif
+ if( measured( { "std vector" , "std vector A/A" } ) ) {
+  const StdGraph< false > G( n , A , false );
+  for( const char * who : { "std vector" , "std vector A/A" } )
+   C( who , [ & ]( Counts & k ) { return( matchingRun( G , k ) ); } );
+  }
+ if( ! measured( { "ADS StaticGraph" } ) )
+  return;
+ const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , E , false ) );
+ C( "ADS StaticGraph" , [ & ]( Counts & k ) {
+  return( matchingRun( S , k ) ); } );
+ }
+
+void wmatching( int n , int r , unsigned seed )
+{
+ if( n < 2 )
+  return;
+ std::mt19937_64 g( seed + unsigned( n ) );
+ const Input I = gnm( n , 4 * std::size_t( n ) , false , g );
+ const auto E = edgesOf( I , arcs( I ) );
+ Cell C( "wmatching" , "gnm4" , std::size_t( n ) , E.size() , r );
+ std::vector< std::tuple< int , int , long long > > L;
+ for( const auto & [ u , v , w ] : E ) L.emplace_back( u , v , w );
+ for( const char * who : { "ADS" , "ADS A/A" } )
+  C( who , [ & ]( Counts & k ) {
+   const auto M = ADS::maxWeightMatching( n , L );
+   k = { { "edges" , (long long) M.second.size() } };
+   return( M.first ); } );
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost adjacency_list" } ) ) {
+  using BG = boost::adjacency_list< boost::vecS , boost::vecS ,
+             boost::undirectedS , boost::no_property ,
+             boost::property< boost::edge_weight_t , long long > >;
+  BG G( static_cast< std::size_t >( n ) );
+  for( const auto & [ u , v , w ] : L )
+   boost::add_edge( std::size_t( u ) , std::size_t( v ) , w , G );
+  C( "Boost adjacency_list" , [ & ]( Counts & k ) {
+   std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
+                                         static_cast< std::size_t >( n ) );
+   boost::maximum_weighted_matching( G , mate.data() );
+   long long s = 0 , e = 0;
+   for( const auto & [ u , v , w ] : L )
+    if( mate[ std::size_t( u ) ] == std::size_t( v ) ) { s += w; ++e; }
+   k = { { "edges" , e } };
+   return( s ); } );
+  }
+#endif
  }
 
 /// n random merges and n finds on the MFSET M
@@ -1072,6 +1264,14 @@ int main( int argc , char ** argv )
   if( want( "scc" ) )
    for( const char * c : { "gnm4" , "road" , "rmat" } )
     scc( c , n / 10 , r , o.seed );
+  if( want( "euler" ) )
+   for( const char * c : { "walk" , "uwalk" } )
+    euler( c , n , r , o.seed );
+  if( want( "matching" ) )
+   for( const char * c : { "gnm4" , "grid" , "rmat" } )
+    matching( c , n , r , o.seed );
+  if( want( "wmatching" ) )
+   wmatching( n / 50 , r , o.seed );
   if( want( "union-find" ) )
    unionFind( n , r , o.seed );
   for( const char * b : { "grid-bfs" , "grid-dijkstra" } )

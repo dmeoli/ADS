@@ -68,6 +68,7 @@
 #include <ranges>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -237,6 +238,90 @@ std::vector< std::vector< int > > incidence( const G & g );
 inline std::vector< int > adjFromIncidence(
                           const std::vector< std::vector< int > > & B ,
                           int u , bool directed );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ CLASS Rows --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace detail {
+
+/// the type of the arcs of the rows of a graph read where they are
+template< class G , bool Direct >
+struct RowsArc {
+ using type = int;   ///< none: the copy has the heads only
+ };
+
+/// the type of the arcs of `arcData()`
+template< class G >
+struct RowsArc< G , true > {
+ /// an arc of the graph, its head or a pair of head and weight
+ using type = std::remove_cvref_t< decltype(
+                                   *std::declval< const G & >().arcData() ) >;
+ };
+
+/// the arcs of a graph in compressed rows, for the algorithms that walk the
+/// adjacencies with a cursor per node: those of a graph that keeps them so
+/// (`offsets()` and `arcData()`, as `StaticGraph`) where they are, those of
+/// any other model copied once, in the order of `forEachAdj()`, with none
+/// for a name that is not a node
+template< Graph G >
+class Rows {
+
+ public:
+
+ /// whether the rows of the graph are read where they are
+ static constexpr bool direct = requires( const G & h ) {
+  { h.offsets() } -> std::convertible_to< const int * >;
+  h.arcData();
+  };
+
+ /// the rows of \f$ g \f$, which must outlive them if `direct`
+ explicit Rows( const G & g ) {
+  if constexpr( direct ) {
+   f_o = g.offsets();
+   f_a = g.arcData();
+   }
+  else {
+   const int n = g.bound();
+   f_off.assign( std::size_t( n ) + 1 , 0 );
+   for( int u = 0 ; u < n ; ++u ) {
+    f_off[ u ] = f_head.size();
+    if( g.hasNode( u ) )
+     g.forEachAdj( u , [ & ]( int v ) { f_head.push_back( v ); } );
+    }
+   f_off[ n ] = f_head.size();
+   }
+  }
+
+ /// the place of the first arc leaving \f$ u \f$
+ [[nodiscard]] std::size_t first( int u ) const {
+  if constexpr( direct ) return( std::size_t( f_o[ u ] ) );
+  else return( f_off[ u ] );
+  }
+
+ /// the place after the last arc leaving \f$ u \f$
+ [[nodiscard]] std::size_t last( int u ) const { return( first( u + 1 ) ); }
+
+ /// the head of the arc in the place \f$ i \f$
+ [[nodiscard]] int head( std::size_t i ) const {
+  if constexpr( ! direct ) return( f_head[ i ] );
+  else if constexpr( std::is_convertible_v< decltype( f_a[ i ] ) , int > )
+   return( int( f_a[ i ] ) );
+  else return( f_a[ i ].to );
+  }
+
+ private:
+
+ using Arc = typename RowsArc< G , direct >::type;   ///< an arc of g
+
+ const int * f_o = nullptr;            ///< the offsets of the graph
+ const Arc * f_a = nullptr;            ///< its arcs
+ std::vector< std::size_t > f_off;     ///< the offsets of the copy
+ std::vector< int > f_head;            ///< the heads of the copy
+
+ };  // end( class Rows )
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 

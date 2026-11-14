@@ -29,9 +29,13 @@
 #include "ADSTest.h"
 
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/Assignment.h"
+#include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/Grid.h"
 #include "ADS/graph/GridGraph.h"
+#include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Matching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -47,10 +51,13 @@
 #include "ADS/queue/Dequeue.h"
 #include "ADS/queue/LinkedQueue.h"
 #include "ADS/stack/ArrayStack.h"
+#include "ADS/complexity/EasyCases.h"
 
 #include <algorithm>
+#include <bit>
 #include <climits>
 #include <cmath>
+#include <functional>
 #include <queue>
 #include <random>
 #include <set>
@@ -923,6 +930,623 @@ ADS_TEST( "graph-builder" )
  CHECK_THROWS( B.addEdge( 0 , 3 , 0 ) , contract_violation );
  CHECK_THROWS( B.addEdge( -1 , 0 , 0 ) , contract_violation );
  CHECK_THROWS( GraphBuilder<>( -1 ) , contract_violation );
+ }
+
+/// whether the labels a and b of the nodes make the same partition, i.e.,
+/// a[ u ] = a[ v ] if and only if b[ u ] = b[ v ]
+bool samePartition( const std::vector< int > & a ,
+                    const std::vector< int > & b )
+{
+ if( a.size() != b.size() )
+  return( false );
+ std::vector< int > ab( a.size() + 1 , -1 ) , ba( a.size() + 1 , -1 );
+ for( std::size_t u = 0 ; u < a.size() ; ++u ) {
+  if( ( a[ u ] < 0 ) || ( b[ u ] < 0 ) || ( a[ u ] > int( a.size() ) ) ||
+      ( b[ u ] > int( a.size() ) ) )
+   return( false );
+  if( ab[ a[ u ] ] == -1 ) ab[ a[ u ] ] = b[ u ];
+  if( ba[ b[ u ] ] == -1 ) ba[ b[ u ] ] = a[ u ];
+  if( ( ab[ a[ u ] ] != b[ u ] ) || ( ba[ b[ u ] ] != a[ u ] ) )
+   return( false );
+  }
+ return( true );
+ }
+
+// the strongly connected components in one pass, Tarjan's and Pearce's,
+// against the closure on every oriented graph of up to 4 nodes and on
+// random ones of 5 to 7, and against scc() (Kosaraju) on large ones: the
+// same partition, numbered from 1 in a topological order of the graph of
+// the components (which the audits check); unoriented graphs, where they
+// are the connected components; a deleted node, numbered 0; parallel
+// arcs; paths and circuits of 10^6 nodes, which a recursion would not
+// survive
+ADS_TEST( "scc-one-pass" )
+{
+ auto check = [ & ]( const auto & h , int n ) {
+  std::vector< std::vector< bool > > R( n , std::vector< bool >( n ) );
+  for( int u : h.V() ) {
+   R[ u ][ u ] = true;
+   h.forEachAdj( u , [ & ]( int v ) { R[ u ][ v ] = true; } );
+   }
+  for( int k = 0 ; k < n ; ++k )
+   for( int u = 0 ; u < n ; ++u )
+    for( int v = 0 ; v < n ; ++v )
+     if( R[ u ][ k ] && R[ k ][ v ] )
+      R[ u ][ v ] = true;
+  const auto K = scc( h ) , T = sccTarjan( h ) , P = sccPearce( h );
+  for( int u : h.V() )
+   for( int v : h.V() ) {
+    const bool same = R[ u ][ v ] && R[ v ][ u ];
+    CHECK( ( T[ u ] == T[ v ] ) == same && ( P[ u ] == P[ v ] ) == same );
+    }
+  CHECK( samePartition( K , T ) && samePartition( K , P ) );
+  CHECK( *std::max_element( K.begin() , K.end() ) ==
+         *std::max_element( T.begin() , T.end() ) );
+  };
+ for( int n = 1 ; n <= 4 ; ++n ) {
+  std::vector< std::pair< int , int > > A;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = 0 ; v < n ; ++v )
+    if( u != v ) A.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << A.size() ) ; ++mask ) {
+   ListGraph<> h( n , true );
+   for( std::size_t i = 0 ; i < A.size() ; ++i )
+    if( mask & ( 1u << i ) ) h.insertEdge( A[ i ].first , A[ i ].second );
+   check( h , n );
+   }
+  }
+ std::mt19937 g( 11 );
+ for( int it = 0 ; it < 3000 ; ++it ) {
+  const int n = 5 + it % 3;
+  ListGraph<> h( n , true );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = 0 ; v < n ; ++v )
+    if( ( u != v ) && ( g() % 3 == 0 ) ) h.insertEdge( u , v );
+  if( it % 5 == 0 ) h.deleteNode( int( g() % unsigned( n ) ) );
+  check( h , n );
+  const auto T = sccTarjan( h ) , P = sccPearce( h );
+  for( int u = 0 ; u < n ; ++u )
+   CHECK( ( T[ u ] == 0 ) == ! h.hasNode( u ) && ( P[ u ] == 0 ) ==
+          ! h.hasNode( u ) );
+  }
+
+ // the edges: no node, no edge, an unoriented graph (its connected
+ // components), parallel arcs, the chain of 10^6 nodes (numbered along
+ // it) and the same chain closed
+ CHECK( sccTarjan( ListGraph<>( 0 ) ).empty() &&
+        sccPearce( ListGraph<>( 0 ) ).empty() );
+ auto e = sccPearce( ListGraph<>( 4 ) );
+ std::sort( e.begin() , e.end() );
+ CHECK( e == std::vector< int >( { 1 , 2 , 3 , 4 } ) );
+ ListGraph<> u( 6 , false );
+ u.insertEdge( 0 , 3 ); u.insertEdge( 3 , 5 ); u.insertEdge( 1 , 2 );
+ CHECK( samePartition( sccTarjan( u ) , cc( u ) ) &&
+        samePartition( sccPearce( u ) , cc( u ) ) );
+ const StaticGraph<> par( 3 , std::vector< std::pair< int , int > >( {
+                          { 0 , 1 } , { 0 , 1 } , { 1 , 0 } , { 1 , 2 } ,
+                          { 1 , 2 } } ) , true );
+ CHECK( sccTarjan( par ) == std::vector< int >( { 1 , 1 , 2 } ) &&
+        sccPearce( par ) == std::vector< int >( { 1 , 1 , 2 } ) );
+ const int N = 1000000;
+ std::vector< std::pair< int , int > > C;
+ for( int v = 0 ; v + 1 < N ; ++v )
+  C.emplace_back( v , v + 1 );
+ const StaticGraph<> chain( N , C , true );
+ const auto TC = sccTarjan( chain ) , PC = sccPearce( chain );
+ bool along = true;
+ for( int v = 0 ; v < N ; ++v )
+  along = along && ( TC[ v ] == v + 1 ) && ( PC[ v ] == v + 1 );
+ CHECK( along );
+ C.emplace_back( N - 1 , 0 );
+ const StaticGraph<> ring( N , C , true );
+ const auto TR = sccTarjan( ring ) , PR = sccPearce( ring );
+ CHECK( std::all_of( TR.begin() , TR.end() , []( int x ) { return( x == 1 ); }
+                     ) && TR == PR );
+
+ // random large graphs against Kosaraju: sparse ones, with many small
+ // components and a giant one, and denser ones
+ for( int it = 0 ; it < 4 ; ++it ) {
+  const int n = 100000 , m = ( it + 1 ) * n / 2 + n / 3;
+  std::vector< std::pair< int , int > > E;
+  while( int( E.size() ) < m ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b ) E.emplace_back( a , b );
+   }
+  const StaticGraph<> h( n , E , true );
+  const auto K = scc( h ) , T = sccTarjan( h ) , P = sccPearce( h );
+  CHECK( samePartition( K , T ) && samePartition( K , P ) );
+  }
+ }
+
+/// whether the m edges E, oriented or not, have a trail that uses each of
+/// them once from s (any start if s = -1), closed if asked, by backtracking
+bool trailExists( int n , const std::vector< std::pair< int , int > > & E ,
+                  bool directed , int s , bool closed )
+{
+ if( E.empty() )
+  return( true );
+ std::vector< bool > used( E.size() , false );
+ std::function< bool( int , int , std::size_t ) > go = [ & ]( int start ,
+                                                    int u , std::size_t k ) {
+  if( k == E.size() )
+   return( ! closed || ( u == start ) );
+  for( std::size_t e = 0 ; e < E.size() ; ++e ) {
+   if( used[ e ] )
+    continue;
+   int v = -1;
+   if( E[ e ].first == u ) v = E[ e ].second;
+   else if( ! directed && ( E[ e ].second == u ) ) v = E[ e ].first;
+   if( v < 0 )
+    continue;
+   used[ e ] = true;
+   const bool ok = go( start , v , k + 1 );
+   used[ e ] = false;
+   if( ok )
+    return( true );
+   }
+  return( false );
+  };
+ for( int a = 0 ; a < n ; ++a )
+  if( ( ( s == -1 ) || ( s == a ) ) && go( a , a , 0 ) )
+   return( true );
+ return( false );
+ }
+
+// the Eulerian trails, open and closed, of oriented and unoriented graphs
+// against a backtracking on every graph of up to 4 nodes (oriented) and 5
+// (unoriented) and on random multigraphs of parallel edges: eulerianTrail()
+// with and without a start, eulerianCycle(), isEulerianTrail() on what
+// they give; the walks on random Eulerian graphs of 10^5 nodes and 10^6
+// edges, and on paths of 10^6 nodes, open and closed, oriented or not
+ADS_TEST( "euler-trails" )
+{
+ using EL = std::vector< std::pair< int , int > >;
+ auto check = [ & ]( const auto & h , int n , const EL & E , bool d ) {
+  const auto T = eulerianTrail( h );
+  CHECK( T.has_value() == trailExists( n , E , d , -1 , false ) );
+  if( T ) CHECK( isEulerianTrail( h , *T ) );
+  const auto C = eulerianCycle( h );
+  CHECK( C.has_value() == trailExists( n , E , d , -1 , true ) );
+  if( C ) CHECK( isEulerianCycle( h , *C ) && isEulerianTrail( h , *C ) );
+  if( C && ! E.empty() ) CHECK( T && T->front() == T->back() );
+  for( int s = 0 ; s < n ; ++s ) {
+   const auto S = eulerianTrail( h , s );
+   CHECK( S.has_value() == ( trailExists( n , E , d , s , false ) &&
+          ( E.empty() || std::any_of( E.begin() , E.end() , [ & ]( auto e ) {
+           return( e.first == s || ( ! d && e.second == s ) ); } ) ) ) );
+   if( S ) CHECK( isEulerianTrail( h , *S ) &&
+                  ( S->empty() || S->front() == s ) );
+   }
+  };
+ for( bool d : { true , false } )
+  for( int n = 1 ; n <= ( d ? 4 : 5 ) ; ++n ) {
+   EL A;
+   for( int u = 0 ; u < n ; ++u )
+    for( int v = d ? 0 : u + 1 ; v < n ; ++v )
+     if( u != v ) A.emplace_back( u , v );
+   for( unsigned mask = 0 ; mask < ( 1u << A.size() ) ; ++mask ) {
+    ListGraph<> h( n , d );
+    EL E;
+    for( std::size_t i = 0 ; i < A.size() ; ++i )
+     if( mask & ( 1u << i ) ) {
+      h.insertEdge( A[ i ].first , A[ i ].second );
+      E.push_back( A[ i ] );
+      }
+    check( h , n , E , d );
+    }
+   }
+ std::mt19937 g( 17 );
+ for( int it = 0 ; it < 3000 ; ++it ) {
+  const bool d = it % 2 == 0;
+  const int n = 2 + it % 3 , m = int( g() % 7 );
+  EL E;
+  while( int( E.size() ) < m ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b ) E.emplace_back( a , b );
+   }
+  const StaticGraph<> h( n , E , d );
+  check( h , n , E , d );
+  }
+
+ // the edges: an isolated node beside a cycle, a start with no edge, the
+ // unoriented triangle with a tail (the trail from an odd node), the
+ // checkers on a wrong trail, a repeated edge and a reversed arc
+ ListGraph<> u( 5 , false );
+ u.insertEdge( 0 , 1 ); u.insertEdge( 1 , 2 ); u.insertEdge( 2 , 0 );
+ CHECK( eulerianCycle( u ) && eulerianCycle( u )->size() == 4 );
+ CHECK( ! eulerianTrail( u , 4 ) && eulerianTrail( u , 1 ) );
+ u.insertEdge( 2 , 3 );
+ CHECK( ! eulerianCycle( u ) && ! eulerianTrail( u , 0 ) );
+ const auto ut = eulerianTrail( u );
+ CHECK( ut && ut->front() == 2 && ut->back() == 3 );
+ CHECK( eulerianTrail( u , 3 ) && eulerianTrail( u , 3 )->back() == 2 );
+ CHECK( isEulerianTrail( u , { 3 , 2 , 1 , 0 , 2 } ) &&
+        ! isEulerianTrail( u , { 3 , 2 , 1 , 0 } ) &&
+        ! isEulerianTrail( u , { 3 , 2 , 1 , 2 , 0 } ) &&
+        ! isEulerianCycle( u , { 3 , 2 , 1 , 0 , 2 } ) );
+ ListGraph<> a( 3 , true );
+ a.insertEdge( 0 , 1 ); a.insertEdge( 1 , 2 );
+ CHECK( eulerianTrail( a ) == std::vector< int >( { 0 , 1 , 2 } ) );
+ CHECK( ! eulerianTrail( a , 1 ) && ! isEulerianTrail( a , { 2 , 1 , 0 } ) );
+
+ // large: random closed walks glued into an Eulerian graph, then one edge
+ // removed (an open trail between its ends); paths of 10^6 nodes
+ for( bool d : { true , false } ) {
+  const int n = 100000 , m = 1000000;
+  EL E;
+  int at = 0;
+  while( int( E.size() ) < m - 1 ) {
+   const int v = int( g() % unsigned( n ) );
+   if( v != at ) { E.emplace_back( at , v ); at = v; }
+   }
+  if( at != 0 ) E.emplace_back( at , 0 );
+  const StaticGraph<> h( n , E , d );
+  const auto C = eulerianCycle( h );
+  CHECK( C && C->size() == E.size() + 1 && isEulerianCycle( h , *C ) );
+  const auto [ x , y ] = E[ E.size() / 2 ];
+  E.erase( E.begin() + E.size() / 2 );
+  const StaticGraph<> o( n , E , d );
+  const auto T = eulerianTrail( o );
+  CHECK( T && T->size() == E.size() + 1 && isEulerianTrail( o , *T ) &&
+         ! eulerianCycle( o ) );
+  CHECK( ( T->front() == y && T->back() == x ) ||
+         ( ! d && T->front() == x && T->back() == y ) );
+  EL P;
+  const int N = 1000000;
+  for( int v = 0 ; v + 1 < N ; ++v ) P.emplace_back( v , v + 1 );
+  const StaticGraph<> path( N , P , d );
+  const auto pt = eulerianTrail( path , 0 );
+  CHECK( pt && int( pt->size() ) == N && pt->back() == N - 1 );
+  P.emplace_back( N - 1 , 0 );
+  const StaticGraph<> ring( N , P , d );
+  CHECK( eulerianCycle( ring ) && int( eulerianCycle( ring )->size() ) ==
+         N + 1 );
+  }
+ }
+
+/// the size of a largest matching of the graph of n <= 20 nodes and the
+/// adjacency masks N, by the dynamic programming on the subsets: the least
+/// node of a set is left out or matched to a neighbour in the set
+int matchingSize( int n , const std::vector< unsigned > & N )
+{
+ std::vector< int > f( std::size_t( 1 ) << n , 0 );
+ for( unsigned S = 1 ; S < ( 1u << n ) ; ++S ) {
+  const int u = std::countr_zero( S );
+  const unsigned R = S & ~( 1u << u );
+  int best = f[ R ];
+  for( unsigned T = R & N[ u ] ; T ; T &= T - 1 )
+   best = std::max( best , 1 + f[ R & ~( 1u << std::countr_zero( T ) ) ] );
+  f[ S ] = best;
+  }
+ return( f[ ( 1u << n ) - 1 ] );
+ }
+
+/// the size of the matching of mates M on g, checked: symmetric, on edges,
+/// NIL on the names that are not nodes
+template< class G >
+int checkedSize( const G & g , const std::vector< int > & M )
+{
+ CHECK( int( M.size() ) == g.bound() );
+ int k = 0;
+ for( int u = 0 ; u < g.bound() ; ++u ) {
+  if( M[ u ] == NIL )
+   continue;
+  CHECK( g.hasNode( u ) && M[ M[ u ] ] == u );
+  const auto A = g.adj( u );
+  CHECK( std::find( A.begin() , A.end() , M[ u ] ) != A.end() );
+  ++k;
+  }
+ return( k / 2 );
+ }
+
+// the maximum matching of a general graph by the blossoms of Edmonds
+// against the dynamic programming on the subsets on every graph of up to 6
+// nodes and on random ones of up to 16, against the branch and bound of
+// branchAndBoundMatching() with unit weights, against the maximum flow on
+// bipartite graphs of thousands of nodes; the graphs that make blossoms
+// within blossoms (the complete graphs, the Petersen graph, chains of
+// triangles and of pentagons), a deleted node, a path of 10^6 nodes,
+// parallel edges, and an oriented graph refused
+ADS_TEST( "blossom-matching" )
+{
+ auto check = [ & ]( const auto & h , int n ) {
+  std::vector< unsigned > N( n , 0 );
+  for( int u : h.V() )
+   h.forEachAdj( u , [ & ]( int v ) { N[ u ] |= 1u << v; } );
+  for( int u = 0 ; u < n ; ++u )
+   if( ! h.hasNode( u ) )
+    for( auto & x : N ) x &= ~( 1u << u );
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
+         matchingSize( n , N ) );
+  };
+ for( int n = 1 ; n <= 6 ; ++n ) {
+  std::vector< std::pair< int , int > > P;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v ) P.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << P.size() ) ; ++mask ) {
+   ListGraph<> h( n , false );
+   for( std::size_t i = 0 ; i < P.size() ; ++i )
+    if( mask & ( 1u << i ) ) h.insertEdge( P[ i ].first , P[ i ].second );
+   check( h , n );
+   }
+  }
+ std::mt19937 g( 23 );
+ for( int it = 0 ; it < 4000 ; ++it ) {
+  const int n = 7 + it % 10;
+  const unsigned p = 1 + g() % 6;
+  ListGraph<> h( n , false );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 10 < p ) h.insertEdge( u , v );
+  if( it % 7 == 0 ) h.deleteNode( int( g() % unsigned( n ) ) );
+  check( h , n );
+  }
+ for( int it = 0 ; it < 200 ; ++it ) {          // the branch and bound
+  const int n = 20 + it % 11;
+  std::vector< std::tuple< int , int , long long > > E;
+  ListGraph<> h( n , false );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 8 == 0 ) {
+     h.insertEdge( u , v );
+     E.emplace_back( u , v , 1 );
+     }
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
+         branchAndBoundMatching( n , E ).first );
+  }
+ for( int it = 0 ; it < 6 ; ++it ) {            // bipartiteMatching()
+  const int p = 2000 , q = 1500 + 300 * it;   // (an audit per edge added
+                                               // to the network of flows)
+  std::vector< std::pair< int , int > > B , E;
+  for( int k = 0 ; k < 2 * p + it * p / 2 ; ++k ) {
+   const int i = int( g() % p ) , j = int( g() % unsigned( q ) );
+   B.emplace_back( i , j );
+   E.emplace_back( i , p + j );
+   }
+  const StaticGraph<> h( p + q , E , false );
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
+         int( bipartiteMatching( p , q , B ).size() ) );
+  }
+
+ // blossoms within blossoms: the complete graphs, the Petersen graph,
+ // chains of triangles and pentagons joined by an edge (a perfect matching
+ // only through the blossoms), odd cycles sharing a node
+ for( int n : { 2 , 3 , 9 , 64 , 101 } ) {
+  ListGraph<> k( n , false );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v ) k.insertEdge( u , v );
+  CHECK( checkedSize( k , maxCardinalityMatching( k ) ) == n / 2 );
+  }
+ ListGraph<> pet( 10 , false );
+ for( int i = 0 ; i < 5 ; ++i ) {
+  pet.insertEdge( i , ( i + 1 ) % 5 );
+  pet.insertEdge( 5 + i , 5 + ( i + 2 ) % 5 );
+  pet.insertEdge( i , 5 + i );
+  }
+ CHECK( checkedSize( pet , maxCardinalityMatching( pet ) ) == 5 );
+ for( int c : { 3 , 5 } ) {
+  const int K = 2000;
+  std::vector< std::pair< int , int > > E;
+  for( int b = 0 ; b < K ; ++b ) {
+   for( int i = 0 ; i < c ; ++i )
+    E.emplace_back( b * c + i , b * c + ( i + 1 ) % c );
+   if( b % 2 == 1 )
+    E.emplace_back( ( b - 1 ) * c + 1 , b * c + 1 );
+   }
+  const StaticGraph<> h( K * c , E , false );
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) == K * c / 2 );
+  }
+ ListGraph<> star( 9 , false );                 // four triangles on node 0
+ for( int t = 0 ; t < 4 ; ++t ) {
+  star.insertEdge( 0 , 1 + 2 * t );
+  star.insertEdge( 0 , 2 + 2 * t );
+  star.insertEdge( 1 + 2 * t , 2 + 2 * t );
+  }
+ CHECK( checkedSize( star , maxCardinalityMatching( star ) ) == 4 );
+ const int N = 1000000;
+ std::vector< std::pair< int , int > > P;
+ for( int v = 0 ; v + 1 < N ; ++v ) P.emplace_back( v , v + 1 );
+ P.emplace_back( 0 , 1 );                       // parallel
+ const StaticGraph<> path( N , P , false );
+ CHECK( checkedSize( path , maxCardinalityMatching( path ) ) == N / 2 );
+ CHECK( maxCardinalityMatching( ListGraph<>( 0 , false ) ).empty() );
+ CHECK( maxCardinalityMatching( ListGraph<>( 3 , false ) ) ==
+        std::vector< int >( 3 , NIL ) );
+ CHECK_THROWS( maxCardinalityMatching( ListGraph<>( 3 , true ) ) ,
+               contract_violation );
+ }
+
+/// the largest ( size , weight ) of a matching of the edges E of n <= 16
+/// nodes, by size first if card and by weight alone (edges of weight > 0)
+/// otherwise, by the dynamic programming on the subsets
+template< class W >
+std::pair< int , W > bestMatching( int n ,
+                       const std::vector< std::tuple< int , int , W > > & E ,
+                       bool card )
+{
+ std::vector< std::vector< std::pair< int , W > > > A( n );
+ for( const auto & [ u , v , w ] : E )
+  if( card || ( W( 0 ) < w ) ) {
+   A[ std::min( u , v ) ].emplace_back( std::max( u , v ) , w );
+   }
+ auto better = [ & ]( const std::pair< int , W > & a ,
+                      const std::pair< int , W > & b ) {
+  return( card ? a > b : a.second > b.second );
+  };
+ std::vector< std::pair< int , W > > f( std::size_t( 1 ) << n ,
+                                        { 0 , W( 0 ) } );
+ for( unsigned S = 1 ; S < ( 1u << n ) ; ++S ) {
+  const int u = std::countr_zero( S );
+  const unsigned R = S & ~( 1u << u );
+  auto best = f[ R ];
+  for( const auto & [ v , w ] : A[ u ] )
+   if( R & ( 1u << v ) ) {
+    const auto & g = f[ R & ~( 1u << v ) ];
+    const std::pair< int , W > c( g.first + 1 , g.second + w );
+    if( better( c , best ) ) best = c;
+    }
+  f[ S ] = best;
+  }
+ return( f[ ( 1u << n ) - 1 ] );
+ }
+
+/// the ( size , weight ) of the matching M of the edges E, checked: no two
+/// edges with an end in common, the places increasing
+template< class W >
+std::pair< int , W > checkedMatching( int n ,
+                       const std::vector< std::tuple< int , int , W > > & E ,
+                       const std::pair< W , std::vector< std::size_t > > & M )
+{
+ std::vector< bool > end( n , false );
+ W sum( 0 );
+ CHECK( std::is_sorted( M.second.begin() , M.second.end() ) );
+ for( std::size_t e : M.second ) {
+  CHECK( e < E.size() );
+  const auto & [ u , v , w ] = E[ e ];
+  CHECK( ! end[ u ] && ! end[ v ] );
+  end[ u ] = end[ v ] = true;
+  sum += w;
+  }
+ CHECK( sum == M.first );
+ return( std::pair( int( M.second.size() ) , sum ) );
+ }
+
+// the matching of largest weight, and of largest weight among those of
+// largest size, of a general graph by the primal-dual blossoms of Edmonds,
+// whose duals the audits check, against the dynamic programming on the
+// subsets on every graph of up to 5 nodes with random weights (negative
+// ones too) and on random graphs of up to 14 nodes with weights from
+// narrow (many ties) to wide ranges, against the branch and bound, against
+// the assignment on complete bipartite graphs, against the blossoms of
+// maxCardinalityMatching() with unit weights on large graphs, on weights
+// of type double, on parallel edges and on the edges of the contracts
+ADS_TEST( "weighted-blossom" )
+{
+ using WE = std::vector< std::tuple< int , int , long long > >;
+ std::mt19937 g( 29 );
+ auto check = [ & ]( int n , const WE & E ) {
+  const auto M = maxWeightMatching( n , E );
+  CHECK( checkedMatching( n , E , M ).second ==
+         bestMatching( n , E , false ).second );
+  const auto C = maxWeightMatching( n , E , true );
+  CHECK( checkedMatching( n , E , C ) == bestMatching( n , E , true ) );
+  };
+ for( int n = 1 ; n <= 5 ; ++n ) {
+  std::vector< std::pair< int , int > > P;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v ) P.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << P.size() ) ; ++mask )
+   for( int draw = 0 ; draw < 4 ; ++draw ) {
+    WE E;
+    for( std::size_t i = 0 ; i < P.size() ; ++i )
+     if( mask & ( 1u << i ) )
+      E.emplace_back( P[ i ].first , P[ i ].second ,
+                      ( long long )( g() % 13 ) - 3 );
+    check( n , E );
+    }
+  }
+ for( int it = 0 ; it < 3000 ; ++it ) {
+  const int n = 6 + it % 9;
+  const long long range[] = { 2 , 5 , 100 , 1000000 };
+  const long long R = range[ it % 4 ];
+  WE E;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 3 == 0 )
+     E.emplace_back( u , v , 1 + ( long long )( g() % R ) -
+                             ( it % 8 == 0 ? R / 2 : 0 ) );
+  if( it % 5 == 0 && ! E.empty() )                       // parallel
+   E.push_back( E[ g() % E.size() ] );
+  check( n , E );
+  if( n <= 10 )
+   CHECK( maxWeightMatching( n , E ).first ==
+          branchAndBoundMatching( n , E ).first );
+  }
+
+ for( int it = 0 ; it < 300 ; ++it ) {          // the branch and bound
+  const int n = 16 + it % 9;
+  WE E;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 6 == 0 )
+     E.emplace_back( u , v , 1 + ( long long )( g() % ( it % 2 ? 9 : 999 ) ) );
+  CHECK( checkedMatching( n , E , maxWeightMatching( n , E ) ).second ==
+         branchAndBoundMatching( n , E ).first );
+  }
+
+ // weights of type double and of type int, against the same programming
+ for( int it = 0 ; it < 300 ; ++it ) {
+  const int n = 4 + it % 9;
+  std::vector< std::tuple< int , int , double > > D;
+  std::vector< std::tuple< int , int , int > > I;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 2 == 0 ) {
+     const int w = int( g() % 64 );
+     D.emplace_back( u , v , w * 0.25 );          // exact in binary
+     I.emplace_back( u , v , w );
+     }
+  CHECK( maxWeightMatching( n , D ).first ==
+         bestMatching( n , D , false ).second );
+  CHECK( maxWeightMatching( n , I , true ).first ==
+         bestMatching( n , I , true ).second );
+  }
+
+ // complete bipartite graphs: the perfect matching of largest weight is
+ // the assignment of least cost with the weights negated
+ for( int k : { 1 , 2 , 7 , 40 , 150 } ) {
+  WE E;
+  std::vector< long long > C( std::size_t( k ) * std::size_t( k ) );
+  for( int i = 0 ; i < k ; ++i )
+   for( int j = 0 ; j < k ; ++j ) {
+    const long long w = 1 + ( long long )( g() % 1000000 );
+    E.emplace_back( i , k + j , w );
+    C[ std::size_t( i ) * std::size_t( k ) + std::size_t( j ) ] = - w;
+    }
+  Assignment< long long > A( k , C );
+  const auto M = maxWeightMatching( 2 * k , E , true );
+  CHECK( int( M.second.size() ) == k && M.first == - A.total() );
+  CHECK( maxWeightMatching( 2 * k , E ).first == M.first );
+  }
+
+ // large sparse graphs of unit weights: the size of the blossoms of
+ // maxCardinalityMatching(), for both kinds of the weighted one
+ for( int it = 0 ; it < 3 ; ++it ) {
+  const int n = 1500 + 500 * it , m = 3 * n;
+  WE E;
+  std::vector< std::pair< int , int > > P;
+  while( int( E.size() ) < m ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b ) { E.emplace_back( a , b , 1 ); P.emplace_back( a , b ); }
+   }
+  const StaticGraph<> h( n , P , false );
+  const int c = checkedSize( h , maxCardinalityMatching( h ) );
+  CHECK( maxWeightMatching( n , E ).first == c &&
+         maxWeightMatching( n , E , true ).first == c );
+  }
+
+ // the edges: no node, no edge, light edges only (none taken, unless the
+ // size comes first), a triangle, a path where the heaviest edge must be
+ // left, the contracts
+ CHECK( maxWeightMatching( 0 , WE{} ).first == 0 &&
+        maxWeightMatching( 0 , WE{} , true ).second.empty() );
+ CHECK( maxWeightMatching( 3 , WE{} ).second.empty() );
+ const WE light = { { 0 , 1 , 0 } , { 2 , 3 , -4 } };
+ CHECK( maxWeightMatching( 4 , light ).second.empty() );
+ CHECK( maxWeightMatching( 4 , light , true ) ==
+        std::pair( -4LL , std::vector< std::size_t >( { 0 , 1 } ) ) );
+ const WE path = { { 0 , 1 , 5 } , { 1 , 2 , 8 } , { 2 , 3 , 5 } };
+ CHECK( maxWeightMatching( 4 , path ) ==
+        std::pair( 10LL , std::vector< std::size_t >( { 0 , 2 } ) ) );
+ const WE tri = { { 0 , 1 , 6 } , { 1 , 2 , 7 } , { 0 , 2 , 5 } ,
+                  { 2 , 3 , 1 } };
+ CHECK( maxWeightMatching( 4 , tri ).first == 7 &&
+        maxWeightMatching( 4 , tri , true ).first == 7 );
+ CHECK_THROWS( maxWeightMatching( -1 , WE{} ) , contract_violation );
+ CHECK_THROWS( maxWeightMatching( 2 , WE{ { 0 , 2 , 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( maxWeightMatching( 2 , WE{ { 1 , 1 , 1 } } ) ,
+               contract_violation );
  }
 
 }  // end( namespace )

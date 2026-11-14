@@ -396,7 +396,7 @@ ADS_TEST( "max-flow" )
  }
 
 // the Eulerian cycles of random unions of cycles, audited; an unoriented
-// graph refused
+// graph with no edge, and a start that is not a node refused
 ADS_TEST( "eulerian" )
 {
  std::mt19937 g( 8 );
@@ -419,7 +419,8 @@ ADS_TEST( "eulerian" )
   if( c ) CHECK( isEulerianCycle( h , *c ) );
   }
  ListGraph<> u( 3 , false );
- CHECK_THROWS( (void) eulerianCycle( u ) , contract_violation );
+ CHECK( eulerianCycle( u )->empty() );
+ CHECK_THROWS( (void) eulerianTrail( u , 3 ) , contract_violation );
  ListGraph<> d( 3 );
  d.insertEdge( 0 , 1 );
  d.insertEdge( 1 , 0 );

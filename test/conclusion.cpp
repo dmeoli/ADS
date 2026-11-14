@@ -236,7 +236,7 @@ ADS_TEST( "table19.1.matching" )
 // each node once, and a cycle of n nodes has both; the empty Eulerian
 // cycle of a graph with no edge, two opposite arcs, two disjoint cycles
 // (none)
-// then joined, a cycle of 10^5 nodes, an unoriented graph refused; no
+// then joined, a cycle of 10^5 nodes, an unoriented graph with no edge; no
 // Hamiltonian circuit below 3 nodes, even with self-loops, or on a path
 ADS_TEST( "table19.1.circuits" )
 {
@@ -280,8 +280,7 @@ ADS_TEST( "table19.1.circuits" )
  for( int u = 0 ; u < m ; ++u ) R.insertEdge( u , ( u + 1 ) % m );
  const auto er = eulerianCycle( R );
  CHECK( er && int( er->size() ) == m + 1 );
- CHECK_THROWS( eulerianCycle( ListGraph< int >( 2 , false ) ) ,
-               contract_violation );
+ CHECK( eulerianCycle( ListGraph< int >( 2 , false ) )->empty() );
  for( int n : { 0 , 1 , 2 } )                    // no circuit below 3
   CHECK( ! hamiltonianCircuit( Adjacency( n , std::vector< bool >( n ,
                                                                  true ) ) ) );

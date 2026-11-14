@@ -9,6 +9,63 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- maxWeightMatching() in graph/Matching.h is now the primal-dual algorithm
+  of Edmonds on the blossoms in O( n^3 ) (Gabow and Lawler, in the form of
+  Galil's survey), with integer arithmetic for integer weights and, with
+  maxCardinality, the matching of largest weight among those of largest
+  size (a perfect matching of least cost with the costs negated); at the
+  level of the audits the duals certify the optimum (nonnegative slacks
+  and duals, tight matched edges, full blossoms, free nodes of dual 0); the
+  exponential branch and bound that it was is kept as
+  branchAndBoundMatching(), an independent check; Edmonds' theorem and the
+  cost of the stages in the theory of the graphs, the test
+  engineered_graph weighted-blossom (every graph of up to 5 nodes and
+  random ones of up to 14 against the dynamic programming on the subsets,
+  the branch and bound, the assignment on complete bipartite graphs, the
+  blossoms of maxCardinalityMatching()), the benchmark wmatching of
+  bench/graphs.cpp against maximum_weighted_matching() of Boost and a row
+  of the blossoms in the benchmark assign of bench/assignment.cpp
+
+- maxCardinalityMatching() in graph/Matching.h, a matching of largest
+  size of a general graph by the blossoms of Edmonds, the blossoms kept as
+  the sets of a union-find that knows their bases and the paths rebuilt
+  from the edges that closed them as in the labels of Gabow, the searches
+  started from a greedy matching and the trees of the failed ones left out:
+  O( n m alpha( m , n ) ) in all, within Gabow's O( n^3 ), where the
+  library had only the exponential branch and bound of maxWeightMatching();
+  Berge's and Edmonds' lemmas and the cost in the theory of the graphs,
+  the test engineered_graph blossom-matching (every graph of up to 6 nodes
+  and random ones of up to 16 against the dynamic programming on the
+  subsets, the branch and bound, bipartiteMatching(), nested blossoms, a
+  path of 10^6 nodes) and the benchmark matching of bench/graphs.cpp
+  against edmonds_maximum_cardinality_matching() of Boost
+
+- eulerianTrail() in graph/EulerianCycle.h, the Eulerian trail of an
+  oriented or unoriented graph, closed when there is a cycle and open
+  otherwise (from the node of excess 1, or from an odd node), with an
+  overload that starts it from a given node, and isEulerianTrail(); the
+  walk of Hierholzer on the incidences of the nodes, an unoriented edge
+  with one mark of use for its two arcs, in O( n + m ) with no visit for
+  the connection of the edges (a walk shorter than m tells it);
+  eulerianCycle() and isEulerianCycle() now take unoriented graphs too;
+  Euler's lemma for trails in the theory of the graphs, the test
+  engineered_graph euler-trails (every graph of up to 4 or 5 nodes and
+  random multigraphs against a backtracking, walks of 10^6 edges) and the
+  benchmark euler of bench/graphs.cpp
+
+- sccTarjan() and sccPearce() in graph/Visit.h, the strongly connected
+  components by one visit in depth and no transposed graph (Tarjan's
+  algorithm, and Pearce's variant with one integer and one bit per node),
+  iterative on a stack of the pairs (node, next arc) and on the rows of
+  the graph read in place when it keeps them (detail::Rows of Graph.h),
+  numbered as scc() in a topological order of the graph of the components,
+  which scc() now ensures at the level of the audits; the lemmas of the
+  roots and of the single integer in the theory of the graphs, the test
+  engineered_graph scc-one-pass (every oriented graph of up to 4 nodes
+  against the closure, random large ones against Kosaraju, chains of 10^6
+  nodes) and the two visits and strong_components() of Boost in the
+  benchmark scc of bench/graphs.cpp
+
 - the manual (manual/), one chapter for each area of include/ADS on the
   plan of manual/OUTLINE.md, in Markdown built by Pandoc into
   manual/ADS-manual.pdf and by MkDocs into the folder manual of the site,
