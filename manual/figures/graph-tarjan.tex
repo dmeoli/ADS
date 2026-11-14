@@ -1,0 +1,43 @@
+% The visit of sccTarjan() from 0 (sec. 14.5.5): by each node its order of
+% discovery dt and its low when it finishes, the edges of the tree of the
+% visit in violet and the roots of the three components, {6, 7} closed
+% first, then {3, 4, 5} and {0, 1, 2}, in violet. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (v0) at (0mm,0mm) {0};
+  \node[index] at (0mm,5.6mm) {1/1};
+  \node[vertex] (v1) at (20mm,0mm) {1};
+  \node[index] at (20mm,5.6mm) {2/1};
+  \node[vertex] (v2) at (10mm,-16mm) {2};
+  \node[index] at (10mm,-21.6mm) {3/1};
+  \node[vertex] (v3) at (44mm,0mm) {3};
+  \node[index] at (44mm,5.6mm) {6/4};
+  \node[vertex-touched] (v4) at (34mm,-16mm) {4};
+  \node[index] at (34mm,-21.6mm) {4/4};
+  \node[vertex] (v5) at (54mm,-16mm) {5};
+  \node[index] at (54mm,-21.6mm) {5/4};
+  \node[vertex-touched] (v6) at (74mm,-16mm) {6};
+  \node[index] at (74mm,-21.6mm) {7/7};
+  \node[vertex] (v7) at (94mm,-16mm) {7};
+  \node[index] at (94mm,-21.6mm) {8/7};
+  \draw[edge-touched,->,shorten >=0.6pt] (v0) to (v1);
+  \draw[edge-touched,->,shorten >=0.6pt] (v1) to (v2);
+  \draw[edge,->,shorten >=0.6pt] (v2) to (v0);
+  \draw[edge,->,shorten >=0.6pt] (v1) to (v3);
+  \draw[edge,->,shorten >=0.6pt] (v3) to (v4);
+  \draw[edge-touched,->,shorten >=0.6pt] (v4) to (v5);
+  \draw[edge-touched,->,shorten >=0.6pt] (v5) to (v3);
+  \draw[edge-touched,->,shorten >=0.6pt] (v5) to (v6);
+  \draw[edge-touched,->,bend left=25,shorten >=0.6pt] (v6) to (v7);
+  \draw[edge,->,bend left=25,shorten >=0.6pt] (v7) to (v6);
+  \draw[edge-touched,->,shorten >=0.6pt] (v2) to (v4);
+\end{tikzpicture}
+\end{document}

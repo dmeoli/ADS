@@ -1,0 +1,41 @@
+% A blossom shrunk by maxCardinalityMatching() (sec. 14.11.2): the tree of
+% the search from the free node r, the matched edges in violet, and the
+% edge [d, e] between two even nodes, which closes the odd cycle b, c, d,
+% e, f of base b; the cycle becomes one node B, and the edge [B, g] to the
+% free node g ends an augmenting path. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (r) at (0mm,0mm) {$r$};
+  \node[vertex] (a) at (14mm,0mm) {$a$};
+  \node[vertex-touched] (b) at (28mm,0mm) {$b$};
+  \node[vertex-touched] (c) at (38mm,10mm) {$c$};
+  \node[vertex-touched] (d) at (52mm,7mm) {$d$};
+  \node[vertex-touched] (e) at (52mm,-7mm) {$e$};
+  \node[vertex-touched] (f) at (38mm,-10mm) {$f$};
+  \node[vertex] (g) at (66mm,7mm) {$g$};
+  \draw[edge] (r) -- (a);
+  \draw[edge-touched] (a) -- (b);
+  \draw[edge] (b) -- (c);
+  \draw[edge-touched] (c) -- (d);
+  \draw[edge] (b) -- (f);
+  \draw[edge-touched] (f) -- (e);
+  \draw[edge] (d) -- (e);
+  \draw[edge] (d) -- (g);
+  \node[vertex] (r2) at (90mm,0mm) {$r$};
+  \node[vertex] (a2) at (104mm,0mm) {$a$};
+  \node[vertex-added] (B2) at (118mm,0mm) {$B$};
+  \node[vertex] (g2) at (132mm,7mm) {$g$};
+  \draw[edge] (r2) -- (a2);
+  \draw[edge-touched] (a2) -- (B2);
+  \draw[edge] (B2) -- (g2);
+  \draw[ptr] (70mm,-4mm) -- (84mm,-4mm);
+  \node[var] at (77mm,-8mm) {shrink};
+\end{tikzpicture}
+\end{document}

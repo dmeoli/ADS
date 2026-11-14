@@ -187,7 +187,7 @@ bool isEulerianCycle( const G & g , const std::vector< int > & c );
 /// 4 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ |c| - 1\ \textbf{do}
 ///     \cr
 /// 5 & \qquad \textbf{if}\ ( c_i , c_{i+1} ) \notin E\ \textbf{or}
-///     \text{it was used before }\ \textbf{then return false} \cr
+///     \ \text{it was used before }\ \textbf{then return false} \cr
 /// 6 & \qquad \text{mark } ( c_i , c_{i+1} ) \text{ used} \cr
 /// 7 & \quad \textbf{return true}
 /// \end{array}}

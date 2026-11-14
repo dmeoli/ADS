@@ -1,0 +1,26 @@
+% The open Eulerian trail of eulerianTrail() on an unoriented graph whose only
+% odd nodes are 2 and 3 (sec. 14.12): each edge with its place in the
+% trail 2, 1, 0, 3, 2, 4, 3, from one odd node to the other. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (v0) at (0mm,0mm) {0};
+  \node[vertex] (v1) at (20mm,0mm) {1};
+  \node[vertex-touched] (v2) at (20mm,18mm) {2};
+  \node[vertex-touched] (v3) at (0mm,18mm) {3};
+  \node[vertex] (v4) at (10mm,30mm) {4};
+  \draw[edge-touched,->,shorten >=0.6pt] (v2) -- node[index,auto,inner sep=1.2pt] {1} (v1);
+  \draw[edge-touched,->,shorten >=0.6pt] (v1) -- node[index,auto,inner sep=1.2pt] {2} (v0);
+  \draw[edge-touched,->,shorten >=0.6pt] (v0) -- node[index,auto,inner sep=1.2pt] {3} (v3);
+  \draw[edge-touched,->,shorten >=0.6pt] (v3) -- node[index,auto,inner sep=1.2pt] {4} (v2);
+  \draw[edge-touched,->,shorten >=0.6pt] (v2) -- node[index,auto,inner sep=1.2pt] {5} (v4);
+  \draw[edge-touched,->,shorten >=0.6pt] (v4) -- node[index,auto,inner sep=1.2pt] {6} (v3);
+\end{tikzpicture}
+\end{document}
