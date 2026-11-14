@@ -254,7 +254,12 @@
  follows (4) recursively. Finally, the partitions of a set are in bijection
  with their <em>restricted growth strings</em>, \f$ a_j \f$ the block of the
  item \f$ j \f$, the blocks numbered in the order of their least items, so
- that \f$ a_0 = 0 \f$ and \f$ a_j \le 1 + \max( a_0 , \ldots , a_{j-1} ) \f$;
+ that \f$ a_0 = 0 \f$ and \f$ a_j \le 1 + \max( a_0 , \ldots , a_{j-1} ) \f$,
+ whose lexicographic successor (`setPartitions()`) scans fewer than 2
+ places per string on the average, since the strings whose last \f$ r \f$
+ places open new blocks are \f$ \varpi_{n-r} \le 2^{-r} \varpi_n \f$ for
+ \f$ r \le n - 1 \f$ (since \f$ \varpi_k \ge 2 \varpi_{k-1} \f$ for
+ \f$ k \ge 2 \f$);
  and the strings of balanced parentheses, the words with as many opening as
  closing parentheses and no prefix with more closing than opening ones, are
  in bijection with the forests and with the binary trees of \f$ n \f$ nodes,
