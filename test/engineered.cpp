@@ -1044,6 +1044,23 @@ ADS_TEST( "arena" )
  CHECK( Counted::alive == 0 );
  }
 
+// the iterators of the arena stay valid across the appends of blocks,
+// which move the array of the vector of the blocks: an iterator taken on
+// the first object, and a constant one, read every object made after them
+ADS_TEST( "arena-iterators" )
+{
+ Arena< int > A( 1 );                          // a block per object
+ A.make( 7 );
+ const auto it = A.begin();
+ const Arena< int > & C = A;
+ const auto ct = C.cbegin();
+ for( int i = 1 ; i < 1000 ; ++i ) A.make( i );   // the vector reallocates
+ CHECK( *it == 7 && *ct == 7 && A.end() - it == 1000 );
+ bool same = true;
+ for( int i = 1 ; i < 1000 ; ++i ) same = same && ( it[ i ] == i );
+ CHECK( same && ( ct + 999 )[ 0 ] == 999 );
+ }
+
 // the pool: the slot freed last is the next one made, the blocks double up
 // to their limit and the objects keep their addresses across them, a long
 // random sequence of make() and free() against the set of the objects

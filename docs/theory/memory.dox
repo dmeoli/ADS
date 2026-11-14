@@ -172,10 +172,12 @@
  An <em>arena</em> (Hanson) gives the objects of one type from blocks, by a
  pointer bump, and frees them all at once with the arena; an object costs no
  header and no search, the objects made one after another are next to each
- other, and their addresses never change, which the parents of the nodes of
- a search rely on. A <em>pool</em> (`ObjectPool`) adds the free of one
- object: its slot goes at the head of a free list, the list AVAIL of
- section 2.2.3 of Knuth, and the next allocation takes it again, still in
+ other, and their addresses never change, which the parents of the nodes of a
+ search rely on; its iterators read a block through the vector of the blocks,
+ not through the array of that vector, which an append may move, so that they
+ too stay valid while the arena lives. A <em>pool</em> (`ObjectPool`) adds the
+ free of one object: its slot goes at the head of a free list, the list AVAIL
+ of section 2.2.3 of Knuth, and the next allocation takes it again, still in
  the cache. Its blocks double from 1 slot up to \f$ n \f$, so that a pool
  that has held at most \f$ k \f$ objects at once has at most
  \f$ 2 k + n \f$ slots, and the allocations of blocks are

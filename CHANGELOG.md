@@ -2555,6 +2555,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the iterators of Arena kept the array of the vector of the blocks, which
+  an append of a block moves, so that an iterator taken before a make() that
+  appended a block read freed memory, against the promise of the header;
+  they now hold the vector itself and stay valid while the arena lives, as
+  the header, the theory of the memory and the chapter of the manual say;
+  the test engineered arena-iterators
+
 - texts that disagreed with the code: the theory of the parallel
   algorithms said that the threads of gemm() share a packed panel of B,
   while each runs the blocked loops of the sequential product on its rows

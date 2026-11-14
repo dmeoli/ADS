@@ -308,10 +308,11 @@ nodes of a search, which keep a pointer to the node they come from). The
 arena also gives a random access iterator over the objects in the order
 in which they were made: the object of index $j$ is in the place
 $j \bmod n$ of the block $\lfloor j / n \rfloor$, and a new object only
-moves the end of the sequence. The iterators, however, read the vector of
-the blocks through its first element; hence, they stay valid only as long
-as no `make()` appends a block, since an append may move that vector, whereas the pointers that `make()` returns
-stay valid for the whole life of the arena. As a container in the sense of
+moves the end of the sequence. An iterator holds the vector of the blocks
+itself, not the array of its elements, which an append of a block may move,
+and it reads a block through that vector at each access; hence, the
+iterators stay valid for the whole life of the arena, as the pointers that
+`make()` returns do, whatever blocks are appended. As a container in the sense of
 the standard library, the arena has the types `value_type`,
 `size_type`, `difference_type`, `reference`, `const_reference`, `iterator`
 and `const_iterator` (the second a random access iterator over constant

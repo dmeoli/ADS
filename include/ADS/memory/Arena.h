@@ -107,13 +107,14 @@ class Arena {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // the objects made, in the order of `make()`, random access across the
- // blocks; their addresses do not change, so the iterators stay valid while
+ // blocks; an iterator holds the arena's vector of the blocks, not its
+ // array, which an append may move, so that the iterators stay valid while
  // the arena lives, and a new object only moves the end
 
  /// the iterator, on constant objects if `Const`
  template< bool Const >
  class Iterator {
-  using Blocks = T * const *;   // the blocks, never changed through it
+  using Blocks = const std::vector< T * > *;   // the vector of the blocks
 
   public:
   /// random access
@@ -129,7 +130,8 @@ class Arena {
 
   /// an iterator of no arena
   Iterator( void ) = default;
-  /// the object \f$ i \f$ of the blocks \f$ B \f$ of \f$ n \f$ objects each
+  /// the object \f$ i \f$ of the vector of the blocks \f$ B \f$, of
+  /// \f$ n \f$ objects each
   Iterator( Blocks B , std::size_t n , std::size_t i )
    : f_B( B ) , f_n( n ) , f_i( i ) {}
 
@@ -146,7 +148,7 @@ class Arena {
   /// \f$ j \bmod n \f$ of the block \f$ \lfloor j / n \rfloor \f$
   reference operator[]( difference_type k ) const {
    const std::size_t j = f_i + std::size_t( k );
-   return( f_B[ j / f_n ][ j % f_n ] );
+   return( ( *f_B )[ j / f_n ][ j % f_n ] );
    }
 
   /// the next object
@@ -205,22 +207,22 @@ class Arena {
 
  /// the first object made
  [[nodiscard]] iterator begin( void ) {
-  return( iterator( f_blocks.data() , f_n , 0 ) );
+  return( iterator( &f_blocks , f_n , 0 ) );
   }
 
  /// past the last object made
  [[nodiscard]] iterator end( void ) {
-  return( iterator( f_blocks.data() , f_n , f_size ) );
+  return( iterator( &f_blocks , f_n , f_size ) );
   }
 
  /// the first object made, constant
  [[nodiscard]] const_iterator begin( void ) const {
-  return( const_iterator( f_blocks.data() , f_n , 0 ) );
+  return( const_iterator( &f_blocks , f_n , 0 ) );
   }
 
  /// past the last object made, constant
  [[nodiscard]] const_iterator end( void ) const {
-  return( const_iterator( f_blocks.data() , f_n , f_size ) );
+  return( const_iterator( &f_blocks , f_n , f_size ) );
   }
 
  /// the first object made, constant
