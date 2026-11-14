@@ -155,17 +155,10 @@ both $i$ and $i - q$ are at most $n$ and never decrease and hence there are
 at most $2 n$ comparisons. By the same argument on $P$ against itself one bounds
 the computation of $F$. $\square$
 
-In the code, the scan takes the failure function $G$ that it follows at a
-mismatch separately from $F[ m ]$, which it follows after an occurrence, so
-that the same loop serves the strong variant below:
-
-```cpp
---8<-- "generated/StringMatching-failure.cpp"
-```
-
-```cpp
---8<-- "generated/StringMatching-kmp.cpp"
-```
+The function that line 4 of `kmp()` follows at a mismatch and the value
+$F[ m ]$ that line 6 follows after an occurrence are kept apart, so that
+the same loop serves the strong variant below, which changes only the
+former.
 
 Note that when $P[ F[ q ] ] = P[ q ]$, the comparison that (15.1) makes
 after a mismatch on $P[ q ]$ fails again. The strong failure function of Knuth
@@ -225,10 +218,6 @@ occurrence ends at $j$ when the bit $m - 1$ of $D$ is clear. The search
 takes $\Theta( n )$ operations on words after a preparation of
 $O( m + \sigma )$:
 
-```cpp
---8<-- "generated/StringMatching-shiftor.cpp"
-```
-
 --8<-- "generated/StringMatching-shiftOr.pseudo.md"
 
 **Z-function.** The Z-function of a string $S$ of $n$ symbols is
@@ -251,10 +240,6 @@ $S[ i .. ]$; when $Z[ i - l ] < r - i$ the mismatch that ends it lies
 inside the box too. Only the symbols past $r$ are then compared: each
 successful comparison moves $r$ forward, which happens at most $n$ times,
 and each $i$ has at most one failed comparison. $\square$
-
-```cpp
---8<-- "generated/StringMatching-zfunction.cpp"
-```
 
 --8<-- "generated/StringMatching-zFunction.pseudo.md"
 
@@ -460,14 +445,6 @@ search.
 --8<-- "generated/AhoCorasick-build.pseudo.md"
 
 --8<-- "generated/AhoCorasick-findAll.pseudo.md"
-
-```cpp
---8<-- "generated/AhoCorasick-build.cpp"
-```
-
-```cpp
---8<-- "generated/AhoCorasick-scan.cpp"
-```
 
 <span id="thm-15-2"></span>**Theorem 15.2.** *The automaton of $k$
 patterns of $M$ bytes takes $O( 256 \, M )$ time and space to build, and
@@ -768,15 +745,8 @@ By the lemma, the best occurrences end where the last row is smallest
 that gave the minimum, to the place where the occurrence starts
 ([Montresor 2025, exercise 13.1](Z-bibliography.md#ref-montresor2025)).
 [Table 15.3](15-string.md#tab-15-3) shows the table on a small example,
-and the code fills it row by row:
-
-```cpp
---8<-- "generated/ApproximateMatching-table.cpp"
-```
-
-```cpp
---8<-- "generated/ApproximateMatching-occurrence.cpp"
-```
+which `matchingTable()` fills row by row ([Algorithm
+15.6](15-string.md#alg-15-6)).
 
 <span id="tab-15-3"></span>**Table 15.3.** The table (15.10) of
 $P = \texttt{aba}$ against $T = \texttt{bacbab}$. The last row is smallest
@@ -844,10 +814,6 @@ shorter prefixes. $\square$
 solution back from the last entry in $O( m + n )$ steps, taking an equal
 pair of symbols whenever it meets one; `lcsMemo()` is the memoized version
 of the book, which solves only the subproblems it reaches:
-
-```cpp
---8<-- "generated/LongestCommonSubsequence-readback.cpp"
-```
 
 --8<-- "generated/LongestCommonSubsequence-lcsTable.pseudo.md"
 
@@ -1007,11 +973,7 @@ M_v \leftarrow P_h \wedge X_v .
 $$
 
 The carries of the one addition propagate the horizontal differences down
-the column, and the dozen operations have no branch:
-
-```cpp
---8<-- "generated/EditDistance-myers.cpp"
-```
+the column, and the dozen operations have no branch.
 
 A column thus costs $O( \lceil m / 64 \rceil )$ operations on words, and
 the distance $O( n \lceil m / 64 \rceil )$ time, against the
@@ -1036,11 +998,7 @@ transitions of [Landau and Vishkin 1989](Z-bibliography.md#ref-landau1989),
 the furthest reaching paths of [Myers 1986](Z-bibliography.md#ref-myers1986),
 and the wavefronts of [Marco-Sola et al.
 2021](Z-bibliography.md#ref-marcosola2021)). The slides compare 8 bytes at
-a time:
-
-```cpp
---8<-- "generated/EditDistance-diagonals.cpp"
-```
+a time.
 
 <span id="lem-15-12"></span>**Lemma 15.12.** *The rounds $h \le d$ of
 (15.14) compute the edit distance $d$ in $O( ( n + m ) d )$ time in the
@@ -1212,10 +1170,6 @@ $\mathit{Llcp}$ and $\mathit{Rlcp}$.
 
 --8<-- "generated/SuffixArray-boundLcp.pseudo.md"
 
-```cpp
---8<-- "generated/SuffixArray-boundlcp.cpp"
-```
-
 The class `SuffixArray` is built on the bytes of a `std::string_view`,
 which `toSymbols()` turns into the vector of integers `Symbols`, or on
 such a vector with its alphabet $[ 0 , K )$; in both cases $\mathit{SA}$
@@ -1252,10 +1206,6 @@ Computing the lcp of the suffixes in the order of the text, each from the
 value of the previous one less one, therefore decreases $h$ at most $n$
 times. Since $h \le n$, there are at most $2 n$ comparisons of symbols:
 
-```cpp
---8<-- "generated/SuffixArray-kasai.cpp"
-```
-
 --8<-- "generated/SuffixArray-lcpArray.pseudo.md"
 
 The longest common extension of two suffixes, $\mathrm{lce}( i , j )$, is
@@ -1283,10 +1233,6 @@ chapter 12 (which requires $n < 2^{32}$); hence $O( n )$ per round, and
 $O( n \log n )$ in all, or $O( n \log L )$ for $L$ the length of the
 longest repeated substring, since the ranks are all distinct after
 $\lceil \log_2 ( L + 1 ) \rceil$ rounds:
-
-```cpp
---8<-- "generated/SuffixArray-doubling.cpp"
-```
 
 --8<-- "generated/SuffixArray-suffixArrayDoubling.pseudo.md"
 
@@ -1369,11 +1315,7 @@ T( n ) \le T( n / 2 ) + O( n ) = O( n ) , \tag{15.18}
 $$
 
 with the smallest working space of the linear algorithms. The induction is
-a lambda of the code:
-
-```cpp
---8<-- "generated/SuffixArray-induce.cpp"
-```
+the procedure induce of [Algorithm 15.9](15-string.md#alg-15-9).
 
 <span id="alg-15-9"></span>**Algorithm 15.9.** The induced sorting
 (SA-IS) of [Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011), on
@@ -1712,11 +1654,8 @@ $\mathit{head}_{i-1}$ without its first symbol, which the *suffix link* of
 the node of $\mathit{head}_{i-1}$ gives. When that link is not set yet, it
 is found from the link of the parent by a *rescan* that compares only the
 first symbol of each edge (the string is known to be in the tree), and
-then a *scan* compares the symbols past it:
-
-```cpp
---8<-- "generated/SuffixTree-mccreight.cpp"
-```
+then a *scan* compares the symbols past it (the procedure mcCreight of the
+pseudocode above).
 
 <span id="thm-15-3"></span>**Theorem 15.3.** *McCreight's construction
 takes $O( n \log \sigma )$ time.*
@@ -1736,11 +1675,8 @@ $\mathit{SA}$ by SA-IS and $\mathit{LCP}$ by Kasai et al., and inserts the
 leaves in the order of $\mathit{SA}$: the leaf of rank $r$ climbs from the
 previous leaf, along the rightmost path, to the deepest node of string
 depth at most $\mathit{LCP}[ r - 1 ]$, and splits the edge below it when
-that depth is smaller.
-
-```cpp
---8<-- "generated/SuffixTree-fromsa.cpp"
-```
+that depth is smaller (the procedure fromSuffixArray of the
+same pseudocode).
 
 <span id="lem-15-20"></span>**Lemma 15.20.** *The construction from
 $\mathit{SA}$ and $\mathit{LCP}$ takes $O( n )$ time besides the two
@@ -1837,11 +1773,7 @@ $\mathit{len}( q ) = \mathit{len}( p ) + 1$, then $q$ is the new link;
 otherwise $q$ holds strings that now end at more places than its longer
 members, and it is *cloned* at the length $\mathit{len}( p ) + 1$, the
 transitions on $c$ that led to $q$ along the suffix path being redirected
-to the clone:
-
-```cpp
---8<-- "generated/SuffixAutomaton-extend.cpp"
-```
+to the clone.
 
 <span id="alg-15-11"></span>**Algorithm 15.11.** The online construction of
 the suffix automaton ([Blumer et al. 1985](Z-bibliography.md#ref-blumer1985);
@@ -1990,11 +1922,7 @@ groups of 64, each with the sparse table of the minima of its blocks, and
 the minima of the groups are in a sparse table of their own. The blocks
 strictly between those of $a$ and $b - 1$ are covered by two overlapping
 ranges of one group, or by those of two partial groups and of the groups
-between them:
-
-```cpp
---8<-- "generated/LongestCommonExtension-minimum.cpp"
-```
+between them.
 
 Every place that a query reads is known once the two ranks are, and the
 lines of the two blocks are requested with their words, and a query thus
@@ -2093,10 +2021,6 @@ $\hat s_i$ the rest of $s_i$ ([Figure 15.6](15-string.md#fig-15-6)).
 `frontDecode()` copies $\ell_i$ symbols of the string before and appends
 $\hat s_i$:
 
-```cpp
---8<-- "generated/FrontCoding-frontcode.cpp"
-```
-
 --8<-- "generated/FrontCoding-frontCode.pseudo.md"
 
 --8<-- "generated/FrontCoding-frontDecode.pseudo.md"
@@ -2106,10 +2030,6 @@ The length goes in the byte-aligned code of [Ferragina 2023, chapter
 $\ell$ padded to a whole number $k$ of bytes, with the first two bits of
 the padding giving $k - 1$, so that $\ell < 2^{30}$ takes 1 to 4 bytes,
 the most significant first:
-
-```cpp
---8<-- "generated/FrontCoding-encodelength.cpp"
-```
 
 --8<-- "generated/FrontCoding-encodeLength.pseudo.md"
 
@@ -2274,11 +2194,7 @@ longest palindrome about each of the $2 n - 1$ centres. It keeps the
 palindrome $[ l , r )$ found so far whose right end is the largest: a
 centre $i < r$ starts from the radius of its mirror $l + r - 1 - i$,
 capped at $r - i$, since the palindrome is symmetric, and compares only the
-items past $r$:
-
-```cpp
---8<-- "generated/Palindromes-manacher.cpp"
-```
+items past $r$.
 
 <span id="lem-15-26"></span>**Lemma 15.26.** *The algorithm of Manacher
 takes $\Theta( n )$ time and space.*
@@ -2383,15 +2299,7 @@ $s_2 = w^h w'$ for a Lyndon word $w$ and a proper prefix $w'$ of $w$. It
 compares the next symbol $c$ of $s_3$ with the one $| w |$ places before
 it: if equal, $w'$ grows; if larger, $s_2 c$ is a Lyndon word and becomes
 $w$; if smaller, the $h$ copies of $w$ are factors of (15.24) and the scan
-resumes after them ([Algorithm 15.13](15-string.md#alg-15-13)):
-
-```cpp
---8<-- "generated/Lyndon-duval.cpp"
-```
-
-```cpp
---8<-- "generated/Lyndon-lyndon.cpp"
-```
+resumes after them ([Algorithm 15.13](15-string.md#alg-15-13)).
 
 <span id="alg-15-13"></span>**Algorithm 15.13.** The factorization of
 [Duval 1983](Z-bibliography.md#ref-duval1983) and the least rotation.
@@ -2522,11 +2430,8 @@ all the intervals of one length $d$ telescope to
 $K[ n + 2 - d ][ n + 1 ] - K[ 0 ][ d - 1 ] + O( n ) = O( n )$, and there
 are $O( n )$ lengths. $\square$
 
-The code takes the largest optimal split by the test $\le$:
-
-```cpp
---8<-- "generated/StringBreaking-knuth.cpp"
-```
+Line 7 takes the largest optimal split, as the code does by the test
+$\le$:
 
 --8<-- "generated/StringBreaking-stringBreakingCost.pseudo.md"
 
@@ -2548,10 +2453,6 @@ $f_1 + f_2$ whose children in a binary tree are $c_1$ and $c_2$, and after
 $n - 1$ steps the root is left ([Figure 15.7](15-string.md#fig-15-7)). The
 code of a character is the path from the root to its leaf, 0 to the left
 and 1 to the right (a single character gets the code `0`):
-
-```cpp
---8<-- "generated/Huffman-merge.cpp"
-```
 
 --8<-- "generated/Huffman-huffman.pseudo.md"
 
