@@ -1,0 +1,24 @@
+% Source for the figure of MinDeque (sec. 4.8): the deal of the stack B
+% to the empty stack F by pop_front(), the stacks drawn back to back in
+% the order of the deque. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[guide] (25.9mm,5mm) -- (25.9mm,-17mm);
+  \node[var] at (14.8mm,9mm) {$F$, top on the left};
+  \node[var] at (48mm,9mm) {$B$, top on the right};
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{29.6mm,0}{3/cell,8/cell,1/cell,9/cell,4/cell,6/cell}
+  \node[var,anchor=west] at (78mm,0) {$|F| = 0$, $|B| = 6$};
+  \node[var,anchor=east] at (-6mm,-12mm) {\texttt{pop\_front()}};
+  \cells{b}{7.4mm,-12mm}{3/touched,8/added,1/added}
+  \cells{c}{29.6mm,-12mm}{9/cell,4/cell,6/cell}
+  \node[var,anchor=west] at (78mm,-12mm) {returns \texttt{3}, $\min = 1$};
+\end{tikzpicture}
+\end{document}

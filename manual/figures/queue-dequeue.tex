@@ -1,0 +1,47 @@
+% Source for the figure of Dequeue (sec. 4.4): the circular bidirectional
+% list with a sentinel before and after insertHead(x) and removeTail().
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \tikzset{nx/.style={ptr,shorten >=0.5pt,shorten <=0.5pt}}
+  \newcommand{\dlist}[3]{% name, y, list of label/style
+    \node[node,minimum width=14mm,font=\scriptsize\ttfamily,text=adsInk!55]
+      (#1-s) at (0,#2) {sentinel};
+    \foreach \v/\s [count=\i from 1] in {#3}
+      \node[\s] (#1-\i) at (\i*15mm+4mm,#2) {\v};}
+  \newcommand{\pair}[4]{% name, cell, cell, style
+    \draw[#4,shorten >=0.5pt,shorten <=0.5pt]
+      ([yshift=1.2mm]#1-#2.east) -- ([yshift=1.2mm]#1-#3.west);
+    \draw[#4,shorten >=0.5pt,shorten <=0.5pt]
+      ([yshift=-1.2mm]#1-#3.west) -- ([yshift=-1.2mm]#1-#2.east);}
+  \newcommand{\links}[2]{% name, number of cells
+    \foreach \i [remember=\i as \j (initially s)] in {1,...,#2} {
+      \pair{#1}{\j}{\i}{nx}}
+    \draw[nx] (#1-#2.south) to[out=-90,in=-90,looseness=0.32] (#1-s.south);
+    \draw[nx] (#1-s.north) to[out=90,in=90,looseness=0.32] (#1-#2.north);}
+  \node[var,anchor=east] at (-8mm,0) {before};
+  \dlist{p}{0}{a/node,b/node,c/node}
+  \links{p}{3}
+  \node[var,anchor=east] at (-8mm,-22mm) {\texttt{insertHead(x)}};
+  \dlist{q}{-22mm}{x/node-added,a/node,b/node,c/node}
+  \links{q}{4}
+  \pair{q}{s}{1}{arc-added}
+  \pair{q}{1}{2}{arc-added}
+  \node[var,anchor=east] at (-8mm,-44mm) {\texttt{removeTail()}};
+  \dlist{r}{-44mm}{x/node,a/node,b/node}
+  \pair{r}{s}{1}{nx}
+  \pair{r}{1}{2}{nx}
+  \pair{r}{2}{3}{nx}
+  \draw[arc-touched] (r-3.south) to[out=-90,in=-90,looseness=0.32] (r-s.south);
+  \draw[arc-touched] (r-s.north) to[out=90,in=90,looseness=0.32] (r-3.north);
+  \node[node-touched] (rc) at (68mm,-44mm) {c};
+  \node[var,anchor=west] at (74mm,-44mm) {returned};
+\end{tikzpicture}
+\end{document}

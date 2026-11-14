@@ -1,0 +1,23 @@
+% Source for the figure of RandomQueue (sec. 4.7): pop() with the place
+% j = 2 drawn, the exchange with the last place and the removal of the
+% last place. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{a/cell,b/cell,c/touched,d/cell,e/cell,f/touched,/free,/free}
+  \indices{a}{8}
+  \node[var,anchor=west] at (63mm,0) {$n = 6$, $j = 2$ drawn};
+  \node[var,anchor=east] at (-6mm,-11mm) {exchange};
+  \cells{b}{0,-11mm}{a/cell,b/cell,f/touched,d/cell,e/cell,c/touched,/free,/free}
+  \node[var,anchor=east] at (-6mm,-22mm) {remove last};
+  \cells{c}{0,-22mm}{a/cell,b/cell,f/cell,d/cell,e/cell,/free,/free,/free}
+  \node[var,anchor=west] at (63mm,-22mm) {$n = 5$, returns \texttt{c}};
+\end{tikzpicture}
+\end{document}

@@ -73,6 +73,7 @@ template< class T >
 T * RingDeque< T >::relocate( T * A , std::size_t m , std::size_t h ,
                               std::size_t n )
 {
+ //! [relocate]
  const std::size_t M = m ? 2 * m : 8;
  T * B = std::allocator< T >().allocate( M );
  if( n ) {
@@ -93,6 +94,7 @@ T * RingDeque< T >::relocate( T * A , std::size_t m , std::size_t h ,
  if( A )
   std::allocator< T >().deallocate( A , m );
  return( B );
+ //! [relocate]
  }
 
 template< class T >
@@ -118,10 +120,12 @@ inline T & RingDeque< T >::growBack( T && v )
 template< class T >
 inline T & RingDeque< T >::growFront( T && v )
 {
+ //! [growFront]
  grow();
  f_tail += f_mask + 1;                      // the front at the last place,
  f_head = f_mask;                           // the counters apart by size()
  return( *::new( static_cast< void * >( f_A + f_mask ) ) T( std::move( v ) ) );
+ //! [growFront]
  }
 
 template< class T >
@@ -170,6 +174,7 @@ template< class T >
 template< class ... Args >
 ADS_RING_INLINE T & RingDeque< T >::emplace_back( Args && ... args )
 {
+ //! [emplace_back]
  if( size() == capacity() ) [[unlikely]]    // the item, which may be one
   return( growBack( T( std::forward< Args >( args )... ) ) );   // of ours
  T * p = ::new( static_cast< void * >( f_A + ( f_tail & f_mask ) ) )
@@ -177,6 +182,7 @@ ADS_RING_INLINE T & RingDeque< T >::emplace_back( Args && ... args )
  ++f_tail;
  ADS_INVARIANT( fits() );
  return( *p );
+ //! [emplace_back]
  }
 
 template< class T >

@@ -1,0 +1,37 @@
+% Source for the figure of RealTimeMinQueue (sec. 4.9): a rotation, started
+% by enqueue(g) and ended by the next dequeue(); each stack is drawn from
+% its bottom (left) to its top. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-24mm,0) {before};
+  \node[var,anchor=east] at (-6mm,0) {$F$};
+  \cells{f0}{0,0}{c/cell,b/cell,a/cell}
+  \node[var,anchor=east] at (-6mm,-8mm) {$R$};
+  \cells{r0}{0,-8mm}{d/cell,e/cell,f/cell}
+  \node[var,anchor=west] at (50mm,-4mm) {$|R| = |F| = 3$};
+  \node[var,anchor=east] at (-24mm,-20mm) {\texttt{enqueue(g)}};
+  \node[var,anchor=east] at (-6mm,-20mm) {$F$};
+  \cells{f1}{0,-20mm}{c/cell,b/cell,a/cell}
+  \node[var,anchor=east] at (-6mm,-28mm) {$R'$};
+  \cells{r1}{0,-28mm}{d/cell,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-36mm) {$N$};
+  \cells{n1}{0,-36mm}{g/added,f/added,e/added,/free,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-44mm) {$R$};
+  \node[var,anchor=west] at (0,-44mm) {empty, room for 9};
+  \node[var,anchor=west] at (56mm,-28mm) {rotation started, 3 moves};
+  \node[var,anchor=east] at (-24mm,-56mm) {\texttt{dequeue()}};
+  \node[var,anchor=east] at (-6mm,-56mm) {$F$};
+  \cells{f2}{0,-56mm}{g/cell,f/cell,e/cell,d/added,c/added,b/added}
+  \node[var,anchor=east] at (-6mm,-64mm) {$R$};
+  \node[var,anchor=west] at (0,-64mm) {empty};
+  \node[node-touched] at (56mm,-56mm) {a};
+  \node[var,anchor=west] at (62mm,-56mm) {returned, $N$ is the front};
+\end{tikzpicture}
+\end{document}
