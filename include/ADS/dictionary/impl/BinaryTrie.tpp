@@ -118,7 +118,6 @@ auto JumpTrie< U , V , W , Hashed >::deepest( U x , int lo , int hi ,
 {
  if( ! u )
   u = f_root;
-//! [JumpTrie-deepest]
  if constexpr( Hashed ) {
   while( hi - lo > 1 ) {   // the prefix of depth lo is there, of hi not
    const int m = ( lo + hi ) / 2;
@@ -142,7 +141,6 @@ auto JumpTrie< U , V , W , Hashed >::deepest( U x , int lo , int hi ,
    }
   return( std::pair< Node * , int >( u , i ) );
   }
-//! [JumpTrie-deepest]
  }
 
 template< std::unsigned_integral U , class V , int W , bool Hashed >
@@ -150,7 +148,6 @@ template< std::unsigned_integral U , class V , int W , bool Hashed >
 auto JumpTrie< U , V , W , Hashed >::successor( U x , Node * u , int i ) const
  -> Node *
 {
-//! [JumpTrie-successor]
  if( i == W )
   return( u );
  if( f_n == 0 )
@@ -158,7 +155,6 @@ auto JumpTrie< U , V , W , Hashed >::successor( U x , Node * u , int i ) const
  // the child of the bit of x is missing, the other one is there: its
  // smallest leaf follows x, its largest one precedes it
  return( trieBit< U , W >( x , i ) == 0 ? u->jump : u->jump->child[ 1 ] );
-//! [JumpTrie-successor]
  }
 
 template< std::unsigned_integral U , class V , int W , bool Hashed >
@@ -262,7 +258,6 @@ template< std::unsigned_integral U , class V , int W , bool Hashed >
 bool JumpTrie< U , V , W , Hashed >::insert( U x , const V & v )
 {
  ADS_PRE( ( trieKey< U , W >( x ) ) );
-//! [JumpTrie-insert]
  auto [ u , i ] = deepest( x );
  if( i == W ) {
   u->value = v;
@@ -300,7 +295,6 @@ bool JumpTrie< U , V , W , Hashed >::insert( U x , const V & v )
   if( ( ! a->child[ 0 ] && ( ! a->jump || ( x < a->jump->key ) ) ) ||
       ( ! a->child[ 1 ] && ( ! a->jump || ( x > a->jump->key ) ) ) )
    a->jump = l;
-//! [JumpTrie-insert]
 
  ADS_POST( contains( x ) );
  ADS_INVARIANT( consistent( x ) );
@@ -322,7 +316,6 @@ bool JumpTrie< U , V , W , Hashed >::remove( U x )
  if( ! l )
   return( false );
 
-//! [JumpTrie-remove]
  Node * prev = l->child[ 0 ];
  Node * next = l->child[ 1 ];
  prev->child[ 1 ] = next;
@@ -352,7 +345,6 @@ bool JumpTrie< U , V , W , Hashed >::remove( U x )
  for( Node * a = u->parent ; a ; a = a->parent )
   if( a->jump == l )
    a->jump = a->child[ 0 ] ? prev : next;
-//! [JumpTrie-remove]
 
  ADS_POST( ! contains( x ) );
  ADS_INVARIANT( consistent( x ) );
@@ -516,7 +508,6 @@ template< std::unsigned_integral U , class V , int W >
 const U * SimpleBinaryTrie< U , V , W >::lowerBound( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [SimpleBinaryTrie-lowerBound]
  const Node * u = &f_root;
  const Node * a = nullptr;   // the nearest subtree of larger keys
  int d = 0;                  // its depth
@@ -538,7 +529,6 @@ const U * SimpleBinaryTrie< U , V , W >::lowerBound( U x ) const
  for( ; d < W ; ++d )   // the leftmost leaf below a
   a = a->child[ 0 ] ? a->child[ 0 ] : a->child[ 1 ];
  return( &static_cast< const Leaf * >( a )->key );
-//! [SimpleBinaryTrie-lowerBound]
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -565,7 +555,6 @@ template< std::unsigned_integral U , class V , int W >
 bool SimpleBinaryTrie< U , V , W >::insert( U x , const V & v )
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [SimpleBinaryTrie-insert]
  Node * u = &f_root;
  bool fresh = false;
  for( int i = 0 ; i < W ; ++i ) {
@@ -586,7 +575,6 @@ bool SimpleBinaryTrie< U , V , W >::insert( U x , const V & v )
  static_cast< Leaf * >( u )->value = v;
  if( fresh )
   ++f_n;
-//! [SimpleBinaryTrie-insert]
  ADS_POST( contains( x ) );
  return( fresh );
  }
@@ -596,7 +584,6 @@ template< std::unsigned_integral U , class V , int W >
 bool SimpleBinaryTrie< U , V , W >::remove( U x )
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [SimpleBinaryTrie-remove]
  std::array< Node * , W + 1 > P;   // the path of x
  P[ 0 ] = &f_root;
  for( int i = 0 ; i < W ; ++i )
@@ -613,7 +600,6 @@ bool SimpleBinaryTrie< U , V , W >::remove( U x )
   --f_nodes;
   }
  --f_n;
-//! [SimpleBinaryTrie-remove]
  ADS_POST( ! contains( x ) );
  return( true );
  }

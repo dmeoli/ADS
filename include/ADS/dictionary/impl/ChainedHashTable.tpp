@@ -205,7 +205,6 @@ typename ChainedHashTable< K , V , C , H >::Pos
 ChainedHashTable< K , V , C , H >::find( const Bucket & L ,
                                          const K & k ) const
 {
- //! [find]
  f_probes = 1;
  auto p = L.head();
  for( ; ! L.finished( p ) ; p = L.next( p ) , ++f_probes ) {
@@ -216,7 +215,6 @@ ChainedHashTable< K , V , C , H >::find( const Bucket & L ,
     break;
   }
  return( p );
- //! [find]
  }
 
 template< class K , class V , Chain C , class H >

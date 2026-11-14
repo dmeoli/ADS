@@ -87,7 +87,6 @@ auto IndexedSkipList< K , V >::before( const K & k , Node * update[ kMax ] ,
  -> Node *
 {
  // the ranks are shifted by one, the head at 0 and nil at n + 1
-//! [find]
  Node * x = nullptr;
  std::size_t j = 0;
  const Node * same = nullptr;               // known not smaller than k
@@ -102,7 +101,6 @@ auto IndexedSkipList< K , V >::before( const K & k , Node * update[ kMax ] ,
   update[ l ] = x;
   rank[ l ] = j;
   }
-//! [find]
  Node * n = towerOf( x )[ 0 ].next;
  return( n && !( k < n->key ) ? n : nullptr );
  }
@@ -149,7 +147,6 @@ template< std::totally_ordered K , class V >
 auto IndexedSkipList< K , V >::select( std::size_t i ) const -> const_iterator
 {
  ADS_PRE( i < f_size );
-//! [select]
  Node * x = nullptr;
  std::size_t j = 0;
  for( int l = f_levels - 1 ; l >= 0 ; --l )
@@ -158,7 +155,6 @@ auto IndexedSkipList< K , V >::select( std::size_t i ) const -> const_iterator
    j += t[ l ].w;
    x = t[ l ].next;
    }
-//! [select]
  return( const_iterator( x ) );
  }
 
@@ -170,7 +166,6 @@ void IndexedSkipList< K , V >::insert( const K & k , const V & v )
  if( Node * n = before( k , update , rank ) )
   n->value = v;
  else {
-//! [add]
   const int L = std::min( kMax , 1 + std::countr_one( f_g() ) );
   Node * y = make( k , v , L );
   Link * ty = tower( y );
@@ -189,7 +184,6 @@ void IndexedSkipList< K , V >::insert( const K & k , const V & v )
     }
    }
   for( int l = f_levels ; l < kMax ; ++l ) ++f_head[ l ].w;
-//! [add]
   ++f_size;
   }
  ADS_POST( contains( k ) );
@@ -202,7 +196,6 @@ void IndexedSkipList< K , V >::remove( const K & k )
  Node * update[ kMax ];
  std::size_t rank[ kMax ];
  if( Node * y = before( k , update , rank ) ) {
-//! [remove]
   for( int l = 0 ; l < f_levels ; ++l ) {
    Link * t = towerOf( update[ l ] );
    if( t[ l ].next == y )
@@ -211,7 +204,6 @@ void IndexedSkipList< K , V >::remove( const K & k )
     --t[ l ].w;
    }
   for( int l = f_levels ; l < kMax ; ++l ) --f_head[ l ].w;
-//! [remove]
   dispose( y );
   --f_size;
   while( ( f_levels > 0 ) && ! f_head[ f_levels - 1 ].next ) --f_levels;

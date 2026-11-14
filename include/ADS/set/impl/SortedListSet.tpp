@@ -126,7 +126,6 @@ typename List< T >::Pos SortedListSet< T >::lower( const T & x ) const
  return( p );
  }
 
-//! [merge]
 template< class T >
 SortedListSet< T > merge( const SortedListSet< T > & A ,
                           const SortedListSet< T > & B ,
@@ -160,7 +159,6 @@ SortedListSet< T > merge( const SortedListSet< T > & A ,
   C.insertLast( LB.read( q ) );
  return( C );
  }
-//! [merge]
 
 template< class T >
 SortedListSet< T > setUnion( const SortedListSet< T > & A ,

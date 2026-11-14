@@ -114,7 +114,6 @@ auto BitmapTrie< V >::node( std::string_view s ) const -> Node *
 template< class V >
 auto BitmapTrie< V >::successor( std::string_view s ) const -> Cell *
 {
-//! [BitmapTrie-successor]
  const Node * u = f_root;
  for( const char ch : s ) {
   const unsigned c = static_cast< unsigned char >( ch );
@@ -127,7 +126,6 @@ auto BitmapTrie< V >::successor( std::string_view s ) const -> Cell *
   return( u->max ? u->max->next : f_dummy );
   }
  return( u->min ? u->min : f_dummy );
-//! [BitmapTrie-successor]
  }
 
 template< class V >
@@ -174,7 +172,6 @@ bool BitmapTrie< V >::insert( std::string_view s , const V & v )
   e->term->value = v;
   return( false );
   }
-//! [BitmapTrie-insert]
  Cell * succ = successor( s );
  Cell * it = new Cell{ std::string( s ) , v , succ->prev , succ };
  succ->prev->next = it;
@@ -217,7 +214,6 @@ bool BitmapTrie< V >::insert( std::string_view s , const V & v )
   if( isMax )
    u->max = it;
   }
-//! [BitmapTrie-insert]
  ADS_POST( contains( s ) );
  ADS_INVARIANT( consistent() );
  return( true );
@@ -237,7 +233,6 @@ bool BitmapTrie< V >::remove( std::string_view s )
  if( ! it )
   return( false );
  e->term = nullptr;
-//! [BitmapTrie-remove]
  Cell * prev = it->prev;
  Cell * next = it->next;
  prev->next = next;
@@ -265,7 +260,6 @@ bool BitmapTrie< V >::remove( std::string_view s )
    u->max = ( f_n == 0 ) ? nullptr : prev;
   }
  delete it;
-//! [BitmapTrie-remove]
  ADS_POST( ! contains( s ) );
  ADS_INVARIANT( consistent() );
  return( true );

@@ -78,12 +78,10 @@ template< std::totally_ordered T >
  requires std::semiregular< T >
 const T * SpaceEfficientSortedSet< T >::lowerBound( const T & x ) const
 {
-//! [find]
  const Block * B = blockOf( x );
  if( ! B )
   return( nullptr );
  return( &at( B , place( B , x ) ) );
-//! [find]
  }
 
 template< std::totally_ordered T >
@@ -137,7 +135,6 @@ template< std::totally_ordered T >
 bool SpaceEfficientSortedSet< T >::insert( const T & x )
 {
  bool fresh = true;
-//! [add]
  for( ; ; ) {
   Block * B = blockOf( x );
   if( ! B ) B = f_last;
@@ -197,7 +194,6 @@ bool SpaceEfficientSortedSet< T >::insert( const T & x )
     while( C->s < f_b ) shiftForward( C->prev , C );
    }
   }
-//! [add]
  ADS_POST( contains( x ) );
  ADS_INVARIANT( valid() );
  return( fresh );
@@ -207,7 +203,6 @@ template< std::totally_ordered T >
  requires std::semiregular< T >
 bool SpaceEfficientSortedSet< T >::remove( const T & x )
 {
-//! [remove]
  Block * B = blockOf( x );
  bool gone = false;
  if( B ) {
@@ -264,7 +259,6 @@ bool SpaceEfficientSortedSet< T >::remove( const T & x )
     }
    }
   }
-//! [remove]
  ADS_POST( ! contains( x ) );
  ADS_INVARIANT( valid() );
  return( gone );

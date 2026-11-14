@@ -155,11 +155,9 @@ inline std::size_t MultiplicativeHash< K , Code >::place( const K & k ,
                                                           std::size_t m ) const
 {
  ADS_PRE( ( m > 0 ) && ( ( m & ( m - 1 ) ) == 0 ) );
-//! [MultiplicativeHash-place]
  const int d = std::countr_zero( std::uint64_t( m ) );
  const std::size_t r = d == 0 ? 0 :
                        std::size_t( ( *this )( k ) >> ( 64 - d ) );
-//! [MultiplicativeHash-place]
  ADS_POST( r < m );
  return( r );
  }
@@ -181,7 +179,6 @@ inline std::uint64_t CompoundHash::operator()(
                                   std::span< const std::uint64_t > x ) const
 {
  ADS_PRE( x.size() == f_Z.size() );
-//! [CompoundHash-hash]
  std::uint64_t lo = 0 , hi = 0;   // the sum, mod 2^128
  for( std::size_t i = 0 ; i < x.size() ; ++i ) {
   const Product128 q = product128( f_Z[ i ] , x[ i ] );
@@ -192,7 +189,6 @@ inline std::uint64_t CompoundHash::operator()(
  // 128 bits, the crossed products only their low 64 bits
  const Product128 q = product128( f_lo , lo );
  return( q.hi + f_lo * hi + f_hi * lo );
-//! [CompoundHash-hash]
  }
 
 /*--------------------------------------------------------------------------*/
@@ -209,7 +205,6 @@ inline std::uint64_t SequenceHash::operator()(
                                   std::span< const std::uint64_t > x ) const
 {
  const std::uint64_t p = ( std::uint64_t( 1 ) << 61 ) - 1;
-//! [SequenceHash-hash]
  std::uint64_t h = p - 1;   // the end marker
  for( std::size_t i = x.size() ; i-- > 0 ; ) {
   h = mulMod61( h , f_z ) + ( ( f_a * x[ i ] ) >> 4 );   // below 2^62
@@ -217,7 +212,6 @@ inline std::uint64_t SequenceHash::operator()(
   if( h >= p )
    h -= p;
   }
-//! [SequenceHash-hash]
  return( h );
  }
 

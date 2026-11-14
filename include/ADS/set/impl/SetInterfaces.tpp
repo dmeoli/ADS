@@ -54,9 +54,7 @@ bool ArrayUSet< T , Eq >::remove( const T & x )
 template< class T , class C >
 const T * ArraySSet< T , C >::lowerBound( const T & x ) const
 {
- //! [lowerBound]
  const auto it = std::lower_bound( f_A.begin() , f_A.end() , x , f_less );
- //! [lowerBound]
  return( it == f_A.end() ? nullptr : &*it );
  }
 

@@ -83,7 +83,6 @@ template< std::totally_ordered K , class V >
 auto SkipList< K , V >::before( const K & k , Node * update[ kMax ] ) const
  -> Node *
 {
-//! [find]
  Node * x = nullptr;                        // nil is the head
  Node ** t = const_cast< Node ** >( f_head );
  const Node * same = nullptr;               // known not smaller than k
@@ -95,7 +94,6 @@ auto SkipList< K , V >::before( const K & k , Node * update[ kMax ] ) const
   }
  Node * n = t[ 0 ];
  return( n && !( k < n->key ) ? n : nullptr );   // the node of k, if any
-//! [find]
  }
 
 template< std::totally_ordered K , class V >
@@ -121,7 +119,6 @@ std::optional< V > SkipList< K , V >::fingerLookup( const K & k )
 {
  if( f_levels == 0 )
   return( std::nullopt );
-//! [finger]
  int l = 0;
  for( ; l < f_levels - 1 ; ++l ) {          // up to a node before k whose
   Node * x = f_finger[ l ];                 // successor is not
@@ -136,7 +133,6 @@ std::optional< V > SkipList< K , V >::fingerLookup( const K & k )
   for( Node * n ; ( n = towerOf( x )[ j ] ) && ( n->key < k ) ; ) x = n;
   f_finger[ j ] = x;
   }
-//! [finger]
  Node * n = towerOf( x )[ 0 ];
  return( n && !( k < n->key ) ? std::optional< V >( n->value )
                               : std::nullopt );
@@ -149,7 +145,6 @@ void SkipList< K , V >::insert( const K & k , const V & v )
  if( Node * n = before( k , update ) )
   n->value = v;                             // the new value replaces it
  else {
-//! [add]
   const int L = std::min( kMax , 1 + std::countr_one( f_g() ) );
   for( int l = f_levels ; l < L ; ++l )     // new levels start at the head
    update[ l ] = nullptr;
@@ -161,7 +156,6 @@ void SkipList< K , V >::insert( const K & k , const V & v )
    t[ l ] = link;
    link = x;
    }
-//! [add]
   ++f_size;
   std::fill( f_finger , f_finger + kMax , nullptr );
   }
@@ -174,14 +168,12 @@ void SkipList< K , V >::remove( const K & k )
 {
  Node * update[ kMax ];
  if( Node * n = before( k , update ) ) {
-//! [remove]
   Node ** t = tower( n );
   for( int l = 0 ; l < n->height ; ++l )
    towerOf( update[ l ] )[ l ] = t[ l ];
   dispose( n );
   --f_size;
   while( ( f_levels > 0 ) && ! f_head[ f_levels - 1 ] ) --f_levels;
-//! [remove]
   std::fill( f_finger , f_finger + kMax , nullptr );
   }
  ADS_POST( ! contains( k ) );

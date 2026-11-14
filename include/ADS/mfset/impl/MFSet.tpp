@@ -37,7 +37,6 @@ inline int MFSet::count( void ) const
  return( f_count );
  }
 
-//! [find]
 inline int MFSet::find( int x )
 {
  ADS_PRE( ( x >= 0 ) && ( x < n() ) );
@@ -55,7 +54,6 @@ inline int MFSet::find( int x )
  ADS_POST( f_p[ r ] == r );
  return( r );
  }
-//! [find]
 
 inline bool MFSet::merge( int x , int y )
 {

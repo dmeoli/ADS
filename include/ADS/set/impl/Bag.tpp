@@ -36,7 +36,6 @@ template< class T , class H , class Eq >
 bool Bag< T , H , Eq >::remove( const T & x )
 {
  [[maybe_unused]] const std::size_t c = count( x );
- //! [remove]
  std::vector< T > * g = f_T.find( x );
  if( ! g )
   return( false );
@@ -45,7 +44,6 @@ bool Bag< T , H , Eq >::remove( const T & x )
  else
   f_T.remove( x );
  --f_n;
- //! [remove]
  ADS_POST( count( x ) == c - 1 );
  ADS_INVARIANT( counted() );
  return( true );

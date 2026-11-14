@@ -72,9 +72,7 @@ template< std::unsigned_integral U , class V , int W >
 const U * YFastTrie< U , V , W >::lowerBound( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [YFastTrie-lowerBound]
  return( ceiling( *( *f_x.seek( x ) ).second , x ) );
-//! [YFastTrie-lowerBound]
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -106,7 +104,6 @@ template< std::unsigned_integral U , class V , int W >
 bool YFastTrie< U , V , W >::insert( U x , const V & v )
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [YFastTrie-insert]
  const auto [ r , T ] = *f_x.seek( x );
  const bool fresh = ! T->contains( x );
  T->insert( x , v );
@@ -121,7 +118,6 @@ bool YFastTrie< U , V , W >::insert( U x , const V & v )
    f_x.insert( x , G );
    }
   }
-//! [YFastTrie-insert]
  ADS_POST( contains( x ) );
  ADS_INVARIANT( consistent() );
  return( fresh );
@@ -132,7 +128,6 @@ template< std::unsigned_integral U , class V , int W >
 bool YFastTrie< U , V , W >::remove( U x )
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [YFastTrie-remove]
  auto it = f_x.seek( x );
  const auto [ r , T ] = *it;
  if( ! T->contains( x ) )
@@ -145,7 +140,6 @@ bool YFastTrie< U , V , W >::remove( U x )
   delete T;
   f_x.remove( x );
   }
-//! [YFastTrie-remove]
  ADS_POST( ! contains( x ) );
  ADS_INVARIANT( consistent() );
  return( true );
