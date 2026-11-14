@@ -75,12 +75,15 @@ extra_css:
 nav:
   - Front matter: index.md
   - Part I — Foundations:
+      - 1. Introduction: chapters/01-introduction.md
       - 3. Stacks: chapters/03-stack.md
       - 5. Memory management: chapters/05-memory.md
   - Part II — Searching and ordering:
       - 6. Searching: chapters/06-search.md
+      - 9. Priority queues: chapters/09-priority.md
       - 10. Sets and filters: chapters/10-set.md
       - 11. Disjoint sets: chapters/11-mfset.md
+      - 12. Sorting: chapters/12-sort.md
   - Part III — Algorithms:
       - 13. Algorithm design: chapters/13-algorithm.md
       - 15. Strings: chapters/15-string.md

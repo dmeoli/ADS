@@ -75,12 +75,15 @@ library; the API reference generated from them; this manual.
 ## Table of contents (high-level)
 
 * **Part I — Foundations.**
+    * [Chapter 1](chapters/01-introduction.md#ch-1). Introduction.
     * [Chapter 3](chapters/03-stack.md#ch-3). Stacks.
     * [Chapter 5](chapters/05-memory.md#ch-5). Memory management.
 * **Part II — Searching and ordering.**
     * [Chapter 6](chapters/06-search.md#ch-6). Searching.
+    * [Chapter 9](chapters/09-priority.md#ch-9). Priority queues.
     * [Chapter 10](chapters/10-set.md#ch-10). Sets and filters.
     * [Chapter 11](chapters/11-mfset.md#ch-11). Disjoint sets.
+    * [Chapter 12](chapters/12-sort.md#ch-12). Sorting.
 * **Part III — Algorithms.**
     * [Chapter 13](chapters/13-algorithm.md#ch-13). Algorithm design.
     * [Chapter 15](chapters/15-string.md#ch-15). Strings.

@@ -10,11 +10,14 @@ to: latex
 # the MkDocs nav in mkdocs.yml.
 input-files:
   - ../index.md
+  - ../chapters/01-introduction.md
   - ../chapters/03-stack.md
   - ../chapters/05-memory.md
   - ../chapters/06-search.md
+  - ../chapters/09-priority.md
   - ../chapters/10-set.md
   - ../chapters/11-mfset.md
+  - ../chapters/12-sort.md
   - ../chapters/13-algorithm.md
   - ../chapters/15-string.md
   - ../chapters/16-geometry.md

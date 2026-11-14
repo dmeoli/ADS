@@ -6,6 +6,7 @@
 #   make serve     # live MkDocs preview at 127.0.0.1:8000
 #   make figures   # (re)build each figure .pdf and .svg from its TikZ source
 #   make snippets  # extract the code and the pseudocode of the headers
+#   make check     # the bibliography and the map of chapter 1 are complete
 #   make clean     # remove build artefacts
 #
 # Prerequisites:
@@ -23,7 +24,7 @@ INCLUDE := $(MANUAL)/../include
 LAMALUNGA ?= $(HOME)/GDrive/lamalunga
 FIGTEX  := $(filter-out $(FIGDIR)/tikz-ads.tex,$(wildcard $(FIGDIR)/*.tex))
 
-.PHONY: pdf html serve figures snippets clean
+.PHONY: pdf html serve figures snippets check clean
 
 pdf: figures snippets
 	pandoc --defaults=pandoc.yaml -o $(PDF_OUT)
@@ -56,6 +57,12 @@ $(FIGDIR)/%.svg: $(FIGDIR)/%.pdf
 # comments of the headers, which the chapters include with --8<--.
 snippets:
 	python3 snarf.py $(INCLUDE) $(GENDIR)
+
+# every work the library cites is in the bibliography, and every header and
+# class of the library is in the map of the structures of chapter 1
+check: snippets
+	python3 bibcheck.py $(MANUAL)/..
+	python3 structmap.py $(INCLUDE) --check $(MANUAL)/chapters/01-introduction.md
 
 clean:
 	rm -rf ../../manual-site $(GENDIR)

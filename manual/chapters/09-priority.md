@@ -453,7 +453,7 @@ $$
 *which for $d = \max\{ 2 , \lceil m / n \rceil \}$ is
 $O( m \log_{2 + m / n} n )$, i.e., $O( m )$ on the graphs with
 $m = \Omega( n^{1 + \varepsilon} )$ for a constant $\varepsilon > 0$
-([Johnson 1975](Z-bibliography.md#ref-johnson1975)).*
+([Johnson 1975](Z-bibliography.md#ref-johnson1975b)).*
 
 *Proof.* (9.4) is [Lemma 9.3](09-priority.md#lem-9-3) summed over the
 operations. With $d$ as stated, $n d \le m + 2 n$, and both terms are
@@ -1504,7 +1504,7 @@ complete tree in a vector goes back to [Eytzinger
 1590](Z-bibliography.md#ref-eytzinger1590), as [Morin 2013,
 §10.3](Z-bibliography.md#ref-morin2013) recalls. The $d$-ary heap and the
 choice of $d$ for the shortest paths are due to [Johnson
-1975](Z-bibliography.md#ref-johnson1975), the walk from the bottom up to
+1975](Z-bibliography.md#ref-johnson1975b), the walk from the bottom up to
 [Floyd 1964](Z-bibliography.md#ref-floyd1964) and [Wegener
 1993](Z-bibliography.md#ref-wegener1993), and the effect of the caches on
 the heaps was studied by [LaMarca and Ladner
