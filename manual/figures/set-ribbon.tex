@@ -1,0 +1,34 @@
+% Source for the figure of RibbonFilter (sec. 10.10): the system in
+% echelon form after the banding, m = 10 rows, windows of w = 4
+% coefficients; a row holds an equation whose first coefficient is in its
+% column, or none (grey), and f is the right side. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    b/.style={cell,minimum width=4.5mm,minimum height=4.5mm,rounded corners=0.8pt,line width=0.8pt}]
+  \foreach \r/\bits in {0/1011,1/1101,2/,3/1110,4/1001,5/1011,6/,7/1100,8/,9/1000} {
+    \node[index,anchor=east] at (-3.5mm,-\r*4.5mm) {\r};
+    \foreach \c in {0,...,9} {
+      \node[b] at (\c*4.5mm,-\r*4.5mm) {};
+    }
+    \ifx\bits\empty
+      \foreach \c in {0,...,9} \node[b,fill=adsFree] at (\c*4.5mm,-\r*4.5mm) {};
+    \else
+      \foreach \d [count=\j from 0] in {0,1,2,3} {
+        \pgfmathtruncatemacro{\c}{\r+\j}
+        \ifnum\c<10
+          \node[b,fill=adsPrimary] at (\c*4.5mm,-\r*4.5mm) {};
+        \fi }
+      \node[b] at (51mm,-\r*4.5mm) {};
+    \fi
+  }
+  \node[index] at (51mm,5mm) {$f$};
+  \node[index] at (20.25mm,5mm) {columns};
+\end{tikzpicture}
+\end{document}

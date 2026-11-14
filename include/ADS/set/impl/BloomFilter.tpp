@@ -82,6 +82,7 @@ void BloomFilter< T , H >::insert( const T & x )
  ADS_POST( maybe( x ) );
  }
 
+//! [maybe]
 template< class T , class H >
 bool BloomFilter< T , H >::maybe( const T & x ) const
 {
@@ -95,6 +96,7 @@ bool BloomFilter< T , H >::maybe( const T & x ) const
   }
  return( true );
  }
+//! [maybe]
 
 template< class T , class H >
 double BloomFilter< T , H >::falsePositiveRate( void ) const

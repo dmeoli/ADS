@@ -1,0 +1,30 @@
+% Source for the figure of GrafiteFilter (sec. 10.11): two blocks of r
+% consecutive keys, each rotated by q of the block into [0, r), and a range
+% [a, b] that meets both, whose image is two cyclic ranges of the same
+% total length. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[line width=1.1pt,adsInk] (0,0) -- (100mm,0);
+  \foreach \x in {0,50,100} \draw[line width=1.1pt,adsInk] (\x mm,-1.5mm) -- (\x mm,1.5mm);
+  \node[index] at (25mm,4mm) {block $j$};
+  \node[index] at (75mm,4mm) {block $j + 1$};
+  \fill[adsPrimary,rounded corners=1pt] (40mm,-1.2mm) rectangle (58mm,1.2mm);
+  \node[var] at (40mm,-4.5mm) {$a$};
+  \node[var] at (58mm,-4.5mm) {$b$};
+  \draw[line width=1.1pt,adsInk] (25mm,-22mm) -- (75mm,-22mm);
+  \foreach \x in {25,75} \draw[line width=1.1pt,adsInk] (\x mm,-23.5mm) -- (\x mm,-20.5mm);
+  \node[index] at (25mm,-26mm) {0};
+  \node[index] at (75mm,-26mm) {$r$};
+  \fill[adsPrimary,rounded corners=1pt] (63mm,-23.2mm) rectangle (73mm,-20.8mm);
+  \fill[adsPrimary,rounded corners=1pt] (30mm,-23.2mm) rectangle (38mm,-20.8mm);
+  \draw[ptr,adsInk!55] (45mm,-2mm) -- (68mm,-19.5mm);
+  \draw[ptr,adsInk!55] (54mm,-2mm) -- (34mm,-19.5mm);
+  \node[index,anchor=west] at (78mm,-22mm) {$h( x ) = ( q( \lfloor x / r \rfloor ) + x ) \bmod r$};
+\end{tikzpicture}
+\end{document}

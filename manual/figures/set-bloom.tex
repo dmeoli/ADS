@@ -1,0 +1,23 @@
+% Source for the figure of BloomFilter (sec. 10.7): the m = 16 bits after
+% the insertion of x, whose k = 3 places 2, 7, 12 are h_1 + i h_2 mod m
+% with h_1 = 2 and h_2 = 5, and the query of y, whose places 7, 12, 1 are
+% not all set. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{0/cell,0/cell,0/cell,0/cell,1/cell,0/cell,0/cell,0/cell,0/cell,1/cell,0/cell,0/cell,0/cell,0/cell,0/cell,1/cell}
+  \node[var,anchor=east] at (-6mm,-13mm) {\texttt{insert(x)}};
+  \cells{b}{0,-13mm}{0/cell,0/cell,1/added,0/cell,1/cell,0/cell,0/cell,1/added,0/cell,1/cell,0/cell,0/cell,1/added,0/cell,0/cell,1/cell}
+  \foreach \i in {0,...,15} \node[index,below=1.6mm of b-\i] {\i};
+  \foreach \i in {2,7,12} \draw[ptr] ($(b-\i.north)+(0,5mm)$) -- (b-\i.north);
+  \node[var,anchor=east] at (-6mm,-30mm) {\texttt{maybe(y)}};
+  \cells{c}{0,-30mm}{0/cell,0/touched,1/cell,0/cell,1/cell,0/cell,0/cell,1/touched,0/cell,1/cell,0/cell,0/cell,1/touched,0/cell,0/cell,1/cell}
+  \node[var,anchor=west] at ($(c-15.east)+(4mm,0)$) {false: bit 1 is 0};
+\end{tikzpicture}
+\end{document}

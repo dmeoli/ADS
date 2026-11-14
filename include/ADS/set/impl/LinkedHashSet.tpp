@@ -47,6 +47,7 @@ bool LinkedHashSet< T , H >::contains( const T & x ) const
  return( f_index.contains( x ) );
  }
 
+//! [insert]
 template< class T , class H >
 void LinkedHashSet< T , H >::insert( const T & x )
 {
@@ -56,6 +57,7 @@ void LinkedHashSet< T , H >::insert( const T & x )
  ADS_POST( contains( x ) );
  ADS_INVARIANT( indexed() );
  }
+//! [insert]
 
 template< class T , class H >
 void LinkedHashSet< T , H >::remove( const T & x )

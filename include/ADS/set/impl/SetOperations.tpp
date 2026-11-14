@@ -25,6 +25,7 @@ S setUnion( const S & A , const S & B )
  return( C );
  }
 
+//! [setIntersection]
 template< IterableSet S >
 S setIntersection( const S & A , const S & B )
 {
@@ -39,6 +40,7 @@ S setIntersection( const S & A , const S & B )
  ADS_AUDIT( detail::isSetOperation( C , A , B , '&' ) );
  return( C );
  }
+//! [setIntersection]
 
 template< IterableSet S >
 S setDifference( const S & A , const S & B )

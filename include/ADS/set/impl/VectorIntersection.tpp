@@ -31,6 +31,7 @@ namespace detail {
 
 /// the merge of a[ i .. n ) and b[ j .. m ) one item at a time with no
 /// branch, appended to out[ k .. ); the new k
+//! [mergeCommon]
 template< class T >
 std::size_t mergeCommon( const T * a , std::size_t n , const T * b ,
                          std::size_t m , T * out , std::size_t i ,
@@ -45,6 +46,7 @@ std::size_t mergeCommon( const T * a , std::size_t n , const T * b ,
   }
  return( k );
  }
+//! [mergeCommon]
 
 /// the items of s[ 0 .. m ) also in l[ 0 .. n ), by galloping in l
 template< class T >

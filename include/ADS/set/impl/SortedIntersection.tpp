@@ -120,6 +120,7 @@ std::vector< T > intersectMutualPartition( const std::vector< T > & A ,
  return( out );
  }
 
+//! [intersectDoubling]
 template< class T , class C >
 std::vector< T > intersectDoubling( const std::vector< T > & A ,
                                     const std::vector< T > & B , C less )
@@ -149,6 +150,7 @@ std::vector< T > intersectDoubling( const std::vector< T > & A ,
   } ) );
  return( out );
  }
+//! [intersectDoubling]
 
 template< class T , class C >
 std::vector< T > intersectTwoLevel( const std::vector< T > & A ,

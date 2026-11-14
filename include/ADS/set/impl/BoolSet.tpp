@@ -147,6 +147,7 @@ inline std::optional< long > BoolSet::max( void ) const
  return( std::nullopt );
  }
 
+//! [forEach]
 template< class F >
 void BoolSet::forEach( F && f ) const
 {
@@ -154,6 +155,7 @@ void BoolSet::forEach( F && f ) const
   for( std::uint64_t w = f_W[ k ] ; w ; w &= w - 1 )
    f( long( k * 64 + std::size_t( std::countr_zero( w ) ) ) );
  }
+//! [forEach]
 
 template< class Op >
 inline void BoolSet::combine( BoolSet & C , const BoolSet & A ,
