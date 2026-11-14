@@ -85,7 +85,7 @@ items by backtrack ([Montresor 2025,
 
 --8<-- "generated/Enumeration-subsets.pseudo.md"
 
-![Figure 19.1. The tree of the calls of `subsets( 4 , 2 , f )`: each edge sets a place in (1) or out (0), the dark nodes are the solutions, with their vectors, and the palest ones are pruned by line 3, since the items left cannot reach $k = 2$.](../figures/backtrack-subsets.svg){#fig-19-1}
+![Figure 19.1. The tree of the calls of `subsets( 4 , 2 , f )`: each edge sets a place in (1) or out (0), the violet nodes are the solutions, with their vectors, and the palest ones are pruned by line 3, since the items left cannot reach $k = 2$.](../figures/backtrack-subsets.svg){#fig-19-1}
 
 [Figure 19.1](19-backtrack.md#fig-19-1) shows the tree of the calls for
 $n = 4$ and $k = 2$; the solutions come in the decreasing order of their

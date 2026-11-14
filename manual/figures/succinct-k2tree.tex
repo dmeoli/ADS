@@ -1,6 +1,6 @@
 % Source for the figure of K2Tree (sec. 22.10): the adjacency matrix of a
 % graph of 8 nodes and 7 edges, split by k = 2, its marks by levels T and
-% L, and the path of hasEdge(5, 5) (shaded). Build: make figures.
+% L, and the path of hasEdge(5, 5) (violet). Build: make figures.
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -90,12 +90,12 @@
   \node[index] at (-5mm,-30mm) {6};
   \node[index] at (35mm,5mm) {7};
   \node[index] at (-5mm,-35mm) {7};
-  \draw[adsAdded,line width=1.2pt] (17.5mm,2.8mm) -- (17.5mm,-37.8mm);
-  \draw[adsAdded,line width=1.2pt] (-2.8mm,-17.5mm) -- (37.8mm,-17.5mm);
-  \draw[adsAdded!60,line width=0.7pt] (7.5mm,2.5mm) -- (7.5mm,-37.5mm);
-  \draw[adsAdded!60,line width=0.7pt] (-2.5mm,-7.5mm) -- (37.5mm,-7.5mm);
-  \draw[adsAdded!60,line width=0.7pt] (27.5mm,2.5mm) -- (27.5mm,-37.5mm);
-  \draw[adsAdded!60,line width=0.7pt] (-2.5mm,-27.5mm) -- (37.5mm,-27.5mm);
+  \draw[adsInk!60,line width=1pt] (17.5mm,2.8mm) -- (17.5mm,-37.8mm);
+  \draw[adsInk!60,line width=1pt] (-2.8mm,-17.5mm) -- (37.8mm,-17.5mm);
+  \draw[adsInk!30,line width=0.6pt] (7.5mm,2.5mm) -- (7.5mm,-37.5mm);
+  \draw[adsInk!30,line width=0.6pt] (-2.5mm,-7.5mm) -- (37.5mm,-7.5mm);
+  \draw[adsInk!30,line width=0.6pt] (27.5mm,2.5mm) -- (27.5mm,-37.5mm);
+  \draw[adsInk!30,line width=0.6pt] (-2.5mm,-27.5mm) -- (37.5mm,-27.5mm);
   \node[var,anchor=east] at (51mm,0) {$T$};
   \node[cell,minimum width=5.5mm] (t-0) at (55.0mm,0) {1};
   \node[index,above=1.2mm of t-0] {0};

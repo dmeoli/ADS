@@ -15,11 +15,11 @@
   \cells{a}{0,0}{/free,/free,a/cell,b/cell,c/cell,/free,/free,/free}
   \node[var,anchor=west] at (60mm,0) {$t = 2$, $b = 5$};
   \node[var,anchor=east] at (-6mm,-13mm) {\texttt{take()}};
-  \cells{b}{0,-13mm}{/free,/free,a/cell,b/cell,/touched,/free,/free,/free}
+  \cells{b}{0,-13mm}{/free,/free,a/cell,b/cell,c/touched,/free,/free,/free}
   \node[var,anchor=west] at (60mm,-13mm) {$t = 2$, $b = 4$, returns \texttt{c}};
   \node[var,anchor=east] at (-6mm,-26mm) {\texttt{steal()}};
-  \cells{c}{0,-26mm}{/free,/free,/touched,b/cell,/free,/free,/free,/free}
+  \cells{c}{0,-26mm}{/free,/free,a/touched,b/cell,/free,/free,/free,/free}
   \node[var,anchor=west] at (60mm,-26mm) {$t = 3$, $b = 4$, returns \texttt{a}};
-  \indices{c}{8}
+  \indicesbelow{c}{8}
 \end{tikzpicture}
 \end{document}

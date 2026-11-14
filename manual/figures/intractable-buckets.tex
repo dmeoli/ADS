@@ -15,15 +15,15 @@
   \cells{p0}{0,0}{4/cell,1/cell}
   \cells{p1}{0,-9mm}{2/touched,5/cell,3/cell}
   \cells{p2}{0,-18mm}{/free}
-  \node[index,anchor=west,text=black] at (-3.5mm,-26mm) {\texttt{min(0)} $= 0$, \texttt{max(0)} $= 1$};
+  \node[index,anchor=west,text=adsInk] at (-3.5mm,-26mm) {\texttt{min(0)} $= 0$, \texttt{max(0)} $= 1$};
   \begin{scope}[shift={(70mm,0)}]
   \node[var,anchor=west] at (-24mm,8mm) {after \texttt{inc(0,2)}};
   \foreach \h in {0,1,2}
     \node[var,anchor=east] at (-6mm,-\h*9mm) {\texttt{bucket(0,\h)}};
   \cells{q0}{0,0}{4/cell,1/cell}
   \cells{q1}{0,-9mm}{3/touched,5/cell}
-  \cells{q2}{0,-18mm}{2/touched}
-  \node[index,anchor=west,text=black] at (-3.5mm,-26mm) {\texttt{min(0)} $= 0$, \texttt{max(0)} $= 2$};
+  \cells{q2}{0,-18mm}{2/added}
+  \node[index,anchor=west,text=adsInk] at (-3.5mm,-26mm) {\texttt{min(0)} $= 0$, \texttt{max(0)} $= 2$};
   \end{scope}
 \end{tikzpicture}
 \end{document}

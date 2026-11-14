@@ -24,9 +24,9 @@
       \coordinate (p\z) at (\x+5.5,\y);
     }
   \draw[edge] (p0) \foreach \z in {1,...,15} { -- (p\z) };
-  \foreach \z in {0,...,15} \fill[adsInk] (p\z) circle (0.6mm);
-  \node[index,anchor=south west] at ($(p0)+(0.08,0.08)$) {0};
-  \node[index,anchor=north east] at ($(p15)+(-0.08,-0.08)$) {15};
+  \foreach \z in {0,...,15} \node[point] at (p\z) {};
+  \node[index,anchor=north] at ($(p0)+(0,-0.1)$) {0};
+  \node[index,anchor=south] at ($(p15)+(0,0.1)$) {15};
   \foreach \x in {0,...,3} {
     \node[index] at (\x,-0.75) {$x = \x$};
     \node[index] at (\x+5.5,-0.75) {$x = \x$};

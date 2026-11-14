@@ -11,8 +11,7 @@
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,
-    el/.style={draw,circle,minimum size=6.5mm,font=\small\ttfamily},
-    elt/.style={el,fill=adsTouched}]
+    el/.style={vertex},elt/.style={vertex-touched}]
   \node[var] at (14mm,9mm) {before};
   \node[el] (a0) at (0,0) {0};
   \node[el] (a2) at (-6mm,-12mm) {2};
@@ -20,8 +19,8 @@
   \node[el] (a3) at (28mm,0) {3};
   \node[el] (a4) at (28mm,-12mm) {4};
   \node[el] (a6) at (28mm,-24mm) {6};
-  \draw[ptr] (a2) -- (a0); \draw[ptr] (a5) -- (a0);
-  \draw[ptr] (a4) -- (a3); \draw[ptr] (a6) -- (a4);
+  \draw[arc] (a2) -- (a0); \draw[arc] (a5) -- (a0);
+  \draw[arc] (a4) -- (a3); \draw[arc] (a6) -- (a4);
   \draw[ptr] (44mm,-12mm) -- node[above=1.5mm,font=\small\ttfamily]
     {unite(6,5)} (66mm,-12mm);
   \node[var] at (88mm,9mm) {after};
@@ -31,7 +30,7 @@
   \node[elt] (b3) at (96mm,-12mm) {3};
   \node[el] (b4) at (90mm,-24mm) {4};
   \node[elt] (b6) at (102mm,-24mm) {6};
-  \draw[ptr] (b2) -- (b0); \draw[ptr] (b5) -- (b0);
-  \draw[ptr] (b3) -- (b0); \draw[ptr] (b4) -- (b3); \draw[ptr] (b6) -- (b3);
+  \draw[arc] (b2) -- (b0); \draw[arc] (b5) -- (b0);
+  \draw[arc] (b3) -- (b0); \draw[arc] (b4) -- (b3); \draw[arc] (b6) -- (b3);
 \end{tikzpicture}
 \end{document}

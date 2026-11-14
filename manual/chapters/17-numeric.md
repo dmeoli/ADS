@@ -225,7 +225,7 @@ In many uses the small numbers are the majority (e.g., the counters, the
 terms of a small fraction, the quotients of a gcd), and for them an
 operation costs a few instructions instead of a call to the allocator.
 
-![Figure 17.2. Fields of `detail::Limbs` in a `BigInteger` of two digits, whose pointer $p$ addresses the places in the object, and of one of three digits, whose digits are in a block of the heap of capacity 4; the places in the object are then unused (grey).](../figures/numeric-limbs.svg){#fig-17-2}
+![Figure 17.2. Fields of `detail::Limbs` in a `BigInteger` of two digits, whose pointer $p$ addresses the places in the object, and of one of three digits, whose digits are in a block of the heap of capacity 4; the places in the object are then unused (faintest tint).](../figures/numeric-limbs.svg){#fig-17-2}
 
 **Sum and difference.** On the magnitudes, the sum and the difference are
 Algorithms 4.3.1A and 4.3.1S of [Knuth 1998](Z-bibliography.md#ref-knuth1998v2),
@@ -728,7 +728,7 @@ dimension*, the distance between the starts of two rows, with no copy
 `gemm()` hands its products when there is one, and it spares one
 indirection per row and the scattering of the rows over the heap.
 
-![Figure 17.3. A $4 \times 4$ matrix as a `Matrix` (a vector of pointers to four rows allocated apart) and as a `DenseMatrix` (one block by rows); the quadrant $A_{22}$ of the second is the view whose first entry is the place 10 and whose leading dimension is 4 (shaded).](../figures/numeric-dense.svg){#fig-17-3}
+![Figure 17.3. A $4 \times 4$ matrix as a `Matrix` (a vector of pointers to four rows allocated apart) and as a `DenseMatrix` (one block by rows); the quadrant $A_{22}$ of the second is the view whose first entry is the place 10 and whose leading dimension is 4 (violet).](../figures/numeric-dense.svg){#fig-17-3}
 
 **Products by the definition and by Strassen.** In `Matrix.h`,
 `multiplyNaive()` computes $c_{ij} = \sum_k a_{ik} b_{kj}$ by three loops,
@@ -919,7 +919,7 @@ the node $p$ that precedes it on the row and the node $u$ that precedes
 it on the column). An audit checks the invariant, i.e., that the lists are
 sorted and that each node is on the lists of its row and of its column.
 
-![Figure 17.4. Orthogonal lists of a $3 \times 3$ matrix after the pivot step on the entry $( 0 , 0 )$, which has created the entry $( 2 , 2 )$ (the fill-in, shaded) on the lists of the row 2 and of the column 2; the last node of each list points back to its head, which the figure does not draw.](../figures/numeric-orthogonal.svg){#fig-17-4}
+![Figure 17.4. Orthogonal lists of a $3 \times 3$ matrix after the pivot step on the entry $( 0 , 0 )$, which has created the entry $( 2 , 2 )$ (the fill-in, orange) on the lists of the row 2 and of the column 2; the last node of each list points back to its head, which the figure does not draw.](../figures/numeric-orthogonal.svg){#fig-17-4}
 
 <span id="alg-17-17"></span>**Algorithm 17.17.** Update of an entry
 and the pivot step on the orthogonal lists ([Knuth 1997, Algorithm
@@ -962,7 +962,7 @@ on the rows, a sort of the columns of each row and the sum of the entries
 in the same place take $O( \mathit{nnz} + m )$ time plus the sorts of the
 rows.
 
-![Figure 17.5. A $3 \times 4$ matrix in compressed sparse rows, and its transpose (shaded), i.e., the same matrix by columns: the row $i$ of the transpose holds the entries of the column $i$, by increasing row.](../figures/numeric-csr.svg){#fig-17-5}
+![Figure 17.5. A $3 \times 4$ matrix in compressed sparse rows, and its transpose (violet), i.e., the same matrix by columns: the row $i$ of the transpose holds the entries of the column $i$, by increasing row.](../figures/numeric-csr.svg){#fig-17-5}
 
 In [Algorithm 17.18](17-numeric.md#alg-17-18), the product $y = A x$
 runs through the rows, the index $p$ of the nonzeros running through all of
@@ -1041,7 +1041,7 @@ small (there is none on the rows of equal length of a stencil). Also, a
 window of $\sigma \ll m$ rows (256 by default) keeps the rows near their
 place, and hence the reads of $x$ and the writes of $y$ near each other.
 
-![Figure 17.6. A matrix of 8 rows of lengths 2, 5, 1, 3, 3, 1, 4, 2 in SELL-4-8: the rows, sorted by decreasing length in the window of 8, fill two chunks of widths 5 and 2, each column of a chunk holding the $k$-th nonzero of its 4 rows; the padding (grey) is 7 places, against 15 for the same chunks in the original order of the rows.](../figures/numeric-sell.svg){#fig-17-6}
+![Figure 17.6. A matrix of 8 rows of lengths 2, 5, 1, 3, 3, 1, 4, 2 in SELL-4-8: the rows, sorted by decreasing length in the window of 8, fill two chunks of widths 5 and 2, each column of a chunk holding the $k$-th nonzero of its 4 rows; the padding (faintest tint) is 7 places, against 15 for the same chunks in the original order of the rows.](../figures/numeric-sell.svg){#fig-17-6}
 
 <span id="alg-17-19"></span>**Algorithm 17.19.** Construction of
 SELL-$C$-$\sigma$ from a `CsrMatrix`, where $\pi$ is the permutation of
@@ -1098,7 +1098,7 @@ the removal of a set of rows, of `DynamicCsr`.
 
 --8<-- "generated/DynamicCsr-remove.pseudo.md"
 
-![Figure 17.7. A `DynamicCsr` of four rows, $( a , b )$, $( c )$, $( d , e , f )$ and $( g , h )$, before and after `remove({1,3})`: the entries of the rows removed (grey) are overwritten by those of the rows kept after them, each moved once (shaded).](../figures/numeric-dynamiccsr.svg){#fig-17-7}
+![Figure 17.7. A `DynamicCsr` of four rows, $( a , b )$, $( c )$, $( d , e , f )$ and $( g , h )$, before and after `remove({1,3})`: the entries of the rows removed (faintest tint) are overwritten by those of the rows kept after them, each moved once (violet).](../figures/numeric-dynamiccsr.svg){#fig-17-7}
 
 <span id="lem-17-11"></span>**Lemma 17.11.** *`remove(E)` leaves the
 rows not in $E$ in their order, with their entries, in $O( r + z' )$ time
@@ -1702,7 +1702,7 @@ $l < \lfloor \mathit{keep}[ h ] 2^{64} \rfloor$ come from the same
 product, at the cost of two loads, against the $O( \log n )$ of a binary
 search in the cumulative sums ([Algorithm 17.34](17-numeric.md#alg-17-34)).
 
-![Figure 17.8. Alias table of the weights $( 1 , 2 , 4 , 1 )$, i.e., $p = ( 1/2 , 1 , 2 , 1/2 )$: the cells 0 and 3 keep their item with probability 1/2 and give the alias 2 otherwise (shaded), so that the item 2 has probability $( 1 + 1/2 + 1/2 ) / 4 = 1 / 2$.](../figures/numeric-alias.svg){#fig-17-8}
+![Figure 17.8. Alias table of the weights $( 1 , 2 , 4 , 1 )$, i.e., $p = ( 1/2 , 1 , 2 , 1/2 )$: the cells 0 and 3 keep their item with probability 1/2 and give the alias 2 otherwise (violet), so that the item 2 has probability $( 1 + 1/2 + 1/2 ) / 4 = 1 / 2$.](../figures/numeric-alias.svg){#fig-17-8}
 
 <span id="alg-17-34"></span>**Algorithm 17.34.** Construction of
 Vose and the draw.

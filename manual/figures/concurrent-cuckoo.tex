@@ -15,9 +15,9 @@
   \cells{B}{0,0}{/cell,/cell,/cell,/cell,/cell,/touched,/cell,/touched,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell}
   \indices{B}{16}
   \foreach \a/\b/\r/\v in {0/3/0/6,4/7/1/9,8/11/2/4,12/15/3/12} {
-    \draw[decorate,decoration={brace,amplitude=2mm}]
-      ($(B-\a.north west)+(0.5mm,1.5mm)$) --
-      ($(B-\b.north east)+(-0.5mm,1.5mm)$)
+    \draw[draw=adsInk!70,decorate,decoration={brace,amplitude=2mm}]
+      ($(B-\a.north west)+(0.5mm,6mm)$) --
+      ($(B-\b.north east)+(-0.5mm,6mm)$)
       node[midway,above=3.5mm,var] {region \r, $v = \v$};
   }
   \node[var] (b1) at ($(B-5)+(0,-15mm)$) {$b_1$};

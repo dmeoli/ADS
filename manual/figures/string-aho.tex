@@ -13,7 +13,7 @@
   st/.style={vertex},
   fin/.style={vertex-touched},
   lab/.style={font=\small\ttfamily,text=adsInk,fill=white,inner sep=1pt},
-  fail/.style={->,edge,dashed}
+  fail/.style={guide,->}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=17mm,y=13mm]
@@ -27,15 +27,15 @@
   \node[st]  (s)    at (1,-1) {s};
   \node[st]  (sh)   at (2,-1) {sh};
   \node[fin] (she)  at (3,-1) {she};
-  \draw[ptr] (e) -- node[lab] {h} (h);
-  \draw[ptr] (h) -- node[lab] {e} (he);
-  \draw[ptr] (he) -- node[lab] {r} (her);
-  \draw[ptr] (her) -- node[lab] {s} (hers);
-  \draw[ptr] (h) -- node[lab] {i} (hi);
-  \draw[ptr] (hi) -- node[lab] {s} (his);
-  \draw[ptr] (e) -- node[lab] {s} (s);
-  \draw[ptr] (s) -- node[lab] {h} (sh);
-  \draw[ptr] (sh) -- node[lab] {e} (she);
+  \draw[arc] (e) -- node[lab] {h} (h);
+  \draw[arc] (h) -- node[lab] {e} (he);
+  \draw[arc] (he) -- node[lab] {r} (her);
+  \draw[arc] (her) -- node[lab] {s} (hers);
+  \draw[arc] (h) -- node[lab] {i} (hi);
+  \draw[arc] (hi) -- node[lab] {s} (his);
+  \draw[arc] (e) -- node[lab] {s} (s);
+  \draw[arc] (s) -- node[lab] {h} (sh);
+  \draw[arc] (sh) -- node[lab] {e} (she);
   \draw[fail] (sh) to[bend left=20] (h);
   \draw[fail] (she) to[bend left=20] (he);
   \draw[fail,rounded corners=4mm] (hers.south) -- (4,-1.65) -- (1,-1.65)

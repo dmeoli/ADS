@@ -27,8 +27,8 @@
   \node[node] (b2) at (44mm,-22mm) {b};
   \draw[ptr] ([yshift=1mm]a2.east) -- ([yshift=1mm]b2.west);
   \draw[ptr] ([yshift=-1mm]b2.west) -- ([yshift=-1mm]a2.east);
-  \draw[ptr,dashed] (x2.west) -- (a2.north east);
-  \draw[ptr,dashed] (x2.east) -- (b2.north west);
+  \draw[ptr,dash pattern=on 3pt off 2pt] (x2.west) -- (a2.north east);
+  \draw[ptr,dash pattern=on 3pt off 2pt] (x2.east) -- (b2.north west);
   \node[anchor=west,font=\small,text=adsInk!55] at (50mm,-12mm) {$L[ x ] = \mathtt{a}$, $R[ x ] = \mathtt{b}$ kept};
   % after the reinsertion
   \node[var,anchor=east] at (-8mm,-40mm) {put back};

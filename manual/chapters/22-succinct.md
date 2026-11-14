@@ -195,7 +195,7 @@ $64 / 256 = 25\%$ of space more instead of $o( m )$
 ([Algorithm 22.4](22-succinct.md#alg-22-4)). The fraction is constant, but it is "small" at the practical sizes, since $m / \log_2 m$ is still 2.5% of $m$ for $m = 2^{40}$, a "large" vector. Above $2^{40}$ bits, a third level counts the 1s
 before each $2^{40}$ bits in 64 bits.
 
-![Figure 22.2. The directory of `RankSelect`. Above, a block of 256 bits and its entry $D[ t ]$, with the 1s before the block and the relative ranks 13, 53 and 60 of its words 1, 2 and 3 (the sideways sums of the words being 13, 40, 7 and 22): the rank of a place $i$ in the word 2 adds 53 and the 1s of the word before $i$ (shaded). Below, a group of the inventory of select, its first place $P[ j ]$ and the offsets of its 1s of rank multiple of $2^g$.](../figures/succinct-rankselect.svg){#fig-22-2}
+![Figure 22.2. The directory of `RankSelect`. Above, a block of 256 bits and its entry $D[ t ]$, with the 1s before the block and the relative ranks 13, 53 and 60 of its words 1, 2 and 3 (the sideways sums of the words being 13, 40, 7 and 22): the rank of a place $i$ in the word 2 adds 53 and the 1s of the word before $i$ (violet). Below, a group of the inventory of select, its first place $P[ j ]$ and the offsets of its 1s of rank multiple of $2^g$.](../figures/succinct-rankselect.svg){#fig-22-2}
 
 <span id="alg-22-4"></span>**Algorithm 22.4.** The directory of
 `RankSelect` and its rank, with the blocks of 256 bits.
@@ -283,7 +283,7 @@ entries, one to the line of the block, and the sideways sums of its 8 words
 cut at $i$, with no branch ([Algorithm 22.6](22-succinct.md#alg-22-6)).
 With AVX2, we count the bytes of the line before the one of $i$ 32 at a time, by a table of the 16 nibbles ([Mula, Kurz and Lemire 2018](Z-bibliography.md#ref-mula2018)). The entries take $128 / 4096 = 3.125\%$ of $m$ bits.
 
-![Figure 22.3. (a) A superblock of `CompactRankSelect`, its 8 blocks of 512 bits and its entry of 128 bits: the rank of a place $i$ in the block 5 adds the count $S$ of the superblock, $c_5$ and the 1s of the line before $i$ (shaded). (b) A line of `InterleavedRankSelect`, its count $h_\ell$ of 16 bits in front of its 496 bits.](../figures/succinct-compact.svg){#fig-22-3}
+![Figure 22.3. (a) A superblock of `CompactRankSelect`, its 8 blocks of 512 bits and its entry of 128 bits: the rank of a place $i$ in the block 5 adds the count $S$ of the superblock, $c_5$ and the 1s of the line before $i$ (violet). (b) A line of `InterleavedRankSelect`, its count $h_\ell$ of 16 bits in front of its 496 bits.](../figures/succinct-compact.svg){#fig-22-3}
 
 <span id="alg-22-6"></span>**Algorithm 22.6.** The rank and the select of
 `CompactRankSelect` ([Kurpicz 2022](Z-bibliography.md#ref-kurpicz2022)).
@@ -441,7 +441,7 @@ is less than 2 bits per item more when $n$ is much smaller than $u$
 `RankSelect` on $H$, `access( i )` takes $O( 1 )$ time, a select and a
 field ([Algorithm 22.9](22-succinct.md#alg-22-9)).
 
-![Figure 22.5. The sequence 3, 4, 7, 13, 14, 15, 21, 43 in $[ 0 , 44 )$ by Elias-Fano, with $\ell = \lceil \log_2( 44 / 8 ) \rceil = 3$: the low parts $L$, the buckets, and $H$, a 1 for each item and a 0 at the end of each bucket. The access to $x_6$ (shaded) finds the seventh 1 of $H$ at the place 8.](../figures/succinct-eliasfano.svg){#fig-22-5}
+![Figure 22.5. The sequence 3, 4, 7, 13, 14, 15, 21, 43 in $[ 0 , 44 )$ by Elias-Fano, with $\ell = \lceil \log_2( 44 / 8 ) \rceil = 3$: the low parts $L$, the buckets, and $H$, a 1 for each item and a 0 at the end of each bucket. The access to $x_6$ (violet) finds the seventh 1 of $H$ at the place 8.](../figures/succinct-eliasfano.svg){#fig-22-5}
 
 <span id="alg-22-9"></span>**Algorithm 22.9.** The construction, the
 access and the search of Elias-Fano.
@@ -500,7 +500,7 @@ sequence. In the partitioned form of [Ottaviano and Venturini 2014](Z-bibliograp
 ([Figure 22.6](22-succinct.md#fig-22-6)). It takes no bit if $u_j = m$ (all the values are there). It is a vector of $u_j$ bits, the bit $v$ for the value $v$, if $u_j$ is at most the bits of Elias-Fano, and otherwise it is Elias-Fano with $\ell = \lfloor \log_2( u_j / m ) \rfloor$, in
 $m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1$ bits.
 
-![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (shaded) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
+![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
 
 <span id="lem-22-8"></span>**Lemma 22.8.** *The cost of a block is at most
 that of Elias-Fano on its universe, and the sum
@@ -539,7 +539,7 @@ points, the optimal piecewise linear approximation of the PGM-index
 `ADS/search/PGMIndex.h`), and each item is stored as its *correction* with
 respect to the line of its segment ([Figure 22.7](22-succinct.md#fig-22-7)).
 
-![Figure 22.7. The points $( i , x_i )$ of a sequence of 16 items covered by two segments, each line with its band of half-width $\epsilon = 2$; the item 5 (shaded) is stored as its correction $C[ 5 ]$, its distance from the line of its segment.](../figures/succinct-lavector.svg){#fig-22-7}
+![Figure 22.7. The points $( i , x_i )$ of a sequence of 16 items covered by two segments, each line with its band of half-width $\epsilon = 2$; the item 5 (violet) is stored as its correction $C[ 5 ]$, its distance from the line of its segment.](../figures/succinct-lavector.svg){#fig-22-7}
 
 <span id="lem-22-9"></span>**Lemma 22.9 (the corrections).** *Let the
 segment $j$, over the places $[ p_j , p_{j+1} )$, have a line
@@ -630,7 +630,7 @@ distances of a pattern database, a value cut down is still a "good" lower bound,
 and $B$ is then chosen for most of the values rather than for the largest
 one.
 
-![Figure 22.8. Above, a word of `PackedArray< 4 >` with its 16 fields, the field 15 on the left; the field 5 (shaded) was written by `set( 5 , 9 )`. Below, a byte of `TritArray`, which holds five values in base 3, and the write of one digit by an addition.](../figures/succinct-packed.svg){#fig-22-8}
+![Figure 22.8. Above, a word of `PackedArray< 4 >` with its 16 fields, the field 15 on the left; the field 5 (violet) was written by `set( 5 , 9 )`. Below, a byte of `TritArray`, which holds five values in base 3, and the write of one digit by an addition.](../figures/succinct-packed.svg){#fig-22-8}
 
 A value of three states carries $\log_2 3 \approx 1.585$ bits of
 information, but takes 2 bits in a field of `PackedArray< 2 >`. We may put five such values (*trits*) $t_0 , \ldots , t_4$ in one byte as the number
@@ -699,7 +699,7 @@ $\lfloor ( \mathrm{select}_1( v + 1 ) + 1 ) / 2 \rfloor - 1$
 the navigation, but not the size of a subtree, which needs the order of a
 visit in depth.
 
-![Figure 22.9. A binary tree of 6 nodes completed with a leaf (grey) in place of each missing child, the places of its nodes by levels from 1, and its code $B$ of $2 n + 1 = 13$ bits; C, the third node, has its children E and F at the places 6 and 7 (shaded).](../figures/succinct-jacobson.svg){#fig-22-9}
+![Figure 22.9. A binary tree of 6 nodes completed with a leaf (faintest tint) in place of each missing child, the places of its nodes by levels from 1, and its code $B$ of $2 n + 1 = 13$ bits; C, the third node, has its children E and F at the places 6 and 7 (violet).](../figures/succinct-jacobson.svg){#fig-22-9}
 
 <span id="alg-22-13"></span>**Algorithm 22.13.** The code by levels of a
 binary tree, and its left child and parent
@@ -739,7 +739,7 @@ Similarly, the 0 after the $( v + 1 )$-th 1, at $p + 1$ with
 $p = \mathrm{select}_1( v + 1 )$, is the $( p + 1 - v )$-th 0, i.e., the
 node $p - v$. $\square$
 
-![Figure 22.10. An ordered tree of 8 nodes, numbered by levels and, in parentheses, in preorder. Above, its code by LOUDS after the dummy root 01, the unary degree of each node bracketed; the degree of the node 1 (shaded) is the 0s 6 and 7, its children 4 and 5. Below, its balanced parentheses in preorder and their excess $E$: the pair of the node 1 opens at 1 and closes at 8, the first place after 1 where the excess falls to $E( 1 ) - 1 = 1$ (dashed).](../figures/succinct-louds-bp.svg){#fig-22-10}
+![Figure 22.10. An ordered tree of 8 nodes, numbered by levels and, in parentheses, in preorder. Above, its code by LOUDS after the dummy root 01, the unary degree of each node bracketed; the degree of the node 1 (violet) is the 0s 6 and 7, its children 4 and 5. Below, its balanced parentheses in preorder and their excess $E$: the pair of the node 1 opens at 1 and closes at 8, the first place after 1 where the excess falls to $E( 1 ) - 1 = 1$ (dashed).](../figures/succinct-louds-bp.svg){#fig-22-10}
 
 ```cpp
 --8<-- "generated/LoudsTree-navigation.cpp"
@@ -885,7 +885,7 @@ that share the first $\ell$ bits stay consecutive, in the order of $S$, and
 the place of the range of $c$ at the last level depends on the bits of $c$
 alone. $\square$
 
-![Figure 22.11. The wavelet matrix of the sequence 4 7 6 5 3 2 1 0 2 1 4 1 of 3 bits: each level holds a bit of each item (the items above the bits, in the order of the level), the 0s first at the next level; the access to the item 2, the 6 = 110 (shaded), moves to the places 9 and 11 by (22.15).](../figures/succinct-waveletmatrix.svg){#fig-22-11}
+![Figure 22.11. The wavelet matrix of the sequence 4 7 6 5 3 2 1 0 2 1 4 1 of 3 bits: each level holds a bit of each item (the items above the bits, in the order of the level), the 0s first at the next level; the access to the item 2, the 6 = 110 (violet), moves to the places 9 and 11 by (22.15).](../figures/succinct-waveletmatrix.svg){#fig-22-11}
 
 Hence `access()`, `rank()` and `select()` follow a place, or the two ends of
 a range, down the $w$ levels by (22.15), or up by the select, in $O( w )$
@@ -999,7 +999,7 @@ which hold the 4 starts 2, 3, 4 and 5; the balance cuts the run at the
 row 8 ([Figure 22.13](22-succinct.md#fig-22-13)). We keep the intervals and the images in two ordered maps during the construction, $O( r \log r )$ time, and each
 interval carries a tag (the symbol of its run), which its parts keep.
 
-![Figure 22.13. The LF-mapping of the transform ard\$rcaaaabb of abracadabra as a move structure: each interval of rows (above, between the orange bars) is shifted alike onto its image (below). The run of a (shaded) is cut at the row 8 by the balance, since its image $[ 2 , 6 )$ held 4 starts.](../figures/succinct-move.svg){#fig-22-13}
+![Figure 22.13. The LF-mapping of the transform ard\$rcaaaabb of abracadabra as a move structure: each interval of rows (above, between the bars) is shifted alike onto its image (below). The run of a (violet) is cut at the row 8 by the balance (the orange bar), since its image $[ 2 , 6 )$ held 4 starts.](../figures/succinct-move.svg){#fig-22-13}
 
 <span id="alg-22-19"></span>**Algorithm 22.19.** The balance and the move
 of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021).
@@ -1034,7 +1034,7 @@ Hence the outdegree and the $i$-th successor are accesses, in $O( 1 )$ time, and
 an edge is a `nextGEQ()`, in $O( 1 )$ expected time
 ([Algorithm 22.20](22-succinct.md#alg-22-20)).
 
-![Figure 22.14. (a) The lists of a graph of 4 nodes as the sequence of the integers $u n + v$ and the sequence of the starts of the lists; the list of 2 is the items 3 and 4 (shaded). (b) The list of the node 16 of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004) coded by reference to that of the node 15: the copy bits of the reference (the items copied shaded), the extra nodes (orange), and the fields of its code with $L_{\min} = 2$.](../figures/succinct-graphs.svg){#fig-22-14}
+![Figure 22.14. (a) The lists of a graph of 4 nodes as the sequence of the integers $u n + v$ and the sequence of the starts of the lists; the list of 2 is the items 3 and 4 (violet). (b) The list of the node 16 of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004) coded by reference to that of the node 15: the copy bits of the reference (the items copied in violet), the extra nodes (orange), and the fields of its code with $L_{\min} = 2$.](../figures/succinct-graphs.svg){#fig-22-14}
 
 <span id="alg-22-20"></span>**Algorithm 22.20.** The construction of the
 graph in Elias-Fano.
@@ -1106,7 +1106,7 @@ places $0 , \ldots , k^2 - 1$, and those of the $j$-th mark 1 of $T$ come
 after the children of the root and of the $j - 1$ marks 1 before it, i.e.,
 they start at $k^2 j$, with $j = \mathrm{rank}_1( T , p + 1 )$. $\square$
 
-![Figure 22.15. The adjacency matrix of a graph of 8 nodes and 7 edges split by $k = 2$ (the orange lines), and its marks by levels $T$ and $L$, in groups of $k^2 = 4$; `hasEdge( 5 , 5 )` follows the places 3, 8 and 23 (shaded).](../figures/succinct-k2tree.svg){#fig-22-15}
+![Figure 22.15. The adjacency matrix of a graph of 8 nodes and 7 edges split by $k = 2$ (the grey lines), and its marks by levels $T$ and $L$, in groups of $k^2 = 4$; `hasEdge( 5 , 5 )` follows the places 3, 8 and 23 (violet).](../figures/succinct-k2tree.svg){#fig-22-15}
 
 Hence no pointer is stored, as in LOUDS, and one can walk the tree by ranks only. `hasEdge( u , v )` follows one path, in $O( h )$ time. `neighbors( u )` walks down the children that cross
 the row $u$, $k$ of the $k^2$ at each level, and `reverseNeighbors( v )`

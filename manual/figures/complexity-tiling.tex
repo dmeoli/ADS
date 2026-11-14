@@ -10,14 +10,16 @@
 \input{tikz-ads}
 \begin{document}
 \newcommand{\tile}[7]{% x, y, up, right, down, left, name
-  \draw (#1,#2) rectangle ++(1,1);
-  \draw[black!40] (#1,#2) -- ++(1,1) (#1,#2+1) -- ++(1,-1);
-  \node[font=\scriptsize] at (#1+0.5,#2+0.82) {#3};
-  \node[font=\scriptsize] at (#1+0.82,#2+0.5) {#4};
-  \node[font=\scriptsize] at (#1+0.5,#2+0.18) {#5};
-  \node[font=\scriptsize] at (#1+0.18,#2+0.5) {#6};
+  \fill[adsTint,rounded corners=1.6pt] (#1,#2) rectangle ++(1,1);
+  \draw[white,line width=1.2pt] (#1,#2) rectangle ++(1,1)
+    (#1,#2) -- ++(1,1) (#1,#2+1) -- ++(1,-1);
+  \node[tl] at (#1+0.5,#2+0.82) {#3};
+  \node[tl] at (#1+0.82,#2+0.5) {#4};
+  \node[tl] at (#1+0.5,#2+0.18) {#5};
+  \node[tl] at (#1+0.18,#2+0.5) {#6};
   \node[index,below=1mm] at (#1+0.5,#2) {#7};}
-\begin{tikzpicture}[ads,x=12mm,y=12mm]
+\begin{tikzpicture}[ads,x=12mm,y=12mm,
+    tl/.style={font=\scriptsize\ttfamily,text=adsInk}]
   \tile{0}{0}{1}{2}{0}{0}{$D[ 0 ] = d$}
   \tile{1.5}{0}{3}{0}{0}{2}{$D[ 1 ]$}
   \tile{3}{0}{0}{4}{1}{0}{$D[ 2 ]$}
@@ -27,7 +29,6 @@
     \tile{1}{0}{3}{0}{0}{2}{$( 1 , 0 )$}
     \tile{0}{1}{0}{4}{1}{0}{}
     \tile{1}{1}{0}{0}{3}{4}{}
-    \draw[very thick] (0,0) rectangle (2,2);
     \node[index,anchor=south] at (0.5,2.05) {$( 0 , 1 )$};
     \node[index,anchor=south] at (1.5,2.05) {$( 1 , 1 )$};
   \end{scope}

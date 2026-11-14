@@ -12,7 +12,7 @@
 \begin{document}
 \begin{tikzpicture}[ads]
   % before the steals
-  \node[var,anchor=west] at (-14mm,8mm) {after the push of the tokens};
+  \node[var,anchor=west] at (-14mm,12mm) {after the push of the tokens};
   \foreach \s/\y in {0/0,1/-9mm,2/-18mm,3/-27mm} {
     \node[var,anchor=east] at (-4mm,\y) {$D_{\s}$};
   }
@@ -28,7 +28,7 @@
   \node[var,anchor=west] at (32mm,-27mm) {idle};
   % after two steals
   \begin{scope}[xshift=74mm]
-  \node[var,anchor=west] at (-14mm,8mm) {after two steals};
+  \node[var,anchor=west] at (-14mm,12mm) {after two steals};
   \foreach \s/\y in {0/0,1/-9mm,2/-18mm,3/-27mm} {
     \node[var,anchor=east] at (-4mm,\y) {$D_{\s}$};
   }

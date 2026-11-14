@@ -19,13 +19,13 @@
   \draw[ptr] (h1) -- (a-2.north);
   \draw[ptr] (t1) -- (a-5.north);
   \node[var,anchor=east] at (-6mm,-22mm) {\texttt{push(e)}};
-  \cells{b}{0,-22mm}{/free,/free,b/cell,c/cell,d/cell,e/touched,/free,/free}
+  \cells{b}{0,-22mm}{/free,/free,b/cell,c/cell,d/cell,e/added,/free,/free}
   \node[var,anchor=west] at (60mm,-19.5mm) {$h = 2$, $t = 6$};
   \node[var,anchor=west] at (60mm,-24.5mm) {$\mathit{seen}_P = 0$, $\mathit{seen}_C = 4$};
   \node[var] (h2) at ($(b-2)+(0,11mm)$) {$h$};
   \node[var] (t2) at ($(b-6)+(0,11mm)$) {$t$};
   \draw[ptr] (h2) -- (b-2.north);
   \draw[ptr] (t2) -- (b-6.north);
-  \indices{b}{8}
+  \indicesbelow{b}{8}
 \end{tikzpicture}
 \end{document}

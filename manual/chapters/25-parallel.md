@@ -202,7 +202,7 @@ threads that wait for them.
 
 ![Figure 25.1. The deques of a `ThreadPool` of
 $p = 4$ threads after the caller (slot 0) has pushed the $h = 3$ tokens of a
-job $J$ of `bulk()` (shaded), and after two thieves have stolen one token
+job $J$ of `bulk()` (violet), and after two thieves have stolen one token
 each from the top; the caller and the two thieves then claim the calls of
 $J$ from its counter $\mathit{next}$, and the token left is taken back by
 the caller.](../figures/parallel-pool.svg){#fig-25-1}
@@ -576,7 +576,7 @@ once and the output written once, $2 n$ moves.
 
 ![Figure 25.2. The scan by decoupled look-back
 on six tiles, each with its flag (0 nothing, 1 the aggregate $a_c$, 2 the
-inclusive prefix $P_c$): the thread of the tile 4 (shaded) adds on the left
+inclusive prefix $P_c$): the thread of the tile 4 (violet) adds on the left
 the aggregates of the tiles 3, 2 and 1 and stops at the prefix of the tile
 0; then it publishes $P_4$. Meanwhile the tile 3 has published its prefix,
 at which the look-back of the tile 5 will stop at
@@ -667,7 +667,7 @@ the left, otherwise to the right.
 
 ![Figure 25.3. Three sorted ranges and the
 splits at the ranks 4 (dashed) and 9 (solid) of their stable merge, which
-bound three parts of the output (shaded alike); the two items 4 come from
+bound three parts of the output (coloured alike); the two items 4 come from
 $R_1$ first.](../figures/parallel-merge.svg){#fig-25-3}
 
 <span id="alg-25-11"></span>**Algorithm 25.11.** The multisequence selection
@@ -1626,7 +1626,7 @@ only after it has pushed them.
 ![Figure 25.5. `MeshChannels` for $p = 3$
 workers, the queue $Q_{f t}$ of the sender $f$ to the receiver $t$ in the
 row $t$, and a `Mailbox` on it: the outbox of the worker 0 for the worker 1
-and the queue $Q_{01}$ (shaded on the left) before and after the push of a
+and the queue $Q_{01}$ (violet on the left) before and after the push of a
 batch of three messages, which adds 3 to the counter $C$ (3 at the start,
 all the workers active) before the messages enter the
 queue.](../figures/parallel-mailbox.svg){#fig-25-5}
