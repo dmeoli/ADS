@@ -2719,6 +2719,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- BTree had no read-only view of its nodes, so that the test of exercises
+  14.1 and 14.2 of Morin checked only the keys and the height, on a tree
+  built from the keys 0 to 23 in order, which is not that of his figure
+  14.2; levels() now gives the keys of the nodes level by level, as that of
+  BlockBTree and BPlusTree, and the test ods_trees
+  ods-ex14.1.btree-one-pass builds the tree of figure 14.2 and compares
+  each tree with figures 8.56 to 8.58 of the manual, as exercises 90 and 91
+  of chapter 8 say
+
 - listSort() compared again, at the start of each run, the first two items
   that the test of the direction of the run had compared, n comparisons on
   a sorted or reversed list of n items and n - 1 + r on r runs; each pair

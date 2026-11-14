@@ -4267,7 +4267,8 @@ children, and the tree is the 2-4 tree of [§8.10](08-tree.md#sec-8-10); in
 general, a node has from $t$ to $2 t$ children, which is the B-tree of [Morin
 2013, §14.2](Z-bibliography.md#ref-morin-cpp) with $B = t$. In `BTree` a node
 holds its keys, its values and its children in three vectors, a leaf having no
-child, and the default degree is $t = 3$.
+child, and the default degree is $t = 3$; `levels()` gives the keys of the
+nodes level by level, the shape that the tests compare with the figures.
 
 <span id="lem-8-50"></span>**Lemma 8.50.** *(The height of a
 B-tree, [Cormen et al. 2009, Theorem 18.1](Z-bibliography.md#ref-cormen2009).)
@@ -6739,6 +6740,8 @@ template< std::totally_ordered K , class V > class BTree {
   [[nodiscard]] std::size_t size( void ) const;
   [[nodiscard]] bool empty( void ) const;
   [[nodiscard]] int height( void ) const;
+  [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels(
+      void ) const;
   template< class F > void forEach( F && f ) const;
   using value_type = std::pair< const K & , const V & >;
   [[nodiscard]] const_iterator begin( void ) const;
@@ -7534,8 +7537,9 @@ a proof by the lemmas cited.
     2013, exercise 14.1](Z-bibliography.md#ref-morin-cpp)). Solved by
     [Figure 8.56](08-tree.md#fig-8-56); the bottom-up tree is
     checked by `ods_ints.ods.ex14.1.figure`, and the one-pass tree by
-    `ods_trees.ods-ex14.1.btree-one-pass` (its keys, height and
-    invariant, since `BTree` shows no node).
+    `ods_trees.ods-ex14.1.btree-one-pass`, which builds the tree of figure
+    14.2 and compares the shape of each tree, by `levels()`, with the
+    figure.
 91. Show what happens when the keys 3 and then 4 are removed from the same
     B-tree by the removal in one pass ([Morin 2013, exercise
     14.2](Z-bibliography.md#ref-morin-cpp)), and then 5, 0 and 6, so that
