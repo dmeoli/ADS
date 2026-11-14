@@ -2555,6 +2555,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the policy THREE of BlockBTree fell back to the rules of the book at a
+  root that splits and at the children of a root of two children, so that a
+  tree of at most two leaves still ran the cycle of Lemma 14.1 of Morin's
+  book, three restructurings every four operations (3000 in 4000 from a root
+  leaf of 2 B - 2 keys, B = 16); in a tree of two leaves the leaves now hold
+  down to max( 1 , floor( B / 2 ) ) keys, and a leaf below that is merged
+  with the other one into a root leaf if that leaf stays B / 4 below the top
+  and shares its keys with it otherwise, so that those restructurings too
+  are O( m / B ) (one split in that cycle), as the header, the theory of the
+  external memory and the chapter of the manual now say; the test ods_ints
+  ods.ex14.7.small-trees
+
 - MultiSearcher counted the checks of its candidates, 2 a place before the
   switch to the automaton, while a check may compare up to the length of the
   longest pattern, so that its worst case was O( n lmax + occ log occ ) (the

@@ -402,10 +402,22 @@
  the same way, so that every node written has between about \f$ 7 B / 6 \f$
  and \f$ 7 B / 4 \f$ keys. Both meet the condition, with
  \f$ \alpha = 1 / 4 \f$ and \f$ \alpha = 1 / 8 \f$ for \f$ B \ge 8 \f$,
- and the cycle of Lemma 5 costs them nothing after its first round; but
- `THREE` falls back to the rules of the book at a root that splits and at
- the children of a root of two children, so that on a tree of at most two
- leaves it still runs that cycle, \f$ \Theta( m ) \f$ restructurings.
+ and the cycle of Lemma 5 costs them nothing after its first round. On a
+ tree of two leaves, where its moves lack the siblings, `THREE` lets the
+ leaves hold down to \f$ \lambda = \max( 1 , \lfloor B / 2 \rfloor ) \f$
+ keys; a leaf below \f$ \lambda \f$ is merged with the other one into a
+ root leaf if that leaf has at most \f$ 2 B - 1 - \lfloor B / 4 \rfloor \f$
+ keys, and otherwise the two share their keys, more than about
+ \f$ 7 B / 8 \f$ and at most about \f$ 5 B / 4 \f$ each. The split of a
+ root leaf of \f$ 2 B \f$ keys gives two leaves of \f$ B \f$ and
+ \f$ B - 1 \f$, about \f$ B / 2 \f$ above \f$ \lambda \f$, and the root
+ leaf of a merge is \f$ B / 4 \f$ below the top; hence these nodes too are
+ \f$ B / 8 \f$ from their bounds, the bound of a leaf changes only when a
+ restructuring rewrites it (from two leaves to three, or back), and the
+ cycle of Lemma 5 at a root leaf costs a single split. The internal children
+ of a root of two children follow the rules of the book, but their keys
+ change only by the restructurings below them, \f$ O( m / B ) \f$, and so do
+ their restructurings.
 
  <em>Lemma 7 (the internal nodes).</em> A B-tree of \f$ n \f$ keys whose root
  is not a leaf has at most \f$ ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) \f$
