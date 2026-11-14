@@ -1,0 +1,33 @@
+% Source for the figure of PathIterator (sec. 1.8): a binary search tree,
+% the path pi from the root to the current node (in violet), on the node 3,
+% after one step (the node 4, reached by popping 3 and 2) and after another
+% (the node 5, reached by pushing 6 and 5). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\newcommand{\tree}[4]{% x offset, current node, list of path edges, label
+  \begin{scope}[xshift=#1]
+    \foreach \k/\x/\y in {4/0/0,2/-12/-12,6/12/-12,1/-18/-24,3/-6/-24,5/6/-24,7/18/-24}
+      \coordinate (n\k) at (\x mm,\y mm);
+    \foreach \a/\b in {4/2,4/6,2/1,2/3,6/5,6/7}
+      \draw[edge] (n\a) -- (n\b);
+    \foreach \a/\b in {#3}
+      \draw[edge-touched] (n\a) -- (n\b);
+    \foreach \k in {1,...,7}
+      \node[vertex] at (n\k) {\k};
+    \node[vertex-touched] at (n#2) {#2};
+    \node[var] at (0,-33mm) {#4};
+  \end{scope}}
+\begin{tikzpicture}[ads]
+  \tree{0mm}{3}{4/2,2/3}{$\pi = \langle 4, 2, 3 \rangle$}
+  \tree{50mm}{4}{}{$\pi = \langle 4 \rangle$}
+  \tree{100mm}{5}{4/6,6/5}{$\pi = \langle 4, 6, 5 \rangle$}
+  \draw[ptr] (22mm,-12mm) -- (30mm,-12mm) node[midway,above=1.5mm,var] {\texttt{++}};
+  \draw[ptr] (72mm,-12mm) -- (80mm,-12mm) node[midway,above=1.5mm,var] {\texttt{++}};
+\end{tikzpicture}
+\end{document}

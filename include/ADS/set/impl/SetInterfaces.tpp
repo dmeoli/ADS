@@ -38,6 +38,7 @@ bool ArrayUSet< T , Eq >::insert( const T & x )
 template< class T , class Eq >
 bool ArrayUSet< T , Eq >::remove( const T & x )
 {
+ //! [uset-remove]
  const T * p = find( x );
  if( ! p )
   return( false );
@@ -45,6 +46,7 @@ bool ArrayUSet< T , Eq >::remove( const T & x )
  if( &y != &f_A.back() )
   y = std::move( f_A.back() );
  f_A.pop_back();
+ //! [uset-remove]
  ADS_POST( find( x ) == nullptr );
  return( true );
  }
@@ -68,10 +70,12 @@ const T * ArraySSet< T , C >::find( const T & x ) const
 template< class T , class C >
 bool ArraySSet< T , C >::insert( const T & x )
 {
+ //! [sset-insert]
  const auto it = std::lower_bound( f_A.begin() , f_A.end() , x , f_less );
  if( ( it != f_A.end() ) && ! f_less( x , *it ) )
   return( false );
  f_A.insert( it , x );
+ //! [sset-insert]
  ADS_POST( find( x ) != nullptr );
  ADS_INVARIANT( sorted() );
  return( true );

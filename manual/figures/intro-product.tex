@@ -1,0 +1,37 @@
+% Source for the figure of the product of two words on halves of 32 bits
+% (sec. 1.6, Portable.h): the four partial products, each of 64 bits, at
+% their shifts, and the sum mid of the three numbers below 2^32 whose high
+% half is the carry into the high word. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\tikzset{half/.style={cell,minimum width=29.6mm},
+         halftouched/.style={touched,minimum width=29.6mm},
+         halfadded/.style={added,minimum width=29.6mm},
+         halffree/.style={free,minimum width=29.6mm}}
+\begin{tikzpicture}[ads]
+  \foreach \b/\x in {127..96/0,95..64/30,63..32/60,31..0/90}
+    \node[index] at (\x mm,8mm) {bits \b};
+  \node[half] at (90mm,0) {lo($a_0 b_0$)};
+  \node[halftouched] at (60mm,0) {hi($a_0 b_0$)};
+  \node[var,anchor=west] at (106mm,0) {$a_0 b_0$};
+  \node[half] at (30mm,-8mm) {hi($a_0 b_1$)};
+  \node[halftouched] at (60mm,-8mm) {lo($a_0 b_1$)};
+  \node[var,anchor=west] at (106mm,-8mm) {$a_0 b_1 2^{32}$};
+  \node[half] at (30mm,-16mm) {hi($a_1 b_0$)};
+  \node[halftouched] at (60mm,-16mm) {lo($a_1 b_0$)};
+  \node[var,anchor=west] at (106mm,-16mm) {$a_1 b_0 2^{32}$};
+  \node[half] at (0mm,-24mm) {hi($a_1 b_1$)};
+  \node[half] at (30mm,-24mm) {lo($a_1 b_1$)};
+  \node[var,anchor=west] at (106mm,-24mm) {$a_1 b_1 2^{64}$};
+  \node[halfadded] at (30mm,-36mm) {carry};
+  \node[halfadded] at (60mm,-36mm) {lo($\mathit{mid}$)};
+  \node[var,anchor=west] at (106mm,-36mm) {$\mathit{mid} < 3 \cdot 2^{32}$};
+  \draw[edge] (-15mm,-30mm) -- (105mm,-30mm);
+\end{tikzpicture}
+\end{document}

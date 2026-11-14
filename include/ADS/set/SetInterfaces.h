@@ -21,9 +21,11 @@
  *   \f$ O( 1 ) \f$ after the scan;
  * - `ArraySSet`, an `SSet` on a sorted vector: `find()` and `lowerBound()`
  *   by binary search in \f$ O( \log n ) \f$, `insert()` and `remove()` move
- *   the items after the place by one `memmove()` in \f$ O( n ) \f$ (the
- *   improvements of exercise 1.7: the binary search for the
- *   `find()`, the block move for the changes).
+ *   the items after the place by one place, as one block (the `insert()`
+ *   and the `erase()` of `std::vector`, a single `memmove()` for the items
+ *   that are trivially copyable), in \f$ O( n ) \f$ (the improvements of
+ *   exercise 1.7: the binary search for the `find()`, the block move for
+ *   the changes).
  *
  * The contracts [see `Contract.h`]: after `insert()` the item is there and
  * after `remove()` it is not; the invariant of `ArraySSet` is the strict
@@ -118,6 +120,19 @@ class ArrayUSet {
 
  /// the item equal to \f$ x \f$ removed, the last one moved into its
  /// place, \f$ O( n ) \f$; true if there was one
+ ///
+ /// In pseudocode (Morin, exercise 1.6), \f$ A[ 0 .. n - 1 ] \f$ the
+ /// vector:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{remove}( x ) \cr
+ /// 2 & \quad i \gets \text{the index of an item equal to } x \text{ in }
+ ///     A,\ \text{by a scan};\ \textbf{if}\ \text{none}\ \textbf{then
+ ///     return false} \cr
+ /// 3 & \quad A[ i ] \gets A[ n - 1 ];\ n \gets n - 1;
+ ///     \ \textbf{return true}
+ /// \end{array}}
+ /// \f]
  /// \post no item equal to \f$ x \f$ is there
  bool remove( const T & x );
 
@@ -160,6 +175,21 @@ class ArraySSet {
 
  /// \f$ x \f$ added in its place if no item equal to it is there, the items
  /// after it moved by one place, \f$ O( n ) \f$; true if added
+ ///
+ /// In pseudocode (Morin, exercises 1.6 and 1.7), \f$ A[ 0 .. n - 1 ] \f$
+ /// the vector, increasing:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{insert}( x ) \cr
+ /// 2 & \quad i \gets \min \{ j : j = n\ \textbf{or}\ A[ j ] \ge x \},
+ ///     \ \text{by binary search} \cr
+ /// 3 & \quad \textbf{if}\ i < n\ \textbf{and}\ A[ i ] = x\ \textbf{then
+ ///     return false} \cr
+ /// 4 & \quad A[ i + 1 .. n ] \gets A[ i .. n - 1 ]\quad \triangleright
+ ///     \ \text{one block move} \cr
+ /// 5 & \quad A[ i ] \gets x;\ n \gets n + 1;\ \textbf{return true}
+ /// \end{array}}
+ /// \f]
  /// \post an item equal to \f$ x \f$ is there
  bool insert( const T & x );
 

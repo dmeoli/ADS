@@ -1,0 +1,28 @@
+% Source for the figure of CircularIterator (sec. 1.8): a circular vector of
+% capacity c = 8 whose head is at the place 5, the items v0 .. v4 by their
+% index i from the head; *it, with it on i = 2, reads the place 7, and
+% it[2] the place (5 + 2 + 2) mod 8 = 1. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {places};
+  \cells{a}{0,0}{v3/cell,v4/touched,/free,/free,/free,v0/cell,v1/cell,v2/touched}
+  \indices{a}{8}
+  \node[var,anchor=east] at (-6mm,-9mm) {$i$};
+  \foreach \p/\i in {0/3,1/4,5/0,6/1,7/2}
+    \node[index] at ($(a-\p)+(0,-9mm)$) {\i};
+  \node[var] (it) at ($(a-7)+(0,-19mm)$) {\texttt{*it}};
+  \node[var] (ik) at ($(a-1)+(0,-19mm)$) {\texttt{it[2]}};
+  \draw[ptr] (it) -- ($(a-7)+(0,-11.5mm)$);
+  \draw[ptr] (ik) -- ($(a-1)+(0,-11.5mm)$);
+  \node[var] (h) at ($(a-5)+(0,12mm)$) {$\mathit{head}$};
+  \draw[ptr] (h) -- ($(a-5.north)+(0,4.4mm)$);
+  \node[var,anchor=west] at (63mm,0) {$n = 5$, $c = 8$};
+\end{tikzpicture}
+\end{document}

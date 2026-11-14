@@ -175,6 +175,7 @@ concept Dictionary = requires( D d , const D cd , const typename D::Key & k ,
 /// and `pop()` are partial, with the precondition that the stack is not
 /// empty; `pop()` also returns the item it removes, and the axiom is about
 /// the stack it leaves
+//! [Stack]
 template< class S >
 concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
  typename S::Item;
@@ -183,6 +184,7 @@ concept Stack = requires( S s , const S cs , const typename S::Item & v ) {
  { s.pop() } -> std::convertible_to< typename S::Item >;
  { cs.top() } -> std::convertible_to< typename S::Item >;
  };
+//! [Stack]
 
 /// QUEUE (section 4.3.1): items are added at the back and removed from the
 /// front (FIFO); `top()` reads the front. As axioms,

@@ -7,7 +7,8 @@
  * them: `insert( x )` always adds \f$ x \f$, `find( x )` gives one of the
  * items equal to \f$ x \f$, `findAll( x )` all of them, `count( x )` how
  * many, and `remove( x )` removes the last one added, each in
- * \f$ O( 1 ) \f$ expected time but `findAll()`, linear in what it gives.
+ * \f$ O( 1 ) \f$ expected time (amortized for `insert()` and `remove()`,
+ * which may rebuild the table) but `findAll()`, linear in what it gives.
  * The bag is a USet of groups, as the exercise asks: a hash table [see
  * `FlatHashTable.h`] from an item to the vector of the items equal to it,
  * in the order of their insertions; equal items need not be identical
@@ -81,7 +82,7 @@ class Bag {
  /// the number of groups of equal items
  [[nodiscard]] std::size_t distinct( void ) const { return( f_T.size() ); }
 
- /// adds \f$ x \f$, \f$ O( 1 ) \f$ expected; always true
+ /// adds \f$ x \f$, \f$ O( 1 ) \f$ expected amortized; always true
  ///
  /// In pseudocode (Morin, exercise 1.5), \f$ G \f$ the table of the
  /// groups:
@@ -99,7 +100,20 @@ class Bag {
  bool insert( const T & x );
 
  /// removes the last item added equal to \f$ x \f$, \f$ O( 1 ) \f$
- /// expected; true if there was one
+ /// expected amortized; true if there was one
+ ///
+ /// In pseudocode (Morin, exercise 1.5), \f$ G \f$ the table of the
+ /// groups:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{remove}( x ) \cr
+ /// 2 & \quad g \gets G.\mathrm{find}( x );\ \textbf{if}\ g =
+ ///     \textbf{nil}\ \textbf{then return false} \cr
+ /// 3 & \quad \textbf{if}\ | g | > 1\ \textbf{then}\ \text{remove the
+ ///     last item of } g\ \textbf{else}\ G.\mathrm{remove}( x ) \cr
+ /// 4 & \quad n \gets n - 1;\ \textbf{return true}
+ /// \end{array}}
+ /// \f]
  /// \post one item equal to \f$ x \f$ less, if there was one
  bool remove( const T & x );
 
