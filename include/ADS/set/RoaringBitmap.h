@@ -316,6 +316,23 @@ class RoaringBitmap {
 
  /// the first container whose chunk is not smaller than `key`, by a
  /// binary search with no branch
+ ///
+ /// In pseudocode (beyond the book), \f$ K \f$ the sorted chunks of the
+ /// containers and \f$ \kappa \f$ the chunk sought; the test of line 5
+ /// chooses \f$ \beta \f$ by a conditional move, not by a jump:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{find}( \kappa ) \cr
+ /// 2 & \quad n \gets | K |;\ \textbf{if}\ n = 0\ \textbf{then return}
+ ///     \ 0 \cr
+ /// 3 & \quad \beta \gets 0 \cr
+ /// 4 & \quad \textbf{while}\ n > 1\ \textbf{do} \cr
+ /// 5 & \qquad h \gets \lfloor n / 2 \rfloor;\ \textbf{if}\ K[ \beta + h
+ ///     ] < \kappa\ \textbf{then}\ \beta \gets \beta + h \cr
+ /// 6 & \qquad n \gets n - h \cr
+ /// 7 & \quad \textbf{return}\ \beta + [ K[ \beta ] < \kappa ]
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] std::size_t find( std::uint16_t key ) const;
 
  /// the invariant of the containers, \f$ O( n ) \f$
