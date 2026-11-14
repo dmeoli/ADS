@@ -27,7 +27,10 @@ the two read as one family.
   `build/preamble.tex`. Number new sections by hand, without gaps.
 - **Labelled items** carry an anchor, `<span id="..."></span>`, before
   their bold label, and are numbered by chapter: `lem-3-1` (Lemma 3.1),
-  `alg-3-1`, `fig-3-1`, `tab-3-1`, `rem-3-1`. Equations are numbered with
+  `alg-3-1`, `tab-3-1`, `rem-3-1`. A figure instead takes its id on the
+  image, in a paragraph of its own, `![Figure 3.1. caption](../figures/x.svg){#fig-3-1}`:
+  a span in the same paragraph would stop Pandoc from making a figure, and
+  the PDF would lose the caption. Equations are numbered with
   `\tag{3.1}` inside the display and cited as "(3.1)".
 - **Cross-references** are Markdown links to `FILE.md#id`, from a chapter
   to a sibling file (`[§3.2](03-stack.md#sec-3-2)`); `build/crossref-link.lua`
@@ -81,7 +84,7 @@ manual/
   build/
     Makefile  pandoc.yaml  preamble.tex  mkdocs.yml  snarf.py
     snippets.lua  figure-ext.lua  crossref-link.lua  break-code.lua
-    katex-init.js
+    katex-init.js  figcaption.js   # the second shows the captions on the site
 ```
 
 ---
@@ -112,8 +115,8 @@ figures keep their natural size, since the TikZ figures are drawn at it.
    `\input`s `tikz-ads` (see `stack-array.tex`); a cell of a vector is
    `cell`, the cell an operation touches `touched`, a free one `free`.
 2. `make figures` writes the `.pdf` and the `.svg`.
-3. Reference it as `![Figure N.M. caption](../figures/<name>.svg)`, after
-   its anchor `<span id="fig-N-M"></span>`.
+3. Reference it as `![Figure N.M. caption](../figures/<name>.svg){#fig-N-M}`,
+   a paragraph of its own (see section 2).
 4. Commit the `.tex`, the `.pdf` and the `.svg`.
 
 ---
