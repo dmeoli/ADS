@@ -386,7 +386,8 @@ void saisInduce( const C * T , S * SA , S n , const S * size , S * B ,
 /// suffixes are tied, unless the groups of a repeated name are small (16
 /// suffixes on average, so that a round costs little and few rounds
 /// separate them), and false if more than limit are still tied after a
-/// round, or after 16 rounds, which leaves the work to the recursion
+/// round, or after 17 rounds (h past 2^16), which leaves the work to the
+/// recursion
 template< class S >
 bool saisDoubling( const S * R , S * SA , S m ,
                    const std::vector< S > & count , S limit )

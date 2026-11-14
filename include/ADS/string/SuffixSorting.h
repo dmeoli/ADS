@@ -34,9 +34,10 @@
  *   T( n ) \le T( \lfloor n / 2 \rfloor ) + O( n ) = O( n ) .
  * \f]
  * Besides \f$ T \f$ and the \f$ n \f$ words of \f$ \mathit{SA} \f$, a level
- * takes \f$ 8 K \f$ words for the counts and the parts of the buckets and
- * \f$ n / 32 \f$ words for two bit vectors, and the levels together
- * \f$ O( n ) \f$ words. As engineered here:
+ * takes at most \f$ 15 K \f$ words for the counts of the kinds, the sizes
+ * and the heads of the buckets, the seeds and the parts of the partial
+ * induction, and \f$ n / 32 \f$ words for two bit vectors, and the levels
+ * together \f$ O( n ) \f$ words. As engineered here:
  *
  * - the types, 64 places a word: with \f$ G \f$ the bits of the places
  *   where \f$ T[ i ] < T[ i + 1 ] \f$ and \f$ E \f$ of those where they
@@ -117,6 +118,11 @@
  * - a text whose suffixes are all of type L never rises, so that each
  *   suffix is larger than the next one and \f$ \mathit{SA} \f$ is
  *   \f$ n - 1 , \ldots , 0 \f$.
+ *
+ * The sorts of comparisons of the direct sort and of the ties, and the at
+ * most 17 rounds of the doubling, cost \f$ O( m \log m ) \f$ at a level,
+ * so that the worst case is \f$ O( n \log n ) \f$, and \f$ O( n ) \f$ when
+ * the radix sorts and the recursion do the work.
  *
  * `lcpArrayPhi()` is the algorithm of Kärkkäinen, Manzini and Puglisi: with
  * \f$ \Phi[ \mathit{SA}[ r ] ] = \mathit{SA}[ r - 1 ] \f$, the permuted LCP
