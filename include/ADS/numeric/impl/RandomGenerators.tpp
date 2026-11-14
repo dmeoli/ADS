@@ -70,6 +70,7 @@ constexpr std::uint64_t WyRand::operator()( void )
  return( hi ^ lo );
  }
 
+//! [uniformBelow]
 template< FullWordGenerator G >
 std::uint64_t uniformBelow( G && g , std::uint64_t s )
 {
@@ -83,6 +84,7 @@ std::uint64_t uniformBelow( G && g , std::uint64_t s )
  ADS_POST( hi < s );
  return( hi );
  }
+//! [uniformBelow]
 
 inline AliasTable::AliasTable( const std::vector< double > & w )
  : f_T( w.size() )

@@ -1,0 +1,28 @@
+% Source for the figure of SellMatrix (sec. 17.7): the two chunks of C = 4
+% rows of an 8-row matrix with sigma = 8; each column of a chunk is the
+% k-th nonzero of its 4 rows, stored one after the other, and the grey
+% places are the padding. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % chunk 0: rows 1, 6, 3, 4 of lengths 5, 4, 3, 3
+  \foreach \r/\len [count=\l from 0] in {1/5,6/4,3/3,4/3} {
+    \node[index,anchor=east] at (-5mm,-\l*7mm) {row \r};
+    \foreach \k in {0,...,4} {
+      \ifnum\k<\len \node[cell] at (\k*7mm,-\l*7mm) {x};
+      \else \node[free] at (\k*7mm,-\l*7mm) {0}; \fi } }
+  % chunk 1: rows 0, 7, 2, 5 of lengths 2, 2, 1, 1
+  \foreach \r/\len [count=\l from 0] in {0/2,7/2,2/1,5/1} {
+    \node[index,anchor=east] at (59mm,-\l*7mm) {row \r};
+    \foreach \k in {0,1} {
+      \ifnum\k<\len \node[cell] at (64mm+\k*7mm,-\l*7mm) {x};
+      \else \node[free] at (64mm+\k*7mm,-\l*7mm) {0}; \fi } }
+  \node[var] at (14mm,8mm) {chunk 0, width 5};
+  \node[var] at (67.5mm,8mm) {chunk 1, width 2};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,25 @@
+% Source for the figure of the product of Karatsuba (sec. 17.2): the three
+% products of the halves added at their shifts into the 2n - 1 coefficients
+% of the result, for n = 6 and h = 3. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {$r_D$};
+  \cells{a}{0,0}{/touched,/touched,/touched,/touched,/touched}
+  \node[var,anchor=east] at (-4mm,-9mm) {$r_M - r_S - r_D$};
+  \cells{b}{21mm,-9mm}{/cell,/cell,/cell,/cell,/cell}
+  \node[var,anchor=east] at (-4mm,-18mm) {$r_S$};
+  \cells{c}{42mm,-18mm}{/touched,/touched,/touched,/touched,/touched}
+  \node[var,anchor=east] at (-4mm,-30mm) {$r$};
+  \cells{r}{0,-30mm}{/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell,/cell}
+  \indices{r}{11}
+  \node[var,anchor=west] at (37mm,0) {shift 0};
+  \node[var,anchor=west] at (58mm,-9mm) {shift $h = 3$};
+  \node[var,anchor=west] at (79mm,-18mm) {shift $2 h = 6$};
+\end{tikzpicture}
+\end{document}

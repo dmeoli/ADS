@@ -1,0 +1,26 @@
+% Source for the figure of SparseMatrix (sec. 17.7): the orthogonal lists
+% of a 3 x 3 matrix after the pivot step on (0,0), which has created the
+% entry (2,2) (the fill-in). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \j in {0,1,2}
+    \node[node,fill=adsFree] (c\j) at (22mm+\j*22mm,0) {col \j};
+  \foreach \i in {0,1,2}
+    \node[node,fill=adsFree] (h\i) at (0,-13mm-\i*13mm) {row \i};
+  \foreach \i/\j/\v/\s in {0/0/a/node,0/2/b/node,1/1/c/node,2/0/d/node,2/2/e/touched}
+    \node[\s,minimum width=8mm,minimum height=6mm,rounded corners=1pt]
+      (n\i\j) at (22mm+\j*22mm,-13mm-\i*13mm) {\v};
+  \draw[ptr] (h0) -- (n00);  \draw[ptr] (n00) -- (n02);
+  \draw[ptr] (h1) -- (n11);
+  \draw[ptr] (h2) -- (n20);  \draw[ptr] (n20) -- (n22);
+  \draw[ptr] (c0) -- (n00);  \draw[ptr] (n00) -- (n20);
+  \draw[ptr] (c1) -- (n11);
+  \draw[ptr] (c2) -- (n02);  \draw[ptr] (n02) -- (n22);
+\end{tikzpicture}
+\end{document}

@@ -336,6 +336,7 @@ class MPIMailboxCore {
 
  /// the waves of `quiescent()`, after the outboxes are sent: true at the
  /// end of the computation or of its stop
+ //! [wave]
  bool wave( void ) {
   if( f_done )
    return( true );
@@ -363,6 +364,7 @@ class MPIMailboxCore {
   f_waving = true;
   return( false );
   }
+ //! [wave]
 
  /// the closing, a collective operation after the end: the messages and
  /// the notes sent to each process summed over all of them, and those not

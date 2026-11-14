@@ -82,6 +82,7 @@ inline double CsrMatrix::get( std::size_t i , std::size_t j ) const
                                    : 0.0 );
  }
 
+//! [multiply]
 inline void CsrMatrix::multiply( const double * x , double * y ) const
 {
  const std::uint32_t * col = f_col.data();
@@ -94,6 +95,7 @@ inline void CsrMatrix::multiply( const double * x , double * y ) const
   y[ i ] = s;
   }
  }
+//! [multiply]
 
 inline std::vector< double > CsrMatrix::multiply(
                                       const std::vector< double > & x ) const

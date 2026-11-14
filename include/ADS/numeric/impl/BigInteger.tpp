@@ -172,6 +172,7 @@ struct Ntt {
  /// rounds of the butterflies of Cooley and Tukey on the blocks of length
  /// 2, 4, ..., n, by the root of unity of each length or by its inverse;
  /// the inverse times 1 / n
+ //! [transform]
  static void transform( std::vector< std::uint32_t > & a , bool inverse ) {
   const std::size_t n = a.size();
   for( std::size_t i = 1 , j = 0 ; i < n ; ++i ) {
@@ -199,6 +200,7 @@ struct Ntt {
    for( auto & x : a ) x = mul( x , ninv );
    }
   }
+ //! [transform]
 
  /// the cyclic convolution modulo P of x and y, both of length n
  static std::vector< std::uint32_t > convolve(
@@ -276,6 +278,7 @@ inline BigInteger BigInteger::operator-( void ) const
 /*------------------------- THE OPERATIONS ON SPANS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
+//! [addN]
 inline BigInteger::Limb BigInteger::addN( Limb * r , const Limb * a ,
                                           std::size_t na , const Limb * b ,
                                           std::size_t nb )
@@ -287,6 +290,7 @@ inline BigInteger::Limb BigInteger::addN( Limb * r , const Limb * a ,
  if( r != a ) std::copy( a + i , a + na , r + i );   // else in place
  return( c );
  }
+//! [addN]
 
 inline BigInteger::Limb BigInteger::subN( Limb * r , const Limb * a ,
                                           std::size_t na , const Limb * b ,
