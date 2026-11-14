@@ -36,12 +36,14 @@ inline std::pair< std::size_t , std::size_t > duvalRun( std::string_view S ,
 {
  // the bytes unsigned, as std::string_view orders them
  const auto * s = reinterpret_cast< const unsigned char * >( S.data() );
+//! [duval]
  std::size_t j = i + 1 , k = i;      // S[ k ] is |w| places before S[ j ]
  while( ( j < S.size() ) && ( s[ k ] <= s[ j ] ) ) {
   k = s[ k ] < s[ j ] ? i : k + 1;   // a longer Lyndon word, or w' grows
   ++j;
   }
  return( std::pair( j - k , j ) );
+//! [duval]
  }
 
 }  // end( namespace detail )
@@ -49,6 +51,7 @@ inline std::pair< std::size_t , std::size_t > duvalRun( std::string_view S ,
 inline std::vector< std::size_t > lyndonFactorization( std::string_view S )
 {
  std::vector< std::size_t > F;
+//! [lyndon]
  for( std::size_t i = 0 ; i < S.size() ; ) {
   const auto [ w , j ] = detail::duvalRun( S , i );
   while( i + w <= j ) {              // the copies of w are factors
@@ -56,6 +59,7 @@ inline std::vector< std::size_t > lyndonFactorization( std::string_view S )
    i += w;
    }
   }
+//! [lyndon]
  ADS_AUDIT( [ & ]( void ) {
   for( std::size_t f = 0 ; f < F.size() ; ++f ) {
    const std::size_t e = f + 1 < F.size() ? F[ f + 1 ] : S.size();

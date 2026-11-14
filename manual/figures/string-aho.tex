@@ -1,0 +1,45 @@
+% Source for the figure of AhoCorasick (sec. 15.3): the trie of the
+% patterns he, she, his, hers, the states that end a pattern doubled,
+% and the failure links that do not lead to the root (dashed). Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{
+  st/.style={circle,draw,minimum size=6.5mm,font=\small\ttfamily},
+  fin/.style={st,double,fill=adsTouched},
+  lab/.style={font=\small\ttfamily,fill=white,inner sep=1pt},
+  fail/.style={->,dashed,black!60}
+}
+\begin{document}
+\begin{tikzpicture}[ads,x=17mm,y=13mm]
+  \node[st]  (e)    at (0,0)  {$\varepsilon$};
+  \node[st]  (h)    at (1,1)  {h};
+  \node[fin] (he)   at (2,1)  {he};
+  \node[st]  (her)  at (3,1)  {her};
+  \node[fin] (hers) at (4,1)  {hers};
+  \node[st]  (hi)   at (2,2)  {hi};
+  \node[fin] (his)  at (3,2)  {his};
+  \node[st]  (s)    at (1,-1) {s};
+  \node[st]  (sh)   at (2,-1) {sh};
+  \node[fin] (she)  at (3,-1) {she};
+  \draw[ptr] (e) -- node[lab] {h} (h);
+  \draw[ptr] (h) -- node[lab] {e} (he);
+  \draw[ptr] (he) -- node[lab] {r} (her);
+  \draw[ptr] (her) -- node[lab] {s} (hers);
+  \draw[ptr] (h) -- node[lab] {i} (hi);
+  \draw[ptr] (hi) -- node[lab] {s} (his);
+  \draw[ptr] (e) -- node[lab] {s} (s);
+  \draw[ptr] (s) -- node[lab] {h} (sh);
+  \draw[ptr] (sh) -- node[lab] {e} (she);
+  \draw[fail] (sh) to[bend left=20] (h);
+  \draw[fail] (she) to[bend left=20] (he);
+  \draw[fail,rounded corners=4mm] (hers.south) -- (4,-1.65) -- (1,-1.65)
+    -- (s.south);
+  \draw[fail,rounded corners=4mm] (his.east) -- (4.6,2) -- (4.6,-1.95)
+    -- (0.8,-1.95) -- (s.south west);
+\end{tikzpicture}
+\end{document}

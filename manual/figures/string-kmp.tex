@@ -1,0 +1,27 @@
+% Source for the figure of kmp() (sec. 15.2): the pattern ababaca against
+% the text, the mismatch after q = 5 matched symbols (above), the shift to
+% q = F[5] = 3 (below), and the failure function F of the pattern. Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{bad/.style={cell,fill=black!15}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5mm,0) {$T$};
+  \cells{t}{0,0}{a/cell,b/cell,a/cell,b/cell,a/cell,b/cell,a/cell,c/cell,a/cell,b/cell}
+  \indices{t}{10}
+  \node[var,anchor=east] at (-5mm,-13mm) {$P$, $q = 5$};
+  \cells{p}{0,-13mm}{a/touched,b/touched,a/touched,b/touched,a/touched,c/bad,a/cell}
+  \node[var,anchor=west] at (72mm,-13mm) {$P[ 5 ] \ne T[ 5 ]$};
+  \node[var,anchor=east] at (-5mm,-24mm) {$q \gets F[ 5 ] = 3$};
+  \cells{r}{14mm,-24mm}{a/touched,b/touched,a/touched,b/cell,a/cell,c/cell,a/cell}
+  \node[var,anchor=west] at (72mm,-24mm) {shift by $q - F[ q ] = 2$};
+  \node[var,anchor=east] at (-5mm,-38mm) {$F$};
+  \cells{f}{0,-38mm}{-1/cell,0/cell,0/cell,1/cell,2/cell,3/touched,0/cell,1/cell}
+  \indices{f}{8}
+\end{tikzpicture}
+\end{document}

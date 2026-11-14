@@ -162,6 +162,7 @@ template< class I >
            std::same_as< I , std::uint64_t > )
 I LceIndex< I >::minimum( std::size_t a , std::size_t c ) const
 {
+//! [minimum]
  constexpr std::size_t B = 16 , G = 64;
  const I * const lcp = f_line.data() + f_shift;
  const std::size_t ba = a / B , bc = c / B , oa = a % B;
@@ -196,6 +197,7 @@ I LceIndex< I >::minimum( std::size_t a , std::size_t c ) const
   v = std::min( { v , row[ f ] , row[ gy - ( std::size_t( 1 ) << L ) ] } );
   }
  return( v );
+//! [minimum]
  }
 
 template< class I >

@@ -194,8 +194,7 @@ the vertices that make a turn not to the left
 choices made so far. [Figure 16.1](16-geometry.md#fig-16-1) shows the scan
 of a point that pops two vertices.
 
-<span id="fig-16-1"></span>
-![Figure 16.1. The scan of Graham on seven points sorted by angle around $o$: before the scan of $p_4$, the stack holds $o$, $p_1$, $p_2$, $p_3$ (the chain), and the points not scanned yet are white; $p_4$ makes a right turn with $p_2$ and $p_3$, and then with $p_1$ and $p_2$, so that $p_3$ and $p_2$ are popped (grey) before $p_4$ is pushed (shaded).](../figures/geometry-graham.svg)
+![Figure 16.1. The scan of Graham on seven points sorted by angle around $o$: before the scan of $p_4$, the stack holds $o$, $p_1$, $p_2$, $p_3$ (the chain), and the points not scanned yet are white; $p_4$ makes a right turn with $p_2$ and $p_3$, and then with $p_1$ and $p_2$, so that $p_3$ and $p_2$ are popped (grey) before $p_4$ is pushed (shaded).](../figures/geometry-graham.svg){#fig-16-1}
 
 <span id="alg-16-2"></span>**Algorithm 16.2.** The scan of Graham
 ([Graham 1972](Z-bibliography.md#ref-graham1972); [Montresor 2025,
@@ -288,8 +287,7 @@ points left is $o( n )$ in expectation ([Devroye and Toussaint
 contrary, most points survive, and the filter costs one pass over $P$ with
 little or no benefit.
 
-<span id="fig-16-2"></span>
-![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (shaded), whose inner points (grey) are dropped; of the 11 points left (black), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg)
+![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (shaded), whose inner points (grey) are dropped; of the 11 points left (black), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg){#fig-16-2}
 
 Second, sorting the points left by $x$ and then $y$,
 instead of by angle, allows a radix sort. With $| x | , | y | < 2^{31}$,
@@ -395,8 +393,7 @@ $x \ge x_m$; hence, a square on the left of the line holds at most one
 point of the left half, and similarly on the right. Thus the rectangle
 holds at most 8 points, $p$ included. $\square$
 
-<span id="fig-16-3"></span>
-![Figure 16.3. The strip of width $2 \delta$ about the split $x = x_m$ (grey), with the points of each half at least $\delta$ apart; the points that follow $p$ in the strip by less than $\delta$ in ordinate lie in the rectangle above it (shaded), whose 8 squares of side $\delta / 2$ hold at most one point each.](../figures/geometry-strip.svg)
+![Figure 16.3. The strip of width $2 \delta$ about the split $x = x_m$ (grey), with the points of each half at least $\delta$ apart; the points that follow $p$ in the strip by less than $\delta$ in ordinate lie in the rectangle above it (shaded), whose 8 squares of side $\delta / 2$ hold at most one point each.](../figures/geometry-strip.svg){#fig-16-3}
 
 The recursion returns each range sorted by $y$, merging the two halves as
 mergesort does, so that the strip comes out in order of $y$ in linear time;
@@ -634,8 +631,7 @@ intervals with $a \le x$ met so far.
 
 --8<-- "generated/IntervalTree-stabbed.pseudo.md"
 
-<span id="fig-16-4"></span>
-![Figure 16.4. An `IntervalTree` of seven intervals, each node with its interval $( a , b )$ (left) and the largest right end of its subtree (right). Above, the nodes on the path of `stabbed(7)` (shaded): it goes right at $[ 5 , 11 ]$ with $m = \max( 8 , 11 ) = 11 \ge 7$, then left at $[ 9 , 10 ]$ and right at $[ 6 , 7 ]$. Below, the tree after `insert(3,13)`: the new leaf, and the augmented values that change on its path (shaded).](../figures/geometry-interval.svg)
+![Figure 16.4. An `IntervalTree` of seven intervals, each node with its interval $( a , b )$ (left) and the largest right end of its subtree (right). Above, the nodes on the path of `stabbed(7)` (shaded): it goes right at $[ 5 , 11 ]$ with $m = \max( 8 , 11 ) = 11 \ge 7$, then left at $[ 9 , 10 ]$ and right at $[ 6 , 7 ]$. Below, the tree after `insert(3,13)`: the new leaf, and the augmented values that change on its path (shaded).](../figures/geometry-interval.svg){#fig-16-4}
 
 To report the intervals, `stab()` visits the tree in symmetric order, and
 it reports them by increasing $( a , b )$. However, it enters a subtree
@@ -720,8 +716,7 @@ a rectangle, on the range tree of [Bentley
 
 --8<-- "generated/RangeTree-count.pseudo.md"
 
-<span id="fig-16-5"></span>
-![Figure 16.5. A `RangeTree` of seven points, each node with its point (above) and the sorted ordinates of its subtree (below). Above, the pieces of `count(2,5,2,5)`, i.e., the keys from $( 2 , -\infty )$ to $( 5 , +\infty )$: the single points $( 2 , 2 )$, $( 4 , 4 )$, $( 5 , 1 )$ and the subtree of $( 3 , 7 )$ (shaded), in which the ordinates in $[ 2 , 5 ]$ are 2 and 4. Below, the tree after `insert(5,6)`: the new leaf and the sequences of all its ancestors, merged again (shaded).](../figures/geometry-range.svg)
+![Figure 16.5. A `RangeTree` of seven points, each node with its point (above) and the sorted ordinates of its subtree (below). Above, the pieces of `count(2,5,2,5)`, i.e., the keys from $( 2 , -\infty )$ to $( 5 , +\infty )$: the single points $( 2 , 2 )$, $( 4 , 4 )$, $( 5 , 1 )$ and the subtree of $( 3 , 7 )$ (shaded), in which the ordinates in $[ 2 , 5 ]$ are 2 and 4. Below, the tree after `insert(5,6)`: the new leaf and the sequences of all its ancestors, merged again (shaded).](../figures/geometry-range.svg){#fig-16-5}
 
 <span id="lem-16-11"></span>**Lemma 16.11.** *`count()` returns the number
 of points of the rectangle, with their copies, in $O( \log^2 n )$ time; an

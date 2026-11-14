@@ -184,8 +184,9 @@ class RearCodedDictionary {
  /// 3 & \qquad \textbf{if}\ i \bmod b = 0\ \textbf{then} \cr
  /// 4 & \qquad\quad \text{append the length of } C \text{ to } P;
  ///     \ \text{append } \mathrm{code}( | s_i | ) \cdot \mathrm{code}( s_i[
- ///     g + 16 .. | s_i | - 1 ] ) \text{ to } C \text{, with } g
- ///     \text{ the prefix that all the strings share} \cr
+ ///     g + 16 .. | s_i | - 1 ] ) \text{ to } C \cr
+ ///   & \qquad\quad \triangleright\ g \text{ the prefix that all the }
+ ///     \text{strings share} \cr
  /// 5 & \qquad \textbf{else} \cr
  /// 6 & \qquad\quad \ell \gets \mathrm{commonPrefixLength}( s_{i-1} , s_i )
  ///     \cr

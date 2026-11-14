@@ -34,11 +34,13 @@ inline std::vector< FrontPair > frontCode(
                                         const std::vector< std::string > & D )
 {
  std::vector< FrontPair > F;
+//! [frontcode]
  F.reserve( D.size() );
  for( std::size_t i = 0 ; i < D.size() ; ++i ) {
   const std::size_t l = i ? commonPrefixLength( D[ i - 1 ] , D[ i ] ) : 0;
   F.emplace_back( l , D[ i ].substr( l ) );
   }
+//! [frontcode]
  ADS_AUDIT( frontDecode( F ) == D );
  return( F );
  }
@@ -47,11 +49,13 @@ inline void encodeLength( std::uint32_t l , std::string & out )
 {
  ADS_PRE( l < ( std::uint32_t( 1 ) << 30 ) );
  const std::size_t start = out.size();
+//! [encodelength]
  int k = 1;                                 // the bytes: l < 2^( 8 k - 2 )
  while( ( k < 4 ) && ( l >= ( std::uint32_t( 1 ) << ( 8 * k - 2 ) ) ) ) ++k;
  const std::uint32_t v = ( std::uint32_t( k - 1 ) << ( 8 * k - 2 ) ) | l;
  for( int j = k - 1 ; j >= 0 ; --j )        // the most significant first
   out.push_back( char( ( v >> ( 8 * j ) ) & 0xFF ) );
+//! [encodelength]
  ADS_AUDIT( [ & ]( void ) {
   std::size_t pos = start;
   return( ( decodeLength( out , pos ) == l ) && ( pos == out.size() ) ); }() );
