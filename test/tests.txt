@@ -466,6 +466,7 @@ taocp  sparse-matrix         liste ortogonali e passo di pivot
 taocp  sparse-pivot          pivot lungo le liste, Algoritmo 2.2.6S
 taocp  bitwise               trucchi sui bit, volume 4A
 taocp  generation            tuple, permutazioni, combinazioni, partizioni
+taocp  generation-costs      visite senza copie, Algoritmo P, radici 1
 taocp  generation-visits     visite che fermano o no la generazione
 taocp  random-numbers        generatori congruenziali e test statistici
 taocp  random-ranges         estrazioni limitate da generatori stretti

@@ -1614,6 +1614,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the generators of Generation.h keep their O( 1 ) amortized bounds in the
+  code: plainChanges() passes its own vector to the visit, from the index
+  0, instead of a new vector of the n items for each permutation;
+  integerPartitions() is Algorithm 7.2.1.4P of Knuth, the 1s cut at once
+  by the length and the parts 2 split by one step, fewer than 3 p( n )
+  parts written in all, instead of the pops of the 1s one by one,
+  Theta( sqrt n ) per partition on the average; mixedRadix() carries over
+  the places of radix larger than 1 only, so that the radices 1 no longer
+  cost Theta( n ) per tuple; the theory of the combinatorial generation
+  and chapter 18 of the manual prove the bounds, and the test
+  generation-costs checks the visits in place, Algorithm P against a
+  recursive generation and the radices 1
+
 - OrderMaintenanceList inserts in O( 1 ) amortized time, removes in O( 1 )
   in the worst case and keeps testBefore() in O( 1 ): it is now the list
   labeling of Bender, Cole, Demaine, Farach-Colton and Zito on two levels,

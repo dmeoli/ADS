@@ -1254,6 +1254,53 @@ ADS_TEST( "generation" )
  CHECK_THROWS( nestedParentheses( -1 , stop ) , contract_violation );
  }
 
+// the bounds of the generators: plainChanges() and integerPartitions()
+// visit their own vector, never a copy, which stays in its place;
+// integerPartitions() is Algorithm 7.2.1.4P, against a recursive
+// generation of the partitions in reverse lexicographic order up to
+// n = 25; mixedRadix() skips the radices 1 and gives the tuples of the
+// others with zeros in their places
+ADS_TEST( "generation-costs" )
+{
+ const Tuple * seen = nullptr;
+ const int * data = nullptr;
+ bool same = true;
+ auto watch = [ & ]( const Tuple & t ) {
+  if( ! seen ) { seen = &t; data = t.data(); }
+  same = same && ( &t == seen ) && ( t.data() == data );
+  };
+ CHECK( plainChanges( 7 , watch ) == 5040 && same );
+ seen = nullptr;
+ CHECK( integerPartitions( 30 , watch ) == 5604 && same );
+ for( int n = 1 ; n <= 25 ; ++n ) {
+  std::vector< Tuple > ref , got;
+  Tuple cur;
+  auto rec = [ & ]( auto & self , int rest , int most ) -> void {
+   if( rest == 0 ) { ref.push_back( cur ); return; }
+   for( int x = std::min( rest , most ) ; x >= 1 ; --x ) {
+    cur.push_back( x );
+    self( self , rest - x , x );
+    cur.pop_back();
+    }
+   };
+  rec( rec , n , n );
+  integerPartitions( n , [ & ]( const Tuple & a ) { got.push_back( a ); } );
+  CHECK( got == ref );
+  }
+ std::vector< Tuple > A , B;
+ const std::vector< int > ones = { 1 , 2 , 1 , 1 , 3 , 1 } , plain = { 2 , 3 };
+ mixedRadix( ones , [ & ]( const Tuple & t ) { A.push_back( t ); } );
+ mixedRadix( plain , [ & ]( const Tuple & t ) {
+  B.push_back( Tuple( { 0 , t[ 0 ] , 0 , 0 , t[ 1 ] , 0 } ) ); } );
+ CHECK( A == B );
+ const std::vector< int > tail( 100000 , 1 );   // m = ( 2 , 1 , ... , 1 )
+ std::vector< int > m2 = { 2 };
+ m2.insert( m2.end() , tail.begin() , tail.end() );
+ long firsts = 0;
+ CHECK( mixedRadix( m2 , [ & ]( const Tuple & t ) { firsts += t[ 0 ]; } ) ==
+        2 && firsts == 1 );
+ }
+
 // the random numbers of volume 2: the period of Hull and Dobell, minstd at
 // its known value after 10000 steps, the chi-square and the
 // Kolmogorov-Smirnov tests passed by a good generator and failed by a bad

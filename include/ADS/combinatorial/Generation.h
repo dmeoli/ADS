@@ -85,23 +85,31 @@ namespace ADS {
 using Tuple = std::vector< int >;   ///< a tuple, a permutation, a string
 
 /// the tuples \f$ ( a_0 , \ldots , a_{n-1} ) \f$ with
-/// \f$ 0 \le a_j < m_j \f$, in lexicographic order
+/// \f$ 0 \le a_j < m_j \f$, in lexicographic order, \f$ O( 1 ) \f$
+/// amortized per tuple after \f$ O( n ) \f$
 ///
 /// In pseudocode (Knuth's Algorithm 7.2.1.1M, beyond the book), adding 1 with
-/// the carries:
+/// the carries over the places of radix larger than 1 only, \f$ b( j ) \f$
+/// the last such place before \f$ j \f$ and \f$ \ell \f$ the last one, -1 if
+/// none (a place of radix 1 holds 0 for ever, and a carry that walked over
+/// it would cost \f$ \Theta( n ) \f$ per tuple for \f$ m = ( 2 , 1 , \ldots ,
+/// 1 ) \f$):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{mixedRadix}( m ) \cr
 /// 2 & \quad a \gets ( 0 , \ldots , 0 ) \cr
 /// 3 & \quad \textbf{loop} \cr
 /// 4 & \qquad \textbf{if}\ \mathrm{visit}( a )\ \textbf{then return} \cr
-/// 5 & \qquad j \gets n - 1 \cr
+/// 5 & \qquad j \gets \ell \cr
 /// 6 & \qquad \textbf{while}\ j \ge 0\ \textbf{and}\ a_j = m_j - 1
-///     \ \textbf{do}\ a_j \gets 0;\ j \gets j - 1 \cr
+///     \ \textbf{do}\ a_j \gets 0;\ j \gets b( j ) \cr
 /// 7 & \qquad \textbf{if}\ j < 0\ \textbf{then return} \cr
 /// 8 & \qquad a_j \gets a_j + 1
 /// \end{array}}
 /// \f]
+/// The carries are \f$ O( 1 ) \f$ amortized: a carry over the place
+/// \f$ j \f$ happens once in \f$ \prod_{i \ge j} m_i \ge 2^k \f$ tuples,
+/// \f$ k \f$ the places of radix larger than 1 from \f$ j \f$ on.
 /// \pre each \f$ m_j \ge 1 \f$
 template< class F >
 long mixedRadix( const std::vector< int > & m , F && visit );
@@ -157,11 +165,14 @@ long grayTuples( const std::vector< int > & m , F && visit );
 template< class F >
 long permutationsLex( Tuple a , F && visit );
 
-/// the permutations of \f$ 0 , \ldots , n - 1 \f$ by swaps of adjacent items
+/// the permutations of \f$ 0 , \ldots , n - 1 \f$ by swaps of adjacent
+/// items, \f$ O( 1 ) \f$ amortized per permutation, the same vector
+/// visited each time
 ///
 /// In pseudocode (Knuth's Algorithm 7.2.1.2P, beyond the book), the places
 /// from 1, \f$ c_j \f$ and \f$ o_j \f$ the counter and the direction of the
-/// item \f$ j \f$, and \f$ s \f$ the items above it already at an end:
+/// item \f$ j \f$, and \f$ s \f$ the items above it already at an end (the
+/// vector of the code holds \f$ a_j \f$ at the index \f$ j - 1 \f$):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{plainChanges}( n ) \cr
@@ -265,29 +276,39 @@ template< class F >
 long revolvingDoor( int n , int t , F && visit );
 
 /// the partitions of \f$ n \f$, their parts nonincreasing, in reverse
-/// lexicographic order
+/// lexicographic order, \f$ O( 1 ) \f$ amortized per partition
 ///
-/// In pseudocode (the order of Knuth's Algorithm 7.2.1.4P, beyond the book):
-/// the last part larger than 1 drops by 1, and the 1s after it, with the unit
-/// taken from it, are split again into parts as large as it.
+/// In pseudocode (Knuth's Algorithm 7.2.1.4P, beyond the book): the last
+/// part \f$ a_q \f$ larger than 1 drops by 1, and the 1s after it, with the
+/// unit taken from it, are split again into parts as large as it; the 1s
+/// are cut off at once, by the length \f$ m \f$ of the partition, never one
+/// by one, and a part 2 becomes \f$ 1 + 1 \f$ by one step, the case of half
+/// the partitions:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{integerPartitions}( n ) \cr
 /// 2 & \quad \textbf{if}\ n = 0\ \textbf{then}\ \mathrm{visit}( () );
 ///     \ \textbf{return} \cr
-/// 3 & \quad a \gets ( n ) \cr
+/// 3 & \quad a_0 \gets 0;\ m \gets 0;\ r \gets n \cr
 /// 4 & \quad \textbf{loop} \cr
-/// 5 & \qquad \textbf{if}\ \mathrm{visit}( a )\ \textbf{then return} \cr
-/// 6 & \qquad k \gets \text{the 1s at the end of } a \text{, removed} \cr
-/// 7 & \qquad \textbf{if}\ a = ()\ \textbf{then return} \cr
-/// 8 & \qquad x \gets \text{the last part of } a \text{, decreased by 1};\ r
-///     \gets k + 1 \cr
-/// 9 & \qquad \textbf{while}\ r > x\ \textbf{do}\ \text{append } x \text{ to }
-///     a;\ r \gets r - x \cr
-/// 10 & \qquad \textbf{if}\ r > 0\ \textbf{then}\ \text{append } r \text{ to }
-///      a
+/// 5 & \qquad m \gets m + 1;\ a_m \gets r;\ q \gets m \text{, or }
+///     m - 1 \text{ if } r = 1 \cr
+/// 6 & \qquad \textbf{loop} \cr
+/// 7 & \qquad\quad \textbf{if}\ \mathrm{visit}( a_1 , \ldots , a_m )
+///     \ \textbf{then return} \cr
+/// 8 & \qquad\quad \textbf{if}\ a_q \ne 2\ \textbf{then break} \cr
+/// 9 & \qquad\quad a_q \gets 1;\ q \gets q - 1;\ m \gets m + 1;\ a_m
+///     \gets 1 \cr
+/// 10 & \qquad \textbf{if}\ q = 0\ \textbf{then return} \cr
+/// 11 & \qquad x \gets a_q - 1;\ a_q \gets x;\ r \gets m - q + 1;\ m
+///     \gets q \cr
+/// 12 & \qquad \textbf{while}\ r > x\ \textbf{do}\ m \gets m + 1;\ a_m
+///     \gets x;\ r \gets r - x
 /// \end{array}}
 /// \f]
+/// The work between two visits is the number of parts written, fewer than
+/// 3 per partition over the whole run (Lemma 3 of
+/// \ref theory_combinatorial_generation).
 /// \pre \f$ n \ge 0 \f$
 template< class F >
 long integerPartitions( int n , F && visit );

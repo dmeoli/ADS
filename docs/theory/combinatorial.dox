@@ -200,8 +200,17 @@
  argument gives \f$ O( 1 ) \f$ amortized for the tuples, where a carry over
  the last \f$ k \f$ places happens once every
  \f$ m_{n-1} m_{n-2} \cdots m_{n-k} \ge 2^k \f$ tuples, and for the
- combinations. The engineered versions of `FastGeneration.h` remove the
- constant itself from the inner loop: the last place of a combination runs
+ combinations. For the tuples the bound needs \f$ m_j \ge 2 \f$: a place of
+ radix 1 holds 0 for ever, and a carry that walked over it would cost
+ \f$ \Theta( n ) \f$ for each of the 2 tuples of \f$ m = ( 2 , 1 , \ldots ,
+ 1 ) \f$; `mixedRadix()` links each place to the last place of radix larger
+ than 1 before it, so that the carries skip the places of radix 1 and the
+ argument holds on the others. A generator also passes its own vector to
+ the visit, never a copy, which would cost \f$ \Theta( n ) \f$ per object
+ and hide the bound: `plainChanges()` keeps its permutation from the index
+ 0 and the counters and the directions of Algorithm P from 1. The
+ engineered versions of `FastGeneration.h` remove the constant itself from
+ the inner loop: the last place of a combination runs
  through its values by a loop of its own, the last 3 items of a permutation
  are written in their 6 orders directly, and the words of
  `forEachCombinationMask()` move their lowest 1 up by one addition while it
@@ -252,6 +261,30 @@
  which `nestedParentheses()` builds by a backtrack that tries the opening
  parenthesis first, a node of its tree costing \f$ O( 1 ) \f$ and every leaf
  of it being a solution.
+
+ <em>Lemma 3 (the partitions of an integer, Algorithm 7.2.1.4P).</em>
+ `integerPartitions()` visits the \f$ p( n ) \f$ partitions of \f$ n \f$ in
+ reverse lexicographic order writing fewer than \f$ 3 p( n ) \f$ parts in
+ all, i.e., in \f$ O( 1 ) \f$ amortized time per partition.
+
+ Indeed, let \f$ a_q \f$ be the last part larger than 1. If
+ \f$ a_q = 2 \f$, the successor replaces it by \f$ 1 + 1 \f$, writing two
+ parts. Otherwise \f$ a_q \ge 3 \f$ drops to \f$ x = a_q - 1 \ge 2 \f$, the
+ 1s after it are cut off at once by the length of the partition, and their
+ sum plus 1 is written as parts \f$ x \f$ followed by one last part; this
+ is the least partition after the current one in reverse lexicographic
+ order, since the prefix before \f$ a_q \f$ cannot change and the rest is
+ the largest partition with parts at most \f$ x \f$. Let \f$ \Phi \f$ be
+ the number of parts larger than 1: the first case lowers \f$ \Phi \f$ by
+ 1, and the second raises it by the parts \f$ x \f$ written plus at most 1
+ for the last part, the cut 1s and the part \f$ a_q \f$, still larger than
+ 1, leaving it as it was. Since \f$ \Phi \f$ goes from 1, the partition
+ \f$ ( n ) \f$, to 0, the partition \f$ 1^n \f$, the parts \f$ x \f$
+ written over the run are at most the number of the first cases, below
+ \f$ p( n ) \f$, and each step writes besides them at most two parts. The
+ former loop, which removed the 1s one at a time, wrote and erased
+ \f$ \Theta( \sqrt{n} ) \f$ parts per partition on the average, the
+ expected number of 1s in a partition of \f$ n \f$.
 
  \section theory_combinatorial_refs References
 
