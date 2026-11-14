@@ -1855,3 +1855,10 @@ ods_ints  ods.ex12.2.incidence-matrix    Morin es. 12.2, matrice di incidenza
 ods_ints  ods12.3.visits                 Morin 12.3 ed es. 12.3, 12.8, 12.9, visite
 ods_ints  ods.ex12.4.components          Morin es. 12.4-12.7, componenti e foresta
 ods_ints  ods.ex12.10.universal-sink     Morin es. 12.10, pozzo universale
+ods_ints  ods14.1.block-store            Morin 14.1, memoria a blocchi
+ods_ints  ods14.2.b-tree                 Morin 14.2, B-albero sui blocchi
+ods_ints  ods.ex14.1.figure              Morin es. 14.1-14.2, B-albero della figura
+ods_ints  ods.ex14.3.internal-nodes      Morin es. 14.3, nodi interni
+ods_ints  ods.ex14.4.memory              Morin es. 14.4, memoria interna
+ods_ints  ods.ex14.6.restructures        Morin es. 14.6-14.7, ristrutturazioni
+ods_ints  ods.ex14.8.bplus-tree          Morin es. 14.8, B+-albero con rimozione

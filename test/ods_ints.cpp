@@ -29,6 +29,8 @@
 #include "ADS/dictionary/BitmapTrie.h"
 #include "ADS/dictionary/XFastTrie.h"
 #include "ADS/dictionary/YFastTrie.h"
+#include "ADS/external/BlockBTree.h"
+#include "ADS/external/BlockStore.h"
 #include "ADS/graph/IncidenceGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/MatrixGraph.h"
@@ -47,6 +49,7 @@
 #include "ADS/sort/QuickSort.h"
 #include "ADS/sort/QuicksortAdversary.h"
 #include "ADS/sort/RadixSort.h"
+#include "ADS/tree/BPlusTree.h"
 
 #include <algorithm>
 #include <array>
@@ -1544,6 +1547,230 @@ ADS_TEST( "ods.ex12.10.universal-sink" )
   CHECK( ADS::universalSink( g ) == expected );
   if( round % 3 == 0 )
    CHECK( expected == s );
+  }
+ }
+
+
+/*--------------------------------------------------------------------------*/
+/*-------------------- CHAPTER 14, EXTERNAL MEMORY -------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// ods 14.1: the store of blocks, one I/O per read and per write, a freed
+// block given again by the next placement, and the counters of a
+// TwoLevelMemory shared
+ADS_TEST( "ods14.1.block-store" )
+{
+ ADS::TwoLevelMemory mem( 4 , 64 );
+ ADS::BlockStore< std::vector< int > > S( &mem );
+ const auto a = S.placeBlock( { 1 , 2 } );
+ const auto b = S.placeBlock( { 3 } );
+ CHECK( a != b && S.blocks() == 2 && S.writes() == 2 && S.reads() == 0 );
+ auto x = S.readBlock( a );
+ x.push_back( 9 );   // a copy: the disk changes only by a write
+ CHECK( S.peek( a ).size() == 2 && S.reads() == 1 );
+ S.writeBlock( a , x );
+ CHECK( S.peek( a ).size() == 3 && S.writes() == 3 );
+ S.freeBlock( b );
+ CHECK( S.blocks() == 1 && S.placeBlock( { 7 } ) == b );
+ CHECK( mem.reads() == 1 && mem.writes() == 4 );
+ CHECK_THROWS( ( void ) S.readBlock( 5 ) , ADS::contract_violation );
+ }
+
+/// a differential test of the B-tree of a policy against a std::set, the
+/// invariant checked at each operation while there are at most 1024 keys,
+/// and the I/Os of each operation within a constant times the height
+void btreeAgainstSet( int B , ADS::BTreePolicy pol , int ops ,
+                      std::uint64_t seed )
+{
+ ADS::BlockBTree< int > t( B , pol );
+ std::set< int > s;
+ std::mt19937_64 g( seed );
+ for( int i = 0 ; i < ops ; ++i ) {
+  const int k = int( g() % 3000 );
+  const std::uint64_t io = t.reads() + t.writes();
+  if( g() % 5 < 3 )
+   CHECK( t.insert( k ) == s.insert( k ).second );
+  else
+   CHECK( t.remove( k ) == ( s.erase( k ) == 1 ) );
+  CHECK( t.size() == s.size() );
+  // a walk down and back up, four blocks per level at most
+  CHECK( t.reads() + t.writes() - io <=
+         std::uint64_t( 8 * t.height() + 8 ) );
+  const int y = int( g() % 3100 );
+  const auto it = s.lower_bound( y );
+  CHECK( t.find( y ) == ( it == s.end() ? std::optional< int >() :
+                          std::optional< int >( *it ) ) );
+  }
+ std::vector< int > K;
+ t.forEach( [ & ]( int k ) { K.push_back( k ); } );
+ CHECK( K == std::vector< int >( s.begin() , s.end() ) );
+ for( const int k : K )
+  CHECK( t.remove( k ) );
+ CHECK( t.empty() && t.height() == 1 && t.nodes() == 1 );
+ }
+
+// ods 14.2: the B-tree on the blocks against a std::set, for B = 2, 3, 8
+// and 64 and the three policies
+ADS_TEST( "ods14.2.b-tree" )
+{
+ for( int B : { 2 , 3 , 8 , 64 } )
+  for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
+                    ADS::BTreePolicy::THREE } )
+   btreeAgainstSet( B , pol , 6000 , std::uint64_t( B ) * 7 + int( pol ) );
+ }
+
+/// the B-tree of figure 14.2 of Morin's book, B = 2, its keys doubled so
+/// that the 1.5 and the 7.5 of exercise 14.1 are integers
+ADS::BlockBTree< int > figureBTree( void )
+{
+ ADS::BlockBTree< int > t( 2 );
+ t.assign( { { { 20 } } ,
+             { { 6 , 12 } , { 28 , 34 , 42 } } ,
+             { { 0 , 2 , 4 } , { 8 , 10 } , { 14 , 16 , 18 } ,
+               { 22 , 24 , 26 } , { 30 , 32 } , { 36 , 38 , 40 } ,
+               { 44 , 46 } } } );
+ return( t );
+ }
+
+// ods ex 14.1 and ex 14.2: the insertions of 1.5 and 7.5 into the tree of
+// figure 14.2 (two splits of leaves and one of their parent, which gives
+// the root a second key), and the removals of 3 and 4 (the key of an
+// internal node replaced by its successor, then a borrow from the leaf on
+// the left), as the book's rules give them
+ADS_TEST( "ods.ex14.1.figure" )
+{
+ using L = std::vector< std::vector< std::vector< int > > >;
+ auto t = figureBTree();
+ CHECK( t.size() == 25 && t.height() == 3 );
+ CHECK( t.insert( 3 ) && t.insert( 15 ) );
+ CHECK( ( t.levels() == L{ { { 12 , 20 } } ,
+                         { { 3 , 6 } , { 16 } , { 28 , 34 , 42 } } ,
+                         { { 0 , 2 } , { 4 } , { 8 , 10 } , { 14 , 15 } ,
+                           { 18 } , { 22 , 24 , 26 } , { 30 , 32 } ,
+                           { 36 , 38 , 40 } , { 44 , 46 } } } ) );
+ CHECK( t.splits() == 3 );
+ auto u = figureBTree();
+ CHECK( u.remove( 6 ) );
+ CHECK( ( u.levels() == L{ { { 20 } } ,
+                         { { 8 , 12 } , { 28 , 34 , 42 } } ,
+                         { { 0 , 2 , 4 } , { 10 } , { 14 , 16 , 18 } ,
+                           { 22 , 24 , 26 } , { 30 , 32 } , { 36 , 38 , 40 } ,
+                           { 44 , 46 } } } ) );
+ CHECK( u.remove( 8 ) );
+ CHECK( ( u.levels() == L{ { { 20 } } ,
+                         { { 4 , 12 } , { 28 , 34 , 42 } } ,
+                         { { 0 , 2 } , { 10 } , { 14 , 16 , 18 } ,
+                           { 22 , 24 , 26 } , { 30 , 32 } , { 36 , 38 , 40 } ,
+                           { 44 , 46 } } } ) );
+ CHECK( u.borrows() == 1 && u.merges() == 0 );
+ }
+
+// ods ex 14.3: a B-tree of n keys has at most ( ( n + 1 ) / B + B - 3 ) /
+// ( B - 1 ) internal nodes, since its L leaves hold at least B - 1 keys
+// each, n >= B L - 1, and its internal nodes but the root at least B
+// children; checked on random trees and on the trees of the smallest
+// nodes, built by the removals that follow the insertions
+ADS_TEST( "ods.ex14.3.internal-nodes" )
+{
+ std::mt19937 g( 21 );
+ for( int B : { 2 , 3 , 5 , 9 } ) {
+  ADS::BlockBTree< int > t( B );
+  for( int i = 0 ; i < 4000 ; ++i ) {
+   if( g() % 3 )
+    t.insert( int( g() % 20000 ) );
+   else
+    t.remove( int( g() % 20000 ) );
+   const double n = double( t.size() );
+   CHECK( double( t.internalNodes() ) <=
+          ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) + 1e-9 );
+   }
+  }
+ }
+
+// ods ex 14.4: the internal memory of the operations, at most 5 nodes at
+// once and the path of the indices, whatever the height, where the
+// recursion of the book holds one node per level
+ADS_TEST( "ods.ex14.4.memory" )
+{
+ for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
+                   ADS::BTreePolicy::THREE } ) {
+  ADS::BlockBTree< int > t( 2 , pol );
+  std::mt19937 g( 22 );
+  for( int i = 0 ; i < 30000 ; ++i )
+   t.insert( int( g() ) );
+  for( int i = 0 ; i < 30000 ; ++i )
+   t.remove( int( g() ) );
+  CHECK( t.height() >= 8 );
+  CHECK( t.peakNodes() <= 5 );
+  CHECK( t.peakPath() < std::size_t( t.height() + 2 ) );
+  }
+ }
+
+// ods ex 14.6 and ex 14.7: the cycle of two insertions and two removals
+// at a leaf of 2 B - 2 keys costs the book's rules a split, a borrow and a
+// merge per cycle, Theta( m ) in all, for any B, while the wide nodes of
+// exercise 14.6 and the three-node moves of exercise 14.7 make
+// O( m / B ) restructurings
+ADS_TEST( "ods.ex14.6.restructures" )
+{
+ const int B = 16 , cycles = 1000;
+ for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
+                   ADS::BTreePolicy::THREE } ) {
+  ADS::BlockBTree< int > t( B , pol );
+  std::vector< int > left , right;
+  for( int k = 0 ; k < 2 * B - 2 ; ++k )
+   left.push_back( k );
+  for( int k = 0 ; k < B ; ++k )
+   right.push_back( 1001 + k );
+  t.assign( { { { 1000 } } , { left , right } } );
+  const std::size_t r = t.restructures();
+  for( int c = 0 ; c < cycles ; ++c ) {
+   CHECK( t.insert( 500 ) && t.insert( 501 ) );
+   CHECK( t.remove( 501 ) && t.remove( 500 ) );
+   }
+  const std::size_t done = t.restructures() - r;
+  if( pol == ADS::BTreePolicy::STANDARD )
+   CHECK( done == 3 * std::size_t( cycles ) );
+  else
+   CHECK( done <= 4 * std::size_t( cycles ) / std::size_t( B ) );
+  }
+ }
+
+// ods ex 14.8: the B+-tree with the removal by borrows and merges, find()
+// the smallest key >= x and findRange( x , y ) the keys in ( x , y ],
+// against a std::map, the shape checked at each operation
+ADS_TEST( "ods.ex14.8.bplus-tree" )
+{
+ for( int m : { 3 , 4 , 5 , 8 } ) {
+  ADS::BPlusTree< int , int > t( m );
+  std::map< int , int > s;
+  std::mt19937 g( static_cast< std::uint32_t >( m ) );
+  for( int i = 0 ; i < 8000 ; ++i ) {
+   const int k = int( g() % 600 );
+   if( g() % 2 ) {
+    t.insert( k , i );
+    s[ k ] = i;
+    }
+   else {
+    t.remove( k );
+    s.erase( k );
+    }
+   CHECK( t.size() == s.size() );
+   t.check();
+   const int x = int( g() % 620 ) , y = x + int( g() % 50 );
+   const auto it = s.lower_bound( x );
+   CHECK( t.find( x ) == ( it == s.end() ? std::optional< int >() :
+                           std::optional< int >( it->first ) ) );
+   std::vector< std::pair< int , int > > R;
+   for( auto j = s.upper_bound( x ) ; j != s.end() && j->first <= y ; ++j )
+    R.push_back( *j );
+   CHECK( t.findRange( x , y ) == R );
+   }
+  for( auto [ k , v ] : std::map< int , int >( s ) ) {
+   t.remove( k );
+   CHECK( ! t.contains( k ) );
+   }
+  CHECK( t.size() == 0 && t.levels().size() == 1 );
   }
  }
 
