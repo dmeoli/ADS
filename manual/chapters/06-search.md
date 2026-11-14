@@ -145,11 +145,7 @@ ends after at most $\lfloor \log_2 n \rfloor + 1 = \lceil \log_2 ( n + 1 ) \rcei
 comparisons with $\mathit{lo} = \mathit{hi}$, which is the answer by (6.2). $\square$
 
 Its contracts check (6.2) at the result, and that the range is sorted, an
-audit that costs $O( n )$ against the $O( \log n )$ of the search:
-
-```cpp
---8<-- "generated/BinarySearch-lowerBound.cpp"
-```
+audit that costs $O( n )$ against the $O( \log n )$ of the search.
 
 When the answer $h$ is near the start, or the length of the vector is not
 known, the search of [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)
@@ -344,10 +340,6 @@ when its condition holds and 0 otherwise.
 
 --8<-- "generated/StaticSearch-branchlessLowerBound.pseudo.md"
 
-```cpp
---8<-- "generated/StaticSearch-branchlessLowerBound.cpp"
-```
-
 <span id="lem-6-3"></span>**Lemma 6.3.** *On a sorted vector of $n > 0$
 items, `branchlessLowerBound()` returns $\mathrm{lowerBound}( v )$ after
 $\lceil \log_2 n \rceil + 1$ comparisons, whatever $v$.*
@@ -415,11 +407,7 @@ to the leaves, $H - 1$.
 --8<-- "generated/CountLess-greaterBits.pseudo.md"
 
 A search is thus a loop of counts, one per level, and `upperBound()` counts
-the keys not larger than $v$ instead:
-
-```cpp
---8<-- "generated/StaticSearch-search.cpp"
-```
+the keys not larger than $v$ instead.
 
 Besides the two bounds, the tree answers `contains()` by `lowerBound()`,
 reads the item of a place by `operator[]`, and gives `size()`, `empty()`
@@ -543,11 +531,7 @@ that their misses overlap, and is searched by a binary search with no
 branch. On repeated keys, whose places a line cannot all approximate, the
 answer may be out of the window, and the search then goes on past it by
 galloping, at a cost logarithmic in the distance. Since the items are a copy
-on huge pages, the window adds no miss of the TLB:
-
-```cpp
---8<-- "generated/PGMIndex-lowerBound.cpp"
-```
+on huge pages, the window adds no miss of the TLB.
 
 Like the S+ tree, the index answers `contains()`, `operator[]`, `size()`,
 `empty()` and `height()` (its levels), and also gives `segments()`, the
@@ -900,10 +884,13 @@ Below 600 items the pivot is the median of three, and a range of at most
 
 <span id="alg-6-16"></span>**Algorithm 6.16.** The engineered selection
 (the selection of [Hoare 1961](Z-bibliography.md#ref-hoare1961) with the
-sample of [Floyd and Rivest 1975](Z-bibliography.md#ref-floyd1975)); the
-range is $A[ 0 .. n - 1 ]$ and $k$ the place `nth`.
+sample of [Floyd and Rivest 1975](Z-bibliography.md#ref-floyd1975)), and
+its partition of Lomuto with no branch; the range is $A[ 0 .. n - 1 ]$ and
+$k$ the place `nth`.
 
 --8<-- "generated/NthElement-nthElement.pseudo.md"
+
+--8<-- "generated/NthElement-selectLomuto.pseudo.md"
 
 The partition suits the order of the range, which 64 items taken at a
 stride reveal. On a random order (more than 16 turns, i.e., a rise followed
@@ -917,9 +904,24 @@ quicksort), while the partition of Hoare mispredicts half of its
 comparisons on random items. The loop is unrolled by 4, so that it does not
 depend on the alignment of one jump.
 
-```cpp
---8<-- "generated/NthElement-selectLomuto.cpp"
-```
+<span id="lem-6-11"></span>**Lemma 6.11.** *`selectLomuto()` makes $n -
+1$ comparisons and returns a place $q$ such that $A[ q ] = p$, the items
+before $q$ are smaller than $p$ (not larger, when the equal items go
+left), and those after $q$ are not.*
+
+*Proof.* Call an item *left* when the test of line 5 holds for it. We
+show that after the iteration $i$ of line 3 the items of $A[ 1 .. \ell -
+1 ]$ are left and those of $A[ \ell .. i ]$ are not, with $1 \le \ell \le
+i + 1$; this holds before the first iteration, with $\ell = 1$ and an
+empty second range. Line 4 exchanges $x = A[ i ]$ with $A[ \ell ]$, which
+is an item that is not left when $\ell < i$, and $x$ itself when $\ell =
+i$. If $x$ is left, line 5 extends the first range by the place $\ell$
+that now holds $x$, and the item moved to the place $i$ is not left; if
+$x$ is not left, it stays at the place $\ell$, the first of the second
+range. After the last iteration, $A[ 1 .. \ell - 1 ]$ are left and
+$A[ \ell .. n - 1 ]$ are not; line 6 moves $p$ to the place $q = \ell -
+1$ and the left item there, if $q > 0$, to the place 0. Each iteration
+makes one comparison, and there are $n - 1$ of them. $\square$
 
 On a range in some order (an organ pipe, a few runs) the partition is the
 scheme of Hoare, whose branches are then predicted and which writes only
@@ -998,11 +1000,7 @@ holding the right spine of the tree of $A[ 0 .. i - 1 ]$.
 
 --8<-- "generated/RangeMinimum-cartesianTree.pseudo.md"
 
-```cpp
---8<-- "generated/RangeMinimum-cartesianTree.cpp"
-```
-
-<span id="lem-6-11"></span>**Lemma 6.11.** *$\mathrm{RMQ}( i , j )$ is the
+<span id="lem-6-12"></span>**Lemma 6.12.** *$\mathrm{RMQ}( i , j )$ is the
 lowest common ancestor of $i$ and $j$ in the Cartesian tree of $A$, i.e.,
 the node of least depth among those that the Euler tour of the tree visits
 between the first visits of $i$ and $j$ ([Bender and Farach-Colton
@@ -1082,7 +1080,7 @@ $j$, which pops the items larger than the new one and pushes it
 
 ![Figure 6.9. A block of 8 items (64 in `WordRangeMinimum`) and the mask of the place 6 by (6.14), whose set bits are the places 2 and 6 of the minima from the right of the items 0 to 6; the leftmost minimum of the items 3 to 6 is the lowest set bit at or above 3, i.e., the place 6.](../figures/search-word.svg){#fig-6-9}
 
-<span id="lem-6-12"></span>**Lemma 6.12.** *Inside a block, the leftmost
+<span id="lem-6-13"></span>**Lemma 6.13.** *Inside a block, the leftmost
 minimum of $A[ i .. j ]$ is the place of the lowest set bit of
 $\mathit{mask}[ j ]$ at or above $i$, i.e.,
 $b + \mathrm{ctz}( \mathit{mask}[ j ] \wedge \neg ( 2^{i-b} - 1 ) )$.*
@@ -1104,11 +1102,7 @@ side by side, and so are the minima in the table; a query thus makes at
 most five reads of the memory, independent of one another, and never reads
 the array. Both answers (in one block and across blocks) are computed, and
 one is chosen by a conditional move, which a random range would otherwise
-mispredict half of the times:
-
-```cpp
---8<-- "generated/WordRangeMinimum-query.cpp"
-```
+mispredict half of the times.
 
 <span id="alg-6-20"></span>**Algorithm 6.20.** The range minima by the
 stacks in a word (after [Baumstark et al.
