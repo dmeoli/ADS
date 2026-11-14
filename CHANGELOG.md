@@ -2555,6 +2555,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- MultiSearcher counted the checks of its candidates, 2 a place before the
+  switch to the automaton, while a check may compare up to the length of the
+  longest pattern, so that its worst case was O( n lmax + occ log occ ) (the
+  patterns a^999 b and zzzzzzzz on a^n compared about 1000 bytes a place);
+  it now counts the bytes compared, 16 a place, as StringSearcher does, so
+  that findAll() takes O( n + M + occ log occ ) time and count() O( n + M )
+  in the worst case, M the length of the patterns, and automatonFrom() gives
+  the place of the switch; the header, the theory of the strings and the
+  chapter of the manual say so; the test engineered_strings
+  multi-search-worst
+
 - nthElement() counted its budget in rounds, 2 ceil( log2( n + 1 ) ) of them
   cutting less than a quarter before the median of the medians, so that its
   worst case was O( n log n ) (38 n comparisons at n = 2^16 against the

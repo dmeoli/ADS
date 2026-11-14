@@ -781,6 +781,40 @@ ADS_TEST( "multi-search" )
   }
  }
 
+// the worst case of the search of many patterns: on a^n, the patterns
+// a^999 b and zzzzzzzz make every place a candidate of one check of about
+// 1000 bytes, so that the count of the bytes hands the text to the
+// automaton within the first blocks, where a count of the checks never did;
+// the same on the shift-or filters (more than 64 patterns, of 8 bytes or
+// more, and shorter); the occurrences found all the same, and no switch
+// on a random text
+ADS_TEST( "multi-search-worst" )
+{
+ const std::string T( 200000 , 'a' );
+ const MultiSearcher S( { std::string( 999 , 'a' ) + "b" , "zzzzzzzz" } );
+ CHECK( S.filtered() && S.automatonFrom( T ) <= 256 );
+ CHECK( S.findAll( T ).empty() && S.count( T ) == 0 );
+ for( std::size_t least : { 4 , 8 } ) {      // stride 1 and stride 2
+  std::vector< std::string > P{ std::string( 999 , 'a' ) + "b" };
+  for( int z = 0 ; z < 99 ; ++z )
+   P.push_back( std::string( least , char( 'b' + z % 20 ) ) +
+                std::to_string( z ) );
+  const MultiSearcher M( P );
+  CHECK( ! M.filtered() && M.automatonFrom( T ) <= 256 );
+  CHECK( M.findAll( T ).empty() && M.count( T ) == 0 );
+  const std::string U = T + P[ 0 ] + P[ 7 ];
+  CHECK( M.findAll( U ) == ( std::vector< std::pair< std::size_t ,
+                                                      std::size_t > >{
+          { T.size() , 0 } , { T.size() + 1000 , 7 } } ) );
+  }
+ std::mt19937_64 g( 41 );
+ const std::string R = randomString( g , 100000 , 26 , 'a' );
+ std::vector< std::string > Q;
+ for( int z = 0 ; z < 20 ; ++z ) Q.push_back( R.substr( g() % 99000 , 12 ) );
+ const MultiSearcher F( Q );
+ CHECK( F.automatonFrom( R ) == std::string_view::npos );
+ }
+
 // the number of distinct palindromes against their enumeration
 ADS_TEST( "eertree" )
 {

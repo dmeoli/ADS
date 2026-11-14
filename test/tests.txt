@@ -533,6 +533,7 @@ engineered_strings  edit-distance   distanza, LCS e ricerca bit-parallele
 engineered_strings  classic-matching  Boyer-Moore, Horspool, Shift-Or, Z
 engineered_strings  aho-corasick    automa di Aho e Corasick
 engineered_strings  multi-search    filtro SIMD a bucket per molti pattern
+engineered_strings  multi-search-worst  caso peggiore lineare: byte confrontati
 engineered_strings  lyndon          fattorizzazione di Lyndon, rotazione minima
 engineered_strings  lyndon-bytes    Lyndon e rotazione minima sui byte da 0x80
 engineered_strings  suffix-automaton  automa dei suffissi

@@ -44,13 +44,22 @@
  * one on a candidate. A candidate is checked against the patterns of its
  * buckets, by their first 8 bytes in one comparison of words and then by
  * the rest. Every occurrence makes its place a candidate for its bucket, so
- * that nothing is missed; when the checks exceed 2 a place on average
- * (\f$ 2 s + 4096 \f$ after the block at \f$ s \f$: patterns everywhere,
- * or a text whose bytes the filter cannot tell apart), the automaton goes
- * on from the first place not tested, its occurrences
- * that start before it left out (and `count()` takes the count of the
- * automaton from a little before that place, less the occurrences before
- * it in a window of the length of the longest pattern).
+ * that nothing is missed; when the bytes compared with the patterns exceed
+ * 16 a place on average (\f$ 16 s + 4096 \f$ after the block at \f$ s \f$,
+ * a word of 8 bytes for each pattern checked and the bytes past it that
+ * `memcmp()` compares: patterns everywhere, long patterns whose first bytes
+ * are everywhere, or a text whose bytes the filter cannot tell apart), the
+ * automaton goes on from the first place not tested, as `StringSearcher`
+ * does from its own count of the bytes compared, its occurrences that start
+ * before it left out (and `count()` takes the count of the automaton from a
+ * little before that place, less the occurrences before it in a window of
+ * the length of the longest pattern). Since the bytes compared before the
+ * switch are at most \f$ 16 n + 4096 \f$ plus those of one block, and the
+ * automaton is linear, `findAll()` takes
+ * \f$ O( n + \mathit{occ} \log \mathit{occ} ) \f$ time in the worst case,
+ * \f$ \mathit{occ} \f$ the occurrences (the logarithm for their sort), and
+ * `count()` \f$ O( n ) \f$; `automatonFrom()` tells where the switch
+ * happens.
  *
  * Above 64 patterns the halves of the bytes of a bucket cover them all,
  * and the filter of shift-or of FDR takes over, on the first
@@ -191,14 +200,14 @@ class MultiSearcher {
  ///
  /// In pseudocode (the filters of FDR in Hyperscan, beyond the book), the
  /// candidates of a filter checked against the patterns of their buckets,
- /// and the automaton of Aho and Corasick taking over when the checks are
- /// too many:
+ /// and the automaton of Aho and Corasick taking over when the bytes
+ /// compared are too many, so that the search is linear in \f$ n \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{findAll}( T ) \cr
  /// 2 & \quad \textbf{if}\ k = 1\ \textbf{then return}\ \text{the }
  ///     \text{occurrences of } P_0 \text{ by } \mathrm{StringSearcher} \cr
- /// 3 & \quad R \gets \emptyset;\ \mathit{checks} \gets 0 \cr
+ /// 3 & \quad R \gets \emptyset;\ \mathit{bytes} \gets 0 \cr
  /// 4 & \quad \textbf{foreach}\ \text{block of places } i \text{ of } T
  ///     \ \textbf{do} \cr
  /// 5 & \qquad \textbf{foreach}\ i \text{ and bucket } b \text{ that pass }
@@ -207,9 +216,9 @@ class MultiSearcher {
  /// 6 & \qquad\quad \textbf{foreach}\ \text{pattern } P_j \text{ of } b
  ///     \ \textbf{with}\ T[ i .. i + |P_j| - 1 ] = P_j\ \textbf{do}\ R \gets R
  ///     \cup \{ ( i , j ) \} \cr
- /// 7 & \qquad\quad \mathit{checks} \gets \mathit{checks} + \text{the }
- ///     \text{patterns compared} \cr
- /// 8 & \qquad \textbf{if}\ \mathit{checks} > 2 i + 4096\ \textbf{then}
+ /// 7 & \qquad\quad \mathit{bytes} \gets \mathit{bytes} + \text{the }
+ ///     \text{bytes compared with the patterns} \cr
+ /// 8 & \qquad \textbf{if}\ \mathit{bytes} > 16 i + 4096\ \textbf{then}
  ///     \cr
  /// 9 & \qquad\quad R \gets R \cup \text{the occurrences that the automaton }
  ///     \text{finds from } i \text{ on};\ \textbf{break} \cr
@@ -223,6 +232,11 @@ class MultiSearcher {
  /// the number of the occurrences of the patterns in \f$ T \f$, by the
  /// search of `findAll()`
  [[nodiscard]] std::size_t count( std::string_view T ) const;
+
+ /// the place of \f$ T \f$ from which the automaton takes over the search
+ /// of `findAll()` and `count()`, `std::string_view::npos` if the filter
+ /// searches all of \f$ T \f$ (or there are fewer than two patterns)
+ [[nodiscard]] std::size_t automatonFrom( std::string_view T ) const;
 
  /// the number of patterns
  [[nodiscard]] std::size_t size( void ) const { return( f_P.size() ); }
@@ -261,14 +275,14 @@ class MultiSearcher {
  std::size_t shiftOr2( std::string_view T , F && report ) const;
 
  /// the occurrences that start at s, by the table of the prefixes of the
- /// shift-or filter; the number of the checks
+ /// shift-or filter; the number of the bytes compared
  template< class F >
  std::size_t verify( const unsigned char * T , std::size_t n ,
                      std::size_t s , F && report ) const;
 
  /// the places s .. s + 63 whose bits are on in mask, candidates for the
  /// buckets in C[ 0 .. 63 ], checked against their patterns; the number
- /// of the checks
+ /// of the bytes compared
  template< class F >
  std::size_t check( const unsigned char * T , std::size_t n , std::size_t s ,
              std::uint64_t mask , const unsigned char * C ,
