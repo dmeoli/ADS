@@ -1689,6 +1689,7 @@ contract_string       matching             ricerca di stringhe, capitolo 13
 contract_string       other-strings        prefissi, suffissi, parentesi
 
 contract_tree         b-plus-tree          B+-albero, capitolo 6
+contract_tree         b-plus-tree-occupancy  foglie del B+-albero piene a metà
 contract_tree         binary-tree          albero binario, capitolo 5
 contract_tree         parent-tree          vettore dei padri, capitolo 5
 contract_tree         search-tree          ABR e Red-Black, capitolo 6

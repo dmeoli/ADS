@@ -4547,7 +4547,8 @@ since a leaf holds at least $q$ pairs, the separators are at most $n / q$ keys
 of $n$, a share that vanishes as $m$ grows. Its iterators are a leaf and a
 place in it, bidirectional along the list. In addition, `levels()` gives the
 keys of the nodes level by level, the shape of figure 6.7 that the tests
-compare, `check()` verifies the shape whatever the level of the contracts, and
+compare, `check()` verifies the shape of [Lemma 8.52](08-tree.md#lem-8-52)
+(leaves included) whatever the level of the contracts, and
 `order()` and `size()` give $m$ and $n$. Since the nodes are linked by
 pointers, the class cannot be copied.
 

@@ -2719,6 +2719,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the invariant of BPlusTree, shaped(), took from 1 to m pairs in a leaf
+  but the root, weaker than the ceil( m / 2 ) that the insertion and the
+  removal keep and Lemma 8.52 of the manual proves; it now checks the
+  bound proved, as the header and chapter 8 say; the test contract_tree
+  b-plus-tree-occupancy checks the leaves after each operation
+
 - PageHeap reserved one more place in the vector of its segments before
   each new segment, so that the s-th segment copied the s - 1 addresses
   before it, a quadratic cost in all; the room now doubles when the vector
