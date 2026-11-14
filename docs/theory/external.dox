@@ -162,10 +162,10 @@
  winner. Replacement selection (the snow plow of Knuth) forms longer runs
  with a heap of \f$ M - 2 B \f$ items: an item larger than the last one
  written joins the current run, a smaller one the next run; on a random
- input the runs have \f$ 2 M \f$ items on average, which saves a pass when
- the number \f$ \lceil n / R \rceil \f$ of the runs of the other way lies
- between a power \f$ k^p \f$ and \f$ 2 k^p \f$, and a sorted input is one
- run.
+ input the runs have \f$ 2 ( M - 2 B ) \f$ items on average, which saves a
+ pass when the number \f$ \lceil n / R \rceil \f$ of the runs of the other
+ way lies roughly between a power \f$ k^p \f$ and \f$ 2 k^p \f$, and a
+ sorted input is one run.
 
  <em>Lemma 2 (the sample of the distribution).</em> Let the \f$ k - 1 \f$
  pivots be the items of ranks \f$ ( a + 1 ) , 2 ( a + 1 ) , \ldots \f$ of a
@@ -361,12 +361,15 @@
  split, a borrow and a merge, so that \f$ \Theta( m ) \f$ is reached for
  any \f$ B \f$.
 
- Indeed, the credits of the book (one per node with \f$ B - 1 \f$ or
- \f$ 2 B - 1 \f$ keys, three per operation) pay each split, whose two nodes
- have \f$ B \f$ and \f$ B - 1 \f$ keys and leave the parent a credit, and
- each merge, whose node of \f$ 2 B - 2 \f$ keys frees the credits of the
- two nodes of \f$ B - 2 \f$ and \f$ B - 1 \f$ keys, a borrow ending the
- removal (exercise 14.5 draws them on the figures). The cycle of the
+ Indeed, keep one credit on each node but the root with \f$ B - 1 \f$
+ keys and three on each node with \f$ 2 B - 1 \f$ keys: each operation
+ creates at most three, and two pay each restructuring. A split takes the
+ three credits of its node, one for its new node of \f$ B - 1 \f$ keys
+ and two for itself; a merge takes the credits of its two nodes of
+ \f$ B - 2 \f$ and \f$ B - 1 \f$ keys; the borrow that ends a removal
+ takes the credit of the node in underflow and one new credit, and two
+ more new ones if both nodes are left with \f$ B - 1 \f$ keys (exercise
+ 14.5 draws them on the figures). The cycle of the
  second claim is the test `ods.ex14.6.restructures`: the two insertions
  make a leaf of \f$ 2 B \f$ keys, split into \f$ B \f$ and \f$ B - 1 \f$, the
  first removal leaves \f$ B - 2 \f$ keys beside a sibling of \f$ B \f$,
@@ -399,7 +402,10 @@
  the same way, so that every node written has between about \f$ 7 B / 6 \f$
  and \f$ 7 B / 4 \f$ keys. Both meet the condition, with
  \f$ \alpha = 1 / 4 \f$ and \f$ \alpha = 1 / 8 \f$ for \f$ B \ge 8 \f$,
- and the cycle of Lemma 5 costs them nothing after its first round.
+ and the cycle of Lemma 5 costs them nothing after its first round; but
+ `THREE` falls back to the rules of the book at a root that splits and at
+ the children of a root of two children, so that on a tree of at most two
+ leaves it still runs that cycle, \f$ \Theta( m ) \f$ restructurings.
 
  <em>Lemma 7 (the internal nodes).</em> A B-tree of \f$ n \f$ keys whose root
  is not a leaf has at most \f$ ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) \f$

@@ -225,8 +225,13 @@ $\mathit{fc}[ 1 .. \ell_{\max} ]$ and the symbols by length in vectors:
 
 Encoding a symbol is a lookup of its codeword and its length in
 $O( 1 )$ time ([Algorithm 21.3](21-compression.md#alg-21-3)), and the
-construction takes $O( \sigma \log \sigma )$ time. We write and read the bits by `PackedBitWriter` and `PackedBitReader` of `PackedBits.h`, which pack them in bytes with the first bit in the most significant bit of the
-first byte. Hence the value of the bits read so far is the integer whose
+construction takes $O( \sigma \log \sigma )$ time. The class (whose
+symbols are of the type `symbol_type`) is built from the lengths or, by
+`fromFrequencies()`, from the frequencies through `huffmanLengths()`;
+`maxLength()` gives the longest length and `firstCode( l )` the value
+$\mathit{fc}[ l ]$ of the first codeword of length $l$. We write and read the bits by `PackedBitWriter` and `PackedBitReader` of `PackedBits.h`, which pack them in bytes with the first bit in the most significant bit of the
+first byte, and whose `position()` counts the bits read (past the end
+too). Hence the value of the bits read so far is the integer whose
 binary digits they are, which is the order in which the canonical decoder
 and the arithmetic decoder of [§21.4](21-compression.md#sec-21-4) read
 their input; a reader also gives zeros past the end of its bytes, as the
@@ -432,7 +437,7 @@ $p$ is the number of the underflows pending, and $v$ the $w$ bits read.
 
 <span id="lem-21-6"></span>**Lemma 21.6.** *After the expansions of
 `RangeEncoder::encode()`, $H - L > M / 4$; hence, with a total
-$T \le M / 4$, the interval (21.8) of a symbol of positive count is
+$T \le M / 4$ (the `maxTotal()` of the encoder and of the decoder), the interval (21.8) of a symbol of positive count is
 nonempty.*
 
 *Proof.* When the loop of the expansions stops, none of its three cases applies, i.e., $L < M / 2 < H$ and either $L < M / 4$ or
@@ -643,8 +648,8 @@ frequencies sum to the total and the stream fits in the input, so that a "corrup
 
 The models that we have seen so far give a symbol a probability that does
 not depend on the symbols before it. The *prediction by partial matching*
-of [Cleary and Witten 1984](Z-bibliography.md#ref-cleary1984) (`PPM.h`)
-codes each symbol arithmetically in the context of the $K$ symbols before
+of [Cleary and Witten 1984](Z-bibliography.md#ref-cleary1984) (`PPM.h`,
+`ppmEncode()` and its inverse `ppmDecode()`) codes each symbol arithmetically in the context of the $K$ symbols before
 it, and we follow the version C of [Moffat 1990](Z-bibliography.md#ref-moffat1990), which works as follows. For each context $\alpha$ of length $0 \le l \le K$
 the model counts how many times each symbol has followed $\alpha$ in the
 text seen so far. Then the symbol $s[ i ]$ is coded in the longest context
@@ -726,6 +731,14 @@ optimal for the distribution $P[ x ] = 2^{-\ell( x )}$, and choosing a code is t
 the small integers takes few bits on them. `signedToNatural()` maps an
 integer of any sign to a natural number ($x \ge 0$ to $2 x$, $x < 0$ to
 $-2 x + 1$), and the codes then apply to differences of any sign.
+Each code has its encoder (`encodeUnary()` for the unary one) and its decoder (`decodeUnary()`, `decodeGamma()`,
+`decodeDelta()`, `decodeRice()`, `decodeGolomb()`, `decodeVByte()`,
+`decodeDense()`) and the function of its length in bits or bytes
+(`unaryLength()`, `gammaLength()`, `deltaLength()`, `riceLength()`,
+`golombLength()`, `vbyteLength()`, `denseLength()`), which the encoders
+ensure at the level of the postconditions; `binaryLength( x )` is
+$\lvert B( x ) \rvert$, `naturalToSigned()` inverts `signedToNatural()`,
+and `prefixSums()` inverts `dGaps()`.
 We list the codes, with their lengths and their codewords for $x = 9$, in
 [Table 21.6](21-compression.md#tab-21-6); of course, the "optimal"
 distributions of its fourth column are those of
@@ -819,7 +832,10 @@ the dense codes.
 --8<-- "generated/IntegerCodes-denseOptimalS.pseudo.md"
 
 PForDelta ([Zukowski et al. 2006](Z-bibliography.md#ref-zukowski2006))
-codes a block of values in $b$ bits each after subtracting a base. A value out of $[ \mathit{base} , \mathit{base} + 2^b - 2 ]$ is an *exception*, marked in its slot by the escape $2^b - 1$ and written apart in 64 bits, and `pforDeltaWidth()` chooses $b$ so that 90% of the
+codes a block of values in $b$ bits each after subtracting a base (the
+record `PForDeltaBlock`, with $b$, the base, the slots and the exceptions,
+whose `size()` is the number of values and `codeBits()` the $n b$ bits of
+the slots plus 64 for each exception; `decodePForDelta()` decodes it). A value out of $[ \mathit{base} , \mathit{base} + 2^b - 2 ]$ is an *exception*, marked in its slot by the escape $2^b - 1$ and written apart in 64 bits, and `pforDeltaWidth()` chooses $b$ so that 90% of the
 values fit. Its decoder unpacks the slots with no branch per value and
 patches the escapes afterwards, which is, arguably, the main reason for the design. In the original the exceptions are linked in place of the escapes, and the OptPFD of
 [Yan, Ding and Suel 2009](Z-bibliography.md#ref-yan2009) chooses $b$ for
@@ -829,11 +845,12 @@ each block by the cost of its exceptions, as `patchedPack()` of
 --8<-- "generated/IntegerCodes-encodePForDelta.pseudo.md"
 
 The codes above take one integer at a time. The *interpolative* code of
-[Moffat and Stuiver 2000](Z-bibliography.md#ref-moffat2000) takes instead a
-strictly increasing sequence $x[ l .. r - 1 ]$ in $[ \mathit{low} , \mathit{hi} ]$ at once. It writes the middle item
+[Moffat and Stuiver 2000](Z-bibliography.md#ref-moffat2000) (`encodeInterpolative()`, decoded by `decodeInterpolative()`) takes
+instead a strictly increasing sequence $x[ l .. r - 1 ]$ in $[ \mathit{low} , \mathit{hi} ]$ at once. It writes the middle item
 $x[ m ]$, $m = \lfloor ( l + r - 1 ) / 2 \rfloor$, in the range that the
 items around it leave to it, by the binary code of the range
-(`encodeBounded()`); then it writes the two halves recursively, each in the
+(`encodeBounded()`, decoded by `decodeBounded()`); then it writes the two
+halves recursively, each in the
 range that $x[ m ]$ leaves it ([Algorithm 21.15](21-compression.md#alg-21-15)).
 
 <span id="alg-21-15"></span>**Algorithm 21.15.** The interpolative code of
@@ -1012,6 +1029,14 @@ the cheapest cut that starts at $s$ is a first level $[ s , t )$ followed
 by the cheapest cut that starts at $t$, which is (21.17). It is solved from $s = w - 1$ down, each $s$ by a minimum over at most $w$
 values of $t$. $\square$
 
+`DirectAccessCodes` reads an item by `access( i )` or `operator[]`, and is
+a random-access range with the aliases of the standard containers
+(`value_type`, `size_type`, `difference_type`, `reference`,
+`const_reference`, and `const_iterator`, the same as `iterator`, with
+`begin()`, `end()`, `cbegin()` and `cend()`); `widths()` gives the widths
+of the levels and `sizeInBits()` the bits of the chunks, of the
+continuation bits and of their ranks.
+
 <span id="alg-21-18"></span>**Algorithm 21.18.** The construction of the
 directly addressable codes by (21.17), and the access (21.16)
 ([Brisaboa, Ladra and Navarro 2013](Z-bibliography.md#ref-brisaboa2013)).
@@ -1057,7 +1082,7 @@ search of the window, and its decoding.
 A search of the window takes $O( w \ell )$ time for a phrase of length
 $\ell$, hence $O( n w )$ in the worst case. LZSS
 ([Storer and Szymanski 1982](Z-bibliography.md#ref-storer1982),
-`lzssParse()`) emits either a copy $\langle d , \ell \rangle$ or a literal
+`lzssParse()`, decoded by `lzssDecode()`) emits either a copy $\langle d , \ell \rangle$ or a literal
 $\langle 0 , c \rangle$, a copy only if $\ell$ reaches a minimum (1 in
 chapter 13 of Ferragina, 3 in gzip). We find the copies as gzip does in `lzssParseHashed()`, which is perhaps the most used form of the search: the places are chained by the hash of the 3 symbols
 that start there, from the most recent, and the search follows the chain of
@@ -1071,6 +1096,10 @@ hashes of gzip.
 
 --8<-- "generated/LempelZiv-lzssParseHashed.pseudo.md"
 
+The phrases are the records `LZ77Phrase` (the fields `distance`, `length`
+and `next`, the last one empty at the end of the text), `LZSSPhrase`
+(`distance`, 0 for a literal, `length` and `literal`) and `LZ78Phrase`
+(`id` and `next`), compared field by field.
 LZ78 ([Ziv and Lempel 1978](Z-bibliography.md#ref-ziv1978), `lz78Parse()`)
 keeps an explicit dictionary of phrases in a trie, which starts with the
 empty phrase 0. The longest phrase $f$ that prefixes the rest of the text
@@ -1185,7 +1214,8 @@ column and $L$ its last ([Burrows and Wheeler 1994](Z-bibliography.md#ref-burrow
 chapter 14, Block-Sorting Compression, of
 [Ferragina 2023](Z-bibliography.md#ref-ferragina2023)). The transform
 `bwt()` of `BurrowsWheeler.h` is $L$ without the $\$$, together with the
-row $r$ of the $\$$ in $L$ (the *primary* row). Since $\$$ is the smallest
+row $r$ of the $\$$ in $L$ (the *primary* row), the two fields `last` and
+`primary` of the record `BWT`. Since $\$$ is the smallest
 symbol and occurs once, sorting the rotations is sorting the suffixes, and
 
 $$
@@ -1271,6 +1301,11 @@ to at most $n$, and by the concavity of the logarithm their logarithms sum
 to at most $m \log_2( n / m ) \le n_c \log_2( n / n_c ) + \log_2 e$. The
 sum over $c$ is $n H_0 + O( \sigma )$. $\square$
 
+Each of the three codes of Algorithm 21.24 has its inverse,
+`inverseMoveToFront()` (on a string or on the bytes), `runLengthDecode()`
+and `zeroRunDecode()`, which the audits of the encoders apply to their
+output.
+
 <span id="alg-21-24"></span>**Algorithm 21.24.** The move-to-front and the
 run-length codes, as bzip2 chains them.
 
@@ -1307,7 +1342,8 @@ bzip, each block undone in the opposite order.
 ## 21.11 Compressed indexes {#sec-21-11}
 
 The transform is also an index of the substrings of $s$, which replaces
-both the text and its suffix array
+both the text and its suffix array (each index of this section gives its
+space by `sizeInBits()`)
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)). Indeed, the occurrences of a pattern $P$ are the rows of $M'$ prefixed by $P$, a range
 of rows, and the range can be found from $L$ with no access to the text.
 

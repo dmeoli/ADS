@@ -25,6 +25,23 @@ of small fields ([§22.7](22-succinct.md#sec-22-7)), the trees
 permutations ([§22.9](22-succinct.md#sec-22-9)) and the graphs ([§22.10](22-succinct.md#sec-22-10)). Finally, [§22.11](22-succinct.md#sec-22-11) describes how the directories and the wavelet structures are built on
 several threads.
 
+Some members are common to the classes of the chapter, and we describe
+them once here. The static sequences (`BitVector`, the directories of
+`RankSelect.h` and `CompactRankSelect.h`, `EliasFano`,
+`PartitionedEliasFano`, `LAVector` and `WaveletMatrix`) are random-access
+ranges with the aliases of the standard containers (`value_type`,
+`size_type`, `difference_type`, `reference`, `const_reference`,
+`const_iterator` and `iterator`, the same), whose iterators read the items
+by subscript (`SubscriptIterator` of `BitVector.h`), from `begin()` and
+`cbegin()` to `end()` and `cend()`. Each structure gives its space in bits
+by `sizeInBits()`; besides, the directories give their bits beyond those
+of the vector by `directoryBits()`, `EliasFano` and `BVGraph` the bits of
+their codes alone by `codeBits()`, `BalancedParentheses` the bits of its
+range min-max tree by `treeBits()`, and `LAVector` the bits of its
+corrections by `correctionsInBits()` (and their width by
+`correctionBits()`). Finally, the trees mark a missing node (or place) by
+the constant `nil`.
+
 ## 22.1 Rank, select and the lower bounds {#sec-22-1}
 
 A vector of bits $B[ 0 , m )$ with $n$ 1s has, for $b \in \{ 0 , 1 \}$,
@@ -97,7 +114,10 @@ at most ([Algorithm 22.1](22-succinct.md#alg-22-1)). Its words fill lines of the
 rank of a word needs no mask at the end of the vector. Unlike
 `std::vector< bool >`, whose layout is left to the implementation,
 `BitVector` exposes its words, which a directory of rank or a code read a
-word at a time needs.
+word at a time needs. Its words are a `Words`, a vector on the allocator of
+the lines; `copyBits()` ors a run of bits of a word array into another
+from any place, `reserve( n )` makes room for $n$ bits and `toString()`
+writes the bits as `'0'` and `'1'`, the bit 0 first.
 
 ![Figure 22.1. Three words of a `BitVector` of $n = 100$ bits, each word with its bit 0 on the right: the field read by `get( 58 , 13 )` crosses from the word 0 to the word 1, and the bits past the size are 0 (the word 2 is there although no bit of the vector is in it). Below, a stream that holds $\gamma( 9 ) \gamma( 3 )$, read from the place $p$.](../figures/succinct-bitvector.svg){#fig-22-1}
 
@@ -143,14 +163,17 @@ and the place is then its trailing zeros:
 --8<-- "generated/BitVector-selectInWord.cpp"
 ```
 
-We write the codes of the integers of [§21.7](21-compression.md#sec-21-7) on the streams of bits of `BitStream.h`. These are the support of the codes of the
-integers of [§21.7](21-compression.md#sec-21-7). A `BitWriter` appends
+We write the codes of the integers of [§21.7](21-compression.md#sec-21-7)
+on the streams of bits of `BitStream.h`. A `BitWriter` appends
 bits to a `BitVector`, and a `BitReader` reads them back from a place that
 moves forward, both in $O( 1 )$ time per field of up to 64 bits
 ([Algorithm 22.3](22-succinct.md#alg-22-3)). `write()` and `read()` move a field with its least significant bit first, the order of the words. `writeBinary()` and `readBinary()` move it with its most significant bit first, the order in which the codes are written on paper, and they turn the field around by three rounds of masks and a swap of the bytes. Also,
 `writeUnary( q )` writes $q$ zeros and a 1, and `readUnary()` counts the
 zeros up to the 1 a word at a time, by the trailing zeros of the word, in
-$O( 1 + q / 64 )$ time. The fast decoders of the literature write the codes into words rather than bytes, e.g., the streams of the WebGraph framework of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004). Indeed, a codeword of up to 64 bits spans at most two words, and the unary part is
+$O( 1 + q / 64 )$ time. A single bit is moved by `writeBit()` and
+`readBit()`; `seek( p )` moves the reader to the place $p$, `atEnd()`
+tells whether all the bits have been read, and `release()` hands the bits
+written over to the caller, leaving the writer empty. The fast decoders of the literature write the codes into words rather than bytes, e.g., the streams of the WebGraph framework of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004). Indeed, a codeword of up to 64 bits spans at most two words, and the unary part is
 decoded by one instruction per word.
 
 <span id="alg-22-3"></span>**Algorithm 22.3.** The binary and the unary
@@ -472,7 +495,8 @@ Finally, the $h$-th 0 of $H$ ends the bucket $h - 1$, and the 1s after it, up to
 next 0, are the items of the bucket $h$. $\square$
 
 Hence `nextGEQ()` costs a $\mathrm{select}_0$ and a scan of the bucket, in
-$O( 1 + c )$ time for a bucket of $c$ items. A bucket holds $n 2^\ell / u \le 2$ items on average (for "random" items), and the search is $O( 1 )$ expected when the items are spread evenly, which is often (but not always) the case. Past 8 items, which the "clusters" of a sequence may give, the end of the bucket is found by
+$O( 1 + c )$ time for a bucket of $c$ items, and `contains( x )` tests its
+result ($\ell$ itself is `lowWidth()`). A bucket holds $n 2^\ell / u \le 2$ items on average (for "random" items), and the search is $O( 1 )$ expected when the items are spread evenly, which is often (but not always) the case. Past 8 items, which the "clusters" of a sequence may give, the end of the bucket is found by
 $\mathrm{select}_0$ too and its low bits by a binary search, in
 $O( \log c )$ time:
 
@@ -498,7 +522,9 @@ Elias-Fano depends only on $n$ and $u$, and it ignores the "clusters" of a
 sequence. In the partitioned form of [Ottaviano and Venturini 2014](Z-bibliography.md#ref-ottaviano2014)
 (`PartitionedEliasFano`) we cut a strictly increasing sequence into blocks of 128 items. We code the block $j$, of $m$ items, relative to $b_j = x_{128 j - 1} + 1$, the end of the block before (0 for the first block). Its values $v = x - b_j$ are in $[ 0 , u_j )$, with $u_j$ the last of them plus 1, and the block is coded in the cheapest of three codes
 ([Figure 22.6](22-succinct.md#fig-22-6)). It takes no bit if $u_j = m$ (all the values are there). It is a vector of $u_j$ bits, the bit $v$ for the value $v$, if $u_j$ is at most the bits of Elias-Fano, and otherwise it is Elias-Fano with $\ell = \lfloor \log_2( u_j / m ) \rfloor$, in
-$m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1$ bits.
+$m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1$ bits. `kinds()`
+counts the blocks of each of the three codes, and `contains( x )` is a
+`nextGEQ()` here too, as in `LAVector`.
 
 ![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
 
@@ -611,7 +637,7 @@ of all the widths. Its gain comes from segments of different widths, which the w
 
 An array of $n$ values below $2^B$ takes $n B$ bits when its fields are
 packed in words, against the $8 n$ of a byte per value. The tables of the searches in "large" spaces of states may have $10^9$ entries and more, e.g., the pattern databases of the heuristic search ([Felner, Korf and Hanan 2004](Z-bibliography.md#ref-felner2004)), and they fit in the memory only so packed.
-`PackedArray< B >` takes the widths that divide 64, $B \in \{ 1 , 2 , 4 , 8 , 16 , 32 \}$. A word then holds $64 / B$ fields, and the field $i$ is the bits $( i \bmod 64 / B ) B$ on of the word $\lfloor i B / 64 \rfloor$. A read is one load, one shift and one mask, with no test of a field that crosses two words, which `BitVector::get( i , len )` pays for the other widths
+`PackedArray< B >` takes the widths that divide 64, $B \in \{ 1 , 2 , 4 , 8 , 16 , 32 \}$. A word then holds $64 / B$ fields (the constant `PER`, and `MAX` is $2^B - 1$, the largest value of a field), and the field $i$ is the bits $( i \bmod 64 / B ) B$ on of the word $\lfloor i B / 64 \rfloor$. A read is one load, one shift and one mask, with no test of a field that crosses two words, which `BitVector::get( i , len )` pays for the other widths
 ([Figure 22.8](22-succinct.md#fig-22-8)). A write clears the field by a mask
 and puts the value by an or, in the same word:
 
@@ -828,7 +854,8 @@ open one, and `rightSibling( v )` is the open parenthesis after its closed
 one, if any ([Algorithm 22.16](22-succinct.md#alg-22-16)). Furthermore,
 `subtreeSize( v )` is $( j - i + 1 ) / 2$ for its parentheses at $i$ and
 $j$, `depth( v )` is the excess at its open parenthesis less 1, and $u$ is
-an ancestor of $v$ if $u \le v < u + \mathrm{subtreeSize}( u )$. These may cost a search of the range min-max tree, or a select and a rank for
+an ancestor of $v$ if $u \le v < u + \mathrm{subtreeSize}( u )$, the test
+of `isAncestor( u , v )`. These may cost a search of the range min-max tree, or a select and a rank for
 `leftmostChild()`, `depth()` and `isLeaf()`. Against LOUDS, the parentheses
 give the size of a subtree, the depth and the ancestors, and number the
 nodes of a subtree consecutively (from $v$ to
@@ -922,7 +949,7 @@ select, the quantile and the count of the wavelet matrix
 
 A wavelet tree shaped by the code of Huffman
 ([Mäkinen and Navarro 2005](Z-bibliography.md#ref-makinen2005),
-`HuffmanWaveletTree`) takes $n ( H_0 + 1 )$ bits instead of $n w$, and it may be somewhat faster on a "skewed" alphabet, quite often the case of a text. We give the symbol $c$ the canonical code of Huffman of its frequency, of length $\ell_c$, with its bits from the highest. The tree is the trie of the codes, and its internal node $v$,
+`HuffmanWaveletTree`) takes $n ( H_0 + 1 )$ bits instead of $n w$, and it may be somewhat faster on a "skewed" alphabet, quite often the case of a text. We give the symbol $c$ the canonical code of Huffman of its frequency, of length $\ell_c$ (`codeLength( c )`, 0 for a symbol absent), with its bits from the highest. The tree is the trie of the codes, and its internal node $v$,
 reached by the prefix $\pi_v$, keeps the bit after $\pi_v$ of the code of
 each item whose code starts with $\pi_v$, in the order of the sequence
 ([Figure 22.12](22-succinct.md#fig-22-12)). We give the canonical codes by length and then by symbol, the first one 0, which is another convention than
@@ -1063,7 +1090,8 @@ the lists of the Web, which the codes of
 [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004) do. With the pages
 sorted by URL, most links stay in the host (*locality*), and the pages of a
 host link to the same pages (*similarity*). `BVGraph` codes the list of $x$ as its outdegree, in $\gamma$, followed by the *reference* $r$: the list of $x - r$, among the previous $W$ lists, that shares the most successors with that of $x$ (0 for none). Then comes the *copy list* of the reference, a bit per successor of $x - r$ that records whether it is a successor of $x$ too. It is written as *copy blocks*, i.e., its first bit and the lengths less 1 of its runs, the last one omitted since the outdegree of the reference implies it. Next come the successors not copied, the *extra nodes*: the runs of at
-least $L_{\min}$ consecutive integers as intervals, and the *residuals* as
+least $L_{\min}$ consecutive integers as intervals (each an `Interval`, its
+left extreme and its length), and the *residuals* as
 gaps less 1, the first ones of each relative to $x$ by `signedToNatural()`
 ([Algorithm 22.21](22-succinct.md#alg-22-21)).
 

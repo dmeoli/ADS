@@ -66,7 +66,7 @@ a square matrix of `bool`, symmetric when the graph is unoriented, whose
 diagonal (a loop of a node) each problem ignores: a node with a loop may
 be in an independent set, need not be in a cover, and takes a color like
 any other. A formula in conjunctive normal form is a `Cnf`, a vector of
-clauses, each a vector of literals, $+( v + 1 )$ for the variable $v$ and
+clauses, each a `Clause`, i.e., a vector of literals, $+( v + 1 )$ for the variable $v$ and
 $-( v + 1 )$ for its negation; a set of nodes, a path or a tour is a
 `Nodes`, a vector of `int`; and a system of 0-1 integer programming is
 $A x \le b$. Also, the contracts check that the graphs are square (and symmetric
@@ -130,7 +130,7 @@ $$
 *Proof.* The sequences of choices are the paths from the root of a tree of
 height at most $h$ whose nodes have at most $k$ children, and the tree has
 at most $k^h$ leaves. Each run follows one path, in time $O( t )$, and the
-next sequence differs from the last one in a suffix; hence the runs are at
+next sequence differs from the last one in a suffix. Hence the runs are at
 most $k^h$, and the bookkeeping of $P$ costs $O( h ) = O( t )$ per run.
 $\square$
 
@@ -211,7 +211,7 @@ for distances not negative, which are a precondition (adding a constant
 $c$ to all the distances and $n c$ to $k$ keeps the answer, and makes them
 so). Also, the four Hamiltonian problems share one backtracking, `hamilton( P )`,
 which extends a path by the nodes adjacent to its last one, in increasing
-order: `hamiltonianCircuit()` from $P = ( 0 )$ and closed,
+order. It runs as `hamiltonianCircuit()` from $P = ( 0 )$ and closed,
 `hamiltonianCycle()` on the oriented edges (exercise 18.12),
 `hamiltonianPath()` from each possible start, or from a given $r$ to a
 given $t$ (exercise 18.13), and `hamiltonianChain()` on the unoriented
@@ -416,7 +416,7 @@ are pairwise joined. Finally, the adjacency matrix has $( m n^2 )^2$ entries.
 $\square$
 
 `dominoToSat()` writes the same conditions as clauses on the variables
-$u_{hij}$, true if the tile $h$ is in $( i , j )$: the unit clause
+$u_{hij}$, true if the tile $h$ is in $( i , j )$. They are the unit clause
 $u_{000}$, at least one tile and at most one tile in each square, and,
 for each pair of adjacent squares and each pair of tiles that do not fit
 there side by side, the clause that forbids both. `dominoToLp01()` writes
@@ -446,16 +446,16 @@ distance is 1 on the edges of $G$ and 2 elsewhere, with $k = n$: a tour has
 $n$ edges of length at least 1, and its length is $n$ if and only if all
 its edges are edges of $G$. In `halfSum()` the bound is half the sum of
 the numbers, or $-1$ if the sum is odd (then no partition exists, and the
-bound $-1$ has no YES in any of the three problems): a set of numbers of
+bound $-1$ has no YES in any of the three problems). Thus a set of numbers of
 sum $s / 2$ leaves the other half to the second processor, or to the
 objects left out of the knapsack, whose profits and volumes are the
 numbers themselves. `cycleToPath()` splits the node 0 into a new node $n$,
 which takes the edges out of 0, and the node 0, which keeps the edges into
 it, so that a
-cycle through 0 becomes a path from $n$ to 0, and conversely;
+cycle through 0 becomes a path from $n$ to 0, and conversely. Then
 `cycleToChain()` makes each node $v$ of that path a chain $v_{in} -
 v_{mid} - v_{out}$, each edge $( u , v )$ an edge $[ u_{out} , v_{in} ]$,
-and adds a pendant node at each end, so that an unoriented Hamiltonian path
+and adds a pendant node at each end. Thus an unoriented Hamiltonian path
 must cross each chain from $v_{in}$ to $v_{out}$, which keeps the
 orientation, and the pendant nodes fix its two ends ($3 ( n + 1 ) + 2$
 nodes in all). Both drop the loops of $G$, as the problems of
@@ -479,7 +479,7 @@ circuit to the paths.
 The same tool proves lower bounds within P. Sorting reduces to the convex
 hull (`sortToHull()`, [Algorithm 20.9](20-complexity.md#alg-20-9)): the
 points $( a_i , a_i^2 )$ lie on a parabola, all of them are vertices of
-the hull, and the hull lists them in the order of the $a_i$; hence a hull
+the hull, and the hull lists them in the order of the $a_i$. Hence a hull
 computed with $o( n \log n )$ comparisons would sort in $o( n \log n )$,
 against the lower bound of the sorting by comparisons, and the convex hull
 costs $\Omega( n \log n )$ ([Montresor 2025,
@@ -494,7 +494,7 @@ to the convex hull.
 ## 20.5 Polynomial cases {#sec-20-5}
 
 The square tiling is NP-complete, while the tiling of a strip $1 \times n$
-is in P ([Montresor 2025, §18.5](Z-bibliography.md#ref-montresor2025)): a
+is in P ([Montresor 2025, §18.5](Z-bibliography.md#ref-montresor2025)). A
 strip is a walk of $n - 1$ edges from $d$ in the graph $H$ whose nodes are
 the $m$ tiles and whose edges $( d_u , d_v )$ join a tile to those that fit
 on its right.
@@ -515,7 +515,7 @@ and so has any length; without a reachable cycle, every walk from $d$ is a
 path, and its length is at most $L( d )$. One visit in depth of $H$ from
 $d$ finds a reachable cycle as a back edge, i.e., an edge to a node still
 open, and computes $L$ in the postvisit, since without cycles the longest
-path from $u$ is one edge plus the longest from a successor; the visit
+path from $u$ is one edge plus the longest from a successor. The visit
 examines the $m^2$ pairs of tiles of the implicit matrix of $H$ once each.
 $\square$
 
@@ -576,7 +576,7 @@ false one ([Aspvall, Plass and Tarjan
 
 `twoSat()` takes a clause of one literal $a$ as $a \vee a$, builds the
 graph of the $2 n$ literals (the literal $\pm( v + 1 )$ at the node $2 v$
-or $2 v + 1$, by `literalNode()`) with each implication once, and ranks
+or $2 v + 1$, by `literalNode()`) with each implication once. Then it ranks
 the strongly connected components in the topological order
 ([Algorithm 20.11](20-complexity.md#alg-20-11)), in $O( n + m )$ time for
 $m$ clauses (up to the logarithmic factor of the set that removes the
@@ -608,10 +608,10 @@ flow with unit capacities from a source to the left nodes, along the
 edges, to a sink (`bipartiteMatching()`, by the reduction of section 15.2
 of the book). On intervals of the line, finally, a set that meets pairwise
 has a common point (the property of Helly in one dimension: the latest
-left end lies before the earliest right end), and the largest clique of
+left end lies before the earliest right end). Hence the largest clique of
 the graph of the intervals $[ a , b )$ built by `intervalGraph()` is the
-largest number of intervals through one point, which a sweep of the sorted
-ends counts in $O( n \log n )$ (`intervalClique()`, the right ends before
+largest number of intervals through one point; a sweep of the sorted
+ends counts it in $O( n \log n )$ (`intervalClique()`, the right ends before
 the left ones, so that an empty interval meets none).
 
 ## 20.6 Pseudopolynomial algorithms {#sec-20-6}
@@ -638,7 +638,7 @@ since a subset of the first $i$ elements either avoids the $i$-th or takes
 it once. `subsetSumDP()` of `Pseudopolynomial.h` fills (20.5) in $O( n k )$
 time with one row of $k + 1$ bits, written from the right, so that $M[ j -
 A_i ]$ is still the value of the row before
-([Algorithm 20.12](20-complexity.md#alg-20-12)); the row is a vector of
+([Algorithm 20.12](20-complexity.md#alg-20-12)). The row is a vector of
 `Bits`, which may be `std::vector< bool >` (the default),
 `boost::dynamic_bitset` or the `BitVector` of the library, with the same
 cells written. If a pointer `rows` is given, the function appends there the
@@ -664,9 +664,9 @@ by dynamic programming ([Montresor 2025, §19.1 and exercise
 With more parts, the same idea gives the other dynamic programmings of
 the header ([Algorithm 20.13](20-complexity.md#alg-20-13)). In `bottino()`
 (exercise 19.5), three thieves share jewels of prices $P[ i ]$ so that
-each takes a third of the value $m$: $S[ i ][ j ][ h ]$ records whether the
-first $i$ jewels give $j$ to the first thief and $h$ to the second, the
-third taking what is left, and since the prices are not negative $j$ and
+each takes a third of the value $m$. There $S[ i ][ j ][ h ]$ records
+whether the first $i$ jewels give $j$ to the first thief and $h$ to the
+second, the third taking what is left; since the prices are not negative $j$ and
 $h$ range in $[ 0 , m / 3 ]$, i.e., $O( n m^2 )$ entries. In
 `schedulingDP()` (exercise 19.2), the vectors of the loads of the $m$
 processors reachable with the first $i$ programs, each load at most $d$,
@@ -802,9 +802,9 @@ increasing name ([Algorithm 20.16](20-complexity.md#alg-20-16);
 triangle inequality, the circuit of `deltaTsp()` costs at most $2 \,
 \mathit{OPT}$.*
 
-*Proof.* The tree $T$ weighs less than any circuit, which is a spanning
-path plus an edge, and the walk that goes twice along each edge of $T$
-costs $2 w( T ) < 2 \, \mathit{OPT}$. Then the preorder visits the cities in the
+*Proof.* The tree $T$ weighs no more than any circuit, which is a spanning
+path plus an edge of nonnegative cost, and the walk that goes twice along
+each edge of $T$ costs $2 w( T ) \le 2 \, \mathit{OPT}$. Then the preorder visits the cities in the
 order of their first visit by the walk, and each shortcut over the cities
 already visited costs no more than the stretch of the walk that it
 replaces, by the triangle inequality. $\square$
@@ -968,11 +968,11 @@ there the least distance $A$ is taken from $S[ 0 ]$, which is the same for
 symmetric distances). We remark that two values of figure 19.6 of the
 book do not follow from this formula (21 for $1 , 2 , 3$ and for $1 , 5$,
 where it gives 19 and 20), and we found no rule that gives all the values
-of the figure; with the formula, the tree has 25 nodes instead of 23, and
+of the figure. With the formula, the tree has 25 nodes instead of 23, and
 it ends with the same circuit of cost 19 (we suspect a slip in the figure, although we cannot exclude another rule). The second bound is that of the
 1-tree of [Held and Karp 1971](Z-bibliography.md#ref-held1971) (exercise
 19.10), which replaces the sum by the weight of a minimum spanning tree of
-the cities out of $S$; `spanningTreeWeight()` and `oneTree()` compute the
+the cities out of $S$. Also, `spanningTreeWeight()` and `oneTree()` compute the
 tree of a set of cities and the minimum 1-tree of a city (a minimum
 spanning tree of the others plus the two least edges of that city), which
 bounds the optimum from below, since each circuit is a 1-tree.
@@ -997,7 +997,7 @@ least bound with a priority queue, and bounds a node by reducing the rows
 and the columns of its matrix to a least entry 0
 ([Algorithm 20.19](20-complexity.md#alg-20-19)). Subtracting a constant
 from a row or a column lowers the cost of each circuit by that constant,
-since a circuit uses one entry of each row and one of each column; hence
+since a circuit uses one entry of each row and one of each column. Hence
 the sum of the constants subtracted is a lower bound, and the entries 0
 left are the edges that a circuit of that cost would use. Including an edge
 $( i , j )$ marks its row and its column as done and sets to $\infty$ the
@@ -1017,7 +1017,7 @@ plus that of all its candidates is not above the best. `knapsackBB()`
 (exercise 19.12) takes the objects by decreasing profit per volume, each
 in and then out, and prunes a node when the fractional knapsack of the
 objects left within the capacity left ([§13.11](13-algorithm.md#sec-13-11))
-does not beat the best; this is an upper bound of the best profit of the
+does not beat the best. This is an upper bound of the best profit of the
 objects left, since the fractional greedy is optimal for the relaxation
 ([Lemma 13.15](13-algorithm.md#lem-13-15)). `knapsackBacktrack()` is the
 same visit with the objects in their order and the simple bound, the sum
@@ -1093,7 +1093,10 @@ vector of nodes, each node knows its place in its two buckets, and
 the next bucket of side $k$, by taking it out of its bucket (the last node
 of the bucket fills its place) and appending it to the next one; `choose(
 k )` scans the least bucket of the other side for the node with the most
-edges to $V_k$.
+edges to $V_k$, `contains( u )` tells whether $u$ is still to be placed and
+`count( k , u )` gives its edges to $V_k$. The size of the cut that
+results, i.e., the number of edges between the two sides, is
+`cutSize( G , side )`.
 
 ![Figure 20.3. The buckets of the side 0 of a `Buckets` before and after `inc(0,2)`: the node 2 leaves the bucket 1, where the last node 3 takes its place, and is appended to the bucket 2, and the largest bucket not empty becomes 2.](../figures/intractable-buckets.svg){#fig-20-3}
 
@@ -1109,7 +1112,7 @@ time on the adjacency matrix, $O( n )$ choices of $O( n )$ time each.*
 moved into it inherits. Furthermore, the bounds $\mathit{min}( k )$ and
 $\mathit{max}( k )$ move by a scan only when a bucket empties. In
 `minMaxGreedy()` all the nodes are inserted at the start, with the count
-0, and the counts only grow; hence $\mathit{min}( k )$ never decreases, and
+0, and the counts only grow. Hence $\mathit{min}( k )$ never decreases, and
 its scans move it forward at most $n + 1$ places in all, while
 $\mathit{max}( k )$ grows by one at most per `inc()`, and its scans move
 it down at most as many places as it grew, plus $n + 1$. Each node placed updates the counts of its
@@ -1179,12 +1182,17 @@ tile next to the hole into it, and the goal has the tiles in increasing
 order and the hole last ([Montresor 2025, §19.5](Z-bibliography.md#ref-montresor2025)).
 A configuration is a `Board`, the tile of each square by rows, 0 the hole;
 `puzzleGoal()` gives the goal and `puzzleMoves()` the configurations one
-move away. `solvePuzzle()` is the branch-and-bound of the text: a node is
-a configuration, its children are those one move away, its cost $g( x )$
+move away. `solvePuzzle()` is the branch-and-bound of the text, whose
+nodes are the configurations and whose children are those one move away.
+The cost of a node $x$, $g( x )$,
 is the number of moves from the root, its lower bound $h( x )$ is the sum
 of the distances of the tiles from their places (`manhattan()`), and the
 next node visited is the one of least $f( x ) = g( x ) + h( x )$, by a
-Fibonacci heap ([Figure 20.5](20-complexity.md#fig-20-5)). This is the
+Fibonacci heap ([Figure 20.5](20-complexity.md#fig-20-5)). The least
+level met of each configuration is kept in a map, the parameter `Map` of
+`solvePuzzle()` (`std::map` by default, or another map of the standard
+library or of Boost, or a hash table of ADS), which changes the time but
+not the nodes visited. This is the
 algorithm A* of [Hart, Nilsson and Raphael
 1968](Z-bibliography.md#ref-hart1968) ([Algorithm 20.24](20-complexity.md#alg-20-24)).
 
@@ -1225,10 +1233,10 @@ the same search therefore runs with the maps of the standard library, of Boost o
 the library (e.g., `FlatHashTable`) and visits the same nodes; if a pointer
 `visited` is given, the function counts there the nodes extracted. Beyond
 the text, two searches work with any goal, e.g., the spiral one of
-`puzzleSpiralGoal()` ([Algorithm 20.24](20-complexity.md#alg-20-24)):
+`puzzleSpiralGoal()` ([Algorithm 20.24](20-complexity.md#alg-20-24)).
 `puzzleBFS()` is the case $h = 0$, the visit in breadth, whose first goal
 reached is one of the fewest moves, and which examines many more
-configurations than A*; `puzzleDFS()` is the backtracking that goes back
+configurations than A*. In turn, `puzzleDFS()` is the backtracking that goes back
 when a configuration is already on the current path or the moves exceed a
 bound, and it finds a solution of at most that many moves if there is
 one, not necessarily the shortest.

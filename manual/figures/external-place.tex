@@ -1,6 +1,6 @@
 % The binary search of place() in a node of eleven keys for x = 27 (sec.
-% 23.3; the figure findIt(a, 27) of Morin's book): the three probes, in
-% order, and the first place of a key >= 27. Build: make figures (in
+% 23.3; the data of the figure findIt(a, 27) of Morin's book): the four
+% probes of std::lower_bound, in order, and the first place of a key >= 27. Build: make figures (in
 % ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
@@ -33,8 +33,9 @@
   \node[var] at (59.2mm,-6.4mm) {2};
   \node[touched] (k-9) at (66.6mm,0) {31};
   \node[index] at (66.6mm,5.2mm) {9};
-  \node[var] at (66.6mm,-6.4mm) {3};
-  \node[cell] (k-10) at (74mm,0) {45};
+  \node[var] at (66.6mm,-6.4mm) {4};
+  \node[touched] (k-10) at (74mm,0) {45};
+  \node[var] at (74mm,-6.4mm) {3};
   \node[index] at (74mm,5.2mm) {10};
   \node[var,anchor=east] at (-5mm,0) {$x = 27$};
   \draw[ptr] (k-9.south) ++(0,-14mm) node[var,below] {returns 9} -- ++(0,4.5mm);

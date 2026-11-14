@@ -26,8 +26,9 @@
  *   book). With `snowPlow` the runs are made
  *   by replacement selection, the snow plow of Knuth [see
  *   `replacementSelection()` of `ExternalSort.h`, the same runs in memory],
- *   a heap of \f$ M - 2 B \f$ items that gives runs of \f$ 2 M \f$ items on
- *   average on a random input and a single run on a sorted one.
+ *   a heap of \f$ M - 2 B \f$ items that gives runs of
+ *   \f$ 2 ( M - 2 B ) \f$ items on average on a random input and a single
+ *   run on a sorted one.
  * - `sortingLowerBound()` is the bound of Aggarwal and Vitter by the tree of
  *   the I/Os: a read of \f$ B \f$ items into a memory that holds
  *   \f$ M - B \f$ others can have at most \f$ \binom{M}{B} \f$ outcomes,
