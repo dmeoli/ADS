@@ -1088,7 +1088,10 @@ reservations* of [Blelloch, Fineman, Gibbons and Shun
 of an object `step`. The step $\mathrm{reserve}( i )$ reads the state, and
 either finds that $i$ has no work (it returns false, and $i$ is done) or
 writes $i$ into a `Reservation` of each place that it would change, by a
-priority write that keeps the least index there. The step $\mathrm{commit}(
+priority write that keeps the least index there (`reserve( i )`, a
+compare-and-swap; `check( i )` tells whether $i$ holds the place,
+`reserved()` whether some iteration does, `reset()` frees it, and
+`checkReset( i )` frees it only if $i$ holds it). The step $\mathrm{commit}(
 i )$ changes the state and returns true if $i$ holds all its reservations,
 or returns false to be tried in the next round; the holder of a reservation
 frees it, and at the end of a round all of them are free. A round runs in

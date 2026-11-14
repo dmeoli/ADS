@@ -14,7 +14,7 @@ the hash tables that the threads share, the relaxed priority queue, the
 event count on which a thread sleeps until a condition holds, and the
 priority queues of the workers of a parallel search, from which the idle
 workers steal. These structures are the bricks of the parallel algorithms
-and of the runtime of the workers of chapter 25, and of the parallel
+and of the runtime of the workers of [chapter 25](25-parallel.md#ch-25), and of the parallel
 searches of the library. Each of them gives, in a precise sense, the
 result of a sequential structure of the earlier chapters; its cost,
 however, depends on how the threads meet in memory more than on the number
@@ -43,7 +43,7 @@ A *shared object* is a structure whose operations are called by several
 threads, each thread being a sequence of calls. An operation takes time,
 from its *invocation* to its *response*, and two operations of two threads
 may overlap. A sequential specification (e.g., the axioms of the QUEUE of
-chapter 4) does not specify overlapping operations, and one needs a
+[chapter 4](04-queue.md#ch-4)) does not specify overlapping operations, and one needs a
 condition that relates the runs of the shared object to those of the
 sequential one. Throughout the chapter we use the condition of
 [Herlihy and Wing 1990](Z-bibliography.md#ref-herlihy1990). We say that a
@@ -162,7 +162,7 @@ queue that is stolen, cf. [§24.11](24-concurrent.md#sec-24-11)).
 
 ## 24.3 Queues of one producer {#sec-24-3}
 
-`SPSCQueue` is the circular vector of the queue of chapter 4 shared by two
+`SPSCQueue` is the circular vector of the queue of [chapter 4](04-queue.md#ch-4) shared by two
 threads. Only the producer writes the tail $t$, and only the consumer
 writes the head $h$; each index is thus an atomic written with release and
 read with acquire, and no lock is needed (the queue of [Lamport
@@ -288,8 +288,8 @@ it shows, and takes them. When it has taken the $B$ items of a block and
 finds the next one linked, it gives the block back to its lane, on a stack
 that the producer empties at once, by an exchange, when it needs a block
 and before it allocates one ([Figure 24.3](24-concurrent.md#fig-24-3)). A
-producer is a handle that `producer()` returns, used by one thread at a
-time. All the lanes form a list built by the push of Treiber of
+producer is a handle of class `Producer` that `producer()` returns, used
+by one thread at a time. All the lanes form a list built by the push of Treiber of
 [§24.4](24-concurrent.md#sec-24-4), and they live as long as the queue,
 also when their producer is gone and its items are still to be taken.
 
@@ -341,8 +341,10 @@ producer writes, and the consumer touches the lines of the producer once
 per batch, with the same wait for a batch as `SPSCQueue` (when a call took
 some items and the next one finds fewer than $\min( B , 64 )$ in the
 block). Furthermore, the consumer of either queue may sleep until an item comes,
-by `waitPop()`, on the event count of [§24.10](24-concurrent.md#sec-24-10);
-the producers then call `notify()` after their pushes.
+by `waitPop()`, on the event count of [§24.10](24-concurrent.md#sec-24-10)
+(and the consumer of `MPSCQueue` by `waitPopInto( out , n )`, the
+`popInto()` that sleeps until at least one item comes); the producers then
+call `notify()` after their pushes.
 
 ## 24.4 Queues of many producers or of many consumers {#sec-24-4}
 
@@ -458,7 +460,7 @@ has claimed its index has not yet published it, which is consistent with a
 linearization point of the push at its publication. The rings of [Nikolaev
 2019](Z-bibliography.md#ref-nikolaev2019), with a cycle per place, are
 lock-free in the strict sense, at the price of a somewhat more complex
-protocol. In chapter 25 the farm takes its tasks from an `MPMCQueue`; there
+protocol. In [chapter 25](25-parallel.md#ch-25) the farm takes its tasks from an `MPMCQueue`; there
 such a stop happens only when the system deschedules a thread, and it then
 delays the other threads only until that thread runs again.
 
@@ -470,7 +472,7 @@ last, and their data, in its cache. An idle worker steals the oldest task,
 at the top of the deque of another worker; in a computation by fork and
 join this task is often the root of a "large" subtree of work ([Blumofe and
 Leiserson 1999](Z-bibliography.md#ref-blumofe1999); the bound on the time
-of this schedule is in chapter 25). `WorkStealingDeque` is the deque of
+of this schedule is in [chapter 25](25-parallel.md#ch-25)). `WorkStealingDeque` is the deque of
 [Chase and Lev 2005](Z-bibliography.md#ref-chase2005). Its owner thread
 pushes and takes at the bottom, and any other thread steals from the top,
 without locks, on a circular vector of $2^k$ places that the owner doubles
@@ -567,7 +569,7 @@ the last item), and a steal at its compare-and-swap. `push()` is
 wait-free, while `take()` and `steal()` are lock-free; a thief fails only
 when another thread took the item it wanted, and `steal()` then returns
 false, so that the caller may try another victim. This deque is that of the
-pool of threads of chapter 25. Its argument returns in
+pool of threads of [chapter 25](25-parallel.md#ch-25). Its argument returns in
 [§24.11](24-concurrent.md#sec-24-11), where the queues of a search are
 stolen without making their owner race for each item.
 
@@ -648,7 +650,7 @@ it, which the pseudocode checks. Each hook uses the orders acquire and
 release, and therefore a thread that follows a parent sees the writes that
 preceded the hook. After the compression of all the
 elements, with no union running, `parent( x )` is the label of the set of
-$x$, the least element; the parallel connected components of chapter 25
+$x$, the least element; the parallel connected components of [chapter 25](25-parallel.md#ch-25)
 use it in this way.
 
 <span id="lem-24-8"></span>**Lemma 24.8.** *On one thread,
@@ -841,7 +843,10 @@ without locks, exact when no operation runs and otherwise an estimate. The
 operations of a single key are linearizable at the moment they hold the
 lock of its region, or at the second read of the version for a lookup
 without locks. Also, `forEach()` visits the pairs of one moment, since it
-holds all the locks.
+holds all the locks. Besides these operations, `contains( k )` is the
+lookup that returns only whether $k$ is there, `insertOrAssign( k , v )`
+is the insertion that, for a key found, assigns $v$ to its value before
+the unlock, and `rehashes()` counts the doublings of the table.
 
 ## 24.8 Linear probing that grows {#sec-24-8}
 
@@ -1013,7 +1018,9 @@ from the same line. [Lemma 24.12](24-concurrent.md#lem-24-12) then holds unchang
 `update()` changes the value by the same instruction and never the key; the
 lookup reads a value written with that key, or a later one of `update()`.
 We remark that `clear()`, `forEach()` and `consistent()` may not run with
-the other operations. Vectors replaced are kept until the table is
+the other operations. Also, `contains( k )` (or `contains( k , h )` with
+the hash given) is the lookup that returns only whether $k$ is there, and
+`rehashes()` counts the growths of the table. Vectors replaced are kept until the table is
 destroyed, and with sizes that double they occupy less than the vector in
 use. For a `packed` set (with no value), `findOrInsertKey()` returns the key
 that the table holds, which is equal to $k$ by `Eq`, though not necessarily
@@ -1422,10 +1429,14 @@ $O( s )$ by the construction of Floyd. A pair is copied only by a deal, and
 the pairs of an offer move with their heap, by its pointer.
 
 `StealingFrontier` holds the queues of $p$ workers, one per call $f( i )$ of
-the `run( p , f )` of an executor (see chapter 25). Its `pop( i )` returns
+the `run( p , f )` of an executor (see [chapter 25](25-parallel.md#ch-25)). Its `pop( i )` returns
 the least pair of the queue of the worker $i$. When that queue is empty, it
 returns the least pair of what it steals from victims drawn at random; it
-returns no pair only when no worker holds one, or after `stop()`.
+returns no pair only when no worker holds one, or after `stop()`
+(`terminated()` tells whether no worker holds a pair, i.e., $C = 0$, and
+`stopped()` whether `stop()` was called). The owner of a
+`StealablePriorityQueue` learns from `offering()` whether one of its
+offers waits for a thief.
 
 <span id="alg-24-12"></span>**Algorithm 24.12.** The pop of a worker of
 `StealingFrontier`; $C$ is the counter of the workers at work and of the

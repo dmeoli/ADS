@@ -261,7 +261,8 @@ packed into a batch until it holds `batch` bytes (65536 by default),
 [Algorithm 26.4](26-distributed.md#alg-26-4). Finally, `MPIMailbox<Msg>`
 of a type that is not trivially copyable is an `MPIByteMailbox` whose
 bytes are those of `MPICodec<Msg>`, the customization point that encodes
-and decodes a message, given for `std::string` and for the vectors of
+a message (`encode( x , out )` appends its bytes to `out`) and decodes it
+(`decode( b )` rebuilds it from exactly those bytes), given for `std::string` and for the vectors of
 trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The bytes $b$ that `poll(f)`
 of `MPIByteMailbox` passes to `f(t, b)` are valid during the call, at an
 offset multiple of 8 of a buffer that `new` allocated (hence aligned for
