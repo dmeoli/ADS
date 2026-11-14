@@ -501,10 +501,6 @@ without gaps ([Figure 1.2](01-introduction.md#fig-1-2) and
 In the code, we move the last item instead of copying it, and we do
 not move it at all when the item removed is the last one.
 
-```cpp
---8<-- "generated/SetInterfaces-uset-remove.cpp"
-```
-
 `ArraySSet`, instead, keeps the items in strictly increasing
 order by the order `C` (`std::less<>` by default), two items
 being equal when neither is smaller than the other. This is
@@ -522,10 +518,6 @@ the exercise suggests ([Figure
 1.3](01-introduction.md#fig-1-3)); the `insert()` of
 `std::vector` makes the move, and it becomes one `memmove()`
 when the items are trivially copyable.
-
-```cpp
---8<-- "generated/SetInterfaces-sset-insert.cpp"
-```
 
 ![Figure 1.3. An `ArraySSet` of six items, and `insert(5)`: the binary search probes the places 3, 1 and 2 (in violet, in this order), the items 7, 8 and 9 move by one place as one block, and 5 is written in the place 3 (in orange).](../figures/intro-sset.svg){#fig-1-3}
 
@@ -572,10 +564,6 @@ $G$ the table of the groups ([Morin 2013, exercise
 --8<-- "generated/Bag-insert.pseudo.md"
 
 --8<-- "generated/Bag-remove.pseudo.md"
-
-```cpp
---8<-- "generated/Bag-insert.cpp"
-```
 
 <span id="lem-1-4"></span>**Lemma 1.4.** *If the operations of the table
 $G$ take $O( 1 )$ expected amortized time, then `insert()` and `remove()`
@@ -836,16 +824,19 @@ a b = a_1 b_1 2^{64} + ( a_0 b_1 + a_1 b_0 ) 2^{32} + a_0 b_0 , \tag{1.13}
 $$
 
 i.e., four products of 32 bits, each of which fits in a word
-([Figure 1.6](01-introduction.md#fig-1-6)).
+([Figure 1.6](01-introduction.md#fig-1-6) and
+[Algorithm 1.4](01-introduction.md#alg-1-4)).
 
-```cpp
---8<-- "generated/Portable-wideProduct.cpp"
-```
+<span id="alg-1-4"></span>**Algorithm 1.4.** The product of two words by
+the products of their halves (after [Knuth 1998, Algorithm
+4.3.1M](Z-bibliography.md#ref-knuth1998v2)).
+
+--8<-- "generated/Portable-wideProductHalves.pseudo.md"
 
 ![Figure 1.6. The product of two words on halves of 32 bits, as in (1.13): the four partial products at their shifts, the three halves summed into $\mathit{mid}$ in violet, and the two halves of $\mathit{mid}$ in orange: its low half, the bits 32 to 63 of the product, and its high half, the carry into the high word.](../figures/intro-product.svg){#fig-1-6}
 
 <span id="lem-1-7"></span>**Lemma 1.7.** *The computation of
-`wideProduct()` on halves gives the product $a b$ exactly, i.e., its low
+`wideProductHalves()` ([Algorithm 1.4](01-introduction.md#alg-1-4)) gives the product $a b$ exactly, i.e., its low
 word and its high word, with no overflow of an intermediate word.*
 
 *Proof.* Each partial product $p_{ij} = a_i b_j$ is below $( 2^{32} - 1 )^2
@@ -857,9 +848,9 @@ adds three numbers below $2^{32}$, and is thus below $3 \cdot 2^{32} <
 $$
 a b = ( p_{11} + h_{01} + h_{10} + m_1 ) 2^{64} + m_0 2^{32} + l_{00} ,
 $$
-where $m_0 2^{32} + l_{00} < 2^{64}$; hence $m_0 2^{32} + l_{00}$, which the
-code returns as `( mid << 32 ) | ( p00 & LOW )`, is the low word of $a b$,
-and $p_{11} + h_{01} + h_{10} + m_1$, which it writes in `hi`, is $\lfloor a
+where $m_0 2^{32} + l_{00} < 2^{64}$; hence $m_0 2^{32} + l_{00}$, which
+line 5 returns, is the low word of $a b$, and $p_{11} + h_{01} + h_{10} +
+m_1$, which line 4 writes in $\mathit{hi}$, is $\lfloor a
 b / 2^{64} \rfloor < 2^{64}$, the high word. Since its terms are not
 negative, each partial sum of the high word is below $2^{64}$ as well, and
 no intermediate word overflows. $\square$
@@ -967,11 +958,13 @@ The level 3 is thus meant for the tests, which are all compiled at it (both
 the CMake files and the makefile define `ADS_CONTRACTS=3` for them), since a
 linear algorithm may become quadratic there. Each macro expands to one check,
 `ADS_CONTRACT_CHECK( level , kind , cond )`, which calls `detail::violated()`
-when the condition is false.
+when the condition is false
+([Algorithm 1.5](01-introduction.md#alg-1-5)).
 
-```cpp
---8<-- "generated/Contract-check.cpp"
-```
+<span id="alg-1-5"></span>**Algorithm 1.5.** The check of a contract, the
+body of the macro `ADS_CONTRACT_CHECK`.
+
+--8<-- "generated/Contract-check.pseudo.md"
 
 The test of the level is an `if constexpr`. A condition is therefore compiled
 at each level, and stays correct C++ (a change of the code that breaks it is
@@ -1118,9 +1111,9 @@ those that a policy declares empty (or deleted, for the open addressing with
 lazy deletion), and reads each place through the policy. Since the static
 functions `size()`, `occupied()` and `read()` of the policy take the owner
 and the place, a policy nested in its owner can read its private fields
-([Algorithm 1.4](01-introduction.md#alg-1-4)).
+([Algorithm 1.6](01-introduction.md#alg-1-6)).
 
-<span id="alg-1-4"></span>**Algorithm 1.4.** The steps of `SlotIterator`,
+<span id="alg-1-6"></span>**Algorithm 1.6.** The steps of `SlotIterator`,
 $i$ the place and $m$ the size of the table.
 
 --8<-- "generated/Iterators-SlotIterator-next.pseudo.md"
@@ -1138,21 +1131,18 @@ path $\pi$ from the root to the current node, the end being the
 empty path. It therefore needs no link to the parent in the nodes,
 and it goes both ways (a step back from the end reaching the last
 node), and a policy gives the root, the children (nil for none) and
-the reading of a node ([Algorithm 1.5](01-introduction.md#alg-1-5)
+the reading of a node ([Algorithm 1.7](01-introduction.md#alg-1-7)
 and [Figure 1.8](01-introduction.md#fig-1-8)).
 
-<span id="alg-1-5"></span>**Algorithm 1.5.** The steps of `PathIterator`,
+<span id="alg-1-7"></span>**Algorithm 1.7.** The steps of `PathIterator`,
 $\pi$ the path from the root to the current node.
 
 --8<-- "generated/Iterators-PathIterator-next.pseudo.md"
 
 --8<-- "generated/Iterators-PathIterator-prev.pseudo.md"
 
-In the code, we write the two steps once, with the side as a parameter.
-
-```cpp
---8<-- "generated/Iterators-path-step.cpp"
-```
+In the code, we write the two steps once, with the side as a parameter,
+since `prev()` is `next()` with the two children exchanged.
 
 ![Figure 1.8. A `PathIterator` on a binary search tree of seven nodes: on the node 3, with the path $\pi$ from the root in violet; after one step, which pops 3 and 2 and stops on 4, the node from whose left subtree it came; after another, which pushes the right child 6 of 4 and the leftmost node 5 below it.](../figures/intro-path.svg){#fig-1-8}
 
@@ -1238,8 +1228,7 @@ engineered structure cites the work it follows, and the benchmarks of
 B](B-benchmarks.md#app-B)). Each chapter describes both levels, and says
 what the second changes and why it is faster.
 
-Also, the code follows a few conventions, which the snippets of this manual
-show. We write each realization as one header, included by its path (e.g.,
+Also, the code follows a few conventions. We write each realization as one header, included by its path (e.g.,
 `#include "ADS/stack/ArrayStack.h"`), which declares its classes and
 functions with their contracts. At its end the header includes the
 definitions of its templates, in the folder `impl/` next to it (e.g.,
@@ -1325,8 +1314,8 @@ For each structure it gives the abstract data type and its axioms, the
 representation and its invariants, and figures of its state in memory before
 and after the operations. Then come the pseudocode of the operations,
 extracted from the headers, the analysis of the costs as lemmas with their
-proofs, the code of the operations that teach something (also extracted from
-the headers), and the engineered variants with what they change. A section of
+proofs, the declarations that a user calls with short examples of their
+use, and the engineered variants with what they change. A section of
 discussion and references and one of exercises, each solved by a test of the
 library, close the chapter.
 
@@ -1715,6 +1704,20 @@ which a batch prefers to the events one by one, and the group hooks
 `group_end()`. Furthermore, an observer may have `prepare(e)`, which may
 refuse a change before it is made, `audit(s)`, a check of the observer
 against the structure $s$, and `mask()`, a filter of the kinds at run time.
+Each of these members is tested by a concept of the namespace `mod`:
+`observes<O, E>` for `on(e)` on the event `E`, `observes_span<O, E>` for
+`on(s)` on a span, `groups`, `refuses`, `auditable<O, S>`, `masked<O>`,
+`lazy<O>` for an observer that queues the events and works at its next
+`flush()`, and `counted<O>` for one that reports counts of its own by
+`counts()`;
+`observer_of<O, L>` holds when $O$ observes at least one event of the list
+$L$, and an event with an inverse (cf. `UndoLog` below) satisfies
+`invertible<E>`. The kinds of an event, as seen by the coalescing of a
+batch, are the values of the enumeration `mod::Role`, and
+`mod::variant_t<L>` is the `std::variant` of the events of $L$, i.e., the
+type `Event` of a subject and the type of the buffer of a batch. A subject
+policy (`NoObservers`, `Static<O...>`, `Dynamic<L>` or `Both`) gives the subject
+of a structure of the events $L$ as its member template `bind<L>`.
 Two lists complete it, `requires_modifications`, of the events without which
 the observer cannot work, and `depends_on`, of the static observers that must
 precede it. An `on()` may also return `Keep::Detach` to leave with no
@@ -1909,11 +1912,13 @@ returns: `native` with `decrease()` on the handles, `lazy` for a
 item is inserted again with the lower key, and its stale copies are
 skipped when they come out. An opt-in `Q::decrease_key` wins over the
 inference, and `MultiQueue`, a relaxed queue with no exact `min()`,
-declares by it that it is lazy.
+declares by it that it is lazy
+([Algorithm 1.8](01-introduction.md#alg-1-8)).
 
-```cpp
---8<-- "generated/Capabilities-decrease_key_of.cpp"
-```
+<span id="alg-1-8"></span>**Algorithm 1.8.** The capability of a queue to
+lower a priority, computed at compile time.
+
+--8<-- "generated/Capabilities-decrease_key_of.pseudo.md"
 
 Neither form is better in general. A lazy queue needs no handles and no
 table of positions, at the price of one copy per decrease instead of one
@@ -1940,6 +1945,45 @@ least entry of the native queue (the pairs are distinct), and the stale
 copies before it are skipped and not counted; the additions and the
 decreases are the calls of the prototype, which are the same in both.
 $\square$
+
+[Table 1.7](01-introduction.md#tab-1-7) lists all the names of
+`Capabilities.h`, with what each one requires or answers; the
+customization points `reserve`, `prefetch` and `insert_bulk`, and the
+object `query`, are in the namespace `ADS`, as the concepts are.
+
+<span id="tab-1-7"></span>**Table 1.7.** The names of `Capabilities.h`:
+S marks a syntactic capability (a concept on members), O an opt-in, Q a
+query or its tools, T a type or a customization point; $S$ is a
+structure, $Q$ a queue, $T$ a table of nodes and $G$ a graph.
+
+| Name | Kind | Requires or gives |
+|---|---|---|
+| `mod::list<E...>` | T | a list of event types (cf. [§1.13](01-introduction.md#sec-1-13)) |
+| `key_type_t<S>` | T | `S::Key`, else `S::key_type`, else `S::value_type`, else `std::size_t` |
+| `modifications_of<S>` | T | `S::modifications`, else the empty list |
+| `priority_t<Q>` | T | `Q::Priority`, else the items of $Q$ |
+| `enable_stable_references<S>` | O | the items keep their addresses (false by default) |
+| `nonmonotone_values<T>` | O | the values of the nodes may also rise (false by default) |
+| `monotone_of<S>()`, `declares_monotone<S>` | O | the bits `up` and `down` of `S::monotone`, all bits by default |
+| `forwarding_query`, `forwarding_query_tag<T>` | Q | the base of the tags, and the concept of a tag |
+| `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | Q | the four tags, and the objects `stable_references`, `thread_safe_reads`, `rank_complexity`, `event_set` |
+| `complexity` | Q | `constant`, `logarithmic`, `linear`, the answer of `rank_complexity_t` |
+| `query_v<S, T>`, `query` | Q | the answer of $S$ to the tag $T$, at compile time and as an object |
+| `meetable_query<T>`, `query_meet_v<A, B, T>` | Q | a tag with a meet, and the answer of a composition |
+| `reserve`, `prefetch`, `insert_bulk` | T | the member, else a free function found by ADL, else the default |
+| `bulk_insertable<S>`, `bulk_erasable<S>` | S | `insert_bulk(r)`, `erase_bulk(r)` |
+| `splittable<S>`, `joinable<S>` | S | `std::move( s ).split( k )`, `S::join2( l , r )` |
+| `rankable<S>`, `selectable<S, G>` | S | `rank(k)`, `select(i)` (and `augSelect(p)` with an augmentation $G$) |
+| `prefetchable<S>`, `reservable<S>` | S | `prefetch(k)`, `reserve(n)` |
+| `augmented_by<S, G>`, `range_actionable<S, A>` | S | `augRange(lo, hi)` with `S::Augmented` equal to $G$, `applyRange(lo, hi, a)` |
+| `decrease_key_kind`, `decrease_key_of<Q>()` | T | `none`, `lazy`, `native` ([Algorithm 1.8](01-introduction.md#alg-1-8)) |
+| `addressable<Q>` | S | an `AddressablePriorityQueue` with `increase(h, p)` and `erase(h)` |
+| `observes_values<Q>` | S | `update(id)`, the key of an item read again from the table |
+| `batch_extract<Q>`, `shiftable_keys<Q>` | S | `extract(theta, out)`, `shift_all(delta)` |
+| `monotone_extract<Q>`, `rekeyable<Q, F>` | S | a `PriorityQueue` with `rebase()`, `rekey(f)` |
+| `erasable<T>`, `epoch_clearable<T>` | S | `erase(k)`, the policy `T::Clear` with `epoch()` |
+| `undoable<S>`, `snapshotable<S>` | S | `rollback( s.checkpoint() )`, `snapshot()` |
+| `in_arcs<G>`, `stable_edge_ids<G>`, `batch_updatable<G>` | S | `forEachIn(v, f)`, `arcId(u, v)`, `batch()` |
 
 ## 1.15 Discussion and references {#sec-1-15}
 

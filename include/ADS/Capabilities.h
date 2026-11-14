@@ -498,6 +498,22 @@ enum class decrease_key_kind { none , lazy , native };
 /// it (e.g., a queue whose `decrease()` is an insertion), else `native` if
 /// it has `decrease( h , p )` on its handles, else `lazy` if it is a
 /// `PriorityQueue`, else `none` (the shortest paths and Prim's algorithm)
+///
+/// In pseudocode, each test made at compile time:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{decrease\_key\_of}( Q ) \cr
+/// 2 & \quad \textbf{if}\ Q \text{ declares } \mathtt{decrease\_key}
+///     \ \textbf{then return}\ \text{its value}\quad \triangleright
+///     \ \text{the opt-in wins} \cr
+/// 3 & \quad \textbf{if}\ Q \text{ has } \mathrm{decrease}( h , p )
+///     \text{ on its handles}\ \textbf{then return}
+///     \ \mathit{native} \cr
+/// 4 & \quad \textbf{if}\ Q \text{ models } \mathtt{PriorityQueue}
+///     \ \textbf{then return}\ \mathit{lazy} \cr
+/// 5 & \quad \textbf{return}\ \mathit{none}
+/// \end{array}}
+/// \f]
 //! [decrease_key_of]
 template< class Q >
 constexpr decrease_key_kind decrease_key_of( void )

@@ -87,6 +87,23 @@ namespace detail {
 /// the product of 128 bits of `a` and `b`, its high half in `hi`, by the
 /// four products of their halves of 32 bits (Algorithm 4.3.1M of Knuth),
 /// for the compilers with no product of two words and for the tests
+///
+/// In pseudocode, \f$ x_0 \f$ and \f$ x_1 \f$ the low and the high half of
+/// 32 bits of the word \f$ x \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{wideProductHalves}( a , b ) \cr
+/// 2 & \quad p_{i j} \gets a_i b_j \text{ for } i , j \in \{ 0 , 1 \}
+///     \quad \triangleright\ \text{four products of 32 bits} \cr
+/// 3 & \quad \mathit{mid} \gets \lfloor p_{0 0} / 2^{32} \rfloor +
+///     ( p_{0 1} \bmod 2^{32} ) + ( p_{1 0} \bmod 2^{32} ) \cr
+/// 4 & \quad \mathit{hi} \gets p_{1 1} + \lfloor p_{0 1} / 2^{32}
+///     \rfloor + \lfloor p_{1 0} / 2^{32} \rfloor + \lfloor \mathit{mid}
+///     / 2^{32} \rfloor \cr
+/// 5 & \quad \textbf{return}\ ( \mathit{mid} \bmod 2^{32} ) \, 2^{32} +
+///     ( p_{0 0} \bmod 2^{32} )
+/// \end{array}}
+/// \f]
 constexpr std::uint64_t wideProductHalves( std::uint64_t a , std::uint64_t b ,
                                            std::uint64_t & hi )
 {
