@@ -100,8 +100,10 @@
  \f$ n! \ge ( n / e )^n \f$. Hence merge sort and heapsort, with
  \f$ O( n \log n ) \f$ comparisons in the worst case, and Quicksort on
  average, are optimal up to a constant factor; the merge insertion of Ford
- and Johnson (`mergeInsertionSort()` of `KnuthSorts.h`) is within
- \f$ 0.03 \, n \f$ comparisons of (1), and for \f$ n \le 11 \f$ it meets it.
+ and Johnson (`mergeInsertionSort()` of `KnuthSorts.h`) exceeds
+ \f$ \log_2 n! \f$ by between about \f$ 0.028 \, n \f$ and
+ \f$ 0.114 \, n \f$ comparisons in the worst case, and for
+ \f$ n \le 11 \f$ and \f$ n = 20 , 21 \f$ it meets (1).
 
  The same argument gives finer bounds when the input is restricted. If the
  input is known to consist of \f$ r \f$ runs of lengths

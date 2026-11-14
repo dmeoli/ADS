@@ -115,7 +115,10 @@ or the lists that an operation touches, state that the counts `n()` and
 `m()` agree with the representation. The class `GraphNodes<T>`, from which
 `MatrixGraph` and `ListGraph` derive, holds what these two share: the flag
 `directed()`, the counts, the vector of the names in use, and the labels,
-with `label(u)` and `setLabel(u, t)`. On that vector, the iterator `nodes()`
+with `label(u)` and `setLabel(u, t)`; to the classes derived from it it
+gives the checks of a node and of an edge (`check(u)` and `edge(u, v)`),
+`addNode(t)`, and `nodesCounted()`, the invariant that `n()` counts the
+names in use, each with its label. On that vector, the iterator `nodes()`
 visits the nodes in increasing order with no vector built, through the slots
 of `Alive` (whose `size()`, `occupied()` and `read()` give the number of the
 names, whether a name is in use and its node). The realizations name the
@@ -165,16 +168,18 @@ column. Also `forEachAdj()`, `forEachEdge()` and the iterator `neighbors(u)`
 adds a row and a column, i.e., $\Theta( n )$ time, and `deleteNode(u)`
 empties both before it marks the name unused, again in $\Theta( n )$.
 
-<span id="lem-14-1"></span>**Theorem 14.1.** *`MatrixGraph` realizes the
-GRAPH in $\Theta( n^2 )$ space, with `insertEdge()`, `deleteEdge()`,
-`hasEdge()` and `weight()` in $O( 1 )$ time, `adj()` and `inAdj()` in
-$\Theta( n )$ time, and `insertNode()` and `deleteNode()` in $\Theta( n )$
-time.*
+<span id="lem-14-1"></span>**Theorem 14.1.** *Let $N = \mathrm{bound}()$,
+which is $n$ when no node has been deleted. `MatrixGraph` realizes the
+GRAPH in $\Theta( N^2 )$ space, with `insertEdge()`, `deleteEdge()`,
+`hasEdge()` and `weight()` in $O( 1 )$ time, `adj()`, `inAdj()` and
+`deleteNode()` in $\Theta( N )$ time, and `insertNode()` in $\Theta( N )$
+amortized time.*
 
-*Proof.* The matrix has $\mathrm{bound}()^2$ places, one optional weight
-each; the costs follow from the number of entries that each operation
-reads or writes, as described above (a new row is $n + 1$ places, and a
-new column one place in each of the $n$ rows). $\square$
+*Proof.* The matrix has $N^2$ places, one optional weight each; the costs
+follow from the number of entries that each operation reads or writes, as
+described above. A new node appends a row of $N + 1$ places and one place
+to each of the $N$ rows, each append amortized $O( 1 )$ since the rows
+are vectors that double. $\square$
 
 Its main defect is the space: $n^2$ places for any number of edges, i.e.,
 $n^2$ optional weights (at least $n^2$ bytes even without weights), where
@@ -250,17 +255,17 @@ leads from them to their head. Thus `inAdj(u)` of an oriented graph scans
 all the lists ([Algorithm 14.2](14-graph.md#alg-14-2)); in an unoriented one
 they are the edges that leave $u$, which the list of $u$ gives in $O( d( u )
 )$. For the same reason `deleteNode(u)` removes $u$ from the list of each
-node before it empties the list of $u$, in $O( n + m )$ time.
+node before it empties the list of $u$, in $O( \mathrm{bound}() + m )$ time.
 
 --8<-- "generated/ListGraph-deleteNode.pseudo.md"
 
-<span id="lem-14-2"></span>**Theorem 14.2.** *`ListGraph` realizes the
-GRAPH in $\Theta( n + m )$ space, with `insertNode()` in $O( 1 )$
+<span id="lem-14-2"></span>**Theorem 14.2.** *With $N = \mathrm{bound}()$,
+`ListGraph` realizes the GRAPH in $\Theta( N + m )$ space, with `insertNode()` in $O( 1 )$
 amortized time, `insertEdge(u,v)`, `deleteEdge(u,v)`, `hasEdge(u,v)` and
 `weight(u,v)` in $O( d( u ) )$ time ($O( d( u ) + d( v ) )$ for the first
 two if the graph is unoriented), `adj(u)` in $\Theta( d( u ) + 1 )$ time,
-`inAdj(u)` in $O( n + m )$ time ($O( d( u ) \log d( u ) )$ if unoriented,
-since the result is sorted), and `deleteNode()` in $O( n + m )$ time.*
+`inAdj(u)` in $O( N + m )$ time ($O( d( u ) \log d( u ) )$ if unoriented,
+since the result is sorted), and `deleteNode()` in $O( N + m )$ time.*
 
 *Proof.* Each list has a node per adjacent node, i.e., $m$ list nodes (or
 $2 m$) besides the vector of the $\mathrm{bound}()$ heads. The insertion,
@@ -322,8 +327,10 @@ of `ArrayGraph` by a counting sort on the tails
 the arcs many times. First, each arc of a weighted graph is a `WeightedArc`,
 i.e., its head next to its weight; hence the scan of the arcs of $u$ reads
 one run of pairs instead of two parallel runs. In all, the graph takes $4 (
-n + 1 ) + ( 4 + s ) a$ bytes, $s$ the size of a weight (0 if unweighted,
-when an arc is an `int`, as the alias `Arc` and the flag `weighted` state).
+n + 1 ) + b a$ bytes, $b$ the size of an arc: 4 if unweighted, when an arc
+is an `int` (as the alias `Arc` and the flag `weighted` state), and
+otherwise 4 plus the size of a weight rounded up to the alignment of the
+weight, e.g., 8 for an `int` or a `float` and 16 for a `double`.
 Second, the arcs of each node are sorted by head. This makes the reads of a
 visit that follows them go forward in memory, and lets `weight(u,v)` and
 `setWeight()` find an arc by a binary search, in $O( \log d( u ) )$. The
@@ -926,8 +933,9 @@ alone makes the choices of [Lemma 14.9](14-graph.md#lem-14-9).*
 *Proof.* An open node has a number below $i$, and $i - 1$ counts the open
 nodes, which are at most the $c + 1$ names of the $N$ not closed, the
 closed ones being $N - 1 - c$; the closed nodes have the numbers
-$c + 1 , \ldots , N - 1$ of their components. Thus a closed node never
-lowers an open one, as the test $y \in S$ of
+$c + 1 , \ldots , N - 1$ of their components. The two ranges meet at most
+in $c + 1$, and the test $\mathit{rindex}[ v ] < \mathit{rindex}[ u ]$ is
+strict; thus a closed node never lowers an open one, as the test $y \in S$ of
 [Lemma 14.9](14-graph.md#lem-14-9) ensures, and a node of $S$ belongs to
 the component of the root $u$ if and only if its number is at least
 $\mathit{rindex}[ u ]$. $\square$
@@ -961,7 +969,7 @@ lists of adjacency. `gridDistances()` is the visit in breadth of
 [§14.5.2](14-graph.md#sec-14-5-2) from several sources at once, all of them
 at distance 0 in the queue. It gives each cell its distance in moves from
 the nearest source, `INF` if none reaches it ([Algorithm
-14.11](14-graph.md#alg-14-12)). This is the algorithm of [Lee
+14.12](14-graph.md#alg-14-12)). This is the algorithm of [Lee
 1961](Z-bibliography.md#ref-lee1961) for the routing of the wires on a
 board, after the maze of [Moore 1959](Z-bibliography.md#ref-moore1959). With
 the sources a whole set of pixels it is the distance transform of an image;
@@ -991,8 +999,9 @@ matrix is needed. The fill by spans of [Smith
 instead of a cell, with fewer operations on the queue for the same bound.
 Finally, `knightDistance(n, s, t)` gives the fewest moves of a knight
 between two squares of an $n \times n$ board by a visit of the graph of the
-knight moves, in $\Theta( n^2 )$. It returns `INF` when there is no way
-(only on the boards of 1, 2 and 3 squares a side). On the infinite board
+knight moves, in $\Theta( n^2 )$. It returns `INF` when there is no way,
+which happens only on the boards of 2 and 3 squares a side (on a board of
+one square the two squares are the same). On the infinite board
 the distance has a closed form computable in $O( 1 )$, which differs from
 that of a finite board near its corners.
 
@@ -1027,8 +1036,9 @@ border, and hence the names are those of the map (`node(r, c)` and `cell(u)`
 convert, `cost(u)` and `minCost()` read the costs). The neighbours of $u$
 come from its row and its column, one division, and from at most 8 reads of
 the vector. Thus the graph takes $s \, R \, C$ bytes ($s$ the size of a
-cost, 0 without the vector), against the $4 ( n + 1 ) + ( 4 + s' ) a$ bytes
-of a `StaticGraph` of the same grid with $a \le 8 n$ arcs.
+cost, 0 without the vector), against the $4 ( n + 1 ) + b a$ bytes of a
+`StaticGraph` of the same grid ([§14.4.1](14-graph.md#sec-14-4-1)) with
+$a \le 8 n$ arcs.
 
 A move from $u$ into $v$ costs, with $\gamma( x )$ the cost of the cell $x$,
 either $\gamma( v )$ (the cell entered pays, `MoveCost::ENTERED`, the
@@ -1040,7 +1050,7 @@ passes by two sides of the cell. The enumeration `Corners` states whether it
 may always cut the corner (`CUT`, as in the first jump point search),
 whether one of the two sides must be free (`NO_SQUEEZE`), or whether both
 must (`NO_CUT`, the rule of the benchmarks since 2012). [Figure
-14.10](14-graph.md#fig-14-11) shows the moves of a cell under the last rule.
+14.11](14-graph.md#fig-14-11) shows the moves of a cell under the last rule.
 All three rules are symmetric in the two ends of a move. Hence the graph is
 unoriented when the free cells cost the same and oriented otherwise
 (`directed()`), since under either model one of $( u , v )$ and $( v , u )$
@@ -1240,11 +1250,14 @@ free tree in $O( n )$ time (the double sweep, proved by [Bulterman et al.
 2002](Z-bibliography.md#ref-bulterman2002)).*
 
 *Proof.* Let $x$ be the start, $a$ the farthest node from $x$, and $P$ a
-longest path, from $p$ to $q$. If the path from $x$ to $a$ meets $P$, at a
-node $y$, then $d( y , a ) \ge \max\{ d( y , p ) , d( y , q ) \}$ by the
-choice of $a$; thus replacing the end of $P$ farther from $a$ by $a$ gives a
-path no shorter, which ends at $a$. If it does not meet $P$, let $y$ be the
-node of $P$ nearest to $x$, and $z$ the node where the path from $x$ to $y$
+longest path, from $p$ to $q$, and $y$ the node of $P$ nearest to $x$,
+through which the path from $x$ to any node of $P$ passes. If the path from
+$x$ to $a$ meets $P$, it passes through $y$, and $d( x , a ) \ge d( x , p )$
+gives $d( y , a ) \ge d( y , p )$, and likewise $d( y , a ) \ge d( y , q )$.
+The path from $y$ to $a$ shares with $P$ at most a part of one of its two
+halves, say that towards $p$; then the path from $a$ to $q$ passes through
+$y$ and has length $d( a , y ) + d( y , q ) \ge d( y , p ) + d( y , q )$,
+i.e., it is a longest path that ends at $a$. If it does not meet $P$, let $z$ the node where the path from $x$ to $y$
 leaves the path from $x$ to $a$. Then $d( z , a ) \ge d( z , y ) + \max\{ d(
 y , p ) , d( y , q ) \}$, and again a longest path ends at $a$. $\square$
 
@@ -1716,7 +1729,7 @@ by saturating the edges that leave $s$. Then a node $u$ with an excess
 either pushes it on an edge with $c_f( u , v ) > 0$ and $d( v ) = d( u ) -
 1$, or, if there is none, raises $d( u )$ to the least $d( v ) + 1$ over its
 residual edges, which keeps the labels valid ([Algorithm
-14.14](14-graph.md#alg-14-15)).
+14.15](14-graph.md#alg-14-15)).
 
 <span id="lem-14-21"></span>**Lemma 14.21.** *A label never decreases and
 stays below $2 n$; hence there are $O( n^2 )$ relabelings and $O( n m )$
@@ -1741,8 +1754,9 @@ This bound gives little indication of the speed, which comes from two
 heuristics of [Cherkassky and Goldberg
 1997](Z-bibliography.md#ref-cherkassky1997). The first is the *global
 relabeling*, a visit in breadth backwards from $t$ that sets each label to
-its distance, made again whenever the relabelings since the last one cost
-more than $6 n + m$. The second is the *gap*: when no node is left with some
+its distance, made again in the first phase whenever the relabelings since the last one,
+each of which counts 12 plus the degree of its node, cost more than half
+of $6 n + m$. The second is the *gap*: when no node is left with some
 label $k$, it puts out of the game all the nodes of label above $k$, since
 none of them reaches $t$ any more. In stopping each labeling at the last
 node with an excess, the code follows the HIPR of the same authors. It
@@ -1891,8 +1905,11 @@ size if and only if no path augments it ([Berge
 *Proof.* An augmenting path gives a larger matching. Conversely, if
 $\lvert M' \rvert > \lvert M \rvert$, the symmetric difference of the two
 is made of paths and of even cycles in which the edges of $M$ and of $M'$
-alternate, and one of its paths has more edges of $M'$ than of $M$: it
-augments $M$. $\square$
+alternate, and one of its paths has more edges of $M'$ than of $M$, so
+that it starts and ends with edges of $M'$. Each end of that path is free
+in $M$, since an edge of $M$ at it would be either in the symmetric
+difference, and then in the path, or in $M'$ too, and then the end would
+have two edges of $M'$; hence the path augments $M$. $\square$
 
 A search for such a path from a free node $r$ grows an alternating tree.
 The nodes at an even distance from $r$ along the tree are *even*, the
@@ -1911,13 +1928,21 @@ in $G / C$ ([Edmonds 1965](Z-bibliography.md#ref-edmonds1965b)).*
 *Proof.* A path of $G / C$ through the shrunk node enters it by an edge to
 some node of $C$, and goes on from the base: one of the two ways around
 the cycle from that node to the base has an even number of edges and
-alternates, and lifts the path to $G$. Conversely, an augmenting path of
-$G$ either misses $C$, or can be cut at its first node in $C$ after the
-stem from $r$ to the base has been exchanged with the matching, which keeps
-the sizes and makes the base free; the part before the cut is then
-augmenting in $G / C$. $\square$
+alternates, and lifts the path to $G$. Conversely, let the stem, the
+alternating path of the tree from $r$ to the base, be exchanged with the
+matching in $G$ and in $G / C$: this gives matchings $M'$ and $M' / C$ of
+the same sizes as $M$ and $M / C$, and in them the base and the shrunk node
+are free. If $M$ has an augmenting path, it is not of largest size, and by
+[Lemma 14.23](14-graph.md#lem-14-23) neither is $M'$, which then has an
+augmenting path $P$. At most one end of $P$ lies in $C$, whose only free
+node is now the base; if $P$ misses $C$ it augments $M' / C$ as it is,
+and otherwise its part from an end out of $C$ to its first node in $C$
+ends, in $G / C$, at the free shrunk node, and augments $M' / C$. Thus
+$M' / C$, and with it $M / C$, is not of largest size in $G / C$, and
+[Lemma 14.23](14-graph.md#lem-14-23) gives an augmenting path of
+$M / C$. $\square$
 
-![Figure 14.13. A blossom shrunk by `maxCardinalityMatching()`: the tree of the search from the free node $r$, the matched edges in violet, and the edge $[ d , e ]$ between two even nodes, which closes the odd cycle $b , c , d , e , f$ of base $b$ (in violet); the cycle becomes the node $B$ (in orange), and the edge $[ B , g ]$ to the free node $g$ ends an augmenting path, which lifts to $r , a , b , f , e , d , g$.](../figures/graph-blossom.svg){#fig-14-13}
+![Figure 14.13. A blossom shrunk by `maxCardinalityMatching()`: the tree of the search from the free node $r$, the matched edges in violet, and the edge $[ d , e ]$ between two even nodes, which closes the odd cycle $b , c , d , e , f$ of base $b$ (in violet); the cycle becomes the node $B$ (in orange), and the edge $[ B , g ]$ to the free node $g$ ends an augmenting path, which lifts to $r , a , b , c , d , g$, the even way from $d$ to the base $b$ around the cycle starting with the matched edge $[ d , c ]$.](../figures/graph-blossom.svg){#fig-14-13}
 
 Thus the search of `maxCardinalityMatching(g)` (beyond the book) shrinks
 each blossom it closes, each node of the cycle becoming even (the odd
@@ -2000,7 +2025,7 @@ primal-dual algorithm of Edmonds in the $O( n^3 )$ of Gabow and of
 [Lawler 1976](Z-bibliography.md#ref-lawler1976), as [Galil
 1986](Z-bibliography.md#ref-galil1986) surveys it
 ([Algorithm 14.18](14-graph.md#alg-14-18)). It keeps the conditions (i)
-and (iii), and approaches (ii): each $y_v$ starts at the largest weight and
+and (iii), and approaches (ii): each $y_v$ starts at the largest weight (0 if no weight is positive) and
 the matching empty, and the free nodes, whose duals are always equal and
 the least, are the roots of the trees grown on the edges of slack 0 alone,
 the blossoms with $z_B > 0$ being the odd sets of (iii). When no tight edge
@@ -2055,7 +2080,7 @@ on large sparse graphs.
 `branchAndBoundMatching(n, E)` solves the same problem on a graph of a few
 nodes by a branch and bound, sharing no code with the blossoms, and the
 tests use it as an independent oracle. In this search the first node not
-yet decided is left unmatched or matched to each free neighbour, and a
+yet decided is left unmatched or matched to each later neighbour still free, and a
 branch is cut when twice its weight plus the best weight at each node left
 cannot beat twice the best matching found (each edge touches two nodes).
 In the worst case it takes time proportional to the number of matchings of
@@ -2155,7 +2180,7 @@ graphs solve the assignment from scratch (LEMON by its minimum cost flows,
 SciPy by the algorithm of Crouse), and, as far as we know, none keeps the
 potentials for a warm start.
 
-![Figure 14.14. The reduced costs $c( i , j ) - u_i - v_j$ of an `Assignment` of $3 \times 3$ costs, with the potentials $v_j$ above the columns and $u_i$ beside the rows, before and after `setRow(1, (8, 0, 7))`: the pairs of the assignment (in violet) have reduced cost 0, the row changed is in orange, and every reduced cost stays nonnegative; one augmentation from the freed row gives the new assignment, of cost 6.](../figures/graph-assign.svg){#fig-14-14}
+![Figure 14.14. The reduced costs $c( i , j ) - u_i - v_j$ of an `Assignment` of the $3 \times 3$ costs of rows $( 4 , 1 , 3 )$, $( 2 , 0 , 5 )$ and $( 3 , 2 , 2 )$, with the potentials $v_j$ above the columns and $u_i$ beside the rows, before and after `setRow(1, (8, 0, 7))`: the pairs of the assignment (in violet) have reduced cost 0, the row changed is in orange, and every reduced cost stays nonnegative; one augmentation from the freed row gives the new assignment, of cost 6.](../figures/graph-assign.svg){#fig-14-14}
 
 ## 14.12 Eulerian cycles and trails {#sec-14-12}
 
@@ -2181,9 +2206,12 @@ gives the conditions, and connects its edges. Conversely, under them, a
 walk along unused edges from $s$ (from any node with an edge, if all are
 balanced) can stop only at $t$ (at its start), since each other node it
 enters has an unused edge to leave by. If the walk does not use all the
-edges, some node on it has an unused edge (by the connection), and the
-closed walk from that node, spliced into the first, gives a longer trail.
-$\square$
+edges, some node on it has an unused edge (by the connection); the unused
+edges leave each node balanced (each node of even degree, if unoriented),
+since the walk takes from every node as many edges entering as leaving,
+apart from $s$ and $t$, and so the walk along them from that node can stop
+only where it started, and the closed walk, spliced into the first, gives
+a longer trail. $\square$
 
 ### 14.12.2 The walk of Hierholzer {#sec-14-12-2}
 
@@ -2207,8 +2235,13 @@ that there is no trail, and the connection needs no other visit.*
 *Proof.* The walk uses each edge reachable from its start, by the splicing
 argument of [Lemma 14.28](14-graph.md#lem-14-28). A component in which each
 node is balanced is strongly connected (with the edge $( t , s )$ added in
-the open case), and so each of its edges is reachable from any of its
-nodes; the edges of another component are not reachable at all. $\square$
+the open case): if an edge $( u , v )$ had $u$ not reachable from $v$, the
+set $R$ of the nodes reachable from $v$ would have the edge $( u , v )$
+entering it and no edge leaving it, and the sum of the excesses over $R$,
+the edges leaving $R$ minus those entering it, would be negative instead
+of 0. Hence each of its edges is reachable from any of its nodes, while
+the edges of another component are not reachable at all; for an
+unoriented graph, the component is connected by definition. $\square$
 
 `eulerianTrail(g)` returns the nodes of a trail of a graph, oriented or
 not: closed (the first node repeated at the end) if there is an Eulerian
@@ -2216,8 +2249,8 @@ cycle, and open otherwise, from the node with $x( s ) = 1$ (the first of
 the two odd nodes, if unoriented); it returns no value if there is no
 trail, and an empty trail if the graph has no edge.
 `eulerianTrail(g, s)` starts from a given node, and returns no value if no
-trail starts from it. `eulerianCycle(g)` returns only a closed trail, now
-for an unoriented graph too, and `isEulerianTrail(g, c)` and
+trail starts from it. `eulerianCycle(g)` returns only a closed trail, for an
+oriented or an unoriented graph, and `isEulerianTrail(g, c)` and
 `isEulerianCycle(g, c)` check that a sequence of nodes is a trail, open or
 closed, or a cycle, using each edge exactly once (an unoriented edge in
 either direction). An unoriented graph must have no loop.
@@ -2365,12 +2398,14 @@ previous solution, and `CERTIFIED` (2) with no computation at all. Events
 are queued, and the work is done at the next query (the lazy flush), which
 the base class `EventQueue<W>` organizes. First, the queue $Q$ is coalesced
 by (14.11) into $P$. If $\lvert P \rvert > \rho \max( m , 1 )$, $\rho$ the
-ratio of `setRecomputeRatio()` ($1 / 4$ by default), the solution is
+ratio of `setRecomputeRatio()` ($1 / 4$ by default; the test is
+`tooMany()` of `EventQueue<W>`, which an observer derived from it calls),
+the solution is
 computed from scratch, since a repair that touches a large part of the graph
 costs as much and is usually slower by a constant. Otherwise each event of
 $P$ is tested against the certificate of the previous solution and found
 *harmless*, *repairable* or *fatal* ([Algorithm
-14.17](14-graph.md#alg-14-21)). Hence the outcome is from scratch if one
+14.21](14-graph.md#alg-14-21)). Hence the outcome is from scratch if one
 event is fatal, by a repair if one is repairable, and certified if all are
 harmless. `pending()` counts the events waiting, `count(o)` the queries of
 each outcome, and `mask()` contains all the kinds.

@@ -160,11 +160,14 @@ $\square$
 $k \ge 1$ leaves is drawn uniformly at random, its expected depth is at
 least $\log_2 k$.*
 
-*Proof.* By induction on $k$. For $k = 1$ the bound is 0. Otherwise let
-the subtrees of the root have $k_1$ and $k_2$ leaves, $k_1 + k_2 = k$
+*Proof.* By induction on the height of the tree (not on $k$, since a
+root with one child has a subtree with all the $k$ leaves). For height 0
+the tree is a leaf and the bound is 0. Otherwise let the subtrees of the
+root, of smaller height, have $k_1$ and $k_2$ leaves, $k_1 + k_2 = k$
 (one of them possibly empty). The leaf drawn lies in the first one with
 probability $k_1 / k$, and is then a leaf drawn uniformly from it. Hence,
-by the inductive hypothesis, its expected depth $E( k )$ satisfies
+by the inductive hypothesis applied to the nonempty subtrees, its expected
+depth $E( k )$ satisfies
 
 $$
 E( k ) \ge 1 + \frac{k_1}{k} \log_2 k_1 + \frac{k_2}{k} \log_2 k_2
@@ -266,9 +269,12 @@ Ford and Johnson ([Knuth 1998, §5.3.1](Z-bibliography.md#ref-knuth1998v3)).
 Its comparisons in the worst case are
 $\sum_{k=1}^{n} \lceil \log_2 ( 3 k / 4 ) \rceil$, which
 `fordJohnsonBound()` computes and the test `taocp.knuth-sorts` checks. This
-is within about $0.03 \, n$ of $\log_2 n!$, and equal to
-$\lceil \log_2 n! \rceil$ for $n \le 11$ and for $n = 20 , 21$ ([Knuth
-1998, §5.3.1](Z-bibliography.md#ref-knuth1998v3)). Its bookkeeping of the
+exceeds $\log_2 n!$ by between about $0.028 \, n$ and $0.114 \, n$ for
+large $n$, the excess oscillating with the place of $n$ between two powers
+of 2 (the sum is $n \log_2 n - \theta n + O( \log n )$ with
+$1.329 < \theta < 1.415$, against the $n \log_2 n - 1.443 \, n$ of
+Stirling), and it equals $\lceil \log_2 n! \rceil$ for $n \le 11$ and
+for $n = 20 , 21$ ([Knuth 1998, §5.3.1](Z-bibliography.md#ref-knuth1998v3)). Its bookkeeping of the
 pairs and of the insertions makes it slow in time, however, and it is of
 interest only when a comparison is far dearer than a move.
 
@@ -353,9 +359,11 @@ right and to the left, and a turtle thus reaches the front in one pass.
 `oddEvenSort()`, the odd-even transposition sort of [Habermann
 1972](Z-bibliography.md#ref-habermann1972), compares the pairs
 $( 2 i , 2 i + 1 )$ and then the pairs $( 2 i + 1 , 2 i + 2 )$ in turns.
-Within a round the comparisons are independent, which makes it a sort for $n$
-processors on a line, and $n$ rounds suffice (it can report the rounds it
-made). `combSort()` of [Dobosiewicz 1980](Z-bibliography.md#ref-dobosiewicz1980)
+Within a phase the comparisons are independent, which makes it a sort for $n$
+processors on a line; $n$ phases suffice ([Habermann
+1972](Z-bibliography.md#ref-habermann1972)), i.e., $\lceil n / 2 \rceil$ rounds
+of an even and an odd phase, and the function makes one more round, with no
+swap, to find the vector sorted (it can report the rounds it made). `combSort()` of [Dobosiewicz 1980](Z-bibliography.md#ref-dobosiewicz1980)
 compares the items at a gap that shrinks by the factor $1.3$ at each pass
 ($g \gets \lfloor 10 g / 13 \rfloor$), which moves the turtles far, and
 ends as a bubble sort with gap 1. It is near $O( n \log n )$ in practice,
@@ -407,11 +415,24 @@ i.e., with $A[ i ] \le A[ i + h ]$ for each $i$, stays $h$-sorted after a
 pass with gap $g$.*
 
 *Proof.* This is Theorem K of [Knuth 1998,
-§5.2.1](Z-bibliography.md#ref-knuth1998v3). Its core is that sorting the
-columns of a matrix whose rows are sorted leaves the rows sorted, since the
-$j$-th smallest of a column is not larger than the $j$-th smallest of the
-column to its right, the latter dominating the former item by item.
-$\square$
+§5.2.1](Z-bibliography.md#ref-knuth1998v3), which rests on the following
+fact: if $x_1 , \ldots , x_{m+r}$ and $y_1 , \ldots , y_{s+r}$ satisfy
+$x_j \le y_{s+j}$ for $1 \le j \le r$, and $x'$ and $y'$ are the two
+sequences sorted, then $x'_j \le y'_{s+j}$ for $1 \le j \le r$. Indeed,
+the $s + j$ smallest items of $y$ (those of places $1 , \ldots , s + j$ of
+$y'$) include at least $j$ of $y_{s+1} , \ldots , y_{s+r}$, since only $s$
+items lie outside them; each such $y_{s+i}$ is at least $x_i$, so that $j$
+distinct items of $x$ are at most $y'_{s+j}$, and hence so is $x'_j$. Now
+let $A$ be $h$-sorted, and take a place $i$ with $i + h < n$; let
+$p_1 < \cdots < p_a$ be the places congruent to $i$ modulo $g$, and
+$q_1 < \cdots < q_b$ those congruent to $i + h$. The places $p_k$ with
+$p_k + h < n$ are a prefix $p_1 , \ldots , p_r$, and since consecutive
+places of a class differ by $g$, their images $p_k + h$ are the last $r$
+places $q_{s+1} , \ldots , q_{s+r}$ of the other class, $s = b - r$. The
+fact, with $x$ the items of the first class (the $r$ constrained ones
+first) and $y$ those of the second, shows that after the pass, which sorts
+each class, $A[ p_k ] = x'_k \le y'_{s+k} = A[ p_k + h ]$ for each
+$k \le r$, in particular at $i$. $\square$
 
 The time depends on the gaps, which the five generators of the header give
 in increasing order, from 1 (the contracts check both properties):
@@ -528,10 +549,15 @@ Indeed, the same bound follows from the tree of the recursion
 ([Morin 2013, §11.1.1](Z-bibliography.md#ref-morin-cpp)): for $n$ a power
 of 2, the level $i$ of the tree has $2^i$ parts of $n / 2^i$ items, whose
 merges cost $O( n )$ in all, and there are $\log_2 n$ levels. In
-[Figure 12.4](12-sort.md#fig-12-4) each row is a level. Compared with
-(12.1), (12.3) is within $n \log_2 e - n < 0.443 \, n$ comparisons of the
-lower bound of [Theorem 12.1](12-sort.md#thm-12-1), at the price of a
-buffer of $n$ items, which the next sorts avoid.
+[Figure 12.4](12-sort.md#fig-12-4) each row is a level. Compared with the
+lower bound of [Theorem 12.1](12-sort.md#thm-12-1), (12.3) exceeds
+$\log_2 n!$ by less than $( \log_2 e - 1 ) n + 1 < 0.443 \, n + 1$
+comparisons when $n$ is a power of 2, and by less than $0.529 \, n + 1$
+for any $n$ (writing $2^{\lceil \log_2 n \rceil} = n 2^\theta$ with
+$0 \le \theta < 1$, (12.3) is $n \log_2 n - n ( 2^\theta - \theta ) +
+1$, and $2^\theta - \theta \ge 1 - 0.0861$, the minimum being at $\theta =
+\log_2 \log_2 e$), at the price of a buffer of $n$ items, which the next
+sorts avoid.
 
 Three more functions of the header reuse the merge ([Algorithm
 12.7](12-sort.md#alg-12-7)). The bottom-up sort, `mergeSortBottomUp()`,
@@ -542,8 +568,9 @@ makes the comparisons of the recursive sort. The overload `mergeSort(L)`
 sorts a `List` with pointers in $O( n \log n )$ (exercise 12.1 of the book)
 only through the operations of the SEQUENCE. Its second half is moved into a
 list $R$, both halves are sorted, and the items of $R$ are inserted into $L$
-at their places; each item is thus copied once per level, since the abstract
-data type moves no cells between lists. The merge sort
+at their places; the items of the second half are thus copied twice per
+level, $n$ copies per level in all, since the abstract data type moves no
+cells between lists. The merge sort
 of a list that relinks its cells instead, with no auxiliary array
 (exercise 11.2 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)), is
 `listSort()` of `ListSort.h`, in [Chapter 2](02-sequence.md#ch-2), which
@@ -583,8 +610,11 @@ every later one not smaller than the last item taken, is pulled out of the
 list and merged with the result, until the list is empty
 ([Algorithm 12.8](12-sort.md#alg-12-8)). Pulling a strand and merging it
 cost $O( n )$ each, and the strands are as many as the items of a longest
-strictly decreasing subsequence (the $i$-th strand takes the first item of
-each such subsequence that is left); hence the sort takes $O( n )$ on a
+strictly decreasing subsequence: a strand, being non-decreasing, takes at
+most one item of such a subsequence, and conversely an item of the $i$-th
+strand, $i > 1$, was left out of the $( i - 1 )$-th by a larger item
+before it, which belongs to that strand, so that going back strand by
+strand gives a strictly decreasing subsequence of $i$ items; hence the sort takes $O( n )$ on a
 sorted list and $O( n^2 )$ on a decreasing one. It is stable, the result
 going first on a tie, and it can report the number of its strands.
 
@@ -600,7 +630,11 @@ Merging two adjacent runs costs (roughly) their total length. Hence a sequence
 of merges is a binary tree over the runs whose cost is the sum of
 $\ell_i \cdot \mathrm{depth}( i )$, as for the codes of Huffman
 ([§21.2](21-compression.md#sec-21-2)), and the best such tree among those
-that keep the runs in their order costs between $n H$ and $n H + n$. Timsort
+that keep the runs in their order, an optimal alphabetic tree, costs
+between $n H$ and $n H + 2 n$ ([Mehlhorn 1975](Z-bibliography.md#ref-mehlhorn1975)); the
+$2 n$ cannot be lowered much, since on three runs of lengths
+$\varepsilon n$, $( 1 - 2 \varepsilon ) n$ and $\varepsilon n$ any order
+of the merges costs about $2 n$ while $n H$ tends to 0. Timsort
 ([Peters 2002](Z-bibliography.md#ref-peters2002)) keeps the runs on a stack
 whose lengths grow from the top at least as the numbers of Fibonacci,
 merging when the rule fails. Hence the stack has $O( \log n )$ runs, and its
@@ -656,14 +690,27 @@ of Powersort on $r$ runs of lengths $\ell_1 , \ldots , \ell_r$ cost at most
 $n H + 2 n$, where the cost of a merge is the total length of the two runs.
 The stack never holds more than $\lceil \log_2 n \rceil + 1$ runs.*
 
-*Proof.* The proof is in [Munro and Wild
-2018](Z-bibliography.md#ref-munro2018). Its idea is that a run of length
-$\ell_i$ is a leaf of depth at most $\lfloor \log_2 ( n / \ell_i ) \rfloor
-+ 2$ in the tree of the midpoints, since the two boundaries around it have
-midpoints that differ by at least $\ell_i / ( 2 n )$, and hence share fewer
-than $\log_2 ( n / \ell_i ) + 2$ bits. Then the cost of the merges is the
-sum of the lengths times the depths. The powers on the stack increase strictly
-and are at most $\lceil \log_2 n \rceil + 1$. $\square$
+*Proof.* We follow [Munro and Wild 2018](Z-bibliography.md#ref-munro2018),
+taking from them one fact on the tree of the merges, which is the
+Cartesian tree of the powers of the $r - 1$ boundaries (the root the
+boundary of least power, merged last): the powers strictly increase along
+each path from the root, so that a run lies at depth at most the larger
+power $p_i$ of its two boundaries. The midpoints of
+two adjacent runs, as fractions of $n$, differ by at least $\ell_i / ( 2 n )$
+for each of the two runs, and two numbers of $[ 0 , 1 )$ that differ by
+$\delta$ differ in one of their first $\lfloor \log_2 ( 1 / \delta )
+\rfloor + 1$ bits; hence $p_i \le \lfloor \log_2 ( n / \ell_i ) \rfloor +
+2$. Each merge costs the lengths of the runs below it, so that the total
+cost is $\sum_i \ell_i \, \mathrm{depth}( i ) \le \sum_i \ell_i ( \log_2
+( n / \ell_i ) + 2 ) = n H + 2 n$. As for the stack, a boundary is pushed only after the merges of the runs
+whose boundary has a larger power, and two boundaries adjacent on the stack
+never have the same power (the second fact we take from the paper), so that
+the powers strictly increase upwards; they lie between 1 and
+$\lfloor \log_2 n \rfloor + 1$, since two adjacent runs of at least one
+item have midpoints at least $1 / n$ apart, and the stack holds therefore at
+most $\lfloor \log_2 n \rfloor + 1 \le \lceil \log_2 n \rceil + 1$ runs. The runs here are those after the extension
+to $\mathit{minrun}$, whose binary insertion sorts cost $O( n \log
+\mathit{minrun} ) = O( n )$ more. $\square$
 
 With (12.2), [Theorem 12.4](12-sort.md#thm-12-4) makes Powersort optimal up
 to $O( n )$ comparisons on any distribution of runs: $O( n )$ on few
@@ -846,23 +893,35 @@ The same analysis, with equal keys, gives the theorem of [Morin 2013,
 §11.1.2](Z-bibliography.md#ref-morin-cpp): a pivot that has duplicates takes
 them all out of both sides, and equal keys can thus only lower the count.
 
-<span id="thm-12-6"></span>**Theorem 12.6.** *A quicksort with a random
-pivot and a partition in three (the items smaller than, equal to and larger
-than the pivot), such as `threeWayQuickSort()`, makes at most
-$2 n \ln n + O( n )$ comparisons in expectation on any $n$ items, and
-$O( n \log k )$ on $k$ distinct keys.*
+<span id="thm-12-6"></span>**Theorem 12.6.** *A quicksort with a pivot
+drawn uniformly at random and a partition in three (the items smaller than,
+equal to and larger than the pivot), counting one comparison for the test
+of an item against the pivot, makes in expectation at most $n + 2 n \ln k
+\le n + 2 n \ln n$ comparisons on $n$ items with $k$ distinct keys.*
 
-*Proof.* The partition makes at most two comparisons per item. Replace
-each key by its rank among the distinct keys, ties broken at random: the
-comparisons of the sort on the original keys are a subset of those it
-would make if the equal keys were told apart, since a pivot removes all
-its equals at once. Hence the first claim follows from [Theorem
-12.5](12-sort.md#thm-12-5) up to the factor of the two
-comparisons, which (12.4) absorbs into its constant. For the second, the
-recursion has the $k$ distinct keys as its pivots, i.e., it is a random
-binary search tree of $k$ nodes, of expected depth $O( \log k )$, and each
-item is compared at most twice per level it goes down (cf. [Lemma
-12.9](12-sort.md#lem-12-9)). $\square$
+*Proof.* Let the distinct keys be $1 , \ldots , k$, of multiplicities
+$m_1 , \ldots , m_k$, and let $M[ a , b ]$ be the items of keys from $a$
+to $b$. An item $x$ of key $a$ is compared only with pivots, at most once
+with each, and with at most one pivot of each key, since a pivot takes out
+of the recursion all the items equal to it. The items of keys from $a$ to
+$b > a$ stay in one part until the first pivot among them is drawn, and
+each of them is equally likely to be that pivot; hence $x$ meets a pivot of
+key $b$ with probability $m_b / M[ a , b ] \le \ln ( M[ a , b ] / M[ a ,
+b - 1 ] )$ (since $t \le - \ln ( 1 - t )$), and the same holds for $b < a$.
+Summing over $b > a$ the logarithms telescope to $\ln ( M[ a , k ] / m_a )
+\le \ln ( n / m_a )$, and likewise over $b < a$; with the pivot of key
+$a$, $x$ is compared at most $1 + 2 \ln ( n / m_a )$ times in expectation.
+Over the $n$ items this is $n + 2 n \sum_a ( m_a / n ) \ln ( n / m_a )$,
+and the entropy of the multiplicities is at most $\ln k$. $\square$
+
+On distinct keys the bound is that of (12.4) up to $O( n )$, and with
+$k = O( 1 )$ keys it is linear. `threeWayQuickSort()`
+([§12.7](12-sort.md#sec-12-7)) draws its pivot by a generator of fixed seed,
+so that the sort is the same on every run, asks `less` once for an item
+smaller than the pivot and twice for the others, and leaves the parts of at
+most 16 items to `insertionSort()`; on an input independent of the
+generator it thus makes at most $4 n \ln k + O( n )$ calls of `less` in
+expectation.
 
 More variants of `QuickSort.h` complete the section of the book ([Algorithm
 12.11](12-sort.md#alg-12-11)). In `quickSortTuned()` the improvements of the
@@ -999,7 +1058,11 @@ items on each side, and therefore an item takes part in at most
 $\log_{8/7} n$ such partitions. An unbalanced one costs $O( n )$ too, and
 along any path of the recursion there are at most
 $\lfloor \log_2 n \rfloor + 1$ of them before heapsort takes the part, in
-$O( n \log n )$ ([§12.9](12-sort.md#sec-12-9)). Hence each item is
+$O( n \log n )$ ([§12.9](12-sort.md#sec-12-9)). A partition of the
+equals takes out of the part the items equal to the item before it, which
+is then smaller than all those left; hence the next partition of that part
+is of the other kind, and the partitions of the equals along a path are at
+most one more than the others. Hence each item is
 compared $O( \log n )$ times by the partitions, and the checks by insertion
 and the swaps that break the patterns cost $O( 1 )$ per item per
 partition. $\square$
@@ -1041,10 +1104,13 @@ three pointers move rightward, and the items equal to the pivot gather in a
 middle part that no later call sorts again. Its pivot is drawn at random, as section 5.3.2
 suggests, by a generator of fixed seed (the same sort on each run), and
 its recursion is bounded as in Algorithm 5.6. By
-[Theorem 12.6](12-sort.md#thm-12-6) it makes $2 n \ln n$ comparisons on
-average and $O( n \log k )$ on $k$ distinct keys, but $\Theta( n^2 )$ in the
-worst case, with a probability that vanishes with $n$ on any input, there
-being no fallback to heapsort. It is the quicksort of chapter 11 of
+[Theorem 12.6](12-sort.md#thm-12-6) it makes at most $4 n \ln k + O( n )$
+calls of `less` in expectation on $k$ distinct keys, at most
+$4 n \ln n + O( n )$ on any $n$ items, but $\Theta( n^2 )$ in the worst
+case, with a probability that vanishes with $n$ on any input chosen
+independently of the generator, there being no fallback to heapsort (the
+adversary of [§12.6](12-sort.md#sec-12-6) defeats it, as it defeats any
+quicksort). It is the quicksort of chapter 11 of
 [Morin 2013](Z-bibliography.md#ref-morin-cpp), whose partition keeps the
 larger items at the right end instead ([Algorithm
 12.14](12-sort.md#alg-12-14)).
@@ -1121,7 +1187,7 @@ goes three-way in one pass. The keys equal to $p$ are not written, and the
 gap they leave between the two sides is filled with $p$ at the end;
 meanwhile the minimum and the maximum of each side are kept, and a side of
 one key is thus done. Elsewhere a second pass puts the keys equal to $p$ apart. Hence
-$k$ distinct keys take $O( n \log k )$. Past $2 \lfloor \log_2 n \rfloor$
+$k$ distinct keys take $O( n \log k )$. Past $2 ( \lfloor \log_2 n \rfloor + 1 )$
 levels a part is sorted by heapsort, as in the introsort of [Musser
 1997](Z-bibliography.md#ref-musser1997), which bounds the worst case by $O(
 n \log n )$. From 4096 integers on AVX-512, if a sample of 64 keys spans
@@ -1171,8 +1237,9 @@ samplesort ([Sanders and Winkel 2004](Z-bibliography.md#ref-sanders2004);
 --8<-- "generated/SampleSort-sampleSort.pseudo.md"
 
 Its sample has $\alpha k - 1$ items, with
-$\alpha = \max\{ 1 , \lfloor 0.2 \log_2 n \rfloor \}$, drawn at random into
-the front of the part and sorted, and every $\alpha$-th item of it is a
+$\alpha = \max\{ 1 , \lfloor ( \lfloor \log_2 n \rfloor + 1 ) / 5 \rfloor
+\}$ (about $0.2 \log_2 n$), drawn at random (by a generator of fixed seed)
+into the front of the part and sorted by `pdqSort()`, and every $\alpha$-th item of it is a
 splitter. The $k - 1$ splitters $s_1 \le \cdots \le s_{k-1}$, $k$ a power of
 2, are laid out as a complete binary search tree in an array
 $t[ 1 .. k - 1 ]$, the children of $t[ j ]$ in $t[ 2 j ]$ and
@@ -1191,7 +1258,7 @@ together, and their loads overlap:
 ![Figure 12.6. The classification of `sampleSort()` with $k = 8$ buckets and the splitters $10 , 20 , \ldots , 70$ laid out as a tree in $t[ 1 .. 7 ]$ (the indices above the nodes): $x = 55$ follows $j \gets 2 j + [ t_j \le x ]$ along the nodes in violet and lands in the bucket $13 - 8 = 5$, the number of splitters not larger than 55.](../figures/sort-samplesort.svg){#fig-12-6}
 
 The number of buckets aims at buckets of 16 items after the last level:
-$k = 2^\ell$ with $\ell = \lfloor \log_2 ( n / 16 ) \rfloor$ if it is at most
+$k = 2^\ell$ with $\ell = \lfloor \log_2 ( n / 16 ) \rfloor$ (but at least 1) if it is at most
 8, half of it (rounded up) if at most 16 (two levels then split alike),
 and 8 otherwise. If the sample has equal splitters, they are kept once and
 each bucket $i > 0$ is split into the items equal to $s_i$, which are done,
@@ -1370,19 +1437,53 @@ avoids both. Furthermore, the bound of
 
 ![Figure 12.7. `heapsort()` on $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin 2013]): on the left the max-heap built by `heapBuild()`, on the right the same heap as a vector and the vector after the first 1, 2, 3 and 7 extractions; the maximum of the heap is in violet, and the sorted suffix, which the extractions fill from the right, in orange.](../figures/sort-heapsort.svg){#fig-12-7}
 
-<span id="lem-12-16"></span>**Lemma 12.16.** *The heapsort of [Morin
-2013](Z-bibliography.md#ref-morin-cpp) on a vector in increasing order, and
-`heapsort()` on a vector in decreasing order, make at least
-$2 n \log_2 n - O( n )$ comparisons (exercise 11.8 there).*
+<span id="lem-12-16"></span>**Lemma 12.16.** *For each $n$ there is an
+input of $n$ distinct items on which `heapsort()` makes at least
+$2 n \log_2 n - O( n )$ comparisons, and likewise for the heapsort of
+[Morin 2013](Z-bibliography.md#ref-morin-cpp), with the order reversed
+(exercise 11.8 there).*
 
-*Proof.* The vector is already a heap of the kind of the sort, and the
-construction moves nothing. At each extraction the item moved to the root
-is the last leaf, which is one of the smallest items left (for the
-max-heap), not larger than the items of the upper levels, and it sinks
-back to the bottom level of the heap, with two comparisons per level. A heap
-of $i$ items has $\lfloor \log_2 i \rfloor$ levels below the root, and
-$\sum_{i \le n} 2 \lfloor \log_2 i \rfloor \ge 2 \log_2 n! - 2 n = 2 n
-\log_2 n - O( n )$ by [Lemma 12.3](12-sort.md#lem-12-3). $\square$
+*Proof.* We build the input by running the sort backwards, as a max-heap
+$H_n$ that `heapBuild()` leaves as it is (no item is larger than its
+parent), so that the sort replays the extractions chosen below. Let $H_1$
+be one item, and let $H_{i-1}$, a max-heap of $i - 1$ items, be built.
+Its least item $x$ lies in a leaf $p$, at the depth
+$k \ge \lfloor \log_2 ( i - 1 ) \rfloor - 1$, since the leaves of a heap
+lie on its last two levels; let $v_0 , \ldots , v_k = p$ be the path from
+the root to $p$. The heap $H_i$ has a new item $M$, larger than all the
+others, at the root, the item of $v_{j-1}$ in $H_{i-1}$ at $v_j$ for
+$1 \le j \le k$, the item $x$ at the new last place $i - 1$, and the items
+of $H_{i-1}$ elsewhere. It is a max-heap: along the path each item moved
+down lies under one not smaller, the children of $v_j$ off the path were
+already below the item now at $v_j$, and $x$, the least item, is under
+any parent. The extraction from $H_i$ swaps $M$ with $x$, and then
+`maxHeapRestore()` on $i - 1$ items finds at each $v_j$, $j < k$, that the
+larger child is $v_{j+1}$, since its item was the parent in $H_{i-1}$ of
+the other child, and that it is larger than $x$, a descendant of it in
+$H_{i-1}$; at $p$, a leaf, it stops. Hence the extraction leaves
+$H_{i-1}$, and it makes at least $2 k - 1$ comparisons (two at each $v_j$,
+$j < k$, but at most one node with a single child). Summing over
+$i = 2 , \ldots , n$, with [Lemma 12.3](12-sort.md#lem-12-3),
+
+$$
+\sum_{m=1}^{n-1} \bigl( 2 \lfloor \log_2 m \rfloor - 3 \bigr) \ge
+2 \log_2 ( n - 1 )! - 5 n = 2 n \log_2 n - O( n ) .
+$$
+
+The heapsort of Morin, on a min-heap with the result reversed, is the same
+with the order of the items reversed. $\square$
+
+On this input the sort phase walks almost to the bottom of the heap at
+each extraction. The average over the inputs is of the same order:
+[Schaffer and Sedgewick 1993](Z-bibliography.md#ref-schaffer1993), who
+analyse the heapsort of Williams with Floyd's construction, i.e., our
+`heapsort()`, show that it makes about $2 n \log_2 n$ comparisons on
+average, and about $n \log_2 n$ in the variant of Floyd that sinks the
+item to the bottom and then lifts it (the bottom-up heapsort below). The
+inputs in order, increasing for the sort of Morin and decreasing for
+`heapsort()`, are heaps already, and their sifts stop somewhat above the
+bottom: we measured about $0.66 \, n$ levels missed in all for $n$ up to
+$2 \cdot 10^4$, which the count of the test below includes.
 
 The test `ods_ints.ods.ex11.8.heapsort-worst` checks the count against
 $2 n \log_2 n - 4 n$ for both sorts, on $n$ up to $10^5$. The heap of
@@ -1396,7 +1497,7 @@ Two more sorts of the area select by trees ([Algorithm
 `KnuthSorts.h`, plays a knockout tournament on a complete binary tree $W$
 whose $L$ leaves are the items (padded with $\bot$, which loses all its
 matches). Its winner, i.e., the least item, goes out, its leaf becomes $\bot$,
-and only the matches on its path are played again: $\lceil \log_2 n \rceil$
+and only the matches on its path are played again: at most $\lceil \log_2 n \rceil$
 comparisons per item, and $O( n \log n )$ in all with $O( n )$ extra places.
 This is the idea from which heapsort grew, and the sort is stable, since
 equal winners are decided by their places; the tree of losers of
@@ -1742,12 +1843,22 @@ bitonic sequence of zeros and ones gives two bitonic halves, no item of the
 first larger than an item of the second, one of the two halves
 being all zeros or all ones.*
 
-*Proof.* A bitonic sequence of zeros and ones is, up to the direction,
-$0^a 1^b 0^c$ or $1^a 0^b 1^c$. A half-cleaner pairs, at distance $k / 2$,
-the items of the two halves. A case analysis on where the block of ones (or of
-zeros) falls with respect to the middle shows that the minima and the maxima
-are bitonic, and that either the minima are all 0 or the maxima are all 1
-([Knuth 1998, §5.3.4](Z-bibliography.md#ref-knuth1998v3)).
+*Proof.* A sequence of zeros and ones is bitonic if and only if its ones,
+read cyclically on the places $0 , \ldots , k - 1$, form one block of
+consecutive places (possibly empty or wrapping around the end), and
+likewise its zeros. Let the block of the ones have $b$ places. If $b \le
+k / 2$, no pair $( i , i + k / 2 )$ of the half-cleaner holds two ones,
+since the block would then span more than $k / 2$ places; hence every
+minimum is 0, and the maxima carry the ones of the block, the one at the
+place $p$ going to the place $p \bmod ( k / 2 )$ of the second half. The
+block, of at most $k / 2$ consecutive places taken modulo $k$, falls
+modulo $k / 2$ onto as many consecutive places of the half taken
+cyclically, with no two of them on the same place; hence the maxima are
+bitonic, and so are the minima, all zeros. If $b > k / 2$, the block of
+the zeros has fewer than $k / 2$ places, and the same argument with the
+roles of zeros and ones exchanged makes every maximum 1 and the minima
+bitonic. In both cases one half is constant, the minima are 0 or the
+maxima are 1, and no item of the first half exceeds one of the second.
 $\square$
 
 By [Lemma 12.20](12-sort.md#lem-12-20) and induction, the half-cleaners of
