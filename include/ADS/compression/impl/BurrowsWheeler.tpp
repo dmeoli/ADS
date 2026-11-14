@@ -63,6 +63,7 @@ inline BWT bwt( std::string_view s )
  return( b );
  }
 
+//! [lfMapping]
 inline std::vector< std::size_t > lfMapping( const BWT & b )
 {
  const std::size_t n = b.last.size();
@@ -81,6 +82,8 @@ inline std::vector< std::size_t > lfMapping( const BWT & b )
  return( LF );
  }
 
+//! [lfMapping]
+//! [inverseBwt]
 inline std::string inverseBwt( const BWT & b )
 {
  const auto LF = lfMapping( b );
@@ -95,6 +98,7 @@ inline std::string inverseBwt( const BWT & b )
  ADS_PRE( k == b.primary );
  return( s );
  }
+//! [inverseBwt]
 
 inline std::vector< std::uint8_t > moveToFront( std::string_view s ,
                                                 std::string_view alphabet )

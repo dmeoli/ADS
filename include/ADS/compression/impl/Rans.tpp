@@ -171,6 +171,7 @@ inline std::vector< std::uint8_t > ransDecompress(
  const std::uint8_t * p = in.data() + kRansHead;
  const std::uint8_t * const end = in.data() + in.size() - 8;
  constexpr std::uint32_t mask = ( 1u << kRansScale ) - 1;
+ //! [step]
  auto step = [ & ]( std::uint32_t & y ) {   // a symbol, and the 16 bits
   const std::uint32_t slot = y & mask , e = T[ slot ];
   y = ( e & 0xFFFF ) * ( y >> kRansScale ) + ( e >> 16 );
@@ -180,6 +181,7 @@ inline std::vector< std::uint8_t > ransDecompress(
   p += 2 * std::size_t( r );
   return( Z[ slot ] );
   };
+ //! [step]
  // a round of kRansWays steps from p <= end reads within the 8 bytes of
  // padding: a malformed stream stops there, at one comparison a round
  std::size_t i = 0;

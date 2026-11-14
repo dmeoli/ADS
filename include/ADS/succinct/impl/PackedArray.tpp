@@ -81,6 +81,7 @@ PackedArray< B , Saturate >::PackedArray( E & ex , std::size_t n , F && f )
  ADS_INVARIANT( clean() );
  }
 
+//! [get]
 template< unsigned B , bool Saturate >
 inline typename PackedArray< B , Saturate >::Word
 PackedArray< B , Saturate >::get( std::size_t i ) const
@@ -88,7 +89,9 @@ PackedArray< B , Saturate >::get( std::size_t i ) const
  ADS_PRE( i < f_n );
  return( ( f_w[ i / PER ] >> ( ( i % PER ) * B ) ) & MAX );
  }
+//! [get]
 
+//! [set]
 template< unsigned B , bool Saturate >
 inline bool PackedArray< B , Saturate >::set( std::size_t i , Word v )
 {
@@ -104,6 +107,7 @@ inline bool PackedArray< B , Saturate >::set( std::size_t i , Word v )
  ADS_POST( get( i ) == v );
  return( c );
  }
+//! [set]
 
 template< unsigned B , bool Saturate >
 void PackedArray< B , Saturate >::push_back( Word v )
@@ -178,6 +182,7 @@ inline unsigned TritArray::get( std::size_t i ) const
  return( DIGITS[ f_y[ i / 5 ] ][ i % 5 ] );
  }
 
+//! [tritSet]
 inline void TritArray::set( std::size_t i , unsigned v )
 {
  ADS_PRE( ( i < f_n ) && ( v <= 2 ) );
@@ -187,6 +192,7 @@ inline void TritArray::set( std::size_t i , unsigned v )
                    ( int( v ) - int( DIGITS[ y ][ j ] ) ) * POW3[ j ] );
  ADS_POST( get( i ) == v );
  }
+//! [tritSet]
 
 inline void TritArray::push_back( unsigned v )
 {

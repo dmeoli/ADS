@@ -1,0 +1,46 @@
+% Source for the figure of LAVector (sec. 22.6): the points (i, x_i) of a
+% sequence of 16 items covered by two segments, each line with its band of
+% half-width epsilon = 2, and the correction of the item 5 (shaded).
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge,->] (-3mm,0) -- (99mm,0) node[index,anchor=west] {$i$};
+  \draw[edge,->] (-3mm,0) -- (-3mm,54.0mm) node[index,anchor=south] {$x_i$};
+  \fill[adsTint] (-2mm,0.0mm) -- (56mm,20.925mm) -- (56mm,23.925mm) -- (-2mm,3.0mm) -- cycle;
+  \draw[edge-touched] (-2mm,0.725mm) -- (56mm,23.2mm);
+  \fill[adsTint] (58mm,43.5mm) -- (92mm,48.75mm) -- (92mm,51.75mm) -- (58mm,46.5mm) -- cycle;
+  \draw[edge-touched] (58mm,44.65mm) -- (92mm,50.6mm);
+  \fill[adsInk] (0mm,1.5mm) circle (0.75mm);
+  \fill[adsInk] (6mm,3.75mm) circle (0.75mm);
+  \fill[adsInk] (12mm,6.75mm) circle (0.75mm);
+  \fill[adsInk] (18mm,8.25mm) circle (0.75mm);
+  \fill[adsInk] (24mm,10.5mm) circle (0.75mm);
+  \fill[adsPrimary] (30mm,13.5mm) circle (1.1mm);
+  \fill[adsInk] (36mm,15.75mm) circle (0.75mm);
+  \fill[adsInk] (42mm,17.25mm) circle (0.75mm);
+  \fill[adsInk] (48mm,20.25mm) circle (0.75mm);
+  \fill[adsInk] (54mm,22.5mm) circle (0.75mm);
+  \fill[adsInk] (60mm,45.0mm) circle (0.75mm);
+  \fill[adsInk] (66mm,45.75mm) circle (0.75mm);
+  \fill[adsInk] (72mm,47.25mm) circle (0.75mm);
+  \fill[adsInk] (78mm,48.0mm) circle (0.75mm);
+  \fill[adsInk] (84mm,49.5mm) circle (0.75mm);
+  \fill[adsInk] (90mm,50.25mm) circle (0.75mm);
+  \draw[adsAdded,line width=1.2pt] (30mm,13.125mm) -- (30mm,13.5mm);
+  \node[var,anchor=east] at (28mm,18.0mm) {$C[ 5 ]$};
+  \draw[edge] (28.5mm,16.5mm) -- (29.7mm,13.875mm);
+  \node[var,anchor=west] at (60mm,40mm) {segment 1, slope 1.4};
+  \node[var,anchor=west] at (44mm,6mm) {segment 0, slope 3.1};
+  \node[index,anchor=north] at (0mm,-1mm) {0};
+  \node[index,anchor=north] at (30mm,-1mm) {5};
+  \node[index,anchor=north] at (60mm,-1mm) {10};
+  \node[index,anchor=north] at (90mm,-1mm) {15};
+\end{tikzpicture}
+\end{document}

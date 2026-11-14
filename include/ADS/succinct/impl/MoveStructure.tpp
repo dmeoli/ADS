@@ -100,6 +100,7 @@ inline MoveStructure::MoveStructure( std::span< const std::uint64_t > p ,
   return( true ); }() ) );
  }
 
+//! [move]
 inline std::pair< std::uint64_t , std::size_t > MoveStructure::move(
                                      std::uint64_t x , std::size_t i ) const
 {
@@ -110,6 +111,7 @@ inline std::pair< std::uint64_t , std::size_t > MoveStructure::move(
  while( start( j + 1 ) <= y ) ++j;          // at most 3 steps
  return( std::pair( y , j ) );
  }
+//! [move]
 
 inline std::size_t MoveStructure::interval( std::uint64_t x ) const
 {

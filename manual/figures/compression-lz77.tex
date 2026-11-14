@@ -1,0 +1,32 @@
+% Source for the figure of LZ77 (sec. 21.9): the parse of aabbabab into its
+% four phrases, the copies (shaded) with an arrow from the symbol copied,
+% and the last copy overlapping itself. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,lab/.style={font=\small}]
+  \foreach \v/\st [count=\i from 0] in {a/cell,a/touched,b/cell,b/touched,
+                                        a/cell,b/touched,a/touched,b/touched}
+    \node[\st,minimum width=10mm] (s-\i) at (\i*10mm,0) {\v};
+  \foreach \i in {0,...,7}
+    \node[index,below=1.4mm of s-\i] {\i};
+  % the phrases, bracketed above
+  \foreach \a/\b/\t in {0/0/{$\langle 0 , 0 , \mathtt{a} \rangle$},
+                        1/2/{$\langle 1 , 1 , \mathtt{b} \rangle$},
+                        3/4/{$\langle 1 , 1 , \mathtt{a} \rangle$},
+                        5/7/{$\langle 2 , 3 , - \rangle$}}
+    {\draw[edge] ($(s-\a.north west)+(0.6mm,1.5mm)$) -- ++(0,1.2mm)
+           -| ($(s-\b.north east)+(-0.6mm,1.5mm)$);
+     \node[lab,anchor=south] at ($(s-\a.north west)!0.5!(s-\b.north east)
+                                  +(0,3.4mm)$) {\t};}
+  % the copies, from the symbol copied to the symbol written
+  \foreach \f/\t in {0/1,2/3,3/5,4/6,5/7}
+    \draw[ptr] ($(s-\f.south)+(0,-8mm)$) to[bend right=45]
+                        ($(s-\t.south)+(0,-8mm)$);
+\end{tikzpicture}
+\end{document}

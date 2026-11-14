@@ -1,0 +1,50 @@
+% Source for the figure of RankSelect (sec. 22.3): a block of 256 bits
+% (four words, with their sideways sums) and its entry of 64 bits, the 1s
+% before the block in the high 40 bits and those before the words 1, 2 and
+% 3 in 8 bits each; below, the inventory of select of a group of 2^l 1s,
+% its first place and the offsets of its sampled 1s. Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,fld/.style={cell,minimum height=7mm,font=\small}]
+  % the block t: four words, the word 0 on the left, the bits of W[4t+2]
+  % before i shaded
+  \node[var,anchor=east] at (-2mm,0) {block $t$};
+  \foreach \w/\p in {0/13,1/40,2/7,3/22}
+    {\node[cell,minimum width=26mm,font=\small] (w\w) at (13mm+\w*26mm,0)
+       {$W[ 4 t + \w ]$};
+     \node[index,below=1.2mm of w\w] {popcount $= \p$};}
+  \fill[adsPrimary] (52.3mm,-3.2mm) rectangle (56mm,3.2mm);
+  \draw[edge,densely dashed] (56mm,-3.5mm) -- (56mm,5.5mm);
+  \node[index,anchor=south] at (56mm,5.6mm) {$i$};
+  % the entry D[t]
+  \node[var,anchor=east] at (-2mm,-17mm) {$D[ t ]$};
+  \node[fld,minimum width=52mm,anchor=west] (e0) at (0,-17mm)
+    {$c$, the 1s before the block};
+  \node[fld,minimum width=17mm,anchor=west] (e1) at (52mm,-17mm) {60};
+  \node[fld,minimum width=17mm,anchor=west,fill=adsPrimary,text=adsOnPrimary] (e2) at (69mm,-17mm) {53};
+  \node[fld,minimum width=17mm,anchor=west] (e3) at (86mm,-17mm) {13};
+  \foreach \i/\t in {0/{63--24},1/{23--16},2/{15--8},3/{7--0}}
+    \node[index,below=1.2mm of e\i] {\t};
+  \node[var,anchor=west] at (0,-28mm)
+    {$\mathrm{rank}_1( i ) = c + 53 + \lvert W[ 4 t + 2 ] \bmod 2^{i \bmod 64} \rvert$};
+  % the inventory of a group
+  \node[var,anchor=east] at (-2mm,-40mm) {group $j$};
+  \draw[edge] (0,-40mm) -- (104mm,-40mm);
+  \foreach \x in {4,21,38,55,72,89}
+    {\draw[edge] (\x mm,-41.5mm) -- (\x mm,-38.5mm);
+     \fill[adsPrimary] (\x mm,-40mm) circle (0.9mm);}
+  \draw[edge] (104mm,-42mm) -- (104mm,-38mm);
+  \node[index,anchor=north] at (4mm,-42mm) {$P[ j ]$};
+  \node[index,anchor=north] at (104mm,-42.5mm) {$P[ j + 1 ]$};
+  \foreach \x in {21,38,55,72,89}
+    \node[index,anchor=north] at (\x mm,-42mm) {$+ O[ \cdot ]$};
+  \node[index,anchor=west] at (0,-48mm)
+    {the 1s of rank $0 , 2^g , 2 \cdot 2^g , \ldots$ of the group (dots), at offsets of 16 bits from $P[ j ]$};
+\end{tikzpicture}
+\end{document}

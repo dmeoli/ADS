@@ -1,0 +1,42 @@
+% Source for the figure of StreamVByte (sec. 21.8): the integers 1024, 12,
+% 70000 and 5, their control byte (the lengths less 1 in 2 bits each, the
+% integer 0 in the low bits), their 7 bytes of data, and the register of 16
+% bytes that one shuffle fills from them, the missing high bytes made 0
+% (grey). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,bb/.style={cell,minimum width=8mm},
+                       zz/.style={free,minimum width=8mm},
+                       tt/.style={touched,minimum width=8mm}]
+  % the control byte: bits 7..0, two bits per integer
+  \node[var,anchor=east] at (-6mm,4mm) {control};
+  \foreach \v [count=\i from 0] in {00,10,00,01}
+    \node[tt,minimum width=9mm] (k-\i) at (\i*9mm,4mm) {\v};
+  \foreach \j [count=\i from 0] in {3,2,1,0}
+    \node[index,above=1.2mm of k-\i] {$\ell_{\j} - 1$};
+  \node[var,anchor=west] at (36mm,4mm) {$= 00100001_2 = 33$};
+  % the data, little-endian, integer by integer
+  \node[var,anchor=east] at (-6mm,-14mm) {data};
+  \foreach \v [count=\i from 0] in {00,04,0C,70,11,01,05}
+    \node[bb] (d-\i) at (\i*8mm,-14mm) {\v};
+  \foreach \a/\e/\t in {0/1/{1024},2/2/{12},3/5/{70000},6/6/{5}}
+    \draw[edge] ($(d-\a.north west)+(0.5mm,1mm)$) -- ++(0,1mm)
+          -| node[index,pos=0.25,above=0.6mm] {\t}
+          ($(d-\e.north east)+(-0.5mm,1mm)$);
+  % the register filled by one shuffle
+  \node[var,anchor=east] at (-6mm,-32mm) {register};
+  \foreach \v/\s [count=\i from 0] in {00/bb,04/bb,00/zz,00/zz,0C/bb,00/zz,00/zz,%
+      00/zz,70/bb,11/bb,01/bb,00/zz,05/bb,00/zz,00/zz,00/zz}
+    \node[\s] (r-\i) at (\i*8mm,-32mm) {\v};
+  \foreach \i/\x in {0/x_0,4/x_1,8/x_2,12/x_3}
+    \node[index,below=1.2mm of r-\i,anchor=north west,xshift=-4mm] {$\x$};
+  \foreach \f/\t in {0/0,1/1,2/4,3/8,4/9,5/10,6/12}
+    \draw[ptr,shorten >=0.5mm,shorten <=0.5mm] (d-\f.south) -- (r-\t.north);
+\end{tikzpicture}
+\end{document}

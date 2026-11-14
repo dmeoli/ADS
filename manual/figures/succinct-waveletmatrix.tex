@@ -1,0 +1,100 @@
+% Source for the figure of WaveletMatrix (sec. 22.9): the sequence
+% 4 7 6 5 3 2 1 0 2 1 4 1 of 3 bits, its three levels (the items above the
+% bits, in the order of the level), the Z of each level, and the access to
+% the item 2, the 6 = 110 shaded. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0mm) {$B_0$};
+  \node[cell] (b0-0) at (0mm,0mm) {1};
+  \node[index,above=0.8mm of b0-0] {4};
+  \node[cell] (b0-1) at (7mm,0mm) {1};
+  \node[index,above=0.8mm of b0-1] {7};
+  \node[touched] (b0-2) at (14mm,0mm) {1};
+  \node[index,above=0.8mm of b0-2] {6};
+  \node[cell] (b0-3) at (21mm,0mm) {1};
+  \node[index,above=0.8mm of b0-3] {5};
+  \node[cell] (b0-4) at (28mm,0mm) {0};
+  \node[index,above=0.8mm of b0-4] {3};
+  \node[cell] (b0-5) at (35mm,0mm) {0};
+  \node[index,above=0.8mm of b0-5] {2};
+  \node[cell] (b0-6) at (42mm,0mm) {0};
+  \node[index,above=0.8mm of b0-6] {1};
+  \node[cell] (b0-7) at (49mm,0mm) {0};
+  \node[index,above=0.8mm of b0-7] {0};
+  \node[cell] (b0-8) at (56mm,0mm) {0};
+  \node[index,above=0.8mm of b0-8] {2};
+  \node[cell] (b0-9) at (63mm,0mm) {0};
+  \node[index,above=0.8mm of b0-9] {1};
+  \node[cell] (b0-10) at (70mm,0mm) {1};
+  \node[index,above=0.8mm of b0-10] {4};
+  \node[cell] (b0-11) at (77mm,0mm) {0};
+  \node[index,above=0.8mm of b0-11] {1};
+  \draw[edge] (45.5mm,-5mm) -- (45.5mm,6mm);
+  \node[var,anchor=west] at (82mm,0mm) {$Z_0 = 7$};
+  \node[var,anchor=east] at (-6mm,-16mm) {$B_1$};
+  \node[cell] (b1-0) at (0mm,-16mm) {1};
+  \node[index,above=0.8mm of b1-0] {3};
+  \node[cell] (b1-1) at (7mm,-16mm) {1};
+  \node[index,above=0.8mm of b1-1] {2};
+  \node[cell] (b1-2) at (14mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-2] {1};
+  \node[cell] (b1-3) at (21mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-3] {0};
+  \node[cell] (b1-4) at (28mm,-16mm) {1};
+  \node[index,above=0.8mm of b1-4] {2};
+  \node[cell] (b1-5) at (35mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-5] {1};
+  \node[cell] (b1-6) at (42mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-6] {1};
+  \node[cell] (b1-7) at (49mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-7] {4};
+  \node[cell] (b1-8) at (56mm,-16mm) {1};
+  \node[index,above=0.8mm of b1-8] {7};
+  \node[touched] (b1-9) at (63mm,-16mm) {1};
+  \node[index,above=0.8mm of b1-9] {6};
+  \node[cell] (b1-10) at (70mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-10] {5};
+  \node[cell] (b1-11) at (77mm,-16mm) {0};
+  \node[index,above=0.8mm of b1-11] {4};
+  \draw[edge] (45.5mm,-21mm) -- (45.5mm,-10mm);
+  \node[var,anchor=west] at (82mm,-16mm) {$Z_1 = 7$};
+  \node[var,anchor=east] at (-6mm,-32mm) {$B_2$};
+  \node[cell] (b2-0) at (0mm,-32mm) {1};
+  \node[index,above=0.8mm of b2-0] {1};
+  \node[cell] (b2-1) at (7mm,-32mm) {0};
+  \node[index,above=0.8mm of b2-1] {0};
+  \node[cell] (b2-2) at (14mm,-32mm) {1};
+  \node[index,above=0.8mm of b2-2] {1};
+  \node[cell] (b2-3) at (21mm,-32mm) {1};
+  \node[index,above=0.8mm of b2-3] {1};
+  \node[cell] (b2-4) at (28mm,-32mm) {0};
+  \node[index,above=0.8mm of b2-4] {4};
+  \node[cell] (b2-5) at (35mm,-32mm) {1};
+  \node[index,above=0.8mm of b2-5] {5};
+  \node[cell] (b2-6) at (42mm,-32mm) {0};
+  \node[index,above=0.8mm of b2-6] {4};
+  \node[cell] (b2-7) at (49mm,-32mm) {1};
+  \node[index,above=0.8mm of b2-7] {3};
+  \node[cell] (b2-8) at (56mm,-32mm) {0};
+  \node[index,above=0.8mm of b2-8] {2};
+  \node[cell] (b2-9) at (63mm,-32mm) {0};
+  \node[index,above=0.8mm of b2-9] {2};
+  \node[cell] (b2-10) at (70mm,-32mm) {1};
+  \node[index,above=0.8mm of b2-10] {7};
+  \node[touched] (b2-11) at (77mm,-32mm) {0};
+  \node[index,above=0.8mm of b2-11] {6};
+  \draw[edge] (38.5mm,-37mm) -- (38.5mm,-26mm);
+  \node[var,anchor=west] at (82mm,-32mm) {$Z_2 = 6$};
+  \draw[ptr] (b0-2.south) -- ($(b1-9.north)+(0,4.5mm)$);
+  \draw[ptr] (b1-9.south) -- ($(b2-11.north)+(0,4.5mm)$);
+  \node[var,anchor=west] at (0,-42mm) {last level: \texttt{0 4 4 2 2 6 1 1 1 5 3 7}, the items equal to a value consecutive};
+\end{tikzpicture}
+\end{document}

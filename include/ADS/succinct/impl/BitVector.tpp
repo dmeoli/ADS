@@ -26,6 +26,7 @@ constexpr Word lowMask( int len )
 
 }  // end( namespace detail )
 
+//! [selectInWord]
 constexpr int selectInWord( Word x , int k )
 {
  ADS_PRE( ( k >= 0 ) && ( k < sidewaysSum( x ) ) );
@@ -46,6 +47,7 @@ constexpr int selectInWord( Word x , int k )
  for( ; r > 0 ; --r ) v &= v - 1;           // the lower 1s cleared
  return( 8 * byte + ruler( v ) );
  }
+//! [selectInWord]
 
 inline BitVector::BitVector( std::size_t n , bool b )
  : f_w( wordsFor( n ) , 0 ) , f_n( n )

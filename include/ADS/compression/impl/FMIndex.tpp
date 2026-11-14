@@ -95,6 +95,7 @@ inline std::size_t FMIndex::lf( std::size_t r ) const
  return( f_C[ static_cast< unsigned char >( c ) ] + rank( c , r ) );
  }
 
+//! [range]
 inline std::pair< std::size_t , std::size_t > FMIndex::range(
                                                    std::string_view P ) const
 {
@@ -109,6 +110,7 @@ inline std::pair< std::size_t , std::size_t > FMIndex::range(
  return( std::pair( first , last ) );
  }
 
+//! [range]
 inline std::size_t FMIndex::count( std::string_view P ) const
 {
  const auto [ first , last ] = range( P );
