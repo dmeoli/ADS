@@ -88,6 +88,19 @@ class BlockStore {
  void writeBlock( std::size_t i , const T & b );
 
  /// \f$ b \f$ written in a free block, one write; its index
+ ///
+ /// In pseudocode (section 14.1 of Morin's book), \f$ F \f$ the stack of
+ /// the free blocks and \f$ A \f$ the array of the blocks:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{placeBlock}( b ) \cr
+ /// 2 & \quad \textbf{if}\ F = \emptyset\ \textbf{then}\ i \gets |A|
+ ///     ;\ \text{append a block to } A \cr
+ /// 3 & \quad \textbf{else}\ i \gets \mathrm{pop}( F ) \cr
+ /// 4 & \quad A[ i ] \gets b;\ \text{count one write} \cr
+ /// 5 & \quad \textbf{return}\ i
+ /// \end{array}}
+ /// \f]
  std::size_t placeBlock( const T & b );
 
  /// the block \f$ i \f$ given back

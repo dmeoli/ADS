@@ -92,6 +92,7 @@ inline std::vector< std::size_t > listRankPointerJumping(
  const std::size_t n = succ.size();
  std::vector< std::size_t > s( succ ) , r( n );
  for( std::size_t i = 0 ; i < n ; ++i ) r[ i ] = s[ i ] == i ? 0 : 1;
+//! [pointerJumping]
  std::size_t k = 0;
  for( ; ; ++k ) {
   bool jumped = false;
@@ -106,6 +107,7 @@ inline std::vector< std::size_t > listRankPointerJumping(
   s.swap( s2 );
   r.swap( r2 );
   }
+//! [pointerJumping]
  if( rounds ) *rounds = k;
  return( r );
  }

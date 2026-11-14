@@ -1,0 +1,42 @@
+% The BlockStore of sec. 23.2: six blocks, the free ones in the faintest
+% tint and their indices on the stack F (its top last); placeBlock(b)
+% writes b into the free block on top of F, and readBlock(2) returns a copy
+% of the block 2. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0mm) {before};
+  \node[cell] (a-0) at (0mm,0mm) {u};
+  \node[free] (a-1) at (7.4mm,0mm) {};
+  \node[cell] (a-2) at (14.8mm,0mm) {v};
+  \node[cell] (a-3) at (22.2mm,0mm) {w};
+  \node[free] (a-4) at (29.6mm,0mm) {};
+  \node[cell] (a-5) at (37mm,0mm) {x};
+  \foreach \i in {0,...,5} \node[index,above=1.6mm of a-\i] {\i};
+  \node[var,anchor=west] at (56mm,0mm) {$F = ( 1 , 4 )$};
+  \node[var,anchor=east] at (-4mm,-14mm) {\texttt{placeBlock(b)}};
+  \node[cell] (c-0) at (0mm,-14mm) {u};
+  \node[free] (c-1) at (7.4mm,-14mm) {};
+  \node[cell] (c-2) at (14.8mm,-14mm) {v};
+  \node[cell] (c-3) at (22.2mm,-14mm) {w};
+  \node[added] (c-4) at (29.6mm,-14mm) {b};
+  \node[cell] (c-5) at (37mm,-14mm) {x};
+  \node[var,anchor=west] at (56mm,-14mm) {$F = ( 1 )$, returns 4};
+  \node[var,anchor=east] at (-4mm,-28mm) {\texttt{readBlock(2)}};
+  \node[cell] (d-0) at (0mm,-28mm) {u};
+  \node[free] (d-1) at (7.4mm,-28mm) {};
+  \node[touched] (d-2) at (14.8mm,-28mm) {v};
+  \node[cell] (d-3) at (22.2mm,-28mm) {w};
+  \node[cell] (d-4) at (29.6mm,-28mm) {b};
+  \node[cell] (d-5) at (37mm,-28mm) {x};
+  \node[touched] (e-0) at (62mm,-28mm) {v};
+  \draw[ptr] (d-5.east) ++(2mm,0) -- (e-0.west);
+  \node[var,anchor=west] at (70mm,-28mm) {a copy, one read};
+\end{tikzpicture}
+\end{document}

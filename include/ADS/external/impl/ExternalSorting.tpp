@@ -134,6 +134,7 @@ template< class Sel , class T , class C >
 void mergeGroup( std::vector< DiskFile< T > > & runs , std::size_t lo ,
                  std::size_t hi , DiskFile< T > & dest , C less )
 {
+//! [mergeGroup]
  std::vector< std::unique_ptr< DiskReader< T > > > rd;
  std::vector< std::optional< T > > first;
  for( std::size_t i = lo ; i < hi ; ++i ) {
@@ -150,6 +151,7 @@ void mergeGroup( std::vector< DiskFile< T > > & runs , std::size_t lo ,
              std::optional< T >( rd[ j ]->next() ) : std::nullopt );
   }
  w.close();
+//! [mergeGroup]
  for( std::size_t i = lo ; i < hi ; ++i ) runs[ i ].clear();
  }
 

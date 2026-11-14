@@ -1,0 +1,56 @@
+% The two-level memory of TwoLevelMemory with B = 4 and M = 12 (sec. 23.1):
+% the reader of the file F loads its block 1 into its buffer by one read,
+% and the writer of G appends the four items of its full buffer as a new
+% block by one write; the memory left is free. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0mm) {file $F$};
+  \node[cell] (f-0) at (0mm,0mm) {7};
+  \node[cell] (f-1) at (7.4mm,0mm) {3};
+  \node[cell] (f-2) at (14.8mm,0mm) {9};
+  \node[cell] (f-3) at (22.2mm,0mm) {1};
+  \node[touched] (f-4) at (32.6mm,0mm) {4};
+  \node[touched] (f-5) at (40mm,0mm) {8};
+  \node[touched] (f-6) at (47.4mm,0mm) {2};
+  \node[touched] (f-7) at (54.8mm,0mm) {6};
+  \node[cell] (f-8) at (65.2mm,0mm) {5};
+  \node[cell] (f-9) at (72.6mm,0mm) {0};
+  \node[cell] (f-10) at (80mm,0mm) {11};
+  \node[cell] (f-11) at (87.4mm,0mm) {13};
+  \node[cell] (f-12) at (97.8mm,0mm) {12};
+  \node[cell] (f-13) at (105.2mm,0mm) {10};
+  \node[var,anchor=east] at (-4mm,-30mm) {memory};
+  \node[touched] (m-0) at (0mm,-30mm) {4};
+  \node[touched] (m-1) at (7.4mm,-30mm) {8};
+  \node[touched] (m-2) at (14.8mm,-30mm) {2};
+  \node[touched] (m-3) at (22.2mm,-30mm) {6};
+  \node[added] (m-4) at (32.6mm,-30mm) {x};
+  \node[added] (m-5) at (40mm,-30mm) {y};
+  \node[added] (m-6) at (47.4mm,-30mm) {z};
+  \node[added] (m-7) at (54.8mm,-30mm) {w};
+  \node[free] (m-8) at (65.2mm,-30mm) {};
+  \node[free] (m-9) at (72.6mm,-30mm) {};
+  \node[free] (m-10) at (80mm,-30mm) {};
+  \node[free] (m-11) at (87.4mm,-30mm) {};
+  \node[var,anchor=east] at (-4mm,-50mm) {file $G$};
+  \node[cell] (g-0) at (0mm,-50mm) {p};
+  \node[cell] (g-1) at (7.4mm,-50mm) {q};
+  \node[cell] (g-2) at (14.8mm,-50mm) {r};
+  \node[cell] (g-3) at (22.2mm,-50mm) {s};
+  \node[added] (g-4) at (32.6mm,-50mm) {x};
+  \node[added] (g-5) at (40mm,-50mm) {y};
+  \node[added] (g-6) at (47.4mm,-50mm) {z};
+  \node[added] (g-7) at (54.8mm,-50mm) {w};
+  \draw[ptr] (f-5.south) -- node[var,right=1mm] {\texttt{readBlock(1)}} (m-1.north);
+  \draw[ptr] (m-7.south) -- node[var,right=1mm] {\texttt{appendBlock()}} (g-7.north);
+  \node[index] at (13mm,-36.5mm) {reader}; \node[index] at (45mm,-36.5mm) {writer}; \node[index] at (77mm,-36.5mm) {free};
+\end{tikzpicture}
+\end{document}

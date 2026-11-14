@@ -1,0 +1,121 @@
+% Exercise 14.2 of Morin's book, by BlockBTree with B = 2: remove(3)
+% replaces the key 3 of an internal node by its successor 4, taken out of
+% the leaf {4, 5}; remove(4) does the same with 5, which leaves the leaf
+% {5} empty, and the leaf borrows from its sibling on the left. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (52.35mm,0mm) {10};
+  \coordinate (a0-0-t) at (52.35mm,3mm);
+  \coordinate (a0-0-b) at (52.35mm,-3mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (19.8mm,-13mm) {4};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.4mm,-13mm) {6};
+  \coordinate (a1-0-t) at (22.6mm,-10mm);
+  \coordinate (a1-0-b) at (22.6mm,-16mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (76.5mm,-13mm) {14};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (82.1mm,-13mm) {17};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (87.7mm,-13mm) {21};
+  \coordinate (a1-1-t) at (82.1mm,-10mm);
+  \coordinate (a1-1-b) at (82.1mm,-16mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-26mm) {0};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-26mm) {1};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (14mm,-26mm) {2};
+  \coordinate (a2-0-t) at (8.4mm,-23mm);
+  \coordinate (a2-0-b) at (8.4mm,-29mm);
+  \node[touched,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (22.6mm,-26mm) {5};
+  \coordinate (a2-1-t) at (22.6mm,-23mm);
+  \coordinate (a2-1-b) at (22.6mm,-29mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.2mm,-26mm) {7};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (36.8mm,-26mm) {8};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (42.4mm,-26mm) {9};
+  \coordinate (a2-2-t) at (36.8mm,-23mm);
+  \coordinate (a2-2-b) at (36.8mm,-29mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (51mm,-26mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (56.6mm,-26mm) {12};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (62.2mm,-26mm) {13};
+  \coordinate (a2-3-t) at (56.6mm,-23mm);
+  \coordinate (a2-3-b) at (56.6mm,-29mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (70.8mm,-26mm) {15};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (76.4mm,-26mm) {16};
+  \coordinate (a2-4-t) at (73.6mm,-23mm);
+  \coordinate (a2-4-b) at (73.6mm,-29mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (85mm,-26mm) {18};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (90.6mm,-26mm) {19};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (96.2mm,-26mm) {20};
+  \coordinate (a2-5-t) at (90.6mm,-23mm);
+  \coordinate (a2-5-b) at (90.6mm,-29mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (104.8mm,-26mm) {22};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (110.4mm,-26mm) {23};
+  \coordinate (a2-6-t) at (107.6mm,-23mm);
+  \coordinate (a2-6-b) at (107.6mm,-29mm);
+  \draw[edge] (49.55mm,-3mm) -- (a1-0-t);
+  \draw[edge] (55.15mm,-3mm) -- (a1-1-t);
+  \draw[edge] (17mm,-16mm) -- (a2-0-t);
+  \draw[edge] (22.6mm,-16mm) -- (a2-1-t);
+  \draw[edge] (28.2mm,-16mm) -- (a2-2-t);
+  \draw[edge] (73.7mm,-16mm) -- (a2-3-t);
+  \draw[edge] (79.3mm,-16mm) -- (a2-4-t);
+  \draw[edge] (84.9mm,-16mm) -- (a2-5-t);
+  \draw[edge] (90.5mm,-16mm) -- (a2-6-t);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (47.45mm,-46mm) {10};
+  \coordinate (b0-0-t) at (47.45mm,-43mm);
+  \coordinate (b0-0-b) at (47.45mm,-49mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (15.6mm,-59mm) {2};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (21.2mm,-59mm) {6};
+  \coordinate (b1-0-t) at (18.4mm,-56mm);
+  \coordinate (b1-0-b) at (18.4mm,-62mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (70.9mm,-59mm) {14};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (76.5mm,-59mm) {17};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (82.1mm,-59mm) {21};
+  \coordinate (b1-1-t) at (76.5mm,-56mm);
+  \coordinate (b1-1-b) at (76.5mm,-62mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-72mm) {0};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-72mm) {1};
+  \coordinate (b2-0-t) at (5.6mm,-69mm);
+  \coordinate (b2-0-b) at (5.6mm,-75mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (17mm,-72mm) {5};
+  \coordinate (b2-1-t) at (17mm,-69mm);
+  \coordinate (b2-1-b) at (17mm,-75mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-72mm) {7};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.2mm,-72mm) {8};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (36.8mm,-72mm) {9};
+  \coordinate (b2-2-t) at (31.2mm,-69mm);
+  \coordinate (b2-2-b) at (31.2mm,-75mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (45.4mm,-72mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (51mm,-72mm) {12};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (56.6mm,-72mm) {13};
+  \coordinate (b2-3-t) at (51mm,-69mm);
+  \coordinate (b2-3-b) at (51mm,-75mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (65.2mm,-72mm) {15};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (70.8mm,-72mm) {16};
+  \coordinate (b2-4-t) at (68mm,-69mm);
+  \coordinate (b2-4-b) at (68mm,-75mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (79.4mm,-72mm) {18};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (85mm,-72mm) {19};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (90.6mm,-72mm) {20};
+  \coordinate (b2-5-t) at (85mm,-69mm);
+  \coordinate (b2-5-b) at (85mm,-75mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (99.2mm,-72mm) {22};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (104.8mm,-72mm) {23};
+  \coordinate (b2-6-t) at (102mm,-69mm);
+  \coordinate (b2-6-b) at (102mm,-75mm);
+  \draw[edge] (44.65mm,-49mm) -- (b1-0-t);
+  \draw[edge] (50.25mm,-49mm) -- (b1-1-t);
+  \draw[edge] (12.8mm,-62mm) -- (b2-0-t);
+  \draw[edge] (18.4mm,-62mm) -- (b2-1-t);
+  \draw[edge] (24mm,-62mm) -- (b2-2-t);
+  \draw[edge] (68.1mm,-62mm) -- (b2-3-t);
+  \draw[edge] (73.7mm,-62mm) -- (b2-4-t);
+  \draw[edge] (79.3mm,-62mm) -- (b2-5-t);
+  \draw[edge] (84.9mm,-62mm) -- (b2-6-t);
+  \node[var,anchor=east] at (-4mm,0mm) {\texttt{remove(3)}};
+  \node[var,anchor=east] at (-4mm,-46mm) {\texttt{remove(4)}};
+\end{tikzpicture}
+\end{document}

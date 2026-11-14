@@ -294,6 +294,20 @@ class DiskReader {
 
  /// the item \f$ i \f$, its block read if not in the buffer; the scan goes
  /// on from \f$ i + 1 \f$
+ ///
+ /// In pseudocode (chapter 1, Introduction, of Ferragina's book, beyond the
+ /// book), \f$ \beta \f$ the number of the block in the buffer:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{at}( i ) \cr
+ /// 2 & \quad \textbf{if}\ \lfloor i / B \rfloor \ne \beta\ \textbf{then}
+ ///     \ \text{read the block } \lfloor i / B \rfloor \text{ into the }
+ ///     \text{buffer};\ \beta \gets \lfloor i / B \rfloor \cr
+ /// 3 & \quad \mathit{pos} \gets i + 1 \cr
+ /// 4 & \quad \textbf{return}\ \text{the item } i \bmod B \text{ of the }
+ ///     \text{buffer}
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ i \f$ is below the size of the file
  const T & at( std::size_t i );
 
