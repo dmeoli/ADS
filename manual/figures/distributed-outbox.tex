@@ -1,0 +1,32 @@
+% Source for the figure of MPIMailbox (sec. 26.3): the outboxes of the
+% process 1 of three with batch = 4, before and after send(2, z), which
+% fills the outbox of the rank 2 and posts it by MPI_Isend; the buffer
+% stays on the list of the sends in flight. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {$O_0$};
+  \cells{a}{0,0}{u/cell,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-8mm) {$O_1$};
+  \cells{b}{0,-8mm}{v/cell,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-16mm) {$O_2$};
+  \cells{c}{0,-16mm}{w/cell,x/cell,y/cell,/free}
+  \node[var,anchor=west] at (32mm,-8mm) {before};
+  \node[var,anchor=east] at (-6mm,-34mm) {$O_0$};
+  \cells{A}{0,-34mm}{u/cell,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-42mm) {$O_1$};
+  \cells{B}{0,-42mm}{v/cell,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-50mm) {$O_2$};
+  \cells{C}{0,-50mm}{/free,/free,/free,/free}
+  \node[var,anchor=west] at (32mm,-34mm) {after \texttt{send(2,z)}};
+  \cells{F}{76mm,-50mm}{w/touched,x/touched,y/touched,z/touched}
+  \draw[ptr] (C-3.east) -- (F-0.west);
+  \node[var,above=2mm of F-1.north east] {in flight};
+  \node[index,below=1.2mm of F-1.south east] {\texttt{MPI\_Isend} to the rank 2};
+\end{tikzpicture}
+\end{document}

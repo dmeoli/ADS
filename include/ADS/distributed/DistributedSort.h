@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The sort of the items spread over the processes of MPI, beyond the book,
- * compiled only with `ADS_WITH_MPI` (the CMake option of the same name, OFF
+ * compiled only with `ADS_WITH_MPI` (the CMake option of the same name, AUTO
  * by default) and an implementation of MPI (Open MPI or MPICH): each of the
  * \f$ P \f$ processes of a communicator holds a vector of items, and after
  * `sort( comm , A , less )` each holds a sorted vector, those of the ranks
@@ -120,7 +120,7 @@ namespace ADS::distributed {
 /// 3 & \quad n \gets |A|;\ \textbf{for}\ j \gets 0\ \textbf{to}\ P - 2
 ///     \ \textbf{do}\ s[ j ] \gets A[ \lfloor ( j + 1 ) n / P \rfloor ] \cr
 /// 4 & \quad S \gets \text{the samples } s \text{ of the processes with }
-///     n > 0\quad \triangleright\ \text{MPI_Allgather} \cr
+///     n > 0\quad \triangleright\ \mathrm{MPI\_Allgather} \cr
 /// 5 & \quad \mathrm{sort}( S );\ \mathit{cut}[ 0 ] \gets 0;\ \mathit{cut}[ P
 ///     ] \gets n \cr
 /// 6 & \quad \textbf{for}\ j \gets 1\ \textbf{to}\ P - 1\ \textbf{do} \cr
@@ -134,7 +134,7 @@ namespace ADS::distributed {
 ///     \mathit{lo} ) ( j - f + 1 ) / ( l - f + 1 ) \rfloor \cr
 /// 11 & \quad \text{send } A[ \mathit{cut}[ j ] .. \mathit{cut}[ j + 1 ] - 1 ]
 ///     \text{ to the process } j \text{, for each } j\quad \triangleright
-///     \ \text{MPI_Alltoallv} \cr
+///     \ \mathrm{MPI\_Alltoallv} \cr
 /// 12 & \quad A \gets \mathrm{multiwayMerge}( \mathit{ex} , \text{the } P
 ///     \text{ pieces received} )
 /// \end{array}}
@@ -244,6 +244,7 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
    S.insert( S.end() , all.begin() + std::ptrdiff_t( q * ( p - 1 ) ) ,
              all.begin() + std::ptrdiff_t( ( q + 1 ) * ( p - 1 ) ) );
  ADS::sort( S , less );
+ //! [cuts]
  // the cuts: piece j of this process are its items in ( s_{j-1} , s_j ],
  // a run of splitters equal to x splitting the items equal to x evenly
  std::vector< std::size_t > cut( p + 1 , 0 );
@@ -272,6 +273,7 @@ void sort( E & ex , MPI_Comm comm , std::vector< T > & A , C less )
   }
  for( std::size_t j = 1 ; j <= p ; ++j )
   cut[ j ] = std::max( cut[ j ] , cut[ j - 1 ] );
+ //! [cuts]
  using detail::Count;
  using detail::Displacement;
  using detail::fits;

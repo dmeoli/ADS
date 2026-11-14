@@ -1,0 +1,24 @@
+% Source for the figure of a batch of MPIByteMailbox (sec. 26.3): two
+% records, each a tag and a length of 32 bits followed by the bytes of the
+% message padded to a multiple of 8. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[cell,minimum width=14mm] (t1) at (0,0) {7};
+  \node[cell,minimum width=14mm,right=0pt of t1] (l1) {5};
+  \cells{d}{$(l1.east)+(3.5mm,0)$}{$b_0$/touched,$b_1$/touched,$b_2$/touched,$b_3$/touched,$b_4$/touched,/free,/free,/free}
+  \node[cell,minimum width=14mm,right=0pt of d-7] (t2) {2};
+  \node[cell,minimum width=14mm,right=0pt of t2] (l2) {0};
+  \node[index,above=1.5mm of t1] {tag};
+  \node[index,above=1.5mm of l1] {length};
+  \node[index,above=1.5mm of t2] {tag};
+  \node[index,above=1.5mm of l2] {length};
+  \node[index,above=1.5mm of d-2] {bytes};
+  \node[index,above=1.5mm of d-6] {padding};
+\end{tikzpicture}
+\end{document}
