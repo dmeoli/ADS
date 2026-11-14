@@ -1,0 +1,37 @@
+% Source for the figure of SpaceEfficientSortedSet (sec. 10.4): b = 4,
+% blocks of b + 1 = 5 places, before and after insert(9), which finds its
+% block full, moves the last item of each full block to the front of the
+% next one up to a block with room, and then puts 9 in its place; above
+% each block, its key in the skip list, its largest item. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{2/cell,5/cell,8/cell,11/cell,14/touched}
+  \cells{b}{42mm,0}{20/cell,23/cell,26/cell,29/cell,31/touched}
+  \cells{c}{84mm,0}{40/cell,44/cell,47/cell,/free,/free}
+  \foreach \x/\k in {a/14,b/31,c/47}
+    \node[index] at ($(\x-2.north)+(0,4mm)$) {key \k};
+  \draw[ptr] (a-4.east) -- (b-0.west);
+  \draw[ptr] (b-4.east) -- (c-0.west);
+  % after
+  \node[var,anchor=east] at (-6mm,-17mm) {\texttt{insert(9)}};
+  \cells{d}{0,-17mm}{2/cell,5/cell,8/cell,9/added,11/cell}
+  \cells{e}{42mm,-17mm}{14/touched,20/cell,23/cell,26/cell,29/cell}
+  \cells{f}{84mm,-17mm}{31/touched,40/cell,44/cell,47/cell,/free}
+  \foreach \x/\k in {d/11,e/29,f/47}
+    \node[index] at ($(\x-2.north)+(0,4mm)$) {key \k};
+  \draw[ptr] (d-4.east) -- (e-0.west);
+  \draw[ptr] (e-4.east) -- (f-0.west);
+  \foreach \x/\n in {d/$B_0$,e/$B_1$,f/$B_2$}
+    \node[var] at ($(\x-2.south)+(0,-4mm)$) {\n};
+\end{tikzpicture}
+\end{document}

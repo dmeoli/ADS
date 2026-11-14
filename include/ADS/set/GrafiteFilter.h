@@ -82,10 +82,14 @@
  * Elias-Fano the buckets \f$ \lfloor x / s \rfloor \f$ that hold a key, in
  * at most \f$ B \f$ bits per key; \f$ [ a , b ] \f$ may hold a key if a kept
  * bucket is in \f$ [ \lfloor a / s \rfloor , \lfloor b / s \rfloor ] \f$,
- * one `nextGEQ()` and one `access()`. A query whose range is out of the
- * buckets of \f$ S \f$ is answered right, which makes the filter exact on
- * keys and queries drawn independently at random from the universe, and
- * faster to build and to query than Grafite (no hash); but a query that
+  * one `nextGEQ()` and one `access()`. A query whose range is out of the
+ * buckets of \f$ S \f$ is answered right, and on keys and queries drawn
+ * independently at random from the universe a range of \f$ \ell \f$ keys,
+ * which meets at most \f$ \ell / s + 2 \f$ buckets, each kept with
+ * probability at most about \f$ n s / 2^{64} \approx 2^{-(B-2)} \f$, is a
+ * false positive with probability at most about
+ * \f$ ( \ell / s + 2 ) \, 2^{-(B-2)} \f$; the filter is also faster to
+ * build and to query than Grafite (no hash); but a query that
  * falls in the bucket of a key without holding it (a correlated query, at
  * distance below \f$ s \f$ from the key) is always a false positive: there is
  * no bound that holds for every query.

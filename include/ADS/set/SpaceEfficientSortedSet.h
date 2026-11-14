@@ -188,6 +188,32 @@ class SpaceEfficientSortedSet {
  /// \f$ b - 1 \f$ items, or the last one, within \f$ b \f$ blocks, and if
  /// there is none the items of the \f$ b \f$ blocks are gathered into the
  /// first \f$ b - 1 \f$, the last one freed (the reverse of `insert()`)
+ ///
+ /// In pseudocode (exercise 4.13 of Morin, beyond the book), the blocks
+ /// \f$ B_0 , B_1 , \ldots \f$ from the block of \f$ x \f$ on:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
+ /// 2 & \quad B_0 \gets \text{the block of } \mathrm{lowerBound}( x ) \cr
+ /// 3 & \quad \textbf{if}\ B_0 = \textbf{nil}\ \textbf{or}\ x \notin B_0
+ ///     \ \textbf{then return} \cr
+ /// 4 & \quad \text{take } x \text{ out of } B_0 \text{, freeing } B_0
+ ///     \text{ if it is left empty} \cr
+ /// 5 & \quad \textbf{if}\ |B_0| = b - 2\ \textbf{and}\ B_1 \ne
+ ///     \textbf{nil}\ \textbf{then} \cr
+ /// 6 & \qquad r \gets \text{the least } r \ge 1 \text{ with }
+ ///     |B_r| \ne b - 1 \text{ or } B_{r+1} = \textbf{nil} \text{, if }
+ ///     r < b \cr
+ /// 7 & \qquad \textbf{if}\ r < b\ \textbf{then for}\ j \gets 1
+ ///     \ \textbf{to}\ r\ \textbf{do}\ \text{move the first item of }
+ ///     B_j \text{ to the end of } B_{j-1} \cr
+ /// 8 & \qquad \textbf{else}\ \text{gather the items of } B_0 , \ldots ,
+ ///     B_{b-1} \text{ into } B_0 , \ldots , B_{b-2} \text{, and free }
+ ///     B_{b-1} \cr
+ /// 9 & \qquad \textbf{if}\ B_r \text{ is left empty}\ \textbf{then}
+ ///     \ \text{free } B_r
+ /// \end{array}}
+ /// \f]
  /// \post \f$ x \f$ is not there, true if it was
  bool remove( const T & x );
 
