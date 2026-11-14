@@ -4,9 +4,9 @@
 % ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads]
@@ -20,7 +20,7 @@
   \fields{-18mm}{24mm}{fields of 4}{0011,0010,0011,0010}
   \fields{-27mm}{48mm}{bytes}{00000101,00000101}
   \fields{-36mm}{48mm}{$\cdot\,\mathtt{0x0101}$}{00001010,00000101}
-  \node[touched,minimum width=48mm] at (24mm,-36mm) {00001010};
+  \node[added,minimum width=48mm] at (24mm,-36mm) {00001010};
   \foreach \i in {0,...,15}
     \node[index] at ($(93mm-\i*6mm,5.5mm)$) {\i};
   \node[var,anchor=west] at (98mm,-36mm) {\textup{$\gg 8$ gives $10 = \nu( x )$}};

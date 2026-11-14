@@ -4,9 +4,9 @@
 % ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads]
@@ -26,7 +26,7 @@
   \lab{-45mm}{$\gg 2$}
   \row{s}{-45mm}{0/cell,0/cell,0/cell,0/cell,0/cell,0/cell,1/touched,1/touched}
   \lab{-54mm}{$v + ( \ldots )$}
-  \row{r}{-54mm}{0/cell,1/cell,1/cell,0/cell,0/cell,0/cell,1/touched,1/touched}
+  \row{r}{-54mm}{0/cell,1/cell,1/added,0/cell,0/cell,0/cell,1/added,1/added}
   \foreach \i in {0,...,7}
     \node[index] at ($(x-\i.north)+(0,2.5mm)$) {\the\numexpr7-\i\relax};
 \end{tikzpicture}

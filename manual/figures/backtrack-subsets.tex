@@ -4,17 +4,17 @@
 % (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,
-    n/.style={draw,circle,minimum size=3.2mm,inner sep=0pt},
-    sol/.style={n,fill=adsTouched},
-    cut/.style={n,fill=adsFree,draw=black!45},
-    e/.style={font=\scriptsize\ttfamily,text=black!70,inner sep=2pt},
-    level distance=12mm,
+    n/.style={vertex,minimum size=3.6mm},
+    sol/.style={n,fill=adsPrimary},
+    cut/.style={n,fill=adsFree},
+    e/.style={font=\scriptsize\ttfamily,text=adsInk!55,inner sep=2pt},
+    level distance=12mm,edge from parent/.style={edge,draw=adsInk!45},
     level 1/.style={sibling distance=56mm},
     level 2/.style={sibling distance=28mm},
     level 3/.style={sibling distance=14mm},

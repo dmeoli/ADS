@@ -4,22 +4,22 @@
 % the bar are inactive. Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var,anchor=east] at (-6mm,0) {before};
   \cells{a}{0,0}{o1/cell,o2/touched,o3/cell,o4/touched,o5/free,o6/free}
-  \draw[very thick] ($(a-3.north east)+(0,1.5mm)$) -- ($(a-3.south east)+(0,-1.5mm)$);
+  \draw[line width=1.4pt,draw=adsInk] ($(a-3.north east)+(0,1.5mm)$) -- ($(a-3.south east)+(0,-1.5mm)$);
   \node[var,anchor=west] at (46mm,0) {$\mathrm{size}( x ) = 4$};
   \node[var,anchor=east] at (-6mm,-16mm) {after};
   \cells{b}{0,-16mm}{o1/cell,o4/touched,o3/cell,o2/free,o5/free,o6/free}
-  \draw[very thick] ($(b-2.north east)+(0,1.5mm)$) -- ($(b-2.south east)+(0,-1.5mm)$);
+  \draw[line width=1.4pt,draw=adsInk] ($(b-2.north east)+(0,1.5mm)$) -- ($(b-2.south east)+(0,-1.5mm)$);
   \node[var,anchor=west] at (46mm,-16mm) {$\mathrm{size}( x ) = 3$};
-  \indices{b}{6}
-  \draw[->,black!60] (a-1.south) to[bend right=25] (b-3.north);
-  \draw[->,black!60] (a-3.south) to[bend left=25] (b-1.north);
+  \foreach \i in {0,...,5} \node[index,below=1.6mm of b-\i] {\i};
+  \draw[->,adsInk!55] (a-1.south) to[bend right=25] (b-3.north);
+  \draw[->,adsInk!55] (a-3.south) to[bend left=25] (b-1.north);
 \end{tikzpicture}
 \end{document}

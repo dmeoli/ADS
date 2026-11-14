@@ -70,7 +70,7 @@ bytes into the top one ([Figure 18.1](18-combinatorial.md#fig-18-1)).
 
 --8<-- "generated/Bitwise-sidewaysSum.pseudo.md"
 
-![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (shaded) is the sum of the two bytes.](../figures/combinatorial-sideways.svg){#fig-18-1}
+![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (in colour) is the sum of the two bytes.](../figures/combinatorial-sideways.svg){#fig-18-1}
 
 <span id="lem-18-1"></span>**Lemma 18.1.** *For any word $x$,
 `sidewaysSum(x)` returns $\nu( x )$, with 12 operations on words and no
@@ -163,7 +163,7 @@ word of $t$ ones with a constant number of operations
 
 --8<-- "generated/Bitwise-nextSameWeight.pseudo.md"
 
-![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (shaded).](../figures/combinatorial-gosper.svg){#fig-18-2}
+![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (in colour).](../figures/combinatorial-gosper.svg){#fig-18-2}
 
 <span id="lem-18-3"></span>**Lemma 18.3.** *For $x \ne 0$, with
 $u = x \,\&\, -x$ and $v = x + u$, the next larger word with as many 1 bits

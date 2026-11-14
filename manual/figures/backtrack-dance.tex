@@ -4,16 +4,16 @@
 % Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads]
   % before
   \node[var,anchor=east] at (-8mm,0) {before};
   \node[node] (a) at (0,0) {a};
-  \node[node,fill=adsTouched] (x) at (22mm,0) {x};
+  \node[node-touched] (x) at (22mm,0) {x};
   \node[node] (b) at (44mm,0) {b};
   \draw[ptr] ([yshift=1mm]a.east) -- ([yshift=1mm]x.west);
   \draw[ptr] ([yshift=-1mm]x.west) -- ([yshift=-1mm]a.east);
@@ -22,23 +22,23 @@
   % after the removal
   \node[var,anchor=east] at (-8mm,-22mm) {removed};
   \node[node] (a2) at (0,-22mm) {a};
-  \node[node,fill=adsTouched] (x2) at (22mm,-12mm) {x};
+  \node[node-touched] (x2) at (22mm,-12mm) {x};
   \node[node] (b2) at (44mm,-22mm) {b};
   \draw[ptr] ([yshift=1mm]a2.east) -- ([yshift=1mm]b2.west);
   \draw[ptr] ([yshift=-1mm]b2.west) -- ([yshift=-1mm]a2.east);
   \draw[ptr,dashed] (x2.west) -- (a2.north east);
   \draw[ptr,dashed] (x2.east) -- (b2.north west);
-  \node[anchor=west,font=\small,text=black!65] at (50mm,-12mm) {$L[ x ] = \mathtt{a}$, $R[ x ] = \mathtt{b}$ kept};
+  \node[anchor=west,font=\small,text=adsInk!55] at (50mm,-12mm) {$L[ x ] = \mathtt{a}$, $R[ x ] = \mathtt{b}$ kept};
   % after the reinsertion
   \node[var,anchor=east] at (-8mm,-40mm) {put back};
   \node[node] (a3) at (0,-40mm) {a};
-  \node[node,fill=adsTouched] (x3) at (22mm,-40mm) {x};
+  \node[node-touched] (x3) at (22mm,-40mm) {x};
   \node[node] (b3) at (44mm,-40mm) {b};
   \draw[ptr] ([yshift=1mm]a3.east) -- ([yshift=1mm]x3.west);
   \draw[ptr] ([yshift=-1mm]x3.west) -- ([yshift=-1mm]a3.east);
   \draw[ptr] ([yshift=1mm]x3.east) -- ([yshift=1mm]b3.west);
   \draw[ptr] ([yshift=-1mm]b3.west) -- ([yshift=-1mm]x3.east);
-  \node[anchor=west,font=\small,text=black!65] at (50mm,-40mm) {$R[ L[ x ] ] \gets x$, $L[ R[ x ] ] \gets x$};
-  \node[anchor=west,font=\small,text=black!65] at (50mm,-22mm) {$R[ L[ x ] ] \gets R[ x ]$, $L[ R[ x ] ] \gets L[ x ]$};
+  \node[anchor=west,font=\small,text=adsInk!55] at (50mm,-40mm) {$R[ L[ x ] ] \gets x$, $L[ R[ x ] ] \gets x$};
+  \node[anchor=west,font=\small,text=adsInk!55] at (50mm,-22mm) {$R[ L[ x ] ] \gets R[ x ]$, $L[ R[ x ] ] \gets L[ x ]$};
 \end{tikzpicture}
 \end{document}

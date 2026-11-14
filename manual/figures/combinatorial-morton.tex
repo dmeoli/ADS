@@ -4,9 +4,9 @@
 % grid (right). Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,x=11mm,y=11mm]
@@ -22,8 +22,8 @@
       \node[cell,minimum width=11mm,minimum height=11mm] at (\x+5.5,\y) {};
       \coordinate (p\z) at (\x+5.5,\y);
     }
-  \draw[thick,black!70] (p0) \foreach \z in {1,...,15} { -- (p\z) };
-  \foreach \z in {0,...,15} \fill (p\z) circle (0.6mm);
+  \draw[edge] (p0) \foreach \z in {1,...,15} { -- (p\z) };
+  \foreach \z in {0,...,15} \fill[adsInk] (p\z) circle (0.6mm);
   \node[index,anchor=south west] at ($(p0)+(0.08,0.08)$) {0};
   \node[index,anchor=north east] at ($(p15)+(-0.08,-0.08)$) {15};
   \foreach \x in {0,...,3} {
