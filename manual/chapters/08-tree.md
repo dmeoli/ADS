@@ -2108,7 +2108,7 @@ against the 51 of 8, and replaces 7 with 8
 
 ![Figure 8.36. [Morin 2013, exercise 7.1](Z-bibliography.md#ref-morin-cpp), second half: the insertion of 7.5 of priority 80 (his 20) into the treap of [Figure 8.35](08-tree.md#fig-8-35) (c): (a) the new leaf, the left child of 8; (b) after the right rotation at 8; (c) after the left rotation at 7, below 9, of priority 83.](../figures/tree-treap-ex71b.svg){#fig-8-36}
 
-![Figure 8.37. [Morin 2013, exercise 7.2](Z-bibliography.md#ref-morin-cpp): the removal of 5 and then of 7 from the treap of [Figure 8.32](08-tree.md#fig-8-32): (a) after the right rotation at 5, which lifts 4; (b) 5, left with one child, replaced by it; (c) after the right rotation at 7, which lifts 6; (d) 7 replaced by its one child 8. In violet, the node to remove in (a) and (c), and in (b) and (d) the node whose child changes.](../figures/tree-treap-ex72.svg){#fig-8-37}
+![Figure 8.37. [Morin 2013, exercise 7.2](Z-bibliography.md#ref-morin-cpp): the removal of 5 and then of 7 from the treap of [Figure 8.32](08-tree.md#fig-8-32): (a) after the right rotation at 5, which lifts 4; (b) 5, left with one child, replaced by it; (c) after the right rotation at 7, which lifts 6; (d) 7 replaced by its one child 8. In violet, the node to remove in (a) and (c), and in (b) and (d) the node whose child changes.](../figures/tree-treap-ex72.svg){#fig-8-37 height=85%}
 
 <span id="thm-8-4"></span>**Theorem 8.4.** *([Morin 2013,
 Theorem 7.2](Z-bibliography.md#ref-morin-cpp).) A treap realizes the
