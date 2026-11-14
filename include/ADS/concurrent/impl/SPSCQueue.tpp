@@ -32,7 +32,6 @@ SPSCQueue< T >::~SPSCQueue()
  std::allocator< T >().deallocate( f_A , capacity() + 2 * pad );
  }
 
-//! [emplace]
 template< class T >
 template< class ... Args >
 bool SPSCQueue< T >::emplace( Args && ... args )
@@ -48,7 +47,6 @@ bool SPSCQueue< T >::emplace( Args && ... args )
  f_tail.store( t + 1 , std::memory_order_release );
  return( true );
  }
-//! [emplace]
 
 template< class T >
 void SPSCQueue< T >::relax( void )
@@ -73,7 +71,6 @@ void SPSCQueue< T >::refresh( std::size_t h )
  f_tailSeen = t;
  }
 
-//! [tryPop]
 template< class T >
 bool SPSCQueue< T >::tryPop( T & x )
 {
@@ -90,7 +87,6 @@ bool SPSCQueue< T >::tryPop( T & x )
  f_head.store( h + 1 , std::memory_order_release );
  return( f_streaming = true );
  }
-//! [tryPop]
 
 template< class T >
 std::optional< T > SPSCQueue< T >::pop( void )

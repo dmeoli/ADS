@@ -26,7 +26,6 @@ MPSCInbox< T >::~MPSCInbox()
   }
  }
 
-//! [push]
 template< class T >
 void MPSCInbox< T >::push( T v )
 {
@@ -37,7 +36,6 @@ void MPSCInbox< T >::push( T v )
                                        std::memory_order_relaxed ) ) {}
  f_wait.notify();
  }
-//! [push]
 
 template< class T >
 std::vector< T > MPSCInbox< T >::take( void )

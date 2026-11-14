@@ -124,10 +124,9 @@ class ConcurrentUnionFind {
  /// \end{array}}
  /// \f]
  /// \pre \f$ 0 \le x < n \f$
- //! [find]
  [[nodiscard]] std::int32_t find( std::int32_t x ) {
   ADS_PRE( ( x >= 0 ) && ( std::size_t( x ) < f_n ) );
-  for( ;; ) {
+  for( ; ; ) {
    std::int32_t p = f_p[ x ].load( std::memory_order_acquire );
    const std::int32_t g = f_p[ p ].load( std::memory_order_acquire );
    if( p == g )
@@ -137,7 +136,6 @@ class ConcurrentUnionFind {
    x = p;
    }
   }
- //! [find]
 
  /// the parent of \f$ x \f$ at a moment of the call (\f$ x \f$ if a root)
  /// \pre \f$ 0 \le x < n \f$
@@ -188,9 +186,8 @@ class ConcurrentUnionFind {
  /// \end{array}}
  /// \f]
  /// \pre \f$ 0 \le x , y < n \f$
- //! [unite]
  bool unite( std::int32_t x , std::int32_t y ) {
-  for( ;; ) {
+  for( ; ; ) {
    x = find( x );
    y = find( y );
    if( x == y )
@@ -203,7 +200,6 @@ class ConcurrentUnionFind {
     return( true );
    }
   }
- //! [unite]
 
  /// whether \f$ x \f$ and \f$ y \f$ are in the same set
  ///
@@ -220,7 +216,7 @@ class ConcurrentUnionFind {
  /// \f]
  /// \pre \f$ 0 \le x , y < n \f$
  [[nodiscard]] bool sameSet( std::int32_t x , std::int32_t y ) {
-  for( ;; ) {
+  for( ; ; ) {
    x = find( x );
    y = find( y );
    if( x == y )

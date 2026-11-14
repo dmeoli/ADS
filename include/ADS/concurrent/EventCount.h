@@ -246,14 +246,14 @@ class EventCount {
  /// 4 & \qquad \textbf{if}\ \mathrm{CAS}( ( e , w ) , ( e' , w' ) , ( e'
  ///     + 1 , 0 ) )\ \textbf{then}\quad \triangleright\ \text{acquire and}
  ///     \text{ release} \cr
- /// 5 & \qquad\quad E \gets e' + 1\quad \triangleright\ \text{release};
+ /// 5 & \qquad\quad \text{raise } E \text{ to } e' + 1 \text{ if it is}
+ ///     \text{ behind}\quad \triangleright\ \text{release};
  ///     \ \text{wake all the threads asleep on } E \cr
  /// 6 & \qquad\quad \textbf{return} \cr
  /// 7 & \qquad ( e' , w' ) \gets ( e , w )\quad \triangleright\ \text{read}
  ///     \text{ by the failed CAS}
  /// \end{array}}
  /// \f]
- //! [notify]
  void notify( void ) noexcept {
 #ifndef ADS_EVENTCOUNT_RMW
   detail::lightFence();
@@ -270,7 +270,6 @@ class EventCount {
     return;
     }
   }
- //! [notify]
 
  /// returns when `p()` is true: it looks again and again for up to `spin`
  /// nanoseconds, with a pause of the processor between the looks, and then

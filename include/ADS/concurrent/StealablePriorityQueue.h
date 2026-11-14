@@ -38,13 +38,14 @@
  * other thread can take a pair from its heaps (an owner that raced with
  * the thieves for each pair, as in a deque of work stealing, would need
  * one of the two at each operation, by the laws of order of Attiya et
- * al.); a steal costs the thief two exchanges at most, and the owner a
- * store of a pointer, or \f$ O( m ) \f$ when it deals the pairs again. The
- * price is that a thief waits for the next operation of the owner, which
- * `serve()` brings forward in a long computation of the owner. A steal moves
- * one of the two interleaved heaps, about half of the pairs, and the pairs
- * stolen keep their keys, their bounds and their items; `drain( f )` takes
- * back the offer that no thief has claimed and empties both heaps.
+ * al.); a steal costs the thief one exchange and a store of the flag, and
+ * the owner a store of a pointer, or \f$ O( m ) \f$ when it deals the pairs
+ * again. The price is that a thief waits for the next operation of the
+ * owner, which `serve()` brings forward in a long computation of the owner.
+ * A steal moves one of the two interleaved heaps, about half of the pairs,
+ * and the pairs stolen keep their keys, their bounds and their items;
+ * `drain( f )` takes back the offer that no thief has claimed and empties
+ * both heaps.
  *
  * With a type `Bd` of bounds (none by default), each pair carries a bound
  * besides its key, e.g., the key of selection of a branch-and-bound by

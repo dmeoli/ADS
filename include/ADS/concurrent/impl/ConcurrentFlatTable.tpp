@@ -408,7 +408,6 @@ auto ConcurrentFlatTable< K , V , H , Eq , C >::
  return( f_S[ t % kStripes ] );
  }
 
-//! [enter]
 template< class K , class V , class H , class Eq , class C >
 auto ConcurrentFlatTable< K , V , H , Eq , C >::enter( Stripe & s ) -> Table *
 {
@@ -423,7 +422,6 @@ auto ConcurrentFlatTable< K , V , H , Eq , C >::enter( Stripe & s ) -> Table *
   help();
   }
  }
-//! [enter]
 
 template< class K , class V , class H , class Eq , class C >
 void ConcurrentFlatTable< K , V , H , Eq , C >::copy( Table & T , Table & N )
@@ -1040,7 +1038,6 @@ inline bool ConcurrentFlatTable< K , V , H , Eq , C >::live( const Table & T ,
   }
  }
 
-//! [renew]
 template< class K , class V , class H , class Eq , class C >
 inline void ConcurrentFlatTable< K , V , H , Eq , C >::renew( Table & T ,
                                                              std::size_t g )
@@ -1073,7 +1070,6 @@ inline void ConcurrentFlatTable< K , V , H , Eq , C >::renew( Table & T ,
   (void) T; (void) g;
   }
  }
-//! [renew]
 
 template< class K , class V , class H , class Eq , class C >
 inline std::uint64_t ConcurrentFlatTable< K , V , H , Eq , C >::wordAt(

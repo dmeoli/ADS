@@ -43,7 +43,6 @@ void WorkStealingDeque< T >::push( T x )
  f_bottom.store( b + 1 , std::memory_order_release );
  }
 
-//! [take]
 template< class T >
 std::optional< T > WorkStealingDeque< T >::take( void )
 {
@@ -67,9 +66,7 @@ std::optional< T > WorkStealingDeque< T >::take( void )
   return( std::nullopt );
  return( x );
  }
-//! [take]
 
-//! [steal]
 template< class T >
 bool WorkStealingDeque< T >::steal( T & x )
 {
@@ -85,7 +82,6 @@ bool WorkStealingDeque< T >::steal( T & x )
  x = y;
  return( true );
  }
-//! [steal]
 
 template< class T >
 std::size_t WorkStealingDeque< T >::size( void ) const
