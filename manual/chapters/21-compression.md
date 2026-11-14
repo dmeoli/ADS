@@ -937,7 +937,7 @@ bytes of 0 end the code.
 
 *Stream VByte.* The variable-byte code of
 [§21.7](21-compression.md#sec-21-7) keeps the length of an integer in the bytes of the integer, a flag bit per byte, which the decoder tests one byte at a time, as we have seen.
-The Stream VByte of [Lemire, Kurz and Rupp 2018](Z-bibliography.md#ref-lemire2018)
+The Stream VByte of [Lemire, Kurz and Rupp 2018](Z-bibliography.md#ref-lemire2018svb)
 (`StreamVByte.h`) writes each integer of 32 bits in as many bytes as its
 significant bytes, $\ell_i = \max( 1 , \lceil \mathrm{bitwidth}( x_i ) / 8
 \rceil )$, and moves the lengths apart. They take 2 bits per integer: the
@@ -962,7 +962,7 @@ time, still with no test ([Algorithm 21.17](21-compression.md#alg-21-17)).
 ![Figure 21.5. The integers 1024, 12, 70000 and 5 in Stream VByte: their control byte holds the lengths less 1 (1, 0, 2 and 0, the integer 0 in the low bits), their 7 bytes of data are little-endian, and one shuffle moves the bytes to the four places of 4 bytes of a register, the missing high bytes made 0 (grey).](../figures/compression-streamvbyte.svg){#fig-21-5}
 
 <span id="alg-21-17"></span>**Algorithm 21.17.** Stream VByte
-([Lemire, Kurz and Rupp 2018](Z-bibliography.md#ref-lemire2018)), one
+([Lemire, Kurz and Rupp 2018](Z-bibliography.md#ref-lemire2018svb)), one
 integer at a time in the encoder and four at a time in the decoder.
 
 --8<-- "generated/StreamVByte-streamVByteEncode.pseudo.md"

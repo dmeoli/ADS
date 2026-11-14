@@ -90,6 +90,8 @@ library; the API reference generated from them; this manual.
     * [Chapter 19](chapters/19-backtrack.md#ch-19). Backtracking.
     * [Chapter 20](chapters/20-complexity.md#ch-20). Complexity and intractable problems.
 * **Part IV — Engineering.**
+    * [Chapter 21](chapters/21-compression.md#ch-21). Compression.
+    * [Chapter 22](chapters/22-succinct.md#ch-22). Succinct structures.
     * [Chapter 24](chapters/24-concurrent.md#ch-24). Concurrency.
     * [Chapter 25](chapters/25-parallel.md#ch-25). Parallelism.
     * [Chapter 26](chapters/26-distributed.md#ch-26). Distributed computing.

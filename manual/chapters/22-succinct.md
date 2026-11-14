@@ -1219,7 +1219,7 @@ its place. In all, the work is $O( n w )$ bits, $O( n w / 64 )$ words copied and
 $O( n \lceil w / 8 \rceil )$ moves of items for the matrix, or
 $O( \sum_c f_c \ell_c )$ bits for the tree, plus $O( q 2^k )$ counts for
 $q$ slices ($O( q \sigma )$ for the tree, whose slices therefore hold at
-least $\sigma$ items each), and the depth is that of a slice. The other parallel constructions of the literature ([Shun 2015](Z-bibliography.md#ref-shun2015); [Dinklage, Fischer, Kurpicz and Tarnowski 2023](Z-bibliography.md#ref-dinklage2023)) trade the passes against the memory in other ways, and we leave the comparison to Appendix B.
+least $\sigma$ items each), and the depth is that of a slice. The other parallel constructions of the literature ([Shun 2015](Z-bibliography.md#ref-shun2015wt); [Dinklage, Fischer, Kurpicz and Tarnowski 2023](Z-bibliography.md#ref-dinklage2023)) trade the passes against the memory in other ways, and we leave the comparison to Appendix B.
 
 ## 22.12 Discussion and references {#sec-22-12}
 
