@@ -103,6 +103,16 @@ class ObjectPool {
  /// the slots of this pool and of `other` exchanged
  void swap( ObjectPool & other ) noexcept;
 
+ /// the blocks of `other` taken by this pool, with the objects alive in
+ /// them, `other` left empty: the objects made by `other` become objects of
+ /// this pool, to be freed by it, so that a linked structure takes the
+ /// nodes of another one with no copy (the `absorb()` of `List`); the
+ /// block chain of `other` goes under the first block of this pool, in
+ /// \f$ O( \log n ) \f$ time for the walk to it, and the free slots of
+ /// `other` and those it never used are no longer given, until the pool dies
+ /// \pre the two allocators are equal
+ void adopt( ObjectPool & other ) noexcept;
+
  /// a new object built from `args`, in the slot freed last if any
  ///
  /// In pseudocode (the list AVAIL of section 2.2.3 of TAOCP, beyond the

@@ -19,6 +19,11 @@
  *   \f$ ( \mathit{head} + i ) \bmod c \f$, \f$ c \f$ the capacity, so that
  *   the order of the items is that of the queue and not that of the places.
  *
+ * - `RankIterator` is the random-access iterator of a container that reads
+ *   its items by rank, `c[ i ]`, \f$ i \f$ from 0: the lists of blocks
+ *   whose rank is a computation (a rootish, a dual or a cubish array), whose
+ *   iterator is the rank and the container.
+ *
  * - `IndirectIterator` reads through an iterator on pointers (smart or
  *   not), with its category: a random-access view of a vector of pointers to
  *   the items, as the heaps of handles keep them.
@@ -329,6 +334,105 @@ class CircularIterator {
  difference_type f_i = 0;     ///< the item from the head
 
  };  // end( class CircularIterator )
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CLASS RankIterator ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the random-access iterator on the items of a container `C` read by rank,
+/// `c[ i ]` the item \f$ i \f$, of the type `T`
+template< class C , class T , bool Const = true >
+class RankIterator {
+ using Owner = std::conditional_t< Const , const C , C >;
+ using Item = std::conditional_t< Const , const T , T >;
+
+ public:
+ /// random access
+ using iterator_category = std::random_access_iterator_tag;
+ using value_type = T;                     ///< the items
+ using difference_type = std::ptrdiff_t;   ///< the distances
+ using reference = Item &;                 ///< a reference to an item
+ using pointer = Item *;                   ///< a pointer to an item
+
+ /// an iterator on no container
+ RankIterator( void ) = default;
+
+ /// on the item of rank \f$ i \f$ of `c`
+ RankIterator( Owner * c , std::size_t i ) : f_c( c ) , f_i( i ) {}
+
+ /// the constant iterator from the mutable one
+ template< bool K > requires ( Const && ! K )
+ RankIterator( const RankIterator< C , T , K > & o )
+  : f_c( o.owner() ) , f_i( o.rank() ) {}
+
+ /// the item
+ reference operator*( void ) const { return( ( *f_c )[ f_i ] ); }
+
+ /// the address of the item
+ pointer operator->( void ) const { return( &**this ); }
+
+ /// the item \f$ k \f$ ranks on
+ reference operator[]( difference_type k ) const {
+  return( ( *f_c )[ f_i + std::size_t( k ) ] );
+  }
+
+ /// to the next item
+ RankIterator & operator++( void ) { ++f_i; return( *this ); }
+
+ /// to the previous item
+ RankIterator & operator--( void ) { --f_i; return( *this ); }
+
+ /// to the next item, returning the iterator before the step
+ RankIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+
+ /// to the previous item, returning the iterator before the step
+ RankIterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+
+ /// \f$ k \f$ items on
+ RankIterator & operator+=( difference_type k ) {
+  f_i += std::size_t( k );
+  return( *this );
+  }
+
+ /// \f$ k \f$ items back
+ RankIterator & operator-=( difference_type k ) {
+  f_i -= std::size_t( k );
+  return( *this );
+  }
+
+ friend RankIterator operator+( RankIterator a , difference_type k ) {
+  return( a += k );
+  }
+ friend RankIterator operator+( difference_type k , RankIterator a ) {
+  return( a += k );
+  }
+ friend RankIterator operator-( RankIterator a , difference_type k ) {
+  return( a -= k );
+  }
+ friend difference_type operator-( const RankIterator & a ,
+                                   const RankIterator & b ) {
+  return( difference_type( a.f_i - b.f_i ) );
+  }
+
+ /// equal on the same rank
+ bool operator==( const RankIterator & o ) const { return( f_i == o.f_i ); }
+
+ /// the order of the ranks
+ std::strong_ordering operator<=>( const RankIterator & o ) const {
+  return( f_i <=> o.f_i );
+  }
+
+ /// the container
+ [[nodiscard]] Owner * owner( void ) const { return( f_c ); }
+
+ /// the rank \f$ i \f$ of the item
+ [[nodiscard]] std::size_t rank( void ) const { return( f_i ); }
+
+ private:
+ Owner * f_c = nullptr;
+ std::size_t f_i = 0;         ///< the rank of the item
+
+ };  // end( class RankIterator )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS IndirectIterator --------------------------*/

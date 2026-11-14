@@ -73,6 +73,25 @@ void ObjectPool< T , A >::swap( ObjectPool & other ) noexcept
  }
 
 template< class T , class A >
+void ObjectPool< T , A >::adopt( ObjectPool & other ) noexcept
+{
+ if( ( &other == this ) || ! other.f_last )
+  return;
+ if( ! f_last )                             // nothing here: all of other
+  swap( other );
+ else {
+  Block * b = f_last;                       // the first block of this pool
+  while( b->prev ) b = b->prev;
+  b->prev = other.f_last;
+  f_size += other.f_size;
+  if( other.f_n > f_n ) f_n = other.f_n;
+  }
+ other.f_free = other.f_next = other.f_end = nullptr;
+ other.f_last = nullptr;
+ other.f_size = 0;
+ }
+
+template< class T , class A >
 inline T * ObjectPool< T , A >::allocate( void )
 {
  return( reinterpret_cast< T * >( slot()->object ) );

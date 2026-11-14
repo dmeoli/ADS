@@ -27,6 +27,11 @@
  * (the chains of `ChainedHashTable`) takes `List< T , false >`, whose cells
  * come one by one from `new` and `delete`.
  *
+ * Against Morin's `DLList`, the claims for the benchmarks: the cells come
+ * from the pool, with no call to the allocator after the first ones and
+ * next to each other in memory, where Morin's are each a `new` and a
+ * `delete`; `position()` walks from the nearer end as Morin's `getNode()`.
+ *
  * The contracts [see `Contract.h`]: a position is a cell of this list, which
  * costs a scan of the list and is therefore an audit, checked by the
  * operations that change the list (`insert()`, `remove()` and `write()`)
@@ -37,10 +42,32 @@
  * the predecessor of its successor, which also makes the walk from the
  * sentinel come back to it. The operations are defined in `List.tpp`.
  *
+ * It is also the `DLList` of section 3.2 of Morin's book: the list keeps
+ * its size, and has the operations by rank of a LIST [see `IndexedList.h`],
+ * `get( i )`, `set( i , x )`, `add( i , x )` and `erase( i )`, which reach
+ * the cell of rank \f$ i \f$ from the nearer end (`position( i )`, Morin's
+ * `getNode( i )`) in \f$ O( 1 + \min\{ i , n - i \} ) \f$ time, and those of
+ * the exercises of chapter 3 of Morin: `checkSize()` (3.5), `insert()`,
+ * which is the `addBefore()` of exercise 3.6, `isPalindrome()` (3.7),
+ * `rotate()`, which moves the sentinel and no item (3.8), `truncate()`
+ * (3.9), `absorb()` (3.10), `deal()` (3.11), `reverse()` (3.12), and
+ * `takeFirst()`, `merge()` and `mergeSort()` (3.13). The operations that
+ * move cells from a list to another relink them when the cells come from
+ * `new` (`Pooled` false), as Morin's do; between pooled lists a cell cannot
+ * change pool, so that `truncate()`, `deal()`, `takeFirst()` and `merge()`
+ * move the items into cells of the other list (in time linear in the items
+ * moved), while `absorb()` takes the pool of the other list along with its
+ * cells [see `ObjectPool::adopt()`], in \f$ O( \log n ) \f$, and
+ * `mergeSort()` and `reverse()` relink the cells of one list in both
+ * cases.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  * \see B. Stroustrup, The C++ Programming Language, 4th ed., Addison-Wesley,
  *      2013, section 17.5 (copy and move)
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, section 3.2 and
+ *      exercises 3.5 to 3.13
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -64,8 +91,11 @@
 #include "ADS/memory/ObjectPool.h"
 
 #include <cstddef>
+#include <functional>
 #include <initializer_list>
 #include <iterator>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -315,6 +345,194 @@ class List {
  /// \f$ v \f$ at the front, for `std::front_inserter`
  void push_front( const T & v );
 
+/*------------------------- THE DLList OF MORIN ----------------------------*/
+
+ /// the number \f$ n \f$ of items, kept
+ [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+
+ /// the cell of rank \f$ i \f$, the sentinel for \f$ i = n \f$, reached
+ /// from the nearer end in \f$ O( 1 + \min\{ i , n - i \} ) \f$ (Morin's
+ /// `getNode( i )`)
+ ///
+ /// In pseudocode (Morin, section 3.2), \f$ s \f$ the sentinel:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{position}( i ) \cr
+ /// 2 & \quad \textbf{if}\ i < n / 2\ \textbf{then}\ p \gets
+ ///     s.\mathit{succ};\ \textbf{repeat}\ i\ \text{ times: } p \gets
+ ///     p.\mathit{succ} \cr
+ /// 3 & \quad \textbf{else}\ p \gets s;\ \textbf{repeat}\ n - i
+ ///     \ \text{ times: } p \gets p.\mathit{pred} \cr
+ /// 4 & \quad \textbf{return}\ p
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i \le n \f$
+ [[nodiscard]] Pos position( std::size_t i ) const;
+
+ /// the item of rank \f$ i \f$, \f$ O( 1 + \min\{ i , n - i \} ) \f$
+ /// \pre \f$ i < n \f$
+ [[nodiscard]] const T & get( std::size_t i ) const;
+
+ /// \f$ x \f$ written at the rank \f$ i \f$, the old item returned,
+ /// \f$ O( 1 + \min\{ i , n - i \} ) \f$
+ /// \pre \f$ i < n \f$
+ T set( std::size_t i , const T & x );
+
+ /// \f$ x \f$ put at the rank \f$ i \f$, before the cell of rank \f$ i \f$,
+ /// \f$ O( 1 + \min\{ i , n - i \} ) \f$
+ /// \pre \f$ i \le n \f$
+ /// \post one item more, \f$ x \f$ at the rank \f$ i \f$
+ void add( std::size_t i , const T & x );
+
+ /// removes the item of rank \f$ i \f$ and returns it,
+ /// \f$ O( 1 + \min\{ i , n - i \} ) \f$
+ /// \pre \f$ i < n \f$
+ /// \post one item less
+ T erase( std::size_t i );
+
+ /// counts the cells and throws `std::logic_error` if they are not the
+ /// size kept (exercise 3.5 of Morin's book), \f$ O( n ) \f$
+ void checkSize( void ) const;
+
+ /// true if the item of rank \f$ i \f$ equals that of rank
+ /// \f$ n - 1 - i \f$ for every \f$ i \f$, by two walks from the two ends,
+ /// \f$ \lfloor n / 2 \rfloor \f$ comparisons at most (exercise 3.7 of
+ /// Morin's book)
+ ///
+ /// In pseudocode (Morin, exercise 3.7):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{isPalindrome}() \cr
+ /// 2 & \quad p \gets s.\mathit{succ};\ q \gets s.\mathit{pred} \cr
+ /// 3 & \quad \textbf{for}\ k \gets 1\ \textbf{to}\ \lfloor n / 2
+ ///     \rfloor\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ p.\mathit{value} \ne q.\mathit{value}
+ ///     \ \textbf{then return false} \cr
+ /// 5 & \qquad p \gets p.\mathit{succ};\ q \gets q.\mathit{pred} \cr
+ /// 6 & \quad \textbf{return true}
+ /// \end{array}}
+ /// \f]
+ [[nodiscard]] bool isPalindrome( void ) const;
+
+ /// the item of rank \f$ i \f$ moved to the rank \f$ ( i + r ) \bmod n \f$
+ /// by moving the sentinel before the item of rank \f$ n - r \f$, in
+ /// \f$ O( 1 + \min\{ r , n - r \} ) \f$, no item moved and no cell made
+ /// (exercise 3.8 of Morin's book)
+ ///
+ /// In pseudocode (Morin, exercise 3.8), \f$ r \f$ reduced modulo
+ /// \f$ n \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{rotate}( r ) \cr
+ /// 2 & \quad \textbf{if}\ r = 0\ \textbf{then return} \cr
+ /// 3 & \quad u \gets \mathrm{position}( n - r ) \cr
+ /// 4 & \quad \text{unlink } s;\ \text{link } s \text{ between }
+ ///     u.\mathit{pred} \text{ and } u
+ /// \end{array}}
+ /// \f]
+ void rotate( std::size_t r );
+
+ /// the items of ranks \f$ i , \ldots , n - 1 \f$ cut off into the list
+ /// returned, in \f$ O( 1 + \min\{ i , n - i \} ) \f$ by relinking
+ /// (exercise 3.9 of Morin's book; in \f$ O( 1 + n - i ) \f$ by moving the
+ /// items if `Pooled`)
+ ///
+ /// In pseudocode (Morin, exercise 3.9):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{truncate}( i ) \cr
+ /// 2 & \quad u \gets \mathrm{position}( i );\ L \gets \text{an empty list}
+ ///     \cr
+ /// 3 & \quad \textbf{if}\ u \ne s\ \textbf{then}\ \text{link } u , \ldots
+ ///     , s.\mathit{pred} \text{ between the ends of } L;\ \text{link }
+ ///     u.\mathit{pred} \text{ to } s \cr
+ /// 4 & \quad |L| \gets n - i;\ n \gets i;\ \textbf{return}\ L
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i \le n \f$
+ /// \post \f$ i \f$ items left
+ [[nodiscard]] List truncate( std::size_t i );
+
+ /// the items of `l2` appended to this list in their order, `l2` left
+ /// empty, in \f$ O( 1 ) \f$ by relinking (exercise 3.10 of Morin's book;
+ /// in \f$ O( \log n ) \f$ if `Pooled`, the pool of `l2` taken)
+ /// \pre `l2` is not this list
+ void absorb( List & l2 );
+
+ /// the items of odd rank moved, in their order, to the list returned
+ /// (exercise 3.11 of Morin's book), \f$ O( n ) \f$
+ ///
+ /// In pseudocode (Morin, exercise 3.11):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{deal}() \cr
+ /// 2 & \quad L \gets \text{an empty list};\ p \gets s.\mathit{succ} \cr
+ /// 3 & \quad \textbf{while}\ p \ne s\ \textbf{and}\ p.\mathit{succ} \ne
+ ///     s\ \textbf{do} \cr
+ /// 4 & \qquad q \gets p.\mathit{succ};\ \text{unlink } q;\ \text{link } q
+ ///     \text{ at the end of } L;\ p \gets p.\mathit{succ} \cr
+ /// 5 & \quad \textbf{return}\ L
+ /// \end{array}}
+ /// \f]
+ /// \post \f$ \lceil n / 2 \rceil \f$ items left
+ [[nodiscard]] List deal( void );
+
+ /// the order of the items reversed, by exchanging the two links of each
+ /// cell and of the sentinel, \f$ O( n ) \f$ (exercise 3.12 of Morin's
+ /// book)
+ /// \post the items in the reverse order (an audit)
+ void reverse( void );
+
+ /// the first cell of `l2` moved to the end of this list, by relinking (a
+ /// new cell with the item moved if `Pooled`), \f$ O( 1 ) \f$ (exercise
+ /// 3.13 of Morin's book)
+ /// \pre `l2` is not empty and is not this list
+ void takeFirst( List & l2 );
+
+ /// the merge of the two sorted lists `l1` and `l2`, which are left empty,
+ /// stable (the items of `l1` first among equal ones), in
+ /// \f$ O( |l1| + |l2| ) \f$ (exercise 3.13 of Morin's book)
+ ///
+ /// In pseudocode (Morin, exercise 3.13):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{merge}( l_1 , l_2 ) \cr
+ /// 2 & \quad L \gets \text{an empty list} \cr
+ /// 3 & \quad \textbf{while}\ l_1 \ne \emptyset\ \textbf{and}\ l_2 \ne
+ ///     \emptyset\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ \mathrm{first}( l_2 ) < \mathrm{first}( l_1 )
+ ///     \ \textbf{then}\ L.\mathrm{takeFirst}( l_2 )\ \textbf{else}
+ ///     \ L.\mathrm{takeFirst}( l_1 ) \cr
+ /// 5 & \quad L.\mathrm{absorb}( l_1 );\ L.\mathrm{absorb}( l_2 );
+ ///     \ \textbf{return}\ L
+ /// \end{array}}
+ /// \f]
+ /// \pre `l1` and `l2` sorted by `less`
+ /// \post the result sorted (an audit)
+ template< class C = std::less<> >
+ [[nodiscard]] static List merge( List & l1 , List & l2 , C less = C() );
+
+ /// sorts the list, stable, by the merge sort of exercise 3.13 of Morin's
+ /// book: the list cut in two halves by a walk to its middle, each sorted
+ /// recursively and the two merged, all on the cells of this list, which
+ /// are relinked and never copied, \f$ O( n \log n ) \f$ time and
+ /// \f$ O( \log n ) \f$ space for the recursion [see `ListSort.h` for the
+ /// natural merge sort of the runs, bottom up]
+ ///
+ /// In pseudocode (Morin, exercise 3.13):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{mergeSort}( L ) \cr
+ /// 2 & \quad \textbf{if}\ |L| \le 1\ \textbf{then return} \cr
+ /// 3 & \quad R \gets L.\mathrm{truncate}( \lfloor |L| / 2 \rfloor ) \cr
+ /// 4 & \quad \mathrm{mergeSort}( L );\ \mathrm{mergeSort}( R ) \cr
+ /// 5 & \quad L \gets \mathrm{merge}( L , R )
+ /// \end{array}}
+ /// \f]
+ /// \post the list sorted (an audit)
+ template< class C = std::less<> >
+ void mergeSort( C less = C() );
+
 /*--------------------------------------------------------------------------*/
  private:
 
@@ -346,7 +564,16 @@ class List {
   void swap( Plain & ) noexcept {}
   };
 
+ /// the cell \f$ c \f$ unlinked from its list and linked before \f$ p \f$
+ static void relink( Cell * c , Cell * p ) noexcept;
+
+ /// the chain of \f$ k \f$ cells from \f$ a \f$, ended by nil along `succ`,
+ /// sorted by the merge sort of `mergeSort()`; its first cell returned
+ template< class C >
+ static Cell * sortChain( Cell * a , std::size_t k , C & less );
+
  mutable Cell f_sentinel;   ///< the sentinel, i.e., the list
+ std::size_t f_size = 0;    ///< the number of items
  /// the cells
  [[no_unique_address]]
  std::conditional_t< Pooled , ObjectPool< Cell > , Plain > f_pool;

@@ -77,6 +77,54 @@ inline bool isPalindrome( const std::string & s )
  return( true );
  }
 
+inline bool isDyckWord( std::span< const int > w )
+{
+ //! [isDyckWord]
+ std::size_t h = 0;                         // the size of the stack
+ for( int c : w ) {
+  ADS_PRE( ( c == 1 ) || ( c == -1 ) );
+  if( c == 1 ) ++h;
+  else if( h == 0 ) return( false );        // a pop of the empty stack
+  else --h;
+  }
+ return( true );
+ //! [isDyckWord]
+ }
+
+inline bool isMatched( std::string_view s )
+{
+ //! [isMatched]
+ ArrayStack< char > S( s.size() );
+ for( char c : s )
+  switch( c ) {
+   case '(': case '[': case '{': S.push( c ); break;
+   case ')': if( S.empty() || ( S.pop() != '(' ) ) return( false ); break;
+   case ']': if( S.empty() || ( S.pop() != '[' ) ) return( false ); break;
+   case '}': if( S.empty() || ( S.pop() != '{' ) ) return( false ); break;
+   default: ADS_PRE( false );
+   }
+ return( S.empty() );
+ //! [isMatched]
+ }
+
+template< Stack S , Queue Q >
+void reverseWithQueue( S & s )
+{
+ const auto old = [ & ] {
+  if constexpr( ADS_CONTRACTS >= 3 ) return( detail::stackItems( s ) );
+  else return( std::vector< typename S::Item >() );
+  }();
+ //! [reverseWithQueue]
+ Q q;
+ while( ! s.empty() ) q.enqueue( s.pop() );
+ while( ! q.empty() ) s.push( q.dequeue() );
+ //! [reverseWithQueue]
+ ADS_AUDIT( ( [ & ] {
+  auto now = detail::stackItems( s );
+  return( std::equal( now.begin() , now.end() , old.rbegin() ,
+                      old.rend() ) ); }() ) );
+ }
+
 template< Stack S >
 void sortStack( S & s )
 {
@@ -95,10 +143,10 @@ void removeGreater( S & s , const typename S::Item & k )
   if( !( k < x ) ) aux.push( x );
   }
  while( ! aux.empty() ) s.push( aux.pop() );
- ADS_AUDIT( [ & ] {
+ ADS_AUDIT( ( [ & ] {
   for( const auto & x : detail::stackItems( s ) )
    if( k < x ) return( false );
-  return( true ); }() );
+  return( true ); }() ) );
  }
 
 namespace detail {

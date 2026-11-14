@@ -76,6 +76,15 @@
      duplicates</td><td>\f$ \Theta( n ) \f$</td>
      <td>\f$ O( n ) \f$ to enqueue, \f$ O( 1 ) \f$ to dequeue</td>
      <td>none</td></tr>
+ <tr><td><tt>RandomQueue</tt></td><td>a vector, the item out drawn
+     uniformly</td><td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$
+     amortized</td><td>none</td></tr>
+ <tr><td><tt>MinQueue</tt></td><td>two stacks with the minimum</td>
+     <td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$ amortized,
+     <tt>min()</tt> in \f$ O( 1 ) \f$</td><td>none</td></tr>
+ <tr><td><tt>MinDeque</tt></td><td>two stacks with the minimum, back to
+     back</td><td>\f$ \Theta( n ) \f$</td><td>\f$ O( 1 ) \f$ amortized at
+     both ends, <tt>min()</tt> in \f$ O( 1 ) \f$</td><td>none</td></tr>
  </table>
 
  A singly linked list is a queue when the items enter after its last cell and
@@ -146,6 +155,57 @@
  without knowing how many items it holds, which the QUEUE of the book does
  not say.
 
+ \section theory_queue_ods The queues of Morin's book
+
+ `RingDeque` is also the `ArrayDeque` of section 2.4 of Morin's Open Data
+ Structures, a LIST by rank whose `insert( i , v )` and `erase( i )` move the
+ \f$ \min\{ i , n - i \} \f$ items of the shorter side (see
+ \ref theory_sequence_ods for the other deques of chapter 2 of Morin and
+ the costs of their operations by rank).
+
+ The `RandomQueue` of exercise 2.3 keeps its items in a vector in no order:
+ `push()` appends, `pop()` draws a place \f$ j \f$ uniformly, exchanges it
+ with the last place and removes the last one, in \f$ O( 1 ) \f$. Each item
+ inside is equally likely to come out, whatever the history, since the draw
+ does not depend on the order of the vector. The place is drawn by the
+ multiplication of Lemire: with \f$ w \f$ a word of 64 bits uniform and
+ \f$ w \cdot n = 2^{64} h + l \f$, the high half \f$ h \f$ is uniform in
+ \f$ [ 0 , n ) \f$ once the words with \f$ l < ( 2^{64} - n ) \bmod n \f$ are
+ rejected, since each value of \f$ h \f$ is then the image of exactly
+ \f$ \lfloor 2^{64} / n \rfloor \f$ words; the rejection happens with
+ probability below \f$ n / 2^{64} \f$, and the division that computes the
+ threshold only when \f$ l < n \f$, i.e., almost never.
+
+ <em>Lemma 1 (two stacks make a queue, exercise 3.15).</em> Let `MinQueue`
+ enqueue on a stack \f$ I \f$ and dequeue from a stack \f$ O \f$, moving all
+ the items of \f$ I \f$ to \f$ O \f$ when \f$ O \f$ is empty. Then the items
+ leave in the order in which they entered, \f$ m \f$ operations take
+ \f$ O( m ) \f$ time, and the least item is the lesser of the minima of the
+ two stacks, each kept by a `MinStack` (see \ref theory_stack_ods).
+
+ Indeed, the move reverses \f$ I \f$, so that the oldest item is on top of
+ \f$ O \f$, and the items of \f$ O \f$ are all older than those of
+ \f$ I \f$; each item is pushed and popped twice at most, once on each
+ stack, which bounds the total work by \f$ 4 m \f$ operations of the
+ stacks. The worst case of one operation is \f$ \Theta( n ) \f$, which the
+ real-time queue of Hood and Melville removes by spreading the reversal
+ over the operations.
+
+ <em>Lemma 2 (two stacks make a deque, exercise 3.16).</em> Let `MinDeque`
+ keep a stack \f$ F \f$ with the front on top and a stack \f$ B \f$ with the
+ back on top, and let a removal from an empty side deal the \f$ k \f$ items
+ of the other side again, the \f$ \lceil k / 2 \rceil \f$ nearer to the end
+ of the empty side to it. Then \f$ m \f$ operations take \f$ O( m ) \f$
+ time.
+
+ Indeed, let \f$ \Phi = 2 \, | |F| - |B| | \f$. An operation that does not
+ deal costs 1 and changes \f$ \Phi \f$ by 2 at most; a deal of \f$ k \f$
+ items costs \f$ O( k ) \f$ and is called when one side is empty, i.e.,
+ \f$ \Phi = 2 k \f$, after which \f$ \Phi \le 2 \f$ (the removal that
+ follows it changes it by 2 more at most), so that the drop of
+ \f$ \Phi \f$ pays for it. As for the queue, the least item is the lesser
+ of the minima of the two stacks.
+
  \section theory_queue_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.3.1 and
@@ -157,6 +217,15 @@
  \see U. Pape, Implementation and efficiency of Moore-algorithms for the
       shortest route problem, Mathematical Programming 7(1), 212-222, 1974,
       doi:10.1007/BF01585517
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, sections 2.3 and 2.4 and
+      exercises 2.3, 3.15 and 3.16
+ \see R. Hood, R. Melville, Real-time queue operations in pure LISP,
+      Information Processing Letters 13(2), 50-54, 1981,
+      doi:10.1016/0020-0190(81)90030-2
+ \see D. Lemire, Fast random integer generation in an interval, ACM
+      Transactions on Modeling and Computer Simulation 29(1), 3:1-3:12,
+      2019, doi:10.1145/3230636
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File queue.dox ----------------------------*/

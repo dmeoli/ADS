@@ -21,6 +21,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workflow of the documentation publishes the site, and that of the
   releases attaches the PDF
 
+- the lists, the deques and the sets of chapters 1, 2 and 3 of Morin's Open
+  Data Structures and of their exercises, each against the standard library
+  in test/ods_lists.cpp, and the section on them in the theories of the
+  sequences, the stacks, the queues and the sets: RootishArrayStack (the
+  blocks of 1, 2, ..., r places of Brodnik et al., O( sqrt n ) places
+  wasted), DualArrayDeque on two stacks of any type (a vector, or a
+  RootishArrayStack for exercise 2.10), Treque (exercise 2.4, fast at the
+  two ends and in the middle), ContiguousDeque (exercise 2.9, the items in
+  one contiguous piece, no modular arithmetic), CubishArrayStack (exercise
+  2.13, a tiered vector of three levels, O( n^{1/3} ) insertions and
+  O( n^{2/3} ) places wasted), SEList (the unrolled list of blocks of b - 1
+  to b + 1 items, whose two end blocks are free so that the operations of a
+  deque never spread nor gather, exercises 3.17 and 3.18), XorList (one word
+  of links per cell, reversed in O( 1 )) and xorSwap() (exercise 3.19),
+  RandomQueue (exercise 2.3, the item out drawn by the multiplication of
+  Lemire), MinStack, MinQueue and MinDeque (exercises 3.14 to 3.16), the
+  concepts IndexedList and IndexedDeque with rotateArray() and rotate()
+  (exercises 2.5 and 2.6), the concepts USet and SSet with ArrayUSet and
+  ArraySSet (exercise 1.6), Bag (exercise 1.5), isDyckWord(), isMatched()
+  and reverseWithQueue() (exercises 1.2 to 1.4), and RankIterator, the
+  iterator of a container read by rank
+- RingDeque::insert( i , v ), erase( i ), rotate( r ) and shrink_to_fit():
+  the ArrayDeque of Morin, the items of the shorter side moved by runs
+  contiguous in the vector (exercises 2.6 and 2.7)
+- List keeps its size and has the operations of the DLList of Morin and of
+  its exercises: position( i ) from the nearer end, get(), set(), add() and
+  erase() by rank, checkSize(), isPalindrome(), rotate( r ) by moving the
+  sentinel, truncate(), absorb(), deal(), reverse(), takeFirst(), merge()
+  and mergeSort() (exercises 3.5 to 3.13); the cells move between lists of
+  cells from new, while a pooled list moves the items, but absorb(), which
+  takes the pool of the other list
+- SinglyList keeps its last cell and its size: push_back(), pop_front(),
+  front(), back(), size(), get(), set(), add() and erase() by rank,
+  secondLast(), reverse() and checkSize() (the SLList of Morin, exercises
+  3.2 to 3.5)
+- TieredVector shifts toward the front the items before a rank below n / 2,
+  the first block with a gap of free places, so that an insertion or a
+  removal at the rank i takes O( 1 + min( i , sqrt n , n - i ) ) amortized
+  time (exercise 2.12 of Morin); push_front(), pop_front(), front(), back()
+  and capacity()
+- ArraySequence::insert( p , first , last ), the items of a range put at
+  once with one shift (the addAll() of exercise 2.2 of Morin)
+- ObjectPool::adopt( other ), the blocks of another pool taken with the
+  objects alive in them, so that a list takes the cells of another one
+
 - ConcurrentFlatTable::findOrInsertKey( k , h ), for a set kept in the
   words (`packed`, an empty value): the key held equal to k by the
   equality of the table, k itself if it was absent, so that a set of
@@ -1450,6 +1495,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   both signs, bit by bit against std::sort by radixKey()
 
 ### Changed
+
+- ArraySequence shifts its items by std::move() and std::move_backward(),
+  one memmove() for the items trivially copyable (the FastArrayStack of
+  Morin)
 
 - ConcurrentFlatTable::findOrInsert() and findOrInsertKey() compare the
   tag of a place they pass with the one of the key before the key, as a

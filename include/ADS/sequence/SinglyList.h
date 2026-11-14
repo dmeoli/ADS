@@ -27,10 +27,32 @@
  * block; the price is that the list keeps the memory of its largest size
  * until it dies. The operations are defined in `SinglyList.tpp`.
  *
+ * Against Morin's `SLList`, the claim for the benchmarks: the cells come
+ * from the pool, where Morin's are each a `new` and a `delete`.
+ *
+ * It is also the `SLList` of section 3.1 of Morin's book: the list keeps
+ * its last cell and its size, so that `push_back()` (Morin's `add( x )`),
+ * `push_front()` and `pop_front()` (his `push( x )`, `pop()` and
+ * `remove()`) and `size()` take \f$ O( 1 ) \f$ time, and it has the
+ * operations of the exercises of chapter 3 of Morin: `get( i )`,
+ * `set( i , x )`, `add( i , x )` and `erase( i )` by rank in
+ * \f$ O( 1 + i ) \f$ (exercise 3.3), `secondLast()` by a walk that needs
+ * neither the size nor the last cell (exercise 3.2), `reverse()` in place
+ * by relinking the cells (exercise 3.4) and `checkSize()`, which counts
+ * the cells against the size (exercise 3.5). A dummy cell before the first
+ * one cannot remove the special cases of the queue as it does for a doubly
+ * linked list (exercise 3.1): the operations at the back need the cell
+ * before the last one to remove it, which a singly linked list does not
+ * reach in \f$ O( 1 ) \f$, and an empty list must still set the last cell
+ * apart from the dummy.
+ *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, exercise 4.6,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
  * \see A. V. Aho, J. E. Hopcroft, J. D. Ullman, Data Structures and
  *      Algorithms, Addison-Wesley, 1983, section 2.2
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, section 3.1 and
+ *      exercises 3.1 to 3.5
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -56,6 +78,8 @@
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
+#include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
@@ -293,8 +317,106 @@ class SinglyList {
  template< std::input_iterator I , std::sentinel_for< I > S >
  SinglyList( I first , S last );
 
- /// \f$ v \f$ at the front, for `std::front_inserter`
+ /// \f$ v \f$ at the front, for `std::front_inserter` (Morin's
+ /// `push( x )`), \f$ O( 1 ) \f$
  void push_front( const T & v );
+
+/*------------------------- THE SLList OF MORIN ----------------------------*/
+
+ /// the number \f$ n \f$ of items, kept
+ [[nodiscard]] std::size_t size( void ) const { return( f_size ); }
+
+ /// \f$ v \f$ at the back, after the last cell (Morin's `add( x )`),
+ /// \f$ O( 1 ) \f$
+ void push_back( const T & v );
+
+ /// removes the first item and returns it (Morin's `pop()` and
+ /// `remove()`), \f$ O( 1 ) \f$
+ /// \pre the list is not empty
+ T pop_front( void );
+
+ /// the first item
+ /// \pre the list is not empty
+ [[nodiscard]] const T & front( void ) const;
+
+ /// the last item, from the last cell, \f$ O( 1 ) \f$
+ /// \pre the list is not empty
+ [[nodiscard]] const T & back( void ) const;
+
+ /// the item of rank \f$ i \f$, by a walk of \f$ i \f$ cells (exercise 3.3
+ /// of Morin's book)
+ /// \pre \f$ i < n \f$
+ [[nodiscard]] const T & get( std::size_t i ) const;
+
+ /// \f$ x \f$ written at the rank \f$ i \f$, \f$ O( 1 + i ) \f$; the old
+ /// item returned (exercise 3.3)
+ /// \pre \f$ i < n \f$
+ T set( std::size_t i , const T & x );
+
+ /// \f$ x \f$ put at the rank \f$ i \f$, after the cell of rank
+ /// \f$ i - 1 \f$ reached by a walk, \f$ O( 1 + i ) \f$ (exercise 3.3)
+ ///
+ /// In pseudocode (Morin, exercise 3.3), \f$ \mathit{first} \f$ the first
+ /// cell:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{add}( i , x ) \cr
+ /// 2 & \quad \textbf{if}\ i = 0\ \textbf{then}\ \mathrm{pushFront}( x );
+ ///     \ \textbf{return} \cr
+ /// 3 & \quad u \gets \mathit{first};\ \textbf{repeat}\ i - 1
+ ///     \ \text{ times: } u \gets u.\mathit{next} \cr
+ /// 4 & \quad u.\mathit{next} \gets \text{a new cell of } x \text{ before }
+ ///     u.\mathit{next};\ n \gets n + 1
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i \le n \f$
+ /// \post one item more, \f$ x \f$ at the rank \f$ i \f$
+ void add( std::size_t i , const T & x );
+
+ /// removes the item of rank \f$ i \f$ and returns it, \f$ O( 1 + i ) \f$
+ /// (exercise 3.3)
+ /// \pre \f$ i < n \f$
+ /// \post one item less
+ T erase( std::size_t i );
+
+ /// the item before the last one, by a walk that reads neither the size
+ /// nor the last cell (exercise 3.2 of Morin's book), \f$ O( n ) \f$
+ ///
+ /// In pseudocode (Morin, exercise 3.2):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{secondLast}() \cr
+ /// 2 & \quad u \gets \mathit{first} \cr
+ /// 3 & \quad \textbf{while}\ u.\mathit{next}.\mathit{next} \ne
+ ///     \textbf{nil}\ \textbf{do}\ u \gets u.\mathit{next} \cr
+ /// 4 & \quad \textbf{return}\ u.\mathit{value}
+ /// \end{array}}
+ /// \f]
+ /// \pre two items at least
+ [[nodiscard]] const T & secondLast( void ) const;
+
+ /// the order of the items reversed by relinking the cells, in
+ /// \f$ O( n ) \f$ time and \f$ O( 1 ) \f$ space, with no cell made
+ /// (exercise 3.4 of Morin's book)
+ ///
+ /// In pseudocode (Morin, exercise 3.4):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{reverse}() \cr
+ /// 2 & \quad p \gets \textbf{nil};\ u \gets \mathit{first};
+ ///     \ \mathit{last} \gets u \cr
+ /// 3 & \quad \textbf{while}\ u \ne \textbf{nil}\ \textbf{do}
+ ///     \ w \gets u.\mathit{next};\ u.\mathit{next} \gets p;\ p \gets u;
+ ///     \ u \gets w \cr
+ /// 4 & \quad \mathit{first} \gets p
+ /// \end{array}}
+ /// \f]
+ /// \post the items in the reverse order (an audit)
+ void reverse( void );
+
+ /// counts the cells and throws `std::logic_error` if they are not the
+ /// size kept (exercise 3.5 of Morin's book), \f$ O( n ) \f$
+ void checkSize( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -302,7 +424,12 @@ class SinglyList {
  /// the cell of the item in the position \f$ p \f$
  [[nodiscard]] Cell * cell( Pos p ) const;
 
+ /// the cell of rank \f$ i \f$, by a walk
+ [[nodiscard]] Cell * walk( std::size_t i ) const;
+
  Cell * f_first = nullptr;               ///< the first cell
+ Cell * f_last = nullptr;                ///< the last cell
+ std::size_t f_size = 0;                 ///< the number of items
  ObjectPool< Cell > f_pool;              ///< the cells
  /// its address is \f$ \mathit{pos}_{-1} \f$
  mutable Cell f_before{ T() , nullptr };

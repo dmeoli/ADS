@@ -26,6 +26,24 @@
  * moving a sequence takes its vector in \f$ O( 1 ) \f$ time, leaving the one
  * moved from empty.
  *
+ * It is also the `ArrayStack` of section 2.1 of Morin's book, the LIST of
+ * `get( i )`, `set( i , x )`, `add( i , x )` and `remove( i )` on a vector
+ * (`read()`, `write()` and the two `insert()` and `remove()` here), and its
+ * `FastArrayStack` of section 2.2: the items are shifted by
+ * `std::move_backward()` and `std::move()`, which become one `memmove()`
+ * for the items trivially copyable; the range `insert()` is the `addAll()`
+ * of exercise 2.2. Morin halves the vector when \f$ 3 n \le c \f$, this
+ * vector when \f$ 4 n \le c \f$: the argument is the same, with another
+ * constant. A removed item leaves behind it, in the place \f$ n \f$, the
+ * husk of the item moved out of it (exercise 2.1), which keeps its resources
+ * only if its move does not take them, until an insertion or a resize
+ * overwrites it.
+ *
+ * Against Morin's code, the claims for the benchmarks: equal shifts (one
+ * `memmove()`, as his `FastArrayStack` with `std::copy()`), a growth that
+ * moves the items where his copies them, and a shrink at a quarter where his
+ * is at a third, i.e., fewer reallocations when the size oscillates.
+ *
  * The contracts [see `Contract.h`]: a position is an index from -1 to
  * \f$ n \f$; `next()` needs one from -1 to \f$ n - 1 \f$ and `prev()` one
  * from 0 to \f$ n \f$, since there is nothing after \f$ \mathit{pos}_n \f$
@@ -44,6 +62,9 @@
  * \see T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction
  *      to Algorithms, 3rd ed., MIT Press, 2009, section 17.4 (dynamic
  *      tables, the contraction at a quarter)
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, sections 2.1 and 2.2
+ *      and exercises 2.1 and 2.2
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -65,6 +86,7 @@
 
 #include "ADS/Contract.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
@@ -156,6 +178,30 @@ class ArraySequence {
  ///       they were before \f$ p \f$ and one place on from \f$ p \f$ (an
  ///       audit)
  Pos insert( Pos p , const T & v );
+
+ /// puts the \f$ k \f$ items of [ `first` , `last` ) at the indices
+ /// \f$ p , \ldots , p + k - 1 \f$, in their order, the items from the
+ /// index \f$ p \f$ moving \f$ k \f$ places on once, in
+ /// \f$ O( n - p + k ) \f$ time (exercise 2.2 of Morin's book), where
+ /// \f$ k \f$ calls of `insert( p , v )` move them \f$ k \f$ times, in
+ /// \f$ O( k ( n - p ) ) \f$; the range may hold items of this sequence
+ ///
+ /// In pseudocode (Morin, exercise 2.2), \f$ C[ 0 .. k - 1 ] \f$ the items:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{insertAll}( p , C ) \cr
+ /// 2 & \quad \textbf{if}\ n + k > c\ \textbf{then}\ \mathrm{resize}(
+ ///     \text{the least } 2^j c \ge n + k ) \cr
+ /// 3 & \quad A[ p + k .. n + k - 1 ] \gets A[ p .. n - 1 ] \cr
+ /// 4 & \quad A[ p .. p + k - 1 ] \gets C;\ n \gets n + k \cr
+ /// 5 & \quad \textbf{return}\ p
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 0 \le p \le n \f$
+ /// \post \f$ k \f$ items more, those before \f$ p \f$ where they were and
+ ///       those from \f$ p \f$ \f$ k \f$ places on (an audit)
+ template< std::input_iterator I , std::sentinel_for< I > S >
+ Pos insert( Pos p , I first , S last );
 
  /// removes the item at the index \f$ p \f$, the following ones moving one
  /// place back; a vector left a quarter full is halved

@@ -122,12 +122,47 @@ ArraySequence< T >::insert( Pos p , const T & v )
  const T x = v;                 // v may be an item, which resize() moves
  if( f_size == f_capacity )     // full: twice the size
   resize( f_capacity ? 2 * f_capacity : 1 );
- for( Pos i = f_size ; i > p ; --i )
-  f_A[ i ] = std::move( f_A[ i - 1 ] );
+ std::move_backward( f_A.get() + p , f_A.get() + f_size ,   // memmove
+                     f_A.get() + f_size + 1 );               // if trivial
  f_A[ p ] = x;
  ++f_size;
  ADS_POST( ( f_size == n + 1 ) && detail::equal( f_A[ p ] , x ) );
  ADS_AUDIT( same( *old , 0 , 0 , p ) && same( *old , p , p + 1 , n - p ) );
+ ADS_INVARIANT( fits() );
+ return( p );
+ }
+
+template< class T >
+template< std::input_iterator I , std::sentinel_for< I > S >
+typename ArraySequence< T >::Pos
+ArraySequence< T >::insert( Pos p , I first , S last )
+{
+ ADS_PRE( ( p >= 0 ) && ( p <= f_size ) );
+ const Pos n = f_size;
+ const auto old = detail::snapshot( *this );
+ ArraySequence c;                  // the items first, which may be ours
+ if constexpr( std::forward_iterator< I > ) {
+  const Pos k = Pos( std::ranges::distance( first , last ) );
+  if( k ) c.resize( k );
+  }
+ for( ; first != last ; ++first )
+  c.push_back( *first );
+ const Pos k = c.f_size;
+ if( k == 0 )
+  return( p );
+ //! [insertAll]
+ if( f_size + k > f_capacity ) {   // one resize for the k items
+  Pos m = f_capacity ? f_capacity : 1;
+  while( m < f_size + k ) m *= 2;
+  resize( m );
+  }
+ std::move_backward( f_A.get() + p , f_A.get() + f_size ,
+                     f_A.get() + f_size + k );
+ std::move( c.f_A.get() , c.f_A.get() + k , f_A.get() + p );
+ f_size += k;
+ //! [insertAll]
+ ADS_POST( f_size == n + k );
+ ADS_AUDIT( same( *old , 0 , 0 , p ) && same( *old , p , p + k , n - p ) );
  ADS_INVARIANT( fits() );
  return( p );
  }
@@ -138,8 +173,7 @@ typename ArraySequence< T >::Pos ArraySequence< T >::remove( Pos p )
  ADS_PRE( ( p >= 0 ) && ( p < f_size ) );
  const Pos n = f_size;
  const auto old = detail::snapshot( *this );
- for( Pos i = p ; i < f_size - 1 ; ++i )
-  f_A[ i ] = std::move( f_A[ i + 1 ] );
+ std::move( f_A.get() + p + 1 , f_A.get() + f_size , f_A.get() + p );
  --f_size;
  if( f_size <= f_capacity / 4 )   // a quarter full: half the size, and
   resize( f_size ? f_capacity / 2 : 0 );   // no vector when empty

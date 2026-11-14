@@ -70,6 +70,9 @@
      vector, with a free list</td><td>\f$ \Theta( n + k ) \f$</td>
      <td>\f$ O( 1 ) \f$ amortized</td><td>none, the vector
      grows</td></tr>
+ <tr><td><tt>MinStack</tt></td><td>two vectors, the items and the record
+     minima</td><td>\f$ \Theta( n + m ) \f$, \f$ m \le n \f$ minima</td>
+     <td>\f$ O( 1 ) \f$ amortized, <tt>min()</tt> too</td><td>none</td></tr>
  </table>
 
  On a vector the \f$ n \f$ items are in the places \f$ 0 , \ldots , n - 1 \f$
@@ -175,6 +178,47 @@
  small items rise by one place per pass, as in the bubble sort, of which
  this is the version on a stack (see \ref theory_sequence_sort).
 
+ \section theory_stack_ods The stacks of Morin's book
+
+ The exercises of chapter 1 of Morin's Open Data Structures on the STACK
+ are three. A sequence \f$ w \f$ of \f$ +1 \f$ and \f$ -1 \f$ is a
+ <em>Dyck word</em> when no prefix of it has a negative sum; it is so if
+ and only if the pushes for \f$ +1 \f$ and the pops for \f$ -1 \f$, run on
+ an empty stack, never pop the empty stack (exercise 1.2), since after a
+ prefix the stack holds as many items as the sum of the prefix, and a pop
+ of the empty stack is the first prefix of sum \f$ -1 \f$. A word whose sum
+ is 0 is moreover one after which the stack is empty: the Dyck words of
+ sum 0 are the sequences of operations that leave a stack as it was. A
+ string of brackets is <em>matched</em> (exercise 1.3) when it is a Dyck
+ word of sum 0 in which each pop removes the bracket that opens the one
+ read: `isMatched()` pushes the open brackets and checks each closed one
+ against the top, in \f$ O( n ) \f$ time. A queue reverses a stack
+ (exercise 1.4), `reverseWithQueue()`: the items popped come out of the
+ queue in the order in which they went in, the old top first, and pushed in
+ that order they end with the old top at the bottom.
+
+ <em>Lemma 3 (the minimum of a stack, exercise 3.14).</em> Let `MinStack`
+ push an item \f$ x \f$ also on a second stack \f$ M \f$ when \f$ M \f$ is
+ empty or \f$ x \le \mathrm{top}( M ) \f$, and pop \f$ M \f$ when the item
+ popped is not larger than \f$ \mathrm{top}( M ) \f$. Then
+ \f$ \mathrm{top}( M ) \f$ is the least item of the stack, and \f$ M \f$
+ holds the items that were not larger than all those below them when they
+ were pushed.
+
+ Indeed, by induction on the operations, \f$ M \f$ does not increase from
+ its bottom and its top is the least item: a push of \f$ x \f$ not larger
+ than the least goes on top of \f$ M \f$, and one larger leaves both the
+ minimum and \f$ M \f$ as they were; a pop removes the top of \f$ M \f$
+ exactly when the item popped equals it, which happens only if that item is
+ the one that put it there or an equal one pushed on top of it, also in
+ \f$ M \f$ (an item equal to the minimum goes to \f$ M \f$ too, for this
+ reason). The minima are one per record low from the bottom: \f$ n \f$ on
+ a decreasing input, \f$ O( \log n ) \f$ expected on a random one (the
+ records of a random permutation), where the pairs of an item and the
+ minimum below it would hold \f$ 2 n \f$ items. The queue and the double
+ ended queue with the minimum (exercises 3.15 and 3.16) are two such stacks
+ back to back (see \ref theory_queue_ods).
+
  \section theory_stack_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.3.1 and
@@ -191,6 +235,9 @@
       Centrum, Amsterdam, 1961
  \see R. Sedgewick, Algorithms in C++, Parts 1-4, 3rd ed., Addison-Wesley,
       1998, section 4.3
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, exercises 1.2, 1.3, 1.4
+      and 3.14
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File stack.dox ----------------------------*/

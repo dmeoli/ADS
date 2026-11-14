@@ -1823,3 +1823,40 @@ engineered_search  trit-array             cinque valori ternari per byte
 engineered_search  zobrist-ranges         Zobrist su array e span
 engineered_search  backoff-threads        attesa con backoff esponenziale
 engineered_search  affinity               thread fissati ai processori
+
+# Open Data Structures (Morin), chapters 1, 2 and 3
+ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti
+ods_lists  ods-ex1.1.lines              i nove problemi sulle righe
+ods_lists  ods-ex1.2.dyck               parole di Dyck e pila
+ods_lists  ods-ex1.3.matched            stringhe di parentesi bilanciate
+ods_lists  ods-ex1.4.reverse-stack      pila rovesciata con una coda
+ods_lists  ods-ex1.5.bag                Bag su un USet di gruppi
+ods_lists  ods-ex1.6.reference-sets     USet e SSet su vettore
+ods_lists  ods-2.1.array-stack          ArrayStack e FastArrayStack
+ods_lists  ods-ex2.2.add-all            addAll con un solo spostamento
+ods_lists  ods-2.3.array-queue          ArrayQueue circolare
+ods_lists  ods-2.4.array-deque          ArrayDeque per rango
+ods_lists  ods-ex2.8.power-of-two       capacità potenza di 2
+ods_lists  ods-2.5.dual-array-deque     DualArrayDeque bilanciato
+ods_lists  ods-2.6.rootish-array-stack  RootishArrayStack e spazio sprecato
+ods_lists  ods-ex2.3.random-queue       RandomQueue uniforme
+ods_lists  ods-ex2.4.treque             Treque veloce agli estremi e al centro
+ods_lists  ods-ex2.5.rotate-array       rotazione di un array
+ods_lists  ods-ex2.6.rotate-list        rotazione di una lista
+ods_lists  ods-ex2.9.contiguous-deque   deque contiguo senza modulo
+ods_lists  ods-ex2.10.rootish-deque     DualArrayDeque su RootishArrayStack
+ods_lists  ods-ex2.11.tiered-deque      tiered vector, spostamenti in coda
+ods_lists  ods-ex2.12.tiered-deque      tiered vector, spostamenti in testa
+ods_lists  ods-ex2.13.cubish            CubishArrayStack a tre livelli
+ods_lists  ods-3.1.sllist               SLList come pila e coda
+ods_lists  ods-ex3.2-3.5.sllist         esercizi su SLList
+ods_lists  ods-3.2.dllist               DLList per rango
+ods_lists  ods-ex3.5-3.12.dllist        esercizi su DLList
+ods_lists  ods-ex3.13.merge-sort        merge sort di una DLList
+ods_lists  ods-ex3.14.min-stack         MinStack
+ods_lists  ods-ex3.15.min-queue         MinQueue
+ods_lists  ods-ex3.16.min-deque         MinDeque
+ods_lists  ods-3.3.selist               SEList a blocchi
+ods_lists  ods-ex3.17-3.18.selist-ends  SEList agli estremi
+ods_lists  ods-3.4.xor-list             lista XOR
+ods_lists  ods-ex3.19.xor-swap          scambio con XOR
