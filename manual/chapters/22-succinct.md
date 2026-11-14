@@ -129,7 +129,7 @@ a field of `BitVector`; $W$ are the words.
 --8<-- "generated/BitVector-get.pseudo.md"
 
 Finding the place of the $k$-th 1 of a word, by `selectInWord()`, is the last step of
-every select of the library, in place of the tables of the small blocks of
+each select of the library, in place of the tables of the small blocks of
 the classical analysis ([Jacobson 1989](Z-bibliography.md#ref-jacobson1989);
 [Clark 1996](Z-bibliography.md#ref-clark1996)). It is the broadword method
 of [Vigna 2008](Z-bibliography.md#ref-vigna2008)
@@ -154,25 +154,21 @@ sum is at least 128, i.e., it has its high bit, if and only if
 $s_j \ge k + 1$. Hence the first byte $b$ with $s_b > k$ is the one that holds
 the 1 of rank $k$, which is the $( k - s_{b-1} )$-th 1 of the byte. $\square$
 
-In the code, the trailing zeros of the masked word give $b$, and the 1 inside the byte
+In the implementation, the trailing zeros of the masked word give $b$, and the 1 inside the byte
 is found by clearing its lower 1s, at most 7 times. With the instructions
-BMI2, the code deposits the single bit $2^k$ on the 1s of the word instead,
-and the place is then its trailing zeros:
-
-```cpp
---8<-- "generated/BitVector-selectInWord.cpp"
-```
+BMI2, the implementation deposits the single bit $2^k$ on the 1s of the word instead,
+and the place is then its trailing zeros.
 
 We write the codes of the integers of [§21.7](21-compression.md#sec-21-7)
 on the streams of bits of `BitStream.h`. A `BitWriter` appends
 bits to a `BitVector`, and a `BitReader` reads them back from a place that
 moves forward, both in $O( 1 )$ time per field of up to 64 bits
-([Algorithm 22.3](22-succinct.md#alg-22-3)). `write()` and `read()` move a field with its least significant bit first, the order of the words. `writeBinary()` and `readBinary()` move it with its most significant bit first, the order in which the codes are written on paper, and they turn the field around by three rounds of masks and a swap of the bytes. Also,
+([Algorithm 22.3](22-succinct.md#alg-22-3)). The functions `write()` and `read()` move a field with its least significant bit first, the order of the words. The functions `writeBinary()` and `readBinary()` move it with its most significant bit first, the order in which the codes are written on paper, and they turn the field around by three rounds of masks and a swap of the bytes. Also,
 `writeUnary( q )` writes $q$ zeros and a 1, and `readUnary()` counts the
 zeros up to the 1 a word at a time, by the trailing zeros of the word, in
 $O( 1 + q / 64 )$ time. A single bit is moved by `writeBit()` and
 `readBit()`; `seek( p )` moves the reader to the place $p$, `atEnd()`
-tells whether all the bits have been read, and `release()` hands the bits
+is true when all the bits have been read, and `release()` hands the bits
 written over to the caller, leaving the writer empty. In the literature the fast decoders write the codes into words rather than bytes, e.g., the streams of the WebGraph framework of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004). Indeed, a codeword of up to 64 bits spans at most two words, and the unary part is
 decoded by one instruction per word.
 
@@ -185,11 +181,37 @@ fields of the streams of bits.
 
 --8<-- "generated/BitStream-BitReader-readUnary.pseudo.md"
 
+<span id="lem-22-3"></span>**Lemma 22.3.** *(i) A `BitVector` of $m$
+bits keeps at most $\lfloor m / 64 \rfloor + 10$ words, i.e., $m + O( 512
+)$ bits, with at least one word past the last bit and the bits past the
+size at 0. (ii) `get( i , len )`, $len \le 64$, reads at most two words,
+and `push_back()` and `append()` take $O( 1 )$ amortized time. (iii)
+`readUnary()` reads $q$ zeros and the 1 in at most $\lfloor q / 64 \rfloor
++ 1$ steps of one word each.*
+
+*Proof.* (i) The constructor of $m$ bits takes $\lceil ( \lfloor m / 64
+\rfloor + 9 ) / 8 \rceil 8 \le \lfloor m / 64 \rfloor + 9$ words, rounded
+down to a multiple of 8, i.e., at least $\lfloor m / 64 \rfloor + 2$; an
+append grows the words by 8 only when fewer than $\lfloor m' / 64 \rfloor
++ 2$ are there for the new size $m'$, which keeps the count below
+$\lfloor m' / 64 \rfloor + 10$. The constructor writes 0s past the size,
+and an append writes only the bits of its field, whose value has no 1
+above its length (a precondition). (ii) A field of at most 64 bits from
+the place $i$ lies in the words $\lfloor i / 64 \rfloor$ and the next
+one. An append writes at most two words, and the growth of the words by 8
+at a time reallocates them geometrically (the growth of `std::vector`
+beyond its capacity), which is $O( 1 )$ amortized per append. (iii) Each
+step reads up to 64 bits from the current place: if they are all 0 it
+counts them and moves past them, and otherwise the trailing zeros of the
+word give the 1. All the steps but the last read 64 zeros each (or the
+last bits of the vector, after which the precondition stops the reader).
+$\square$
+
 ## 22.3 Rank and select {#sec-22-3}
 
 One can reduce the rank to a few counts by the two-level directory of Jacobson.
 
-<span id="lem-22-3"></span>**Lemma 22.3 (the directory of
+<span id="lem-22-4"></span>**Lemma 22.4 (the directory of
 Jacobson).** *With superblocks of $Z$ bits, each with the 1s before it in
 $\log_2 m$ bits, and blocks of $z$ bits, each with the 1s before it since
 its superblock in $\log_2 Z$ bits,*
@@ -203,7 +225,10 @@ $$
 *and with $Z = \log_2^2 m$ and $z = \log_2 m / 2$ the counts take $o( m )$
 bits, with the rank in $O( 1 )$ time.*
 
-*Proof.* Clearly, the 1s before $i$ are those before its superblock, those of its superblock before its block, and those of its block before $i$, which is (22.3). Also, the superblocks take $( m / \log_2^2 m ) \log_2 m = m / \log_2 m$
+*Proof.* The places before $i$ are split into those before its
+superblock, those of its superblock before its block, and those of its
+block before $i$; counting the 1s of each part gives the three terms of
+(22.3). Also, the superblocks take $( m / \log_2^2 m ) \log_2 m = m / \log_2 m$
 bits, and the blocks $( 2 m / \log_2 m ) \log_2 \log_2^2 m =
 O( m \log \log m / \log m )$, both $o( m )$. Finally, the last term of (22.3) is read in a table of the $2^z = \sqrt{m}$ blocks of $z$ bits and of their $z$
 prefixes, of $O( \sqrt{m} \log m \log \log m )$ bits. $\square$
@@ -238,11 +263,7 @@ $$
 
 i.e., the three relative ranks of the entry. When the bits come from words
 in memory above $2^{23}$ bits, the words are copied in the same pass, since
-reading them twice costs more than a copy in the caches. Its code is the pseudocode. Note that the 1s of the word up to $i$ need no test of the end, since the words exist past the size:
-
-```cpp
---8<-- "generated/RankSelect-rank1.cpp"
-```
+reading them twice costs more than a copy in the caches. The implementation follows the pseudocode. Note that the 1s of the word up to $i$ need no test of the end, since the words exist past the size.
 
 We do not reduce the select to the rank by a binary search, which would cost $O( \log m )$ steps. [Clark 1996](Z-bibliography.md#ref-clark1996) cuts the
 1s in groups of $\log_2^2 m$ and writes down the places of all the 1s of a
@@ -263,9 +284,42 @@ by the inventories of [Vigna 2008](Z-bibliography.md#ref-vigna2008).
 
 --8<-- "generated/RankSelect-BasicRankSelect-select.pseudo.md"
 
-```cpp
---8<-- "generated/RankSelect-select.cpp"
-```
+<span id="lem-22-5"></span>**Lemma 22.5.** *(i) The entries of
+[Algorithm 22.4](22-succinct.md#alg-22-4) hold the 1s before each block and
+the relative ranks of its words 1 to 3 without overflow, (22.4) gives the
+latter, and `rank1( i )` is their sum plus the 1s of the word of $i$ before
+$i$. (ii) For $1 \le k \le n$, [Algorithm 22.5](22-succinct.md#alg-22-5)
+returns $\mathrm{select}_1( k )$; in a group that is not sparse it reads
+fewer than $2^{16} / 64 + 1$ words of the vector, and in a sparse one it
+makes $O( \log( m / 256 ) )$ steps. (iii) The directory of rank takes 64
+bits per 256 bits of the vector, and the inventory of the 1s 64 bits per
+group and at most 32 offsets of 16 bits.*
+
+*Proof.* (i) The relative ranks are at most $3 \cdot 64 = 192$, which fit
+in 8 bits; in (22.4) each partial sum is at most 192, so that no byte
+carries into the next one, and the product modulo $2^{24}$ leaves in the
+byte $j$ the sum $p_0 + \cdots + p_j$. The rank of $i$ in the word $q$ of
+its block is then the 1s before the block, plus the relative rank of $q$
+(0 for $q = 0$), plus the 1s of the word $q$ before $i$, which is (22.3)
+with the word as the last block. (ii) The 1 of rank $r = k - 1$ (from 0)
+is in the group $j = \lfloor r / 2^\ell \rfloor$. If the group is sparse,
+its 1 is found by a binary search on the counts of the directory between
+the places of the first 1s of the groups $j$ and $j + 1$, over at most $m
+/ 256$ blocks. Otherwise line 5 gives the place $p$ of the 1 of rank $2^g
+\lfloor r / 2^g \rfloor \le r$, which is $r$ itself for $g = 0$. The 1 of rank $r$ is the $t$-th 1, from 0, at or after $p$, with $t = r \bmod 2^g$,
+and the loop of line 8 skips the words that hold fewer than $t + 1$ of the
+1s still to pass, until `selectInWord()` finds it
+([Lemma 22.2](22-succinct.md#lem-22-2)). The 1s from $p$ to the 1 of rank
+$r$ lie in the group, which spans fewer than $2^{16}$ bits since it is not
+sparse; hence the loop reads fewer than $2^{16} / 64 + 1$ words. (iii) A
+group of $2^\ell$ 1s keeps its first place in 64 bits and the offsets of
+its 1s of rank multiple of $2^g$, at most $2^{\ell - g} \le 32$ of them, in
+16 bits each. $\square$
+
+On bits spread evenly, a group spans between 3072 and 6144 bits on
+average by the choice of $\ell$, and the scan of line 8 then covers a few
+words; this, and not (ii), is the case for which the inventories are
+designed.
 
 A select is thus (typically) three accesses to the memory and a few words, $O( 1 )$
 time where the 1s are spread evenly, with about $576 / 6144$ to
@@ -315,16 +369,15 @@ With AVX2, we count the bytes of the line before the one of $i$ 32 at a time, by
 
 --8<-- "generated/CompactRankSelect-select.pseudo.md"
 
-Its select keeps the superblock of every 4096-th bit $b$, in 32 bits each,
+Its select keeps the superblock of each 4096-th bit $b$, in 32 bits each,
 i.e., at most $32 / 4096 < 0.8\%$ of $m$ bits for each value. It finds the $k$-th bit $b$ by a binary search on the entries between two samples. Then it finds the block by the 7 counts of the superblock, and the word by the sums of the 8 words of its line, both by comparisons with no branch; the bit is found by `selectInWord()`. This is $O( \log( m / 4096 ) )$ steps in the worst case,
-and $O( 1 )$ where the bits $b$ are spread "evenly" (a sample every 2 to 8 superblocks for a density between 1/2 and 1/8). Its trade with `RankSelect` is, roughly, the "classical" one of the literature: a sum of up to 8 words and a
+and $O( 1 )$ where the bits $b$ are spread "evenly" (a sample each 2 to 8 superblocks for a density between 1/2 and 1/8). Its trade with `RankSelect` is, roughly, the "classical" one of the literature: a sum of up to 8 words and a
 search of the entries instead of one word and an inventory, in 15 times
 fewer bits.
 
 `InterleavedRankSelect` takes the layout of SPIDER of
 [Laws et al. 2024](Z-bibliography.md#ref-laws2024), with the counts inside
-the lines of the bits. A line of 512 bits holds 496 bits of $B$ and, in its
-first 16 bits, the 1s before it since its superblock of 128 lines (63488
+the lines of the bits. A line of 512 bits holds 496 bits of $B$. In its first 16 bits it holds the 1s before it since its superblock of 128 lines (63488
 bits, so that the count fits in 16 bits); a superblock keeps the 1s before
 it in 64 bits apart. Hence
 
@@ -334,7 +387,7 @@ $$
 \ell = \lfloor i / 496 \rfloor , \tag{22.6}
 $$
 
-with one access to the memory of the vector, the line, against the two of the directories kept apart. Its array of the superblocks, one word per 63488 bits, typically stays in the caches, and the counts take $16 / 512 = 3.125\%$ of the line. Its select keeps the line of every 8192-th bit $b$ with the bits $b$ before that line, in 96 bits, i.e., at most $96 / 8192 < 1.2\%$ of $m$ bits for each value. As SPIDER does, it guesses the line of the $k$-th bit $b$ between two samples
+with one access to the memory of the vector, the line, against the two of the directories kept apart. Its array of the superblocks, one word per 63488 bits, typically stays in the caches, and the counts take $16 / 512 = 3.125\%$ of the line. Its select keeps the line of each 8192-th bit $b$ with the bits $b$ before that line, in 96 bits, i.e., at most $96 / 8192 < 1.2\%$ of $m$ bits for each value. As SPIDER does, it guesses the line of the $k$-th bit $b$ between two samples
 $( \ell_j , c_j )$ by interpolation,
 
 $$
@@ -352,6 +405,23 @@ and then corrects the guess a line at a time by the counts of the lines (hopeful
 --8<-- "generated/InterleavedRankSelect-rank1.pseudo.md"
 
 --8<-- "generated/InterleavedRankSelect-select.pseudo.md"
+
+<span id="lem-22-6"></span>**Lemma 22.6.** *(22.5) and (22.6) give
+$\mathrm{rank}_1( i )$, and their counts fit in the fields that hold them;
+the entries of `CompactRankSelect` take $128 / 4096$ of the bits and the
+counts of `InterleavedRankSelect` $16 / 512$ of each line.*
+
+*Proof.* In (22.5), the places before $i$ are split into four parts. They are those before its top region of $2^{32}$ bits, those of the region before its superblock, those of the
+superblock before its block, and those of the block before $i$; the last
+term counts the 1s of the words $j$ of the block whose bits $64 j ,
+\ldots$ precede $o$, all of them when $o \ge 64 ( j + 1 )$ and none when
+$o \le 64 j$. The count of a superblock is below $2^{32}$, and $c_j \le 7
+\cdot 512 = 3584 < 2^{12}$. In (22.6) the places before $i$ are those
+before its superblock of 128 lines, those of the lines of the superblock
+before the line $\ell$, and those of the line before $i$; the count $h_\ell$
+is at most $127 \cdot 496 = 62992 < 2^{16}$. A superblock of 4096 bits has
+one entry of 128 bits, and a line of 512 bits gives 16 of them to its
+count. $\square$
 
 [Table 22.2](22-succinct.md#tab-22-2) summarizes the four vectors of bits
 with rank and select. In our experience `RankSelect` is usually preferable when the queries dominate, since its rank typically reads one entry and one word; `CompactRankSelect`
@@ -381,7 +451,7 @@ It cuts $B$ in blocks of $b = 63$ bits, and writes a block of $c$ 1s as its
 $\binom{b}{c}$ blocks of class $c$, in
 $\lceil \log_2 \binom{b}{c} \rceil$ bits. We compute the offset by the combinatorial number system.
 
-<span id="lem-22-4"></span>**Lemma 22.4 (the combinatorial number
+<span id="lem-22-7"></span>**Lemma 22.7 (the combinatorial number
 system).** *The vectors of $b$ bits with $c$ 1s at the places
 $p_1 < \cdots < p_c$ are numbered from 0 to $\binom{b}{c} - 1$ by*
 
@@ -389,7 +459,7 @@ $$
 o = \sum_{t=1}^{c} \binom{p_t}{t} , \tag{22.8}
 $$
 
-*their rank in the colexicographic order; and the place $p$, scanned from
+*their rank in the colexicographic order. The place $p$, scanned from
 $b - 1$ down, holds the $t$-th 1, $t$ being the 1s not yet met, if and only
 if $\binom{p}{t} \le o$, where $o$ is the remainder after the 1s above.*
 
@@ -411,7 +481,7 @@ take at most $m H_0( B ) + m / b$ bits, and the classes $6 m / b$. A superblock 
 $m H_0( B ) + ( 7 / 63 + 128 / 2016 ) m < m H_0( B ) + 0.175 m$. As for the time, the rank of a place sums the classes of the blocks of its superblock before its own,
 and of their offsets the lengths, at most 31 of each, and rebuilds its
 block from the highest place down by
-[Lemma 22.4](22-succinct.md#lem-22-4), at most $b$ steps. Similarly, the select finds the superblock by a binary search on the counts, the block by the classes,
+[Lemma 22.7](22-succinct.md#lem-22-7), at most $b$ steps. Similarly, the select finds the superblock by a binary search on the counts, the block by the classes,
 and the 1 in the rebuilt block. $\square$
 
 <span id="alg-22-8"></span>**Algorithm 22.8.** The construction, the rank
@@ -425,13 +495,9 @@ and the select of `RRRBitVector`
 --8<-- "generated/RRRBitVector-select1.pseudo.md"
 
 Note that a query walks only the places it needs: the rank stops at its place or at
-the last 1, the select at its bit. We write the walk with no branch, the binomials coming from a table of $64 \times 64$ entries:
+the last 1, the select at its bit. We write the walk with no branch, the binomials coming from a table of $64 \times 64$ entries.
 
-```cpp
---8<-- "generated/RRRBitVector-below.cpp"
-```
-
-`select0()` does the same with the 0s of each block, counted as its length less its class. We rebuild the block in full when it is sparse in 0s.
+The function `select0()` does the same with the 0s of each block, counted as its length less its class. We rebuild the block in full when it is sparse in 0s.
 
 ## 22.6 Sequences of integers {#sec-22-6}
 
@@ -454,7 +520,7 @@ $$
 bits, and $x_i = 2^\ell ( \mathrm{select}_1( H , i + 1 ) - i ) + L[ i ]$.*
 
 *Proof.* Note that the places (22.9) are strictly increasing, since the buckets do not decrease and $i$ grows, and therefore the $( i + 1 )$-th 1 of $H$ is the one of
-$x_i$, from which its bucket is read back by subtracting $i$. Also, the 0s of $H$ before that 1 are as many as the bucket, and hence $H$ has $n$ 1s and at most
+$x_i$, from which its bucket is read back by subtracting $i$. Also, the 0s of $H$ before that 1 are as many as the bucket, and hence $H$ has $n$ 1s. It has at most
 $\lfloor ( u - 1 ) / 2^\ell \rfloor + 1 \le n$ 0s, since
 $2^\ell \ge u / n$; $L$ has $n \ell$ bits. $\square$
 
@@ -475,34 +541,31 @@ access and the search of Elias-Fano.
 
 --8<-- "generated/EliasFano-BasicEliasFano-nextGEQ.pseudo.md"
 
-```cpp
---8<-- "generated/EliasFano-access.cpp"
-```
-
-`nextGEQ( x )` gives the place of the first item $\ge x$, which is the
+The function `nextGEQ( x )` gives the place of the first item $\ge x$, which is the
 rank of $x$ (the items $< x$) and gives the predecessor and the successor.
 
-<span id="lem-22-5"></span>**Lemma 22.5.** *Let $h = \lfloor x / 2^\ell
+<span id="lem-22-8"></span>**Lemma 22.8.** *Let $h = \lfloor x / 2^\ell
 \rfloor$. The first item $\ge x$ is either in the bucket $h$, whose items
 start after the $h$-th 0 of $H$, or it is the first item of a later
 bucket; and among the items of the bucket $h$ the low bits decide, since
 they are sorted.*
 
-*Proof.* Clearly, the items of a bucket $h' < h$ are below $h 2^\ell \le x$, and
+*Proof.* The items of a bucket $h' < h$ are below $( h' + 1 ) 2^\ell \le
+h 2^\ell \le x$, and
 those of a bucket $h' > h$ are at least $( h + 1 ) 2^\ell > x$. Those of the bucket $h$ share the high bits of $x$, and they are compared with
 $x$ by their low bits, which are in non-decreasing order within the bucket.
 Finally, the $h$-th 0 of $H$ ends the bucket $h - 1$, and the 1s after it, up to the
 next 0, are the items of the bucket $h$. $\square$
 
-Hence `nextGEQ()` costs a $\mathrm{select}_0$ and a scan of the bucket, in
-$O( 1 + c )$ time for a bucket of $c$ items, and `contains( x )` tests its
-result ($\ell$ itself is `lowWidth()`). A bucket holds $n 2^\ell / u \le 2$ items on average (for "random" items), and the search is $O( 1 )$ expected when the items are spread evenly, which is often (but not always) the case. Past 8 items, which the "clusters" of a sequence may give, the end of the bucket is found by
-$\mathrm{select}_0$ too and its low bits by a binary search, in
-$O( \log c )$ time:
-
-```cpp
---8<-- "generated/EliasFano-nextGEQ.cpp"
-```
+Hence `nextGEQ()` costs a $\mathrm{select}_0$ and a search of the low
+bits of the bucket, and `contains( x )` tests its result ($\ell$ itself is
+`lowWidth()`). The first 8 items of the bucket are scanned; past them,
+which the clusters of a sequence may give, the end of the bucket is found
+by $\mathrm{select}_0$ too and its low bits by a binary search, so that a
+bucket of $c$ items costs $O( 1 + \log c )$ steps beyond the selects. The
+$n$ items fall in $\lceil u / 2^\ell \rceil$ buckets, at most $n$ by the
+proof of [Theorem 22.2](22-succinct.md#thm-22-2), and hence a bucket holds
+at least one item on average.
 
 Ferragina's book computes the rank by a binary search on the select, in
 $O( \log n )$ time; the bucket found by $\mathrm{select}_0$ is the design
@@ -521,14 +584,14 @@ does.
 Elias-Fano depends only on $n$ and $u$, and it ignores the "clusters" of a
 sequence. In the partitioned form of [Ottaviano and Venturini 2014](Z-bibliography.md#ref-ottaviano2014)
 (`PartitionedEliasFano`) we cut a strictly increasing sequence into blocks of 128 items. We code the block $j$, of $m$ items, relative to $b_j = x_{128 j - 1} + 1$, the end of the block before (0 for the first block). Its values $v = x - b_j$ are in $[ 0 , u_j )$, with $u_j$ the last of them plus 1, and the block is coded in the cheapest of three codes
-([Figure 22.6](22-succinct.md#fig-22-6)). It takes no bit if $u_j = m$ (all the values are there). It is a vector of $u_j$ bits, the bit $v$ for the value $v$, if $u_j$ is at most the bits of Elias-Fano, and otherwise it is Elias-Fano with $\ell = \lfloor \log_2( u_j / m ) \rfloor$, in
-$m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1$ bits. `kinds()`
+([Figure 22.6](22-succinct.md#fig-22-6)). It takes no bit if $u_j = m$ (all the values are there). It is a vector of $u_j$ bits, the bit $v$ for the value $v$, if $u_j$ is at most the bits of Elias-Fano. Otherwise it is Elias-Fano with $\ell = \lfloor \log_2( u_j / m ) \rfloor$, in
+$m \ell + m + \lfloor ( u_j - 1 ) / 2^\ell \rfloor + 1$ bits. The function `kinds()`
 counts the blocks of each of the three codes, and `contains( x )` is a
 `nextGEQ()` here too, as in `LAVector`.
 
 ![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
 
-<span id="lem-22-6"></span>**Lemma 22.6.** *A block of $m$ items with
+<span id="lem-22-9"></span>**Lemma 22.9.** *A block of $m$ items with
 $u > m$ costs at most $\min\{ u , \, 2 m + m \lceil \log_2( u / m ) \rceil \}$
 bits, i.e., never more than Elias-Fano with the $\ell$ of
 [Theorem 22.2](22-succinct.md#thm-22-2) on its universe (with equality for
@@ -561,12 +624,9 @@ $m_j / n$), $\sum_j m_j \log_2( u_j / m_j ) \le n \log_2( \sum_j u_j / n )
 We remark that the extra bit per item of (22.10) comes from the rounding
 of the logarithm in each block, and it can be reached: on two blocks with
 $u_1 / m = 1.5$ and $u_2 / m = 2.5$ the ceilings sum to 3 per item, while
-the whole sequence, with $u / n = 2$, has 1. A program that compares the
-Elias-Fano form of the code with the formula of Theorem 22.2 for all
-$m < 300$ and $m < u < 50 m$ finds it never above, and equal on the
-powers of 2.
+the whole sequence, with $u / n = 2$, has 1.
 
-Besides, the records of the blocks cost a field of fixed width per block: the last item, the place of the code, and its kind with $\ell$ in 8 bits (so that a query computes no logarithm). Also, the last item of every eighth block is kept apart for the searches. On the dense runs of an inverted index the cost is usually far smaller than that of Elias-Fano. `access( i )` reads the
+Besides, the records of the blocks cost a field of fixed width per block: the last item, the place of the code, and its kind with $\ell$ in 8 bits (so that a query computes no logarithm). Also, the last item of each eighth block is kept apart for the searches. On the dense runs of an inverted index the cost is usually far smaller than that of Elias-Fano. The function `access( i )` reads the
 records of the block of $i$ and of the one before (next to each other) and
 selects the item in the code of the block, a scan of its few words. Also, `nextGEQ( x )` finds the first block whose last item is at least $x$ by a search of the items apart in the layout of Eytzinger ([Khuong and Morin 2017](Z-bibliography.md#ref-khuong2017)), a complete binary tree by levels whose descent fetches the nodes three levels ahead. At most 8 records follow, and the item is found in its block by the high
 part, or by the sideways sums of the vector up to $x$
@@ -595,7 +655,7 @@ respect to the line of its segment ([Figure 22.7](22-succinct.md#fig-22-7)).
 
 ![Figure 22.7. The points $( i , x_i )$ of a sequence of 16 items covered by two segments, each line with its band of half-width $\epsilon = 2$; the item 5 (violet) is stored as its correction $C[ 5 ]$, its distance from the line of its segment.](../figures/succinct-lavector.svg){#fig-22-7}
 
-<span id="lem-22-7"></span>**Lemma 22.7 (the corrections).** *Let the
+<span id="lem-22-10"></span>**Lemma 22.10 (the corrections).** *Let the
 segment $j$, over the places $[ p_j , p_{j+1} )$, have a line
 $f( i ) = x_{p_j} + \gamma + \alpha ( i - p_j )$ with
 $| f( i ) - x_i | \le \epsilon$ for each of its places, and let
@@ -642,8 +702,9 @@ and the choice of the width of the corrections.
 --8<-- "generated/LAVector-tuned.pseudo.md"
 
 Accessing $x_i$ is (22.11) once the segment of $i$ is known, which a
-table of the segment of every $2^t$-th place gives in $O( 1 )$ expected
-time for $2^t \approx n / m$. In turn, the rank of $x$ first finds the last segment
+table of the segment of each $2^t$-th place gives after a scan of the
+segments that start among the $2^t$ places before $i$, one on average for
+$2^t \approx n / m$. In turn, the rank of $x$ first finds the last segment
 whose first item is below $x$, through a table of the first segment of each
 bucket of the high bits of the items, as the buckets of Elias-Fano. Then,
 since by (22.11) $\beta_j + \lfloor \alpha ( i - p_j ) \rfloor \le x_i <
@@ -655,11 +716,13 @@ window, which the search checks on the two items at its ends, the whole
 segment is searched.
 
 Against Elias-Fano, which takes $2 + \lceil \log_2( u / n ) \rceil$ bits per item, the LA-vector may win when the items follow lines "closely". This happens, e.g., on the places of a pattern repeated with some noise, on the keys of a process that grows at a steady rate, or on the dense runs of an inverted index, where $m$ is small and $c$ is the logarithm of the noise instead of the average gap. On gaps drawn at random no line may follow the items better than the average gap does, the corrections need about $\log_2( u / n )$ bits as
-the low bits of Elias-Fano, and the segments are an overhead. `tuned()`
+the low bits of Elias-Fano, and the segments are an overhead. The function `tuned()`
 therefore tries the widths up to six bits above the logarithm of the
 average gap (or half the bits of the items, if more) and keeps the one of
 the fewest bits. In the journal form of [Boffa, Ferragina and Vinciguerra 2022](Z-bibliography.md#ref-boffa2022), the LA-vector chooses the width segment by segment, by a shortest path over the segments
-of all the widths. Its gain comes from segments of different widths, which the width $w_j$ that each segment takes from its corrections already gives in part. On the sequences of the benchmark of the library the shortest path came within a few hundredths of the bits of `tuned()`, with a slower construction, and it is therefore not kept.
+of all the widths. Its gain comes from segments of different widths, which the width $w_j$
+that each segment takes from its corrections already gives in part, and
+the library does not implement the shortest path.
 
 ## 22.7 Arrays of packed fields {#sec-22-7}
 
@@ -667,15 +730,7 @@ An array of $n$ values below $2^B$ takes $n B$ bits when its fields are
 packed in words, against the $8 n$ of a byte per value. In the searches, the tables of "large" spaces of states may have $10^9$ entries and more, e.g., the pattern databases of the heuristic search ([Felner, Korf and Hanan 2004](Z-bibliography.md#ref-felner2004)), and they fit in the memory only so packed.
 `PackedArray< B >` takes the widths that divide 64, $B \in \{ 1 , 2 , 4 , 8 , 16 , 32 \}$. A word then holds $64 / B$ fields (the constant `PER`, and `MAX` is $2^B - 1$, the largest value of a field), and the field $i$ is the bits $( i \bmod 64 / B ) B$ on of the word $\lfloor i B / 64 \rfloor$. A read is one load, one shift and one mask, with no test of a field that crosses two words, which `BitVector::get( i , len )` pays for the other widths
 ([Figure 22.8](22-succinct.md#fig-22-8)). A write clears the field by a mask
-and puts the value by an or, in the same word:
-
-```cpp
---8<-- "generated/PackedArray-get.cpp"
-```
-
-```cpp
---8<-- "generated/PackedArray-set.cpp"
-```
+and puts the value by an or, in the same word.
 
 A *saturated* array (the template parameter `Saturate`) stores a value
 above $2^B - 1$ as $2^B - 1$, and counts it in `clamped()`, instead of
@@ -694,11 +749,7 @@ y = \sum_{j = 0}^{4} t_j 3^j \le 3^5 - 1 = 242 , \tag{22.13}
 $$
 
 i.e., in 1.6 bits per value, 0.015 above the entropy and one fifth less than the fields of 2 bits ([Breyer and Korf 2010](Z-bibliography.md#ref-breyer2010), whose tables keep the distances modulo 3, from which the distance of a state is recovered along a path to the goal). `TritArray` reads the digit $j = i \bmod 5$ of the byte $\lfloor i / 5 \rfloor$ from a table of the five digits of each of the 243 bytes, 1215 bytes that stay in the cache of the first level. It writes the digit by adding $( v - t_j ) 3^j$ to the byte, which by
-(22.13) changes only that digit:
-
-```cpp
---8<-- "generated/PackedArray-tritSet.cpp"
-```
+(22.13) changes only that digit.
 
 Six values would need $3^6 = 729 > 256$ codes, and $3^{40} < 2^{64} <
 3^{41}$ would put 40 values in a word, 1.6 bits each again, at the price of
@@ -729,15 +780,14 @@ numbered by the places of their bits; the data of a node go in a vector
 indexed by its number. We give three codes, which differ in the operations
 that they answer in constant time.
 
-<span id="lem-22-8"></span>**Lemma 22.8 (the binary tree of
+<span id="lem-22-11"></span>**Lemma 22.11 (the binary tree of
 Jacobson).** *Complete a binary tree of $n$ nodes with a leaf in place of
 each missing child, and write by levels a 1 for a node and a 0 for a leaf
 added, in $B[ 1 , 2 n + 1 ]$. Then the children of the $x$-th node are at
 the places $2 x$ and $2 x + 1$, and the item at the place $p$ is the
 $\mathrm{Rank}_1( p )$-th node if $B[ p ] = 1$.*
 
-*Proof.* A visit by levels lists the root at the place 1, and then the children of the nodes in the order of the nodes, two per node; hence the
-children of the first $x - 1$ nodes take the places $2 , \ldots ,
+*Proof.* A visit by levels lists the root at the place 1, and then the children of the nodes in the order of the nodes, two per node. Hence the children of the first $x - 1$ nodes take the places $2 , \ldots ,
 2 x - 1$, and those of the $x$-th one the next two. $\square$
 
 One can see that, with rank and select in $O( 1 )$ time, the left child of
@@ -749,8 +799,14 @@ $\mathrm{Select}_1( \lfloor p / 2 \rfloor )$. Hence `JacobsonTree`
 ([Jacobson 1989](Z-bibliography.md#ref-jacobson1989)) takes
 $2 n + 1 + o( n )$ bits, within $O( \log n )$ of the lower bound, with
 `left()`, `right()` and `parent()` in $O( 1 )$ time
-([Figure 22.9](22-succinct.md#fig-22-9)). In the library the nodes are numbered $0 , \ldots , n - 1$ by levels and the places from 0. Then the node $v$ is at the place $\mathrm{select}_1( v + 1 )$, its left child is the node $\mathrm{rank}_1( 2 v + 1 )$ if that place holds a 1, and its parent is
-$\lfloor ( \mathrm{select}_1( v + 1 ) + 1 ) / 2 \rfloor - 1$
+([Figure 22.9](22-succinct.md#fig-22-9)). In the library the nodes are numbered $0 , \ldots , n - 1$ by levels and
+the places from 0, i.e., the node $v$ is the $( v + 1 )$-th node and the
+place $q$ is the place $q + 1$ of Lemma 22.11. Then the node $v$ is at the
+place $\mathrm{select}_1( v + 1 )$; its left child is at the place $2 ( v
++ 1 ) - 1 = 2 v + 1$, and it is the node $\mathrm{rank}_1( 2 v + 1 )$ if
+that place holds a 1; and its parent is the $\lfloor ( \mathrm{select}_1(
+v + 1 ) + 1 ) / 2 \rfloor$-th node, i.e., the node $\lfloor (
+\mathrm{select}_1( v + 1 ) + 1 ) / 2 \rfloor - 1$
 ([Algorithm 22.13](22-succinct.md#alg-22-13)). This representation answers
 the navigation, but not the size of a subtree, which needs the order of a
 visit in depth.
@@ -773,7 +829,7 @@ writes the degree $d$ of each node, by levels, as $0^d 1$. Hence the code has $n
 one per node and the dummy root, i.e., $2 n + 1$ bits
 ([Figure 22.10](22-succinct.md#fig-22-10)).
 
-<span id="lem-22-9"></span>**Lemma 22.9.** *In the code of LOUDS, the
+<span id="lem-22-12"></span>**Lemma 22.12.** *In the code of LOUDS, the
 $k$-th 0 is the $k$-th node by levels, and the children of the $k$-th node
 are the 0s after the $( k + 1 )$-th 1. Hence, with the nodes numbered from
 0 and the places from 0,*
@@ -796,10 +852,6 @@ $p = \mathrm{select}_1( v + 1 )$, is the $( p + 1 - v )$-th 0, i.e., the
 node $p - v$. $\square$
 
 ![Figure 22.10. An ordered tree of 8 nodes, numbered by levels and, in parentheses, in preorder. Above, its code by LOUDS after the dummy root 01, the unary degree of each node bracketed; the degree of the node 1 (violet) is the 0s 6 and 7, its children 4 and 5. Below, its balanced parentheses in preorder and their excess $E$: the pair of the node 1 opens at 1 and closes at 8, the first place after 1 where the excess falls to $E( 1 ) - 1 = 1$ (dashed).](../figures/succinct-louds-bp.svg){#fig-22-10}
-
-```cpp
---8<-- "generated/LoudsTree-navigation.cpp"
-```
 
 Its functions are `leftmostChild()` and `rightSibling()`, the names of the
 TREE of the book (`ADS/tree/Tree.h`); the $i$-th child is the first one
@@ -827,15 +879,39 @@ $$
 \tag{22.15}
 $$
 
-since the parentheses strictly inside the pair of $i$ are balanced and keep
-the excess at least $E( i )$ (cf. [Figure 22.10](22-succinct.md#fig-22-10)).
-Similarly, `findOpen( j )` is $k + 1$ for the last $k < j$ with
-$E( k ) = E( j )$, and `enclose( i )`, the open parenthesis of the pair
-that encloses the one at $i$, is $k + 1$ for the last $k < i$ with
-$E( k ) = E( i ) - 2$. Since the excess moves by $\pm 1$, one can see that the first place with an excess at most a target has that very excess, and every
-operation is therefore a search for the first place, forward or backward,
-whose excess reaches a target. Note that the excess of a place is
-$E( i ) = 2 \, \mathrm{rank}_1( i + 1 ) - ( i + 1 )$, in $O( 1 )$ time.
+(cf. [Figure 22.10](22-succinct.md#fig-22-10)), and similarly for
+`findOpen()` and `enclose()`, the open parenthesis of the pair that
+encloses the one at $i$.
+
+<span id="lem-22-13"></span>**Lemma 22.13.** *In a balanced sequence of
+parentheses, (i) (22.15) gives the closed parenthesis that matches the open
+one at $i$; (ii) `findOpen( j )` is $k + 1$ for the last $k < j$ with $E( k
+) = E( j )$, and `enclose( i )` is $k + 1$ for the last $k < i$ with $E( k
+) = E( i ) - 2$; (iii) the first place after (or before) a start whose
+excess is at most a target $t$ below the excess of the start has the
+excess $t$; (iv) $E( i ) = 2 \, \mathrm{rank}_1( i + 1 ) - ( i + 1 )$.*
+
+*Proof.* (iv) Among the $i + 1$ parentheses of $B[ 0 , i ]$, the open ones
+are $\mathrm{rank}_1( i + 1 )$ and the closed ones the rest. (iii) The
+excess changes by $\pm 1$ from a place to the next, and therefore it
+cannot pass from above $t$ to below $t$ without taking the value $t$. (i)
+The parenthesis at $i$ is open, so that $E( i ) = E( i - 1 ) + 1$. The
+parentheses strictly inside its pair form a balanced sequence, whose
+prefixes have a nonnegative excess, and hence $E( j ) \ge E( i )$ inside
+the pair; the matching closed parenthesis at $c$ gives $E( c ) = E( i ) -
+1$, and $c$ is therefore the least $j > i$ with that excess. (ii) For the
+closed parenthesis at $j$ and its match at $o$, the parentheses between
+them are balanced, so that $E( o - 1 ) = E( j )$ and $E( k ) > E( j )$
+for $o \le k < j$; hence $o - 1$ is the last $k < j$ with $E( k ) = E( j
+)$. The pair that encloses the one at $i$ opens at the last place $o' < i$
+whose parenthesis is open and whose pair contains $i$. Between $o'$ and $i$
+the parentheses are balanced pairs, so that $E( i - 1 ) = E( o' )$, i.e.,
+$E( o' - 1 ) = E( i ) - 2$, and each $k$ with $o' \le k < i$ has $E( k )
+\ge E( i ) - 1$. $\square$
+
+By (iii), each operation is a search for the first place, forward or
+backward, whose excess reaches a target, and by (iv) the excess of a place
+costs $O( 1 )$ time.
 
 `BalancedParentheses` answers the searches by the range min-max tree of
 [Navarro and Sadakane 2014](Z-bibliography.md#ref-navarro2014a). It keeps,
@@ -843,9 +919,14 @@ for each leaf of 512 bits, for each group of 16 leaves and for each node of
 a complete binary tree over the groups, the total excess of its range and
 its minimum prefix excess. A search runs on the excess relative to its
 start, and needs no rank. It scans the leaf of $i$ a byte at a time, with the excess, the minimum and the place of each target of each of the 256 bytes in tables. Then it scans the leaves of the group of $i$ by their excess and minimum in 16 bits. At last it climbs the tree, whose leaves are the groups, to the first range on its side whose minimum reaches the target, and goes down to its group, its leaf and its byte
-([Algorithm 22.15](22-succinct.md#alg-22-15)). A range whose minimum stays
-above the target holds no answer, and it is skipped whole; the search thus
-takes $O( \log( n / 8192 ) + 16 + 512 / 8 )$ time, and most searches of a tree usually end in the leaf of $i$, at the cost of (usually) one miss of the cache.
+([Algorithm 22.15](22-succinct.md#alg-22-15)). A range whose minimum stays above the target holds no answer, by (iii) of
+[Lemma 22.13](22-succinct.md#lem-22-13), and it is skipped whole; the
+first range on the side of the search whose minimum reaches the target
+holds the answer, again by (iii). The search thus scans at most two leaves
+of $512 / 8$ bytes, two groups of 16 leaves, and climbs and descends the
+binary tree over the $n / 8192$ groups, i.e., $O( \log( n / 8192 ) + 16 +
+512 / 8 )$ time. In a tree, most searches end in the leaf of $i$, at the
+cost of one miss of the cache.
 
 <span id="alg-22-15"></span>**Algorithm 22.15.** The range min-max tree, and
 the forward search of `findClose()`
@@ -859,15 +940,10 @@ the forward search of `findClose()`
 
 --8<-- "generated/BalancedParentheses-enclose.pseudo.md"
 
-```cpp
---8<-- "generated/BalancedParentheses-forwardSearch.cpp"
-```
-
 In space, the tree takes $32 / 512$ bits per parenthesis for the leaves (6.25%) and
 at most $4 \cdot 128 / 8192$ for the groups, besides the directory of rank
 of `CompactRankSelect`, 3.5% of the bits, since no search needs a rank.
-`forwardSearch( i , d )` gives the first $j > i$ with
-$E( j ) - E( i ) = d < 0$, which may also be the end of a subtree of the code
+The function `forwardSearch( i , d )` gives the first $j > i$ with $E( j ) - E( i ) = d < 0$. This may also be the end of a subtree of the code
 by the degrees in depth (`ADS/dictionary/SuccinctPatriciaTrie.h`).
 [Jacobson 1989](Z-bibliography.md#ref-jacobson1989) gives `findClose()` in
 $O( \log n )$ time with the pioneers, and Munro and Raman in $O( 1 )$ time
@@ -878,7 +954,7 @@ hundred bits, the one here, is usually the fastest in practice, at least on the 
 [Grossi and Ottaviano 2013](Z-bibliography.md#ref-grossi2013)).
 
 `BPTree` numbers the nodes in preorder, the node $v$ being the
-$( v + 1 )$-th open parenthesis. `parent( v )` is `enclose()` of its open
+$( v + 1 )$-th open parenthesis. The function `parent( v )` is `enclose()` of its open
 parenthesis, `leftmostChild( v )` is $v + 1$ if the next parenthesis is an
 open one, and `rightSibling( v )` is the open parenthesis after its closed
 one, if any ([Algorithm 22.16](22-succinct.md#alg-22-16)). Furthermore,
@@ -886,7 +962,28 @@ one, if any ([Algorithm 22.16](22-succinct.md#alg-22-16)). Furthermore,
 $j$, `depth( v )` is the excess at its open parenthesis less 1, and $u$ is
 an ancestor of $v$ if $u \le v < u + \mathrm{subtreeSize}( u )$, the test
 of `isAncestor( u , v )`. These may cost a search of the range min-max tree, or a select and a rank for
-`leftmostChild()`, `depth()` and `isLeaf()`. Against LOUDS, the parentheses
+`leftmostChild()`, `depth()` and `isLeaf()`.
+
+<span id="lem-22-14"></span>**Lemma 22.14.** *With the node $v$ at the
+open parenthesis $i$ and its match at $j$, the subtree of $v$ has $( j - i +
+1 ) / 2$ nodes, numbered $v , \ldots , v + ( j - i - 1 ) / 2$ in preorder,
+the depth of $v$ is $E( i ) - 1$, and the formulas of `parent()`,
+`leftmostChild()`, `rightSibling()` and `isAncestor()` above are right.*
+
+*Proof.* The visit in depth writes the parentheses of the subtree of $v$
+between entering and leaving $v$, i.e., in $B[ i , j ]$, two per node, and
+it enters these nodes consecutively in preorder, starting from $v$. The
+open parentheses before $i$ whose match is after $i$ are those of the
+ancestors of $v$, and the others before $i$ are matched before it; hence
+$E( i - 1 )$ is the number of the proper ancestors of $v$, which is its
+depth, and $E( i ) - 1 = E( i - 1 )$. The parent of $v$ is the nearest of
+these ancestors, the pair that encloses $i$
+([Lemma 22.13](22-succinct.md#lem-22-13)); the first child of $v$, if
+any, is entered right after $v$, at $i + 1$, and it is the node $v + 1$;
+the next sibling of $v$, if any, is entered right after leaving $v$, at $j
++ 1$. Finally, $u$ is an ancestor of $v$ (or $v$ itself) if and only if $v$
+is in the subtree of $u$, i.e., $u \le v < u + \mathrm{subtreeSize}( u )$.
+$\square$ Against LOUDS, the parentheses
 give the size of a subtree, the depth and the ancestors, and number the
 nodes of a subtree consecutively (from $v$ to
 $v + \mathrm{subtreeSize}( v ) - 1$), at the price of the searches. We remark that DFUDS of [Benoit et al. 2005](Z-bibliography.md#ref-benoit2005), the degrees in unary in preorder, also gives the $i$-th child in $O( 1 )$ time with the same matching; chapter 15 of Ferragina does not treat it, and neither does the library.
@@ -911,7 +1008,7 @@ their costs, for $n$ nodes and $m$ edges.
 | `JacobsonTree` | $2 n + 1 + o( n )$ | the children and the parent of a binary tree in $O( 1 )$ |
 | `LoudsTree` | $2 n + 1 + o( n )$ | the parent, the degree, the $i$-th child and the next sibling in $O( 1 )$ |
 | `BPTree`, on `BalancedParentheses` | $2 n$, and 6.25% of them for the leaves of the range min-max tree, at most as much for its groups and 3.5% for a rank directory | also the size of a subtree, the depth and the ancestors, by a search of the excess |
-| `EliasFanoGraph` | $m ( 2 + \lceil \log_2( n^2 / m ) \rceil ) + n ( 2 + \lceil \log_2( m / n ) \rceil )$ | the outdegree and the $i$-th successor in $O( 1 )$, an edge in $O( 1 )$ expected |
+| `EliasFanoGraph` | $m ( 2 + \lceil \log_2( n^2 / m ) \rceil ) + n ( 2 + \lceil \log_2( m / n ) \rceil )$ | the outdegree and the $i$-th successor in $O( 1 )$, an edge by a `nextGEQ()` |
 | `BVGraph` | about 3 per edge on the Web graphs | a list in $O( R d )$, $R$ the longest chain of references |
 | `K2Tree` | $k^2 m ( \log_{k^2}( n^2 / m ) + O( 1 ) )$ in the worst case | an edge in $O( h )$, the successors and the predecessors of a node |
 
@@ -922,7 +1019,7 @@ Our wavelet matrix, that of [Claude, Navarro and Ordóñez 2015](Z-bibliography.
 $w$ bits in $n w$ bits plus the directories of rank and select, with the
 access, the rank and the select of any symbol in $O( w )$ time.
 
-<span id="lem-22-10"></span>**Lemma 22.10 (the wavelet matrix).** *Let the
+<span id="lem-22-15"></span>**Lemma 22.15 (the wavelet matrix).** *Let the
 level $\ell$ of $S$ hold the bit $w - 1 - \ell$ of each item, the items
 passing to the next level stably sorted by that bit, the $Z_\ell$ with a 0
 first. Then the item at the place $i$ of a level is at the place*
@@ -938,8 +1035,7 @@ of $S$, at the last level.*
 *Proof.* A stable partition by a bit sends an item to the place given by
 the items with its bit before it, which is (22.16), and keeps the order
 among the items with the same bit. By induction on the levels, the items
-that share the first $\ell$ bits stay consecutive, in the order of $S$, and
-the place of the range of $c$ at the last level depends on the bits of $c$
+that share the first $\ell$ bits stay consecutive, in the order of $S$. Also, the place of the range of $c$ at the last level depends on the bits of $c$
 alone. $\square$
 
 ![Figure 22.11. The wavelet matrix of the sequence 4 7 6 5 3 2 1 0 2 1 4 1 of 3 bits: each level holds a bit of each item (the items above the bits, in the order of the level), the 0s first at the next level; the access to the item 2, the 6 = 110 (violet), moves to the places 9 and 11 by (22.16).](../figures/succinct-waveletmatrix.svg){#fig-22-11}
@@ -948,11 +1044,7 @@ Hence `access()`, `rank()` and `select()` follow a place, or the two ends of
 a range, down the $w$ levels by (22.16), or up by the select, in $O( w )$
 time ([Figure 22.11](22-succinct.md#fig-22-11)); `rank( c , i )` follows
 the places 0 and $i$ down along the bits of $c$, and the difference at the
-last level is the answer:
-
-```cpp
---8<-- "generated/WaveletMatrix-rank.cpp"
-```
+last level is the answer.
 
 Furthermore, the $k$-th smallest item of a range, `quantile( i , j , k )`, goes down to
 the 0s or to the 1s according to how many 0s the range holds at each level,
@@ -977,6 +1069,28 @@ select, the quantile and the count of the wavelet matrix
 
 --8<-- "generated/WaveletMatrix-countLess.pseudo.md"
 
+<span id="lem-22-16"></span>**Lemma 22.16.** *For $0 \le i < j \le n$
+and $k < j - i$, `quantile( i , j , k )` returns the $k$-th smallest item
+of $S[ i .. j - 1 ]$, from 0, and `countLess( i , j , c )` the number of
+its items smaller than $c$, each with $2 w$ ranks.*
+
+*Proof.* By [Lemma 22.15](22-succinct.md#lem-22-15), before the level
+$\ell$ the range $[ i , j )$ holds exactly the items of the original range
+whose first $\ell$ bits are those chosen so far, the prefix $c$ of the result. Line 4 computes the number $z$ of those whose next bit is 0,
+which by (22.16) go to the range $[ i - i_1 , j - j_1 )$ of the next level,
+the others to $[ Z_\ell + i_1 , Z_\ell + j_1 )$. For the quantile, we keep
+the invariant that the answer is the $k$-th smallest item of the current
+range: all the items with the next bit 0 are smaller than those with the
+bit 1 and the same prefix, so that the answer has the bit 0 if and only if
+$k < z$, and otherwise it is the $( k - z )$-th of the items with the bit
+1. After $w$ levels the prefix is the whole item. For the count, an item
+of the range is smaller than $c$ if and only if, at the first bit where
+they differ, the item has 0 and $c$ has 1. At a level where $c$ has the bit 1, line 6 counts the items of the range with the bit 0, which agree
+with $c$ on the bits before and are smaller, and follows those with the
+bit 1; where $c$ has 0, the items with the bit 1 are larger and are
+dropped. The items equal to $c$ are not counted. Each level costs two
+ranks. $\square$
+
 A wavelet tree shaped by the code of Huffman
 ([Mäkinen and Navarro 2005](Z-bibliography.md#ref-makinen2005),
 `HuffmanWaveletTree`) takes $n ( H_0 + 1 )$ bits instead of $n w$, and it may be somewhat faster on a "skewed" alphabet, quite often the case of a text. We give the symbol $c$ the canonical code of Huffman of its frequency, of length $\ell_c$ (`codeLength( c )`, 0 for a symbol absent), with its bits from the highest. Our tree is the trie of the codes, and its internal node $v$,
@@ -998,7 +1112,7 @@ $k' = \mathrm{select}_b( B , \mathrm{rank}_b( B , o_v ) + k ) - o_v + 1$
 
 ![Figure 22.12. The wavelet tree of abracadabra shaped by the canonical code a 0, b 100, c 101, d 110, r 111 of its frequencies: each internal node keeps a bit for each item that reaches it (the items above the bits), and the bits of all the nodes are one vector, the nodes laid by levels.](../figures/succinct-huffmanwt.svg){#fig-22-12}
 
-<span id="lem-22-11"></span>**Lemma 22.11.** *The bits of the nodes of
+<span id="lem-22-17"></span>**Lemma 22.17.** *The bits of the nodes of
 `HuffmanWaveletTree` are $\sum_c f_c \ell_c < n ( H_0 + 1 )$, for the
 frequencies $f_c$ of the symbols.*
 
@@ -1037,18 +1151,15 @@ $$
 $$
 
 and the interval of $\pi( x )$ is found from $d_i$ forward, past the
-starts $p_j \le \pi( x )$:
-
-```cpp
---8<-- "generated/MoveStructure-move.cpp"
-```
+starts $p_j \le \pi( x )$.
 
 We say that the structure is *balanced* when no image $[ q_i , q_i + p_{i+1} - p_i )$
 holds 4 starts or more. Its construction ensures it by cutting an interval
 whose image holds 4 starts at the third of them, so that the first part
 holds 2; the new start may weigh on another image (the cut may cascade), which is checked in
-turn ([Algorithm 22.19](22-succinct.md#alg-22-19)). Then the intervals become at most $2 r$ (Nishimoto and Tabei, for this balance), and the search forward
-takes at most 3 steps; hence each step of a walk costs $O( 1 )$ time, in
+turn ([Algorithm 22.19](22-succinct.md#alg-22-19)). Then the intervals become at most $2 r$ (Nishimoto and Tabei, for this
+balance), and the search forward takes at most 3 steps
+([Lemma 22.18](22-succinct.md#lem-22-18) below); hence each step of a walk costs $O( 1 )$ time, in
 $O( r )$ words instead of the $n$ of the permutation written in full. On
 the runs of the transform of abracadabra (cf. [Table 21.7](21-compression.md#tab-21-7))
 the image of the run of a, the rows $[ 6 , 10 )$, is the rows $[ 2 , 6 )$,
@@ -1065,15 +1176,29 @@ of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021).
 
 --8<-- "generated/MoveStructure-move.pseudo.md"
 
+<span id="lem-22-18"></span>**Lemma 22.18.** *If the structure is
+balanced, `move( x , i )` with $x \in [ p_i , p_{i+1} )$ returns $\pi( x
+)$ and the interval that holds it after at most 3 iterations of line 3.*
+
+*Proof.* By (22.18), $y = \pi( x )$ lies in the image $[ q_i , q_i +
+p_{i+1} - p_i )$, which starts in the interval $d_i$. The loop moves $j$
+forward while the next start is at most $y$, and stops at the interval that holds $y$. Each start that it passes lies in $( q_i , y ]$, inside
+the image, which holds at most 3 starts by the balance. $\square$
+
+The bound of $2 r$ on the intervals after the balance is the theorem of
+[Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021) for the
+cut of an image of 4 starts, which the construction of the library
+follows.
+
 [Table 22.4](22-succinct.md#tab-22-4) summarizes the sequences of the area.
 
 <span id="tab-22-4"></span>**Table 22.4.** The sequences and their costs.
 
 | Realization | Space in bits | Access | Search |
 |---|---|---|---|
-| `EliasFano` | $n ( 2 + \lceil \log_2( u / n ) \rceil )$, plus the directory of $H$ | $O( 1 )$ | `nextGEQ()` in $O( 1 )$ expected, $O( \log c )$ for a bucket of $c$ items |
+| `EliasFano` | $n ( 2 + \lceil \log_2( u / n ) \rceil )$, plus the directory of $H$ | $O( 1 )$ | `nextGEQ()` in a $\mathrm{select}_0$ and $O( 1 + \log c )$ for a bucket of $c$ items |
 | `PartitionedEliasFano` | at most that of Elias-Fano on each block of 128 items, plus a record per block | a scan of the code of a block | `nextGEQ()` by a search of the records and the scan of a block |
-| `LAVector` | (22.12) | $O( 1 )$ expected | `nextGEQ()` in $O( w_j - \log_2 \alpha )$ once the segment is found |
+| `LAVector` | (22.12) | a lookup and a scan of the segments of $2^t$ places | `nextGEQ()` in $O( w_j - \log_2 \alpha )$ once the segment is found |
 | `WaveletMatrix` | $n w$, plus a directory per level | $O( w )$ | rank, select, quantile and range counts in $O( w )$ |
 | `HuffmanWaveletTree` | less than $n ( H_0 + 1 )$, plus the directory and $O( \sigma )$ words | $O( \ell_c )$, $H_0 + 1$ on average | rank and select of $c$ in $O( \ell_c )$ |
 | `MoveStructure` | $O( r )$ words for a permutation of $r$ intervals | the image of a place and its interval in $O( 1 )$ | the interval of a place by a binary search |
@@ -1087,8 +1212,8 @@ m \log_2( n^2 / m )$ bits for a graph with no regularity.
 representation of the adjacency lists of large graphs in Unicorn
 ([Curtiss et al. 2013](Z-bibliography.md#ref-curtiss2013)) and in the
 quasi-succinct indices of [Vigna 2013](Z-bibliography.md#ref-vigna2013).
-Hence the outdegree and the $i$-th successor are accesses, in $O( 1 )$ time, and
-an edge is a `nextGEQ()`, in $O( 1 )$ expected time
+Hence the outdegree and the $i$-th successor are accesses, in $O( 1 )$
+time, and an edge $( u , v )$ is the test of `nextGEQ( u n + v )`
 ([Algorithm 22.20](22-succinct.md#alg-22-20)).
 
 ![Figure 22.14. (a) The lists of a graph of 4 nodes as the sequence of the integers $u n + v$ and the sequence of the starts of the lists; the list of 2 is the items 3 and 4 (violet). (b) The list of the node 16 of [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004) coded by reference to that of the node 15: the copy bits of the reference (the items copied in violet), the extra nodes (orange), and the fields of its code with $L_{\min} = 2$.](../figures/succinct-graphs.svg){#fig-22-14}
@@ -1098,7 +1223,7 @@ graph in Elias-Fano.
 
 --8<-- "generated/EliasFanoGraph-build.pseudo.md"
 
-<span id="lem-22-12"></span>**Lemma 22.12.** *Coding each list apart, in the universe of the list, takes*
+<span id="lem-22-19"></span>**Lemma 22.19.** *Coding each list apart, in the universe of the list, takes*
 
 $$
 \sum_u d_u \log_2 \frac{n}{d_u} \le m \log_2 \frac{n^2}{m} \tag{22.19}
@@ -1119,8 +1244,7 @@ same $O( 1 )$ access. Neither exploits the locality and the similarity of
 the lists of the Web, which the codes of
 [Boldi and Vigna 2004](Z-bibliography.md#ref-boldi2004) do. With the pages
 sorted by URL, most links stay in the host (*locality*), and the pages of a
-host link to the same pages (*similarity*). `BVGraph` codes the list of $x$ as its outdegree, in $\gamma$, followed by the *reference* $r$: the list of $x - r$, among the previous $W$ lists, that shares the most successors with that of $x$ (0 for none). Then comes the *copy list* of the reference, a bit per successor of $x - r$ that records whether it is a successor of $x$ too. It is written as *copy blocks*, i.e., its first bit and the lengths less 1 of its runs, the last one omitted since the outdegree of the reference implies it. Next come the successors not copied, the *extra nodes*: the runs of at
-least $L_{\min}$ consecutive integers as intervals (each an `Interval`, its
+host link to the same pages (*similarity*). `BVGraph` codes the list of $x$ as its outdegree, in $\gamma$, followed by the *reference* $r$: the list of $x - r$, among the previous $W$ lists, that shares the most successors with that of $x$ (0 for none). Then comes the *copy list* of the reference, a bit per successor of $x - r$ that records whether it is a successor of $x$ too. It is written as *copy blocks*, i.e., its first bit and the lengths less 1 of its runs, the last one omitted since the outdegree of the reference implies it. Next come the successors not copied, the *extra nodes*. These are the runs of at least $L_{\min}$ consecutive integers as intervals (each an `Interval`, its
 left extreme and its length), and the *residuals* as
 gaps less 1, the first ones of each relative to $x$ by `signedToNatural()`
 ([Algorithm 22.21](22-succinct.md#alg-22-21)).
@@ -1147,14 +1271,14 @@ by the $\zeta$ codes, tuned to their power-law distribution, and reorders
 the nodes (e.g., by the layered label propagation of
 [Boldi et al. 2011](Z-bibliography.md#ref-boldi2011)) to make the locality
 stronger; neither is in chapter 15 of Ferragina, nor in the library.
-`copyList()`, `copyBlocks()`, `intervals()` and `residualGaps()` are the
+The functions `copyList()`, `copyBlocks()`, `intervals()` and `residualGaps()` are the
 steps of the coding, given for the examples of that chapter.
 
 The $k^2$-tree of [Brisaboa, Ladra and Navarro 2014](Z-bibliography.md#ref-brisaboa2014) (`K2Tree`) splits the adjacency matrix, padded to the side $N = k^h \ge n$, into $k^2$ submatrices of side $N / k$. Each one is a child of the root, marked 1 if it has an edge and 0 otherwise, and each child marked 1 is split again, down to the cells. We write the marks by levels: $T$ has those of all
 the levels but the last, and $L$ those of the cells
 ([Figure 22.15](22-succinct.md#fig-22-15)).
 
-<span id="lem-22-13"></span>**Lemma 22.13.** *The children of the node
+<span id="lem-22-20"></span>**Lemma 22.20.** *The children of the node
 marked at the place $p$ of $T$ start at the place
 $k^2 \, \mathrm{rank}_1( T , p + 1 )$ of $T$ followed by $L$.*
 
@@ -1166,9 +1290,8 @@ they start at $k^2 j$, with $j = \mathrm{rank}_1( T , p + 1 )$. $\square$
 
 ![Figure 22.15. The adjacency matrix of a graph of 8 nodes and 7 edges split by $k = 2$ (the grey lines), and its marks by levels $T$ and $L$, in groups of $k^2 = 4$; `hasEdge( 5 , 5 )` follows the places 3, 8 and 23 (violet).](../figures/succinct-k2tree.svg){#fig-22-15}
 
-Hence no pointer is stored, as in LOUDS, and one can walk the tree by ranks only. `hasEdge( u , v )` follows one path, in $O( h )$ time. `neighbors( u )` walks down the children that cross
-the row $u$, $k$ of the $k^2$ at each level, and `reverseNeighbors( v )`
-those that cross the column $v$, and the same bits therefore give the
+Hence no pointer is stored, as in LOUDS, and one can walk the tree by ranks only. The function `hasEdge( u , v )` follows one path, in $O( h )$ time. The function `neighbors( u )` walks down the children that cross
+the row $u$, $k$ of the $k^2$ at each level. Similarly, `reverseNeighbors( v )` walks down those that cross the column $v$, and the same bits therefore give the
 successors and the predecessors, which the lists give only by doubling
 them ([Algorithm 22.22](22-succinct.md#alg-22-22)).
 
@@ -1181,10 +1304,6 @@ of an edge ([Brisaboa, Ladra and Navarro 2014](Z-bibliography.md#ref-brisaboa201
 --8<-- "generated/K2Tree-neighbors.pseudo.md"
 
 --8<-- "generated/K2Tree-hasEdge.pseudo.md"
-
-```cpp
---8<-- "generated/K2Tree-hasEdge.cpp"
-```
 
 A row is read in $O( \sqrt{m} )$ time on average for $m$ edges spread
 uniformly, and in $O( n )$ in the worst case. Each edge sets at most $k^2$ marks per level, and below the level where the submatrices outnumber the edges these marks are distinct. This gives the bound
@@ -1215,11 +1334,28 @@ of the directories of `RankSelect` and of `CompactRankSelect`.
 
 --8<-- "generated/CompactRankSelect-directory.pseudo.md"
 
+<span id="lem-22-21"></span>**Lemma 22.21.** *The directories of
+[Algorithm 22.23](22-succinct.md#alg-22-23) are those of the sequential
+scan, with $O( m / 64 )$ words of work besides the samples of select.*
+
+*Proof.* The entry of a block depends only on its words and on the 1s
+before it. The first pass counts the 1s of each chunk, and the prefix sums
+of the counts give the 1s before each chunk; the second pass, from that
+count, adds the 1s of the blocks of the chunk in order, as the sequential
+scan does from the start. A count of the top level is the number of the
+1s before its top block, which is the $c_k$ of the chunk that starts there. Indeed, the chunks are a power of 2 of blocks, so that a top block either holds
+whole chunks, the first of which starts at it, or lies inside one chunk,
+which writes its count while it scans. The first place of a group of select
+and the offsets of its sampled bits are functions of the bits, which the
+two passes over the chunks find from the entries by a select in a word
+([Lemma 22.2](22-succinct.md#lem-22-2)). Each pass reads each word $O( 1
+)$ times. $\square$
+
 We build the wavelet matrix faster, also on one thread, by a property of
 its levels that lets one pass over the items write several levels.
 
-<span id="lem-22-14"></span>**Lemma 22.14 (the levels by the reversed
-prefixes).** *In the wavelet matrix of [Lemma 22.10](22-succinct.md#lem-22-10),
+<span id="lem-22-22"></span>**Lemma 22.22 (the levels by the reversed
+prefixes).** *In the wavelet matrix of [Lemma 22.15](22-succinct.md#lem-22-15),
 let $b_j( c )$ be the bit at the level $\ell + j$ of the item $c$, and*
 
 $$
@@ -1231,10 +1367,13 @@ $$
 one. Then the order of the items at the level $\ell + j$ is the stable sort
 of their order at the level $\ell$ by $\kappa_j$.*
 
-*Proof.* Clearly, the level $\ell + j$ is reached by $j$ stable partitions by the bits $b_0 , \ldots , b_{j-1}$, the last by $b_{j-1}$. This is the radix sort
-of the least significant digit first by the key whose most significant bit
-is $b_{j-1}$, i.e., $\kappa_j$. In fact, the same key orders the stable sort, and both
-keep the order of the level $\ell$ among the items of equal key. $\square$
+*Proof.* By [Lemma 22.15](22-succinct.md#lem-22-15), the order at the
+level $\ell + j$ comes from the order at the level $\ell$ by $j$ stable
+partitions, by the bits $b_0 , \ldots , b_{j-1}$ in this order. A sequence
+of stable partitions by the bits of a key, from the least significant to
+the most significant one, is the radix sort of the least significant digit first, which sorts stably by the key. Here the key has $b_{j-1}$ as its
+most significant bit and $b_0$ as its least significant one, i.e., it is
+$\kappa_j$. $\square$
 
 Hence the place of an item $c$ at the level $\ell + j$ is
 
@@ -1246,7 +1385,7 @@ $$
 with $P_j[ a ]$ the items whose key is below $a$, and $Z_{\ell + j}$ is the
 number of the items with $b_j = 0$; both are sums of the counts of the $2^k$
 values of $\kappa_k$, from which each $\kappa_j = \kappa_k \bmod 2^j$
-follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.10](22-succinct.md#lem-22-10)
+follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.15](22-succinct.md#lem-22-15)
 moves them $k$ times, once per level. With $k \le 8$ this is $\lceil w / 8 \rceil$ passes over the items instead of $w$, the bits being written into $2^k - 1$ streams, one per value of $\kappa_j$ for each $j < k$. We recognize here the sort by the prefixes of the bits of
 [Dinklage, Ellert, Fischer, Kurpicz and Löbel 2021](Z-bibliography.md#ref-dinklage2021),
 applied to $k$ levels at a time ([Algorithm 22.24](22-succinct.md#alg-22-24)).
@@ -1271,7 +1410,7 @@ parallel construction of the wavelet tree of Huffman.
 
 We build the wavelet tree of Huffman in slices too. Here the counts of the symbols of each slice give the place of each slice in each node of the trie
 of the codes, and each slice writes the bits of its items along their codes
-into a stream per node, with no item moved. A stream gathers its bits into a word and stores the word when it is full; the store is plain when the word is inside its range, and an atomic or when the word is at one of its ends, which it may share with the stream of another slice (the words are 0 at first, and only the 1s are written; cf. the class `BitRuns` of `BitVector.h`). On one
+into a stream per node, with no item moved. A stream gathers its bits into a word and stores the word when it is full. The store is plain when the word is inside its range, and an atomic or when the word is at one of its ends, which it may share with the stream of another slice (the words are 0 at first, and only the 1s are written; cf. the class `BitRuns` of `BitVector.h`). On one
 thread the tree is built by the sequential scan, which writes each bit at
 its place. In all, the work is $O( n w )$ bits, $O( n w / 64 )$ words copied and
 $O( n \lceil w / 8 \rceil )$ moves of items for the matrix, or
@@ -1279,7 +1418,526 @@ $O( \sum_c f_c \ell_c )$ bits for the tree, plus $O( q 2^k )$ counts for
 $q$ slices ($O( q \sigma )$ for the tree, whose slices therefore hold at
 least $\sigma$ items each), and the depth is that of a slice. The other parallel constructions of the literature ([Shun 2015](Z-bibliography.md#ref-shun2015wt); [Dinklage, Fischer, Kurpicz and Tarnowski 2023](Z-bibliography.md#ref-dinklage2023)) trade the passes against the memory in other ways, and we leave the comparison to Appendix B.
 
-## 22.12 Discussion and references {#sec-22-12}
+## 22.12 The interface {#sec-22-12}
+
+We collect here, header by header, the declarations of the namespace `ADS`
+that a user calls in this chapter, without the contracts, the documentation
+and the members that only the implementation uses; each block points to the
+section that describes its functions, and the example at the end shows the
+main structures at work. The program of the example compiles against the
+headers as it stands, and its assertions hold.
+
+`BalancedParentheses.h` ([§22.8](22-succinct.md#sec-22-8)).
+
+```cpp
+class BalancedParentheses { public:
+ static constexpr std::size_t nil = std::size_t( -1 );
+ BalancedParentheses( void );
+ explicit BalancedParentheses( BitVector b );
+ std::size_t size( void ) const;
+ bool operator[]( std::size_t i ) const;
+ std::int64_t excess( std::size_t i ) const;
+ std::size_t findClose( std::size_t i ) const;
+ std::size_t forwardSearch( std::size_t i , std::int64_t d ) const;
+ std::size_t findOpen( std::size_t j ) const;
+ std::size_t enclose( std::size_t i ) const;
+ const CompactRankSelect & bits( void ) const;
+ std::size_t treeBits( void ) const;
+ };
+```
+
+`BitStream.h` ([§22.2](22-succinct.md#sec-22-2)).
+
+```cpp
+class BitWriter { public:
+ BitWriter( void ) = default;
+ std::size_t size( void ) const;
+ void writeBit( bool b );
+ void write( Word v , int len );
+ void writeBinary( Word v , int len );
+ void writeUnary( std::uint64_t q );
+ const BitVector & bits( void ) const;
+ BitVector release( void );
+ };
+class BitReader { public:
+ explicit BitReader( const BitVector & b , std::size_t p = 0 );
+ std::size_t position( void ) const;
+ void seek( std::size_t p );
+ bool atEnd( void ) const;
+ bool readBit( void );
+ Word read( int len );
+ Word readBinary( int len );
+ std::uint64_t readUnary( void );
+ };
+```
+
+`BitVector.h` ([§22.11](22-succinct.md#sec-22-11)).
+
+```cpp
+using Words = std::vector< Word , detail::LineAllocator< Word > >;
+constexpr int selectInWord( Word x , int k );
+template< class O , class T >
+class SubscriptIterator;   // random access, *it reads ( *o )[ i ]
+class BitVector { public:
+ BitVector( void ) = default;
+ explicit BitVector( std::size_t n , bool b = false );
+ explicit BitVector( std::string_view s );
+ BitVector( std::span< const Word > w , std::size_t n );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ bool operator[]( std::size_t i ) const;
+ void set( std::size_t i , bool b = true );
+ void push_back( bool b );
+ void append( Word v , int len );
+ Word get( std::size_t i , int len ) const;
+ void put( std::size_t i , Word v , int len );
+ std::size_t count( void ) const;
+ const Words & words( void ) const;
+ std::string toString( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ using const_iterator = SubscriptIterator< BitVector , bool >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+```
+
+`BPTree.h` ([§22.8](22-succinct.md#sec-22-8)).
+
+```cpp
+class BPTree { public:
+ static constexpr std::size_t nil = std::size_t( -1 );
+ BPTree( void ) = default;
+ explicit BPTree( const std::vector< std::vector< std::size_t > > & c );
+ explicit BPTree( BitVector b );
+ std::size_t size( void ) const;
+ std::size_t root( void ) const;
+ std::size_t parent( std::size_t v ) const;
+ std::size_t leftmostChild( std::size_t v ) const;
+ std::size_t rightSibling( std::size_t v ) const;
+ std::size_t degree( std::size_t v ) const;
+ std::size_t subtreeSize( std::size_t v ) const;
+ std::size_t depth( std::size_t v ) const;
+ bool isAncestor( std::size_t u , std::size_t v ) const;
+ bool isLeaf( std::size_t v ) const;
+ const BalancedParentheses & parentheses( void ) const;
+ };
+```
+
+`BVGraph.h` ([§22.10](22-succinct.md#sec-22-10)).
+
+```cpp
+class BVGraph { public:
+ using List = std::vector< std::size_t >;
+ using Interval = std::pair< std::size_t , std::size_t >;
+ BVGraph( void ) = default;
+ explicit BVGraph( const std::vector< List > & a , std::size_t w = 7 ,
+     std::size_t r = 3 , std::size_t lmin = 4 );
+ std::size_t order( void ) const;
+ std::size_t edges( void ) const;
+ std::size_t outdegree( std::size_t x ) const;
+ List successors( std::size_t x ) const;
+ std::size_t reference( std::size_t x ) const;
+ std::size_t codeBits( void ) const;
+ std::size_t sizeInBits( void ) const;
+ static BitVector copyList( const List & s , const List & ref );
+ static std::pair< bool ,
+     std::vector< std::size_t > > copyBlocks( const BitVector & c );
+ static std::pair< std::vector< Interval > ,
+     List > intervals( const List & e , std::size_t lmin );
+ static std::vector< std::uint64_t > residualGaps( const List & res ,
+     std::size_t x );
+ };
+```
+
+`CompactRankSelect.h` ([§22.1](22-succinct.md#sec-22-1)).
+
+```cpp
+class CompactRankSelect { public:
+ CompactRankSelect( void );
+ explicit CompactRankSelect( BitVector b );
+ CompactRankSelect( std::span< const Word > w , std::size_t n );
+ template< Executor E > CompactRankSelect( E & ex , BitVector b );
+ template< Executor E >
+ CompactRankSelect( E & ex , std::span< const Word > w , std::size_t n );
+ const BitVector & bits( void ) const;
+ std::size_t size( void ) const;
+ bool operator[]( std::size_t i ) const;
+ std::size_t ones( void ) const;
+ std::size_t zeros( void ) const;
+ std::size_t rank1( std::size_t i ) const;
+ std::size_t rank0( std::size_t i ) const;
+ std::size_t select1( std::size_t k ) const;
+ std::size_t select0( std::size_t k ) const;
+ std::size_t directoryBits( void ) const;
+ using const_iterator = SubscriptIterator< CompactRankSelect , bool >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+```
+
+`EliasFanoGraph.h` ([§22.10](22-succinct.md#sec-22-10)).
+
+```cpp
+class EliasFanoGraph { public:
+ EliasFanoGraph( void ) = default;
+ explicit EliasFanoGraph( const std::vector< std::vector< std::size_t > > &
+     a );
+ std::size_t order( void ) const;
+ std::size_t edges( void ) const;
+ std::size_t outdegree( std::size_t u ) const;
+ std::size_t successor( std::size_t u , std::size_t i ) const;
+ std::vector< std::size_t > successors( std::size_t u ) const;
+ bool hasEdge( std::size_t u , std::size_t v ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`EliasFano.h` ([§22.6](22-succinct.md#sec-22-6)).
+
+```cpp
+template< bool Lazy > class BasicEliasFano { public:
+ BasicEliasFano( void ) = default;
+ explicit BasicEliasFano( const std::vector< std::uint64_t > & x );
+ BasicEliasFano( const std::vector< std::uint64_t > & x , std::uint64_t u );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::uint64_t universe( void ) const;
+ std::uint64_t access( std::size_t i ) const;
+ std::uint64_t operator[]( std::size_t i ) const;
+ std::size_t nextGEQ( std::uint64_t x ) const;
+ bool contains( std::uint64_t x ) const;
+ int lowWidth( void ) const;
+ const BitVector & low( void ) const;
+ const BasicRankSelect< Lazy > & high( void ) const;
+ std::size_t codeBits( void ) const;
+ std::size_t sizeInBits( void ) const;
+ std::vector< std::uint64_t > decode( void ) const;
+ using const_iterator = SubscriptIterator< BasicEliasFano , std::uint64_t >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+using EliasFano = BasicEliasFano< false >;
+using LazyEliasFano = BasicEliasFano< true >;
+```
+
+`HuffmanWaveletTree.h` ([§22.6](22-succinct.md#sec-22-6)).
+
+```cpp
+template< class RS = RankSelect > class HuffmanWaveletTree { public:
+ HuffmanWaveletTree( void ) = default;
+ explicit HuffmanWaveletTree( std::span< const std::uint32_t > x ,
+     bool withSelect = true );
+ template< Executor E >
+ HuffmanWaveletTree( E & ex , std::span< const std::uint32_t > x ,
+     bool withSelect = true );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t sigma( void ) const;
+ std::uint32_t access( std::size_t i ) const;
+ std::uint32_t operator[]( std::size_t i ) const;
+ std::pair< std::uint32_t , std::size_t > accessRank( std::size_t i ) const;
+ std::size_t rank( std::uint32_t c , std::size_t i ) const;
+ std::pair< std::size_t , std::size_t > rank( std::uint32_t c ,
+     std::size_t i , std::size_t j ) const;
+ std::size_t select( std::uint32_t c , std::size_t k ) const;
+ int codeLength( std::uint32_t c ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`InterleavedRankSelect.h` ([§22.1](22-succinct.md#sec-22-1)).
+
+```cpp
+class InterleavedRankSelect { public:
+ InterleavedRankSelect( void );
+ explicit InterleavedRankSelect( const BitVector & b );
+ InterleavedRankSelect( std::span< const Word > w , std::size_t n );
+ std::size_t size( void ) const;
+ std::size_t ones( void ) const;
+ std::size_t zeros( void ) const;
+ bool operator[]( std::size_t i ) const;
+ std::size_t rank1( std::size_t i ) const;
+ std::size_t rank0( std::size_t i ) const;
+ std::size_t select1( std::size_t k ) const;
+ std::size_t select0( std::size_t k ) const;
+ std::size_t directoryBits( void ) const;
+ };
+```
+
+`JacobsonTree.h` ([§22.8](22-succinct.md#sec-22-8)).
+
+```cpp
+class JacobsonTree { public:
+ static constexpr std::size_t nil = std::size_t( -1 );
+ JacobsonTree( void );
+ explicit JacobsonTree( const std::vector< std::pair< std::size_t ,
+     std::size_t > > & c );
+ explicit JacobsonTree( BitVector b );
+ std::size_t size( void ) const;
+ std::size_t root( void ) const;
+ std::size_t left( std::size_t v ) const;
+ std::size_t right( std::size_t v ) const;
+ std::size_t parent( std::size_t v ) const;
+ bool isLeaf( std::size_t v ) const;
+ const BitVector & bits( void ) const;
+ };
+```
+
+`K2Tree.h` ([§22.10](22-succinct.md#sec-22-10)).
+
+```cpp
+class K2Tree { public:
+ using Edge = std::pair< std::size_t , std::size_t >;
+ K2Tree( void ) = default;
+ K2Tree( std::size_t n , const std::vector< Edge > & e ,
+     std::size_t k = 2 );
+ std::size_t order( void ) const;
+ std::size_t edges( void ) const;
+ std::vector< std::size_t > neighbors( std::size_t u ) const;
+ std::vector< std::size_t > reverseNeighbors( std::size_t v ) const;
+ bool hasEdge( std::size_t u , std::size_t v ) const;
+ const BitVector & levels( void ) const;
+ const BitVector & leaves( void ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`LAVector.h` ([§22.6](22-succinct.md#sec-22-6)).
+
+```cpp
+class LAVector { public:
+ LAVector( void ) = default;
+ explicit LAVector( const std::vector< std::uint64_t > & x , int c = 7 );
+ static LAVector tuned( const std::vector< std::uint64_t > & x );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ int correctionBits( void ) const;
+ std::size_t segments( void ) const;
+ std::uint64_t access( std::size_t i ) const;
+ std::uint64_t operator[]( std::size_t i ) const;
+ std::uint64_t select( std::size_t k ) const;
+ std::size_t nextGEQ( std::uint64_t x ) const;
+ std::size_t rank( std::uint64_t x ) const;
+ bool contains( std::uint64_t x ) const;
+ std::size_t correctionsInBits( void ) const;
+ std::size_t sizeInBits( void ) const;
+ std::vector< std::uint64_t > decode( void ) const;
+ using const_iterator = SubscriptIterator< LAVector , std::uint64_t >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+```
+
+`LoudsTree.h` ([§22.8](22-succinct.md#sec-22-8)).
+
+```cpp
+class LoudsTree { public:
+ static constexpr std::size_t nil = std::size_t( -1 );
+ LoudsTree( void );
+ explicit LoudsTree( const std::vector< std::vector< std::size_t > > & c );
+ explicit LoudsTree( BitVector b );
+ std::size_t size( void ) const;
+ std::size_t root( void ) const;
+ std::size_t degree( std::size_t v ) const;
+ std::size_t parent( std::size_t v ) const;
+ std::size_t leftmostChild( std::size_t v ) const;
+ std::size_t rightSibling( std::size_t v ) const;
+ std::size_t child( std::size_t v , std::size_t i ) const;
+ bool isLeaf( std::size_t v ) const;
+ const BitVector & bits( void ) const;
+ };
+```
+
+`MoveStructure.h` ([§22.10](22-succinct.md#sec-22-10)).
+
+```cpp
+class MoveStructure { public:
+ MoveStructure( void ) = default;
+ MoveStructure( std::span< const std::uint64_t > p ,
+     std::span< const std::uint64_t > q ,
+     std::span< const std::uint32_t > tag , std::uint64_t n );
+ std::size_t intervals( void ) const;
+ std::uint64_t size( void ) const;
+ std::uint64_t start( std::size_t i ) const;
+ std::uint32_t tag( std::size_t i ) const;
+ std::pair< std::uint64_t , std::size_t > move( std::uint64_t x ,
+     std::size_t i ) const;
+ std::size_t interval( std::uint64_t x ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`PackedArray.h` ([§22.2](22-succinct.md#sec-22-2)).
+
+```cpp
+template< unsigned B , bool Saturate = false > class PackedArray { public:
+ using Word = std::uint64_t;
+ static constexpr std::size_t PER = 64 / B;
+ static constexpr Word MAX = ( Word( 1 ) << B ) - 1;
+ PackedArray( void ) = default;
+ explicit PackedArray( std::size_t n , Word v = 0 );
+ template< Executor E , class F >
+ PackedArray( E & ex , std::size_t n , F && f );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ Word get( std::size_t i ) const;
+ Word operator[]( std::size_t i ) const;
+ bool set( std::size_t i , Word v );
+ void push_back( Word v );
+ std::size_t clamped( void ) const;
+ const std::vector< Word > & words( void ) const;
+ std::size_t bytes( void ) const;
+ friend bool operator==( const PackedArray & a , const PackedArray & b );
+ };
+class TritArray { public:
+ TritArray( void ) = default;
+ explicit TritArray( std::size_t n , unsigned v = 0 );
+ template< Executor E , class F >
+ TritArray( E & ex , std::size_t n , F && f );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ unsigned get( std::size_t i ) const;
+ unsigned operator[]( std::size_t i ) const;
+ void set( std::size_t i , unsigned v );
+ void push_back( unsigned v );
+ const std::vector< std::uint8_t > & data( void ) const;
+ std::size_t bytes( void ) const;
+ friend bool operator==( const TritArray & a , const TritArray & b );
+ };
+```
+
+`PartitionedEliasFano.h` ([§22.6](22-succinct.md#sec-22-6)).
+
+```cpp
+class PartitionedEliasFano { public:
+ PartitionedEliasFano( void ) = default;
+ explicit PartitionedEliasFano( std::span< const std::uint64_t > x );
+ PartitionedEliasFano( std::span< const std::uint64_t > x ,
+     std::uint64_t u );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::uint64_t universe( void ) const;
+ std::uint64_t access( std::size_t i ) const;
+ std::uint64_t operator[]( std::size_t i ) const;
+ std::size_t nextGEQ( std::uint64_t x ) const;
+ bool contains( std::uint64_t x ) const;
+ std::array< std::size_t , 3 > kinds( void ) const;
+ std::size_t sizeInBits( void ) const;
+ using const_iterator = SubscriptIterator< PartitionedEliasFano ,
+     std::uint64_t >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+```
+
+`RankSelect.h` ([§22.1](22-succinct.md#sec-22-1)).
+
+```cpp
+struct RankSelectOptions {
+ enum class Selects { NONE , ONES , ZEROS , BOTH };
+ };
+template< bool Lazy >
+class BasicRankSelect : public RankSelectOptions { public:
+ BasicRankSelect( void );
+ explicit BasicRankSelect( BitVector b , Selects s = Selects::BOTH );
+ BasicRankSelect( std::span< const Word > w , std::size_t n ,
+     Selects s = Selects::BOTH );
+ template< Executor E >
+ BasicRankSelect( E & ex , BitVector b , Selects s = Selects::BOTH );
+ template< Executor E >
+ BasicRankSelect( E & ex , std::span< const Word > w , std::size_t n ,
+     Selects s = Selects::BOTH );
+ const BitVector & bits( void ) const;
+ std::size_t size( void ) const;
+ bool operator[]( std::size_t i ) const;
+ std::size_t ones( void ) const;
+ std::size_t zeros( void ) const;
+ std::size_t rank1( std::size_t i ) const;
+ std::size_t rank0( std::size_t i ) const;
+ std::size_t select1( std::size_t k ) const;
+ std::size_t select0( std::size_t k ) const;
+ std::size_t directoryBits( void ) const;
+ using const_iterator = SubscriptIterator< BasicRankSelect , bool >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+using RankSelect = BasicRankSelect< false >;
+using LazyRankSelect = BasicRankSelect< true >;
+```
+
+`RRRBitVector.h` ([§22.1](22-succinct.md#sec-22-1)).
+
+```cpp
+class RRRBitVector { public:
+ RRRBitVector( void );
+ explicit RRRBitVector( const BitVector & b );
+ std::size_t size( void ) const;
+ std::size_t ones( void ) const;
+ std::size_t zeros( void ) const;
+ bool operator[]( std::size_t i ) const;
+ std::size_t rank1( std::size_t i ) const;
+ std::size_t rank0( std::size_t i ) const;
+ std::size_t select1( std::size_t k ) const;
+ std::size_t select0( std::size_t k ) const;
+ std::size_t sizeInBits( void ) const;
+ };
+```
+
+`WaveletMatrix.h` ([§22.6](22-succinct.md#sec-22-6)).
+
+```cpp
+class WaveletMatrix { public:
+ WaveletMatrix( void ) = default;
+ explicit WaveletMatrix( std::span< const std::uint64_t > x , int w = 0 );
+ template< Executor E >
+ WaveletMatrix( E & ex , std::span< const std::uint64_t > x , int w = 0 );
+ template< class U >   // U is std::uint8_t, std::uint16_t or std::uint32_t
+ explicit WaveletMatrix( std::span< const U > x , int w = 0 );
+ template< Executor E , class U >
+ WaveletMatrix( E & ex , std::span< const U > x , int w = 0 );
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ int width( void ) const;
+ std::uint64_t access( std::size_t i ) const;
+ std::uint64_t operator[]( std::size_t i ) const;
+ std::size_t rank( std::uint64_t c , std::size_t i ) const;
+ std::size_t select( std::uint64_t c , std::size_t k ) const;
+ std::uint64_t quantile( std::size_t i , std::size_t j ,
+     std::size_t k ) const;
+ std::size_t countLess( std::size_t i , std::size_t j ,
+     std::uint64_t c ) const;
+ std::size_t sizeInBits( void ) const;
+ using const_iterator = SubscriptIterator< WaveletMatrix , std::uint64_t >;
+ const_iterator begin( void ) const;
+ const_iterator end( void ) const;
+ };
+```
+
+
+```cpp
+#include "ADS/succinct/BPTree.h"
+#include "ADS/succinct/EliasFano.h"
+#include "ADS/succinct/RankSelect.h"
+#include "ADS/succinct/WaveletMatrix.h"
+#include <cassert>
+
+int main( void )
+{
+ const ADS::RankSelect b( ADS::BitVector( "0110100111" ) );   // bit 0 first
+ assert( ( b.rank1( 5 ) == 3 ) && ( b.select1( 3 ) == 4 ) );
+ const ADS::EliasFano ef( { 3 , 4 , 7 , 13 , 14 , 15 , 21 , 43 } );
+ assert( ( ef.access( 3 ) == 13 ) && ( ef[ ef.nextGEQ( 16 ) ] == 21 ) );
+ const std::vector< std::uint64_t > x = { 3 , 1 , 4 , 1 , 5 , 9 , 2 , 6 };
+ const ADS::WaveletMatrix wm( x );
+ assert( ( wm.rank( 1 , 4 ) == 2 ) && ( wm.quantile( 2 , 6 , 0 ) == 1 ) );
+ const ADS::BPTree t( { { 1 , 2 } , { 3 } , {} , {} } );   // the children
+ assert( ( t.degree( t.root() ) == 2 ) &&
+         ( t.subtreeSize( t.root() ) == 4 ) );
+ }
+```
+
+## 22.13 Discussion and references {#sec-22-13}
 
 The rank and the select in $o( m )$ bits are those of
 [Jacobson 1989](Z-bibliography.md#ref-jacobson1989) and
@@ -1315,7 +1973,7 @@ costs or gains, against the libraries of reference (e.g., the SDSL of
 [Gog, Beller, Moffat and Petri 2014](Z-bibliography.md#ref-gog2014b)), is
 measured by the campaign of Appendix B, and no number is given here.
 
-## 22.13 Exercises {#sec-22-13}
+## 22.14 Exercises {#sec-22-14}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -1344,7 +2002,7 @@ Each exercise names the test of the library that solves it (run it with
    combinatorial number system. Test:
    `engineered_succinct.rrr-bit-vector`.
 7. Realize Elias-Fano with `access()` and `nextGEQ()`
-   ([Lemma 22.5](22-succinct.md#lem-22-5)), its partitioned form, and the
+   ([Lemma 22.8](22-succinct.md#lem-22-8)), its partitioned form, and the
    LA-vector. Tests: `pearls_succinct.elias-fano`,
    `engineered_succinct.partitioned-elias-fano`,
    `engineered_succinct.la-vector`.
@@ -1352,7 +2010,7 @@ Each exercise names the test of the library that solves it (run it with
    arrays of trits five to a byte, built on several threads. Tests:
    `engineered_search.packed-array`, `engineered_search.trit-array`.
 9. Realize the binary tree of Jacobson, the tree of LOUDS
-   ([Lemma 22.9](22-succinct.md#lem-22-9)), the balanced parentheses with
+   ([Lemma 22.12](22-succinct.md#lem-22-12)), the balanced parentheses with
    the range min-max tree and the tree on them. Tests:
    `pearls_succinct.jacobson-tree`, `pearls_succinct.louds-tree`,
    `pearls_succinct.balanced-parentheses`, `pearls_succinct.bp-tree`.

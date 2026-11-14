@@ -98,7 +98,6 @@ bool subsetSumDP( const std::vector< long > & A , long k ,
   if( rows ) rows->resize( rows->size() + A.size() + 1 );
   return( false );
   }
-//! [subsetSumDP]
  const std::size_t K = std::size_t( k ) + 1;
  Bits M( K );                           // all false
  detail::setBit( M , 0 , true );
@@ -109,7 +108,6 @@ bool subsetSumDP( const std::vector< long > & A , long k ,
                    M[ std::size_t( j - a ) ] || M[ std::size_t( j ) ] );
   if( rows ) rows->push_back( detail::bitsOf( M , K ) );
   }
-//! [subsetSumDP]
  ADS_POST( ! rows || ( rows->size() == A.size() + 1 ) );
  return( M[ std::size_t( k ) ] );
  }

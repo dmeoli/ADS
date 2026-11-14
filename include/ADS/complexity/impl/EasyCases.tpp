@@ -57,7 +57,6 @@ inline std::optional< std::vector< bool > > twoSat( const Cnf & F , int n )
  ADS_PRE( std::all_of( F.begin() , F.end() , []( const Clause & c ) {
   return( ( c.size() == 1 ) || ( c.size() == 2 ) ); } ) );
  const auto result = [ & ]( void ) -> std::optional< std::vector< bool > > {
-//! [twoSat]
   ListGraph<> g( 2 * n );
   std::set< std::pair< int , int > > E;       // each implication once
   auto imply = [ & ]( int u , int v ) {
@@ -81,7 +80,6 @@ inline std::optional< std::vector< bool > > twoSat( const Cnf & F , int n )
    x[ v ] = rank[ p ] > rank[ q ];
    }
   return( x );
-//! [twoSat]
   }();
  ADS_POST( ! result || satCertificate( F , *result ) );
  return( result );

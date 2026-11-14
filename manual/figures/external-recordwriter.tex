@@ -43,6 +43,6 @@
   \node[free] (B-2) at (14.8mm,-36mm) {};
   \node[free] (B-3) at (22.2mm,-36mm) {};
   \node[var,anchor=west] at (80mm,-5mm) {before \texttt{push(j)}};
-  \node[var,anchor=west] at (80mm,-31mm) {after: \texttt{flush()}};
+  \node[var,anchor=west] at (80mm,-31mm) {after \texttt{push(j)}, which calls \texttt{flush()}};
 \end{tikzpicture}
 \end{document}

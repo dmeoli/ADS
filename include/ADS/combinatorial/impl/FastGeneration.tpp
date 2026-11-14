@@ -143,7 +143,6 @@ long forEachCombination( int n , int t , F && visit )
   }
  }
 
-//! [nextCombination]
 constexpr Word nextCombination( Word x )
 {
  ADS_PRE( x != 0 );
@@ -152,9 +151,7 @@ constexpr Word nextCombination( Word x )
  return( ( u + 1 ) | ( ( ( ~u & ( u + 1 ) ) - 1 ) >>
                        ( std::countr_zero( x ) + 1 ) ) );
  }
-//! [nextCombination]
 
-//! [forEachCombinationMask]
 template< class F >
 long forEachCombinationMask( int n , int t , F && visit )
 {
@@ -179,7 +176,6 @@ long forEachCombinationMask( int n , int t , F && visit )
   x = nextCombination( x );
   }
  }
-//! [forEachCombinationMask]
 
 /*--------------------------------------------------------------------------*/
 

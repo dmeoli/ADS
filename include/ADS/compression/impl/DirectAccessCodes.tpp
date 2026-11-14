@@ -105,7 +105,6 @@ inline void DirectAccessCodes::build( std::span< const std::uint64_t > x ,
  ADS_AUDIT( std::equal( x.begin() , x.end() , begin() ) );
  }
 
-//! [access]
 inline std::uint64_t DirectAccessCodes::access( std::size_t i ) const
 {
  ADS_PRE( i < f_n );
@@ -134,7 +133,6 @@ inline std::uint64_t DirectAccessCodes::access( std::size_t i ) const
  return( v );
  }
 
-//! [access]
 inline std::vector< int > DirectAccessCodes::widths( void ) const
 {
  std::vector< int > w;

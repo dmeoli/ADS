@@ -232,6 +232,32 @@ class Buckets {
 
  /// takes \f$ u \f$ out of its two buckets, moving the least and the largest
  /// bucket not empty if they empty
+ ///
+ /// In pseudocode (exercise 19.17), with \f$ h_k[ u ] \f$ the edges of
+ /// \f$ u \f$ to \f$ V_k \f$ and \f$ p_k[ u ] \f$ its place in its bucket;
+ /// `inc()` is \f$ \mathrm{take}( k , u ) \f$, \f$ h_k[ u ] \gets h_k[ u ] +
+ /// 1 \f$ and the append of \f$ u \f$ to the bucket of \f$ h_k[ u ] \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( u ) \cr
+ /// 2 & \quad \mathrm{take}( 0 , u );\ \mathrm{take}( 1 , u ) \cr
+ /// 3 & \textbf{procedure}\ \mathrm{take}( k , u ) \cr
+ /// 4 & \quad h \gets h_k[ u ];\ B \gets \mathrm{bucket}( k , h );\ p \gets
+ ///     p_k[ u ] \cr
+ /// 5 & \quad B[ p ] \gets \text{the last node of } B;\ p_k[ B[ p ] ] \gets
+ ///     p;\ \text{drop the last node of } B \cr
+ /// 6 & \quad \textbf{if}\ B = \emptyset\ \textbf{and}\ \mathit{min}( k ) =
+ ///     h\ \textbf{then} \cr
+ /// 7 & \qquad \textbf{while}\ \mathit{min}( k ) \le n \textbf{ and }
+ ///     \mathrm{bucket}( k , \mathit{min}( k ) ) = \emptyset\ \textbf{do}
+ ///     \ \mathit{min}( k ) \gets \mathit{min}( k ) + 1 \cr
+ /// 8 & \quad \textbf{if}\ B = \emptyset\ \textbf{and}\ \mathit{max}( k ) =
+ ///     h\ \textbf{then} \cr
+ /// 9 & \qquad \textbf{while}\ \mathit{max}( k ) \ge 0 \textbf{ and }
+ ///     \mathrm{bucket}( k , \mathit{max}( k ) ) = \emptyset\ \textbf{do}
+ ///     \ \mathit{max}( k ) \gets \mathit{max}( k ) - 1
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ u \f$ is in the structure
  void remove( int u );
 

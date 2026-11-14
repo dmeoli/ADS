@@ -65,13 +65,13 @@ program), and the chapter where its comparison belongs.
 | `backtrack` | dancing links on exact covers; clause learning, A* and subset sum on the structures of each library | `ExactCover` of the book, `std`, Boost, (DLX1, DLX2, SSXCC of Knuth) | [§19.8](19-backtrack.md#sec-19-8) |
 | `bestfirst` | the closed set, the addressable frontier, the ordered frontier and the packed arrays of a best-first search | `std::unordered_set`, `std::set`, `std::vector< bool >`, Boost.Heap, `boost::unordered_flat_set`, `boost::dynamic_bitset` | [7](07-dictionary.md#ch-7), [8](08-tree.md#ch-8), [§9.13](09-priority.md#sec-9-13), [22](22-succinct.md#ch-22) |
 | `bignum` | products, quotients, conversion, gcd and square roots of long integers, sums of rationals | `boost::multiprecision::cpp_int`, `boost::rational`, (GMP, FLINT) | [§17.11](17-numeric.md#sec-17-11) |
-| `combinatorial` | population counts, Morton codes, permutations and combinations | `std::popcount`, `std::next_permutation`, `boost::dynamic_bitset`, (libpopcnt, libmorton, Hinnant's combinations) | [§18.9](18-combinatorial.md#sec-18-9) |
-| `compression` | entropy coders, codes of integers, BWT, FM-index and r-index, LZ parses, space | (huff0, FSE, Stream VByte, FastPFor, sdsl-lite, libsais, LZ4, ryg_rans, r-index of Prezza) | [§21.12](21-compression.md#sec-21-12) |
+| `combinatorial` | population counts, Morton codes, permutations and combinations | `std::popcount`, `std::next_permutation`, `boost::dynamic_bitset`, (libpopcnt, libmorton, Hinnant's combinations) | [§18.10](18-combinatorial.md#sec-18-10) |
+| `compression` | entropy coders, codes of integers, BWT, FM-index and r-index, LZ parses, space | (huff0, FSE, Stream VByte, FastPFor, sdsl-lite, libsais, LZ4, ryg_rans, r-index of Prezza) | [§21.13](21-compression.md#sec-21-13) |
 | `concurrent` | queues between two threads, work-stealing deques, the wait of a consumer | Boost.Lockfree, `std::deque` under a mutex, (rigtorp, moodycamel, folly) | [§24.12](24-concurrent.md#sec-24-12) |
 | `dictionaries` | insertions, lookups and visits of hash tables and search trees | `std::unordered_map`, `std::map`, `boost::unordered_flat_map`, `boost::container::flat_map` | [§7.6](07-dictionary.md#sec-7-6), [8](08-tree.md#ch-8) |
 | `dynamic` | the observers that keep shortest paths, spanning forests and flows after a change; link-cut trees; union-find with rollback; offline connectivity | the algorithms of the book from scratch, a vector of parents, `UnionFind` | [§14.14](14-graph.md#sec-14-14), [8](08-tree.md#ch-8), [§11.6](11-mfset.md#sec-11-6) |
 | `edit` | edit distance, longest common subsequence, approximate search | the dynamic programming of the textbook, (edlib, rapidfuzz-cpp) | [§15.9](15-string.md#sec-15-9) |
-| `external` | multiway merges, the mergesort of the notes in two-level memory, random sampling | `std::priority_queue`, `__gnu_parallel::multiway_merge`, `std::ranges::sample`, Boost.Heap, (tlx) | [§23.7](23-external.md#sec-23-7) |
+| `external` | multiway merges, the mergesort of the notes in two-level memory, random sampling | `std::priority_queue`, `__gnu_parallel::multiway_merge`, `std::ranges::sample`, Boost.Heap, (tlx) | [§23.8](23-external.md#sec-23-8) |
 | `fingerprints` | hashes of rows of doubles, the comparison of two rows | `std::hash` combined, `std::equal`, `boost::hash_range` | [7](07-dictionary.md#ch-7) |
 | `flows` | maximum flows from scratch and after a change of a capacity | Boost `push_relabel_max_flow`, (LEMON `Preflow`) | [§14.14](14-graph.md#sec-14-14) |
 | `geometry` | convex hull, closest pair | Boost.Geometry, (CGAL) | [§16.5](16-geometry.md#sec-16-5) |
@@ -81,7 +81,7 @@ program), and the chapter where its comparison belongs.
 | `hashing` | hash functions, hash maps, filters, range filters, perfect hashing, concurrent maps | `std::hash`, `std::unordered_map`, Boost, (Abseil, unordered_dense, XXH3, wyhash, rapidhash, robin-map, libcuckoo, fastfilter_cpp, xor filters, PTHash, BBHash, RecSplit) | [§7.6](07-dictionary.md#sec-7-6), [§10.12](10-set.md#sec-10-12), [§24.12](24-concurrent.md#sec-24-12) |
 | `joins` | union, intersection, difference, batch insertion and building of trees based on join, on $t$ threads | `std::map`, (PAM) | [8](08-tree.md#ch-8), [§25.16](25-parallel.md#sec-25-16) |
 | `lce` | longest common extensions | the suffix array of the textbook, direct comparison, (sdsl-lite) | [§15.9](15-string.md#sec-15-9) |
-| `learned` | LA-vector, PGM-index, dynamic PGM-index | Elias-Fano, `std::map`, `BTreeMap`, (sdsl-lite, la_vector, PGM-index) | [§6.10](06-search.md#sec-6-10), [§22.12](22-succinct.md#sec-22-12) |
+| `learned` | LA-vector, PGM-index, dynamic PGM-index | Elias-Fano, `std::map`, `BTreeMap`, (sdsl-lite, la_vector, PGM-index) | [§6.10](06-search.md#sec-6-10), [§22.13](22-succinct.md#sec-22-13) |
 | `matrix` | dense products and transposition | the products of the book, (Eigen, OpenBLAS) | [§17.11](17-numeric.md#sec-17-11) |
 | `memory` | arenas, object pools, allocators of blocks of any size | `new`/`delete`, `std::pmr`, Boost.Pool, (mimalloc, jemalloc) | [§5.11](05-memory.md#sec-5-11) |
 | `mpi` | the sort and the mailbox over the processes of MPI | none (the scaling over $P$) | [§26.6](26-distributed.md#sec-26-6) |
@@ -100,7 +100,7 @@ program), and the chapter where its comparison belongs.
 | `sparse` | sparse products by a vector and transposition | the orthogonal lists of the book, (Eigen) | [§17.11](17-numeric.md#sec-17-11) |
 | `ssets` | the sorted sets of Open Data Structures (exercise 9.14 of Morin's book) | `std::set`, (the code of Morin) | [7](07-dictionary.md#ch-7), [8](08-tree.md#ch-8), [§B.6](B-benchmarks.md#sec-B-6) |
 | `stringdicts` | static dictionaries of strings by rank and by prefix | sorted `std::string`, (HAT-trie, marisa-trie, tx-trie, path-decomposed tries) | [7](07-dictionary.md#ch-7), [§15.9](15-string.md#sec-15-9) |
-| `succinct` | rank and select, compressed bit vectors, Elias-Fano, balanced parentheses, wavelet structures, directly addressable codes, space | (sdsl-lite, sux, pasta, succinct) | [§22.12](22-succinct.md#sec-22-12) |
+| `succinct` | rank and select, compressed bit vectors, Elias-Fano, balanced parentheses, wavelet structures, directly addressable codes, space | (sdsl-lite, sux, pasta, succinct) | [§22.13](22-succinct.md#sec-22-13) |
 | `suffix` | suffix arrays and LCP arrays | the constructions of the textbook, (libsais, libdivsufsort) | [§15.9](15-string.md#sec-15-9) |
 | `tries` | dictionaries of strings with enumeration by prefix | `std::map`, `std::unordered_map`, (Abseil, HAT-trie, libart) | [7](07-dictionary.md#ch-7) |
 
