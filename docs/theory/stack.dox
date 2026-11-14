@@ -169,8 +169,8 @@
  \f$ c_k \f$ at the bottom, where \f$ c_j = \max\{ x_1 , \ldots , x_j \} \f$;
  hence it carries a largest item to the bottom, after the pass \f$ i \f$
  the \f$ i \f$ largest items are at the bottom in order, and \f$ n - 1 \f$
- passes sort the stack, the least item on top. The \f$ n \f$ passes of
- `sortStack()` take \f$ \Theta( n^2 ) \f$ operations on every input.
+ passes sort the stack, the least item on top. The \f$ n - 1 \f$ passes
+ of `sortStack()` take \f$ \Theta( n^2 ) \f$ operations on every input.
 
  Indeed, by induction on the levels of the recursion, the level \f$ j \f$
  finds \f$ c_j \f$ on top, pushes back

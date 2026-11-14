@@ -174,7 +174,9 @@
  of the other node; otherwise its parent is replaced by the larger parent of
  the other one, which keeps \f$ p[ x ] \ge x \f$. The climb stops as soon as
  the two components are joined, or the two nodes reach the same parent,
- often well below the roots. The link by index alone gives the worst-case
+ often well below the roots; its postcondition, that the two have one root,
+ climbs with no halving, so that the contracts leave the forest that the
+ algorithm makes. The link by index alone gives the worst-case
  bound \f$ O( m \log_{1 + m / n} n ) \f$ (Tarjan and van Leeuwen), and the
  bound (1) in expectation when the elements are numbered in a random order
  (Goel, Khanna, Larkin and Tarjan); the experiments of Patwary, Blair and

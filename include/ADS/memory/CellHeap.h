@@ -17,11 +17,11 @@
  * cell, so that a collection costs \f$ O( n ) \f$ time on a heap of
  * \f$ n \f$ cells, whatever the cells reached.
  *
- * The contracts [see `Contract.h`]: an address is a cell of the heap;
- * `cons()` needs a free cell after a collection; `collect()` ensures that it
- * frees exactly the cells that are not reachable and leaves the fields of
- * the others as they were, an audit. The operations are defined in
- * `CellHeap.tpp`.
+ * The contracts [see `Contract.h`]: an address is a cell of the heap, and
+ * the cell read, written or made a root is not free; `cons()` needs a free
+ * cell after a collection; `collect()` ensures that it frees exactly the
+ * cells that are not reachable and leaves the fields of the others as they
+ * were, an audit. The operations are defined in `CellHeap.tpp`.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 2.3.5
@@ -122,7 +122,7 @@ class CellHeap {
  void setCdr( Value c , Value v );
 
  /// the cell \f$ c \f$ made a root, once more
- /// \pre \f$ c \f$ is a cell of the heap
+ /// \pre \f$ c \f$ is a cell of the heap, not free
  void addRoot( Value c );
 
  /// one of the roots \f$ c \f$ removed, if there is one

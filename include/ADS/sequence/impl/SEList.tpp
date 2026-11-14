@@ -19,7 +19,7 @@ namespace ADS {
 template< class T >
 SEList< T >::SEList( std::size_t b )
  : f_dummy{ &f_dummy , &f_dummy , 0 , 0 } , f_b( b ) ,
-   f_mask( std::bit_ceil( b + 1 ) - 1 )
+   f_cap( b + 1 )
 {
  ADS_PRE( b >= 3 );
  }
@@ -72,7 +72,7 @@ void SEList< T >::swap( SEList & o ) noexcept
  std::swap( f_n , o.f_n );
  std::swap( f_blocks , o.f_blocks );
  std::swap( f_b , o.f_b );
- std::swap( f_mask , o.f_mask );
+ std::swap( f_cap , o.f_cap );
  }
 
 template< class T >
@@ -80,7 +80,7 @@ typename SEList< T >::Node * SEList< T >::newBlock( Node * p )
 {
  Node * u = std::exchange( f_spare , nullptr );
  if( ! u )
-  u = static_cast< Node * >( ::operator new( OFF + ( f_mask + 1 ) *
+  u = static_cast< Node * >( ::operator new( OFF + f_cap *
                                              sizeof( T ) ,
                                              std::align_val_t( ALIGN ) ) );
  u->head = u->n = 0;
@@ -107,7 +107,7 @@ void SEList< T >::dropBlock( Node * u )
 template< class T >
 void SEList< T >::pushFront( Node * u , T && x )
 {
- const std::size_t h = ( u->head - 1 ) & f_mask;
+ const std::size_t h = u->head == 0 ? f_cap - 1 : u->head - 1;
  ::new( static_cast< void * >( places( u ) + h ) ) T( std::move( x ) );
  u->head = h;
  ++u->n;
@@ -126,7 +126,7 @@ T SEList< T >::popFront( Node * u )
  T & r = at( u , 0 );
  T x = std::move( r );
  r.~T();
- u->head = ( u->head + 1 ) & f_mask;
+ u->head = wrap( u->head + 1 );
  --u->n;
  return( x );
  }
@@ -168,7 +168,7 @@ void SEList< T >::erase( Node * u , std::size_t j )
   for( std::size_t k = j ; k > 0 ; --k )
    at( u , k ) = std::move( at( u , k - 1 ) );
   at( u , 0 ).~T();
-  u->head = ( u->head + 1 ) & f_mask;
+  u->head = wrap( u->head + 1 );
   }
  else {
   for( std::size_t k = j ; k + 1 < n ; ++k )

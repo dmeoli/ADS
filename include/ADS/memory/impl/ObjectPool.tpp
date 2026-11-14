@@ -77,15 +77,18 @@ void ObjectPool< T , A >::adopt( ObjectPool & other ) noexcept
 {
  if( ( &other == this ) || ! other.f_last )
   return;
- if( ! f_last )                             // nothing here: all of other
+ const std::size_t n = std::max( f_n , other.f_n ) , m = other.f_n;
+ if( ! f_last ) {                           // nothing here: all of other
   swap( other );
+  other.f_n = m;                            // each keeps its own limit
+  }
  else {
   Block * b = f_last;                       // the first block of this pool
   while( b->prev ) b = b->prev;
   b->prev = other.f_last;
   f_size += other.f_size;
-  if( other.f_n > f_n ) f_n = other.f_n;
   }
+ f_n = n;                                   // the larger limit, in both
  other.f_free = other.f_next = other.f_end = nullptr;
  other.f_last = nullptr;
  other.f_size = 0;

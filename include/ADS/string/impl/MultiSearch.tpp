@@ -221,28 +221,33 @@ std::size_t MultiSearcher::check( const unsigned char * T , std::size_t n ,
                            std::size_t s , std::uint64_t mask ,
                            const unsigned char * C , F && report ) const
 {
- std::size_t checks = 0;
+ std::size_t bytes = 0;
  for( ; mask ; mask &= mask - 1 ) {
   const unsigned p = unsigned( std::countr_zero( mask ) );
   const std::size_t i = s + p;
   for( unsigned c = C[ p ] ; c ; c &= c - 1 )
    for( const std::uint32_t j : f_bucket[ std::countr_zero( c ) ] ) {
-    ++checks;
     const std::string & P = f_P[ j ];
     const std::size_t l = P.size();
+    bytes += 8;                       // a word, or a pattern past the end
     if( i + l > n ) continue;
     if( i + 8 <= n ) {                // the first 8 bytes in one word
      std::uint64_t w;
      std::memcpy( &w , T + i , 8 );
      if( ( ( w ^ f_head[ j ] ) & f_mask[ j ] ) != 0 ) continue;
-     if( ( l > 8 ) && ( std::memcmp( T + i + 8 , P.data() + 8 , l - 8 ) ) )
-      continue;
+     if( l > 8 ) {
+      bytes += l - 8;
+      if( std::memcmp( T + i + 8 , P.data() + 8 , l - 8 ) ) continue;
+      }
      }
-    else if( std::memcmp( T + i , P.data() , l ) ) continue;
+    else {
+     bytes += l;
+     if( std::memcmp( T + i , P.data() , l ) ) continue;
+     }
     report( i , std::size_t( j ) );
     }
   }
- return( checks );
+ return( bytes );
  }
 
 template< class F >
@@ -263,17 +268,18 @@ std::size_t MultiSearcher::verify( const unsigned char * T , std::size_t n ,
  std::memcpy( &k , T + s , f_L );
  const std::size_t h = std::size_t( ( k * 0x9E3779B97F4A7C15ull ) >>
                                     ( 64 - f_bits ) );
- std::size_t checks = 0;
+ std::size_t bytes = 0;
  for( std::uint32_t j = f_first[ h ] ; j != ~std::uint32_t( 0 ) ;
       j = f_next[ j ] ) {
-  ++checks;
+  bytes += 8;                         // the prefix, one word
   if( f_key[ j ] != k ) continue;
   const std::string & p = f_P[ j ];
-  if( ( s + p.size() <= n ) &&
-      ( std::memcmp( T + s + f_L , p.data() + f_L , p.size() - f_L ) == 0 ) )
+  if( s + p.size() > n ) continue;
+  bytes += p.size() - f_L;
+  if( std::memcmp( T + s + f_L , p.data() + f_L , p.size() - f_L ) == 0 )
    report( s , std::size_t( j ) );
   }
- return( checks );
+ return( bytes );
  }
 
 template< class F >
@@ -340,7 +346,7 @@ std::size_t MultiSearcher::shiftOr( std::string_view Tv ,
 #endif
   if( cur != ~std::uint64_t( 0 ) ) [[unlikely]] {
    ends( j );
-   if( work > 2 * j + 4096 ) {        // too many checks: the automaton
+   if( work > 16 * j + 4096 ) {       // too many bytes: the automaton
     return( j + 8 >= L - 1 ? j + 9 - L : 0 );
     }
    }
@@ -413,7 +419,7 @@ std::size_t MultiSearcher::shiftOr2( std::string_view Tv ,
 #endif
   if( cur != ~std::uint64_t( 0 ) ) [[unlikely]] {
    ends( j );
-   if( work > 2 * j + 4096 )          // too many checks: the automaton
+   if( work > 16 * j + 4096 )         // too many bytes: the automaton
     return( j + 15 >= back ? j + 15 - back : 0 );
    }
   cur = nxt;
@@ -431,9 +437,10 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
  const std::size_t last = n - f_least;  // the places 0 .. last
  std::size_t s = 0 , work = 0;
  alignas( 64 ) unsigned char C[ 64 ];
- // the checks of patterns counted: past 2 a place, the filter lets too
- // much through (a small alphabet, or patterns everywhere), and the
- // automaton goes on from s, its occurrences that start before s left out
+ // the bytes compared with the patterns counted: past 16 a place, the
+ // filter lets too much through (a small alphabet, or patterns everywhere,
+ // or long patterns whose first bytes are everywhere), and the automaton
+ // goes on from s, its occurrences that start before s left out
 #if defined( __AVX512BW__ )
  // 64 places a block while the loads of q - 1 places ahead are in T, two
  // blocks a step, q known at compile time so that the tables stay in
@@ -466,7 +473,7 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
    if( last - t < 63 ) m &= ( std::uint64_t( 1 ) << ( last - t + 1 ) ) - 1;
    _mm512_store_si512( C , acc );
    work += check( T , n , t , m , C , report );
-   return( work <= 2 * t + 4096 );
+   return( work <= 16 * t + 4096 );
    };
   for( ; ( s + 64 <= last ) && ( s + 128 + Q - 1 <= n ) ; s += 128 ) {
    const __m512i a = probe( s ) , b = probe( s + 64 );
@@ -522,7 +529,7 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
   if( last - s < 31 ) m &= ( std::uint64_t( 1 ) << ( last - s + 1 ) ) - 1;
   _mm256_store_si256( reinterpret_cast< __m256i * >( C ) , acc );
   work += check( T , n , s , m , C , report );
-  if( work > 2 * s + 4096 ) {
+  if( work > 16 * s + 4096 ) {
    return( s + 32 );
    }
   }
@@ -541,7 +548,7 @@ std::size_t MultiSearcher::scan( std::string_view Tv , F && report ) const
    if( c ) m |= std::uint64_t( 1 ) << p;
    }
   work += check( T , n , s , m , C , report );
-  if( ( work > 2 * s + 4096 ) && ( s + 32 <= last ) ) {
+  if( ( work > 16 * s + 4096 ) && ( s + 32 <= last ) ) {
    return( s + 32 );
    }
   }
@@ -567,6 +574,14 @@ inline std::vector< std::pair< std::size_t , std::size_t > >
  std::sort( R.begin() , R.end() );
  ADS_AUDIT( detail::multiNaive( T , f_P ) == R );
  return( R );
+ }
+
+inline std::size_t MultiSearcher::automatonFrom( std::string_view T ) const
+{
+ if( f_P.size() < 2 ) return( npos );
+ auto none = []( std::size_t , std::size_t ) {};
+ return( f_q ? scan( T , none ) :
+         f_W ? shiftOr2( T , none ) : shiftOr( T , none ) );
  }
 
 inline std::size_t MultiSearcher::count( std::string_view T ) const

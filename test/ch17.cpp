@@ -31,6 +31,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -86,6 +87,22 @@ ADS_TEST( "sec17.monte-carlo" )
         zeroPolynomial( nought , 3 , 1000 , 5 , g ) );
  CHECK( ! zeroPolynomial( one , 4 , -1 , 3 , g ) );
  CHECK_THROWS( zeroPolynomial( one , 1 , 1 , -1 , g ) , contract_violation );
+ }
+
+// zeroPolynomial() draws its points from { 1 , ... , 2 d }: a degree whose
+// double is not a long violates its contract, the largest one that is a
+// long is accepted
+ADS_TEST( "sec17.monte-carlo-degree" )
+{
+ std::mt19937_64 g( 17 );
+ auto one = []( const std::vector< long > & ) { return( 1L ); };
+ auto nought = []( const std::vector< long > & ) { return( 0L ); };
+ const long big = std::numeric_limits< long >::max();
+ CHECK_THROWS( zeroPolynomial( one , 1 , big , 1 , g ) , contract_violation );
+ CHECK_THROWS( zeroPolynomial( one , 1 , big / 2 + 1 , 1 , g ) ,
+               contract_violation );
+ CHECK( ! zeroPolynomial( one , 1 , big / 2 , 1 , g ) );
+ CHECK( zeroPolynomial( nought , 2 , big / 2 , 3 , g ) );
  }
 
 // the selection of Hoare, with and without random pivots, and the median

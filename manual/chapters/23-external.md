@@ -487,13 +487,21 @@ $\square$
 Both policies meet the condition, with $\alpha = 1 / 4$ for `WIDE` and
 $\alpha = 1 / 8$ for `THREE` when $B \ge 8$, and the cycle of
 [Lemma 23.4](23-external.md#lem-23-4) costs them nothing after its first
-round, with one exception. The moves of `THREE` need a sibling for an
-overflow and two for an underflow; a root that splits, and the children of
-a root of two children, fall back to the rules of the book. Hence on a tree
-of at most two leaves `THREE` still runs that cycle, a split, a borrow and a
-merge every four operations from a root leaf of $2 B - 2$ keys. On taller
-trees the restructurings at the children of the root are themselves
-caused by those below them, and so remain $O( m / B )$. However, the price is paid elsewhere: a restructuring of `THREE` also reads
+round. The moves of `THREE` need a sibling for an overflow and two for an
+underflow, which a tree of two leaves lacks; there the leaves may hold down
+to $\lambda = \max( 1 , \lfloor B / 2 \rfloor )$ keys, and a leaf below
+$\lambda$ is merged with the other one into a root leaf if that leaf has at
+most $2 B - 1 - \lfloor B / 4 \rfloor$ keys, the two sharing their keys
+otherwise, more than about $7 B / 8$ and at most about $5 B / 4$ each.
+Thus the split of a root leaf of $2 B$ keys, into leaves of $B$ and
+$B - 1$ keys, leaves them about $B / 2$ above $\lambda$, and the root
+leaf of a merge is $B / 4$ below the top, so that the condition of the
+lemma holds there too (a leaf changes its bound only when a restructuring
+rewrites it), and the cycle from a root leaf of $2 B - 2$ keys costs a
+single split (the test `ods_ints.ods.ex14.7.small-trees`). The internal
+children of a root of two children follow the rules of the book; their
+keys, however, change only by the restructurings below them, and so their
+restructurings remain $O( m / B )$. The price is paid elsewhere: a restructuring of `THREE` also reads
 the siblings with which it shares the keys, and a node of `WIDE` may hold
 $3 B - 1$ keys, and so needs a larger block for the same $B$.
 

@@ -583,6 +583,38 @@ ADS_TEST( "spec.ArrayQueue" )
   }
  }
 
+// the copies and the moves of ArrayQueue: a queue moved from is empty, with
+// no capacity, and refuses enqueue() and dequeue() by their contracts; a
+// copy of a queue that wraps round the end of its vector holds the same
+// items from its front, and the two are then independent; a move
+// assignment and a swap exchange the vectors in O( 1 )
+ADS_TEST( "spec.ArrayQueue-moves" )
+{
+ ArrayQueue< int > a( 4 );
+ a.enqueue( 1 );
+ ArrayQueue< int > b( std::move( a ) );
+ CHECK( a.empty() && a.size() == 0 && a.capacity() == 0 );
+ CHECK_THROWS( a.dequeue() , contract_violation );
+ CHECK_THROWS( a.top() , contract_violation );
+ CHECK_THROWS( a.enqueue( 2 ) , contract_violation );
+ CHECK( b.size() == 1 && b.capacity() == 4 && b.top() == 1 );
+ for( int i = 2 ; i <= 4 ; ++i ) b.enqueue( i );
+ CHECK( b.dequeue() == 1 && b.dequeue() == 2 );
+ b.enqueue( 5 );
+ b.enqueue( 6 );                               // 5 and 6 wrap round
+ ArrayQueue< int > c( b );
+ CHECK( std::equal( c.begin() , c.end() , b.begin() , b.end() ) );
+ CHECK( c.capacity() == 4 && c.dequeue() == 3 && b.top() == 3 );
+ ArrayQueue< int > d( 2 );
+ d = std::move( c );
+ CHECK( d.size() == 3 && d.top() == 4 && c.size() == 0 );
+ d = b;                                        // a copy assignment
+ CHECK( d.size() == 4 && d.top() == 3 && b.size() == 4 );
+ ArrayQueue< int > e( 1 );
+ e.swap( d );
+ CHECK( e.size() == 4 && d.capacity() == 1 && d.empty() );
+ }
+
 /*--------------------------------------------------------------------------*/
 /*------------------------- EXAMPLES OF THE TEXT ---------------------------*/
 /*--------------------------------------------------------------------------*/

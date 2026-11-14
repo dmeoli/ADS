@@ -203,6 +203,27 @@ void radix( unsigned seed , std::uint64_t C , int steps )
  CHECK( H.empty() );
  }
 
+// the keys extracted by extractBelow() count for the precondition of
+// push() as those of pop(): no key below the largest of them may come
+// after it, its equal may, and any key after clear()
+ADS_TEST( "radix-heap-floor" )
+{
+ RadixHeap< int , unsigned > Q;
+ Q.push( 1 , 3u );
+ Q.push( 2 , 5u );
+ Q.push( 3 , 9u );
+ std::vector< unsigned > out;
+ Q.extractBelow( 8u , [ & ]( int , unsigned k ) { out.push_back( k ); } );
+ CHECK( out.size() == 2 && Q.size() == 1 );
+ CHECK_THROWS( Q.push( 4 , 4u ) , contract_violation );
+ Q.push( 5 , 5u );
+ CHECK( Q.topKey() == 5u && Q.pop() == 5 && Q.pop() == 3 );
+ CHECK_THROWS( Q.push( 6 , 8u ) , contract_violation );
+ Q.clear();
+ Q.push( 7 , 0u );
+ CHECK( Q.pop() == 7 );
+ }
+
 // the radix heap against a multiset, for digits of 1, 3, 4 and 8 bits, on
 // keys of 8, 32 and 64 bits, signed and unsigned, in bands of width 0
 // (all equal), 1, 1000 and the whole type; the edge cases: an empty heap

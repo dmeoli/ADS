@@ -1667,7 +1667,10 @@ $d$, given as a function of its $n$ variables, at $K$ points drawn from
 $\{ 1 , \ldots , 2 \max( d , 1 ) \}^n$, errs with probability at most $1 /
 2$ per run, and only when it answers that $p$ is zero; a point where $p \ne
 0$ proves that it is not ([Schwartz 1980](Z-bibliography.md#ref-schwartz1980);
-[Zippel 1979](Z-bibliography.md#ref-zippel1979)). In the same way, the algorithm of
+[Zippel 1979](Z-bibliography.md#ref-zippel1979)). Its points are of the
+type `long`, and its precondition is thus that $2 d$ is a `long`, i.e.,
+$d \le \mathrm{LONG\_MAX} / 2$, beyond which the set $S$ could not be
+drawn. In the same way, the algorithm of
 [Freivalds 1977](Z-bibliography.md#ref-freivalds1977) (`freivalds()`,
 exercise 17.4) applies the same argument to the matrix $M = A B - C$ of
 three $n \times n$ matrices: it compares $A ( B x )$ with $C x$ for a random

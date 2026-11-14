@@ -821,7 +821,7 @@ in `hi`, `byteSwap( x )`, the 8 bytes of a word in the reverse order, and the
 signed integer `Int128`. The product is that of `unsigned __int128` where the
 compiler has it, the intrinsic of MSVC on x64 and ARM64 otherwise, and a
 computation on halves of 32 bits elsewhere (and in a constant expression of
-MSVC). The swap is the builtin of GCC and Clang, else the `std::byteswap()`
+MSVC), which is also `wideProductHalves( a , b , hi )`. The swap is the builtin of GCC and Clang, else the `std::byteswap()`
 of C++23, else the intrinsic of MSVC, and else three exchanges by masks (of
 the bytes, of the pairs of bytes and of the halves of the word). With $a =
 a_1 2^{32} + a_0$ and $b = b_1 2^{32} + b_0$, where $0 \le a_0 , a_1 , b_0 ,
@@ -870,7 +870,9 @@ the high word if and only if the sum of the low words, modulo $2^{64}$, is
 smaller than either of them, and that the product needs only the low words of
 the cross terms, since their high words fall beyond the bit 127. The random
 queue of chapter [4](04-queue.md#ch-4) uses `wideProduct()` (for its draw of
-an index), the learned index of chapter [6](06-search.md#ch-6) and the branch
+an index), and the integers of any length of chapter
+[17](17-numeric.md#ch-17) use it, or `wideProductHalves()` under
+`ADS_BIGINT_PORTABLE`, for their products of digits; the learned index of chapter [6](06-search.md#ch-6) and the branch
 and bound of chapter [20](20-complexity.md#ch-20) use `Int128`, and the sorts
 of strings of chapter [12](12-sort.md#ch-12) and the search of several
 patterns of chapter [15](15-string.md#ch-15) use `byteSwap()`.

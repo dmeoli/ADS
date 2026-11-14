@@ -38,14 +38,22 @@
  *   about \f$ 3.5 B \f$ keys and into three otherwise, and a node in
  *   underflow sharing them with two siblings, into two nodes or three in
  *   the same way, so that every node touched has between about
- *   \f$ 7 B / 6 \f$ and \f$ 7 B / 4 \f$ keys; a root that splits and the
- *   children of a root of two children follow the rules of the book, so
- *   that a tree of at most two leaves still runs the cycle above.
+ *   \f$ 7 B / 6 \f$ and \f$ 7 B / 4 \f$ keys; a tree of two leaves, where
+ *   these moves lack the siblings, lets its leaves hold down to
+ *   \f$ \max( 1 , \lfloor B / 2 \rfloor ) \f$ keys, and a leaf below
+ *   that is merged with the other one into a root leaf if the merged leaf
+ *   has at most \f$ 2 B - 1 - \lfloor B / 4 \rfloor \f$ keys, and shares
+ *   its keys with it otherwise, so that the split of a root leaf, into two
+ *   leaves of about \f$ B \f$ keys, and this merge also leave
+ *   \f$ \Omega( B ) \f$ keys from the bounds.
  *
  * In both, a node touched needs \f$ \Omega( B ) \f$ operations below it
  * before it is touched again, so that a potential of the distance of each
  * node from its bounds pays the restructurings, \f$ O( m / B ) \f$ in all
- * (see \ref theory_external_btree).
+ * (see \ref theory_external_btree); with `THREE` the restructurings at the
+ * internal children of a root of two children follow the rules of the book,
+ * but each of them is caused by a restructuring below, and so they are
+ * \f$ O( m / B ) \f$ too.
  *
  * The internal memory is \f$ O( B + \log_B n ) \f$, the claim of the
  * introduction of chapter 14 that the recursive code of the book does not
@@ -137,7 +145,8 @@ namespace ADS {
 enum class BTreePolicy {
  STANDARD ,   ///< \f$ B - 1 \f$ to \f$ 2 B - 1 \f$ keys, the book's rules
  WIDE ,       ///< \f$ B - 1 \f$ to \f$ 3 B - 1 \f$ keys (exercise 14.6)
- THREE        ///< the book's bounds, by three nodes (exercise 14.7)
+ THREE        ///< the book's bounds but in a tree of two leaves, by three
+              ///< nodes (exercise 14.7)
  };
 
 /// a B-tree of keys whose nodes are the blocks of a `BlockStore`
@@ -369,8 +378,12 @@ class BlockBTree {
  void fixOverflow( Node & p , std::size_t i , const Node & u );
 
  /// the underflow of the child \f$ i \f$ of \f$ p \f$, `u`, fixed by the
- /// policy
- void fixUnderflow( Node & p , std::size_t i , const Node & u );
+ /// policy; `root` if \f$ p \f$ is the root
+ void fixUnderflow( Node & p , std::size_t i , const Node & u , bool root );
+
+ /// the smallest number of keys of a node but the root, of a leaf of a
+ /// tree of two leaves if `twoLeaves` (fewer with `THREE`)
+ [[nodiscard]] std::size_t lowKeys( bool twoLeaves ) const;
 
  /// the keys of the block \f$ u \f$ and below, at depth \f$ d \f$, within
  /// \f$ ( \mathit{lo} , \mathit{hi} ) \f$; the depth of the leaves in `h`

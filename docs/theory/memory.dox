@@ -172,14 +172,18 @@
  An <em>arena</em> (Hanson) gives the objects of one type from blocks, by a
  pointer bump, and frees them all at once with the arena; an object costs no
  header and no search, the objects made one after another are next to each
- other, and their addresses never change, which the parents of the nodes of
- a search rely on. A <em>pool</em> (`ObjectPool`) adds the free of one
- object: its slot goes at the head of a free list, the list AVAIL of
- section 2.2.3 of Knuth, and the next allocation takes it again, still in
+ other, and their addresses never change, which the parents of the nodes of a
+ search rely on; its iterators read a block through the vector of the blocks,
+ not through the array of that vector, which an append may move, so that they
+ too stay valid while the arena lives. A <em>pool</em> (`ObjectPool`) adds the
+ free of one object: its slot goes at the head of a free list, the list AVAIL
+ of section 2.2.3 of Knuth, and the next allocation takes it again, still in
  the cache. Its blocks double from 1 slot up to \f$ n \f$, so that a pool
  that has held at most \f$ k \f$ objects at once has at most
  \f$ 2 k + n \f$ slots, and the allocations of blocks are
- \f$ O( \log k ) \f$ while the blocks double.
+ \f$ O( \log k ) \f$ while the blocks double. A pool that adopts the
+ blocks of another one (`adopt()`) keeps them whatever it holds, and its
+ limit becomes the larger of the two, whether it had blocks or not.
 
  A <em>size class</em> serves all the requests between two sizes with
  blocks of the larger one. `SizeClassAllocator` has the class of 8 bytes,
@@ -234,9 +238,10 @@
  In `CellHeap` the cells have two fields, each nil, an atom or the address
  of a cell, and the cells not reachable from the roots are garbage, which
  `collect()` finds by marking the reachable cells and sweeping the others
- onto the free list. A marking by a visit in depth needs a stack as deep as
- the longest path of cells, which a collector, run when the memory is
- exhausted, cannot allocate.
+ onto the free list; a root is a cell in use (`addRoot()` refuses a free
+ one, whose marking would walk the free list). A marking by a visit in depth
+ needs a stack as deep as the longest path of cells, which a collector, run
+ when the memory is exhausted, cannot allocate.
 
  <em>Lemma 3 (Deutsch, Schorr and Waite).</em> During the marking by
  pointer reversal (Algorithm 2.3.5E of Knuth), with \f$ c \f$ the current

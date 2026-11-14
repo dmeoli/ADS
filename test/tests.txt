@@ -46,6 +46,7 @@ ch04  sec4.2.1.counter   sezione 4.2.1, contatore binario
 ch04  sec4.3.1.stack-on-list  sezione 4.3.1, pila simulata con una lista
 ch04  spec.ArrayStack    sezione 4.3.2, pila con vettore
 ch04  spec.ArrayQueue    sezione 4.3.3, coda con vettore circolare
+ch04  spec.ArrayQueue-moves  sezione 4.3.3, copie e spostamenti
 ch04  sec4.donGiovanni   inizio del capitolo 4, il catalogo
 ch04  sec4.4.hanoi       sezione 4.4 e Figura 4.8, torri di Hanoi
 ch04  ex4.1              Esercizio 4.1, i primi n interi
@@ -222,6 +223,7 @@ ch12  ex12.6             Esercizio 12.6, ricerca in matrice ordinata
 ch12  ex12.7             Esercizio 12.7, torneo di tennis
 ch12  ex12.8             Esercizio 12.8, prodotto di numeri complessi
 ch12  ex12.9             Esercizio 12.9, conta gli zeri
+ch12  ex12.9.gallop-comparisons Esercizio 12.9, confronti della ricerca a galoppo
 ch12  ex12.10            Esercizio 12.10, minimo in una matrice
 ch12  ex12.11            Esercizio 12.11, chi manca?
 ch12  ex12.12            Esercizio 12.12, massimo in sequenza unimodale
@@ -300,6 +302,7 @@ ch16  ex16.8             Esercizio 16.8, anagrammi
 
 # chapter 17, Algoritmi probabilistici
 ch17  sec17.monte-carlo  testa o croce, espressione polinomiale nulla
+ch17  sec17.monte-carlo-degree  espressione nulla, grado al limite del long
 ch17  sec17.1.selection  sezione 17.1, selezione
 ch17  sec17.2.primality  sezione 17.2, primalità, Miller-Rabin
 ch17  sec17.3.rsa        sezione 17.3, RSA
@@ -393,6 +396,7 @@ beyond  sequence-order      ordine di una sequenza
 beyond  sequence-sorting    natural merge sort, bubble sort
 beyond  sequence-merge-dedup fusione ed eliminazione dei duplicati
 beyond  stack-algorithms    palindromi, ordinamento di una pila
+beyond  stack-sort-passes   ordinamento di una pila in n - 1 passate
 beyond  string-matching     ricerca ingenua e KMP
 beyond  list-exercises      esercizi su liste
 beyond  even-odd-strings    stringhe pari e dispari
@@ -462,6 +466,7 @@ taocp  external-sort         replacement selection e merge polifase
 taocp  threaded-tree         albero infilato
 taocp  allocators            boundary tag e buddy system
 taocp  cell-heap             garbage collector, Deutsch-Schorr-Waite
+taocp  cell-heap-roots       radici solo su celle in uso
 taocp  sparse-matrix         liste ortogonali e passo di pivot
 taocp  sparse-pivot          pivot lungo le liste, Algoritmo 2.2.6S
 taocp  bitwise               trucchi sui bit, volume 4A
@@ -491,7 +496,9 @@ engineered  flat-hash-table      tabella con byte di controllo a gruppi
 engineered  pointer-table        tabella di puntatori, ispezione lineare
 engineered  open-hash-readers    letture concorrenti di OpenHashTable
 engineered  arena                arena a blocchi
+engineered  arena-iterators      iteratori dell'arena dopo nuovi blocchi
 engineered  pool                 pool con lista dei liberi
+engineered  pool-adopt           adopt(): il limite maggiore dei due
 engineered  huge-page-allocator  allocatore su pagine enormi
 engineered  random-hashing       splitmix64, Zobrist, tabulazione
 engineered  spsc-queue           coda fra un produttore e un consumatore
@@ -529,6 +536,7 @@ engineered_strings  edit-distance   distanza, LCS e ricerca bit-parallele
 engineered_strings  classic-matching  Boyer-Moore, Horspool, Shift-Or, Z
 engineered_strings  aho-corasick    automa di Aho e Corasick
 engineered_strings  multi-search    filtro SIMD a bucket per molti pattern
+engineered_strings  multi-search-worst  caso peggiore lineare: byte confrontati
 engineered_strings  lyndon          fattorizzazione di Lyndon, rotazione minima
 engineered_strings  lyndon-bytes    Lyndon e rotazione minima sui byte da 0x80
 engineered_strings  suffix-automaton  automa dei suffissi
@@ -593,6 +601,7 @@ heaps  dary-heap-bottom-up   heap d-ario con il pop dal basso
 heaps  large-heap-audits     audit degli heap grandi sui soli estremi
 heaps  dial-queue            coda di Dial su una finestra circolare
 heaps  radix-heap            heap radix monotono a cifre di B bit
+heaps  radix-heap-floor      push dopo extractBelow: non sotto le chiavi estratte
 heaps  heap-priority-queue-pool  heap del libro con gli elementi in un pool
 heaps  linked-heap-pool      heap con puntatori, nodi in un pool
 heaps  pairing-heap          pairing heap a due passate e ausiliario
@@ -605,9 +614,11 @@ ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  pgm-compressed       PGM compresso, pendenze condivise ed Elias-Fano
 ordered  pgm-dynamic          PGM dinamico, metodo logaritmico e tombstone
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
+ordered  nth-element-adversary  selezione lineare contro l'avversario di McIlroy
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
 ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo
 ordered  rem-union-find       algoritmo di Rem con lo splicing
+ordered  rem-union-find-contracts  contratti di merge() senza compressione
 ordered  bool-set-words       vettore booleano a parole di 64 bit
 ordered  roaring-bitmap       bitmap compresse Roaring
 ordered  adaptive-radix-tree  albero radice adattivo su stringhe
@@ -1716,6 +1727,7 @@ engineered_pearls  book-mergesort-selectors mergesort delle note, selettori
 # the engineered structures of the graphs, and the algorithms of the book
 # on them
 engineered_graph  static-graph        grafo a righe compresse
+engineered_graph  static-graph-macros nessuna macro di prefetch inutilizzata
 engineered_graph  indexed-dary-heap   heap d-ario indicizzato con decrease
 engineered_graph  union-find          union-find per dimensione o rango
 engineered_graph  book-on-structures  algoritmi del libro su ogni struttura
@@ -1864,6 +1876,7 @@ ods_lists  ods-ex3.15.real-time-min-queue  coda col minimo, O(1) nel caso peggio
 ods_lists  ods-ex3.16.real-time-min-deque  deque col minimo, O(1) nel caso peggiore
 ods_lists  ods-ex3.16.min-deque         MinDeque
 ods_lists  ods-3.3.selist               SEList a blocchi
+ods_lists  ods-3.3.selist-space         SEList, b + 1 posti per blocco
 ods_lists  ods-ex3.17-3.18.selist-ends  SEList agli estremi
 ods_lists  ods-3.4.xor-list             lista XOR
 ods_lists  ods-ex3.19.xor-swap          scambio con XOR
@@ -1905,6 +1918,7 @@ ods_ints  ods.ex14.1.figure                 Morin es. 14.1-14.2, figura
 ods_ints  ods.ex14.3.internal-nodes         Morin es. 14.3, nodi interni
 ods_ints  ods.ex14.4.memory                 Morin es. 14.4, memoria interna
 ods_ints  ods.ex14.6.restructures           Morin es. 14.6-14.7
+ods_ints  ods.ex14.7.small-trees            Morin es. 14.7, alberi di due foglie
 ods_ints  ods.ex14.8.bplus-tree             Morin es. 14.8, B+-albero
 
 # the skip lists and the search trees of Morin, Open Data Structures,

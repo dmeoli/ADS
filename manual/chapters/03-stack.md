@@ -497,7 +497,7 @@ passes, i.e., the bubble sort on a stack.
 <span id="lem-3-4"></span>**Lemma 3.4.** *A pass carries a largest item
 of the stack to its bottom; hence after $i$ passes the $i$ largest items
 are at the bottom, in order, and $n - 1$ passes sort the stack (the least
-item on top). The $n$ passes of `sortStack()` take $\Theta( n^2 )$
+item on top). The $n - 1$ passes of `sortStack()` take $\Theta( n^2 )$
 operations of the stack on every input, with a stack of the calls of depth
 $n$.*
 
@@ -513,15 +513,15 @@ $c_p$, a largest item among the others, at the place $p$. The claim on $i$
 passes follows by induction on $i$, and after $n - 1$ passes the least
 item is on top of the others, which are sorted. Each level of a pass makes at
 most two pops and two pushes, on a recursion of depth $k = n$, and the
-count of the items takes $2 n$ more; hence each of the $n$ passes costs
+count of the items takes $2 n$ more; hence each of the $n - 1$ passes costs
 $\Theta( n )$ operations, whatever the order of the items. $\square$
 
 By the formula of the proof, the place $j$ receives either an item from
 above it or $x_{j+1}$, and a small item thus rises by at most one place
 per pass, as in the bubble sort; a stack whose least item is at the bottom
-therefore needs $n - 1$ passes. Yet, the code makes $n$ passes whatever the
-input, the last one redundant, and each pass goes down to the bottom of
-the stack, even when it is already sorted. Finally, the contracts of
+therefore needs $n - 1$ passes, the number that the code makes whatever the
+input, and each pass goes down to the bottom of the stack, even when it is
+already sorted. Finally, the contracts of
 `sortStack()`, `removeGreater()`, `reverseWithQueue()` and
 `forEachBottomUp()` are audits, which read the stack by popping it and
 pushing it back. They check, respectively, a sorted stack with the same

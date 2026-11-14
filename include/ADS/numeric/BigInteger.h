@@ -140,6 +140,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <bit>
@@ -154,7 +155,8 @@
 
 // the width of the product of two digits done by the compiler: 128 with
 // unsigned __int128, 64 with the intrinsics of MSVC on x64, 0 for none,
-// the four products of the halves of 32 bits
+// the four products of the halves of 32 bits; the product is that of
+// Portable.h in every case
 #ifndef ADS_BIGINT_WIDE
  #if defined( ADS_BIGINT_PORTABLE )
   #define ADS_BIGINT_WIDE 0

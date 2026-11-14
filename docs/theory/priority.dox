@@ -369,7 +369,11 @@
    \text{ and } \ell \text{ differ} , \tag{5}
  \f]
  \f$ x_r \f$ the digit \f$ r \f$ of \f$ x \f$, and \f$ r = 0 \f$ if
- \f$ x = \ell \f$.
+ \f$ x = \ell \f$. A key pushed must not be smaller than any key extracted
+ or read, which the heap checks against the largest of them; the buckets
+ need only \f$ x \ge \ell \f$, and \f$ \ell \f$ may lag behind that key,
+ since `extractBelow()` extracts whole buckets without moving
+ \f$ \ell \f$.
 
  <em>Lemma 4 (the order of the buckets).</em> With \f$ x , y \ge \ell \f$,
  if the bucket of \f$ x \f$ has a smaller index than that of \f$ y \f$, then

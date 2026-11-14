@@ -308,10 +308,11 @@ nodes of a search, which keep a pointer to the node they come from). The
 arena also gives a random access iterator over the objects in the order
 in which they were made: the object of index $j$ is in the place
 $j \bmod n$ of the block $\lfloor j / n \rfloor$, and a new object only
-moves the end of the sequence. The iterators, however, read the vector of
-the blocks through its first element; hence, they stay valid only as long
-as no `make()` appends a block, since an append may move that vector, whereas the pointers that `make()` returns
-stay valid for the whole life of the arena. As a container in the sense of
+moves the end of the sequence. An iterator holds the vector of the blocks
+itself, not the array of its elements, which an append of a block may move,
+and it reads a block through that vector at each access; hence, the
+iterators stay valid for the whole life of the arena, as the pointers that
+`make()` returns do, whatever blocks are appended. As a container in the sense of
 the standard library, the arena has the types `value_type`,
 `size_type`, `difference_type`, `reference`, `const_reference`, `iterator`
 and `const_iterator` (the second a random access iterator over constant
@@ -421,14 +422,15 @@ other one, and `swap()` exchanges the slots of two pools in $O( 1 )$ time.
 Furthermore, `adopt(other)` takes the blocks of `other` with the objects
 alive in them, which become objects of this pool, to be freed by it, and
 leaves `other` empty; the lists of the library use it to take the nodes of
-another list with no copy (`absorb()` in [§2.10](02-sequence.md#sec-2-10)). If this
-pool has no block, it is a `swap()`, which brings here also the limit $n$
-of `other`, and the free slots of `other` stay free here. Otherwise, the chain of the blocks of `other` is hung under the
-first block of this pool, which is found by a walk of the chain, in time
-linear in the number of the blocks of this pool (cf.
-[Lemma 5.5](05-memory.md#lem-5-5)); the largest block becomes the larger
-of the two limits, and the free slots of `other`, and those it never used,
-are no longer given until the pool dies. In `adopt()` the two allocators must be equal, since the blocks of `other` go back to `A` with this pool. Finally,
+another list with no copy (`absorb()` in [§2.10](02-sequence.md#sec-2-10)). In
+both cases below, the limit $n$ of the blocks of this pool becomes the
+larger of the two limits, and `other` keeps its own. If this pool has no
+block, it takes the blocks of `other` as a `swap()` does, and the free
+slots of `other` stay free here. Otherwise, the chain of the blocks of
+`other` is hung under the first block of this pool, which is found by a
+walk of the chain, in time linear in the number of the blocks of this pool
+(cf. [Lemma 5.5](05-memory.md#lem-5-5)), and the free slots of `other`,
+and those it never used, are no longer given until the pool dies. In `adopt()` the two allocators must be equal, since the blocks of `other` go back to `A` with this pool. Finally,
 `size()` is the number of the objects alive, and `bytes()` the memory of
 the blocks, headers included, computed by a walk of the chain.
 
@@ -862,14 +864,16 @@ others onto the free list ([Algorithm 5.10](05-memory.md#alg-5-10)).
 A field is of the type `CellHeap::Value` (a `long`); the constant `nil` is
 $-1$, `atom(k)` gives the atom $k \ge 0$ and `isCell(v)` is true when $v$ is the address of a cell. We read the fields of a cell in use by `car(c)`
 and `cdr(c)`, and write them by `setCar(c, v)` and `setCdr(c, v)`, whose
-precondition is that $c$ is a cell of the heap in use; `addRoot(c)`
-adds one more occurrence of the cell $c$ to the roots, and `removeRoot(c)`
-removes one of them, if there is one (and does nothing otherwise).
+precondition is that $c$ is a cell of the heap in use; `addRoot(c)`,
+with the same precondition, adds one more occurrence of the cell $c$ to
+the roots, and `removeRoot(c)` removes one of them, if there is one (and
+does nothing otherwise).
 Finally, `freeCells()` is the number of the free cells, and `collect()`
 returns the number of the cells that it frees, i.e., of the cells in use before it that are unreachable. The heap relies on the program for what it
-does not check: the fields of the cells in use and the roots hold only nil,
-atoms and cells in use (a free cell named by a root, for instance, would
-bring the free list into the marking).
+does not check: the fields of the cells in use hold only nil, atoms and
+cells in use, and a root stays a cell in use until it is removed (a free
+cell named by a root, for instance, would bring the free list into the
+marking, which is why `addRoot()` refuses a free cell).
 
 A marking by a visit in depth needs a stack as deep as the longest path of
 cells, which a collector (run when the memory is exhausted) cannot

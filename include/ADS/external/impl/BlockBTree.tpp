@@ -104,6 +104,8 @@ void BlockBTree< K >::deal( Node & p , std::size_t f , std::size_t k ,
  std::vector< K > A;
  std::vector< std::size_t > C , ids( k );
  A.reserve( k * ( maxKeys() + 2 ) );
+ if( ! leaf )
+  C.reserve( k * ( maxKeys() + 2 ) );
  for( std::size_t j = 0 ; j < k ; ++j ) {
   ids[ j ] = p.kids[ f + j ];
   const Node v = ( f + j == c ) ? known : f_bs.readBlock( ids[ j ] );
@@ -177,13 +179,26 @@ void BlockBTree< K >::fixOverflow( Node & p , std::size_t i , const Node & u )
  }
 
 template< std::totally_ordered K >
+std::size_t BlockBTree< K >::lowKeys( bool twoLeaves ) const
+{
+ return( ( f_policy == BTreePolicy::THREE ) && twoLeaves ?
+         std::max< std::size_t >( 1 , std::size_t( f_B / 2 ) ) : minKeys() );
+ }
+
+template< std::totally_ordered K >
 void BlockBTree< K >::fixUnderflow( Node & p , std::size_t i ,
-                                    const Node & u )
+                                    const Node & u , bool root )
 {
 //! [BlockBTree-fixUnderflow]
  const std::size_t M = maxKeys() , m = minKeys();
  const std::size_t slack = std::size_t( f_B / 4 );
  const std::size_t B = std::size_t( f_B );
+ if( ( f_policy == BTreePolicy::THREE ) && root && ( p.kids.size() == 2 ) &&
+     u.kids.empty() ) {   // two leaves: merged while B / 4 below the top
+  deal( p , 0 , 2 , i , u , [ & ]( std::size_t t ) {
+   return( t <= M - slack ? std::size_t( 1 ) : std::size_t( 2 ) ); } );
+  return;
+  }
  if( ( f_policy == BTreePolicy::THREE ) && ( p.kids.size() >= 3 ) ) {
   const std::size_t f = std::min( i > 0 ? i - 1 : 0 , p.kids.size() - 3 );
   deal( p , f , 3 , i , u , [ & ]( std::size_t t ) {
@@ -255,6 +270,7 @@ bool BlockBTree< K >::remove( const K & x )
  std::vector< std::pair< std::size_t , std::size_t > > P;
  std::size_t u = f_root , target = NONE , tIdx = 0 , leafIdx = 0;
  Held cur( this , f_bs.readBlock( u ) );
+ const bool twoKids = cur.node.kids.size() == 2;   // the root's
 //! [BlockBTree-remove]
  for( ; ; ) {
   if( target != NONE ) {   // down the leftmost path to the successor
@@ -297,7 +313,11 @@ bool BlockBTree< K >::remove( const K & x )
  f_bs.writeBlock( u , cur.node );
  --f_n;
  bool replaced = target == NONE;
- while( ! P.empty() && ( cur.node.keys.size() < minKeys() ) ) {
+ // a leaf under a root of two children may hold fewer keys with THREE
+ auto low = [ & ]( void ) {
+  return( lowKeys( twoKids && ( P.size() == 1 ) && cur.node.kids.empty() ) );
+  };
+ while( ! P.empty() && ( cur.node.keys.size() < low() ) ) {
   const auto [ q , j ] = P.back();
   P.pop_back();
   Held p( this , f_bs.readBlock( q ) );
@@ -305,7 +325,7 @@ bool BlockBTree< K >::remove( const K & x )
    p.node.keys[ tIdx ] = y;
    replaced = true;
    }
-  fixUnderflow( p.node , j , cur.node );
+  fixUnderflow( p.node , j , cur.node , P.empty() );
   f_bs.writeBlock( q , p.node );
   cur.node = std::move( p.node );
   u = q;
@@ -440,7 +460,9 @@ bool BlockBTree< K >::valid( std::size_t u , const K * lo , const K * hi ,
 {
  const Node & v = f_bs.peek( u );
  const std::size_t s = v.keys.size();
- if( ( s > maxKeys() ) || ( ( u != f_root ) && ( s < minKeys() ) ) )
+ const bool two = ( d == 1 ) && v.kids.empty() &&
+                  ( f_bs.peek( f_root ).kids.size() == 2 );
+ if( ( s > maxKeys() ) || ( ( u != f_root ) && ( s < lowKeys( two ) ) ) )
   return( false );
  for( std::size_t i = 0 ; i < s ; ++i )
   if( ( i > 0 && !( v.keys[ i - 1 ] < v.keys[ i ] ) ) ||

@@ -1066,10 +1066,16 @@ bits, and the row of $x$ is at most $c / B$. If $C > 2^{B r}$, its new
 row is below $r < c / B$. Each later move lowers the row by at least 1, which
 gives at most $1 + c / B$ moves in all. $\square$
 
-`peekKey()` reads the least key from the first bucket in use without
-moving any bucket, and the keys pushed next need only be not smaller than
-the last key extracted. Instead, `top()` and `topKey()` make the first
-bucket one of the row 0, and therefore raise $\ell$. Its
+The precondition of `push()` is that the key is not smaller than any key
+extracted, by `pop()` or by `extractBelow()` (below), or read by `top()`
+and `topKey()`; the heap keeps the largest of these keys apart from $\ell$,
+which `extractBelow()` does not raise to the keys that it extracts, and
+checks the key pushed against it (the structure itself needs only a key
+not smaller than $\ell$). `peekKey()` reads the least key from the first
+bucket in use without moving any bucket, and does not count as a read, so
+that the keys pushed next need only be not smaller than the keys
+extracted. Instead, `top()` and `topKey()` make the first bucket one of
+the row 0, and therefore raise $\ell$. Its
 digits of $B$ bits are the two-level heap of the paper, which trades fewer
 moves for more buckets; with $B = 1$ it is the radix heap of the paper.
 

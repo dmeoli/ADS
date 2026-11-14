@@ -33,6 +33,7 @@
 #include "ADS/set/BoolSet.h"
 #include "ADS/set/RoaringBitmap.h"
 #include "ADS/set/VectorIntersection.h"
+#include "ADS/sort/QuicksortAdversary.h"
 #include "ADS/tree/BTreeMap.h"
 
 #include <algorithm>
@@ -429,6 +430,26 @@ ADS_TEST( "nth-element" )
  CHECK_THROWS( nthElement( Z , 0 ) , contract_violation );
  }
 
+// the selection against the adversary of McIlroy, which fixes the order of
+// the items while they are compared: the budget of 4 n items keeps the
+// comparisons linear, below 16 n for n = 2^12 to 2^18 and the ranks n / 2
+// and n / 10, where a budget of rounds let them grow with log n (38 n at
+// 2^16); the item put at its place is the right one for the values given
+ADS_TEST( "nth-element-adversary" )
+{
+ for( std::size_t n : { std::size_t( 1 ) << 12 , std::size_t( 1 ) << 16 ,
+                        std::size_t( 1 ) << 18 } )
+  for( std::size_t k : { n / 2 , n / 10 } ) {
+   QuicksortAdversary a( n );
+   std::vector< std::size_t > A = a.items();
+   const auto nth = A.begin() + std::ptrdiff_t( k );
+   nthElement( A.begin() , nth , A.end() , a.less() );
+   CHECK( a.comparisons() <= 16 * n );
+   const auto v = a.input();
+   CHECK( v[ *nth ] == k );
+   }
+ }
+
 // the range minima against a scan: the empty array, one item, sizes around
 // the blocks of 64 (63, 64, 65, 128, 129), all the ranges of the small
 // arrays, random ranges of 10^5 items, equal items (the leftmost one),
@@ -539,6 +560,37 @@ ADS_TEST( "vector-intersection" )
         std::vector< double >( { -2 , 0 , 7.25 , 9 } ) );
  std::vector< int > U = { 3 , 1 } , V = { 1 , 3 };
  CHECK_THROWS( intersect( U , V ) , contract_violation );
+ }
+
+// the contracts of merge() leave the forest as the algorithm of Rem makes
+// it: after each of random merges, also of elements in the same set, the
+// parents are those of the splicing alone, run on a vector beside it, with
+// no halving of a path by the check of the postcondition
+ADS_TEST( "rem-union-find-contracts" )
+{
+ const std::uint32_t n = 300;
+ RemUnionFind U( n );
+ std::vector< std::uint32_t > p( n );
+ std::iota( p.begin() , p.end() , 0u );
+ auto merge = [ & ]( std::uint32_t a , std::uint32_t b ) {   // Rem's
+  while( p[ a ] != p[ b ] ) {
+   if( p[ a ] > p[ b ] ) std::swap( a , b );
+   if( a == p[ a ] ) { p[ a ] = p[ b ]; return; }
+   const std::uint32_t z = p[ a ];
+   p[ a ] = p[ b ];
+   a = z;
+   }
+  };
+ std::mt19937 g( 47 );
+ bool same = true;
+ for( int t = 0 ; t < 2000 ; ++t ) {
+  const std::uint32_t x = g() % n , y = g() % n;
+  U.merge( x , y );
+  merge( x , y );
+  for( std::uint32_t v = 0 ; v < n ; ++v )
+   same = same && ( U.parent( v ) == p[ v ] );
+  }
+ CHECK( same );
  }
 
 // the union of disjoint sets against MFSet on random merges and queries,

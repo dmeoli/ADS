@@ -1174,20 +1174,18 @@ blocks between the first and the last holding at least $b - 1$ items each
 (the code requires $b \ge 3$).
 
 <span id="lem-2-14"></span>**Lemma 2.14.** *An `SEList` of $n$ items has
-at most $n / ( b - 1 ) + 2$ blocks, i.e., $O( n / b )$ pointers, and, when
-$b + 1$ is a power of 2, it takes $n + O( b + n / b )$ places; the block of
+at most $n / ( b - 1 ) + 2$ blocks, i.e., $O( n / b )$ pointers, and it
+takes $n + O( b + n / b )$ places; the block of
 the rank $i$ is reached from the nearer end through $O( 1 + \min\{ i , n
 - i \} / b )$ blocks.*
 
-*Proof.* The blocks but two hold $b - 1$ items at least. A block has $b + 1$
-places when $b + 1$ is a power of 2 (the code rounds the places of a block
-up to a power of 2), and hence a middle block wastes 2 places at most and
-each end block $b$ at most. Finally, the walk of `locate( i )` from the
-nearer end passes over whole blocks of $b - 1$ items at least. $\square$
+*Proof.* The blocks but two hold $b - 1$ items at least. A block has
+exactly $b + 1$ places, and hence a middle block wastes 2 places at most
+and each end block $b$ at most, which with the $n / ( b - 1 ) + 2$ blocks
+gives the places. Finally, the walk of `locate( i )` from the nearer end
+passes over whole blocks of $b - 1$ items at least. $\square$
 
-Of course, the default $b = 63$ gives blocks of 64 places. A $b$ for which
-$b + 1$ is not a power of 2 wastes up to the difference with the next power
-of 2 in each block, i.e., up to about $n$ places in the worst case.
+`capacity()` gives these places, $b + 1$ for each block in use.
 
 An insertion at the rank $i$ in a full block looks at the next $b$ blocks at
 most for one with room ([Algorithm 2.22](02-sequence.md#alg-2-22)). If one
@@ -1279,9 +1277,10 @@ $b$ of them; the deque needs the relaxation at the front too. $\square$
 [Lemma 2.16](02-sequence.md#lem-2-16) answers [Morin 2013, exercises 3.17
 and 3.18](Z-bibliography.md#ref-morin-cpp), and the bound on the space loses
 the $2 b$ places of the two ends at most. A block is one allocation, its
-header followed by its places, which are raw memory, a power of 2 of them
-($b + 1 = 64$ for the default $b = 63$). A place is thus reduced by a mask,
-where Morin's `BDeque`, an `ArrayDeque`, divides by $b + 1$; his blocks also
+header followed by its $b + 1$ places, which are raw memory. A place is
+reduced modulo $b + 1$ by a comparison and a subtraction, since the sum of
+the offset of the first item and a rank is below $2 ( b + 1 )$, where
+Morin's `BDeque`, an `ArrayDeque`, divides by $b + 1$; his blocks also
 build $b + 1$ items by default each. Furthermore, the class has the
 iterators, `operator[]`, `at()`, `front()`, `back()`, `size()` and
 `clear()`, and its invariant (the bound on the items of each block, none

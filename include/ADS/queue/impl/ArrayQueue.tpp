@@ -23,6 +23,42 @@ ArrayQueue< T >::ArrayQueue( std::size_t dim )
  }
 
 template< class T >
+ArrayQueue< T >::ArrayQueue( const ArrayQueue & other )
+ : f_A( new T[ other.f_capacity ] ) , f_size( other.f_size ) , f_head( 0 ) ,
+   f_capacity( other.f_capacity )
+{
+ for( std::size_t i = 0 , p = other.f_head ; i < f_size ; ++i ) {
+  f_A[ i ] = other.f_A[ p ];
+  if( ++p == f_capacity ) p = 0;
+  }
+ }
+
+template< class T >
+ArrayQueue< T >::ArrayQueue( ArrayQueue && other ) noexcept
+ : f_A( std::move( other.f_A ) ) ,
+   f_size( std::exchange( other.f_size , 0 ) ) ,
+   f_head( std::exchange( other.f_head , 0 ) ) ,
+   f_capacity( std::exchange( other.f_capacity , 0 ) )
+{
+ }
+
+template< class T >
+ArrayQueue< T > & ArrayQueue< T >::operator=( ArrayQueue other ) noexcept
+{
+ swap( other );
+ return( *this );
+ }
+
+template< class T >
+void ArrayQueue< T >::swap( ArrayQueue & other ) noexcept
+{
+ f_A.swap( other.f_A );
+ std::swap( f_size , other.f_size );
+ std::swap( f_head , other.f_head );
+ std::swap( f_capacity , other.f_capacity );
+ }
+
+template< class T >
 bool ArrayQueue< T >::empty( void ) const
 {
  return( f_size == 0 );

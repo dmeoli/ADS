@@ -1350,6 +1350,45 @@ ADS_TEST( "sequence-merge-dedup" )
   }
  }
 
+// sortStack() makes n - 1 passes, which Lemma 3.4 of the manual proves to
+// sort: the pushes of a stack that counts them are the n of the count of
+// the items, 2 m - 1 for a pass on m >= 1 items, and the 2 n of the audit
+// (the items read and counted again), for n = 0 to 40 items in every
+// order tried, the least item at the bottom included
+namespace {
+
+struct CountingStack {
+ using Item = int;
+ SequenceStack< List< int > > s;
+ long pushes = 0;
+ bool empty( void ) const { return( s.empty() ); }
+ void push( const int & v ) { ++pushes; s.push( v ); }
+ int pop( void ) { return( s.pop() ); }
+ int top( void ) const { return( s.top() ); }
+ };
+
+}  // end( namespace )
+
+ADS_TEST( "stack-sort-passes" )
+{
+ std::mt19937 g( 6 );
+ for( long n = 0 ; n <= 40 ; ++n )
+  for( int order = 0 ; order < 3 ; ++order ) {
+   CountingStack S;
+   for( long i = 0 ; i < n ; ++i )            // rising, falling, random
+    S.push( order == 0 ? int( i ) : order == 1 ? int( n - i ) :
+            int( g() % 100 ) );
+   S.pushes = 0;
+   sortStack( S );
+   const long passes = n > 0 ? n - 1 : 0 ,
+              audit = ADS_CONTRACTS >= 3 ? 2 * n : 0;
+   CHECK( S.pushes == n + passes * ( 2 * n - 1 ) + audit );
+   Ints out;
+   while( ! S.empty() ) out.push_back( S.pop() );
+   CHECK( std::is_sorted( out.begin() , out.end() ) );
+   }
+ }
+
 // the palindromes, the sorting of a stack with its own operations, and
 // removeGreater(); the edge cases: the strings of one and two characters
 // and all equal, the empty stack, one item, all equal, sorted either way,

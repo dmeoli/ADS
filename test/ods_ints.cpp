@@ -1768,6 +1768,70 @@ ADS_TEST( "ods.ex14.6.restructures" )
   }
  }
 
+// ods ex 14.7 on the trees of at most two leaves, where the moves of three
+// nodes lack the siblings: the cycle of two insertions and two removals
+// from a root leaf of 2 B - 2 keys costs THREE a single split, where the
+// rules of the book cost three restructurings a cycle; removals down to a
+// leaf of floor( B / 2 ) keys cost nothing, one more merges the two
+// leaves into a root leaf B / 4 below the top, and a fuller sibling shares
+// its keys; random operations on 0 .. 3 B keys against a std::set, the
+// invariant checked at each one
+ADS_TEST( "ods.ex14.7.small-trees" )
+{
+ const int B = 16 , cycles = 1000;
+ std::vector< int > leaf;
+ for( int k = 0 ; k < 2 * B - 2 ; ++k ) leaf.push_back( k );
+ for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::THREE } ) {
+  ADS::BlockBTree< int > t( B , pol );
+  t.assign( { { leaf } } );
+  for( int c = 0 ; c < cycles ; ++c ) {
+   CHECK( t.insert( 500 ) && t.insert( 501 ) );
+   CHECK( t.remove( 501 ) && t.remove( 500 ) );
+   }
+  if( pol == ADS::BTreePolicy::STANDARD )
+   CHECK( t.restructures() == 3 * std::size_t( cycles ) );
+  else
+   CHECK( t.restructures() == 1 && t.height() == 2 );
+  }
+ {
+  ADS::BlockBTree< int > t( B , ADS::BTreePolicy::THREE );
+  std::vector< int > left , right;
+  for( int k = 0 ; k < B - 1 ; ++k ) {
+   left.push_back( k );
+   right.push_back( 100 + k );
+   }
+  t.assign( { { { 50 } } , { left , right } } );
+  for( int k = 0 ; k < B - 1 - B / 2 ; ++k )   // down to floor( B / 2 )
+   CHECK( t.remove( k ) );
+  CHECK( t.restructures() == 0 && t.height() == 2 );
+  CHECK( t.remove( B - 1 - B / 2 ) );          // merged into a root leaf
+  CHECK( t.merges() == 1 && t.height() == 1 &&
+         t.size() == std::size_t( B / 2 - 1 + 1 + B - 1 ) );
+  ADS::BlockBTree< int > u( B , ADS::BTreePolicy::THREE );
+  std::vector< int > full;
+  for( int k = 0 ; k < 2 * B - 1 ; ++k ) full.push_back( 100 + k );
+  u.assign( { { { 50 } } , { left , full } } );
+  for( int k = 0 ; k <= B - 1 - B / 2 ; ++k ) CHECK( u.remove( k ) );
+  CHECK( u.borrows() == 1 && u.height() == 2 );   // the keys shared
+  const auto L = u.levels();
+  CHECK( L[ 1 ].size() == 2 && L[ 1 ][ 0 ].size() + 1 >= std::size_t( B ) &&
+         L[ 1 ][ 1 ].size() + 1 >= std::size_t( B ) );
+  }
+ for( int b : { 2 , 3 , 4 , 8 , 16 } ) {
+  ADS::BlockBTree< int > t( b , ADS::BTreePolicy::THREE );
+  std::set< int > s;
+  std::mt19937 g( static_cast< std::uint32_t >( b ) );
+  for( int i = 0 ; i < 20000 ; ++i ) {
+   const int x = int( g() % std::uint32_t( 3 * b ) );
+   if( g() % 2 ) CHECK( t.insert( x ) == s.insert( x ).second );
+   else CHECK( t.remove( x ) == ( s.erase( x ) == 1 ) );
+   }
+  std::vector< int > K;
+  t.forEach( [ & ]( int k ) { K.push_back( k ); } );
+  CHECK( K == std::vector< int >( s.begin() , s.end() ) );
+  }
+ }
+
 // ods ex 14.8: the B+-tree with the removal by borrows and merges,
 // lowerBound() the smallest key >= x and findRange( x , y ) the keys in
 // ( x , y ], against a std::map, the shape checked at each operation

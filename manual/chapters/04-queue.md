@@ -100,9 +100,12 @@ the copy and the move constructors and assignments, and leave the
 destruction of the items to their arrays. Their copies are made item by
 item, through `forEach()`, while a move constructor takes the state in $O(
 1 )$ time, leaving the object moved from empty, and the move assignment
-exchanges the two states. Each of the other classes
-copies and moves as its members do (item by item for those on a list or on
-stacks), but for `ArrayQueue`, whose vector can only be moved.
+exchanges the two states. `ArrayQueue` declares them too, as `ArrayStack`
+does: a copy takes the items from the front into a vector of the same
+capacity, a move takes the vector in $O( 1 )$ time and leaves the queue
+moved from empty, with no capacity, and the assignment copies or moves and
+then swaps. Each of the other classes copies and moves as its members do
+(item by item for those on a list or on stacks).
 
 Throughout the chapter $n$ is the number of items, $m$ the number of
 places of a vector, $h$ the place of the front in a circular vector, and

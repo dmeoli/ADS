@@ -159,22 +159,25 @@ of [Montresor 2025](Z-bibliography.md#ref-montresor2025), and
 probes at the places $0 , 1 , 3 , 7 , \ldots , 2^k - 1$ stop at the first
 $k$ with $A[ 2^k - 1 ] \ge v$, i.e., $k = \lceil \log_2 ( h + 1 ) \rceil$,
 after $k + 1$ comparisons. In `gallopSearch()` the binary search that
-follows runs on the places $2^{k-1}$ to $2^k - 1$, $2^{k-1}$ of them, and
-costs at most $k$ more comparisons, since its range includes the place
-$2^k - 1$ already compared ([Algorithm 6.3](06-search.md#alg-6-3) and
-[Figure 6.2](06-search.md#fig-6-2)); in all, for $h \ge 1$, at most
+follows runs on the places $2^{k-1}$ to $2^k - 2$, $2^{k-1} - 1$ of them,
+since the place $2^k - 1$ is already known to hold an item not smaller
+than $v$, and so costs at most $k - 1$ more comparisons
+([Algorithm 6.3](06-search.md#alg-6-3) and
+[Figure 6.2](06-search.md#fig-6-2)); when the doubling passes the end of
+the vector before the place $2^k - 1$, the probes are $k$ and the binary
+search runs on fewer places. In all, for $h \ge 1$, at most
 
 $$
-2 \lceil \log_2 ( h + 1 ) \rceil + 1 \tag{6.3}
+2 \lceil \log_2 ( h + 1 ) \rceil \tag{6.3}
 $$
 
-comparisons (2 for $h = 0$), which depend on the answer but not on $n$.
+comparisons (1 for $h = 0$), which depend on the answer but not on $n$.
 [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976) also show that
 applying the same idea to the search of $k$ gives
 $\log_2 h + \log_2 \log_2 h + \cdots$ comparisons, close to the lower
 bound $\log_2 h$.
 
-![Figure 6.2. `gallopSearch()` for $v = 40$, each probe numbered above in its order: the probes at the places 0, 1, 3 and 7 double the bound until $A[ 7 ] \ge v$, and the binary search on the places 4 to 7 (the brace) probes the places 6, 5 and 4 and finds the answer $h = 5$; it never probes the place 7, which the last doubling has compared already, so that the 7 comparisons are those of (6.3) with $k = 3$.](../figures/search-gallop.svg){#fig-6-2}
+![Figure 6.2. `gallopSearch()` for $v = 40$, each probe numbered above in its order: the probes at the places 0, 1, 3 and 7 double the bound until $A[ 7 ] \ge v$, and the binary search on the places 4 to 6 (the brace), which leaves out the place 7 compared by the last doubling, probes the places 5 and 4 and finds the answer $h = 5$, so that the 6 comparisons are those of (6.3) with $k = 3$.](../figures/search-gallop.svg){#fig-6-2}
 
 <span id="alg-6-3"></span>**Algorithm 6.3.** The searches with a bound that
 doubles ([Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)): on a
@@ -189,9 +192,9 @@ on a sequence of unknown length.
 
 `exponentialSearch()` finds the least $i \ge \mathit{lo}$ at which a
 predicate $p$, false and then true, holds (the method $B_1$ of Bentley and
-Yao). Its binary search leaves out the last probe, whose $p$ is known to be
-true, and hence makes at most $k - 1$ evaluations after the $k + 1$ of the
-probes, within the bound $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$
+Yao). Its binary search too leaves out the last probe, whose $p$ is known
+to be true, and hence makes at most $k - 1$ evaluations after the $k + 1$ of
+the probes, within the bound $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$
 of its header. Its probes are cut at the largest value of the type of the
 integers, which they never overflow, and the middle of its binary search is
 computed on the unsigned distance. `unboundedSearch()` applies it to a
@@ -929,14 +932,22 @@ $n$ comparisons. When the pivot is the smallest item of the range, the
 items equal to it go to its left, so that many equal items end in one step;
 since the items of a range cut on its left by a pivot are not smaller than
 it, a later pivot equal to it is known to be the smallest with no pass.
-Finally, each round that does not cut the range by at least a quarter
-counts against a budget of $2 \lceil \log_2 ( n + 1 ) \rceil$ rounds, and
-past it the pivot is the median of the medians, whose rounds cost (6.11).
-Each round before it costs $O( n )$ at most; those that cut by a
-quarter shrink the range geometrically, but those that cut less may each
-leave almost all of it, and the bound in the worst case is therefore
-$O( n \log n )$. (A budget counted in the items partitioned, e.g., stopping
-when their sum exceeds a constant times $n$, would make it linear.)
+Finally, each round charges the items of its part to a budget of $4 n$
+items, which a random order hardly ever exhausts (by (6.12), the rounds of
+a random range of more than 600 items partition about $1.5 n$ items at
+most),
+and a round whose part the rest of the budget does not cover takes as its
+pivot the median of the medians, whose rounds cost (6.11). Hence the other
+rounds partition at most $4 n$ items in all, and their samples, selected
+recursively within their own budgets, hold $O( m^{2/3} )$ items of a part
+of $m > 600$, i.e., less than $m / 16$. By induction on $n$, the selection
+therefore takes $O( n )$ time in the worst case, as the selection of
+[Musser 1997](Z-bibliography.md#ref-musser1997) does by the same device;
+against the adversary of [McIlroy 1999](Z-bibliography.md#ref-mcilroy1999),
+which fixes the order of the items while they are compared, the
+comparisons stay below $16 n$ from $n = 2^{12}$ to $2^{18}$ (the test
+`ordered.nth-element-adversary`), where a budget counted in rounds let them
+grow with $\log n$.
 [Table 6.2](06-search.md#tab-6-2) compares the three selections.
 
 <span id="tab-6-2"></span>**Table 6.2.** The selections of the item of
@@ -946,7 +957,7 @@ rank $k$ in `ADS/search`.
 |---|---|---|
 | `selection()` | at random, or the first item | $O( n )$ expected by (6.10), $\Theta( n^2 )$ in the worst case |
 | `medianOfMedians()` | the median of the medians of the groups of 5 | $O( n )$ in the worst case, by (6.11) |
-| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n \log n )$ in the worst case |
+| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case |
 
 ## 6.9 Range minima {#sec-6-9}
 

@@ -346,12 +346,15 @@
  middle terms with the high half of \f$ a_0 b_0 \f$ is computed on the low
  halves of the middle products, i.e., as three numbers below \f$ 2^{32} \f$,
  whose sum is below \f$ 3 \cdot 2^{32} \f$ and fits in a word with no
- overflow; its high half is the carry into the high word of the product. In
- the same way, the signed integers of 128 bits, where the compiler has no
- `__int128`, are two words in two's complement, and the sum carries 1 into
- the high word exactly when the sum of the low words, modulo \f$ 2^{64} \f$,
- is smaller than either of them. These are details of the implementation,
- out of the API reference.
+ overflow; its high half is the carry into the high word of the product.
+ This computation is also `wideProductHalves()`, which the integers of any
+ length of `BigInteger.h` call in place of the builtin when
+ `ADS_BIGINT_PORTABLE` is defined, so that the library has one product of two
+ words. In the same way, the signed integers of 128 bits, where the compiler
+ has no `__int128`, are two words in two's complement, and the sum carries 1
+ into the high word exactly when the sum of the low words, modulo
+ \f$ 2^{64} \f$, is smaller than either of them. These are details of the
+ implementation, out of the API reference.
 
  \section theory_ADS_refs References
 

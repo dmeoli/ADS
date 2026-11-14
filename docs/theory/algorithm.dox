@@ -278,7 +278,8 @@
  \f$ d \f$ roots, and the general case follows by induction on \f$ n \f$,
  writing the polynomial as one in \f$ x_1 \f$ whose leading coefficient is a
  polynomial of the other variables. Hence `zeroPolynomial()`, with
- \f$ S = \{ 1 , \ldots , 2 d \} \f$, errs with probability at most
+ \f$ S = \{ 1 , \ldots , 2 d \} \f$ (of `long` points, so that
+ \f$ 2 d \f$ must be a `long`, its precondition), errs with probability at most
  \f$ 1 / 2 \f$ per run, and only when it answers zero; \f$ K \f$ independent
  runs leave at most \f$ 2^{-K} \f$. The algorithm of Freivalds
  (`freivalds()`, exercise 17.4) is the same argument for the matrix

@@ -15,7 +15,6 @@
 /*--------------------------------------------------------------------------*/
 
 #include <algorithm>
-#include <bit>
 #include <cstdint>
 #include <optional>
 
@@ -229,15 +228,19 @@ It selectMedianOfMedians( It first , It last , C & less )
 template< class It , class C >
 void select( It first , It nth , It last , C & less )
 {
- int budget = 2 * int( std::bit_width( std::size_t( last - first ) ) );
+ // the items that the rounds partition, at most 4 times those of the
+ // range; a round whose part the rest of the budget does not cover takes
+ // the median of the medians, so that the worst case stays linear
+ std::ptrdiff_t budget = 4 * ( last - first );
  std::optional< std::iter_value_t< It > > floor;   // see below
  while( last - first > 24 ) {
   const std::ptrdiff_t n = last - first;
   It p;
   bool ordered = false;
-  if( budget <= 0 )                         // the worst case stays linear
+  if( budget < n )
    p = selectMedianOfMedians( first , last , less );
-  else if( n > 600 ) {                      // the sample of Floyd and Rivest
+  else if( budget -= n ; n > 600 ) {        // charged, and the sample of
+                                            // Floyd and Rivest
    const std::ptrdiff_t k = nth - first;
    const double z = std::log( double( n ) );
    const double s = 0.5 * std::exp( 2 * z / 3 );
@@ -282,8 +285,6 @@ void select( It first , It nth , It last , C & less )
    floor = *m;
    first = m + 1;
    }
-  if( 4 * ( last - first ) > 3 * n )
-   --budget;
   }
  selectInsertion( first , last , less );
  }

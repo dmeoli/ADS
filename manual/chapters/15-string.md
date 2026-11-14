@@ -655,12 +655,18 @@ prefixes holds each pattern under its prefix. $\square$
 **The switch to the automaton.** Both filters may let through a candidate
 at nearly every place, on patterns that occur everywhere or on a text
 whose bytes the filter cannot tell apart (a small alphabet, against
-patterns that use all of it). Each search therefore counts its *checks*,
-i.e., the patterns compared at the candidates (in the filter of shuffles)
-or the entries of the chains visited (in the filters of shift-or). When
-they exceed $2 s + 4096$ after the block that starts at $s$ (except on
-the last block of the filter of shuffles without vector instructions),
-the search stops and returns the first place that it has not tested. This
+patterns that use all of it), or on long patterns whose first bytes occur
+everywhere. Each search therefore counts the *bytes* that it compares with
+the patterns, as `StringSearcher` does
+([§15.2.2](15-string.md#sec-15-2-2)): a word of 8 bytes for each pattern
+compared at a candidate (in the filter of shuffles) or for each entry of
+the chains visited (in the filters of shift-or), and the bytes past the
+word that `memcmp()` compares when the word agrees. When they exceed
+$16 s + 4096$ after the block that starts at $s$ (except on the last block
+of the filter of shuffles without vector instructions), the search stops
+and returns the first place that it has not tested, which
+`automatonFrom(T)` also gives (`std::string_view::npos` if the filter
+searches all of $T$). This
 is the end of the block of shuffles ($s + 32$ or $s + 64$), or the first
 start whose end lies in the next block of shift-or, $j + 9 - L$ for the
 stride 1 and $j + 15 - 2 ( W - 1 )$ for the stride 2. The automaton then
@@ -670,9 +676,8 @@ earlier ones being the filter's.
 
 <span id="lem-15-7"></span>**Lemma 15.7.** *`MultiSearcher::findAll()`
 gives $\mathrm{Occ}( P_j , T )$ for each $j$. Before the switch the
-filter makes at most $2 s + 4096$ checks plus those of its last block,
-each costing $O( 1 )$ plus the bytes that it compares, at most
-$\ell_{\max}$. Hence the search takes $O( n \, \ell_{\max} +
+filter compares at most $16 n + 4096$ bytes plus those of its last block,
+at most $64 ( M + 8 k )$. Hence the search takes $O( n + M +
 \mathit{occ} \log \mathit{occ} )$ time in the worst case, the last term
 for the final sort, after a construction of $O( 256 M + k \log k \,
 \ell_{\max} )$ time.*
@@ -683,20 +688,21 @@ stops after testing all the starts before $f$. The automaton reports, by
 [Lemma 15.5](15-string.md#lem-15-5), all the occurrences that lie in
 $T[ \max( f - \ell_{\max} , 0 ) .. ]$, which include those that
 start at $f$ or later, and of these it keeps exactly the latter. As for
-the time, the filter costs $O( 1 )$ per place, the checks are bounded as
-stated, and the automaton costs $O( n + \mathit{occ} )$ by
+the time, the filter costs $O( 1 )$ per place, a check costs $O( 1 )$ per
+byte counted, the bytes are bounded as stated (a block tests 64 places at
+most, each against at most the $k$ patterns), and the automaton costs $O( n + \mathit{occ} )$ by
 [Theorem 15.2](15-string.md#thm-15-2). The construction sorts the
 patterns, with $O( k \log k )$ comparisons of at most $\ell_{\max}$ bytes,
 fills the tables in $O( M )$ time and builds the automaton in
 $O( 256 M )$. $\square$
 
-We remark that the bound on the checks does not make the search linear,
-since a check may compare up to $\ell_{\max}$ bytes, whereas
-`StringSearcher` counts the bytes of its comparisons
-([§15.2.2](15-string.md#sec-15-2-2)). For instance, the patterns
-$a^{999} b$ and $\mathtt{zzzzzzzz}$ on the text $a^n$ make every place a
-candidate of one check, below the threshold, and each check compares about
-1000 bytes; on such inputs the automaton without the filter would likely be faster.
+We remark that counting the checks instead of the bytes would not make the
+search linear, since a check may compare up to $\ell_{\max}$ bytes. For
+instance, the patterns $a^{999} b$ and $\mathtt{zzzzzzzz}$ on the text
+$a^n$ make every place a candidate of one check, and each check compares
+about 1000 bytes; counted in bytes, the checks of the first block already
+exceed the threshold, and the automaton searches the rest of the text (the
+test `engineered_strings.multi-search-worst`).
 
 **The count.** `count()` counts the occurrences of the filter and, after a
 switch at the place $f$, adds those of the automaton that start at $f$ or

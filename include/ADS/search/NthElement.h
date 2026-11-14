@@ -51,16 +51,18 @@
  * left by a pivot are not smaller than it, and a later pivot equal to it is
  * known to be the smallest with no pass.
  *
- * Each round that does not cut the range by at least a quarter counts
- * against a budget of \f$ 2 \lceil \log_2 ( n + 1 ) \rceil \f$ rounds; past
- * it the pivot is the median of the medians of the groups of 5, which has at
- * least \f$ 3 n / 10 \f$ items on each side, so that what is left costs
+ * Each round charges the items of its part to a budget of \f$ 4 n \f$
+ * items, which a random order hardly ever exhausts; a round whose part the
+ * rest of the budget does not cover takes as its pivot the median of the
+ * medians of the groups of 5, which has at least \f$ 3 n / 10 \f$ items on
+ * each side, so that what is left costs
  * \f$ T( n ) \le T( n / 5 ) + T( 7 n / 10 ) + O( n ) = O( n ) \f$. The
- * rounds before it cost \f$ O( n ) \f$ each, at most
- * \f$ 2 \lceil \log_2 ( n + 1 ) \rceil \f$ of them cutting little, and the
- * others shrinking the range geometrically: \f$ O( n \log n ) \f$ in the
- * worst case (a budget counted in items, not in rounds, would make it
- * linear). A range of at most 24 items is sorted by insertion.
+ * other rounds partition at most \f$ 4 n \f$ items in all, and their
+ * samples, selected recursively within their own budgets, hold
+ * \f$ O( m^{2/3} ) \f$ items of a part of \f$ m > 600 \f$, less than
+ * \f$ m / 16 \f$, so that by induction the selection takes \f$ O( n ) \f$
+ * time in the worst case. A range of at most 24 items is sorted by
+ * insertion.
  *
  * The contracts [see `Contract.h`]: `nth` in
  * \f$ [ \mathit{first} , \mathit{last} ) \f$; the items before `nth` are not
@@ -79,6 +81,9 @@
  * \see M. Blum, R. W. Floyd, V. Pratt, R. L. Rivest, R. E. Tarjan, Time
  *      bounds for selection, Journal of Computer and System Sciences 7(4),
  *      448-461, 1973, doi:10.1016/S0022-0000(73)80033-9
+ * \see D. R. Musser, Introspective sorting and selection algorithms,
+ *      Software: Practice and Experience 27(8), 983-993, 1997,
+ *      doi:10.1002/(SICI)1097-024X(199708)27:8\<983::AID-SPE117\>3.0.CO;2-\#
  * \see S. Edelkamp, A. Weiß, BlockQuicksort: avoiding branch mispredictions
  *      in quicksort, Proceedings of ESA 2016, LIPIcs 57, 38:1-38:16, 2016,
  *      doi:10.4230/LIPIcs.ESA.2016.38
@@ -133,24 +138,24 @@ namespace ADS {
 ///     \text{ (fall)}\ \textbf{then} \cr
 /// 3 & \qquad \textbf{if}\ A \text{ is sorted (reversed, and then }
 ///     \text{reversed back)}\ \textbf{then return} \cr
-/// 4 & \quad \mathit{budget} \gets 2 \lceil \log_2 ( n + 1 ) \rceil \cr
+/// 4 & \quad \mathit{budget} \gets 4 n \cr
 /// 5 & \quad \textbf{while}\ \text{the part } A[ i .. j ] \text{ has more }
 ///     \text{than 24 items}\ \textbf{do} \cr
-/// 6 & \qquad \textbf{if}\ \mathit{budget} \le 0\ \textbf{then}\ p \gets
-///     \text{the median of the medians of the groups of 5} \cr
-/// 7 & \qquad \textbf{else if}\ j - i + 1 > 600\ \textbf{then} \cr
-/// 8 & \qquad\quad \mathrm{nthElement}( A[ \ell .. r ] , k )\quad
-///     \triangleright\ \text{the sample of Floyd and Rivest};\ p \gets k \cr
-/// 9 & \qquad \textbf{else}\ p \gets \text{the median of } A[ i ] , A[ ( i
-///     + j ) / 2 ] , A[ j ] \cr
-/// 10 & \qquad m \gets \text{the place of } A[ p ] \text{ after a partition}
+/// 6 & \qquad \textbf{if}\ \mathit{budget} < j - i + 1\ \textbf{then}\ p
+///     \gets \text{the median of the medians of the groups of 5} \cr
+/// 7 & \qquad \textbf{else} \cr
+/// 8 & \qquad\quad \mathit{budget} \gets \mathit{budget} - ( j - i + 1 )
+///     \cr
+/// 9 & \qquad\quad \textbf{if}\ j - i + 1 > 600\ \textbf{then}
+///     \ \mathrm{nthElement}( A[ \ell .. r ] , k );\ p \gets k\quad
+///     \triangleright\ \text{the sample of Floyd and Rivest} \cr
+/// 10 & \qquad\quad \textbf{else}\ p \gets \text{the median of } A[ i ] ,
+///     A[ ( i + j ) / 2 ] , A[ j ] \cr
+/// 11 & \qquad m \gets \text{the place of } A[ p ] \text{ after a partition}
 ///     \text{ of } A[ i .. j ] \text{ around it} \cr
-/// 11 & \qquad \textbf{if}\ m = k\ \textbf{then return} \cr
-/// 12 & \qquad \textbf{else if}\ k < m\ \textbf{then}\ j \gets m - 1
+/// 12 & \qquad \textbf{if}\ m = k\ \textbf{then return} \cr
+/// 13 & \qquad \textbf{else if}\ k < m\ \textbf{then}\ j \gets m - 1
 ///     \ \textbf{else}\ i \gets m + 1 \cr
-/// 13 & \qquad \textbf{if}\ \text{the part kept is more than } 3 / 4
-///     \text{ of the last one}\ \textbf{then}\ \mathit{budget} \gets
-///     \mathit{budget} - 1 \cr
 /// 14 & \quad \text{sort } A[ i .. j ] \text{ by insertion}
 /// \end{array}}
 /// \f]

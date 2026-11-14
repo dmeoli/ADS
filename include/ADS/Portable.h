@@ -7,7 +7,9 @@
  * two, the swap of the bytes of a word and the signed integers of 128 bits.
  * The product is that of `unsigned __int128` where the compiler has it, the
  * intrinsic of MSVC on x64 and ARM64 otherwise, and the arithmetic on halves
- * of 32 bits elsewhere (and in a constant expression of MSVC); the swap is
+ * of 32 bits elsewhere (and in a constant expression of MSVC), which is also
+ * `wideProductHalves()`, the product of `BigInteger.h` when
+ * `ADS_BIGINT_PORTABLE` is defined; the swap is
  * the builtin of GCC and Clang, else the `std::byteswap()` of C++23, else
  * the intrinsic of MSVC, else three exchanges by masks, of the bytes, of the
  * pairs of bytes and of the halves; the signed integer of 128 bits is
@@ -56,6 +58,24 @@ namespace detail {
 
 /*--------------------------------------------------------------------------*/
 
+/// the product of 128 bits of `a` and `b`, its high half in `hi`, by the
+/// four products of their halves of 32 bits (Algorithm 4.3.1M of Knuth),
+/// for the compilers with no product of two words and for the tests
+constexpr std::uint64_t wideProductHalves( std::uint64_t a , std::uint64_t b ,
+                                           std::uint64_t & hi )
+{
+ //! [wideProduct]
+ constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
+ const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW ,
+                     b1 = b >> 32;
+ const std::uint64_t p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
+                     p11 = a1 * b1;
+ const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
+ hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
+ return( ( mid << 32 ) | ( p00 & LOW ) );
+ //! [wideProduct]
+ }
+
 /// the product of 128 bits of `a` and `b`, its high half in `hi`
 constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
                                      std::uint64_t & hi )
@@ -74,16 +94,7 @@ constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
   return( a * b );
  #endif
   }
- //! [wideProduct]
- constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
- const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW ,
-                     b1 = b >> 32;
- const std::uint64_t p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
-                     p11 = a1 * b1;
- const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
- hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
- return( ( mid << 32 ) | ( p00 & LOW ) );
- //! [wideProduct]
+ return( wideProductHalves( a , b , hi ) );
 #endif
  }
 

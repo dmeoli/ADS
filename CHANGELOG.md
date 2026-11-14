@@ -2555,6 +2555,124 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- sortStack() made n passes, while the lemma of chapter 3 of the manual and
+  of the theory of the stacks proves that n - 1 sort the stack, the last one
+  redundant; it now makes n - 1, as its pseudocode, the header, the theory
+  and the chapter say; the test beyond stack-sort-passes counts the pushes
+
+- ArrayQueue had the implicit move constructor and assignment of its
+  members, so that a queue moved from kept its size and its capacity with no
+  vector, empty() false and dequeue() and top() reading through a null
+  pointer; it now has the copy and move constructors, the assignment by copy
+  and swap and swap() of ArrayStack, the queue moved from left empty with no
+  capacity, as the header, the theory of the queues and chapter 4 of the
+  manual say; the test ch04 spec.ArrayQueue-moves
+
+- the pseudocode of RingDeque::insert() and erase() tested i < n / 2 where
+  the code divides integers; it now writes floor( n / 2 ), as the code and
+  chapter 4 of the manual do
+
+- BigInteger.tpp had its own mulWide(), a copy of wideProduct() of
+  Portable.h with the same three paths; the integers of any length now take
+  their products of digits from Portable.h, whose computation on the halves
+  of 32 bits is wideProductHalves(), kept for ADS_BIGINT_PORTABLE, as
+  Portable.h, the theory of the library and chapters 1 and 17 of the manual
+  say; the test taocp big-integer-words checks both against the products on
+  digits of 16 bits
+
+- SEList rounded the places of a block up to a power of 2, std::bit_ceil( b
+  + 1 ), so that its space n + O( b + n / b ) held only when b + 1 was a
+  power of 2 (a block of b = 64 had 128 places for at most 65 items); a
+  block now has exactly b + 1 places, a place reduced by a comparison and a
+  subtraction instead of a mask, and capacity() gives the places of the
+  blocks; the header, the theory of the sequences and Lemma 2.14 of the
+  manual no longer state the condition; the test ods_lists
+  ods-3.3.selist-space
+
+- zeroPolynomial() drew its points from { 1 , ... , 2 d } computing 2 d as a
+  long, which overflows when d > LONG_MAX / 2; its precondition now requires
+  d <= LONG_MAX / 2, as the header, the theory of the algorithms and the
+  chapter of the manual say; the test ch17 sec17.monte-carlo-degree
+
+- StaticGraph.h defined the macro ADS_GRAPH_PREFETCH, not guarded by #ifndef
+  and used by no code of the library; with no measure to argue a prefetch in
+  the scans of the rows, it is removed, and the chapter of the manual no
+  longer describes it; the test engineered_graph static-graph-macros
+
+- the postcondition of RemUnionFind::merge(), find( x ) == find( y ) at the
+  level 2, halved the paths as a side effect, so that the contracts changed
+  the forest that they checked; it now climbs to the roots without changing
+  any parent, as the header, the theory of the MFSET and the chapter of the
+  manual say; the test ordered rem-union-find-contracts
+
+- the precondition of RadixHeap::push(), a key not smaller than any key
+  extracted or read, was checked only against the base of the buckets, which
+  extractBelow() does not raise to the keys that it extracts, so that a key
+  below those keys was accepted; the heap now keeps the largest key
+  extracted or read and checks the key pushed against it, as the header, the
+  theory of the priority queues and the chapter of the manual say; the test
+  heaps radix-heap-floor
+
+- the policy THREE of BlockBTree fell back to the rules of the book at a
+  root that splits and at the children of a root of two children, so that a
+  tree of at most two leaves still ran the cycle of Lemma 14.1 of Morin's
+  book, three restructurings every four operations (3000 in 4000 from a root
+  leaf of 2 B - 2 keys, B = 16); in a tree of two leaves the leaves now hold
+  down to max( 1 , floor( B / 2 ) ) keys, and a leaf below that is merged
+  with the other one into a root leaf if that leaf stays B / 4 below the top
+  and shares its keys with it otherwise, so that those restructurings too
+  are O( m / B ) (one split in that cycle), as the header, the theory of the
+  external memory and the chapter of the manual now say; the test ods_ints
+  ods.ex14.7.small-trees
+
+- MultiSearcher counted the checks of its candidates, 2 a place before the
+  switch to the automaton, while a check may compare up to the length of the
+  longest pattern, so that its worst case was O( n lmax + occ log occ ) (the
+  patterns a^999 b and zzzzzzzz on a^n compared about 1000 bytes a place);
+  it now counts the bytes compared, 16 a place, as StringSearcher does, so
+  that findAll() takes O( n + M + occ log occ ) time and count() O( n + M )
+  in the worst case, M the length of the patterns, and automatonFrom() gives
+  the place of the switch; the header, the theory of the strings and the
+  chapter of the manual say so; the test engineered_strings
+  multi-search-worst
+
+- nthElement() counted its budget in rounds, 2 ceil( log2( n + 1 ) ) of them
+  cutting less than a quarter before the median of the medians, so that its
+  worst case was O( n log n ) (38 n comparisons at n = 2^16 against the
+  adversary of McIlroy); each round now charges the items of its part to a
+  budget of 4 n items, and a round that the rest of the budget does not
+  cover takes the median of the medians, so that the worst case is O( n ),
+  as the header, the theory of the searches and the chapter of the manual
+  now say, with the inputs at random unchanged; the test ordered
+  nth-element-adversary
+
+- gallopSearch() ran its binary search on [ lo , min( hi + 1 , n ) ), the
+  place hi included although the doubling had already found A[ hi ] >= v,
+  one comparison too many (7 instead of 6 on a vector of 11 items and the
+  answer 4); the binary search now leaves it out, and the cost is at most 2
+  ceil( log2( h + 1 ) ) comparisons for h >= 1 and 1 for h = 0, as the
+  header, the theory of the searches, the chapter of the manual and its
+  figure now say; the test ch12 ex12.9.gallop-comparisons
+
+- CellHeap::addRoot() took a free cell as a root, whose marking would then
+  walk the free list; its precondition is now a cell of the heap in use, as
+  for car(), cdr(), setCar() and setCdr(), stated in the header, the theory
+  of the memory and the chapter of the manual; the test taocp
+  cell-heap-roots
+
+- ObjectPool::adopt() took the limit of the blocks of the other pool when
+  this one had no block (a swap) and the larger of the two limits otherwise;
+  the rule is now the same in both cases, the larger limit, the other pool
+  keeping its own, as the header, the theory of the memory and the chapter
+  of the manual say; the test engineered pool-adopt
+
+- the iterators of Arena kept the array of the vector of the blocks, which
+  an append of a block moves, so that an iterator taken before a make() that
+  appended a block read freed memory, against the promise of the header;
+  they now hold the vector itself and stay valid while the arena lives, as
+  the header, the theory of the memory and the chapter of the manual say;
+  the test engineered arena-iterators
+
 - texts that disagreed with the code: the theory of the parallel
   algorithms said that the threads of gemm() share a packed panel of B,
   while each runs the blocked loops of the sequential product on its rows

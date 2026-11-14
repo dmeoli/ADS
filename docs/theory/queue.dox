@@ -124,7 +124,10 @@
  the indices equal), whence the count \f$ n \f$ kept beside \f$ h \f$. Since
  \f$ h < m \f$ and \f$ n \le m \f$, the sum \f$ h + n \f$ is below
  \f$ 2 m \f$, and the modulo of (1) is a comparison and a subtraction rather
- than a division.
+ than a division. A copy of `ArrayQueue` reads the items by (1) and writes
+ them from the place 0 of its vector, \f$ h = 0 \f$, while a move takes the
+ vector and leaves \f$ n = m = 0 \f$ behind, a queue that is empty and full
+ at once, so that its contracts refuse both `dequeue()` and `enqueue()`.
 
  `RingDeque` takes \f$ m = 2^j \f$, so that the modulo is the mask
  \f$ m - 1 \f$, and keeps the front and the back as counters modulo

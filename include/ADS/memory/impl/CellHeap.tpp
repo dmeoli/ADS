@@ -75,7 +75,7 @@ inline void CellHeap::setCdr( Value c , Value v )
 
 inline void CellHeap::addRoot( Value c )
 {
- ADS_PRE( isCell( c ) && ( c < Value( f_C.size() ) ) );
+ ADS_PRE( isCell( c ) && ( c < Value( f_C.size() ) ) && ! f_C[ c ].free );
  f_roots.insert( c );
  }
 

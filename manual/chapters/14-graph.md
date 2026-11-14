@@ -354,11 +354,7 @@ $( u , v )$ and $( v , u )$, and parallel arcs are kept. [Figure
 `StaticGraph` also gives what the engineered algorithms read directly: the arcs
 of $u$ as a span (`out(u)`), the raw offsets and arcs (`offsets()` and
 `arcData()`), the head of an arc (`head()`) and the degree
-(`degree(u)`). The macro `ADS_GRAPH_PREFETCH(p)` hints the processor to
-bring the line of $p$ into the cache (it expands to no code
-where the compiler has no such builtin). It serves a loop of the caller
-that knows which row it will read next, and the library itself does not
-call it. `transpose()` builds the graph with the arcs reversed, which the
+(`degree(u)`). `transpose()` builds the graph with the arcs reversed, which the
 visits from the bottom up and the strongly connected components of a
 reversed graph need, and `relabel(p)` the same graph with the node $u$
 renamed $p[ u ]$. Both rebuild the rows by
