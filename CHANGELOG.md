@@ -132,24 +132,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sequences, the stacks, the queues and the sets: RootishArrayStack (the
   blocks of 1, 2, ..., r places of Brodnik et al., O( sqrt n ) places
   wasted), DualArrayDeque on two stacks of any type (a vector, or a
-  RootishArrayStack for exercise 2.10), Treque (exercise 2.4, fast at the
-  two ends and in the middle), ContiguousDeque (exercise 2.9, the items in
+  RootishArrayStack for exercise 2.9), Treque (exercise 2.3, fast at the
+  two ends and in the middle), ContiguousDeque (exercise 2.8, the items in
   one contiguous piece, no modular arithmetic), CubishArrayStack (exercise
-  2.13, a tiered vector of three levels, O( n^{1/3} ) insertions and
+  2.12, a tiered vector of three levels, O( n^{1/3} ) insertions and
   O( n^{2/3} ) places wasted), SEList (the unrolled list of blocks of b - 1
   to b + 1 items, whose two end blocks are free so that the operations of a
   deque never spread nor gather, exercises 3.17 and 3.18), XorList (one word
   of links per cell, reversed in O( 1 )) and xorSwap() (exercise 3.19),
-  RandomQueue (exercise 2.3, the item out drawn by the multiplication of
+  RandomQueue (exercise 2.2, the item out drawn by the multiplication of
   Lemire), MinStack, MinQueue and MinDeque (exercises 3.14 to 3.16), the
   concepts IndexedList and IndexedDeque with rotateArray() and rotate()
-  (exercises 2.5 and 2.6), the concepts USet and SSet with ArrayUSet and
+  (exercises 2.4 and 2.5), the concepts USet and SSet with ArrayUSet and
   ArraySSet (exercise 1.6), Bag (exercise 1.5), isDyckWord(), isMatched()
   and reverseWithQueue() (exercises 1.2 to 1.4), and RankIterator, the
   iterator of a container read by rank
 - RingDeque::insert( i , v ), erase( i ), rotate( r ) and shrink_to_fit():
   the ArrayDeque of Morin, the items of the shorter side moved by runs
-  contiguous in the vector (exercises 2.6 and 2.7)
+  contiguous in the vector (exercises 2.5 and 2.6)
 - List keeps its size and has the operations of the DLList of Morin and of
   its exercises: position( i ) from the nearer end, get(), set(), add() and
   erase() by rank, checkSize(), isPalindrome(), rotate( r ) by moving the
@@ -164,10 +164,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TieredVector shifts toward the front the items before a rank below n / 2,
   the first block with a gap of free places, so that an insertion or a
   removal at the rank i takes O( 1 + min( i , sqrt n , n - i ) ) amortized
-  time (exercise 2.12 of Morin); push_front(), pop_front(), front(), back()
+  time (exercise 2.11 of Morin); push_front(), pop_front(), front(), back()
   and capacity()
 - ArraySequence::insert( p , first , last ), the items of a range put at
-  once with one shift (the addAll() of exercise 2.2 of Morin)
+  once with one shift (the addAll() of exercise 2.1 of Morin)
 - ObjectPool::adopt( other ), the blocks of another pool taken with the
   objects alive in them, so that a list takes the cells of another one
 
@@ -1679,7 +1679,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - the balance of DualArrayDeque is done in place, for a vector as for a
-  RootishArrayStack (exercise 2.10): the t < n / 2 items at the bottom of
+  RootishArrayStack (exercise 2.9): the t < n / 2 items at the bottom of
   the larger stack move to the bottom of the other one, which grows by t
   places, and the larger one then shifts down and gives back its t top
   places, n moves and the places of n + t < 3 n / 2 items at the peak,
@@ -1687,7 +1687,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   explains why neither this balance nor the rebuild of ContiguousDeque is
   spread over the operations (an amortized bound anyway for a list by
   rank, and two representations at once with copies of the items), and
-  the test ods-ex2.10.rootish-deque counts the items alive during the
+  the test ods-ex2.9.rootish-deque counts the items alive during the
   balances
 
 - the generators of Generation.h keep their O( 1 ) amortized bounds in the

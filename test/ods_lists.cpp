@@ -453,7 +453,7 @@ ADS_TEST( "ods-2.1.array-stack" )
  CHECK( std::equal( a.begin() , a.end() , r.begin() , r.end() ) );
  }
 
-ADS_TEST( "ods-ex2.2.add-all" )
+ADS_TEST( "ods-ex2.1.add-all" )
 {
  ArraySequence< int > a{ 1 , 2 , 3 };
  const std::vector< int > c{ 7 , 8 , 9 , 10 };
@@ -496,7 +496,7 @@ ADS_TEST( "ods-2.4.array-deque" )
  RingDeque< std::string > d;
  listRandom( d , 20000 , 6 , 24 );
  listRandom( d , 20000 , 4 , 25 );
- // the shifts across the end of the vector, by runs (exercise 2.7)
+ // the shifts across the end of the vector, by runs (exercise 2.6)
  for( std::size_t h = 0 ; h < 16 ; ++h ) {
   RingDeque< int > e;
   std::deque< int > r;
@@ -522,7 +522,7 @@ ADS_TEST( "ods-2.4.array-deque" )
  CHECK( d.size() == 100 && d.capacity() == 128 );
  }
 
-ADS_TEST( "ods-ex2.8.power-of-two" )
+ADS_TEST( "ods-ex2.7.power-of-two" )
 {
  RingDeque< int > d;
  for( int k = 0 ; k < 5000 ; ++k ) {
@@ -573,7 +573,7 @@ ADS_TEST( "ods-2.6.rootish-array-stack" )
  CHECK( s.blocks() == 0 );
  }
 
-ADS_TEST( "ods-ex2.3.random-queue" )
+ADS_TEST( "ods-ex2.2.random-queue" )
 {
  // each of 8 items equally likely to come out first: the counts of 80000
  // draws within 5 standard deviations of 10000
@@ -600,7 +600,7 @@ ADS_TEST( "ods-ex2.3.random-queue" )
  CHECK( in == out );
  }
 
-ADS_TEST( "ods-ex2.4.treque" )
+ADS_TEST( "ods-ex2.3.treque" )
 {
  Treque< std::string > t;
  listRandom( t , 20000 , 6 , 28 );
@@ -608,7 +608,7 @@ ADS_TEST( "ods-ex2.4.treque" )
  dequeRandom( t , 10000 , 5 , 30 );
  }
 
-ADS_TEST( "ods-ex2.5.rotate-array" )
+ADS_TEST( "ods-ex2.4.rotate-array" )
 {
  for( std::size_t n = 0 ; n < 40 ; ++n )
   for( std::size_t r = 0 ; r < 2 * n + 2 ; ++r ) {
@@ -622,7 +622,7 @@ ADS_TEST( "ods-ex2.5.rotate-array" )
    }
  }
 
-ADS_TEST( "ods-ex2.6.rotate-list" )
+ADS_TEST( "ods-ex2.5.rotate-list" )
 {
  // the rotate() of the lists that have one, and the cycles on the others
  auto run = []< IndexedList L >( L l , std::size_t n ) {
@@ -654,7 +654,7 @@ ADS_TEST( "ods-ex2.6.rotate-list" )
  CHECK( full[ 0 ] == 5 && full[ 3 ] == 0 && full[ 7 ] == 4 );
  }
 
-ADS_TEST( "ods-ex2.9.contiguous-deque" )
+ADS_TEST( "ods-ex2.8.contiguous-deque" )
 {
  ContiguousDeque< std::string > d;
  listRandom( d , 20000 , 6 , 31 );
@@ -686,7 +686,7 @@ struct Live {
  ~Live() { --alive; }
  };
 
-ADS_TEST( "ods-ex2.10.rootish-deque" )
+ADS_TEST( "ods-ex2.9.rootish-deque" )
 {
  DualArrayDeque< std::string , RootishArrayStack< std::string > > d;
  listRandom( d , 20000 , 6 , 34 );
@@ -710,19 +710,19 @@ ADS_TEST( "ods-ex2.10.rootish-deque" )
  CHECK( e.empty() && ( Live::alive == 0 ) );
  }
 
-ADS_TEST( "ods-ex2.11.tiered-deque" )
+ADS_TEST( "ods-ex2.10.tiered-deque" )
 {
  // the shifts toward the back of the tiered vector, the bound of
- // exercise 2.11; the places wasted below 2 b plus the gap
+ // exercise 2.10; the places wasted below 2 b plus the gap
  TieredVector< std::string > v;
  listRandom( v , test::scaled< std::size_t >( 60000 , 6000 ) , 7 , 37 ,
              false );
  CHECK( v.capacity() - v.size() < 2 * v.block() );
  }
 
-ADS_TEST( "ods-ex2.12.tiered-deque" )
+ADS_TEST( "ods-ex2.11.tiered-deque" )
 {
- // the shifts toward the front too, the bound of exercise 2.12, past a
+ // the shifts toward the front too, the bound of exercise 2.11, past a
  // rebuild of the blocks (4 b^2 items for b = 64)
  TieredVector< std::string > v;
  listRandom( v , test::scaled< std::size_t >( 60000 , 6000 ) , 9 , 38 );
@@ -739,7 +739,7 @@ ADS_TEST( "ods-ex2.12.tiered-deque" )
  CHECK( w.capacity() == 0 );
  }
 
-ADS_TEST( "ods-ex2.13.cubish" )
+ADS_TEST( "ods-ex2.12.cubish" )
 {
  CubishArrayStack< std::string > c;
  listRandom( c , test::scaled< std::size_t >( 80000 , 8000 ) , 9 , 41 );

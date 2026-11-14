@@ -304,7 +304,7 @@ therefore a mask; it doubles when it is full, and hence it has no
 capacity; and it adds and removes items at both ends. It is thus the
 `ArrayQueue` and the `ArrayDeque` of [Morin 2013, §2.3 and
 §2.4](Z-bibliography.md#ref-morin-cpp), with the mask of [Morin 2013,
-exercise 2.8](Z-bibliography.md#ref-morin-cpp) in place of the modulo, and
+exercise 2.7](Z-bibliography.md#ref-morin-cpp) in place of the modulo, and
 the deque of [Knuth 1997, §2.2.2](Z-bibliography.md#ref-knuth1997) on a
 vector that grows.
 
@@ -453,7 +453,7 @@ grow the vector, and its cost is amortized by
 [Lemma 4.2](04-queue.md#lem-4-2). $\square$
 
 The moves of the two sides are made on runs of places that are contiguous
-in the vector, as [Morin 2013, exercise 2.7](Z-bibliography.md#ref-morin-cpp)
+in the vector, as [Morin 2013, exercise 2.6](Z-bibliography.md#ref-morin-cpp)
 asks. Indeed, the ranks $\mathit{lo} , \ldots , \mathit{hi}$ of the items to
 move occupy at most two pieces of the vector, and the places one rank away at
 most two more. A run stops at the first end of the vector that either the
@@ -482,7 +482,7 @@ those at the ends.
 
 **Rotation.** `rotate(r)` moves the item of rank $i$ to the rank $( i + r )
 \bmod n$, for every $i$ ([Morin 2013, exercise
-2.6](Z-bibliography.md#ref-morin-cpp)). When the vector is full, the items
+2.5](Z-bibliography.md#ref-morin-cpp)). When the vector is full, the items
 already sit in a circle, and the rotation only moves the two counters back
 by $r$, in $O( 1 )$ time. Otherwise the deque moves $\min\{ r , n - r \}$
 items from one end to the other, one at a time
@@ -490,7 +490,7 @@ items from one end to the other, one at a time
 a place is free after each removal.
 
 <span id="alg-4-6"></span>**Algorithm 4.6.** The rotation of
-`RingDeque` ([Morin 2013, exercise 2.6](Z-bibliography.md#ref-morin-cpp)),
+`RingDeque` ([Morin 2013, exercise 2.5](Z-bibliography.md#ref-morin-cpp)),
 $r$ reduced modulo $n$.
 
 --8<-- "generated/RingDeque-rotate.pseudo.md"
@@ -547,7 +547,7 @@ equality.
 ## 4.7 A random queue {#sec-4-7}
 
 The `RandomQueue` of [Morin 2013, exercise
-2.3](Z-bibliography.md#ref-morin-cpp) is a bag: `push(x)` puts an item in,
+2.2](Z-bibliography.md#ref-morin-cpp) is a bag: `push(x)` puts an item in,
 and `pop()` takes out one chosen uniformly at random among those inside,
 both in $O( 1 )$ amortized time. Its items are the first $n$ places of a
 vector that doubles, in no order. To remove one, `pop()` draws a place $j$
@@ -558,7 +558,7 @@ one and removes the last place ([Algorithm 4.8](04-queue.md#alg-4-8) and
 ![Figure 4.7. `pop()` on a `RandomQueue` of six items, with the place $j = 2$ drawn: the items of the place drawn and of the last place (in violet) are exchanged, and the last place is removed, returning `c`.](../figures/queue-random.svg){#fig-4-7}
 
 <span id="alg-4-8"></span>**Algorithm 4.8.** The removal of
-`RandomQueue` ([Morin 2013, exercise 2.3](Z-bibliography.md#ref-morin-cpp));
+`RandomQueue` ([Morin 2013, exercise 2.2](Z-bibliography.md#ref-morin-cpp));
 $A[ 0 .. n - 1 ]$ are the items.
 
 --8<-- "generated/RandomQueue-pop.pseudo.md"
@@ -1148,17 +1148,17 @@ Each exercise names the test of the library that solves it (run it with
 9. Make the moves of `insert(i, v)`, `erase(i)` and of the growth of the
    previous exercise by blocks of contiguous places rather than item by
    item, and check them when the items to move wrap around the end of the
-   vector ([Morin 2013, exercise 2.7](Z-bibliography.md#ref-morin-cpp)).
+   vector ([Morin 2013, exercise 2.6](Z-bibliography.md#ref-morin-cpp)).
    Test: `ods_lists.ods-2.4.array-deque`.
 10. Replace the modulo of the previous exercises by the mask of a vector
     of $2^j$ places ([Morin 2013, exercise
-    2.8](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.8.power-of-two`.
+    2.7](Z-bibliography.md#ref-morin-cpp)). Test:
+    `ods_lists.ods-ex2.7.power-of-two`.
 11. Rotate a LIST so that the item of rank $i$ goes to the rank $( i + r )
     \bmod n$, in $O( 1 + \min\{ r , n - r \} )$ time on a deque on a
     circular vector, and in $O( 1 )$ when its vector is full ([Morin 2013,
-    exercise 2.6](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.6.rotate-list`.
+    exercise 2.5](Z-bibliography.md#ref-morin-cpp)). Test:
+    `ods_lists.ods-ex2.5.rotate-list`.
 12. Realize a deque on a circular vector that grows, with items that own
     memory or that can only be moved, an item of the deque inserted into it
     when it must grow, and random-access iterators, against `std::deque`.
@@ -1168,8 +1168,8 @@ Each exercise names the test of the library that solves it (run it with
 13. Design a `RandomQueue`, whose `remove()` takes an item chosen uniformly
     at random among those inside, with `add(x)` and `remove()` in $O( 1 )$
     amortized time, and draw its places with no bias ([Morin 2013,
-    exercise 2.3](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.3.random-queue`.
+    exercise 2.2](Z-bibliography.md#ref-morin-cpp)). Test:
+    `ods_lists.ods-ex2.2.random-queue`.
 14. Realize a queue with no duplicates under the two policies of
     [§4.6](04-queue.md#sec-4-6), and move or copy the positive items of a
     queue using only its operations. Tests: `beyond.queue-algorithms`,

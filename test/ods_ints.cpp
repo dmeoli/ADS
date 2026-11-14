@@ -1257,12 +1257,12 @@ ADS_TEST( "ods.ex11.8.heapsort-worst" )
   }
  }
 
-// ods ex 11.10: the comparison tree of figure 11.6, with 4 leaves for the
+// ods ex 11.9: the comparison tree of figure 11.6, with 4 leaves for the
 // 6 permutations of 1, 2, 3, sorts all of them but 2, 3, 1 and 3, 2, 1,
 // which reach the leaf of 3, 1, 2; the binary tree of k leaves has height
-// at least log2 k (exercises 11.11 to 11.13), so that 3 comparisons are
+// at least log2 k (exercises 11.10 to 11.12), so that 3 comparisons are
 // needed
-ADS_TEST( "ods.ex11.10.comparison-tree" )
+ADS_TEST( "ods.ex11.9.comparison-tree" )
 {
  // the tree: a[ 0 ] vs a[ 2 ]; if smaller, a[ 0 ] vs a[ 1 ]; if that is
  // smaller, a[ 1 ] vs a[ 2 ]
@@ -1287,7 +1287,7 @@ ADS_TEST( "ods.ex11.10.comparison-tree" )
  CHECK( std::ceil( std::log2( 6.0 ) ) == 3.0 );
  }
 
-// ods ex 11.15: the radix sort of signed integers, the sign bit flipped in
+// ods ex 11.13: the radix sort of signed integers, the sign bit flipped in
 // the key, against std::sort, with the extremes of each width
 template< class T >
 void signedRadix( std::uint64_t seed )
@@ -1306,7 +1306,7 @@ void signedRadix( std::uint64_t seed )
  CHECK( v == w );
  }
 
-ADS_TEST( "ods.ex11.15.signed-radix-sort" )
+ADS_TEST( "ods.ex11.13.signed-radix-sort" )
 {
  signedRadix< std::int8_t >( 1 );
  signedRadix< std::int16_t >( 2 );

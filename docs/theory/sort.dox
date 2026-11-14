@@ -464,15 +464,13 @@
  sort is `mergeSort()`, its quicksort, with the random pivot and the
  partition in three, `threeWayQuickSort()` (`EngineeredQuickSorts.h`), its
  heap sort `heapsort()`, on a heap of the maximum instead of the minimum,
- which spares the final reversal of the book (exercise 11.9: the
- comparator negated would cost a negation per comparison,
+ which spares the final reversal of the book (exercise 11.9 of the Java
+ edition: the comparator negated would cost a negation per comparison,
  \f$ \Theta( n \log n ) \f$, against the \f$ n / 2 \f$ swaps of the
  reversal), its counting sort and radix sort `countingSort()` and
  `radixSort()`, the latter on signed integers too, the sign bit flipped in
- the key (exercise 11.15), and the merge sort of a list without an array
+ the key (exercise 11.13), and the merge sort of a list without an array
  `listSort()` (`ListSort.h`), which relinks the cells (exercise 11.2).
- Exercise 11.14 has no statement: its text is a comment in the source of
- the book.
 
  <em>Lemma 6 (the adversary of quicksort).</em> For any quicksort that takes
  its pivot among \f$ O( 1 ) \f$ items of its part, deterministically or at
@@ -525,16 +523,16 @@
  11.6 has 4 leaves for the 6 permutations of three items, and besides
  \f$ 3 , 1 , 2 \f$ and \f$ 3 , 2 , 1 \f$, which the book shows, the pair
  \f$ 2 , 3 , 1 \f$ and \f$ 3 , 1 , 2 \f$ reaches the same rightmost leaf,
- which orders \f$ 2 , 3 , 1 \f$ wrongly (exercise 11.10). A binary tree of
+ which orders \f$ 2 , 3 , 1 \f$ wrongly (exercise 11.9). A binary tree of
  \f$ k \f$ leaves has height at least \f$ \log_2 k \f$, since a tree of height
- \f$ h \f$ has at most \f$ 2^h \f$ leaves (exercise 11.12), and a leaf drawn
+ \f$ h \f$ has at most \f$ 2^h \f$ leaves (exercise 11.11), and a leaf drawn
  at random has expected depth at least \f$ \log_2 k \f$, by induction with
  \f$ ( k_1 / k ) \log_2 k_1 + ( k_2 / k ) \log_2 k_2 \ge \log_2 k - 1 \f$
  for \f$ k_1 + k_2 = k \f$, the convexity of \f$ x \log x \f$ (exercise
- 11.13); hence \f$ \log_2 n! = n \log_2 n - O( n ) \f$ comparisons, by
+ 11.12); hence \f$ \log_2 n! = n \log_2 n - O( n ) \f$ comparisons, by
  the formula of Stirling,
  \f$ \log_2 n! = n \log_2 n - n \log_2 e + O( \log n ) \f$ (exercise
- 11.11), even in expectation over the random choices of a sort. Exercise
+ 11.10), even in expectation over the random choices of a sort. Exercise
  11.1 is the trace
  of the sorts on \f$ 1 , 7 , 4 , 6 , 2 , 8 , 3 , 5 \f$, in the test
  `ods11.1.sorts`.

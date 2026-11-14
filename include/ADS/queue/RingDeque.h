@@ -24,11 +24,11 @@
  *
  * It is the `ArrayQueue` of section 2.3 of Morin's book and its
  * `ArrayDeque` of section 2.4, with the mask of a power of 2 in place of
- * the modulo (exercise 2.8) and the items moved by blocks (exercise 2.7):
+ * the modulo (exercise 2.7) and the items moved by blocks (exercise 2.6):
  * `insert()` and `erase()` at a rank move the items of the shorter side by
  * `std::move()` on the runs contiguous in the vector, three at most, which
  * is one `memmove()` each for the items trivially copyable, and a doubling
- * moves them by `memcpy()`; `rotate()` rotates the ranks (exercise 2.6).
+ * moves them by `memcpy()`; `rotate()` rotates the ranks (exercise 2.5).
  *
  * Against Morin's code, the claims for the benchmarks: the mask of a power
  * of 2 in place of the division of `%`; the places are raw memory and a
@@ -46,7 +46,7 @@
  *      Addison-Wesley, 1997, section 2.2.2 (the circular queue)
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
  *      https://opendatastructures.org/ods-cpp.pdf, sections 2.3 and 2.4 and
- *      exercises 2.6, 2.7 and 2.8
+ *      exercises 2.5, 2.6 and 2.7
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -395,10 +395,10 @@ class RingDeque {
  /// the item of rank \f$ i \f$ moved to the rank \f$ ( i + r ) \bmod n \f$,
  /// for every \f$ i \f$: \f$ O( 1 ) \f$ time when the vector is full, the
  /// head alone moving, and \f$ O( 1 + \min\{ r , n - r \} ) \f$ otherwise,
- /// the items moved one by one from one end to the other (exercise 2.6 of
+ /// the items moved one by one from one end to the other (exercise 2.5 of
  /// Morin's book)
  ///
- /// In pseudocode (Morin, exercise 2.6), \f$ r \f$ reduced modulo
+ /// In pseudocode (Morin, exercise 2.5), \f$ r \f$ reduced modulo
  /// \f$ n \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
@@ -481,7 +481,7 @@ class RingDeque {
 
  /// \f$ D[ k ] \gets D[ k + 1 ] \f$ for \f$ k = \mathit{lo} , \ldots ,
  /// \mathit{hi} - 1 \f$, by `std::move()` on the runs that are contiguous
- /// in the vector, three at most (exercise 2.7 of Morin's book)
+ /// in the vector, three at most (exercise 2.6 of Morin's book)
  void shiftDown( std::size_t lo , std::size_t hi );
 
  /// \f$ D[ k ] \gets D[ k - 1 ] \f$ for \f$ k = \mathit{hi} , \ldots ,

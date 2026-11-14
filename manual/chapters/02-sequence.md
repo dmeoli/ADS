@@ -1897,7 +1897,7 @@ in the text.
 3. Insert the $k$ items of a collection at the rank $i$ in $O( n - i + k )$
    time, and explain why $k$ calls of `add( i , x )` are slower ([Morin
    2013, exercise 2.1](Z-bibliography.md#ref-morin-cpp)). Test:
-   `ods_lists.ods-ex2.2.add-all`.
+   `ods_lists.ods-ex2.1.add-all`.
 4. Realize a vector whose first $N$ items need no allocation. Test:
    `sequences.small-vector`.
 5. Realize the `ArrayQueue` and the `ArrayDeque` of Morin on a circular
@@ -1908,28 +1908,28 @@ in the text.
 6. Shift the items of the `ArrayDeque` by block moves, and reduce its
    places by a mask instead of `%` with a capacity that is a power of 2
    ([Morin 2013, exercises 2.6 and 2.7](Z-bibliography.md#ref-morin-cpp)).
-   Test: `ods_lists.ods-ex2.8.power-of-two`.
+   Test: `ods_lists.ods-ex2.7.power-of-two`.
 7. Realize the `DualArrayDeque`, with a balance in place, and draw the
    operations of Morin's Figure 2.4 on it ([Figure 2.5](02-sequence.md#fig-2-5)).
    Test: `ods_lists.ods-2.5.dual-array-deque`.
 8. Realize a queue whose `remove()` removes an item chosen uniformly at
    random, with every operation in $O( 1 )$ amortized time ([Morin 2013,
    exercise 2.2](Z-bibliography.md#ref-morin-cpp)). Test:
-   `ods_lists.ods-ex2.3.random-queue`.
+   `ods_lists.ods-ex2.2.random-queue`.
 9. Realize the treque, with insertions and removals in $O( 1 + \min\{ i , n
    - i , | n / 2 - i | \} )$ time ([Morin 2013, exercise
-   2.3](Z-bibliography.md#ref-morin-cpp)). Test: `ods_lists.ods-ex2.4.treque`.
+   2.3](Z-bibliography.md#ref-morin-cpp)). Test: `ods_lists.ods-ex2.3.treque`.
 10. Rotate an array by $r$ places in place ([Morin 2013, exercise
     2.4](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.5.rotate-array`.
+    `ods_lists.ods-ex2.4.rotate-array`.
 11. Rotate a LIST by $r$ ranks, in $O( 1 + \min\{ r , n - r \} )$ time on
     an `ArrayDeque` and on a `DualArrayDeque` ([Morin 2013, exercise
     2.5](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.6.rotate-list`.
+    `ods_lists.ods-ex2.5.rotate-list`.
 12. Realize a deque with no modular arithmetic, its items in one contiguous
     piece, with the amortized costs of the `ArrayDeque` ([Morin 2013,
     exercise 2.8](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.9.contiguous-deque`.
+    `ods_lists.ods-ex2.8.contiguous-deque`.
 13. Realize the `RootishArrayStack`, draw the operations of Morin's Figure
     2.5 on it ([Figure 2.8](02-sequence.md#fig-2-8)), and check that the
     places unused stay $O( \sqrt{n} )$ after every operation. Test:
@@ -1937,18 +1937,18 @@ in the text.
 14. Realize a list with $O( \sqrt{n} )$ places wasted and insertions and
     removals in $O( 1 + \min\{ i , n - i \} )$ time ([Morin 2013, exercise
     2.9](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.10.rootish-deque`.
+    `ods_lists.ods-ex2.9.rootish-deque`.
 15. Realize a list with $O( \sqrt{n} )$ places wasted and insertions and
     removals in $O( 1 + \min\{ \sqrt{n} , n - i \} )$ time, and then in
     $O( 1 + \min\{ i , \sqrt{n} , n - i \} )$ ([Morin 2013, exercises 2.10
     and 2.11](Z-bibliography.md#ref-morin-cpp)). Tests:
-    `ods_lists.ods-ex2.11.tiered-deque`, `ods_lists.ods-ex2.12.tiered-deque`,
+    `ods_lists.ods-ex2.10.tiered-deque`, `ods_lists.ods-ex2.11.tiered-deque`,
     `sequences.tiered-vector`.
 16. Realize the `CubishArrayStack`, with `operator[]` in $O( 1 )$ time,
     insertions and removals in $O( n^{1/3} )$ amortized time and $O(
     n^{2/3} )$ places wasted ([Morin 2013, exercise
     2.12](Z-bibliography.md#ref-morin-cpp)). Test:
-    `ods_lists.ods-ex2.13.cubish`.
+    `ods_lists.ods-ex2.12.cubish`.
 17. State the LIST and the DEQUE as concepts and check that the
     realizations of this chapter model them. Test:
     `ods_lists.ods-1.2.interfaces`.

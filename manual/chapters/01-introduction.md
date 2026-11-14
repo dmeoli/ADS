@@ -338,7 +338,7 @@ the first four of them, together with `TieredVector`, `SEList` and
 `XorList`. A test, `ods_lists.ods-1.2.interfaces`, checks these models at
 compile time and runs one function template on all the lists. Furthermore, the header
 has two rotations of a LIST, `rotateArray()` and `rotate()`, which
-solve [Morin 2013, exercises 2.5 and 2.6](Z-bibliography.md#ref-morin-cpp)
+solve [Morin 2013, exercises 2.4 and 2.5](Z-bibliography.md#ref-morin-cpp)
 and are described with the sequences in chapter [2](02-sequence.md#ch-2).
 
 ![Figure 1.1. A LIST of six items read by rank, `l[2]` reading `c` (in violet), and the same list after `insert(2, x)`, which writes `x` at the rank 2 (in orange) and moves the items from the rank 2 on by one rank; a DEQUE changes the two ends only.](../figures/intro-list.svg){#fig-1-1}

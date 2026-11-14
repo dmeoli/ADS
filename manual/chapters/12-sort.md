@@ -137,10 +137,10 @@ the six orders of three items.
 
 ![Figure 12.1. The comparison tree of `insertionSort()` on $a[ 0 ] , a[ 1 ] , a[ 2 ]$: each internal node is a comparison, the left edge followed when the first item is smaller; a leaf $i < j < l$ is the order $a[ i ] < a[ j ] < a[ l ]$ that the sort has found. The six leaves are the $3!$ orders, and three comparisons are needed in the worst case.](../figures/sort-comparison-tree.svg){#fig-12-1}
 
-![Figure 12.2. A comparison tree with four leaves for the six orders of three items (exercise 11.10 of [Morin 2013]). The inputs $3 , 1 , 2$, $3 , 2 , 1$ and $2 , 3 , 1$ all have $a[ 0 ] > a[ 2 ]$ and reach the leaf in violet, which writes $a[ 1 ] , a[ 2 ] , a[ 0 ]$: right for the first, wrong for the other two.](../figures/sort-comparison-tree-b.svg){#fig-12-2}
+![Figure 12.2. A comparison tree with four leaves for the six orders of three items (exercise 11.9 of [Morin 2013]). The inputs $3 , 1 , 2$, $3 , 2 , 1$ and $2 , 3 , 1$ all have $a[ 0 ] > a[ 2 ]$ and reach the leaf in violet, which writes $a[ 1 ] , a[ 2 ] , a[ 0 ]$: right for the first, wrong for the other two.](../figures/sort-comparison-tree-b.svg){#fig-12-2}
 
 In passing, the tree of [Figure 12.2](12-sort.md#fig-12-2) answers exercise
-11.10
+11.9
 of [Morin 2013](Z-bibliography.md#ref-morin-cpp): besides $3 , 1 , 2$ and
 $3 , 2 , 1$, which reach the same leaf and of which the second is sorted
 wrongly, the pair $2 , 3 , 1$ and $3 , 1 , 2$ reaches it too, and
@@ -1361,10 +1361,11 @@ decreasing order, and the vector ends sorted. $\square$
 11.1 of [Morin 2013](Z-bibliography.md#ref-morin-cpp). The sort of the book
 of Morin builds a heap of the minimum, extracts into the end of the vector,
 which leaves it in decreasing order, and reverses it at the end. A max-heap
-spares the reversal. In its exercise 11.9 one should explain why the
-reversal is better not avoided by negating the comparator instead: a negation costs a little at
-each of the $\Theta( n \log n )$ comparisons, while the reversal costs
-$n / 2$ swaps once, and the max-heap avoids both. Furthermore, the bound of
+spares the reversal. In exercise 11.9 of its Java edition one should
+explain why the reversal is better not avoided by negating the comparator
+instead: a negation costs a little at each of the $\Theta( n \log n )$
+comparisons, while the reversal costs $n / 2$ swaps once, and the max-heap
+avoids both. Furthermore, the bound of
 [Theorem 12.7](12-sort.md#thm-12-7) is attained, as we show next.
 
 ![Figure 12.7. `heapsort()` on $1 , 7 , 4 , 6 , 2 , 8 , 3 , 5$ (exercise 11.1 of [Morin 2013]): on the left the max-heap built by `heapBuild()`, on the right the same heap as a vector and the vector after the first 1, 2, 3 and 7 extractions; the maximum of the heap is in violet, and the sorted suffix, which the extractions fill from the right, in orange.](../figures/sort-heapsort.svg){#fig-12-7}
@@ -1516,7 +1517,7 @@ bytes as digits, between the vector and a buffer
 ([Algorithm 12.21](12-sort.md#alg-12-21)): $O( w ( n + 256 ) )$ time for
 keys of $w$ bytes, and no comparison. Its keys come from `radixKey()`,
 which makes the bits of a number an unsigned integer whose order is that of
-the numbers: the sign bit flipped for a signed integer (exercise 11.15 of
+the numbers: the sign bit flipped for a signed integer (exercise 11.13 of
 [Morin 2013](Z-bibliography.md#ref-morin-cpp), whose radix sort takes the
 unsigned integers only), and for a floating point number all the bits
 flipped if it is negative and the sign bit otherwise ([Herf
@@ -2017,25 +2018,25 @@ Each exercise names the test of the library that solves it (run it with
 5. Describe an input on which heapsort makes at least
    $2 n \log_2 n - O( n )$ comparisons, and explain why the reversal at the
    end of the heapsort of the book should not be replaced by a negated
-   comparator ([Morin 2013, exercises 11.8 and
-   11.9](Z-bibliography.md#ref-morin-cpp);
+   comparator ([Morin 2013, exercise
+   11.8](Z-bibliography.md#ref-morin-cpp), and exercise 11.9 of its Java
+   edition;
    [Lemma 12.16](12-sort.md#lem-12-16)). Test:
    `ods_ints.ods.ex11.8.heapsort-worst`.
 6. Find another pair of permutations of $1 , 2 , 3$ that the comparison
    tree of [Figure 12.2](12-sort.md#fig-12-2) does not both sort, and prove
    that $\log_2 n! = n \log_2 n - O( n )$, that a binary tree with $k$
    leaves has height at least $\log_2 k$, and that a random leaf of it has
-   expected depth at least $\log_2 k$ ([Morin 2013, exercises 11.10 to
-   11.13](Z-bibliography.md#ref-morin-cpp);
+   expected depth at least $\log_2 k$ ([Morin 2013, exercises 11.9 to
+   11.12](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.1](12-sort.md#lem-12-1) to
-   [Lemma 12.3](12-sort.md#lem-12-3)). Exercise 11.14 of the book has no
-   statement (its text is a comment in the source of the book). Test:
-   `ods_ints.ods.ex11.10.comparison-tree`.
+   [Lemma 12.3](12-sort.md#lem-12-3)). Test:
+   `ods_ints.ods.ex11.9.comparison-tree`.
 7. Write a radix sort that sorts signed integers correctly, with the
    extremes of each width ([Morin 2013, exercise
-   11.15](Z-bibliography.md#ref-morin-cpp);
+   11.13](Z-bibliography.md#ref-morin-cpp);
    [Lemma 12.18](12-sort.md#lem-12-18)). Test:
-   `ods_ints.ods.ex11.15.signed-radix-sort`.
+   `ods_ints.ods.ex11.13.signed-radix-sort`.
 8. Sort by Selection Sort and by Insertion Sort, counting the comparisons
    and the moves of each against [Lemma 12.4](12-sort.md#lem-12-4)
    ([Montresor 2025, §2.7.1 and §2.7.2](Z-bibliography.md#ref-montresor2025)).

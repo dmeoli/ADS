@@ -543,7 +543,7 @@
  current processors, and the choice is left to the benchmarks.
 
  A `DualArrayDeque` whose two stacks are `RootishArrayStack` (exercise
- 2.10) wastes \f$ O( \sqrt{n} ) \f$ places in each stack, and shifts
+ 2.9) wastes \f$ O( \sqrt{n} ) \f$ places in each stack, and shifts
  \f$ O( 1 + \min\{ i , n - i \} ) \f$ items by Lemma 7. Its balance is done
  in place, for either kind of stack: the larger stack \f$ G \f$ gives its
  \f$ t = |G| - \lfloor n / 2 \rfloor < n / 2 \f$ bottom items to the bottom

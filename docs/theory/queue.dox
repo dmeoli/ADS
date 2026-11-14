@@ -171,7 +171,7 @@
  \ref theory_sequence_ods for the other deques of chapter 2 of Morin and
  the costs of their operations by rank).
 
- The `RandomQueue` of exercise 2.3 keeps its items in a vector in no order:
+ The `RandomQueue` of exercise 2.2 keeps its items in a vector in no order:
  `push()` appends, `pop()` draws a place \f$ j \f$ uniformly, exchanges it
  with the last place and removes the last one, in \f$ O( 1 ) \f$. Each item
  inside is equally likely to come out, whatever the history, since the draw
@@ -302,7 +302,7 @@
       doi:10.1007/BF01585517
  \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
       https://opendatastructures.org/ods-cpp.pdf, sections 2.3 and 2.4 and
-      exercises 2.3, 3.15 and 3.16
+      exercises 2.2, 3.15 and 3.16
  \see R. Hood, R. Melville, Real-time queue operations in pure LISP,
       Information Processing Letters 13(2), 50-54, 1981,
       doi:10.1016/0020-0190(81)90030-2

@@ -2,7 +2,7 @@
 /*--------------------------- File RandomQueue.h ---------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The random queue of exercise 2.3 of Morin's book, beyond the book: a bag
+ * The random queue of exercise 2.2 of Morin's book, beyond the book: a bag
  * in which `push()` puts an item and `pop()` takes one out chosen uniformly
  * at random among those inside, both in \f$ O( 1 ) \f$ amortized time. The
  * items are the first \f$ n \f$ places of a vector that doubles [see
@@ -25,7 +25,7 @@
  * defined in `RandomQueue.tpp`.
  *
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
- *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.3
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.2
  * \see D. Lemire, Fast random integer generation in an interval, ACM
  *      Transactions on Modeling and Computer Simulation 29(1), 3:1-3:12,
  *      2019, doi:10.1145/3230636
@@ -94,7 +94,7 @@ class RandomQueue {
  /// takes out an item chosen uniformly at random and returns it,
  /// \f$ O( 1 ) \f$ (Morin's `remove()`)
  ///
- /// In pseudocode (Morin, exercise 2.3), \f$ A[ 0 .. n - 1 ] \f$ the items:
+ /// In pseudocode (Morin, exercise 2.2), \f$ A[ 0 .. n - 1 ] \f$ the items:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{pop}() \cr

@@ -45,7 +45,7 @@
  *
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
  *      https://opendatastructures.org/ods-cpp.pdf, section 2.5 and exercises
- *      2.6 and 2.10
+ *      2.5 and 2.9
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
