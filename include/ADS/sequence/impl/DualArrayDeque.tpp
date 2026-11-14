@@ -129,23 +129,36 @@ bool DualArrayDeque< T , S >::balanced( void ) const
  }
 
 template< class T , class S >
+void DualArrayDeque< T , S >::deal( S & big , S & small , std::size_t t )
+{
+ //! [deal]
+ const std::size_t b = small.size() , g = big.size();
+ // small grows by t, its items t places up and big[ t - 1 ] , ... ,
+ // big[ 0 ] below them, the places from the top down
+ auto from = [ & ]( std::size_t j ) -> T & {
+  return( j >= t ? small[ j - t ] : big[ t - 1 - j ] );
+  };
+ for( std::size_t j = b ; j < b + t ; ++j )
+  small.push_back( std::move( from( j ) ) );
+ for( std::size_t j = b ; j > 0 ; --j )
+  small[ j - 1 ] = std::move( from( j - 1 ) );
+ // big loses its t bottom items, the others t places down
+ for( std::size_t k = 0 ; k + t < g ; ++k )
+  big[ k ] = std::move( big[ k + t ] );
+ for( std::size_t k = 0 ; k < t ; ++k )
+  big.pop_back();
+ //! [deal]
+ }
+
+template< class T , class S >
 void DualArrayDeque< T , S >::balance( void )
 {
  if( balanced() )
   return;
  //! [balance]
- const std::size_t n = size() , m = n / 2;
- S F , B;
- if constexpr( requires { F.reserve( m ); } ) {
-  F.reserve( m );
-  B.reserve( n - m );
-  }
- for( std::size_t k = m ; k > 0 ; --k )
-  F.push_back( std::move( ( *this )[ k - 1 ] ) );
- for( std::size_t k = m ; k < n ; ++k )
-  B.push_back( std::move( ( *this )[ k ] ) );
- f_F = std::move( F );
- f_B = std::move( B );
+ const std::size_t m = size() / 2 , f = f_F.size();
+ if( f > m ) deal( f_F , f_B , f - m );     // the bottom of F to B
+ else deal( f_B , f_F , m - f );            // the bottom of B to F
  //! [balance]
  }
 

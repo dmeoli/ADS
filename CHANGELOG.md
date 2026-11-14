@@ -1621,6 +1621,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- the balance of DualArrayDeque is done in place, for a vector as for a
+  RootishArrayStack (exercise 2.10): the t < n / 2 items at the bottom of
+  the larger stack move to the bottom of the other one, which grows by t
+  places, and the larger one then shifts down and gives back its t top
+  places, n moves and the places of n + t < 3 n / 2 items at the peak,
+  where two stacks built anew held 2 n; the theory of the sequences
+  explains why neither this balance nor the rebuild of ContiguousDeque is
+  spread over the operations (an amortized bound anyway for a list by
+  rank, and two representations at once with copies of the items), and
+  the test ods-ex2.10.rootish-deque counts the items alive during the
+  balances
+
 - the generators of Generation.h keep their O( 1 ) amortized bounds in the
   code: plainChanges() passes its own vector to the visit, from the index
   0, instead of a new vector of the n items for each permutation;

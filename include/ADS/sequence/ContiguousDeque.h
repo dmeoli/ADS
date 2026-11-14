@@ -18,7 +18,10 @@
  * removal at the rank \f$ i \f$ moves the items of the shorter side, in
  * \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized time. A vector with more
  * than \f$ 9 n + 24 \f$ places after a removal is rebuilt with
- * \f$ 3 n + 8 \f$, so that the space stays \f$ O( n ) \f$.
+ * \f$ 3 n + 8 \f$, so that the space stays \f$ O( n ) \f$. The rebuild is
+ * not spread over the operations: keeping the one contiguous piece in use
+ * while another is filled would need copies of the items and two pieces
+ * at once (see \ref theory_sequence_ods).
  *
  * Compared with `RingDeque` [see `RingDeque.h`], it pays the rebuilds that
  * the circular vector avoids when a queue used as a FIFO runs along the

@@ -672,12 +672,42 @@ ADS_TEST( "ods-ex2.9.contiguous-deque" )
   CHECK( q[ i ] == q.front() + int( i ) );
  }
 
+/// an item that counts the items alive, moved-from ones included, and
+/// their peak
+struct Live {
+ int v = 0;
+ static inline long alive = 0 , peak = 0;
+ static void born( void ) { peak = std::max( peak , ++alive ); }
+ Live( int x = 0 ) : v( x ) { born(); }
+ Live( const Live & o ) : v( o.v ) { born(); }
+ Live( Live && o ) noexcept : v( o.v ) { born(); }
+ Live & operator=( const Live & ) = default;
+ Live & operator=( Live && ) noexcept = default;
+ ~Live() { --alive; }
+ };
+
 ADS_TEST( "ods-ex2.10.rootish-deque" )
 {
  DualArrayDeque< std::string , RootishArrayStack< std::string > > d;
  listRandom( d , 20000 , 6 , 34 );
  listRandom( d , 20000 , 4 , 35 );
  dequeRandom( d , 20000 , 5 , 36 );
+ // the balance in place: the insertions at the front unbalance the two
+ // stacks again and again, and the items alive never exceed 3 n / 2 but
+ // for the copies of the item passed (two stacks built anew would hold
+ // 2 n)
+ DualArrayDeque< Live , RootishArrayStack< Live > > e;
+ for( int i = 0 ; i < 30000 ; ++i ) {
+  Live::peak = Live::alive;
+  e.push_front( Live( i ) );
+  CHECK( 2 * Live::peak <= 3 * long( e.size() ) + 8 );
+  }
+ for( int i = 0 ; i < 30000 ; ++i ) {
+  Live::peak = Live::alive;
+  e.pop_back();                             // the other side, the same
+  CHECK( 2 * Live::peak <= 3 * long( e.size() + 1 ) + 8 );
+  }
+ CHECK( e.empty() && ( Live::alive == 0 ) );
  }
 
 ADS_TEST( "ods-ex2.11.tiered-deque" )

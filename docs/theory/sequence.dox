@@ -543,8 +543,44 @@
 
  A `DualArrayDeque` whose two stacks are `RootishArrayStack` (exercise
  2.10) wastes \f$ O( \sqrt{n} ) \f$ places in each stack, and shifts
- \f$ O( 1 + \min\{ i , n - i \} ) \f$ items by Lemma 7; a balance holds the
- items twice while it lasts.
+ \f$ O( 1 + \min\{ i , n - i \} ) \f$ items by Lemma 7. Its balance is done
+ in place, for either kind of stack: the larger stack \f$ G \f$ gives its
+ \f$ t = |G| - \lfloor n / 2 \rfloor < n / 2 \f$ bottom items to the bottom
+ of the other one \f$ S \f$, which grows by \f$ t \f$ places and moves its
+ items \f$ t \f$ places up from its top down, so that no item is
+ overwritten before it is read; then \f$ G \f$ moves its other items
+ \f$ t \f$ places down and gives back its \f$ t \f$ top places. Each item
+ moves once, \f$ n \f$ moves in all, and the peak is the places of
+ \f$ n + t < 3 n / 2 \f$ items, plus the \f$ O( \sqrt{n} ) \f$ of the blocks
+ of the two `RootishArrayStack`, where building two new stacks held the
+ places of \f$ 2 n \f$ items. The peak cannot drop to
+ \f$ n + O( \sqrt{n} ) \f$ by moving the \f$ t \f$ items in rounds: a
+ round of \f$ k \f$ items shifts both stacks, \f$ \Theta( n ) \f$ moves, and
+ \f$ t / k \f$ rounds cost \f$ \Theta( n t / k ) \f$, i.e.,
+ \f$ \Theta( n \sqrt{n} ) \f$ for \f$ k = \sqrt{n} \f$, against the
+ \f$ O( n ) \f$ that the analysis of Lemma 7 allows.
+
+ Neither the balance nor the rebuild of `ContiguousDeque` is spread over
+ the operations, i.e., de-amortized, for two reasons. First, the bound
+ that matters for a LIST by rank, \f$ O( 1 + \min\{ i , n - i \} ) \f$,
+ is amortized anyway on these structures, whose insertion in the middle
+ shifts \f$ \Theta( n ) \f$ items; a balance or a rebuild spread over the
+ operations would only make the operations at the two ends
+ \f$ O( 1 ) \f$ in the worst case. Second, the global rebuilding that
+ would do it (that of `RealTimeMinDeque`, see
+ \ref theory_queue_minimum) keeps the old representation in use while
+ the new one is filled, and so needs copies of the items, not moves (the
+ old cells stay readable through `operator[]`, and for `ContiguousDeque`
+ through `data()` and the iterators, which are pointers into the one
+ contiguous piece); two representations at once, i.e., the places of
+ \f$ 2 n \f$ items or more, which is what the balance in place above
+ avoids; every insertion and removal in the middle replayed on the part
+ already copied; and the old cells destroyed a few at a time afterwards.
+ The constant work per operation at the ends would then be several times
+ that of the amortized structure, whose rebuild of `ContiguousDeque` is
+ moreover one `memmove()` in place for the items trivially copyable; a
+ deque that needs \f$ O( 1 ) \f$ in the worst case at the ends is the
+ linked `Dequeue`, which allocates one cell per insertion.
 
  <em>Lemma 9 (the tiered vector with a gap, exercises 2.11 and 2.12).</em>
  Let a `TieredVector` keep its items in blocks of \f$ b \f$ places,

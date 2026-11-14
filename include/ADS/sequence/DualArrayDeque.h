@@ -19,8 +19,12 @@
  * `S = RootishArrayStack< T >` [see `RootishArrayStack.h`] the deque wastes
  * \f$ O( \sqrt{n} ) \f$ places outside a balance and inserts and removes
  * at the rank \f$ i \f$ in \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized
- * time (exercise 2.10), a balance holding the \f$ n \f$ items twice for
- * the time it lasts. A stack `S` has `size()`, `operator[]`,
+ * time (exercise 2.10). A balance is done in place: the \f$ t \f$ items at
+ * the bottom of the larger stack go to the bottom of the other, which grows
+ * by \f$ t < n / 2 \f$ places, before the larger one shrinks, i.e., the
+ * places of \f$ n + t \f$ items at the peak instead of those of
+ * \f$ 2 n \f$, and \f$ n \f$ moves (see \ref theory_sequence_ods for why it
+ * is not spread over the operations). A stack `S` has `size()`, `operator[]`,
  * `push_back()`, `pop_back()` and either the `insert()` and `erase()` of a
  * rank or those of an iterator, as `std::vector`.
  *
@@ -32,7 +36,7 @@
  * Against Morin's code, the claims for the benchmarks: the stacks are
  * `std::vector`, whose shifts are one `memmove()` for the items trivially
  * copyable and whose growth moves the items, where Morin's `ArrayStack`
- * copies them one by one; a balance reserves the two new stacks once.
+ * copies them one by one; a balance moves each item once, in place.
  *
  * The contracts [see `Contract.h`]: a rank is below `size()` (at most
  * `size()` for an insertion), and the removals at the ends need a deque
@@ -229,21 +233,35 @@ class DualArrayDeque {
  static void take( S & s , std::size_t j );
 
  /// the items dealt again into two halves if a stack has more than three
- /// times the items of the other, in \f$ O( n ) \f$ time
+ /// times the items of the other, in \f$ O( n ) \f$ time, in place: the
+ /// \f$ t \f$ items at the bottom of the larger stack pass to the bottom
+ /// of the other, by \f$ n \f$ moves
  ///
- /// In pseudocode (Morin, section 2.5):
+ /// In pseudocode (Morin, section 2.5, the deal in place beyond the book),
+ /// \f$ G \f$ the larger stack, \f$ S \f$ the other one and
+ /// \f$ t = |G| - m \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{balance}() \cr
  /// 2 & \quad \textbf{if}\ 3 |F| < |B|\ \textbf{or}\ 3 |B| < |F|
  ///     \ \textbf{then} \cr
- /// 3 & \qquad m \gets \lfloor n / 2 \rfloor;\ F' \gets \text{the items } m
- ///     - 1 , \ldots , 0 \cr
- /// 4 & \qquad B' \gets \text{the items } m , \ldots , n - 1;\ F \gets F';
- ///     \ B \gets B'
+ /// 3 & \qquad m \gets \lfloor n / 2 \rfloor;\ t \gets |G| - m \cr
+ /// 4 & \qquad \text{push } t \text{ places on } S;\ \textbf{for}\ j \gets
+ ///     |S| - 1\ \textbf{downto}\ 0\ \textbf{do} \cr
+ /// 5 & \qquad\quad \textbf{if}\ j \ge t\ \textbf{then}\ S[ j ] \gets
+ ///     S[ j - t ]\ \textbf{else}\ S[ j ] \gets G[ t - 1 - j ] \cr
+ /// 6 & \qquad \textbf{for}\ k \gets 0\ \textbf{to}\ |G| - t - 1
+ ///     \ \textbf{do}\ G[ k ] \gets G[ k + t ] \cr
+ /// 7 & \qquad \text{pop } t \text{ places from } G
  /// \end{array}}
  /// \f]
  void balance( void );
+
+ /// the \f$ t \f$ items at the bottom of `big` moved to the bottom of
+ /// `small` in the order of the ranks, by \f$ |\mathit{big}| +
+ /// |\mathit{small}| \f$ moves and \f$ t \f$ places more on `small` at
+ /// most
+ static void deal( S & big , S & small , std::size_t t );
 
  /// the two stacks are balanced
  [[nodiscard]] bool balanced( void ) const;
