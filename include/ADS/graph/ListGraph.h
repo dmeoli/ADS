@@ -20,6 +20,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.4,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, section 12.2
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -117,6 +119,13 @@ class ListGraph : public GraphNodes< T > {
  /// the set of the nodes adjacent to \f$ u \f$, in the order of insertion
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::vector< int > adj( int u ) const;
+
+ /// the nodes with an edge to \f$ u \f$, in increasing order, by a scan of
+ /// all the lists, \f$ O( n + m ) \f$ time (the `inEdges( i )` of the
+ /// `AdjacencyLists` of section 12.2 of Morin's book); the lists of an
+ /// unoriented graph give them in \f$ O( \deg( u ) ) \f$
+ /// \pre \f$ u \f$ is a node
+ [[nodiscard]] std::vector< int > inAdj( int u ) const;
 
  /// \f$ f( v ) \f$ on the nodes adjacent to \f$ u \f$
  /// \pre \f$ u \f$ is a node

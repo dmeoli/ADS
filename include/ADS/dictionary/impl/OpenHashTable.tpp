@@ -165,6 +165,8 @@ OpenHashTable< K , V , H >::OpenHashTable( std::size_t m , Probing probe ,
    f_h( h )
 {
  ADS_PRE( ( m > 0 ) && f_probe.works( m ) );
+ if constexpr( PlaceHash< H , K > )
+  ADS_PRE( is_pow2( m ) );
  if( f_probe.kind() == Probing::Kind::LINEAR )
   f_linear = f_probe.stride( 0 , m );
  }
@@ -192,7 +194,10 @@ void OpenHashTable< K , V , H >::insert( const K & k , const V & v )
   }
  c = { Slot::FULL , k , v };
  if( f_restructure && ( 2 * ( f_size + f_deleted ) > f_T.size() ) )
-  rebuild( resized( f_T.size() , true , f_m0 ) );
+  // the deleted places go away; the size doubles unless the keys are at
+  // most a quarter of it
+  rebuild( 4 * f_size > f_T.size() ? resized( f_T.size() , true , f_m0 ) :
+                                     f_T.size() );
  ADS_POST( where( k ) < f_T.size() );
  ADS_INVARIANT( consistent( k ) );
  }
@@ -295,10 +300,19 @@ bool OpenHashTable< K , V , H >::is( std::size_t i , const K & k ) const
  }
 
 template< class K , class V , class H >
+std::size_t OpenHashTable< K , V , H >::hashOf( const K & k ) const
+{
+ if constexpr( PlaceHash< H , K > )
+  return( f_h.place( k , f_T.size() ) );
+ else
+  return( f_h( k ) );
+ }
+
+template< class K , class V , class H >
 std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
 {
  const std::size_t m = f_T.size();
- const std::size_t h = f_h( k );
+ const std::size_t h = hashOf( k );
  long firstDeleted = -1;
  std::size_t i = 0;
  std::size_t j = h % m;                    // H( k , 0 ) = H0( k )
@@ -327,7 +341,7 @@ std::size_t OpenHashTable< K , V , H >::scan( const K & k , bool insert ) const
 template< class K , class V , class H >
 std::size_t OpenHashTable< K , V , H >::where( const K & k ) const
 {
- const std::size_t m = f_T.size() , h = f_h( k );
+ const std::size_t m = f_T.size() , h = hashOf( k );
  for( std::size_t i = 0 ; i < m ; ++i ) {
   const std::size_t j = f_probe.at( h , i , m );
   if( is( j , k ) )
@@ -343,7 +357,7 @@ bool OpenHashTable< K , V , H >::consistent( const K & k ) const
 {
  const std::size_t m = f_T.size();
  if( m > 1024 ) {
-  const std::size_t h = f_h( k );
+  const std::size_t h = hashOf( k );
   for( std::size_t i = 0 ; i < m ; ++i ) {
    const std::size_t j = f_probe.at( h , i , m );
    if( f_T[ j ].slot == Slot::NIL )

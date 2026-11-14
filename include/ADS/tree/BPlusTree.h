@@ -26,8 +26,24 @@
  * parent with \f$ m + 1 \f$ children splits in the same way, the middle key
  * going one level up, up to the root, which may split and give a new root
  * with two children. The book describes the removal only as a series of
- * cases similar to those of the insertion, and so it is not here [see
- * `BTree.h` and `BTreeMap.h` for the removal from a B-tree].
+ * cases similar to those of the insertion; `remove()` is that of exercise
+ * 14.8 of Morin's book: the key goes out of its leaf, and a leaf left with
+ * fewer than \f$ \lceil m / 2 \rceil \f$ keys takes a key from a sibling
+ * that has more, through their parent, whose separator becomes the largest
+ * key of the left one, or is merged with it, the parent losing a child; an
+ * internal node left with fewer than \f$ \lceil m / 2 \rceil \f$
+ * children does the same with a sibling, the separator in the parent
+ * going down between the two, and a root left with one child gives its
+ * place to it. A separator need not be a key that is still there, only a
+ * bound of the keys on its two sides, so that a removal changes no
+ * separator but those of the borrows and of the merges. `lowerBound( x )`
+ * gives the smallest key \f$ \ge x \f$ (the `find( x )` of the exercise)
+ * and `findRange( x , y )` the keys in
+ * \f$ ( x , y ] \f$, the operations of the exercise, the latter along the
+ * list of the leaves in \f$ O( \log_m n + k ) \f$ for \f$ k \f$ keys.
+ * The separators repeat a key per leaf but the last, at most
+ * \f$ n / \lceil m / 2 \rceil \f$ keys of \f$ n \f$, a share that
+ * vanishes as \f$ m \f$ grows (the last point of the exercise).
  *
  * The contracts [see `Contract.h`]: the order is \f$ m > 2 \f$, as the book
  * requires, and the invariant is the shape of the tree, checked after each
@@ -36,6 +52,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 6.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap06.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, exercise 14.8
  * \see R. Bayer, E. M. McCreight, Organization and maintenance of large
  *      ordered indexes, Acta Informatica 1(3), 173-189, 1972,
  *      doi:10.1007/BF00288683
@@ -167,6 +185,47 @@ class BPlusTree {
  /// \end{array}}
  /// \f]
  void insert( const K & x , const V & v );
+
+ /// removes the key \f$ x \f$, if it is there, in
+ /// \f$ O( m \log_m n ) \f$ time
+ ///
+ /// In pseudocode (exercise 14.8 of Morin's book), \f$ h \f$ the least
+ /// number of keys of a leaf and of children of an internal node,
+ /// \f$ \lceil m / 2 \rceil \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( x ) \cr
+ /// 2 & \quad f \gets \mathrm{leaf}( x );\ \textbf{if}\ x \text{ is not }
+ ///     \text{in } f\ \textbf{then return} \cr
+ /// 3 & \quad \text{take } x \text{ out of } f \cr
+ /// 4 & \quad \textbf{while}\ f \ne \mathit{root} \text{ has fewer than }
+ ///     h \text{ keys or children}\ \textbf{do} \cr
+ /// 5 & \qquad s \gets \text{the sibling on the left of } f \text{, or on }
+ ///     \text{the right};\ b \gets \text{their parent} \cr
+ /// 6 & \qquad \textbf{if}\ s \text{ has more than } h\ \textbf{then}
+ ///     \ \text{move its item next to } f \text{ into } f \text{, through }
+ ///     \text{the separator in } b;\ \textbf{return} \cr
+ /// 7 & \qquad \text{merge } f \text{ and } s \text{ (and the separator, }
+ ///     \text{if internal), and take it out of } b;\ f \gets b \cr
+ /// 8 & \quad \textbf{if}\ \text{the root is internal with one child}
+ ///     \ \textbf{then}\ \text{the child becomes the root}
+ /// \end{array}}
+ /// \f]
+ /// \post \f$ x \f$ is not there
+ void remove( const K & x );
+
+ /// true if the key \f$ x \f$ is there
+ [[nodiscard]] bool contains( const K & x ) const;
+
+ /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of
+ /// exercise 14.8 of Morin's book), in \f$ O( \log_m n ) \f$ nodes
+ [[nodiscard]] const K * lowerBound( const K & x ) const;
+
+ /// the pairs with keys in \f$ ( x , y ] \f$, the `findRange( x , y )` of
+ /// exercise 14.8 of Morin's book: `range()` with the first bound left out
+ [[nodiscard]] std::vector< std::pair< K , V > > findRange( const K & x ,
+                                                           const K & y )
+  const;
 
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
@@ -354,6 +413,11 @@ class BPlusTree {
 
  /// frees the nodes of the subtree of \f$ u \f$
  static void destroy( Node * u );
+
+ /// the underflow of \f$ u \f$, not the root, fixed by a borrow from a
+ /// sibling or by a merge with it; the parent, if it may be in underflow
+ /// now, or nil
+ Node * fix( Node * u );
 
  int f_m;                     ///< the order
  Node * f_root;               ///< the root

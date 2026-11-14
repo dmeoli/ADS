@@ -546,6 +546,65 @@
  need, \f$ O( n + k \log k ) \f$ expected for the \f$ k \f$ best items of
  \f$ n \f$.
 
+ \section theory_priority_morin The heaps of Morin's book
+
+ The `BinaryHeap` of section 10.1 of Morin's book is `DaryHeap` with
+ \f$ D = 2 \f$ (`DaryHeap.h`), its array in the order of Eytzinger: the
+ children of the place \f$ i \f$ are \f$ D i + 1 , \ldots , D i + D \f$ and
+ its parent is \f$ \lfloor ( i - 1 ) / D \rfloor \f$, since the places before
+ the first child of \f$ i \f$ are the root and the \f$ D \f$ children of each
+ of the \f$ i \f$ places before \f$ i \f$ (exercise 10.4). A push moves up
+ \f$ \log_D n \f$ levels with one comparison each, a pop moves down as many
+ levels with \f$ D \f$ comparisons each, \f$ D - 1 \f$ among the children
+ and one with the item, so that the pop makes
+ \f$ D \log_D n = ( D / \log_2 D ) \log_2 n \f$ comparisons, the least for
+ \f$ D = 3 \f$ and as many for \f$ D = 4 \f$ as for \f$ D = 2 \f$, with half
+ the levels and the four children in one line of cache (exercise 10.5).
+ The insertions of 7 and 3 and the removals of 6 and 8 of exercises 10.1
+ and 10.2 give the arrays that the test `ods10.1.binary-heap` checks, from
+ the heap of figures 10.2 and 10.3.
+
+ `erase( i )` removes the item of a place in \f$ O( D \log_D n ) \f$: the
+ last item takes its place and moves up, if it is better than the parent
+ there, or down otherwise, the order holding above and below it in either
+ case (exercise 10.3). It is of little use since the places of the items
+ change at every operation and a caller has no handle to follow them, so
+ that it must search the place first, in \f$ O( n ) \f$; `IndexedDaryHeap`
+ keeps the place of each item instead. The second best item is the best
+ child of the root, \f$ O( D ) \f$, and in the randomized meldable heap the
+ smaller child of the root, \f$ O( 1 ) \f$ (exercise 10.9). The \f$ k \f$
+ best items are the first \f$ k \f$ that a heap \f$ Q \f$ of places gives,
+ which starts from the root and receives the children of each place it
+ gives: each item of the answer has its parent in the answer before it, so
+ that \f$ Q \f$ holds the best item not yet given, and it never holds more
+ than \f$ k ( D - 1 ) + 1 \f$ places, \f$ O( k D \log k ) \f$ time
+ (exercise 10.10). The same heap of the first items of \f$ k \f$ sorted
+ lists, the list of the item given putting its next one, merges them in
+ \f$ O( n \log k ) \f$ (exercise 10.11, in the test
+ `ods.ex10.11.k-way-merge`; `multiwayMerge()` and the trees of losers of
+ `MultiwayMerge.h` do it with fewer comparisons per item).
+
+ <em>Lemma 6 (the random walk of the meldable heap).</em> In a binary tree
+ of \f$ n \f$ nodes, the walk from the root that goes to either child with
+ probability \f$ 1 / 2 \f$ until it leaves the tree has an expected length
+ of at most \f$ \log_2( n + 1 ) \f$ (Lemma 10.1 of Morin's book).
+
+ Indeed, by induction on \f$ n \f$: with \f$ n_1 + n_2 = n - 1 \f$ nodes in
+ the two subtrees, the expected length is at most
+ \f$ 1 + ( \log_2( n_1 + 1 ) + \log_2( n_2 + 1 ) ) / 2 \le
+ 1 + \log_2( ( n + 1 ) / 2 ) = \log_2( n + 1 ) \f$, by the concavity of the
+ logarithm. The merge of the randomized meldable heap of Gambin and
+ Malinowski (`MeldableHeap.h`) follows such a walk in each of the two
+ heaps, the smaller root staying on top and the other heap going down a
+ child chosen by a coin, so that it takes
+ \f$ O( \log n_1 + \log n_2 ) \f$ expected time whatever the shapes, and so
+ do the push, the pop, the meld of two heaps and the removal of the node of
+ a handle, which merges the two subtrees of the node and hangs the result
+ where the node was, the order holding between its parent and every node
+ below it (exercise 10.8). The coins of exercises 10.6 and 10.7 are those
+ of a seeded generator in the test `ods10.2.meldable-heap`, since the
+ shape of the heap of figure 10.4 after the operations depends on them.
+
  \section theory_priority_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 10 and
@@ -622,6 +681,11 @@
  \see R. Paredes, G. Navarro, Optimal incremental sorting, Proceedings of
       the 8th Workshop on Algorithm Engineering and Experiments (ALENEX),
       171-182, 2006, doi:10.1137/1.9781611972863.16
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, chapter 10
+ \see A. Gambin, A. Malinowski, Randomized meldable priority queues,
+      Proceedings of SOFSEM'98, Lecture Notes in Computer Science 1521,
+      344-349, 1998, doi:10.1007/3-540-49477-4_26
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File priority.dox --------------------------*/

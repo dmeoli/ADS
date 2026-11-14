@@ -40,6 +40,7 @@
 #include "ADS/Contract.h"
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
 
 /*--------------------------------------------------------------------------*/
@@ -81,6 +82,19 @@ bool is_pow2( std::size_t n );
 /// \post not below \f$ m_0 \f$, and a power of two (or \f$ m_0 \f$) if
 ///       \f$ m \f$ is one
 std::size_t resized( std::size_t m , bool grow , std::size_t m0 );
+
+/// a hash \f$ H \f$ that maps a key straight to a place of a table of
+/// \f$ m = 2^d \f$ places by `h.place( k , m )`, as the multiplicative
+/// hashing of section 5.1.1 of Morin's book and the tabulation hashing of
+/// its section 5.2.3 do with the \f$ d \f$ most significant bits of a
+/// product or of a XOR [see `MultiplicativeHash` in `UniversalHashing.h`
+/// and `TabulationHash` in `RandomHashing.h`]; the tables use it in place
+/// of \f$ h( k ) \bmod m \f$, whose low bits are the worst ones of a
+/// product
+template< class H , class K >
+concept PlaceHash = requires( const H & h , const K & k , std::size_t m ) {
+ { h.place( k , m ) } -> std::convertible_to< std::size_t >;
+ };
 
 /*--------------------------------------------------------------------------*/
 

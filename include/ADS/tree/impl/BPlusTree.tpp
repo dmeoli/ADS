@@ -76,6 +76,139 @@ void BPlusTree< K , V >::insert( const K & x , const V & v )
  }
 
 template< std::totally_ordered K , class V >
+void BPlusTree< K , V >::remove( const K & x )
+{
+ Node * f = leaf( x );
+ const auto i = std::lower_bound( f->k.begin() , f->k.end() , x ) -
+                f->k.begin();
+ if( ( i == long( f->k.size() ) ) || ( f->k[ i ] != x ) )
+  return;
+//! [BPlusTree-remove]
+ f->k.erase( f->k.begin() + i );
+ f->v.erase( f->v.begin() + i );
+ --f_size;
+ for( Node * u = f ; u && ( u != f_root ) ; )
+  u = fix( u );
+ if( ! f_root->is_leaf && ( f_root->p.size() == 1 ) ) {
+  Node * r = f_root;
+  f_root = r->p.front();
+  f_root->parent = nullptr;
+  r->p.clear();
+  delete r;
+  }
+//! [BPlusTree-remove]
+ ADS_POST( ! lookup( x ).has_value() );
+ ADS_INVARIANT( shaped() );
+ }
+
+template< std::totally_ordered K , class V >
+auto BPlusTree< K , V >::fix( Node * u ) -> Node *
+{
+ const std::size_t h = std::size_t( ( f_m + 1 ) / 2 );   // ceil( m / 2 )
+ const std::size_t size = u->is_leaf ? u->k.size() : u->p.size();
+ if( size >= h )
+  return( nullptr );
+//! [BPlusTree-fix]
+ Node * b = u->parent;
+ const std::size_t j = std::size_t( std::find( b->p.begin() , b->p.end() ,
+                                               u ) - b->p.begin() );
+ const bool left = j > 0;
+ Node * s = left ? b->p[ j - 1 ] : b->p[ j + 1 ];
+ K & sep = b->k[ left ? j - 1 : j ];   // between the two
+ const std::size_t ss = s->is_leaf ? s->k.size() : s->p.size();
+ if( ss > h ) {   // a borrow through the separator
+  if( u->is_leaf ) {
+   if( left ) {
+    u->k.insert( u->k.begin() , s->k.back() );
+    u->v.insert( u->v.begin() , s->v.back() );
+    s->k.pop_back();
+    s->v.pop_back();
+    sep = s->k.back();
+    }
+   else {
+    u->k.push_back( s->k.front() );
+    u->v.push_back( s->v.front() );
+    s->k.erase( s->k.begin() );
+    s->v.erase( s->v.begin() );
+    sep = u->k.back();
+    }
+   }
+  else if( left ) {
+   u->k.insert( u->k.begin() , sep );
+   u->p.insert( u->p.begin() , s->p.back() );
+   u->p.front()->parent = u;
+   sep = s->k.back();
+   s->k.pop_back();
+   s->p.pop_back();
+   }
+  else {
+   u->k.push_back( sep );
+   u->p.push_back( s->p.front() );
+   u->p.back()->parent = u;
+   sep = s->k.front();
+   s->k.erase( s->k.begin() );
+   s->p.erase( s->p.begin() );
+   }
+  return( nullptr );
+  }
+ // a merge of the right one of the two into the left one
+ Node * l = left ? s : u , * r = left ? u : s;
+ const std::size_t at = left ? j - 1 : j;   // the separator in b
+ if( l->is_leaf ) {
+  l->k.insert( l->k.end() , r->k.begin() , r->k.end() );
+  l->v.insert( l->v.end() , r->v.begin() , r->v.end() );
+  l->next = r->next;
+  if( r->next )
+   r->next->prev = l;
+  }
+ else {
+  l->k.push_back( b->k[ at ] );
+  l->k.insert( l->k.end() , r->k.begin() , r->k.end() );
+  for( Node * c : r->p )
+   c->parent = l;
+  l->p.insert( l->p.end() , r->p.begin() , r->p.end() );
+  r->p.clear();
+  }
+ b->k.erase( b->k.begin() + std::ptrdiff_t( at ) );
+ b->p.erase( b->p.begin() + std::ptrdiff_t( at + 1 ) );
+ delete r;
+ return( b );
+//! [BPlusTree-fix]
+ }
+
+template< std::totally_ordered K , class V >
+bool BPlusTree< K , V >::contains( const K & x ) const
+{
+ return( lookup( x ).has_value() );
+ }
+
+template< std::totally_ordered K , class V >
+const K * BPlusTree< K , V >::lowerBound( const K & x ) const
+{
+ for( const Node * f = leaf( x ) ; f ; f = f->next ) {
+  const auto i = std::lower_bound( f->k.begin() , f->k.end() , x );
+  if( i != f->k.end() )
+   return( &*i );
+  }
+ return( nullptr );
+ }
+
+template< std::totally_ordered K , class V >
+std::vector< std::pair< K , V > >
+BPlusTree< K , V >::findRange( const K & x , const K & y ) const
+{
+ std::vector< std::pair< K , V > > out;
+ for( const Node * f = leaf( x ) ; f ; f = f->next )
+  for( std::size_t i = 0 ; i < f->k.size() ; ++i ) {
+   if( y < f->k[ i ] )
+    return( out );
+   if( x < f->k[ i ] )
+    out.emplace_back( f->k[ i ] , f->v[ i ] );
+   }
+ return( out );
+ }
+
+template< std::totally_ordered K , class V >
 std::size_t BPlusTree< K , V >::size( void ) const
 {
  return( f_size );

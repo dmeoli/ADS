@@ -457,6 +457,87 @@
  in time for the others; the stability is not applicable where equal items
  cannot be told apart (integers, strings).
 
+ \section theory_sort_morin The exercises of Morin's book on sorting
+
+ The sorts of chapter 11 of Morin's book are those of this area: its merge
+ sort is `mergeSort()`, its quicksort, with the random pivot and the
+ partition in three, `threeWayQuickSort()` (`EngineeredQuickSorts.h`), its
+ heap sort `heapsort()`, on a heap of the maximum instead of the minimum,
+ which spares the final reversal of the book (exercise 11.9: the
+ comparator negated would cost a negation per comparison,
+ \f$ \Theta( n \log n ) \f$, against the \f$ n / 2 \f$ swaps of the
+ reversal), its counting sort and radix sort `countingSort()` and
+ `radixSort()`, the latter on signed integers too, the sign bit flipped in
+ the key (exercise 11.15), and the merge sort of a list without an array
+ `listSort()` (`ListSort.h`), which relinks the cells (exercise 11.2).
+ Exercise 11.14 has no statement: its text is a comment in the source of
+ the book.
+
+ <em>Lemma 6 (the adversary of quicksort).</em> For any quicksort that takes
+ its pivot among \f$ O( 1 ) \f$ items of its part, deterministically or at
+ random, the comparator of McIlroy (`QuicksortAdversary.h`) makes it do at
+ least \f$ \binom{n}{2} \f$ comparisons on \f$ n \f$ items, and the values
+ it gives are an input on which a deterministic such sort does the same
+ comparisons (exercises 11.3 to 11.6).
+
+ Indeed, the adversary freezes the candidate for the pivot, the gas item
+ last compared with a frozen one, at the first comparison of a partition
+ between two gas items, to the smallest value still free: the pivot is then
+ below all the gas of its part, the partition sends all of it to one side,
+ and a part of \f$ k \f$ items costs \f$ k - 1 \f$ comparisons or more, the
+ next part having \f$ k - 1 \f$ items. Its answers are those of the total
+ order of the values given, the gas after the frozen ones, so that the same
+ sort, replayed on those values, gets the same answers. The sorted array is
+ the killer input of the first item as the pivot, and the input that the
+ adversary leaves for the middle item is one for that rule; for any rule
+ that does not look at the values the adversary builds one (exercise
+ 11.5).
+
+ <em>Lemma 7 (the expected comparisons of the quicksort of the book).</em>
+ The quicksort of Morin's book, which compares the \f$ k \f$ items of a part
+ with its pivot, the pivot itself included, and returns at once on the
+ parts of at most one item, makes on \f$ n \ge 2 \f$ distinct keys
+ \f[
+   T( n ) = 2 ( n + 1 ) H_n - 4 n + \frac{2 n - 1}{3} \tag{8}
+ \f]
+ comparisons in expectation, \f$ H_n \f$ the harmonic number.
+
+ Indeed, \f$ T( n ) = n + ( 2 / n ) \sum_{k<n} T( k ) \f$ with
+ \f$ T( 0 ) = T( 1 ) = 0 \f$, which is the recurrence of the classical
+ count, \f$ 2 ( n + 1 ) H_n - 4 n \f$ for \f$ n - 1 \f$ comparisons per part,
+ plus one comparison per part of at least two items; the parts are one per
+ pivot, \f$ n \f$ in all, of which the parts of one item are
+ \f$ ( n + 1 ) / 3 \f$ in expectation for \f$ n \ge 2 \f$, hence the
+ \f$ n - ( n + 1 ) / 3 \f$ of (8). The \f$ 2 n H_n - n + H_n \f$ that exercise
+ 11.7 states is not the expectation of that count, nor of the count without
+ the pivot, \f$ 2 ( n + 1 ) H_n - 4 n \f$: it differs from (8) already at
+ \f$ n = 2 \f$, where both counts are exact (2 and 1) and the formula gives
+ 5.5; the test `ods.ex11.7.quicksort-expectation` checks (8) on the
+ recurrence up to 2000 and on the average of the quicksort of the book.
+
+ The heap sort of the book, on an array in increasing order, already a heap
+ of the minimum, does at least \f$ 2 n \log_2 n - O( n ) \f$ comparisons:
+ the leaf moved to the root at each step, one of the largest items left,
+ sinks back to the bottom, with two comparisons per level, the count that
+ the test `ods.ex11.8.heapsort-worst` checks against
+ \f$ 2 n \log_2 n - 4 n \f$ (exercise 11.8). The comparison tree of figure
+ 11.6 has 4 leaves for the 6 permutations of three items, and besides
+ \f$ 3 , 1 , 2 \f$ and \f$ 3 , 2 , 1 \f$, which the book shows, the pair
+ \f$ 2 , 3 , 1 \f$ and \f$ 3 , 1 , 2 \f$ reaches the same rightmost leaf,
+ which orders \f$ 2 , 3 , 1 \f$ wrongly (exercise 11.10). A binary tree of
+ \f$ k \f$ leaves has height at least \f$ \log_2 k \f$, since a tree of height
+ \f$ h \f$ has at most \f$ 2^h \f$ leaves (exercise 11.12), and a leaf drawn
+ at random has expected depth at least \f$ \log_2 k \f$, by induction with
+ \f$ ( k_1 / k ) \log_2 k_1 + ( k_2 / k ) \log_2 k_2 \ge \log_2 k - 1 \f$
+ for \f$ k_1 + k_2 = k \f$, the convexity of \f$ x \log x \f$ (exercise
+ 11.13); hence \f$ \log_2 n! = n \log_2 n - O( n ) \f$ comparisons, by
+ the formula of Stirling,
+ \f$ \log_2 n! = n \log_2 n - n \log_2 e + O( \log n ) \f$ (exercise
+ 11.11), even in expectation over the random choices of a sort. Exercise
+ 11.1 is the trace
+ of the sorts on \f$ 1 , 7 , 4 , 6 , 2 , 8 , 3 , 5 \f$, in the test
+ `ods11.1.sorts`.
+
  \section theory_sort_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 2.7, 2.8,
@@ -509,6 +590,11 @@
  \see P. Massart, The tight constant in the Dvoretzky-Kiefer-Wolfowitz
       inequality, The Annals of Probability 18(3), 1269-1283, 1990,
       doi:10.1214/aop/1176990746
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, chapter 11
+ \see M. D. McIlroy, A killer adversary for quicksort, Software: Practice
+      and Experience 29(4), 341-344, 1999,
+      doi:10.1002/(SICI)1097-024X(19990410)29:4<341::AID-SPE237>3.0.CO;2-R
 */
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File sort.dox ----------------------------*/

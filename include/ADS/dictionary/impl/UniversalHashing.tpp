@@ -124,6 +124,117 @@ inline std::uint64_t MultiplyShiftHash::operator()( std::uint64_t k ) const
 
 /*--------------------------------------------------------------------------*/
 
+template< class K , class Code >
+MultiplicativeHash< K , Code >::MultiplicativeHash( std::uint64_t seed ,
+                                                    Code code )
+ : f_code( std::move( code ) )
+{
+ SplitMix64 g( seed );
+ f_z = g() | 1;
+ }
+
+template< class K , class Code >
+MultiplicativeHash< K , Code > MultiplicativeHash< K , Code >::ofMultiplier(
+                                                 std::uint64_t z , Code code )
+{
+ ADS_PRE( z & 1 );
+ MultiplicativeHash f( 1 , std::move( code ) );
+ f.f_z = z;
+ return( f );
+ }
+
+template< class K , class Code >
+inline std::uint64_t MultiplicativeHash< K , Code >::operator()(
+                                                         const K & k ) const
+{
+ return( f_z * std::uint64_t( f_code( k ) ) );
+ }
+
+template< class K , class Code >
+inline std::size_t MultiplicativeHash< K , Code >::place( const K & k ,
+                                                          std::size_t m ) const
+{
+ ADS_PRE( ( m > 0 ) && ( ( m & ( m - 1 ) ) == 0 ) );
+//! [MultiplicativeHash-place]
+ const int d = std::countr_zero( std::uint64_t( m ) );
+ const std::size_t r = d == 0 ? 0 :
+                       std::size_t( ( *this )( k ) >> ( 64 - d ) );
+//! [MultiplicativeHash-place]
+ ADS_POST( r < m );
+ return( r );
+ }
+
+/*--------------------------------------------------------------------------*/
+
+inline CompoundHash::CompoundHash( std::size_t r , std::uint64_t seed )
+ : f_Z( r )
+{
+ ADS_PRE( r >= 1 );
+ SplitMix64 g( seed );
+ for( auto & z : f_Z )
+  z = g();
+ f_lo = g() | 1;
+ f_hi = g();
+ }
+
+inline std::uint64_t CompoundHash::operator()(
+                                  std::span< const std::uint64_t > x ) const
+{
+ ADS_PRE( x.size() == f_Z.size() );
+//! [CompoundHash-hash]
+ std::uint64_t lo = 0 , hi = 0;   // the sum, mod 2^128
+ for( std::size_t i = 0 ; i < x.size() ; ++i ) {
+  const Product128 q = product128( f_Z[ i ] , x[ i ] );
+  lo += q.lo;
+  hi += q.hi + ( lo < q.lo ? 1 : 0 );
+  }
+ // z s mod 2^128, of which the high half: the low halves of z and s give
+ // 128 bits, the crossed products only their low 64 bits
+ const Product128 q = product128( f_lo , lo );
+ return( q.hi + f_lo * hi + f_hi * lo );
+//! [CompoundHash-hash]
+ }
+
+/*--------------------------------------------------------------------------*/
+
+inline SequenceHash::SequenceHash( std::uint64_t seed )
+{
+ SplitMix64 g( seed );
+ const std::uint64_t p = ( std::uint64_t( 1 ) << 61 ) - 1;
+ f_z = 1 + g() % ( p - 1 );
+ f_a = g() | 1;
+ }
+
+inline std::uint64_t SequenceHash::operator()(
+                                  std::span< const std::uint64_t > x ) const
+{
+ const std::uint64_t p = ( std::uint64_t( 1 ) << 61 ) - 1;
+//! [SequenceHash-hash]
+ std::uint64_t h = p - 1;   // the end marker
+ for( std::size_t i = x.size() ; i-- > 0 ; ) {
+  h = mulMod61( h , f_z ) + ( ( f_a * x[ i ] ) >> 4 );   // below 2^62
+  h = ( h & p ) + ( h >> 61 );
+  if( h >= p )
+   h -= p;
+  }
+//! [SequenceHash-hash]
+ return( h );
+ }
+
+inline std::uint64_t SequenceHash::operator()( std::string_view s ) const
+{
+ const std::uint64_t p = ( std::uint64_t( 1 ) << 61 ) - 1;
+ std::uint64_t h = p - 1;
+ for( std::size_t i = s.size() ; i-- > 0 ; ) {
+  h = mulMod61( h , f_z ) + static_cast< unsigned char >( s[ i ] );
+  if( h >= p )
+   h -= p;
+  }
+ return( h );
+ }
+
+/*--------------------------------------------------------------------------*/
+
 inline StringHash::StringHash( std::uint64_t seed )
 {
  SplitMix64 g( seed );

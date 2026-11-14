@@ -54,8 +54,8 @@ using RBT = RedBlackTree< int , int >;
 
 static_assert( Dictionary< BST > );
 static_assert( Dictionary< RBT > );
-// BPlusTree has no remove(), so it is not a Dictionary
-static_assert( ! Dictionary< BPlusTree< int , int > > );
+// BPlusTree has remove() too (exercise 14.8 of Morin's book)
+static_assert( Dictionary< BPlusTree< int , int > > );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/

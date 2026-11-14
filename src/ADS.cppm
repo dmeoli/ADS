@@ -93,6 +93,8 @@ module;
 #include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/dictionary/AdaptiveRadixTree.h"
+#include "ADS/dictionary/BinaryTrie.h"
+#include "ADS/dictionary/BitmapTrie.h"
 #include "ADS/dictionary/BucketCuckooTable.h"
 #include "ADS/dictionary/ChainedHashTable.h"
 #include "ADS/dictionary/CuckooHashing.h"
@@ -119,6 +121,10 @@ module;
 #include "ADS/dictionary/Trie.h"
 #include "ADS/dictionary/TwoLevelDictionary.h"
 #include "ADS/dictionary/UniversalHashing.h"
+#include "ADS/dictionary/XFastTrie.h"
+#include "ADS/dictionary/YFastTrie.h"
+#include "ADS/external/BlockBTree.h"
+#include "ADS/external/BlockStore.h"
 #if defined( ADS_WITH_MPI )
  #include "ADS/distributed/DistributedSort.h"
 #endif
@@ -145,6 +151,7 @@ module;
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/Grid.h"
 #include "ADS/graph/GridGraph.h"
+#include "ADS/graph/IncidenceGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Matching.h"
 #include "ADS/graph/MatrixGraph.h"
@@ -245,6 +252,7 @@ module;
 #include "ADS/priority/LinkedHeapPriorityQueue.h"
 #include "ADS/priority/ListPriorityQueue.h"
 #include "ADS/priority/LoserTree.h"
+#include "ADS/priority/MeldableHeap.h"
 #include "ADS/priority/MinMaxHeap.h"
 #include "ADS/priority/MultiwayMerge.h"
 #include "ADS/priority/OrderKey.h"
@@ -328,6 +336,7 @@ module;
 #include "ADS/sort/MultikeyQuickSort.h"
 #include "ADS/sort/PigeonholeSort.h"
 #include "ADS/sort/QuickSort.h"
+#include "ADS/sort/QuicksortAdversary.h"
 #include "ADS/sort/RadixSort.h"
 #include "ADS/sort/RunSorts.h"
 #include "ADS/sort/SampleSort.h"
@@ -811,6 +820,14 @@ export namespace ADS {
  // ADS/dictionary/AdaptiveRadixTree.h
  using ADS::AdaptiveRadixTree;
 
+ // ADS/dictionary/BinaryTrie.h
+ using ADS::BinaryTrie;
+ using ADS::SimpleBinaryTrie;
+ using ADS::TrieWidth;
+
+ // ADS/dictionary/BitmapTrie.h
+ using ADS::BitmapTrie;
+
  // ADS/dictionary/BucketCuckooTable.h
  using ADS::BucketCuckooTable;
 
@@ -901,6 +918,7 @@ export namespace ADS {
  using ADS::SuccinctPatriciaTrie;
 
  // ADS/dictionary/TableSize.h
+ using ADS::PlaceHash;
  using ADS::is_pow2;
  using ADS::is_prime;
  using ADS::next_prime;
@@ -915,10 +933,20 @@ export namespace ADS {
 
  // ADS/dictionary/UniversalHashing.h
  using ADS::CarterWegmanHash;
+ using ADS::CompoundHash;
  using ADS::DLeftHashTable;
  using ADS::DotProductHash;
+ using ADS::MultiplicativeHash;
  using ADS::MultiplyShiftHash;
+ using ADS::SequenceHash;
  using ADS::StringHash;
+
+ // ADS/dictionary/XFastTrie.h
+ using ADS::ListXFastTrie;
+ using ADS::XFastTrie;
+
+ // ADS/dictionary/YFastTrie.h
+ using ADS::YFastTrie;
 
  // ADS/distributed/MPIExecutor.h
 #if defined( ADS_WITH_MPI )
@@ -933,6 +961,13 @@ export namespace ADS {
  using ADS::MPICodec;
  using ADS::MPIMailbox;
 #endif
+
+ // ADS/external/BlockBTree.h
+ using ADS::BTreePolicy;
+ using ADS::BlockBTree;
+
+ // ADS/external/BlockStore.h
+ using ADS::BlockStore;
 
  // ADS/external/ExternalSorting.h
  using ADS::binaryMergeSort;
@@ -1041,6 +1076,9 @@ export namespace ADS {
  using ADS::manhattan;
  using ADS::octile;
  using ADS::readGridMap;
+
+ // ADS/graph/IncidenceGraph.h
+ using ADS::IncidenceGraph;
 
  // ADS/graph/ListGraph.h
  using ADS::ListGraph;
@@ -1585,6 +1623,9 @@ export namespace ADS {
  using ADS::LoserTree;
  using ADS::kWayMerge;
 
+ // ADS/priority/MeldableHeap.h
+ using ADS::MeldableHeap;
+
  // ADS/priority/MinMaxHeap.h
  using ADS::IntervalHeap;
  using ADS::MinMaxHeap;
@@ -1918,6 +1959,9 @@ export namespace ADS {
  using ADS::partitionByValue;
  using ADS::quickSort;
  using ADS::quickSortTuned;
+
+ // ADS/sort/QuicksortAdversary.h
+ using ADS::QuicksortAdversary;
 
  // ADS/sort/RadixSort.h
  using ADS::RadixKey;

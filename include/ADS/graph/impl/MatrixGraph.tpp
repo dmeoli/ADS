@@ -102,6 +102,17 @@ std::vector< int > MatrixGraph< W , T >::adj( int u ) const
  }
 
 template< class W , class T >
+std::vector< int > MatrixGraph< W , T >::inAdj( int u ) const
+{
+ ( void ) B::check( u );
+ std::vector< int > in;
+ for( int v = 0 ; v < B::bound() ; ++v )
+  if( f_M[ v ][ u ] )
+   in.push_back( v );
+ return( in );
+ }
+
+template< class W , class T >
 template< class F >
 void MatrixGraph< W , T >::forEachAdj( int u , F && f ) const
 {

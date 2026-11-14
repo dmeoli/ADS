@@ -64,6 +64,7 @@
 #include "ADS/Contract.h"
 
 #include <array>
+#include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -212,6 +213,14 @@ class TabulationHash {
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::uint64_t operator()( std::uint64_t x ) const;
+
+ /// the place of \f$ x \f$ in a table of \f$ m = 2^d \f$ places, the
+ /// \f$ d \f$ most significant bits of its hash, as the `LinearHashTable`
+ /// of section 5.2.3 of Morin's book takes them [see `PlaceHash` in
+ /// `TableSize.h`]
+ /// \pre \f$ m \f$ is a power of two
+ /// \post the result is below \f$ m \f$
+ [[nodiscard]] std::size_t place( std::uint64_t x , std::size_t m ) const;
 
  private:
  std::array< std::array< std::uint64_t , 256 > , 8 > f_T;   ///< the tables

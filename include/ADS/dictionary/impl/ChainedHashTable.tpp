@@ -28,6 +28,21 @@ ChainedHashTable< K , V , C , H >::ChainedHashTable( std::size_t m ,
  : f_T( m ) , f_m0( m ) , f_restructure( restructure ) , f_h( h )
 {
  ADS_PRE( m > 0 );
+ if constexpr( PlaceHash< H , K > )
+  ADS_PRE( is_pow2( m ) );
+ }
+
+template< class K , class V , Chain C , class H >
+ requires( C != Chain::SORTED || std::totally_ordered< K > )
+ChainedHashTable< K , V , C , H >::ChainedHashTable( std::size_t m ,
+                                                     double g , double s ,
+                                                     H h )
+ : f_T( m ) , f_m0( m ) , f_restructure( true ) , f_grow( g ) ,
+   f_shrink( s ) , f_h( h )
+{
+ ADS_PRE( ( m > 0 ) && ( s >= 0 ) && ( g > 2 * s ) );
+ if constexpr( PlaceHash< H , K > )
+  ADS_PRE( is_pow2( m ) );
  }
 
 template< class K , class V , Chain C , class H >
@@ -65,7 +80,8 @@ void ChainedHashTable< K , V , C , H >::insert( const K & k , const V & v )
  else
   L.insert( L.head() , { k , v } );
  ++f_size;
- if( f_restructure && ( f_size > 2 * f_T.size() ) )
+ if( f_restructure &&
+     ( double( f_size ) > f_grow * double( f_T.size() ) ) )
   rebuild( resized( f_T.size() , true , f_m0 ) );
  ADS_POST( present( k ) );
  ADS_INVARIANT( consistent( k ) );
@@ -81,7 +97,8 @@ void ChainedHashTable< K , V , C , H >::remove( const K & k )
   return;
  L.remove( p );
  --f_size;
- if( f_restructure && ( f_T.size() > f_m0 ) && ( 2 * f_size < f_T.size() ) )
+ if( f_restructure && ( f_T.size() > f_m0 ) &&
+     ( double( f_size ) < f_shrink * double( f_T.size() ) ) )
   rebuild( resized( f_T.size() , false , f_m0 ) );
  ADS_POST( ! present( k ) );
  ADS_INVARIANT( consistent( k ) );
@@ -176,7 +193,10 @@ template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
 std::size_t ChainedHashTable< K , V , C , H >::place( const K & k ) const
 {
- return( f_h( k ) % f_T.size() );
+ if constexpr( PlaceHash< H , K > )
+  return( f_h.place( k , f_T.size() ) );
+ else
+  return( f_h( k ) % f_T.size() );
  }
 
 template< class K , class V , Chain C , class H >

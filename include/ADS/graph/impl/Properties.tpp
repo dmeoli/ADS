@@ -228,6 +228,28 @@ int universalSink( const std::vector< std::vector< T > > & A )
  }
 
 template< Graph G >
+ requires requires( const G g , int u , int v ) {
+  { g.hasEdge( u , v ) } -> std::convertible_to< bool >;
+  }
+int universalSink( const G & g )
+{
+ ADS_PRE( g.directed() );
+ const std::vector< int > N = g.V();
+ if( N.empty() )
+  return( NIL );
+//! [universalSink-graph]
+ int c = N[ 0 ];
+ for( std::size_t j = 1 ; j < N.size() ; ++j )
+  if( g.hasEdge( c , N[ j ] ) )   // c has an edge out
+   c = N[ j ];                     // else N[ j ] misses the edge from c
+ for( const int j : N )
+  if( ( j != c ) && ( g.hasEdge( c , j ) || ! g.hasEdge( j , c ) ) )
+   return( NIL );
+//! [universalSink-graph]
+ return( c );
+ }
+
+template< Graph G >
 std::optional< std::vector< int > > uniqueTopologicalOrder( const G & g )
 {
  ADS_PRE( g.directed() );

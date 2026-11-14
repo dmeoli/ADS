@@ -66,6 +66,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ObjectPool::adopt( other ), the blocks of another pool taken with the
   objects alive in them, so that a list takes the cells of another one
 
+- the structures and the exercises of chapters 5, 10, 11, 12, 13 and 14 of
+  P. Morin, Open Data Structures (in C++), each with its pseudocode, the
+  places where it is meant to be faster than the code of the book, and the
+  markers of the snippets around its main operations, tested by the new
+  program ods_ints (a test per section or exercise, and differential tests
+  against the containers of the standard library):
+  - BinaryTrie, SimpleBinaryTrie, XFastTrie, ListXFastTrie and YFastTrie
+    (dictionary/BinaryTrie.h, XFastTrie.h, YFastTrie.h): the sorted sets of
+    the integers of w bits of chapter 13 and of exercises 13.1 and 13.2,
+    with lowerBound( x ) the successor of x, the x-fast tries with
+    findNear( x ) in O(1 + log d(x)) and O(1 + log log d(x)) expected time
+    (exercise 13.4), the y-fast trie over the Treap of ADS; BitmapTrie
+    (dictionary/BitmapTrie.h), the sorted set of strings of exercise 13.3,
+    O(|s|) per operation by the bitmaps of the children
+  - MeldableHeap (priority/MeldableHeap.h), the randomized meldable heap of
+    Gambin and Malinowski with the merge as a loop, the removal by handle
+    (exercise 10.8), meld(), secondTop() and smallest( k ); DaryHeap::erase(
+    i ), secondTop(), smallest( k ), parent() and child() (exercises 10.3,
+    10.4, 10.9, 10.10)
+  - QuicksortAdversary (sort/QuicksortAdversary.h), the adversary of McIlroy,
+    the comparator of exercise 11.6 that forces binom( n , 2 ) comparisons
+    out of any quicksort that picks its pivot among O(1) items
+  - IncidenceGraph (graph/IncidenceGraph.h), the matrix of incidence of
+    exercise 12.2; inAdj() of MatrixGraph and ListGraph, the inEdges() of
+    the book; universalSink() on any graph with hasEdge(), O(n) on the
+    adjacency matrix (exercise 12.10)
+  - BlockStore and BlockBTree (external/BlockStore.h, BlockBTree.h): the
+    store of blocks with its I/Os counted and the B-tree of chapter 14 on
+    it, in O(B + log_B n) internal memory (exercise 14.4), with the wide
+    nodes of exercise 14.6 and the three-node moves of exercise 14.7
+    (BTreePolicy), which make O(m / B) restructurings; BPlusTree::remove(),
+    lowerBound() and findRange() (exercise 14.8)
+  - PlaceHash (dictionary/TableSize.h), a hash that gives the place on a
+    table of 2^d places, used by ChainedHashTable and OpenHashTable;
+    MultiplicativeHash, CompoundHash and SequenceHash
+    (dictionary/UniversalHashing.h), the multiplicative hashing and the hash
+    codes of sections 5.1.1 and 5.3; TabulationHash::place(); the
+    ChainedHashTable with any two loads g > 2s (the 1 and 1/3 of the book)
+  - bench/hashattack.cpp, the experiment of exercise 5.11: the keys that put
+    a fixed hash in one place, against the random hashes of the book
+  - the sections on them in the theory of dictionaries, priority queues,
+    sorting, graphs, trees and external memory, with the notes on the
+    exercises that ask for a proof or an explanation
+
 - ConcurrentFlatTable::findOrInsertKey( k , h ), for a set kept in the
   words (`packed`, an empty value): the key held equal to k by the
   equality of the table, k itself if it was absent, so that a set of
@@ -1499,6 +1543,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ArraySequence shifts its items by std::move() and std::move_backward(),
   one memmove() for the items trivially copyable (the FastArrayStack of
   Morin)
+
+- OpenHashTable rebuilds at its size, instead of doubling, when the deleted
+  places fill it with at most a quarter of keys, as the LinearHashTable of
+  Morin's book sizes the new table on the keys; a table emptied by removals
+  and refilled with other keys no longer grows for ever
+- BPlusTree is a Dictionary, with remove(): the test of chapter 6 that
+  asserted the opposite asserts it
 
 - ConcurrentFlatTable::findOrInsert() and findOrInsertKey() compare the
   tag of a place they pass with the one of the key before the key, as a

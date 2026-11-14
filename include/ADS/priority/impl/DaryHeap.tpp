@@ -86,6 +86,67 @@ inline void DaryHeap< T , Better , D , BottomUp >::bottomUp( T x )
  }
 
 template< class T , class Better , unsigned D , bool BottomUp >
+T DaryHeap< T , Better , D , BottomUp >::erase( std::size_t i )
+{
+ ADS_PRE( i < f_A.size() );
+//! [DaryHeap-erase]
+ T r = std::move( f_A[ i ] );
+ T x = std::move( f_A.back() );
+ f_A.pop_back();
+ if( i < f_A.size() ) {
+  if( ( i > 0 ) && f_better( x , f_A[ parent( i ) ] ) )
+   up( i , std::move( x ) );
+  else
+   down( i , std::move( x ) );
+  }
+//! [DaryHeap-erase]
+ ADS_INVARIANT( ordered() );
+ return( r );
+ }
+
+template< class T , class Better , unsigned D , bool BottomUp >
+const T * DaryHeap< T , Better , D , BottomUp >::secondTop( void ) const
+{
+ const std::size_t n = f_A.size();
+ if( n < 2 )
+  return( nullptr );
+ std::size_t b = 1;
+ for( std::size_t k = 2 ; ( k <= D ) && ( k < n ) ; ++k )
+  if( f_better( f_A[ k ] , f_A[ b ] ) )
+   b = k;
+ return( &f_A[ b ] );
+ }
+
+template< class T , class Better , unsigned D , bool BottomUp >
+std::vector< T > DaryHeap< T , Better , D , BottomUp >::smallest(
+                                                       std::size_t k ) const
+{
+ std::vector< T > S;
+ const std::size_t n = f_A.size();
+ if( ( n == 0 ) || ( k == 0 ) )
+  return( S );
+ S.reserve( k < n ? k : n );
+ // a binary heap of places, the worst on top for the std:: heaps
+ const auto worse = [ this ]( std::size_t a , std::size_t b ) {
+  return( f_better( f_A[ b ] , f_A[ a ] ) );
+  };
+//! [DaryHeap-smallest]
+ std::vector< std::size_t > Q{ 0 };
+ while( ( S.size() < k ) && ! Q.empty() ) {
+  std::pop_heap( Q.begin() , Q.end() , worse );
+  const std::size_t i = Q.back();
+  Q.pop_back();
+  S.push_back( f_A[ i ] );
+  for( std::size_t c = D * i + 1 ; ( c <= D * i + D ) && ( c < n ) ; ++c ) {
+   Q.push_back( c );
+   std::push_heap( Q.begin() , Q.end() , worse );
+   }
+  }
+//! [DaryHeap-smallest]
+ return( S );
+ }
+
+template< class T , class Better , unsigned D , bool BottomUp >
 bool DaryHeap< T , Better , D , BottomUp >::empty( void ) const
 {
  return( f_A.empty() );
