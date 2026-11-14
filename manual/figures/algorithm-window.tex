@@ -1,0 +1,24 @@
+% Source for the figure of maxSumSegmentLength() (sec. 13.5): the prefix
+% sums of D = (2,-3,4,-1,-2,1,5,-3), L = 2, U = 4, and the deque of the
+% starts before and after the end i = 7. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {$P$};
+  \cells{p}{0,0}{0/cell,2/cell,-1/cell,3/touched,2/touched,0/touched,1/cell,6/cell,3/cell}
+  \indices{p}{9}
+  \draw[ptr] ($(p-7.north)+(0,5mm)$) node[above=0.5mm,var] {$i = 7$} -- (p-7.north);
+  \draw[thick] ($(p-3.north west)+(0,1.5mm)$) -- ++(0,1mm) -- node[above=1mm,font=\scriptsize] {the starts $[ i - U , i - L ]$} ($(p-5.north east)+(0,2.5mm)$) -- ++(0,-1mm);
+  \node[var,anchor=east] at (-6mm,-17mm) {$W$ before};
+  \cells{w}{0,-17mm}{2/cell,4/cell}
+  \node[index,anchor=west,text=black] at (17mm,-17mm) {$P$: $-1$, 2 (increasing from the head)};
+  \node[var,anchor=east] at (-6mm,-28mm) {$W$ after};
+  \cells{v}{0,-28mm}{5/touched}
+  \node[index,anchor=west,text=black] at (17mm,-28mm) {4 removed ($P[ 4 ] \ge P[ 5 ]$), 5 appended, 2 removed ($2 < i - U$)};
+\end{tikzpicture}
+\end{document}

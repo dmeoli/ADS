@@ -29,6 +29,7 @@ inline int Chooser::choice( int k )
 template< class A >
 bool Chooser::run( A && alg , long * runs )
 {
+//! [run]
  f_path.clear();
  for( ; ; ) {
   f_depth = 0;
@@ -43,6 +44,7 @@ bool Chooser::run( A && alg , long * runs )
    return( false );
   ++f_path.back().first;
   }
+//! [run]
  }
 
 inline std::vector< int > Chooser::choices( void ) const

@@ -1,0 +1,20 @@
+% Source for the figure of Chooser (sec. 20.2): the sequence of the pairs
+% (choice, alternatives) before and after a failed run. Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,cell/.append style={minimum width=11mm}]
+  \node[var,anchor=east] at (-6mm,0) {failed run};
+  \foreach \t [count=\i from 0] in {{(0,2)},{(2,3)},{(1,2)}} \node[cell] (a-\i) at (\i*11mm,0) {\t};
+  \node[var,anchor=east] at (-6mm,-13mm) {next run};
+  \node[touched,minimum width=11mm] (b-0) at (0,-13mm) {(1,2)};
+  \foreach \i in {1,2} \node[free,minimum width=11mm] (b-\i) at (\i*11mm,-13mm) {};
+  \indices{b}{3}
+  \node[index,anchor=west,text=black] at (30mm,0) {\texttt{f\_depth} $= 3$: the run made three choices};
+  \node[index,anchor=west,text=black] at (30mm,-13mm) {$(1,2)$ and $(2,3)$ dropped, the choice 0 of 2 advanced to 1};
+\end{tikzpicture}
+\end{document}

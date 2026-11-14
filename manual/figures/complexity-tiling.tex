@@ -1,0 +1,34 @@
+% Source for the figure of the square tiling (sec. 20.3): four tiles, each
+% with the colors of its sides, and a legal covering of the 2 x 2 square
+% with d = D[0] in the corner (0, 0). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\newcommand{\tile}[7]{% x, y, up, right, down, left, name
+  \draw (#1,#2) rectangle ++(1,1);
+  \draw[black!40] (#1,#2) -- ++(1,1) (#1,#2+1) -- ++(1,-1);
+  \node[font=\scriptsize] at (#1+0.5,#2+0.82) {#3};
+  \node[font=\scriptsize] at (#1+0.82,#2+0.5) {#4};
+  \node[font=\scriptsize] at (#1+0.5,#2+0.18) {#5};
+  \node[font=\scriptsize] at (#1+0.18,#2+0.5) {#6};
+  \node[index,below=1mm] at (#1+0.5,#2) {#7};}
+\begin{tikzpicture}[ads,x=12mm,y=12mm]
+  \tile{0}{0}{1}{2}{0}{0}{$D[ 0 ] = d$}
+  \tile{1.5}{0}{3}{0}{0}{2}{$D[ 1 ]$}
+  \tile{3}{0}{0}{4}{1}{0}{$D[ 2 ]$}
+  \tile{4.5}{0}{0}{0}{3}{4}{$D[ 3 ]$}
+  \begin{scope}[shift={(7,-0.5)}]
+    \tile{0}{0}{1}{2}{0}{0}{$( 0 , 0 )$}
+    \tile{1}{0}{3}{0}{0}{2}{$( 1 , 0 )$}
+    \tile{0}{1}{0}{4}{1}{0}{}
+    \tile{1}{1}{0}{0}{3}{4}{}
+    \draw[very thick] (0,0) rectangle (2,2);
+    \node[index,anchor=south] at (0.5,2.05) {$( 0 , 1 )$};
+    \node[index,anchor=south] at (1.5,2.05) {$( 1 , 1 )$};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

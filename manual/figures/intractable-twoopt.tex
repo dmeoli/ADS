@@ -1,0 +1,27 @@
+% Source for the figure of a move of twoOpt() (sec. 20.10): the edges
+% (2,3) and (5,6) removed, (2,5) and (3,6) added, the stretch 3 4 5
+% reversed. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \foreach \c/\s in {0/0,1/1,2/2,5/3,4/4,3/5,6/6,7/7}
+    \coordinate (a\c) at (90-45*\s:13mm);
+  \foreach \u/\v in {0/1,1/2,3/4,4/5,6/7,7/0} \draw[thick] (a\u) -- (a\v);
+  \draw[dashed,black!50] (a2) -- (a3); \draw[dashed,black!50] (a5) -- (a6);
+  \foreach \c in {0,...,7} \node[draw,circle,fill=white,font=\scriptsize,inner sep=1pt,minimum size=4.5mm] at (a\c) {\c};
+  \node[font=\small] at (0,-19mm) {$\pi = ( 0 , 1 , 2 , 3 , 4 , 5 , 6 , 7 )$};
+  \begin{scope}[shift={(50mm,0)}]
+  \foreach \c/\s in {0/0,1/1,2/2,5/3,4/4,3/5,6/6,7/7}
+    \coordinate (b\c) at (90-45*\s:13mm);
+  \foreach \u/\v in {0/1,1/2,3/4,4/5,6/7,7/0} \draw[thick] (b\u) -- (b\v);
+  \draw[very thick,adsTouched!60!black] (b2) -- (b5); \draw[very thick,adsTouched!60!black] (b3) -- (b6);
+  \foreach \c in {0,...,7} \node[draw,circle,fill=white,font=\scriptsize,inner sep=1pt,minimum size=4.5mm] at (b\c) {\c};
+  \node[font=\small] at (0,-19mm) {$( 0 , 1 , 2 , 5 , 4 , 3 , 6 , 7 )$};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

@@ -23,6 +23,7 @@ namespace detail {
 /// exactly \f$ l \f$ closed transactions, nothing if not reachable, for
 /// \f$ l = 0 , \ldots , k \f$
 template< class T >
+//! [closedTransactions]
 std::vector< std::optional< T > > closedTransactions(
                             const std::vector< T > & prices , std::size_t k )
 {
@@ -38,6 +39,7 @@ std::vector< std::optional< T > > closedTransactions(
    }
  return( free );
  }
+//! [closedTransactions]
 
 }  // end( namespace detail )
 

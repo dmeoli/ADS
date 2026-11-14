@@ -70,6 +70,7 @@ inline std::optional< Tiling > squareTiling( const std::vector< Tile > & D ,
  return( result );
  }
 
+//! [linearTiling]
 inline bool linearTiling( const std::vector< Tile > & D , long n )
 {
  const int m = int( D.size() );
@@ -92,6 +93,7 @@ inline bool linearTiling( const std::vector< Tile > & D , long n )
  dfs( dfs , 0 );
  return( cycle || ( longest[ 0 ] >= n - 1 ) );
  }
+//! [linearTiling]
 
 /*--------------------------------------------------------------------------*/
 
