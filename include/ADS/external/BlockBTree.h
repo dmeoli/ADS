@@ -35,10 +35,12 @@
  *   at about \f$ 1.25 B \f$ or more each;
  * - `THREE` (exercise 14.7): the bounds of the book, a node in overflow
  *   sharing its keys with a sibling, into two nodes if the two have at most
- *   about \f$ 3.75 B \f$ keys and into three otherwise, and a node in
+ *   about \f$ 3.5 B \f$ keys and into three otherwise, and a node in
  *   underflow sharing them with two siblings, into two nodes or three in
  *   the same way, so that every node touched has between about
- *   \f$ 7 B / 6 \f$ and \f$ 7 B / 4 \f$ keys.
+ *   \f$ 7 B / 6 \f$ and \f$ 7 B / 4 \f$ keys; a root that splits and the
+ *   children of a root of two children follow the rules of the book, so
+ *   that a tree of at most two leaves still runs the cycle above.
  *
  * In both, a node touched needs \f$ \Omega( B ) \f$ operations below it
  * before it is touched again, so that a potential of the distance of each
@@ -168,8 +170,8 @@ class BlockBTree {
  /// 3 & \quad \textbf{loop} \cr
  /// 4 & \qquad \text{read } u;\ i \gets \text{the first place with }
  ///     u.\mathit{keys}[ i ] \ge x \cr
- /// 5 & \qquad \textbf{if}\ u.\mathit{keys}[ i ] = x\ \textbf{then return}
- ///     \ x \cr
+ /// 5 & \qquad \textbf{if}\ i < |u.\mathit{keys}| \textbf{ and }
+ ///     u.\mathit{keys}[ i ] = x\ \textbf{then return}\ x \cr
  /// 6 & \qquad \textbf{if}\ i < |u.\mathit{keys}|\ \textbf{then}\ z \gets
  ///     u.\mathit{keys}[ i ] \cr
  /// 7 & \qquad \textbf{if}\ u \text{ is a leaf}\ \textbf{then return}\ z \cr
