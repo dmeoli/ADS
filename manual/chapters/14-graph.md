@@ -3526,7 +3526,7 @@ for( auto [ a , b ] : std::vector< std::pair< int , int > >{
       { 2 , 1 } , { 1 , 0 } , { 0 , 3 } , { 3 , 2 } , { 2 , 4 } , { 4 , 3 } } )
  g.insertEdge( a , b );
 std::optional< std::vector< int > > T = ADS::eulerianTrail( g );
-                                           // *T is ( 2 , 1 , 0 , 3 , 2 , 4 , 3 )
+                                           // *T is 2, 1, 0, 3, 2, 4, 3
 ```
 
 ## 14.13 Changes of the graph and reoptimization {#sec-14-13}
@@ -4095,9 +4095,9 @@ ADS::ListGraph< int > g( 3 );              // oriented
 g.insertEdge( 0 , 1 , 2 );
 g.insertEdge( 1 , 2 , 2 );
 g.insertEdge( 0 , 2 , 5 );
-ADS::ShortestPathsObserver< ADS::ListGraph< int > > P( g , 0 );
-ADS::Observable< ADS::ListGraph< int > ,
-                 ADS::ShortestPathsObserver< ADS::ListGraph< int > > > G( g , P );
+using SP = ADS::ShortestPathsObserver< ADS::ListGraph< int > >;
+SP P( g , 0 );
+ADS::Observable< ADS::ListGraph< int > , SP > G( g , P );
 P.setRecomputeRatio( 1.0 );                // a repair for up to m events
 int d = P.distance( 2 );                   // d is 4
 G.setWeight( 0 , 2 , 6 );                  // off the tree, harmless
