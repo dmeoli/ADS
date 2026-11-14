@@ -38,7 +38,6 @@ LeftLeaningRedBlackTree< K , V >::~LeftLeaningRedBlackTree()
 template< std::totally_ordered K , class V >
 auto LeftLeaningRedBlackTree< K , V >::findLast( const K & k ) const -> Link *
 {
- //! [find]
  Link * w = f_root , * prev = nullptr;
  while( w ) {
   prev = w;
@@ -47,7 +46,6 @@ auto LeftLeaningRedBlackTree< K , V >::findLast( const K & k ) const -> Link *
   else return( w );
   }
  return( prev );
- //! [find]
  }
 
 template< std::totally_ordered K , class V >
@@ -95,7 +93,6 @@ void LeftLeaningRedBlackTree< K , V >::rotateRight( Link * u )
 template< std::totally_ordered K , class V >
 void LeftLeaningRedBlackTree< K , V >::addFixup( Link * u )
 {
- //! [addFixup]
  while( u->colour == kRed ) {
   if( u == f_root ) {
    u->colour = kBlack;
@@ -117,13 +114,11 @@ void LeftLeaningRedBlackTree< K , V >::addFixup( Link * u )
   pushBlack( g );                           // a 2-4 node split
   u = g;
   }
- //! [addFixup]
  }
 
 template< std::totally_ordered K , class V >
 void LeftLeaningRedBlackTree< K , V >::insert( const K & k , const V & v )
 {
- //! [add]
  Link * p = findLast( k );
  if( p && !( key( p ) < k ) && !( k < key( p ) ) )
   static_cast< Node * >( p )->value = v;
@@ -135,7 +130,6 @@ void LeftLeaningRedBlackTree< K , V >::insert( const K & k , const V & v )
   ++f_n;
   addFixup( u );
   }
- //! [add]
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid() );
  }
@@ -183,7 +177,6 @@ auto LeftLeaningRedBlackTree< K , V >::removeCase3( Link * u ) -> Link *
 template< std::totally_ordered K , class V >
 void LeftLeaningRedBlackTree< K , V >::removeFixup( Link * u )
 {
- //! [removeFixup]
  while( u->colour > kBlack ) {
   if( u == f_root )
    u->colour = kBlack;
@@ -199,13 +192,11 @@ void LeftLeaningRedBlackTree< K , V >::removeFixup( Link * u )
   if( ( colour( w->right ) == kRed ) && ( colour( w->left ) == kBlack ) )
    flipLeft( w );
   }
- //! [removeFixup]
  }
 
 template< std::totally_ordered K , class V >
 void LeftLeaningRedBlackTree< K , V >::remove( const K & k )
 {
- //! [remove]
  Link * u = findLast( k );
  if( u && !( key( u ) < k ) && !( k < key( u ) ) ) {
   Link * w = u->right;                      // w: the node spliced
@@ -235,7 +226,6 @@ void LeftLeaningRedBlackTree< K , V >::remove( const K & k )
   if( phantom.parent || ( f_root == &phantom ) )
    place( &phantom ) = nullptr;             // the phantom out
   }
- //! [remove]
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( valid() );
  }
@@ -252,7 +242,6 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
   return( key( a ) < key( b ) );
   };
  ADS_PRE( ! f_root || smaller() );
- //! [absorb]
  if( ! f_root ) {                           // nothing here: all of t
   std::swap( f_root , t.f_root );
   std::swap( f_n , t.f_n );
@@ -305,7 +294,6 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
  x->right->parent = x;
  x->colour = kRed;
  addFixup( x );
- //! [absorb]
  ADS_INVARIANT( valid() );
  }
 

@@ -197,7 +197,6 @@ struct Rebuild {
  /// 10 & \quad \textbf{return}\ u
  /// \end{array}}
  /// \f]
- //! [toList]
  template< class N >
  static N * toList( N * u , N * r ) {
   while( u ) {                              // the left spine by a loop,
@@ -210,11 +209,9 @@ struct Rebuild {
    }
   return( r );
   }
- //! [toList]
 
  /// the balanced tree of the first \f$ s \f$ nodes of the list \f$ h \f$,
  /// which is advanced past them
- //! [fromList]
  template< class N , class Set >
  static N * fromList( std::size_t s , N * & h , Set & set ) {
   if( s == 0 ) return( nullptr );
@@ -226,7 +223,6 @@ struct Rebuild {
   set( u , s );
   return( u );
   }
- //! [fromList]
 
  /// the number of nodes of the subtree of \f$ u \f$, by the stack
  /// \f$ S \f$, emptied first

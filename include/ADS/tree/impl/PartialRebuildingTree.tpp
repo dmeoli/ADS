@@ -86,7 +86,6 @@ void PartialRebuildingTree< K , V , P >::rebuild( std::size_t i )
 template< std::totally_ordered K , class V , RebuildPolicy P >
 void PartialRebuildingTree< K , V , P >::rebalance( void )
 {
- //! [rule]
  for( std::size_t i = 0 ; i < f_path.size() ; ++i ) {
   Node * u = f_path[ i ];
   bool selected;
@@ -102,13 +101,11 @@ void PartialRebuildingTree< K , V , P >::rebalance( void )
    break;
    }
   }
- //! [rule]
  }
 
 template< std::totally_ordered K , class V , RebuildPolicy P >
 void PartialRebuildingTree< K , V , P >::insert( const K & k , const V & v )
 {
- //! [add]
  f_path.clear();
  Node ** link = &f_root;
  while( Node * w = *link ) {
@@ -124,7 +121,6 @@ void PartialRebuildingTree< K , V , P >::insert( const K & k , const V & v )
  *link = new Node( k , v );
  for( Node * w : f_path ) ++w->s;
  rebalance();
- //! [add]
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid() );
  }
@@ -132,7 +128,6 @@ void PartialRebuildingTree< K , V , P >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V , RebuildPolicy P >
 void PartialRebuildingTree< K , V , P >::remove( const K & k )
 {
- //! [remove]
  f_path.clear();
  Node ** link = &f_root;
  Node * u;
@@ -159,7 +154,6 @@ void PartialRebuildingTree< K , V , P >::remove( const K & k )
   for( Node * w : f_path ) --w->s;
   rebalance();
   }
- //! [remove]
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( valid() );
  }

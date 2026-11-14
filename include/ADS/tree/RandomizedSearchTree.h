@@ -107,7 +107,8 @@ class RandomizedSearchTree {
  /// associates \f$ v \f$ to \f$ k \f$, in \f$ O( \log n ) \f$ expected time
  ///
  /// In pseudocode (Martínez and Roura, beyond the book), \f$ s \f$ the
- /// sizes, after a search that found \f$ k \f$ absent:
+ /// sizes, recomputed from the children at each node that a split
+ /// returns, after a search that found \f$ k \f$ absent:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( t , k , v ) \cr
@@ -135,7 +136,8 @@ class RandomizedSearchTree {
  /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ expected time
  ///
  /// In pseudocode (Martínez and Roura, beyond the book), the node of
- /// \f$ k \f$ replaced by the join of its subtrees:
+ /// \f$ k \f$ replaced by the join of its subtrees, and the size of each
+ /// node that a join returns recomputed from its children:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{join}( a , b ) \cr

@@ -56,7 +56,6 @@ void Treap< K , V >::rotateLeft( Ptr & t )
 template< std::totally_ordered K , class V >
 bool Treap< K , V >::insert( Ptr & t , const K & k , const V & v )
 {
- //! [add]
  if( ! t ) {
   t = std::make_unique< Node >( Node{ k , v , f_g() , 1 , nullptr ,
                                       nullptr } );
@@ -76,7 +75,6 @@ bool Treap< K , V >::insert( Ptr & t , const K & k , const V & v )
   }
  t->value = v;
  return( false );
- //! [add]
  }
 
 template< std::totally_ordered K , class V >
@@ -91,7 +89,6 @@ void Treap< K , V >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V >
 bool Treap< K , V >::remove( Ptr & t , const K & k )
 {
- //! [remove]
  if( ! t )
   return( false );
  if( k < t->key ) {
@@ -123,7 +120,6 @@ bool Treap< K , V >::remove( Ptr & t , const K & k )
   }
  update( t );
  return( gone );
- //! [remove]
  }
 
 template< std::totally_ordered K , class V >
@@ -194,7 +190,6 @@ template< std::totally_ordered K , class V >
 auto Treap< K , V >::lowerBoundNode( const K & k ) const
  -> const Node *
 {
- //! [find]
  const Node * best = nullptr;
  for( const Node * t = f_root.get() ; t ; )
   if( t->key < k ) t = t->right.get();
@@ -203,7 +198,6 @@ auto Treap< K , V >::lowerBoundNode( const K & k ) const
    if( !( k < t->key ) ) break;
    t = t->left.get();
    }
- //! [find]
  return( best );
  }
 
@@ -235,7 +229,6 @@ template< std::totally_ordered K , class V >
 std::pair< K , V > Treap< K , V >::select( std::size_t i ) const
 {
  ADS_PRE( i < f_size );
- //! [select]
  const Node * t = f_root.get();
  for( ; ; ) {
   const std::size_t l = sz( t->left );
@@ -246,7 +239,6 @@ std::pair< K , V > Treap< K , V >::select( std::size_t i ) const
    t = t->right.get();
    }
   }
- //! [select]
  return( std::pair< K , V >( t->key , t->value ) );
  }
 
@@ -273,7 +265,6 @@ auto Treap< K , V >::fromSorted( const std::vector< std::pair< K , V > > & A ,
                                return( !( a.first < b.first ) ); } ) ==
           A.end() );
  Treap T( seed );
- //! [fromSorted]
  std::vector< Ptr > S;                      // the right spine, the root
  for( const auto & [ k , v ] : A ) {        // first; a node owns its left
   Ptr u = std::make_unique< Node >(         // subtree, and its right one
@@ -297,7 +288,6 @@ auto Treap< K , V >::fromSorted( const std::vector< std::pair< K , V > > & A ,
   update( top );
   l = std::move( top );
   }
- //! [fromSorted]
  T.f_root = std::move( l );
  T.f_size = A.size();
  ADS_INVARIANT( T.valid( T.f_root , nullptr , nullptr ) );

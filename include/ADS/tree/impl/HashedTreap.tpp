@@ -92,7 +92,6 @@ void HashedTreap< K , V >::rotateLeft( Ptr & t )
 template< std::totally_ordered K , class V >
 int HashedTreap< K , V >::insert( Ptr & t , const K & k , const V & v )
 {
- //! [add]
  // 0: k was there; 1: a new node that may still go up; 2: settled
  if( ! t ) {
   t = std::make_unique< Node >( Node{ k , v , nullptr , nullptr } );
@@ -112,7 +111,6 @@ int HashedTreap< K , V >::insert( Ptr & t , const K & k , const V & v )
  if( left ) rotateRight( t );
  else rotateLeft( t );
  return( 1 );
- //! [add]
  }
 
 template< std::totally_ordered K , class V >
@@ -127,7 +125,6 @@ void HashedTreap< K , V >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V >
 bool HashedTreap< K , V >::remove( Ptr & t , const K & k )
 {
- //! [remove]
  if( ! t )
   return( false );
  if( k < t->key ) return( remove( t->left , k ) );
@@ -146,7 +143,6 @@ bool HashedTreap< K , V >::remove( Ptr & t , const K & k )
   }
  rotateLeft( t );
  return( remove( t->left , k ) );
- //! [remove]
  }
 
 template< std::totally_ordered K , class V >

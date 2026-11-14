@@ -70,14 +70,12 @@ int ChildListTree< T >::leftmostChild( int n ) const
 template< class T >
 int ChildListTree< T >::rightSibling( int n ) const
 {
- //! [rightSibling]
  const Node & u = node( n );
  if( u.parent == NIL )
   return( NIL );
  const auto & C = f_N[ u.parent ].children;
  const auto q = C.next( u.where );
  return( C.finished( q ) ? NIL : C.read( q ) );
- //! [rightSibling]
  }
 
 template< class T >

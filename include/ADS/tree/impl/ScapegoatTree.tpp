@@ -77,7 +77,6 @@ template< std::totally_ordered K , class V , bool StoredSizes >
 void ScapegoatTree< K , V , StoredSizes >::rebuild( Node * u , std::size_t s ,
                                                Node * p )
 {
- //! [rebuild]
  auto set = []( Node * x , std::size_t t ) {
   if constexpr( StoredSizes ) x->s = t;
   else ( void ) x , ( void ) t;
@@ -94,7 +93,6 @@ void ScapegoatTree< K , V , StoredSizes >::rebuild( Node * u , std::size_t s ,
   }
  if( ! p ) f_root = r;
  else ( p->left == u ? p->left : p->right ) = r;
- //! [rebuild]
  ++f_rebuilds;
  f_work += s;
  }
@@ -103,13 +101,11 @@ template< std::totally_ordered K , class V , bool StoredSizes >
 std::optional< V > ScapegoatTree< K , V , StoredSizes >::lookup(
  const K & k ) const
 {
- //! [find]
  for( const Node * w = f_root ; w ; )
   if( k < w->key ) w = w->left;
   else if( w->key < k ) w = w->right;
   else return( w->value );
  return( std::nullopt );
- //! [find]
  }
 
 template< std::totally_ordered K , class V , bool StoredSizes >
@@ -121,7 +117,6 @@ bool ScapegoatTree< K , V , StoredSizes >::contains( const K & k ) const
 template< std::totally_ordered K , class V , bool StoredSizes >
 void ScapegoatTree< K , V , StoredSizes >::insert( const K & k , const V & v )
 {
- //! [add]
  f_path.clear();
  Node ** link = &f_root;
  while( Node * w = *link ) {
@@ -161,7 +156,6 @@ void ScapegoatTree< K , V , StoredSizes >::insert( const K & k , const V & v )
    su = sw;
    }
   }
- //! [add]
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid() );
  }
@@ -169,7 +163,6 @@ void ScapegoatTree< K , V , StoredSizes >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V , bool StoredSizes >
 void ScapegoatTree< K , V , StoredSizes >::remove( const K & k )
 {
- //! [remove]
  f_path.clear();
  Node ** link = &f_root;
  Node * u;
@@ -201,7 +194,6 @@ void ScapegoatTree< K , V , StoredSizes >::remove( const K & k )
    f_q = f_n;
    }
   }
- //! [remove]
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( valid() );
  }

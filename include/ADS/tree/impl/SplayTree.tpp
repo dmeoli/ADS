@@ -50,7 +50,6 @@ void SplayTree< K , V >::destroy( Node * t )
 template< std::totally_ordered K , class V >
 auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
 {
- //! [splay]
  if( ! t )
   return( t );
  // the two parts and the links where they grow, the right child of the
@@ -93,7 +92,6 @@ auto SplayTree< K , V >::splay( Node * t , const K & k ) -> Node *
  t->left = L;
  t->right = R;
  return( t );
- //! [splay]
  }
 
 template< std::totally_ordered K , class V >
@@ -160,7 +158,6 @@ bool SplayTree< K , V >::contains( const K & k )
 template< std::totally_ordered K , class V >
 auto SplayTree< K , V >::lowerBoundNode( const K & k ) -> Node *
 {
- //! [lowerBoundNode]
  if( ! f_root )
   return( nullptr );
  f_root = splay( f_root , k );
@@ -170,7 +167,6 @@ auto SplayTree< K , V >::lowerBoundNode( const K & k ) -> Node *
   return( nullptr );
  f_root->right = splay( f_root->right , k );   // its smallest key comes up
  return( f_root->right );
- //! [lowerBoundNode]
  }
 
 template< std::totally_ordered K , class V >

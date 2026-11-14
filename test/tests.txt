@@ -1968,6 +1968,8 @@ ods_trees  ods-ex6.7.order-numbers             ex. 6.7 and 6.9, three numbers
 ods_trees  ods-ex6.10.pre-in-rebuild           tree from two visits
 ods_trees  ods-ex6.11.shape-code               shape in 2(n-1) bits
 ods_trees  ods-ex6.14.getLE                    getLE(x)
+ods_trees  ods-ex6.12.bst-insert-figure        ex. 6.12, figure 6.5, insertions
+ods_trees  ods-ex6.13.bst-remove-figure        ex. 6.13, figure 6.5, removals
 ods_trees  ods6.2.searchtree-lowerbound        SearchTree, lowerBound(x)
 ods_trees  ods-ex6.19.size-depth-height        ex. 6.15, 6.18, 6.19, measures
 ods_trees  ods-ex7.4.permute                   permute(a), shuffleFast()
@@ -1978,6 +1980,8 @@ ods_trees  ods-ex7.9.finger-treap              finger search in a treap
 ods_trees  ods-ex7.11.treap-list               TreapList
 ods_trees  ods-ex7.14.randomized-bst           Martinez-Roura trees
 ods_trees  ods8.1.scapegoat                    section 8.1, ScapegoatTree
+ods_trees  ods-ex8.1.scapegoat-figure          ex. 8.1, figure 8.1, no rebuild
+ods_trees  ods-ex8.2.scapegoat-credits         ex. 8.2, two rules of the scapegoat
 ods_trees  ods-ex8.5.scapegoat-variants        ex. 8.5 to 8.7, same rebuilds
 ods_trees  ods-ex8.3.rebuild-nlogn             rebuilds of n log n nodes
 ods_trees  ods-ex8.4.scapegoat-base            height log_b q, any b
@@ -1988,6 +1992,9 @@ ods_trees  ods-ex8.11.order-maintenance        Sequence, order maintenance
 ods_trees  ods-ex8.11.order-constant           O(1) amortized labels
 ods_trees  ods9.2.left-leaning-red-black       section 9.2, RedBlackTree
 ods_trees  ods-ex9.1.two-four-tree             ex. 9.1 and 9.8, 2-4 view
+ods_trees  ods-ex9.2.red-black-insert-figure   ex. 9.2, three insertions
+ods_trees  ods-ex9.3.red-black-remove-figure   ex. 9.3, the cases of the removal
 ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join
 ods_trees  ods-ex9.12.avl-rebalancing          one rebalancing per insertion
 ods_trees  ods-ex9.13.avl                      AVLTree
+ods_trees  ods-ex14.1.btree-one-pass           ex. 14.1 and 14.2 on BTree

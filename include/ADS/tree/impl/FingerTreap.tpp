@@ -37,7 +37,6 @@ FingerTreap< K , V >::~FingerTreap()
 template< std::totally_ordered K , class V >
 auto FingerTreap< K , V >::search( const K & k , Node * u ) const -> Node *
 {
- //! [fingerFind]
  if( ! u ) u = f_root;
  while( u && u->parent && ( ( k < u->lo->key ) || ( u->hi->key < k ) ) )
   u = u->parent;                            // up until the subtree spans k
@@ -48,7 +47,6 @@ auto FingerTreap< K , V >::search( const K & k , Node * u ) const -> Node *
   else break;
   }
  return( u );
- //! [fingerFind]
  }
 
 template< std::totally_ordered K , class V >
@@ -126,7 +124,6 @@ void FingerTreap< K , V >::rotateRight( Node * u )
 template< std::totally_ordered K , class V >
 void FingerTreap< K , V >::insert( const K & k , const V & v )
 {
- //! [add]
  Node * p = search( k , nullptr );
  if( p && !( p->key < k ) && !( k < p->key ) )
   p->value = v;
@@ -142,7 +139,6 @@ void FingerTreap< K , V >::insert( const K & k , const V & v )
   for( Node * w = u->parent ; w ; w = w->parent ) update( w );
   ++f_size;
   }
- //! [add]
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid() );
  }
@@ -150,7 +146,6 @@ void FingerTreap< K , V >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V >
 void FingerTreap< K , V >::remove( const K & k )
 {
- //! [remove]
  Node * u = search( k , nullptr );
  if( u && !( u->key < k ) && !( k < u->key ) ) {
   while( u->left && u->right )              // down, the child of larger
@@ -166,7 +161,6 @@ void FingerTreap< K , V >::remove( const K & k )
   --f_size;
   f_finger = nullptr;
   }
- //! [remove]
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( valid() );
  }
