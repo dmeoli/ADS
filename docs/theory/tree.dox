@@ -1000,7 +1000,14 @@
  changes. A removal from the tree of Fibonacci of height \f$ h \f$ (the
  smallest AVL tree of that height, see (2)) of the deepest leaf on the side
  of the shorter subtrees makes every node of its path unbalanced in turn,
- \f$ \Theta( \log n ) \f$ rebalancings. The AVL tree, shallower
+ \f$ \Theta( \log n ) \f$ rebalancings: each rebalancing restores a
+ subtree whose height drops by 1, which unbalances its parent, whose
+ shorter side it was, and so on every other level at least.
+ `rebalancings()` counts them and their rotations, and the test of the
+ exercise checks both claims, at most one rebalancing (and two rotations)
+ per insertion, random or increasing, and at least \f$ h / 2 - 1 \f$ for
+ the removal from the tree of Fibonacci of height \f$ h \f$, built level
+ by level with no rotation, for \f$ h \f$ from 6 to 22. The AVL tree, shallower
  (\f$ 1.44 \log_2 n \f$ against \f$ 2 \log_2 n \f$), searches faster, the
  red-black tree changes less; the benchmark `bench/ssets.cpp` measures the
  searches, the insertions and the removals of all the sorted sets of the

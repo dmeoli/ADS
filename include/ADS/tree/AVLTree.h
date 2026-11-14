@@ -193,6 +193,15 @@ class AVLTree
  template< class F >
  void forEach( F && f ) const;
 
+ /// the rebalancings of `insert()` and `remove()` so far, i.e., the nodes
+ /// found unbalanced on their paths and mended by one or two rotations,
+ /// and those rotations (exercise 9.12 of Morin)
+ [[nodiscard]] std::pair< std::size_t , std::size_t > rebalancings( void )
+  const {
+  return( std::pair< std::size_t , std::size_t >( f_rebalances ,
+                                                  f_rotations ) );
+  }
+
 /*--------------------------------------------------------------------------*/
  private:
 
@@ -258,7 +267,7 @@ class AVLTree
  static void update( Ptr & t );
  static void rotateRight( Ptr & t );
  static void rotateLeft( Ptr & t );
- static void balance( Ptr & t );
+ void balance( Ptr & t );
  bool insert( Ptr & t , const K & k , const V & v );
  bool remove( Ptr & t , const K & k );
  template< class F >
@@ -273,6 +282,8 @@ class AVLTree
 
  Ptr f_root;              ///< the root
  std::size_t f_size = 0;  ///< the number of keys
+ std::size_t f_rebalances = 0;   ///< the rebalancings so far
+ std::size_t f_rotations = 0;    ///< their rotations
 
  };  // end( class AVLTree )
 

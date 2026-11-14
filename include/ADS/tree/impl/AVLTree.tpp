@@ -109,14 +109,22 @@ void AVLTree< K , V >::balance( Ptr & t )
 {
  update( t );
  const int b = h( t->left ) - h( t->right );
+ if( ( b > 1 ) || ( b < -1 ) ) {
+  ++f_rebalances;
+  ++f_rotations;
+  }
  if( b > 1 ) {                              // too high on the left
-  if( h( t->left->left ) < h( t->left->right ) )
+  if( h( t->left->left ) < h( t->left->right ) ) {
    rotateLeft( t->left );                   // double rotation
+   ++f_rotations;
+   }
   rotateRight( t );
   }
  else if( b < -1 ) {                        // too high on the right
-  if( h( t->right->right ) < h( t->right->left ) )
+  if( h( t->right->right ) < h( t->right->left ) ) {
    rotateRight( t->right );
+   ++f_rotations;
+   }
   rotateLeft( t );
   }
  }

@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- AVLTree::rebalancings(), the rebalancings of the insertions and of the
+  removals so far and their rotations, and the test
+  ods-ex9.12.avl-rebalancing, the numeric check of exercise 9.12 of
+  Morin: at most one rebalancing and two rotations per insertion, random
+  or increasing, and at least h / 2 - 1 rebalancings for the removal of the
+  deepest leaf on the shorter side of the tree of Fibonacci of height h
+
 - RealTimeMinQueue and RealTimeMinDeque, the queue and the deque with the
   minimum of exercises 3.15 and 3.16 of Morin in O( 1 ) worst-case time
   per operation, next to the amortized MinQueue and MinDeque: the queue by

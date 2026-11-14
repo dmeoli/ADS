@@ -1942,4 +1942,5 @@ ods_trees  ods-ex8.11.order-constant           O(1) amortized labels
 ods_trees  ods9.2.left-leaning-red-black       section 9.2, RedBlackTree
 ods_trees  ods-ex9.1.two-four-tree             ex. 9.1 and 9.8, 2-4 view
 ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join
+ods_trees  ods-ex9.12.avl-rebalancing          one rebalancing per insertion
 ods_trees  ods-ex9.13.avl                      AVLTree

@@ -1243,6 +1243,67 @@ ADS_TEST( "ods-ex9.10.red-black-join" )
  CHECK_THROWS( X.absorb( Y ) , contract_violation );
  }
 
+ADS_TEST( "ods-ex9.12.avl-rebalancing" )
+{
+ // exercise 9.12: an insertion rebalances once at most, by one or two
+ // rotations; the removal of the deepest leaf on the shorter side of a
+ // tree of Fibonacci rebalances on the order of its height
+ AVLTree< int , int > T;
+ std::mt19937 g( 81 );
+ for( int s = 0 ; s < 20000 ; ++s ) {
+  const auto [ r0 , t0 ] = T.rebalancings();
+  T.insert( int( g() % 100000 ) , s );
+  const auto [ r1 , t1 ] = T.rebalancings();
+  CHECK( ( r1 - r0 <= 1 ) && ( t1 - t0 <= 2 ) );
+  }
+ for( int i = 0 ; i < 1 << 12 ; ++i ) {      // increasing, the worst order
+  const auto [ r0 , t0 ] = T.rebalancings();
+  T.insert( 200000 + i , i );
+  const auto [ r1 , t1 ] = T.rebalancings();
+  CHECK( ( r1 - r0 <= 1 ) && ( t1 - t0 <= 2 ) );
+  }
+ for( int h = 6 ; h <= 22 ; h += 4 ) {
+  // the tree of Fibonacci of height h, left subtree of height h - 1 and
+  // right of h - 2, its keys in symmetric order, inserted level by level,
+  // which keeps every prefix balanced and needs no rotation
+  struct Shape { int key , left , right , h; };
+  std::vector< Shape > S;
+  int next = 0;
+  auto build = [ & ]( auto & self , int k ) -> int {
+   if( k < 0 ) return( -1 );
+   const int u = int( S.size() );
+   S.push_back( { 0 , -1 , -1 , k } );
+   const int l = self( self , k - 1 );
+   S[ u ].key = next++;
+   const int r = self( self , k - 2 );
+   S[ u ].left = l;
+   S[ u ].right = r;
+   return( u );
+   };
+  build( build , h );
+  AVLTree< int , int > F;
+  std::vector< int > level = { 0 };
+  while( ! level.empty() ) {
+   std::vector< int > below;
+   for( const int u : level ) {
+    F.insert( S[ u ].key , 0 );
+    for( const int c : { S[ u ].left , S[ u ].right } )
+     if( c >= 0 ) below.push_back( c );
+    }
+   level = below;
+   }
+  CHECK( ( F.height() == h ) && ( F.rebalancings().first == 0 ) );
+  int u = 0;                                // the shorter side, down to a
+  for( ; ; ) {                              // leaf
+   const int c = S[ u ].right >= 0 ? S[ u ].right : S[ u ].left;
+   if( c < 0 ) break;
+   u = c;
+   }
+  F.remove( S[ u ].key );
+  CHECK( int( F.rebalancings().first ) >= h / 2 - 1 );
+  }
+ }
+
 ADS_TEST( "ods-ex9.13.avl" )
 {
  // exercise 9.13: the AVL tree of ADS, height at most 1.4405 log2 n
