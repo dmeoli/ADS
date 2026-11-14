@@ -1,9 +1,9 @@
-% Source for the figure of CellHeap (sec. 5.10): three cells of two fields
-% (car, cdr) reachable from a root, and the same cells during the marking by
-% pointer reversal, when the visit has gone down the car of a and of b and
-% stands at the atom 1 (c) with b as the previous cell (p); the dashed
-% fields hold the reversed pointers, i.e., the path back to the root. Build:
-% make figures (in ../build).
+% Source for the figure of CellHeap (sec. 5.10): three cells a, b, d of two
+% fields (car, cdr) reachable from a root, and the same cells during the
+% marking by pointer reversal, when the visit has gone down the car of a and
+% of b and stands at the atom 1 (the current value c) with b as the previous
+% cell (p); the dashed fields hold the reversed pointers, i.e., the path back
+% to the root. Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
@@ -26,7 +26,7 @@
     {\nodepart{one}\phantom{x}\nodepart{two}nil};
   \node[var,right=1mm of a#1] {$a$};
   \node[var,left=1mm of b#1] {$b$};
-  \node[var,right=1mm of c#1] {$c$};
+  \node[var,right=1mm of c#1] {$d$};
   \node[var] (t#1) at (#1-16mm,-30mm) {atom 1};
   \node[var] (u#1) at (#1+16mm,-30mm) {atom 2};
   \draw[ptr] (c#1.one south) -- (u#1);
