@@ -152,15 +152,11 @@ The audit `tiled()` checks the three properties of
 when the contracts are at their highest level. Besides, the class keeps the set of the blocks in use, for the precondition that `free()` receives an
 address given by `allocate()` and still in use. This set costs
 $O( \log u )$ time per operation for $u$ blocks in use; it is the price
-of the contract, since the method itself does not need it. Two queries,
+of the contract, since the method does not need it. Two queries,
 `freeWords()` and `freeBlocks()`, give the words in free blocks (tags
 included) and the number of the free blocks, by a walk of the free list in
 $O( f )$ time. Apart from the contracts, the code of `free()` follows
 [Algorithm 5.1](05-memory.md#alg-5-1) line by line.
-
-```cpp
---8<-- "generated/Allocators-boundary-free.cpp"
-```
 
 Which fit is best cannot be told in general. [Knuth 1997,
 §2.5](Z-bibliography.md#ref-knuth1997) reports simulations in which the
@@ -235,12 +231,8 @@ ordered set of at most $N$ addresses (or on the map of the blocks in use),
 in $O( \log N )$ time. $\square$
 
 In the code, the merge loop of `free()` is that of
-[Algorithm 5.2](05-memory.md#alg-5-2), with the buddy computed by an
+[Algorithm 5.2](05-memory.md#alg-5-2), with the buddy (5.1) computed by an
 exclusive or.
-
-```cpp
---8<-- "generated/Allocators-buddy-free.cpp"
-```
 
 The buddy system has no external fragmentation in the sense of the
 boundary tags, since a free block of $2^k$ words serves any request up to
@@ -287,7 +279,7 @@ blocks.*
 none), and only the last block may thus have places not used; since each
 call fills one place, the blocks are $\lceil z / n \rceil$. The vector
 holds pointers to the blocks; hence, no block is moved or freed while the
-arena lives, although the vector itself may be moved by an append. Besides the allocation and the append, the work of `make()` is a placement
+arena lives, although the vector of the pointers may be moved by an append. Besides the allocation and the append, the work of `make()` is a placement
 `new` and two increments. $\square$
 
 If the constructor of an object throws, the object is not counted, and
@@ -308,8 +300,9 @@ nodes of a search, which keep a pointer to the node they come from). The
 arena also gives a random access iterator over the objects in the order
 in which they were made: the object of index $j$ is in the place
 $j \bmod n$ of the block $\lfloor j / n \rfloor$, and a new object only
-moves the end of the sequence. An iterator holds the vector of the blocks
-itself, not the array of its elements, which an append of a block may move,
+moves the end of the sequence. An iterator holds the address of the vector of the
+blocks, not that of the array
+of its elements, which an append of a block may move,
 and it reads a block through that vector at each access; hence, the
 iterators stay valid for the whole life of the arena, as the pointers that
 `make()` returns do, whatever blocks are appended. As a container in the sense of
@@ -321,7 +314,7 @@ objects, built also from the first), and the functions `begin()`, `end()`,
 `bytes()` the memory of the blocks, $\#\mathit{blocks} \cdot n \cdot
 \mathrm{sizeof}( T )$. An arena can be neither copied nor moved, since
 its objects are reached by their addresses. The price of all this is that
-an object cannot be freed by itself: the destructor of the arena destroys
+an object cannot be freed apart from the others: the destructor of the arena destroys
 all the objects and frees the blocks.
 
 ## 5.5 Pools of objects {#sec-5-5}
@@ -365,13 +358,9 @@ last block, of $k$ slots.
 
 --8<-- "generated/ObjectPool-free.pseudo.md"
 
-The slot of `make()` comes from one function, which also doubles the
+The slot of `make()` (lines 2 to 5) comes from one function, which also doubles the
 blocks; `allocate()` gives a raw slot from the same function, for an
 object that the caller builds (as with `std::allocator`).
-
-```cpp
---8<-- "generated/ObjectPool-slot.cpp"
-```
 
 If the constructor of the object throws, `make()` pushes the slot back on
 $F$ before passing the exception on, and the pool is then as it was, but
@@ -469,9 +458,12 @@ since the header and the sizes of the other classes are multiples of 16.
 `SizeClassAllocator` (the lists of available blocks of [Knuth 1997,
 §2.5](Z-bibliography.md#ref-knuth1997), by size class); $F_c$ holds the
 blocks given back of the class $c$ and $[ \mathit{next}_c ,
-\mathit{end}_c )$ is the rest of its page.
+\mathit{end}_c )$ is the rest of its page; `sizeClass()` gives the class
+of a request ([Lemma 5.6](05-memory.md#lem-5-6)).
 
 --8<-- "generated/SizeClassAllocator-allocate.pseudo.md"
+
+--8<-- "generated/SizeClassAllocator-sizeClass.pseudo.md"
 
 ![Figure 5.5. The page of the class 2 (blocks of 32 bytes) of a `SizeClassAllocator`, after its header: before, the block 1 is on $F_2$ and the blocks from 3 on were never given; `allocate(20)` pops the block 1, and `allocate(25)` cuts the block 3 from the page. The violet cell is the block given, those in the faintest tint are free.](../figures/memory-sizeclass.svg){#fig-5-5}
 
@@ -494,14 +486,11 @@ $n - 1$, which the processor gives in one instruction (through
 `std::bit_width`), and $j$ is a shift. Each operation is then the pop or
 the push of a list, or the bump of a pointer. $\square$
 
-Indeed, the code follows the proof step by step. Conversely,
+The function `sizeClass()` of [Algorithm 5.5](05-memory.md#alg-5-5)
+follows the proof step by step. Conversely,
 `classSize(c)` gives 8 for $c = 0$, $16 c$ for $1 \le c \le 8$, and
 $2^e + j \, 2^{e-2}$ with $e = 7 + \lfloor ( c - 9 ) / 4 \rfloor$ and
 $j = ( c - 9 ) \bmod 4 + 1$ for $9 \le c \le 40$.
-
-```cpp
---8<-- "generated/SizeClassAllocator-sizeClass.cpp"
-```
 
 When the rest of the current page of a class is shorter than a block, the
 class takes a new page and the rest is lost (less than one block a page).
@@ -575,10 +564,6 @@ class $c$ and $A_c$ the list of its other pages with free slots.
 --8<-- "generated/PageHeap-more.pseudo.md"
 
 --8<-- "generated/PageHeap-give.pseudo.md"
-
-```cpp
---8<-- "generated/PageHeap-give.cpp"
-```
 
 <span id="lem-5-7"></span>**Lemma 5.7.** *A page on the list $A_c$ has at
 least one free slot. Hence `more()` makes at most two rounds, and each
@@ -665,7 +650,16 @@ request out of the classes). An allocator of a type `U` is built from that
 of `T` over the same resource, as `rebind` and `std::allocator_traits`
 require. Neither the resource nor its
 allocators synchronize: one thread at a time uses a `PoolResource`, which
-must outlive the objects and the allocators made from it.
+must outlive the objects and the allocators made from it. For instance,
+with the header `ADS/memory/PoolAllocator.h`, the nodes of a list of the
+standard library come from the classes of a resource:
+
+```cpp
+ADS::PoolResource<> r;                     // M = 256
+std::list< int , ADS::PoolAllocator< int > > L{
+ ADS::PoolAllocator< int >( r ) };
+for( int i = 0 ; i < 1000 ; ++i ) L.push_back( i );   // one slot a node
+```
 
 ## 5.8 A pool shared by threads {#sec-5-8}
 
@@ -716,17 +710,10 @@ thread, $c$ the class of the request and $B$ the batch of $H$ for $c$.
 
 --8<-- "generated/ConcurrentPool-ConcurrentPoolResource-collect.pseudo.md"
 
-Since the CAS of `send()` has the order *release*, the links written into
-the slots of the batch are visible to the owner, which takes the stack
-with the order *acquire*.
-
-```cpp
---8<-- "generated/ConcurrentPool-give.cpp"
-```
-
-```cpp
---8<-- "generated/ConcurrentPool-send.cpp"
-```
+Since the CAS of line 9 of `send()` has the order *release*, the links
+written into the slots of the batch are visible to the owner, which takes
+the stack with the order *acquire*. In the code, the test of line 3 of
+`deallocate()` is the branch marked as likely.
 
 <span id="lem-5-8"></span>**Lemma 5.8.** *In `ConcurrentPoolResource`,
 (i) a free by the owner of the slot makes no atomic operation, and the
@@ -953,11 +940,8 @@ collection thus costs $O( n + r )$ time for $r$ occurrences of roots,
 i.e., $O( n )$ when the roots are $O( n )$. $\square$
 
 The code of the marking is made of three loops, one for each move of the
-induction.
-
-```cpp
---8<-- "generated/CellHeap-markReversal.cpp"
-```
+induction, i.e., the loops of lines 10 and 13 and the move of line 17 of
+`mark()` in [Algorithm 5.10](05-memory.md#alg-5-10).
 
 A `cons()` costs $O( 1 )$ time, but for the collection. If each
 collection frees at least a fraction $\alpha$ of the heap, the $O( n )$

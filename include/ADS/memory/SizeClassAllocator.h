@@ -149,6 +149,21 @@ class SizeClassAllocator {
  /// \f$ \lceil n / 16 \rceil \f$ up to 128, and otherwise, with
  /// \f$ 2^e < n \le 2^{e + 1} \f$,
  /// \f$ 9 + 4 ( e - 7 ) + \lceil ( n - 2^e ) / 2^{e - 2} \rceil - 1 \f$
+ ///
+ /// In pseudocode, with no table and no loop:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{sizeClass}( n ) \cr
+ /// 2 & \quad \textbf{if}\ n \le 8\ \textbf{then return}\ 0 \cr
+ /// 3 & \quad \textbf{if}\ n \le 128\ \textbf{then return}
+ ///     \ \lceil n / 16 \rceil \cr
+ /// 4 & \quad e \gets \text{the position of the leading bit of } n - 1
+ ///     \quad \triangleright\ 2^e < n \le 2^{e + 1} \cr
+ /// 5 & \quad j \gets \lceil ( n - 2^e ) / 2^{e - 2} \rceil
+ ///     \quad \triangleright\ \text{an addition and a shift} \cr
+ /// 6 & \quad \textbf{return}\ 9 + 4 ( e - 7 ) + j - 1
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ 1 \le n \le 32768 \f$
  [[nodiscard]] static unsigned sizeClass( std::size_t n );
 
