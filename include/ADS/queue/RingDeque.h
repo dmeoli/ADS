@@ -22,6 +22,21 @@
  * as a FIFO never moves its items. The places are raw memory, the items
  * being built in them when inserted and destroyed when removed.
  *
+ * It is the `ArrayQueue` of section 2.3 of Morin's book and its
+ * `ArrayDeque` of section 2.4, with the mask of a power of 2 in place of
+ * the modulo (exercise 2.8) and the items moved by blocks (exercise 2.7):
+ * `insert()` and `erase()` at a rank move the items of the shorter side by
+ * `std::move()` on the runs contiguous in the vector, three at most, which
+ * is one `memmove()` each for the items trivially copyable, and a doubling
+ * moves them by `memcpy()`; `rotate()` rotates the ranks (exercise 2.6).
+ *
+ * Against Morin's code, the claims for the benchmarks: the mask of a power
+ * of 2 in place of the division of `%`; the places are raw memory and a
+ * doubling moves them by `memcpy()`, where Morin's `ArrayDeque` builds its
+ * new array by default and assigns the items one by one; the deque does not
+ * shrink, so that a queue whose size oscillates never reallocates, where
+ * Morin's resizes whenever \f$ 3 n \le m \f$.
+ *
  * The contracts [see `Contract.h`]: `front()`, `back()` and the removals
  * need a deque that is not empty, and `operator[]` a rank below `size()`;
  * the invariant is that the capacity is 0 or a power of 2 at least
@@ -29,6 +44,9 @@
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 2.2.2 (the circular queue)
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, sections 2.3 and 2.4
+ *      and exercises 2.6, 2.7 and 2.8
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -50,6 +68,7 @@
 
 #include "ADS/Contract.h"
 
+#include <algorithm>
 #include <bit>
 #include <compare>
 #include <cstddef>
@@ -327,6 +346,80 @@ class RingDeque {
  /// removes all the items, the places kept
  void clear( void );
 
+ /// puts \f$ v \f$ at the rank \f$ i \f$, moving by one place the items
+ /// on the shorter side of \f$ i \f$, in
+ /// \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized time (the `add( i , x )`
+ /// of the `ArrayDeque` of section 2.4 of Morin's book)
+ ///
+ /// In pseudocode (Morin, section 2.4), the ranks \f$ 0 .. n - 1 \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{insert}( i , v ) \cr
+ /// 2 & \quad \textbf{if}\ i < n / 2\ \textbf{then} \cr
+ /// 3 & \qquad \mathrm{pushFront}( D[ 0 ] ) \cr
+ /// 4 & \qquad \textbf{for}\ k \gets 1\ \textbf{to}\ i - 1\ \textbf{do}
+ ///     \ D[ k ] \gets D[ k + 1 ] \cr
+ /// 5 & \quad \textbf{else} \cr
+ /// 6 & \qquad \mathrm{pushBack}( D[ n - 1 ] ) \cr
+ /// 7 & \qquad \textbf{for}\ k \gets n - 1\ \textbf{downto}\ i + 1
+ ///     \ \textbf{do}\ D[ k ] \gets D[ k - 1 ] \cr
+ /// 8 & \quad D[ i ] \gets v
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i \le n \f$
+ /// \post one item more, \f$ v \f$ at the rank \f$ i \f$
+ void insert( std::size_t i , const T & v );
+
+ /// removes the item of rank \f$ i \f$, moving by one place the items on
+ /// the shorter side, in \f$ O( 1 + \min\{ i , n - i \} ) \f$ time (the
+ /// `remove( i )` of Morin's `ArrayDeque`)
+ ///
+ /// In pseudocode (Morin, section 2.4):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{erase}( i ) \cr
+ /// 2 & \quad \textbf{if}\ i < n / 2\ \textbf{then} \cr
+ /// 3 & \qquad \textbf{for}\ k \gets i\ \textbf{downto}\ 1\ \textbf{do}
+ ///     \ D[ k ] \gets D[ k - 1 ] \cr
+ /// 4 & \qquad \mathrm{popFront}() \cr
+ /// 5 & \quad \textbf{else} \cr
+ /// 6 & \qquad \textbf{for}\ k \gets i\ \textbf{to}\ n - 2\ \textbf{do}
+ ///     \ D[ k ] \gets D[ k + 1 ] \cr
+ /// 7 & \qquad \mathrm{popBack}()
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ i < n \f$
+ /// \post one item less
+ void erase( std::size_t i );
+
+ /// the item of rank \f$ i \f$ moved to the rank \f$ ( i + r ) \bmod n \f$,
+ /// for every \f$ i \f$: \f$ O( 1 ) \f$ time when the vector is full, the
+ /// head alone moving, and \f$ O( 1 + \min\{ r , n - r \} ) \f$ otherwise,
+ /// the items moved one by one from one end to the other (exercise 2.6 of
+ /// Morin's book)
+ ///
+ /// In pseudocode (Morin, exercise 2.6), \f$ r \f$ reduced modulo
+ /// \f$ n \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{rotate}( r ) \cr
+ /// 2 & \quad \textbf{if}\ n = m\ \textbf{then}\ h \gets h - r;
+ ///     \ t \gets t - r;\ \textbf{return} \cr
+ /// 3 & \quad \textbf{if}\ r \le n - r\ \textbf{then}\ \textbf{repeat}
+ ///     \ r\ \text{ times: }\mathrm{pushFront}( \mathrm{popBack}() ) \cr
+ /// 4 & \quad \textbf{else}\ \textbf{repeat}\ n - r\ \text{ times: }
+ ///     \mathrm{pushBack}( \mathrm{popFront}() )
+ /// \end{array}}
+ /// \f]
+ void rotate( std::size_t r );
+
+ /// the least number of places, a power of 2 and 8 at least, that holds the
+ /// \f$ n \f$ items, the items moved there in order; the deque never
+ /// shrinks by itself (Morin's `ArrayDeque` shrinks when
+ /// \f$ 3 n < m \f$), so that its space is that of its largest size until
+ /// this call
+ void shrink_to_fit( void );
+
  /// the same items in the same order
  [[nodiscard]] bool operator==( const RingDeque & o ) const;
 
@@ -385,6 +478,15 @@ class RingDeque {
  /// out of the insertions by the hint of a cold branch
  T & growBack( T && v );
  T & growFront( T && v );
+
+ /// \f$ D[ k ] \gets D[ k + 1 ] \f$ for \f$ k = \mathit{lo} , \ldots ,
+ /// \mathit{hi} - 1 \f$, by `std::move()` on the runs that are contiguous
+ /// in the vector, three at most (exercise 2.7 of Morin's book)
+ void shiftDown( std::size_t lo , std::size_t hi );
+
+ /// \f$ D[ k ] \gets D[ k - 1 ] \f$ for \f$ k = \mathit{hi} , \ldots ,
+ /// \mathit{lo} + 1 \f$, by `std::move_backward()` on the contiguous runs
+ void shiftUp( std::size_t lo , std::size_t hi );
 
  /// the capacity 0 or a power of 2 at least size()
  [[nodiscard]] bool fits( void ) const;
