@@ -388,6 +388,7 @@ inline std::size_t BasicRankSelect< Lazy >::before( std::size_t t ,
  return( b ? o : t * kBlock - o );
  }
 
+//! [rank1]
 template< bool Lazy >
 inline std::size_t BasicRankSelect< Lazy >::rank1( std::size_t i ) const
 {
@@ -409,6 +410,7 @@ inline std::size_t BasicRankSelect< Lazy >::rank1( std::size_t i ) const
                             detail::lowMask( int( i % 64 ) ) ) ) );
 #endif
  }
+//! [rank1]
 
 template< bool Lazy >
 inline std::size_t BasicRankSelect< Lazy >::rank0( std::size_t i ) const
@@ -524,6 +526,7 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
    I.pos[ j ] |= Word( 1 ) << 63;
  }
 
+//! [select]
 template< bool Lazy >
 #if defined( __GNUC__ )
 __attribute__(( always_inline ))
@@ -558,6 +561,7 @@ inline std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
   }
  return( 64 * w + std::size_t( selectInWord( x , int( t ) ) ) );
  }
+//! [select]
 
 template< bool Lazy >
 inline std::size_t BasicRankSelect< Lazy >::selectSparse( std::size_t k ,

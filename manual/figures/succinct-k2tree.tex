@@ -1,0 +1,162 @@
+% Source for the figure of K2Tree (sec. 22.10): the adjacency matrix of a
+% graph of 8 nodes and 7 edges, split by k = 2, its marks by levels T and
+% L, and the path of hasEdge(5, 5) (shaded). Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,0mm) {};
+  \node[cell,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,0mm) {1};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,0mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,0mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,0mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,0mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,0mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,0mm) {};
+  \node[cell,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-5mm) {1};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-5mm) {};
+  \node[cell,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-5mm) {1};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-5mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-5mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-5mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-5mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-5mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-10mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-15mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-20mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-25mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-25mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-25mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-25mm) {};
+  \node[cell,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-25mm) {1};
+  \node[touched,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-25mm) {1};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-25mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-25mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-30mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-30mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-30mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-30mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-30mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-30mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-30mm) {};
+  \node[cell,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-30mm) {1};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (0mm,-35mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (5mm,-35mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (10mm,-35mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (15mm,-35mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (20mm,-35mm) {};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (25mm,-35mm) {};
+  \node[cell,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (30mm,-35mm) {1};
+  \node[free,minimum width=5mm,minimum height=5mm,font=\scriptsize\ttfamily] at (35mm,-35mm) {};
+  \node[index] at (0mm,5mm) {0};
+  \node[index] at (-5mm,0mm) {0};
+  \node[index] at (5mm,5mm) {1};
+  \node[index] at (-5mm,-5mm) {1};
+  \node[index] at (10mm,5mm) {2};
+  \node[index] at (-5mm,-10mm) {2};
+  \node[index] at (15mm,5mm) {3};
+  \node[index] at (-5mm,-15mm) {3};
+  \node[index] at (20mm,5mm) {4};
+  \node[index] at (-5mm,-20mm) {4};
+  \node[index] at (25mm,5mm) {5};
+  \node[index] at (-5mm,-25mm) {5};
+  \node[index] at (30mm,5mm) {6};
+  \node[index] at (-5mm,-30mm) {6};
+  \node[index] at (35mm,5mm) {7};
+  \node[index] at (-5mm,-35mm) {7};
+  \draw[adsAdded,line width=1.2pt] (17.5mm,2.8mm) -- (17.5mm,-37.8mm);
+  \draw[adsAdded,line width=1.2pt] (-2.8mm,-17.5mm) -- (37.8mm,-17.5mm);
+  \draw[adsAdded!60,line width=0.7pt] (7.5mm,2.5mm) -- (7.5mm,-37.5mm);
+  \draw[adsAdded!60,line width=0.7pt] (-2.5mm,-7.5mm) -- (37.5mm,-7.5mm);
+  \draw[adsAdded!60,line width=0.7pt] (27.5mm,2.5mm) -- (27.5mm,-37.5mm);
+  \draw[adsAdded!60,line width=0.7pt] (-2.5mm,-27.5mm) -- (37.5mm,-27.5mm);
+  \node[var,anchor=east] at (51mm,0) {$T$};
+  \node[cell,minimum width=5.5mm] (t-0) at (55.0mm,0) {1};
+  \node[index,above=1.2mm of t-0] {0};
+  \node[cell,minimum width=5.5mm] (t-1) at (60.5mm,0) {0};
+  \node[index,above=1.2mm of t-1] {1};
+  \node[cell,minimum width=5.5mm] (t-2) at (66.0mm,0) {0};
+  \node[index,above=1.2mm of t-2] {2};
+  \node[touched,minimum width=5.5mm] (t-3) at (71.5mm,0) {1};
+  \node[index,above=1.2mm of t-3] {3};
+  \node[cell,minimum width=5.5mm] (t-4) at (79.0mm,0) {1};
+  \node[index,above=1.2mm of t-4] {4};
+  \node[cell,minimum width=5.5mm] (t-5) at (84.5mm,0) {1};
+  \node[index,above=1.2mm of t-5] {5};
+  \node[cell,minimum width=5.5mm] (t-6) at (90.0mm,0) {0};
+  \node[index,above=1.2mm of t-6] {6};
+  \node[cell,minimum width=5.5mm] (t-7) at (95.5mm,0) {0};
+  \node[index,above=1.2mm of t-7] {7};
+  \node[touched,minimum width=5.5mm] (t-8) at (103.0mm,0) {1};
+  \node[index,above=1.2mm of t-8] {8};
+  \node[cell,minimum width=5.5mm] (t-9) at (108.5mm,0) {0};
+  \node[index,above=1.2mm of t-9] {9};
+  \node[cell,minimum width=5.5mm] (t-10) at (114.0mm,0) {0};
+  \node[index,above=1.2mm of t-10] {10};
+  \node[cell,minimum width=5.5mm] (t-11) at (119.5mm,0) {1};
+  \node[index,above=1.2mm of t-11] {11};
+  \node[var,anchor=east] at (51mm,-14mm) {$L$};
+  \node[cell,minimum width=5.5mm] (l-0) at (55.0mm,-14mm) {0};
+  \node[index,below=1.2mm of l-0] {12};
+  \node[cell,minimum width=5.5mm] (l-1) at (60.5mm,-14mm) {1};
+  \node[index,below=1.2mm of l-1] {13};
+  \node[cell,minimum width=5.5mm] (l-2) at (66.0mm,-14mm) {1};
+  \node[index,below=1.2mm of l-2] {14};
+  \node[cell,minimum width=5.5mm] (l-3) at (71.5mm,-14mm) {0};
+  \node[index,below=1.2mm of l-3] {15};
+  \node[cell,minimum width=5.5mm] (l-4) at (79.0mm,-14mm) {0};
+  \node[index,below=1.2mm of l-4] {16};
+  \node[cell,minimum width=5.5mm] (l-5) at (84.5mm,-14mm) {0};
+  \node[index,below=1.2mm of l-5] {17};
+  \node[cell,minimum width=5.5mm] (l-6) at (90.0mm,-14mm) {1};
+  \node[index,below=1.2mm of l-6] {18};
+  \node[cell,minimum width=5.5mm] (l-7) at (95.5mm,-14mm) {0};
+  \node[index,below=1.2mm of l-7] {19};
+  \node[cell,minimum width=5.5mm] (l-8) at (103.0mm,-14mm) {0};
+  \node[index,below=1.2mm of l-8] {20};
+  \node[cell,minimum width=5.5mm] (l-9) at (108.5mm,-14mm) {0};
+  \node[index,below=1.2mm of l-9] {21};
+  \node[cell,minimum width=5.5mm] (l-10) at (114.0mm,-14mm) {1};
+  \node[index,below=1.2mm of l-10] {22};
+  \node[touched,minimum width=5.5mm] (l-11) at (119.5mm,-14mm) {1};
+  \node[index,below=1.2mm of l-11] {23};
+  \node[cell,minimum width=5.5mm] (l-12) at (127.0mm,-14mm) {0};
+  \node[index,below=1.2mm of l-12] {24};
+  \node[cell,minimum width=5.5mm] (l-13) at (132.5mm,-14mm) {1};
+  \node[index,below=1.2mm of l-13] {25};
+  \node[cell,minimum width=5.5mm] (l-14) at (138.0mm,-14mm) {1};
+  \node[index,below=1.2mm of l-14] {26};
+  \node[cell,minimum width=5.5mm] (l-15) at (143.5mm,-14mm) {0};
+  \node[index,below=1.2mm of l-15] {27};
+  \node[var,anchor=west] at (49mm,-27mm)
+    {$\mathrm{hasEdge}( 5 , 5 )$: the places 3, then $4 \cdot \mathrm{rank}_1( 4 ) + 0 = 8$,};
+  \node[var,anchor=west] at (49mm,-33mm)
+    {then $4 \cdot \mathrm{rank}_1( 9 ) + 3 = 23$, the place 11 of $L$};
+\end{tikzpicture}
+\end{document}

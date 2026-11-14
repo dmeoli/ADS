@@ -1,0 +1,51 @@
+% Source for the figure of BitVector (sec. 22.2): the bit i in the bit
+% i mod 64 of the word i / 64 (the bit 0 of a word on its right), the field
+% of 13 bits read by get(58, 13) across two words, and the bits past the
+% size, all 0; below, a stream of bits that holds gamma(9) gamma(3), its
+% reader at the place p. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \def\u{0.85mm}
+  \foreach \x in {0,55,110}
+    \fill[adsTint,rounded corners=1.6pt] (\x mm,0) rectangle (\x mm+64*\u,6mm);
+  \fill[adsFree] (0,0) rectangle (64*\u,6mm);
+  \fill[adsFree] (55mm,0) rectangle (55mm+28*\u,6mm);
+  \fill[adsPrimary] (110mm,0) rectangle (110mm+6*\u,6mm);
+  \fill[adsPrimary] (55mm+57*\u,0) rectangle (55mm+64*\u,6mm);
+  \foreach \x/\w in {0/2,55/1,110/0}
+    {\node[var] at (\x mm+32*\u,9.5mm) {$W[ \w ]$};}
+  \foreach \x/\l/\r in {0/191/128,55/127/64,110/63/0}
+    {\node[index,anchor=north west] at (\x mm,-0.8mm) {\l};
+     \node[index,anchor=north east] at (\x mm+64*\u,-0.8mm) {\r};}
+  \draw[edge,densely dashed] (55mm+28*\u,0) -- (55mm+28*\u,6mm);
+  \node[font=\scriptsize,text=adsInk!55] at (32*\u,3mm) {all 0};
+  \node[font=\scriptsize,text=adsInk!55] at (55mm+14*\u,3mm) {0};
+  \node[index,anchor=north] at (55mm+28*\u,-0.8mm) {$n = 100$};
+  \draw[edge] (55mm+57*\u,-5mm) -- ++(0,1mm) -- (110mm+6*\u,-4mm) -- ++(0,-1mm);
+  \node[var,anchor=north] at (93mm,-6mm)
+    {$\mathrm{get}( 58 , 13 )$, the bits $58 , \ldots , 70$};
+  \node[var,anchor=east] at (-2mm,-20mm) {stream};
+  \node[cell,minimum width=6mm] (s-0) at (3.0mm,-20mm) {0};
+  \node[cell,minimum width=6mm] (s-1) at (9.3mm,-20mm) {0};
+  \node[cell,minimum width=6mm] (s-2) at (15.6mm,-20mm) {0};
+  \node[cell,minimum width=6mm] (s-3) at (21.9mm,-20mm) {1};
+  \node[cell,minimum width=6mm] (s-4) at (28.2mm,-20mm) {0};
+  \node[cell,minimum width=6mm] (s-5) at (34.5mm,-20mm) {0};
+  \node[cell,minimum width=6mm] (s-6) at (40.8mm,-20mm) {1};
+  \node[touched,minimum width=6mm] (s-7) at (47.1mm,-20mm) {0};
+  \node[touched,minimum width=6mm] (s-8) at (53.4mm,-20mm) {1};
+  \node[touched,minimum width=6mm] (s-9) at (59.699999999999996mm,-20mm) {1};
+  \draw[edge] ($(s-0.south west)+(0.4mm,-1mm)$) -- ++(0,-1mm) -| node[index,pos=0.25,below=0.6mm] {$\gamma( 9 )$} ($(s-6.south east)+(-0.4mm,-1mm)$);
+  \draw[edge] ($(s-7.south west)+(0.4mm,-1mm)$) -- ++(0,-1mm) -| node[index,pos=0.25,below=0.6mm] {$\gamma( 3 )$} ($(s-9.south east)+(-0.4mm,-1mm)$);
+  \draw[ptr] ($(s-7.north)+(0,5mm)$) -- (s-7.north);
+  \node[var,anchor=south] at ($(s-7.north)+(0,5.4mm)$) {$p$};
+  \node[var,anchor=west] at (70mm,-20mm) {\texttt{readUnary()} counts 1 zero, then \texttt{readBinary( 1 )}};
+\end{tikzpicture}
+\end{document}

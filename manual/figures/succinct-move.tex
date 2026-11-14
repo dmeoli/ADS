@@ -1,0 +1,72 @@
+% Source for the figure of MoveStructure (sec. 22.9): the LF-mapping of the
+% transform ard$rcaaaabb of abracadabra on its runs, each interval of rows
+% (above) shifted alike onto its image (below), after the balance, which cut
+% the run of a at its row 8 (shaded). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {rows};
+  \node[var,anchor=east] at (-6mm,-26mm) {images};
+  \node[cell,minimum width=9mm] (a-0) at (0mm,0) {a};
+  \node[index,above=1.4mm of a-0] {0};
+  \node[cell,minimum width=9mm] (b-0) at (0mm,-26mm) {0};
+  \node[cell,minimum width=9mm] (a-1) at (9mm,0) {r};
+  \node[index,above=1.4mm of a-1] {1};
+  \node[cell,minimum width=9mm] (b-1) at (9mm,-26mm) {1};
+  \node[cell,minimum width=9mm] (a-2) at (18mm,0) {d};
+  \node[index,above=1.4mm of a-2] {2};
+  \node[cell,minimum width=9mm] (b-2) at (18mm,-26mm) {2};
+  \node[cell,minimum width=9mm] (a-3) at (27mm,0) {\$};
+  \node[index,above=1.4mm of a-3] {3};
+  \node[cell,minimum width=9mm] (b-3) at (27mm,-26mm) {3};
+  \node[cell,minimum width=9mm] (a-4) at (36mm,0) {r};
+  \node[index,above=1.4mm of a-4] {4};
+  \node[cell,minimum width=9mm] (b-4) at (36mm,-26mm) {4};
+  \node[cell,minimum width=9mm] (a-5) at (45mm,0) {c};
+  \node[index,above=1.4mm of a-5] {5};
+  \node[cell,minimum width=9mm] (b-5) at (45mm,-26mm) {5};
+  \node[touched,minimum width=9mm] (a-6) at (54mm,0) {a};
+  \node[index,above=1.4mm of a-6] {6};
+  \node[cell,minimum width=9mm] (b-6) at (54mm,-26mm) {6};
+  \node[touched,minimum width=9mm] (a-7) at (63mm,0) {a};
+  \node[index,above=1.4mm of a-7] {7};
+  \node[cell,minimum width=9mm] (b-7) at (63mm,-26mm) {7};
+  \node[touched,minimum width=9mm] (a-8) at (72mm,0) {a};
+  \node[index,above=1.4mm of a-8] {8};
+  \node[cell,minimum width=9mm] (b-8) at (72mm,-26mm) {8};
+  \node[touched,minimum width=9mm] (a-9) at (81mm,0) {a};
+  \node[index,above=1.4mm of a-9] {9};
+  \node[cell,minimum width=9mm] (b-9) at (81mm,-26mm) {9};
+  \node[cell,minimum width=9mm] (a-10) at (90mm,0) {b};
+  \node[index,above=1.4mm of a-10] {10};
+  \node[cell,minimum width=9mm] (b-10) at (90mm,-26mm) {10};
+  \node[cell,minimum width=9mm] (a-11) at (99mm,0) {b};
+  \node[index,above=1.4mm of a-11] {11};
+  \node[cell,minimum width=9mm] (b-11) at (99mm,-26mm) {11};
+  \draw[ptr,draw=adsInk!35] (0.0mm,-4mm) -- (9.0mm,-22mm);
+  \draw[ptr,draw=adsInk!35] (9.0mm,-4mm) -- (90.0mm,-22mm);
+  \draw[ptr,draw=adsInk!35] (18.0mm,-4mm) -- (81.0mm,-22mm);
+  \draw[ptr,draw=adsInk!35] (27.0mm,-4mm) -- (0.0mm,-22mm);
+  \draw[ptr,draw=adsInk!35] (36.0mm,-4mm) -- (99.0mm,-22mm);
+  \draw[ptr,draw=adsInk!35] (45.0mm,-4mm) -- (72.0mm,-22mm);
+  \draw[ptr] (58.5mm,-4mm) -- (22.5mm,-22mm);
+  \draw[ptr] (76.5mm,-4mm) -- (40.5mm,-22mm);
+  \draw[ptr,draw=adsInk!35] (94.5mm,-4mm) -- (58.5mm,-22mm);
+  \draw[line width=1.6pt,adsAdded] (4.5mm,-5mm) -- (4.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (13.5mm,-5mm) -- (13.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (22.5mm,-5mm) -- (22.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (31.5mm,-5mm) -- (31.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (40.5mm,-5mm) -- (40.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (49.5mm,-5mm) -- (49.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (67.5mm,-5mm) -- (67.5mm,5mm);
+  \draw[line width=1.6pt,adsAdded] (85.5mm,-5mm) -- (85.5mm,5mm);
+  \node[var,anchor=west] at (0,-36mm)
+    {$\pi( x ) = q_i + ( x - p_i )$ on each interval $[ p_i , p_{i+1} )$; the starts $p_i$ are the orange bars};
+\end{tikzpicture}
+\end{document}

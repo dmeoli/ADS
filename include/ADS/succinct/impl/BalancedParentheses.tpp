@@ -154,6 +154,7 @@ inline std::size_t BalancedParentheses::scanBackward( std::size_t a ,
  return( nil );
  }
 
+//! [forwardSearch]
 inline std::size_t BalancedParentheses::forwardSearch( std::size_t i ,
                                                        std::int64_t d ) const
 {
@@ -186,6 +187,7 @@ inline std::size_t BalancedParentheses::forwardSearch( std::size_t i ,
   e += f_lexc[ l ];
  return( scanForward( l * kLeaf , leafEnd( l ) , e , d ) );
  }
+//! [forwardSearch]
 
 inline std::size_t BalancedParentheses::backwardSearch( std::size_t i ,
                                                         std::int64_t d ) const

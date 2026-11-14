@@ -1,0 +1,45 @@
+% Source for the figure of JacobsonTree (sec. 22.8): a binary tree of 6
+% nodes completed with a leaf (grey) in place of each missing child, the
+% places of its nodes by levels from 1, and its code B of 2n + 1 bits.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,nd/.style={vertex,minimum size=6.5mm},
+    lf/.style={rounded corners=1pt,fill=adsFree,minimum size=3.6mm},
+    pl/.style={font=\scriptsize,text=adsInk!60}]
+  \node[nd] (A) at (0,0) {A};
+  \node[nd] (B) at (-18mm,-11mm) {B};
+  \node[nd,vertex-touched,minimum size=6.5mm] (C) at (18mm,-11mm) {C};
+  \node[nd] (D) at (-26mm,-22mm) {D};
+  \node[lf] (b5) at (-10mm,-22mm) {};
+  \node[nd,vertex-touched,minimum size=6.5mm] (E) at (10mm,-22mm) {E};
+  \node[nd,vertex-touched,minimum size=6.5mm] (F) at (26mm,-22mm) {F};
+  \foreach \n/\x in {8/-31,9/-21,10/5,11/15,12/21,13/31}
+    \node[lf] (b\n) at (\x mm,-32mm) {};
+  \draw[edge] (A)--(B) (A)--(C) (B)--(D) (B)--(b5) (C)--(E) (C)--(F)
+        (D)--(b8) (D)--(b9) (E)--(b10) (E)--(b11) (F)--(b12) (F)--(b13);
+  \foreach \n/\p in {A/1,C/3,F/7}
+    \node[pl,anchor=south west] at (\n.north east) {\p};
+  \foreach \n/\p in {B/2,D/4,E/6}
+    \node[pl,anchor=south east] at (\n.north west) {\p};
+  \foreach \n/\p in {b5/5,b8/8,b9/9,b10/10,b11/11,b12/12,b13/13}
+    \node[pl,anchor=north] at ([yshift=-0.8mm]\n.south) {\p};
+  % the code by levels
+  \node[var,anchor=east] at (45mm,-11mm) {$B$};
+  \foreach \v/\s [count=\i from 0] in {1/cell,1/cell,1/touched,1/cell,0/free,%
+      1/touched,1/touched,0/free,0/free,0/free,0/free,0/free,0/free}
+    \node[\s,minimum width=6mm] (c\i) at (52mm+\i*6mm,-11mm) {\v};
+  \foreach \i in {0,...,12}
+    \node[index,below=1.2mm of c\i] {\pgfmathtruncatemacro\p{\i+1}\p};
+  \node[var,anchor=west] at (49mm,-24mm)
+    {the children of the $x$-th node at $2 x$ and $2 x + 1$:};
+  \node[var,anchor=west] at (49mm,-30mm)
+    {C, the 3rd node, has E and F at the places 6 and 7};
+\end{tikzpicture}
+\end{document}

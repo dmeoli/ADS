@@ -1,0 +1,42 @@
+% Source for the figure of CompactRankSelect and InterleavedRankSelect
+% (sec. 22.4): the superblock of 4096 bits in 8 blocks of 512 with its entry
+% of 128 bits, and the line of 512 bits with the count of 16 bits in front of
+% its 496 bits. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,fld/.style={cell,minimum height=6mm,font=\scriptsize}]
+  % (a) CompactRankSelect
+  \node[var,anchor=west] at (-14mm,8mm) {(a) \texttt{CompactRankSelect}};
+  \node[var,anchor=east] at (-2mm,0) {bits};
+  \foreach \k in {0,...,7}
+    \node[fld,minimum width=16mm,anchor=west,font=\small] (b\k) at (\k*16mm,0)
+      {$512$};
+  \fill[adsPrimary] (80.3mm,-2.7mm) rectangle (83mm,2.7mm);
+  \draw[edge,densely dashed] (83mm,-3mm) -- (83mm,4.5mm);
+  \node[index,anchor=south] at (83mm,4.6mm) {$i$};
+  \draw[edge] (0,-4.5mm) -- ++(0,-1mm) -- (128mm,-5.5mm) -- ++(0,1mm);
+  \node[index,anchor=north] at (64mm,-6mm) {a superblock of 4096 bits, 8 blocks (lines) of 512};
+  \node[var,anchor=east] at (-2mm,-16mm) {entry};
+  \node[fld,minimum width=32mm,anchor=west] (s) at (0,-16mm) {$S$, 32 bits};
+  \foreach \k/\f in {0/adsTint,1/adsTint,2/adsTint,3/adsTint,4/adsTint,5/adsPrimary,6/adsTint,7/adsTint}
+    \node[fld,minimum width=12mm,anchor=west,fill=\f]
+      (c\k) at (32mm+\k*12mm,-16mm) {\ifnum\k=5 \textcolor{adsOnPrimary}{$c_5$}\else $c_{\k}$\fi};
+  \node[index,anchor=north] at (80mm,-19.5mm) {12 bits each, $c_0 = 0$};
+  \node[var,anchor=west] at (0,-27mm)
+    {$\mathrm{rank}_1( i ) = T[ \lfloor i / 2^{32} \rfloor ] + S + c_5 + \text{the 1s of the line of } i \text{ before } i$};
+  % (b) InterleavedRankSelect
+  \node[var,anchor=west] at (-14mm,-38mm) {(b) \texttt{InterleavedRankSelect}};
+  \node[var,anchor=east] at (-2mm,-46mm) {line $\ell$};
+  \node[fld,minimum width=16mm,anchor=west,fill=adsPrimary,text=adsOnPrimary] at (0,-46mm) {$h_\ell$, 16 bits};
+  \node[fld,minimum width=112mm,anchor=west,font=\small] at (16mm,-46mm)
+    {496 bits of $B$, the places $[ 496 \ell , 496 \ell + 496 )$};
+  \node[var,anchor=west] at (0,-55mm)
+    {$\mathrm{rank}_1( i ) = S[ \lfloor \ell / 128 \rfloor ] + h_\ell + \text{the 1s of the line before } i$, \quad $\ell = \lfloor i / 496 \rfloor$};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,42 @@
+% Source for the figure of PartitionedEliasFano (sec. 22.6): the sequence
+% 3 4 5 6 7 8 9 10 20 41 70 99 in blocks of 4 items (128 in the library),
+% each coded relative to the end of the block before in the cheapest of the
+% three ways, and the records of the blocks. Build: make figures.
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5mm,0) {items};
+  \node[cell,minimum width=9mm] (x0) at (0.0mm,0) {3};
+  \node[cell,minimum width=9mm] (x1) at (9.25mm,0) {4};
+  \node[cell,minimum width=9mm] (x2) at (18.5mm,0) {5};
+  \node[cell,minimum width=9mm] (x3) at (27.75mm,0) {6};
+  \node[touched,minimum width=9mm] (x4) at (41.0mm,0) {7};
+  \node[touched,minimum width=9mm] (x5) at (50.25mm,0) {8};
+  \node[touched,minimum width=9mm] (x6) at (59.5mm,0) {9};
+  \node[touched,minimum width=9mm] (x7) at (68.75mm,0) {10};
+  \node[cell,minimum width=9mm] (x8) at (82.0mm,0) {20};
+  \node[cell,minimum width=9mm] (x9) at (91.25mm,0) {41};
+  \node[cell,minimum width=9mm] (x10) at (100.5mm,0) {70};
+  \node[cell,minimum width=9mm] (x11) at (109.75mm,0) {99};
+  \node[var,anchor=east] at (-5mm,-12mm) {kind};
+  \node[node,minimum width=37mm,anchor=west] at (-4.5mm,-12mm) {vector, $u_0 = 7$};
+  \node[node-touched,minimum width=37mm,anchor=west] at (36.5mm,-12mm) {full, $u_1 = 4$};
+  \node[node,minimum width=37mm,anchor=west] at (77.5mm,-12mm) {Elias-Fano, $u_2 = 89$};
+  \node[var,anchor=east] at (-5mm,-22mm) {code};
+  \node[node,minimum width=37mm,anchor=west] at (-4.5mm,-22mm) {1s at 3--6, 7 bits};
+  \node[node-touched,minimum width=37mm,anchor=west] at (36.5mm,-22mm) {no bit};
+  \node[node,minimum width=37mm,anchor=west] at (77.5mm,-22mm) {$9 , 30 , 59 , 88$, $\ell = 4$};
+  \node[var,anchor=east] at (-5mm,-32mm) {records};
+  \node[node,minimum width=37mm,anchor=west] at (-4.5mm,-32mm) {last 6, place 0};
+  \node[node,minimum width=37mm,anchor=west] at (36.5mm,-32mm) {last 10, place 7};
+  \node[node,minimum width=37mm,anchor=west] at (77.5mm,-32mm) {last 99, place 7};
+  \node[var,anchor=west] at (-4.5mm,-42mm)
+    {the block $j$ holds the values $x - b_j$, $b_j$ the last item of the block before plus 1};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,53 @@
+% Source for the figure of LoudsTree, BalancedParentheses and BPTree (sec.
+% 22.8): an ordered tree of 8 nodes numbered by levels (and, in parentheses,
+% in preorder), its code by LOUDS after the dummy root, and its balanced
+% parentheses with their excess, the pair of the node 1 shaded.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,nd/.style={vertex,minimum size=6.5mm},
+    pl/.style={font=\scriptsize,text=adsInk!60}]
+  \node[nd] (n0) at (0,0) {0};
+  \node[nd,vertex-touched,minimum size=6.5mm] (n1) at (-16mm,-11mm) {1};
+  \node[nd] (n2) at (0,-11mm) {2};
+  \node[nd] (n3) at (16mm,-11mm) {3};
+  \node[nd] (n4) at (-23mm,-22mm) {4};
+  \node[nd] (n5) at (-9mm,-22mm) {5};
+  \node[nd] (n6) at (16mm,-22mm) {6};
+  \node[nd] (n7) at (-9mm,-33mm) {7};
+  \draw[edge] (n0)--(n1) (n0)--(n2) (n0)--(n3) (n1)--(n4) (n1)--(n5) (n3)--(n6)
+        (n5)--(n7);
+  \foreach \n/\p in {n0/0,n2/5,n3/6,n6/7,n7/4}
+    \node[pl,anchor=west] at ([xshift=0.6mm]\n.east) {(\p)};
+  \foreach \n/\p in {n1/1,n4/2,n5/3}
+    \node[pl,anchor=east] at ([xshift=-0.6mm]\n.west) {(\p)};
+  % LOUDS
+  \node[var,anchor=east] at (36mm,0) {LOUDS};
+  \foreach \v/\s [count=\i from 0] in {0/free,1/free,0/cell,0/cell,0/cell,1/cell,%
+      0/touched,0/touched,1/touched,1/cell,0/cell,1/cell,1/cell,0/cell,1/cell,1/cell,1/cell}
+    \node[\s,minimum width=5.5mm] (L\i) at (40mm+\i*5.5mm,0) {\v};
+  \foreach \i in {0,...,16}
+    \node[index,below=1mm of L\i] {\i};
+  \foreach \a/\b/\t in {0/1/{dummy},2/5/{0},6/8/{1},9/9/{2},10/11/{3},12/12/{4},13/14/{5},15/15/{6},16/16/{7}}
+    \draw[edge] ($(L\a.north west)+(0.4mm,0.8mm)$) -- ++(0,0.8mm)
+          -| node[index,pos=0.25,above=0.4mm] {\t} ($(L\b.north east)+(-0.4mm,0.8mm)$);
+  % the parentheses and their excess
+  \node[var,anchor=east] at (36mm,-24mm) {BP};
+  \foreach \v/\s [count=\i from 0] in {{(}/cell,{(}/touched,{(}/cell,{)}/cell,{(}/cell,{(}/cell,{)}/cell,{)}/cell,%
+      {)}/touched,{(}/cell,{)}/cell,{(}/cell,{(}/cell,{)}/cell,{)}/cell,{)}/cell}
+    \node[\s,minimum width=5.5mm] (P\i) at (40mm+\i*5.5mm,-24mm) {\v};
+  \foreach \i in {0,...,15}
+    \node[index,below=1mm of P\i] {\i};
+  \draw[edge] (40mm-2.75mm,-44mm) -- ++(16*5.5mm,0);
+  \node[index,anchor=east] at (40mm-3.5mm,-44mm) {0};
+  \node[index,anchor=east] at (40mm-3.5mm,-38mm) {$E$};
+  \draw[edge-touched] plot coordinates {(40mm-2.75mm,-44mm) (40.0mm,-42.5mm) (45.5mm,-41.0mm) (51.0mm,-39.5mm) (56.5mm,-41.0mm) (62.0mm,-39.5mm) (67.5mm,-38.0mm) (73.0mm,-39.5mm) (78.5mm,-41.0mm) (84.0mm,-42.5mm) (89.5mm,-41.0mm) (95.0mm,-42.5mm) (100.5mm,-41.0mm) (106.0mm,-39.5mm) (111.5mm,-41.0mm) (117.0mm,-42.5mm) (122.5mm,-44.0mm)};
+  \draw[edge,densely dashed] (45.5mm,-42.5mm) -- (84mm,-42.5mm);
+\end{tikzpicture}
+\end{document}

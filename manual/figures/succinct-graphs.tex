@@ -1,0 +1,93 @@
+% Source for the figure of EliasFanoGraph and BVGraph (sec. 22.10): (a) the
+% lists of a graph of 4 nodes as one sequence of the integers un + v and the
+% sequence of the starts of the lists; (b) the list of the node 16 coded by
+% reference to that of the node 15 (the lists of Boldi and Vigna), its copy
+% bits, the extra nodes, and the fields of its code with L_min = 2.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=west] at (-22mm,8mm) {(a) \texttt{EliasFanoGraph}, $n = 4$: $0 \to 1 , 2$, \ $1 \to 2$, \ $2 \to 0 , 3$};
+  \node[var,anchor=east] at (-6mm,0) {edges $u n + v$};
+  \node[cell,minimum width=9mm] (e0) at (0.0mm,0) {1};
+  \node[index,below=1.2mm of e0] {0};
+  \node[cell,minimum width=9mm] (e1) at (9.4mm,0) {2};
+  \node[index,below=1.2mm of e1] {1};
+  \node[cell,minimum width=9mm] (e2) at (18.8mm,0) {6};
+  \node[index,below=1.2mm of e2] {2};
+  \node[touched,minimum width=9mm] (e3) at (28.200000000000003mm,0) {8};
+  \node[index,below=1.2mm of e3] {3};
+  \node[touched,minimum width=9mm] (e4) at (37.6mm,0) {11};
+  \node[index,below=1.2mm of e4] {4};
+  \node[var,anchor=east] at (64mm,0) {starts};
+  \node[cell,minimum width=9mm] (s0) at (70.0mm,0) {0};
+  \node[index,below=1.2mm of s0] {0};
+  \node[cell,minimum width=9mm] (s1) at (79.4mm,0) {2};
+  \node[index,below=1.2mm of s1] {1};
+  \node[touched,minimum width=9mm] (s2) at (88.8mm,0) {3};
+  \node[index,below=1.2mm of s2] {2};
+  \node[touched,minimum width=9mm] (s3) at (98.2mm,0) {5};
+  \node[index,below=1.2mm of s3] {3};
+  \node[cell,minimum width=9mm] (s4) at (107.6mm,0) {5};
+  \node[index,below=1.2mm of s4] {4};
+  \node[var,anchor=west] at (-22mm,-12mm) {the list of 2 is the items $[ 3 , 5 )$ of the edges less $2 \cdot 4$: 0 and 3};
+  \node[var,anchor=west] at (-22mm,-20mm) {(b) \texttt{BVGraph}: the list of 16 by reference to that of 15};
+  \node[var,anchor=east] at (-6mm,-28mm) {list of 15};
+  \node[cell,minimum width=10mm] (a0) at (0.0mm,-28mm) {13};
+  \node[index,below=1.2mm of a0] {copy 0};
+  \node[touched,minimum width=10mm] (a1) at (10.4mm,-28mm) {15};
+  \node[index,below=1.2mm of a1] {copy 1};
+  \node[touched,minimum width=10mm] (a2) at (20.8mm,-28mm) {16};
+  \node[index,below=1.2mm of a2] {copy 1};
+  \node[touched,minimum width=10mm] (a3) at (31.200000000000003mm,-28mm) {17};
+  \node[index,below=1.2mm of a3] {copy 1};
+  \node[cell,minimum width=10mm] (a4) at (41.6mm,-28mm) {18};
+  \node[index,below=1.2mm of a4] {copy 0};
+  \node[cell,minimum width=10mm] (a5) at (52.0mm,-28mm) {19};
+  \node[index,below=1.2mm of a5] {copy 0};
+  \node[touched,minimum width=10mm] (a6) at (62.400000000000006mm,-28mm) {23};
+  \node[index,below=1.2mm of a6] {copy 1};
+  \node[touched,minimum width=10mm] (a7) at (72.8mm,-28mm) {24};
+  \node[index,below=1.2mm of a7] {copy 1};
+  \node[cell,minimum width=10mm] (a8) at (83.2mm,-28mm) {203};
+  \node[index,below=1.2mm of a8] {copy 0};
+  \node[touched,minimum width=10mm] (a9) at (93.60000000000001mm,-28mm) {315};
+  \node[index,below=1.2mm of a9] {copy 1};
+  \node[cell,minimum width=10mm] (a10) at (104.0mm,-28mm) {1034};
+  \node[index,below=1.2mm of a10] {copy 0};
+  \node[var,anchor=east] at (-6mm,-43mm) {list of 16};
+  \node[touched,minimum width=10mm] (b0) at (0.0mm,-43mm) {15};
+  \node[touched,minimum width=10mm] (b1) at (10.4mm,-43mm) {16};
+  \node[touched,minimum width=10mm] (b2) at (20.8mm,-43mm) {17};
+  \node[added,minimum width=10mm] (b3) at (31.200000000000003mm,-43mm) {22};
+  \node[touched,minimum width=10mm] (b4) at (41.6mm,-43mm) {23};
+  \node[touched,minimum width=10mm] (b5) at (52.0mm,-43mm) {24};
+  \node[touched,minimum width=10mm] (b6) at (62.400000000000006mm,-43mm) {315};
+  \node[added,minimum width=10mm] (b7) at (72.8mm,-43mm) {316};
+  \node[added,minimum width=10mm] (b8) at (83.2mm,-43mm) {317};
+  \node[added,minimum width=10mm] (b9) at (93.60000000000001mm,-43mm) {3041};
+  \node[var,anchor=east] at (-6mm,-55mm) {code of 16};
+  \node[node,minimum width=14mm,anchor=west] (f0) at (-5mm,-55mm) {10};
+  \node[index,below=1.2mm of f0,align=center,text width=13mm] {outdegree};
+  \node[node,minimum width=14mm,anchor=west] (f1) at (10.2mm,-55mm) {1};
+  \node[index,below=1.2mm of f1,align=center,text width=13mm] {reference};
+  \node[node,minimum width=14mm,anchor=west] (f2) at (25.4mm,-55mm) {6};
+  \node[index,below=1.2mm of f2,align=center,text width=13mm] {blocks};
+  \node[node,minimum width=14mm,anchor=west] (f3) at (40.599999999999994mm,-55mm) {0};
+  \node[index,below=1.2mm of f3,align=center,text width=13mm] {first bit};
+  \node[node,minimum width=29.299999999999997mm,anchor=west] (f4) at (55.8mm,-55mm) {0 2 1 1 0 0};
+  \node[index,below=1.2mm of f4,align=center,text width=28.299999999999997mm] {block lengths};
+  \node[node,minimum width=14mm,anchor=west] (f5) at (86.3mm,-55mm) {1};
+  \node[index,below=1.2mm of f5,align=center,text width=13mm] {intervals};
+  \node[node,minimum width=15.5mm,anchor=west] (f6) at (101.5mm,-55mm) {600 0};
+  \node[index,below=1.2mm of f6,align=center,text width=14.5mm] {316, length 2};
+  \node[node,minimum width=20.099999999999998mm,anchor=west] (f7) at (118.2mm,-55mm) {12 3018};
+  \node[index,below=1.2mm of f7,align=center,text width=19.099999999999998mm] {residuals 22, 3041};
+\end{tikzpicture}
+\end{document}

@@ -305,6 +305,7 @@ inline std::size_t WaveletMatrix::start( std::uint64_t c ) const
  return( s );
  }
 
+//! [rank]
 inline std::size_t WaveletMatrix::rank( std::uint64_t c ,
                                         std::size_t i ) const
 {
@@ -324,6 +325,7 @@ inline std::size_t WaveletMatrix::rank( std::uint64_t c ,
   }
  return( i - s );
  }
+//! [rank]
 
 inline std::size_t WaveletMatrix::select( std::uint64_t c ,
                                           std::size_t k ) const

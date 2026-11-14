@@ -1,0 +1,41 @@
+% Source for the figure of HuffmanWaveletTree (sec. 22.9): the wavelet tree
+% of abracadabra shaped by the canonical code a 0, b 100, c 101, d 110,
+% r 111, each internal node with its items (above) and their next bits.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,b/.style={cell,minimum width=5mm,minimum height=5.5mm},
+    lf/.style={node,minimum width=6mm},sm/.style={font=\scriptsize\ttfamily,text=adsInk!60}]
+  % a node: \wt{name}{x}{y}{items}{bits}
+  \newcommand{\wt}[5]{%
+    \foreach \c/\v [count=\i from 0] in {#4}
+      {\node[b] (#1-\i) at (#2+\i*5mm,#3) {\v};
+       \node[sm,above=0.6mm of #1-\i] {\c};}}
+  \wt{r}{0mm}{0mm}{a/0,b/1,r/1,a/0,c/1,a/0,d/1,a/0,b/1,r/1,a/0}{}
+  \wt{u}{25mm}{-17mm}{b/0,r/1,c/0,d/1,b/0,r/1}{}
+  \wt{v}{10mm}{-34mm}{b/0,c/1,b/0}{}
+  \wt{w}{45mm}{-34mm}{r/1,d/0,r/1}{}
+  \node[lf] (la) at (2mm,-17mm) {a};
+  \node[lf] (lb) at (6mm,-49mm) {b};
+  \node[lf] (lc) at (24mm,-49mm) {c};
+  \node[lf] (ld) at (41mm,-49mm) {d};
+  \node[lf] (lr) at (59mm,-49mm) {r};
+  \draw[edge] (r-0.south west) -- node[index,left=0.4mm] {0} (la.north);
+  \draw[edge] (r-10.south east) -- node[index,right=0.4mm] {1} (u-3.north);
+  \draw[edge] ([yshift=-3mm]u-0.south west) -- node[index,left=0.4mm] {0} ([yshift=3mm]v-1.north);
+  \draw[edge] ([yshift=-3mm]u-5.south east) -- node[index,right=0.4mm] {1} ([yshift=3mm]w-1.north);
+  \draw[edge] (v-0.south) -- node[index,left=0.4mm] {0} (lb.north);
+  \draw[edge] (v-2.south) -- node[index,right=0.4mm] {1} (lc.north);
+  \draw[edge] (w-0.south) -- node[index,left=0.4mm] {0} (ld.north);
+  \draw[edge] (w-2.south) -- node[index,right=0.4mm] {1} (lr.north);
+  \node[var,anchor=west] at (68mm,0) {root: the first bits of the codes};
+  \node[var,anchor=west] at (68mm,-17mm) {node 1: the second bits};
+  \node[var,anchor=west] at (68mm,-34mm) {nodes 10 and 11: the third bits};
+\end{tikzpicture}
+\end{document}
