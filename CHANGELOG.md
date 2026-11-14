@@ -2719,6 +2719,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CuckooHashTable evicts up to the bound 3 log_c m of Pagh and Rodler, with
+  c = 1 / ( 2 maxLoad ), when it exceeds the 8 log2 m + 16 kept for the
+  small tables, which fell below it past about 2^12 places, so that the
+  hypothesis of their analysis holds at every size
+
 - offlineConnectivity() no longer asks the nodes of a COMPONENTS question,
   which it does not use, to lie in [ 0 , n ), so that it answers 0 with no
   nodes rather than failing its precondition; the test engineered_dynamic

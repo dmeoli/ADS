@@ -40,8 +40,10 @@
  * a place (blocked cuckoo hashing, loads above 90 %) or use \f$ d > 2 \f$
  * functions (Fotakis et al.).
  *
- * \f$ \mathit{MaxLoop} \f$ is \f$ 8 \lceil \log_2 m \rceil + 16 \f$, against
- * the \f$ 3 \log_{1+\epsilon} m \f$ of the analysis of Pagh and Rodler.
+ * \f$ \mathit{MaxLoop} \f$ is the larger of \f$ 8 \lceil \log_2 m \rceil +
+ * 16 \f$, which suits the small tables, and the \f$ \lceil 3 \log_\gamma m
+ * \rceil \f$ of the analysis of Pagh and Rodler, with the slack
+ * \f$ \gamma = 1 / ( 2\, \mathit{maxLoad} ) \f$ of the load.
  *
  * The contracts [see `Contract.h`]: \f$ m \ge 2 \f$ and
  * \f$ 0 < \mathit{maxLoad} < 1 / 2 \f$; `insert()` ensures that the key is
@@ -91,7 +93,9 @@
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
 
+#include <algorithm>
 #include <bit>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -135,7 +139,9 @@ class CuckooHashTable {
  ///
  /// In pseudocode (Pagh and Rodler, chapter 8 of Ferragina),
  /// \f$ T \f$ the table, \f$ c \f$ the key in hand and \f$ \mathit{maxLoop} =
- /// 8 \lceil \log_2 m \rceil + 16 \f$:
+ /// \max\{ 8 \lceil \log_2 m \rceil + 16 , \lceil 3 \log_\gamma m \rceil
+ /// \} \f$, the bound of Pagh and Rodler with the slack
+ /// \f$ \gamma = 1 / ( 2\, \mathit{maxLoad} ) \f$ of the load:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr

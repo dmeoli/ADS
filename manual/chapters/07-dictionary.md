@@ -2005,7 +2005,8 @@ keeps the keys whose insertion fails and which a search also looks at
 `CuckooHashTable` ([Pagh and Rodler 2004](Z-bibliography.md#ref-pagh2004);
 [Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023)); $T$ is
 the table, $c$ the key in hand, and
-$\mathit{maxLoop} = 8 \lceil \log_2 m \rceil + 16$.
+$\mathit{maxLoop} = \max\{ 8 \lceil \log_2 m \rceil + 16 , \lceil 3
+\log_\gamma m \rceil \}$, with $\gamma = 1 / ( 2\, \mathit{maxLoad} )$.
 
 --8<-- "generated/CuckooHashing-CuckooHashTable-insert.pseudo.md"
 
@@ -2132,10 +2133,11 @@ suffice with a stash). Second, the table doubles past the load `maxLoad`
 (0.4 by default) and halves below $\mathit{maxLoad} / 4$, the global
 rebuilding of [Ferragina 2023, chapter
 8](Z-bibliography.md#ref-ferragina2023), and hence $c \ge 1.25$. Third,
-$\mathit{MaxLoop} = 8 \lceil \log_2 m \rceil + 16$ falls below
-$3 \log_{1.25} m \approx 9.32 \log_2 m$ for $m$ larger than about $2^{12}$,
-so that near the largest load allowed by default the hypothesis on
-$\mathit{MaxLoop}$ fails on the large tables. The stash of $s$ places
+$\mathit{MaxLoop}$ is the larger of $8 \lceil \log_2 m \rceil + 16$ and
+$\lceil 3 \log_c m \rceil$ with $c = 1 / ( 2\, \mathit{maxLoad} )$; the
+first, which suits the small tables, falls below the second (about
+$9.32 \log_2 m$ by default) for $m$ larger than about $2^{12}$, so that the
+hypothesis on $\mathit{MaxLoop}$ holds at every size. The stash of $s$ places
 lowers the probability of a rehash from $\Theta( 1 / n )$ to
 $\Theta( 1 / n^{s+1} )$ for random functions ([Kirsch et al.
 2009](Z-bibliography.md#ref-kirsch2009)), and the test

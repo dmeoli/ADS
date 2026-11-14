@@ -70,7 +70,13 @@ bool CuckooHashTable< K , V , H >::walk( Cell & c )
   f_T[ q ] = std::move( c );
   return( true );
   }
- const int maxLoop = 8 * int( std::bit_width( f_m - 1 ) ) + 16;
+ // the bound 3 log_g m of Pagh and Rodler, m >= g n with g = 1 / ( 2
+ // maxLoad ) the slack of the load, at least the 8 log2 m + 16 that suits
+ // the small tables
+ const double g = 1 / ( 2 * f_maxLoad );
+ const int maxLoop = std::max( 8 * int( std::bit_width( f_m - 1 ) ) + 16 ,
+                               int( std::ceil( 3 * std::log( double( f_m ) )
+                                               / std::log( g ) ) ) );
  for( int t = 0 ; t < maxLoop ; ++t ) {
   std::swap( c , f_T[ p ] );                // c is the key evicted from p
   ++f_evictions;
