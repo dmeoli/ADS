@@ -74,7 +74,6 @@ inline RRRBitVector::RRRBitVector( const BitVector & b ) : f_m( b.size() )
                                                                   0 ) ) );
  }
 
-//! [below]
 inline int RRRBitVector::below( std::uint64_t o , int c , int q )
 {
  const auto & T = tables();
@@ -87,7 +86,6 @@ inline int RRRBitVector::below( std::uint64_t o , int c , int q )
   }
  return( t );
  }
-//! [below]
 
 inline std::uint64_t RRRBitVector::locate( std::size_t j , int & c ,
                                            std::size_t & ones ) const

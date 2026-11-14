@@ -122,7 +122,6 @@ inline __m256i popcount256( __m256i v )
  }
 
 /// the full adder of three vectors of bits: h the carries, l the sums
-//! [csa256]
 inline void csa256( __m256i & h , __m256i & l , __m256i a , __m256i b ,
                     __m256i c )
 {
@@ -130,7 +129,6 @@ inline void csa256( __m256i & h , __m256i & l , __m256i a , __m256i b ,
  h = _mm256_or_si256( _mm256_and_si256( a , b ) , _mm256_and_si256( u , c ) );
  l = _mm256_xor_si256( u , c );
  }
-//! [csa256]
 
 /// Harley-Seal on the vectors load( 0 ) , ... , load( n - 1 )
 template< class L >

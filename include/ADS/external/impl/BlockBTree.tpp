@@ -62,7 +62,6 @@ void BlockBTree< K >::path( std::size_t len ) const
 template< std::totally_ordered K >
 std::optional< K > BlockBTree< K >::lowerBound( const K & x ) const
 {
-//! [BlockBTree-lowerBound]
  std::optional< K > z;
  std::size_t u = f_root;
  Held cur( this , f_bs.readBlock( u ) );
@@ -79,7 +78,6 @@ std::optional< K > BlockBTree< K >::lowerBound( const K & x ) const
   u = a.kids[ i ];
   cur.node = f_bs.readBlock( u );
   }
-//! [BlockBTree-lowerBound]
  }
 
 template< std::totally_ordered K >
@@ -95,7 +93,6 @@ void BlockBTree< K >::deal( Node & p , std::size_t f , std::size_t k ,
                             std::size_t c , const Node & known ,
                             D && decide )
 {
-//! [BlockBTree-deal]
  // the keys and the children gathered, which count as k nodes in memory
  f_held += k;
  if( f_held > f_peak )
@@ -157,13 +154,11 @@ void BlockBTree< K >::deal( Node & p , std::size_t f , std::size_t k ,
  else
   ++f_borrows;
  f_held -= k;
-//! [BlockBTree-deal]
  }
 
 template< std::totally_ordered K >
 void BlockBTree< K >::fixOverflow( Node & p , std::size_t i , const Node & u )
 {
-//! [BlockBTree-fixOverflow]
  const std::size_t M = maxKeys() , slack = std::size_t( f_B / 4 );
  if( ( f_policy == BTreePolicy::THREE ) && ( p.kids.size() >= 2 ) ) {
   const std::size_t s = ( i + 1 < p.kids.size() ) ? i + 1 : i - 1;
@@ -175,7 +170,6 @@ void BlockBTree< K >::fixOverflow( Node & p , std::size_t i , const Node & u )
  else
   deal( p , i , 1 , i , u , []( std::size_t ) {
    return( std::size_t( 2 ) ); } );
-//! [BlockBTree-fixOverflow]
  }
 
 template< std::totally_ordered K >
@@ -189,7 +183,6 @@ template< std::totally_ordered K >
 void BlockBTree< K >::fixUnderflow( Node & p , std::size_t i ,
                                     const Node & u , bool root )
 {
-//! [BlockBTree-fixUnderflow]
  const std::size_t M = maxKeys() , m = minKeys();
  const std::size_t slack = std::size_t( f_B / 4 );
  const std::size_t B = std::size_t( f_B );
@@ -214,7 +207,6 @@ void BlockBTree< K >::fixUnderflow( Node & p , std::size_t i ,
  else                                  // borrow while both keep B - 1
   deal( p , f , 2 , i , u , [ & ]( std::size_t t ) {
    return( t - 1 >= 2 * m ? std::size_t( 2 ) : std::size_t( 1 ) ); } );
-//! [BlockBTree-fixUnderflow]
  }
 
 template< std::totally_ordered K >
@@ -223,7 +215,6 @@ bool BlockBTree< K >::insert( const K & x )
  std::vector< std::pair< std::size_t , std::size_t > > P;
  std::size_t u = f_root , i;
  Held cur( this , f_bs.readBlock( u ) );
-//! [BlockBTree-insert]
  for( ; ; ) {   // down to the leaf, the path kept as indices
   i = place( cur.node , x );
   if( ( i < cur.node.keys.size() ) && ( cur.node.keys[ i ] == x ) )
@@ -257,7 +248,6 @@ bool BlockBTree< K >::insert( const K & x )
   cur.node = std::move( p.node );
   u = q;
   }
-//! [BlockBTree-insert]
  ADS_POST( contains( x ) );
  ADS_INVARIANT( consistent() );
  return( true );
@@ -271,7 +261,6 @@ bool BlockBTree< K >::remove( const K & x )
  std::size_t u = f_root , target = NONE , tIdx = 0 , leafIdx = 0;
  Held cur( this , f_bs.readBlock( u ) );
  const bool twoKids = cur.node.kids.size() == 2;   // the root's
-//! [BlockBTree-remove]
  for( ; ; ) {
   if( target != NONE ) {   // down the leftmost path to the successor
    if( cur.node.kids.empty() )
@@ -339,7 +328,6 @@ bool BlockBTree< K >::remove( const K & x )
   f_root = cur.node.kids.front();   // the root left with one child
   f_bs.freeBlock( u );
   }
-//! [BlockBTree-remove]
  ADS_POST( ! contains( x ) );
  ADS_INVARIANT( consistent() );
  return( true );

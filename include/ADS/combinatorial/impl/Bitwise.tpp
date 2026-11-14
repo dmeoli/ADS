@@ -16,7 +16,6 @@
 
 namespace ADS {
 
-//! [sidewaysSum]
 constexpr int sidewaysSum( Word x )
 {
  x = x - ( ( x >> 1 ) & 0x5555555555555555ULL );            // 2-bit fields
@@ -24,7 +23,6 @@ constexpr int sidewaysSum( Word x )
  x = ( x + ( x >> 4 ) ) & 0x0F0F0F0F0F0F0F0FULL;            // bytes
  return( int( ( x * 0x0101010101010101ULL ) >> 56 ) );      // their sum
  }
-//! [sidewaysSum]
 
 constexpr int ruler( Word x )
 {
@@ -76,7 +74,6 @@ constexpr Word grayInverse( Word g )
  return( g );
  }
 
-//! [nextSameWeight]
 constexpr Word nextSameWeight( Word x )
 {
  ADS_PRE( x != 0 );
@@ -84,7 +81,6 @@ constexpr Word nextSameWeight( Word x )
  ADS_PRE( v != 0 );                         // no overflow
  return( v + ( ( ( v ^ x ) / u ) >> 2 ) );
  }
-//! [nextSameWeight]
 
 namespace detail {
 
@@ -122,13 +118,11 @@ constexpr std::pair< std::uint32_t , std::uint32_t > deinterleave( Word z )
                     std::uint32_t( detail::gather( z >> 1 ) ) ) );
  }
 
-//! [hasZeroByte]
 constexpr bool hasZeroByte( Word x )
 {
  return( ( ( x - 0x0101010101010101ULL ) & ~x &
            0x8080808080808080ULL ) != 0 );
  }
-//! [hasZeroByte]
 
 /*--------------------------------------------------------------------------*/
 

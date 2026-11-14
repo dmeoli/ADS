@@ -202,7 +202,6 @@ inline void RangeEncoder::emit( bool b )
  for( ; f_pending > 0 ; --f_pending ) f_out.put( ! b );
  }
 
-//! [encode]
 inline void RangeEncoder::encode( std::uint64_t low , std::uint64_t high ,
                                   std::uint64_t total )
 {
@@ -229,7 +228,6 @@ inline void RangeEncoder::encode( std::uint64_t low , std::uint64_t high ,
   }
  ADS_INVARIANT( f_high - f_low > quarter );
  }
-//! [encode]
 
 inline std::vector< std::uint8_t > RangeEncoder::finish( void )
 {

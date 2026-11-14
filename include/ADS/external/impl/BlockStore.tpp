@@ -39,7 +39,6 @@ void BlockStore< T >::writeBlock( std::size_t i , const T & b )
 template< class T >
 std::size_t BlockStore< T >::placeBlock( const T & b )
 {
-//! [placeBlock]
  std::size_t i;
  if( f_free.empty() ) {
   i = f_B.size();
@@ -56,7 +55,6 @@ std::size_t BlockStore< T >::placeBlock( const T & b )
  if( f_mem )
   f_mem->countWrite();
  return( i );
-//! [placeBlock]
  }
 
 template< class T >

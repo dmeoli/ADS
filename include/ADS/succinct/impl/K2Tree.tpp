@@ -116,7 +116,6 @@ inline std::vector< std::size_t > K2Tree::reverseNeighbors(
  return( out );
  }
 
-//! [hasEdge]
 inline bool K2Tree::hasEdge( std::size_t u , std::size_t v ) const
 {
  ADS_PRE( ( u < f_n ) && ( v < f_n ) );
@@ -132,7 +131,6 @@ inline bool K2Tree::hasEdge( std::size_t u , std::size_t v ) const
   s = c;
   }
  }
-//! [hasEdge]
 
 inline const BitVector & K2Tree::levels( void ) const
 {

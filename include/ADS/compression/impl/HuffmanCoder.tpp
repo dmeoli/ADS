@@ -279,7 +279,6 @@ inline void huffmanDecodeStreams( std::span< const std::uint8_t > in ,
   };
  for( std::size_t R = rounds() ; R > 0 ; R = rounds() )
   for( ; R > 0 ; --R ) {
-  //! [lookups]
   for( std::size_t j = 0 ; j < 4 ; ++j )
    for( std::size_t k = 0 ; k < 4 ; ++k ) {
     const std::uint32_t e = T3[ ( w[ k ] >> used[ k ] ) & mask ];
@@ -292,7 +291,6 @@ inline void huffmanDecodeStreams( std::span< const std::uint8_t > in ,
    used[ k ] &= 7;
    w[ k ] = loadLE< std::uint64_t >( p[ k ] );
    }
-  //! [lookups]
   }
  for( std::size_t k = 0 ; k < 4 ; ++k )     // the rest, a symbol a time
   for( ; o[ k ] < end[ k ] ; ++o[ k ] ) {

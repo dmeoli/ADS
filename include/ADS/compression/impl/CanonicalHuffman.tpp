@@ -117,7 +117,6 @@ std::vector< std::uint8_t > CanonicalHuffman< C >::encode(
  return( w.bytes() );
  }
 
-//! [decode]
 template< class C >
 C CanonicalHuffman< C >::decode( PackedBitReader & r ) const
 {
@@ -131,7 +130,6 @@ C CanonicalHuffman< C >::decode( PackedBitReader & r ) const
  ADS_PRE( v - f_fc[ l ] < f_symb[ l ].size() );
  return( f_symb[ l ][ v - f_fc[ l ] ] );
  }
-//! [decode]
 
 template< class C >
 std::vector< C > CanonicalHuffman< C >::decode(

@@ -154,14 +154,10 @@ sum is at least 128, i.e., it has its high bit, if and only if
 $s_j \ge k + 1$. Hence the first byte $b$ with $s_b > k$ is the one that holds
 the 1 of rank $k$, which is the $( k - s_{b-1} )$-th 1 of the byte. $\square$
 
-In the code, the trailing zeros of the masked word give $b$, and the 1 inside the byte
+In the implementation, the trailing zeros of the masked word give $b$, and the 1 inside the byte
 is found by clearing its lower 1s, at most 7 times. With the instructions
-BMI2, the code deposits the single bit $2^k$ on the 1s of the word instead,
-and the place is then its trailing zeros:
-
-```cpp
---8<-- "generated/BitVector-selectInWord.cpp"
-```
+BMI2, the implementation deposits the single bit $2^k$ on the 1s of the word instead,
+and the place is then its trailing zeros.
 
 We write the codes of the integers of [§21.7](21-compression.md#sec-21-7)
 on the streams of bits of `BitStream.h`. A `BitWriter` appends
@@ -238,11 +234,7 @@ $$
 
 i.e., the three relative ranks of the entry. When the bits come from words
 in memory above $2^{23}$ bits, the words are copied in the same pass, since
-reading them twice costs more than a copy in the caches. Its code is the pseudocode. Note that the 1s of the word up to $i$ need no test of the end, since the words exist past the size:
-
-```cpp
---8<-- "generated/RankSelect-rank1.cpp"
-```
+reading them twice costs more than a copy in the caches. The implementation follows the pseudocode. Note that the 1s of the word up to $i$ need no test of the end, since the words exist past the size.
 
 We do not reduce the select to the rank by a binary search, which would cost $O( \log m )$ steps. [Clark 1996](Z-bibliography.md#ref-clark1996) cuts the
 1s in groups of $\log_2^2 m$ and writes down the places of all the 1s of a
@@ -262,10 +254,6 @@ i.e., at most 32 offsets, a line of the cache. Hence $\mathrm{select}_1( k )$ re
 by the inventories of [Vigna 2008](Z-bibliography.md#ref-vigna2008).
 
 --8<-- "generated/RankSelect-BasicRankSelect-select.pseudo.md"
-
-```cpp
---8<-- "generated/RankSelect-select.cpp"
-```
 
 A select is thus (typically) three accesses to the memory and a few words, $O( 1 )$
 time where the 1s are spread evenly, with about $576 / 6144$ to
@@ -425,11 +413,7 @@ and the select of `RRRBitVector`
 --8<-- "generated/RRRBitVector-select1.pseudo.md"
 
 Note that a query walks only the places it needs: the rank stops at its place or at
-the last 1, the select at its bit. We write the walk with no branch, the binomials coming from a table of $64 \times 64$ entries:
-
-```cpp
---8<-- "generated/RRRBitVector-below.cpp"
-```
+the last 1, the select at its bit. We write the walk with no branch, the binomials coming from a table of $64 \times 64$ entries.
 
 `select0()` does the same with the 0s of each block, counted as its length less its class. We rebuild the block in full when it is sparse in 0s.
 
@@ -475,10 +459,6 @@ access and the search of Elias-Fano.
 
 --8<-- "generated/EliasFano-BasicEliasFano-nextGEQ.pseudo.md"
 
-```cpp
---8<-- "generated/EliasFano-access.cpp"
-```
-
 `nextGEQ( x )` gives the place of the first item $\ge x$, which is the
 rank of $x$ (the items $< x$) and gives the predecessor and the successor.
 
@@ -498,11 +478,7 @@ Hence `nextGEQ()` costs a $\mathrm{select}_0$ and a scan of the bucket, in
 $O( 1 + c )$ time for a bucket of $c$ items, and `contains( x )` tests its
 result ($\ell$ itself is `lowWidth()`). A bucket holds $n 2^\ell / u \le 2$ items on average (for "random" items), and the search is $O( 1 )$ expected when the items are spread evenly, which is often (but not always) the case. Past 8 items, which the "clusters" of a sequence may give, the end of the bucket is found by
 $\mathrm{select}_0$ too and its low bits by a binary search, in
-$O( \log c )$ time:
-
-```cpp
---8<-- "generated/EliasFano-nextGEQ.cpp"
-```
+$O( \log c )$ time.
 
 Ferragina's book computes the rank by a binary search on the select, in
 $O( \log n )$ time; the bucket found by $\mathrm{select}_0$ is the design
@@ -667,15 +643,7 @@ An array of $n$ values below $2^B$ takes $n B$ bits when its fields are
 packed in words, against the $8 n$ of a byte per value. In the searches, the tables of "large" spaces of states may have $10^9$ entries and more, e.g., the pattern databases of the heuristic search ([Felner, Korf and Hanan 2004](Z-bibliography.md#ref-felner2004)), and they fit in the memory only so packed.
 `PackedArray< B >` takes the widths that divide 64, $B \in \{ 1 , 2 , 4 , 8 , 16 , 32 \}$. A word then holds $64 / B$ fields (the constant `PER`, and `MAX` is $2^B - 1$, the largest value of a field), and the field $i$ is the bits $( i \bmod 64 / B ) B$ on of the word $\lfloor i B / 64 \rfloor$. A read is one load, one shift and one mask, with no test of a field that crosses two words, which `BitVector::get( i , len )` pays for the other widths
 ([Figure 22.8](22-succinct.md#fig-22-8)). A write clears the field by a mask
-and puts the value by an or, in the same word:
-
-```cpp
---8<-- "generated/PackedArray-get.cpp"
-```
-
-```cpp
---8<-- "generated/PackedArray-set.cpp"
-```
+and puts the value by an or, in the same word.
 
 A *saturated* array (the template parameter `Saturate`) stores a value
 above $2^B - 1$ as $2^B - 1$, and counts it in `clamped()`, instead of
@@ -694,11 +662,7 @@ y = \sum_{j = 0}^{4} t_j 3^j \le 3^5 - 1 = 242 , \tag{22.13}
 $$
 
 i.e., in 1.6 bits per value, 0.015 above the entropy and one fifth less than the fields of 2 bits ([Breyer and Korf 2010](Z-bibliography.md#ref-breyer2010), whose tables keep the distances modulo 3, from which the distance of a state is recovered along a path to the goal). `TritArray` reads the digit $j = i \bmod 5$ of the byte $\lfloor i / 5 \rfloor$ from a table of the five digits of each of the 243 bytes, 1215 bytes that stay in the cache of the first level. It writes the digit by adding $( v - t_j ) 3^j$ to the byte, which by
-(22.13) changes only that digit:
-
-```cpp
---8<-- "generated/PackedArray-tritSet.cpp"
-```
+(22.13) changes only that digit.
 
 Six values would need $3^6 = 729 > 256$ codes, and $3^{40} < 2^{64} <
 3^{41}$ would put 40 values in a word, 1.6 bits each again, at the price of
@@ -797,10 +761,6 @@ node $p - v$. $\square$
 
 ![Figure 22.10. An ordered tree of 8 nodes, numbered by levels and, in parentheses, in preorder. Above, its code by LOUDS after the dummy root 01, the unary degree of each node bracketed; the degree of the node 1 (violet) is the 0s 6 and 7, its children 4 and 5. Below, its balanced parentheses in preorder and their excess $E$: the pair of the node 1 opens at 1 and closes at 8, the first place after 1 where the excess falls to $E( 1 ) - 1 = 1$ (dashed).](../figures/succinct-louds-bp.svg){#fig-22-10}
 
-```cpp
---8<-- "generated/LoudsTree-navigation.cpp"
-```
-
 Its functions are `leftmostChild()` and `rightSibling()`, the names of the
 TREE of the book (`ADS/tree/Tree.h`); the $i$-th child is the first one
 plus $i$, since the children of a node are consecutive in the order by
@@ -858,10 +818,6 @@ the forward search of `findClose()`
 --8<-- "generated/BalancedParentheses-findOpen.pseudo.md"
 
 --8<-- "generated/BalancedParentheses-enclose.pseudo.md"
-
-```cpp
---8<-- "generated/BalancedParentheses-forwardSearch.cpp"
-```
 
 In space, the tree takes $32 / 512$ bits per parenthesis for the leaves (6.25%) and
 at most $4 \cdot 128 / 8192$ for the groups, besides the directory of rank
@@ -948,11 +904,7 @@ Hence `access()`, `rank()` and `select()` follow a place, or the two ends of
 a range, down the $w$ levels by (22.16), or up by the select, in $O( w )$
 time ([Figure 22.11](22-succinct.md#fig-22-11)); `rank( c , i )` follows
 the places 0 and $i$ down along the bits of $c$, and the difference at the
-last level is the answer:
-
-```cpp
---8<-- "generated/WaveletMatrix-rank.cpp"
-```
+last level is the answer.
 
 Furthermore, the $k$-th smallest item of a range, `quantile( i , j , k )`, goes down to
 the 0s or to the 1s according to how many 0s the range holds at each level,
@@ -1037,11 +989,7 @@ $$
 $$
 
 and the interval of $\pi( x )$ is found from $d_i$ forward, past the
-starts $p_j \le \pi( x )$:
-
-```cpp
---8<-- "generated/MoveStructure-move.cpp"
-```
+starts $p_j \le \pi( x )$.
 
 We say that the structure is *balanced* when no image $[ q_i , q_i + p_{i+1} - p_i )$
 holds 4 starts or more. Its construction ensures it by cutting an interval
@@ -1181,10 +1129,6 @@ of an edge ([Brisaboa, Ladra and Navarro 2014](Z-bibliography.md#ref-brisaboa201
 --8<-- "generated/K2Tree-neighbors.pseudo.md"
 
 --8<-- "generated/K2Tree-hasEdge.pseudo.md"
-
-```cpp
---8<-- "generated/K2Tree-hasEdge.cpp"
-```
 
 A row is read in $O( \sqrt{m} )$ time on average for $m$ edges spread
 uniformly, and in $O( n )$ in the worst case. Each edge sets at most $k^2$ marks per level, and below the level where the submatrices outnumber the edges these marks are distinct. This gives the bound

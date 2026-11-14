@@ -211,12 +211,10 @@ DiskReader< T >::DiskReader( const DiskFile< T > & f )
 template< class T >
 void DiskReader< T >::load( std::size_t b )
 {
-//! [load]
  if( b != f_block ) {
   f_file->readBlock( b , f_buf.data() );
   f_block = b;
   }
-//! [load]
  }
 
 template< class T >

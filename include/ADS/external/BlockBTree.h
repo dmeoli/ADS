@@ -375,6 +375,39 @@ class BlockBTree {
 
  /// the overflow of the child \f$ i \f$ of \f$ p \f$, `u`, fixed by the
  /// policy
+ ///
+ /// In pseudocode (beyond the book), with the overflow and the underflow
+ /// of `fixUnderflow()`; \f$ M \f$ is `maxKeys()`, \f$ m \f$ `minKeys()`,
+ /// \f$ s = \lfloor B / 4 \rfloor \f$, \f$ d \f$ the children of \f$ p \f$
+ /// and \f$ t \f$ the keys that `deal()` gathers:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{fixOverflow}( p , i ) \cr
+ /// 2 & \quad \textbf{if}\ \text{THREE and } d \ge 2\ \textbf{then}
+ ///     \ j \gets i + 1 \text{ if } i + 1 < d \text{, else } i - 1 \cr
+ /// 3 & \qquad \mathrm{deal}( p , \min\{ i , j \} , 2 ) \text{ into 2}
+ ///     \text{ children if } \lfloor t / 2 \rfloor \le M - s \text{, into 3}
+ ///     \text{ otherwise} \cr
+ /// 4 & \quad \textbf{else}\ \mathrm{deal}( p , i , 1 ) \text{ into 2}
+ ///     \text{ children} \cr
+ /// 5 & \textbf{procedure}\ \mathrm{fixUnderflow}( p , i , \mathit{root} )
+ ///     \cr
+ /// 6 & \quad \textbf{if}\ \text{THREE, } \mathit{root} \text{, } d = 2
+ ///     \text{ and the children are leaves}\ \textbf{then} \cr
+ /// 7 & \qquad \mathrm{deal}( p , 0 , 2 ) \text{ into 1 child if } t \le M -
+ ///     s \text{, into 2 otherwise} \cr
+ /// 8 & \quad \textbf{else if}\ \text{THREE and } d \ge 3\ \textbf{then} \cr
+ /// 9 & \qquad \mathrm{deal}( p , \min\{ \max\{ i - 1 , 0 \} , d - 3 \} , 3
+ ///     ) \text{ into 2 children if } \lfloor t / 2 \rfloor \le M - s
+ ///     \text{, into 3 otherwise} \cr
+ /// 10 & \quad \textbf{else if}\ \text{WIDE}\ \textbf{then}\ \mathrm{deal}( p
+ ///      , f , 2 ) \text{ into 1 child if } 2 t \le 5 B \text{, into 2}
+ ///      \text{ otherwise} \cr
+ /// 11 & \quad \textbf{else}\ \mathrm{deal}( p , f , 2 ) \text{ into 2}
+ ///      \text{ children if } t - 1 \ge 2 m \text{, into 1 otherwise}
+ ///      \quad \triangleright\ f = i - 1 \text{, or } 0 \text{ if } i = 0
+ /// \end{array}}
+ /// \f]
  void fixOverflow( Node & p , std::size_t i , const Node & u );
 
  /// the underflow of the child \f$ i \f$ of \f$ p \f$, `u`, fixed by the

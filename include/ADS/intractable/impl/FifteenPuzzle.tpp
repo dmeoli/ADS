@@ -153,7 +153,6 @@ std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
   detail::setLevel( best , B , 0 );
   FibonacciHeapPriorityQueue< int , int > Q;
   Q.insert( 0 , manhattan( B , n ) );
-//! [solvePuzzle]
   while( ! Q.empty() ) {
    const int k = Q.deleteMin();
    if( level[ k ] > *detail::levelOf( best , node[ k ] ) )
@@ -177,7 +176,6 @@ std::optional< std::vector< Board > > solvePuzzle( const Board & B , int n ,
     Q.insert( int( node.size() ) - 1 , g + lb );
     }
    }
-//! [solvePuzzle]
   return( std::nullopt );
   }();
  ADS_POST( ! result ||

@@ -64,7 +64,6 @@ inline std::size_t LoudsTree::root( void ) const
  return( size() ? 0 : nil );
  }
 
-//! [navigation]
 inline std::size_t LoudsTree::degree( std::size_t v ) const
 {
  ADS_PRE( v < size() );
@@ -89,7 +88,6 @@ inline std::size_t LoudsTree::rightSibling( std::size_t v ) const
  ADS_PRE( v < size() );
  return( f_b[ f_b.select0( v + 1 ) + 1 ] ? nil : v + 1 );
  }
-//! [navigation]
 
 inline std::size_t LoudsTree::child( std::size_t v , std::size_t i ) const
 {

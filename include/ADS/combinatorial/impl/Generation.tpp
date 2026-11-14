@@ -46,7 +46,6 @@ long mixedRadix( const std::vector< int > & m , F && visit )
   if( m[ j ] > 1 ) last = j;
   }
  long count = 0;
- //! [mixedRadix]
  for( ; ; ) {
   ++count;
   if( detail::visitStops( visit , a ) ) return( count );
@@ -58,10 +57,8 @@ long mixedRadix( const std::vector< int > & m , F && visit )
   if( j < 0 ) return( count );
   ++a[ j ];
   }
- //! [mixedRadix]
  }
 
-//! [grayTuples]
 template< class F >
 long grayTuples( const std::vector< int > & m , F && visit )
 {
@@ -91,7 +88,6 @@ long grayTuples( const std::vector< int > & m , F && visit )
    }
   }
  }
-//! [grayTuples]
 
 template< class F >
 long permutationsLex( Tuple a , F && visit )
@@ -146,7 +142,6 @@ long plainChanges( int n , F && visit )
   }
  }
 
-//! [heapPermutations]
 template< class F >
 long heapPermutations( int n , F && visit )
 {
@@ -168,7 +163,6 @@ long heapPermutations( int n , F && visit )
   }
  return( count );
  }
-//! [heapPermutations]
 
 template< class F >
 long combinationsLex( int n , int t , F && visit )
@@ -242,7 +236,6 @@ long integerPartitions( int n , F && visit )
   }
  Tuple a;                                   // a_1 .. a_m, nonincreasing
  a.reserve( std::size_t( n ) );
- //! [integerPartitions]
  std::size_t q = 0;                         // a_q the last part > 1, from 1
  int r = n;                                 // the sum of the parts to come
  for( ; ; ) {
@@ -265,7 +258,6 @@ long integerPartitions( int n , F && visit )
    r -= x;
    }
   }
- //! [integerPartitions]
  }
 
 template< class F >

@@ -97,10 +97,6 @@ file by `DiskReader` (chapter 1, Introduction, of
 
 --8<-- "generated/TwoLevelMemory-DiskReader-at.pseudo.md"
 
-```cpp
---8<-- "generated/TwoLevelMemory-load.cpp"
-```
-
 ![Figure 23.1. The two-level memory of `TwoLevelMemory` with $B = 4$ and $M = 12$: the reader of the file $F$ loads its block 1 into its buffer by one read (in violet), and the writer of $G$ appends the four items of its full buffer as a new block by one write (in orange); the rest of the memory is free.](../figures/external-model.svg){#fig-23-1}
 
 An algorithm of the internal memory that follows links (a list, a tree of
@@ -155,10 +151,6 @@ count with the algorithms on the files.
 block ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BlockStore-placeBlock.pseudo.md"
-
-```cpp
---8<-- "generated/BlockStore-placeBlock.cpp"
-```
 
 ![Figure 23.2. A `BlockStore` of six blocks, the free ones in the faintest tint and their indices on the stack $F$ (its top last): `placeBlock(b)` writes $b$ into the free block on top of $F$ and returns its index, and `readBlock(2)` returns a copy of the block 2.](../figures/external-blockstore.svg){#fig-23-2}
 
@@ -237,10 +229,6 @@ the internal one, not pointed to.
 
 --8<-- "generated/BlockBTree-lowerBound.pseudo.md"
 
-```cpp
---8<-- "generated/BlockBTree-BlockBTree-lowerBound.cpp"
-```
-
 ![Figure 23.3. A B-tree with $B = 2$ (the data of figure 14.2 of Morin 2013): the nodes and the edges that `lowerBound(4)` reads, and those that `lowerBound(16.5)` reads, which ends at a leaf and returns 17, the last key $\ge 16.5$ met on the way.](../figures/external-btree.svg){#fig-23-3}
 
 <span id="thm-23-1"></span>**Theorem 23.1.** *`lowerBound()` reads
@@ -294,10 +282,6 @@ kept instead of the nodes.
 
 --8<-- "generated/BlockBTree-insert.pseudo.md"
 
-```cpp
---8<-- "generated/BlockBTree-BlockBTree-insert.cpp"
-```
-
 ![Figure 23.5. The insertions of 1.5 and then of 7.5 in the tree of Figure 23.3 (exercise 14.1 of Morin 2013): the first splits the leaf $\{ 0 , 1 , 1.5 , 2 \}$, the second splits the leaf $\{ 7 , 7.5 , 8 , 9 \}$ and then its parent, whose middle key 6 goes up to the root; the nodes written by a split and the keys added are in orange.](../figures/external-btree-insert.svg){#fig-23-5}
 
 ### 23.3.3 Removal {#sec-23-3-3}
@@ -330,10 +314,6 @@ kept instead of the nodes.
 
 --8<-- "generated/BlockBTree-remove.pseudo.md"
 
-```cpp
---8<-- "generated/BlockBTree-BlockBTree-remove.cpp"
-```
-
 ![Figure 23.6. The removals of 3 and then of 4 from the tree of Figure 23.3 (exercise 14.2 of Morin 2013): the first replaces the key 3 of an internal node by its successor 4, taken out of the leaf $\{ 4 , 5 \}$ (that leaf in violet); the second does the same with 5, which leaves the leaf empty, and the leaf borrows from its sibling on the left; the other nodes written are in orange.](../figures/external-btree-remove.svg){#fig-23-6}
 
 ### 23.3.4 One routine for the restructurings {#sec-23-3-4}
@@ -358,18 +338,6 @@ otherwise.
 $k$ consecutive children into $k'$ (beyond the book).
 
 --8<-- "generated/BlockBTree-deal.pseudo.md"
-
-```cpp
---8<-- "generated/BlockBTree-BlockBTree-deal.cpp"
-```
-
-```cpp
---8<-- "generated/BlockBTree-BlockBTree-fixOverflow.cpp"
-```
-
-```cpp
---8<-- "generated/BlockBTree-BlockBTree-fixUnderflow.cpp"
-```
 
 ![Figure 23.7. The three restructurings of the rules of the book with $B = 3$, each one call of `deal()`: a leaf of $2 B = 6$ keys split into nodes of $B$ and $B - 1$ keys, the middle key going up; a leaf of $B - 2 = 1$ key that borrows from a sibling of 4 keys; and a leaf of 1 key merged with a sibling of $B - 1 = 2$ keys, the separator coming down. The nodes gathered are in violet and the nodes written in orange.](../figures/external-btree-deal.svg){#fig-23-7}
 
@@ -464,7 +432,13 @@ otherwise; a node in underflow shares them with two siblings, into two
 nodes or three in the same way. Thus each node that these moves write has
 between about $7 B / 6$ and $7 B / 4$ keys, as in the B*-trees of [Knuth
 1998, §6.2.4](Z-bibliography.md#ref-knuth1998v3), whose overflow is shared
-with a sibling.
+with a sibling. The procedures that choose the restructuring of
+an overflow and of an underflow by the policy are given next, as calls of
+`deal()` ([Algorithm 23.6](23-external.md#alg-23-6)); with `THREE`, the
+two leaves of a root are merged into one only while it keeps $\lfloor B /
+4 \rfloor$ keys of room.
+
+--8<-- "generated/BlockBTree-fixOverflow.pseudo.md"
 
 <span id="lem-23-3"></span>**Lemma 23.3.** *If every node that a
 restructuring writes has at least $\alpha B$ keys more than its lower bound
@@ -642,11 +616,7 @@ multiway mergesort (chapter 5, Sorting Atomic Items, of
 --8<-- "generated/ExternalSorting-multiwayMergeSort.pseudo.md"
 
 The merge of a group reads each run through a `DiskReader`, keeps the
-heads in the tree of losers, and writes the output through a `DiskWriter`:
-
-```cpp
---8<-- "generated/ExternalSorting-mergeGroup.cpp"
-```
+heads in the tree of losers, and writes the output through a `DiskWriter`.
 
 ![Figure 23.9. The multiway mergesort with $B = 2$ and $M = 8$: three runs of at most $R = 8$ items, sorted in memory, and their merge with $k = 3$, a block of each run and one of the output in memory. After the output 1, 2, 3, 4 (two blocks written, in orange) the heads 7, 6 and 5 compete; the blocks in memory are in violet, those already emptied in the faintest tint, and 5 wins.](../figures/external-mergesort.svg){#fig-23-9}
 
@@ -790,10 +760,6 @@ or that are the tail, whose jumps no longer change
 ([Figure 23.10](23-external.md#fig-23-10)).
 
 --8<-- "generated/ListRanking-listRankPointerJumping.pseudo.md"
-
-```cpp
---8<-- "generated/ListRanking-pointerJumping.cpp"
-```
 
 ![Figure 23.10. The pointer jumping of Wyllie on the list 3, 6, 0, 5, 1, 7, 2, 4 (the tail 4): the ranks $r$ and the successors $s$ of the items after each round, the item 3 (the head) in violet; after 3 rounds each $s$ is the tail and $r$ is the rank.](../figures/external-listranking.svg){#fig-23-10}
 

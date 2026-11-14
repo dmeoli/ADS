@@ -73,7 +73,6 @@ inline std::uint64_t BasicEliasFano< Lazy >::universe( void ) const
  return( f_u );
  }
 
-//! [access]
 template< bool Lazy >
 inline std::uint64_t BasicEliasFano< Lazy >::access( std::size_t i ) const
 {
@@ -82,7 +81,6 @@ inline std::uint64_t BasicEliasFano< Lazy >::access( std::size_t i ) const
  const std::uint64_t l = f_low.get( i * std::size_t( f_l ) , f_l );
  return( f_l >= 64 ? l : ( h << f_l ) | l );
  }
-//! [access]
 
 template< bool Lazy >
 inline std::uint64_t BasicEliasFano< Lazy >::operator[]( std::size_t i ) const
@@ -90,7 +88,6 @@ inline std::uint64_t BasicEliasFano< Lazy >::operator[]( std::size_t i ) const
  return( access( i ) );
  }
 
-//! [nextGEQ]
 template< bool Lazy >
 inline std::size_t BasicEliasFano< Lazy >::nextGEQ( std::uint64_t x ) const
 {
@@ -124,7 +121,6 @@ inline std::size_t BasicEliasFano< Lazy >::nextGEQ( std::uint64_t x ) const
  ADS_POST( ( p == 0 ) || ( access( p - 1 ) < x ) );
  return( p );
  }
-//! [nextGEQ]
 
 template< bool Lazy >
 inline bool BasicEliasFano< Lazy >::contains( std::uint64_t x ) const
