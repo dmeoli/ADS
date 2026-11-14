@@ -3,6 +3,7 @@
 [![CI](https://github.com/dmeoli/ADS/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/dmeoli/ADS/badge.svg?branch=main)](https://coveralls.io/github/dmeoli/ADS?branch=main)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://dmeoli.github.io/ADS/)
+[![Manual](https://img.shields.io/badge/docs-Manual-blue)](https://dmeoli.github.io/ADS/manual/)
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20)
 [![Header-only](https://img.shields.io/badge/header--only-yes-brightgreen)](https://github.com/dmeoli/ADS#use)
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
@@ -739,6 +740,19 @@ of an input iterator to the older algorithms, as the views of the standard
 library do; with these iterators one should use `std::ranges::prev` and
 the algorithms of `std::ranges`, not `std::prev` and those of
 `<algorithm>`.
+
+## Manual
+
+A manual of the library lives in [`manual/`](manual/), one chapter for each
+area of `include/ADS`, with the definitions and the invariants of each
+structure, figures of its state in memory, the pseudocode and the code of
+its operations, the analysis of their costs and exercises tied to the
+tests, in two forms generated from the same Markdown sources in
+`manual/chapters`:
+
+- **PDF**, a single file: **[ADS - A User Manual (PDF)](manual/ADS-manual.pdf)**,
+  also attached to each release;
+- **Web**: <https://dmeoli.github.io/ADS/manual/>.
 
 ## Further reading
 
