@@ -280,8 +280,7 @@ $\gamma' N$; the space is thus $\Theta( N + k )$ words.*
 
 *Proof.* The first claim holds for the empty `MultiStack`, whose lists
 are all empty. A `push(i,v)` takes the cell $c$ at the head of the free
-list (line 3), which it removes from that list, or a new cell (line 2),
-which is in no list; line 4 then makes $c$ the head of the list of the
+list (line 3), which it removes from that list, or a new cell (line 2), which is in no list. Then line 4 makes $c$ the head of the list of the
 stack $i$, with the old top below it; the list then holds $v$ and then
 the old items from the top down. A `pop(i)` removes the head $c$ of the
 list of the stack $i$, whose item is the top, and makes it the head of the
@@ -406,8 +405,7 @@ gives $H_n$, and $H_n \le 1 + \ln n$ follows by comparing the sum with
 $\int_1^n d x / x$ ([Lemma 1.7](01-introduction.md#lem-1-7), where the
 same count is that of the changes of a running minimum). Finally, each
 operation makes at most one comparison and one `push_back` or `pop_back`
-on each of $A$ and $M$. Neither vector shrinks, and only a `push()` makes
-them grow, so that the argument of the second part of
+on each of $A$ and $M$. Neither vector shrinks, and only a `push()` makes them grow. Hence the argument of the second part of
 [Lemma 3.3](03-stack.md#lem-3-3) bounds the items moved by their
 enlargements in $m'$ operations by $2 \gamma m' / ( \gamma - 1 )$; their
 capacities are less than $\gamma' N$, since $M$ never holds more items
@@ -568,12 +566,10 @@ In line 10 of
 `toPostfix()` in [Algorithm 3.5](03-stack.md#alg-3-5), the test
 $\pi( x ) \le \pi( \mathrm{top}( S ) )$, with $\le$ in place of $<$, makes
 the operators of equal precedence associate to the left (e.g.,
-`8 - 3 - 2` becomes `8 3 - 2 -`, whose value is 3). To state what the
-two functions compute, let the postfix form $P$ of an expression be
+`8 - 3 - 2` becomes `8 3 - 2 -`, whose value is 3). To state what the two functions compute, we let the postfix form $P$ of an expression be
 defined by $P( a ) = a$ for an operand $a$, $P( ( E ) ) = P( E )$ and
 $P( E_1 \mathbin{\mathrm{op}} E_2 ) = P( E_1 ) \, P( E_2 ) \,
-\mathrm{op}$, and let the infix expressions with the usual precedences be
-those of the grammar
+\mathrm{op}$. The infix expressions with the usual precedences are those of the grammar
 
 $$
 E \to T \mid E + T \mid E - T , \qquad
@@ -622,7 +618,7 @@ the open parenthesis, which $R_E$ does not contain, and pops it (lines 7
 and 8). Thus $Q$ is $Q_E$ followed by $R_E$ from the top down, i.e.,
 $P( E ) = P( X )$, and $R$ is empty. For $X = E_1 + T$ (and in the same
 way for $-$), $S$ admits the level 1 of $E_1$, whose scan appends $Q_1$
-and pushes $R_1$; the operator then pops in line 10 every item of $R_1$,
+and pushes $R_1$; in line 10 the operator then pops every item of $R_1$,
 since their precedences are at least 1, and stops at the top of $S$, which
 is not an operator since $S$ admits the level 1. After the push of line
 12, the stack has $+$ on top, of precedence $1 < 2$, and admits the level
@@ -631,8 +627,7 @@ $R_1$ from the top down and $Q_2$, while $R$ is $+$ under $R_2$, and
 $Q$ followed by $R$ from the top down is $P( E_1 ) \, P( T ) \, + =
 P( X )$, with precedences at least 1 in $R$. For $X = T_1 \cdot F$ (and
 for $/$) the argument is the same with the level 2: the operator pops
-$R_1$, whose precedences are at least 2, stops at the top of $S$, which is
-not an operator of precedence 2, and after its push the stack admits the
+$R_1$, whose precedences are at least 2, stops at the top of $S$, which is not an operator of precedence 2. After its push the stack admits the
 level 3 of $F$, whose scan pushes no operator; hence $R$ is the operator
 only, of precedence 2. Finally, a phrase $E$ derived as $T$, or $T$
 derived as $F$, is scanned from a stack that admits the lower level and
@@ -642,8 +637,7 @@ the empty stack, and line 13 appends $R$ from the top down, which gives
 $P( e )$; the associativity to the left is that of the derivation of
 $E_1 + T$ in (3.3). As for the cost, each token is pushed at most once and
 popped at most once, each iteration of the loops of lines 7, 10 and 13
-pops an item, and the stack and the output hold at most $n$ tokens. The
-last claim holds on the empty stack; line 5 pushes an open parenthesis,
+pops an item, and the stack and the output hold at most $n$ tokens. The last claim holds on the empty stack. Line 5 pushes an open parenthesis,
 above which no operator lies, and line 12 pushes an operator $x$ when the
 loop of line 10 has stopped, i.e., on the empty stack, on an open
 parenthesis or on an operator of precedence lower than $\pi( x )$, while a
@@ -781,8 +775,7 @@ item is on top of the others, which are sorted. By the same formula, the
 item at the place $j < k$ after a pass is either $x_{j+1}$ or $c_j$, an
 item of the places $1 , \ldots , j$; the item at the bottom is $c_k$, and
 no item thus rises by more than one place. Each level of a pass makes at
-most two pops and two pushes, on a recursion of at most $k = n$ levels, and the
-count of the items takes $2 n$ more; hence each of the $n - 1$ passes costs
+most two pops and two pushes, on a recursion of at most $k = n$ levels. The count of the items takes $2 n$ more, and each of the $n - 1$ passes thus costs
 $\Theta( n )$ operations, whatever the order of the items. $\square$
 
 As in the bubble sort, a small item rises slowly, and the $n - 1$ passes
@@ -886,8 +879,7 @@ stack is empty again, so that the rest $v$ of $s$ is also scanned with
 success from the empty stack, and it is matched by induction; thus $s =$
 `(`$u$`)`$v$ is matched. Each bracket costs $O( 1 )$ time, and the stack
 holds at most $n$ items. As for the pairs, the scan pushes the open
-bracket of an adjacent pair and pops it at once, finding its kind, and it
-reaches the rest of $s$ with the stack it had before the pair; hence it
+bracket of an adjacent pair and pops it at once, finding its kind; it thus reaches the rest of $s$ with the stack it had before the pair; hence it
 succeeds on $s$ if and only if it succeeds on $s$ without the pair, and the
 first part gives the claim. If $s$ is matched, so is every string reached by
 removals, and a nonempty matched string has an adjacent pair (in
@@ -902,7 +894,7 @@ is a Dyck word with $s_n = 0$; the converse holds when there is a single
 kind of brackets, and the items of the stack are needed only to tell the
 kinds apart. In the library, the test compares `isMatched()` with the
 removal of the adjacent pairs `()`, `[]` and `{}` until none is left,
-which is correct by [Lemma 3.9](03-stack.md#lem-3-9) but takes
+which is correct by [Lemma 3.9](03-stack.md#lem-3-9). It takes, however,
 $O( n^2 )$ time.
 
 ## 3.9 Discussion and references {#sec-3-9}
