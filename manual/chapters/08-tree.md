@@ -99,26 +99,26 @@ that [Lemma 8.1](08-tree.md#lem-8-1) proves in general.
 ![Figure 8.1. A binary tree with (a) nine real nodes and (b) its ten external nodes, drawn as the faint squares (the tree of [Morin 2013, Figure 6.2](Z-bibliography.md#ref-morin-cpp)).](../figures/tree-external.svg){#fig-8-1}
 
 <span id="lem-8-1"></span>**Lemma 8.1.** *A binary tree of
-$n \ge 1$ nodes has $n - 1$ edges and $n + 1$ external nodes. If it has a
-leaf and its root has two children, then it has at least two leaves.*
+$n \ge 1$ nodes has $n - 1$ edges and $n + 1$ external nodes, and its
+leaves are one more than its nodes with two children. If its root has two
+children, then it has at least two leaves.*
 
 *Proof.* Each node but the root is joined by one edge to its parent, and
 each edge joins a node to its parent; hence the edges are $n - 1$. Each of
 the $n$ real nodes has two places for a child, i.e., $2 n$ places in all,
 and $n - 1$ of them hold the real nodes other than the root (one place per
-edge); the other $n + 1$ hold external nodes. Finally, a tree that is not
-empty has a leaf (the last node of a longest path from the root), and if
-the root has two children both of its subtrees are not empty, and each of
-them holds a leaf. $\square$
+edge); the other $n + 1$ hold external nodes. Let $n_0$, $n_1$ and $n_2$ be
+the numbers of the nodes with no child, one child and two children; then
+$n = n_0 + n_1 + n_2$ and, counting the edges by their upper nodes,
+$n - 1 = n_1 + 2 n_2$, whence $n_0 = n_2 + 1$. Finally, if the root has two
+children, $n_2 \ge 1$ and therefore $n_0 \ge 2$. $\square$
 
-Both counts are exercises 6.1 and 6.2 of [Morin
+The two counts are exercises 6.1 and 6.2 of [Morin
 2013](Z-bibliography.md#ref-morin-cpp), and the last claim is his exercise
-6.3, where one has to show that a tree with a leaf has either a root with at
-most one child or more than one leaf. A related identity holds for the
-leaves: since a node with two children contributes two places filled and a
-leaf none, the leaves of a binary tree that is not empty are the nodes with
-two children plus one (exercise 5.11 of [Montresor
-2025](Z-bibliography.md#ref-montresor2025)).
+6.3 (a tree that is not empty always has a leaf, the last node of a longest
+path from the root, and one has to show that it has either a root with at
+most one child or more than one leaf); the identity of the leaves is
+exercise 5.11 of [Montresor 2025](Z-bibliography.md#ref-montresor2025).
 
 The abstract data type TREE of [Montresor 2025,
 §5.1](Z-bibliography.md#ref-montresor2025) has the node and its subtree as the
@@ -195,10 +195,19 @@ the ordered and of the binary trees, and the cost of their operations
 
 <span id="lem-8-3"></span>**Lemma 8.3.** *The costs of [Table
 8.2](08-tree.md#tab-8-2) hold for the code compiled with the contracts of
-level 1 and 2; at the level 3 each update also checks the invariant of its
-class, in $O( n )$ time, and the insertions of `Tree` and `BinaryTree`
-check in $O( d( u ) )$ time that the tree inserted is not the root of the
-tree of the node $u$.*
+level 1 and 2. The removal of the subtree of a node $u$ (by `deleteLeft()`,
+`deleteRight()`, `deleteChild()`, `deleteSibling()`, `remove()` or the
+destructor) costs $O( n_u )$ time, but in `CursorTree`, where it costs
+$O( c + n_u )$, $c$ the number of the siblings before $u$, and in
+`PreorderArrayTree`, where it costs $O( n )$. At the level 3 an update of
+`Tree` and of `BinaryTree` also checks that the children of the node
+updated have it as their parent, in time linear in their number. An
+insertion of these two classes checks in $O( d( u ) )$ time that the tree inserted is not the
+root of the tree of the node $u$; `setParent( i , j )` of `ParentTree`
+keeps its vector a forest if and only if $j$ is not below $i$, which it
+checks in $O( d( j ) )$ time; each update of the
+other five realizations checks the invariant of its class, in time linear
+in the size of its vector.*
 
 *Proof.* In `Tree` and `BinaryTree` each link is a field of the node, and an
 insertion writes a constant number of fields ([Algorithm
@@ -212,17 +221,33 @@ cell after `where` in the list of the parent, and an insertion adds one
 node and one cell, both in $O( 1 )$ amortized; its space is that of $n$
 nodes and $n - 1$ cells. `ParentTree` reads and writes $p[ i ]$ and gives no
 child. In `PreorderArrayTree` the parent is a field, the first child is $i +
-1$ if its parent is $i$ ([Lemma 8.4](08-tree.md#lem-8-4)), the next sibling
-is found after the end of the subtree, which `subtreeEnd()` reaches by a
-scan of the subtree, and an insertion of $k$ places moves the $O( n )$
-places after it and renumbers their parents, in $O( n + k )$ ([Algorithm
-8.7](08-tree.md#alg-8-7)). In `ArrayBinaryTree` the parent of $i > 0$ is
-$\lfloor ( i - 1 ) / 2 \rfloor$ and its children $2 i + 1$ and $2 i + 2$; an
-insertion copies the $k$ places of the tree inserted, each with one write,
-after the vector has grown to the last place written (or copies first the
-whole vector, when the tree inserted is the tree itself), and the vector
-reaches the place $2^{h+1} - 2$ at most for a tree of height $h$, since
-the place of a node of depth $d$ is less than $2^{d+1} - 1$. $\square$
+1$ if its parent is $i$ ([Lemma 8.5](08-tree.md#lem-8-5)), and the updates
+are those of [Lemma 8.6](08-tree.md#lem-8-6). In `ArrayBinaryTree` the
+parent of $i > 0$ is $\lfloor ( i - 1 ) / 2 \rfloor$ and its children $2 i
++ 1$ and $2 i + 2$ ([Lemma 8.9](08-tree.md#lem-8-9)). An insertion copies
+the $k$ places of the tree inserted, each with one write, after the vector
+has grown to the last place written (or copies first the whole vector, when
+the tree inserted is the tree itself), and since a node of depth $d$ lies
+in a place below $2^{d+1} - 1$ ([Lemma 8.9](08-tree.md#lem-8-9)) the
+vector of a tree of height $h$ has at most $2^{h+1} - 1$ places.
+
+A removal of the subtree of $u$ visits that subtree once, with a stack of
+its own, and frees (or, in the vectors, returns to the free list or empties)
+each of its $n_u$ nodes in $O( 1 )$. It unlinks $u$ from its parent in
+$O( 1 )$ in the representations whose parent reaches its child directly, by
+a field of the node, by the position `where` of its cell, or by the place
+$2 i + 1$ or $2 i + 2$. In `CursorTree` the parent reaches only its first
+child, and $u$ is unlinked by a scan of the $c$ siblings before it; in
+`PreorderArrayTree` the removal erases the stretch of the subtree and
+renumbers the parents after it, in $O( n )$ ([Lemma
+8.6](08-tree.md#lem-8-6)). As for the checks, `linked()` of `Tree` and
+of `BinaryTree` scans the children of the node, `top()` climbs from $u$ to
+its root, the audit of `ParentTree` climbs from $j$ to its root, and the
+invariants of the other classes scan the vector of the nodes or visit the
+tree from the root, in time linear in the size of the vector. Finally, a
+cycle of the vector of `ParentTree` after `setParent( i , j )` must use the
+new link from $i$ to $j$ and then the links from $j$ up to $i$. These exist
+if and only if $j$ was below $i$ (and never for $j = -1$). $\square$
 
 ### 8.2.1 Pointers to the first child and to the next sibling {#sec-8-2-1}
 
@@ -258,8 +283,9 @@ We check by the contracts the precondition of the book, i.e., that the tree
 inserted is a root ($t$ has no parent), and also that it is neither the node
 itself nor the root of the tree of the node, which would close a cycle;
 `insertSibling()` needs a node that is not a root. A tree whose insertion is
-refused stays the caller's. At the contract level 3 the invariant checked is
-that each child of a node has that node as its parent, down the subtree.
+refused stays the caller's. At the contract level 3 each update also checks
+that the children of the node it changes have that node as their parent
+(only the links that the update writes, not the whole subtree).
 
 As for the visits, they are free functions on a node: `dfs(t, pre, post)` calls
 `pre(u)` on each node before the subtrees of its children and `post(u)` after
@@ -293,8 +319,8 @@ subtrees $T_1 , \ldots , T_k$ (e.g., `( a ( b ( e ) ( f ) ) ( c ( g ) ) )`
 for the tree of [Figure 8.2](08-tree.md#fig-8-2)). The list is
 read back by `tree_from_list(s)`, a descent on the grammar
 $T \to ( \, v \, T^* \, )$, the values being written with `<<` and read
-with `>>` ([Algorithm 8.3](08-tree.md#alg-8-3)). Each of them
-costs $O( n )$ time, with an explicit stack or queue.
+with `>>` ([Algorithm 8.3](08-tree.md#alg-8-3)); [Lemma
+8.4](08-tree.md#lem-8-4) below gives the cost of all four.
 
 <span id="alg-8-3"></span>**Algorithm 8.3.** The copy, the
 heaviest level and the parenthesized lists of a `Tree`.
@@ -313,14 +339,43 @@ Finally, the two ranges of the standard interface (cf.
 next siblings. The second, `preorder(t)`, gives the nodes of the subtree of $t$
 in previsit, by the step of [Algorithm
 8.4](08-tree.md#alg-8-4), which goes down to the first
-child if there is one and otherwise climbs until it finds a next sibling. A
-single step may climb $h$ levels; yet, over a complete visit each link is
-followed twice at most, and the visit costs $O( n )$ time and $O( 1 )$ space.
+child if there is one and otherwise climbs until it finds a next sibling,
+never above $t$. A single step may climb $h$ levels; yet, the steps of a
+complete visit are few in all, as the following lemma shows.
 
 <span id="alg-8-4"></span>**Algorithm 8.4.** The next
 node of the previsit of an ordered tree, by the links to the parents.
 
 --8<-- "generated/Tree-next.pseudo.md"
+
+<span id="lem-8-4"></span>**Lemma 8.4.** *On the subtree of a node $t$
+with $n_t$ nodes and height $h_t$, `copy(t)` and `to_list(t)` cost
+$O( n_t )$ time and $O( h_t )$ space besides their result, and
+`maxWeightLevel(t)` costs $O( n_t )$ time and space proportional to the two
+largest consecutive levels, all with the contracts of level 1 and 2 and
+with the values copied, added, written and read in constant time;
+`tree_from_list(s)` costs time linear in the length of $s$. The range
+`children(t)` costs $O( 1 )$ per child, and the range `preorder(t)` gives
+the nodes of the subtree of $t$ in previsit in $O( n_t )$ time and
+$O( 1 )$ space in all.*
+
+*Proof.* `copy()` and `to_list()` keep on their stack the nodes of the path
+from $t$ to the current node, each with its next child. Each node is
+pushed once and popped once, with $O( 1 )$ work (a node made and hung by
+one insertion, or two tokens written). `maxWeightLevel()` keeps the current
+level and the next one, and scans each node once with its children.
+`tree_from_list()` splits $s$ into its tokens in one scan, and the descent
+of [Algorithm 8.3](08-tree.md#alg-8-3) consumes each token once, a
+parenthesis and a value opening a node and a parenthesis closing it. The
+range of the children follows one link per child. For the previsit, each
+step of [Algorithm 8.4](08-tree.md#alg-8-4) either follows the link from a
+node to its first child, or follows the links from a node to its parent
+while the node has no next sibling, and then the link to a next sibling. A
+node is entered once, by the link to it from its parent or from its
+previous sibling; the climb leaves a node $u \ne t$ toward its parent only
+after the subtree of $u$ is over and $u$ has no next sibling, which happens
+once. Hence the $n_t$ steps follow at most $2 n_t$ links, with $O( 1 )$
+work each besides, and keep only the current node. $\square$
 
 A short example of use builds the tree $( a \, ( b ) \, ( c ) )$, writes it as a
 parenthesized list and reads it back:
@@ -356,8 +411,9 @@ itself, copied as it was before the call), and `remove(n)` removes the subtree
 of $n$ ([Algorithm 8.5](08-tree.md#alg-8-5)). Note that the removal
 has to unlink $n$ from the list of the children of its parent, which a singly
 linked list of siblings allows only by a scan from the first child. Hence it
-costs $O( d + n_n )$ time, $d$ the number of the siblings before $n$ and $n_n$
-the nodes of its subtree, which return to the free list in postvisit.
+costs $O( c + n_n )$ time, $c$ the number of the siblings before $n$ and $n_n$
+the nodes of its subtree, which return to the free list in postvisit ([Lemma
+8.3](08-tree.md#lem-8-3)).
 
 ![Figure 8.3. The tree of [Figure 8.2](08-tree.md#fig-8-2) as a `CursorTree`, one column per place; `remove(1)` unlinks `b` from the children of `a` (in violet, the link changed) and puts the places of `e`, `f` and `b` on the free list 1, 4, 3 (the faint places, linked by their field of the sibling); `insertChild(0,d)` then takes the place 1.](../figures/tree-cursor.svg){#fig-8-3}
 
@@ -403,7 +459,8 @@ is for. Furthermore, `insertChild(n, v)` puts the new node at the head of the li
 of $n$ and records its cell ([Figure 8.4](08-tree.md#fig-8-4)),
 `insertSibling(n, v)` after the cell of $n$. A removal `remove(n)` unlinks the
 cell of $n$ in $O( 1 )$ by its position, with no scan of the siblings as in
-`CursorTree`, and costs $O( n_n )$ for the subtree. As for the other
+`CursorTree`, and costs $O( n_n )$ for the subtree ([Lemma
+8.3](08-tree.md#lem-8-3)). As for the other
 operations, the visits and the copies of subtrees (`insertChildTree(n, t, s)`
 and `insertSiblingTree(n, t, s)`) are those of `CursorTree` ([Algorithm
 8.6](08-tree.md#alg-8-6)). A copy of the whole tree, by the copy
@@ -440,13 +497,14 @@ paths of the shortest paths, and the forests of the MFSET
 it is that of their numbers), and also the access to the children, which needs
 a scan of the vector. Since `setParent(i, j)` may hang any node under any
 other, the structure is a forest of $n$ isolated nodes at the start, and it
-stays a forest of rooted trees after each call ([Figure
+stays a forest of rooted trees after each call whose $j$ is not a descendant
+of $i$ ([Lemma 8.3](08-tree.md#lem-8-3) and [Figure
 8.5](08-tree.md#fig-8-5)); `size()` is $n$. Its contracts check that
-the nodes are in $[ 0 , n )$ and that a node is not its own parent. At the
-contract level 3 they also check that $j$ is not a descendant of $i$ (a walk
-from $j$ to its root, which would otherwise close a cycle); thus `setParent()`
-costs $O( 1 )$ time in the code compiled for production and $O( d( j ) )$ with
-the audits.
+the nodes are in $[ 0 , n )$, $j$ possibly $-1$, and that a node is not its
+own parent; at the contract level 3 they also check, by a walk from $j$ to
+its root, that $j$ is not a descendant of $i$. Thus `setParent()` costs
+$O( 1 )$ time in the code compiled for production and $O( d( j ) )$ with the
+audits.
 
 ![Figure 8.5. A `ParentTree` of 7 nodes, a tree rooted at 0 and the node 6 alone, before and after `setParent(6,2)`, which writes the place 6 (in orange).](../figures/tree-parent.svg){#fig-8-5}
 
@@ -457,9 +515,9 @@ of the children: the place $i$ holds the value of the $i$-th node of the
 previsit and the place of its parent, the root being in the place 0 with the
 parent `NIL`. Since the previsit lists each subtree as a contiguous stretch,
 the parents alone give the children ([Lemma
-8.4](08-tree.md#lem-8-4)).
+8.5](08-tree.md#lem-8-5)).
 
-<span id="lem-8-4"></span>**Lemma 8.4.** *In a vector of the
+<span id="lem-8-5"></span>**Lemma 8.5.** *In a vector of the
 nodes in preorder with their parents $p$, the subtree of the node $i$ is the
 stretch $[ i , e )$, where $e$ is the first place after $i$ whose parent
 precedes $i$ (or the size of the vector, if there is none). Hence the first
@@ -481,8 +539,8 @@ Reading and writing a value, and the parent, take $O( 1 )$ time;
 or as the next sibling (`insertSibling(i, t)`) of $i$, and removing a subtree
 (`remove(i)`), shift the places after it and renumber the parents that point
 beyond it, in $O( n + k )$ time ([Algorithm
-8.7](08-tree.md#alg-8-7) and [Figure
-8.6](08-tree.md#fig-8-6)). We expect the vector to suit (typically)
+8.7](08-tree.md#alg-8-7), [Figure 8.6](08-tree.md#fig-8-6) and [Lemma
+8.6](08-tree.md#lem-8-6) below). We expect the vector to suit (typically)
 the trees that are read much more often than they change, e.g., the trees
 written once and then visited, since the previsit is the order of the vector
 (`values()` gives the values in that order, as a view) and it is scanned in
@@ -500,13 +558,41 @@ subtree, the insertion of a first child and the removal in
 
 --8<-- "generated/PreorderArrayTree-remove.pseudo.md"
 
+<span id="lem-8-6"></span>**Lemma 8.6.** *(i) A vector of parents $p$
+on the places $0 , \ldots , n - 1$, with $p[ 0 ] = -1$ and $0 \le p[ j ] <
+j$ for $j > 0$, is the previsit of the tree it describes (the children of
+each node in the order of their places) if and only if, for each $j > 0$,
+$p[ j ]$ is $j - 1$ or an ancestor of $j - 1$. (ii) If the vector is the
+previsit of its tree, `insertChild( i , t )`, `insertSibling( i , t )` and
+`remove( i )` leave it the previsit of the tree they make, in $O( n + k )$
+time, $k$ the number of places inserted or removed.*
+
+*Proof.* (i) In the previsit, the node after $j - 1$ is the first child of
+$j - 1$, if any, and otherwise the next sibling of the deepest ancestor of
+$j - 1$ (itself included) that has one; its parent is therefore $j - 1$ or
+an ancestor of $j - 1$. Conversely, by induction on $n$, let the places
+$0 , \ldots , n - 2$ be the previsit of their tree, and let $q = p[ n - 1 ]$
+be $n - 2$ or one of its ancestors. The subtree of $q$ is then a stretch
+that ends at $n - 2$ ([Lemma 8.5](08-tree.md#lem-8-5)), and $n - 1$, the
+last child of $q$ by its place, comes right after it in the previsit, as
+the last node. (ii) The previsit of the tree made by `insertChild( i , t )`
+is the old one with that of $t$ right after $i$. That of the tree made
+by `insertSibling( i , t )` is the old one with that of $t$ right after the
+subtree of $i$, which ends at `subtreeEnd( i )` by [Lemma
+8.5](08-tree.md#lem-8-5). `splice()` inserts the $k$ places of $t$ there,
+gives the root of $t$ its parent and adds the place of the insertion to the
+other parents of $t$, and adds $k$ to each parent that points to a place
+that has moved. The removal erases the stretch of the subtree of $i$ (again
+[Lemma 8.5](08-tree.md#lem-8-5)), whose places no other node has as its
+parent, and subtracts $k$ from each parent beyond it. Each of these steps
+scans the vector once, and the copy of $t$ costs $O( k )$. $\square$
+
 In this case the invariant, checked at the contract level 3, is that the root
 comes first and each other node after its parent ($p[ j ] < j$). This is
-necessary, not sufficient: a vector is a preorder exactly when the parent of
-each place $j > 0$ is $j - 1$ or an ancestor of $j - 1$, while, e.g.,
-$p = ( -1 , 0 , 0 , 1 )$ passes the check and is no preorder. The operations
-keep the stronger condition, by [Lemma 8.4](08-tree.md#lem-8-4), but the
-invariant does not test it.
+necessary but not sufficient for a previsit (part (i) of the lemma), e.g.,
+$p = ( -1 , 0 , 0 , 1 )$ passes the check and is no previsit, since $p[ 3 ]
+= 1$ is neither 2 nor an ancestor of 2; the operations keep the stronger
+condition, by part (ii), but the invariant does not test it.
 
 ## 8.3 Binary trees {#sec-8-3}
 
@@ -525,8 +611,9 @@ its parent without destroying it, in $O( 1 )$: the subtree becomes a root owned
 by the caller, ready to be inserted elsewhere, which moves subtrees (a mirror,
 a rotation) with no copy ([Figure 8.7](08-tree.md#fig-8-7)). Its
 contracts require that the tree inserted be a root other than the node itself
-and than the root of its tree, and that it go where no child is; the invariant
-is that each child has its parent as parent, down the subtree.
+and than the root of its tree, and that it go where no child is; at the level
+3 each update also checks that the two children of the node it changes have
+that node as their parent.
 
 ![Figure 8.7. A `BinaryTree` before and after `c.insertLeft(a.detachLeft())`: the subtree of `b` (in violet) is cut off `a` and hung under `c` with no copy, the edge added in orange.](../figures/tree-binarytree.svg){#fig-8-7}
 
@@ -534,14 +621,14 @@ Here the visit `dfs(t, pre, in, post)` examines a node before its subtrees
 (`pre`), between them (`in`) and after them (`post`), and `pre_visit()`,
 `in_visit()` and `post_visit()` are `dfs()` with one of the three. Also,
 `copy(t)` makes a deep copy of a subtree, and `join(v, l, r)` a new root of
-value $v$ with the copies of $l$ and $r$ as its subtrees, both in time linear
-in the nodes copied. A parenthesized list of a binary tree has `()` for the
+value $v$ with the copies of $l$ and $r$ as its subtrees. A parenthesized list of a binary tree has `()` for the
 empty tree and $( v \, L \, R )$ for the root $v$ with the subtrees $L$ and $R$
 (e.g., `( 8 () ( 5 ( 27 () () ) ( 16 () () ) ) )`). We write it by `to_list(t)`
 and read it back by `from_list(s)` ([Algorithm
 8.8](08-tree.md#alg-8-8)). None of these functions recurses in the
 code, which keeps an explicit stack for the reason given after [Lemma
-8.2](08-tree.md#lem-8-2).
+8.2](08-tree.md#lem-8-2), and their costs are those of [Lemma
+8.7](08-tree.md#lem-8-7).
 
 <span id="alg-8-8"></span>**Algorithm 8.8.** The visit in depth,
 the join and the reading of a parenthesized list of a `BinaryTree`.
@@ -552,6 +639,21 @@ the join and the reading of a parenthesized list of a `BinaryTree`.
 
 --8<-- "generated/BinaryTree-readTree.pseudo.md"
 
+<span id="lem-8-7"></span>**Lemma 8.7.** *Let the values be copied,
+written and read in constant time. Then `dfs()`, `copy(t)` and `to_list(t)`
+cost $O( n_t )$ time and $O( h_t )$ space besides their result on the
+subtree of $t$, of $n_t$ nodes and height $h_t$, and `join(v, l, r)` costs
+$O( n_l + n_r )$; `from_list(s)` costs time linear in the length of $s$.*
+
+*Proof.* Both the visit and the copy keep on their stack the nodes of the path
+from $t$ to the current node, each with the number of its subtrees done;
+each node is pushed once and popped once, and in between it is examined,
+copied and hung under the copy of its parent, or written with its two
+parentheses, in $O( 1 )$ (the empty subtrees of the list are written when
+their parent is examined). `join()` makes one node and two copies. Finally, the
+reading consumes each token of $s$ once, as in [Lemma
+8.4](08-tree.md#lem-8-4). $\square$
+
 Three ranges, `preorder(t)`, `inorder(t)` and `postorder(t)`, walk the nodes of
 the subtree of $t$ by the links to the parents, with no stack and no recursion,
 by the three steps of [Algorithm 8.9](08-tree.md#alg-8-9). The
@@ -561,7 +663,7 @@ the invisit goes to the leftmost node of the right subtree, or else climbs
 until it leaves a left child. Finally, the postvisit, which starts at the first
 leaf reached by going left when possible and right otherwise, goes from a left
 child to the first leaf of the right subtree of its parent, and otherwise to
-the parent itself. [Lemma 8.9](08-tree.md#lem-8-9) of
+the parent itself. [Lemma 8.14](08-tree.md#lem-8-14) of
 [§8.4](08-tree.md#sec-8-4) shows that a complete walk costs $O( n )$ time and
 $O( 1 )$ space, although a single step may cost $\Theta( h )$.
 
@@ -590,11 +692,12 @@ of the first children and of the next siblings.
 
 --8<-- "generated/BinaryTree-to_binary.pseudo.md"
 
-<span id="lem-8-5"></span>**Lemma 8.5.** *The map from the
+<span id="lem-8-8"></span>**Lemma 8.8.** *The map from the
 ordered forests of $n$ nodes to the binary trees of $n$ nodes that makes the
 first child the left child and the next sibling the right child is one to
 one and onto. The previsit of a forest $F$ is the previsit of its binary
-tree $B$, and the postvisit of $F$ is the invisit of $B$.*
+tree $B$, and the postvisit of $F$ is the invisit of $B$; `to_binary(t)`
+builds $B$ in $O( n )$ time.*
 
 *Proof.* Let $F = ( T_1 , \ldots , T_k )$, $r$ the root of $T_1$, $F_1$ the
 forest of the subtrees of the children of $r$ and $F' = ( T_2 , \ldots ,
@@ -604,7 +707,10 @@ subtree and $F'$ from the right one; by induction on $n$ the two maps are
 inverse of each other. The previsit of $F$ is $r$, the previsit of $F_1$
 and that of $F'$, i.e., the previsit of $B( F )$, and the postvisit of $F$
 is the postvisit of $F_1$, then $r$, then the postvisit of $F'$, i.e., the
-invisit of $B( F )$. $\square$
+invisit of $B( F )$. Finally, `to_binary()` is the copy of [Lemma
+8.7](08-tree.md#lem-8-7) with the first child and the next sibling read in
+place of the two children. Each of these costs $O( 1 )$ by [Lemma
+8.3](08-tree.md#lem-8-3). $\square$
 
 A complete $d$-ary tree, whose internal nodes have $d$ children each and
 whose levels are all full but possibly the last one, filled from the left,
@@ -622,7 +728,25 @@ which `dary_child(i, d, j)` (the child $1 \le j \le d$) and
 `dary_parent(i, d)` compute, the contracts requiring $d \ge 1$, $j$ in
 $1 , \ldots , d$ and $i > 0$ for the parent. This is how the heaps of
 [§9.3](09-priority.md#sec-9-3) and [§9.4](09-priority.md#sec-9-4) are
-stored.
+stored, and the following lemma justifies the numbering.
+
+<span id="lem-8-9"></span>**Lemma 8.9.** *Number the places of an
+infinite $d$-ary tree, $d \ge 1$, by levels from 0, from left to right
+within a level. Then the level $l$ holds the places $a_l , \ldots ,
+a_{l+1} - 1$, with $a_l = 1 + d + \cdots + d^{l-1}$, the children of the
+place $i$ are those of (8.1), and the parent of $i > 0$ is
+$\lfloor ( i - 1 ) / d \rfloor$. For $d = 2$, a node of depth $l$ lies in
+a place between $2^l - 1$ and $2^{l+1} - 2$.*
+
+*Proof.* There are $d^l$ places at the level $l$, after the $a_l$ places of the
+levels above. Let $i = a_l + m$ be the place $m$ of the level $l$, $0 \le m
+< d^l$; its children are the places $d m + 1 , \ldots , d m + d$ of the
+level $l + 1$ (counted from 1), since the $m$ nodes before it have $d m$
+children before them. These are $a_{l+1} + d m + j - 1$ for $1 \le j \le
+d$, and $a_{l+1} = d a_l + 1$ gives $a_{l+1} + d m + j - 1 = d i + j$.
+Conversely, $i = d q + j$ with $1 \le j \le d$ is a child of $q$, and
+$\lfloor ( i - 1 ) / d \rfloor = q$. For $d = 2$, $a_l = 2^l - 1$.
+$\square$
 
 ### 8.3.2 Cursors {#sec-8-3-2}
 
@@ -630,7 +754,8 @@ stored.
 nodes, `NIL` where a node is missing, with a free list of the places removed,
 linked by their field of the left child; the next insertions reuse them before
 the vector grows. As for `CursorTree`, the tree can be copied, saved or moved
-in one piece, and the insertions cost $O( 1 )$ amortized time. Here
+in one piece, and the insertions cost $O( 1 )$ amortized time ([Lemma
+8.3](08-tree.md#lem-8-3)). Here
 `setRoot(v)` makes the root of an empty tree, and `insertLeft(n, v)` and
 `insertRight(n, v)` a new child of value $v$ where none is. Similarly,
 `insertLeft(n, t, s)` and `insertRight(n, t, s)` make a copy of the subtree of
@@ -661,8 +786,9 @@ with $d = 2$. The root is in the place 0, the children of the place $i$ in $2 i
 place where no node is. Moving along the tree, reading and writing take $O( 1
 )$ time, with no link at all. Since the vector grows to the deepest place used,
 a tree of height $h$ takes $O( 2^h )$ space: $2^{h+1} - 1$ places in the worst
-case, which a path of $n = h + 1$ nodes going to the right needs, against the
-$n$ of a complete tree. We remark that the representation thus suits the trees
+case, which a path of $n = h + 1$ nodes going to the right needs, its last
+node being in the place $2^{h+1} - 2$ ([Lemma 8.9](08-tree.md#lem-8-9)),
+against the $n$ of a complete tree. We remark that the representation thus suits the trees
 that are complete or nearly so, which is usually the case of the heaps. As in
 `CursorBinaryTree`, `setRoot(v)` makes the root of an empty tree, and the
 constructor with $( v , l , r )$ joins two trees under a new root. Then
@@ -701,7 +827,7 @@ first node and the successor of the last one, closes the threads, so that no
 thread is nil ([Figure 8.11](08-tree.md#fig-8-11)). An insertion
 `insert(k)` goes down the search path and replaces a thread with a new leaf,
 which inherits the thread on its side and takes a thread to its parent on the
-other side, in $O( h )$ time. Then `contains(k)` is the search, `size()` the
+other side ([Lemma 8.10](08-tree.md#lem-8-10)). Then `contains(k)` is the search, `size()` the
 number of keys, and `forEach(f)` visits the keys in increasing order by the
 threads, while `reversed()` returns them in decreasing order by the
 predecessors. This class also gives bidirectional iterators (`begin()` and
@@ -717,22 +843,33 @@ a threaded search tree and the successor
 
 --8<-- "generated/ThreadedTree-successor.pseudo.md"
 
-<span id="lem-8-6"></span>**Lemma 8.6.** *A visit of the
-$n$ keys of a threaded tree by $n$ calls of `successor()` from the head
-costs $O( n )$ time and $O( 1 )$ space, i.e., $O( 1 )$ amortized time per
-step, although one step may cost $\Theta( h )$.*
+<span id="lem-8-10"></span>**Lemma 8.10.** *`insert(k)` keeps the threads
+of a threaded tree of height $h$, in $O( h )$ time. A visit of the $n$ keys
+by $n$ calls of `successor()` from the head costs $O( n )$ time and $O( 1 )$
+space, i.e., $O( 1 )$ amortized time per step, although one step may cost
+$\Theta( h )$.*
 
-*Proof.* Each step follows either one thread or one right child and then
-left children down to a node whose left link is a thread. A left child is
-followed only on the way down to the next node of the symmetric order, and
-each left link of a real child is therefore followed once in the
-visit; so is each right link of a real child, and each thread is followed
-at most once. With the head, the links are $2 n + 2$. $\square$
+*Proof.* Let the search for an absent $k$ end at the node $x$ whose left
+link is a thread, the case of the right link being symmetric. The new leaf
+$\ell$ becomes the left child of $x$, and hence comes right before $x$ in
+the symmetric order, after the old predecessor $q$ of $x$; it takes the old
+left thread of $x$, to $q$ (or to the head), and a right thread to $x$. No
+other thread changes: a right thread to $x$ could only come from the
+predecessor of $x$ in its left subtree, which is empty, and $q$, an ancestor
+of $x$ whose right subtree holds $x$, has no right thread. In all, the descent
+visits at most $h + 1$ nodes. For the visit, each step follows either one
+thread or one right child and then left children down to a node whose left
+link is a thread. A left child is followed only on the way down to the next
+node of the symmetric order, and each left link of a real child is
+therefore followed once in the visit; so is each right link of a real
+child, and each thread is followed at most once. With the head, the links
+are $2 n + 2$. $\square$
 
 Its invariant, an $O( n )$ check at the contract level 3, is that the visit by
 threads gives the keys in increasing order, `size()` of them. The destructor
-collects the nodes by the threads, with no recursion, so that a path of $10^4$
-keys inserted in decreasing order is freed and walked with no stack.
+collects the nodes into a vector by the threads, in $O( n )$ time by the
+lemma, and then frees them, with no recursion and no stack; a path of $10^4$
+keys inserted in decreasing order is thus freed and walked safely.
 
 ### 8.3.5 Expression trees {#sec-8-3-5}
 
@@ -746,8 +883,7 @@ form of the expression (cf. [§3.6](03-stack.md#sec-3-6)), with a stack of
 trees. An operand is pushed as a leaf, and an operator pops its right and then
 its left subtree and pushes the tree they make under it ([Algorithm
 8.14](08-tree.md#alg-8-14) and [Figure
-8.12](08-tree.md#fig-8-12)), in $O( n )$ time for $n$ tokens by the
-argument of [Lemma 3.3](03-stack.md#lem-3-3). Then `evaluate(t, env)` computes
+8.12](08-tree.md#fig-8-12)). Then `evaluate(t, env)` computes
 the value by a postvisit, the values of the variables being given by the
 dictionary `env`. We write the expression in prefix form by `prefixForm(t)`,
 each subtree in parentheses (e.g.,
@@ -767,6 +903,26 @@ of a postfix expression, its value and its infix form.
 --8<-- "generated/ExpressionTree-evaluate.pseudo.md"
 
 --8<-- "generated/ExpressionTree-infixForm.pseudo.md"
+
+<span id="lem-8-11"></span>**Lemma 8.11.** *On a well formed postfix
+expression $e$ of $n$ tokens, `expressionTree(e)` returns the binary tree
+whose postvisit is $e$, in time linear in the length of $e$. On a tree of
+$n$ nodes, `evaluate()` makes one arithmetic operation per operator and one
+lookup in `env` per variable, and `prefixForm()` and `infixForm()` cost time
+linear in the length of their result; all of them keep $O( h )$ nodes on
+their stack, $h$ the height of the tree.*
+
+*Proof.* We follow the scan of [Lemma 3.3](03-stack.md#lem-3-3) with each value
+replaced by a tree. By induction on the structure of an expression $E$ read
+from a stack $S$, an operand pushes its leaf, and for $E = E_1 \, E_2 \,
+\mathrm{op}$ the scans of $E_1$ and of $E_2$ leave their trees $T_1$ and $T_2$
+on $S$, which the operator replaces with the tree of root $\mathrm{op}$ over
+$T_1$ and $T_2$, whose postvisit is $E$. Each token costs one or three
+operations of the stack and one node, besides the split of $e$ into its
+tokens. As for the other three functions, they are visits with a stack of the nodes of
+the current path, each node entered once and left once, the leaves reading
+a number or the value of a variable and each operator applying itself to
+the two values of its subtrees. $\square$
 
 ### 8.3.6 Building a heap by insertions {#sec-8-3-6}
 
@@ -791,7 +947,7 @@ of a max-heap by insertions ([Montresor 2025,
 
 --8<-- "generated/HeapByInsertion-heapBuildByInsertion.pseudo.md"
 
-<span id="lem-8-7"></span>**Lemma 8.7.** *If
+<span id="lem-8-12"></span>**Lemma 8.12.** *If
 $A[ 0 .. i - 1 ]$ is a max-heap, `maxHeapSiftUp(A, i)` makes
 $A[ 0 .. i ]$ a max-heap with at most $\lfloor \log_2( i + 1 ) \rfloor$
 swaps. Hence `heapBuildByInsertion()` makes a max-heap of $n$ items in
@@ -820,7 +976,7 @@ against the $1.88 n$ of the bottom-up construction ([Hayward and McDiarmid
 1991](Z-bibliography.md#ref-hayward1991)). We remark that the insertions remain
 the method to use when the items arrive one by one and the heap must be valid
 after each of them, as in a priority queue (cf.
-[§9.3](09-priority.md#sec-9-3)). We remark that the two constructions may give
+[§9.3](09-priority.md#sec-9-3)). Note also that the two constructions may give
 different heaps of the same items, e.g., $[ 10 , 9 , 7 , 4 ]$ by insertions and
 $[ 10 , 7 , 9 , 4 ]$ by the construction of Floyd, both from $[ 4 , 7 , 9 , 10
 ]$. Its contracts check $i < n$, and at the contract level 3 that the prefix is
@@ -874,7 +1030,7 @@ take on each node entered from its parent, with its depth below $u$, which
 the walk keeps by adding 1 at each step down and subtracting 1 at each step
 up.
 
-<span id="lem-8-8"></span>**Lemma 8.8.** *The walk of
+<span id="lem-8-13"></span>**Lemma 8.13.** *The walk of
 [Algorithm 8.16](08-tree.md#alg-8-16) on the subtree of $u$
 enters each node of the subtree once from its parent and costs
 $O( n_u )$ time and $O( 1 )$ space.*
@@ -887,11 +1043,11 @@ and once up, and each step costs $O( 1 )$. $\square$
 
 When the nodes have no link to their parent, a walk of this kind needs a stack
 (or a list) of the nodes of the path from $u$, as the visits of
-[§8.2](08-tree.md#sec-8-2) keep. We remark that the visit by levels does not
-fit the pattern of the visits in depth, and it needs a queue in every case: it
-examines the nodes level by level, from left to right within a level ([Figure
+[§8.2](08-tree.md#sec-8-2) keep. The visit by levels, instead, does not
+follow the pattern of the visits in depth: it examines the nodes level by
+level, from left to right within a level ([Figure
 8.15](08-tree.md#fig-8-15)), and it is the `bfs()` of
-[§8.2.1](08-tree.md#sec-8-2-1).
+[§8.2.1](08-tree.md#sec-8-2-1), with its queue.
 
 ![Figure 8.15. The visit by levels of the tree of [Figure 8.1](08-tree.md#fig-8-1): each node holds its place in the visit, and the dashed lines separate the levels, as in [Morin 2013, Figure 6.4](Z-bibliography.md#ref-morin-cpp).](../figures/tree-bfs.svg){#fig-8-15}
 
@@ -905,7 +1061,7 @@ ranges of [§8.3.1](08-tree.md#sec-8-3-1) without the bound $t$, which here is
 the root of the tree ([Algorithm 8.17](08-tree.md#alg-8-17)). The
 previsit starts at the root, the invisit at the leftmost node,
 `firstInorder(u)`, and the postvisit at the first leaf reached by going left
-when possible and right otherwise, `firstPostorder(u)`; both cost $O( h )$.
+when possible and right otherwise, `firstPostorder(u)`.
 
 <span id="alg-8-17"></span>**Algorithm 8.17.** The next node in
 the three visits of a binary tree, by the links to the parents ([Morin
@@ -917,21 +1073,25 @@ the three visits of a binary tree, by the links to the parents ([Morin
 
 --8<-- "generated/BinaryTreeAlgorithms-nextPostorder.pseudo.md"
 
-<span id="lem-8-9"></span>**Lemma 8.9.** *Starting from the
-first node of a visit and calling the function of the next node until it
-returns nil costs $O( n )$ time in all, i.e., $O( 1 )$ amortized time per
-call, although a single call may cost $\Theta( h )$.*
+<span id="lem-8-14"></span>**Lemma 8.14.** *Let $t$ be a node of a binary
+tree, the root for the functions of [Algorithm 8.17](08-tree.md#alg-8-17),
+with $n_t$ nodes and height $h_t$ in its subtree. Then `firstInorder()` and
+`firstPostorder()` cost $O( h_t )$, and starting from the first node of a
+visit of the subtree and calling the function of the next node until it
+returns nil costs $O( n_t )$ time and $O( 1 )$ space in all, i.e., $O( 1 )$
+amortized time per call, although a single call may cost $\Theta( h_t )$.*
 
-*Proof.* Each call walks a path made of edges down and edges up, and we charge
-each step to the edge it walks. In the previsit an edge is walked down when its
+*Proof.* Each of the two functions of the first node goes down one path of the
+subtree. Each call of the next node walks a path made of edges down and
+edges up, never above $t$, and we charge each step to the edge it walks. In the previsit an edge is walked down when its
 lower node is examined, which happens once, and up only when the subtree of its
 lower node has been examined, i.e., once. A similar argument holds in the
 invisit, an edge to a right child being walked down on the way to the leftmost
 node of that subtree and an edge to a left child on the way to the first node.
 In the postvisit an edge is walked down on the way to the first leaf of a
 subtree, once, and up when the walk goes from a node to its parent, once. Hence
-the $n$ calls walk at most $2 ( n - 1 )$ edges, and each call costs $O( 1 )$
-besides its steps. $\square$
+the $n_t$ calls walk at most $2 ( n_t - 1 )$ edges of the subtree, and each
+call costs $O( 1 )$ besides its steps. $\square$
 
 ### 8.4.3 The numbers of the three visits {#sec-8-4-3}
 
@@ -939,11 +1099,10 @@ Each of the previsit, the invisit and the postvisit numbers the nodes of a tree
 with $0 , \ldots , n - 1$ in the order in which it examines them ([Figure
 8.16](08-tree.md#fig-8-16)). Our `orderNumbers(t, f)` calls `f(u, pre,
 in, post)` on each node with its three numbers, computed in one visit by three
-counters ([Algorithm 8.18](08-tree.md#alg-8-18)), in $O( n )$ time
-and $O( h )$ space (exercise 6.7 of [Morin
+counters ([Algorithm 8.18](08-tree.md#alg-8-18); exercise 6.7 of [Morin
 2013](Z-bibliography.md#ref-morin-cpp)). Once they are known, some questions on
 the tree are answered in constant time ([Lemma
-8.10](08-tree.md#lem-8-10), his exercise 6.9).
+8.15](08-tree.md#lem-8-15), his exercise 6.9).
 
 ![Figure 8.16. The numbers of the previsit, of the postvisit and of the invisit of the binary tree of twelve nodes of [Morin 2013, Figure 6.10](Z-bibliography.md#ref-morin-cpp).](../figures/tree-numbering.svg){#fig-8-16}
 
@@ -953,7 +1112,8 @@ of each node in one visit, $a$, $b$ and $c$ being three counters from 0
 
 --8<-- "generated/BinaryTreeAlgorithms-number.pseudo.md"
 
-<span id="lem-8-10"></span>**Lemma 8.10.** *Let
+<span id="lem-8-15"></span>**Lemma 8.15.** *`orderNumbers(t, f)` gives
+each node its three numbers in $O( n )$ time and $O( h )$ space. Let
 $\mathrm{pre}( u )$ and $\mathrm{post}( u )$ be the numbers of the node $u$
 in the previsit and in the postvisit. Then $u$ is an ancestor of $w$ if and
 only if $\mathrm{pre}( u ) \le \mathrm{pre}( w )$ and
@@ -967,7 +1127,13 @@ $$
 *the three numbers of a node, however, determine neither $n_u$ nor
 $d( u )$.*
 
-*Proof.* The previsit lists the subtree of $u$ as a stretch that starts at $u$,
+*Proof.* We note that the visit of [Algorithm 8.18](08-tree.md#alg-8-18) keeps on its
+stack the nodes of the current path, each with the number of its subtrees
+done. It takes the first counter when it enters a node, the second when
+the left subtree of the node is done and the third when both are; these are
+the moments at which the previsit, the invisit and the postvisit examine the
+node, and each node is pushed and popped once. The previsit lists the
+subtree of $u$ as a stretch that starts at $u$,
 and the postvisit as a stretch that ends at $u$. A node $w$ in the subtree
 comes after $u$ in the first and before $u$ in the second. A node out of it,
 instead, either precedes $u$ in both (if it comes before the subtree) or
@@ -994,18 +1160,38 @@ A binary tree is *size-balanced* if the two subtrees of each node differ by one
 node at most. We test it by `isSizeBalanced(t)`, a postvisit that returns the
 size of each subtree, or a mark $\bot$ at the first node that is not balanced,
 which stops the visit ([Algorithm
-8.19](08-tree.md#alg-8-19)). Each node is examined once, in
-$O( n )$ time, and the code keeps an explicit stack, as the height may be $n -
+8.19](08-tree.md#alg-8-19)), with an explicit stack, as the height may be $n -
 1$ (exercise 6.6 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). One can
 write instead the obvious test, which calls a function of the size at each
-node; it costs the sum of the sizes of all the subtrees, i.e., $\Theta( n \log
-n )$ on a balanced tree and $\Theta( n^2 )$ on a path.
+node; the following lemma compares the two.
 
 <span id="alg-8-19"></span>**Algorithm 8.19.** The test of
 the balance of the sizes ([Morin 2013, exercise
 6.6](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTreeAlgorithms-sizeIfBalanced.pseudo.md"
+
+<span id="lem-8-16"></span>**Lemma 8.16.** *`isSizeBalanced(t)` decides
+whether a tree of $n$ nodes and height $h$ is size-balanced in $O( n )$
+time and $O( h )$ space. On the other hand, the test that computes the size of the subtree of
+each node apart costs $\sum_u n_u = \sum_u ( d( u ) + 1 )$, which is
+$\Theta( n \log n )$ on a size-balanced tree and $n ( n + 1 ) / 2$ on a
+path.*
+
+*Proof.* By induction on the postvisit, the value returned for a node is the
+size of its subtree when the subtree is size-balanced, and $\bot$ otherwise:
+the node is balanced exactly when the sizes of its two subtrees differ by
+one at most, and its size is their sum plus one. Each node is pushed and
+popped once, with the nodes of its path below it on the stack. A node $w$ is
+counted in $n_u$ once for each of its $d( w ) + 1$ ancestors $u$, which
+gives the identity of the sums, and the depths of a path are
+$0 , \ldots , n - 1$. A size-balanced tree has height $\lceil \log_2( n + 1 ) \rceil - 1$,
+since its larger subtree has $\lceil ( n - 1 ) / 2 \rceil$ nodes and is
+size-balanced, which gives the recurrence of [Lemma
+8.21](08-tree.md#lem-8-21); hence the sum is $O( n \log n )$. Conversely, in
+any binary tree at most $2^{l+1} - 1$ nodes have depth at most $l$, and with
+$l = \lfloor \log_2 n \rfloor - 2$ at least $n / 2$ nodes have depth larger
+than $l$, i.e., the sum is $\Omega( n \log n )$. $\square$
 
 ### 8.4.5 Rebuilding a tree {#sec-8-4-5}
 
@@ -1015,8 +1201,10 @@ into the values of the left subtree and those of the right one, and the next
 values of the previsit are those of the two subtrees, the left one first
 (exercise 5.4 of [Montresor 2025](Z-bibliography.md#ref-montresor2025) and
 exercise 6.10 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)). A recursion on
-this argument would look each root up in the invisit, which may cost $O( n^2 )$
-time on a path unless the places of the values are kept in a table. Instead,
+this argument would look each root up in the invisit, which costs
+$\Theta( n^2 )$ time on a path of left children unless the places of the
+values are kept in a table (the root of the subtree of $m$ nodes is then the
+last of its $m$ values in the invisit). Instead,
 `fromPreorderInorder(pre, in)` keeps a stack $S$ of the nodes whose right
 subtree is still open, and needs only the equality of the values ([Algorithm
 8.20](08-tree.md#alg-8-20)).
@@ -1027,9 +1215,12 @@ place of $I$.
 
 --8<-- "generated/BinaryTreeAlgorithms-fromPreorderInorder.pseudo.md"
 
-<span id="lem-8-11"></span>**Lemma 8.11.** *At most one binary
+<span id="lem-8-17"></span>**Lemma 8.17.** *At most one binary
 tree of distinct values has the previsit $P$ and the invisit $I$, and
-`fromPreorderInorder()` builds it, if it exists, in $O( n )$ time.*
+`fromPreorderInorder()` builds it, if it exists, in $O( n )$ time. For any
+$P$, the tree built has the previsit $P$; hence, when the values of $P$ are
+distinct, its invisit is $I$ if and only if some binary tree has the two
+visits.*
 
 *Proof.* The uniqueness is the argument above, by induction on $n$. For the
 algorithm, consider the node $t$ of $P[ i ]$ and the node $\ell$ created last
@@ -1042,11 +1233,23 @@ $I$ before its right subtree begins; the values popped are those nodes, and
 $t$, the next value of the previsit, is the root of the right subtree of the
 last one popped. Its stack holds, from the bottom up, the nodes created whose
 values have not appeared in $I[ 0 .. j )$ yet, and each node is pushed once and
-popped once. $\square$
+popped once. For the last claim, we remark that the stack holds, for any $P$ and $I$,
+the nodes of the path from the root to the node made last from which the
+path goes left, and that node. Indeed, a node made as a left child is pushed on the path
+of its parent, and a node made as the right child of the last node popped,
+$\ell'$, replaces the nodes of the path below $\ell'$, all popped and with no
+right child for good. In both cases the new node comes, in the previsit,
+right after the node made before it, the left child of a leaf or the right
+child of the deepest ancestor whose right subtree is still to come; hence the
+previsit of the tree built is $P$. If its invisit is $I$, a tree with the
+two visits exists; conversely, by the uniqueness, the tree built is that
+tree. $\square$
 
 Its contracts check that the two visits have the same length and, at the end,
-that the invisit of the tree built is $I$, which fails exactly when no tree of
-distinct values has those two visits; if a comparison of the values throws, the
+that the invisit of the tree built is $I$, which fails, for distinct values,
+exactly when no tree has those two visits (the last part of the lemma); with
+repeated values the check may pass, e.g., $P = I = ( a , a )$ gives the root
+$a$ with the right child $a$. If a comparison of the values throws, the
 nodes made so far are freed. [Table 8.3](08-tree.md#tab-8-3)
 follows the algorithm on a tree of six nodes.
 
@@ -1082,7 +1285,7 @@ shape code ([Morin 2013, exercise 6.11](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTreeAlgorithms-fromShapeCode.pseudo.md"
 
-<span id="lem-8-12"></span>**Lemma 8.12.** *The code of
+<span id="lem-8-18"></span>**Lemma 8.18.** *The code of
 `shapeCode()` determines the shape, and its $2 ( n - 1 )$ bits exceed by
 $\frac32 \log_2 n + O( 1 )$ bits the least number of bits that distinguishes all the
 shapes of $n$ nodes.*
@@ -1103,8 +1306,8 @@ code of all of them. $\square$
 By the links to the parents, `lowestCommonAncestor(u, v)` returns the deepest
 node that is an ancestor of both $u$ and $v$. The deeper node climbs to the
 depth of the other, and then the two climb together until they meet ([Algorithm
-8.22](08-tree.md#alg-8-22)), in $O( h )$ time and $O( 1 )$ space, the
-depths being counted by two climbs to the root. A usual alternative pushes the
+8.22](08-tree.md#alg-8-22)), the depths being counted by two climbs to the
+root. A usual alternative pushes the
 two paths on two stacks and pops them while their tops agree, in $O( h )$
 space. With many queries on a fixed tree, the reduction of [Bender and
 Farach-Colton 2000](Z-bibliography.md#ref-bender2000) to the range minimum on
@@ -1128,14 +1331,13 @@ order of a search tree and the coloring of a Red-Black tree.
 
 Two trees are compared by `equalTrees(t, s, eq)`, which returns whether they have
 the same shape and keys equal by `eq` in the same places. It is a simultaneous
-previsit, in $O( n )$ time and $O( h )$ space; the two trees may have different
+previsit; the two trees may have different
 representations, and with a comparison always true it compares the shapes
 alone. Similarly, `isSearchTree(t, less)` checks the order of a binary search
 tree ([§8.5](08-tree.md#sec-8-5)). Each key must lie in the open interval $( a
 , b )$ that its ancestors leave to it, with $a = -\infty$ and $b = +\infty$ at
-the root. The function checks it by a visit that carries the two ends down, in
-$O( n )$ time and $O( h )$ space; this is the same as checking that the invisit
-is strictly increasing. Comparing each node with its children only is not
+the root, and the function checks it by a visit that carries the two ends
+down. Comparing each node with its children only is not
 enough: the root 5 with the left child 3 and the grandchild 7, the right child
 of 3, passes that test, and yet 7 is in the left subtree of 5. Finally,
 `isRedBlackTree(t, red)`, where `red(u)` returns whether the node $u$ is red,
@@ -1143,7 +1345,41 @@ checks the constraints of a Red-Black coloring ([§8.5](08-tree.md#sec-8-5)).
 These are the root black, no red node with a red child and the same number of
 black nodes on every path from the root down to a leaf nil. Its check is a
 postvisit that returns the black height of each subtree, the leaf nil counted,
-or $-1$ at the first violation, and it costs $O( n )$ time.
+or $-1$ at the first violation.
+
+<span id="lem-8-19"></span>**Lemma 8.19.** *On trees of at most $n$ nodes
+and height at most $h$: (i) `lowestCommonAncestor(u, v)` returns the deepest
+common ancestor of $u$ and $v$ in $O( h )$ time and $O( 1 )$ space; (ii)
+`equalTrees(t, s, eq)` decides whether the two trees have the same shape
+and keys equal by `eq` in the same places; (iii) `isSearchTree(t, less)`
+decides whether each key lies in the open interval that its ancestors leave
+to it, which holds if and only if the tree is a binary search tree, and if
+and only if its invisit is strictly increasing; (iv) `isRedBlackTree(t,
+red)` decides whether the coloring satisfies (V1), (V3) and (V4) of
+[§8.5.5](08-tree.md#sec-8-5-5), the leaves nil being black. Each of (ii) to
+(iv) costs $O( n )$ time and $O( h )$ space.*
+
+*Proof.* (i) After the first two loops $u$ and $v$ have the same depth $k$.
+Their ancestors of depth $k' \le k$ coincide exactly when $k'$ is at most
+the depth of the lowest common ancestor, since below it the two paths part,
+and therefore the joint climb meets first at that node; each loop climbs at
+most $h$ levels and keeps two nodes. (ii) The visit pushes the pairs of the
+children of two equal nodes, and stops at the first pair with one node nil
+and the other not or with keys not equal; it examines each pair of the
+common shape once. (iii) By induction down the tree, the interval carried to
+a node has as its ends the keys of the nearest ancestors at which the path
+from the root went right and left. Every key in its interval means that each
+key is larger than the keys of the ancestors whose right subtree holds it
+and smaller than those of the others, i.e., the property of the keys at
+every node; and by induction on the structure the invisit, which lists the
+left subtree, the node and the right subtree, is strictly increasing exactly
+when that property holds. (iv) By induction on the postvisit, the value
+returned for a node is the number of black nodes on each path from it down
+to a leaf nil (the leaf counted) if its subtree has no red node with a red
+child and the same number on every such path, and $-1$ otherwise; the test
+of the root adds (V1). In (ii) to (iv) each node is pushed and popped once,
+and the stack holds, for each node of the current path, at most one pending
+child. $\square$
 
 ### 8.4.7 Searches and builders on search trees {#sec-8-4-7}
 
@@ -1164,9 +1400,11 @@ exercise 6.14](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTreeAlgorithms-getLE.pseudo.md"
 
-<span id="lem-8-13"></span>**Lemma 8.13.** *`searchTreeRange()`
+<span id="lem-8-20"></span>**Lemma 8.20.** *`searchTreeRange()`
 examines at most $k + 2 ( h + 1 )$ nodes of a tree of height $h$, $k$ the
-number of the keys reported; hence it costs $O( h + k )$ time.*
+number of the keys reported; hence it costs $O( h + k )$ time.
+`lessOrEqual( t , x , f )` reports the $n'$ keys not larger than $x$ in
+increasing order in $O( n' + h )$ time.*
 
 *Proof.* Let $u$ be a node examined whose key is smaller than
 $\mathit{lo}$. At each proper ancestor $a$ of $u$ the visit went toward $u$:
@@ -1177,16 +1415,21 @@ every key of the tree smaller than $\mathit{lo}$, which therefore passes
 through $u$; all the nodes of this kind lie on that single path of at most
 $h + 1$ nodes. Symmetrically, the nodes examined whose keys exceed
 $\mathit{hi}$ lie on the path of a search for a key just larger than
-$\mathit{hi}$, and every other node examined is reported. $\square$
+$\mathit{hi}$, and every other node examined is reported. For
+`lessOrEqual()`, the walk goes down the path of $x$; at a node not larger
+than $x$ it reports the whole left subtree in invisit, then the node, and
+goes right, and at a larger node it goes left. The keys not larger than $x$
+are those of the nodes of the first kind and of their left subtrees, since
+the subtrees left behind on the right of the path are larger than $x$. They
+come in increasing order, since each node of the first kind follows its left
+subtree and precedes what the walk meets after it, which lies in its right
+subtree. Each subtree visited is reported in full, and the other nodes
+examined lie on the path. $\square$
 
 Indeed, the test of the function checks the bound on the count returned, on
-trees built by insertions and on plain nodes. Similarly, `lessOrEqual(t, x, f)`
-(the `getLE(x)` of exercise 6.14 of [Morin
-2013](Z-bibliography.md#ref-morin-cpp)) reports the keys not larger than $x$ in
-increasing order and returns their number $n'$. It goes down the path of $x$
-and visits all the left subtree of each node not larger than $x$, which costs
-$O( n' + h )$, since each subtree visited is reported in full and the other
-nodes lie on the path. `MeasuredSearchTree::getLE()` of
+trees built by insertions and on plain nodes. The second function is the
+`getLE(x)` of exercise 6.14 of [Morin 2013](Z-bibliography.md#ref-morin-cpp),
+and it returns the number $n'$ of the keys reported. `MeasuredSearchTree::getLE()` of
 [§8.5](08-tree.md#sec-8-5) is this function on its nodes.
 
 Conversely, `minimumHeightSearchTree(A, make)` builds the binary search tree of
@@ -1203,7 +1446,7 @@ least height of the keys $A[ i .. j )$, and the Cartesian tree of a vector
 
 --8<-- "generated/BinaryTreeAlgorithms-cartesianBinaryTree.pseudo.md"
 
-<span id="lem-8-14"></span>**Lemma 8.14.** *A binary tree of $n$
+<span id="lem-8-21"></span>**Lemma 8.21.** *A binary tree of $n$
 nodes has height at least $\lceil \log_2( n + 1 ) \rceil - 1$, and the tree
 of `minimumHeightSearchTree()` has that height; it is built in $O( n )$ time
 with a recursion of depth $O( \log n )$.*
@@ -1219,26 +1462,43 @@ nodes. Hence the height $H( n )$ of its tree satisfies $H( 0 ) = -1$ and $H( n
 )$, i.e., $T( n ) = O( n )$. $\square$
 
 Note that the keys must be strictly increasing (a precondition), and the height
-is checked as an audit. We obtain the same tree from a sorted list in $O( n )$
-by building the subtrees in the symmetric order while the list is read.
-Furthermore, any tree is rebalanced in place, in $O( n )$ time and $O( 1 )$
-space, by the algorithm of Day, Stout and Warren ([Stout and Warren
-1986](Z-bibliography.md#ref-stout1986)); the rebuilds of the scapegoat trees of
-[§8.9](08-tree.md#sec-8-9) do the former.
+is checked as an audit. Furthermore, any binary search tree of $n$ nodes can
+be rebuilt in place into one of height $\lfloor \log_2 n \rfloor$, in $O( n )$
+time and $O( 1 )$ space, by the algorithm of Day, Stout and Warren ([Stout and
+Warren 1986](Z-bibliography.md#ref-stout1986)), which turns the tree into a
+path of right children and then compresses it by left rotations; the
+rebuilds of the scapegoat trees ([§8.9.1](08-tree.md#sec-8-9-1)) reach a
+tree of least height in other ways.
 
 Last, `cartesianBinaryTree(A, less)` is the Cartesian tree of [Vuillemin
 1980](Z-bibliography.md#ref-vuillemin1980) as a `BinaryTree`. Its root is
 the leftmost minimum of $A$ and its subtrees are the Cartesian trees of the
-parts before and after it, i.e., it is the binary tree whose invisit is $A$
-and which is a heap of the minimum; with `std::greater` it is the maximal
+parts before and after it; with `std::greater` it is the maximal
 tree, with the maximum at the root. Its parents come from `cartesianTree()`
-of `RangeMinimum.h`, which builds them (with a stack of the right spine) in
-$O( n )$ time ([§6.9](06-search.md#sec-6-9), with the figure of an example
-there), against the $O( n^2 )$ of the recursion of the definition on a
-sorted $A$; the invisit of the tree built is checked to be $A$ as an audit.
-In it, the lowest common ancestor of two places is the minimum of $A$
-between them, which ties the two problems of this section to the range
-minima of [§6.9](06-search.md#sec-6-9).
+of `RangeMinimum.h`, which builds them with a stack of the right spine
+([Algorithm 6.18](06-search.md#alg-6-18), with the figure of an example
+in [§6.9](06-search.md#sec-6-9)), and the invisit of the tree built is
+checked to be $A$ as an audit.
+
+<span id="lem-8-22"></span>**Lemma 8.22.** *`cartesianBinaryTree(A, less)`
+builds in $O( n )$ time the binary tree whose invisit is $A$ and whose
+every node holds the leftmost minimum of the items of its subtree; in it,
+the lowest common ancestor of the places $i \le j$ is the leftmost minimum
+of $A[ i .. j ]$. By contrast, the recursion of the definition, which scans each part for
+its minimum, costs $\Theta( n^2 )$ time on an increasing $A$.*
+
+*Proof.* `cartesianTree()` pushes and pops each place once on its stack
+([§6.9](06-search.md#sec-6-9)), and the tree is then linked in one pass over
+the parents, each place on the side of its parent that its index gives. By
+induction on the definition, the invisit of the tree is the part before the
+root, the root and the part after it, i.e., $A$, and the root of each
+subtree is the leftmost minimum of its part. For the lowest common
+ancestor, the claim is [Lemma 6.12](06-search.md#lem-6-12). On an increasing $A$ the
+root of each part is its first item, and the recursion scans parts of
+$n , n - 1 , \ldots , 1$ items. $\square$
+
+In this way the lowest common ancestors of the previous pages and the range
+minima of [§6.9](06-search.md#sec-6-9) are the same problem.
 
 ## 8.5 Binary search trees {#sec-8-5}
 
@@ -1251,8 +1511,9 @@ subtree are larger (the *binary search tree property* of [Morin 2013,
 §6.2](Z-bibliography.md#ref-morin-cpp), the ABR of [Montresor 2025,
 §6.1](Z-bibliography.md#ref-montresor2025)). The search, the insertion and
 the removal then go down one path from the root, and their cost is
-$O( h )$ for a tree of height $h$. What distinguishes the trees of this
-section and of the next three is how they keep $h$ small.
+$O( h )$ for a tree of height $h$ ([Theorem 8.1](08-tree.md#thm-8-1)). What
+distinguishes the trees of this section and of the next three is how they
+keep $h$ small.
 
 `SearchTree.h` realizes the DICTIONARY of [§7.1](07-dictionary.md#sec-7-1)
 on the plain binary search tree and on the Red-Black tree of [Montresor
@@ -1282,8 +1543,9 @@ precondition that $u$ is not a null pointer, since a static function cannot
 recognize the sentinel), and `size()`, `empty()` and `clear()` are those of
 the other containers, the last one an iterative visit, as the height may be
 $n - 1$. Copies are made node by node with the same shape and
-colors, in $O( n )$ time and with an explicit stack. The move leaves the
-source empty in $O( 1 )$, and the assignment is by copy and `swap()`.
+colors, with an explicit stack; the move leaves the source empty, and the
+assignment is by copy and `swap()` ([Theorem 8.1](08-tree.md#thm-8-1) gives
+the costs).
 
 Only the Red-Black tree has the operations based on join of
 [§8.12](08-tree.md#sec-8-12) (`split()`, `join()`, `join2()`,
@@ -1331,7 +1593,7 @@ a node in a binary search tree with the links to the parents ([Montresor
 
 --8<-- "generated/SearchTree-successorNode.pseudo.md"
 
-<span id="lem-8-15"></span>**Lemma 8.15.** *In a binary search
+<span id="lem-8-23"></span>**Lemma 8.23.** *In a binary search
 tree of height $h$, `successorNode( t )` returns the node of the smallest key
 larger than that of $t$ (the sentinel if there is none) in $O( h )$ time.
 The walk from `min()` along the successors visits the $n$ nodes in
@@ -1381,7 +1643,7 @@ of a binary search tree ([Morin 2013, §6.2.1](Z-bibliography.md#ref-morin-cpp))
 
 --8<-- "generated/SearchTree-lowerBoundNode.pseudo.md"
 
-<span id="lem-8-16"></span>**Lemma 8.16.** *`lowerBoundNode( x )`
+<span id="lem-8-24"></span>**Lemma 8.24.** *`lowerBoundNode( x )`
 returns the node of the smallest key not smaller than $x$, or the sentinel
 when all the keys are smaller than $x$, in $O( h )$ time.*
 
@@ -1466,7 +1728,8 @@ weakness lies in the height, which nothing keeps small.
 <span id="thm-8-1"></span>**Theorem 8.1.** *`BinarySearchTree`
 realizes the DICTIONARY and the SSET, with `lookup()`, `insert()`, `remove()`
 and `lowerBound()` in $O( h )$ time each, where $h \le n - 1$ is the height
-of the tree; hence in $O( n )$ time in the worst case.*
+of the tree; hence in $O( n )$ time in the worst case. A copy and `clear()`
+cost $O( n )$ time, and a move $O( 1 )$.*
 
 *Proof.* The search keeps the invariant that $x$, if it is in the tree,
 lies in the subtree of the current node: at a node of key $y \ne x$ the
@@ -1480,18 +1743,20 @@ most one child, which keeps the order of the other keys, or else gives the
 node the key of its successor, the smallest key of its right subtree, which
 is larger than the keys of the left subtree and smaller than the other keys
 of the right one, and then splices the node of the successor, which has no
-left child. `lowerBound()` is correct by [Lemma 8.16](08-tree.md#lem-8-16).
+left child. `lowerBound()` is correct by [Lemma 8.24](08-tree.md#lem-8-24).
 Each procedure follows one path down from the root (the removal goes on from
 the node of $x$ to its successor, below it), i.e., at most $h + 1$ nodes,
 with $O( 1 )$ work per node and per splice; and since the nodes of a path are
-distinct, $h + 1 \le n$. $\square$
+distinct, $h + 1 \le n$. The copy and `clear()` visit each node once, with a
+stack of at most two nodes per level, and a move exchanges the root and
+the size with those of an empty tree. $\square$
 
 We reach the worst case as soon as the keys arrive in order (e.g., the
 increasing integers), since each
 new key is then the largest so far and goes at the end of the right path.
 In a random order of insertion, instead, the expected depth of a node is
-$2 \ln n + O( 1 )$, about $1.39 \log_2 n$, by the argument of
-[§8.6](08-tree.md#sec-8-6). This is the argument of the quicksort, whose
+at most $2 \ln n + O( 1 )$, about $1.39 \log_2 n$ ([Lemma
+8.31](08-tree.md#lem-8-31) of [§8.6](08-tree.md#sec-8-6)). This is the argument of the quicksort, whose
 pivots are the roots of the subtrees ([§12.6](12-sort.md#sec-12-6)); the
 trees of the next sections keep a logarithmic height whatever the order.
 
@@ -1515,12 +1780,13 @@ answered by the following lemma (the getLE of exercise 6.14 is `getLE()` of
 `BinaryTreeAlgorithms.h`, described in [§8.4](08-tree.md#sec-8-4)). By the
 *height* of a node we mean, as Morin does, the height of its subtree.
 
-<span id="lem-8-17"></span>**Lemma 8.17.** *In a binary
+<span id="lem-8-25"></span>**Lemma 8.25.** *In a binary
 search tree on the keys $1 , \ldots , n$:*
 
 1. *the insertions in an empty tree give the height $n - 1$ exactly for the
-   $2^{n-1}$ orders in which each key after the first is the smallest or the
-   largest of those not yet inserted (exercise 6.15);*
+   $2^{n-1}$ orders in which each key is the smallest or the largest of
+   those not yet inserted, itself included, and each path is built by one order
+   only, that of its nodes from the root (exercise 6.15);*
 2. *`insert( x )` followed by `remove( x )` gives back the tree when $x$
    was not there, while it may differ when $x$ was there (exercise 6.16);*
 3. *a `remove()` raises the height of no node (exercise 6.17);*
@@ -1530,10 +1796,12 @@ search tree on the keys $1 , \ldots , n$:*
 
 *Proof.* (1) A tree of height $n - 1$ on $n$ nodes is a path, whose root
 holds the smallest or the largest key. The first key inserted is the root,
-and the others form a path below it, recursively; this gives two choices
-for each of the first $n - 1$ keys and one for the last, i.e., $2^{n-1}$
-orders, and conversely each such order adds its keys at the end of the
-path. (2) If $x$ was not there, `insert( x )` adds a leaf, and the removal
+since a node never moves, and the others form a path below it,
+recursively; this gives two choices for each of the first $n - 1$ keys and
+one for the last, i.e., $2^{n-1}$ orders, and conversely each such order
+adds its keys at the end of the path. A node of depth $d$ is inserted after
+its $d$ ancestors, and on a path these are the nodes above it; hence the
+order is that of the path. (2) If $x$ was not there, `insert( x )` adds a leaf, and the removal
 of a leaf detaches it and changes nothing else; if $x$ was there,
 `insert()` only changes its value, and `remove()` takes the key away. (3) A
 splice moves the subtree of the child up by one level without changing its
@@ -1568,24 +1836,40 @@ the order of its keys ([Figure 8.25](08-tree.md#fig-8-25), after
 Morin's figure 7.6 and Montresor's figure 6.4). The right rotation of a node
 $u$ with left child $w$ makes $w$ the root of the subtree and $u$ its right
 child, and the right subtree $B$ of $w$ becomes the left subtree of $u$; the
-left rotation of $w$ is its inverse. Before and after, the keys of $A$ are smaller than $w$,
-those of $B$ lie between $w$ and $u$, and those of $C$ are larger than $u$,
-so that the property of the keys holds. As for the
-depths, $A$ moves up by one level, $C$ down by one, and $B$ stays.
+left rotation of $w$ is its inverse, and $A$ is the left subtree of $w$ and
+$C$ the right subtree of $u$.
 
 ![Figure 8.25. The right rotation of $u$ and its inverse, the left rotation of $w$; $A$, $B$ and $C$ are subtrees, and the links that change are in violet before the rotation and in orange after it.](../figures/tree-rotation.svg){#fig-8-25}
 
+<span id="lem-8-26"></span>**Lemma 8.26.** *A rotation keeps the
+property of the keys. The right rotation of $u$ lifts $w$ and the nodes of
+$A$ by one level, lowers $u$ and the nodes of $C$ by one, and leaves the
+depths of the nodes of $B$ and of all the other nodes unchanged. Only $u$
+and $w$ change their subtrees, so that the size and the height of the
+subtree of every other node stay, and those of $u$ and then of $w$ are
+recomputed from their children in $O( 1 )$. A rotation may change the
+depths of $n - 2$ nodes.*
+
+*Proof.* Before and after, the keys of $A$ are smaller than $w$, those of $B$
+lie between $w$ and $u$, and those of $C$ are larger than $u$, and the keys
+outside the subtree keep their position with respect to it. Also, the subtree
+rooted at the place of $u$ holds the same nodes before and after, and hence
+the ancestors of that place keep their subtrees, while the nodes of $A$, of
+$B$ and of $C$ keep theirs. As for the depths, that of $A$ falls with that of $w$, the
+depth of $C$ grows with that of $u$, and $B$ goes from below $w$ to below
+$u$, at the same depth. After the rotation $u$ is the child of $w$, and its
+measures are those of its new children; then those of $w$ follow. Finally,
+if $u$ is the root and $A$ holds the $n - 2$ nodes other than $u$ and $w$,
+all their depths change. $\square$
+
 A rotation rewrites three links, each with its link to the parent, and the
 sizes of the two nodes it turns, the lower one first (since the size of the
-upper one includes it), in $O( 1 )$ time. The left rotation of `SearchTree`
+upper one includes it). The left rotation of `SearchTree`
 is the function $\mathrm{rotateLeft}$ of the lines 20 to 23 of [Algorithm
 8.28](08-tree.md#alg-8-28), and the right one, `rotateRight()`, is its
-mirror.
-
-No other node changes its size, since the two subtrees have the
-same nodes before and after. On the other hand, the depths of a whole subtree change;
-this is why the tree of [§8.5.6](08-tree.md#sec-8-5-6) has no rotation
-(cf. exercise 7.7 of Morin, discussed in [§8.6](08-tree.md#sec-8-6)). The
+mirror. Since the depths of a whole subtree may change, the tree of
+[§8.5.6](08-tree.md#sec-8-5-6), which keeps them, has no rotation (cf.
+exercise 7.7 of Morin, discussed in [§8.6](08-tree.md#sec-8-6)). The
 rotations are the tool of the Red-Black trees, of the AVL trees
 ([§8.7](08-tree.md#sec-8-7)), of the treaps ([§8.6](08-tree.md#sec-8-6)) and
 of the splay trees ([§8.8](08-tree.md#sec-8-8)). Also, the join of
@@ -1667,18 +1951,26 @@ from $t$ lifts $p$, which becomes black, with $n$ red below it
 
 ![Figure 8.27. The cases (3), (4a) and (5a) of `balanceInsert()`, the red nodes in orange and the black ones in the faint tint, $A$ to $E$ subtrees with black roots: in (3) the colors move the fault to $n$, which becomes the new $t$; in (4a) the left rotation of $p$ makes $p$ the new $t$, for the case (5a), where the right rotation of $n$ ends the repair. The mirror cases are not drawn.](../figures/tree-rb-insert.svg){#fig-8-27}
 
-<span id="lem-8-18"></span>**Lemma 8.18.** *`balanceInsert()`
+<span id="lem-8-27"></span>**Lemma 8.27.** *`balanceInsert()`
 restores (V1) to (V4) with $O( \log n )$ changes of color and at most two
 rotations; hence `insert()` of `RedBlackTree` costs $O( \log n )$ time.*
 
-*Proof.* Each case keeps (V4). In the case (3), the recoloring adds a black
-node to each path through $p$ or $z$ and removes one, the black of $n$, from
-the same paths; the rotations of (4) and (5), together with their
-recolorings, leave unchanged the black nodes of each path from the top of
-the subtree ([Figure 8.27](08-tree.md#fig-8-27)). The case (3)
+*Proof.* We show that each case keeps (V4) and leaves at most one fault,
+a red node with a red parent or a red root, at the node called $t$ next. In
+the case (3), the recoloring adds a black node to each path through $p$ or
+$z$ and removes one, the black of $n$, from the same paths, and the only
+possible fault is between $n$ and its parent. Next, the case (4a) rotates two red
+nodes, which changes no count of black nodes, and leaves the fault between
+the new $t$ (the old $p$) and the new $p$ (the old $t$), on the same side.
+In the case (5a), before the step each path from $n$ down to the subtrees
+counts the black $n$ and no other node among $n$, $p$ and $t$; after it,
+each counts the black $p$ and no other, the red $n$ and $t$ being its two
+children ([Figure 8.27](08-tree.md#fig-8-27)), and the top of the subtree
+is black, so that no fault is left; the mirrors are the same. The case (3)
 moves the only fault two levels up, and it cannot happen more than
 $h / 2 + 1$ times; (4) leads to (5), which ends the loop, as do (1) and
-(2). $\square$
+(2). Each case costs $O( 1 )$, and $h = O( \log n )$ by [Theorem
+8.2](08-tree.md#thm-8-2). $\square$
 
 After the loop, the code returns the root by climbing from the new node,
 since a rotation of the case (5) may have changed it. Of the four points in
@@ -1707,18 +1999,42 @@ paths through $t$ and leaves the others as they were, which ends the repair.
 
 ![Figure 8.28. The cases (1) to (4) of `balanceDelete()`, $t$ a left child of $p$ and carrying the black token: the red nodes in orange, the black ones in the faint tint, a node of either color in violet, with $c$ the color of $p$ that $f$ takes in the case (4); $G$ and $H$ subtrees. The mirror cases (5) to (8) are not drawn.](../figures/tree-rb-delete.svg){#fig-8-28}
 
-<span id="lem-8-19"></span>**Lemma 8.19.** *`balanceDelete()`
+<span id="lem-8-28"></span>**Lemma 8.28.** *`balanceDelete()`
 restores (V1) to (V4) with $O( \log n )$ changes of color and at most three
 rotations; hence `remove()` of `RedBlackTree` costs $O( \log n )$ time.*
 
-*Proof.* Only the case (2) moves the token up, one level at a time, and it
-can therefore repeat at most $h$ times. After the case (1) the parent $p$
-is red, so that a case (2) that follows passes the token to a red node and
-ends; otherwise (3) or (4) follow. The case (3) is followed by (4), and (4)
-ends the loop. Thus the sequences with the most rotations are (1), (3), (4)
-and its mirror, with three. That each case keeps the black nodes of the
-paths that avoid $t$, and adds one to those through $t$ when it ends, is a
-check on [Figure 8.28](08-tree.md#fig-8-28). $\square$
+*Proof.* We recall that the token means that each path from $p$ down through $t$ has one
+black node fewer than each path from $p$ down through the sibling $f$, all
+the other counts being as (V4) wants. Let $c$ be the color of $p$ and count,
+for each subtree that hangs below the nodes of the step, the black nodes
+among $p$, $f$, $a$ and $b$ on the path from the top of the step to it
+([Figure 8.28](08-tree.md#fig-8-28)). In the case (1), $p$ is black and $f$
+red; after the rotation of $p$, the black $f$ is on top and the red $p$
+below it, so that the paths to $t$, to $a$ and to $b$ count as many black
+nodes as before, and the token stays on $t$, whose new sibling $a$ is black. In
+the case (2), $f$ turns red and the paths through $f$ lose one black node,
+as those through $t$ had; the deficit moves to all the paths through $p$,
+i.e., the token moves to $p$, and (V3) holds below $p$, the nephews being
+black. In the case (3), the rotation of $f$ puts the red $a$ on top of $f$,
+and the exchange makes $a$ black and $f$ red, so that the paths to the two
+subtrees of $a$ and to $b$ count as many black nodes as before; the far
+nephew of $t$ is now the red $f$. In the case (4), before the step the
+paths to $t$ count $\beta = [ c = \mathrm{black} ]$ black nodes, and those
+to $a$ and to the subtrees of $b$ count $\beta + 1$, by $f$, $b$ being red.
+After the rotation of $p$, with $f$ of color $c$ and $p$ and $b$ black, the
+paths to $t$ count $\beta + 1$, by $f$ and $p$, and those to $a$ and to the
+subtrees of $b$ count $\beta + 1$, by $f$ and by $p$ or $b$, which clears
+the deficit and keeps the other counts. A red $t$
+absorbs the token at the last line, and (V3) and (V1) hold at the end since
+the only red nodes made are $p$ in (1), above the black $t$ and $a$, $f$ in
+(2), above two black nephews, and $f$ in (3), whose children were those of
+the red $a$. Only the case (2) moves the token up, one level at a time, and
+it can therefore repeat at most $h$ times. After the case (1) the parent
+$p$ is red, so that a case (2) that follows passes the token to a red node
+and ends; otherwise (3) or (4) follow. The case (3) is followed by (4), and
+(4) ends the loop. Thus the sequences with the most rotations are (1), (3),
+(4) and its mirror, with three, and $h = O( \log n )$ by [Theorem
+8.2](08-tree.md#thm-8-2). $\square$
 
 The other three mended points are here. First, `balanceDelete()` is given
 the parent $p$ of $t$ as a second argument, since $t$ may be the sentinel:
@@ -1749,8 +2065,7 @@ each update, for a constant factor on the cost of the plain tree.
 `MeasuredSearchTree` is that tree: a DICTIONARY with the successor search,
 the getLE of exercise 6.14 and the three measures of each node, which
 `measures( k )` returns as a `Measures` (with the fields `size`, `depth` and
-`height`) in $O( h )$ time; `height()` reads the height of the root in
-$O( 1 )$.
+`height`) after a search, and `height()` reads the height of the root.
 
 The insertion adds a leaf of depth one more than its parent. Only the nodes
 of its path change their size (by 1) and possibly their height, which is
@@ -1774,9 +2089,10 @@ $s$, $d$ and $h$ the three measures.
 
 --8<-- "generated/MeasuredSearchTree-remove.pseudo.md"
 
-<span id="lem-8-20"></span>**Lemma 8.20.** *`insert()` and
+<span id="lem-8-29"></span>**Lemma 8.29.** *`insert()` and
 `remove()` of `MeasuredSearchTree` keep the size, the depth and the height
-of each node exact, in $O( h )$ time, and no node changes its depth.*
+of each node exact, in $O( h )$ time, and no node changes its depth; hence
+`measures( k )` costs $O( h )$ and `height()` $O( 1 )$.*
 
 *Proof.* The insertion adds one node to the subtrees of the ancestors of the
 new leaf and to no other, and it can change only the heights of those
@@ -1786,7 +2102,9 @@ moves up, being the successor (or the predecessor) of the pair of $u$. The
 chain thus ends at a leaf, and the walks down of all its steps make one path
 from the node of $k$, of at most $h$ edges in all. Only the leaf
 disappears, and hence no other node moves; the sizes and the heights
-change only on its path, which the last loop walks up. $\square$
+change only on its path, which the last loop walks up. Finally,
+`measures( k )` reads the node of a search, and `height()` the root.
+$\square$
 
 A removal moves up to $h$ pairs instead of one, the price of the depths that
 never change. A rotation would keep the sizes and the heights in $O( 1 )$
@@ -1801,7 +2119,8 @@ All the other operations are those of the plain tree, in $O( h )$ time:
 as in [§8.5.2](08-tree.md#sec-8-5-2), `forEach()` and the `PathIterator` of
 [§1.8](01-introduction.md#sec-1-8). Also, `getLE( x )` returns the pairs
 whose keys are not larger than $x$, by the `lessOrEqual()` of
-[§8.4](08-tree.md#sec-8-4), in $O( n' + h )$ time for $n'$ pairs. The tree
+[§8.4](08-tree.md#sec-8-4), in $O( n' + h )$ time for $n'$ pairs ([Lemma
+8.20](08-tree.md#lem-8-20)). The tree
 cannot be copied (its nodes are linked by pointers), only moved; its
 invariant, checked at the level 3, is the order of the keys, the parents
 and the three measures of each node.
@@ -1848,12 +2167,12 @@ and the finger.
 ### 8.6.1 Random binary search trees {#sec-8-6-1}
 
 [Figure 8.29](08-tree.md#fig-8-29) shows two binary search trees
-on the keys $0 , \ldots , 14$. On the left, the path is built by the insertions in increasing order and by no other order, as one proves by
-induction on $n$ (the first key inserted is the root, and the root of a
-path whose keys increase downwards is its least key). On the right, the complete tree is built, e.g., by $\langle 7 , 3 , 11 , 1 , 5 , 9 , 13 , 0 , 2 ,
+on the keys $0 , \ldots , 14$. On the left, the path is built by the
+insertions in increasing order and by no other order ([Lemma
+8.25](08-tree.md#lem-8-25), part 1). On the right, the complete tree is built, e.g., by $\langle 7 , 3 , 11 , 1 , 5 , 9 , 13 , 0 , 2 ,
 4 , 6 , 8 , 10 , 12 , 14 \rangle$, by $\langle 7 , 3 , 1 , 5 , 0 , 2 , 4 , 6 , 11 , 9 , 13 , 8 , 10 , 12 , 14 \rangle$.
 In all, 21964800 orders build it
-([Lemma 8.23](08-tree.md#lem-8-23) below). Balanced shapes are thus far more likely than the degenerate ones when the order is random,
+([Lemma 8.32](08-tree.md#lem-8-32) below). Balanced shapes are thus far more likely than the degenerate ones when the order is random,
 and the rest of this section makes this precise.
 
 ![Figure 8.29. Two binary search trees on the keys 0 to 14: the path, of height 14, which only the increasing order of insertion builds, and the complete tree, of height 3, which 21964800 orders build.](../figures/tree-rbst-two.svg){#fig-8-29}
@@ -1865,7 +2184,7 @@ permutations having probability $1 / n!$. Here the keys $0 , \ldots , n - 1$ sta
 on the comparisons. Our analysis rests on the *harmonic numbers*
 $H_k = 1 + 1 / 2 + \cdots + 1 / k$, with $H_0 = 0$.
 
-<span id="lem-8-21"></span>**Lemma 8.21.** *For every integer
+<span id="lem-8-30"></span>**Lemma 8.30.** *For every integer
 $k \ge 1$, $\ln k < H_k \le 1 + \ln k$.*
 
 *Proof.* Each term $1 / i$ is the area of a rectangle of base $[ i , i + 1 ]$
@@ -1879,7 +2198,7 @@ The *search path* of a value $x$ is the sequence of the nodes that a search
 for $x$ visits; its length, the number of its nodes, is the cost of the
 search, and that of an insertion or of a removal is proportional to it.
 
-<span id="lem-8-22"></span>**Lemma 8.22.** *([Morin 2013, Lemma
+<span id="lem-8-31"></span>**Lemma 8.31.** *([Morin 2013, Lemma
 7.1](Z-bibliography.md#ref-morin-cpp).) In a random binary search tree of
 size $n$:*
 
@@ -1917,7 +2236,7 @@ $$
 
 ![Figure 8.30. The key $i < x$ is on the search path for $x$ if and only if it is the first of $i , \ldots , \lfloor x \rfloor$ to be inserted: otherwise the first, $j$ (in violet), sends $i$ into its left subtree, and the search path for $x$ (the violet edges) into its right one.](../figures/tree-rbst-records.svg){#fig-8-30}
 
-*Proof of [Lemma 8.22](08-tree.md#lem-8-22).* Let $I_i$ be 1 if
+*Proof of [Lemma 8.31](08-tree.md#lem-8-31).* Let $I_i$ be 1 if
 the key $i$ is on the search path for $x$ and 0 otherwise. For a key $x$,
 the nodes of the path other than that of $x$ number
 $\sum_{i \ne x} I_i$. By the linearity of the expectation and by
@@ -1935,12 +2254,12 @@ whose terms are those of the row (a) of
 keys, the keys $0 , \ldots , \lfloor x \rfloor$ contribute $1 , 1 / 2 , \ldots , 1 / ( \lfloor x \rfloor + 1 )$, i.e., $H_{\lfloor x \rfloor + 1} = H_{\lceil x \rceil}$. The keys
 $\lceil x \rceil , \ldots , n - 1$ contribute $H_{n - \lceil x \rceil}$ (the
 row (b)). Finally, the last claim follows from
-[Lemma 8.21](08-tree.md#lem-8-21), since $H_a + H_b \le 2 +
+[Lemma 8.30](08-tree.md#lem-8-30), since $H_a + H_b \le 2 +
 \ln a + \ln b \le 2 \ln n + 2$ for $a , b \le n$. $\square$
 
 ![Figure 8.31. The probability (8.4) that the key $i$ is on the search path for $x$ in a random binary search tree on $0 , \ldots , n - 1$: (a) $x$ a key (its own node in violet), (b) $x$ between the keys $\lfloor x \rfloor$ and $\lceil x \rceil$.](../figures/tree-rbst-probs.svg){#fig-8-31}
 
-By [Lemma 8.22](08-tree.md#lem-8-22), the two kinds of search differ by one node at most, i.e., a search for an absent value costs about as much as a
+By [Lemma 8.31](08-tree.md#lem-8-31), the two kinds of search differ by one node at most, i.e., a search for an absent value costs about as much as a
 search for a key. We remark that the bound is the same for all $x$: the expectation is
 over the order of insertion, and no assumption is made on the value searched (e.g., the bound holds for the smallest key as well as for a key in the middle).
 
@@ -1952,7 +2271,7 @@ costs $O( \log n )$ expected time.*
 *Proof.* The insertion of $x_i$ costs the length of its search path in the
 random binary search tree of $x_0 , \ldots , x_{i-1}$, which is a random
 binary search tree of size $i$ (the first $i$ items of a random permutation
-are in a random order); by [Lemma 8.22](08-tree.md#lem-8-22), part
+are in a random order); by [Lemma 8.31](08-tree.md#lem-8-31), part
 2, this costs $O( \log i )$ in expectation, and the sum over $i < n$ is
 $O( n \log n )$. A search costs $O( \log n )$ by the same lemma. $\square$
 
@@ -1960,7 +2279,7 @@ The count of [Figure 8.29](08-tree.md#fig-8-29) is the case $h = 3$
 of a recurrence on the complete trees ([Morin 2013, exercise
 7.3](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="lem-8-23"></span>**Lemma 8.23.** *Let $f( h )$ be the
+<span id="lem-8-32"></span>**Lemma 8.32.** *Let $f( h )$ be the
 number of orders of insertion of $2^{h+1} - 1$ keys that build the complete
 binary search tree of height $h$. Then*
 
@@ -2004,7 +2323,7 @@ his priorities $p$, which gives the same tree.
 
 ![Figure 8.32. A treap on the keys 0 to 9, each node with its key and its priority; the priorities are $100 - p$ for those $p$ of [Morin 2013, figure 7.5](Z-bibliography.md#ref-morin-cpp), so that the heap with the largest priority above gives his tree.](../figures/tree-treap.svg){#fig-8-32}
 
-<span id="lem-8-24"></span>**Lemma 8.24.** *([Vuillemin
+<span id="lem-8-33"></span>**Lemma 8.33.** *([Vuillemin
 1980](Z-bibliography.md#ref-vuillemin1980).) Given $n$ keys and $n$
 distinct priorities, exactly one binary search tree on the keys is a heap
 on the priorities, and it is the binary search tree built by inserting the
@@ -2024,9 +2343,9 @@ the treap is a random
 binary search tree ([§8.6.1](08-tree.md#sec-8-6-1)), whatever the keys and
 whatever the sequence of insertions and removals that led to it, as long
 as that sequence does not depend on the priorities. Replacing each key by
-its rank, [Lemma 8.22](08-tree.md#lem-8-22) becomes the following.
+its rank, [Lemma 8.31](08-tree.md#lem-8-31) becomes the following.
 
-<span id="lem-8-25"></span>**Lemma 8.25.** *([Morin 2013, Lemma
+<span id="lem-8-34"></span>**Lemma 8.34.** *([Morin 2013, Lemma
 7.2](Z-bibliography.md#ref-morin-cpp).) In a treap of a set $S$ of $n$
 keys, let $r( x )$ be the rank of $x$ in $S \cup \{ x \}$. Then the search
 path for $x \in S$ has expected length $H_{r(x)+1} + H_{n - r(x)} - 1$; that for $x \notin S$ expected length $H_{r(x)} + H_{n - r(x)}$, both at
@@ -2035,30 +2354,57 @@ most $2 \ln n + O( 1 )$, the expectation being over the priorities alone.*
 *Proof.* We take the priorities, as the analysis does, independent and
 identically distributed, and condition on the event that no two of them are
 equal; by symmetry, all the orders of the $n$ priorities are then equally
-likely. By [Lemma 8.24](08-tree.md#lem-8-24) the treap of $S$ is the binary
+likely. By [Lemma 8.33](08-tree.md#lem-8-33) the treap of $S$ is the binary
 search tree built by inserting the keys of $S$ by decreasing priority, i.e.,
 in a uniformly random order, and it is therefore a random binary search tree
 whose shape depends only on the ranks of the keys. Let each key of $S$ be
 replaced by its rank $0 , \ldots , n - 1$, and let $r( x )$ be the number of
 the keys of $S$ smaller than $x$. When $x \in S$, the search path of $x$
 visits the nodes that that of $r( x )$ visits, and part 1 of [Lemma
-8.22](08-tree.md#lem-8-22) gives $H_{r(x)+1} + H_{n-r(x)} - 2$ nodes other
+8.31](08-tree.md#lem-8-31) gives $H_{r(x)+1} + H_{n-r(x)} - 2$ nodes other
 than that of $x$, i.e., $H_{r(x)+1} + H_{n-r(x)} - 1$ in all. When $x \notin
 S$, it visits the nodes that the search for any $x'$ with $r( x ) - 1 < x' <
 r( x )$ visits, since $x'$ compares with each rank as $x$ with each key, and
 part 2 of the same lemma, with $\lceil x' \rceil = r( x )$, gives
 $H_{r(x)} + H_{n-r(x)}$. Finally, $0 \le r( x ) \le n$, and each of the two
 harmonic numbers is at most $1 + \ln n$ by [Lemma
-8.21](08-tree.md#lem-8-21). $\square$
+8.30](08-tree.md#lem-8-30). $\square$
 
 `Treap` draws the priorities as the 64-bit words of the generator
 `SplitMix64` of `ADS/dictionary/RandomHashing.h` ([Steele et al.
 2014](Z-bibliography.md#ref-steele2014); [§7.3.4](07-dictionary.md#sec-7-3-4)),
 seeded by the constructor, `Treap( seed )`, and a run can be
-reproduced. Two priorities collide with probability $2^{-64}$, i.e., some
-two of $n$ collide with probability below $n^2 / 2^{65}$; the code then
-leaves the older node above, which keeps the tree a valid treap, the only
-loss being the exact uniformity of the shape.
+reproduced. Our analysis takes the priorities as independent and
+uniform, which a deterministic generator only imitates; what the code
+guarantees is the following.
+
+<span id="lem-8-35"></span>**Lemma 8.35.** *The words that one `SplitMix64`
+returns in its first $2^{64}$ calls are pairwise distinct; hence the
+priorities that `Treap( seed )` draws for its insertions are distinct. If
+two nodes have equal priorities (e.g., after a join of two treaps of
+different seeds), the insertion and `fromSorted()` keep the older node
+above, and the tree is still a binary search tree whose every node has a
+priority not smaller than those of its children.*
+
+*Proof.* At its call $i$ the generator returns $\mathrm{splitmix64}( s_0 + i \gamma )$, with $s_0$ the seed and $\gamma$ the odd constant
+$9\mathrm{e}3779\mathrm{b}97\mathrm{f}4\mathrm{a}7\mathrm{c}15_{16}$, and the states $s_0 + i \gamma \bmod 2^{64}$ are distinct for $0 \le i <
+2^{64}$, since $\gamma$ is invertible modulo $2^{64}$. Moreover,
+$\mathrm{splitmix64}$ is a composition of bijections of the 64-bit words:
+the addition of a constant, the maps $x \mapsto x \oplus ( x \gg s )$ with
+$s \ge 1$ (whose inverse recovers the bits from the most significant down),
+and the products by two odd constants. For the ties, the insertion rotates
+the new node up only while its priority is strictly larger than that of its
+parent, and `fromSorted()` pops from its stack only the nodes of strictly
+smaller priority. Since the rotations keep the order of the keys ([Lemma
+8.26](08-tree.md#lem-8-26)) and leave above each node only nodes of
+priorities not smaller. $\square$
+
+Thus the probability $2^{-64}$ that two uniform words collide concerns only
+the nodes of different generators, e.g., those of a join and of a batch
+([§8.6.3](08-tree.md#sec-8-6-3)), among which some two of $n$ collide with
+probability below $n^2 / 2^{65}$ if their words are taken as independent and
+uniform; even then the treap stays valid, the only loss being the exact
+uniformity of the shape.
 
 Both the insertion and the removal restore the heap property by *rotations*
 ([§8.5](08-tree.md#sec-8-5)). A right rotation at a node $t$ with left child
@@ -2068,10 +2414,9 @@ one node by one level and lowers the other by one. A new key is inserted
 at a leaf, as in a binary search tree, with a fresh priority; while its
 priority is larger than its parent's, a rotation at the parent lifts it
 by one level ([Algorithm 8.32](08-tree.md#alg-8-32)). Morin walks the new node up by the links to the parents. `Treap` has no such
-link, and rotates on the way back of the recursive descent, where the test of the line 5 (or of its mirror, after line 6) is made at each level of the path.
-Above the first level where
-it fails it fails again, since the child tested there is the node that was
-there before the insertion.
+link, and rotates on the way back of the recursive descent, where the test of the line 5 (or of its mirror, after line 6) is made at each level of the path;
+above the first level where it fails it fails again ([Theorem
+8.4](08-tree.md#thm-8-4) below).
 
 <span id="alg-8-32"></span>**Algorithm 8.32.** The insertion
 into a treap ([Seidel and Aragon 1996](Z-bibliography.md#ref-seidel1996));
@@ -2092,11 +2437,11 @@ below the root 3, whose priority is larger.
 
 An insertion costs the length of the search path plus the number
 of rotations, each of which lifts the new node by one level, and therefore
-not more than its depth; by [Lemma 8.25](08-tree.md#lem-8-25)
+not more than its depth; by [Lemma 8.34](08-tree.md#lem-8-34)
 both are $O( \log n )$ in expectation. In fact, the rotations are far fewer
 ([Morin 2013, exercise 7.5](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="lem-8-26"></span>**Lemma 8.26.** *([Seidel and Aragon
+<span id="lem-8-36"></span>**Lemma 8.36.** *([Seidel and Aragon
 1996](Z-bibliography.md#ref-seidel1996).) An insertion into a treap makes
 fewer than 2 rotations in expectation, and so does a removal.*
 
@@ -2139,7 +2484,7 @@ child at most, which takes its place. Morin rotates the node down to a
 leaf and then unlinks it; `Treap` stops one or more rotations earlier, when
 the node has one child, and the tree that results is the same, the only
 treap of the other keys and their priorities
-([Lemma 8.24](08-tree.md#lem-8-24)).
+([Lemma 8.33](08-tree.md#lem-8-33)).
 
 <span id="alg-8-33"></span>**Algorithm 8.33.** The removal from
 a treap ([Seidel and Aragon 1996](Z-bibliography.md#ref-seidel1996)).
@@ -2177,22 +2522,26 @@ DICTIONARY and the SSET with `lookup()`, `insert()`, `remove()` and
 `lowerBound()` in $O( \log n )$ expected time each, with fewer than 2
 rotations per update in expectation, and space $\Theta( n )$.*
 
-*Proof.* A rotation keeps the order of the keys ([§8.5.4](08-tree.md#sec-8-5-4)).
+*Proof.* A rotation keeps the order of the keys ([Lemma 8.26](08-tree.md#lem-8-26)).
 The insertion rotates the new node up while its priority is larger than its
 parent's, and the removal rotates the node of $k$ down, the child of larger
 priority going up, until it has one child at most, and then splices it; in
 both cases the only pair of a parent and a child that may break the heap
 property is the one that the next rotation repairs, and at the end the tree
 is a binary search tree and a heap, i.e., the treap of the new set of keys
-([Lemma 8.24](08-tree.md#lem-8-24)). `lookup()` follows one search path, and
-`lowerBound()` too, with the argument of [Lemma 8.16](08-tree.md#lem-8-16).
+([Lemma 8.33](08-tree.md#lem-8-33)). In the recursive insertion of the code,
+once the new node stops below a parent, the child tested at each level above
+is the node that was there before the insertion, whose priority is not
+larger than that of its parent by the heap property; hence the test fails
+again, and no rotation is made above. `lookup()` follows one search path, and
+`lowerBound()` too, with the argument of [Lemma 8.24](08-tree.md#lem-8-24).
 The insertion follows the search path of $k$ in the treap before it and then
 makes at most one rotation per node of that path; the removal follows the
 search path of $k$ and then makes its rotations and the splice. Each step of
 a path and each rotation costs $O( 1 )$, each path has expected length at
-most $2 \ln n + O( 1 )$ by [Lemma 8.25](08-tree.md#lem-8-25), and the
+most $2 \ln n + O( 1 )$ by [Lemma 8.34](08-tree.md#lem-8-34), and the
 rotations are fewer than 2 in expectation by [Lemma
-8.26](08-tree.md#lem-8-26). Each key has one node of constant size, hence the
+8.36](08-tree.md#lem-8-36). Each key has one node of constant size, hence the
 space. $\square$
 
 The other operations of the dictionary, which we only list, are `contains()`, `size()`,
@@ -2213,7 +2562,7 @@ expects; `HashedTreap`, `FingerTreap` and `RandomizedSearchTree` below give
 the same range in the same way.
 
 In a treap the expected length of a search path is $2 \ln n + O( 1 ) \approx
-1.386 \log_2 n$ ([Lemma 8.25](08-tree.md#lem-8-25)). In a skip list it is
+1.386 \log_2 n$ ([Lemma 8.34](08-tree.md#lem-8-34)). In a skip list it is
 $2 \log_2 n + O( 1 )$ with the probability $1 / 2$ of
 promotion, or $e \ln n + O( 1 ) \approx 1.884 \log_2 n$ with the best
 probability, $1 / e$ ([§7.9.3](07-dictionary.md#sec-7-9-3)). Both structures
@@ -2244,15 +2593,35 @@ subtree are the $s( t.\mathit{left} )$ smallest of its subtree, and hence the pa
 decreased by $s( t.\mathit{left} ) + 1$
 ([Algorithm 8.34](08-tree.md#alg-8-34)). `rank( k )`, the number
 of keys smaller than $k$, adds $s( t.\mathit{left} ) + 1$ at each node of
-the path of $k$ where the path turns right. Both follow one path, in
-$O( \log n )$ expected time, and `select()` requires $i < n$, which its
-contract checks.
+the path where the path turns right, going left at each node whose key is
+not smaller than $k$ (the node of $k$ included). `select()` requires $i < n$,
+which its contract checks.
 
 <span id="alg-8-34"></span>**Algorithm 8.34.** The access by rank
 ([Morin 2013, exercise 7.10](Z-bibliography.md#ref-morin-cpp)); $s$ is the
 size of a subtree, 0 for nil.
 
 --8<-- "generated/Treap-select.pseudo.md"
+
+<span id="lem-8-37"></span>**Lemma 8.37.** *In a binary search tree whose
+nodes keep the sizes of their subtrees, `select( i )` returns the pair of
+rank $i$, $0 \le i < n$, and `rank( k )` the number of the keys smaller than
+$k$, each in time proportional to the length of one search path; in a treap,
+in $O( \log n )$ expected time.*
+
+*Proof.* At a node $t$ whose subtree holds the pair of rank $i$ among its
+keys, the $s( t.\mathit{left} )$ keys of the left subtree are the smallest:
+the pair is there if $i < s( t.\mathit{left} )$, it is the pair of $t$ if
+$i = s( t.\mathit{left} )$, and otherwise it has the rank $i - s(
+t.\mathit{left} ) - 1$ in the right subtree; the descent stops at a node,
+since $i < n$ and the rank decreases with the size. `rank( k )` follows the
+search path of a value just smaller than $k$ and larger than every key
+smaller than $k$, and the keys smaller than $k$ are those of the nodes where
+that path turns right, each with its left subtree, since the subtrees left
+on the other side of the path hold larger keys. Both walk one search path,
+that of the key of rank $i$ and that of a value between two keys, whose
+expected length in a treap is $O( \log n )$ by [Lemma
+8.34](08-tree.md#lem-8-34). $\square$
 
 One can insert the keys of a sorted vector one by one in
 $O( n \log n )$ expected time, but the treap of sorted keys is built in
@@ -2280,7 +2649,7 @@ set when the nodes are popped, by the loop or at the end. Hence the ownership of
 
 ![Figure 8.38. `fromSorted()` on the keys of [Figure 8.32](08-tree.md#fig-8-32): (a) the treap of 0, 1 and 2 and the stack $S$ of its right spine (in violet); (b) after the key 3, of the largest priority, which pops the whole spine and takes it as its left subtree.](../figures/tree-treap-fromsorted.svg){#fig-8-38}
 
-<span id="lem-8-27"></span>**Lemma 8.27.** *`fromSorted( A ,
+<span id="lem-8-38"></span>**Lemma 8.38.** *`fromSorted( A ,
 seed )` builds in $O( n )$ time the treap that the insertions of the pairs of
 $A$, in their order, into `Treap( seed )` build.*
 
@@ -2291,7 +2660,7 @@ spine, below the nodes of larger priority and above those of smaller
 priority, which are the ones popped (the priorities decrease along the
 spine, from the bottom of $S$ upwards). Of these, the last node popped, i.e., the highest,
 becomes its left child with all the keys below it. Each node is pushed and popped once, in $O( n )$ in all. Now the treap of a set of keys and priorities is unique
-([Lemma 8.24](08-tree.md#lem-8-24)), and the generator draws the
+([Lemma 8.33](08-tree.md#lem-8-33)), and the generator draws the
 priorities in the same order in both constructions, the order of $A$.
 Hence the two trees are the same. $\square$
 
@@ -2304,13 +2673,14 @@ join ([Morin 2013, exercises 7.12 and 7.13](Z-bibliography.md#ref-morin-cpp);
 [Blelloch and Reid-Miller 1998](Z-bibliography.md#ref-blelloch1998)), which
 it inherits from `Joinable` of `ADS/tree/JoinAlgorithms.h` and which [§8.12](08-tree.md#sec-8-12) presents for all the balanced trees
 together. `split( k )` cuts the treap into the keys smaller than $k$, the pair of $k$
-if there, and the larger keys, in $O( \log n )$ expected time, i.e., the `split(x)` of Morin, and `join2( L , R )` glues two treaps whose
-keys are separated, the `absorb(t)` of Morin. There are also `join()`,
+if there, and the larger keys, i.e., the `split(x)` of Morin, and `join2( L , R )` glues two treaps whose
+keys are separated, the `absorb(t)` of Morin, both in $O( \log n )$ expected
+time ([Lemma 8.83](08-tree.md#lem-8-83)). There are also `join()`,
 `extractRange()`, the union, the intersection and the difference of two
 treaps, the batches of insertions and of removals, `filter()` and
 `mapReduce()`. Joining two treaps merges their two facing spines by the
-priorities, which is the removal of an imaginary root between them, in
-$O( \log n )$ expected time. These operations reach the nodes through the adaptor `TreapNodes`. It
+priorities, which is the removal of an imaginary root between them
+([§8.12.2](08-tree.md#sec-8-12-2)). These operations reach the nodes through the adaptor `TreapNodes`. It
 exposes a node into its two subtrees, connects a node over two subtrees
 updating its size. It also makes the nodes of a batch
 with the priorities $\mathrm{splitmix64}( s + i \gamma )$, from a salt $s$
@@ -2344,28 +2714,60 @@ links. Its insertion and removal are those of `Treap` with this $p$. The inserti
 returns, besides whether the key is new, whether the new node may
 still go up. Once a parent keeps the larger priority, no rotation is
 needed above it (its subtree keeps its root, and the heap property held
-above that root before the insertion), and the hashes of the other
-ancestors are not computed.
+above that root before the insertion, as in the proof of [Theorem
+8.4](08-tree.md#thm-8-4)), and the hashes of the other ancestors are not
+computed.
 
 A fixed function of the addresses is not random, and the addresses are
-chosen by the allocator, perhaps in increasing order. We remark, however, that the analysis of [§8.6.2](08-tree.md#sec-8-6-2) does not need the full
-independence of the priorities. Indeed, the proof of [Lemma 8.22](08-tree.md#lem-8-22) only uses the probability that a
-given key has the largest priority among the $k$ keys of an interval. It holds up to a constant factor if that probability is $O( 1 / k )$ for each set of $k$ keys, the *min-wise independence* that [Morin 2013,
-§7.3](Z-bibliography.md#ref-morin-cpp) requires of the hash. `HashedTreap` takes
-the simple tabulation hash `TabulationHash` of `RandomHashing.h`
-([§7.3.4](07-dictionary.md#sec-7-3-4)), its tables drawn from the seed of the constructor. On keys of 8 characters, it gives each of $k$ keys the
-extreme hash with probability $( 1 \pm \epsilon ) / k$,
-$\epsilon = O( \log^2 k / k^{1/8} )$ ([Pătraşcu and Thorup 2012, Theorem
-3](Z-bibliography.md#ref-patrascu2012), stated for the minimum, the
-maximum being the minimum of the complements). Hence the expected depth of
-a node stays $O( \log n )$, whatever the keys, the addresses and the order
-of the operations, as long as they do not depend on the tables, and so do
-the costs of [Theorem 8.4](08-tree.md#thm-8-4). Since the shape depends on the addresses, two runs may build the same set into
-different trees. In exchange for the smaller node, one pays a hash of 8 lookups in
-tables of 16 KB per priority read, i.e., two per level climbed by a new
-node and two per rotation of a removal. `HashedTreap` has the operations of
-the dictionary and of the SSET of `Treap`, its range of pairs and its
-contracts, but neither the sizes nor the operations by rank and by join.
+chosen by the allocator, perhaps in increasing order. However, the analysis
+of [§8.6.2](08-tree.md#sec-8-6-2) does not need the full independence of
+the priorities: an upper bound on the probability that a given key has the
+largest priority among the keys of an interval suffices, up to a constant
+factor, i.e., the *min-wise independence* that [Morin 2013,
+§7.3](Z-bibliography.md#ref-morin-cpp) requires of the hash.
+
+<span id="lem-8-39"></span>**Lemma 8.39.** *Let the priorities of a treap
+of the set $S$ of $n$ keys be random, with ties allowed, and let a constant
+$c$ exist such that, for each set $B$ of $k$ consecutive keys of $S$ and
+each key $i$ of $B$, the priority of $i$ is not smaller than those of all
+the other keys of $B$ with probability at most $c / k$. Then the search
+path of any value $x$ has expected length at most $2 c ( 1 + \ln n ) + 1$.*
+
+*Proof.* Let $i \in S$ be on the search path for $x$, say $i < x$ (the case
+$i > x$ is symmetric, and $i = x$ adds at most one node). The subtree of $i$ holds
+the keys of $S$ in the open interval that the ancestors of $i$ leave to it,
+and the search for $x$ enters that interval. Hence the subtree holds all the
+keys of $S$ between $i$ and $x$, and by the heap property (with ties, each
+node has a priority not smaller than its children) the priority of $i$ is
+not smaller than those of the keys of the interval $B_i = S \cap [ i , x
+)$. If $B_i$ has $k$ keys, this has probability at most $c / k$, and the
+keys $i < x$, which give distinct $k = 1 , 2 , \ldots , a$, contribute at
+most $c H_a$; with the symmetric sum $c H_b$, the expected length is at most
+$c ( H_a + H_b ) + 1$ with $a , b \le n$, i.e., at most
+$2 c ( 1 + \ln n ) + 1$ by [Lemma 8.30](08-tree.md#lem-8-30). $\square$
+
+`HashedTreap` takes the simple tabulation hash `TabulationHash` of
+`RandomHashing.h` ([§7.3.4](07-dictionary.md#sec-7-3-4)), its tables drawn
+from the seed of the constructor. On keys of 8 characters, i.e., the 8 bytes
+of an address, it gives each of $k$ keys the minimum hash with probability
+$( 1 \pm \epsilon ) / k$, $\epsilon = O( \log^2 k / k^{1/8} )$ ([Pătraşcu
+and Thorup 2012, Theorem 3](Z-bibliography.md#ref-patrascu2012)), and the
+maximum as well, since the complement of the hash is the hash whose first
+table is complemented, again with random tables. Since $\epsilon$ is
+bounded for all $k$, the hypothesis of the lemma holds with a constant $c$,
+the keys of each interval being read as the addresses of their nodes.
+Hence the expected depth of a node stays $O( \log n )$, whatever the keys, the
+addresses and the order of the operations, as long as they do not depend on
+the tables, and so do the costs of [Theorem 8.4](08-tree.md#thm-8-4) (the
+bound of [Lemma 8.36](08-tree.md#lem-8-36) on the rotations, however, rests
+on the probability of the first two of an interval, which the theorem does
+not give). Since the shape depends on the addresses, two runs may build the
+same set into different trees. In exchange for the smaller node, one pays a
+hash of 8 lookups in tables of 16 KB per priority read, i.e., two per level
+climbed by a new node and two per rotation of a removal. `HashedTreap` has
+the operations of the dictionary and of the SSET of `Treap`, its range of
+pairs and its contracts, but neither the sizes nor the operations by rank
+and by join.
 
 ### 8.6.5 Finger search {#sec-8-6-5}
 
@@ -2386,22 +2788,38 @@ finger ([Morin 2013, exercise 7.9](Z-bibliography.md#ref-morin-cpp);
 
 ![Figure 8.39. `fingerFind(6, u)` in a `FingerTreap` with the shape of [Figure 8.32](08-tree.md#fig-8-32), from the node $u$ of 4 (in orange), each node with its interval $[ \mathit{lo} , \mathit{hi} ]$: the climb to 5, the first ancestor whose interval holds 6, and the descent from it through 9 and 7 to 6 (in violet).](../figures/tree-finger.svg){#fig-8-39}
 
-In a treap, a node $v$ is an ancestor of a node $u$ if and only if $v$ has
-the largest priority among the keys from $v$ to $u$, both included. This is the characterization of the search paths of [§8.6.1](08-tree.md#sec-8-6-1)
-read on the treap as the tree of the insertions by decreasing priority
-([Lemma 8.24](08-tree.md#lem-8-24)). In particular, the lowest
-common ancestor of two nodes is the node of largest priority among the keys
-between them.
+Our analysis rests on the ancestors in a treap, which the priorities
+determine.
 
-<span id="lem-8-28"></span>**Lemma 8.28.** *([Seidel and Aragon
+<span id="lem-8-40"></span>**Lemma 8.40.** *In a treap with distinct
+priorities, a node $v$ is an ancestor of a node $u$ if and only if $v$ has
+the largest priority among the keys from $v$ to $u$, both included, and the
+lowest common ancestor of two nodes is the node of largest priority among
+the keys between them, both included.*
+
+*Proof.* By [Lemma 8.33](08-tree.md#lem-8-33) the treap is the binary search
+tree of the insertions by decreasing priority, and the ancestors of $u$ are
+the nodes of the search path for its key. By the argument before (8.4), a
+key $v$ is on that path if and only if it comes first in the order of
+insertion, i.e., it has the largest priority, among the keys from $v$ to
+$u$. Let $m$ have the largest priority among the keys from $u$ to $w$; it
+has the largest among the keys from $m$ to $u$ and from $m$ to $w$, and it
+is therefore a common ancestor. A common ancestor $a$ below $m$ would have
+both $u$ and $w$, and hence $m$, which lies between them, in its subtree,
+and therefore a priority larger than that of $m$, a contradiction.
+$\square$
+
+<span id="lem-8-41"></span>**Lemma 8.41.** *([Seidel and Aragon
 1996](Z-bibliography.md#ref-seidel1996).) Let $k$ be a key of a
 `FingerTreap` and $u$ a node, with $r$ keys strictly between $k$ and the key
 of $u$. Then `fingerFind( k , u )` visits $O( 1 + \log r )$ nodes in
-expectation.*
+expectation, and `insert()` and `remove()` cost $O( \log n )$ expected
+time.*
 
 *Proof.* Let $u$ hold the key $x < k$ (the other case is symmetric). Let $a$
 be the lowest common ancestor of $u$ and of the node of $k$, i.e., the
-node of largest priority among the $r + 2$ keys of $B = [ x , k ]$. Our climb stops at $a$: the interval of an ancestor of $u$ below $a$ lies in
+node of largest priority among the $r + 2$ keys of $B = [ x , k ]$ ([Lemma
+8.40](08-tree.md#lem-8-40)). Our climb stops at $a$: the interval of an ancestor of $u$ below $a$ lies in
 the subtree of one child of $a$, the one of $u$, and does not hold $k$,
 while the interval of $a$ holds both $x$ and $k$. Then the descent from $a$ to $k$ follows the ancestors of $k$ below $a$. We bound the expected number
 of the ancestors of $u$ below $a$; those of $k$ are bounded in the same
@@ -2420,7 +2838,12 @@ H_{r+2} - 1 \le H_{r+1} ,
 $$
 
 and the climb and the descent visit $O( 1 + \log r )$ nodes in expectation,
-by [Lemma 8.21](08-tree.md#lem-8-21). $\square$
+by [Lemma 8.30](08-tree.md#lem-8-30). Both the insertion and the removal make the
+rotations of `Treap` ([Theorem 8.4](08-tree.md#thm-8-4)), each updating the
+sizes and the extremes of its two nodes in $O( 1 )$ ([Lemma
+8.26](08-tree.md#lem-8-26)), and then walk from the place of the change to
+the root, along a path of ancestors whose expected length is $O( \log n )$
+by [Lemma 8.34](08-tree.md#lem-8-34). $\square$
 
 The same argument bounds the search of an absent key, on the treap of the
 keys and of the key searched. `lookupFrom( k , f )` searches from a finger
@@ -2441,15 +2864,31 @@ changed. Its removal rotates the node down until it has one child at most, the c
 of larger priority going up as in [Algorithm 8.33](08-tree.md#alg-8-33),
 splices it, and walks to the root in the same way.
 
-Both cost $O( \log n )$ expected time, the walk to the root being a path of
-the treap. `lookup()` searches from the root, and `select()` and `rank()`
-read the sizes as in `Treap`. Each node having three links, the class owns its nodes by plain pointers.
+Both cost $O( \log n )$ expected time ([Lemma 8.41](08-tree.md#lem-8-41)).
+`lookup()` searches from the root, and `select()` and `rank()`
+read the sizes as in `Treap` ([Lemma 8.37](08-tree.md#lem-8-37)). Each node having three links, the class owns its nodes by plain pointers.
 Hence it cannot be copied and it can be moved (the source is left empty).
 Its destructor frees the nodes by rotations, with no stack: while the current node has a left child it is
 rotated right, and otherwise it is freed and its right child becomes
-current. Each rotation moves one node to the right spine for good, and the
-destruction costs $O( n )$ for any shape. A node is three words larger than
-in `Treap` (the extremes and the parent), the price of the finger.
+current.
+
+<span id="lem-8-42"></span>**Lemma 8.42.** *The destruction by rotations
+of a binary tree of $n$ nodes makes fewer than $n$ rotations and frees the
+$n$ nodes, in $O( n )$ time and $O( 1 )$ space, whatever its shape.*
+
+*Proof.* Let the spine be the current node with the chain of the right
+children below it. A right rotation at the current node $c$ lifts its left
+child $\ell$, which becomes current, and puts $c$ on the spine below it;
+the nodes already on the spine stay there. A node freed is the current one,
+which leaves the spine at its top, its right child becoming current. Hence
+a node enters the spine once, by a rotation or because it was on the right
+spine of the root at the start, and the root is never rotated in; the
+rotations are at most $n - 1$, and each step costs $O( 1 )$ and keeps one
+pointer. $\square$
+
+`SplayTree` frees its nodes in the same way ([§8.8](08-tree.md#sec-8-8)). A
+node of `FingerTreap` is three words larger than in `Treap` (the extremes and
+the parent), the price of the finger.
 
 ### 8.6.6 Randomized binary search trees {#sec-8-6-6}
 
@@ -2494,7 +2933,7 @@ independent random binary search trees of their keys, since the order of
 the keys of each side is the restriction of a random order. We call such a
 tree *random* below; the empty tree is random.
 
-<span id="lem-8-29"></span>**Lemma 8.29.** *([Martínez and Roura
+<span id="lem-8-43"></span>**Lemma 8.43.** *([Martínez and Roura
 1998](Z-bibliography.md#ref-martinez1998).) Let $T$ be a random binary
 search tree. Then (i) the two trees of a split of $T$ at a key $k$ not in $T$
 are independent random binary search trees; (ii) the insertion of a key not
@@ -2507,7 +2946,7 @@ on its random choices.*
 
 *Proof.* (i) A random binary search tree has the distribution of a treap
 of its keys with independent and identically distributed priorities, by
-[Lemma 8.24](08-tree.md#lem-8-24), and the split cuts edges
+[Lemma 8.33](08-tree.md#lem-8-33), and the split cuts edges
 without reading any priority; on the treap, the two trees are heaps on the
 same priorities, i.e., the treaps of two disjoint sets of keys with
 independent priorities, which are independent random binary search trees.
@@ -2529,24 +2968,42 @@ join of its two subtrees, random by (iii). Otherwise the root
 stays, uniform among the other $m - 1$ keys, and the removal recurs into an
 independent random subtree. $\square$
 
+<span id="lem-8-44"></span>**Lemma 8.44.** *Each operation of
+`RandomizedSearchTree` on $n$ keys, after any sequence of insertions and
+removals that does not depend on its random choices, costs $O( \log n )$
+expected time; an insertion draws one random number per level that it
+goes down before the coin falls, and a removal one per step of its join.*
+
+*Proof.* By [Lemma 8.43](08-tree.md#lem-8-43) the tree is a random binary
+search tree. The searches, `select()` and `rank()` walk one search path
+([Lemma 8.37](08-tree.md#lem-8-37)), and an insertion of an absent $k$ follows
+the search path of $k$ down to the subtree where the coin falls, and the
+split of that subtree goes on along the same path, cutting its edges. The
+removal of $k$ follows the search path of $k$, and the join of the two
+subtrees of its node walks down the right spine of the left subtree and the
+left spine of the right one, which are the nodes below $k$ on the search
+paths of a value just smaller and of a value just larger than $k$. Each
+step costs $O( 1 )$, and each of these paths has expected length at most
+$2 \ln n + O( 1 )$ by [Lemma 8.31](08-tree.md#lem-8-31). $\square$
+
 The test of the exercise checks the distribution on 10000 trees of the keys
 1 to 5, each built by the insertions in increasing order and then by the
 removal and the reinsertion of 1: a path, of height 4, comes out with a
 frequency within 0.02 of $2^4 / 5!$, the probability of a path in a random
-binary search tree (the first key of the order is 1 or 5, and so on
-recursively). By [Lemma 8.29](08-tree.md#lem-8-29) and
-[Lemma 8.22](08-tree.md#lem-8-22), each operation of
-`RandomizedSearchTree` costs $O( \log n )$ expected time. Here `lookup()`, `contains()`, `lowerBound()`, `findKey()` and `lowerBoundKey()` are the
-searches of a binary search tree, and `select()` and `rank()` read the sizes
-as in `Treap`, the sizes being kept for the balance; hence the access by
-rank comes for free. Morin describes the same choices made by rotations
-([Morin 2013, §7.3](Z-bibliography.md#ref-morin-cpp)), namely the new leaf rotated up to the root of the subtree where the coin
-falls. The node removed is
-rotated down by the left with probability $s( u.\mathit{left} ) / ( s( u ) - 1 )$.
-The split and the join, instead, are the original form of Martínez and Roura. A node has a size instead of a priority, the same space. An insertion,
-however, draws a random number at each level until the coin falls, $O( \log n )$ in
-all, against one in a treap; this is where it should lose against the
-treap in the comparison that the exercise proposes, although we have not measured it.
+binary search tree ([Lemma 8.25](08-tree.md#lem-8-25), part 1). Here
+`lookup()`, `contains()`, `lowerBound()`, `findKey()` and `lowerBoundKey()`
+are the searches of a binary search tree, and `select()` and `rank()` read
+the sizes as in `Treap`, the sizes being kept for the balance; hence the
+access by rank comes for free. Morin describes the same choices made by
+rotations ([Morin 2013, §7.3](Z-bibliography.md#ref-morin-cpp)), namely the
+new leaf rotated up to the root of the subtree where the coin falls, and
+the node removed rotated down by the left with probability
+$s( u.\mathit{left} ) / ( s( u ) - 1 )$; the split and the join, instead,
+are the original form of Martínez and Roura. A node has a size instead of a
+priority, the same space. An insertion, however, draws $O( \log n )$ random
+numbers in expectation, against one in a treap. This is where it may
+lose against the treap in the comparison that the exercise proposes (we
+have not measured it).
 
 ## 8.7 AVL trees {#sec-8-7}
 
@@ -2565,7 +3022,7 @@ parent, its iterator is the `PathIterator` of
 [§1.8](01-introduction.md#sec-1-8). Its balance makes it somewhat
 lower than a Red-Black tree.
 
-<span id="lem-8-30"></span>**Lemma 8.30.** *An AVL tree of height
+<span id="lem-8-45"></span>**Lemma 8.45.** *An AVL tree of height
 $h$ has at least $F_{h+3} - 1$ nodes, $F_k$ the $k$-th number of Fibonacci
 ($F_1 = F_2 = 1$); hence an AVL tree of $n$ nodes has height*
 
@@ -2626,7 +3083,42 @@ the rotations made to mend them; the tests of exercise 9.12 of Morin read
 them, since the number of rebalancings distinguishes an insertion from a
 removal.
 
-<span id="lem-8-31"></span>**Lemma 8.31.** *An insertion in an
+<span id="lem-8-46"></span>**Lemma 8.46.** *Let the two subtrees of a node
+$z$ be AVL trees whose heights differ by at most 2. Then `balance( z )`
+makes, in $O( 1 )$ time, an AVL tree of the same keys with the heights and
+the sizes stored right; if the heights differ by 2, the higher being $H +
+2$, its height is $H + 2$ or $H + 3$, and it is $H + 2$ when a double
+rotation is made. Hence, by induction on the path, `insert()` and
+`remove()` leave an AVL tree, in $O( \log n )$ time.*
+
+*Proof.* If the heights differ by at most 1, `balance()` only recomputes the
+two measures of $z$ from its children. Otherwise, let the left subtree $y$
+be the higher, of height $H + 2$, the right one of height $H$, and $y_l$ and
+$y_r$ the subtrees of $y$, of heights $H + 1$ and $H$ or $H + 1$ in some
+order. If $h( y_l ) \ge h( y_r )$, the right rotation of $z$ makes $y$ the
+root, over $y_l$, of height $H + 1$, and over $z$, whose subtrees $y_r$ and
+the right one have the heights $H$ or $H + 1$ and $H$; $z$ has height $H +
+1$ or $H + 2$, and $y$ is balanced, of height $H + 2$ or $H + 3$. Otherwise
+$h( y_l ) = H$ and $h( y_r ) = H + 1$, and the subtrees of the root $x$ of
+$y_r$ have the heights $H$ and $H$ or $H - 1$. In this case, the double rotation makes $x$
+the root over $y$, with the subtrees $y_l$ and one of $x$, and over $z$,
+with the other subtree of $x$ and the right one, so that $y$ and $z$ have
+the height $H + 1$ and $x$ the height $H + 2$. Both rotations keep the order
+of the keys and recompute the measures of the nodes they move, the lower
+first ([Lemma 8.26](08-tree.md#lem-8-26)). For the updates, we show by
+induction from the bottom of the path that each subtree on it, once
+balanced, has a height at most one more (in an insertion) or at most one
+less (in a removal) than before the update. This holds for the new leaf and
+for the child that replaces the node removed. Above, one child of the node
+has changed its height by at most 1, the subtrees differ by at most 2, and
+`balance()` applies. Without a rotation the height changes with that of the
+child; with a rotation in an insertion, the subtree $y$ grew from $H + 1$
+to $H + 2$ through one child, so that $y_l$ and $y_r$ have the heights $H +
+1$ and $H$ and the new height is $H + 2$, as before the insertion; in a
+removal the old height was $H + 3$, given by the subtree that did not
+change, and the new one is $H + 2$ or $H + 3$. The recursion goes down $O( \log n )$ levels by (8.6). $\square$
+
+<span id="lem-8-47"></span>**Lemma 8.47.** *An insertion in an
 AVL tree rebalances at most one node, by one or two rotations, and costs
 $O( \log n )$ time (exercise 9.12 of Morin, first part).*
 
@@ -2640,11 +3132,11 @@ the new leaf. If that one is outside, the single rotation of
 subtrees of height $h + 1$. If it is inside, its own subtrees have the
 heights $h$ and $h$ or $h - 1$, and the double rotation leaves $x$ with two
 subtrees of height $h + 1$. In both cases the subtree has again the height
-$h + 2$ that it had before the insertion; hence no ancestor of $z$ changes
-its height, and none is unbalanced. Finally, the recursion goes down
+$h + 2$ that it had before the insertion ([Lemma 8.46](08-tree.md#lem-8-46));
+hence no ancestor of $z$ changes its height, and none is unbalanced. Finally, the recursion goes down
 $h \le 1.4405 \log_2( n + 2 )$ levels by (8.6). $\square$
 
-<span id="lem-8-32"></span>**Lemma 8.32.** *A removal from an
+<span id="lem-8-48"></span>**Lemma 8.48.** *A removal from an
 AVL tree costs $O( \log n )$ time and may rebalance every node of its path
 but the last. In particular, the removal of the leaf at the end of the path
 that goes to the lower subtree at each node of a tree of Fibonacci of
@@ -2670,7 +3162,7 @@ height $k - 1$, one less than before, which unbalances the next node above.
 The nodes rebalanced are the roots of $\Phi_k$ on the path with $k \ge 2$
 and $k \equiv h \pmod 2$, i.e., $\lfloor h / 2 \rfloor$ of them, every node
 of the path but the leaf and, for $h$ odd, the root of $\Phi_1$. Finally,
-$\Phi_h$ has $n = F_{h+3} - 1$ nodes by [Lemma 8.30](08-tree.md#lem-8-30),
+$\Phi_h$ has $n = F_{h+3} - 1$ nodes by [Lemma 8.45](08-tree.md#lem-8-45),
 and hence $h = \Theta( \log n )$. $\square$
 
 [Figure 8.42](08-tree.md#fig-8-42) shows the removal of 11
@@ -2687,7 +3179,8 @@ insertion of 20000 random keys and of 4096 increasing ones.
 Each node of `AVLTree` also keeps the size of its subtree, and the tree
 therefore has the operations based on join of [§8.12](08-tree.md#sec-8-12).
 Its join (`AVLJoin`, through the adaptor `AVLTreeNodes`) goes down the spine of the higher tree to a subtree of
-the height of the other one, in $O( | h_l - h_r | + 1 )$ time. Its
+the height of the other one, in $O( | h_l - h_r | + 1 )$ time ([Lemma
+8.82](08-tree.md#lem-8-82)). Its
 invariant, checked at the level 3, is the order of the keys, the heights and
 the sizes stored, and the balance of each node.
 
@@ -2712,7 +3205,7 @@ is a binary search tree that keeps no balance information at all. Each
 access moves the node accessed to the root by rotations, and the rotations,
 made in pairs, roughly halve the depths of the nodes on its path. No single
 operation is cheap in the worst case (a sequence of increasing insertions
-leaves a path); yet, any sequence of $m$ operations on at most $n$ keys costs
+leaves a path, by [Lemma 8.49](08-tree.md#lem-8-49)); yet, any sequence of $m$ operations on at most $n$ keys costs
 $O( ( m + n ) \log n )$ time, and the keys accessed often (but not always) stay near the root.
 `SplayTree` realizes the DICTIONARY. Its `lookup()`, `contains()`,
 `findKey()`, `lowerBound()` and `lowerBoundKey()` all splay and change the
@@ -2729,11 +3222,35 @@ are both left (or both right) children, rotates $z$ first and then $y$. The
 *zig-zag*, when they are children of different sides, rotates $y$ and then
 $z$ (the double rotation of the AVL trees). It is the order of the two rotations
 of the zig-zig, from the top, that distinguishes the splay from the plain
-rotation of $x$ to the root, which does not halve the depths and has no
-logarithmic amortized bound.
+rotation of $x$ to the root by single rotations, which does not halve the
+depths and has no logarithmic amortized bound, as the second part of the
+following lemma shows.
 
 ![Figure 8.43. The steps of the splay of $x$ (violet), with $A$ to $D$ subtrees: the zig, when the parent $y$ is the root; the zig-zig, which rotates the grandparent $z$ first; the zig-zag, which rotates $y$ first. The mirror steps are not drawn.](../figures/tree-splay-steps.svg){#fig-8-43}
 
+<span id="lem-8-49"></span>**Lemma 8.49.** *(i) The insertions of
+$1 , \ldots , n$ in increasing order into an empty `SplayTree` cost $O( 1 )$
+each and leave the path of left children from $n$ down to 1. (ii) With the
+rotation of the node accessed to the root by single rotations, the same
+insertions followed by the accesses to $1 , 2 , \ldots , n$ cost
+$\Theta( n^2 )$ in all, i.e., $\Theta( n )$ amortized per operation.*
+
+*Proof.* (i) Before the insertion of $k$ the root holds $k - 1$, the
+largest key, with no right child; the splay of $k$ stops at once, and the
+new root $k$ takes the old root as its left child and its empty right
+subtree as its right one. (ii) An insertion of the largest key hangs it to
+the right of the root, which is the largest key so far, and one rotation
+lifts it, which again leaves the left path of (i). Access $1$, at depth
+$n - 1$: lifting it by single rotations past $2 , 3 , \ldots , n$ makes
+each of them, in turn, the right child of $1$, with the previous one as its
+left child, and leaves the root $1$ over the left path from $n$ down to 2.
+By induction, after the accesses to $1 , \ldots , k$, $k \ge 1$, the root is
+$k$, its left subtree holds $1 , \ldots , k - 1$, and its right subtree is
+the left path from $n$ down to $k + 1$; the access to $k + 1$, at depth
+$n - k$, rearranges that path in the same way and a last rotation past $k$
+gives the same form for $k + 1$. The accesses cost
+$( n - 1 ) + \sum_{k=1}^{n-1} ( n - k ) = \Theta( n^2 )$ rotations.
+$\square$
 The splay of `SplayTree` is *top-down*, in one pass from the root that needs
 neither the links to the parents nor a stack. Going down the path of the key
 $k$, it sets aside the nodes met into a tree $L$ of the keys smaller than
@@ -2761,7 +3278,7 @@ a key and a value.
 the worst shape. Inserted in increasing order, the keys $1 , \ldots , 7$
 leave a path of left children, and `lookup( 1 )`, which costs 7 steps,
 leaves a tree of height 4, in which the other nodes of the path are about
-half as deep as before. Then `lookup( 4 )` then halves the depths again.
+half as deep as before, and `lookup( 4 )` then halves the depths again.
 
 ![Figure 8.44. The splays of a path in `SplayTree`: the keys 1 to 7 inserted in increasing order leave a path (left), `lookup(1)` brings 1 to the root and halves the depths of the other nodes of its path (middle), and `lookup(4)` follows (right); the node accessed in violet.](../figures/tree-splay-path.svg){#fig-8-44}
 
@@ -2772,7 +3289,7 @@ potential is the sum of the ranks, $\Phi = \sum_x r( x )$, and we measure
 the cost of a splay by its rotations, counting 1 for the last one when the
 steps leave a single rotation.
 
-<span id="lem-8-33"></span>**Lemma 8.33** (the access lemma).
+<span id="lem-8-50"></span>**Lemma 8.50** (the access lemma).
 *The splay of a node $x$ in a tree of root $t$, by the steps above or by
 the top-down pass of `SplayTree` ($x$ the last node of the path of the key),
 costs, amortized, at most*
@@ -2909,7 +3426,7 @@ successor search of a splay tree.
 
 --8<-- "generated/SplayTree-lowerBoundNode.pseudo.md"
 
-<span id="lem-8-34"></span>**Lemma 8.34.**
+<span id="lem-8-51"></span>**Lemma 8.51.**
 *`lowerBoundNode( k )` returns the node of the smallest key not smaller than
 $k$, or nil, in $O( \log n )$ amortized time, leaving it at the root or at
 the root of the right subtree of the root.*
@@ -2917,7 +3434,7 @@ the root of the right subtree of the root.*
 *Proof.* After the first splay, the root holds $k$ or the last node of its
 path. That node is the predecessor or the successor of $k$ among the keys,
 since the path turns at it for the last time, and by the argument of
-[Lemma 8.16](08-tree.md#lem-8-16) the last left turn is at the
+[Lemma 8.24](08-tree.md#lem-8-24) the last left turn is at the
 successor and, symmetrically, the last right turn at the predecessor. If its
 key is not smaller than $k$, it is $k$ or its successor, i.e., the answer.
 If the root $p$ is the predecessor, no key lies between $p$ and $k$, and $k$
@@ -2931,8 +3448,8 @@ Little is left to say on the remaining members. `root()` returns the key at the 
 any, which the tests read to check that the key of each access has reached
 it; `size()` and `forEach()` are as in the other trees, the latter by an
 iterative visit. Also, the destructor frees the nodes by right rotations at the
-root, with no stack, and the invariant, checked at the level 3, is the
-order of the keys. A splay tree cannot be copied, only moved, and the
+root, with no stack and in $O( n )$ time ([Lemma 8.42](08-tree.md#lem-8-42)),
+and the invariant, checked at the level 3, is the order of the keys. A splay tree cannot be copied, only moved, and the
 `PathIterator` of its standard interface ([§1.8](01-introduction.md#sec-1-8))
 is invalidated by any lookup, since the lookup splays.
 
@@ -2958,7 +3475,7 @@ data of the nodes that a rotation could not update in constant time and a
 rebuild can (e.g., the labels that encode the paths from the root,
 [§8.9.6](08-tree.md#sec-8-9-6)). Their price is a cost of the updates that is
 amortized only, and the rebuilds of $\Omega( n \log n )$ nodes that some
-sequences of $n$ insertions force ([Lemma 8.41](08-tree.md#lem-8-41)).
+sequences of $n$ insertions force ([Lemma 8.58](08-tree.md#lem-8-58)).
 
 ### 8.9.1 Rebuilding a subtree {#sec-8-9-1}
 
@@ -2999,36 +3516,47 @@ by their right links, with no vector ([Morin 2013, exercise
 
 --8<-- "generated/ScapegoatTree-Rebuild-toList.pseudo.md"
 
-<span id="lem-8-35"></span>**Lemma 8.35.** *A rebuild of a
-subtree of $s$ nodes takes $O( s )$ time, and the tree it builds has height
-$\lfloor \log_2 s \rfloor$, the least of all the binary trees of $s$
+<span id="lem-8-52"></span>**Lemma 8.52.** *A rebuild of a
+subtree of $s \ge 1$ nodes takes $O( s )$ time, and the tree it builds has
+height $\lfloor \log_2 s \rfloor$, the least of all the binary trees of $s$
 nodes. Both rebuilds build the same tree. The first uses $s$ places of
-memory besides the nodes and a recursion of depth $O( \log s )$, the second
-a recursion of depth at most $h + \lfloor \log_2 s \rfloor + 2$, $h$ the
-height of the subtree before the rebuild.*
+memory besides the nodes and a recursion of $\lfloor \log_2 s \rfloor + 2$
+calls at most, the second a recursion of at most $\max( h , \lfloor \log_2
+s \rfloor ) + 2$ calls, $h$ the height of the subtree before the rebuild.*
 
-*Proof.* `flatten()` follows each edge of the subtree at most three times
-(down, along the thread, and back). Each of `fromArray()`, `toList()` and
-`fromList()` makes one call per node and one per missing child, i.e.,
-$O( s )$ in all. Both `fromArray()` and `fromList()` put at the root of a
-part of $s$ nodes the node of rank $\lfloor ( s - 1 ) / 2 \rfloor$ of the
-part, in symmetric order, and recur on the two sides, and by induction on $s$
-they build the same tree. Its height $H( s )$ satisfies $H( 1 ) = 0$ and
-$H( s ) = 1 + H( \lceil ( s - 1 ) / 2 \rceil )$, whence $H( s ) =
-\lfloor \log_2 s \rfloor$ by induction, since $\lfloor \log_2 \lceil ( s
-- 1 ) / 2 \rceil \rfloor = \lfloor \log_2 s \rfloor - 1$ for $s \ge 2$.
-A binary tree of height $H$ has at most $2^{H+1} - 1$ nodes, and hence no
-tree of $s$ nodes is lower. Both `fromArray()` and `fromList()` halve the part at each level of their
-recursion. Since the recursion of `toList()`
-enters a right subtree at each call, its depth is at most the number
-of right links on a path from the root of the subtree, plus one.
-$\square$
+*Proof.* In `flatten()` the outer loop follows each edge of the subtree, or
+the thread that replaces it, once downward, and the inner loop of a node
+$u$ with a left child walks the right spine of the left subtree of $u$
+twice, once to make the thread to $u$ and once to remove it. Since an edge
+is on the right spine of the left subtree of one node at most (the lowest
+ancestor from whose left child it is reached by right links only), the
+loops make $O( s )$ steps in all. Each of `fromArray()`, `toList()` and
+`fromList()` makes one call per node and at most one per missing child,
+i.e., $O( s )$ calls of constant time. Both `fromArray()` and `fromList()`
+put at the root of a part of $s$ nodes the node of rank $\lfloor ( s - 1 )
+/ 2 \rfloor$ of the part, in symmetric order, and recur on the parts of
+$\lfloor ( s - 1 ) / 2 \rfloor$ and $\lceil ( s - 1 ) / 2 \rceil$ nodes
+on its two sides; by induction on $s$ they build the same tree. Its height
+$H( s )$ satisfies $H( 1 ) = 0$ and $H( s ) = 1 + H( \lceil ( s - 1 ) / 2
+\rceil )$ for $s \ge 2$, whence $H( s ) = \lfloor \log_2 s \rfloor$ by
+induction, since $\lceil ( s - 1 ) / 2 \rceil = \lfloor s / 2 \rfloor$
+and $\lfloor \log_2 \lfloor s / 2 \rfloor \rfloor = \lfloor \log_2 s
+\rfloor - 1$ for $s \ge 2$. A binary tree of height $H$ has at most
+$2^{H+1} - 1$ nodes, and hence no tree of $s$ nodes is lower. The same
+recurrence, with one more call on an empty part at the bottom, bounds the
+calls open at once in `fromArray()` and in `fromList()`. Finally, each call
+of `toList()` that is open when another one starts has entered the right
+subtree of a node of the spine it walks. The calls open at once are thus at
+most the right links of a path from the root of the subtree, plus one for
+the root and one for an empty subtree, i.e., $h + 2$ at most, and
+`fromList()` starts only after `toList()` has returned. $\square$
 
-In the scapegoat trees $h = O( \log n )$ at any time, and the recursion of
-`toList()` is hence as shallow as that of the other functions. Also, the list
-saves the vector, while `fromArray()` reads its nodes in the order of the
-vector, which we expect to be the faster of the two (the benchmarks compare
-them).
+In the scapegoat trees $h = O( \log n )$ at any time, by the invariant (8.8)
+below, and the
+recursion of `toList()` is hence as shallow as that of the other functions.
+Also, the list saves the vector, while `fromArray()` reads its nodes in the
+order of the vector, which we expect to be the faster of the two (the
+benchmarks compare them).
 
 ### 8.9.2 The scapegoat tree {#sec-8-9-2}
 
@@ -3113,7 +3641,7 @@ In this example the rule `HEIGHT` stops higher than the rule `WEIGHT`, and
 rebuilds a larger subtree (we have not proved that this always happens);
 the lemmas that follow show why both rules stop at all.
 
-<span id="lem-8-36"></span>**Lemma 8.36.** *([Morin 2013,
+<span id="lem-8-53"></span>**Lemma 8.53.** *([Morin 2013,
 Lemma 8.1](Z-bibliography.md#ref-morin-cpp), with $b$ for $3 / 2$.) Let
 $u$ be a node of depth $d > \log_b q$. Then the path from the root to $u$
 has a node $w$ whose child $c$ on the path has $s( c ) > s( w ) / b$; hence
@@ -3124,7 +3652,7 @@ and suppose that $s( u_{i+1} ) \le s( u_i ) / b$ for all $i < d$. Then
 $s( u_i ) \le n / b^i$, and $1 \le s( u ) \le n / b^d < n / b^{\log_b q}
 = n / q \le 1$, a contradiction. $\square$
 
-<span id="lem-8-37"></span>**Lemma 8.37.** *(The rule
+<span id="lem-8-54"></span>**Lemma 8.54.** *(The rule
 of [Galperin and Rivest 1993](Z-bibliography.md#ref-galperin1993).) Let the
 new leaf $u$ have the depth $d > \log_b q$. Then some ancestor $w$ of $u$
 has $b^{d - \mathrm{depth}( w )} > s( w )$; the deepest one, the scapegoat
@@ -3136,7 +3664,7 @@ since $b^0 = 1 = s( u )$. Hence the climb from $u$ stops at a proper
 ancestor of $u$. In turn, the child $c$ of the deepest qualifying ancestor $w$ does
 not qualify, i.e., $s( c ) \ge b^{d - \mathrm{depth}( c )} = b^{d -
 \mathrm{depth}( w ) - 1} > s( w ) / b$. By
-[Lemma 8.35](08-tree.md#lem-8-35) the rebuilt subtree has
+[Lemma 8.52](08-tree.md#lem-8-52) the rebuilt subtree has
 height $\lfloor \log_2 s( w ) \rfloor \le \log_b s( w ) < d -
 \mathrm{depth}( w )$, since $b < 2$, i.e., at most $d - \mathrm{depth}( w )
 - 1$; its nodes are hence at depth at most $d - 1$. $\square$
@@ -3148,7 +3676,7 @@ lowers it by one level at least. We remark that the second step needs a
 fact that the argument leaves unstated, which the next lemma makes
 explicit.
 
-<span id="lem-8-38"></span>**Lemma 8.38.** *Let the
+<span id="lem-8-55"></span>**Lemma 8.55.** *Let the
 new leaf $u$ have the depth $d > \log_b q$, and let $w$ be the scapegoat of
 the rule `WEIGHT`. Then after the rebuild of the subtree of $w$ no node is
 deeper than $d - 1$.*
@@ -3162,7 +3690,7 @@ perfect; after the insertion the child $c$ of $w$ on the path would then
 hold $2^{H-1}$ of the $s( w ) = 2^H$ nodes, the fraction $1 / 2 < 1 / b$,
 and $w$ would not be the scapegoat. Thus $s( w ) \le 2^H - 1$, and the
 rebuilt subtree has height $\lfloor \log_2 s( w ) \rfloor \le H - 1$ by
-[Lemma 8.35](08-tree.md#lem-8-35). $\square$
+[Lemma 8.52](08-tree.md#lem-8-52). $\square$
 
 <span id="rem-8-2"></span>**Remark 8.2.** It is the fact that
 $u$ is the only node at its depth that makes the subtree of $w$, not complete, lose
@@ -3176,7 +3704,7 @@ course, this configuration cannot arise, since the other leaf of $c$ would
 have had the depth $d$ of $u$ before the insertion, against (8.8).
 We remark that Morin's rule therefore keeps the bound with no further check:
 the test $i = 0$ of the code, which takes the root when no node of the path
-qualifies, is never met by [Lemma 8.36](08-tree.md#lem-8-36), and guards
+qualifies, is never met by [Lemma 8.53](08-tree.md#lem-8-53), and guards
 only against the rounding of the products $b \cdot s( c )$. The invariant
 of the class checks $h \le \log_b q$ after each operation at the contract
 level 3, and the tests run both rules on random sequences of insertions and
@@ -3188,7 +3716,7 @@ The time of an operation is that of its descent, $O( \log n )$ by
 (8.8), plus that of the climb to the scapegoat and of the rebuild,
 which the next two lemmas bound. We write $w$ for the scapegoat.
 
-<span id="lem-8-39"></span>**Lemma 8.39.** *([Morin 2013,
+<span id="lem-8-56"></span>**Lemma 8.56.** *([Morin 2013,
 Lemma 8.2](Z-bibliography.md#ref-morin-cpp), and exercises 8.5 and 8.6.)
 With the sizes stored in the nodes, the climb and the rebuild take
 $O( s( w ) )$ time. With the sizes counted at each step (`RECOMPUTE`) they
@@ -3198,7 +3726,7 @@ that of the other child counted (`REUSE`, the default) they take
 $O( s( w ) )$ under both rules.*
 
 *Proof.* A rebuild takes $O( s( w ) )$ by
-[Lemma 8.35](08-tree.md#lem-8-35), and the climb visits the
+[Lemma 8.52](08-tree.md#lem-8-52), and the climb visits the
 $k = d - \mathrm{depth}( w )$ nodes $u_1 , \ldots , u_k = w$ of the path
 above $u = u_0$, with $k \le s( w )$. Stored sizes are read in $O( 1 )$
 each. Under `REUSE` the step to $u_i$ counts the other child of $u_i$, a
@@ -3213,7 +3741,7 @@ But the child $c = u_{k-1}$ of $w$ does not qualify, i.e., $b^{k-1} \le s(
 c ) < s( w )$, whence $k < \log_b s( w ) + 1$ and the counts sum to $O( s(
 w ) \log s( w ) )$. $\square$
 
-<span id="lem-8-40"></span>**Lemma 8.40.** *([Morin 2013,
+<span id="lem-8-57"></span>**Lemma 8.57.** *([Morin 2013,
 Lemma 8.3](Z-bibliography.md#ref-morin-cpp), with $b$ for $3 / 2$.)
 Starting from an empty tree, any sequence of $m$ insertions and removals
 spends $O\bigl( \frac{b}{2 - b} \, m \log_b m \bigr)$ time in the
@@ -3227,7 +3755,7 @@ before the operation, and each removal puts one more credit
 aside: in all, $O( c \, m \log_b m )$ credits (for $m \ge 2$). A rebuild of the subtree of
 $w$ in an insertion is paid by the credits of $w$. Under both rules $w$ has
 a child $x$ on the path with $s( x ) > s( w ) / b$
-([Lemma 8.37](08-tree.md#lem-8-37), or the rule
+([Lemma 8.54](08-tree.md#lem-8-54), or the rule
 `WEIGHT` itself), and the other child $y$ has $s( y ) = s( w ) - 1 - s( x
 )$, whence
 $$
@@ -3255,15 +3783,15 @@ counted under the rule `WEIGHT`), on $\Theta( n )$ space and two links per
 node.*
 
 *Proof.* Our bounds on the searches follow from (8.8).
-Insertions keep it by [Lemma 8.37](08-tree.md#lem-8-37)
-and [Lemma 8.38](08-tree.md#lem-8-38): the new leaf has the depth $d \le
+Insertions keep it by [Lemma 8.54](08-tree.md#lem-8-54)
+and [Lemma 8.55](08-tree.md#lem-8-55): the new leaf has the depth $d \le
 \log_b ( q - 1 ) + 1$, and after a rebuild no node is deeper than $d - 1 \le
 \log_b ( q - 1 ) < \log_b q$. Removals keep it,
 since they never deepen a node, and a rebuild from the root leaves the
 height $\lfloor \log_2 n \rfloor \le \log_b n$ with $q = n$. Finally, the updates
 add to their descent the climb and the rebuild, which
-[Lemma 8.39](08-tree.md#lem-8-39) and
-[Lemma 8.40](08-tree.md#lem-8-40) bound in the amortized
+[Lemma 8.56](08-tree.md#lem-8-56) and
+[Lemma 8.57](08-tree.md#lem-8-57) bound in the amortized
 sense: an operation gives at most $c \, ( \log_b q + 1 ) \le c \, ( \log_b n
 + \log_b 2 + 1 )$ credits, $n$ and $q$ those of the tree before it, since
 $q \le 2 n$. $\square$
@@ -3277,7 +3805,7 @@ that require to illustrate the insertions by
 tree reaches the height 6 with 12 keys. Inserted into an empty tree,
 1, 5, 2, 4, 3 build a path, each key going to the end of it, until 3
 reaches the depth $4 > \log_{3/2} 5 \approx 3.97$. By then, the credits of the
-proof of [Lemma 8.40](08-tree.md#lem-8-40) (in units of the
+proof of [Lemma 8.57](08-tree.md#lem-8-57) (in units of the
 constant $c = 3$ of $b = 3 / 2$, one per ancestor and per insertion) have
 gathered on the ancestors: 4 on the root, 3 on 5, 2 on 2 and 1 on 4.
 Under the rule `WEIGHT` the climb stops at 5, whose child 2 holds $3 > \frac23 \cdot 4$ of
@@ -3294,7 +3822,7 @@ $1.5^4 \approx 5.06 > 5$ at the root, and rebuilds the five nodes with the
 An amortized bound is all a scapegoat tree can give: some sequences make
 it rebuild a lot.
 
-<span id="lem-8-41"></span>**Lemma 8.41.** *([Morin 2013,
+<span id="lem-8-58"></span>**Lemma 8.58.** *([Morin 2013,
 exercise 8.3](Z-bibliography.md#ref-morin-cpp).) Under the rule `WEIGHT`
 with $\sqrt{2} < b < 2$, the insertions of $1 , 2 , \ldots , n$ into an
 empty `ScapegoatTree` rebuild at least*
@@ -3339,9 +3867,10 @@ $\log_b n = \log_2 n / \log_2 b$ and $2 \log_2 e + 1 < 3.9$. $\square$
 
 The argument does not cover the other cases, which we leave as measured.
 Under the rule `HEIGHT` (the default) the nodes of the climb below the
-scapegoat need not shrink by $b$, and the loss of $a$ in a rebuild is
-bounded only by $s ( H - \log_2 s + O( 1 ) )$, $H$ the height of the subtree
-before it; for $b \le \sqrt{2}$ the spine may be longer than $\log_2 n$ by
+scapegoat need not shrink by $b$, and our argument bounds the loss of $a$
+in a rebuild of $s$ nodes only by $s H$, $H$ the height of the subtree
+before it (each node loses at most the ancestors it had inside the subtree).
+For $b \le \sqrt{2}$ the spine may be longer than $\log_2 n$ by
 a factor $1 / \log_2 b \ge 2$, and the bound on $a( x )$ at the end no
 longer falls below its value at the insertion. In both cases one would need
 the rebuilds at each depth of the spine, which the simulations show recur
@@ -3360,9 +3889,11 @@ exercise 8.4](Z-bibliography.md#ref-morin-cpp)). By (8.8) and
 = \ln n / \ln b + O( 1 )$ steps, which grows without bound as $b$ nears 1.
 An update costs $O( \log_b n )$ for its descent plus $O\bigl( \frac{b}{2 -
 b} \log_b n \bigr)$ for its share of the rebuilds, which grows without bound
-as $b$ nears 2. Near 1 the tree behaves much like a plain binary search tree that
-rebuilds rarely, and near 2 a perfectly balanced tree that rebuilds at almost each
-update. The test of the exercise checks the height bound for $b \in \{ 1.05
+as $b$ nears 2. Near 1 the bound $\log_b q$ is far above the height of
+most sequences, and the tree rebuilds rarely; near 2 it is close to $\log_2
+q$, i.e., the tree must stay nearly perfectly balanced, and the rebuilds
+cost more per update by the factor $b / ( 2 - b )$ of
+[Lemma 8.57](08-tree.md#lem-8-57). The test of the exercise checks the height bound for $b \in \{ 1.05
 , 1.2 , 1.5 , 1.9 \}$, and that the nodes rebuilt by 4000 random insertions
 grow with $b$ (`ods_trees.ods-ex8.4.scapegoat-base`).
 
@@ -3393,13 +3924,31 @@ of the nodes.
 | $b$ | $1 < b < 2$, default $3 / 2$ | the height bound $\log_b q$ | 8.4 |
 
 Sizes stored in the nodes cost one increment (or decrement) per node of
-the path of each update, which the climb then saves, whereas sizes counted cost
-nothing outside the climbs, which are usually rare. All the variants make the same
-decisions and build the same trees, since neither the rule nor the shape of
-a rebuild depends on how a size is obtained or on how the nodes are
-gathered. In the test of the exercises we check that all of them, for both
-rules, make the same rebuilds of the same numbers of nodes and end with the
-same height on a random sequence of 20000 operations
+the path of each update, which the climb then saves, whereas sizes counted
+cost nothing outside the climbs, which are usually rare. The choice among
+the variants changes the time of an operation, and nothing else, as we now
+show.
+
+<span id="lem-8-59"></span>**Lemma 8.59.** *For a given $b$ and a given
+rule `Scapegoats`, the trees `ScapegoatTree< K , V , S >` with $S$ true or
+false, under any choice of `Sizes` and of `Rebuilds`, go through the same
+sequence of trees, the same rebuilds and the same counters $n$ and $q$ on
+any sequence of operations.*
+
+*Proof.* By induction on the operations. The descent, the leaf added or the
+node spliced, the counters and the test $b^d > q$ depend only on the tree
+and on $n$ and $q$, which are the same by induction. In the climb, the step
+to $u_i$ obtains the number $s( u_i )$, whether it reads it in the node,
+counts the subtree, or adds 1 and the count of the other child to the size
+of the child on the path, which is $s( u_{i-1} )$ by induction on $i$. The
+tests of both rules are then the same comparisons of the same numbers in
+floating point, with the same table of the powers of $b$, and they select
+the same scapegoat. Last, by [Lemma 8.52](08-tree.md#lem-8-52) the two
+rebuilds build the same tree on the same nodes. $\square$
+
+In the test of the exercises we check that all of them, for both rules,
+make the same rebuilds of the same numbers of nodes and end with the same
+height on a random sequence of 20000 operations
 (`ods_trees.ods-ex8.5.scapegoat-variants`). In addition, the counters `rebuilds()` and
 `rebuiltNodes()` give the number of the rebuilds and the nodes they moved,
 i.e., the work that the lemmas above bound, and `height()` measures the
@@ -3473,7 +4022,7 @@ drift from perfect balance after a number of operations.
 
 ![Figure 8.48. The rebuilds of two trees of partial rebuilding. Above, the `WeightRebuildTree` of 0, ..., 5 after the insertion of 6 (in orange), with the size of each subtree beside its node: the root holds 7 nodes and its right child 5, $3 \cdot 5 > 2 \cdot 7$, and the whole tree is rebuilt (right, in orange). Below, the `CountdownTree` of 0, ..., 8 after the insertion of 9, with the size and the timer of each node: the timer of the root, decremented first, reaches 0 and the whole tree is rebuilt, its timers set to a third of the new sizes. The states are those that the code prints.](../figures/tree-partial.svg){#fig-8-48}
 
-<span id="lem-8-42"></span>**Lemma 8.42.** *Let a node be
+<span id="lem-8-60"></span>**Lemma 8.60.** *Let a node be
 rebuilt with $s$ nodes in its subtree, and let $k$ insertions and removals
 go through it after that, $i$ insertions and $r$ removals. Then each of its
 children holds at most $\frac34$ of its subtree if $3 k \le s$, and at most
@@ -3494,19 +4043,25 @@ insertion or a removal $O( \log n )$ amortized time. A `DynamiteTree`
 spends $O( \delta )$ expected time in the rebuilds of an operation of depth
 $\delta$.*
 
-*Proof.* In a `WeightRebuildTree` each node keeps its children within
-$\frac23$ of its subtree: a node whose child goes beyond is on the path of
-the operation that did it, and the rule rebuilds it, or an ancestor. Hence
-the sizes shrink by $\frac32$ at least at each level. A node rebuilt with
+*Proof.* We count a node added as a leaf as rebuilt with one node (its
+timer is then 0, as $\lfloor 1 / 3 \rfloor$), and we note that a rebuild
+leaves each node of the subtree with children of at most $\lceil ( s - 1 ) /
+2 \rceil$ of its $s$ nodes, by [Lemma 8.52](08-tree.md#lem-8-52). In a
+`WeightRebuildTree` each node keeps its children within $\frac23$ of its
+subtree: a node whose child goes beyond is on the path of the operation
+that did it, and the rule rebuilds it, or an ancestor. Hence the sizes
+shrink by $\frac32$ at least at each level, and a node at the depth $d$ has
+$1 \le ( 2 / 3 )^d n$ nodes in its subtree. A node rebuilt with
 $s$ nodes is selected again only after its children go beyond $\frac23$,
-i.e., by [Lemma 8.42](08-tree.md#lem-8-42), after more than
-$s / 4$ operations through it. Charging the $O( s )$ of the rebuild to them
+i.e., by [Lemma 8.60](08-tree.md#lem-8-60), after more than $s / 4$
+operations through it, which leave it with less than $5 k$ nodes, $k$ their
+number. Charging the $O( k )$ of the rebuild to them
 costs $O( 1 )$ per operation and per node of its path, which has
 $O( \log n )$ nodes. In a `CountdownTree` a node rebuilt with $s$ nodes is
 selected after at most $\lfloor s / 3 \rfloor$ operations through it (fewer
 if an ancestor is rebuilt first, which resets its timer). Its children thus
 stay within $\frac34$ of its subtree by
-[Lemma 8.42](08-tree.md#lem-8-42), and the height is at most
+[Lemma 8.60](08-tree.md#lem-8-60), and the height is at most
 $\log_{4/3} n$ plus the $O( 1 )$ levels of the subtrees of fewer than 3
 nodes, whose timer is 0, and the next operation through them rebuilds them
 at a constant cost. Rebuilding a node of $s \ge 3$ nodes costs $O( s
@@ -3516,25 +4071,40 @@ subtree is not larger than the sum of the subtrees of the nodes that
 explode; a node $u$ of the path contributes $s( u ) \cdot 1 / s( u ) = 1$
 to the expectation of that sum. $\square$
 
-The depth of a `DynamiteTree` is $O( \log n )$ in expectation by the
-following argument, which rests on one assumption that we state and do not
-prove. By [Lemma 8.42](08-tree.md#lem-8-42), a child of a node rebuilt with
-$s$ nodes goes past $\frac34$ of its subtree only after $k > s / 3$
-operations through the node, the $t$-th of which leaves it with at most $s
-+ t$ nodes and explodes it, and rebuilds it (by itself or within an
-ancestor), with probability at least $1 / ( s + t )$, independently of the
-past. The node survives $k$ operations with probability at most
-$\prod_{t=1}^{k} ( 1 - 1 / ( s + t ) ) = s / ( s + k ) < 3 / 4$. Call an
-edge of a path from the root bad when the child holds more than $\frac34$
-of the subtree of the parent; a path has at most $\log_{4/3} n$ good edges.
-If, given the nodes of the path above it and their history, each edge is
-bad with probability at most $3 / 4$, the bad edges are dominated by
-independent trials, and the expected depth is at most $4 \log_{4/3} n +
-O( 1 )$, which makes an operation cost $O( \log n )$ in expectation. This
-conditional bound is the assumption: the bound $s / ( s + k )$ holds for a
-node fixed in advance, while the node at a given depth of the path, and the
-time of its last rebuild, depend on the same explosions, and we have no
-proof that conditioning on them cannot raise the probability above $3 / 4$.
+We have no proof that the depth of a `DynamiteTree` is $O( \log n )$ in
+expectation, only a reduction of it to an assumption, which the next lemma
+states. Its motivation is [Lemma 8.60](08-tree.md#lem-8-60): a child of a
+node rebuilt with $s$ nodes goes past $\frac34$ of its subtree only after $k
+> s / 3$ operations through the node, the $t$-th of which leaves it with at
+most $s + t$ nodes and explodes it (and rebuilds it, by itself or within an
+ancestor) with probability at least $1 / ( s + t )$, independently of the
+past. A node fixed in advance thus survives $k$ such operations with
+probability at most $\prod_{t=1}^{k} ( 1 - 1 / ( s + t ) ) = s / ( s + k )
+< 3 / 4$. We call an edge of a path from the root *bad* when the child holds
+more than $\frac34$ of the subtree of the parent, and *good* otherwise.
+
+<span id="lem-8-61"></span>**Lemma 8.61.** *Assume that, on the path from
+the root of a `DynamiteTree` of $n \ge 1$ nodes to any of its nodes, each
+edge is bad with probability at most $3 / 4$ given the edges above it on the
+path and the explosions that made them. Then the expected depth of each
+node is at most $4 \log_{4/3} n + 4$, and an operation costs $O( \log n )$
+expected time.*
+
+*Proof.* The subtree below a good edge has at most $\frac34$ of the nodes of
+the subtree above it, and hence a path from the root has fewer than $L =
+\lfloor \log_{4/3} n \rfloor + 1$ good edges. Let us extend the edges of
+the path, from the top, by independent trials that are good with
+probability $1 / 4$ after its last edge. By the assumption, the number $T$
+of edges and trials up to the $L$-th good one is dominated by the number of
+independent trials of success probability $1 / 4$ up to the $L$-th success,
+whose expectation is $4 L$. The depth is less than $T$, whence the first
+claim, and the second follows from it and from
+[Theorem 8.8](08-tree.md#thm-8-8). $\square$
+
+The assumption is what we cannot prove: the bound $s / ( s + k )$ holds for
+a node fixed in advance, while the node at a given depth of the path, and
+the time of its last rebuild, depend on the same explosions, and conditioning
+on them may raise the probability that its edge is bad above $3 / 4$.
 Our tests check the invariants and a
 differential run of 20000 operations against `std::map` for each tree.
 They also compare the height of the trees built by $2^{12}$ insertions in
@@ -3609,7 +4179,7 @@ search for an absent key ends. [Figure 8.50](08-tree.md#fig-8-50)
 9.1](Z-bibliography.md#ref-morin-cpp), with the keys of
 [Figure 8.50](08-tree.md#fig-8-50) (a) in its nodes.
 
-<span id="lem-8-43"></span>**Lemma 8.43.** *([Morin 2013,
+<span id="lem-8-62"></span>**Lemma 8.62.** *([Morin 2013,
 Lemma 9.1](Z-bibliography.md#ref-morin-cpp).) A 2-4 tree with $n_\ell$
 leaves has height at most $\log_2 n_\ell$.*
 
@@ -3630,7 +4200,8 @@ between them); if $w'$ has two children, $w$ is *merged* with $w'$ and the
 key between them into a node of three children. Then the parent of $w$, which
 loses a child, is treated in the same way, up to a node with more than
 two children, or to the root, which is removed when left with one child.
-Each process climbs at most $\log_2 n_\ell$ levels.
+By [Lemma 8.62](08-tree.md#lem-8-62), each process climbs at most
+$\log_2 n_\ell$ levels.
 
 `BTree` of minimum degree $t = 2$ ([§8.11](08-tree.md#sec-8-11)) is a 2-4
 tree. It restructures in one pass from the root down, however: it splits
@@ -3689,39 +4260,78 @@ the two properties ([Morin 2013, §9.2](Z-bibliography.md#ref-morin-cpp)):
 - the *no-red-edge property*: no red node has a red parent, i.e., the
   colours of a node and of its parent sum to 1 at least.
 
-We can always colour the root black, and the algorithms keep it so.
-Removing each red node and hanging its two children on its black parent
-turns a red-black tree into a 2-4 tree, by the two properties. Indeed, a
-black node with two black children keeps two, one with a red and a black
-child gets three, one with two red children gets four, and all the paths
-from the root to a nil cross the same number of black nodes
-([Figure 8.50](08-tree.md#fig-8-50), (a) and (b), the trees of
-[Morin 2013, figures 9.4 and 9.5](Z-bibliography.md#ref-morin-cpp)).
+We can always colour the root black, and the algorithms keep it so. Then
+removing each red node and hanging its two children on its black parent
+turns the tree into a 2-4 tree ([Figure 8.50](08-tree.md#fig-8-50), (a)
+and (b), the trees of [Morin 2013, figures 9.4 and
+9.5](Z-bibliography.md#ref-morin-cpp)), as the next lemma proves.
+
+<span id="lem-8-63"></span>**Lemma 8.63.** *Let a red-black tree of $n$
+nodes have a black root. Grouping each black node with its red children
+gives a 2-4 tree whose internal nodes are the groups, whose $n + 1$ leaves
+are the nil, and whose keys are those of the group in symmetric order; its
+height is the number of black nodes, the nil excluded, on any path from the
+root to a nil.*
+
+*Proof.* By the no-red-edge property, and since the root is black, each
+red node has a black parent, and the groups partition the nodes. A group of
+a black node $x$ with $r \in \{ 0 , 1 , 2 \}$ red children has $1 + r$
+keys, and its children in the 2-4 tree are the black children (or nil) of
+$x$ and the children of its red children, which are black or nil by the
+no-red-edge property, i.e., $2 + r$ of them. The symmetric order of the
+binary tree lists the keys of a group between those of its children, which
+is the order of a search tree. Finally, a path from the root to a nil
+enters a new group at each black node it meets and at nothing else, and by
+the black-height property all the nil are at the same depth of the 2-4
+tree. $\square$
 
 ![Figure 8.50. Red-black trees and their 2-4 trees, the red nodes in orange and the nil leaves of the 2-4 trees as small empty squares. (a) A red-black tree of black height 3, that of [Morin 2013, figure 9.4](Z-bibliography.md#ref-morin-cpp) with its nodes numbered in symmetric order, which is not left-leaning at 8, whose left child is black and right child red. (b) Its 2-4 tree, of height 3. (c) The left-leaning red-black tree of [Morin 2013, figure 9.11](Z-bibliography.md#ref-morin-cpp), on which the exercises 9.1 to 9.3 are set, built by `LeftLeaningRedBlackTree`. (d) Its 2-4 tree, which [Morin 2013, exercise 9.1](Z-bibliography.md#ref-morin-cpp) requires.](../figures/tree-redblack-24.svg){#fig-8-50}
 
-<span id="lem-8-44"></span>**Lemma 8.44.** *([Morin 2013,
+<span id="lem-8-64"></span>**Lemma 8.64.** *([Morin 2013,
 Lemma 9.2](Z-bibliography.md#ref-morin-cpp).) A red-black tree of $n \ge 1$
 nodes has height at most $2 \log_2 ( n + 1 ) - 2 \le 2 \log_2 n$.*
 
-*Proof.* Its 2-4 tree has the $n + 1$ nil as leaves, and hence height at
-most $\log_2 ( n + 1 )$ by [Lemma 8.43](08-tree.md#lem-8-43);
-i.e., a path from the root to a nil has at most $\log_2 ( n + 1 )$ black
-nodes besides the nil. On such a path the first node is black and no two
-red nodes are consecutive, and at most $\log_2 ( n + 1 ) - 1$ nodes are
-thus red. A path from the root to a node has therefore at most $2 \log_2 (
-n + 1 ) - 1$ nodes, i.e., $2 \log_2 ( n + 1 ) - 2$ edges, at most $2
-\log_2 n$ for $n \ge 1$. $\square$
+*Proof.* Its 2-4 tree of [Lemma 8.63](08-tree.md#lem-8-63) has the $n + 1$
+nil as leaves, and hence a height $\hat{b} \le \log_2 ( n + 1 )$ by
+[Lemma 8.62](08-tree.md#lem-8-62); i.e., a path from the root to a nil has
+$\hat{b}$ black nodes besides the nil. On such a path the first node is
+black and each red node follows a black one. Hence the path from the
+root to a deepest node, of $B = \hat{b}$ black and $R \le B$ red nodes, has
+$B + R - 1 \le 2 \hat{b} - 1$ edges. If $R < B$, the height is at most $2
+\hat{b} - 2 \le 2 \log_2 ( n + 1 ) - 2$. Otherwise $R = B = \hat{b} \ge 1$,
+and each of the $\hat{b}$ black nodes of the path has a red child on it.
+The group of each of them in the 2-4 tree has then at least three children,
+two of which are off the path, and by induction from the bottom the subtree
+of the group at the height $j$ of the 2-4 tree has at least $2^{j+1} - 1$
+leaves, since $2 \cdot 2^{j-1} + ( 2^j - 1 ) = 2^{j+1} - 1$. Hence $n + 1
+\ge 2^{\hat{b} + 1} - 1 \ge 2^{\hat{b} + 1 / 2}$ for $\hat{b} \ge 1$,
+i.e., $2 \hat{b} - 1 \le 2 \log_2 ( n + 1 ) - 2$. Finally, $2 \log_2 ( n + 1
+) - 2 \le 2 \log_2 n$ for $n \ge 1$, since $n + 1 \le 2 n$. $\square$
 
 The same 2-4 tree is represented by many red-black trees, since a node of
 three children can be a black node with a red left child or with a red
 right child. The *left-leaning property* removes the choice ([Morin 2013,
 §9.2.2](Z-bibliography.md#ref-morin-cpp); [Sedgewick
 2008](Z-bibliography.md#ref-sedgewick2008)): at each node, if the left
-child is black, so is the right one. A node of degree 2 is then a black node
-with two black children, one of degree 3 a black node with a red left child
-and a black right one, one of degree 4 a black node with two red children,
-and each 2-4 tree has exactly one left-leaning representation.
+child is black, so is the right one.
+
+<span id="lem-8-65"></span>**Lemma 8.65.** *In a left-leaning red-black tree
+with a black root, a node of degree 2 of the 2-4 tree of [Lemma
+8.63](08-tree.md#lem-8-63) is a black node with two black children, one of
+degree 3 a black node with a red left child and a black right one, and one
+of degree 4 a black node with two red children. Hence each 2-4 tree has
+exactly one left-leaning representation.*
+
+*Proof.* A group of degree 3 has one red child, which by the left-leaning
+property is the left one; the other two degrees follow from the count of
+the red children in the proof of [Lemma 8.63](08-tree.md#lem-8-63). Given
+the keys of a 2-4 node, the shape of its group is thus fixed. Its black node holds the only key of
+a node of degree 2, the larger key of a node of degree 3 (the smaller one in
+its red left child), or the middle key of a node of degree 4 (the other two
+in its red children); the subtrees of the 2-4 node hang below the group in
+their order. By induction on the height of the 2-4 tree, the representation
+exists and is unique. $\square$
+
 `LeftLeaningRedBlackTree< K , V >`, the `RedBlackTree` of Morin, keeps the
 three properties. Its nodes hold a pair, the three links to the children
 and to the parent, and the colour in a byte (0 red, 1 black, and 2 for the
@@ -3731,19 +4341,42 @@ path to the leftmost nil, and `twoFourDegrees()` counts the nodes of degree
 2, 3 and 4 of the 2-4 tree (the black nodes by the number of their red
 children), in $O( n )$.
 
-Four operations of constant time keep the two properties of colour. They
-change the colours of a node and of its children, and keep the black height
-of each path ([Figure 8.51](08-tree.md#fig-8-51)). `pushBlack( u )`
-takes a black node with two red children and makes it red and them black,
-and `pullBlack( u )` does the converse. `flipLeft( u )` exchanges the
-colours of $u$ and of its right child and rotates $u$ to the left. On a
-node that breaks the left-leaning property (a black left child and a red
-right one) it restores it, and keeps the other two properties. `flipRight(
-u )` is its mirror image. In terms of the 2-4 tree, `pushBlack()` splits a
+Four operations of constant time change the colours of a node and of its
+children ([Figure 8.51](08-tree.md#fig-8-51)). `pushBlack( u )` takes a
+black node with two red children and makes it red and them black, and
+`pullBlack( u )` does the converse. `flipLeft( u )` exchanges the colours of
+$u$ and of its right child and rotates $u$ to the left, and `flipRight( u
+)` is its mirror image. In terms of the 2-4 tree, `pushBlack()` splits a
 node and sends its middle key up, and `pullBlack()` merges two nodes with
-the key between them. Instead, the flips change only the representation of a node,
-or move a key between two nodes when they follow a `pullBlack()` ([Morin
-2013, exercise 9.5](Z-bibliography.md#ref-morin-cpp)).
+the key between them. Instead, the flips change only the representation of
+a node, or move a key between two nodes when they follow a `pullBlack()`
+([Morin 2013, exercise 9.5](Z-bibliography.md#ref-morin-cpp)). In the
+proofs we write $c( x )$ for the colour of a node as a number, 0 for red
+and 1 for black (2 for the double black of the removal), a nil counting as
+1.
+
+<span id="lem-8-66"></span>**Lemma 8.66.** *A `pushBlack()`, a
+`pullBlack()`, a flip whose child rotated up is red, and a rotation of two
+red nodes keep the sum of the colours along each path from the root to a
+nil. Furthermore, `flipLeft( u )` on a node $u$ with a black left child
+and a red right child $r$ whose children are black, in a tree with the
+no-red-edge property, leaves $r$ in the place of $u$ with the colour of $u$
+and the red left child $u$, whose two children are black; no other node
+changes its children or its colour.*
+
+*Proof.* A path through a node $u$ of `pushBlack( u )` or of `pullBlack( u
+)` goes through exactly one of its children, both of which exist, and the
+operation adds $-1$ and $+1$, or $+1$ and $-1$, to the colours of the two.
+In `flipLeft( u )`, let $x = c( u )$ and $c( r ) = 0$, and let $A$ be the
+left subtree of $u$ and $B$ and $C$ those of $r$. Before it, the paths into
+$A$ cross $u$ only, and those into $B$ and $C$ cross $u$ and $r$; both add
+$x$ to the sum. After it, $r$ of colour $x$ is above $u$ of colour 0, the
+paths into $A$ and $B$ cross both and those into $C$ cross $r$ only, which
+again adds $x$. The flip on the right is its mirror image, and a rotation of
+two red nodes adds 0 on each path. For the second claim, $u$ was black by
+the no-red-edge property, $r$ takes its colour and $u$ takes the red of $r$.
+The children of $u$ are now its old left child and the old left child
+of $r$, both black. $\square$
 
 ![Figure 8.51. The operations of `LeftLeaningRedBlackTree` on the colours, the red nodes in orange and the subtrees as squares: `pushBlack(u)` and its inverse `pullBlack(u)`, which split a 2-4 node and merge two of them, and `flipLeft(u)` and its inverse `flipRight(w)`, a rotation with the exchange of the colours of the two nodes.](../figures/tree-llrb-ops.svg){#fig-8-51}
 
@@ -3778,18 +4411,11 @@ the insertion of `LeftLeaningRedBlackTree` ([Morin 2013,
 
 ![Figure 8.52. A round of `addFixup(u)`, $u$ red and the red nodes in orange: (a) the parent $w$ breaks the left-leaning property, and `flipLeft(w)` repairs it (the round goes on with $u$ the former $w$); (b) $u$ and its parent $w$ are red under $g$, whose right child is black, and `flipRight(g)` ends the insertion; (c) the right child of $g$ is red as well, and `pushBlack(g)` splits the 2-4 node and moves the fault two levels up.](../figures/tree-llrb-addfix.svg){#fig-8-52}
 
-We now prove that the rounds restore the three properties. In the proof we
-write $c( x )$ for the colour of a node as a number, 0 for red and 1 for
-black (2 for the double black of the removal), a nil counting as 1. A flip,
-a `pushBlack()` and a `pullBlack()` keep the sum of the colours along every
-path from the root to a nil: the first two exchange the colours of a parent
-and a child, and the rotation moves a node and keeps on each path through
-the two nodes the same multiset of colours; the last two add $-1$ and $+1$,
-or $+1$ and $-1$, to the colours of a node and of the child on the path.
-Hence these operations keep the black-height property, and so does a plain
-rotation of two red nodes.
+We now prove that the rounds restore the three properties; each flip that
+they make rotates up a red child, as the proofs check case by case, and the
+rounds thus keep the sums of [Lemma 8.66](08-tree.md#lem-8-66).
 
-<span id="lem-8-45"></span>**Lemma 8.45.** *At the start of each round
+<span id="lem-8-67"></span>**Lemma 8.67.** *At the start of each round
 of `addFixup( u )`, $u$ is red, the tree has the black-height property, the
 root is black unless it is $u$, and the no-red-edge and the left-leaning
 properties hold at each node, except possibly the no-red-edge property
@@ -3818,7 +4444,7 @@ black; the properties now hold everywhere but possibly at the edge from $g$
 to its parent and at that parent, i.e., the invariant holds with $u = g$,
 two levels higher. Each round costs $O( 1 )$ and either ends or moves $u$
 up by two levels, whence $O( h )$ rounds for the height $h \le 2 \log_2 ( n
-+ 1 )$ of [Lemma 8.44](08-tree.md#lem-8-44). $\square$
++ 1 )$ of [Lemma 8.64](08-tree.md#lem-8-64). $\square$
 
 In terms of the 2-4 tree, the round that goes on is the split of a node of
 five children, and the others turn a node of three or four children into the
@@ -3891,7 +4517,7 @@ We prove next that the rounds and the line 7 restore the properties.
 Here $w$ and $v$ are the parent and the sibling of $u$ at the start of each
 round.
 
-<span id="lem-8-46"></span>**Lemma 8.46.** *At the start of each round
+<span id="lem-8-68"></span>**Lemma 8.68.** *At the start of each round
 of `removeFixup( u )`, $c( u ) = 2$, the sums of the colours along the paths
 from the root to the nils are all equal, the no-red-edge property holds, and
 the left-leaning property holds at each node, $u$ counting as black. When
@@ -3907,8 +4533,8 @@ made, and the only property that may fail is the left-leaning one at $w$,
 when a black $u$ replaces a red left child $w_0$ whose sibling is red, which
 the line 7 repairs: `flipLeft( w )` puts the red right child $r$ of $w$,
 with the colour of $w$, in its place, and $w$, red, as its left child, both
-children of $w$ being then black. By the remarks before [Lemma
-8.45](08-tree.md#lem-8-45), each operation of a round keeps the sums,
+children of $w$ being then black. Each operation of a round keeps the sums by [Lemma
+8.66](08-tree.md#lem-8-66), its flips rotating up a red child,
 and we check the other properties case by case, $a = c( w )$ before the
 round. In case 0, $u$ is the root, and blackening it subtracts 1 from every
 sum. In case 1, $v$ is red, hence the left child of $w$ ($u$ counts as black
@@ -3932,7 +4558,7 @@ $w$ was; for $a = 0$ the loop ends, and the left-leaning property may fail
 only at the parent of $v$, if $v$ is its left child (once red) and its right
 child is red, which the line 7 repairs. If $q$ is red, `rotateLeft( w )`
 (of two red nodes), `flipRight( v )` and `pushBlack( q )` put $q$ with $c(
-q ) = a$ in the place of $w$, with the black children $w$ and $v$; $w$ has
+q ) = a$ in the place of $w$, with the black children $w$ and $v$. Then $w$ has
 the black children $u$ and the left child of $q$, and $v$ has the black
 right child of $q$ on its left and its old right child on its right, which
 may be red, in which case `flipLeft( v )` (the line 12) puts it, black, in
@@ -3959,7 +4585,7 @@ the node in the place of $w$ has colour $a$ or $a + 1 \le 1$, the root is
 black, and the sums no longer count a 2; hence the tree is a left-leaning
 red-black tree. Each round costs $O( 1 )$, case 1 is followed by a round
 that ends, and the rounds that go on move $u$ up by one level, whence $O( h
-)$ rounds and $O( \log n )$ time by [Lemma 8.44](08-tree.md#lem-8-44).
+)$ rounds and $O( \log n )$ time by [Lemma 8.64](08-tree.md#lem-8-64).
 $\square$
 
 ### 8.10.5 The analysis {#sec-8-10-5}
@@ -3972,9 +4598,9 @@ $\Theta( n )$ space.*
 
 *Proof.* The insertion and the removal change the tree as a binary search
 tree does, which keeps the order of the keys, and the repairs keep it, being
-made of rotations; by [Lemma 8.45](08-tree.md#lem-8-45) and [Lemma
-8.46](08-tree.md#lem-8-46) they restore the three properties. By [Lemma
-8.44](08-tree.md#lem-8-44) the height is at most $2 \log_2 n$, hence each
+made of rotations; by [Lemma 8.67](08-tree.md#lem-8-67) and [Lemma
+8.68](08-tree.md#lem-8-68) they restore the three properties. By [Lemma
+8.64](08-tree.md#lem-8-64) the height is at most $2 \log_2 n$, hence each
 descent and each search costs $O( \log n )$, and so does each repair, by the
 two lemmas. Each node holds one pair and a constant number of links.
 $\square$
@@ -4050,7 +4676,7 @@ two left-leaning red-black trees whose keys are separated.
 
 --8<-- "generated/LeftLeaningRedBlackTree-absorb.pseudo.md"
 
-<span id="lem-8-47"></span>**Lemma 8.47.** *`absorb( t )`
+<span id="lem-8-69"></span>**Lemma 8.69.** *`absorb( t )`
 leaves a left-leaning red-black tree of all the keys in $O( h_1 + h_2 )$
 time, $h_1$ and $h_2$ the heights of the two trees.*
 
@@ -4102,7 +4728,7 @@ order of the book. Red-black trees of height $2 \log_2 n - O( 1 )$ exist
 for arbitrarily large $n$ (exercise 9.4), they are left-leaning, and the
 insertions in decreasing order build them (exercise 9.6):
 
-<span id="lem-8-48"></span>**Lemma 8.48.** *For every $b \ge 1$
+<span id="lem-8-70"></span>**Lemma 8.70.** *For every $b \ge 1$
 there is a left-leaning red-black tree of black height $b$ with $n = 2^{b+1}
 - 2$ nodes and height $2 b - 1 = 2 \log_2 ( n + 2 ) - 3$. Furthermore, the
 insertions of $n , n - 1 , \ldots , 1$ into an empty
@@ -4156,7 +4782,7 @@ nodes with the key between them (exercise 9.5, see
 [§8.10.2](08-tree.md#sec-8-10-2)). We explain the assignment of the parent in the
 removal (exercise 9.7) in [§8.10.4](08-tree.md#sec-8-10-4).
 
-<span id="lem-8-49"></span>**Lemma 8.49.** *([Morin 2013,
+<span id="lem-8-71"></span>**Lemma 8.71.** *([Morin 2013,
 exercise 9.8](Z-bibliography.md#ref-morin-cpp).) A 2-4 tree with $n_\ell$
 leaves has $( n_\ell - 1 ) / 3 \le n_i \le n_\ell - 1$ internal nodes, and
 its left-leaning red-black tree has $n_3 + 2 n_4 = n - n_i$ red nodes,
@@ -4174,20 +4800,34 @@ checks the identity and the bounds at each step of a random sequence of
 insertions and removals, and that the height is less than twice the black
 height (`ods_trees.ods-ex9.1.two-four-tree`).
 
-A binary search tree of height at most $2 \log_2 n - 2$ cannot always be
-coloured (exercise 9.9): let the root have a leaf on the left and a
-perfect tree of height $H \ge 4$ on the right, so that $n = 2^{H+1} + 1$ and
-the height $H + 1 \le 2 \log_2 n - 2$. A path from the root to a nil
-through the leaf has at most 2 black nodes. A path from the root to a nil
-through the right subtree has $H + 2$ nodes, no two consecutive ones red,
-and hence at least $\lceil ( H + 2 ) / 2 \rceil \ge 3$ black ones, and no
-colouring gives both the same black height. When a colouring exists, the
-left-leaning property may still fail. A node with a right child and no left
-one needs that child red (its nil on the left has no black node below it),
-and a red right child under a black left nil breaks the property. For
-instance, the perfect tree of 7 nodes with one more key below its largest
-leaf is coloured by making the new node red, has height $3 \le 2 \log_2 8 -
-2$, and has no left-leaning colouring. The AVL trees of exercises 9.12 and
+The next lemma solves exercise 9.9: a binary search tree of height at most
+$2 \log_2 n - 2$ cannot always be coloured, and when it can, the colouring
+need not be left-leaning.
+
+<span id="lem-8-72"></span>**Lemma 8.72.** *([Morin 2013, exercise
+9.9](Z-bibliography.md#ref-morin-cpp).) For every $H \ge 4$, the binary
+search tree of $n = 2^{H+1} + 1$ nodes whose root has a leaf as its left
+child and a perfect tree of height $H$ as its right subtree has height $H +
+1 \le 2 \log_2 n - 2$ and no red-black colouring. The perfect tree of 7
+nodes with one more node as the right child of its largest leaf has height
+$3 \le 2 \log_2 8 - 2$ and a red-black colouring, but no left-leaning
+one.*
+
+*Proof.* In the first tree, $\log_2 n > H + 1$, and hence $2 \log_2 n - 2 >
+2 H \ge H + 1$. A path from the root to a nil through the left leaf has at
+most 2 black nodes besides the nil. A path from the root to a nil through
+the right subtree has $H + 2$ nodes besides the nil, no two consecutive ones
+red, and hence at least $\lfloor ( H + 2 ) / 2 \rfloor \ge 3$ black ones;
+thus no colouring gives both the same number of black nodes. In the second
+tree, colour all the nodes black but the new one, which is red. Each path
+from the root to a nil then has 3 black nodes besides the nil. In any
+colouring, the parent $p$ of the new node $x$ has a nil on its left, whose
+path has as many black nodes as the path to $p$, and the paths through $x$
+have one more if $x$ is black, and therefore $x$ is red, and $p$ has a black
+left nil and a red right child, which breaks the left-leaning property.
+$\square$
+
+The AVL trees of exercises 9.12 and
 9.13 are in [§8.7](08-tree.md#sec-8-7). As for the comparison of the sorted sets
 of exercise 9.14, it is the benchmark `bench/ssets.cpp`, whose numbers will
 come from a campaign on an idle machine and are not reported here.
@@ -4242,8 +4882,8 @@ internal node of `BTreeMap`, and $k$ the pairs of an interval.
 
 | Header | Values | Search | Insertion, removal | Interval | Node |
 |---|---|---|---|---|---|
-| `BTree.h` | in every node | $O( \log_t n )$ nodes, $O( \log n )$ comparisons | $O( t \log_t n )$ | $O( \log_t n + k )$, by the iterator | a block |
-| `BPlusTree.h` | in the leaves, linked | $O( \log_m n )$ nodes | $O( m \log_m n )$ | $O( \log_m n + k )$ | a page |
+| `BTree.h` | in every node | $O( \log_t n )$ nodes, $O( \log n + \log t )$ comparisons | $O( t \log_t n )$ | $O( i + k + \log_t n )$ from `begin()`, $i$ the pairs before it | a block |
+| `BPlusTree.h` | in the leaves, linked | $O( \log_m n )$ nodes | $O( m \log_m n )$ | $O( \log_m n + k / m )$ nodes, $O( \log n + m + k )$ time | a page |
 | `BTreeMap.h` | in the leaves, linked | $O( ( L + I ) \log n )$ | $O( ( L + I ) \log n )$ | $O( ( L + I ) \log n + k )$ | a few lines of cache |
 
 ### 8.11.1 The B-tree of minimum degree $t$ {#sec-8-11-1}
@@ -4269,7 +4909,7 @@ general, a node has from $t$ to $2 t$ children, which is the B-tree of [Morin
 holds its keys, its values and its children in three vectors, a leaf having no
 child, and the default degree is $t = 3$.
 
-<span id="lem-8-50"></span>**Lemma 8.50.** *(The height of a
+<span id="lem-8-73"></span>**Lemma 8.73.** *(The height of a
 B-tree, [Cormen et al. 2009, Theorem 18.1](Z-bibliography.md#ref-cormen2009).)
 A B-tree of minimum degree $t$ with $n \ge 1$ keys has height*
 
@@ -4288,25 +4928,48 @@ A search goes down one path from the root. In each node it finds by a binary
 search the first place $i$ whose key is not smaller than the one it looks for:
 either that key is the one looked for, or the search goes on in the child
 $x.c[ i ]$, or it stops at a leaf ([Algorithm
-8.49](08-tree.md#alg-8-49)). By [Lemma
-8.50](08-tree.md#lem-8-50) it reads at most
-$h + 1 = O( \log_t n )$ nodes, i.e., $O( \log_t n )$ transfers when a node
-fills a block, and makes $O( \log t )$ comparisons in each, $O( \log n )$ in
-all. With $t$ of the order of the keys of a block, e.g., $t = 128$, three
-levels index millions of keys. The successor search of the sorted set of [Morin
+8.49](08-tree.md#alg-8-49)). The successor search of the sorted set of [Morin
 2013, §6.2](Z-bibliography.md#ref-morin-cpp), `lowerBound( k )`, remembers on
-the same descent the last place not past the end of its node (each such key is
-smaller than those remembered above it), and stops at a key equal to $k$. Its
-variants `findKey()` and `lowerBoundKey()` give the address of the key instead,
-which makes the tree a `USet` and an `SSet` of Morin through `DictionarySet`
-([§10.4](10-set.md#sec-10-4) and [§8.14](08-tree.md#sec-8-14)); `contains()` is
-`lookup()` with the value dropped.
+the same descent the last place not past the end of its node, and stops at a
+key equal to $k$. Its variants `findKey()` and `lowerBoundKey()` give the
+address of the key instead, which makes the tree a `USet` and an `SSet` of
+Morin through `DictionarySet` ([§10.4](10-set.md#sec-10-4) and
+[§8.14](08-tree.md#sec-8-14)); `contains()` is `lookup()` with the value
+dropped.
 
 <span id="alg-8-49"></span>**Algorithm 8.49.** The search in
 a B-tree ([Bayer and McCreight 1972](Z-bibliography.md#ref-bayer1972); [Cormen
 et al. 2009, §18.2](Z-bibliography.md#ref-cormen2009)).
 
 --8<-- "generated/BTree-lookup.pseudo.md"
+
+<span id="lem-8-74"></span>**Lemma 8.74.** *On a B-tree of minimum degree $t$
+and height $h$, `lookup( k )` returns the value of $k$ if $k$ is in the tree
+and nothing otherwise, and `lowerBound( k )` returns the pair of the
+smallest key not smaller than $k$, if any. Each reads at most $h + 1 = O(
+\log_t n )$ nodes, i.e., $O( \log_t n )$ transfers when a node fills a
+block, and makes at most $( h + 1 ) ( \lfloor \log_2( 2 t - 1 ) \rfloor +
+2 ) = O( \log n + \log t )$ comparisons.*
+
+*Proof.* Let the descent be in a node $x$ whose subtree holds all the keys of
+the tree that may answer, which is true at the root, and let $i$ be the
+first place with $x.k[ i ] \ge k$. If $x.k[ i ] = k$, both searches answer
+it. Otherwise, by the order of the keys of a B-tree, the keys of the subtree
+of $x$ between $x.k[ i - 1 ] < k$ and $x.k[ i ]$ are in the subtree of $x.c[
+i ]$, and they are the only ones that can equal $k$, or be not smaller than
+$k$ and smaller than $x.k[ i ]$. Hence `lookup()` loses nothing by going down
+into it, and `lowerBound()` loses nothing by remembering $x.k[ i ]$ (if $i
+< j$, $j$ the keys of $x$), the best answer outside that subtree, which is larger than all the
+candidates inside it. At a leaf with no key equal to $k$, `lookup()` answers
+nothing, and `lowerBound()` the last place it remembered. One node is read per level, $h + 1$ in all, which is $O( \log_t n )$ by [Lemma
+8.73](08-tree.md#lem-8-73). The binary search on at most $2 t - 1$ keys
+(`std::lower_bound`) makes at most $\lfloor \log_2( 2 t - 1 ) \rfloor + 1$
+comparisons, and the test of equality one more. $\square$
+
+Since a tree of height $h$ holds at most $( 2 t )^{h+1} - 1$ keys, three
+levels index up to $256^3 - 1 \approx 1.7 \cdot 10^7$ keys with $t = 128$,
+a degree of the order of the keys of a block, and at least $2 \cdot 128^2 -
+1 = 32767$ by (8.10).
 
 Both the insertion and the removal keep (8.9) by three operations on a
 node and its parent. A *split* of a full child $y = x.c[ i ]$, i.e., of
@@ -4381,7 +5044,7 @@ from a B-tree, each node entered having $t$ keys at least ([Cormen et al. 2009,
 
 --8<-- "generated/BTree-remove.pseudo.md"
 
-<span id="lem-8-51"></span>**Lemma 8.51.** *`insert()` and
+<span id="lem-8-75"></span>**Lemma 8.75.** *`insert()` and
 `remove()` of `BTree` keep (8.9); each reads $O( \log_t n )$ nodes and
 makes $O( \log_t n )$ splits, merges or borrowings of $O( t )$ time each, i.e.,
 it takes $O( t \log_t n )$ time.*
@@ -4401,7 +5064,7 @@ or to a successor gets another one in its place. A root emptied by a merge is
 replaced by its only child, which lowers all the leaves at once. Each level of
 the descent costs one binary search and at most one restructuring of $O( t )$
 moves in the vectors of the nodes, and there are $h + 1 = O( \log_t n )$ levels
-by [Lemma 8.50](08-tree.md#lem-8-50). $\square$
+by [Lemma 8.73](08-tree.md#lem-8-73). $\square$
 
 We say that the removal is in one pass in the sense that no restructuring is
 ever undone or propagated upward. It is fair to remark, however, that the
@@ -4416,10 +5079,11 @@ at the end, [Algorithm 8.52](08-tree.md#alg-8-52)), and the
 iterators keep the path of the places $( x , i )$ from the root. A step goes
 into the child after the key, if the node is internal, and down its leftmost
 path; in a leaf it moves to the next place, and at the end of a leaf it climbs
-to the first ancestor with a key left at its index. Each node is entered and
-left once in a whole visit; hence a step costs $O( 1 )$ amortized time and
-$O( \log_t n )$ at most, and the $k$ pairs of an interval cost
-$O( \log_t n + k )$ from a `lowerBound()`. Its iterator is the nested
+to the first ancestor with a key left at its index, whence the costs of
+[Lemma 8.76](08-tree.md#lem-8-76) below. The class gives no iterator from a
+key, since `lowerBound()` returns a pair, and the $k$ pairs of an interval
+are thus reached from `begin()`, after the $i$ pairs before it, in $O( i +
+k + \log_t n )$ time. Its iterator is the nested
 `const_iterator`, forward, on pairs of constant references. With it the class
 gives `begin()`, `end()`, `cbegin()`, `cend()` and the aliases of a container
 (`value_type`, `size_type`, `reference`, and so on), as do `BPlusTree` and
@@ -4434,6 +5098,25 @@ B-tree by increasing keys, and the step of its iterator (beyond the book).
 --8<-- "generated/BTree-visit.pseudo.md"
 
 --8<-- "generated/BTree-next.pseudo.md"
+
+<span id="lem-8-76"></span>**Lemma 8.76.** *On a B-tree of $n$ keys and
+height $h$, the iterators of `begin()` visit the keys in increasing order,
+$j$ steps from `begin()` take $O( j + h + 1 )$ time in all, and a single
+step takes $O( h + 1 ) = O( \log_t n )$ time; a whole visit, by the
+iterators or by `forEach()`, takes $O( n )$.*
+
+*Proof.* The order is that of the symmetric visit, child $x.c[ i ]$, key
+$x.k[ i ]$, and so on, which lists the keys of a search tree in increasing
+order. A step appends the places of a leftmost path or removes places from
+the end of the path, at a constant cost per place, and the path never holds
+more than $h + 1$ places, whence the bound on one step. In $j$ steps from
+`begin()`, each place appended is the first entry into a node. A node
+is entered when the visit reaches its first key and left after its last
+one; a node entered and left has given all its keys, at least one, to the
+steps, and at most $h + 1$ nodes are entered and not yet left. Hence at most
+$j + h + 1$ nodes are entered, and as many places are removed at most. With
+$n$ steps the nodes entered are all those of the tree, at most $n$, and
+`forEach()` makes one call per node and one per key. $\square$
 
 ### 8.11.2 The B+-tree of order $m$ {#sec-8-11-2}
 
@@ -4461,8 +5144,8 @@ key of the new leaf goes into the parent next to it. A parent that gets $m + 1$
 children splits in the same way, the key between the two groups going one level
 up, and so on up to the root, which may split under a new root with two
 children. `range( A , B )` reaches the leaf of $A$ and walks along the list
-until a key larger than $B$, in $O( \log_m n + k )$ nodes for $k$ pairs, i.e.,
-$O( \log n + k )$ time. [Figure 8.59](08-tree.md#fig-8-59) draws
+until a key larger than $B$, at the cost of [Lemma 8.78](08-tree.md#lem-8-78)
+below. [Figure 8.59](08-tree.md#fig-8-59) draws
 the last insertion of figure 6.7 of the book, which the test
 `ch06.sec6.3.bplus-figure` replays step by step: `insert(6)` fills the leaf
 $\{ 8 , 9 , 10 \}$, which splits into $\{ 6 , 8 \}$ and $\{ 9 , 10 \}$, and the
@@ -4515,7 +5198,7 @@ from a B+-tree by borrowings and merges ([Morin 2013, exercise
 
 --8<-- "generated/BPlusTree-remove.pseudo.md"
 
-<span id="lem-8-52"></span>**Lemma 8.52.** *Let
+<span id="lem-8-77"></span>**Lemma 8.77.** *Let
 $q = \lceil m / 2 \rceil$. After any sequence of insertions and removals, every
 leaf of a B+-tree of order $m$ but the root has at least $q$ pairs, and every
 internal node but the root at least $q$ children. Hence a tree of $n$ pairs
@@ -4539,24 +5222,52 @@ The address of the smallest key not smaller than $x$, the `find( x )` of the
 exercise, is given by `lowerBound( x )`, from the leaf of $x$ and, if none of
 its keys qualifies, from the next leaf of the list. The pairs with keys in
 $( x , y ]$, the interval of the exercise, are given by `findRange( x , y )`
-along the list, in $O( \log_m n + k )$ nodes for $k$ pairs, and `findKey()` and
-`lowerBoundKey()` are the addresses that `DictionarySet` reads. As for the last
-point of the exercise, i.e., why the keys repeated above the leaves cost
-little, we remark that a separator repeats one key per leaf but the last, and
-since a leaf holds at least $q$ pairs, the separators are at most $n / q$ keys
-of $n$, a share that vanishes as $m$ grows. Its iterators are a leaf and a
-place in it, bidirectional along the list. In addition, `levels()` gives the
-keys of the nodes level by level, the shape of figure 6.7 that the tests
-compare, `check()` verifies the shape whatever the level of the contracts, and
-`order()` and `size()` give $m$ and $n$. Since the nodes are linked by
-pointers, the class cannot be copied.
+along the list, and `findKey()` and `lowerBoundKey()` are the addresses that
+`DictionarySet` reads. The last point of the exercise asks why the keys
+repeated above the leaves cost little. We answer it, with the costs of the
+searches by interval, in the next lemma.
+
+<span id="lem-8-78"></span>**Lemma 8.78.** *On a B+-tree of order $m$, $n \ge 1$
+pairs and $\ell$ leaves, `lowerBound( x )` reads at most one leaf after that
+of $x$, and `range( A , B )` and `findRange( x , y )` return their $k$ pairs
+reading at most $h + 2 + k / q$ nodes, $h$ the height and $q = \lceil m / 2
+\rceil$, in $O( \log n + m + k )$ time. The separators are $\ell - 1 <
+n / q$ keys in all.*
+
+*Proof.* The leaf of $x$ holds all the keys of the tree in the interval of its
+separators, and the next leaf only keys larger than its last separator,
+which is not smaller than $x$; since no leaf is empty, the first key of the
+next leaf qualifies when no key of the leaf of $x$ does. The walk along the
+list reads the leaf of the lower end, then leaves all of whose keys it
+returns, $k / q$ at most by [Lemma 8.77](08-tree.md#lem-8-77), and at most
+one more, where it meets a key above the upper end or the end of the list.
+The descent reads $h$ internal nodes. Each internal node costs a binary
+search of $O( \log m )$ comparisons. Also, $h \log_2 m = O( \log n )$ by the
+bound on $h$ of [Lemma 8.77](08-tree.md#lem-8-77), since $\log_2 m \le 2
+\log_2 q$ for $m > 2$; and the walk compares each pair of the leaves it reads
+once, i.e., $O( m + k )$ pairs. Finally, an internal node of $f$ children
+holds $f - 1$ separators, and the sum of $f - 1$ over the internal nodes is
+the number of the nodes but the root, minus the number of the internal
+nodes, i.e., $\ell - 1$; by [Lemma 8.77](08-tree.md#lem-8-77), $\ell \le
+n / q$ when $\ell \ge 2$. $\square$
+
+The share of the separators among the keys thus vanishes as $m$ grows. Its
+iterators are a leaf and a place in it, bidirectional along the list. In
+addition, `levels()` gives the keys of the nodes level by level, the shape
+of figure 6.7 that the tests compare, `check()` verifies the shape whatever
+the level of the contracts (the order and the intervals of the keys, from 1
+to $m$ pairs in a leaf, from $q$ to $m$ children in an internal node but
+the root, the leaves on one level and their list), and `order()` and
+`size()` give $m$ and $n$. Since the nodes are linked by pointers, the class
+cannot be copied.
 
 ### 8.11.3 An engineered B+-tree in the main memory {#sec-8-11-3}
 
 The ordered dictionary of the library that competes with `std::map` and with
 the B-tree maps of other libraries is `BTreeMap< K , V , Less , B , R >`, a
-B+-tree whose node takes $B$ bytes (512 by default, 8 lines of cache of 64
-bytes). Its unit of cost is then the line of the cache, and a node is measured
+B+-tree whose node holds $B$ bytes of keys and of values or children (512 by
+default, 8 lines of cache of 64 bytes), and a few words more for its
+links, its size and, with `R`, its counts. Its unit of cost is then the line of the cache, and a node is measured
 by the lines that its search reads ([Rao and Ross
 2000](Z-bibliography.md#ref-rao2000); [Graefe
 2011](Z-bibliography.md#ref-graefe2011)). A leaf holds up to
@@ -4628,7 +5339,7 @@ of `BTreeMap`, with the splits on the edges ([Comer
 
 --8<-- "generated/BTreeMap-insert.pseudo.md"
 
-<span id="lem-8-53"></span>**Lemma 8.53.** *The keys
+<span id="lem-8-79"></span>**Lemma 8.79.** *The keys
 $k_1 < \cdots < k_n$ inserted in this order into an empty `BTreeMap` leave
 every leaf but the last with $L$ pairs and every internal node but the last of
 its level with $I - 1$ keys; the same holds, with the first nodes in place of
@@ -4647,29 +5358,23 @@ changes again. For the decreasing order the argument is symmetric, with the
 first leaf and the first node of each level. $\square$
 
 With the halving split only, the same sequence would leave each node but the
-last one half full, and the tree higher. When a removal leaves a node with
-fewer than half of its places full ([Algorithm
-8.57](08-tree.md#alg-8-57)), it either merges it with a
-sibling, if the two fit in one node, or takes from the sibling half of the
-difference, so that the two end up balanced and the next restructuring of the
-pair is postponed. A merge may leave the parent short in turn, and a root with
-a single child gives way to it. Hence each node but those of the leftmost and
-of the rightmost paths, and those that the removals have not touched since a
-split, is at least half full. But for the two nodes of each level on those
-paths, a level of internal nodes has at least $\lceil I / 2 \rceil + 1$ times
-the nodes of the level above, and the leaves hold at least
-$\lceil L / 2 \rceil$ pairs each. In the worst case, the height of a tree of
-$n$ pairs is then at most about
-$1 + \log_{\lceil I / 2 \rceil + 1}( n / \lceil L / 2 \rceil )$ (5 levels for a
-million pairs of 64 bits, $L = I = 32$), and an operation takes
-$O( ( L + I ) \log n )$ time, a few lines of cache per level.
+last one half full, and the tree higher. When a removal leaves a leaf with
+fewer than $\lfloor L / 2 \rfloor$ pairs, or an internal node with fewer than
+$\lfloor I / 2 \rfloor$ keys ([Algorithm 8.57](08-tree.md#alg-8-57)), it
+either merges the node with a sibling, if the two fit in one node, or
+moves pairs (or keys and children, through the separator) between them so
+that the left one keeps half of the two, rounded down, and the next
+restructuring of the pair is postponed. A merge may leave the parent short in
+turn, and a root with a single child gives way to it. [Lemma
+8.80](08-tree.md#lem-8-80) below bounds the fill of the nodes and the height
+that follow.
 
 <span id="alg-8-57"></span>**Algorithm 8.57.** The removal of
 `BTreeMap` ([Comer 1979](Z-bibliography.md#ref-comer1979), beyond the book).
 
 --8<-- "generated/BTreeMap-remove.pseudo.md"
 
-`build()` loads a sorted sequence of pairs bottom up in $O( n )$ time
+`build()` loads a sorted sequence of pairs bottom up
 ([Algorithm 8.58](08-tree.md#alg-8-58); [Graefe
 2011](Z-bibliography.md#ref-graefe2011)). It makes $\lceil n / L \rceil$ leaves
 with the pairs spread as evenly as possible, and then the levels of internal
@@ -4687,14 +5392,14 @@ book).
 With the parameter `R`, each internal node keeps also the number of the pairs
 below each of its children, $\mathit{cnt}[ j ]$. An insertion or a removal
 increments or decrements these counts along its way, and a split, a merge or a
-borrowing counts them again on the nodes it touches ($O( I )$ children each).
+borrowing counts them again on the nodes it touches, adding for each child
+the counts of its own children (or taking the pairs of a leaf).
 Then `rank( k )`, the number of the keys smaller than $k$, is the sum of the
 counts of the children before the way down plus the place in the leaf.
 Conversely, the pair of rank $i$ from 0, `select( i )`, goes down to the child
 whose counts pass $i$ ([Algorithm 8.59](08-tree.md#alg-8-59)):
 the order-statistic tree of [Cormen et al. 2022, chapter
-17](Z-bibliography.md#ref-cormen2022) on a B-tree, both in
-$O( ( L + I ) \log n )$ time. We remark that the insertion with no descent is
+17](Z-bibliography.md#ref-cormen2022) on a B-tree. We remark that the insertion with no descent is
 off when `R` is on, since the counts of the right edge must grow.
 
 <span id="alg-8-59"></span>**Algorithm 8.59.** The rank and the
@@ -4703,6 +5408,86 @@ selection of `BTreeMap` with the counts (beyond the book).
 --8<-- "generated/BTreeMap-rank.pseudo.md"
 
 --8<-- "generated/BTreeMap-select.pseudo.md"
+
+We call *edge nodes* the first and the last node of each level, i.e., the
+nodes of the leftmost and of the rightmost paths, and we write $\lambda$ for
+the number of the levels (the `height()` of the class, 1 for a single leaf),
+$\ell = \lfloor L / 2 \rfloor$ and $a = \lfloor I / 2 \rfloor + 1$.
+
+<span id="lem-8-80"></span>**Lemma 8.80.** *After `build()` and any sequence
+of insertions and removals, each leaf holds at least one pair and each
+leaf but the edge ones at least $\ell$ pairs; each internal node holds at
+least one key and each internal node but the root and the edge ones at
+least $a - 1$ keys. Hence a tree of $n \ge 2$ pairs has*
+
+$$
+\lambda \le 2 + \log_a \Bigl( 1 + \frac{ ( a - 1 ) ( n - 2 ) }{ 2 \ell }
+\Bigr) ,
+$$
+
+*i.e., at most 6 levels for a million pairs of 64 bits with $L = I = 32$.
+A search, an insertion and a removal read $O( \lambda )$ nodes and take $O(
+( L + I ) \lambda )$ time, plus $O( I^2 )$ for each node above the last
+internal level that a restructuring counts again when `R` is on; `rank()`
+and `select()` take $O( I \lambda + L )$, `forRange()` $O( ( L + I )
+\lambda + k )$ for $k$ pairs, and `build()` $O( n )$.*
+
+*Proof.* `build()` makes $g = \lceil n / L \rceil$ leaves of $\lfloor n / g
+\rfloor$ or $\lceil n / g \rceil$ pairs, and for $g \ge 2$, $n > ( g - 1 ) L$
+gives $n / g > L / 2$. A level of $m$ nodes gets $\lceil m / ( I + 1 )
+\rceil$ parents of at least $\lceil ( I + 1 ) / 2 \rceil = a$ children each in
+the same way when it has more than one. Each node is made once. A level
+has at most half the nodes of the level below, whence $O( n )$ (the counts
+of `R` add $O( I )$ per node of the last internal level and $O( I^2 )$ per
+node above it, fewer by the factor $a$ at each level).
+
+Next, an insertion. An append to the last leaf, or an insertion into a
+leaf with room, keeps the claim. A split of a full leaf leaves $\lfloor ( L + 1 ) / 2
+\rfloor$ and $\lceil ( L + 1 ) / 2 \rceil$ pairs, unless the new key goes
+past the end of the last leaf or before the start of the first one; there,
+the old leaf keeps its $L$
+pairs and the new one, which becomes the edge node, gets one. A split of an
+internal node of $I + 1$ keys keeps $\lfloor ( I + 1 ) / 2 \rfloor$ and gives
+$I - \lfloor ( I + 1 ) / 2 \rfloor = \lfloor I / 2 \rfloor$ to the new node,
+one key going up. On the right edge the old node keeps $I - 1$ and the new
+last node gets 1, and on the left edge the old first node keeps 1 and the
+new node after it $I - 1$. A split on an edge happens only when the leaf is
+the first or the last, and all its ancestors are then edge nodes. Hence a
+node that stops being an edge node holds $L$ pairs or $I - 1 \ge a - 1$
+keys, and each node made off the edges holds at least $\ell$ pairs or $a -
+1$ keys.
+
+Then a removal. It takes one pair out of a leaf and, at each level of the
+climb, one key out of the parent of a merge. A node $x$ off the edges is
+restructured only when it holds $\ell - 1$ pairs (or $a - 2$ keys). If it
+merges with a sibling, the result holds at least $\ell$ pairs (or $a - 1$
+keys), since the sibling holds at least one (and the separator comes
+down); it is an edge node if the sibling was. If the two do not fit in
+one node, their $p > L$ pairs (or $p \ge I$ keys besides the separator) are
+split into $\lfloor p / 2 \rfloor \ge \ell$ (or $a - 1$) and the rest. A root
+left with no key gives way to its child, and no other node is emptied: a
+leaf of no pair, or an internal node of no key below the root, merges.
+
+For the height, we count the nodes level by level. Let $N_d$ be the number
+of the nodes at the depth $d$, so that $N_1 \ge 2$ and, by the bounds on the keys, $N_{d+1} \ge 2 \cdot 2 + a
+( N_d - 2 )$ for $1 \le d < \lambda - 1$. With $c = ( 2 a - 4 ) / ( a - 1
+)$, $N_{d+1} - c \ge a ( N_d - c )$, and hence $N_d - 2 \ge ( 2 - c ) (
+a^{d-1} - 1 ) = 2 ( a^{d-1} - 1 ) / ( a - 1 )$. The leaves, at the depth
+$\lambda - 1$, hold $n \ge 2 + \ell ( N_{\lambda - 1} - 2 )$ pairs, which
+gives the bound; with $a = 17$, $\ell = 16$ and $n = 10^6$, $\log_{17}(
+500000 ) < 4.7$.
+
+Last, the costs. A descent reads one node per level and counts the place of
+a key in $O( L )$ or $O( I )$ (all the places with the padded keys, or a
+binary search). A split, a merge or a move between two siblings costs $O(
+L )$ or $O( I )$, at most one per level. The climb follows the path of
+the descent, with a sibling per level for a removal. With `R`, the counts of
+the way down change in $O( \lambda )$, and the count of a node of internal
+children adds $O( I )$ counts for each of its $O( I )$ children. The sums
+of `rank()` and the scans of `select()` read $O( I )$ counts per level and
+the place in one leaf. Last, `forRange()` adds to `lowerBound()` the steps of
+the iterator, $O( 1 )$ each, since the next leaf is a child of the parent or
+of the next node on the level of the parent. $\square$
 
 Otherwise the interface is that of an ordered map. Its searches `lookup()`,
 `contains()` and `find()` share one descent, the last giving the value to
@@ -4715,8 +5500,10 @@ pairs with keys in $[ \mathit{lo} , \mathit{hi} )$, by increasing keys, from
 ([Algorithm 8.60](08-tree.md#alg-8-60)), and `forEach()` on all
 of them. `erase( it )` is a removal followed by `lowerBound()` of the key of
 `it`, and returns the iterator on the next pair; `clear()` removes the pairs,
-the pools keeping their memory, `swap()` exchanges two trees, and the copy
-builds the nodes again one by one. Keys and values must be default
+at once (for keys and values with a trivial destructor the pools give all
+their blocks back, otherwise each node goes back to its pool), `swap()`
+exchanges two trees, and the copy loads the pairs of the other tree by
+`build()`, in $O( n )$. Keys and values must be default
 constructible, since the places of a node are built with it, and an insertion
 or a removal invalidates all the iterators. Its invariant, checked at the
 contract level 3 on the trees of up to 4096 pairs, is the order of the keys and
@@ -4755,7 +5542,7 @@ $\mathrm{join}( L , k , R )$ returns a balanced tree of the keys of $L$,
 the key $k$ and the keys of $R$. Split, insertion, removal, union,
 intersection, difference, batches, filters and reductions are then written
 once, on join, and they hold for any scheme whose join has the cost of
-[Lemma 8.54](08-tree.md#lem-8-54). Furthermore, the two
+[Lemma 8.82](08-tree.md#lem-8-82). Furthermore, the two
 recursive calls of each bulk operation touch disjoint trees, and we may
 run them in parallel. In `JoinAlgorithms.h` are the joins of four schemes
 (the AVL trees, the Red-Black trees, the trees balanced by weight and the
@@ -4781,10 +5568,22 @@ leaf, the root included if it is black (0 for nil). For the trees balanced
 by weight it is $\log_2 w( T )$, where the weight $w$ is the number of
 keys plus 1, and for the treaps it is the height again, in expectation.
 [Table 8.7](08-tree.md#tab-8-7) collects the four
-schemes as `JoinTree` keeps them. Its bound on the height of the trees
-balanced by weight follows from their invariant, which keeps the weight of
-a child within $1 - \alpha$ times that of its parent. Hence a node of
-depth $d$ has weight at most $( 1 - \alpha )^d ( n + 1 )$, and at least 2.
+schemes as `JoinTree` keeps them. Its bounds on the heights are those of
+[Lemma 8.45](08-tree.md#lem-8-45) for the AVL trees, of [Lemma
+8.64](08-tree.md#lem-8-64) for the Red-Black trees (which have the two
+properties of colour of [§8.10.2](08-tree.md#sec-8-10-2)), of
+[§8.6](08-tree.md#sec-8-6) for the treaps, and of the next lemma for the
+trees balanced by weight.
+
+<span id="lem-8-81"></span>**Lemma 8.81.** *A tree of $n \ge 1$ keys in
+which each node satisfies $\alpha ( w_l + w_r ) \le \min( w_l , w_r )$, $w_l$
+and $w_r$ the weights of its children, has height at most $\log_{1 / ( 1 -
+\alpha )} \frac{ n + 1 }{ 2 }$.*
+
+*Proof.* The weight of a node is $w_l + w_r$, since its size is that of its
+children plus 1, and by the invariant each child weighs at most $( 1 -
+\alpha )$ times its parent. A node at the depth $d$ thus weighs at most $( 1 -
+\alpha )^d ( n + 1 )$, and at least 2, being a node. $\square$
 
 <span id="tab-8-7"></span>**Table 8.7.** The four
 balancing schemes of `JoinAlgorithms.h`: the rank by which the cost of
@@ -4900,7 +5699,7 @@ priorities. Meanwhile $k$ goes down until its priority beats those below
 it, where an insertion would put it. Since the treap of given keys and
 priorities is unique, the join is deterministic.
 
-<span id="lem-8-54"></span>**Lemma 8.54.** *([Blelloch,
+<span id="lem-8-82"></span>**Lemma 8.82.** *([Blelloch,
 Ferizovic and Sun 2022](Z-bibliography.md#ref-blelloch2022)) For the AVL
 trees, the Red-Black trees and the trees balanced by weight,
 $\mathrm{join}( L , k , R )$ costs $O( | r( L ) - r( R ) | + 1 )$ time,
@@ -4991,7 +5790,7 @@ Ferizovic and Sun 2022](Z-bibliography.md#ref-blelloch2022)).
 In the code of the split, which is the pseudocode, the ranks of the
 subtrees are carried by `Exposed`, and no rank is computed by a walk.
 
-<span id="lem-8-55"></span>**Lemma 8.55.** *On a tree
+<span id="lem-8-83"></span>**Lemma 8.83.** *On a tree
 of $n$ keys balanced by any of the three deterministic schemes, `split()`,
 `splitLast()`, `join2()`, `insert()`, `remove()` and `extract()` cost
 $O( \log n )$ time (in expectation for the treaps).*
@@ -5002,7 +5801,7 @@ be the nodes of the path at which it turns left, from the bottom up, and
 $R_i$ the right subtree of $m_i$. Let $T_i = \mathrm{join}( T_{i-1} , m_i ,
 R_i )$ be the tree that the join of $m_i$ returns, with $T_0$ the part
 returned by the bottom of the path. By [Lemma
-8.54](08-tree.md#lem-8-54), $r( T_{i-1} ) \ge r( R_{i-1}
+8.82](08-tree.md#lem-8-82), $r( T_{i-1} ) \ge r( R_{i-1}
 )$. Also, $T_{i-1}$ is made of keys of the subtree of the left child of
 $m_i$. In a balanced tree the two children of $m_i$ have ranks that differ
 by $O( 1 )$, and thus the rank of $T_{i-1}$ is at most that of $R_i$ plus
@@ -5067,7 +5866,7 @@ recursive calls go to `fork()`, with the sequential switch of
 [§8.12.5](08-tree.md#sec-8-12-5), and the value of a common key is
 computed in the order of the arguments.
 
-<span id="lem-8-56"></span>**Lemma 8.56.** *Let the union, the
+<span id="lem-8-84"></span>**Lemma 8.84.** *Let the union, the
 intersection and the difference of `JoinAlgorithms` be called on two trees
 of sizes $m \le n$, balanced by any of the four schemes, and let $D$ be the
 depth of their recursion. Then $D = O( \log n )$ (in expectation for the
@@ -5111,9 +5910,9 @@ most $m$ internal calls.
 
 Next, the cost of an internal call on trees of sizes $a \le b$. Its
 expose costs $O( 1 )$, its split $O( \log ( b + 1 ) )$ by [Lemma
-8.55](08-tree.md#lem-8-55), and its join (or `join2()`) of two trees of at
+8.83](08-tree.md#lem-8-83), and its join (or `join2()`) of two trees of at
 most $a + b \le 2 b$ keys costs $O( \log ( b + 1 ) )$ by [Lemma
-8.54](08-tree.md#lem-8-54), since the ranks of [Table
+8.82](08-tree.md#lem-8-82), since the ranks of [Table
 8.7](08-tree.md#tab-8-7) are $O( \log )$ of the sizes (in expectation for
 the treaps). The calls at the same depth of the recursion work on disjoint
 sets of keys, and the larger sizes $b_c$ of the $k_i$ internal calls $c$ at
@@ -5209,17 +6008,13 @@ the construction from sorted nodes, the filter and the reduction
 
 --8<-- "generated/JoinAlgorithms-mapReduce.pseudo.md"
 
-Since the two halves have ranks that differ by $O( 1 )$ and each join
-costs $O( 1 )$, `build()` takes $O( n )$ work, and a span of
-$O( \log^2 n )$ at most. With one `join2()` of $O( \log n )$ per level of a
-balanced tree, `filter()` takes $O( n )$ work and $O( \log^2 n )$ span.
-Its companion `mapReduce()` takes $O( n )$ work and a span of the height
-of the tree, $O( \log n )$. The batches expose at each call the root of
-the tree, never a pair of the batch, and their cost is that of [Lemma
-8.57](08-tree.md#lem-8-57). [Table 8.8](08-tree.md#tab-8-8) collects
-the operations with their costs.
+The batches expose at each call the root of the tree, never a pair of the
+batch, and their cost is that of [Lemma 8.85](08-tree.md#lem-8-85); that of
+`build()`, `filter()` and `mapReduce()` is that of [Lemma
+8.86](08-tree.md#lem-8-86), which follows it. [Table 8.8](08-tree.md#tab-8-8)
+collects the operations with their costs.
 
-<span id="lem-8-57"></span>**Lemma 8.57.** *Let a sorted batch of $b$
+<span id="lem-8-85"></span>**Lemma 8.85.** *Let a sorted batch of $b$
 pairs (or keys) go into (or out of) a tree of $t$ keys balanced by any of
 the four schemes, and let $m = \min( b , t )$ and $n = \max( b , t )$.
 Then `multiInsert()` takes the work $O( m \log( n / m + 1 ) + b )$ and the
@@ -5243,18 +6038,18 @@ of the $b$ keys, at most $\min( 2^i , b )$ at the depth $i$. Such a call
 makes a binary search of $O( \log( b_c + 2 ) )$ and a `join()` or a
 `join2()` of two trees no larger than the subtrees of the children of $v$,
 whose ranks the removals do not increase (a join adds at most 1 to the
-larger rank of its arguments, [Lemma 8.54](08-tree.md#lem-8-54), and the
+larger rank of its arguments, [Lemma 8.82](08-tree.md#lem-8-82), and the
 ranks of the children of $v$ are at least 1 below that of $v$, or below by
 the constant $\log_2( 1 / ( 1 - \alpha ) )$ for the weights), i.e., $O(
-\rho( T_v ) + 1 )$ by [Lemma 8.54](08-tree.md#lem-8-54) and
+\rho( T_v ) + 1 )$ by [Lemma 8.82](08-tree.md#lem-8-82) and
 [Table 8.7](08-tree.md#tab-8-7). The binary searches at the depth $i$ add
 up, by the concavity of the logarithm, to $O( k_i \log( b / k_i + 2 ) )$
 with $k_i \le \min( 2^i , b , t )$, and over the $O( \log t )$ depths to
 $O( m \log( n / m + 1 ) + m )$, by the computation of [Lemma
-8.56](08-tree.md#lem-8-56). For the joins, the nodes of rank between $r$
+8.84](08-tree.md#lem-8-84). For the joins, the nodes of rank between $r$
 and $r + 1$ are at most $c \, t \, \gamma^{-r}$ for constants $c$ and
 $\gamma > 1$ of the scheme, since their subtrees hold at least $\gamma^r$
-keys each (by [Lemma 8.30](08-tree.md#lem-8-30) for the heights of the AVL
+keys each (by [Lemma 8.45](08-tree.md#lem-8-45) for the heights of the AVL
 trees, by the black height for the Red-Black trees, by the weight itself
 for the trees balanced by weight) and at most a constant number of them lie
 on one path from the root. Hence, with $R = \log_\gamma( t / m + 1 )$,
@@ -5272,6 +6067,57 @@ The bound of `multiRemove()` is a factor $\log( n / m + 1 )$ above that of
 the join that restores the balance may then cost the rank of the node; we
 expect the true cost to be lower, as that of a removal after another, which
 amortizes, but we have not proved it.
+
+We now turn to the operations that visit a whole tree. In the proof we use, as in
+that of [Lemma 8.85](08-tree.md#lem-8-85), two bounds on the ranks. The rank of a tree of $s$ keys
+of any of the three deterministic schemes is at least $\log_2( s + 1 ) / 2 -
+1$ and at most $c \log_2( s + 2 )$ for a constant $c$ of the scheme, by
+[Table 8.7](08-tree.md#tab-8-7) and since a tree of height $h$ holds at most
+$2^{h+1} - 1$ keys and a Red-Black tree has at most twice as many nodes on a
+path as its black height.
+
+<span id="lem-8-86"></span>**Lemma 8.86.** *On $n$ nodes sorted by
+strictly increasing keys, `build()` takes $O( n )$ work and $O( \log^2 n )$
+span. On a tree of $n$ keys, `filter()` takes $O( n )$ work and $O( \log^2 n
+)$ span, and `mapReduce()` $O( n )$ work and a span of $O( h + 1 )$, $h$
+the height, besides the calls of the predicate, of the map and of the
+reduction; all in expectation for the treaps.*
+
+*Proof.* The recursion of `build()` halves its part, $n$ into $\lfloor n / 2
+\rfloor$ and $n - \lfloor n / 2 \rfloor - 1$. By induction, the parts at the
+depth $i$ have sizes $s_i$ or $s_i + 1$ for some $s_i \le n / 2^i$, since the
+two parts of a part of $s$ or $s + 1$ nodes have sizes between $\lfloor ( s
+- 1 ) / 2 \rfloor$ and $\lfloor ( s + 1 ) / 2 \rfloor$. The join at a call
+of the depth $i$ costs $O( | r( L ) - r( R ) | + 1 ) = O( \log( n / 2^i + 2
+) )$ by [Lemma 8.82](08-tree.md#lem-8-82) and the bounds above on the ranks
+(in expectation for the treaps), and the calls at the depth $i$ are at most
+$2^i$. Hence the work is $O( \sum_{i \le \log_2 n} 2^i \log( n / 2^i + 2 ) )
+= O( n \sum_{j \ge 0} ( j + 2 ) / 2^j ) = O( n )$, with $j = \lfloor \log_2
+n \rfloor - i$. Its depth is $O( \log n )$ and each level waits for one join
+of $O( \log n )$, whence the span; below the grain of
+[§8.12.5](08-tree.md#sec-8-12-5) the recursion is sequential on $O( 1 )$
+nodes. In `filter()`, the trees that the recursion returns at a node $v$
+hold subsets of the keys of the subtrees of the children of $v$, and the
+join or the `join2()` of $v$ costs $O( \log( s_v + 2 ) )$, $s_v$ the size of
+the subtree of $v$, by [Lemma 8.82](08-tree.md#lem-8-82), [Lemma
+8.83](08-tree.md#lem-8-83) and the bounds on the ranks. By the lower bound on
+the ranks, $\log( s_v + 2 ) = O( \rho( v ) + 1 )$, $\rho( v )$ the rank of the
+subtree of $v$. The nodes of rank between $r$ and $r + 1$ are at most
+$c' n \gamma^{-r}$ for constants $c'$ and $\gamma > 1$ of the scheme, as in
+the proof of [Lemma 8.85](08-tree.md#lem-8-85); the work is thus $O(
+\sum_r ( r + 2 ) c' n \gamma^{-r} ) = O( n )$, and the span is the height of
+the tree times $O( \log n )$. For the treaps, the joins of a filtered treap
+are those of treaps of random priorities on fewer keys, of expected cost
+$O( \log( s_v + 2 ) )$. Furthermore, the $s$ keys of consecutive ranks $i , \ldots ,
+i + s - 1$ are a subtree only if the key of rank $i - 1$ or that of rank $i
++ s$, if they exist, has the largest priority of the $s + 2$ keys from $i -
+1$ to $i + s$ and the other one the second largest, which has probability
+$2 / ( ( s + 2 ) ( s + 1 ) )$ when both exist. The expected number of the
+subtrees of $s$ nodes is therefore at most $2 n / s^2 + 2$, and the expected
+work is $O( \sum_s \log( s + 2 ) ( n / s^2 + 1 ) ) = O( n )$ (the sum
+running on $s \le n$, the second term giving $O( \log^2 n )$). Last,
+`mapReduce()` makes one call per node and per nil, with one map and two
+reductions each, and the two calls of a node run in parallel. $\square$
 
 <span id="tab-8-8"></span>**Table 8.8.** The operations of
 `JoinAlgorithms` and their methods in `Joinable`, for trees of $n$ keys
@@ -5307,17 +6153,36 @@ the two trees have fewer than `kJoinGrain` keys in all (2048), or when the
 executor has one thread. On `Sequential` the test is false, the calls
 being in order already.
 
-Also, the shape of the result depends neither on the executor nor on the
-number of its threads. Joins are deterministic, and `make()` draws the
-priorities of the nodes of a batch of a treap as a function of the salt of
-the batch and of the place of the pair in it. For the $i$-th pair it draws
-$\mathrm{splitmix64}( s + \varphi_{64} i )$, with
-$\varphi_{64} = \mathtt{0x9e3779b97f4a7c15}$, and a `parallelFor()` may
-thus make the nodes in any order. A key is compared, and a node read or
-written, by one thread at a time, since the two calls of a level hold
-disjoint subtrees. In the test `join_trees.join-executors`, each operation
-runs on `Sequential` and on a `ThreadPool` of 1, 2 and 8 threads, and the
-results must be equal node by node.
+For a batch of a treap, `make()` draws the priority of the $i$-th pair as
+$\mathrm{splitmix64}( s + \varphi_{64} i )$, $s$ the salt of the batch and
+$\varphi_{64} = \mathtt{0x9e3779b97f4a7c15}$, so that a `parallelFor()` may
+make the nodes in any order.
+
+<span id="lem-8-87"></span>**Lemma 8.87.** *The tree that each operation of
+`Joinable` returns, node by node with its keys, values, sizes, words of the
+scheme and augmented values, is the same on all executors and for any
+number of threads, provided that the functions it is given (the comparison,
+the combination of the values, the predicate, the map and the reduction)
+are pure. Furthermore, no two calls that run in parallel read or write the
+same node.*
+
+*Proof.* The salt of a batch is drawn once, before the recursion. The
+priority of each node is then a function of the salt and of the place of its
+pair, whichever thread makes it. By induction on the recursion, a call
+returns the same tree on all executors: `small()` changes only the executor
+of the calls below, the two calls of a `fork()` receive the same arguments
+whether they run in order or in parallel, and the split, the joins and the
+combination of the values that follow are deterministic functions of their
+results. The two calls of a `fork()` receive disjoint subtrees: the two
+subtrees of an exposed root, or the two trees of a split, and the two parts
+of a sorted batch. Each call reads and writes only the nodes of the
+trees it receives and the nodes it makes; hence they share no node, and
+`mapReduce()`, which writes nothing, reads disjoint subtrees in its two
+calls. $\square$
+
+In the test `join_trees.join-executors`, each operation runs on
+`Sequential` and on a `ThreadPool` of 1, 2 and 8 threads, and the results
+must be equal node by node.
 
 ### 8.12.6 JoinTree and the augmented maps {#sec-8-12-6}
 
@@ -5429,7 +6294,7 @@ Since the path to $\mathit{lo}$ is walked from $t$ downward, i.e., from the
 larger keys to the smaller ones, the code keeps its pieces in a vector, to
 give them to `f` in increasing order.
 
-<span id="lem-8-58"></span>**Lemma 8.58.** *Each operation
+<span id="lem-8-88"></span>**Lemma 8.88.** *Each operation
 of `JoinTree` and of `Joinable` keeps (8.12) at all the nodes, at
 the cost of one evaluation of $\mathrm{from}$ and two of $\otimes$ per
 node that it passes to `connect()`. On a tree of height $h$, `augVisit()`
@@ -5612,6 +6477,55 @@ link-cut tree on the access ([Sleator and Tarjan
 
 --8<-- "generated/LinkCutTree-aggregate.pseudo.md"
 
+These descriptions rest on two properties of the virtual tree, which the
+next lemma proves together with the answers of the operations. The root of
+the virtual tree of a tree of the forest is the only node of it whose
+parent field is empty; the path-parent of the root of a splay tree is
+the parent, in the forest, of the shallowest node of its path.
+
+<span id="lem-8-89"></span>**Lemma 8.89.** *After $\mathrm{access}( v )$, the
+splay tree of $v$ holds exactly the path from the root of the tree of $v$
+to $v$, with $v$ at its root and no parent field set at $v$, and the access
+returns the deepest node of that path that was on the preferred path of the
+root before the access. Consequently, `connected()`, `findRoot()`, `lca()`,
+`cut()`, `cutParent()` and `aggregate()` give the answers stated above.*
+
+*Proof.* A splay keeps the symmetric order of a splay tree, i.e., the order
+of the depths of its path, and the path-parent of its root, which passes to
+the new root. The access splays $v$ and cuts off its right subtree, the part
+of the path deeper than $v$. At each path-parent $x$ it splays $x$ and makes
+the right child of $x$ the splay tree just built, i.e., it replaces the part
+of the path of $x$ deeper than $x$ by the path from $x$ down to $v$. By
+induction on the climb, the splay tree of the last node $x$ holds the path
+from the top of the path of $x$ to $v$. The climb ends at a node with no
+parent field, which is the root of the virtual tree, i.e., $x$ is on the
+path of the root, whose top is the root of the tree. The final splay brings
+$v$ above $x$ with no parent field. The last $x$ is the node where the climb
+entered the path of the root, i.e., the deepest node of that path above $v$
+(or $v$ itself if $v$ was on it). Hence, after $\mathrm{access}( u )$, the
+path of the root is the path from the root to $u$, and `lca( u , v )`
+returns its deepest node above $v$, the lowest common ancestor. In
+`connected( u , v )`, $u$ is the root of its virtual tree after
+$\mathrm{access}( u )$, and $\mathrm{access}( v )$ makes $v$ the root of the
+virtual tree of $v$, and splays only in it, so that $u \ne v$ gets a parent
+field exactly when it is in that virtual tree, i.e., in the tree of $v$. In
+`findRoot( v )`, the shallowest node of the path is the leftmost of the
+splay tree, the root of the tree. After `evert( u )` the path from $u$ to the
+old root is reversed, i.e., $u$ is the shallowest node of its path and the
+root of its tree. In `cut( u , v )`, after `evert( u )` and $\mathrm{access}(
+v )$, the splay tree of $v$ holds the path from $u$ to $v$, which is $u , v$
+exactly when $[ u , v ]$ is an edge, i.e., when $u$ is the left child of $v$
+with no children in the splay tree. Clearing the two links leaves two
+virtual trees, rooted at $u$ and at $v$, which are those of the two trees
+that the edge joined. In `cutParent( v )`, the left subtree
+of $v$ after the access is the path above $v$, whose deepest node is the
+parent of $v$, and dropping it separates $v$ and its descendants. In
+`aggregate( u , v )` the splay tree of $v$ holds the path from $u$ to $v$.
+The aggregate of its root, kept by `pull()` at each rotation and at each
+change of a right child, combines the values of all its nodes, in the order
+of the depths up to the reversals, which commute with a commutative
+operation. $\square$
+
 Its contracts check that the nodes are in $[ 0 , n )$, that `link()` joins two
 nodes of two distinct trees, that `cut()` removes an edge that is there, and
 that `aggregate()` and `lca()` get two nodes of the same tree. At the level of
@@ -5641,7 +6555,7 @@ An access costs its splays plus the changes of the preferred children that it
 makes, and the analysis bounds the two parts separately, on the potential of
 the access lemma of [§8.8](08-tree.md#sec-8-8) taken over the virtual tree.
 
-<span id="lem-8-59"></span>**Lemma 8.59.** *([Sleator and
+<span id="lem-8-90"></span>**Lemma 8.90.** *([Sleator and
 Tarjan 1983](Z-bibliography.md#ref-sleator1983); [Tarjan 1983, chapter
 5](Z-bibliography.md#ref-tarjan1983).) Let the weight of each node be the
 number of its descendants in the forest plus 1, i.e., the size of its subtree
@@ -5716,23 +6630,43 @@ precondition calls `connected()`) then rewrites the parents from that path, and
 no load of a parent waits for the one before.
 
 Our class counts the steps of its walks, and every 16 operations it updates
-their recent mean per operation, an exponential mean with the weight $1 / 4$ on
-the last group. Its bound of 512 steps is about where an operation on the splay
-trees costs as much as the walks (a few nanoseconds a step while the vector
-stays in the caches of the core, a bound measured). Once the mean exceeds it,
-and at least 64 operations have been counted, the vector becomes splay trees in
-$O( n )$ time and stays so; `useSplay()` makes the change at once, and
-`splayed()` reports whether it was made. No restructuring is needed: each node
-becomes a splay tree by itself, whose path-parent is its parent, which is a
-valid virtual tree with no preferred child.
+their recent mean per operation, $E \gets \frac34 E + \frac14 g$, $g$ the
+mean of the last group of 16. Its bound of 512 steps is about where an
+operation on the splay trees costs as much as the walks (a few nanoseconds
+a step while the vector stays in the caches of the core, a bound measured).
+Once $E$ exceeds it, and at least 64 operations have been counted, the
+vector becomes splay trees in $O( n )$ time and stays so; `useSplay()` makes
+the change at once, and `splayed()` reports whether it was made. No
+restructuring is needed: each node becomes a splay tree by itself, whose
+path-parent is its parent, which is a valid virtual tree with no preferred
+child. The operations `cutParent()` and `setValue()` take $O( 1 )$ on the
+vector and are not counted.
 
-Hence the operations cost $O( d )$ for a mean depth $d$ below the bound and
-$O( \log n )$ amortized after the change. Its test
-`engineered_dynamic.link-cut-tree` runs the same random links, cuts, everts and
-queries on the vector of parents, on the splay trees from the start, and with
-the change halfway, against a plain vector of parents. It also builds a path of
-3000 nodes on which the walks are long enough to make the class change without
-being asked.
+<span id="lem-8-91"></span>**Lemma 8.91.** *Starting from $n$ isolated nodes,
+any sequence of $m$ operations of `LinkCutTree` takes $O( ( m + n ) \log n
+)$ time, whether and whenever the change of form happens. Before the
+change, each group of 16 counted operations but the first three and the
+last one makes at most $16 \cdot 2048$ steps; $n$ is the number of the nodes
+at the end, `addNode()` included.*
+
+*Proof.* On the vector, an operation costs $O( 1 )$ plus its steps, and a
+group $j$ with mean $g_j$ leaves $E_j = \frac34 E_{j-1} + \frac14 g_j$. From
+the fourth group on, at least 64 operations have been counted, and a group
+that does not make the change leaves $E_j \le 512$, i.e., $g_j \le 4 E_j \le
+2048$, since $E_{j-1} \ge 0$. The first three groups, the group that makes
+the change and the operations after the last group are at most 79
+operations, each of $O( n )$ steps. Indeed, a walk visits each node once at
+most, and an operation makes at most four walks. Hence the operations on the vector take $O( m + n )$ time, and
+the change $O( n )$. After it, the virtual tree of single nodes has the
+potential $\Phi = \sum_x \log_2 s( x ) \le n \log_2 n$ of the proof of
+[Lemma 8.90](08-tree.md#lem-8-90) and no preferred child, and that lemma
+bounds the rest by $O( ( m + n ) \log n )$. $\square$
+
+Its test `engineered_dynamic.link-cut-tree` runs the same random links,
+cuts, everts and queries on the vector of parents, on the splay trees from
+the start, and with the change halfway, against a plain vector of parents.
+It also builds a path of 3000 nodes on which the walks are long enough to
+make the class change without being asked.
 
 ## 8.14 Sorted sets on the trees {#sec-8-14}
 
@@ -5797,7 +6731,7 @@ degree of a B-tree, $r$ the distance in rank from a finger.
 | `ScapegoatTree` | [8.9](08-tree.md#sec-8-9) | depth $\le \log_b q$ | $\le \log_b q$ | $O( \log n )$, updates amortized | the base $b$, sizes stored or not |
 | `WeightRebuildTree`, `CountdownTree`, `DynamiteTree` | [8.9](08-tree.md#sec-8-9) | sizes (timers) | $O( \log n )$ (expected for the last, under the assumption of [§8.9.5](08-tree.md#sec-8-9-5)) | $O( \log n )$ amortized or expected | none |
 | `LeftLeaningRedBlackTree` | [8.10](08-tree.md#sec-8-10) | a 2-4 tree, left-leaning | $\le 2 \log_2( n + 1 )$ | $O( \log n )$, $O( 1 )$ amortized restructuring | `absorb()` |
-| `BTree`, `BPlusTree`, `BTreeMap` | [8.11](08-tree.md#sec-8-11) | node fill, leaves at one depth | $\le \log_t \frac{ n + 1 }{ 2 }$ for `BTree`, [Lemma 8.52](08-tree.md#lem-8-52) and [§8.11.3](08-tree.md#sec-8-11-3) for the others | $O( t \log_t n )$ | intervals; `rank()`, `select()` in `BTreeMap` |
+| `BTree`, `BPlusTree`, `BTreeMap` | [8.11](08-tree.md#sec-8-11) | node fill, leaves at one depth | $\le \log_t \frac{ n + 1 }{ 2 }$ for `BTree`, [Lemma 8.77](08-tree.md#lem-8-77) and [§8.11.3](08-tree.md#sec-8-11-3) for the others | $O( t \log_t n )$ | intervals; `rank()`, `select()` in `BTreeMap` |
 | `JoinAVLTree`, `JoinRedBlackTree`, `WeightBalancedTree`, `JoinTreap` | [8.12](08-tree.md#sec-8-12) | that of the scheme | $O( \log n )$ | $O( \log n )$ | split, join, set operations in parallel, augmentation |
 
 ## 8.15 Discussion and references {#sec-8-15}
@@ -5824,7 +6758,7 @@ the traversals without a stack, is in [Knuth 1997, §2.3.1 and
 §2.3.2](Z-bibliography.md#ref-knuth1997), which also has the
 representations of the trees by their previsit with the degrees or the
 levels of the nodes, a family to which `PreorderArrayTree` and the shape
-code of [Lemma 8.12](08-tree.md#lem-8-12) belong. As [Morin
+code of [Lemma 8.18](08-tree.md#lem-8-18) belong. As [Morin
 2013, §6.3](Z-bibliography.md#ref-morin-cpp) remarks, whether a node keeps
 the link to its parent is a design decision: the operations that only go
 down a path do not need it, and the link costs a word per node, while
@@ -5897,7 +6831,7 @@ level even on the searches, and that the AVL tree reads a shorter path on
 each search, so that the order of the four depends on the mix of the
 operations and on the locality of the keys.
 
-Random binary search trees have been studied at length. The expected depth of [Lemma 8.22](08-tree.md#lem-8-22) is the cost of the
+Random binary search trees have been studied at length. The expected depth of [Lemma 8.31](08-tree.md#lem-8-31) is the cost of the
 quicksort, whose pivots are the roots of the subtrees ([Knuth 1998,
 §6.2.2](Z-bibliography.md#ref-knuth1998v3)), and [Devroye
 1988](Z-bibliography.md#ref-devroye1988) derives it, with related results,
@@ -5924,7 +6858,7 @@ insertion and the removal follow, which is the form that
 We remark that the treaps of the library draw their priorities from a
 seeded generator, and the tree of a sequence of operations is the same at
 each run. This makes the construction of
-[Lemma 8.27](08-tree.md#lem-8-27) reproduce the insertions
+[Lemma 8.38](08-tree.md#lem-8-38) reproduce the insertions
 exactly, and the tests rely on it. It also means, however, that an adversary
 who knows the seed can choose an order of insertion that makes the tree
 deep, the bounds of this section holding only for sequences that do not
@@ -5946,7 +6880,7 @@ goes back to [Overmars and van Leeuwen
 1983](Z-bibliography.md#ref-overmars1983). [Morin 2013,
 chapter 8](Z-bibliography.md#ref-morin-cpp) follows the rule by the size,
 and his argument for it needs the step that
-[Lemma 8.38](08-tree.md#lem-8-38) makes explicit;
+[Lemma 8.55](08-tree.md#lem-8-55) makes explicit;
 the trees of his exercises 8.8 to 8.10 have no code in the book, and the
 library gives them one, with the analyses of
 [§8.9.5](08-tree.md#sec-8-9-5), the last of which rests on an assumption
@@ -7065,7 +7999,7 @@ a proof by the lemmas cited.
    height in the same way ([Morin 2013, exercise
    6.5](Z-bibliography.md#ref-morin-cpp)), in $O( n_u )$ time and $O( 1 )$
    space, also on a path of $10^5$ nodes (`subtreeSize()`,
-   `subtreeHeight()`, [Lemma 8.8](08-tree.md#lem-8-8)). Test:
+   `subtreeHeight()`, [Lemma 8.13](08-tree.md#lem-8-13)). Test:
    `ods_trees.ods-ex6.4.size2-height2`.
 5. Test in $O( n )$ time whether the two subtrees of each node of a binary
    tree differ by one node at most, on large trees of different shapes
@@ -7077,26 +8011,26 @@ a proof by the lemmas cited.
    to tell in constant time whether a node is an ancestor of another, and
    what they say of the size of a subtree and of the depth of a node
    ([Morin 2013, exercise 6.9](Z-bibliography.md#ref-morin-cpp), [Lemma
-   8.10](08-tree.md#lem-8-10)). Test:
+   8.15](08-tree.md#lem-8-15)). Test:
    `ods_trees.ods-ex6.7.order-numbers`.
 7. Find the node after a given one in the previsit, in the invisit and in
    the postvisit by the links to the parents, so that a whole visit costs
    $O( n )$ ([Morin 2013, exercise 6.8](Z-bibliography.md#ref-morin-cpp),
-   [Lemma 8.9](08-tree.md#lem-8-9)). Test:
+   [Lemma 8.14](08-tree.md#lem-8-14)). Test:
    `ods_trees.ods-ex6.8.next-in-traversals`.
 8. Prove that at most one binary tree has a given previsit and a given
    invisit of distinct values, and build it ([Morin 2013, exercise
    6.10](Z-bibliography.md#ref-morin-cpp); [Montresor 2025, exercise
    5.4](Z-bibliography.md#ref-montresor2025)) in $O( n )$ time, freeing the
    nodes made if a comparison throws ([Lemma
-   8.11](08-tree.md#lem-8-11)). Tests:
+   8.17](08-tree.md#lem-8-17)). Tests:
    `ods_trees.ods-ex6.10.pre-in-rebuild`, `ch05.ex5.4`,
    `lib_trees.from-preorder-inorder` and
    `lib_trees.from-preorder-inorder-throwing`.
 9. Represent the shape of a binary tree of $n$ nodes in at most $2 ( n - 1
    )$ bits and rebuild it from them ([Morin 2013, exercise
    6.11](Z-bibliography.md#ref-morin-cpp), [Lemma
-   8.12](08-tree.md#lem-8-12)), and check that the 5 shapes
+   8.18](08-tree.md#lem-8-18)), and check that the 5 shapes
    of 3 nodes get 5 different codes. Test:
    `ods_trees.ods-ex6.11.shape-code`.
 10. Report the keys of a binary search tree not larger than $x$ in $O( n' +
@@ -7121,7 +8055,7 @@ a proof by the lemmas cited.
 15. Build the binary tree of the first children and of the next siblings of
     an ordered tree, and check that it has the previsit of the ordered tree
     and that its invisit is the postvisit of the ordered tree ([Lemma
-    8.5](08-tree.md#lem-8-5)). Test:
+    8.8](08-tree.md#lem-8-8)). Test:
     `ch05.sec5.5.binary-representation`.
 16. Store a complete $d$-ary tree in a vector by (8.1). Test:
     `ch05.sec5.6.dary`.
@@ -7163,11 +8097,11 @@ a proof by the lemmas cited.
     `exam_treea.tree-1`.
 23. Build a max-heap by insertions, compare it with the construction of
     Floyd on $[ 4 , 7 , 9 , 10 ]$, and refuse a place out of the vector
-    ([Lemma 8.7](08-tree.md#lem-8-7)). Test:
+    ([Lemma 8.12](08-tree.md#lem-8-12)). Test:
     `lib_trees.heap-by-insertion`.
 24. Keep a binary search tree threaded, and visit its keys forward and
     backward by the threads, also on a chain of $10^4$ keys freed with no
-    recursion ([Lemma 8.6](08-tree.md#lem-8-6)). Test:
+    recursion ([Lemma 8.10](08-tree.md#lem-8-10)). Test:
     `taocp.threaded-tree`.
 25. Find the lowest common ancestor of two nodes in $O( h )$ time and $O( 1
     )$ space, compare two trees, check the order of a search tree (with a
@@ -7176,9 +8110,9 @@ a proof by the lemmas cited.
     `lib_trees.is-search-tree`, `lib_trees.is-red-black-tree`,
     `exam_treea.tree-8`.
 26. Report the keys of a search tree in a range examining at most $k + 2 (
-    h + 1 )$ nodes ([Lemma 8.13](08-tree.md#lem-8-13)), build
+    h + 1 )$ nodes ([Lemma 8.20](08-tree.md#lem-8-20)), build
     the search tree of least height of $n$ sorted keys for $n$ from 0 to
-    1000 ([Lemma 8.14](08-tree.md#lem-8-14)) and the Cartesian
+    1000 ([Lemma 8.21](08-tree.md#lem-8-21)) and the Cartesian
     tree of a vector with repeated items. Tests:
     `lib_trees.search-tree-range`, `lib_trees.minimum-height-search-tree`,
     `lib_trees.cartesian-binary-tree`.
@@ -7210,20 +8144,20 @@ a proof by the lemmas cited.
 32. Insert $1 , \ldots , n$ in an empty binary search tree so that its
     height is $n - 1$, and count the orders that do so ([Morin 2013,
     exercise 6.15](Z-bibliography.md#ref-morin-cpp), and [Lemma
-    8.17](08-tree.md#lem-8-17)). Test:
+    8.25](08-tree.md#lem-8-25)). Test:
     `ods_trees.ods-ex6.19.size-depth-height`, which counts the $2^{n-1}$
     orders for $n \le 7$.
 33. Does `insert( x )` followed by `remove( x )` give back the tree ([Morin
     2013, exercise 6.16](Z-bibliography.md#ref-morin-cpp))? Can a removal
     raise the height of a node ([Morin 2013, exercise
     6.17](Z-bibliography.md#ref-morin-cpp))? Solved by [Lemma
-    8.17](08-tree.md#lem-8-17), parts 2 and 3; the
+    8.25](08-tree.md#lem-8-25), parts 2 and 3; the
     removals of `ch06.sec6.1.remove` exercise the three cases of the
     splice.
 34. Can an insertion raise the height of a node, and that of the tree, and
     by how much ([Morin 2013, exercise
     6.18](Z-bibliography.md#ref-morin-cpp))? Solved by [Lemma
-    8.17](08-tree.md#lem-8-17), part 4. Test:
+    8.25](08-tree.md#lem-8-25), part 4. Test:
     `ods_trees.ods-ex6.19.size-depth-height`, which checks that the height
     grows by at most 1 at each of 2000 random insertions.
 35. Keep in each node of a binary search tree the size, the depth and the
@@ -7236,7 +8170,7 @@ a proof by the lemmas cited.
     in $O( h )$ time on the binary search tree and on the Red-Black tree,
     and the address of the key found ([Morin 2013,
     §6.2.1](Z-bibliography.md#ref-morin-cpp), and [Lemma
-    8.16](08-tree.md#lem-8-16)). Test:
+    8.24](08-tree.md#lem-8-24)). Test:
     `ods_trees.ods6.2.searchtree-lowerbound`.
 37. Build a binary search tree from $n$ keys and show that this costs
     $\Omega( n \log n )$ comparisons in the worst case, since the symmetric
@@ -7259,7 +8193,7 @@ a proof by the lemmas cited.
     and `successorNode()`, with no stack, in $\Theta( n )$ time, and in
     decreasing order with `max()` and `predecessorNode()` ([Montresor 2025,
     exercise 6.5](Z-bibliography.md#ref-montresor2025), and [Lemma
-    8.15](08-tree.md#lem-8-15)). Test: `ch06.ex6.5`.
+    8.23](08-tree.md#lem-8-23)). Test: `ch06.ex6.5`.
 42. Concatenate two binary search trees $T_1$ and $T_2$ whose keys are all
     smaller in $T_1$ than in $T_2$, so that the height grows by at most one
     ([Montresor 2025, exercise 6.6](Z-bibliography.md#ref-montresor2025)).
@@ -7321,7 +8255,7 @@ a proof by the lemmas cited.
 53. Prove that 21964800 orders of insertion build the complete binary
     search tree on $0 , \ldots , 14$, by a recurrence on the height ([Morin
     2013, exercise 7.3](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    8.23](08-tree.md#lem-8-23); the test evaluates (8.5) and
+    8.32](08-tree.md#lem-8-32); the test evaluates (8.5) and
     counts the 80 orders of 7 keys. Test:
     `ods_trees.ods-ex7.3.count-sequences`.
 54. Permute a vector of $n$ distinct items uniformly at random in $O( n )$
@@ -7331,10 +8265,10 @@ a proof by the lemmas cited.
     checks by the statistic $\chi^2$ on the 24 orders of 4 items. Test:
     `ods_trees.ods-ex7.4.permute`.
 55. Prove, from both parts of [Lemma
-    8.25](08-tree.md#lem-8-25), that an insertion into a treap,
+    8.34](08-tree.md#lem-8-34), that an insertion into a treap,
     and hence a removal, makes $O( 1 )$ rotations in expectation ([Morin
     2013, exercise 7.5](Z-bibliography.md#ref-morin-cpp)). Solved by [Lemma
-    8.26](08-tree.md#lem-8-26); the operations whose rotations it
+    8.36](08-tree.md#lem-8-36); the operations whose rotations it
     counts are tested against their axioms by
     `contract_dictionary.dictionary-axioms`.
 56. Realize a treap that stores no priority, the priority of a node being a
@@ -7352,14 +8286,14 @@ a proof by the lemmas cited.
 58. Build in $O( n )$ worst-case time, from a sorted vector, the treap that
     the insertions of its keys in order build ([Morin 2013, exercise
     7.8](Z-bibliography.md#ref-morin-cpp)). Solved by `Treap::fromSorted()`
-    ([Lemma 8.27](08-tree.md#lem-8-27)), compared node by
+    ([Lemma 8.38](08-tree.md#lem-8-38)), compared node by
     node with the insertions. Test: `ods_trees.ods7.2.treap-exercises`.
 59. Keep in each node of a treap the smallest and the largest key of its
     subtree, search from a node $u$ by climbing to the first ancestor whose
     interval holds the key, in $O( 1 + \log r )$ expected time, and start
     each search from the node where the previous one ended ([Morin 2013,
     exercise 7.9](Z-bibliography.md#ref-morin-cpp)). Solved by
-    `FingerTreap` ([Lemma 8.28](08-tree.md#lem-8-28)). Test:
+    `FingerTreap` ([Lemma 8.41](08-tree.md#lem-8-41)). Test:
     `ods_trees.ods-ex7.9.finger-treap`.
 60. Add to a treap the access by rank, `get(i)`, by the sizes of the
     subtrees ([Morin 2013, exercise
@@ -7384,7 +8318,7 @@ a proof by the lemmas cited.
 64. Realize the randomized binary search trees of Martínez and Roura and
     compare them with the treap ([Morin 2013, exercise
     7.14](Z-bibliography.md#ref-morin-cpp)). Solved by
-    `RandomizedSearchTree` ([Lemma 8.29](08-tree.md#lem-8-29)), whose
+    `RandomizedSearchTree` ([Lemma 8.43](08-tree.md#lem-8-43)), whose
     test also checks that the frequency of a path of 5 keys is $2^4 / 5!$
     after a removal and an insertion. Test:
     `ods_trees.ods-ex7.14.randomized-bst`.
@@ -7406,14 +8340,14 @@ a proof by the lemmas cited.
     `ods_trees.ods-ex8.1.scapegoat-figure`.
 69. Illustrate the insertions of 1, 5, 2, 4, 3 into an empty scapegoat
     tree, and show where the credits of the proof of [Lemma
-    8.40](08-tree.md#lem-8-40) go and how they are spent
+    8.57](08-tree.md#lem-8-57) go and how they are spent
     ([Morin 2013, exercise 8.2](Z-bibliography.md#ref-morin-cpp)). Solved
     by [Figure 8.47](08-tree.md#fig-8-47). Test:
     `ods_trees.ods-ex8.2.scapegoat-credits`.
 70. Show that the insertions of $1 , 2 , \ldots , n$ into an empty
     scapegoat tree spend $\Omega( n \log n )$ time in the rebuilds ([Morin
     2013, exercise 8.3](Z-bibliography.md#ref-morin-cpp), [Lemma
-    8.41](08-tree.md#lem-8-41)). Test:
+    8.58](08-tree.md#lem-8-58)). Test:
     `ods_trees.ods-ex8.3.rebuild-nlogn`.
 71. Generalize the scapegoat tree to the height bound $\log_b q$, $1 < b <
     2$, and give the amortized costs of the operations as functions of $n$
@@ -7423,7 +8357,7 @@ a proof by the lemmas cited.
 72. Find the scapegoat without counting again the sizes already known, so
     that the climb costs $O( s( w ) )$ ([Morin 2013, exercise
     8.5](Z-bibliography.md#ref-morin-cpp), [Lemma
-    8.39](08-tree.md#lem-8-39)); keep the sizes in the nodes
+    8.56](08-tree.md#lem-8-56)); keep the sizes in the nodes
     instead ([Morin 2013, exercise 8.6](Z-bibliography.md#ref-morin-cpp));
     rebuild a subtree with no array, by a list of its nodes and recursion
     ([Morin 2013, exercise 8.7](Z-bibliography.md#ref-morin-cpp),
@@ -7474,7 +8408,7 @@ a proof by the lemmas cited.
     - O( 1 )$ for arbitrarily large $n$, and sequences of insertions and
     removals that build them ([Morin 2013, exercises 9.4 and
     9.6](Z-bibliography.md#ref-morin-cpp), [Lemma
-    8.48](08-tree.md#lem-8-48)). Test:
+    8.70](08-tree.md#lem-8-70)). Test:
     `ods_trees.ods-ex9.1.two-four-tree`.
 82. Say what `pushBlack()` and `pullBlack()` do to the 2-4 tree that the
     red-black tree simulates ([Morin 2013, exercise
@@ -7488,25 +8422,25 @@ a proof by the lemmas cited.
 84. Bound the internal nodes of a 2-4 tree by its leaves and count the red
     nodes of its red-black tree ([Morin 2013, exercise
     9.8](Z-bibliography.md#ref-morin-cpp), [Lemma
-    8.49](08-tree.md#lem-8-49)). Test:
+    8.71](08-tree.md#lem-8-71)). Test:
     `ods_trees.ods-ex9.1.two-four-tree`.
 85. Show that a binary search tree of height at most $2 \log_2 n - 2$
     cannot always be coloured red and black, and that a colourable one need
     not be left-leaning ([Morin 2013, exercise
-    9.9](Z-bibliography.md#ref-morin-cpp),
-    [§8.10.6](08-tree.md#sec-8-10-6)). Answered in the text; no test.
+    9.9](Z-bibliography.md#ref-morin-cpp), [Lemma
+    8.72](08-tree.md#lem-8-72)). Solved by the lemma; no test.
 86. Join two red-black trees whose keys are separated, in $O( h )$ time
     when their black heights are equal and in $O( \max( h_1 , h_2 ) )$
     otherwise ([Morin 2013, exercises 9.10 and
     9.11](Z-bibliography.md#ref-morin-cpp), [Lemma
-    8.47](08-tree.md#lem-8-47)). Test:
+    8.69](08-tree.md#lem-8-69)). Test:
     `ods_trees.ods-ex9.10.red-black-join`.
 87. Show that an insertion in an AVL tree rebalances at most one node, by
     at most two rotations, and give an AVL tree and a removal that
     rebalance $\Theta( \log n )$ nodes ([Morin 2013, exercise
     9.12](Z-bibliography.md#ref-morin-cpp), and [Lemma
-    8.31](08-tree.md#lem-8-31), [Lemma
-    8.32](08-tree.md#lem-8-32) and [Figure
+    8.47](08-tree.md#lem-8-47), [Lemma
+    8.48](08-tree.md#lem-8-48) and [Figure
     8.42](08-tree.md#fig-8-42)). Test:
     `ods_trees.ods-ex9.12.avl-rebalancing`.
 88. Realize the AVL tree and compare it with the Red-Black tree; which one
@@ -7541,14 +8475,14 @@ a proof by the lemmas cited.
     $( x , y ]$, and explain why the keys repeated above the leaves cost
     little for a large order ([Morin 2013, exercise
     14.8](Z-bibliography.md#ref-morin-cpp); [Lemma
-    8.52](08-tree.md#lem-8-52)). Test:
+    8.77](08-tree.md#lem-8-77)). Test:
     `ods_ints.ods.ex14.8.bplus-tree`; the removals of [Figure
     8.60](08-tree.md#fig-8-60) are solved by the figure.
 93. Realize the B-tree of minimum degree $t$ with the insertion and the
     removal in one pass, check it against `std::map` for $t = 2 , 3 , 7$,
     and check the height bound (8.10) after 1000 increasing insertions
-    with $t = 2$ ([Lemma 8.50](08-tree.md#lem-8-50) and
-    [Lemma 8.51](08-tree.md#lem-8-51)). Tests:
+    with $t = 2$ ([Lemma 8.73](08-tree.md#lem-8-73) and
+    [Lemma 8.75](08-tree.md#lem-8-75)). Tests:
     `taocp.balanced-trees`, `contract_tree.other-trees` and
     `contract_dictionary.dictionary-axioms`.
 94. Replay the insertions of figures 6.7 and 6.8 of [Montresor
@@ -7558,7 +8492,7 @@ a proof by the lemmas cited.
     `ch06.sec6.3.bplus-figure`.
 95. Insert random, increasing and decreasing keys into B+-trees of orders
     3, 4, 5, 8 and 64, check them against `std::map`, and verify the height
-    of [Lemma 8.52](08-tree.md#lem-8-52) and that with
+    of [Lemma 8.77](08-tree.md#lem-8-77) and that with
     few keys the root stays a leaf. Tests: `ch06.sec6.3.bplus-random` and
     `contract_tree.b-plus-tree`.
 96. Realize an ordered map on a B+-tree whose nodes are a few lines of
@@ -7568,7 +8502,7 @@ a proof by the lemmas cited.
     with several sizes of the nodes, on keys at the limits of their type,
     on the infinities and on strings, and verify that increasing and
     decreasing insertions fill the nodes ([Lemma
-    8.53](08-tree.md#lem-8-53)). Test: `ordered.btree-map`.
+    8.79](08-tree.md#lem-8-79)). Test: `ordered.btree-map`.
 97. Use the B+-tree of the previous exercise as the ordered frontier of a
     search keyed by triples, reading the first items in order and erasing
     them by their iterators while reading. Test:
@@ -7601,12 +8535,12 @@ a proof by the lemmas cited.
      expose, split and join, the value of a common key being chosen by a
      function of the two values. Check them against the same operations on
      `std::map`, on trees of very different sizes and on empty trees
-     ([Lemma 8.56](08-tree.md#lem-8-56)). Test:
+     ([Lemma 8.84](08-tree.md#lem-8-84)). Test:
      `join_trees.set-operations`.
 103. Insert a sorted batch of $b$ pairs in $O( m \log( n / m + 1 ) + b )$
      work and remove one in $O( m \log^2( n / m + 1 ) )$ work, $m$ and $n$
      the smaller and the larger of $b$ and of the size of the tree
-     ([Lemma 8.57](08-tree.md#lem-8-57)), without building the tree of
+     ([Lemma 8.85](08-tree.md#lem-8-85)), without building the tree of
      the batch, and keep only the
      pairs that satisfy a predicate ([§8.12.4](08-tree.md#sec-8-12-4)).
      Test: `join_trees.batches`.
@@ -7620,7 +8554,7 @@ a proof by the lemmas cited.
 106. Keep in each node the sum, or the maximum, of the values of its
      subtree through each join. Answer the aggregate of a range and of a
      prefix in $O( \log n )$ combinations ([Lemma
-     8.58](08-tree.md#lem-8-58)); check them against brute
+     8.88](08-tree.md#lem-8-88)); check them against brute
      force on the four schemes, also with the infinite values of the
      floating types. Tests: `join_trees.augmented-maps` and
      `join_trees.infinite-bounds`.
