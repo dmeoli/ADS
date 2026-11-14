@@ -156,6 +156,7 @@ int BasicCdcl< Heap >::addClause( std::vector< int > c )
  return( ci );
  }
 
+//! [propagate]
 template< class Heap >
 int BasicCdcl< Heap >::propagate( void )
 {
@@ -193,6 +194,7 @@ int BasicCdcl< Heap >::propagate( void )
   }
  return( -1 );
  }
+//! [propagate]
 
 template< class Heap >
 void BasicCdcl< Heap >::bump( int v )
@@ -208,6 +210,7 @@ void BasicCdcl< Heap >::bump( int v )
   f_heap.push( std::pair( f_act[ v ] , v ) );   // the old entry goes stale
  }
 
+//! [analyze]
 template< class Heap >
 void BasicCdcl< Heap >::analyze( int confl , std::vector< int > & learnt ,
                                  int & back )
@@ -244,6 +247,7 @@ void BasicCdcl< Heap >::analyze( int confl , std::vector< int > & learnt ,
  if( learnt.size() > 1 ) std::swap( learnt[ 1 ] , learnt[ at ] );
  f_inc /= 0.95;                             // the decay of VSIDS
  }
+//! [analyze]
 
 template< class Heap >
 void BasicCdcl< Heap >::cancelUntil( int lev )

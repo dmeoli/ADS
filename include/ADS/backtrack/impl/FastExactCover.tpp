@@ -75,6 +75,7 @@ inline void FastExactCover::build( void )
  f_force.clear();
  }
 
+//! [hide]
 inline bool FastExactCover::hide( int c , int color , bool check )
 {
  Node * const nd = f_node.data();
@@ -111,6 +112,7 @@ inline bool FastExactCover::hide( int c , int color , bool check )
   }
  return( true );
  }
+//! [hide]
 
 inline int FastExactCover::optionOf( int x ) const
 {
