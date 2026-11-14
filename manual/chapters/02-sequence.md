@@ -1052,8 +1052,9 @@ from `new` does by relinking them, as Morin's does. Between pooled lists,
 however, a cell cannot change pool. Hence `truncate()`, `deal()`,
 `takeFirst()` and `merge()` move the items into cells of the other list (in
 time linear in the items moved), while `absorb()` takes the pool of the
-other list together with its cells (`ObjectPool::adopt()`, which walks the
-$O( \log n )$ blocks of a pool); `mergeSort()` and `reverse()` relink the
+other list together with its cells (`ObjectPool::adopt()`, which is a swap when this pool
+has no block and otherwise walks the blocks of this pool, $O( \log k + k / n
+)$ of them for $k$ slots under a block limit $n$); `mergeSort()` and `reverse()` relink the
 cells of one list in both cases.
 
 ### 2.10.1 Sorting a list {#sec-2-10-1}
