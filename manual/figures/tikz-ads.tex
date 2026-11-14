@@ -1,31 +1,62 @@
-% tikz-ads.tex: the TikZ styles shared by the figures of the memory of the
-% manual, \input by each standalone figure: a cell of a vector (cell), the
-% cell that an operation touches (touched), a free cell (free), a node of a
-% linked structure (node), the labels of indices (index) and of variables
-% (var), a pointer (ptr), and \cells and \indices to draw a row of cells.
+% tikz-ads.tex: the TikZ styles shared by the figures of the manual, \input
+% by each standalone figure after \usepackage{lamalunga}. The grammar is
+% that of flat diagrams (filled shapes, one colour per role, no outlines,
+% gradients or shadows); the colours are computed by lamalunga from one
+% primary, so that changing \adsprimary recolours every figure:
+%   cell, touched, added, free    the places of a vector: in use, read or
+%                                 followed by the operation, added by it,
+%                                 free;
+%   node, vertex                  a node of a linked structure (box) and a
+%                                 vertex of a tree or graph (disc), each
+%                                 with -touched and -added variants;
+%   edge, edge-touched            the edges of a tree or graph, and those
+%                                 an operation follows;
+%   ptr, var, index               a pointer, a variable, an index.
+% \cells{name}{x,y}{list} draws a row of places (items text/style),
+% \indices{name}{n} the indices 0 .. n-1 above them.
 \usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.multipart}
-\definecolor{adsTouched}{RGB}{214,196,236}
-\definecolor{adsFree}{RGB}{236,236,236}
+\providecommand{\adsprimary}{7030A0}
+\definecolor{adsPrimary}{HTML}{\adsprimary}
+\colorharmony{ads}{adsPrimary}
+\colorlet{adsAdded}{ads-triad-a}
+\colorlet{adsInk}{black!78}
+\colorlet{adsTint}{\goldentint{adsPrimary}{4}}
+\colorlet{adsFree}{\goldentint{adsPrimary}{7}}
+\readableon{adsOnPrimary}{adsPrimary}{black}{white}
+\readableon{adsOnAdded}{adsAdded}{black}{white}
 \tikzset{
-  ads/.style={>={Stealth[length=2mm]},font=\small,
-              every node/.append style={inner sep=0pt}},
-  cell/.style={draw,minimum width=7mm,minimum height=7mm,
-               font=\small\ttfamily,outer sep=0pt},
-  touched/.style={cell,fill=adsTouched},
-  free/.style={cell,fill=adsFree,text=black!45},
-  node/.style={draw,rounded corners=1pt,minimum width=8mm,
-               minimum height=6mm,font=\small\ttfamily},
-  index/.style={font=\scriptsize\ttfamily,text=black!60},
-  var/.style={font=\small\itshape},
-  ptr/.style={->,thick}
+  ads/.style={>={Stealth[length=2.2mm,width=2mm]},font=\small,
+              every node/.append style={inner sep=0pt},line cap=round},
+  cell/.style={rounded corners=1.6pt,minimum width=7mm,minimum height=7mm,
+               font=\small\ttfamily,fill=adsTint,text=adsInk,
+               draw=white,line width=1.2pt,outer sep=0pt},
+  touched/.style={cell,fill=adsPrimary,text=adsOnPrimary,
+                  font=\small\ttfamily\bfseries},
+  added/.style={cell,fill=adsAdded,text=adsOnAdded,
+                font=\small\ttfamily\bfseries},
+  free/.style={cell,fill=adsFree,text=adsInk!55},
+  node/.style={rounded corners=2pt,minimum width=8mm,minimum height=6mm,
+               font=\small\ttfamily,fill=adsTint,text=adsInk},
+  node-touched/.style={node,fill=adsPrimary,text=adsOnPrimary,
+                       font=\small\ttfamily\bfseries},
+  node-added/.style={node,fill=adsAdded,text=adsOnAdded,
+                     font=\small\ttfamily\bfseries},
+  vertex/.style={circle,minimum size=7.5mm,font=\small\ttfamily,
+                 fill=adsTint,text=adsInk},
+  vertex-touched/.style={vertex,fill=adsPrimary,text=adsOnPrimary,
+                         font=\small\ttfamily\bfseries},
+  vertex-added/.style={vertex,fill=adsAdded,text=adsOnAdded,
+                       font=\small\ttfamily\bfseries},
+  edge/.style={line width=1.1pt,draw=adsInk!45},
+  edge-touched/.style={line width=1.8pt,draw=adsPrimary},
+  ptr/.style={->,line width=1.1pt,draw=adsInk},
+  var/.style={font=\small\itshape,text=adsPrimary},
+  index/.style={font=\scriptsize\ttfamily,text=adsInk!55},
+  nullptr/.style={font=\small,text=adsInk!55}
 }
-% \cells{name}{x,y}{list}: a row of cells, the first at (x,y), named
-% name-0, name-1, ...; each item is text/style, the style one of cell,
-% touched and free (e.g., {a/cell,e/touched,/free})
 \newcommand{\cells}[3]{%
   \foreach \v/\s [count=\i from 0] in {#3}
-    \node[\s] (#1-\i) at ($(#2)+(\i*7mm,0)$) {\v};}
-% \indices{name}{n}: the indices 0 .. n-1 under the cells of name
+    \node[\s] (#1-\i) at ($(#2)+(\i*7.4mm,0)$) {\v};}
 \newcommand{\indices}[2]{%
   \foreach \i in {0,...,\numexpr#2-1\relax}
-    \node[index,below=1.2mm of #1-\i] {\i};}
+    \node[index,above=1.6mm of #1-\i] {\i};}

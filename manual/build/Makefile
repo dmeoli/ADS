@@ -18,6 +18,9 @@ FIGDIR  := $(MANUAL)/figures
 GENDIR  := $(MANUAL)/generated
 PDF_OUT := $(MANUAL)/ADS-manual.pdf
 INCLUDE := $(MANUAL)/../include
+# lamalunga (github.com/dmeoli/lamalunga), which computes the palette of the
+# figures; set LAMALUNGA to its folder if it is elsewhere
+LAMALUNGA ?= $(HOME)/GDrive/lamalunga
 FIGTEX  := $(filter-out $(FIGDIR)/tikz-ads.tex,$(wildcard $(FIGDIR)/*.tex))
 
 .PHONY: pdf html serve figures snippets clean
@@ -40,7 +43,7 @@ figures: $(FIGTEX:.tex=.pdf) $(FIGTEX:.tex=.svg)
 .PRECIOUS: $(FIGDIR)/%.pdf
 
 $(FIGDIR)/%.pdf: $(FIGDIR)/%.tex $(FIGDIR)/tikz-ads.tex
-	cd $(FIGDIR) && pdflatex -interaction=nonstopmode -halt-on-error \
+	cd $(FIGDIR) && TEXINPUTS=$(LAMALUNGA)//: pdflatex -interaction=nonstopmode -halt-on-error \
 	  $*.tex > /dev/null && rm -f $*.aux $*.log
 
 $(FIGDIR)/%.svg: $(FIGDIR)/%.pdf

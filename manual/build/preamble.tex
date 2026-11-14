@@ -20,6 +20,10 @@
 % --- Figures keep their natural size (the TikZ figures are drawn at it);
 % Pandoc's \pandocbounded already shrinks one wider than the text. -------
 \usepackage{graphicx}
+% the captions carry their hand-written number (Figure 3.1.), as the web
+% build shows them, so LaTeX adds no label of its own
+\usepackage{caption}
+\captionsetup[figure]{labelformat=empty}
 \makeatletter
 \renewcommand{\fps@figure}{htbp}
 \makeatother
