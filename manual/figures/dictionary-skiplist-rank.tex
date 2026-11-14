@@ -1,0 +1,217 @@
+% Source for the figure of exercises 4.4 and 4.5 of Morin (sec. 7.9): the widths
+% of the skip list of the keys 0 to 6 after the removal of the key of rank 2,
+% and after the insertion of a key at rank 3 (the key 2.5) with 5 levels.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  ptr-touched/.style={edge-touched,->},
+  ptr-faint/.style={edge,->},
+  wd/.style={index,font=\footnotesize\ttfamily,fill=white,inner sep=0.6pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[lvl] (ahl0) at (0.0mm,64.0mm) {};
+  \node[lvl] (ahl1) at (0.0mm,72.0mm) {};
+  \node[lvl] (ahl2) at (0.0mm,80.0mm) {};
+  \node[lvl] (ahl3) at (0.0mm,88.0mm) {};
+  \node[lvl] (ahl4) at (0.0mm,96.0mm) {};
+  \node[lvl] (ahl5) at (0.0mm,104.0mm) {};
+  \node[var,font=\small\itshape,anchor=north] at (0.0mm,60.4mm) {head};
+  \node[lvl] (a0l0) at (12.5mm,64.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (12.5mm,60.4mm) {0};
+  \node[lvl] (a1l0) at (25.0mm,64.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (25.0mm,60.4mm) {1};
+  \node[lvl] (a3l0) at (37.5mm,64.0mm) {};
+  \node[lvl] (a3l1) at (37.5mm,72.0mm) {};
+  \node[lvl] (a3l2) at (37.5mm,80.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (37.5mm,60.4mm) {3};
+  \node[lvl] (a4l0) at (50.0mm,64.0mm) {};
+  \node[lvl] (a4l1) at (50.0mm,72.0mm) {};
+  \node[lvl] (a4l2) at (50.0mm,80.0mm) {};
+  \node[lvl] (a4l3) at (50.0mm,88.0mm) {};
+  \node[lvl] (a4l4) at (50.0mm,96.0mm) {};
+  \node[lvl] (a4l5) at (50.0mm,104.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (50.0mm,60.4mm) {4};
+  \node[lvl] (a5l0) at (62.5mm,64.0mm) {};
+  \node[lvl] (a5l1) at (62.5mm,72.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (62.5mm,60.4mm) {5};
+  \node[lvl] (a6l0) at (75.0mm,64.0mm) {};
+  \node[lvl] (a6l1) at (75.0mm,72.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (75.0mm,60.4mm) {6};
+  \node[index,anchor=east] at (-6.0mm,64.0mm) {0};
+  \node[index,anchor=east] at (-6.0mm,72.0mm) {1};
+  \node[index,anchor=east] at (-6.0mm,80.0mm) {2};
+  \node[index,anchor=east] at (-6.0mm,88.0mm) {3};
+  \node[index,anchor=east] at (-6.0mm,96.0mm) {4};
+  \node[index,anchor=east] at (-6.0mm,104.0mm) {5};
+  \node[nullptr] (anil0) at (84.5mm,64.0mm) {nil};
+  \draw[ptr] (ahl0.east) -- (a0l0.west);
+  \node[wd] at (6.2mm,66.9mm) {1};
+  \draw[ptr] (a0l0.east) -- (a1l0.west);
+  \node[wd] at (18.8mm,66.9mm) {1};
+  \draw[ptr-touched] (a1l0.east) -- (a3l0.west);
+  \node[wd] at (31.2mm,66.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr] (a3l0.east) -- (a4l0.west);
+  \node[wd] at (43.8mm,66.9mm) {1};
+  \draw[ptr] (a4l0.east) -- (a5l0.west);
+  \node[wd] at (56.2mm,66.9mm) {1};
+  \draw[ptr] (a5l0.east) -- (a6l0.west);
+  \node[wd] at (68.8mm,66.9mm) {1};
+  \draw[ptr] (a6l0.east) -- (anil0.west);
+  \node[wd] at (81.0mm,66.9mm) {1};
+  \node[nullptr] (anil1) at (84.5mm,72.0mm) {nil};
+  \draw[ptr-touched] (ahl1.east) -- (a3l1.west);
+  \node[wd] at (18.8mm,74.9mm) {\textcolor{adsPrimary}{\textbf{3}}};
+  \draw[ptr] (a3l1.east) -- (a4l1.west);
+  \node[wd] at (43.8mm,74.9mm) {1};
+  \draw[ptr] (a4l1.east) -- (a5l1.west);
+  \node[wd] at (56.2mm,74.9mm) {1};
+  \draw[ptr] (a5l1.east) -- (a6l1.west);
+  \node[wd] at (68.8mm,74.9mm) {1};
+  \draw[ptr] (a6l1.east) -- (anil1.west);
+  \node[wd] at (81.0mm,74.9mm) {1};
+  \node[nullptr] (anil2) at (84.5mm,80.0mm) {nil};
+  \draw[ptr-touched] (ahl2.east) -- (a3l2.west);
+  \node[wd] at (18.8mm,82.9mm) {\textcolor{adsPrimary}{\textbf{3}}};
+  \draw[ptr] (a3l2.east) -- (a4l2.west);
+  \node[wd] at (43.8mm,82.9mm) {1};
+  \draw[ptr] (a4l2.east) -- (anil2.west);
+  \node[wd] at (68.5mm,82.9mm) {3};
+  \node[nullptr] (anil3) at (84.5mm,88.0mm) {nil};
+  \draw[ptr-touched] (ahl3.east) -- (a4l3.west);
+  \node[wd] at (25.0mm,90.9mm) {\textcolor{adsPrimary}{\textbf{4}}};
+  \draw[ptr] (a4l3.east) -- (anil3.west);
+  \node[wd] at (68.5mm,90.9mm) {3};
+  \node[nullptr] (anil4) at (84.5mm,96.0mm) {nil};
+  \draw[ptr-touched] (ahl4.east) -- (a4l4.west);
+  \node[wd] at (25.0mm,98.9mm) {\textcolor{adsPrimary}{\textbf{4}}};
+  \draw[ptr] (a4l4.east) -- (anil4.west);
+  \node[wd] at (68.5mm,98.9mm) {3};
+  \node[nullptr] (anil5) at (84.5mm,104.0mm) {nil};
+  \draw[ptr-touched] (ahl5.east) -- (a4l5.west);
+  \node[wd] at (25.0mm,106.9mm) {\textcolor{adsPrimary}{\textbf{4}}};
+  \draw[ptr] (a4l5.east) -- (anil5.west);
+  \node[wd] at (68.5mm,106.9mm) {3};
+  \node[var,anchor=west] at (-8.0mm,113.0mm) {remove the key of rank 2};
+  \node[lvl] (bhl0) at (0.0mm,0.0mm) {};
+  \node[lvl] (bhl1) at (0.0mm,8.0mm) {};
+  \node[lvl] (bhl2) at (0.0mm,16.0mm) {};
+  \node[lvl] (bhl3) at (0.0mm,24.0mm) {};
+  \node[lvl] (bhl4) at (0.0mm,32.0mm) {};
+  \node[lvl] (bhl5) at (0.0mm,40.0mm) {};
+  \node[var,font=\small\itshape,anchor=north] at (0.0mm,-3.6mm) {head};
+  \node[lvl] (b0l0) at (12.5mm,0.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (12.5mm,-3.6mm) {0};
+  \node[lvl] (b1l0) at (25.0mm,0.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (25.0mm,-3.6mm) {1};
+  \node[lvl] (b2l0) at (37.5mm,0.0mm) {};
+  \node[lvl] (b2l1) at (37.5mm,8.0mm) {};
+  \node[lvl] (b2l2) at (37.5mm,16.0mm) {};
+  \node[lvl] (b2l3) at (37.5mm,24.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (37.5mm,-3.6mm) {2};
+  \node[lvl-added] (b2p5l0) at (50.0mm,0.0mm) {};
+  \node[lvl-added] (b2p5l1) at (50.0mm,8.0mm) {};
+  \node[lvl-added] (b2p5l2) at (50.0mm,16.0mm) {};
+  \node[lvl-added] (b2p5l3) at (50.0mm,24.0mm) {};
+  \node[lvl-added] (b2p5l4) at (50.0mm,32.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (50.0mm,-3.6mm) {2.5};
+  \node[lvl] (b3l0) at (62.5mm,0.0mm) {};
+  \node[lvl] (b3l1) at (62.5mm,8.0mm) {};
+  \node[lvl] (b3l2) at (62.5mm,16.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (62.5mm,-3.6mm) {3};
+  \node[lvl] (b4l0) at (75.0mm,0.0mm) {};
+  \node[lvl] (b4l1) at (75.0mm,8.0mm) {};
+  \node[lvl] (b4l2) at (75.0mm,16.0mm) {};
+  \node[lvl] (b4l3) at (75.0mm,24.0mm) {};
+  \node[lvl] (b4l4) at (75.0mm,32.0mm) {};
+  \node[lvl] (b4l5) at (75.0mm,40.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (75.0mm,-3.6mm) {4};
+  \node[lvl] (b5l0) at (87.5mm,0.0mm) {};
+  \node[lvl] (b5l1) at (87.5mm,8.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (87.5mm,-3.6mm) {5};
+  \node[lvl] (b6l0) at (100.0mm,0.0mm) {};
+  \node[lvl] (b6l1) at (100.0mm,8.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (100.0mm,-3.6mm) {6};
+  \node[index,anchor=east] at (-6.0mm,0.0mm) {0};
+  \node[index,anchor=east] at (-6.0mm,8.0mm) {1};
+  \node[index,anchor=east] at (-6.0mm,16.0mm) {2};
+  \node[index,anchor=east] at (-6.0mm,24.0mm) {3};
+  \node[index,anchor=east] at (-6.0mm,32.0mm) {4};
+  \node[index,anchor=east] at (-6.0mm,40.0mm) {5};
+  \node[nullptr] (bnil0) at (109.5mm,0.0mm) {nil};
+  \draw[ptr] (bhl0.east) -- (b0l0.west);
+  \node[wd] at (6.2mm,2.9mm) {1};
+  \draw[ptr] (b0l0.east) -- (b1l0.west);
+  \node[wd] at (18.8mm,2.9mm) {1};
+  \draw[ptr] (b1l0.east) -- (b2l0.west);
+  \node[wd] at (31.2mm,2.9mm) {1};
+  \draw[ptr-touched] (b2l0.east) -- (b2p5l0.west);
+  \node[wd] at (43.8mm,2.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr-touched] (b2p5l0.east) -- (b3l0.west);
+  \node[wd] at (56.2mm,2.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr] (b3l0.east) -- (b4l0.west);
+  \node[wd] at (68.8mm,2.9mm) {1};
+  \draw[ptr] (b4l0.east) -- (b5l0.west);
+  \node[wd] at (81.2mm,2.9mm) {1};
+  \draw[ptr] (b5l0.east) -- (b6l0.west);
+  \node[wd] at (93.8mm,2.9mm) {1};
+  \draw[ptr] (b6l0.east) -- (bnil0.west);
+  \node[wd] at (106.0mm,2.9mm) {1};
+  \node[nullptr] (bnil1) at (109.5mm,8.0mm) {nil};
+  \draw[ptr] (bhl1.east) -- (b2l1.west);
+  \node[wd] at (18.8mm,10.9mm) {3};
+  \draw[ptr-touched] (b2l1.east) -- (b2p5l1.west);
+  \node[wd] at (43.8mm,10.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr-touched] (b2p5l1.east) -- (b3l1.west);
+  \node[wd] at (56.2mm,10.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr] (b3l1.east) -- (b4l1.west);
+  \node[wd] at (68.8mm,10.9mm) {1};
+  \draw[ptr] (b4l1.east) -- (b5l1.west);
+  \node[wd] at (81.2mm,10.9mm) {1};
+  \draw[ptr] (b5l1.east) -- (b6l1.west);
+  \node[wd] at (93.8mm,10.9mm) {1};
+  \draw[ptr] (b6l1.east) -- (bnil1.west);
+  \node[wd] at (106.0mm,10.9mm) {1};
+  \node[nullptr] (bnil2) at (109.5mm,16.0mm) {nil};
+  \draw[ptr] (bhl2.east) -- (b2l2.west);
+  \node[wd] at (18.8mm,18.9mm) {3};
+  \draw[ptr-touched] (b2l2.east) -- (b2p5l2.west);
+  \node[wd] at (43.8mm,18.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr-touched] (b2p5l2.east) -- (b3l2.west);
+  \node[wd] at (56.2mm,18.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr] (b3l2.east) -- (b4l2.west);
+  \node[wd] at (68.8mm,18.9mm) {1};
+  \draw[ptr] (b4l2.east) -- (bnil2.west);
+  \node[wd] at (93.5mm,18.9mm) {3};
+  \node[nullptr] (bnil3) at (109.5mm,24.0mm) {nil};
+  \draw[ptr] (bhl3.east) -- (b2l3.west);
+  \node[wd] at (18.8mm,26.9mm) {3};
+  \draw[ptr-touched] (b2l3.east) -- (b2p5l3.west);
+  \node[wd] at (43.8mm,26.9mm) {\textcolor{adsPrimary}{\textbf{1}}};
+  \draw[ptr-touched] (b2p5l3.east) -- (b4l3.west);
+  \node[wd] at (62.5mm,26.9mm) {\textcolor{adsPrimary}{\textbf{2}}};
+  \draw[ptr] (b4l3.east) -- (bnil3.west);
+  \node[wd] at (93.5mm,26.9mm) {3};
+  \node[nullptr] (bnil4) at (109.5mm,32.0mm) {nil};
+  \draw[ptr-touched] (bhl4.east) -- (b2p5l4.west);
+  \node[wd] at (25.0mm,34.9mm) {\textcolor{adsPrimary}{\textbf{4}}};
+  \draw[ptr-touched] (b2p5l4.east) -- (b4l4.west);
+  \node[wd] at (62.5mm,34.9mm) {\textcolor{adsPrimary}{\textbf{2}}};
+  \draw[ptr] (b4l4.east) -- (bnil4.west);
+  \node[wd] at (93.5mm,34.9mm) {3};
+  \node[nullptr] (bnil5) at (109.5mm,40.0mm) {nil};
+  \draw[ptr-touched] (bhl5.east) -- (b4l5.west);
+  \node[wd] at (37.5mm,42.9mm) {\textcolor{adsPrimary}{\textbf{6}}};
+  \draw[ptr] (b4l5.east) -- (bnil5.west);
+  \node[wd] at (93.5mm,42.9mm) {3};
+  \node[var,anchor=west] at (-8.0mm,49.0mm) {insert at rank 3, $\ell = 5$};
+\end{tikzpicture}
+\end{document}

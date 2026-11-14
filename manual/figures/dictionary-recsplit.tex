@@ -1,0 +1,33 @@
+% Source for the figure of RecSplit (sec. 7.8): the splitting tree of a
+% bucket of m = 10 keys with leaves of at most l = 4 keys, the upper
+% aggregation into 8 and 2 keys, the lower one into 4 and 4, the values of
+% each leaf, the seeds in preorder, and the descent of a key that falls in
+% the second leaf. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{box/.style={node,minimum width=17mm,minimum height=9mm,align=center},
+  on/.style={node-touched,minimum width=17mm,minimum height=9mm,align=center}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[on] (r) at (0,0) {$m = 10$\\$x_0$};
+  \node[on] (a) at (-25mm,-18mm) {$m = 8$\\$x_1$};
+  \node[box] (b) at (25mm,-18mm) {$m = 2$\\$x_4$};
+  \node[box] (c) at (-42mm,-36mm) {$m = 4$\\$x_2$};
+  \node[on] (d) at (-8mm,-36mm) {$m = 4$\\$x_3$};
+  \draw[edge-touched] (r) -- (a); \draw[edge] (r) -- (b);
+  \draw[edge] (a) -- (c); \draw[edge-touched] (a) -- (d);
+  \node[index,below=1.5mm of c] {values 0 .. 3};
+  \node[index,below=1.5mm of d] {values 4 .. 7};
+  \node[index,below=1.5mm of b] {values 8 .. 9};
+  \node[var,anchor=west] at (12mm,0) {upper aggregation: $8 + 2$};
+  \node[var,anchor=east] at (-38mm,-18mm) {lower aggregation: $4 + 4$};
+  \node[var,anchor=east] at (-56mm,-58mm) {code};
+  \cells{s}{-52mm,-58mm}{$x_0$/touched,$x_1$/touched,$x_2$/cell,$x_3$/touched,$x_4$/cell}
+  \node[var,anchor=west] at ($(s-4.east)+(3mm,0)$) {the seeds in preorder; $x_2$ skipped};
+\end{tikzpicture}
+\end{document}

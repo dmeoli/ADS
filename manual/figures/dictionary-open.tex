@@ -1,0 +1,27 @@
+% Source for the figure of OpenHashTable (sec. 7.5): the linear inspection
+% (delta = 1) on m = 11 places with a deleted place, insert(d) with
+% H_0(d) = 2, which reuses the deleted place, and remove(b).
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{del/.style={free,font=\scriptsize\ttfamily,text=adsInk!70},
+         deltouched/.style={touched,font=\scriptsize\ttfamily\bfseries}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{/free,/free,a/cell,b/cell,del/del,c/cell,/free,/free,/free,/free,/free}
+  \node[var,anchor=east] at (-6mm,-16mm) {\texttt{insert(d)}};
+  \cells{b}{0,-16mm}{/free,/free,a/touched,b/touched,d/added,c/touched,/touched,/free,/free,/free,/free}
+  \foreach \i/\j in {2/3,3/4,4/5,5/6}
+    \draw[ptr,shorten <=1.5pt,shorten >=1.5pt] (b-\i.north) to[bend left=50] (b-\j.north);
+  \node[var,anchor=west] at (84mm,-16mm) {$H_0( d ) = 2$};
+  \node[var,anchor=east] at (-6mm,-29mm) {\texttt{remove(b)}};
+  \cells{c}{0,-29mm}{/free,/free,a/cell,del/deltouched,d/cell,c/cell,/free,/free,/free,/free,/free}
+  \indices{a}{11}
+\end{tikzpicture}
+\end{document}

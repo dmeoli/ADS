@@ -1,0 +1,66 @@
+% Source for the figure of BitmapTrie (sec. 7.11): the trie of car, cat,
+% cow, do with the smallest and largest string below each node, the node c
+% with its bitmap of the bytes of its children and the array of the
+% children, the list of the strings, and lowerBound(cb). Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{lab/.style={font=\small\ttfamily,text=adsInk,inner sep=1.2pt},
+  mm/.style={font=\scriptsize\itshape,text=adsPrimary},
+  b0/.style={free,minimum width=4.4mm,minimum height=5.5mm,font=\scriptsize\ttfamily},
+  b1/.style={cell,minimum width=4.4mm,minimum height=5.5mm,font=\scriptsize\ttfamily},
+  bt/.style={touched,minimum width=4.4mm,minimum height=5.5mm,font=\scriptsize\ttfamily},
+  w/.style={node,minimum width=10mm},
+  wt/.style={node-touched,minimum width=10mm}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % the trie
+  \node[vertex-touched] (r) at (0,0) {};
+  \node[vertex-touched] (c) at (-16mm,-13mm) {c};
+  \node[vertex] (d) at (26mm,-13mm) {d};
+  \node[vertex] (ca) at (-28mm,-26mm) {ca};
+  \node[vertex-touched] (co) at (-4mm,-26mm) {co};
+  \node[vertex] (do) at (26mm,-26mm) {do};
+  \node[vertex] (car) at (-36mm,-39mm) {car};
+  \node[vertex] (cat) at (-20mm,-39mm) {cat};
+  \node[vertex-touched] (cow) at (-4mm,-39mm) {cow};
+  \draw[edge-touched] (r) -- node[lab,above left] {c} (c);
+  \draw[edge] (r) -- node[lab,above right] {d} (d);
+  \draw[edge] (c) -- node[lab,above left] {a} (ca);
+  \draw[edge-touched] (c) -- node[lab,above right] {o} (co);
+  \draw[edge] (d) -- node[lab,right] {o} (do);
+  \draw[edge] (ca) -- node[lab,left] {r} (car);
+  \draw[edge] (ca) -- node[lab,right] {t} (cat);
+  \draw[edge-touched] (co) -- node[lab,right] {w} (cow);
+  \node[mm,right=1.5mm of r] {car .. do};
+  \node[mm,left=1.5mm of c] {car .. cow};
+  \node[mm,right=1.5mm of d] {do .. do};
+  \node[mm,left=1.5mm of ca] {car .. cat};
+  \node[mm,right=1.5mm of co] {cow .. cow};
+  % the list of the strings
+  \foreach \s/\t [count=\i from 0] in {car/w,cat/w,cow/wt,do/w}
+    \node[\t] (l\i) at (-36mm+\i*16mm,-54mm) {\s};
+  \foreach \i/\j in {0/1,1/2,2/3} \draw[ptr,<->] (l\i) -- (l\j);
+  \node[var,anchor=east] at (-43mm,-54mm) {list};
+  % the node c enlarged
+  \begin{scope}[xshift=-40mm,yshift=-74mm]
+  \node[var,anchor=west] at (0,8mm) {the node \texttt{c}: the bitmap of its 256 bytes, \texttt{a} .. \texttt{p} shown};
+  \foreach \ch/\st [count=\i from 0] in {a/b1,b/b0,c/b0,d/b0,e/b0,f/b0,g/b0,h/b0,i/b0,j/b0,k/b0,l/b0,m/b0,n/b0,o/bt,p/b0}
+    { \node[\st] (B\i) at (\i*4.8mm,0) {\ifnum\i=0 1\else\ifnum\i=14 1\else 0\fi\fi};
+      \node[index,above=1mm of B\i] {\ch}; }
+  \node[index,below=1mm of B1] {$s_1$};
+  \node[var,anchor=west] at (0,-14mm) {children};
+  \node[w] (ch0) at (24mm,-14mm) {ca};
+  \node[wt] (ch1) at (36mm,-14mm) {co};
+  \draw[ptr] (B14.south) .. controls +(0,-6mm) and +(4mm,6mm) .. (ch1.north);
+  \node[var,anchor=west] at (48mm,-14mm) {\texttt{lowerBound(cb)}: no child for \texttt{b}; the next};
+  \node[var,anchor=west] at (48mm,-20mm) {bit set is \texttt{o}, of rank 1 by a population count;};
+  \node[var,anchor=west] at (48mm,-26mm) {the smallest string below \texttt{co} is \texttt{cow}};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

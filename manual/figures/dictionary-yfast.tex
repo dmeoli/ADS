@@ -1,0 +1,84 @@
+% Source for the figure of YFastTrie (sec. 7.11): the representatives (the keys
+% of the x-fast trie, 15 = 2^w - 1 always there) and their groups, for the keys
+% 0 1 3 4 5 8 9 10 11 13, after insert(2) and insert(6) (heads for 6, which
+% splits its group), and after remove(1) and remove(9) (a representative, whose
+% group joins the next one). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  ptr-touched/.style={edge-touched,->},
+  ptr-faint/.style={edge,->},
+  wd/.style={index,font=\footnotesize\ttfamily,fill=white,inner sep=0.6pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=west] at (-30mm,8mm) {keys 0 1 3 4 5 8 9 10 11 13};
+  \node[var,anchor=east,text=adsInk] at (-4mm,0mm) {representatives};
+  \node[var,anchor=east,text=adsInk] at (-4mm,-13mm) {groups};
+  \node[cell] (ag0k0) at (0.0mm,-13mm) {0};
+  \node[cell] (ag0k1) at (7.4mm,-13mm) {1};
+  \node[cell] (ag0k2) at (14.8mm,-13mm) {3};
+  \node[cell] (ar0) at (14.8mm,0mm) {3};
+  \draw[ptr] (ar0.south) -- ++(0,-3.2mm);
+  \node[cell] (ag1k0) at (31.2mm,-13mm) {4};
+  \node[cell] (ag1k1) at (38.6mm,-13mm) {5};
+  \node[cell] (ag1k2) at (46.0mm,-13mm) {8};
+  \node[cell] (ag1k3) at (53.4mm,-13mm) {9};
+  \node[cell] (ar1) at (53.4mm,0mm) {9};
+  \draw[ptr] (ar1.south) -- ++(0,-3.2mm);
+  \node[cell] (ag2k0) at (69.8mm,-13mm) {10};
+  \node[cell] (ag2k1) at (77.2mm,-13mm) {11};
+  \node[cell] (ag2k2) at (84.6mm,-13mm) {13};
+  \node[free] (ar2) at (92.0mm,0mm) {15};
+  \draw[ptr] (ar2.south) -- ++(0,-3.2mm);
+  \node[var,anchor=west] at (-30mm,-24mm) {insert(2), insert(6): heads for 6};
+  \node[var,anchor=east,text=adsInk] at (-4mm,-32mm) {representatives};
+  \node[var,anchor=east,text=adsInk] at (-4mm,-45mm) {groups};
+  \node[cell] (bg0k0) at (0.0mm,-45mm) {0};
+  \node[cell] (bg0k1) at (7.4mm,-45mm) {1};
+  \node[added] (bg0k2) at (14.8mm,-45mm) {2};
+  \node[cell] (bg0k3) at (22.2mm,-45mm) {3};
+  \node[cell] (br0) at (22.2mm,-32mm) {3};
+  \draw[ptr] (br0.south) -- ++(0,-3.2mm);
+  \node[cell] (bg1k0) at (38.6mm,-45mm) {4};
+  \node[cell] (bg1k1) at (46.0mm,-45mm) {5};
+  \node[added] (bg1k2) at (53.4mm,-45mm) {6};
+  \node[added] (br1) at (53.4mm,-32mm) {6};
+  \draw[ptr] (br1.south) -- ++(0,-3.2mm);
+  \node[cell] (bg2k0) at (69.8mm,-45mm) {8};
+  \node[cell] (bg2k1) at (77.2mm,-45mm) {9};
+  \node[cell] (br2) at (77.2mm,-32mm) {9};
+  \draw[ptr] (br2.south) -- ++(0,-3.2mm);
+  \node[cell] (bg3k0) at (93.6mm,-45mm) {10};
+  \node[cell] (bg3k1) at (101.0mm,-45mm) {11};
+  \node[cell] (bg3k2) at (108.4mm,-45mm) {13};
+  \node[free] (br3) at (115.8mm,-32mm) {15};
+  \draw[ptr] (br3.south) -- ++(0,-3.2mm);
+  \node[var,anchor=west] at (-30mm,-56mm) {remove(1), remove(9)};
+  \node[var,anchor=east,text=adsInk] at (-4mm,-64mm) {representatives};
+  \node[var,anchor=east,text=adsInk] at (-4mm,-77mm) {groups};
+  \node[cell] (cg0k0) at (0.0mm,-77mm) {0};
+  \node[cell] (cg0k1) at (7.4mm,-77mm) {2};
+  \node[cell] (cg0k2) at (14.8mm,-77mm) {3};
+  \node[cell] (cr0) at (14.8mm,-64mm) {3};
+  \draw[ptr] (cr0.south) -- ++(0,-3.2mm);
+  \node[cell] (cg1k0) at (31.2mm,-77mm) {4};
+  \node[cell] (cg1k1) at (38.6mm,-77mm) {5};
+  \node[cell] (cg1k2) at (46.0mm,-77mm) {6};
+  \node[cell] (cr1) at (46.0mm,-64mm) {6};
+  \draw[ptr] (cr1.south) -- ++(0,-3.2mm);
+  \node[touched] (cg2k0) at (62.4mm,-77mm) {8};
+  \node[cell] (cg2k1) at (69.8mm,-77mm) {10};
+  \node[cell] (cg2k2) at (77.2mm,-77mm) {11};
+  \node[cell] (cg2k3) at (84.6mm,-77mm) {13};
+  \node[free] (cr2) at (92.0mm,-64mm) {15};
+  \draw[ptr] (cr2.south) -- ++(0,-3.2mm);
+\end{tikzpicture}
+\end{document}

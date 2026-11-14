@@ -667,10 +667,10 @@
  smallest or largest key, which the binary trie reaches in \f$ O( w ) \f$ by
  walking down and the x-fast trie in \f$ O( \log w ) \f$ by the search;
  `SimpleBinaryTrie` (exercise 13.1) has no jump pointers and no list, and
- keeps instead, on its walk down, the deepest node where the path of
- \f$ x \f$ goes to the child 0 while the child 1 is there, the root of the
- nearest larger keys, whose leftmost leaf it reaches in \f$ O( w ) \f$ more
- steps. `ListXFastTrie` (exercise 13.2) has no trie at all: its tables map
+ keeps instead, on its walk down, the child 1 of the deepest node where
+ the path of \f$ x \f$ goes to the child 0 while the child 1 is there, the
+ root of the nearest larger keys, whose leftmost leaf it reaches in
+ \f$ O( w ) \f$ more steps. `ListXFastTrie` (exercise 13.2) has no trie at all: its tables map
  each prefix to the smallest and the largest key that have it, which are all
  that the lemma needs, and a removal moves the smallest key of a prefix to
  the next key in the list, the keys of a prefix being consecutive in it.

@@ -1,0 +1,67 @@
+% Source for the figure of AdaptiveRadixTree (sec. 7.10): the four layouts
+% of an internal node (Node4, Node16, Node48, Node256) and the path
+% compression, a node whose prefix of 4 bytes is consumed by a search of
+% random. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{s/.style={cell,minimum width=5mm,minimum height=6mm,font=\scriptsize\ttfamily},
+  sf/.style={free,minimum width=5mm,minimum height=6mm,font=\scriptsize\ttfamily},
+  st/.style={touched,minimum width=5mm,minimum height=6mm,font=\scriptsize\ttfamily},
+  ch/.style={node,minimum width=4mm,minimum height=4mm},
+  dots/.style={font=\small,text=adsInk!55}}
+% \row{name}{x,y}{items v/style}: small cells 5.4mm apart
+\newcommand{\row}[3]{%
+  \foreach \v/\st [count=\i from 0] in {#3}
+    \node[\st] (#1-\i) at ($(#2)+(\i*5.4mm,0)$) {\v};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % Node4
+  \node[var,anchor=east] at (-5mm,0) {Node4};
+  \row{k4}{0,0}{a/s,c/s,f/s,/sf}
+  \row{c4}{0,-7.4mm}{/s,/s,/s,/sf}
+  \node[index,anchor=west] at ($(k4-3.east)+(1.5mm,0)$) {keys};
+  \node[index,anchor=west] at ($(c4-3.east)+(1.5mm,0)$) {children};
+  \foreach \i in {0,1,2} { \node[ch] (n4\i) at ($(c4-\i)+(0,-9mm)$) {};
+    \draw[ptr] (c4-\i.center) -- (n4\i.north); }
+  % Node16
+  \node[var,anchor=east] at (75mm,0) {Node16};
+  \row{k16}{80mm,0}{a/s,b/s,d/s,e/s,g/s,k/s,m/s,p/s,/sf}
+  \node[dots,anchor=west] at ($(k16-8.east)+(1mm,0)$) {\dots};
+  \row{c16}{80mm,-7.4mm}{/s,/s,/s,/s,/s,/s,/s,/s,/sf}
+  \node[dots,anchor=west] at ($(c16-8.east)+(1mm,0)$) {\dots};
+  \node[index,anchor=north west] at ($(c16-0.south west)+(0,-1.5mm)$)
+    {16 keys compared with the byte at once};
+  % Node48
+  \node[var,anchor=east] at (-5mm,-34mm) {Node48};
+  \row{ix}{0,-34mm}{a/st,b/s,c/s,d/s,e/s,f/s,g/s,h/s}
+  \row{iv}{0,-41.4mm}{1/st,0/sf,2/s,0/sf,0/sf,3/s,0/sf,0/sf}
+  \node[dots,anchor=west] at ($(iv-7.east)+(1mm,0)$) {\dots};
+  \node[index,anchor=west] at ($(ix-7.east)+(2mm,0)$) {index (256)};
+  \row{p48}{0,-56mm}{1/st,2/s,3/s,4/sf,5/sf,6/sf}
+  \node[dots,anchor=west] at ($(p48-5.east)+(1mm,0)$) {\dots};
+  \node[index,anchor=west] at ($(p48-5.east)+(6mm,0)$) {children (48)};
+  \draw[ptr,draw=adsPrimary] (iv-0.south) -- (p48-0.north);
+  \draw[ptr] (iv-2.south) -- (p48-1.north);
+  \draw[ptr] (iv-5.south) -- (p48-2.north);
+  % Node256
+  \node[var,anchor=east] at (75mm,-34mm) {Node256};
+  \row{b256}{80mm,-34mm}{a/s,b/s,c/s,d/s,e/s,f/s,g/s,h/s}
+  \row{c256}{80mm,-41.4mm}{/s,/sf,/s,/sf,/sf,/s,/sf,/sf}
+  \node[dots,anchor=west] at ($(c256-7.east)+(1mm,0)$) {\dots};
+  \node[index,anchor=north west] at ($(c256-0.south west)+(0,-12mm)$) {the byte is the place};
+  \foreach \i in {0,2,5} { \node[ch] (n256\i) at ($(c256-\i)+(0,-9mm)$) {};
+    \draw[ptr] (c256-\i.center) -- (n256\i.north); }
+  % path compression
+  \node[var,anchor=east] at (-5mm,-72mm) {path compression};
+  \node[node-touched,minimum width=22mm] (pc) at (8mm,-72mm) {\texttt{ndom}, 4};
+  \row{kp}{-1mm,-80.4mm}{i/s,n/s,s/s,/sf}
+  \node[var,anchor=west] at (24mm,-70mm) {search of \texttt{random}: $d = 2$ before the node;};
+  \node[var,anchor=west] at (24mm,-76mm) {the prefix matches \texttt{random}$[ 2 .. 5 ]$, so $d = 6 = | k |$, and the key};
+  \node[var,anchor=west] at (24mm,-82mm) {\texttt{random}, if there, hangs from the node apart from its children};
+\end{tikzpicture}
+\end{document}

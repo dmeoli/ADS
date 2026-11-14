@@ -1,0 +1,48 @@
+% Source for the figure of SuccinctPatriciaTrie (sec. 7.10): the compact
+% trie of ab, abc, b, bc and its code: the parentheses of the degrees in
+% depth (DFUDS), the first characters and the marks of the ends; the child
+% a of the root begins after the parenthesis that matches the open one at 2.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\newcommand{\op}{(}\newcommand{\cp}{)}
+\tikzset{lab/.style={font=\small\ttfamily,text=adsInk,inner sep=1.5pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % the compact trie, each node with its rank in the visit
+  \node[vertex] (r) at (0,0) {0};
+  \node[vertex-touched] (ab) at (-14mm,-14mm) {1};
+  \node[vertex] (b) at (14mm,-14mm) {3};
+  \node[vertex] (abc) at (-14mm,-28mm) {2};
+  \node[vertex] (bc) at (14mm,-28mm) {4};
+  \draw[edge] (r) -- node[lab,above left] {ab} (ab);
+  \draw[edge] (r) -- node[lab,above right] {b} (b);
+  \draw[edge] (ab) -- node[lab,left] {c} (abc);
+  \draw[edge] (b) -- node[lab,right] {c} (bc);
+  \node[index,right=1.5mm of ab] {ab};
+  \node[index,left=1.5mm of b] {b};
+  \node[index,right=1.5mm of abc] {abc};
+  \node[index,left=1.5mm of bc] {bc};
+  % the arrays
+  \begin{scope}[xshift=36mm]
+  \node[var,anchor=east] at (-5mm,0) {BP};
+  \cells{P}{0,0}{\op/cell,\op/cell,\op/touched,\cp/touched,\op/cell,\cp/cell,\cp/cell,\op/cell,\cp/cell,\cp/cell}
+  \indices{P}{10}
+  \draw[ptr] (P-3.south) .. controls +(0,-5mm) and +(0,-5mm) .. (P-4.south);
+  \node[index,anchor=north] at ($(P-3)!0.5!(P-4)+(0,-9.5mm)$) {child a};
+  \foreach \a/\b/\t in {1/3/root,4/5/ab,6/6/abc,7/8/b,9/9/bc}
+    \node[index,anchor=south] at ($(P-\a)!0.5!(P-\b)+(0,9mm)$) {\t};
+  \node[var,anchor=east] at (-5mm,-18mm) {$\Lambda$};
+  \cells{L}{0,-18mm}{a/cell,b/cell,c/cell,c/cell}
+  \node[var,anchor=east] at (-5mm,-28mm) {$T$};
+  \cells{T}{0,-28mm}{0/free,1/cell,1/cell,1/cell,1/cell}
+  \node[var,anchor=west] at ($(L-3.east)+(4mm,0)$) {rests: \texttt{b} for the node ab, empty for the others};
+  \node[var,anchor=west] at ($(T-4.east)+(4mm,0)$) {by rank $v$: the strings ab, abc, b, bc are 0 .. 3};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

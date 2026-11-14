@@ -1,0 +1,30 @@
+% Source for the figure of CoalescedHashTable (sec. 7.5): m = 7 places
+% addressed by the hash and a cellar of 2, after the insertions of A (2),
+% B (4), C (2), D (4), E (2), before and after that of F (6), whose list
+% merges with that of the place 2. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before \texttt{insert(F)}, $r = 6$};
+  \cells{a}{0,0}{/free,/free,A/cell,/free,B/cell,/free,E/cell,D/cell,C/cell}
+  \draw[ptr] (a-2.north) to[bend left=35] (a-8.north);
+  \draw[ptr] (a-8.south) to[bend left=35] (a-6.south);
+  \draw[ptr] (a-4.north) to[bend left=50] (a-7.north);
+  \node[var,anchor=east] at (-6mm,-30mm) {after, $h( F ) \bmod 7 = 6$, $r = 5$};
+  \cells{b}{0,-30mm}{/free,/free,A/cell,/free,B/cell,F/added,E/touched,D/cell,C/cell}
+  \draw[ptr] (b-2.north) to[bend left=35] (b-8.north);
+  \draw[ptr] (b-8.south) to[bend left=35] (b-6.south);
+  \draw[ptr] (b-4.north) to[bend left=50] (b-7.north);
+  \draw[ptr] (b-6.south) to[bend left=50] (b-5.south);
+  \foreach \i in {0,...,8} \node[index,below=9mm of b-\i] {\i};
+  \draw[edge,decorate,decoration={brace,amplitude=4pt}]
+    ($(b-8.south east)+(0,-14mm)$) -- node[index,below=5pt] {cellar} ($(b-7.south west)+(0,-14mm)$);
+\end{tikzpicture}
+\end{document}

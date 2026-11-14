@@ -1,0 +1,29 @@
+% Source for the figure of OrderedMinimalPerfectHash (sec. 7.8): the graph
+% of Czech, Havas and Majewski for n = 4 keys on m' = 7 vertices, each key
+% an edge labelled by its value, and the labels g of the vertices found by a
+% visit of each tree from its least vertex. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (v0) at (0,0) {0};
+  \node[vertex] (v3) at (24mm,0) {3};
+  \node[vertex] (v5) at (48mm,0) {5};
+  \node[vertex] (v1) at (72mm,0) {1};
+  \node[vertex-touched] (v2) at (100mm,0) {2};
+  \node[vertex] (v6) at (124mm,0) {6};
+  \node[vertex] (v4) at (148mm,0) {4};
+  \draw[edge] (v0) -- node[above=1.5mm,font=\small] {$t_0 / 0$} (v3);
+  \draw[edge] (v3) -- node[above=1.5mm,font=\small] {$t_1 / 1$} (v5);
+  \draw[edge] (v5) -- node[above=1.5mm,font=\small] {$t_2 / 2$} (v1);
+  \draw[edge] (v2) -- node[above=1.5mm,font=\small] {$t_3 / 3$} (v6);
+  \foreach \v/\g in {v0/0,v3/0,v5/1,v1/1,v2/0,v6/3,v4/0}
+    \node[var,below=2mm of \v] {$g = \g$};
+  \node[var,anchor=west] at (0,-16mm) {$h( t_2 ) = ( g( 1 ) + g( 5 ) ) \bmod 4 = 2$};
+\end{tikzpicture}
+\end{document}

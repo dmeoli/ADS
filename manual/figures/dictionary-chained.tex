@@ -1,0 +1,43 @@
+% Source for the figure of ChainedHashTable (sec. 7.4): a table of m = 8
+% lists and n = 10 keys, before and after insert(x) with H(x) = 6, which
+% puts x at the head of its list (Chain::FRONT). Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+% \table{name}{x}{lists}{touched list}: the head cells T[0..7] from the top,
+% each list a chain of nodes to the right; items text/style
+\newcommand{\htable}[4]{%
+  \foreach \L [count=\i from 0] in {#3} {
+    \pgfmathsetmacro{\y}{-\i*8}
+    \ifnum\i=#4 \node[touched,minimum width=6mm,minimum height=6mm] (#1-\i) at (#2,\y mm) {};
+    \else \node[cell,minimum width=6mm,minimum height=6mm] (#1-\i) at (#2,\y mm) {}; \fi
+    \node[index,anchor=east] at ($(#1-\i.west)+(-1mm,0)$) {\i};
+    \def\prev{#1-\i}
+    \foreach \v/\s [count=\j from 1] in \L {
+      \ifx\v\empty\else
+      \node[\s,minimum width=6mm] (#1-\i-\j) at ($(#1-\i)+(\j*11mm,0)$) {\v};
+      \fi}
+    \foreach \v/\s [count=\j from 1] in \L {
+      \ifx\v\empty
+        \node[nullptr] at ($(#1-\i)+(7mm,0)$) {nil};
+      \else
+        \pgfmathtruncatemacro{\k}{\j-1}
+        \ifnum\j=1 \draw[ptr] (#1-\i.center) -- (#1-\i-\j.west);
+        \else \draw[ptr] (#1-\i-\k.east) -- (#1-\i-\j.west); \fi
+      \fi}
+  }}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \htable{a}{0}{{b/node,d/node},{/},{c/node,i/node},{h/node},{/},{a/node,f/node,g/node},{e/node,j/node},{/}}{-1}
+  \node[var] at (14mm,8mm) {before, $n = 10$};
+  \htable{b}{60mm}{{b/node,d/node},{/},{c/node,i/node},{h/node},{/},{a/node,f/node,g/node},{x/node-added,e/node,j/node},{/}}{6}
+  \node[var] at (74mm,8mm) {\texttt{insert(x)}, $H( x ) = 6$, $n = 11$};
+  \node[var,anchor=east] at (-9mm,-28mm) {$T$};
+  \node[var,anchor=east] at (51mm,-28mm) {$T$};
+\end{tikzpicture}
+\end{document}

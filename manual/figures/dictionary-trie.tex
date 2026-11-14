@@ -1,0 +1,88 @@
+% Source for the figure of Trie and RadixTree (sec. 7.10): the trie of the
+% keys tea, ted, ten, to, inn, and the compact trie of the same keys before
+% and after insert(in), which splits the edge "inn". Build: make figures
+% (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{v/.style={vertex,minimum size=5mm},
+  vk/.style={vertex-touched,minimum size=5mm},
+  va/.style={vertex-added,minimum size=5mm},
+  lab/.style={font=\small\ttfamily,text=adsInk,inner sep=1.2pt},
+  key/.style={index,below=1.2mm}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % the trie
+  \node[var] at (0,7mm) {Trie};
+  \node[v] (r) at (0,0) {};
+  \node[v] (t) at (-14mm,-12mm) {};
+  \node[v] (i) at (16mm,-12mm) {};
+  \node[v] (te) at (-24mm,-24mm) {};
+  \node[vk] (to) at (-4mm,-24mm) {};
+  \node[vk] (tea) at (-36mm,-36mm) {};
+  \node[vk] (ted) at (-24mm,-36mm) {};
+  \node[vk] (ten) at (-12mm,-36mm) {};
+  \node[v] (in) at (16mm,-24mm) {};
+  \node[vk] (inn) at (16mm,-36mm) {};
+  \draw[edge] (r) -- node[lab,above left] {t} (t);
+  \draw[edge] (r) -- node[lab,above right] {i} (i);
+  \draw[edge] (t) -- node[lab,above left] {e} (te);
+  \draw[edge] (t) -- node[lab,above right] {o} (to);
+  \draw[edge] (te) -- node[lab,left] {a} (tea);
+  \draw[edge] (te) -- node[lab,right=-0.5pt] {d} (ted);
+  \draw[edge] (te) -- node[lab,right] {n} (ten);
+  \draw[edge] (i) -- node[lab,right] {n} (in);
+  \draw[edge] (in) -- node[lab,right] {n} (inn);
+  \foreach \n/\k in {tea/tea,ted/ted,ten/ten,to/to,inn/inn}
+    \node[index,below=1.2mm of \n] {\k};
+  % the radix tree before
+  \begin{scope}[xshift=64mm]
+  \node[var] at (0,7mm) {RadixTree};
+  \node[v] (R) at (0,0) {};
+  \node[v] (T) at (-12mm,-14mm) {};
+  \node[vk] (INN) at (14mm,-14mm) {};
+  \node[v] (TE) at (-20mm,-28mm) {};
+  \node[vk] (TO) at (-4mm,-28mm) {};
+  \node[vk] (TEA) at (-30mm,-42mm) {};
+  \node[vk] (TED) at (-20mm,-42mm) {};
+  \node[vk] (TEN) at (-10mm,-42mm) {};
+  \draw[edge] (R) -- node[lab,above left] {t} (T);
+  \draw[edge] (R) -- node[lab,above right] {inn} (INN);
+  \draw[edge] (T) -- node[lab,above left] {e} (TE);
+  \draw[edge] (T) -- node[lab,above right] {o} (TO);
+  \draw[edge] (TE) -- node[lab,left] {a} (TEA);
+  \draw[edge] (TE) -- node[lab,right=-0.5pt] {d} (TED);
+  \draw[edge] (TE) -- node[lab,right] {n} (TEN);
+  \foreach \n/\k in {TEA/tea,TED/ted,TEN/ten,TO/to,INN/inn}
+    \node[index,below=1.2mm of \n] {\k};
+  \end{scope}
+  % the radix tree after insert(in)
+  \begin{scope}[xshift=116mm]
+  \node[var] at (0,7mm) {after insert(in)};
+  \node[v] (R2) at (0,0) {};
+  \node[v] (T2) at (-12mm,-14mm) {};
+  \node[va] (IN2) at (14mm,-14mm) {};
+  \node[vk] (INN2) at (14mm,-28mm) {};
+  \node[v] (TE2) at (-20mm,-28mm) {};
+  \node[vk] (TO2) at (-4mm,-28mm) {};
+  \node[vk] (TEA2) at (-30mm,-42mm) {};
+  \node[vk] (TED2) at (-20mm,-42mm) {};
+  \node[vk] (TEN2) at (-10mm,-42mm) {};
+  \draw[edge] (R2) -- node[lab,above left] {t} (T2);
+  \draw[edge] (R2) -- node[lab,above right] {in} (IN2);
+  \draw[edge] (IN2) -- node[lab,right] {n} (INN2);
+  \draw[edge] (T2) -- node[lab,above left] {e} (TE2);
+  \draw[edge] (T2) -- node[lab,above right] {o} (TO2);
+  \draw[edge] (TE2) -- node[lab,left] {a} (TEA2);
+  \draw[edge] (TE2) -- node[lab,right=-0.5pt] {d} (TED2);
+  \draw[edge] (TE2) -- node[lab,right] {n} (TEN2);
+  \foreach \n/\k in {TEA2/tea,TED2/ted,TEN2/ten,TO2/to,INN2/inn}
+    \node[index,below=1.2mm of \n] {\k};
+  \node[index,right=1.5mm of IN2] {in};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

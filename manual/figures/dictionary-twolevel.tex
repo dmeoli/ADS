@@ -1,0 +1,40 @@
+% Source for the figure of TwoLevelDictionary (sec. 7.10): nine sorted
+% strings front-coded in three buckets of b = 3, the Patricia trie on the
+% anchors, and the search of banjo, which reads one anchor and scans one
+% bucket. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{lab/.style={font=\small\ttfamily,text=adsInk,inner sep=1.2pt},
+  w/.style={cell,minimum width=15mm},
+  wt/.style={touched,minimum width=15mm}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (r) at (54mm,26mm) {0};
+  \node[node] (a0) at (0mm,10mm) {0};
+  \node[node-touched] (a1) at (54mm,10mm) {1};
+  \node[node] (a2) at (108mm,10mm) {2};
+  \draw[edge] (r) -- node[lab,above left] {a} (a0);
+  \draw[edge-touched] (r) -- node[lab,right] {b} (a1);
+  \draw[edge] (r) -- node[lab,above right] {c} (a2);
+  \node[var,anchor=east] at (-10mm,26mm) {upper level, in memory};
+  \node[var,anchor=east] at (-10mm,0) {lower level, on disk};
+  % the buckets
+  \foreach \s/\t [count=\i from 0] in {alpha/w,{3 ine}/w,{1 mber}/w}
+    \node[\t] (b0\i) at (\i*16mm,0) {\s};
+  \foreach \s/\t [count=\i from 0] in {bamboo/wt,{2 nana}/wt,{3 d}/wt}
+    \node[\t] (b1\i) at (54mm+\i*16mm,0) {\s};
+  \foreach \s/\t [count=\i from 0] in {cobalt/w,{2 de}/w,{2 ral}/w}
+    \node[\t] (b2\i) at (108mm+\i*16mm,0) {\s};
+  \foreach \b/\o in {0/0,1/3,2/6} \foreach \i in {0,1,2} {
+    \pgfmathtruncatemacro{\r}{\o+\i}
+    \node[index,below=1.2mm of b\b\i] {\r}; }
+  \foreach \b in {0,1,2} \draw[ptr] (a\b.south) -- (b\b0.north);
+  \node[var,anchor=west] at (-7mm,-12mm) {$Q = $ \texttt{banjo}: the blind search reads the anchor \texttt{bamboo}, the scan of its};
+  \node[var,anchor=west] at (-7mm,-18mm) {bucket decodes \texttt{banana} and \texttt{band}: position 6};
+\end{tikzpicture}
+\end{document}
