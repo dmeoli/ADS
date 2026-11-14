@@ -17,7 +17,7 @@ its sequential version, in most cases bit for bit (cf. [Lemma
 round does not depend on the threads. Only the executor knows the threads;
 hence, one algorithm runs on the pool of the library, on FastFlow, on
 OpenMP, on oneTBB and on the calling thread alone. We first fix the model of
-the costs ([§25.1](25-parallel.md#sec-25-1)), then describes the executors
+the costs ([§25.1](25-parallel.md#sec-25-1)), then describe the executors
 ([§25.2](25-parallel.md#sec-25-2) to [§25.5](25-parallel.md#sec-25-5)) and
 the patterns that the algorithms share ([§25.6](25-parallel.md#sec-25-6)).
 Next come the algorithms: the merge and the sorts
@@ -203,9 +203,10 @@ threads that wait for them.
 ![Figure 25.1. The deques of a `ThreadPool` of
 $p = 4$ threads after the caller (slot 0) has pushed the $h = 3$ tokens of a
 job $J$ of `bulk()` (violet), and after two thieves have stolen one token
-each from the top; the caller and the two thieves then claim the calls of
-$J$ from its counter $\mathit{next}$, and the token left is taken back by
-the caller.](../figures/parallel-pool.svg){#fig-25-1}
+each from the top; a stolen token leaves the deques, and the two thieves
+run it with their own deques empty. The caller and the two thieves then
+claim the calls of $J$ from its counter $\mathit{next}$, and the token
+left is taken back by the caller.](../figures/parallel-pool.svg){#fig-25-1}
 
 <span id="alg-25-2"></span>**Algorithm 25.2.** The `bulk()` of `ThreadPool`:
 a job of tokens on the deques of Chase and Lev.
@@ -469,7 +470,9 @@ workers $0 , 1 , \ldots$ of a pool that call it at their start thus fill
 those processors in order. Placement exists on Linux, where the processors
 are the bits of the mask of the process; elsewhere `affinityCpus()` is
 empty, `availableCpus()` falls back on
-`std::thread::hardware_concurrency()`, and `pinThread()` returns false. No
+`std::thread::hardware_concurrency()`, and `pinThread()` returns false. Also,
+`currentCpu()` gives the processor on which the calling thread runs now
+(by `sched_getcpu()` on Linux, $-1$ elsewhere). No
 executor pins its threads, since two programs pinned to the same processors
 would slow each other down, and the choice is left to the caller.
 
@@ -1104,27 +1107,59 @@ e - s ) / g \rfloor + 1$ for the grain $g$, 50 by default.
 --8<-- "generated/SpeculativeFor-rounds.cpp"
 ```
 
-<span id="lem-25-15"></span>**Lemma 25.15.** *If each $\mathrm{reserve}( i
-)$ reserves all the places that $\mathrm{commit}( i )$ may change, and reads
-only places that the iterations before $i$ may change, then the least
-iteration of each round commits, and the state at the end is the one of the
-sequential loop, whatever the executor and the number of its threads.*
+<span id="lem-25-15"></span>**Lemma 25.15.** *Assume that (i) each
+$\mathrm{reserve}( i )$ reserves every place that $\mathrm{commit}( i )$
+may change, but for the places that no other iteration changes or
+reserves; (ii) for each place
+$p$ that $i$ reads and each other iteration $j$ that may change $p$, either
+$i$ reserves $p$, or $j < i$; (iii) $\mathrm{commit}( i )$ changes the
+state and returns true if $i$ holds all its reservations and every
+iteration $j < i$ of the second case of (ii) was done before the round of
+$i$, and otherwise it changes nothing and returns false. Then the least
+iteration of each round commits, and the state at the end is the one of
+the sequential loop, whatever the executor and the number of its
+threads.*
 
-*Proof.* The least iteration of a round wins all its priority writes; hence,
-it holds all its reservations and commits, and each round makes progress. An
-iteration $i$ commits only if no earlier iteration of its round wants one of
-its places, while the earlier iterations of the earlier rounds are done.
-Thus, the state that $i$ read in its reserve is the one that the sequential
-loop leaves before $i$ on the places that $i$ reads, and its commit writes
-what the sequential loop would write. The failures depend only on the
-iterations and on their order, not on the timing of the threads, and
-therefore the rounds and the sizes $r$ of their prefixes are deterministic
-too. $\square$
+*Proof.* A round takes the iterations not yet done in their order, the
+failed ones first; hence every iteration before the least one of a round
+is done before it, and an iteration $j > i$ is in a round only if $i$ is
+done or in the same round. The least iteration of a round wins all its
+priority writes, and therefore holds all its reservations; by (iii) it
+commits, and each round makes progress. Now let $i$ commit in its round,
+and let $p$ be a place that $i$ reads or changes and $j \ne i$ an
+iteration that may change $p$. If $i$ reserves $p$, then $j$ reserves $p$
+too whenever it is in a round, by (i); an iteration $j < i$ in the round of $i$
+would then hold $p$ in place of $i$, and hence all the $j < i$ that may
+change $p$ are done before the round of $i$, while a $j > i$ in a round
+with $i$ (this round or an earlier one) never holds $p$ and changes
+nothing. If instead $i$ does not reserve $p$, then $i$ does
+not change $p$ (by (i), since $j$ changes it), and hence $i$ reads it; by
+(ii) $j < i$, and by (iii) $j$ was done before the round of $i$. In both cases,
+when $i$ reads $p$ (in its reserve or in its commit), $p$ holds the value
+that the iterations before $i$ left and no later one has touched, i.e.,
+the value of the sequential loop before $i$; hence the commit of $i$
+writes what the sequential loop would write. Finally, the outcome of each
+step depends only on the state and on the least index written in each
+reservation, not on the timing of the threads; by induction on the rounds,
+the failures, the rounds and the sizes $r$ of their prefixes are
+deterministic too. $\square$
+
+The maximal matching of [§25.11](25-parallel.md#sec-25-11) meets the
+hypotheses with the first case of (ii) (an edge reserves the two ends that
+it reads and changes), and the maximal independent set with the second (a
+node reads only the states of its neighbors of earlier places, and waits
+while one is undecided); the forests of Kruskal need a lemma of their own
+([Lemma 25.16](25-parallel.md#lem-25-16)).
 
 The size $r$ of a prefix starts at $r_{\mathrm{max}}$. It halves when more
-than a fifth of a round fails, and it doubles, up to $r_{\mathrm{max}}$,
-when less than a tenth does; a round of fewer than 256 iterations runs on
-the calling thread. With $W$ the work of the sequential loop and $R$ that of
+than a fifth of a round fails, but not below $r_{\mathrm{max}} / 64 + 1$
+nor below the failed iterations, and it doubles, up to
+$r_{\mathrm{max}}$, when less than a tenth does; a round of fewer than 256
+iterations runs on the calling thread. The loop takes `step` as a model of
+the concept `SpeculativeStep` (the two members `reserve(i)` and
+`commit(i)`, each returning a value convertible to `bool`), and, given a
+pointer to a `SpeculativeCounts`, it adds there its rounds and the
+iterations tried, the failed ones counted again. With $W$ the work of the sequential loop and $R$ that of
 the iterations tried again, the work is $O( W + R )$, and the depth is that
 of the rounds, each of depth $O( \log r )$ for the pack of the failures. A
 violated precondition (a round in which the least iteration fails) would
@@ -1424,7 +1459,8 @@ interface, the concept `ChannelFamily`. `tryPush( from , to , m )` pushes
 the messages of the span $m$ and returns how many it pushed (all of them,
 but in a bounded family); `drain( me , f )` calls $f$ on the messages of the
 inbox of `me`, moved, and returns how many; and `port( i )` binds both to
-the worker $i$. [Table 25.6](25-parallel.md#tab-25-6) compares the four
+the worker $i$, as a `ChannelPort` whose `tryPush( to , m )` and
+`drain( f )` pass $i$ by themselves and whose `index()` gives it back. [Table 25.6](25-parallel.md#tab-25-6) compares the four
 families.
 
 <span id="tab-25-6"></span>**Table 25.6.** The families of channels: the
