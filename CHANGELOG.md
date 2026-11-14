@@ -2555,6 +2555,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- ObjectPool::adopt() took the limit of the blocks of the other pool when
+  this one had no block (a swap) and the larger of the two limits otherwise;
+  the rule is now the same in both cases, the larger limit, the other pool
+  keeping its own, as the header, the theory of the memory and the chapter
+  of the manual say; the test engineered pool-adopt
+
 - the iterators of Arena kept the array of the vector of the blocks, which
   an append of a block moves, so that an iterator taken before a make() that
   appended a block read freed memory, against the promise of the header;

@@ -1061,6 +1061,35 @@ ADS_TEST( "arena-iterators" )
  CHECK( same && ( ct + 999 )[ 0 ] == 999 );
  }
 
+// adopt() leaves the pool with the larger of the two limits of the blocks,
+// whether it had blocks (a chain hung) or not (a swap), and the other pool
+// with its own: the bytes of the blocks made after it against those of
+// pools that never adopted
+ADS_TEST( "pool-adopt" )
+{
+ const auto bytes = []( std::size_t limit , int k ) {
+  ObjectPool< long > r( limit );
+  for( int i = 0 ; i < k ; ++i ) r.make( i );
+  return( r.bytes() ); };
+ ObjectPool< long > a( 1000 ) , b( 1 );
+ b.make( 0 );
+ a.adopt( b );                                 // a has no block: a swap
+ for( int i = 1 ; i < 100 ; ++i ) a.make( i );
+ CHECK( a.size() == 100 && a.bytes() == bytes( 1000 , 100 ) );
+ CHECK( b.size() == 0 && b.bytes() == 0 );
+ for( int i = 0 ; i < 3 ; ++i ) b.make( i );   // b keeps the limit 1
+ CHECK( b.bytes() == bytes( 1 , 3 ) );
+ ObjectPool< long > c( 1 ) , d( 1000 );
+ c.make( 0 );
+ d.make( 0 );
+ c.adopt( d );                                 // c has blocks: a chain
+ for( int i = 2 ; i < 100 ; ++i ) c.make( i );
+ CHECK( c.size() == 100 &&
+        c.bytes() == bytes( 1000 , 99 ) + bytes( 1 , 1 ) );
+ for( int i = 0 ; i < 3 ; ++i ) d.make( i );   // d keeps the limit 1000
+ CHECK( d.bytes() == bytes( 1000 , 3 ) );
+ }
+
 // the pool: the slot freed last is the next one made, the blocks double up
 // to their limit and the objects keep their addresses across them, a long
 // random sequence of make() and free() against the set of the objects

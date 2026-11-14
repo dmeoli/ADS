@@ -422,14 +422,15 @@ other one, and `swap()` exchanges the slots of two pools in $O( 1 )$ time.
 Furthermore, `adopt(other)` takes the blocks of `other` with the objects
 alive in them, which become objects of this pool, to be freed by it, and
 leaves `other` empty; the lists of the library use it to take the nodes of
-another list with no copy (`absorb()` in [§2.10](02-sequence.md#sec-2-10)). If this
-pool has no block, it is a `swap()`, which brings here also the limit $n$
-of `other`, and the free slots of `other` stay free here. Otherwise, the chain of the blocks of `other` is hung under the
-first block of this pool, which is found by a walk of the chain, in time
-linear in the number of the blocks of this pool (cf.
-[Lemma 5.5](05-memory.md#lem-5-5)); the largest block becomes the larger
-of the two limits, and the free slots of `other`, and those it never used,
-are no longer given until the pool dies. In `adopt()` the two allocators must be equal, since the blocks of `other` go back to `A` with this pool. Finally,
+another list with no copy (`absorb()` in [§2.10](02-sequence.md#sec-2-10)). In
+both cases below, the limit $n$ of the blocks of this pool becomes the
+larger of the two limits, and `other` keeps its own. If this pool has no
+block, it takes the blocks of `other` as a `swap()` does, and the free
+slots of `other` stay free here. Otherwise, the chain of the blocks of
+`other` is hung under the first block of this pool, which is found by a
+walk of the chain, in time linear in the number of the blocks of this pool
+(cf. [Lemma 5.5](05-memory.md#lem-5-5)), and the free slots of `other`,
+and those it never used, are no longer given until the pool dies. In `adopt()` the two allocators must be equal, since the blocks of `other` go back to `A` with this pool. Finally,
 `size()` is the number of the objects alive, and `bytes()` the memory of
 the blocks, headers included, computed by a walk of the chain.
 

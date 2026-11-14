@@ -493,6 +493,7 @@ engineered  open-hash-readers    letture concorrenti di OpenHashTable
 engineered  arena                arena a blocchi
 engineered  arena-iterators      iteratori dell'arena dopo nuovi blocchi
 engineered  pool                 pool con lista dei liberi
+engineered  pool-adopt           adopt(): il limite maggiore dei due
 engineered  huge-page-allocator  allocatore su pagine enormi
 engineered  random-hashing       splitmix64, Zobrist, tabulazione
 engineered  spsc-queue           coda fra un produttore e un consumatore

@@ -181,7 +181,9 @@
  the cache. Its blocks double from 1 slot up to \f$ n \f$, so that a pool
  that has held at most \f$ k \f$ objects at once has at most
  \f$ 2 k + n \f$ slots, and the allocations of blocks are
- \f$ O( \log k ) \f$ while the blocks double.
+ \f$ O( \log k ) \f$ while the blocks double. A pool that adopts the
+ blocks of another one (`adopt()`) keeps them whatever it holds, and its
+ limit becomes the larger of the two, whether it had blocks or not.
 
  A <em>size class</em> serves all the requests between two sizes with
  blocks of the larger one. `SizeClassAllocator` has the class of 8 bytes,
