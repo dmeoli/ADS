@@ -180,8 +180,13 @@ after it, with $h$ and $n$ updated; hence the queue satisfies the axioms
 place $( h + i ) \bmod m$, and $v$, of rank $n$, is at $( h + n ) \bmod
 m$, which is free since $n < m$. After `dequeue()`, the item of old rank
 $i \ge 1$ has rank $i - 1$ and is at the place $( ( h + 1 ) + ( i - 1 ) )
-\bmod m$. Hence the front is always the oldest item still in the
-queue, as (4.1) requires. $\square$
+\bmod m$. Hence, read by rank, the queue is a sequence to which `enqueue(v)`
+appends $v$, from which `dequeue()` removes the first item, and whose first
+item `top()` reads. On sequences, appending $v$ to an empty one makes $v$
+the first item, appending it to one that is not empty leaves the first item
+as it is, and removing the first item of a sequence that is not empty
+commutes with appending at its end; these are the three axioms (4.1). Each
+operation makes a constant number of steps. $\square$
 
 Our code computes the modulo of (4.2) without a division. Since $h < m$
 and $n \le m$, the sum $h + n$ is below $2 m$, and its remainder is the sum
@@ -211,7 +216,7 @@ queue not full, and the invariant $0 \le n \le m$ with $h < m$.
 vector is full, `add(x)` moves the items to a vector of $2 n$ places, in
 the order of their ranks from the place 0; `remove()` shrinks the vector
 in the same way when $3 n$ does not exceed its size. By the argument of
-[Lemma 3.1](03-stack.md#lem-3-1), this costs $O( 1 )$ amortized time per
+[Lemma 3.3](03-stack.md#lem-3-3), this costs $O( 1 )$ amortized time per
 operation. In the library, the variant that grows is `RingDeque`
 ([§4.5](04-queue.md#sec-4-5)), at both ends.
 
@@ -247,9 +252,7 @@ the count $n$ of the items. An `enqueue(v)` links a new cell after the
 back, or makes it the front when the queue is empty. A `dequeue()` unlinks
 the front, and resets the back when it unlinks the last cell
 ([Algorithm 4.2](04-queue.md#alg-4-2) and
-[Figure 4.2](04-queue.md#fig-4-2)). Both cost $O( 1 )$, and the queue has
-no bound on its size, at the price of one cell (an item and a pointer) per
-item.
+[Figure 4.2](04-queue.md#fig-4-2)).
 
 ![Figure 4.2. A `LinkedQueue` with the items `a`, `b`, `c`, after `enqueue(d)` and after `dequeue()`: the cell added and the links that `enqueue(d)` writes are in orange, the cells and the link that the operations read or write in violet; `dequeue()` returns `a` and gives its cell back to the pool of the queue.](../figures/queue-linked.svg){#fig-4-2}
 
@@ -260,7 +263,30 @@ item.
 
 --8<-- "generated/LinkedQueue-dequeue.pseudo.md"
 
-In the code, the test of line 3 of `enqueue()` (whether the new cell is
+<span id="lem-4-2"></span>**Lemma 4.2.** *After any sequence of
+operations whose preconditions hold, the cells reached from $\mathit{front}$
+by the links hold the $n$ items of a `LinkedQueue` in the order of their
+arrival, the last of them is $\mathit{back}$, and $\mathit{front} =
+\textbf{nil}$ if and only if $\mathit{back} = \textbf{nil}$, i.e., if and
+only if $n = 0$. Hence the queue satisfies the axioms (4.1); each operation
+takes $O( 1 )$ time, and the space is $\Theta( n )$ cells besides those
+kept free by the pool.*
+
+*Proof.* By induction on the operations, the empty queue having both
+pointers nil. An `enqueue(v)` builds a cell $t$ with no successor; if the
+queue is empty, line 3 makes $t$ the only cell, and otherwise it links $t$
+after the last one, and in both cases line 4 makes $t$ the last cell. A
+`dequeue()` on a queue that is not empty unlinks the first cell, whose
+successor becomes the first one; if there was no successor, the queue is
+now empty, and line 3 sets $\mathit{back}$ to nil. The list read from the
+front is thus a sequence to which `enqueue(v)` appends $v$ and from which
+`dequeue()` removes the first item, which gives (4.1) as in
+[Lemma 4.1](04-queue.md#lem-4-1). Each operation makes a constant number
+of steps, and the pool gives or takes back a cell in $O( 1 )$ time
+([§5.5](05-memory.md#sec-5-5)). $\square$
+
+The queue has thus no bound on its size, at the price of one cell (an item
+and a pointer) per item. In the code, the test of line 3 of `enqueue()` (whether the new cell is
 linked from the front or from the last cell) becomes a single assignment
 through a reference to the pointer to change. Its cells come from an
 `ObjectPool` of the queue ([§5.5](05-memory.md#sec-5-5)), which gives the
@@ -309,7 +335,22 @@ insertion at either end then sets the two links of the new cell and
 rewrites two more, a removal rewrites two, and neither tests a special
 case ([Figure 4.3](04-queue.md#fig-4-3)). Its four operations
 are those of the list at its head and before its sentinel
-([Algorithm 4.3](04-queue.md#alg-4-3)), and each takes $O( 1 )$ time.
+([Algorithm 4.3](04-queue.md#alg-4-3)).
+
+<span id="lem-4-3"></span>**Lemma 4.3.** *The operations of `Dequeue`
+insert and remove at the two ends of the sequence of its items, i.e.,
+`insertHead(v)` makes $v$ its first item and `insertTail(v)` its last one,
+while `removeHead()` and `removeTail()` remove and return the first and the
+last item; each takes $O( 1 )$ time, and the space is $\Theta( n )$ cells.*
+
+*Proof.* With $p = \mathrm{head}()$, i.e., $\mathit{pos}_0$, the insertion
+of (1.4) puts $v$ at the index 0, and with $p = \mathrm{next}(
+\mathrm{tail}() )$, i.e., $\mathit{pos}_n$ (the sentinel), at the index
+$n$; the removals at $\mathrm{head}()$ and $\mathrm{tail}()$ remove the
+items of index 0 and $n - 1$, after reading them. On `List` each of
+`head()`, `tail()`, `next()`, `read()`, `insert()` and `remove()` takes
+$O( 1 )$ time ([Table 2.1](02-sequence.md#tab-2-1)). $\square$
+
 As in `SequenceStack`, a removal reads the item and then removes its cell,
 and hence copies the item instead of moving it.
 
@@ -382,8 +423,9 @@ $$
 ( h + i ) \mathbin{\&} ( m - 1 ) . \tag{4.3}
 $$
 
-This is (4.2) for $m = 2^j$, since $2^{64}$ is a multiple of $m$: the
-counters can wrap around $2^{64}$ with no item changing its place. An
+This is (4.2) for $m = 2^j$, as [Lemma 4.4](04-queue.md#lem-4-4) below
+shows, and the counters can wrap around $2^{64}$ with no item changing its
+place. An
 insertion at the back and a removal from the front change one counter each
 ($t$ and $h$), and so do an insertion at the front (which decrements $h$)
 and a removal from the back (which decrements $t$). Thus the deque is empty
@@ -433,7 +475,34 @@ $O( 1 )$ time, and `clear()` destroys all the items and keeps the places.
 In a queue the insertions write $t$ and the removals write $h$, and the
 two chains of dependent instructions therefore do not wait for each other.
 
-<span id="lem-4-2"></span>**Lemma 4.2.** *Starting from an empty
+<span id="lem-4-4"></span>**Lemma 4.4.** *After any sequence of
+operations at the ends whose preconditions hold, $n = ( t - h ) \bmod
+2^{64} \le m$, and the item of rank $i < n$ is at the place (4.3), which
+equals $( \bar{h} + i ) \bmod m$ for the place $\bar{h} = h \mathbin{\&}
+( m - 1 )$ of the front; hence the operations at the ends insert and remove
+at the two ends of the sequence of the items by rank.*
+
+*Proof.* For $m = 2^j$ and any integer $x \ge 0$, $x \mathbin{\&} ( m - 1
+) = x \bmod m$, and since $m$ divides $2^{64}$, $( x \bmod 2^{64} ) \bmod
+m = x \bmod m$; the counters taken modulo $2^{64}$ thus give the places
+that they would give with no wrap, and $( h + i ) \bmod m = ( \bar{h} + i
+) \bmod m$. Now by induction on the operations, the empty deque having $h
+= t$. An insertion at the back that finds $n < m$ builds the item at the
+place of $t$, i.e., of $h + n$, the rank $n$, and increments $t$; one at the
+front decrements $h$ and builds the item at the place of the new $h$, the
+rank 0, while the old item of rank $i$ is now of rank $i + 1$ at the same
+place. A removal from the front destroys the item of rank 0 and increments
+$h$, and one from the back destroys the item of rank $n - 1$ and decrements
+$t$. A growth (lines 3 to 5 of `emplace_back()`) moves the item of rank
+$i$ to the place $i$ of the new vector and sets $h = 0$ and $t = n$; for
+`emplace_front()`, the new item goes to the place $M - 1$ with $h = M - 1$
+and $t = n + M$, so that the old item at the place $i$ has the rank $i +
+1$, since $( h + i + 1 ) \bmod M = ( M - 1 + i + 1 ) \bmod M = i$. In
+every case $t - h$ changes by the number of
+items inserted or removed, and stays at most $m$, since an insertion into
+a full deque grows it first. $\square$
+
+<span id="lem-4-5"></span>**Lemma 4.5.** *Starting from an empty
 `RingDeque`, any sequence of operations that reaches at most $N$ items,
 with no call of `reserve()` or of `shrink_to_fit()`, moves fewer than $2 N$ items in all the growths, and the deque never has
 more than $\max\{ 8 , 2 ( N - 1 ) \} < 2 N + 8$ places; hence each
@@ -495,7 +564,7 @@ $( h + k ) \bmod m$ of the vector $A$, and $\ell$ the length of a run.
 
 --8<-- "generated/RingDeque-shiftDown.pseudo.md"
 
-<span id="lem-4-3"></span>**Lemma 4.3.** *`insert(i, v)` moves at most
+<span id="lem-4-6"></span>**Lemma 4.6.** *`insert(i, v)` moves at most
 $\min\{ i , n - i \} + 2$ items, and takes
 $O( 1 + \min\{ i , n - i \} )$ amortized time; `erase(i)` moves
 $\min\{ i , n - 1 - i \}$ items, and takes $O( 1 + \min\{ i , n - i
@@ -511,7 +580,7 @@ moves; here $n - i \le \min\{ i , n - i \} + 1$, because $i \ge \lfloor n
 way, `erase()` moves $i$ items when $i < \lfloor n / 2 \rfloor$, and $n -
 1 - i$ otherwise, which is then at most $i$. Only an insertion at an end may
 grow the vector, and its cost is amortized by
-[Lemma 4.2](04-queue.md#lem-4-2). As for the runs, consider `shiftDown()`
+[Lemma 4.5](04-queue.md#lem-4-5). As for the runs, consider `shiftDown()`
 (the argument for its mirror is the same). The places $d$ of its
 destinations are the residues modulo $m$ of the $\mathit{hi} -
 \mathit{lo} < n \le m$ consecutive integers $h + \mathit{lo} , \ldots , h
@@ -538,16 +607,30 @@ those at the ends.
 \bmod n$, for every $i$ ([Morin 2013, exercise
 2.5](Z-bibliography.md#ref-morin-cpp)). When the vector is full, the items
 already sit in a circle, and the rotation only moves the two counters back
-by $r$, in $O( 1 )$ time. Otherwise the deque moves $\min\{ r , n - r \}$
-items from one end to the other, one at a time
-([Algorithm 4.6](04-queue.md#alg-4-6)); this never grows the vector, since
-a place is free after each removal.
+by $r$. Otherwise the deque moves $\min\{ r , n - r \}$ items from one end
+to the other, one at a time ([Algorithm 4.6](04-queue.md#alg-4-6)).
 
 <span id="alg-4-6"></span>**Algorithm 4.6.** The rotation of
 `RingDeque` ([Morin 2013, exercise 2.5](Z-bibliography.md#ref-morin-cpp)),
 $r$ reduced modulo $n$.
 
 --8<-- "generated/RingDeque-rotate.pseudo.md"
+
+<span id="lem-4-7"></span>**Lemma 4.7.** *For $0 < r < n$, `rotate(r)`
+moves the item of rank $i$ to the rank $( i + r ) \bmod n$, for every $i$,
+in $O( 1 )$ time when $n = m$ and in $O( 1 + \min\{ r , n - r \} )$ time
+otherwise, and it never grows the vector.*
+
+*Proof.* When $n = m$, line 2 leaves every item at its place, and with the
+new front $h' = h - r$ the item at the place of $h + i$, which is that of
+$h' + i + r$, has the rank $( i + r ) \bmod m$ by
+[Lemma 4.4](04-queue.md#lem-4-4). Otherwise, a removal from the back
+followed by the insertion of the same item at the front moves the item of
+rank $n - 1$ to the rank 0 and every other item from the rank $i$ to $i +
+1$, i.e., it rotates by 1; $r$ of them rotate by $r$. In the same way, a
+move from the front to the back rotates by $- 1$, and $n - r$ of them by
+$- ( n - r ) \equiv r \pmod n$. Each move finds a free place, the one its
+removal has just freed, and costs $O( 1 )$ time. $\square$
 
 On a `RingDeque`, the function `rotate(l, r)` of
 `ADS/sequence/IndexedList.h` calls this member; on the lists that have no
@@ -615,11 +698,35 @@ items are kept, the copy is removed in $O( 1 )$ time but found by a scan.
 
 --8<-- "generated/UniqueQueue-enqueue.pseudo.md"
 
-Hence `enqueue()` takes $O( n )$ comparisons in the worst case (about $n /
-2$ on average when a copy is in the queue, at a place drawn uniformly), and
-so does `contains(v)`, while `dequeue()`, `top()` and `size()` take $O( 1 )$
-time. Note that the invariant that no item occurs twice (an $O( n^2 )$ check
-of the contracts) requires the equality of the items to be an equivalence.
+<span id="lem-4-8"></span>**Lemma 4.8.** *If the equality of the items
+is an equivalence, then after any sequence of operations no two items of a
+`UniqueQueue` are equal, the items leave in the order of their first
+arrival (`IGNORE_NEW`) or of their last one (`FORGET_OLD`), among those
+still in the queue, and the item of `enqueue(v)` is in the queue afterwards.
+An `enqueue()` makes at most $n$ comparisons with `IGNORE_NEW` and at most
+$2 n - 1$ with `FORGET_OLD`, `contains()` at most $n$, and `dequeue()`,
+`top()` and `size()` take $O( 1 )$ time.*
+
+*Proof.* By induction on the operations, the empty queue having no item.
+Let $v$ be enqueued. If no item is equal to $v$, then $v$ is appended
+(line 6), and no two items are equal afterwards. If one is, there is only
+one, by induction; with `IGNORE_NEW` the queue does not change, and with
+`FORGET_OLD` the copy is removed (line 5) and $v$ is appended, which again
+leaves no two equal items. In either case the order of the others does not
+change, and the item kept is the one of the first arrival, or of the last.
+A `dequeue()` removes the first item of the list. As for the comparisons,
+the scan of line 2 compares $v$ with the items from the front up to the
+copy, or with all of them, i.e., at most $n$ times; with `FORGET_OLD` the
+code, after removing the copy, enqueues $v$ again by the same procedure,
+whose scan compares it with the $n - 1$ items left. On the `List` of the
+items, a removal at a position and an append take $O( 1 )$ time.
+$\square$
+
+The scan stops at the copy, and when a copy is in the queue at a place
+drawn uniformly it makes about $n / 2$ comparisons on average, plus $n - 1$
+with `FORGET_OLD`. Note that the invariant that no item occurs twice (an
+$O( n^2 )$ check of the contracts) requires the equality of the items to be
+an equivalence.
 An item unequal to itself, such as a NaN, would be enqueued again at each
 `enqueue()`; the postcondition, which checks that $v$ is in the queue,
 refuses it. With `FORGET_OLD`, the item $v$ is copied before the old copy is
@@ -657,7 +764,7 @@ The `RandomQueue` of [Morin 2013, exercise
 and `pop()` takes out one chosen uniformly at random among those inside,
 both in $O( 1 )$ amortized time. Its items are the first $n$ places of a
 `std::vector`, which grows by a constant factor (cf. [Lemma
-3.1](03-stack.md#lem-3-1)), in no order. To remove one, `pop()` draws a place $j$
+3.3](03-stack.md#lem-3-3)), in no order. To remove one, `pop()` draws a place $j$
 uniformly in $\{ 0 , \ldots , n - 1 \}$, exchanges its item with the last
 one and removes the last place ([Algorithm 4.8](04-queue.md#alg-4-8) and
 [Figure 4.7](04-queue.md#fig-4-7)); no item moves but these two.
@@ -670,7 +777,7 @@ $A[ 0 .. n - 1 ]$ are the items.
 
 --8<-- "generated/RandomQueue-pop.pseudo.md"
 
-<span id="lem-4-4"></span>**Lemma 4.4.** *Whatever the sequence of
+<span id="lem-4-9"></span>**Lemma 4.9.** *Whatever the sequence of
 operations before it, a `pop()` on a queue of $n$ items returns each of
 them with probability $1 / n$, provided that the draw of the place is
 uniform and independent of the previous ones. Hence $n$ pops after $n$
@@ -708,7 +815,7 @@ in $[ 0 , n )$ ([Lemire 2019](Z-bibliography.md#ref-lemire2019)).
 
 --8<-- "generated/RandomQueue-uniform.pseudo.md"
 
-<span id="lem-4-5"></span>**Lemma 4.5.** *If the words $w$ are uniform
+<span id="lem-4-10"></span>**Lemma 4.10.** *If the words $w$ are uniform
 in $[ 0 , 2^{64} )$, `uniform(n)` returns each $h \in [ 0 , n )$ with
 probability $1 / n$; each word is rejected with probability $\theta /
 2^{64} < n / 2^{64}$, and the division that computes $\theta$ is made
@@ -729,11 +836,12 @@ of the $\theta$ values of $h$ whose progression starts below $\theta$), a
 fraction $\theta / 2^{64}$; finally, $l < \theta$ implies the test $l < n$ that comes before
 the division. $\square$
 
-For a queue of fewer than $2^{32}$ items, a word is thus rejected with
-probability below $2^{-32}$. Thus, the number of words drawn is geometric,
-with expected value $2^{64} / ( 2^{64} - \theta ) < 1 + 2^{-31}$ in that
-case, so that `pop()` and `sample()` take $O( 1 )$ expected time, but have
-no bound in the worst case. In practice the draw costs one multiplication
+The words are drawn independently, and each is accepted with probability
+$p = 1 - \theta / 2^{64} > 1 - n / 2^{64}$; the number of words drawn is
+thus geometric, with expected value $1 / p$, which is below $1 + 2^{-31}$
+for a queue of fewer than $2^{32}$ items (where $1 - p < 2^{-32}$), so that
+`pop()` and `sample()` take $O( 1 )$ expected time, but have no bound in
+the worst case. In practice the draw costs one multiplication
 and one comparison on all but a negligible fraction of the calls, whereas a
 draw by $w \bmod n$ would cost a division at each call (and would be
 biased). Also, the class has `size()`, `empty()`, `clear()` and `items()`,
@@ -773,7 +881,7 @@ default). Both are built on the `MinStack` of `ADS/stack/MinStack.h`
 3.14](Z-bibliography.md#ref-morin-cpp) that keeps, beside the vector of
 its items, a second vector of the record lows, whose top is the least item
 of the stack ([Algorithm 3.3](03-stack.md#alg-3-3) and
-[Lemma 3.2](03-stack.md#lem-3-2)); each of its operations costs $O( 1 )$
+[Lemma 3.4](03-stack.md#lem-3-4)); each of its operations costs $O( 1 )$
 time, but for the doublings of the two vectors.
 
 **A queue on two stacks.** `MinQueue` enqueues on a stack $I$ (the back, the
@@ -797,7 +905,7 @@ returns the minimum of the stack that is not empty, when the other one is,
 and otherwise the lesser of the two minima, i.e., the one of $O$ unless
 that of $I$ is less than it.
 
-<span id="lem-4-6"></span>**Lemma 4.6.** *The items of a `MinQueue`
+<span id="lem-4-11"></span>**Lemma 4.11.** *The items of a `MinQueue`
 leave it in the order in which they entered; any sequence of $s$
 operations from the empty queue takes $O( s )$ time, and `min()` returns
 the least item in $O( 1 )$ time.*
@@ -831,7 +939,7 @@ other stack) go to the empty side, in the reverse order, and the other
 $\lfloor k / 2 \rfloor$ stay ([Algorithm 4.11](04-queue.md#alg-4-11) and
 [Figure 4.9](04-queue.md#fig-4-9)). A deal takes $O( k )$ time (one may
 argue that this is rather wasteful, but it happens rarely, cf. [Lemma
-4.7](04-queue.md#lem-4-7)), through a vector that holds the items popped.
+4.12](04-queue.md#lem-4-12)), through a vector that holds the items popped.
 
 ![Figure 4.9. A `MinDeque` with the items `3`, `8`, `1`, `9`, `4`, `6`, all on $B$, the two stacks drawn back to back in the order of the deque; `pop_front()` finds $F$ empty and deals the three items nearer to the front to it (in orange), then pops `3` (in violet); the least item is `1`.](../figures/queue-mindeque.svg){#fig-4-9}
 
@@ -844,7 +952,7 @@ items of the stack $s$ from its bottom.
 
 --8<-- "generated/MinDeque-deal.pseudo.md"
 
-<span id="lem-4-7"></span>**Lemma 4.7.** *A deal does not change the
+<span id="lem-4-12"></span>**Lemma 4.12.** *A deal does not change the
 order of the items of a `MinDeque`. Any sequence of $s$ operations on a
 `MinDeque` from the empty deque takes $O( s )$ time, and `min()` returns
 the least item in $O( 1 )$ time.*
@@ -922,7 +1030,7 @@ class MinDeque {
 
 ## 4.9 The minimum in constant worst-case time {#sec-4-9}
 
-[Lemma 4.6](04-queue.md#lem-4-6) and [Lemma 4.7](04-queue.md#lem-4-7) bound
+[Lemma 4.11](04-queue.md#lem-4-11) and [Lemma 4.12](04-queue.md#lem-4-12) bound
 sequences, not operations: one `dequeue()` of `MinQueue` may move the whole
 back, and one removal of `MinDeque` may deal a whole side.
 `RealTimeMinQueue` and `RealTimeMinDeque` spread that work over the
@@ -944,10 +1052,26 @@ the array is read at the cell of its top, and a push builds a cell on
 top with its least place, that of the cell below unless the new item is
 less than the item there (the function `push()` of
 [Algorithm 4.12](04-queue.md#alg-4-12), where $\mu( i )$ is the least
-place of the cell $i$). By induction on the pushes, the least place of
-each cell is that of a least item among the places from 0 up to it, as
-long as no cell has been removed from the bottom (in the queue and in the
-deque, an array that receives pushes has had no such removal).
+place of the cell $i$).
+
+<span id="lem-4-13"></span>**Lemma 4.13.** *As long as no cell of an array
+with the minimum has been removed from its bottom, i.e., $\mathit{lo} = 0$,
+the least place $\mu( i )$ of each live cell $i$ is the place of a least
+item among $a[ 0 .. i ]$; in particular, the cell on top gives a least item
+of the array, and each `push()` and `pop()` takes $O( 1 )$ time.*
+
+*Proof.* By induction on the operations, the empty array having no cell. A
+`push(x)` at the place $i = \mathit{hi}$ sets $\mu( i ) = i$ when $i = 0$
+or when $x$ is less than the item at $\mu( i - 1 )$, which by induction is
+a least item of $a[ 0 .. i - 1 ]$; otherwise it sets $\mu( i ) = \mu( i -
+1 )$, whose item is not larger than $x$. In both cases $\mu( i )$ gives a
+least item of $a[ 0 .. i ]$, and the cells below are not changed. A
+`pop()` removes the cell on top only, and the least places of the others
+depend only on the cells below them, which do not change. Each operation
+makes one comparison and a constant number of other steps. $\square$
+
+In the queue and in the deque, an array that receives pushes has had no
+removal from its bottom, as the proofs below check.
 
 A cell is removed from the top by `pop()`, and from the bottom by
 `popBottom()`, which destroys it and advances $\mathit{lo}$. However, the least
@@ -991,7 +1115,7 @@ with $|F| + |R'|$ cells and the new back with $|F| + |R'| + 2$. Its old
 front, whose cells have all been moved or removed by then, is freed when
 the rotation ends, together with $R'$, which is empty.
 
-<span id="lem-4-8"></span>**Lemma 4.8.** *Let a rotation start with $f =
+<span id="lem-4-14"></span>**Lemma 4.14.** *Let a rotation start with $f =
 |F|$ and $|R'| = f + 1$. Then $F$ does not empty before the rotation
 ends, which happens within $\lceil ( 2 f + 1 ) / 3 \rceil$ operations
 (the one that starts it included); at the end $|R| \le |F|$, and the arrays
@@ -1077,11 +1201,12 @@ and $t$, and allocates the two new arrays; for $n_0 < 32$ it runs the
 steps until the rebuild ends, and frees the old arrays at once. In the
 code, the loop of line 3 checks the end of line 7 before it spends a copy.
 
-<span id="lem-4-9"></span>**Lemma 4.9.** *Let a rebuild start with $n_0
+<span id="lem-4-15"></span>**Lemma 4.15.** *Let a rebuild start with $n_0
 \ge 32$ items. Then it ends within $n_0 / 11 + 2$ operations, during which
 neither side of the old stacks empties and $G$ keeps its $t$ bottom items;
 every operation of `RealTimeMinDeque` takes $O( 1 )$ time in the worst
-case, and the next rebuild starts $\Omega( n_0 )$ operations later.*
+case, the next rebuild starts $\Omega( n_0 )$ operations later, and a
+removal finds its side empty only when the deque has one item.*
 
 *Proof.* The copies are at most $n_0$ plus one per insertion during the
 rebuild (a removal only shortens a prefix), twelve per operation. The
@@ -1113,14 +1238,15 @@ cells. By the argument above, only those of the last rebuild of $n_0' \ge
 32$ items can be left, at most $n_0' + n_0' / 11 + 2$. Since the deque has
 lost at least $n_0' - 31$ items since that rebuild started, at one per
 operation, at least $12 ( n_0' - 31 - n_0' / 11 - 2 )$ of them have been
-destroyed after it ended, and fewer than 100 remain. $\square$
+destroyed after it ended, and fewer than 100 remain. Finally, outside a
+rebuild the sides satisfy $|G| \le 3 |S| + 1$, so that an empty side $S$
+leaves $n = |G| \le 1$, and during a rebuild neither side empties, as
+shown above. $\square$
 
 The items are copied, whereas the queue moves them, since the old stacks
 stay in use during the rebuild; the type of the items must therefore be
-copyable. A removal from an empty side happens only when the deque has one
-item, which the other side holds (with sides within the factor 3, or with
-a rebuild going on, neither side is empty when $n \ge 2$); `front()` and
-`back()` read it there. Besides `forEach(f)`, the class has `size()`,
+copyable. A removal from an empty side thus finds the only item on the
+other side, where `front()` and `back()` read it too. Besides `forEach(f)`, the class has `size()`,
 `empty()` and `clear()`; it copies item by item and moves in $O( 1 )$
 time.
 Its contracts check the preconditions of the removals, and the invariant
@@ -1177,12 +1303,28 @@ The functions of `ADS/queue/QueueAlgorithms.h` act on a queue through
 `enqueue()`, `dequeue()`, `top()` and `empty()` only, and are therefore
 written once for all the models of the concept `Queue`. Moving the positive
 items of a queue $q$, in their order, to the back of another queue `out`
-dequeues each item of $q$ once (`extractPositive()`), in $O( n )$ time, and
-leaves $q$ empty. Copying them instead, with $q$ left as it was
-(`copyPositive()`), enqueues each item in an auxiliary queue as it is
-dequeued, and moves the auxiliary queue back to $q$ at the end. By the FIFO
-order of both queues this restores the order of $q$, in $O( n )$ time and
-space ([Algorithm 4.14](04-queue.md#alg-4-14)). Note that the auxiliary
+dequeues each item of $q$ once (`extractPositive()`) and leaves $q$ empty.
+Copying them instead, with $q$ left as it was (`copyPositive()`), enqueues
+each item in an auxiliary queue as it is dequeued, and moves the auxiliary
+queue back to $q$ at the end ([Algorithm 4.14](04-queue.md#alg-4-14)).
+
+<span id="lem-4-16"></span>**Lemma 4.16.** *Let $q$ hold $x_1 , \ldots ,
+x_n$ from the front, and let `out` be another queue. Then
+`extractPositive( q , out )` appends to `out` the items $x_i > 0$ in the
+order of $i$ and leaves $q$ empty, while `copyPositive( q , out )` appends
+the same items and leaves $q$ with $x_1 , \ldots , x_n$ again. Each makes
+$O( n )$ operations of the queues, and the second takes $O( n )$ space
+besides them.*
+
+*Proof.* By (4.1), the dequeues of line 3 (or line 4) return $x_1 , \ldots
+, x_n$ in this order, and the enqueues on `out` keep the order of the items
+$x_i > 0$ appended. In `copyPositive()`, the auxiliary queue $A$ receives
+$x_1 , \ldots , x_n$ in the same order, and line 6 dequeues them from $A$
+in this order and enqueues them on $q$, which is empty after line 3.
+Every item is dequeued and enqueued at most twice, and $A$ holds at most
+$n$ items. $\square$
+
+Note that the auxiliary
 queue is a `LinkedQueue`, whatever the type of $q$, since an `ArrayQueue`
 would need a capacity that the interface does not give.
 
@@ -1214,7 +1356,7 @@ each `enqueue()` beyond it solves it (on a `RingDeque`, the vector stops at
 64 places). Writing the lines of even rank before those of odd rank takes
 two queues, filled in turn. Finally, writing the lines in a random order
 takes a `RandomQueue`, emptied after all the lines are in (cf.
-[Lemma 4.4](04-queue.md#lem-4-4)).
+[Lemma 4.9](04-queue.md#lem-4-9)).
 
 In `ADS/queue/QueueAlgorithms.h`, the functions are declared as
 
@@ -1243,7 +1385,7 @@ processors costs tens of cycles, against one for the mask; (ii) the places
 are raw memory, and a growth moves the items by `memcpy()` on at most two
 pieces, where the `ArrayDeque` of Morin builds its new array by default and
 assigns the items one by one; (iii) the moves by rank are made by runs
-([Lemma 4.3](04-queue.md#lem-4-3) and what follows it); and (iv) the deque
+([Lemma 4.6](04-queue.md#lem-4-6) and what follows it); and (iv) the deque
 does not shrink, so that a queue whose size oscillates never reallocates,
 where the `ArrayDeque` of Morin resizes whenever $3 n < m$. Furthermore,
 the two counters modulo $2^{64}$ make the insertions at the back and the
@@ -1258,12 +1400,12 @@ pieces. Unlike `boost::circular_buffer`, its vector grows when full; unlike
 `boost::container::devector`, the places freed at one end serve the
 insertions at the other, and a queue used as a FIFO never moves its items.
 Its price is the space of the largest size, at most $2 N + 8$ places for $N$
-items ([Lemma 4.2](04-queue.md#lem-4-2)), until `shrink_to_fit()`. We leave
+items ([Lemma 4.5](04-queue.md#lem-4-5)), until `shrink_to_fit()`. We leave
 the running times against these libraries to the campaign of [Appendix B](B-benchmarks.md#app-B), and
 no number is given here.
 
 `RandomQueue` draws its places with no division in the common case
-([Lemma 4.5](04-queue.md#lem-4-5)), whereas the obvious $w \bmod n$ costs
+([Lemma 4.10](04-queue.md#lem-4-10)), whereas the obvious $w \bmod n$ costs
 a division at each draw and is biased. We expect the real-time structures of
 [§4.9](04-queue.md#sec-4-9) to be somewhat slower than `MinQueue` and
 `MinDeque` over a whole sequence, since their constants are larger (three
@@ -1297,7 +1439,7 @@ deque the global rebuilding of [Overmars
 copy of a structure in the background while the old one stays in use. The
 thresholds of `RealTimeMinDeque` (the factor 3, the twelve copies per
 operation, and the size 32 below which a rebuild is done at once) are those
-of the library, chosen so that the proof of [Lemma 4.9](04-queue.md#lem-4-9)
+of the library, chosen so that the proof of [Lemma 4.15](04-queue.md#lem-4-15)
 goes through with simple constants; other choices are possible, and possibly
 better in practice. Finally, the draw of a place without division is that of
 [Lemire 2019](Z-bibliography.md#ref-lemire2019).

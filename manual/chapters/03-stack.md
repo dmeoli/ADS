@@ -47,15 +47,16 @@ three.
 
 <span id="tab-3-1"></span>**Table 3.1.** The realizations of the STACK in
 `ADS/stack` and the cost of their operations; $n$ is the number of items,
-$c$ the capacity, $k$ the number of stacks and $m \le n$ the number of
-minima kept by `MinStack`.
+$c$ the capacity, $k$ the number of stacks, and $N \ge n$ the largest
+number of items held at once since the stack was built (its vectors never
+shrink).
 
 | Realization | Representation | Space | `push`, `pop`, `top` | Capacity |
 |---|---|---|---|---|
 | `ArrayStack` | a vector, the top in the place $n - 1$ | $\Theta( c )$ | $O( 1 )$ | $c$, fixed |
 | `SequenceStack` | a sequence, the top its first item | that of the sequence | $O( 1 )$ on a list | none |
-| `MultiStack` | $k$ linked stacks in one vector | $\Theta( n + k )$ | $O( 1 )$ amortized | none |
-| `MinStack` | two vectors, the items and the minima | $\Theta( n + m )$ | $O( 1 )$ amortized, `min()` too | none |
+| `MultiStack` | $k$ linked stacks in one vector | $\Theta( N + k )$ | $O( 1 )$ amortized | none |
+| `MinStack` | two vectors, the items and the minima | $\Theta( N )$ | $O( 1 )$ amortized, `min()` too | none |
 
 ## 3.2 A stack on a vector {#sec-3-2}
 
@@ -65,7 +66,7 @@ top in $A[ n - 1 ]$. Hence `push(v)` writes the place $n$ and increments
 $n$, while `pop()` decrements $n$ and returns the item of the place $n$
 ([Algorithm 3.1](03-stack.md#alg-3-1)), each in constant time. Its vector
 is allocated once, when the stack is built (its $c$ places are then
-default-constructed, which costs $\Theta( c )$ time and requires items
+default-constructed, which costs $O( c )$ time and requires items
 with a default constructor), and the only precondition besides those of
 (3.1) is that `push()` finds the stack not full, i.e., $n < c$.
 [Figure 3.1](03-stack.md#fig-3-1) shows the vector before and after the two
@@ -82,10 +83,28 @@ $A[ 0 .. c - 1 ]$ is the vector.
 
 --8<-- "generated/ArrayStack-pop.pseudo.md"
 
+<span id="lem-3-1"></span>**Lemma 3.1.** *Let an `ArrayStack` of
+capacity $c$ undergo any sequence of operations whose preconditions hold.
+Then its items are those of $A[ 0 .. n - 1 ]$, from the bottom to the top,
+with $0 \le n \le c$, and its operations satisfy the axioms (3.1); each of
+`push()`, `pop()`, `top()` and `empty()` takes $O( 1 )$ time, while the
+construction takes $O( c )$ time and $\Theta( c )$ space.*
+
+*Proof.* By induction on the operations, the new stack having $n = 0$. A
+`push(v)` with $n < c$ writes $v$ in $A[ n ]$ and increments $n$, which
+stays at most $c$, so that $v$ is the new top and the places below it are
+untouched; hence `top()`, which reads $A[ n - 1 ]$, gives $v$ right after
+it. A `pop()` with $n > 0$ decrements $n$ and returns $A[ n ]$, the old
+top, and leaves $A[ 0 .. n - 1 ]$, which right after a `push()` is the
+stack before it, i.e., $\mathrm{pop}( \mathrm{push}( S , v ) ) = S$. Each
+operation makes a constant number of steps, and the constructor allocates
+and default-constructs the $c$ places ([§1.6](01-introduction.md#sec-1-6)).
+$\square$
+
 The code follows the pseudocode line by line; its contracts check the
-preconditions above, the number of items after each operation, that
-`push()` leaves $v$ on top, and the invariant $0 \le n \le c$. For
-instance, with the header `ADS/stack/ArrayStack.h`,
+preconditions above, the number of items after each operation, and, after
+a `push(v)`, that $n \le c$ and that $v$ is on top. For instance, with the
+header `ADS/stack/ArrayStack.h`,
 
 ```cpp
 ADS::ArrayStack< std::string > S( 8 );     // c = 8, n = 0
@@ -119,7 +138,7 @@ it.
 2013, §2.1](Z-bibliography.md#ref-morin-cpp), instead, the realization resizes the vector to
 $2 n$ places when it is full and when $3 n$ does not exceed its capacity,
 which costs $O( 1 )$ amortized time per operation by an argument like that
-of [Lemma 3.1](03-stack.md#lem-3-1); `std::vector` with `push_back` and
+of [Lemma 3.3](03-stack.md#lem-3-3); `std::vector` with `push_back` and
 `pop_back` behaves in the same way, but it never shrinks. Both the stacks of
 [§3.4](03-stack.md#sec-3-4) and [§3.5](03-stack.md#sec-3-5) rest on
 `std::vector`, and have no capacity for this reason.
@@ -155,10 +174,26 @@ $$
 $$
 
 which is the definition of `SequenceStack` ([Montresor 2025,
-§4.3.1](Z-bibliography.md#ref-montresor2025)). On a list with pointers,
-even a singly linked one, the three operations of (3.2) cost $O( 1 )$ and
-the stack has no capacity, at the price of one node (an item and at least
-one pointer) per item. On a vector, however, an insertion at the head moves
+§4.3.1](Z-bibliography.md#ref-montresor2025)).
+
+<span id="lem-3-2"></span>**Lemma 3.2.** *On any realization of the
+SEQUENCE that satisfies the axioms (1.4), the operations (3.2) satisfy the
+axioms (3.1), and `empty()` is that of the sequence. On `List` and on
+`SinglyList` each of them takes $O( 1 )$ time, with no capacity.*
+
+*Proof.* By (1.4) with $p = \mathrm{head}()$, i.e., $\mathit{pos}_0$, the
+insertion puts $v$ at the index 0 and returns its position, which is then
+the head, and reading it gives $v$; hence
+$\mathrm{top}( \mathrm{push}( S , v ) ) = v$. Removing the head right after
+the insertion gives back the sequence before it, by the second axiom of
+(1.4), and the item that `pop()` returns is the one it reads before the
+removal; hence $\mathrm{pop}( \mathrm{push}( S , v ) ) = S$. As for the
+cost, on the two lists `head()`, `read()`, `insert()` and `remove()` at a
+position take $O( 1 )$ time ([Table 2.1](02-sequence.md#tab-2-1)), and
+each operation of (3.2) calls a constant number of them. $\square$
+
+The price of the list is one node (an item and at least one pointer) per
+item. On a vector, however, an insertion at the head moves
 all the items; there the top had better be the last item, as in
 `ArrayStack`. Since the class is parametrized on the sequence, the same code
 gives a stack on `List`, on `SinglyList` and on any other model of
@@ -230,7 +265,7 @@ the size of $C$; yet, it happens rarely enough that its cost, spread over
 the operations that came before it, is constant per operation ([Tarjan
 1985](Z-bibliography.md#ref-tarjan1985)).
 
-<span id="lem-3-1"></span>**Lemma 3.1.** *After any sequence of
+<span id="lem-3-3"></span>**Lemma 3.3.** *After any sequence of
 operations on a `MultiStack`, each cell of $C$ is either in the list that
 starts at $\mathit{top}[ i ]$ for exactly one $i$, which holds the items of
 the stack $i$ from its top down, or in the list that starts at
@@ -238,12 +273,14 @@ $\mathit{free}$. Moreover, let $C$ grow by the factor $\gamma > 1$.
 Starting from an empty `MultiStack`, any sequence of $m$ operations moves
 fewer than $\gamma m / ( \gamma - 1 )$ cells in all the enlargements of
 $C$ (i.e., $2 m$ for $\gamma = 2$); hence each operation costs $O( 1 )$
-amortized time.*
+amortized time. Finally, $C$ has $N$ cells, where $N$ is the largest number
+of items held at once by all the stacks, and if an enlargement multiplies
+the capacity of $C$ by at most $\gamma'$, then that capacity is less than
+$\gamma' N$; the space is thus $\Theta( N + k )$ words.*
 
 *Proof.* The first claim holds for the empty `MultiStack`, whose lists
 are all empty. A `push(i,v)` takes the cell $c$ at the head of the free
-list (line 3), which it removes from that list, or a new cell (line 2),
-which is in no list; line 4 then makes $c$ the head of the list of the
+list (line 3), which it removes from that list, or a new cell (line 2), which is in no list. Then line 4 makes $c$ the head of the list of the
 stack $i$, with the old top below it; the list then holds $v$ and then
 the old items from the top down. A `pop(i)` removes the head $c$ of the
 list of the stack $i$, whose item is the top, and makes it the head of the
@@ -254,7 +291,14 @@ the last enlargement of the sequence moves $s \le m$ cells. The sizes at
 which $C$ is enlarged grow at least by the factor $\gamma$ from one
 enlargement to the next, and hence the cells moved in all are at most
 $s ( 1 + \gamma^{-1} + \gamma^{-2} + \cdots ) < \gamma s / ( \gamma - 1 )
-\le \gamma m / ( \gamma - 1 )$. $\square$
+\le \gamma m / ( \gamma - 1 )$. As for the space, a `push()` appends a
+cell to $C$ only when the free list is empty, i.e., when all the cells of
+$C$ hold items, and the number of cells thus grows by one exactly when the
+number of items exceeds its largest value so far; hence $C$ has $N$ cells.
+The last enlargement found $s \le N - 1$ cells in use, all of them, and
+made the capacity at most $\gamma' s < \gamma' N$ (or 1, for the first
+cell). Besides $C$, the stacks take the $k$ tops and the $k$ counters.
+$\square$
 
 Since $C$ may move during a `push()`, an item of the stacks passed to it
 by reference (e.g., in `push( i , top( j ) )`) would be read, after the
@@ -273,11 +317,11 @@ the corresponding level of the contracts, in $O( | C | + k )$ time, where
 $| C |$ is the largest number of items reached so far (since $C$ grows
 only when no cell is free).
 
-The space is that of the $n$ items of all the stacks plus their $k$ tops
-and counters, i.e., $\Theta( n + k )$, but for the free cells and the
-unused tail of $C$ (fewer than $\gamma$ times the largest number of items
-reached). By contrast, $k$ vectors, each one large enough for the largest
-stack, would take $k$ times the largest size. It is fair to remark,
+In the libraries of GCC, LLVM and Microsoft one has $\gamma' = 2$ in
+[Lemma 3.3](03-stack.md#lem-3-3) (the last one enlarges a vector of $s$
+places to $\max\{ \lfloor 3 s / 2 \rfloor , s + 1 \}$ places). By contrast,
+$k$ vectors, each one large enough for the largest stack, would take $k$
+times the largest size. It is fair to remark,
 however, that the links cost one index per item. Also, the items of a
 stack are scattered over $C$ in the order in which the free cells were
 reused. A scan of one stack is thus usually not a scan of contiguous
@@ -317,10 +361,7 @@ second vector $M$ of *minima*. An item is pushed on $M$ too when $M$ is
 empty or the item is not larger than the top of $M$, and it leaves $M$ when
 it is popped from $A$ while being the top of $M$ ([Algorithm
 3.3](03-stack.md#alg-3-3) and [Figure 3.3](03-stack.md#fig-3-3)). Both
-vectors are `std::vector`s with the top at the back, and the costs are
-therefore $O( 1 )$ in the worst case but for their enlargements, which add
-$O( 1 )$ amortized time per operation by the argument of
-[Lemma 3.1](03-stack.md#lem-3-1).
+vectors are `std::vector`s with the top at the back.
 
 ![Figure 3.3. A `MinStack` with the items 5, 3, 7, 3 after `push(9)`, `push(2)` and `pop()`; what each operation adds is in orange, what it reads or removes in violet, the rest in the faint tint. The 9 does not enter $M$, while the 2 does, and leaves it with `pop()`.](../figures/stack-min.svg){#fig-3-3}
 
@@ -336,13 +377,14 @@ Let us call an item of $A$ a *record low* if it is not larger than any
 item below it in $A$ (the item at the bottom is one). Both the correctness of
 `min()` and the space taken by $M$ rest on the following invariant.
 
-<span id="lem-3-2"></span>**Lemma 3.2.** *After any sequence of
+<span id="lem-3-4"></span>**Lemma 3.4.** *After any sequence of
 operations, $M$ holds the record lows of $A$, from the bottom up; hence $M$
 does not increase from its bottom, its top is the least item of the stack,
 and its size $m$ is at most $n$. If the $n$ items are distinct and pushed
 in a uniformly random order, then the expected value of $m$ is the
 harmonic number $H_n = \sum_{i = 1}^{n} 1 / i \le 1 + \ln n$ (with no
-`pop()`).*
+`pop()`). Each operation takes $O( 1 )$ amortized time, and the space is
+$\Theta( N )$, with $N$ the largest number of items held at once.*
 
 *Proof.* By induction on the operations, the empty stack being trivial.
 Note that the record lows of $A$ do not increase from the bottom up, by
@@ -360,7 +402,14 @@ items below $x$ keep their status. As for the expectation, the $i$-th item
 pushed is a record low with probability $1 / i$ (i.e., when it is the least
 of the first $i$ items, whose order is uniformly random). The sum over $i$
 gives $H_n$, and $H_n \le 1 + \ln n$ follows by comparing the sum with
-$\int_1^n d x / x$. $\square$
+$\int_1^n d x / x$ ([Lemma 1.7](01-introduction.md#lem-1-7), where the
+same count is that of the changes of a running minimum). Finally, each
+operation makes at most one comparison and one `push_back` or `pop_back`
+on each of $A$ and $M$. Neither vector shrinks, and only a `push()` makes them grow. Hence the argument of the second part of
+[Lemma 3.3](03-stack.md#lem-3-3) bounds the items moved by their
+enlargements in $m'$ operations by $2 \gamma m' / ( \gamma - 1 )$; their
+capacities are less than $\gamma' N$, since $M$ never holds more items
+than $A$. $\square$
 
 An item equal to the least goes to $M$ too, for the reason given by the
 proof: removing it then leaves on top of $M$ the copy pushed by the equal
@@ -387,7 +436,7 @@ is the run of [Figure 3.3](03-stack.md#fig-3-3). Besides these, the class has `s
 `clear()`, `items()` (the vector $A$, from the bottom to the top) and
 `minima()` (the size $m$ of $M$). Its contracts check that `top()`,
 `pop()` and `min()` find the stack not empty, and the invariant of
-[Lemma 3.2](03-stack.md#lem-3-2) in the form that $M$ does not increase
+[Lemma 3.4](03-stack.md#lem-3-4) in the form that $M$ does not increase
 and that its top is equivalent to the least item of $A$ (an $O( n )$
 check). Two `MinStack`s back to back give the queue and the deque with the
 minimum of [§4.8](04-queue.md#sec-4-8). Also, [Appendix
@@ -438,7 +487,7 @@ expression.
 
 --8<-- "generated/Expressions-evalPostfix.pseudo.md"
 
-<span id="lem-3-3"></span>**Lemma 3.3.** *The scan of a postfix
+<span id="lem-3-5"></span>**Lemma 3.5.** *The scan of a postfix
 expression $E$ that starts with a stack $S$ ends with $S$ and the value of
 $E$ on top of it; hence `evalPostfix()` computes the value of an expression
 of $n$ tokens in $O( n )$ time and $O( n )$ space.*
@@ -513,18 +562,14 @@ right) and the output so far.
 | `7` | `-` | `35 17 40 9 - * + 7` |
 | end | | `35 17 40 9 - * + 7 -` |
 
-Between two parentheses the precedences of the operators on the stack
-increase strictly from the bottom up, since an operator pops those of
-precedence not lower than its own before it is pushed. In line 10 of
+In line 10 of
 `toPostfix()` in [Algorithm 3.5](03-stack.md#alg-3-5), the test
 $\pi( x ) \le \pi( \mathrm{top}( S ) )$, with $\le$ in place of $<$, makes
 the operators of equal precedence associate to the left (e.g.,
-`8 - 3 - 2` becomes `8 3 - 2 -`, whose value is 3). To state what the
-two functions compute, let the postfix form $P$ of an expression be
+`8 - 3 - 2` becomes `8 3 - 2 -`, whose value is 3). To state what the two functions compute, we let the postfix form $P$ of an expression be
 defined by $P( a ) = a$ for an operand $a$, $P( ( E ) ) = P( E )$ and
 $P( E_1 \mathbin{\mathrm{op}} E_2 ) = P( E_1 ) \, P( E_2 ) \,
-\mathrm{op}$, and let the infix expressions with the usual precedences be
-those of the grammar
+\mathrm{op}$. The infix expressions with the usual precedences are those of the grammar
 
 $$
 E \to T \mid E + T \mid E - T , \qquad
@@ -538,13 +583,16 @@ those derived from $T$ and $\ell = 3$ to those derived from $F$; the fully
 parenthesized expressions are those of the grammar $F \to a \mid ( F
 \mathbin{\mathrm{op}} F )$.
 
-<span id="lem-3-4"></span>**Lemma 3.4.** *On a fully parenthesized
+<span id="lem-3-6"></span>**Lemma 3.6.** *On a fully parenthesized
 expression $e$, `toPostfixParenthesized( e )` returns $P( e )$; on an
 expression $e$ of the grammar (3.3), `toPostfix( e )` returns $P( e )$
 with the operators of equal precedence associated to the left. Both take
 $O( n )$ time and space on $n$ tokens
 ([Samelson and Bauer 1960](Z-bibliography.md#ref-samelson1960); [Dijkstra
-1961](Z-bibliography.md#ref-dijkstra1961)).*
+1961](Z-bibliography.md#ref-dijkstra1961)). Moreover, in `toPostfix()` the
+operators on the stack above its topmost open parenthesis (or above its
+bottom, when there is none) have strictly increasing precedences from the
+bottom up, on any sequence of tokens.*
 
 *Proof.* For `toPostfixParenthesized()` we show, by induction on the
 structure of a fully parenthesized phrase $X$, that its scan appends
@@ -570,7 +618,7 @@ the open parenthesis, which $R_E$ does not contain, and pops it (lines 7
 and 8). Thus $Q$ is $Q_E$ followed by $R_E$ from the top down, i.e.,
 $P( E ) = P( X )$, and $R$ is empty. For $X = E_1 + T$ (and in the same
 way for $-$), $S$ admits the level 1 of $E_1$, whose scan appends $Q_1$
-and pushes $R_1$; the operator then pops in line 10 every item of $R_1$,
+and pushes $R_1$; in line 10 the operator then pops every item of $R_1$,
 since their precedences are at least 1, and stops at the top of $S$, which
 is not an operator since $S$ admits the level 1. After the push of line
 12, the stack has $+$ on top, of precedence $1 < 2$, and admits the level
@@ -579,8 +627,7 @@ $R_1$ from the top down and $Q_2$, while $R$ is $+$ under $R_2$, and
 $Q$ followed by $R$ from the top down is $P( E_1 ) \, P( T ) \, + =
 P( X )$, with precedences at least 1 in $R$. For $X = T_1 \cdot F$ (and
 for $/$) the argument is the same with the level 2: the operator pops
-$R_1$, whose precedences are at least 2, stops at the top of $S$, which is
-not an operator of precedence 2, and after its push the stack admits the
+$R_1$, whose precedences are at least 2, stops at the top of $S$, which is not an operator of precedence 2. After its push the stack admits the
 level 3 of $F$, whose scan pushes no operator; hence $R$ is the operator
 only, of precedence 2. Finally, a phrase $E$ derived as $T$, or $T$
 derived as $F$, is scanned from a stack that admits the lower level and
@@ -590,8 +637,11 @@ the empty stack, and line 13 appends $R$ from the top down, which gives
 $P( e )$; the associativity to the left is that of the derivation of
 $E_1 + T$ in (3.3). As for the cost, each token is pushed at most once and
 popped at most once, each iteration of the loops of lines 7, 10 and 13
-pops an item, and the stack and the output hold at most $n$ tokens.
-$\square$
+pops an item, and the stack and the output hold at most $n$ tokens. The last claim holds on the empty stack. Line 5 pushes an open parenthesis,
+above which no operator lies, and line 12 pushes an operator $x$ when the
+loop of line 10 has stopped, i.e., on the empty stack, on an open
+parenthesis or on an operator of precedence lower than $\pi( x )$, while a
+pop keeps the claim on what remains. $\square$
 
 The induction shows why line 10 tests $\le$: the operator $+$ that
 follows $E_1$ must pop the $+$ and the $-$ of $E_1$ still on the stack, so
@@ -669,7 +719,7 @@ bottom up, with the stack of the calls.
 
 --8<-- "generated/StackAlgorithms-forEachBottomUp.pseudo.md"
 
-<span id="lem-3-5"></span>**Lemma 3.5.** *Let $x_1 , \ldots , x_n$ be
+<span id="lem-3-7"></span>**Lemma 3.7.** *Let $x_1 , \ldots , x_n$ be
 the items of a stack from the top down. Then `isPalindrome( s )` is true if
 and only if $s$ is a palindrome; `removeGreater( s , k )` leaves the items
 $x_i \le k$ in their order; `reverseWithQueue( s )` leaves $x_n , \ldots ,
@@ -702,10 +752,12 @@ passes, i.e., the bubble sort on a stack.
 
 --8<-- "generated/StackAlgorithms-pass.pseudo.md"
 
-<span id="lem-3-6"></span>**Lemma 3.6.** *A pass carries a largest item
+<span id="lem-3-8"></span>**Lemma 3.8.** *A pass carries a largest item
 of the stack to its bottom; hence after $i$ passes the $i$ largest items
 are at the bottom, in order, and $n - 1$ passes sort the stack (the least
-item on top). The $n - 1$ passes of `sortStack()` take $\Theta( n^2 )$
+item on top); a pass moves no item up by more than one place, and hence
+$n - 1$ passes are needed when $n \ge 2$ and the only least item is at the
+bottom. The $n - 1$ passes of `sortStack()` take $\Theta( n^2 )$
 operations of the stack on every input, with a stack of the calls of depth
 $n$.*
 
@@ -719,17 +771,17 @@ and pushes $\min( c_j , x_{j+1} )$ when that level returns. Now let $x_{p+1}
 x_j$ for $j > p$, so that the pass leaves them in their places and puts
 $c_p$, a largest item among the others, at the place $p$. The claim on $i$
 passes follows by induction on $i$, and after $n - 1$ passes the least
-item is on top of the others, which are sorted. Each level of a pass makes at
-most two pops and two pushes, on a recursion of at most $k = n$ levels, and the
-count of the items takes $2 n$ more; hence each of the $n - 1$ passes costs
+item is on top of the others, which are sorted. By the same formula, the
+item at the place $j < k$ after a pass is either $x_{j+1}$ or $c_j$, an
+item of the places $1 , \ldots , j$; the item at the bottom is $c_k$, and
+no item thus rises by more than one place. Each level of a pass makes at
+most two pops and two pushes, on a recursion of at most $k = n$ levels. The count of the items takes $2 n$ more, and each of the $n - 1$ passes thus costs
 $\Theta( n )$ operations, whatever the order of the items. $\square$
 
-By the formula of the proof, the place $j$ receives either an item from
-above it or $x_{j+1}$, and a small item thus rises by at most one place
-per pass, as in the bubble sort; a stack whose least item is at the bottom
-therefore needs $n - 1$ passes, the number that the code makes whatever the
-input, and each pass goes down to the bottom of the stack, even when it is
-already sorted. Finally, the contracts of
+As in the bubble sort, a small item rises slowly, and the $n - 1$ passes
+that the code makes whatever the input are as many as the worst input
+needs; each pass also goes down to the bottom of the stack, even when the
+stack is already sorted. Finally, the contracts of
 `sortStack()`, `removeGreater()`, `reverseWithQueue()` and
 `forEachBottomUp()` are audits, which read the stack by popping it and
 pushing it back. They check, respectively, a sorted stack with the same
@@ -801,8 +853,12 @@ and the answer is false.
 | 7 | `}` | `{` | | |
 | 8 | `}` | empty, true | | |
 
-<span id="lem-3-7"></span>**Lemma 3.7.** *`isMatched( s )` is true if and
-only if $s$ is matched, and it takes $O( n )$ time and $O( n )$ space.*
+<span id="lem-3-9"></span>**Lemma 3.9.** *`isMatched( s )` is true if and
+only if $s$ is matched, and it takes $O( n )$ time and $O( n )$ space.
+Moreover, if $s$ has two adjacent brackets `()`, `[]` or `{}`, then $s$ is
+matched if and only if the string left by their removal is; hence the
+removal of such pairs, in any order until none is left, empties $s$ if and
+only if $s$ is matched, in $O( n^2 )$ time.*
 
 *Proof.* We first show, by induction on the grammar, that the scan of a
 matched $u$ that starts with a stack $S$ never pops an item of $S$ and ends
@@ -822,15 +878,24 @@ ends with it empty; by induction, $u$ is matched. After the place $j$ the
 stack is empty again, so that the rest $v$ of $s$ is also scanned with
 success from the empty stack, and it is matched by induction; thus $s =$
 `(`$u$`)`$v$ is matched. Each bracket costs $O( 1 )$ time, and the stack
-holds at most $n$ items. $\square$
+holds at most $n$ items. As for the pairs, the scan pushes the open
+bracket of an adjacent pair and pops it at once, finding its kind; it thus reaches the rest of $s$ with the stack it had before the pair; hence it
+succeeds on $s$ if and only if it succeeds on $s$ without the pair, and the
+first part gives the claim. If $s$ is matched, so is every string reached by
+removals, and a nonempty matched string has an adjacent pair (in
+`(`$u$`)`$v$, either $u$ is empty or $u$ has one, by induction), so that the
+removals end with the empty string; if $s$ is not matched, no string
+reached is, and the empty string is matched. Each removal is found by a
+scan of $O( n )$ characters, and there are at most $n / 2$ of them.
+$\square$
 
 With $+1$ for an open bracket and $-1$ for a closed one, a matched string
 is a Dyck word with $s_n = 0$; the converse holds when there is a single
 kind of brackets, and the items of the stack are needed only to tell the
 kinds apart. In the library, the test compares `isMatched()` with the
 removal of the adjacent pairs `()`, `[]` and `{}` until none is left,
-which by the same induction empties a string if and only if it is
-matched, but takes $O( n^2 )$ time.
+which is correct by [Lemma 3.9](03-stack.md#lem-3-9). It takes, however,
+$O( n^2 )$ time.
 
 ## 3.9 Discussion and references {#sec-3-9}
 

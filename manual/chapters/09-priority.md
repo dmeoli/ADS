@@ -449,7 +449,7 @@ pushes and pops from the empty heap spends $O( m )$ time in all the
 enlargements.*
 
 *Proof.* The first part is [Lemma 9.3](09-priority.md#lem-9-3) with
-$d = 2$. The second is the argument of [Lemma 3.1](03-stack.md#lem-3-1),
+$d = 2$. The second is the argument of [Lemma 3.3](03-stack.md#lem-3-3),
 since a push adds one place and an enlargement moves the items of a full
 vector. $\square$
 
