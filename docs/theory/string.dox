@@ -231,8 +231,10 @@
  it, by the shuffles of the halves of the bytes or by a shift-or on super
  characters, which let through every occurrence and few other places; it
  checks the candidates directly and gives the text to the automaton when
- the checks exceed 2 a place, so that its worst case is that of the
- automaton.
+ the checks exceed \f$ 2 s + 4096 \f$ at the place \f$ s \f$; since a
+ check compares up to \f$ \ell_{\max} \f$ bytes, the longest pattern, its
+ worst case is \f$ O( n \, \ell_{\max} + \mathit{occ} \log \mathit{occ} )
+ \f$, the last term for sorting the occurrences.
 
  \section theory_string_dp Edit distance, alignments and subsequences
 
@@ -468,10 +470,13 @@
  <tr><td><tt>suffixArraySkew()</tt></td><td>\f$ O( n ) \f$</td>
      <td>the recursion on \f$ 2 n / 3 \f$ suffixes; optimal I/Os on
      disk</td></tr>
- <tr><td><tt>suffixArraySais()</tt>, <tt>suffixArray()</tt></td>
+ <tr><td><tt>suffixArraySais()</tt></td>
      <td>\f$ O( n ) \f$</td><td>Lemma 7, the recursion on at most
-     \f$ n / 2 \f$ suffixes; the engineered one in
-     <tt>SuffixSorting.h</tt></td></tr>
+     \f$ n / 2 \f$ suffixes</td></tr>
+ <tr><td><tt>suffixArray()</tt></td>
+     <td>\f$ O( n \log n ) \f$, \f$ O( n ) \f$ by the radix sorts and the
+     recursion</td><td>SA-IS engineered in <tt>SuffixSorting.h</tt>, the
+     ties sorted by comparisons or by the doubling</td></tr>
  <tr><td><tt>suffixArrayScan()</tt></td>
      <td>\f$ O( ( n^2 / b ) \log b ) \f$ comparisons of suffixes</td>
      <td>blocks of \f$ b \f$ symbols, all its passes sequential</td></tr>

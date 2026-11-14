@@ -119,16 +119,20 @@
 
  The lower bound concerns the worst case, and `convexHull()` is faster on the
  usual inputs by two devices. First, the points extreme in the eight
- directions of the axes and of the diagonals are vertices, and a point
- strictly inside their octagon is not; the heuristic of Akl and Toussaint
- drops it with at most 8 evaluations of (1), and for points uniform in a
- square or in a disk the octagon contains all of them but a vanishing
+ directions of the axes and of the diagonals lie on the boundary of the hull
+ (each is a vertex unless a tie leaves it inside an edge), and a point
+ strictly inside their octagon is no vertex; the heuristic of Akl and
+ Toussaint drops it with at most 8 evaluations of (1), and for points
+ uniform in a square the octagon contains all of them but a vanishing
  fraction, so that \f$ k = o( n ) \f$ points survive in expectation (Devroye
- and Toussaint). Second, the survivors are sorted by \f$ x \f$ and then
- \f$ y \f$ instead of by angle, which allows a radix sort of keys of 64 bits
- in \f$ O( k ) \f$; the monotone chain of Andrew then builds the lower and the
- upper chain of the hull by the scan of Graham from the leftmost point to the
- rightmost and back, with the same invariant (3) on each chain.
+ and Toussaint), whereas in a disk a fraction near
+ \f$ 1 - 2 \sqrt{2} / \pi \approx 0.1 \f$ survives. Second, the survivors
+ are sorted by \f$ x \f$ and then \f$ y \f$ instead of by angle, as keys of
+ 64 bits that `sort()` sorts in \f$ O( k \log k ) \f$, and in
+ \f$ O( k ) \f$ when it takes the radix sort; the monotone chain of Andrew
+ then builds the lower and the upper chain of the hull by the scan of Graham
+ from the leftmost point to the rightmost and back, with the same invariant
+ (3) on each chain.
 
  <table>
  <caption>The algorithms of the convex hull</caption>
@@ -139,9 +143,9 @@
      stack</td><td>\f$ O( n \log n ) \f$</td><td>Graham (1972),
      section 16.1</td></tr>
  <tr><td><tt>convexHull()</tt></td><td>octagon filter, radix sort,
-     monotone chain</td><td>\f$ O( n + k ) \f$ after a sort of \f$ k \f$
-     keys in \f$ O( k ) \f$; \f$ O( n ) \f$ expected on uniform
-     points</td><td>Akl and Toussaint (1978), Andrew (1979)</td></tr>
+     monotone chain</td><td>\f$ O( n + k \log k ) \f$, \f$ O( n + k ) \f$
+     with the radix sort; \f$ O( n ) \f$ expected on points uniform in a
+     square</td><td>Akl and Toussaint (1978), Andrew (1979)</td></tr>
  </table>
 
  \section theory_geometry_closest The closest pair
@@ -178,14 +182,16 @@
  \f$ ( a_i , 0 ) \f$ is at a positive distance, and the distinctness of
  \f$ n \f$ numbers costs \f$ \Omega( n \log n ) \f$ there.
 
- The randomized algorithms escape the lower bound by the floor function,
- which the decision trees do not have. In the grid of Golin, Raman, Schwarz
- and Smid the points are taken in a random order, and the \f$ i \f$-th one is
- compared with the points of the 9 cells around its own in a grid of side
- \f$ \lceil \delta_i \rceil \f$, \f$ \delta_i \f$ the least distance among the
- points before it; a cell holds \f$ O( 1 ) \f$ of those points, since they are
- at distance at least \f$ \delta_i \f$ from one another. The grid is rebuilt,
- in \f$ O( i ) \f$, only when the \f$ i \f$-th point lowers the least distance,
+ The randomized algorithms escape the lower bound by the floor function, which
+ the decision trees do not have. In the grid of Golin, Raman, Schwarz and Smid
+ the points are taken in a random order, and the \f$ i \f$-th one is compared
+ with the points of the 9 cells around its own in a grid of side
+ \f$ \lfloor \delta_i \rfloor + 1 \f$, \f$ \delta_i \f$ the least distance
+ among the points before it; a cell holds \f$ O( 1 ) \f$ of those points,
+ since they are at distance at least \f$ \delta_i \f$ from one another (the
+ points are shuffled by a generator seeded with \f$ n \f$, so that the order
+ is random only as far as the generator is). The grid is rebuilt, in
+ \f$ O( i ) \f$, only when the \f$ i \f$-th point lowers the least distance,
  i.e., when it belongs to the closest pair of the first \f$ i \f$ points; over
  the random order this happens with probability at most \f$ 2 / i \f$, since
  that pair has two points and each of the \f$ i \f$ is the last with the same
@@ -197,7 +203,8 @@
  on any input, the expectation being over the random order only.
 
  The sweep of `closestPairSweep()` exploits the usual inputs instead: the
- points sorted by \f$ x \f$ (by radix, in \f$ O( n ) \f$) are scanned from the
+ points sorted by \f$ x \f$ (by `sort()`, in \f$ O( n ) \f$ when it takes
+ the radix sort, \f$ O( n \log n ) \f$ otherwise) are scanned from the
  left, and each one is compared with the ones before it whose difference in
  \f$ x \f$ is below the current \f$ \delta \f$. On points spread in the plane
  there are \f$ O( 1 ) \f$ of them, and the sweep is linear; on inputs that
@@ -214,8 +221,8 @@
  <tr><td><tt>closestPair()</tt></td><td>divide et impera, Shamos and
      Hoey</td><td>\f$ O( n \log n ) \f$</td></tr>
  <tr><td><tt>closestPairSweep()</tt></td><td>sweep on a radix sort, then
-     the randomized grid</td><td>\f$ O( n ) \f$ when the sweep succeeds,
-     \f$ O( n ) \f$ expected always</td></tr>
+     the randomized grid</td><td>the sort, plus \f$ O( n ) \f$ when the
+     sweep succeeds and \f$ O( n ) \f$ expected always</td></tr>
  </table>
 
  \section theory_geometry_ranges Stabbing and range counting on augmented maps

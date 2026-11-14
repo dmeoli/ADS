@@ -13,8 +13,9 @@
  * crossing the split has both points in the strip of width
  * \f$ 2 \delta \f$ about it, and a point of the strip has at most 7 others
  * of the strip within \f$ \delta \f$ above it, since a
- * \f$ \delta \times 2 \delta \f$ rectangle holds at most 8 points at
- * mutual distances at least \f$ \delta \f$; the strip, sorted by
+ * \f$ \delta \times 2 \delta \f$ rectangle astride the split holds at
+ * most 8 points when those of each half are at mutual distances at least
+ * \f$ \delta \f$; the strip, sorted by
  * \f$ y \f$, is scanned comparing each point with the next ones until their
  * difference in \f$ y \f$ reaches \f$ \delta \f$, \f$ O( n ) \f$. The
  * sort by \f$ y \f$ comes from the merge of the halves, as in mergesort, so
@@ -28,8 +29,9 @@
  *
  * `closestPairSweep()`, beyond the book, is the sweep of the plane of
  * Hinrichs, Nievergelt and Schorn with no tree: the points, each made a key
- * of 64 bits \f$ ( x , y ) \f$, sorted by the radix sort of ADS [see
- * `Sort.h`] in \f$ O( n ) \f$, and each one compared with those before it
+ * of 64 bits \f$ ( x , y ) \f$, sorted by `sort()` [see `Sort.h`],
+ * \f$ O( n \log n ) \f$ and \f$ O( n ) \f$ when it takes the radix sort,
+ * and each one compared with those before it
  * while their difference in \f$ x \f$ is below \f$ \delta \f$, the least
  * distance so far (all on squares, exact on 64 bits), a point of the same
  * \f$ x \f$ ending the scan of its column as soon as the difference in
@@ -40,16 +42,18 @@
  * strips full of points far in \f$ y \f$: after \f$ 16 n \f$ comparisons
  * the sweep gives up and starts again along \f$ y \f$, and if that fails too
  * the randomized grid of Golin, Raman, Schwarz and Smid solves the problem:
- * the points in a random order, the \f$ i \f$-th looked for in the 9 cells
- * around its own of a grid of side \f$ \lceil \delta_i \rceil \f$ hashed
- * by the cells, each cell with \f$ O( 1 ) \f$ points of the grid; the grid
- * is built again with the \f$ i \f$ points when \f$ \delta \f$ falls,
- * which happens with probability at most \f$ 2 / i \f$ over the random
- * order, whence \f$ \sum_i ( 1 + i \cdot 2 / i ) = O( n ) \f$ expected
- * time on any input. The time is thus \f$ O( n ) \f$ when a sweep succeeds
- * and \f$ O( n ) \f$ expected always, against the
- * \f$ \Omega( n \log n ) \f$ of the algebraic decision trees, which the
- * grid escapes by the floor function.
+ * the points in a random order (a shuffle by `Xoshiro256` seeded with
+ * \f$ n \f$), the \f$ i \f$-th looked for in the 9 cells around its own of
+ * a grid of side \f$ \lfloor \delta_i \rfloor + 1 \f$ hashed by the cells,
+ * each cell with \f$ O( 1 ) \f$ points of the grid; the grid is built
+ * again with the \f$ i \f$ points when \f$ \delta \f$ falls, which happens
+ * with probability at most \f$ 2 / i \f$ over the random order, whence
+ * \f$ \sum_i ( 1 + i \cdot 2 / i ) = O( n ) \f$ expected time on any
+ * input. The time is thus that of the sort plus \f$ O( n ) \f$ when a sweep
+ * succeeds, and \f$ O( n ) \f$ expected always beyond the sorts: with the
+ * radix sort, below the \f$ \Omega( n \log n ) \f$ of the algebraic
+ * decision trees, which the radix sort and the grid escape by reading bytes
+ * and by the floor function.
  *
  * The contracts [see `Contract.h`]: at least two points, coordinates of
  * absolute value at most \f$ 10^9 \f$, so that the square of a distance
@@ -194,15 +198,15 @@ closestPair( const std::vector< Point > & P );
 /// 16 & \textbf{function}\ \mathrm{closestGrid}( P ) \cr
 /// 17 & \quad \text{shuffle } P;\ \delta^2 \gets \text{the square }
 ///     \text{distance of } P[ 1 ] \text{ and } P[ 2 ] \cr
-/// 18 & \quad G \gets \text{a grid of side } \lceil \delta \rceil
+/// 18 & \quad G \gets \text{a grid of side } \lfloor \delta \rfloor + 1
 ///     \text{ hashed by the cells, with } P[ 1 ] \text{ and } P[ 2 ] \cr
 /// 19 & \quad \textbf{for}\ i \gets 3\ \textbf{to}\ n\ \textbf{do} \cr
 /// 20 & \qquad \text{offer the pairs of } P[ i ] \text{ with the points of }
 ///     \text{the 9 cells around its own} \cr
 /// 21 & \qquad \textbf{if}\ \delta^2 = 0\ \textbf{then}\ \textbf{break} \cr
 /// 22 & \qquad \textbf{if}\ \delta \text{ fell}\ \textbf{then}\ G \gets
-///     \text{a grid of side } \lceil \delta \rceil \text{ with } P[ 1 .. i
-///     ] \cr
+///     \text{a grid of side } \lfloor \delta \rfloor + 1 \text{ with }
+///     P[ 1 .. i ] \cr
 /// 23 & \qquad \textbf{else}\ \text{add } P[ i ] \text{ to } G \cr
 /// 24 & \quad \textbf{return}\ \text{the pair offered at } \delta^2
 ///     \text{, and } \delta^2
@@ -213,8 +217,9 @@ closestPair( const std::vector< Point > & P );
 inline std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
 closestPairSweep( const std::vector< Point > & P );
 
-/// the pair of `closestPair()`, the first pair of the least distance, by
-/// all the pairs; \f$ \Theta( n^2 ) \f$
+/// a closest pair, the first of the least distance in the order of the
+/// loops (not always the one of `closestPair()`), by all the pairs;
+/// \f$ \Theta( n^2 ) \f$
 ///
 /// In pseudocode:
 /// \f[

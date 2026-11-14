@@ -16,7 +16,7 @@ most of the points before sorting them. In
 the pairs, by divide and conquer, by a sweep of the plane and by a
 randomized grid. Finally, [§16.4](16-geometry.md#sec-16-4) answers the two
 queries by maps whose nodes keep a summary of their subtree (the augmented
-maps of chapter 8), i.e., the largest right end of the intervals and the
+maps of [§8.12.6](08-tree.md#sec-8-12-6)), i.e., the largest right end of the intervals and the
 sorted ordinates of the points, respectively. Throughout the chapter $n$
 is the number of points or intervals of the input, $h$ the number of
 vertices of a hull, $k$ the number of points that survive a filter (or of
@@ -153,7 +153,7 @@ the two ends of the edge. $\square$
 
 `convexHullBrute()` checks the two conditions of
 [Lemma 16.3](16-geometry.md#lem-16-3) on each of the $n ( n - 1 )$ ordered
-pairs of distinct points, with $n$ evaluations of (16.1) per pair, and
+pairs of distinct points, with at most $n$ evaluations of (16.1) per pair, and
 sorts by angle the vertices that it finds
 ([Algorithm 16.1](16-geometry.md#alg-16-1)). It costs $O( n^3 )$ time, and
 the tests use it as the reference for the other algorithms. In the code,
@@ -171,7 +171,8 @@ segment ([Montresor 2025, §16.1](Z-bibliography.md#ref-montresor2025)).
 The scan of [Graham 1972](Z-bibliography.md#ref-graham1972) avoids the
 pairs that cannot be edges. Its center is the lowest point $o$ (the
 rightmost of the lowest ones), which is a vertex; every other point lies
-above it, at an angle in $[ 0 , \pi )$ around $o$. Let
+above it or on its left on the same row, at an angle in $( 0 , \pi ]$
+around $o$, so that the sign of (16.1) orders any two of them. Let
 $p_1 , \ldots , p_m$ be the other points sorted by increasing angle around
 $o$ (the angles compared by the sign of (16.1), the nearer point first on
 a tie), where of the points collinear with $o$ only the farthest one is
@@ -229,8 +230,8 @@ lines 7 to 10:
 
 Note that the test $\le 0$ (instead of $< 0$) also pops a vertex collinear
 with its neighbors. Together with the order of the ties and with the points
-collinear with $o$ dropped at line 5, it keeps the points strictly inside
-the edges out of the output, which is thus the one fixed above.
+collinear with $o$ dropped at line 5, it keeps out of the output the points
+strictly inside the edges. The output is thus the one fixed above.
 
 No algorithm that decides by comparisons and arithmetic can improve on the
 bound of [Lemma 16.4](16-geometry.md#lem-16-4), as the next theorem shows
@@ -262,68 +263,92 @@ spread in a square or in a disk).
 ### 16.2.2 The engineered hull {#sec-16-2-2}
 
 `convexHull()` returns the same polygon as `graham()`, and it is meant to
-be faster on the "usual" inputs by two devices. First, there is the filter
+be faster on the inputs met in practice by two devices. First, there is the filter
 of [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978). Consider the
 points of $P$ that are extreme in the eight directions of the axes and of
 the diagonals, i.e., those of largest $-y$, $x - y$, $x$, $x + y$, $y$,
-$y - x$, $-x$ and $-x - y$ (the first one met, on a tie). They are vertices
-of the hull, in this order counterclockwise, and their polygon (the
-*octagon*, which has fewer than eight distinct vertices when some of them
-coincide) is therefore inside the hull; hence, a point strictly inside the
-octagon is no vertex of the hull. One pass over $P$ finds the extreme
-points, and a second one drops each point that lies strictly to the left of
-all the edges of the octagon, with at most 8 evaluations of (16.1) per
-point:
+$y - x$, $-x$ and $-x - y$ (the first one met, on a tie). They lie on the
+boundary of the hull, in this order counterclockwise. Indeed, the points
+extreme in a direction form a vertex or an edge of the hull, and these
+faces follow one another counterclockwise as the direction turns (a point
+extreme in two directions is then extreme in all those between them, which is why a
+point repeats only in consecutive places, but for all the points on one
+line). Each of them is a vertex unless a tie leaves it inside an edge, as
+the first one met may be. Their polygon (the *octagon*, with fewer than
+eight distinct vertices when some of them coincide) is therefore inside the
+hull, and a point strictly inside it is no vertex of the hull. One pass over
+$P$ finds the extreme points, and a second one drops each point that lies
+strictly to the left of all the edges of the octagon, with at most 8
+evaluations of (16.1) per point. When the octagon has fewer than three
+distinct vertices the filter drops nothing, and so it does when all of them
+lie on one line, since no point is then strictly to the left of an edge:
 
 ```cpp
 --8<-- "generated/ConvexHull-octagon.cpp"
 ```
 
 [Figure 16.2](16-geometry.md#fig-16-2) shows the filter on random points.
-On points uniform in a square or in a disk the octagon covers all of them
-but a fraction that vanishes as $n$ grows, so that the number $k$ of the
-points left is $o( n )$ in expectation ([Devroye and Toussaint
-1981](Z-bibliography.md#ref-devroye1981)). On points near a circle, on the
-contrary, most points survive, and the filter costs one pass over $P$ with
-little or no benefit.
+On points uniform in a square the extreme points in the diagonal directions
+tend to the corners and the others to the sides. The octagon thus covers
+all the points but a fraction that vanishes as $n$ grows, and the number $k$
+of the points left is $o( n )$ in expectation. [Devroye and Toussaint
+1981](Z-bibliography.md#ref-devroye1981) show that such a filter followed
+by any hull in $O( n \log n )$ takes $O( n )$ expected time when the density
+of the points is bounded away from 0 and from $\infty$ on a rectangle. On
+points uniform in a disk of radius $r$, instead, the eight extreme points
+tend to the points of the circle in the eight directions, and the octagon
+to the regular octagon inscribed in it, of area $2 \sqrt{2} \, r^2$; a
+fraction near $1 - 2 \sqrt{2} / \pi \approx 0.1$ of the points survives,
+and $k = \Theta( n )$. On points near a circle almost all of them survive,
+and the filter costs one pass over $P$ with little or no benefit.
 
 ![Figure 16.2. The filter of `convexHull()` on 58 random points: the extreme points in the eight directions (squares, here 7 distinct ones) span the octagon (faintest tint), whose inner points (grey) are dropped; of the 11 points left (violet), the monotone chain keeps the 9 vertices of the hull (dashed).](../figures/geometry-octagon.svg){#fig-16-2}
 
 Second, sorting the points left by $x$ and then $y$,
-instead of by angle, allows a radix sort. With $| x | , | y | < 2^{31}$,
-the key
+instead of by angle, allows a sort of integer keys. With
+$| x | , | y | < 2^{31}$, the key
 
 $$
 \kappa( p ) = ( x_p + 2^{31} ) \, 2^{32} + ( y_p + 2^{31} ) \tag{16.5}
 $$
 
 is an unsigned integer of 64 bits whose order is the lexicographic order of
-$( x_p , y_p )$, and the radix sort of ADS (chapter 12) sorts $k$ such keys in
-$O( k )$ time, with at most 8 passes over bytes. On the sorted points, the
+$( x_p , y_p )$, and `convexHull()` sorts the $k$ keys by `sort()`, the sort
+of ADS that chooses its algorithm ([§12.14](12-sort.md#sec-12-14)). On a
+vector of at least 512 keys with more than 16 runs and without the vector
+registers, `sort()` takes the radix sort of
+[§12.10](12-sort.md#sec-12-10), $O( k )$ time with at most 8 passes over
+bytes. It does not when a sample of 64 keys has at most 16
+distinct ones differing in 4 bytes or more; with the registers, it takes
+the radix sort only when the keys of the sample differ in one byte.
+Otherwise it takes a
+quicksort (pattern-defeating, or vectorized when the registers are there)
+or the merge of the runs, in $O( k \log k )$ time in the worst case. On the sorted points, the
 monotone chain of [Andrew 1979](Z-bibliography.md#ref-andrew1979) builds
 the lower chain of the hull by the scan of Graham from the leftmost point
 to the rightmost one, and the upper chain by the same scan back from the
 rightmost point to the leftmost, with the invariant (16.4) on each chain
 ([Algorithm 16.3](16-geometry.md#alg-16-3)). Both scans run on one vector
-$H$ of $2 k$ places, and the second one never pops below the first point
-that it pushed:
+$H$ of $2 k$ places. The upper chain starts from the rightmost point, the
+last one that the lower chain pushed, and it never pops it (the test
+$k \ge t$ of the code keeps at least $t - 1$ points on $H$, $t - 1$ being
+the length of the lower chain):
 
 ```cpp
 --8<-- "generated/ConvexHull-chain.cpp"
 ```
 
 <span id="alg-16-3"></span>**Algorithm 16.3.** The engineered hull: the
-filter of [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978), the
-radix sort, and the monotone chain of [Andrew
+filter of [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978), the sort
+of the integer keys, and the monotone chain of [Andrew
 1979](Z-bibliography.md#ref-andrew1979).
 
 --8<-- "generated/ConvexHull-convexHull.pseudo.md"
 
 <span id="lem-16-5"></span>**Lemma 16.5.** *`convexHull()` returns the
-output of `graham()` in $O( n + k )$ time, where $k \le n$ is the number
-of points that are not strictly inside the octagon; hence in $O( n )$ time
-on every input, the sort and the scans working on $k$ points only, with
-$k = o( n )$ in expectation on points uniform in a square or in a disk.*
+output of `graham()` in $O( n + k \log k )$ time, where $k \le n$ is the
+number of points that are not strictly inside the octagon, and in
+$O( n + k )$ time, hence $O( n )$, when `sort()` takes the radix sort.*
 
 *Proof.* By the remark above, the filter drops no vertex of the hull, and
 the hull of the points left is thus the hull of $P$. By the argument of
@@ -332,11 +357,15 @@ angle, the lower chain is the lower boundary of the hull, and similarly for
 the upper chain. The two chains share their ends; line 11 drops the copy
 of the leftmost point, and the rotation of line 12 starts the output where
 `graham()` starts it. As for the time, the two passes of the filter cost
-$O( n )$, the radix sort and the removal of the repetitions $O( k )$, and
-the two scans $O( k )$, since each point is pushed at most twice and popped
-at most as many times. $\square$
+$O( n )$, and the sort $O( k \log k )$ in the worst case and $O( k )$ when
+it is the radix sort. The removal of the repetitions costs $O( k )$, and so
+do the two scans, since each point is pushed at most twice and popped at
+most as many times. $\square$
 
-We remark that [Lemma 16.5](16-geometry.md#lem-16-5) does not contradict
+On points uniform in a square, $k = o( n )$ in expectation, and the bound of
+[Devroye and Toussaint 1981](Z-bibliography.md#ref-devroye1981) gives
+$O( n )$ expected time whichever algorithm `sort()` takes. We remark that
+the bound $O( n )$ of the radix sort does not contradict
 [Theorem 16.1](16-geometry.md#thm-16-1), since the radix sort reads the
 bytes of the coordinates, an operation that the algebraic decision trees do
 not have. [Table 16.1](16-geometry.md#tab-16-1) summarizes the three
@@ -350,7 +379,7 @@ filter of the octagon.
 |---|---|---|---|
 | `convexHullBrute()` | every segment checked by (16.3) | $O( n^3 )$ | [Montresor 2025, §16.1](Z-bibliography.md#ref-montresor2025) |
 | `graham()` | sort by angle, scan with a stack | $O( n \log n )$ | [Graham 1972](Z-bibliography.md#ref-graham1972) |
-| `convexHull()` | octagon, radix sort, monotone chain | $O( n + k )$; $O( n )$ expected on uniform points | [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978), [Andrew 1979](Z-bibliography.md#ref-andrew1979) |
+| `convexHull()` | octagon, sort of the keys, monotone chain | $O( n + k \log k )$, $O( n + k )$ by the radix sort; $O( n )$ expected on points uniform in a square | [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978), [Andrew 1979](Z-bibliography.md#ref-andrew1979) |
 
 ## 16.3 The closest pair {#sec-16-3}
 
@@ -358,11 +387,12 @@ A *closest pair* of $P$, $n \ge 2$, is a pair of points at the least
 Euclidean distance $d( p , q )$, the two points being at distinct places of
 the input (two repeated points are thus a pair at distance 0). The
 functions of `ClosestPair.h` return the two places $i < j$ and the square
-$d^2$ of the distance, an exact integer by
+$d^2$ of the distance (`squaredDistance()`), an exact integer by
 [Lemma 16.1](16-geometry.md#lem-16-1). No square root is ever taken,
 since $d( p , q ) < \delta$ if and only if $d^2( p , q ) < \delta^2$.
 Comparing all the pairs costs $\Theta( n^2 )$ (`closestPairBrute()`, which
-returns the first pair of the least distance in the order of its loops):
+returns the first pair of the least distance in the order of its loops;
+when several pairs tie, it is not always the pair of `closestPair()`):
 
 --8<-- "generated/ClosestPair-closestPairBrute.pseudo.md"
 
@@ -452,13 +482,14 @@ with simpler arguments.
 the one of `closestPair()`, when several pairs tie), and it is designed for
 the usual inputs. It is the sweep of the plane of [Hinrichs, Nievergelt and
 Schorn 1988](Z-bibliography.md#ref-hinrichs1988), without their balanced
-tree. The points, made keys (16.5), are sorted by radix in $O( n )$ time;
-then each one is compared with the points before it in the order, from the
+tree. The points, made keys (16.5), are sorted by `sort()`, in $O( n )$ time
+when it takes the radix sort and in $O( n \log n )$ otherwise (cf.
+[§16.2.2](16-geometry.md#sec-16-2-2)); then each one is compared with the points before it in the order, from the
 nearest one backwards, until their difference in $x$ reaches the current
 $\delta$ ([Algorithm 16.5](16-geometry.md#alg-16-5)). Since the points of
 one abscissa (a *column*) are sorted by $y$, a point of the same column that
-is not closer than $\delta$ in $y$ ends the scan of the column, and the
-scan jumps to the column before:
+is not closer than $\delta$ in $y$ ends the scan of the column. The scan
+then jumps to the column before:
 
 ```cpp
 --8<-- "generated/ClosestPair-sweep.cpp"
@@ -467,20 +498,35 @@ scan jumps to the column before:
 On points spread in the plane, a point typically meets $O( 1 )$ points in
 the strip of width $\delta$ before it, and the sweep is then linear after
 the sort. Some inputs, however, fill the strips with points far apart in
-$y$ (e.g., two columns of $n / 2$ points each, at distance 1 in $x$ and
-with gaps of $n$ in $y$), and on them the sweep takes $\Theta( n^2 )$
-time. Each sweep has therefore a budget of $16 n$ comparisons. If it runs
+$y$, and on them the sweep takes $\Theta( n^2 )$ time. For instance, take
+two columns of $n / 2$ points each, at distance 1 in $x$, with the points of
+a column $n$ apart in $y$ and those of the second column shifted by
+$n / 2$. Then $\delta^2 = n^2 / 4 + 1$ after the first point of the second
+column, and each later point of that column jumps over its own column but meets
+all the $n / 2$ points of the first one, which are 1 apart from it in
+$x$ (along $y$, instead, the same points are scanned in linear time). Each
+sweep has therefore a budget of $16 n$ comparisons, a comparison being a
+pair that passes the test of line 6 of
+[Algorithm 16.5](16-geometry.md#alg-16-5), counted at line 9. If it runs
 out, the sweep starts again along $y$ (with the roles of the coordinates
 exchanged); if that runs out too, the problem goes to the randomized grid
 of [Golin et al. 1995](Z-bibliography.md#ref-golin1995), whose bound holds
 on any input.
 
-The grid takes the points in a random order (a shuffle by the generator
-`Xoshiro256` of chapter 17). It keeps the points seen so far,
-$P[ 1 .. i - 1 ]$, in the cells of a grid of side
+The grid takes the points in a random order, a shuffle by `shuffleFast()`
+with the generator `Xoshiro256` of [§17.9](17-numeric.md#sec-17-9) seeded
+with $n$; the order is thus the same for all the inputs of $n$ points, and
+it is random only as far as the generator is. The grid keeps the points
+seen so far, $P[ 1 .. i - 1 ]$, in the cells of side
 $s = \lfloor \sqrt{ \delta^2 } \rfloor + 1$, where $\delta$ is their
-least distance; a cell is a pair of integer indices, and the cells in use
-are kept in a hash table with linear probing. A place of the table holds
+least distance and the root is taken in `double`. A cell is the pair of
+integer indices $\bigl( \lfloor ( x + 10^9 ) / s \rfloor + 1 ,
+\lfloor ( y + 10^9 ) / s \rfloor + 1 \bigr)$, never negative even for the
+cells around it, packed in a key of 64 bits. The cells in use are kept in a
+hash table of $2^q$ places with linear probing, whose hash is the
+multiplicative one of Fibonacci (the top $q$ bits of the product, modulo
+$2^{64}$, of the key and of the odd constant `0x9e3779b97f4a7c15`, the
+nearest to $2^{64} / \varphi$). A place of the table holds
 the last point of a cell, and the other points of the cell are linked
 through a vector $\mathit{next}$. The $i$-th point is compared with the
 points of the 9 cells around its cell (that cell included), which contain any
@@ -503,14 +549,21 @@ randomized grid of [Golin et al. 1995](Z-bibliography.md#ref-golin1995).
 <span id="lem-16-7"></span>**Lemma 16.7.** *A cell of the grid holds at
 most 9 of the points of the grid, and `closestGrid()` takes $O( n )$
 expected time on any input, the expectation being over the random order
-(and over the hashing of the cells, which we assume to behave as a random
-function).*
+(which we assume to be uniform) and over the hashing of the cells (which we
+assume to behave as a random function).*
 
 *Proof.* Let $\delta \ge 1$ be the least distance of the points of the
-grid (the loop stops at $\delta = 0$), and $s$ the side; then
-$\delta < s \le \delta + 1 \le 2 \delta$. Cut a cell into 9 squares of
-side $s / 3 \le 2 \delta / 3$; their diameter is $2 \sqrt{2} \delta / 3 <
-\delta$, and each holds at most one point. Besides the rebuilds, the
+grid (the loop stops at $\delta = 0$, and integer points at a positive
+distance are at least 1 apart), and $s$ the side. In exact arithmetic
+$\delta < s \le \delta + 1$. The root in `double` is exact up to rounding:
+below $\delta^2 = 2^{52}$ the square is exact in `double` and its root is
+correctly rounded, so that $s$ is right; above, $s$ may be off by one, and
+$\delta \le s < \delta + 2$ with $\delta > 2^{26}$. In both cases
+$\delta \le s < 3 \delta / \sqrt{2}$. Thus a point at a distance below
+$\delta$ from the $i$-th one differs from it by less than $s$ in each
+coordinate, and lies in one of the 9 cells around its cell. Cut a cell into
+9 squares of side $s / 3$; their diameter $\sqrt{2} \, s / 3$ is below
+$\delta$, and each holds at most one point. Besides the rebuilds, the
 $i$-th point therefore costs $O( 1 )$ comparisons and probes. One can then bound the rebuilds. A rebuild
 because $\delta$ falls costs $O( i )$, and it happens only when the $i$-th
 point belongs to the closest pair of the first $i$ points. In a random
@@ -528,9 +581,10 @@ $$
 
 $\square$
 
-Hence `closestPairSweep()` takes $O( n )$ time when one of the two sweeps
-succeeds, and $O( n )$ expected time always (at most $32 n$ comparisons
-being lost on the failed sweeps); [Table 16.2](16-geometry.md#tab-16-2)
+Hence `closestPairSweep()` takes the time of its sorts plus $O( n )$ when
+one of the two sweeps succeeds, and plus $O( n )$ expected time always (at
+most $32 n$ comparisons being lost on the failed sweeps); with the radix
+sort, this is $O( n )$ and $O( n )$ expected, respectively; [Table 16.2](16-geometry.md#tab-16-2)
 compares it with the other two algorithms. We remark that the sweep is
 deterministic and reads the points in the order of the sort, whereas the
 grid probes a hash table in a random order (typically, one cache miss per
@@ -546,12 +600,12 @@ pair in `ClosestPair.h`.
 |---|---|---|
 | `closestPairBrute()` | all the pairs | $\Theta( n^2 )$ |
 | `closestPair()` | divide and conquer | $O( n \log n )$ |
-| `closestPairSweep()` | sweep on a radix sort, then the randomized grid | $O( n )$ when a sweep succeeds, $O( n )$ expected always |
+| `closestPairSweep()` | sweep on the sort of the keys, then the randomized grid | the sort ($O( n )$ by radix, $O( n \log n )$ otherwise), plus $O( n )$ when a sweep succeeds and $O( n )$ expected always |
 
 ## 16.4 Stabbing and range counting {#sec-16-4}
 
 We now turn to the two queries. Both structures are maps (the `JoinTree`
-of chapter 8, balanced by weight) whose nodes keep, besides a key and its
+of [§8.12.6](08-tree.md#sec-8-12-6), balanced by weight) whose nodes keep, besides a key and its
 multiplicity, the value over their subtree of a monoid
 $( \mathcal{A} , \oplus , \mathbf{0} )$,
 
@@ -585,17 +639,21 @@ same.
 --8<-- "generated/IntervalTree-remove.pseudo.md"
 
 After sorting the input and counting the copies, the constructors give the
-distinct keys with their counts to `multiInsert()` (chapter 8), which
-builds the tree by joins of balanced halves, possibly on the threads of an
-executor (chapter 25):
+distinct keys with their counts to `multiInsert()`
+([§8.12.4](08-tree.md#sec-8-12-4)), which builds the tree by joins of
+balanced halves, possibly on the threads of an executor given to the second
+constructor ([§25.2](25-parallel.md#sec-25-2)). The number of the elements
+with their copies is `size()`.
 
 --8<-- "generated/IntervalTree-IntervalTree.pseudo.md"
 
 ### 16.4.1 The interval tree {#sec-16-4-1}
 
-`IntervalTree` keeps a multiset of closed intervals $[ a , b ]$, $a \le b$,
-of a totally ordered type, with the keys $( a , b )$ in lexicographic
-order, $g( a , b ) = b$ and $\oplus = \max$. Its identity is no interval,
+`IntervalTree<T>` keeps a multiset of closed intervals $[ a , b ]$,
+$a \le b$ (a precondition), of a type `T` that is `std::totally_ordered`,
+with the keys $( a , b )$ (the type `Interval`, a `std::pair`) in
+lexicographic order, $g( a , b ) = b$ and $\oplus = \max$ (the
+augmentation `MaxEnd`). Its identity is no interval,
 an empty `std::optional`, which is below any end; a sentinel such as the
 least value of the type would not do for the floating types, whose
 intervals may end at $-\infty$ (cf. exercise 11). The augmentation of a
@@ -677,28 +735,37 @@ one interval that contains $x$ in $O( \log n )$ time.
 
 ### 16.4.2 The range tree {#sec-16-4-2}
 
-`RangeTree` keeps a multiset of points $( x , y )$, with the keys in
-lexicographic order and $g( x , y )$ the sequence $( y )$ (with $c$ copies
-of $y$ for a point of multiplicity $c$); $\oplus$ is the merge of two
+`RangeTree<T>` keeps a multiset of points $( x , y )$ of a type `T` that
+is totally ordered and has `std::numeric_limits` (the points are the type
+`Point` of the class, a `std::pair`, not the `Point` of `ConvexHull.h`).
+The keys are in
+lexicographic order, and $g( x , y )$ is the sequence $( y )$, with $c$
+copies of $y$ for a point of multiplicity $c$ (the augmentation
+`Ordinates`); $\oplus$ is the merge of two
 sorted sequences, whose identity is the empty one. The augmentation of a
 node is then the sorted sequence of the ordinates of its subtree, as in the
 range tree of [Bentley 1980](Z-bibliography.md#ref-bentley1980dc), while the
 map orders the points by $x$ ([Figure 16.5](16-geometry.md#fig-16-5)).
 
 <span id="lem-16-10"></span>**Lemma 16.10.** *A `RangeTree` of $n$ points
-takes $\Theta( n \log n )$ space, and its construction $O( n \log n )$
-time.*
+takes $O( n \log n )$ space, $\Theta( n \log n )$ when the points are
+distinct, and its construction $O( n \log n )$ time.*
 
 *Proof.* The ordinate of a point is in the sequence of each of its
-ancestors, which are $O( \log n )$ in a tree balanced by weight. Summing
-over the points gives $O( n \log n )$, which a complete tree attains. The
+ancestors and of its own node, which are $O( \log n )$ in a tree balanced
+by weight. Summing over the points gives $O( n \log n )$. For distinct
+points the sum is the sum of the depths plus $n$, and in any binary tree at
+most $2^d$ nodes have depth $d$, so that the sum is at least
+$\sum_{i=1}^{n} \lfloor \log_2 i \rfloor = \Omega( n \log n )$ (with
+repetitions it may be smaller, e.g., $n$ for $n$ copies of one point). The
 construction by joins of balanced halves merges each sequence once per
 level of the recursion, i.e., $O( n )$ work per level on $O( \log n )$
 levels. $\square$
 
 The points of $[ x_1 , x_2 ] \times [ y_1 , y_2 ]$ are those whose keys lie
 between $( x_1 , -\infty )$ and $( x_2 , +\infty )$ and whose ordinate lies
-in $[ y_1 , y_2 ]$. `count()` covers the range of the keys by the
+in $[ y_1 , y_2 ]$. `count()` returns 0 on an empty rectangle ($x_2 < x_1$ or $y_2 < y_1$);
+otherwise it covers the range of the keys by the
 $O( \log n )$ pieces of `augVisit()`, and in each piece it counts the
 ordinates in $[ y_1 , y_2 ]$ by two binary searches on the sorted sequence
 ([Algorithm 16.8](16-geometry.md#alg-16-8)). For the infinities it uses
@@ -716,11 +783,13 @@ a rectangle, on the range tree of [Bentley
 
 --8<-- "generated/RangeTree-count.pseudo.md"
 
-![Figure 16.5. A `RangeTree` of seven points, each node with its point (above) and the sorted ordinates of its subtree (below). Above, the pieces of `count(2,5,2,5)`, i.e., the keys from $( 2 , -\infty )$ to $( 5 , +\infty )$: the single points $( 2 , 2 )$, $( 4 , 4 )$, $( 5 , 1 )$ and the subtree of $( 3 , 7 )$ (violet), in which the ordinates in $[ 2 , 5 ]$ are 2 and 4. Below, the tree after `insert(5,6)`: the new leaf and the sequences of all its ancestors, merged again (orange).](../figures/geometry-range.svg){#fig-16-5}
+![Figure 16.5. A `RangeTree` of seven points, each node with its point (above) and the sorted ordinates of its subtree (below). Above, the pieces of `count(2,5,2,5)`, i.e., of the keys from $( 2 , -\infty )$ to $( 5 , +\infty )$: the single points $( 2 , 2 )$, $( 4 , 4 )$, $( 5 , 1 )$ and the subtree of $( 3 , 7 )$ (violet); the ordinates in $[ 2 , 5 ]$ of the four pieces are 2 and 4, and the count is 2. Below, the tree after `insert(5,6)`: the new leaf and the sequences of all its ancestors, merged again (orange).](../figures/geometry-range.svg){#fig-16-5}
 
 <span id="lem-16-11"></span>**Lemma 16.11.** *`count()` returns the number
-of points of the rectangle, with their copies, in $O( \log^2 n )$ time; an
-insertion or a removal takes $O( n )$ time.*
+of points of the rectangle, with their copies, in $O( \log^2 n + c )$ time,
+$c$ being the copies of the single points among its pieces, i.e., in
+$O( \log^2 n )$ time for points without repetitions; an insertion or a
+removal takes $O( n )$ time.*
 
 *Proof.* By construction, the pieces are disjoint and cover the keys of
 the range. In the
@@ -793,7 +862,8 @@ construction of `multiInsert()` is from [Sun, Ferizovic and Blelloch
 2018](Z-bibliography.md#ref-sun2018). The comparison of the hulls and of
 the closest pairs with those of other libraries (e.g., Boost.Geometry and
 CGAL), and of the two maps with structures built for their queries, belongs
-to the campaign of benchmarks of appendix B, and it is not reported here.
+to the campaign of benchmarks of [appendix B](B-benchmarks.md#app-B), and
+it is not reported here.
 
 ## 16.6 Exercises {#sec-16-6}
 

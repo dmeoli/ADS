@@ -406,10 +406,13 @@
  generator of 64 bits, and by much more on a narrow range (with the
  numbers \f$ 1 , 2 , 3 \f$ and \f$ j = 2 \f$, one index comes twice as
  often as the other); `shuffle()` and `reservoirSampling()` of
- `RandomNumbers.h` draw by the method of Lemire on a full word and, on a
- range of \f$ r + 1 < 2^{64} \f$ numbers, take
+ `RandomNumbers.h` draw by the method of Lemire on a full word; on a
+ range of \f$ r + 1 < 2^{64} \f$ numbers with \f$ j \le r + 1 \f$, they take
  \f$ \lfloor x / q \rfloor \f$ with \f$ q = \lfloor ( r + 1 ) / j \rfloor \f$
- and reject the \f$ x \ge q j \f$, so that they are exact on any generator.
+ and reject the \f$ x \ge q j \f$, and with \f$ j > r + 1 \f$ they take
+ \f$ ( r + 1 ) y + x \f$, \f$ y \f$ drawn in the same way below
+ \f$ \lceil j / ( r + 1 ) \rceil \f$, and reject the results from \f$ j \f$
+ on, so that they are exact on any generator.
 
  <em>Lemma 6 (the reservoir).</em> If the item \f$ t \f$ of a stream,
  \f$ t > n \f$ (from 1), replaces a uniform item of a reservoir of \f$ n \f$

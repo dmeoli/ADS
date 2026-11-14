@@ -314,7 +314,7 @@ template< class F >
 long integerPartitions( int n , F && visit );
 
 /// the restricted growth strings of the partitions of a set of \f$ n \f$
-/// items, in lexicographic order
+/// items, in lexicographic order, \f$ O( 1 ) \f$ amortized per partition
 ///
 /// In pseudocode (the order of Knuth's Algorithm 7.2.1.5H, beyond the book),
 /// \f$ b_j = 1 + \max( a_0 , \ldots , a_{j-1} ) \f$ the largest value that
@@ -335,6 +335,11 @@ long integerPartitions( int n , F && visit );
 ///     \ a_k \gets 0;\ b_k \gets \max( b_{k-1} , a_{k-1} + 1 )
 /// \end{array}}
 /// \f]
+/// The test of line 6 is evaluated
+/// \f$ \sum_{k=1}^{n} \varpi_k < 2 \varpi_n \f$ times in all, since the
+/// strings whose last \f$ r \f$ places open new blocks are
+/// \f$ \varpi_{n-r} \f$, \f$ 0 \le r \le n - 1 \f$, and
+/// \f$ \varpi_k \ge 2 \varpi_{k-1} \f$ for \f$ k \ge 2 \f$.
 /// \pre \f$ n \ge 0 \f$
 template< class F >
 long setPartitions( int n , F && visit );

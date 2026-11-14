@@ -45,8 +45,9 @@
  * buckets, by their first 8 bytes in one comparison of words and then by
  * the rest. Every occurrence makes its place a candidate for its bucket, so
  * that nothing is missed; when the checks exceed 2 a place on average
- * (patterns everywhere, or a text whose bytes the filter cannot tell
- * apart), the automaton goes on from the place reached, its occurrences
+ * (\f$ 2 s + 4096 \f$ after the block at \f$ s \f$: patterns everywhere,
+ * or a text whose bytes the filter cannot tell apart), the automaton goes
+ * on from the first place not tested, its occurrences
  * that start before it left out (and `count()` takes the count of the
  * automaton from a little before that place, less the occurrences before
  * it in a window of the length of the longest pattern).
@@ -208,8 +209,8 @@ class MultiSearcher {
  ///     \cup \{ ( i , j ) \} \cr
  /// 7 & \qquad\quad \mathit{checks} \gets \mathit{checks} + \text{the }
  ///     \text{patterns compared} \cr
- /// 8 & \qquad \textbf{if}\ \mathit{checks} > 2 \text{ per place }
- ///     \text{scanned}\ \textbf{then} \cr
+ /// 8 & \qquad \textbf{if}\ \mathit{checks} > 2 i + 4096\ \textbf{then}
+ ///     \cr
  /// 9 & \qquad\quad R \gets R \cup \text{the occurrences that the automaton }
  ///     \text{finds from } i \text{ on};\ \textbf{break} \cr
  /// 10 & \quad \textbf{return}\ R \text{ sorted}
