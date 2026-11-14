@@ -1477,9 +1477,13 @@ On this input the sort phase walks almost to the bottom of the heap at
 each extraction. The average over the inputs is of the same order:
 [Schaffer and Sedgewick 1993](Z-bibliography.md#ref-schaffer1993), who
 analyse the heapsort of Williams with Floyd's construction, i.e., our
-`heapsort()`, show that it makes about $2 n \log_2 n$ comparisons on
-average, and about $n \log_2 n$ in the variant of Floyd that sinks the
-item to the bottom and then lifts it (the bottom-up heapsort below). The
+`heapsort()`, show that it moves about $n \log_2 n$ keys on average and
+about $\frac{1}{2} n \log_2 n$ in the best case, hence (two comparisons
+per level of a sift) about $2 n \log_2 n$ comparisons on average; the
+variant of Floyd that sinks the item to the bottom and then lifts it (the
+bottom-up heapsort below) makes, by the same results, an asymptotically
+optimal number of comparisons on average, about $n \log_2 n$, and
+$\frac{3}{2}$ times as many in the worst case. The
 inputs in order, increasing for the sort of Morin and decreasing for
 `heapsort()`, are heaps already, and their sifts stop somewhat above the
 bottom: we measured about $0.66 \, n$ levels missed in all for $n$ up to
