@@ -61,7 +61,7 @@ after the two operations. We remark that `pop()` does not clear the place
 it frees: the item is moved out of it, and the place is simply no longer
 counted.
 
-![Figure 3.1. An `ArrayStack` of capacity $c = 8$ with the items `a`, `b`, `c`, `d`, after `push(e)` and after `pop()`; the shaded cell is the one that the operation touches, the grey ones are free.](../figures/stack-array.svg){#fig-3-1}
+![Figure 3.1. An `ArrayStack` of capacity $c = 8$ with the items `a`, `b`, `c`, `d`, after `push(e)` and after `pop()`; the place that `push(e)` fills is in orange, the one that `pop()` reads in violet, and the free places in the faintest tint.](../figures/stack-array.svg){#fig-3-1}
 
 <span id="alg-3-1"></span>**Algorithm 3.1.** The operations of
 `ArrayStack` ([Montresor 2025, §4.3.2](Z-bibliography.md#ref-montresor2025));
@@ -137,7 +137,7 @@ top of the stack $i$ and puts its cell back at the head of the free list
 ([Algorithm 3.2](03-stack.md#alg-3-2)). Both cost $O( 1 )$, except when
 $C$ has to grow.
 
-![Figure 3.2. A `MultiStack` with two stacks, `x1 x2 x3` (the top `x3`, in the cell 6) and `y1 y2` (the top `y2`, in the cell 4), and the free list 2, 5, 7 (grey); the lower row of a cell in use is the index of the cell below it in its stack, that of a free cell the index of the next free one, and $-1$ ends a list.](../figures/stack-multi.svg){#fig-3-2}
+![Figure 3.2. A `MultiStack` with two stacks, `x1 x2 x3` (the top `x3`, in the cell 6) and `y1 y2` (the top `y2`, in the cell 4), and the free list 2, 5, 7 (in the faintest tint), the top of the stack 0 in violet; the lower row of a cell in use is the index of the cell below it in its stack, that of a free cell the index of the next free one, and $-1$ ends a list.](../figures/stack-multi.svg){#fig-3-2}
 
 <span id="alg-3-2"></span>**Algorithm 3.2.** The operations of
 `MultiStack`: the free list of [Knuth 1997,

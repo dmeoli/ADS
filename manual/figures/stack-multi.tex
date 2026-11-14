@@ -4,17 +4,17 @@
 % row). Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads]
-  \node[var,anchor=east] at (-4mm,0) {value};
-  \node[var,anchor=east] at (-4mm,-7mm) {below};
-  \cells{V}{0,0}{x1/cell,y1/cell,/free,x2/cell,y2/cell,/free,x3/cell,/free}
-  \cells{B}{0,-7mm}{-1/cell,-1/cell,5/free,0/cell,1/cell,7/free,3/cell,-1/free}
-  \indices{B}{8}
+  \node[var,anchor=east,text=adsInk] at (-4mm,0) {value};
+  \node[var,anchor=east,text=adsInk] at (-4mm,-7.4mm) {below};
+  \cells{V}{0,0}{x1/cell,y1/cell,/free,x2/cell,y2/cell,/free,x3/touched,/free}
+  \cells{B}{0,-7.4mm}{-1/cell,-1/cell,5/free,0/cell,1/cell,7/free,3/touched,-1/free}
+  \foreach \i in {0,...,7} \node[index,below=1.6mm of B-\i] {\i};
   \node[var] (t0) at ($(V-6)+(0,13mm)$) {$\mathit{top}[0]$};
   \node[var] (t1) at ($(V-4)+(0,13mm)$) {$\mathit{top}[1]$};
   \node[var] (fr) at ($(V-2)+(0,13mm)$) {$\mathit{free}$};

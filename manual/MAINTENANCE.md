@@ -112,8 +112,16 @@ figures keep their natural size, since the TikZ figures are drawn at it.
 ## 6. Adding or updating a figure
 
 1. Write `figures/<chapter>-<name>.tex` as a `standalone` TikZ file that
-   `\input`s `tikz-ads` (see `stack-array.tex`); a cell of a vector is
-   `cell`, the cell an operation touches `touched`, a free one `free`.
+   loads `lmodern`, `tikz` and `lamalunga` and then `\input`s `tikz-ads`
+   (see `stack-array.tex`). The style is flat, one colour per role, with
+   the palette that lamalunga computes from the primary (`7030A0`): what
+   the operation reads or follows is in the primary (`touched`,
+   `node-touched`, `vertex-touched`, `edge-touched`), what it adds in the
+   first colour of its triad (`added`, `node-added`, `vertex-added`), the
+   rest in golden tints of the primary (`cell`, `node`, `vertex`, `edge`,
+   and `free` for a free place); no outlines, gradients or shadows, and no
+   colour outside the palette. The Makefile finds lamalunga in
+   `~/GDrive/lamalunga` (variable `LAMALUNGA`).
 2. `make figures` writes the `.pdf` and the `.svg`.
 3. Reference it as `![Figure N.M. caption](../figures/<name>.svg){#fig-N-M}`,
    a paragraph of its own (see section 2).
