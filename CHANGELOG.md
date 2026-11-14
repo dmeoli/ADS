@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- maxCardinalityMatching() in graph/Matching.h, a matching of largest
+  size of a general graph by the blossoms of Edmonds, the blossoms kept as
+  the sets of a union-find that knows their bases and the paths rebuilt
+  from the edges that closed them as in the labels of Gabow, the searches
+  started from a greedy matching and the trees of the failed ones left out:
+  O( n m alpha( m , n ) ) in all, within Gabow's O( n^3 ), where the
+  library had only the exponential branch and bound of maxWeightMatching();
+  Berge's and Edmonds' lemmas and the cost in the theory of the graphs,
+  the test engineered_graph blossom-matching (every graph of up to 6 nodes
+  and random ones of up to 16 against the dynamic programming on the
+  subsets, the branch and bound, bipartiteMatching(), nested blossoms, a
+  path of 10^6 nodes) and the benchmark matching of bench/graphs.cpp
+  against edmonds_maximum_cardinality_matching() of Boost
+
 - eulerianTrail() in graph/EulerianCycle.h, the Eulerian trail of an
   oriented or unoriented graph, closed when there is a cycle and open
   otherwise (from the node of excess 1, or from an odd node), with an

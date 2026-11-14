@@ -20,6 +20,16 @@
  *   blow up of the copies. It decides, e.g., whether the tasks can all be
  *   given to workers who can do them, each worker taking a bounded number of
  *   them;
+ * - `maxCardinalityMatching()`, a matching of largest size of a general
+ *   graph, by the blossoms of Edmonds (beyond the book): a search grows an
+ *   alternating tree from a free node, shrinks each odd cycle it closes (a
+ *   blossom) into its base, and stops at the first free node it reaches,
+ *   along whose path the matching grows by one. The blossoms are kept as
+ *   the sets of a union-find whose representative knows the base, as in the
+ *   labels of Gabow, so that a search costs \f$ O( m \alpha( m , n ) ) \f$
+ *   and the n searches at most \f$ O( n m \alpha( m , n ) ) \f$, within the
+ *   \f$ O( n^3 ) \f$ of Gabow's implementation; a search that fails leaves
+ *   its tree out of every later one, and a greedy matching starts them;
  * - `maxWeightMatching()`, a matching of largest total weight of a general
  *   graph of a few nodes, by a branch and bound: the first node not yet
  *   decided is left unmatched or matched to each free neighbour, and a
@@ -34,8 +44,9 @@
  *
  * The contracts [see `Contract.h`]: the nodes on the right of the edges are
  * in [ 0 , nr ), the capacities are not negative, an edge joins two
- * distinct nodes of the graph; at the level of the audits the matchings
- * given respect the capacities of the ends. The functions are defined in
+ * distinct nodes of the graph, the graph of `maxCardinalityMatching()` is
+ * unoriented; at the level of the audits the matchings given respect the
+ * capacities of the ends. The functions are defined in
  * `Matching.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 15.2,
@@ -47,6 +58,16 @@
  *      subgraph and bidirected network flow problems, Proceedings of the
  *      15th ACM Symposium on Theory of Computing, 448-456, 1983,
  *      doi:10.1145/800061.808776
+ * \see C. Berge, Two theorems in graph theory, Proceedings of the National
+ *      Academy of Sciences 43(9), 842-844, 1957, doi:10.1073/pnas.43.9.842
+ * \see J. Edmonds, Paths, trees, and flowers, Canadian Journal of
+ *      Mathematics 17, 449-467, 1965, doi:10.4153/CJM-1965-045-4
+ * \see H. N. Gabow, An efficient implementation of Edmonds' algorithm for
+ *      maximum matching on graphs, Journal of the ACM 23(2), 221-234, 1976,
+ *      doi:10.1145/321941.321942
+ * \see R. E. Tarjan, J. van Leeuwen, Worst-case analysis of set union
+ *      algorithms, Journal of the ACM 31(2), 245-281, 1984,
+ *      doi:10.1145/62.2160
  * \see J. Edmonds, Maximum matching and a polyhedron with 0,1-vertices,
  *      Journal of Research of the National Bureau of Standards 69B,
  *      125-130, 1965, doi:10.6028/jres.069B.013
@@ -73,7 +94,9 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/graph/Graph.h"
 #include "ADS/graph/MaxFlow.h"
+#include "ADS/graph/Visit.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -122,6 +145,64 @@ inline std::vector< std::pair< int , int > > bipartiteBMatching(
                       const std::vector< std::vector< int > > & A , int nr ,
                       const std::vector< long long > & capL ,
                       const std::vector< long long > & capR );
+
+/// the mate of each node in a matching of largest size of the unoriented
+/// graph \f$ g \f$, `NIL` for a node left unmatched and for a name that is
+/// not a node
+///
+/// In pseudocode (Edmonds' algorithm, beyond the book, with the blossoms
+/// as the sets of a union-find): \f$ B( v ) \f$ is the base of the
+/// outermost blossom of \f$ v \f$, a node is <em>even</em> if it is the
+/// root, the mate of an odd node or in a blossom, and an odd node \f$ y \f$
+/// keeps the even node \f$ p[ y ] \f$ that reached it; a node of a cycle
+/// that was odd keeps the edge \f$ ( a , b ) \f$ that closed it, its side
+/// first, from which the path to the root is rebuilt (see
+/// \ref theory_graph_flow).
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{maxCardinalityMatching}( G ) \cr
+/// 2 & \quad M \gets \text{a greedy matching} \cr
+/// 3 & \quad \textbf{foreach}\ r \in V\ \textbf{with}\ r \text{ free }
+///     \textbf{do} \cr
+/// 4 & \qquad \textbf{if not}\ \mathrm{search}( r )\ \textbf{then}
+///     \ \text{delete the nodes of its tree from } G \cr
+/// 5 & \quad \textbf{return}\ M \cr
+/// 6 & \textbf{function}\ \mathrm{search}( r ) \cr
+/// 7 & \quad Q \gets ( r );\ r \text{ even} \cr
+/// 8 & \quad \textbf{foreach}\ x \in Q ,\ y \in G.\mathrm{adj}( x )
+///     \ \textbf{with}\ y \text{ not odd}\ \textbf{do} \cr
+/// 9 & \qquad \textbf{if}\ y \text{ is free and unlabeled }
+///     \ \textbf{then}\ \text{augment along } y , P( x );
+///     \ \textbf{return true} \cr
+/// 10 & \qquad \textbf{if}\ y \text{ is unlabeled }\ \textbf{then}
+///     \ y \text{ odd};\ p[ y ] \gets x;\ \text{append } M( y )
+///     \text{ to } Q \text{, even} \cr
+/// 11 & \qquad \textbf{else if}\ B( x ) \ne B( y )\ \textbf{then} \cr
+/// 12 & \qquad\quad b \gets \text{the first common base on the paths }
+///     \text{from } B( x ) \text{ and } B( y ) \text{ to } r \cr
+/// 13 & \qquad\quad \mathrm{shrink}( x , y , b );\ \mathrm{shrink}( y , x ,
+///     b ) \cr
+/// 14 & \quad \textbf{return false} \cr
+/// 15 & \textbf{procedure}\ \mathrm{shrink}( x , y , b ) \cr
+/// 16 & \quad v \gets B( x ) \cr
+/// 17 & \quad \textbf{while}\ v \ne b\ \textbf{do} \cr
+/// 18 & \qquad o \gets M( v );\ o \text{ even, with the edge } ( x , y );
+///     \ \text{append } o \text{ to } Q \cr
+/// 19 & \qquad v' \gets B( p[ o ] );\ \text{merge the blossoms of } v
+///     \text{ and } o \text{ into that of } b;\ v \gets v'
+/// \end{array}}
+/// \f]
+/// The path \f$ P( v ) \f$ from an even node to the root is
+/// \f$ v , M( v ) , P( p[ M( v ) ] ) \f$ for a node even from the start,
+/// and the part of
+/// \f$ P( a ) \f$ from \f$ v \f$ back to \f$ a \f$ followed by
+/// \f$ P( b ) \f$ for a node that was odd, with the edge \f$ ( a , b ) \f$;
+/// the augmentation rematches it with a stack of the pairs (node, new
+/// mate), stopping each part where a node has a new mate already.
+/// \pre the graph is unoriented
+/// \post the mates are symmetric and joined by edges (audit)
+template< Graph G >
+std::vector< int > maxCardinalityMatching( const G & g );
 
 /// the largest total weight of a matching of the graph
 /// of \f$ n \f$ nodes and of the edges \f$ E = ( u , v , w ) \f$, and the

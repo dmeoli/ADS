@@ -625,6 +625,75 @@
  lower bounds are sent, a maximum flow from a new source to a new sink balances
  the excess left at each node.
 
+ A matching of a graph that is not bipartite is beyond the flows: a
+ network has no orientation that turns its paths into the alternating
+ paths of a general graph. Let \f$ M \f$ be a matching; a node is
+ <em>free</em> if no edge of \f$ M \f$ touches it, and a path is
+ <em>alternating</em> if its edges are in turn out of \f$ M \f$ and in it,
+ <em>augmenting</em> if it is alternating and joins two free nodes; its
+ symmetric difference with \f$ M \f$ is a matching with one edge more.
+
+ <em>Lemma 8 (Berge).</em> A matching is of largest size if and only if no
+ path augments it.
+
+ Indeed, if \f$ | M' | > | M | \f$, the symmetric difference of the two is
+ made of paths and of even cycles in which the edges of \f$ M \f$ and of
+ \f$ M' \f$ alternate, and one of its paths has more edges of
+ \f$ M' \f$ than of \f$ M \f$: it augments \f$ M \f$.
+
+ A search for such a path from a free node \f$ r \f$ grows an alternating
+ tree: the nodes at an even distance from \f$ r \f$ along the tree are
+ <em>even</em>, the others <em>odd</em>, each odd node having its mate as
+ its only child. An edge from an even node to a free node not in the tree
+ ends an augmenting path, and one to a matched node not in the tree adds it
+ and its mate; an edge between two even nodes closes an odd cycle, a
+ <em>blossom</em>, whose node nearest to \f$ r \f$, its <em>base</em>, is
+ even and is the only node of the cycle matched outside it, if at all.
+
+ <em>Lemma 9 (Edmonds).</em> Let \f$ G / C \f$ be the graph in which the
+ blossom \f$ C \f$ is shrunk to one node, and \f$ M / C \f$ the matching
+ left. Then \f$ M \f$ has an augmenting path in \f$ G \f$ if and only if
+ \f$ M / C \f$ has one in \f$ G / C \f$.
+
+ Indeed, a path of \f$ G / C \f$ through the shrunk node enters it by an
+ edge to some node of \f$ C \f$, and goes on from the base: one of the two
+ ways around the cycle from that node to the base has an even number of
+ edges and alternates, and lifts the path to \f$ G \f$. Conversely, an
+ augmenting path of \f$ G \f$ either misses \f$ C \f$ or can be cut at
+ its first node in \f$ C \f$ after the stem from \f$ r \f$ to the base
+ is exchanged with the matching, which keeps the sizes and makes the base
+ free; the part before the cut is then augmenting in \f$ G / C \f$.
+
+ So the search shrinks each blossom it closes, every node of the cycle
+ becoming even (the odd ones are then searched too), and stops at the first
+ augmenting path, which it lifts through the blossoms, or with a tree in
+ which every edge from an even node goes to an odd one. Such a tree is
+ <em>Hungarian</em>: no augmenting path can ever use its nodes, since its
+ odd nodes cover all the edges of its even nodes, and so they are left out
+ of every later search, a free root that failed never being reached again.
+ `maxCardinalityMatching()` of `Matching.h` keeps the blossoms as the sets
+ of a union-find with the union by rank and the halving of the paths, the
+ representative of a set storing its base; the base common to two even
+ nodes is found by walking from both towards the root one step at a time,
+ which costs no more than twice the cycle shrunk. For each odd node that
+ a blossom makes even it records the edge \f$ ( a , b ) \f$ that closed
+ the blossom, its own side first, as the labels of Gabow do: the path from
+ such a node to the root goes back along the path of \f$ a \f$ down to
+ \f$ a \f$ and then follows that of \f$ b \f$, and the augmentation
+ rematches the two parts in turn, each stopping at the node whose mate it
+ has changed already. A search examines each edge of its tree at most twice
+ and merges each node once, i.e., it costs
+ \f$ O( m \, \alpha( m , n ) ) \f$ besides the walks, which are paid by
+ the merges; at most \f$ n / 2 \f$ searches succeed and each node is the
+ root of at most one that fails, so that the whole costs
+ \f$ O( n m \, \alpha( m , n ) ) \f$, i.e., \f$ O( n m ) \f$ for every
+ practical \f$ n \f$ and within the \f$ O( n^3 ) \f$ of the
+ implementation of Gabow. Gabow and Tarjan remove the factor
+ \f$ \alpha \f$ with a union-find for the trees of the search, and
+ Micali and Vazirani reach \f$ O( m \sqrt{n} ) \f$ by augmenting along a
+ maximal set of the shortest disjoint paths at once, as Hopcroft and Karp
+ do on bipartite graphs, at the price of a much more delicate search.
+
  \section theory_graph_euler Eulerian trails and other properties
 
  A trail is a path that uses each edge exactly once, and an Eulerian cycle
@@ -633,7 +702,7 @@
  entering it, and call a node of an unoriented graph odd when its degree
  is.
 
- <em>Lemma 8 (Euler).</em> Let the edges of \f$ G \f$ lie in one
+ <em>Lemma 10 (Euler).</em> Let the edges of \f$ G \f$ lie in one
  component, the orientation ignored. An oriented \f$ G \f$ has an
  Eulerian cycle if and only if \f$ x( u ) = 0 \f$ for every node, and an
  open trail if and only if one node \f$ s \f$ has \f$ x( s ) = 1 \f$, one
@@ -708,7 +777,7 @@
  net events of the edges in the order of their first event, then of the nodes
  deleted.
 
- <em>Lemma 9 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
+ <em>Lemma 11 (coalescing).</em> Let \f$ B \f$ be the sequence of the events
  of a batch on a graph \f$ G \f$, and \f$ C \f$ the sequence that (8) gives.
  The graph obtained by replaying \f$ C \f$ on \f$ G \f$ is the one obtained by
  replaying \f$ B \f$, and \f$ |C| \le |B| \f$.
@@ -738,12 +807,12 @@
  repair (1) if one is repairable, and by the certificate (2) if all are
  harmless, in which case nothing is computed.
 
- <em>Lemma 10 (the batch test).</em> If each condition of the certificate
+ <em>Lemma 12 (the batch test).</em> If each condition of the certificate
  involves the weight of a single edge, and each event of \f$ P \f$ is tested
  on the certificate of the solution before \f$ P \f$, then the events of
  \f$ P \f$ found harmless leave the solution optimal all together.
 
- Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 9, so that
+ Indeed, the events of \f$ P \f$ are on distinct edges by Lemma 11, so that
  each condition of the certificate is touched by at most one of them, and a
  harmless event keeps true the conditions that it touches; the conditions
  that no event touches stay as they were.
@@ -768,7 +837,7 @@
  gives no bound of them, while those of the other nodes are still the costs
  of their paths in \f$ T \f$, which no raised edge touches.
 
- <em>Lemma 11 (the increases).</em> Let \f$ A \f$ be the union of the
+ <em>Lemma 13 (the increases).</em> Let \f$ A \f$ be the union of the
  subtrees of \f$ T \f$ under the heads of the edges of \f$ T \f$ raised or
  deleted by \f$ P \f$. Set \f$ d[ x ] = \infty \f$ for \f$ x \in A \f$, then
  \f[
@@ -935,7 +1004,7 @@
  \f$ u_i = \min_j c( i , j ) \f$ and \f$ v = 0 \f$, which satisfy (11)
  whatever the signs of the costs.
 
- <em>Lemma 12 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
+ <em>Lemma 14 (the change of a row).</em> Let \f$ ( u , v , M ) \f$ satisfy
  (11) with the pairs of \f$ M \f$ tight, and let the costs of the row
  \f$ i \f$ change. Removing the pair of \f$ i \f$ from \f$ M \f$ and setting
  \f[
@@ -982,7 +1051,7 @@
  representations, and its use is the algebra of the graph [see
  `incidence()`], not the visits.
 
- <em>Lemma 13 (the universal sink).</em> A universal sink, a node with an
+ <em>Lemma 15 (the universal sink).</em> A universal sink, a node with an
  edge from each of the other \f$ n - 1 \f$ nodes and no edge out, is found or
  shown not to exist with at most \f$ 3 ( n - 1 ) \f$ calls of
  `hasEdge()`, \f$ O( n ) \f$ time on the adjacency matrix (exercise 12.10).
@@ -1091,6 +1160,20 @@
       algorithm for the assignment problem with changing costs, technical
       report CMU-RI-TR-07-27, Robotics Institute, Carnegie Mellon
       University, 2007
+ \see C. Berge, Two theorems in graph theory, Proceedings of the National
+      Academy of Sciences 43(9), 842-844, 1957, doi:10.1073/pnas.43.9.842
+ \see J. Edmonds, Paths, trees, and flowers, Canadian Journal of
+      Mathematics 17, 449-467, 1965, doi:10.4153/CJM-1965-045-4
+ \see H. N. Gabow, An efficient implementation of Edmonds' algorithm for
+      maximum matching on graphs, Journal of the ACM 23(2), 221-234, 1976,
+      doi:10.1145/321941.321942
+ \see H. N. Gabow, R. E. Tarjan, A linear-time algorithm for a special
+      case of disjoint set union, Journal of Computer and System Sciences
+      30(2), 209-221, 1985, doi:10.1016/0022-0000(85)90014-5
+ \see S. Micali, V. V. Vazirani, An O(sqrt(|V|) |E|) algorithm for finding
+      maximum matching in general graphs, Proceedings of the 21st Annual
+      Symposium on Foundations of Computer Science, 17-27, 1980,
+      doi:10.1109/SFCS.1980.12
  \see S. Even, R. E. Tarjan, Network flow and testing graph connectivity,
       SIAM Journal on Computing 4(4), 507-518, 1975, doi:10.1137/0204043
  \see D. B. Johnson, Finding all the elementary circuits of a directed

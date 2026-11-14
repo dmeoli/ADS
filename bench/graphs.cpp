@@ -48,6 +48,10 @@
  *   of 4 n distinct edges among n nodes, oriented and not ("walk" and
  *   "uwalk"), the same code on the three families of graphs (the Boost
  *   Graph Library has no Eulerian trail);
+ * - matching, maxCardinalityMatching(), the blossoms of Edmonds, on the
+ *   unoriented graphs (G( n , 4 n ), grids, R-MAT), against
+ *   edmonds_maximum_cardinality_matching() of the Boost Graph Library on
+ *   its adjacency_list;
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -98,6 +102,7 @@
 
 #include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GridGraph.h"
+#include "ADS/graph/Matching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -114,6 +119,8 @@
  #include <boost/property_map/property_map.hpp>
  #include <boost/graph/compressed_sparse_row_graph.hpp>
  #include <boost/graph/grid_graph.hpp>
+ #include <boost/graph/adjacency_list.hpp>
+ #include <boost/graph/max_cardinality_matching.hpp>
  #include <boost/graph/strong_components.hpp>
  #include <boost/heap/d_ary_heap.hpp>
  #include <boost/heap/fibonacci_heap.hpp>
@@ -1046,6 +1053,51 @@ void euler( const std::string & c , int n , int r , unsigned seed )
  C( "ADS StaticGraph" , [ & ]( Counts & k ) { return( eulerRun( S , k ) ); } );
  }
 
+/// maxCardinalityMatching() on the graph g: the size of the matching
+template< class G >
+long long matchingRun( const G & g , Counts & k )
+{
+ long long s = 0;
+ for( int v : ADS::maxCardinalityMatching( g ) )
+  s += v != ADS::NIL;
+ k = { { "matched" , s } };
+ return( s / 2 );
+ }
+
+void matching( const std::string & c , int n0 , int r , unsigned seed )
+{
+ const Input I = make( c , n0 , false , seed );
+ const int n = I.n;
+ const auto A = arcs( I );
+ const auto E = edgesOf( I , A );
+ Cell C( "matching" , c , std::size_t( n ) , E.size() , r );
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost adjacency_list edmonds" } ) ) {
+  using BG = boost::adjacency_list< boost::vecS , boost::vecS ,
+                                    boost::undirectedS >;
+  BG G( static_cast< std::size_t >( n ) );
+  for( const auto & [ u , v , w ] : E )
+   boost::add_edge( std::size_t( u ) , std::size_t( v ) , G );
+  C( "Boost adjacency_list edmonds" , [ & ]( Counts & k ) {
+   std::vector< std::size_t > mate( static_cast< std::size_t >( n ) );
+   boost::edmonds_maximum_cardinality_matching( G , mate.data() );
+   const long long s = (long long) boost::matching_size( G , mate.data() );
+   k = { { "matched" , 2 * s } };
+   return( s ); } );
+  }
+#endif
+ if( measured( { "std vector" , "std vector A/A" } ) ) {
+  const StdGraph< false > G( n , A , false );
+  for( const char * who : { "std vector" , "std vector A/A" } )
+   C( who , [ & ]( Counts & k ) { return( matchingRun( G , k ) ); } );
+  }
+ if( ! measured( { "ADS StaticGraph" } ) )
+  return;
+ const ADS::StaticGraph<> S( ADS::StaticGraph< int >( n , E , false ) );
+ C( "ADS StaticGraph" , [ & ]( Counts & k ) {
+  return( matchingRun( S , k ) ); } );
+ }
+
 /// n random merges and n finds on the MFSET M
 template< class M >
 long long setsRun( int n , const std::vector< std::pair< int , int > > & U ,
@@ -1175,6 +1227,9 @@ int main( int argc , char ** argv )
   if( want( "euler" ) )
    for( const char * c : { "walk" , "uwalk" } )
     euler( c , n , r , o.seed );
+  if( want( "matching" ) )
+   for( const char * c : { "gnm4" , "grid" , "rmat" } )
+    matching( c , n , r , o.seed );
   if( want( "union-find" ) )
    unionFind( n , r , o.seed );
   for( const char * b : { "grid-bfs" , "grid-dijkstra" } )

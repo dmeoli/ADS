@@ -34,6 +34,7 @@
 #include "ADS/graph/Grid.h"
 #include "ADS/graph/GridGraph.h"
 #include "ADS/graph/ListGraph.h"
+#include "ADS/graph/Matching.h"
 #include "ADS/graph/MinimumSpanningTree.h"
 #include "ADS/graph/ShortestPaths.h"
 #include "ADS/graph/StaticGraph.h"
@@ -49,8 +50,10 @@
 #include "ADS/queue/Dequeue.h"
 #include "ADS/queue/LinkedQueue.h"
 #include "ADS/stack/ArrayStack.h"
+#include "ADS/complexity/EasyCases.h"
 
 #include <algorithm>
+#include <bit>
 #include <climits>
 #include <cmath>
 #include <functional>
@@ -1198,6 +1201,158 @@ ADS_TEST( "euler-trails" )
   CHECK( eulerianCycle( ring ) && int( eulerianCycle( ring )->size() ) ==
          N + 1 );
   }
+ }
+
+/// the size of a largest matching of the graph of n <= 20 nodes and the
+/// adjacency masks N, by the dynamic programming on the subsets: the least
+/// node of a set is left out or matched to a neighbour in the set
+int matchingSize( int n , const std::vector< unsigned > & N )
+{
+ std::vector< int > f( std::size_t( 1 ) << n , 0 );
+ for( unsigned S = 1 ; S < ( 1u << n ) ; ++S ) {
+  const int u = std::countr_zero( S );
+  const unsigned R = S & ~( 1u << u );
+  int best = f[ R ];
+  for( unsigned T = R & N[ u ] ; T ; T &= T - 1 )
+   best = std::max( best , 1 + f[ R & ~( 1u << std::countr_zero( T ) ) ] );
+  f[ S ] = best;
+  }
+ return( f[ ( 1u << n ) - 1 ] );
+ }
+
+/// the size of the matching of mates M on g, checked: symmetric, on edges,
+/// NIL on the names that are not nodes
+template< class G >
+int checkedSize( const G & g , const std::vector< int > & M )
+{
+ CHECK( int( M.size() ) == g.bound() );
+ int k = 0;
+ for( int u = 0 ; u < g.bound() ; ++u ) {
+  if( M[ u ] == NIL )
+   continue;
+  CHECK( g.hasNode( u ) && M[ M[ u ] ] == u );
+  const auto A = g.adj( u );
+  CHECK( std::find( A.begin() , A.end() , M[ u ] ) != A.end() );
+  ++k;
+  }
+ return( k / 2 );
+ }
+
+// the maximum matching of a general graph by the blossoms of Edmonds
+// against the dynamic programming on the subsets on every graph of up to 6
+// nodes and on random ones of up to 16, against the branch and bound of
+// maxWeightMatching() with unit weights, against the maximum flow on
+// bipartite graphs of thousands of nodes; the graphs that make blossoms
+// within blossoms (the complete graphs, the Petersen graph, chains of
+// triangles and of pentagons), a deleted node, a path of 10^6 nodes,
+// parallel edges, and an oriented graph refused
+ADS_TEST( "blossom-matching" )
+{
+ auto check = [ & ]( const auto & h , int n ) {
+  std::vector< unsigned > N( n , 0 );
+  for( int u : h.V() )
+   h.forEachAdj( u , [ & ]( int v ) { N[ u ] |= 1u << v; } );
+  for( int u = 0 ; u < n ; ++u )
+   if( ! h.hasNode( u ) )
+    for( auto & x : N ) x &= ~( 1u << u );
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
+         matchingSize( n , N ) );
+  };
+ for( int n = 1 ; n <= 6 ; ++n ) {
+  std::vector< std::pair< int , int > > P;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v ) P.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << P.size() ) ; ++mask ) {
+   ListGraph<> h( n , false );
+   for( std::size_t i = 0 ; i < P.size() ; ++i )
+    if( mask & ( 1u << i ) ) h.insertEdge( P[ i ].first , P[ i ].second );
+   check( h , n );
+   }
+  }
+ std::mt19937 g( 23 );
+ for( int it = 0 ; it < 4000 ; ++it ) {
+  const int n = 7 + it % 10;
+  const unsigned p = 1 + g() % 6;
+  ListGraph<> h( n , false );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 10 < p ) h.insertEdge( u , v );
+  if( it % 7 == 0 ) h.deleteNode( int( g() % unsigned( n ) ) );
+  check( h , n );
+  }
+ for( int it = 0 ; it < 200 ; ++it ) {          // the branch and bound
+  const int n = 20 + it % 11;
+  std::vector< std::tuple< int , int , long long > > E;
+  ListGraph<> h( n , false );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 8 == 0 ) {
+     h.insertEdge( u , v );
+     E.emplace_back( u , v , 1 );
+     }
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
+         maxWeightMatching( n , E ).first );
+  }
+ for( int it = 0 ; it < 6 ; ++it ) {            // bipartiteMatching()
+  const int p = 2000 , q = 1500 + 300 * it;   // (an audit per edge added
+                                               // to the network of flows)
+  std::vector< std::pair< int , int > > B , E;
+  for( int k = 0 ; k < 2 * p + it * p / 2 ; ++k ) {
+   const int i = int( g() % p ) , j = int( g() % unsigned( q ) );
+   B.emplace_back( i , j );
+   E.emplace_back( i , p + j );
+   }
+  const StaticGraph<> h( p + q , E , false );
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
+         int( bipartiteMatching( p , q , B ).size() ) );
+  }
+
+ // blossoms within blossoms: the complete graphs, the Petersen graph,
+ // chains of triangles and pentagons joined by an edge (a perfect matching
+ // only through the blossoms), odd cycles sharing a node
+ for( int n : { 2 , 3 , 9 , 64 , 101 } ) {
+  ListGraph<> k( n , false );
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v ) k.insertEdge( u , v );
+  CHECK( checkedSize( k , maxCardinalityMatching( k ) ) == n / 2 );
+  }
+ ListGraph<> pet( 10 , false );
+ for( int i = 0 ; i < 5 ; ++i ) {
+  pet.insertEdge( i , ( i + 1 ) % 5 );
+  pet.insertEdge( 5 + i , 5 + ( i + 2 ) % 5 );
+  pet.insertEdge( i , 5 + i );
+  }
+ CHECK( checkedSize( pet , maxCardinalityMatching( pet ) ) == 5 );
+ for( int c : { 3 , 5 } ) {
+  const int K = 2000;
+  std::vector< std::pair< int , int > > E;
+  for( int b = 0 ; b < K ; ++b ) {
+   for( int i = 0 ; i < c ; ++i )
+    E.emplace_back( b * c + i , b * c + ( i + 1 ) % c );
+   if( b % 2 == 1 )
+    E.emplace_back( ( b - 1 ) * c + 1 , b * c + 1 );
+   }
+  const StaticGraph<> h( K * c , E , false );
+  CHECK( checkedSize( h , maxCardinalityMatching( h ) ) == K * c / 2 );
+  }
+ ListGraph<> star( 9 , false );                 // four triangles on node 0
+ for( int t = 0 ; t < 4 ; ++t ) {
+  star.insertEdge( 0 , 1 + 2 * t );
+  star.insertEdge( 0 , 2 + 2 * t );
+  star.insertEdge( 1 + 2 * t , 2 + 2 * t );
+  }
+ CHECK( checkedSize( star , maxCardinalityMatching( star ) ) == 4 );
+ const int N = 1000000;
+ std::vector< std::pair< int , int > > P;
+ for( int v = 0 ; v + 1 < N ; ++v ) P.emplace_back( v , v + 1 );
+ P.emplace_back( 0 , 1 );                       // parallel
+ const StaticGraph<> path( N , P , false );
+ CHECK( checkedSize( path , maxCardinalityMatching( path ) ) == N / 2 );
+ CHECK( maxCardinalityMatching( ListGraph<>( 0 , false ) ).empty() );
+ CHECK( maxCardinalityMatching( ListGraph<>( 3 , false ) ) ==
+        std::vector< int >( 3 , NIL ) );
+ CHECK_THROWS( maxCardinalityMatching( ListGraph<>( 3 , true ) ) ,
+               contract_violation );
  }
 
 }  // end( namespace )
