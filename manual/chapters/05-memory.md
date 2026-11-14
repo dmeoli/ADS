@@ -168,6 +168,21 @@ small" for any later request. On the other hand, the next fit spreads the splits
 price of a (possibly much) worse locality ([Wilson et al.
 1995](Z-bibliography.md#ref-wilson1995)).
 
+In `ADS/memory/Allocators.h`, the declarations of `BoundaryTagAllocator`
+that a user calls are
+
+```cpp
+class BoundaryTagAllocator {
+ public:
+  enum class Fit { FIRST , BEST , NEXT };
+  explicit BoundaryTagAllocator( long N , Fit fit = Fit::FIRST );
+  long allocate( long n );
+  void free( long a );
+  long freeWords( void ) const;
+  long freeBlocks( void ) const;
+  };
+```
+
 ## 5.3 The buddy system {#sec-5-3}
 
 `BuddyAllocator` manages a memory of $N = 2^m$ words, $0 \le m \le 40$,
@@ -247,6 +262,20 @@ free blocks, and `blockSize(a)`, the size $2^k$ of the block in use at
 $a$. Finally, the constructor requires $0 \le m \le 40$, and that $2^m$ fits in a
 `long` (i.e., $m \le 30$ where a `long` has 32 bits).
 
+In `ADS/memory/Allocators.h`, the declarations of `BuddyAllocator` that a
+user calls are
+
+```cpp
+class BuddyAllocator {
+ public:
+  explicit BuddyAllocator( int m );
+  long allocate( long n );
+  void free( long a );
+  long freeWords( void ) const;
+  long blockSize( long a ) const;
+  };
+```
+
 ## 5.4 Arenas {#sec-5-4}
 
 An *arena* (also called a *region*) gives the objects of one type from
@@ -316,6 +345,20 @@ objects, built also from the first), and the functions `begin()`, `end()`,
 its objects are reached by their addresses. The price of all this is that
 an object cannot be freed apart from the others: the destructor of the arena destroys
 all the objects and frees the blocks.
+
+In `ADS/memory/Arena.h`, the declarations of `Arena` that a user calls are
+
+```cpp
+template< class T , class A = std::allocator< T > >
+class Arena {
+ public:
+  explicit Arena( std::size_t n = std::size_t( 1 ) << 12 ,
+       const A & alloc = A() );
+  template< class... Args > T * make( Args &&... args );
+  std::size_t size( void ) const;
+  std::size_t bytes( void ) const;
+  };
+```
 
 ## 5.5 Pools of objects {#sec-5-5}
 
@@ -423,6 +466,25 @@ and those it never used, are no longer given until the pool dies. In `adopt()` t
 `size()` is the number of the objects alive, and `bytes()` the memory of
 the blocks, headers included, computed by a walk of the chain.
 
+In `ADS/memory/ObjectPool.h`, the declarations of `ObjectPool` that a user
+calls are
+
+```cpp
+template< class T , class A = HugePageAllocator< T > >
+class ObjectPool {
+ public:
+  explicit ObjectPool( std::size_t n = std::size_t( 1 ) << 24 ,
+       const A & alloc = A() );
+  void adopt( ObjectPool & other );
+  template< class... Args > T * make( Args &&... args );
+  void free( T * x );
+  T * allocate( void );
+  void deallocate( T * x );
+  std::size_t size( void ) const;
+  std::size_t bytes( void ) const;
+  };
+```
+
 ## 5.6 Size classes {#sec-5-6}
 
 A *size class* serves all the requests between two sizes with blocks of
@@ -505,6 +567,24 @@ given back serve any later request of their class. This is the scheme of
 TLSF ([Masmano et al. 2004](Z-bibliography.md#ref-masmano2004)) and of
 the allocators of today, which choose the block by its size class instead
 of by a fit, in constant time.
+
+In `ADS/memory/SizeClassAllocator.h`, the declarations of
+`SizeClassAllocator` that a user calls are
+
+```cpp
+class SizeClassAllocator {
+ public:
+  static constexpr std::size_t LARGEST = 32768;
+  static constexpr std::size_t PAGE = std::size_t( 1 ) << 16;
+  SizeClassAllocator( void );
+  void * allocate( std::size_t n );
+  void deallocate( void * p , std::size_t n );
+  static unsigned sizeClass( std::size_t n );
+  static std::size_t classSize( unsigned c );
+  std::size_t bytes( void ) const;
+  void release( void );
+  };
+```
 
 ## 5.7 Free lists by page {#sec-5-7}
 
@@ -661,6 +741,50 @@ std::list< int , ADS::PoolAllocator< int > > L{
 for( int i = 0 ; i < 1000 ; ++i ) L.push_back( i );   // one slot a node
 ```
 
+In `ADS/memory/PoolAllocator.h`, the declarations of `PoolResource` that a
+user calls are
+
+```cpp
+template< std::size_t M = 256 >
+class PoolResource {
+ public:
+  static constexpr std::size_t GRAIN = 8;
+  static constexpr std::size_t ALIGN = 16;
+  static constexpr std::size_t MAX = M;
+  static constexpr std::size_t CLASSES = M / GRAIN;
+  static constexpr bool pooled( std::size_t b , std::size_t a );
+  PoolResource( void );
+  template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
+  void * allocate( void );
+  template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
+  void deallocate( void * p );
+  void * allocate( std::size_t b ,
+       std::size_t a = alignof( std::max_align_t ) );
+  void deallocate( void * p , std::size_t b ,
+       std::size_t a = alignof( std::max_align_t ) );
+  std::size_t size( void ) const;
+  std::size_t bytes( void ) const;
+  };
+```
+
+and those of `PoolAllocator` are
+
+```cpp
+template< class T , class R = PoolResource<> >
+class PoolAllocator {
+ public:
+  using value_type = T;
+  PoolAllocator( R & r );
+  PoolAllocator( void ) requires requires { R::global(); };
+  template< class U > PoolAllocator( const PoolAllocator< U , R > & o );
+  T * allocate( std::size_t n );
+  void deallocate( T * p , std::size_t n );
+  R * resource( void ) const;
+  template< class U >
+  bool operator==( const PoolAllocator< U , R > & o ) const;
+  };
+```
+
 ## 5.8 A pool shared by threads {#sec-5-8}
 
 `ConcurrentPoolResource<M>` has the classes of `PoolResource`, and an
@@ -774,6 +898,36 @@ other thread uses the resource. It cannot be copied, and its destructor
 frees the heaps and their segments, without destroying the objects still
 alive.
 
+In `ADS/memory/ConcurrentPool.h`, the declarations of
+`ConcurrentPoolResource` that a user calls are
+
+```cpp
+template< std::size_t M = 256 >
+class ConcurrentPoolResource {
+ public:
+  static constexpr std::size_t GRAIN = 8;
+  static constexpr std::size_t ALIGN = 16;
+  static constexpr std::size_t MAX = M;
+  static constexpr std::size_t CLASSES = M / GRAIN;
+  static constexpr std::size_t SEGMENT = detail::PageHeap< CLASSES
+       >::SEGMENT;
+  static constexpr bool pooled( std::size_t b , std::size_t a );
+  ConcurrentPoolResource( void );
+  static ConcurrentPoolResource & global( void );
+  template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
+  void * allocate( void );
+  template< std::size_t b , std::size_t a = alignof( std::max_align_t ) >
+  void deallocate( void * p );
+  void * allocate( std::size_t b ,
+       std::size_t a = alignof( std::max_align_t ) );
+  void deallocate( void * p , std::size_t b ,
+       std::size_t a = alignof( std::max_align_t ) );
+  void collect( void );
+  std::size_t heaps( void ) const;
+  std::size_t bytes( void ) const;
+  };
+```
+
 ## 5.9 Huge pages {#sec-5-9}
 
 A structure whose nodes are reached in no useful order (e.g., the trees of
@@ -834,6 +988,22 @@ It is fair to remark that the aligned `operator new` of the C library may
 reserve some more address space for the alignment, depending on its
 implementation. This memory is not touched either, and costs no physical
 memory.
+
+In `ADS/memory/HugePageAllocator.h`, the declarations of
+`HugePageAllocator` that a user calls are
+
+```cpp
+template< class T >
+class HugePageAllocator {
+ public:
+  static constexpr std::size_t PAGE = std::size_t( 1 ) << 21;
+  HugePageAllocator( void );
+  T * allocate( std::size_t n );
+  void deallocate( T * p , std::size_t n );
+  template< class U >
+  bool operator==( const HugePageAllocator< U > & ) const;
+  };
+```
 
 ## 5.10 Garbage collection {#sec-5-10}
 
@@ -953,6 +1123,29 @@ marking with an explicit stack (`collect(false)`). At the highest level
 of the contracts, `collect()` checks that it frees exactly the cells that
 are not reachable (found by a plain visit), and that it leaves the fields
 of the others as they were.
+
+In `ADS/memory/CellHeap.h`, the declarations of `CellHeap` that a user
+calls are
+
+```cpp
+class CellHeap {
+ public:
+  using Value = long;
+  static constexpr Value nil = -1;
+  static Value atom( long k );
+  static bool isCell( Value v );
+  explicit CellHeap( std::size_t n );
+  Value cons( Value car , Value cdr );
+  Value car( Value c ) const;
+  Value cdr( Value c ) const;
+  void setCar( Value c , Value v );
+  void setCdr( Value c , Value v );
+  void addRoot( Value c );
+  void removeRoot( Value c );
+  std::size_t collect( bool reversal = true );
+  std::size_t freeCells( void ) const;
+  };
+```
 
 ## 5.11 The allocators compared {#sec-5-11}
 

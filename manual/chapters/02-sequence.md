@@ -72,7 +72,7 @@ $\mathit{pos}_n$ needs to be computed (on a singly linked list `tail()`
 costs $O( n )$), while the range stays common, as the algorithms of C++17
 and of Boost want it. This range is a view, i.e., a pointer to the sequence,
 which must not change during the visit, and a step costs what `next()`
-costs; being an adapter with no state of its own, it has no figure.
+costs; as an adapter with no state, it has no figure.
 
 Those realizations with positions name the type of their items `Item` and
 that of their positions `Pos`, and the linked ones also have a nested
@@ -278,6 +278,42 @@ items are contiguous. Note that a change made through an iterator bypasses
 the contracts of `write()`, which check that the item is read back and that
 the others are where they were (the latter an audit of cost $O( n )$).
 
+In `ADS/sequence/ArraySequence.h`, the declarations of `ArraySequence` that
+a user calls are
+
+```cpp
+template< class T >
+class ArraySequence {
+ public:
+  using Item = T;
+  using Pos = long;
+  ArraySequence( void );
+  ArraySequence( std::initializer_list< T > items );
+  template< std::input_iterator I , std::sentinel_for< I > S >
+  ArraySequence( I first , S last );
+  bool empty( void ) const;
+  bool finished( Pos p ) const;
+  Pos head( void ) const;
+  Pos tail( void ) const;
+  Pos next( Pos p ) const;
+  Pos prev( Pos p ) const;
+  Pos insert( Pos p , const T & v );
+  template< std::input_iterator I , std::sentinel_for< I > S >
+  Pos insert( Pos p , I first , S last );
+  Pos remove( Pos p );
+  const T & read( Pos p ) const;
+  void write( Pos p , const T & v );
+  Pos size( void ) const;
+  Pos capacity( void ) const;
+  bool operator==( const ArraySequence & o ) const;
+  T * data( void );
+  const T * data( void ) const;
+  T & operator[]( Pos i );
+  const T & operator[]( Pos i ) const;
+  void push_back( const T & v );
+  };
+```
+
 ### 2.2.1 A vector with room inside itself {#sec-2-2-1}
 
 Each of the many short vectors of a structure (the children of a node, the
@@ -303,6 +339,41 @@ interface of a vector (`push_back()`, `emplace_back()`, `pop_back()`,
 `SmallVector`.
 
 --8<-- "generated/SmallVector-emplace_back.pseudo.md"
+
+In `ADS/sequence/SmallVector.h`, the declarations of `SmallVector` that a
+user calls are
+
+```cpp
+template< class T , std::size_t N = 8 >
+class SmallVector {
+ public:
+  SmallVector( void );
+  explicit SmallVector( std::size_t n , const T & x = T() );
+  SmallVector( std::initializer_list< T > items );
+  template< std::input_iterator I , std::sentinel_for< I > S >
+  SmallVector( I first , S last );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  bool small( void ) const;
+  T * data( void );
+  const T * data( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  T & front( void );
+  const T & front( void ) const;
+  T & back( void );
+  const T & back( void ) const;
+  void push_back( const T & x );
+  void push_back( T && x );
+  template< class... Args > T & emplace_back( Args &&... args );
+  void pop_back( void );
+  void reserve( std::size_t n );
+  void resize( std::size_t n , const T & x = T() );
+  void clear( void );
+  bool operator==( const SmallVector & o ) const;
+  };
+```
 
 ## 2.3 The circular vector by rank {#sec-2-3}
 
@@ -481,6 +552,34 @@ cost $\Theta( n t / k )$, i.e., $\Theta( n \sqrt{n} )$ for $k = \sqrt{n}$,
 against the $O( n )$ that the analysis of [Lemma
 2.4](02-sequence.md#lem-2-4) allows.
 
+In `ADS/sequence/DualArrayDeque.h`, the declarations of `DualArrayDeque`
+that a user calls are
+
+```cpp
+template< class T , class S = std::vector< T > >
+class DualArrayDeque {
+ public:
+  DualArrayDeque( void );
+  DualArrayDeque( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  const T & front( void ) const;
+  const T & back( void ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_front( const T & x );
+  void push_back( const T & x );
+  void pop_front( void );
+  void pop_back( void );
+  void rotate( std::size_t r );
+  void clear( void );
+  std::size_t frontSize( void ) const;
+  bool operator==( const DualArrayDeque & o ) const;
+  };
+```
+
 ## 2.5 The treque and the contiguous deque {#sec-2-5}
 
 The *treque* (triple ended queue) of [Morin 2013, exercise
@@ -572,6 +671,61 @@ a queue that runs along the vector. Compared with `RingDeque`, the
 contiguous deque pays the rebuilds that the circular vector avoids when it
 is used as a queue, and it saves the mask of each access and the split of
 the items into two pieces.
+
+In `ADS/sequence/Treque.h`, the declarations of `Treque` that a user calls
+are
+
+```cpp
+template< class T >
+class Treque {
+ public:
+  Treque( void );
+  Treque( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  const T & front( void ) const;
+  const T & back( void ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_front( const T & x );
+  void push_back( const T & x );
+  void pop_front( void );
+  void pop_back( void );
+  void clear( void );
+  bool operator==( const Treque & o ) const;
+  };
+```
+
+In `ADS/sequence/ContiguousDeque.h`, the declarations of `ContiguousDeque`
+that a user calls are
+
+```cpp
+template< class T >
+class ContiguousDeque {
+ public:
+  ContiguousDeque( void );
+  ContiguousDeque( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  T & front( void );
+  T & back( void );
+  T * data( void );
+  const T * data( void ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_front( const T & x );
+  void push_back( const T & x );
+  void pop_front( void );
+  void pop_back( void );
+  void clear( void );
+  bool operator==( const ContiguousDeque & o ) const;
+  };
+```
 
 ## 2.6 The rootish array stack {#sec-2-6}
 
@@ -685,6 +839,35 @@ code computes $9 + 8 i$ in an `int`, which overflows for $i > 2^{28}$. Also,
 his blocks are arrays of `new T[ b + 1 ]`, whose items are built by default
 and assigned later; ours build an item only when it is inserted.
 
+In `ADS/sequence/RootishArrayStack.h`, the declarations of
+`RootishArrayStack` that a user calls are
+
+```cpp
+template< class T >
+class RootishArrayStack {
+ public:
+  RootishArrayStack( void );
+  RootishArrayStack( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  std::size_t blocks( void ) const;
+  static std::size_t block( std::size_t i );
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  const T & front( void ) const;
+  const T & back( void ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_back( const T & x );
+  void push_back( T && x );
+  template< class ... Args > T & emplace_back( Args && ... args );
+  void pop_back( void );
+  void clear( void );
+  bool operator==( const RootishArrayStack & o ) const;
+  };
+```
+
 ## 2.7 The tiered vector {#sec-2-7}
 
 The tiered vector of [Goodrich and Kloss
@@ -765,6 +948,32 @@ $O( 1 )$ time. [Bille et al. 2017](Z-bibliography.md#ref-bille2017)
 engineer the tiered vector further, with more levels and a careful layout
 in memory; `CubishArrayStack` below is the tiered vector with three levels.
 
+In `ADS/sequence/TieredVector.h`, the declarations of `TieredVector` that a
+user calls are
+
+```cpp
+template< class T >
+class TieredVector {
+ public:
+  TieredVector( void );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t block( void ) const;
+  std::size_t capacity( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  const T & front( void ) const;
+  const T & back( void ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_back( const T & x );
+  void pop_back( void );
+  void push_front( const T & x );
+  void pop_front( void );
+  void clear( void );
+  };
+```
+
 ## 2.8 The cubish array stack {#sec-2-8}
 
 The cubish array stack of [Morin 2013, exercise
@@ -820,9 +1029,33 @@ the mirror of the insertion (`erase()`, whose pseudocode is in the header),
 and `pop_back()`, `push_back()`, `size()`, `capacity()` and `clear()`
 complete the class.
 
+In `ADS/sequence/CubishArrayStack.h`, the declarations of
+`CubishArrayStack` that a user calls are
+
+```cpp
+template< class T >
+class CubishArrayStack {
+ public:
+  CubishArrayStack( void );
+  CubishArrayStack( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t block( void ) const;
+  std::size_t capacity( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_back( const T & x );
+  void pop_back( void );
+  void clear( void );
+  bool operator==( const CubishArrayStack & o ) const;
+  };
+```
+
 ## 2.9 The singly linked list {#sec-2-9}
 
-A linked list keeps each item in a cell of its own, which holds the
+A linked list keeps each item in a separate cell, which holds the
 address of the next cell. An insertion allocates a cell and changes the
 links of its neighbors, in $O( 1 )$ time at any place that one holds;
 however, there is no access by index, and a scan follows pointers that may
@@ -916,6 +1149,47 @@ the reversal in place of `SinglyList` ([Morin 2013, exercises 3.2 and
 --8<-- "generated/SinglyList-secondLast.pseudo.md"
 
 --8<-- "generated/SinglyList-reverse.pseudo.md"
+
+In `ADS/sequence/SinglyList.h`, the declarations of `SinglyList` that a
+user calls are
+
+```cpp
+template< class T >
+class SinglyList {
+ public:
+  struct Cell;
+  using Item = T;
+  using Pos = Cell *;
+  SinglyList( void );
+  SinglyList( std::initializer_list< T > items );
+  bool empty( void ) const;
+  bool finished( Pos p ) const;
+  Pos head( void ) const;
+  Pos tail( void ) const;
+  Pos next( Pos p ) const;
+  Pos prev( Pos p ) const;
+  Pos insert( Pos p , const T & v );
+  Pos remove( Pos p );
+  const T & read( Pos p ) const;
+  void write( Pos p , const T & v );
+  bool operator==( const SinglyList & o ) const;
+  template< std::input_iterator I , std::sentinel_for< I > S >
+  SinglyList( I first , S last );
+  void push_front( const T & v );
+  std::size_t size( void ) const;
+  void push_back( const T & v );
+  T pop_front( void );
+  const T & front( void ) const;
+  const T & back( void ) const;
+  const T & get( std::size_t i ) const;
+  T set( std::size_t i , const T & x );
+  void add( std::size_t i , const T & x );
+  T erase( std::size_t i );
+  const T & secondLast( void ) const;
+  void reverse( void );
+  void checkSize( void ) const;
+  };
+```
 
 ## 2.10 The doubly linked list {#sec-2-10}
 
@@ -1023,6 +1297,52 @@ has no block and otherwise walks the blocks of this pool, $O( \log k + k / n
 )$ of them for $k$ slots under a block limit $n$); `mergeSort()` and `reverse()` relink the
 cells of one list in both cases.
 
+In `ADS/sequence/List.h`, the declarations of `List` that a user calls are
+
+```cpp
+template< class T , bool Pooled = true >
+class List {
+ public:
+  using Item = T;
+  struct Cell;
+  using Pos = Cell *;
+  List( void );
+  List( std::initializer_list< T > items );
+  template< std::input_iterator I , std::sentinel_for< I > S >
+  List( I first , S last );
+  bool empty( void ) const;
+  bool finished( Pos p ) const;
+  Pos head( void ) const;
+  Pos tail( void ) const;
+  Pos next( Pos p ) const;
+  Pos prev( Pos p ) const;
+  Pos insert( Pos p , const T & v );
+  Pos remove( Pos p );
+  const T & read( Pos p ) const;
+  void write( Pos p , const T & v );
+  bool operator==( const List & o ) const;
+  void push_back( const T & v );
+  void push_front( const T & v );
+  std::size_t size( void ) const;
+  Pos position( std::size_t i ) const;
+  const T & get( std::size_t i ) const;
+  T set( std::size_t i , const T & x );
+  void add( std::size_t i , const T & x );
+  T erase( std::size_t i );
+  void checkSize( void ) const;
+  bool isPalindrome( void ) const;
+  void rotate( std::size_t r );
+  List truncate( std::size_t i );
+  void absorb( List & l2 );
+  List deal( void );
+  void reverse( void );
+  void takeFirst( List & l2 );
+  template< class C = std::less<> >
+  static List merge( List & l1 , List & l2 , C less = C() );
+  template< class C = std::less<> > void mergeSort( C less = C() );
+  };
+```
+
 ### 2.10.1 Sorting a list {#sec-2-10-1}
 
 The merge sort of [Morin 2013, exercise 3.13](Z-bibliography.md#ref-morin-cpp)
@@ -1086,6 +1406,13 @@ one pass, in $O( n )$ time and space. A merge sort walks the cells $\log r$
 times, and each walk may miss the cache (possibly) once per cell when the
 cells are scattered, while the radix sort reads them twice.
 
+In `ADS/sequence/ListSort.h`, the functions are declared as
+
+```cpp
+template< class T , bool P , class C = std::less<> >
+void listSort( List< T , P > & L , C less = C() );
+```
+
 ## 2.11 Lists with cursors {#sec-2-11}
 
 A language with no pointers, or a program that wants its lists in one block
@@ -1128,6 +1455,49 @@ space has a space of its own, while the lists made on one space
 (`CursorList( S )`) share it through a `std::shared_ptr`, and the space
 lives as long as one of them does; `space()` gives it. The list also has
 `push_front()`, `first()`, `get()` and an iterator.
+
+In `ADS/sequence/CursorList.h`, the declarations of `CursorSpace` and
+`CursorList` that a user calls are
+
+```cpp
+template< class T >
+class CursorSpace {
+ public:
+  struct Cell;
+  explicit CursorSpace( long dim = 8 );
+  Cell & operator[]( long c );
+  const Cell & operator[]( long c ) const;
+  long take( void );
+  void give( long c );
+  long capacity( void ) const;
+  long used( void ) const;
+  };
+template< class T >
+class CursorList {
+ public:
+  using Item = T;
+  using Pos = long;
+  CursorList( void );
+  explicit CursorList( std::shared_ptr< CursorSpace< T > > S );
+  CursorList( std::initializer_list< T > items );
+  bool empty( void ) const;
+  bool finished( Pos p ) const;
+  Pos head( void ) const;
+  Pos tail( void ) const;
+  Pos next( Pos p ) const;
+  Pos prev( Pos p ) const;
+  Pos insert( Pos p , const T & v );
+  Pos remove( Pos p );
+  const T & read( Pos p ) const;
+  void write( Pos p , const T & v );
+  bool operator==( const CursorList & o ) const;
+  const CursorSpace< T > & space( void ) const;
+  long first( void ) const;
+  template< std::input_iterator I , std::sentinel_for< I > S >
+  CursorList( I first , S last );
+  void push_front( const T & v );
+  };
+```
 
 ## 2.12 The space-efficient list {#sec-2-12}
 
@@ -1248,6 +1618,35 @@ iterators, `operator[]`, `at()`, `front()`, `back()`, `size()` and
 `clear()`, and its invariant (the bound on the items of each block, none
 empty, and the count of $n$) is an $O( n / b )$ check.
 
+In `ADS/sequence/SEList.h`, the declarations of `SEList` that a user calls
+are
+
+```cpp
+template< class T >
+class SEList {
+ public:
+  explicit SEList( std::size_t b = 63 );
+  SEList( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t block( void ) const;
+  std::size_t blocks( void ) const;
+  std::size_t capacity( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  const T & front( void ) const;
+  const T & back( void ) const;
+  void insert( std::size_t i , const T & x );
+  void erase( std::size_t i );
+  void push_front( const T & x );
+  void push_back( const T & x );
+  void pop_front( void );
+  void pop_back( void );
+  void clear( void );
+  bool operator==( const SEList & o ) const;
+  };
+```
+
 ## 2.13 The XOR list {#sec-2-13}
 
 The discussion of chapter 3 of [Morin 2013](Z-bibliography.md#ref-morin-cpp)
@@ -1298,6 +1697,31 @@ references to the same integer, which the first exclusive or sets to 0.
 ([Morin 2013, exercise 3.19](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/XorList-xorSwap.pseudo.md"
+
+In `ADS/sequence/XorList.h`, the declarations of the functions and of
+`XorList` that a user calls are
+
+```cpp
+template< class T >
+class XorList {
+ public:
+  XorList( void );
+  XorList( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  const T & front( void ) const;
+  const T & back( void ) const;
+  void push_front( const T & x );
+  void push_back( const T & x );
+  void pop_front( void );
+  void pop_back( void );
+  void reverse( void );
+  void clear( void );
+  bool operator==( const XorList & o ) const;
+  };
+template< std::unsigned_integral U >
+constexpr void xorSwap( U & a , U & b );
+```
 
 ## 2.14 The skip list by rank {#sec-2-14}
 
@@ -1413,6 +1837,32 @@ the iterators; its invariant, an $O( n \log n )$ check at the level 3 of
 the contracts, is that the widths of each level sum to $n + 1$ and that
 each level is a sublist of the level below.
 
+In `ADS/sequence/SkipListSequence.h`, the declarations of
+`SkipListSequence` that a user calls are
+
+```cpp
+template< class T >
+class SkipListSequence {
+ public:
+  using Item = T;
+  explicit SkipListSequence( std::uint64_t seed = 1 );
+  std::size_t size( void ) const;
+  bool empty( void ) const;
+  int levels( void ) const;
+  const T & get( std::size_t i ) const;
+  void set( std::size_t i , const T & v );
+  void add( std::size_t i , const T & v );
+  const T & operator[]( std::size_t i ) const;
+  T & operator[]( std::size_t i );
+  void insert( std::size_t i , const T & v );
+  void erase( std::size_t i );
+  void push_back( const T & v );
+  T remove( std::size_t i );
+  SkipListSequence truncate( std::size_t i );
+  void absorb( SkipListSequence & s );
+  };
+```
+
 ## 2.15 The treap by rank and the order of a list {#sec-2-15}
 
 The `TreapList` of [Morin 2013, exercise
@@ -1458,6 +1908,32 @@ of `SkipListSequence` (`get()`, `set()`, `add()`, `remove()`, `read()`,
 `insert()`, `erase()`, `push_back()`, `truncate()`, `absorb()` and
 `size()`).
 
+In `ADS/sequence/TreapList.h`, the declarations of `TreapList` that a user
+calls are
+
+```cpp
+template< class T >
+class TreapList {
+ public:
+  using Item = T;
+  explicit TreapList( std::uint64_t seed = 1 );
+  std::size_t size( void ) const;
+  bool empty( void ) const;
+  const T & get( std::size_t i ) const;
+  void set( std::size_t i , const T & v );
+  void add( std::size_t i , const T & v );
+  const T & operator[]( std::size_t i ) const;
+  T & operator[]( std::size_t i );
+  void insert( std::size_t i , const T & v );
+  void erase( std::size_t i );
+  void push_back( const T & v );
+  T remove( std::size_t i );
+  TreapList truncate( std::size_t i );
+  void absorb( TreapList & s );
+  struct Shape;
+  };
+```
+
 ### 2.15.1 Order maintenance {#sec-2-15-1}
 
 The *order maintenance* problem asks for a list of elements with three
@@ -1470,7 +1946,7 @@ path, so that the order is a comparison of two words. The root has the
 label $2^{63}$, and the children of a node of label $\ell$, whose lowest
 bit set is $2^j$, the labels $\ell \pm 2^{j-1}$, which keeps the labels in
 symmetric order for a tree of height up to 63. A rebuild relabels the
-subtree it rebuilds within its own $O( s )$ time, while a rotation would
+subtree it rebuilds within $O( s )$ time, while a rotation would
 change the labels of a whole subtree (which is why the exercise sits in the
 chapter of the partial rebuilding), and an insertion costs $O( \log n )$
 amortized time.
@@ -1558,6 +2034,28 @@ insertion is at most 8 after $2^{17}$ insertions, and at most one more than
 after $2^{12}$. `first()`, `next()`, `value()` and `size()` read the list,
 and an element (of the type `Element`, a pointer to its node) stays valid
 until it is removed. The test of the order is two comparisons of words:
+
+In `ADS/sequence/OrderMaintenanceList.h`, the declarations of
+`OrderMaintenanceList` that a user calls are the following, where `Element`
+is a constant handle of an element:
+
+```cpp
+template< class T >
+class OrderMaintenanceList {
+ public:
+  using Item = T;
+  static constexpr std::size_t B = 64;
+  OrderMaintenanceList( void );
+  std::size_t size( void ) const;
+  Element addAfter( Element e , const T & v );
+  void remove( Element e );
+  bool testBefore( Element a , Element b ) const;
+  static const T & value( Element e );
+  Element first( void ) const;
+  Element next( Element e ) const;
+  std::pair< std::size_t , std::size_t > relabelWork( void ) const;
+  };
+```
 
 ## 2.16 Algorithms on sequences {#sec-2-16}
 
@@ -1653,6 +2151,26 @@ comparisons must tell them apart ([McIlroy
 On a `List`, `listSort()` of [§2.10.1](02-sequence.md#sec-2-10-1) does the
 same work by relinking the cells, with no copy of an item.
 
+In `ADS/sequence/SequenceAlgorithms.h`, the functions are declared as
+
+```cpp
+template< Sequence S >
+long search( const S & s , const typename S::Item & v );
+template< Sequence S >
+long searchOrdered( const S & s , const typename S::Item & v );
+template< Sequence S >
+std::pair< typename S::Pos , bool > lowerBound( const S & s ,
+     const typename S::Item & v );
+template< Sequence S >
+S sublist( const S & s , typename S::Pos p , typename S::Pos q );
+template< Sequence S > Order order( const S & s );
+template< Sequence S > void bubbleSort( S & s );
+template< Sequence S > S mergeSorted( const S & a , const S & b );
+template< Sequence S >
+void naturalMergeSort( S & s , long * passes = nullptr );
+template< Sequence S > void removeDuplicates( S & s );
+```
+
 ### 2.16.1 Rotations {#sec-2-16-1}
 
 `rotateArray( a , r )` of `ADS/sequence/IndexedList.h` moves each item
@@ -1697,6 +2215,15 @@ orders with probability $1 / n!$ in $n - 1$ swaps ([Morin 2013, exercise
 of [§17.9](17-numeric.md#sec-17-9), whose indices are drawn by the method
 of [Lemire 2019](Z-bibliography.md#ref-lemire2019) and never by $g() \bmod
 j$. Finally, the sorts of a vector are in chapter [12](12-sort.md#ch-12).
+
+In `ADS/sequence/IndexedList.h`, whose concepts `IndexedList` and
+`IndexedDeque` are in [Table 1.1](01-introduction.md#tab-1-1), the
+functions are declared as
+
+```cpp
+template< class T > void rotateArray( std::span< T > a , std::size_t r );
+template< IndexedList L > void rotate( L & l , std::size_t r );
+```
 
 ## 2.17 Rearrangements in place {#sec-2-17}
 
@@ -1805,6 +2332,23 @@ We remark that the two optima, the fewest swaps and the least cost, may come
 from different sequences of swaps. The sort that gives the permutation costs
 $O( n \log n )$, and the costs are summed in the type `W` of the template,
 `T` by default, which may be wider than `T` to avoid an overflow.
+
+In `ADS/sequence/Rearrangements.h`, the functions are declared as
+
+```cpp
+template< class T , class F >
+std::pair< std::size_t ,
+     std::size_t > dutchNationalFlag( std::vector< T > & A ,
+     F && colour , std::size_t * swaps = nullptr );
+template< class T , class C = std::less<> >
+void wiggleSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void sortKSorted( std::vector< T > & A , std::size_t k , C less = C() );
+template< class T , class W = T >
+requires std::is_arithmetic_v<
+T > std::pair< std::size_t ,
+     W > minimumSwapSort( const std::vector< T > & A );
+```
 
 ## 2.18 Discussion and references {#sec-2-18}
 

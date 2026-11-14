@@ -124,6 +124,25 @@ of [Lemma 3.1](03-stack.md#lem-3-1); `std::vector` with `push_back` and
 [§3.4](03-stack.md#sec-3-4) and [§3.5](03-stack.md#sec-3-5) rest on
 `std::vector`, and have no capacity for this reason.
 
+In `ADS/stack/ArrayStack.h`, the declarations of `ArrayStack` that a user
+calls are
+
+```cpp
+template< class T >
+class ArrayStack {
+ public:
+  using Item = T;
+  explicit ArrayStack( std::size_t dim );
+  bool empty( void ) const;
+  const T & top( void ) const;
+  T pop( void );
+  void push( const T & v );
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  bool operator==( const ArrayStack & o ) const;
+  };
+```
+
 ## 3.3 A stack on a sequence {#sec-3-3}
 
 Any SEQUENCE realizes a stack if its first item is taken as the top:
@@ -151,6 +170,22 @@ and `pop()` find the stack not empty and that `push(v)` leaves $v$ on
 top. When the sequence is a range of the
 standard library, `begin()` and `end()` give its constant iterators, i.e.,
 a view of the items from the top to the bottom.
+
+In `ADS/stack/SequenceStack.h`, the declarations of `SequenceStack` that a
+user calls are
+
+```cpp
+template< Sequence S >
+class SequenceStack {
+ public:
+  using Item = typename S::Item;
+  bool empty( void ) const;
+  const Item & top( void ) const;
+  Item pop( void );
+  void push( const Item & v );
+  bool operator==( const SequenceStack & o ) const;
+  };
+```
 
 ## 3.4 Several stacks in one vector {#sec-3-4}
 
@@ -247,6 +282,25 @@ reused. A scan of one stack is thus usually not a scan of contiguous
 memory, as it is in `ArrayStack`, and it may well be slower for this
 reason.
 
+In `ADS/stack/MultiStack.h`, the declarations of `MultiStack` that a user
+calls are
+
+```cpp
+template< class T >
+class MultiStack {
+ public:
+  using Item = T;
+  explicit MultiStack( int k );
+  int stacks( void ) const;
+  bool empty( int i ) const;
+  int size( int i ) const;
+  const T & top( int i ) const;
+  void push( int i , const T & v );
+  T pop( int i );
+  std::ranges::subrange< const_iterator > stack( int i ) const;
+  };
+```
+
 ## 3.5 A stack with the minimum {#sec-3-5}
 
 `MinStack` ([Morin 2013, exercise 3.14](Z-bibliography.md#ref-morin-cpp))
@@ -336,6 +390,27 @@ check). Two `MinStack`s back to back give the queue and the deque with the
 minimum of [§4.8](04-queue.md#sec-4-8). Also, [Appendix
 A](A-writing-structure.md#fig-A-1) follows this class through the files
 of the library that a new structure typically touches.
+
+In `ADS/stack/MinStack.h`, the declarations of `MinStack` that a user calls
+are
+
+```cpp
+template< class T , class C = std::less<> >
+class MinStack {
+ public:
+  using Item = T;
+  explicit MinStack( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  const T & top( void ) const;
+  const T & min( void ) const;
+  void push( const T & x );
+  T pop( void );
+  void clear( void );
+  const std::vector< T > & items( void ) const;
+  std::size_t minima( void ) const;
+  };
+```
 
 ## 3.6 Arithmetic expressions {#sec-3-6}
 
@@ -526,6 +601,14 @@ the stack at the end. An expression that is not well formed in other ways
 is translated without complaint (e.g., `1 2 +` stays as it is), and the
 output separates the tokens by one space.
 
+In `ADS/stack/Expressions.h`, the functions are declared as
+
+```cpp
+long evalPostfix( std::string_view e );
+std::string toPostfixParenthesized( std::string_view e );
+std::string toPostfix( std::string_view e );
+```
+
 ## 3.7 Algorithms on a stack {#sec-3-7}
 
 The functions of `ADS/stack/StackAlgorithms.h` act on a stack through
@@ -647,6 +730,20 @@ already sorted. Finally, the contracts of
 pushing it back. They check, respectively, a sorted stack with the same
 number of items, no item larger than the key, the old items in the reverse
 order, and the stack as it was.
+
+In `ADS/stack/StackAlgorithms.h`, the functions are declared as
+
+```cpp
+bool isPalindrome( const std::string & s );
+template< Stack S > void sortStack( S & s );
+template< Stack S >
+void removeGreater( S & s , const typename S::Item & k );
+template< Stack S , class F > void forEachBottomUp( S & s , F && f );
+bool isDyckWord( std::span< const int > w );
+bool isMatched( std::string_view s );
+template< Stack S , Queue Q = LinkedQueue< typename S::Item > >
+void reverseWithQueue( S & s );
+```
 
 ## 3.8 Dyck words and matched brackets {#sec-3-8}
 

@@ -586,6 +586,55 @@ items equal to $x$, not a counter, since equal items need not be identical
 sets `Bag` apart from the multiset of counters `HashMultiset` of chapter
 [10](10-set.md#ch-10).
 
+In `ADS/set/SetInterfaces.h`, the declarations of `ArrayUSet` and
+`ArraySSet` that a user calls are
+
+```cpp
+template< class T , class Eq = std::equal_to<> >
+class ArrayUSet {
+ public:
+  using Item = T;
+  explicit ArrayUSet( Eq eq = Eq() );
+  std::size_t size( void ) const;
+  const T * find( const T & x ) const;
+  bool insert( const T & x );
+  bool remove( const T & x );
+  const std::vector< T > & items( void ) const;
+  };
+template< class T , class C = std::less<> >
+class ArraySSet {
+ public:
+  using Item = T;
+  explicit ArraySSet( C less = C() );
+  std::size_t size( void ) const;
+  const T * find( const T & x ) const;
+  const T * lowerBound( const T & x ) const;
+  bool insert( const T & x );
+  bool remove( const T & x );
+  const std::vector< T > & items( void ) const;
+  };
+```
+
+In `ADS/set/Bag.h`, the declarations of `Bag` that a user calls are
+
+```cpp
+template< class T , class H = DefaultHash< T > ,
+     class Eq = std::equal_to< T > >
+class Bag {
+ public:
+  using Item = T;
+  explicit Bag( H h = H() , Eq eq = Eq() );
+  std::size_t size( void ) const;
+  bool empty( void ) const;
+  std::size_t distinct( void ) const;
+  bool insert( const T & x );
+  bool remove( const T & x );
+  const T * find( const T & x ) const;
+  std::vector< T > findAll( const T & x ) const;
+  std::size_t count( const T & x ) const;
+  };
+```
+
 ## 1.5 Mathematical background {#sec-1-5}
 
 We recall here the notation and the few facts that the analyses of the

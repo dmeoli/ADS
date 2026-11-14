@@ -215,6 +215,25 @@ in the same way when $3 n$ does not exceed its size. By the argument of
 operation. In the library, the variant that grows is `RingDeque`
 ([§4.5](04-queue.md#sec-4-5)), at both ends.
 
+In `ADS/queue/ArrayQueue.h`, the declarations of `ArrayQueue` that a user
+calls are
+
+```cpp
+template< class T >
+class ArrayQueue {
+ public:
+  using Item = T;
+  explicit ArrayQueue( std::size_t dim );
+  bool empty( void ) const;
+  const T & top( void ) const;
+  T dequeue( void );
+  void enqueue( const T & v );
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  bool contains( const T & v ) const;
+  };
+```
+
 ## 4.3 A queue on a linked list {#sec-4-3}
 
 A singly linked list is a queue when the items enter after its last cell
@@ -255,6 +274,24 @@ by cell, in $O( n )$ time; a move takes the cells and the pool in $O( 1 )$
 time, and leaves the queue moved from empty and usable. Its contracts check
 the preconditions of (4.1), and that `enqueue(v)` leaves $v$ at the front
 when the queue was empty.
+
+In `ADS/queue/LinkedQueue.h`, the declarations of `LinkedQueue` that a user
+calls are
+
+```cpp
+template< class T >
+class LinkedQueue {
+ public:
+  using Item = T;
+  LinkedQueue( void );
+  bool empty( void ) const;
+  void enqueue( const T & v );
+  T dequeue( void );
+  const T & top( void ) const;
+  std::size_t size( void ) const;
+  bool operator==( const LinkedQueue & o ) const;
+  };
+```
 
 ## 4.4 A deque on a bidirectional list {#sec-4-4}
 
@@ -300,6 +337,26 @@ the algorithm of Pape and D'Esopo ([Pape
 1974](Z-bibliography.md#ref-pape1974)), which puts a node at the tail the
 first time it is reached and at the head afterwards
 ([§14.8.1](14-graph.md#sec-14-8-1)).
+
+In `ADS/queue/Dequeue.h`, the declarations of `Dequeue` that a user calls
+are
+
+```cpp
+template< class T >
+class Dequeue {
+ public:
+  using Item = T;
+  bool empty( void ) const;
+  void insertHead( const T & v );
+  void insertTail( const T & v );
+  T removeHead( void );
+  T removeTail( void );
+  const T & head( void ) const;
+  const T & tail( void ) const;
+  void push_back( const T & v );
+  void push_front( const T & v );
+  };
+```
 
 ## 4.5 A deque on a circular vector that doubles {#sec-4-5}
 
@@ -498,6 +555,42 @@ a rank below $n$, that `insert(i, v)` and `erase(i)` receive $i \le n$
 and $i < n$, and the invariant that the number of places is 0 or a power
 of 2 not smaller than $n$.
 
+In `ADS/queue/RingDeque.h`, the declarations of `RingDeque` that a user
+calls are
+
+```cpp
+template< class T >
+class RingDeque {
+ public:
+  RingDeque( void );
+  RingDeque( std::initializer_list< T > l );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  std::size_t capacity( void ) const;
+  void reserve( std::size_t n );
+  T & front( void );
+  const T & front( void ) const;
+  T & back( void );
+  const T & back( void ) const;
+  T & operator[]( std::size_t i );
+  const T & operator[]( std::size_t i ) const;
+  void push_back( const T & v );
+  void push_back( T && v );
+  void push_front( const T & v );
+  void push_front( T && v );
+  template< class ... Args > T & emplace_back( Args && ... args );
+  template< class ... Args > T & emplace_front( Args && ... args );
+  void pop_front( void );
+  void pop_back( void );
+  void clear( void );
+  void insert( std::size_t i , const T & v );
+  void erase( std::size_t i );
+  void rotate( std::size_t r );
+  void shrink_to_fit( void );
+  bool operator==( const RingDeque & o ) const;
+  };
+```
+
 ## 4.6 A queue with no duplicates {#sec-4-6}
 
 `UniqueQueue` is a queue that never holds two equal items, with one of two
@@ -534,6 +627,23 @@ their cells would bring `enqueue()` to $O( 1 )$ expected time (see [chapter
 second structure. We kept the specification of [Montresor 2025,
 §4.3](Z-bibliography.md#ref-montresor2025), in which the items need only an
 equality.
+
+In `ADS/queue/UniqueQueue.h`, the declarations of `UniqueQueue` that a user
+calls are
+
+```cpp
+template< std::equality_comparable T , Duplicate D = Duplicate::IGNORE_NEW >
+class UniqueQueue {
+ public:
+  using Item = T;
+  bool empty( void ) const;
+  void enqueue( const T & v );
+  T dequeue( void );
+  const T & top( void ) const;
+  bool contains( const T & v ) const;
+  std::size_t size( void ) const;
+  };
+```
 
 ## 4.7 A random queue {#sec-4-7}
 
@@ -624,6 +734,27 @@ draw by $w \bmod n$ would cost a division at each call (and would be
 biased). Also, the class has `size()`, `empty()`, `clear()` and `items()`,
 the vector of the items in no order. Its contracts check that `pop()` and
 `sample()` find the queue not empty, and that `uniform(n)` receives $n > 0$.
+
+In `ADS/queue/RandomQueue.h`, the declarations of `RandomQueue` that a user
+calls are
+
+```cpp
+template< class T >
+class RandomQueue {
+ public:
+  using Item = T;
+  explicit RandomQueue( std::uint64_t seed = 1 );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void push( const T & x );
+  void push( T && x );
+  T pop( void );
+  const T & sample( void );
+  std::size_t uniform( std::size_t n );
+  void clear( void );
+  const std::vector< T > & items( void ) const;
+  };
+```
 
 ## 4.8 Queues and deques with the minimum {#sec-4-8}
 
@@ -739,6 +870,47 @@ classes also have `size()`, `empty()` and `clear()`, and `MinDeque` reads
 its ends by `front()` and `back()` (the bottom of the other stack when a
 side is empty). In both, the contracts check that the removals, the reads
 and `min()` find the structure not empty.
+
+In `ADS/queue/MinQueue.h`, the declarations of `MinQueue` that a user calls
+are
+
+```cpp
+template< class T , class C = std::less<> >
+class MinQueue {
+ public:
+  using Item = T;
+  explicit MinQueue( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void enqueue( const T & x );
+  T dequeue( void );
+  const T & top( void ) const;
+  const T & min( void ) const;
+  void clear( void );
+  };
+```
+
+In `ADS/queue/MinDeque.h`, the declarations of `MinDeque` that a user calls
+are
+
+```cpp
+template< class T , class C = std::less<> >
+class MinDeque {
+ public:
+  using Item = T;
+  explicit MinDeque( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void push_front( const T & x );
+  void push_back( const T & x );
+  T pop_front( void );
+  T pop_back( void );
+  const T & front( void ) const;
+  const T & back( void ) const;
+  const T & min( void ) const;
+  void clear( void );
+  };
+```
 
 ## 4.9 The minimum in constant worst-case time {#sec-4-9}
 
@@ -946,6 +1118,49 @@ time.
 Its contracts check the preconditions of the removals, and the invariant
 that a rebuild never reads a cell that a removal has destroyed.
 
+In `ADS/queue/RealTimeMinQueue.h`, the declarations of `RealTimeMinQueue`
+that a user calls are
+
+```cpp
+template< class T , class C = std::less<> >
+class RealTimeMinQueue {
+ public:
+  using Item = T;
+  explicit RealTimeMinQueue( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void enqueue( const T & x );
+  T dequeue( void );
+  const T & top( void ) const;
+  const T & min( void ) const;
+  template< class F > void forEach( F && f ) const;
+  void clear( void );
+  };
+```
+
+In `ADS/queue/RealTimeMinDeque.h`, the declarations of `RealTimeMinDeque`
+that a user calls are
+
+```cpp
+template< std::copy_constructible T , class C = std::less<> >
+class RealTimeMinDeque {
+ public:
+  using Item = T;
+  explicit RealTimeMinDeque( C less = C() );
+  bool empty( void ) const;
+  std::size_t size( void ) const;
+  void push_front( const T & x );
+  void push_back( const T & x );
+  T pop_front( void );
+  T pop_back( void );
+  const T & front( void ) const;
+  const T & back( void ) const;
+  const T & min( void ) const;
+  template< class F > void forEach( F && f ) const;
+  void clear( void );
+  };
+```
+
 ## 4.10 Algorithms on a queue {#sec-4-10}
 
 The functions of `ADS/queue/QueueAlgorithms.h` act on a queue through
@@ -990,6 +1205,13 @@ each `enqueue()` beyond it solves it (on a `RingDeque`, the vector stops at
 two queues, filled in turn. Finally, writing the lines in a random order
 takes a `RandomQueue`, emptied after all the lines are in (cf.
 [Lemma 4.4](04-queue.md#lem-4-4)).
+
+In `ADS/queue/QueueAlgorithms.h`, the functions are declared as
+
+```cpp
+template< Queue Q > void extractPositive( Q & q , Q & out );
+template< Queue Q > void copyPositive( Q & q , Q & out );
+```
 
 ## 4.11 Engineered variants {#sec-4-11}
 
