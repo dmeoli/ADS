@@ -7,9 +7,10 @@
  * two of chapter 5, Sorting Atomic Items, of Ferragina's book:
  *
  * - `pdqSort()`, the pattern-defeating quicksort of Peters: the introsort of
- *   Musser, i.e., the quicksort whose depth of recursion is bounded by
- *   \f$ 2 \lfloor \log_2 n \rfloor \f$, past which the part is sorted by
- *   heapsort, so that the worst case is \f$ O( n \log n ) \f$, with the
+ *   Musser in the form of Peters, i.e., the quicksort that allows
+ *   \f$ \lfloor \log_2 n \rfloor + 1 \f$ partitions too unbalanced (see
+ *   below), past which the part is sorted by heapsort, so that the worst
+ *   case is \f$ O( n \log n ) \f$, with the
  *   pivot by the median of three, or by the ninther of Tukey on large parts,
  *   and three defences against the patterns: a partition that moved nothing
  *   is checked by an insertion sort that gives up after 8 moves, so that a
@@ -30,9 +31,11 @@
  *   Java 7), as section 5.3.5 of Ferragina's book presents it: two pivots
  *   \f$ p \le q \f$, the 2nd and the 4th of five equally spaced items, split
  *   the part into three, smaller than \f$ p \f$, between and larger than
- *   \f$ q \f$, in one pass; it makes 5% fewer comparisons and 20% more swaps
- *   than the classical one on average, as Wild and Nebel computed, and fewer
- *   scans of the memory, which is what makes it faster;
+ *   \f$ q \f$, in one pass; it makes 5% fewer comparisons and 80% more swaps
+ *   than the classical one on average (\f$ 1.9 n \ln n \f$ and
+ *   \f$ 0.6 n \ln n \f$, against \f$ 2 n \ln n \f$ and
+ *   \f$ n \ln n / 3 \f$), as Wild and Nebel computed, and fewer scans of the
+ *   memory, which is what makes it faster;
  * - `threeWayQuickSort()`, the quicksort of section 5.3 of Ferragina's book
  *   with the three-way partition of its Algorithm 5.4 (section 5.3.1): three
  *   pointers move rightward, and the items equal to the pivot gather in a
@@ -47,7 +50,9 @@
  *   \f$ n \f$ on every input, there being no fallback to heapsort.
  *
  * All sort in place and are not stable; the recursion goes into the smaller
- * part and loops on the larger, so that the stack stays \f$ O( \log n ) \f$.
+ * part and loops on the larger (`pdqSort()` goes into the left part, the
+ * other partitions leaving at most \f$ 7 / 8 \f$ of the items on each side),
+ * so that the stack stays \f$ O( \log n ) \f$.
  * The contracts [see `Contract.h`]: each sort ends with the same items sorted,
  * an audit. The functions are defined in `EngineeredQuickSorts.tpp`.
  *

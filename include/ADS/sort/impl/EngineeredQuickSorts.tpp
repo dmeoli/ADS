@@ -151,6 +151,7 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
    startR += num;
    };
   while( r - l + 1 > 2 * B ) {
+//! [blocks]
    if( numL == 0 ) {                        // the misplaced on the left,
     startL = 0;                             // 8 at a time, which the
     const T * const x = a + l;              // compiler unrolls: no test
@@ -160,6 +161,7 @@ std::pair< std::size_t , bool > partitionRightBlocks( std::vector< T > & A ,
       numL += ! less( x[ u ] , pivot );
       }
     }
+//! [blocks]
    if( numR == 0 ) {                        // the misplaced on the right
     startR = 0;
     const T * const y = a + r;

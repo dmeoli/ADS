@@ -1,0 +1,182 @@
+% Source for the figure of the radix sort of eight keys of 8 bits by four
+% stable passes on digits of 2 bits (sec. 12.7), the data of figure 11.8
+% of Morin's book. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    d/.style={cell,minimum width=5.6mm,minimum height=5.2mm,font=\scriptsize\ttfamily},
+    k/.style={touched,minimum width=5.6mm,minimum height=5.2mm,font=\scriptsize\ttfamily\bfseries}]
+
+  \node[var] at (8.4mm,6mm) {input};
+  \node[d] at (0mm,0mm) {01};
+  \node[d] at (5.6mm,0mm) {01};
+  \node[d] at (11.2mm,0mm) {00};
+  \node[d] at (16.8mm,0mm) {01};
+  \node[d] at (0mm,-5.6mm) {00};
+  \node[d] at (5.6mm,-5.6mm) {00};
+  \node[d] at (11.2mm,-5.6mm) {00};
+  \node[d] at (16.8mm,-5.6mm) {01};
+  \node[d] at (0mm,-11.2mm) {11};
+  \node[d] at (5.6mm,-11.2mm) {00};
+  \node[d] at (11.2mm,-11.2mm) {10};
+  \node[d] at (16.8mm,-11.2mm) {00};
+  \node[d] at (0mm,-16.8mm) {00};
+  \node[d] at (5.6mm,-16.8mm) {10};
+  \node[d] at (11.2mm,-16.8mm) {10};
+  \node[d] at (16.8mm,-16.8mm) {00};
+  \node[d] at (0mm,-22.4mm) {00};
+  \node[d] at (5.6mm,-22.4mm) {00};
+  \node[d] at (11.2mm,-22.4mm) {11};
+  \node[d] at (16.8mm,-22.4mm) {11};
+  \node[d] at (0mm,-28mm) {11};
+  \node[d] at (5.6mm,-28mm) {11};
+  \node[d] at (11.2mm,-28mm) {00};
+  \node[d] at (16.8mm,-28mm) {00};
+  \node[d] at (0mm,-33.6mm) {10};
+  \node[d] at (5.6mm,-33.6mm) {10};
+  \node[d] at (11.2mm,-33.6mm) {10};
+  \node[d] at (16.8mm,-33.6mm) {10};
+  \node[d] at (0mm,-39.2mm) {01};
+  \node[d] at (5.6mm,-39.2mm) {01};
+  \node[d] at (11.2mm,-39.2mm) {01};
+  \node[d] at (16.8mm,-39.2mm) {01};
+  \node[var] at (38.4mm,6mm) {pass 1};
+  \node[d] at (30mm,0mm) {11};
+  \node[d] at (35.6mm,0mm) {00};
+  \node[d] at (41.2mm,0mm) {10};
+  \node[k] at (46.8mm,0mm) {00};
+  \node[d] at (30mm,-5.6mm) {00};
+  \node[d] at (35.6mm,-5.6mm) {10};
+  \node[d] at (41.2mm,-5.6mm) {10};
+  \node[k] at (46.8mm,-5.6mm) {00};
+  \node[d] at (30mm,-11.2mm) {11};
+  \node[d] at (35.6mm,-11.2mm) {11};
+  \node[d] at (41.2mm,-11.2mm) {00};
+  \node[k] at (46.8mm,-11.2mm) {00};
+  \node[d] at (30mm,-16.8mm) {01};
+  \node[d] at (35.6mm,-16.8mm) {01};
+  \node[d] at (41.2mm,-16.8mm) {00};
+  \node[k] at (46.8mm,-16.8mm) {01};
+  \node[d] at (30mm,-22.4mm) {00};
+  \node[d] at (35.6mm,-22.4mm) {00};
+  \node[d] at (41.2mm,-22.4mm) {00};
+  \node[k] at (46.8mm,-22.4mm) {01};
+  \node[d] at (30mm,-28mm) {01};
+  \node[d] at (35.6mm,-28mm) {01};
+  \node[d] at (41.2mm,-28mm) {01};
+  \node[k] at (46.8mm,-28mm) {01};
+  \node[d] at (30mm,-33.6mm) {10};
+  \node[d] at (35.6mm,-33.6mm) {10};
+  \node[d] at (41.2mm,-33.6mm) {10};
+  \node[k] at (46.8mm,-33.6mm) {10};
+  \node[d] at (30mm,-39.2mm) {00};
+  \node[d] at (35.6mm,-39.2mm) {00};
+  \node[d] at (41.2mm,-39.2mm) {11};
+  \node[k] at (46.8mm,-39.2mm) {11};
+  \node[var] at (68.4mm,6mm) {pass 2};
+  \node[d] at (60mm,0mm) {11};
+  \node[d] at (65.6mm,0mm) {11};
+  \node[k] at (71.2mm,0mm) {00};
+  \node[d] at (76.8mm,0mm) {00};
+  \node[d] at (60mm,-5.6mm) {01};
+  \node[d] at (65.6mm,-5.6mm) {01};
+  \node[k] at (71.2mm,-5.6mm) {00};
+  \node[d] at (76.8mm,-5.6mm) {01};
+  \node[d] at (60mm,-11.2mm) {00};
+  \node[d] at (65.6mm,-11.2mm) {00};
+  \node[k] at (71.2mm,-11.2mm) {00};
+  \node[d] at (76.8mm,-11.2mm) {01};
+  \node[d] at (60mm,-16.8mm) {01};
+  \node[d] at (65.6mm,-16.8mm) {01};
+  \node[k] at (71.2mm,-16.8mm) {01};
+  \node[d] at (76.8mm,-16.8mm) {01};
+  \node[d] at (60mm,-22.4mm) {11};
+  \node[d] at (65.6mm,-22.4mm) {00};
+  \node[k] at (71.2mm,-22.4mm) {10};
+  \node[d] at (76.8mm,-22.4mm) {00};
+  \node[d] at (60mm,-28mm) {00};
+  \node[d] at (65.6mm,-28mm) {10};
+  \node[k] at (71.2mm,-28mm) {10};
+  \node[d] at (76.8mm,-28mm) {00};
+  \node[d] at (60mm,-33.6mm) {10};
+  \node[d] at (65.6mm,-33.6mm) {10};
+  \node[k] at (71.2mm,-33.6mm) {10};
+  \node[d] at (76.8mm,-33.6mm) {10};
+  \node[d] at (60mm,-39.2mm) {00};
+  \node[d] at (65.6mm,-39.2mm) {00};
+  \node[k] at (71.2mm,-39.2mm) {11};
+  \node[d] at (76.8mm,-39.2mm) {11};
+  \node[var] at (98.4mm,6mm) {pass 3};
+  \node[d] at (90mm,0mm) {00};
+  \node[k] at (95.6mm,0mm) {00};
+  \node[d] at (101.2mm,0mm) {00};
+  \node[d] at (106.8mm,0mm) {01};
+  \node[d] at (90mm,-5.6mm) {11};
+  \node[k] at (95.6mm,-5.6mm) {00};
+  \node[d] at (101.2mm,-5.6mm) {10};
+  \node[d] at (106.8mm,-5.6mm) {00};
+  \node[d] at (90mm,-11.2mm) {00};
+  \node[k] at (95.6mm,-11.2mm) {00};
+  \node[d] at (101.2mm,-11.2mm) {11};
+  \node[d] at (106.8mm,-11.2mm) {11};
+  \node[d] at (90mm,-16.8mm) {01};
+  \node[k] at (95.6mm,-16.8mm) {01};
+  \node[d] at (101.2mm,-16.8mm) {00};
+  \node[d] at (106.8mm,-16.8mm) {01};
+  \node[d] at (90mm,-22.4mm) {01};
+  \node[k] at (95.6mm,-22.4mm) {01};
+  \node[d] at (101.2mm,-22.4mm) {01};
+  \node[d] at (106.8mm,-22.4mm) {01};
+  \node[d] at (90mm,-28mm) {00};
+  \node[k] at (95.6mm,-28mm) {10};
+  \node[d] at (101.2mm,-28mm) {10};
+  \node[d] at (106.8mm,-28mm) {00};
+  \node[d] at (90mm,-33.6mm) {10};
+  \node[k] at (95.6mm,-33.6mm) {10};
+  \node[d] at (101.2mm,-33.6mm) {10};
+  \node[d] at (106.8mm,-33.6mm) {10};
+  \node[d] at (90mm,-39.2mm) {11};
+  \node[k] at (95.6mm,-39.2mm) {11};
+  \node[d] at (101.2mm,-39.2mm) {00};
+  \node[d] at (106.8mm,-39.2mm) {00};
+  \node[var] at (128.4mm,6mm) {pass 4};
+  \node[k] at (120mm,0mm) {00};
+  \node[d] at (125.6mm,0mm) {00};
+  \node[d] at (131.2mm,0mm) {00};
+  \node[d] at (136.8mm,0mm) {01};
+  \node[k] at (120mm,-5.6mm) {00};
+  \node[d] at (125.6mm,-5.6mm) {00};
+  \node[d] at (131.2mm,-5.6mm) {11};
+  \node[d] at (136.8mm,-5.6mm) {11};
+  \node[k] at (120mm,-11.2mm) {00};
+  \node[d] at (125.6mm,-11.2mm) {10};
+  \node[d] at (131.2mm,-11.2mm) {10};
+  \node[d] at (136.8mm,-11.2mm) {00};
+  \node[k] at (120mm,-16.8mm) {01};
+  \node[d] at (125.6mm,-16.8mm) {01};
+  \node[d] at (131.2mm,-16.8mm) {00};
+  \node[d] at (136.8mm,-16.8mm) {01};
+  \node[k] at (120mm,-22.4mm) {01};
+  \node[d] at (125.6mm,-22.4mm) {01};
+  \node[d] at (131.2mm,-22.4mm) {01};
+  \node[d] at (136.8mm,-22.4mm) {01};
+  \node[k] at (120mm,-28mm) {10};
+  \node[d] at (125.6mm,-28mm) {10};
+  \node[d] at (131.2mm,-28mm) {10};
+  \node[d] at (136.8mm,-28mm) {10};
+  \node[k] at (120mm,-33.6mm) {11};
+  \node[d] at (125.6mm,-33.6mm) {00};
+  \node[d] at (131.2mm,-33.6mm) {10};
+  \node[d] at (136.8mm,-33.6mm) {00};
+  \node[k] at (120mm,-39.2mm) {11};
+  \node[d] at (125.6mm,-39.2mm) {11};
+  \node[d] at (131.2mm,-39.2mm) {00};
+  \node[d] at (136.8mm,-39.2mm) {00};
+\end{tikzpicture}
+\end{document}

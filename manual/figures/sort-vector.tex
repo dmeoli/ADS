@@ -1,0 +1,27 @@
+% Source for the figure of the partition of vectorQuickSort() in place
+% (sec. 12.10): the keys written below and above the pivot at the two
+% ends, the free places, and the next block read from the end with fewer
+% free places. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    seg/.style={cell,minimum height=7mm,font=\small},
+    segf/.style={free,minimum height=7mm,font=\small},
+    segt/.style={touched,minimum height=7mm,font=\small}]
+  \node[seg,minimum width=30mm,anchor=west] (L) at (0,0) {$< p$};
+  \node[segf,minimum width=14mm,anchor=west] (FL) at (L.east) {$f_L$};
+  \node[segt,minimum width=14mm,anchor=west] (B) at (FL.east) {block};
+  \node[seg,minimum width=40mm,anchor=west] (U) at (B.east) {not read};
+  \node[segf,minimum width=22mm,anchor=west] (FR) at (U.east) {$f_R$};
+  \node[seg,minimum width=26mm,anchor=west] (R) at (FR.east) {$\ge p$};
+  \draw[ptr] (B.south) .. controls +(0,-8mm) and +(0,-8mm) .. node[var,below=1mm] {$\ell$ keys} (FL.south);
+  \draw[ptr] (B.north) .. controls +(0,10mm) and +(0,10mm) .. node[var,above=1mm] {$W - \ell$ keys} (FR.north);
+  \node[var,anchor=west] at (0,-16mm) {$f_L + f_R = 2 U W$ before a read; the read is from the end with $\min\{ f_L , f_R \} \le U W$};
+\end{tikzpicture}
+\end{document}
