@@ -20,8 +20,8 @@
  * sequential `multiwayMerge()` into its place of the output, in parallel,
  * so that no part waits for another. A split is found by narrowing a window
  * \f$ [ \mathit{lo}_i , \mathit{hi}_i ) \f$ on each range: the pivot is the
- * middle item \f$ x \f$ of the widest window, of range \f$ j \f$ and
- * position \f$ m \f$, and a binary search in each window counts the items
+ * middle item \f$ x \f$ of a window (chosen as below), of range \f$ j \f$
+ * and position \f$ m \f$, and a binary search in each window counts the items
  * before \f$ ( x , j , m ) \f$, those \f$ \le x \f$ in the ranges
  * \f$ i < j \f$ and those \f$ < x \f$ in the ranges \f$ i > j \f$; if they
  * are fewer than \f$ r \f$, \f$ x \f$ and all of them go to the left (each

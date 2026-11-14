@@ -289,6 +289,7 @@ class Mailbox {
  /// \end{array}}
  /// \f]
  /// \pre `me` is a worker
+//! [quiescent]
  bool quiescent( std::size_t me ) {
   ADS_PRE( me < size() );
   if( stopped() )
@@ -303,6 +304,7 @@ class Mailbox {
    }
   return( f_count.value.load( std::memory_order_acquire ) == 0 );
   }
+//! [quiescent]
 
  /// true once the computation has ended or the mailbox has stopped (any
  /// thread may ask)
@@ -423,6 +425,7 @@ class Mailbox {
 
  /// the outbox of `me` for `to` pushed, as many messages as the channel
  /// takes; the next push when a batch more has come
+//! [push]
  void push( std::size_t me , std::size_t to ) {
   Worker & w = *f_worker[ me ];
   auto & o = w.out[ to ];
@@ -442,6 +445,7 @@ class Mailbox {
    }
   w.next[ to ] = o.size() + f_batch;
   }
+//! [push]
 
  Ch f_ch;                                  ///< the channels
  std::vector< std::unique_ptr< Worker > > f_worker;   ///< one per worker

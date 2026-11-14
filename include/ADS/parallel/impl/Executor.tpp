@@ -121,6 +121,7 @@ T lookBackScan( E & ex , I in , std::size_t n , O out , T init , Op & op )
     if( c > 0 ) {
      S[ c ].aggregate.emplace( a );
      S[ c ].flag.store( 1 , std::memory_order_release );
+//! [lookBack]
      // the look-back: aggregates on the left, until a prefix
      std::optional< T > acc;
      for( std::size_t j = c ; j-- > 0 ; ) {
@@ -136,6 +137,7 @@ T lookBackScan( E & ex , I in , std::size_t n , O out , T init , Op & op )
        break;
       }
      excl = *acc;
+//! [lookBack]
      }
     else
      excl = init;
@@ -219,6 +221,7 @@ void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
    f( first + i * size , std::min( last , first + ( i + 1 ) * size ) );
   return;
   }
+//! [forBlocks]
  detail::FirstError error;
  ex.bulk( b , [ & ]( std::size_t i ) {
   if( error.failed() )
@@ -231,6 +234,7 @@ void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
    }
   } );
  error.rethrow();
+//! [forBlocks]
  }
 
 /*--------------------------------------------------------------------------*/

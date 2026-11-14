@@ -1,0 +1,45 @@
+% Source for the figure of ThreadPool (sec. 25.3): the deques of a pool of
+% p = 4 threads when the caller, in the slot 0, has pushed the h = 3 tokens
+% of a job of bulk(), and after two thieves have stolen one token each.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before the steals
+  \node[var,anchor=west] at (-14mm,8mm) {after the push of the tokens};
+  \foreach \s/\y in {0/0,1/-9mm,2/-18mm,3/-27mm} {
+    \node[var,anchor=east] at (-4mm,\y) {$D_{\s}$};
+  }
+  \cells{a}{0,0}{J/touched,J/touched,J/touched,/free}
+  \cells{b}{0,-9mm}{/free,/free,/free,/free}
+  \cells{c}{0,-18mm}{/free,/free,/free,/free}
+  \cells{d}{0,-27mm}{/free,/free,/free,/free}
+  \node[index,above=1mm of a-0] {top};
+  \node[index,above=1mm of a-3] {bottom};
+  \node[var,anchor=west] at (32mm,0) {claims calls};
+  \node[var,anchor=west] at (32mm,-9mm) {idle};
+  \node[var,anchor=west] at (32mm,-18mm) {idle};
+  \node[var,anchor=west] at (32mm,-27mm) {idle};
+  % after two steals
+  \begin{scope}[xshift=74mm]
+  \node[var,anchor=west] at (-14mm,8mm) {after two steals};
+  \foreach \s/\y in {0/0,1/-9mm,2/-18mm,3/-27mm} {
+    \node[var,anchor=east] at (-4mm,\y) {$D_{\s}$};
+  }
+  \cells{e}{0,0}{/free,/free,J/cell,/free}
+  \cells{f}{0,-9mm}{/free,/free,/free,/free}
+  \cells{g}{0,-18mm}{/free,/free,/free,/free}
+  \cells{h}{0,-27mm}{/free,/free,/free,/free}
+  \node[index,above=1mm of e-2] {top};
+  \node[var,anchor=west] at (32mm,0) {claims calls};
+  \node[var,anchor=west] at (32mm,-9mm) {a token of $J$};
+  \node[var,anchor=west] at (32mm,-18mm) {a token of $J$};
+  \node[var,anchor=west] at (32mm,-27mm) {idle};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

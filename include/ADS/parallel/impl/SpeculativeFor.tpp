@@ -63,6 +63,7 @@ void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
  std::size_t done = s , kept = 0;
  // a round of fewer iterations than this runs on the calling thread
  constexpr std::size_t kGrainRound = 256;
+//! [rounds]
  while( done < e ) {
   const std::size_t size = std::min( r , e - done );
   if( c ) {
@@ -87,6 +88,7 @@ void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
   else if( double( kept ) < 0.1 * double( size ) )
    r = std::min( 2 * r , rmax );
   }
+//! [rounds]
  }
 
 }  // end( namespace ADS )

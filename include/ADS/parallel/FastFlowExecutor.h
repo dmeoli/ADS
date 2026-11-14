@@ -253,7 +253,8 @@ class FastFlowExecutor {
  ///     \ f( i ) \cr
  /// 4 & \quad \textbf{else}\ \text{the } \mathrm{parallel\_for} \text{ of }
  ///     \text{FastFlow on } [ 0 , \max\{ n , p \} ) \text{ in chunks of 1,}
- ///     \text{ on all the } p \text{ workers, the indices from } n
+ ///     \cr
+ /// & \qquad \text{on all the } p \text{ workers, the indices from } n
  ///     \text{ doing nothing}
  /// \end{array}}
  /// \f]
@@ -264,6 +265,7 @@ class FastFlowExecutor {
     f( i );
    return;
    }
+//! [bulk]
   std::lock_guard< std::mutex > g( f_lock );
   detail::FirstError error;
   // at least one index per worker, those from n doing nothing
@@ -281,6 +283,7 @@ class FastFlowExecutor {
    tl_inside = false;
    } , long( f_p ) );
   error.rethrow();
+//! [bulk]
   }
 
  /// the lock of the data shared by the workers of `run()`
