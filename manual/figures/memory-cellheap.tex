@@ -1,0 +1,50 @@
+% Source for the figure of CellHeap (sec. 5.10): three cells of two fields
+% (car, cdr) reachable from a root, and the same cells during the marking by
+% pointer reversal, when the visit has gone down the car of a and of b and
+% stands at the atom 1 (c) with b as the previous cell (p); the dashed
+% fields hold the reversed pointers, i.e., the path back to the root. Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{pair/.style={rectangle split,rectangle split horizontal,
+  rectangle split parts=2,draw,minimum height=6mm,text width=5mm,
+  align=center,font=\scriptsize\ttfamily},
+  rev/.style={->,thick,dashed,draw=black!70}}
+% \heap{dx}{car of a}{car of b}{fill of a and b}: the three cells, a at
+% (dx,0)
+\newcommand{\heap}[2]{%
+  \node[pair,#2] (a#1) at (#1,0) {\nodepart{one}\phantom{x}\nodepart{two}};
+  \node[pair,#2] (b#1) at (#1-16mm,-16mm)
+    {\nodepart{one}\phantom{x}\nodepart{two}nil};
+  \node[pair] (c#1) at (#1+16mm,-16mm)
+    {\nodepart{one}\phantom{x}\nodepart{two}nil};
+  \node[var,right=1mm of a#1] {$a$};
+  \node[var,left=1mm of b#1] {$b$};
+  \node[var,right=1mm of c#1] {$c$};
+  \node[var] (t#1) at (#1-16mm,-30mm) {atom 1};
+  \node[var] (u#1) at (#1+16mm,-30mm) {atom 2};
+  \draw[ptr] (c#1.one south) -- (u#1);
+  \draw[ptr] (a#1.two south) -- (c#1.north);}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \heap{0mm}{}
+  \node[var] (r) at (-18mm,0) {root};
+  \draw[ptr] (r) -- (a0mm.west);
+  \draw[ptr] (a0mm.one south) -- (b0mm.north);
+  \draw[ptr] (b0mm.one south) -- (t0mm);
+  \heap{75mm}{fill=adsTouched}
+  \node[var] (r2) at (75mm-18mm,0) {root};
+  \draw[ptr] (r2) -- (a75mm.west);
+  \node[var,inner sep=1.5pt] (nil) at (75mm-12mm,11mm) {nil};
+  \draw[rev] (a75mm.one north) -- (nil);
+  \draw[rev] (b75mm.one north) -- (a75mm.one south);
+  \node[var] (p) at (75mm-30mm,-8mm) {$p$};
+  \draw[ptr] (p) -- (b75mm.north west);
+  \node[var] (cc) at (75mm-30mm,-30mm) {$c$};
+  \draw[ptr] (cc) -- (t75mm);
+\end{tikzpicture}
+\end{document}

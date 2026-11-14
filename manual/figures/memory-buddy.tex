@@ -1,0 +1,32 @@
+% Source for the figure of BuddyAllocator (sec. 5.3): a memory of 16 words
+% before and after free(0), which merges the block of 4 words at 0 with its
+% buddy at 0 xor 4 = 4, and stops at the buddy 0 xor 8 = 8, in use. Build:
+% make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+% \bud{a}{b}{y}{style}{text}: the block of the words a .. b - 1 of the row y
+\newcommand{\bud}[5]{\node[#4,minimum width=#2*7mm-#1*7mm,minimum height=7mm,
+  anchor=west] at (#1*7mm,#3) {#5};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {before};
+  \bud{0}{4}{0}{touched}{\rmfamily $2^2$, in use}
+  \bud{4}{8}{0}{free}{\rmfamily $2^2$, $F_2$}
+  \bud{8}{16}{0}{cell}{\rmfamily $2^3$, in use}
+  \node[var,anchor=east] at (-4mm,-14mm) {after};
+  \bud{0}{8}{-14mm}{free}{\rmfamily $2^3$, $F_3$}
+  \bud{8}{16}{-14mm}{cell}{\rmfamily $2^3$, in use}
+  \foreach \a/\b in {0/0000,4/0100,8/1000,16/10000}
+    \node[index,anchor=north] at (\a*7mm,-18.5mm) {\b};
+  \draw[ptr] (0,8mm) node[above=0.5mm,font=\scriptsize\ttfamily] {free(0)}
+    -- (0,3.5mm);
+  \node[var,anchor=west,align=left] at (117mm,0)
+    {$0 \oplus 2^2 = 4$ is free: merge};
+  \node[var,anchor=west,align=left] at (117mm,-14mm)
+    {$0 \oplus 2^3 = 8$ is in use: stop};
+\end{tikzpicture}
+\end{document}

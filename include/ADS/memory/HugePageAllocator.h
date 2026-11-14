@@ -183,7 +183,7 @@ class HugePageAllocator {
  /// 5 & \quad \textbf{if}\ \text{this thread keeps a block of } r \text{ }
  ///     \text{bytes}\ \textbf{then return}\ \text{it, no longer kept} \cr
  /// 6 & \quad p \gets \text{a block of } r \text{ bytes aligned to } P;
- ///     \ \mathrm{madvise}( p , r , \text{MADV_HUGEPAGE} ) \cr
+ ///     \ \mathrm{madvise}( p , r , \text{MADV\_HUGEPAGE} ) \cr
  /// 7 & \quad \textbf{return}\ p
  /// \end{array}}
  /// \f]

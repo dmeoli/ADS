@@ -1,0 +1,27 @@
+% Source for the figure of Arena (sec. 5.4): an arena of blocks of n = 4
+% objects before and after make(g), and before and after make(e) on a full
+% block, which appends a new block. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % the vector of the blocks
+  \node[var] at (0,17mm) {blocks};
+  \node[cell] (v-0) at (0,8mm) {};
+  \node[cell] (v-1) at (0,-8mm) {};
+  \node[index,left=1.2mm of v-0] {0};
+  \node[index,left=1.2mm of v-1] {1};
+  \cells{a}{30mm,8mm}{a/cell,b/cell,c/cell,d/cell}
+  \cells{b}{30mm,-8mm}{e/cell,f/cell,g/touched,/free}
+  \draw[ptr] (v-0.center) -- (a-0.west);
+  \draw[ptr] (v-1.center) -- (b-0.west);
+  \fill (v-0.center) circle (0.6mm); \fill (v-1.center) circle (0.6mm);
+  \node[var,anchor=west] at (61mm,8mm) {full};
+  \node[var,anchor=west] at (61mm,-8mm)
+    {$\mathit{used}$ from 2 to 3 by \texttt{make(g)}};
+\end{tikzpicture}
+\end{document}
