@@ -353,6 +353,33 @@ class FlowNetwork {
 
  /// a path of the levels from \f$ u \f$ to \f$ t \f$, of at most \f$ d \f$
  /// units
+ ///
+ /// In pseudocode, \f$ \ell \f$ the levels, \f$ \mathit{next}[ x ] \f$ the
+ /// place of the first edge of \f$ x \f$ not yet passed in the phase and
+ /// \f$ P \f$ the stack of the edges of the path:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{blocking}( u , t , d ) \cr
+ /// 2 & \quad P \gets () \cr
+ /// 3 & \quad \textbf{while}\ u \ne t\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ \mathit{next}[ u ] < \deg( u )\ \textbf{then} \cr
+ /// 5 & \qquad\quad ( u , v ) \gets \text{the edge } \mathit{next}[ u ]
+ ///     \text{ of } u \cr
+ /// 6 & \qquad\quad \textbf{if}\ c_f( u , v ) > 0\ \textbf{and}
+ ///     \ \ell( v ) = \ell( u ) + 1\ \textbf{then}\ \text{push }
+ ///     ( u , v ) \text{ on } P;\ u \gets v \cr
+ /// 7 & \qquad\quad \textbf{else}\ \mathit{next}[ u ] \gets
+ ///     \mathit{next}[ u ] + 1 \cr
+ /// 8 & \qquad \textbf{else if}\ P = ()\ \textbf{then return}\ 0 \cr
+ /// 9 & \qquad \textbf{else}\ \text{pop } ( x , u ) \text{ from } P;
+ ///     \ u \gets x;\ \mathit{next}[ u ] \gets \mathit{next}[ u ] + 1
+ ///     \quad \triangleright\ \text{a dead end} \cr
+ /// 10 & \quad \delta \gets \min( d , \min_{e \in P} c_f( e ) ) \cr
+ /// 11 & \quad \textbf{foreach}\ ( x , y ) \in P\ \textbf{do}\ f( x , y )
+ ///     \gets f( x , y ) + \delta;\ f( y , x ) \gets f( y , x ) - \delta \cr
+ /// 12 & \quad \textbf{return}\ \delta
+ /// \end{array}}
+ /// \f]
  long long blocking( int u , int t , long long d );
 
  /// each edge and its twin carry opposite flows within their capacities

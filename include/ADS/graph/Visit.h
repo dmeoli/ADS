@@ -275,6 +275,27 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p );
 /// 6 & \quad \mathrm{post}( u )
 /// \end{array}}
 /// \f]
+/// and on the stack \f$ S \f$ of the code, a frame \f$ ( x , A , i ) \f$
+/// holding a node, its adjacent nodes and the place of the next one:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{dfs}( G , u , \mathit{visited} ) \cr
+/// 2 & \quad \mathit{visited}[ u ] \gets \textbf{true};\ \mathrm{pre}( u );
+///     \ S \gets ( ( u , G.\mathrm{adj}( u ) , 0 ) ) \cr
+/// 3 & \quad \textbf{while}\ S \ne ()\ \textbf{do} \cr
+/// 4 & \qquad ( x , A , i ) \gets \text{the top of } S \cr
+/// 5 & \qquad \textbf{if}\ i = \lvert A \rvert\ \textbf{then}
+///     \ \text{pop } S;\ \mathrm{post}( x );\ \textbf{continue}
+///     \quad \triangleright\ \text{the return} \cr
+/// 6 & \qquad v \gets A[ i ];\ i \gets i + 1 \text{ in the top frame};
+///     \ \mathrm{edge}( x , v ) \cr
+/// 7 & \qquad \textbf{if not}\ \mathit{visited}[ v ]\ \textbf{then}
+///     \quad \triangleright\ \text{the call} \cr
+/// 8 & \qquad\quad \mathit{visited}[ v ] \gets \textbf{true};
+///     \ \mathrm{pre}( v );\ \text{push } ( v , G.\mathrm{adj}( v ) , 0 )
+///     \text{ on } S
+/// \end{array}}
+/// \f]
 /// \pre \f$ u \f$ is a node not visited, and `visited` has a place per name
 template< Graph G , class Pre , class Edge , class Post >
 void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,

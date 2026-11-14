@@ -115,6 +115,18 @@ class IncidenceGraph {
 
  /// removes the edge \f$ ( i , j ) \f$, if it is there, the last column
  /// copied in its place, \f$ O( m + n ) \f$ time
+ ///
+ /// In pseudocode, \f$ A_{\cdot,e} \f$ the column of the edge \f$ e \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{deleteEdge}( i , j ) \cr
+ /// 2 & \quad e \gets \text{the first column with } A_{i,e} = -1
+ ///     \text{ and } A_{j,e} = +1 \text{, or } m \cr
+ /// 3 & \quad \textbf{if}\ e = m\ \textbf{then return} \cr
+ /// 4 & \quad A_{\cdot,e} \gets A_{\cdot,m-1};\ \text{drop the column }
+ ///     m - 1;\ m \gets m - 1
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ i \f$ and \f$ j \f$ are distinct nodes
  void deleteEdge( int i , int j );
 
