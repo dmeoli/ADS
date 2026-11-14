@@ -1,0 +1,88 @@
+% Source for merge of MeldableHeap (sec. 9.6)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t1-4) at (0.00mm,-30.00mm) {19};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t1-3) at (6.80mm,-20.00mm) {17};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t1-2) at (13.60mm,-10.00mm) {9};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t1-5) at (20.40mm,-20.00mm) {26};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t1-1) at (27.20mm,0.00mm) {4};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t1-8) at (34.00mm,-30.00mm) {55};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t1-7) at (40.80mm,-20.00mm) {50};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t1-6) at (47.60mm,-10.00mm) {8};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t1-9) at (54.40mm,-20.00mm) {16};
+\begin{scope}[on background layer]
+\draw[edge] (t1-3) -- (t1-4);
+\draw[edge] (t1-2) -- (t1-3);
+\draw[edge] (t1-1) -- (t1-2);
+\draw[edge] (t1-2) -- (t1-5);
+\draw[edge] (t1-7) -- (t1-8);
+\draw[edge] (t1-6) -- (t1-7);
+\draw[edge-touched] (t1-1) -- (t1-6);
+\draw[edge] (t1-6) -- (t1-9);
+\end{scope}
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-2) at (75.00mm,-10.00mm) {25};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-4) at (81.80mm,-30.00mm) {32};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-3) at (88.60mm,-20.00mm) {28};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-5) at (95.40mm,-30.00mm) {93};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-1) at (102.20mm,0.00mm) {19};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-8) at (109.00mm,-30.00mm) {99};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-7) at (115.80mm,-20.00mm) {89};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t2-6) at (122.60mm,-10.00mm) {20};
+\begin{scope}[on background layer]
+\draw[edge] (t2-1) -- (t2-2);
+\draw[edge] (t2-3) -- (t2-4);
+\draw[edge] (t2-2) -- (t2-3);
+\draw[edge] (t2-3) -- (t2-5);
+\draw[edge] (t2-7) -- (t2-8);
+\draw[edge] (t2-6) -- (t2-7);
+\draw[edge] (t2-1) -- (t2-6);
+\end{scope}
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t3-4) at (20.00mm,-80.00mm) {19};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t3-3) at (26.80mm,-70.00mm) {17};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t3-2) at (33.60mm,-60.00mm) {9};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t3-5) at (40.40mm,-70.00mm) {26};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t3-1) at (47.20mm,-50.00mm) {4};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-8) at (54.00mm,-80.00mm) {25};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-10) at (60.80mm,-100.00mm) {32};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-9) at (67.60mm,-90.00mm) {28};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-11) at (74.40mm,-100.00mm) {93};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-7) at (81.20mm,-70.00mm) {19};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-14) at (88.00mm,-100.00mm) {99};
+\node[vertex-added,minimum size=6mm,font=\footnotesize\ttfamily] (t3-13) at (94.80mm,-90.00mm) {89};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t3-12) at (101.60mm,-80.00mm) {20};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t3-16) at (108.40mm,-100.00mm) {55};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t3-15) at (115.20mm,-90.00mm) {50};
+\node[vertex-touched,minimum size=6mm,font=\footnotesize\ttfamily] (t3-6) at (122.00mm,-60.00mm) {8};
+\node[vertex,minimum size=6mm,font=\footnotesize\ttfamily] (t3-17) at (128.80mm,-70.00mm) {16};
+\begin{scope}[on background layer]
+\draw[edge] (t3-3) -- (t3-4);
+\draw[edge] (t3-2) -- (t3-3);
+\draw[edge] (t3-1) -- (t3-2);
+\draw[edge] (t3-2) -- (t3-5);
+\draw[edge] (t3-7) -- (t3-8);
+\draw[edge] (t3-9) -- (t3-10);
+\draw[edge] (t3-8) -- (t3-9);
+\draw[edge] (t3-9) -- (t3-11);
+\draw[edge-touched] (t3-6) -- (t3-7);
+\draw[edge] (t3-13) -- (t3-14);
+\draw[edge] (t3-12) -- (t3-13);
+\draw[edge-touched] (t3-7) -- (t3-12);
+\draw[edge] (t3-15) -- (t3-16);
+\draw[edge-touched] (t3-12) -- (t3-15);
+\draw[edge-touched] (t3-1) -- (t3-6);
+\draw[edge] (t3-6) -- (t3-17);
+\end{scope}
+\node[var,anchor=west] at (-3.0mm,8.0mm) {$h_1$};
+\node[var,anchor=west] at (72.0mm,8.0mm) {$h_2$};
+\node[var,anchor=west] at (-3.0mm,-43.0mm) {$\mathrm{merge}( h_1 , h_2 )$, coins right, left, right, right};
+\end{tikzpicture}
+\end{document}

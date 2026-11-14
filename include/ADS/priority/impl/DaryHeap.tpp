@@ -203,6 +203,7 @@ inline void DaryHeap< T , Better , D , BottomUp >::up( std::size_t i , T x )
 template< class T , class Better , unsigned D , bool BottomUp >
 inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
 {
+//! [DaryHeap-down]
  const std::size_t n = f_A.size();
  for( ; ; ) {
   const std::size_t c = D * i + 1;
@@ -219,6 +220,7 @@ inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
   i = b;
   }
  f_A[ i ] = std::move( x );
+//! [DaryHeap-down]
  }
 
 template< class T , class Better , unsigned D , bool BottomUp >

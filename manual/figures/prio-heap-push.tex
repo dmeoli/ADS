@@ -1,0 +1,72 @@
+% Source for push(6) on a binary heap (sec. 9.3)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (h2-0) at (0.00mm,0.00mm) {4};
+\node[vertex] (h2-1) at (-24.00mm,-10.50mm) {9};
+\node[vertex-touched] (h2-2) at (24.00mm,-10.50mm) {8};
+\node[vertex] (h2-3) at (-36.00mm,-21.00mm) {17};
+\node[vertex] (h2-4) at (-12.00mm,-21.00mm) {26};
+\node[vertex-touched] (h2-5) at (12.00mm,-21.00mm) {50};
+\node[vertex] (h2-6) at (36.00mm,-21.00mm) {16};
+\node[vertex] (h2-7) at (-42.00mm,-31.50mm) {19};
+\node[vertex] (h2-8) at (-30.00mm,-31.50mm) {69};
+\node[vertex] (h2-9) at (-18.00mm,-31.50mm) {32};
+\node[vertex] (h2-10) at (-6.00mm,-31.50mm) {93};
+\node[vertex] (h2-11) at (6.00mm,-31.50mm) {55};
+\node[vertex-added] (h2-12) at (18.00mm,-31.50mm) {6};
+\begin{scope}[on background layer]
+\draw[edge-touched] (h2-5) -- (h2-12);
+\draw[edge] (h2-5) -- (h2-11);
+\draw[edge] (h2-4) -- (h2-10);
+\draw[edge] (h2-4) -- (h2-9);
+\draw[edge] (h2-3) -- (h2-8);
+\draw[edge] (h2-3) -- (h2-7);
+\draw[edge] (h2-2) -- (h2-6);
+\draw[edge-touched] (h2-2) -- (h2-5);
+\draw[edge] (h2-1) -- (h2-4);
+\draw[edge] (h2-1) -- (h2-3);
+\draw[edge-touched] (h2-0) -- (h2-2);
+\draw[edge] (h2-0) -- (h2-1);
+\end{scope}
+\node[var,anchor=west] at (-50.0mm,7.0mm) {the new leaf $A[ 12 ] = 6$};
+\cells{a3}{-44.40mm,-42.00mm}{4/touched,9/cell,8/touched,17/cell,26/cell,50/touched,16/cell,19/cell,69/cell,32/cell,93/cell,55/cell,6/added}
+\node[vertex-touched] (h4-0) at (0.00mm,-66.00mm) {4};
+\node[vertex] (h4-1) at (-24.00mm,-76.50mm) {9};
+\node[vertex-added] (h4-2) at (24.00mm,-76.50mm) {6};
+\node[vertex] (h4-3) at (-36.00mm,-87.00mm) {17};
+\node[vertex] (h4-4) at (-12.00mm,-87.00mm) {26};
+\node[vertex-touched] (h4-5) at (12.00mm,-87.00mm) {8};
+\node[vertex] (h4-6) at (36.00mm,-87.00mm) {16};
+\node[vertex] (h4-7) at (-42.00mm,-97.50mm) {19};
+\node[vertex] (h4-8) at (-30.00mm,-97.50mm) {69};
+\node[vertex] (h4-9) at (-18.00mm,-97.50mm) {32};
+\node[vertex] (h4-10) at (-6.00mm,-97.50mm) {93};
+\node[vertex] (h4-11) at (6.00mm,-97.50mm) {55};
+\node[vertex-touched] (h4-12) at (18.00mm,-97.50mm) {50};
+\begin{scope}[on background layer]
+\draw[edge-touched] (h4-5) -- (h4-12);
+\draw[edge] (h4-5) -- (h4-11);
+\draw[edge] (h4-4) -- (h4-10);
+\draw[edge] (h4-4) -- (h4-9);
+\draw[edge] (h4-3) -- (h4-8);
+\draw[edge] (h4-3) -- (h4-7);
+\draw[edge] (h4-2) -- (h4-6);
+\draw[edge-touched] (h4-2) -- (h4-5);
+\draw[edge] (h4-1) -- (h4-4);
+\draw[edge] (h4-1) -- (h4-3);
+\draw[edge-touched] (h4-0) -- (h4-2);
+\draw[edge] (h4-0) -- (h4-1);
+\end{scope}
+\node[var,anchor=west] at (-50.0mm,-59.0mm) {after two moves up, the parent 4 not larger};
+\cells{a5}{-44.40mm,-108.00mm}{4/touched,9/cell,6/added,17/cell,26/cell,8/touched,16/cell,19/cell,69/cell,32/cell,93/cell,55/cell,50/touched}
+\end{tikzpicture}
+\end{document}

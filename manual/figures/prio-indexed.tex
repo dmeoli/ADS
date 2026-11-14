@@ -1,0 +1,27 @@
+% Source for IndexedDaryHeap (sec. 9.5)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\tikzset{every node/.append style={font=\scriptsize\ttfamily}}
+\node[var,anchor=east] at (-6mm,0.0mm) {$A$};
+\cells{a}{0,0.0mm}{{2:5}/touched,{4:1}/cell,{3:7}/touched,{9:0}/cell,{6:3}/cell,{8:2}/touched}
+\indices{a}{6}
+\node[var,anchor=east] at (-6mm,-11.0mm) {$\mathit{pos}$};
+\cells{p}{0,-11.0mm}{{3}/cell,{1}/cell,{5}/touched,{4}/cell,{-1}/cell,{0}/cell,{-1}/cell,{2}/cell}
+\node[var,anchor=west] at (62mm,0) {key:id, before \texttt{decrease(2,1)}};
+\node[var,anchor=east] at (-6mm,-27.0mm) {$A$};
+\cells{b}{0,-27.0mm}{{1:2}/added,{4:1}/cell,{2:5}/touched,{9:0}/cell,{6:3}/cell,{3:7}/touched}
+\node[var,anchor=east] at (-6mm,-38.0mm) {$\mathit{pos}$};
+\cells{q}{0,-38.0mm}{{3}/cell,{1}/cell,{0}/added,{4}/cell,{-1}/cell,{2}/touched,{-1}/cell,{5}/touched}
+\node[var,anchor=west] at (62mm,-27mm) {after it: 2 up to the root};
+\foreach \i in {0,...,7} \node[index,below=1.4mm of q-\i] {\i};
+\end{tikzpicture}
+\end{document}

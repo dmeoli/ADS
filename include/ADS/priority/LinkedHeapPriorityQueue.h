@@ -157,7 +157,7 @@ class LinkedHeapPriorityQueue {
  /// 14 & \quad u \gets \mathit{last} \cr
  /// 15 & \quad \textbf{if}\ u = \mathit{root}\ \textbf{then return}\ u \cr
  /// 16 & \quad \textbf{if}\ u \text{ is a left child}\ \textbf{then}
- ///     \textbf{return}\ u.\mathit{parent} \cr
+ ///     \ \textbf{return}\ u.\mathit{parent} \cr
  /// 17 & \quad \textbf{while}\ u \ne \mathit{root}\ \textbf{and}\ u
  ///     \text{ is a right child}\ \textbf{do}\ u \gets u.\mathit{parent}
  ///     \cr

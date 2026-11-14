@@ -1,0 +1,43 @@
+% Source for the k smallest items of a heap (sec. 9.4)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (h5-0) at (0.00mm,0.00mm) {4};
+\node[vertex-touched] (h5-1) at (-25.00mm,-10.50mm) {9};
+\node[vertex-touched] (h5-2) at (25.00mm,-10.50mm) {6};
+\node[vertex-added] (h5-3) at (-37.50mm,-21.00mm) {17};
+\node[vertex-added] (h5-4) at (-12.50mm,-21.00mm) {26};
+\node[vertex-touched] (h5-5) at (12.50mm,-21.00mm) {8};
+\node[vertex-added] (h5-6) at (37.50mm,-21.00mm) {16};
+\node[vertex] (h5-7) at (-43.75mm,-31.50mm) {19};
+\node[vertex] (h5-8) at (-31.25mm,-31.50mm) {69};
+\node[vertex] (h5-9) at (-18.75mm,-31.50mm) {32};
+\node[vertex] (h5-10) at (-6.25mm,-31.50mm) {93};
+\node[vertex-added] (h5-11) at (6.25mm,-31.50mm) {55};
+\node[vertex-added] (h5-12) at (18.75mm,-31.50mm) {50};
+\begin{scope}[on background layer]
+\draw[edge] (h5-5) -- (h5-12);
+\draw[edge] (h5-5) -- (h5-11);
+\draw[edge] (h5-4) -- (h5-10);
+\draw[edge] (h5-4) -- (h5-9);
+\draw[edge] (h5-3) -- (h5-8);
+\draw[edge] (h5-3) -- (h5-7);
+\draw[edge] (h5-2) -- (h5-6);
+\draw[edge-touched] (h5-2) -- (h5-5);
+\draw[edge] (h5-1) -- (h5-4);
+\draw[edge] (h5-1) -- (h5-3);
+\draw[edge-touched] (h5-0) -- (h5-2);
+\draw[edge-touched] (h5-0) -- (h5-1);
+\end{scope}
+\node[var,anchor=west] at (-52.0mm,7.0mm) {the 4 smallest items (violet) and the places left in $Q$ (orange)};
+\cells{a6}{-44.40mm,-42.00mm}{4/touched,9/touched,6/touched,17/added,26/added,8/touched,16/added,19/cell,69/cell,32/cell,93/cell,55/added,50/added}
+\end{tikzpicture}
+\end{document}

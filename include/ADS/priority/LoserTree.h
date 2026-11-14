@@ -111,9 +111,9 @@ class LoserTree {
  /// 5 & \quad L[ 0 ] \gets W[ 1 ]\ \text{if } k > 1 \text{, else } 0 \cr
  /// 6 & \textbf{function}\ \mathrm{beats}( i , j ) \cr
  /// 7 & \quad \textbf{if}\ i \text{ is exhausted}\ \textbf{then}
- ///     \textbf{return false} \cr
+ ///     \ \textbf{return false} \cr
  /// 8 & \quad \textbf{if}\ j \text{ is exhausted}\ \textbf{then}
- ///     \textbf{return true} \cr
+ ///     \ \textbf{return true} \cr
  /// 9 & \quad \textbf{return}\ \mathit{key}[ i ] < \mathit{key}[ j ]
  ///     \ \textbf{or}\ ( \mathit{key}[ i ] = \mathit{key}[ j ]
  ///     \ \textbf{and}\ i < j )

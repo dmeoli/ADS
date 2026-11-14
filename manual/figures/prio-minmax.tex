@@ -1,0 +1,66 @@
+% Source for MinMaxHeap and IntervalHeap (sec. 9.10)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (h1-0) at (0.00mm,0.00mm) {2};
+\node[vertex-added] (h1-1) at (-25.00mm,-10.50mm) {70};
+\node[vertex] (h1-2) at (25.00mm,-10.50mm) {50};
+\node[vertex] (h1-3) at (-37.50mm,-21.00mm) {10};
+\node[vertex] (h1-4) at (-12.50mm,-21.00mm) {8};
+\node[vertex] (h1-5) at (12.50mm,-21.00mm) {20};
+\node[vertex] (h1-6) at (37.50mm,-21.00mm) {30};
+\node[vertex] (h1-7) at (-43.75mm,-31.50mm) {40};
+\node[vertex] (h1-8) at (-31.25mm,-31.50mm) {15};
+\node[vertex] (h1-9) at (-18.75mm,-31.50mm) {45};
+\node[vertex] (h1-10) at (-6.25mm,-31.50mm) {9};
+\node[vertex] (h1-11) at (6.25mm,-31.50mm) {25};
+\node[vertex] (h1-12) at (18.75mm,-31.50mm) {33};
+\begin{scope}[on background layer]
+\draw[edge] (h1-5) -- (h1-12);
+\draw[edge] (h1-5) -- (h1-11);
+\draw[edge] (h1-4) -- (h1-10);
+\draw[edge] (h1-4) -- (h1-9);
+\draw[edge] (h1-3) -- (h1-8);
+\draw[edge] (h1-3) -- (h1-7);
+\draw[edge] (h1-2) -- (h1-6);
+\draw[edge] (h1-2) -- (h1-5);
+\draw[edge] (h1-1) -- (h1-4);
+\draw[edge] (h1-1) -- (h1-3);
+\draw[edge] (h1-0) -- (h1-2);
+\draw[edge] (h1-0) -- (h1-1);
+\end{scope}
+\node[var,anchor=west] at (-52.0mm,7.0mm) {a min-max heap: the levels 0 and 2 for the least, 1 and 3 for the greatest};
+\cells{a2}{-44.40mm,-42.00mm}{2/touched,70/added,50/cell,10/cell,8/cell,20/cell,30/cell,40/cell,15/cell,45/cell,9/cell,25/cell,33/cell}
+\foreach \y/\t in {0/min,-10.5/max,-21/min,-31.5/max} \node[index,anchor=west] at (54mm,\y mm) {\t};
+\node[var,anchor=west] at (-52.0mm,-54.0mm) {an interval heap of the same items: $[ \mathit{lo} , \mathit{hi} ]$ in each node};
+\node[touched,minimum width=8mm] (i0l) at (-4.2mm,-62.0mm) {2};
+\node[added,minimum width=8mm] (i0h) at (4.2mm,-62.0mm) {70};
+\node[cell,minimum width=8mm] (i1l) at (-32.2mm,-75.0mm) {8};
+\node[cell,minimum width=8mm] (i1h) at (-23.8mm,-75.0mm) {50};
+\node[cell,minimum width=8mm] (i2l) at (23.8mm,-75.0mm) {10};
+\node[cell,minimum width=8mm] (i2h) at (32.2mm,-75.0mm) {45};
+\node[cell,minimum width=8mm] (i3l) at (-46.2mm,-88.0mm) {9};
+\node[cell,minimum width=8mm] (i3h) at (-37.8mm,-88.0mm) {30};
+\node[cell,minimum width=8mm] (i4l) at (-18.2mm,-88.0mm) {15};
+\node[cell,minimum width=8mm] (i4h) at (-9.8mm,-88.0mm) {40};
+\node[cell,minimum width=8mm] (i5l) at (9.8mm,-88.0mm) {20};
+\node[cell,minimum width=8mm] (i5h) at (18.2mm,-88.0mm) {33};
+\node[cell,minimum width=8mm] (i6l) at (37.8mm,-88.0mm) {25};
+\begin{scope}[on background layer]
+\draw[edge] (0.0mm,-62.0mm) -- (-28.0mm,-75.0mm);
+\draw[edge] (0.0mm,-62.0mm) -- (28.0mm,-75.0mm);
+\draw[edge] (-28.0mm,-75.0mm) -- (-42.0mm,-88.0mm);
+\draw[edge] (-28.0mm,-75.0mm) -- (-14.0mm,-88.0mm);
+\draw[edge] (28.0mm,-75.0mm) -- (14.0mm,-88.0mm);
+\draw[edge] (28.0mm,-75.0mm) -- (42.0mm,-88.0mm);
+\end{scope}
+\end{tikzpicture}
+\end{document}

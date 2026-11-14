@@ -149,7 +149,7 @@ class MinMaxHeap {
  ///     \max\{ 64 , n / 8 \} \text{ items }\ \textbf{then}
  ///     \ \text{sort the items} \cr
  /// 3 & \quad \textbf{if}\  \text{the items are sorted }\ \textbf{then}
- ///     \textbf{return}\ \text{the first of them, removed} \cr
+ ///     \ \textbf{return}\ \text{the first of them, removed} \cr
  /// 4 & \quad x \gets A[ 0 ];\ n \gets n - 1;\ A[ 0 ] \gets A[ n ];
  ///     \ \mathrm{down}_{\min}( 0 );\ \textbf{return}\ x \cr
  /// 5 & \textbf{procedure}\ \mathrm{down}_{\min}( i ) \cr
@@ -160,7 +160,7 @@ class MinMaxHeap {
  ///     \ \textbf{then return} \cr
  /// 9 & \qquad \text{swap } A[ m ] \text{ and } A[ i ] \cr
  /// 10 & \qquad \textbf{if}\ m \text{ is a child of } i\ \textbf{then}
- ///     \textbf{return} \cr
+ ///     \ \textbf{return} \cr
  /// 11 & \qquad p \gets \lfloor ( m - 1 ) / 2 \rfloor \cr
  /// 12 & \qquad \textbf{if}\ \mathrm{better}( A[ p ] , A[ m ] )
  ///     \ \textbf{then}\ \text{swap } A[ p ] \text{ and } A[ m ] \cr
@@ -183,7 +183,7 @@ class MinMaxHeap {
  ///     \max\{ 64 , n / 8 \} \text{ items }\ \textbf{then}
  ///     \ \text{sort the items} \cr
  /// 3 & \quad \textbf{if}\  \text{the items are sorted }\ \textbf{then}
- ///     \textbf{return}\ \text{the last of them, removed} \cr
+ ///     \ \textbf{return}\ \text{the last of them, removed} \cr
  /// 4 & \quad k \gets \text{the place of the worst item, } 0 , 1
  ///     \text{ or } 2 \cr
  /// 5 & \quad x \gets A[ k ];\ n \gets n - 1 \cr
@@ -328,7 +328,7 @@ class IntervalHeap {
  ///     \max\{ 64 , n / 8 \} \text{ items }\ \textbf{then}
  ///     \ \text{sort the items} \cr
  /// 3 & \quad \textbf{if}\  \text{the items are sorted }\ \textbf{then}
- ///     \textbf{return}\ \text{the first of them, removed} \cr
+ ///     \ \textbf{return}\ \text{the first of them, removed} \cr
  /// 4 & \quad x \gets A[ 0 ] \cr
  /// 5 & \quad \textbf{if}\ n \le 2\ \textbf{then}\ \text{remove } A[ 0 ]
  ///     \text{, the other item to its place};\ \textbf{return}\ x \cr
@@ -363,7 +363,7 @@ class IntervalHeap {
  ///     \max\{ 64 , n / 8 \} \text{ items }\ \textbf{then}
  ///     \ \text{sort the items} \cr
  /// 3 & \quad \textbf{if}\  \text{the items are sorted }\ \textbf{then}
- ///     \textbf{return}\ \text{the last of them, removed} \cr
+ ///     \ \textbf{return}\ \text{the last of them, removed} \cr
  /// 4 & \quad \textbf{if}\ n \le 2\ \textbf{then}\ n \gets n - 1;
  ///     \ \textbf{return}\ A[ n ] \cr
  /// 5 & \quad x \gets A[ 1 ];\ n \gets n - 1;\ y \gets A[ n ];\ h \gets

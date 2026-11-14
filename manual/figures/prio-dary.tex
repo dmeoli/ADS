@@ -1,0 +1,70 @@
+% Source for DaryHeap with D = 3 and erase (sec. 9.4)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex] (h1-0) at (0.00mm,0.00mm) {1};
+\node[vertex-touched] (h1-1) at (-36.67mm,-10.50mm) {5};
+\node[vertex] (h1-2) at (0.00mm,-10.50mm) {3};
+\node[vertex] (h1-3) at (36.67mm,-10.50mm) {8};
+\node[vertex-added] (h1-4) at (-48.89mm,-21.00mm) {9};
+\node[vertex-added] (h1-5) at (-36.67mm,-21.00mm) {6};
+\node[vertex-added] (h1-6) at (-24.44mm,-21.00mm) {7};
+\node[vertex] (h1-7) at (-12.22mm,-21.00mm) {11};
+\node[vertex] (h1-8) at (0.00mm,-21.00mm) {12};
+\node[vertex] (h1-9) at (12.22mm,-21.00mm) {4};
+\node[vertex] (h1-10) at (24.44mm,-21.00mm) {10};
+\node[vertex] (h1-11) at (36.67mm,-21.00mm) {13};
+\node[vertex-touched] (h1-12) at (48.89mm,-21.00mm) {9};
+\begin{scope}[on background layer]
+\draw[edge] (h1-3) -- (h1-12);
+\draw[edge] (h1-3) -- (h1-11);
+\draw[edge] (h1-3) -- (h1-10);
+\draw[edge] (h1-2) -- (h1-9);
+\draw[edge] (h1-2) -- (h1-8);
+\draw[edge] (h1-2) -- (h1-7);
+\draw[edge-touched] (h1-1) -- (h1-6);
+\draw[edge-touched] (h1-1) -- (h1-5);
+\draw[edge-touched] (h1-1) -- (h1-4);
+\draw[edge] (h1-0) -- (h1-3);
+\draw[edge] (h1-0) -- (h1-2);
+\draw[edge] (h1-0) -- (h1-1);
+\end{scope}
+\node[var,anchor=west] at (-57.0mm,7.0mm) {a heap with $D = 3$: the children $3 i + 1 , \ldots , 3 i + 3$ of $i = 1$; \texttt{erase(1)} takes the last item 9};
+\cells{a2}{-44.40mm,-31.50mm}{1/cell,5/touched,3/cell,8/cell,9/added,6/added,7/added,11/cell,12/cell,4/cell,10/cell,13/cell,9/touched}
+\node[vertex] (h3-0) at (0.00mm,-46.00mm) {1};
+\node[vertex-touched] (h3-1) at (-36.67mm,-56.50mm) {6};
+\node[vertex] (h3-2) at (0.00mm,-56.50mm) {3};
+\node[vertex] (h3-3) at (36.67mm,-56.50mm) {8};
+\node[vertex] (h3-4) at (-48.89mm,-67.00mm) {9};
+\node[vertex-added] (h3-5) at (-36.67mm,-67.00mm) {9};
+\node[vertex] (h3-6) at (-24.44mm,-67.00mm) {7};
+\node[vertex] (h3-7) at (-12.22mm,-67.00mm) {11};
+\node[vertex] (h3-8) at (0.00mm,-67.00mm) {12};
+\node[vertex] (h3-9) at (12.22mm,-67.00mm) {4};
+\node[vertex] (h3-10) at (24.44mm,-67.00mm) {10};
+\node[vertex] (h3-11) at (36.67mm,-67.00mm) {13};
+\begin{scope}[on background layer]
+\draw[edge] (h3-3) -- (h3-11);
+\draw[edge] (h3-3) -- (h3-10);
+\draw[edge] (h3-2) -- (h3-9);
+\draw[edge] (h3-2) -- (h3-8);
+\draw[edge] (h3-2) -- (h3-7);
+\draw[edge] (h3-1) -- (h3-6);
+\draw[edge-touched] (h3-1) -- (h3-5);
+\draw[edge] (h3-1) -- (h3-4);
+\draw[edge] (h3-0) -- (h3-3);
+\draw[edge] (h3-0) -- (h3-2);
+\draw[edge] (h3-0) -- (h3-1);
+\end{scope}
+\node[var,anchor=west] at (-57.0mm,-39.0mm) {after \texttt{erase(1)}: 9 not smaller than the parent 1, hence down by the best child 6};
+\cells{a4}{-40.70mm,-77.50mm}{1/cell,6/touched,3/cell,8/cell,9/cell,9/added,7/cell,11/cell,12/cell,4/cell,10/cell,13/cell}
+\end{tikzpicture}
+\end{document}

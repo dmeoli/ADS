@@ -1,0 +1,41 @@
+% Source for PairingHeap (sec. 9.8)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (r) at (37.5mm,12.0mm) {2};
+\node[vertex] (c0) at (0.0mm,0.0mm) {9};
+\node[vertex] (c1) at (15.0mm,0.0mm) {4};
+\node[vertex] (c2) at (30.0mm,0.0mm) {8};
+\node[vertex] (c3) at (45.0mm,0.0mm) {5};
+\node[vertex] (c4) at (60.0mm,0.0mm) {7};
+\node[vertex] (c5) at (75.0mm,0.0mm) {3};
+\begin{scope}[on background layer]\foreach \i in {0,...,5} \draw[edge] (r) -- (c\i);\end{scope}
+\node[var,anchor=west] at (-5.0mm,19.0mm) {the root 2 and its children, the leftmost first};
+\node[vertex] (d0) at (100.0mm,0.0mm) {4};
+\node[vertex-added] (d0k0) at (100.0mm,-11.0mm) {9};
+\begin{scope}[on background layer]\draw[edge-touched] (d0) -- (d0k0);\end{scope}
+\node[vertex] (d1) at (115.0mm,0.0mm) {5};
+\node[vertex-added] (d1k0) at (115.0mm,-11.0mm) {8};
+\begin{scope}[on background layer]\draw[edge-touched] (d1) -- (d1k0);\end{scope}
+\node[vertex] (d2) at (130.0mm,0.0mm) {3};
+\node[vertex-added] (d2k0) at (130.0mm,-11.0mm) {7};
+\begin{scope}[on background layer]\draw[edge-touched] (d2) -- (d2k0);\end{scope}
+\node[var,anchor=west] at (95.0mm,19.0mm) {the first pass, by pairs from the left};
+\node[vertex-touched] (e) at (130.0mm,-32.0mm) {3};
+\node[vertex-added] (f0) at (115.0mm,-45.0mm) {4};
+\node[vertex-added] (f1) at (130.0mm,-45.0mm) {5};
+\node[vertex] (f2) at (145.0mm,-45.0mm) {7};
+\node[vertex] (g9) at (115.0mm,-56.0mm) {9};
+\node[vertex] (g8) at (130.0mm,-56.0mm) {8};
+\begin{scope}[on background layer]\draw[edge-touched] (e) -- (f0); \draw[edge-touched] (e) -- (f1); \draw[edge] (e) -- (f2); \draw[edge] (f0) -- (g9); \draw[edge] (f1) -- (g8);\end{scope}
+\node[var,anchor=west] at (95.0mm,-25.0mm) {the second pass, from the right: 3 links 5, then 4};
+\end{tikzpicture}
+\end{document}

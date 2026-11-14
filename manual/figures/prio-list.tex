@@ -1,0 +1,52 @@
+% Source for ListPriorityQueue (sec. 9.2)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[var,anchor=east] at (-3.0mm,0.0mm) {sorted};
+\node[node-touched,minimum width=11mm] (s0) at (8.0mm,0.0mm) {2,a};
+\node[node,minimum width=11mm] (s1) at (25.0mm,0.0mm) {5,c};
+\draw[ptr] (s0) -- (s1);
+\node[node,minimum width=11mm] (s2) at (42.0mm,0.0mm) {7,b};
+\draw[ptr] (s1) -- (s2);
+\node[node,minimum width=11mm] (s3) at (59.0mm,0.0mm) {9,d};
+\draw[ptr] (s2) -- (s3);
+\node[var,anchor=east] at (-3.0mm,-12.0mm) {\texttt{insert(e,4)}};
+\node[node-touched,minimum width=11mm] (t0) at (8.0mm,-12.0mm) {2,a};
+\node[node-added,minimum width=11mm] (t1) at (25.0mm,-12.0mm) {4,e};
+\draw[ptr] (t0) -- (t1);
+\node[node,minimum width=11mm] (t2) at (42.0mm,-12.0mm) {5,c};
+\draw[ptr] (t1) -- (t2);
+\node[node,minimum width=11mm] (t3) at (59.0mm,-12.0mm) {7,b};
+\draw[ptr] (t2) -- (t3);
+\node[node,minimum width=11mm] (t4) at (76.0mm,-12.0mm) {9,d};
+\draw[ptr] (t3) -- (t4);
+\node[var,anchor=east] at (-3.0mm,-28.0mm) {unsorted};
+\node[node,minimum width=11mm] (u0) at (8.0mm,-28.0mm) {7,b};
+\node[node-touched,minimum width=11mm] (u1) at (25.0mm,-28.0mm) {2,a};
+\draw[ptr] (u0) -- (u1);
+\node[node,minimum width=11mm] (u2) at (42.0mm,-28.0mm) {9,d};
+\draw[ptr] (u1) -- (u2);
+\node[node,minimum width=11mm] (u3) at (59.0mm,-28.0mm) {5,c};
+\draw[ptr] (u2) -- (u3);
+\node[var,anchor=east] at (-3.0mm,-40.0mm) {\texttt{insert(e,4)}};
+\node[node-added,minimum width=11mm] (v0) at (8.0mm,-40.0mm) {4,e};
+\node[node,minimum width=11mm] (v1) at (25.0mm,-40.0mm) {7,b};
+\draw[ptr] (v0) -- (v1);
+\node[node-touched,minimum width=11mm] (v2) at (42.0mm,-40.0mm) {2,a};
+\draw[ptr] (v1) -- (v2);
+\node[node,minimum width=11mm] (v3) at (59.0mm,-40.0mm) {9,d};
+\draw[ptr] (v2) -- (v3);
+\node[node,minimum width=11mm] (v4) at (76.0mm,-40.0mm) {5,c};
+\draw[ptr] (v3) -- (v4);
+\node[var,anchor=west] at (95mm,-6mm) {the minimum at the head};
+\node[var,anchor=west] at (95mm,-34mm) {the minimum found by a scan};
+\end{tikzpicture}
+\end{document}

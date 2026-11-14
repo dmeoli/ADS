@@ -93,12 +93,14 @@ void LoserTree< T , C >::replace( std::optional< T > key )
 {
  ADS_PRE( ! empty() );
  const std::size_t k = f_key.size();
+//! [LoserTree-replace]
  std::size_t w = f_node[ 0 ];
  f_key[ w ] = std::move( key );
  for( std::size_t v = ( w + k ) / 2 ; v >= 1 ; v /= 2 )
   if( beats( f_node[ v ] , w ) )            // the loser there wins now
    std::swap( w , f_node[ v ] );
  f_node[ 0 ] = w;
+//! [LoserTree-replace]
  ADS_INVARIANT( detail::contract( [ & ]( void ) {
   return( winnerIsBest() ); } ) );
  }

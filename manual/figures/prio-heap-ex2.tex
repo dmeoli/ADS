@@ -1,0 +1,62 @@
+% Source for Morin exercise 10.2 (sec. 9.3)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[vertex-touched] (h14-0) at (0.00mm,0.00mm) {8};
+\node[vertex] (h14-1) at (-24.00mm,-10.50mm) {9};
+\node[vertex-touched] (h14-2) at (24.00mm,-10.50mm) {16};
+\node[vertex] (h14-3) at (-36.00mm,-21.00mm) {17};
+\node[vertex] (h14-4) at (-12.00mm,-21.00mm) {26};
+\node[vertex] (h14-5) at (12.00mm,-21.00mm) {50};
+\node[vertex-added] (h14-6) at (36.00mm,-21.00mm) {55};
+\node[vertex] (h14-7) at (-42.00mm,-31.50mm) {19};
+\node[vertex] (h14-8) at (-30.00mm,-31.50mm) {69};
+\node[vertex] (h14-9) at (-18.00mm,-31.50mm) {32};
+\node[vertex] (h14-10) at (-6.00mm,-31.50mm) {93};
+\begin{scope}[on background layer]
+\draw[edge] (h14-4) -- (h14-10);
+\draw[edge] (h14-4) -- (h14-9);
+\draw[edge] (h14-3) -- (h14-8);
+\draw[edge] (h14-3) -- (h14-7);
+\draw[edge-touched] (h14-2) -- (h14-6);
+\draw[edge] (h14-2) -- (h14-5);
+\draw[edge] (h14-1) -- (h14-4);
+\draw[edge] (h14-1) -- (h14-3);
+\draw[edge-touched] (h14-0) -- (h14-2);
+\draw[edge] (h14-0) -- (h14-1);
+\end{scope}
+\node[var,anchor=west] at (-50.0mm,7.0mm) {\texttt{pop()} of 6: 55 down by 8 and 16};
+\cells{a15}{-37.00mm,-42.00mm}{8/touched,9/cell,16/touched,17/cell,26/cell,50/cell,55/added,19/cell,69/cell,32/cell,93/cell}
+\node[vertex-touched] (h16-0) at (0.00mm,-66.00mm) {9};
+\node[vertex-touched] (h16-1) at (-24.00mm,-76.50mm) {17};
+\node[vertex] (h16-2) at (24.00mm,-76.50mm) {16};
+\node[vertex-touched] (h16-3) at (-36.00mm,-87.00mm) {19};
+\node[vertex] (h16-4) at (-12.00mm,-87.00mm) {26};
+\node[vertex] (h16-5) at (12.00mm,-87.00mm) {50};
+\node[vertex] (h16-6) at (36.00mm,-87.00mm) {55};
+\node[vertex-added] (h16-7) at (-42.00mm,-97.50mm) {93};
+\node[vertex] (h16-8) at (-30.00mm,-97.50mm) {69};
+\node[vertex] (h16-9) at (-18.00mm,-97.50mm) {32};
+\begin{scope}[on background layer]
+\draw[edge] (h16-4) -- (h16-9);
+\draw[edge] (h16-3) -- (h16-8);
+\draw[edge-touched] (h16-3) -- (h16-7);
+\draw[edge] (h16-2) -- (h16-6);
+\draw[edge] (h16-2) -- (h16-5);
+\draw[edge] (h16-1) -- (h16-4);
+\draw[edge-touched] (h16-1) -- (h16-3);
+\draw[edge] (h16-0) -- (h16-2);
+\draw[edge-touched] (h16-0) -- (h16-1);
+\end{scope}
+\node[var,anchor=west] at (-50.0mm,-59.0mm) {\texttt{pop()} of 8: 93 down by 9, 17 and 19};
+\cells{a17}{-33.30mm,-108.00mm}{9/touched,17/touched,16/cell,19/touched,26/cell,50/cell,55/cell,93/added,69/cell,32/cell}
+\end{tikzpicture}
+\end{document}

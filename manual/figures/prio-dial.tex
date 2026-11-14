@@ -1,0 +1,43 @@
+% Source for DialQueue (sec. 9.9)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[var,anchor=west] at (-4.0mm,9.0mm) {$W = 8$, $\ell = 13$; a key $k$ in the bucket $k \bmod 8$};
+\node[free,minimum width=12mm] (w0) at (8.0mm,0) {};
+\node[index,above=1.4mm of w0] {0};
+\node[cell,minimum width=12mm] (u0) at (8.0mm,-10mm) {0};
+\node[cell,minimum width=12mm] (w1) at (21.0mm,0) {17};
+\node[index,above=1.4mm of w1] {1};
+\node[cell,minimum width=12mm] (u1) at (21.0mm,-10mm) {1};
+\node[free,minimum width=12mm] (w2) at (34.0mm,0) {};
+\node[index,above=1.4mm of w2] {2};
+\node[cell,minimum width=12mm] (u2) at (34.0mm,-10mm) {0};
+\node[free,minimum width=12mm] (w3) at (47.0mm,0) {};
+\node[index,above=1.4mm of w3] {3};
+\node[cell,minimum width=12mm] (u3) at (47.0mm,-10mm) {0};
+\node[cell,minimum width=12mm] (w4) at (60.0mm,0) {20};
+\node[index,above=1.4mm of w4] {4};
+\node[cell,minimum width=12mm] (u4) at (60.0mm,-10mm) {1};
+\node[touched,minimum width=12mm] (w5) at (73.0mm,0) {13 13};
+\node[index,above=1.4mm of w5] {5};
+\node[touched,minimum width=12mm] (u5) at (73.0mm,-10mm) {1};
+\node[cell,minimum width=12mm] (w6) at (86.0mm,0) {14};
+\node[index,above=1.4mm of w6] {6};
+\node[cell,minimum width=12mm] (u6) at (86.0mm,-10mm) {1};
+\node[free,minimum width=12mm] (w7) at (99.0mm,0) {};
+\node[index,above=1.4mm of w7] {7};
+\node[cell,minimum width=12mm] (u7) at (99.0mm,-10mm) {0};
+\node[var,anchor=east] at (0,-10mm) {\textit{used}};
+\node[node-added,minimum width=24mm] (o) at (128mm,0) {30, 41};
+\node[var] at (128mm,7mm) {overflow};
+\node[var,anchor=west] at (0,-19mm) {the next bucket in use: the scan of \textit{used} from the bucket 5, around the circle};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,64 @@
+% Source for RadixHeap (sec. 9.9)
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\usetikzlibrary{backgrounds}
+\begin{document}
+\begin{tikzpicture}[ads]
+\node[var,anchor=west] at (-4.0mm,9.0mm) {$\ell = 20 = 00\,01\,01\,00_2$};
+\node[index,anchor=east] at (-3.0mm,0.0mm) {$r = 0$};
+\node[touched,minimum width=13mm] (g0) at (8.0mm,0.0mm) {20};
+\node[cell,minimum width=13mm] (g1) at (22.0mm,0.0mm) {21};
+\node[free,minimum width=13mm] (g2) at (36.0mm,0.0mm) {};
+\node[cell,minimum width=13mm] (g3) at (50.0mm,0.0mm) {23};
+\node[index,anchor=east] at (-3.0mm,-8.0mm) {$r = 1$};
+\node[free,minimum width=13mm] (g4) at (8.0mm,-8.0mm) {};
+\node[free,minimum width=13mm] (g5) at (22.0mm,-8.0mm) {};
+\node[cell,minimum width=13mm] (g6) at (36.0mm,-8.0mm) {25 26};
+\node[free,minimum width=13mm] (g7) at (50.0mm,-8.0mm) {};
+\node[index,anchor=east] at (-3.0mm,-16.0mm) {$r = 2$};
+\node[free,minimum width=13mm] (g8) at (8.0mm,-16.0mm) {};
+\node[free,minimum width=13mm] (g9) at (22.0mm,-16.0mm) {};
+\node[cell,minimum width=13mm] (g10) at (36.0mm,-16.0mm) {45};
+\node[free,minimum width=13mm] (g11) at (50.0mm,-16.0mm) {};
+\node[index,anchor=east] at (-3.0mm,-24.0mm) {$r = 3$};
+\node[free,minimum width=13mm] (g12) at (8.0mm,-24.0mm) {};
+\node[cell,minimum width=13mm] (g13) at (22.0mm,-24.0mm) {100};
+\node[free,minimum width=13mm] (g14) at (36.0mm,-24.0mm) {};
+\node[free,minimum width=13mm] (g15) at (50.0mm,-24.0mm) {};
+\node[index] at (8.0mm,5.0mm) {$x_r = 0$};
+\node[index] at (22.0mm,5.0mm) {$x_r = 1$};
+\node[index] at (36.0mm,5.0mm) {$x_r = 2$};
+\node[index] at (50.0mm,5.0mm) {$x_r = 3$};
+\node[var,anchor=west] at (76.0mm,9.0mm) {$\ell = 25$, the bucket 6 emptied into the row 0};
+\node[index,anchor=east] at (77.0mm,0.0mm) {$r = 0$};
+\node[free,minimum width=13mm] (h0) at (88.0mm,0.0mm) {};
+\node[added,minimum width=13mm] (h1) at (102.0mm,0.0mm) {25};
+\node[added,minimum width=13mm] (h2) at (116.0mm,0.0mm) {26};
+\node[free,minimum width=13mm] (h3) at (130.0mm,0.0mm) {};
+\node[index,anchor=east] at (77.0mm,-8.0mm) {$r = 1$};
+\node[free,minimum width=13mm] (h4) at (88.0mm,-8.0mm) {};
+\node[free,minimum width=13mm] (h5) at (102.0mm,-8.0mm) {};
+\node[free,minimum width=13mm] (h6) at (116.0mm,-8.0mm) {};
+\node[free,minimum width=13mm] (h7) at (130.0mm,-8.0mm) {};
+\node[index,anchor=east] at (77.0mm,-16.0mm) {$r = 2$};
+\node[free,minimum width=13mm] (h8) at (88.0mm,-16.0mm) {};
+\node[free,minimum width=13mm] (h9) at (102.0mm,-16.0mm) {};
+\node[cell,minimum width=13mm] (h10) at (116.0mm,-16.0mm) {45};
+\node[free,minimum width=13mm] (h11) at (130.0mm,-16.0mm) {};
+\node[index,anchor=east] at (77.0mm,-24.0mm) {$r = 3$};
+\node[free,minimum width=13mm] (h12) at (88.0mm,-24.0mm) {};
+\node[cell,minimum width=13mm] (h13) at (102.0mm,-24.0mm) {100};
+\node[free,minimum width=13mm] (h14) at (116.0mm,-24.0mm) {};
+\node[free,minimum width=13mm] (h15) at (130.0mm,-24.0mm) {};
+\node[index] at (88.0mm,5.0mm) {$x_r = 0$};
+\node[index] at (102.0mm,5.0mm) {$x_r = 1$};
+\node[index] at (116.0mm,5.0mm) {$x_r = 2$};
+\node[index] at (130.0mm,5.0mm) {$x_r = 3$};
+\end{tikzpicture}
+\end{document}
