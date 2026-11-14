@@ -2555,6 +2555,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- SEList rounded the places of a block up to a power of 2, std::bit_ceil( b
+  + 1 ), so that its space n + O( b + n / b ) held only when b + 1 was a
+  power of 2 (a block of b = 64 had 128 places for at most 65 items); a
+  block now has exactly b + 1 places, a place reduced by a comparison and a
+  subtraction instead of a mask, and capacity() gives the places of the
+  blocks; the header, the theory of the sequences and Lemma 2.14 of the
+  manual no longer state the condition; the test ods_lists
+  ods-3.3.selist-space
+
 - zeroPolynomial() drew its points from { 1 , ... , 2 d } computing 2 d as a
   long, which overflows when d > LONG_MAX / 2; its precondition now requires
   d <= LONG_MAX / 2, as the header, the theory of the algorithms and the

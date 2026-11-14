@@ -1874,6 +1874,7 @@ ods_lists  ods-ex3.15.real-time-min-queue  coda col minimo, O(1) nel caso peggio
 ods_lists  ods-ex3.16.real-time-min-deque  deque col minimo, O(1) nel caso peggiore
 ods_lists  ods-ex3.16.min-deque         MinDeque
 ods_lists  ods-3.3.selist               SEList a blocchi
+ods_lists  ods-3.3.selist-space         SEList, b + 1 posti per blocco
 ods_lists  ods-ex3.17-3.18.selist-ends  SEList agli estremi
 ods_lists  ods-3.4.xor-list             lista XOR
 ods_lists  ods-ex3.19.xor-swap          scambio con XOR

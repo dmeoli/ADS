@@ -692,7 +692,8 @@
  The `SEList` of Morin keeps its items in a doubly linked list of blocks,
  each a circular deque of at most \f$ b + 1 \f$ items, the blocks between
  the first and the last holding at least \f$ b - 1 \f$ items each; hence
- \f$ n \f$ items take \f$ n / ( b - 1 ) + 2 \f$ blocks at most, i.e.,
+ \f$ n \f$ items take \f$ n / ( b - 1 ) + 2 \f$ blocks at most, of exactly
+ \f$ b + 1 \f$ places each for any \f$ b \f$, i.e.,
  \f$ n + O( b + n / b ) \f$ places and \f$ O( n / b ) \f$ pointers, and the
  block of the rank \f$ i \f$ is reached from the nearer end through
  \f$ O( 1 + \min\{ i , n - i \} / b ) \f$ blocks.

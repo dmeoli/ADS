@@ -39,9 +39,10 @@
  * time.
  *
  * Against Morin's code, the claims for the benchmarks: a block is one
- * allocation of a power of 2 places, reduced by a mask where Morin's
- * `BDeque`, an `ArrayDeque`, divides by \f$ b + 1 \f$, and holds raw places
- * where Morin's builds \f$ b + 1 \f$ items by default; the operations at the
+ * allocation of exactly \f$ b + 1 \f$ places, its index reduced by a
+ * comparison and a subtraction where Morin's `BDeque`, an `ArrayDeque`,
+ * divides by \f$ b + 1 \f$, and holds raw places where Morin's builds
+ * \f$ b + 1 \f$ items by default; the operations at the
  * two ends never spread nor gather; one block emptied is kept, so that a
  * queue that crosses the boundary of a block back and forth allocates
  * nothing.
@@ -79,7 +80,6 @@
 
 #include "ADS/Contract.h"
 
-#include <bit>
 #include <cstddef>
 #include <initializer_list>
 #include <iterator>
@@ -146,6 +146,12 @@ class SEList {
 
  /// the number of blocks
  [[nodiscard]] std::size_t blocks( void ) const { return( f_blocks ); }
+
+ /// the places of the blocks, \f$ b + 1 \f$ each, at most
+ /// \f$ n + O( b + n / b ) \f$
+ [[nodiscard]] std::size_t capacity( void ) const {
+  return( f_blocks * f_cap );
+  }
 
  /// the item of rank \f$ i \f$, \f$ O( 1 + \min\{ i , n - i \} / b ) \f$
  /// \pre \f$ i < n \f$
@@ -341,9 +347,15 @@ class SEList {
                                    + OFF ) );
   }
 
+ /// the place \f$ i < 2 ( b + 1 ) \f$ of a block reduced modulo
+ /// \f$ b + 1 \f$, by a comparison and a subtraction
+ std::size_t wrap( std::size_t i ) const {
+  return( i >= f_cap ? i - f_cap : i );
+  }
+
  /// the item \f$ j \f$ of the block \f$ u \f$
  T & at( Node * u , std::size_t j ) const {
-  return( places( u )[ ( u->head + j ) & f_mask ] );
+  return( places( u )[ wrap( u->head + j ) ] );
   }
 
  /// the block of rank \f$ i \f$, from the nearer end, \f$ j \f$ the place
@@ -425,7 +437,7 @@ class SEList {
  std::size_t f_n = 0;         ///< the number of items
  std::size_t f_blocks = 0;    ///< the number of blocks
  std::size_t f_b;             ///< the parameter \f$ b \f$
- std::size_t f_mask;          ///< the places of a block, less 1
+ std::size_t f_cap;           ///< the places of a block, b + 1
 
  };  // end( class SEList )
 

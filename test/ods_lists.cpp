@@ -1153,6 +1153,28 @@ ADS_TEST( "ods-ex3.16.min-deque" )
   }
  }
 
+// ods 3.3, Lemma 2.14 of the manual: the blocks of an SEList have b + 1
+// places for any b, not only when b + 1 is a power of 2, so that the
+// places left empty are at most 2 a block and b at each end, after pushes
+// at both ends and insertions and removals at random ranks
+ADS_TEST( "ods-3.3.selist-space" )
+{
+ for( std::size_t b : { 3 , 4 , 5 , 8 , 63 , 64 , 100 } ) {
+  SEList< int > s( b );
+  std::mt19937 g( static_cast< std::uint32_t >( b ) );
+  for( int i = 0 ; i < 20000 ; ++i ) {
+   const std::size_t n = s.size();
+   if( ( n == 0 ) || ( g() % 3 ) ) {
+    if( g() % 2 ) s.push_back( i ); else s.insert( g() % ( n + 1 ) , i );
+    }
+   else
+    s.erase( g() % n );
+   }
+  CHECK( s.capacity() == s.blocks() * ( b + 1 ) );
+  CHECK( s.capacity() - s.size() <= 2 * s.blocks() + 2 * b );
+  }
+ }
+
 ADS_TEST( "ods-3.3.selist" )
 {
  for( std::size_t b : { 3 , 4 , 5 , 8 , 63 } ) {
