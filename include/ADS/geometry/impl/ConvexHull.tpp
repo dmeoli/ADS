@@ -50,6 +50,7 @@ inline bool smallCoordinates( const std::vector< Point > & P )
 
 }  // end( namespace detail )
 
+//! [cross]
 inline long long cross( const Point & a , const Point & b ,
                          const Point & c )
 {
@@ -57,6 +58,7 @@ inline long long cross( const Point & a , const Point & b ,
  return( ( L( b.x ) - a.x ) * ( L( c.y ) - a.y ) -
          ( L( b.y ) - a.y ) * ( L( c.x ) - a.x ) );
  }
+//! [cross]
 
 inline bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
                       const Point & q )
@@ -98,7 +100,7 @@ inline std::vector< Point > convexHullBrute( std::vector< Point > P )
    for( std::size_t k = 0 ; k < n && edge ; ++k ) {
     const long long c = cross( P[ i ] , P[ j ] , P[ k ] );
     if( c < 0 ) edge = false;
-    // a point on the segment, strictly inside, is not a vertex
+    // a point on the line out of the segment: no edge, but a part of one
     using L = long long;
     if( ( c == 0 ) && ( k != i ) && ( k != j ) &&
         ( ( L( P[ k ].x ) - P[ i ].x ) * ( L( P[ k ].x ) - P[ j ].x ) +
@@ -151,6 +153,7 @@ inline std::vector< Point > graham( std::vector< Point > P )
    continue;
   Q.push_back( P[ i ] );
   }
+//! [graham]
  std::vector< Point > S;                     // the stack of the hull
  for( const Point & p : Q ) {
   while( ( S.size() >= 2 ) &&
@@ -158,6 +161,7 @@ inline std::vector< Point > graham( std::vector< Point > P )
    S.pop_back();                             // the backtrack
   S.push_back( p );
   }
+//! [graham]
  ADS_AUDIT( detail::isHullOf( S , P0 ) );
  return( S );
  }
@@ -193,6 +197,7 @@ inline std::vector< Point > convexHull( const std::vector< Point > & P )
  auto key = []( const Point & p ) {
   return( ( U( L( p.x ) + ( L( 1 ) << 31 ) ) << 32 ) |
           U( L( p.y ) + ( L( 1 ) << 31 ) ) ); };
+//! [octagon]
  std::vector< U > K;
  K.reserve( m >= 3 ? n / 8 + 16 : n );
  for( const Point & p : P ) {
@@ -202,6 +207,7 @@ inline std::vector< Point > convexHull( const std::vector< Point > & P )
   if( ! inside )
    K.push_back( key( p ) );
   }
+//! [octagon]
  sort( K );
  K.erase( std::unique( K.begin() , K.end() ) , K.end() );
  auto point = []( U k ) {
@@ -212,6 +218,7 @@ inline std::vector< Point > convexHull( const std::vector< Point > & P )
   for( U k : K ) H.push_back( point( k ) );   // by x, as graham()
   return( H );
   }
+//! [chain]
  H.resize( 2 * K.size() );
  std::size_t k = 0;
  for( std::size_t i = 0 ; i < K.size() ; ++i ) {   // the lower chain
@@ -225,6 +232,7 @@ inline std::vector< Point > convexHull( const std::vector< Point > & P )
   H[ k++ ] = p;
   }
  H.resize( k - 1 );                         // the first point came back
+//! [chain]
  // from the lowest point, the rightmost of the lowest ones, as graham()
  const auto low = std::min_element( H.begin() , H.end() ,
                                     []( const Point & a , const Point & b ) {

@@ -152,8 +152,8 @@ inline double pseudoAngle( long dx , long dy );
 /// the hull by checking every segment, \f$ O( n^3 ) \f$; the vertices in
 /// counterclockwise order from the lowest one
 ///
-/// In pseudocode (section 16.1), a point strictly inside a segment of the
-/// hull being no vertex:
+/// In pseudocode (section 16.1), a point strictly inside an edge of the
+/// hull being no vertex, which the second condition of line 6 ensures:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{convexHullBrute}( P ) \cr
@@ -163,8 +163,9 @@ inline double pseudoAngle( long dx , long dy );
 /// 5 & \quad \textbf{foreach}\ p_i , p_j \in P \text{ with } i \ne j
 ///     \ \textbf{do} \cr
 /// 6 & \qquad \textbf{if}\ \mathrm{cross}( p_i , p_j , p_k ) \ge 0
-///     \text{ for each } k\ \textbf{and}\ \text{no } p_k \text{ lies }
-///     \text{strictly inside } p_i p_j\ \textbf{then} \cr
+///     \text{ for each } k\ \textbf{and}\ \text{no } p_k \text{ on the }
+///     \text{line of } p_i p_j \text{ lies out of the segment}
+///     \ \textbf{then} \cr
 /// 7 & \qquad\quad H \gets H \cup \{ p_i , p_j \} \cr
 /// 8 & \quad \textbf{return}\ H \text{ sorted by angle around its lowest }
 ///     \text{point}
