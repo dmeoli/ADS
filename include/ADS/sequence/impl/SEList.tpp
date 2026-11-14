@@ -182,7 +182,6 @@ template< class T >
 typename SEList< T >::Node *
 SEList< T >::locate( std::size_t i , std::size_t & j ) const
 {
- //! [locate]
  Node * u;
  if( i < f_n / 2 ) {                        // from the front
   for( u = f_dummy.next ; i >= u->n ; u = u->next )
@@ -197,7 +196,6 @@ SEList< T >::locate( std::size_t i , std::size_t & j ) const
    }
   j = i - k;
   }
- //! [locate]
  return( u );
  }
 
@@ -237,13 +235,11 @@ template< class T >
 void SEList< T >::push_back( const T & x )
 {
  T y = x;                                   // x may be an item
- //! [push_back]
  Node * u = f_dummy.prev;
  if( ( u == &f_dummy ) || ( u->n == f_b + 1 ) )
   u = newBlock( &f_dummy );
  pushBack( u , std::move( y ) );
  ++f_n;
- //! [push_back]
  ADS_INVARIANT( bounded() );
  }
 
@@ -263,13 +259,11 @@ template< class T >
 void SEList< T >::pop_back( void )
 {
  ADS_PRE( f_n > 0 );
- //! [pop_back]
  Node * u = f_dummy.prev;
  popBack( u );
  if( u->n == 0 )
   dropBlock( u );
  --f_n;
- //! [pop_back]
  ADS_INVARIANT( bounded() );
  }
 
@@ -288,7 +282,6 @@ void SEList< T >::pop_front( void )
 template< class T >
 void SEList< T >::spread( Node * u )
 {
- //! [spread]
  Node * w = u;
  for( std::size_t k = 0 ; k < f_b ; ++k )
   w = w->next;
@@ -296,18 +289,15 @@ void SEList< T >::spread( Node * u )
  for( ; w != u ; w = w->prev )
   while( w->n < f_b )
    pushFront( w , popBack( w->prev ) );
- //! [spread]
  }
 
 template< class T >
 void SEList< T >::gather( Node * u )
 {
- //! [gather]
  for( std::size_t k = 1 ; k < f_b ; ++k , u = u->next )
   while( ( u->n < f_b ) && ( u->next->n > 0 ) )
    pushBack( u , popFront( u->next ) );
  dropBlock( u );                            // the b-th block, empty
- //! [gather]
  }
 
 template< class T >
@@ -321,7 +311,6 @@ void SEList< T >::insert( std::size_t i , const T & x )
  std::size_t j;
  Node * u = locate( i , j );
  if( u->n == f_b + 1 ) {
-  //! [insert]
   Node * v = u;                             // the first block with room
   std::size_t r = 0;
   while( ( r < f_b ) && ( v != &f_dummy ) && ( v->n == f_b + 1 ) ) {
@@ -338,7 +327,6 @@ void SEList< T >::insert( std::size_t i , const T & x )
    for( ; v != u ; v = v->prev )            // one item on from each block
     pushFront( v , popBack( v->prev ) );
    }
-  //! [insert]
   }
  insert( u , j , std::move( y ) );
  ++f_n;
@@ -355,7 +343,6 @@ void SEList< T >::erase( std::size_t i )
  Node * u = locate( i , j );
  erase( u , j );
  --f_n;
- //! [erase]
  if( u->n == 0 )                            // an end block, emptied
   dropBlock( u );
  else if( middle( u ) && ( u->n < f_b - 1 ) ) {
@@ -374,7 +361,6 @@ void SEList< T >::erase( std::size_t i )
     dropBlock( v );
    }
   }
- //! [erase]
  ADS_POST( f_n == n - 1 );
  ADS_INVARIANT( bounded() );
  }

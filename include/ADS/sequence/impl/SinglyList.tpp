@@ -253,9 +253,7 @@ void SinglyList< T >::add( std::size_t i , const T & x )
 {
  ADS_PRE( i <= f_size );
  [[maybe_unused]] const std::size_t n = f_size;
- //! [add]
  insert( i == 0 ? head() : walk( i - 1 ) , x );
- //! [add]
  ADS_POST( f_size == n + 1 );
  }
 
@@ -264,11 +262,9 @@ T SinglyList< T >::erase( std::size_t i )
 {
  ADS_PRE( i < f_size );
  [[maybe_unused]] const std::size_t n = f_size;
- //! [erase]
  const Pos p = i == 0 ? head() : walk( i - 1 );
  T x = std::move( cell( p )->value );
  remove( p );
- //! [erase]
  ADS_POST( f_size == n - 1 );
  return( x );
  }
@@ -277,19 +273,16 @@ template< class T >
 const T & SinglyList< T >::secondLast( void ) const
 {
  ADS_PRE( ( f_first != nullptr ) && ( f_first->next != nullptr ) );
- //! [secondLast]
  const Cell * u = f_first;
  while( u->next->next )
   u = u->next;
  return( u->value );
- //! [secondLast]
  }
 
 template< class T >
 void SinglyList< T >::reverse( void )
 {
  const auto old = detail::snapshot( *this );
- //! [reverse]
  Cell * p = nullptr , * u = f_first;
  f_last = u;
  while( u ) {
@@ -299,7 +292,6 @@ void SinglyList< T >::reverse( void )
   u = w;
   }
  f_first = p;
- //! [reverse]
  ADS_AUDIT( ( [ & ] {
   SinglyList r;
   for( const T & x : *old ) r.push_front( x );

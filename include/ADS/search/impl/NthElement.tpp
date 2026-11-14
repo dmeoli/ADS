@@ -40,7 +40,6 @@ void selectInsertion( It first , It last , C & less )
 /// the pivot in *first; the items smaller than it (not larger, if Equal)
 /// before it, the others after it, by the scheme of Lomuto with no branch;
 /// the place of the pivot
-//! [selectLomuto]
 template< bool Equal , class It , class C >
 It selectLomuto( It first , It last , C & less )
 {
@@ -72,7 +71,6 @@ It selectLomuto( It first , It last , C & less )
  std::iter_swap( first , lt );
  return( lt );
  }
-//! [selectLomuto]
 
 /// the same, by the scheme of Hoare: two indices from the ends swap the
 /// items on the wrong side, the others are read and never written, and on

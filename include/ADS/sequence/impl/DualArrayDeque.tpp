@@ -69,11 +69,9 @@ void DualArrayDeque< T , S >::insert( std::size_t i , const T & x )
  [[maybe_unused]] const std::size_t n = size();
  T y = x;                                   // x may be an item
  const std::size_t f = f_F.size();
- //! [insert]
  if( i < f ) put( f_F , f - i , std::move( y ) );
  else put( f_B , i - f , std::move( y ) );
  balance();
- //! [insert]
  ADS_POST( size() == n + 1 );
  ADS_INVARIANT( balanced() );
  }
@@ -84,11 +82,9 @@ void DualArrayDeque< T , S >::erase( std::size_t i )
  ADS_PRE( i < size() );
  [[maybe_unused]] const std::size_t n = size();
  const std::size_t f = f_F.size();
- //! [erase]
  if( i < f ) take( f_F , f - 1 - i );
  else take( f_B , i - f );
  balance();
- //! [erase]
  ADS_POST( size() == n - 1 );
  ADS_INVARIANT( balanced() );
  }
@@ -131,7 +127,6 @@ bool DualArrayDeque< T , S >::balanced( void ) const
 template< class T , class S >
 void DualArrayDeque< T , S >::deal( S & big , S & small , std::size_t t )
 {
- //! [deal]
  const std::size_t b = small.size() , g = big.size();
  // small grows by t, its items t places up and big[ t - 1 ] , ... ,
  // big[ 0 ] below them, the places from the top down
@@ -147,7 +142,6 @@ void DualArrayDeque< T , S >::deal( S & big , S & small , std::size_t t )
   big[ k ] = std::move( big[ k + t ] );
  for( std::size_t k = 0 ; k < t ; ++k )
   big.pop_back();
- //! [deal]
  }
 
 template< class T , class S >
@@ -155,11 +149,9 @@ void DualArrayDeque< T , S >::balance( void )
 {
  if( balanced() )
   return;
- //! [balance]
  const std::size_t m = size() / 2 , f = f_F.size();
  if( f > m ) deal( f_F , f_B , f - m );     // the bottom of F to B
  else deal( f_B , f_F , m - f );            // the bottom of B to F
- //! [balance]
  }
 
 template< class T , class S >

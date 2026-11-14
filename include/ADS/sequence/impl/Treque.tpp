@@ -27,11 +27,9 @@ void Treque< T >::insert( std::size_t i , const T & x )
 {
  ADS_PRE( i <= size() );
  [[maybe_unused]] const std::size_t n = size();
- //! [insert]
  if( i < f_L.size() ) f_L.insert( i , x );
  else f_R.insert( i - f_L.size() , x );
  balance();
- //! [insert]
  ADS_POST( size() == n + 1 );
  ADS_INVARIANT( balanced() );
  }
@@ -41,11 +39,9 @@ void Treque< T >::erase( std::size_t i )
 {
  ADS_PRE( i < size() );
  [[maybe_unused]] const std::size_t n = size();
- //! [erase]
  if( i < f_L.size() ) f_L.erase( i );
  else f_R.erase( i - f_L.size() );
  balance();
- //! [erase]
  ADS_POST( size() == n - 1 );
  ADS_INVARIANT( balanced() );
  }
@@ -53,7 +49,6 @@ void Treque< T >::erase( std::size_t i )
 template< class T >
 void Treque< T >::balance( void )
 {
- //! [balance]
  if( f_L.size() > f_R.size() + 1 ) {
   f_R.push_front( std::move( f_L.back() ) );
   f_L.pop_back();
@@ -62,7 +57,6 @@ void Treque< T >::balance( void )
   f_L.push_back( std::move( f_R.front() ) );
   f_R.pop_front();
   }
- //! [balance]
  }
 
 template< class T >

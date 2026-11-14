@@ -778,7 +778,6 @@ class PathIterator {
   }
 
  /// from `n` down to its first node (or last, if not `first`)
- //! [path-step]
  void descend( N * n , bool first ) {
   for( ; n ; n = child( n , ! first ) ) f_path.push_back( n );
   }
@@ -795,7 +794,6 @@ class PathIterator {
    f_path.pop_back();
    } while( ! f_path.empty() && ( child( f_path.back() , forward ) == from ) );
   }
- //! [path-step]
 
  const O * f_o = nullptr;
  std::vector< N * > f_path;   ///< from the root to the current node

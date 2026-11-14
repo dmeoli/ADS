@@ -514,7 +514,6 @@ enum class decrease_key_kind { none , lazy , native };
 /// 5 & \quad \textbf{return}\ \mathit{none}
 /// \end{array}}
 /// \f]
-//! [decrease_key_of]
 template< class Q >
 constexpr decrease_key_kind decrease_key_of( void )
 {
@@ -529,7 +528,6 @@ constexpr decrease_key_kind decrease_key_of( void )
  else
   return( decrease_key_kind::none );
  }
-//! [decrease_key_of]
 
 /// an `AddressablePriorityQueue` with `increase( h , p )` and
 /// `erase( h )` on its handles as well (the open lists whose priorities

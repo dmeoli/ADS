@@ -159,14 +159,12 @@ class MinArray {
  template< class U >
  void push( U && x , const C & less ) {
   ADS_PRE( f_hi < f_cap );
-  //! [MinArray-push]
   std::construct_at( f_a + f_hi , Cell{ T( std::forward< U >( x ) ) ,
                                         f_hi } );
   if( ( f_hi > f_lo ) &&
       ! less( f_a[ f_hi ].item , at( least( f_hi - 1 ) ) ) )
    f_a[ f_hi ].m = least( f_hi - 1 );
   ++f_hi;
-  //! [MinArray-push]
   }
 
  /// the top cell destroyed

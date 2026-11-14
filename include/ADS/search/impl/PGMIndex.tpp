@@ -366,7 +366,6 @@ inline std::size_t ADS_PGM::predict( const Level & l , std::size_t s ,
  return( std::size_t( p < lo ? lo : p > hi ? hi : p ) );
  }
 
-//! [lowerBound]
 ADS_PGM_T
 inline std::size_t ADS_PGM::lowerBound( const K & v ) const
 {
@@ -396,7 +395,6 @@ inline std::size_t ADS_PGM::lowerBound( const K & v ) const
            ( ( r == 0 ) || ( f_A[ r - 1 ] < v ) ) );
  return( r );
  }
-//! [lowerBound]
 
 ADS_PGM_T
 inline bool ADS_PGM::contains( const K & v ) const

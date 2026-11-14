@@ -65,12 +65,10 @@ template< class T >
 void LinkedQueue< T >::enqueue( const T & v )
 {
  [[maybe_unused]] const bool was_empty = empty();
- //! [enqueue]
  Cell * c = f_pool.make( Cell{ v , nullptr } );
  ( f_back ? f_back->next : f_front ) = c;
  f_back = c;
  ++f_size;
- //! [enqueue]
  ADS_POST( ! empty() && ( ! was_empty || detail::equal( top() , v ) ) );
  }
 
@@ -78,7 +76,6 @@ template< class T >
 T LinkedQueue< T >::dequeue( void )
 {
  ADS_PRE( ! empty() );
- //! [dequeue]
  Cell * c = f_front;
  T v = std::move( c->value );
  f_front = c->next;
@@ -86,7 +83,6 @@ T LinkedQueue< T >::dequeue( void )
   f_back = nullptr;
  f_pool.free( c );
  --f_size;
- //! [dequeue]
  return( v );
  }
 

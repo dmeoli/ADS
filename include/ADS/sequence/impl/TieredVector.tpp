@@ -53,7 +53,6 @@ void TieredVector< T >::insert( std::size_t i , const T & x )
   f_blocks.emplace_back();
   f_blocks.back().a = std::make_unique< T[] >( f_b );
   }
- //! [insert]
  const std::size_t v = f_g + i;             // the virtual place of i
  const std::size_t k = v >> f_lg , L = ( f_g + f_n ) >> f_lg;
  for( std::size_t j = L ; j > k ; --j ) {   // the last item of each block
@@ -67,7 +66,6 @@ void TieredVector< T >::insert( std::size_t i , const T & x )
  for( std::size_t q = end ; q > ( v & m ) ; --q )           // i one place on
   c.a[ ( c.off + q ) & m ] = std::move( c.a[ ( c.off + q - 1 ) & m ] );
  c.a[ ( c.off + v ) & m ] = std::move( y );
- //! [insert]
  ++f_n;
  ADS_INVARIANT( full() );
  }
@@ -81,7 +79,6 @@ void TieredVector< T >::insertFront( std::size_t i , T && x )
   f_blocks.front().a = std::make_unique< T[] >( f_b );
   f_g = f_b;
   }
- //! [insertFront]
  const std::size_t w = f_g + i - 1;         // the virtual place of x
  const std::size_t k = w >> f_lg;
  for( std::size_t j = 0 ; j < k ; ++j ) {   // the first item of each block
@@ -95,7 +92,6 @@ void TieredVector< T >::insertFront( std::size_t i , T && x )
  for( std::size_t q = s ; q <= ( w & m ) ; ++q )
   c.a[ ( c.off + q - 1 ) & m ] = std::move( c.a[ ( c.off + q ) & m ] );
  c.a[ ( c.off + w ) & m ] = std::move( x );
- //! [insertFront]
  --f_g;
  ++f_n;
  }
@@ -105,7 +101,6 @@ void TieredVector< T >::eraseFront( std::size_t i )
 {
  const std::size_t m = f_b - 1;
  const std::size_t v = f_g + i , k = v >> f_lg;
- //! [eraseFront]
  Block & c = f_blocks[ k ];                 // the items of the block before
  const std::size_t s = k == 0 ? f_g : 0;    // i one place on
  for( std::size_t q = v & m ; q > s ; --q )
@@ -116,7 +111,6 @@ void TieredVector< T >::eraseFront( std::size_t i )
   q.a[ q.off ] = std::move( p.a[ ( p.off + m ) & m ] );
   p.off = ( p.off - 1 ) & m;
   }
- //! [eraseFront]
  ++f_g;
  --f_n;
  if( f_g == f_b ) {                         // the first block empty

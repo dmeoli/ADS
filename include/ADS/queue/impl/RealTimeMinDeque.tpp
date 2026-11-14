@@ -67,7 +67,6 @@ T RealTimeMinDeque< T , C >::pop( int s )
 {
  ADS_PRE( ! empty() );
  [[maybe_unused]] const std::size_t n = f_n;
- //! [pop]
  const int x = f_A[ s ].size() > 0 ? s : 1 - s;   // or the only item
  ADS_INVARIANT( ( x == s ) || ( ! f_rb && ( f_n == 1 ) ) );
  Array & A = f_A[ x ];
@@ -82,7 +81,6 @@ T RealTimeMinDeque< T , C >::pop( int s )
    --c;
    }
   }
- //! [pop]
  afterOp();
  ADS_POST( f_n == n - 1 );
  return( v );
@@ -109,12 +107,10 @@ const T & RealTimeMinDeque< T , C >::min( void ) const
 template< std::copy_constructible T , class C >
 bool RealTimeMinDeque< T , C >::due( void ) const
 {
- //! [due]
  const std::size_t a = f_A[ 0 ].size() , b = f_A[ 1 ].size();
  return( ( std::max( a , b ) > 3 * std::min( a , b ) + 1 ) ||
          ( 2 * a >= f_A[ 0 ].capacity() ) ||
          ( 2 * b >= f_A[ 1 ].capacity() ) );
- //! [due]
  }
 
 template< std::copy_constructible T , class C >
@@ -134,7 +130,6 @@ void RealTimeMinDeque< T , C >::afterOp( void )
 template< std::copy_constructible T , class C >
 void RealTimeMinDeque< T , C >::start( void )
 {
- //! [start]
  f_g = f_A[ 0 ].size() >= f_A[ 1 ].size() ? 0 : 1;
  const std::size_t n0 = f_n , keep = ( n0 + 1 ) / 2;
  f_t = f_A[ f_g ].size() - keep;            // the bottom of G that passes
@@ -144,7 +139,6 @@ void RealTimeMinDeque< T , C >::start( void )
  f_cs = 0;
  f_cg = f_t;
  f_rb = true;
- //! [start]
  if( n0 >= kSmall ) {
   steps( kSteps );
   return;
@@ -159,7 +153,6 @@ void RealTimeMinDeque< T , C >::steps( int k )
  const int s = 1 - f_g;
  Array & G = f_A[ f_g ] , & S = f_A[ s ];
  Array & Gn = f_new[ f_g ] , & Sn = f_new[ s ];
- //! [steps]
  for( ; ; --k ) {
   if( f_p > 0 ) {                           // the bottom of G, downwards
    if( k == 0 ) return;
@@ -175,7 +168,6 @@ void RealTimeMinDeque< T , C >::steps( int k )
    }
   else break;                               // both prefixes complete
   }
- //! [steps]
  std::size_t j = 0;                         // the old arrays to destroy
  for( Array * a : { &G , &S } ) {
   while( f_old[ j ].capacity() > 0 ) {

@@ -85,7 +85,6 @@ inline void CellHeap::removeRoot( Value c )
  if( it != f_roots.end() ) f_roots.erase( it );
  }
 
-//! [markReversal]
 inline void CellHeap::markReversal( Value cur )
 {
  Value prev = nil;
@@ -116,7 +115,6 @@ inline void CellHeap::markReversal( Value cur )
   x.cdr = next;                             // the cdr reversed
   }
  }
-//! [markReversal]
 
 inline void CellHeap::markStack( Value root )
 {

@@ -76,7 +76,6 @@ const T & XorList< T >::back( void ) const
 template< class T >
 void XorList< T >::push_front( const T & x )
 {
- //! [push_front]
  Cell * c = f_pool.make( Cell{ word( f_head ) , x } );
  if( f_head )
   f_head->link ^= word( c );
@@ -84,7 +83,6 @@ void XorList< T >::push_front( const T & x )
   f_tail = c;
  f_head = c;
  ++f_n;
- //! [push_front]
  ADS_INVARIANT( walks() );
  }
 
@@ -105,7 +103,6 @@ template< class T >
 void XorList< T >::pop_front( void )
 {
  ADS_PRE( f_n > 0 );
- //! [pop_front]
  Cell * c = f_head;
  f_head = other( c , nullptr );             // its only neighbour
  if( f_head )
@@ -114,7 +111,6 @@ void XorList< T >::pop_front( void )
   f_tail = nullptr;
  f_pool.free( c );
  --f_n;
- //! [pop_front]
  ADS_INVARIANT( walks() );
  }
 
@@ -168,11 +164,9 @@ bool XorList< T >::walks( void ) const
 template< std::unsigned_integral U >
 constexpr void xorSwap( U & a , U & b )
 {
- //! [xorSwap]
  a ^= b;
  b ^= a;
  a ^= b;
- //! [xorSwap]
  }
 
 /*--------------------------------------------------------------------------*/

@@ -104,7 +104,6 @@ void CubishArrayStack< T >::reset( Mid & M )
 template< class T >
 void CubishArrayStack< T >::pushFront( Mid & M , T && x )
 {
- //! [pushFront]
  if( M.g == 0 ) {                           // a new leaf at the front
   M.head = ( M.head - 1 ) & ( 2 * f_b - 1 );
   M.L[ M.head ] = Leaf{ newLeaf() , 0 };
@@ -114,7 +113,6 @@ void CubishArrayStack< T >::pushFront( Mid & M , T && x )
  --M.g;
  Leaf & f = M.L[ M.head ];
  f.a[ ( f.off + M.g ) & ( f_b - 1 ) ] = std::move( x );
- //! [pushFront]
  ++M.n;
  }
 
@@ -151,7 +149,6 @@ T CubishArrayStack< T >::popFront( Mid & M )
 template< class T >
 T CubishArrayStack< T >::popBack( Mid & M )
 {
- //! [popBack]
  const std::size_t v = M.g + M.n - 1;
  T x = std::move( at( M , M.n - 1 ) );
  --M.n;
@@ -161,7 +158,6 @@ T CubishArrayStack< T >::popBack( Mid & M )
   freeLeaf( std::move( leaf( M , M.nl - 1 ).a ) );
   --M.nl;
   }
- //! [popBack]
  return( x );
  }
 
@@ -173,7 +169,6 @@ void CubishArrayStack< T >::insert( Mid & M , std::size_t r , T && x )
   leaf( M , M.nl ) = Leaf{ newLeaf() , 0 };
   ++M.nl;
   }
- //! [insertMid]
  const std::size_t v = M.g + r;
  const std::size_t k = v >> f_lg , L = ( M.g + M.n ) >> f_lg;
  for( std::size_t j = L ; j > k ; --j ) {   // the last item of each leaf
@@ -187,7 +182,6 @@ void CubishArrayStack< T >::insert( Mid & M , std::size_t r , T && x )
  for( std::size_t q = end ; q > ( v & m ) ; --q )   // r one place on
   c.a[ ( c.off + q ) & m ] = std::move( c.a[ ( c.off + q - 1 ) & m ] );
  c.a[ ( c.off + v ) & m ] = std::move( x );
- //! [insertMid]
  ++M.n;
  }
 
@@ -244,7 +238,6 @@ void CubishArrayStack< T >::insert( std::size_t i , const T & x )
  T y = x;                                   // x may be an item
  if( f_n + 1 > 8 * f_b * f_b * f_b )
   rebuild( f_n + 1 );
- //! [insert]
  const std::size_t C = f_b * f_b;
  if( f_mids.empty() || ( f_mids.back().n == C ) )
   f_mids.push_back( newMid() );
@@ -252,7 +245,6 @@ void CubishArrayStack< T >::insert( std::size_t i , const T & x )
  for( std::size_t j = f_mids.size() - 1 ; j > k ; --j )
   pushFront( f_mids[ j ] , popBack( f_mids[ j - 1 ] ) );
  insert( f_mids[ k ] , i & ( C - 1 ) , std::move( y ) );
- //! [insert]
  ++f_n;
  ADS_POST( f_n == n + 1 );
  ADS_INVARIANT( full() );
@@ -264,14 +256,12 @@ void CubishArrayStack< T >::erase( std::size_t i )
  ADS_PRE( i < f_n );
  [[maybe_unused]] const std::size_t n = f_n;
  const std::size_t C = f_b * f_b;
- //! [erase]
  const std::size_t k = i >> ( 2 * f_lg );
  erase( f_mids[ k ] , i & ( C - 1 ) );
  for( std::size_t j = k + 1 ; j < f_mids.size() ; ++j )
   pushBack( f_mids[ j - 1 ] , popFront( f_mids[ j ] ) );
  if( f_mids.back().n == 0 )
   f_mids.pop_back();
- //! [erase]
  --f_n;
  if( ( f_b > 16 ) && ( 8 * f_n < f_b * f_b * f_b ) )
   rebuild( f_n );

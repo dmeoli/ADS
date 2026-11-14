@@ -27,10 +27,8 @@ void MinQueue< T , C >::enqueue( const T & x )
 template< class T , class C >
 void MinQueue< T , C >::transfer( void )
 {
- //! [transfer]
  while( ! f_I.empty() )
   f_O.push( f_I.pop() );
- //! [transfer]
  }
 
 template< class T , class C >
@@ -56,11 +54,9 @@ template< class T , class C >
 const T & MinQueue< T , C >::min( void ) const
 {
  ADS_PRE( ! empty() );
- //! [min]
  if( f_I.empty() ) return( f_O.min() );
  if( f_O.empty() ) return( f_I.min() );
  return( f_less( f_O.min() , f_I.min() ) ? f_O.min() : f_I.min() );
- //! [min]
  }
 
 /*--------------------------------------------------------------------------*/
