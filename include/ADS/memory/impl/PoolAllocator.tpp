@@ -115,7 +115,7 @@ inline T * PoolAllocator< T , R >::allocate( std::size_t n )
   return( static_cast< T * >(
            f_r->template allocate< sizeof( T ) , alignof( T ) >() ) );
  if( n > std::numeric_limits< std::size_t >::max() / sizeof( T ) )
-  throw std::bad_array_new_length();
+  throw( std::bad_array_new_length() );
  return( static_cast< T * >( f_r->allocate( n * sizeof( T ) ,
                                             alignof( T ) ) ) );
  }

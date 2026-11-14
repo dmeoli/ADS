@@ -190,7 +190,7 @@ class HugePageAllocator {
  [[nodiscard]] T * allocate( std::size_t n ) {
   if( n > ( std::numeric_limits< std::size_t >::max() - PAGE ) /
           sizeof( T ) )
-   throw std::bad_array_new_length();
+   throw( std::bad_array_new_length() );
   const std::size_t b = n * sizeof( T );
   if( b < PAGE )
    return( std::allocator< T >().allocate( n ) );

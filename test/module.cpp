@@ -93,7 +93,7 @@ int main()
         "BigInteger" );
 
  std::cout << ( failed ? "FAILED" : "PASSED" ) << " module\n";
- return failed ? 1 : 0;
+ return( failed ? 1 : 0 );
 }
 
 /*--------------------------------------------------------------------------*/

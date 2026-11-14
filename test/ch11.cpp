@@ -247,7 +247,7 @@ struct Counted {
  explicit Counted( int x = 0 ) : v( x ) { ++live; }
  Counted( const Counted & o ) : v( o.v ) {
   if( fail )
-   throw std::runtime_error( "copy" );
+   throw( std::runtime_error( "copy" ) );
   ++live;
   }
  Counted( Counted && o ) noexcept : v( o.v ) { ++live; }

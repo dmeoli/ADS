@@ -58,9 +58,9 @@ FingerprintPerfectHash< T , H >::FingerprintPerfectHash(
   if( i == kMaxLevels ) {
    std::sort( X.begin() , X.end() );
    if( std::adjacent_find( X.begin() , X.end() ) != X.end() )
-    throw std::runtime_error( "FingerprintPerfectHash: two keys have the "
-                              "same hash" );
-   throw std::runtime_error( "FingerprintPerfectHash: too many levels" );
+    throw( std::runtime_error( "FingerprintPerfectHash: two keys have the "
+                               "same hash" ) );
+   throw( std::runtime_error( "FingerprintPerfectHash: too many levels" ) );
    }
   const std::size_t m = std::max< std::size_t >( kBlock ,
    ( std::size_t( std::ceil( gamma * double( X.size() ) ) ) + kBlock - 1 ) /

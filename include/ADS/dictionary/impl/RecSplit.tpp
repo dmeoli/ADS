@@ -198,7 +198,7 @@ RecSplit< T , L , H >::RecSplit( const std::vector< T > & keys ,
   B.push_back( base( k ) );
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
-   throw std::runtime_error( "RecSplit: no seed separates the keys" );
+   throw( std::runtime_error( "RecSplit: no seed separates the keys" ) );
   if( build( B , b ) )
    break;
   f_seed = hashWord( f_seed , f_trials );   // a new seed

@@ -58,8 +58,8 @@ MinimalPerfectHash< T , H >::MinimalPerfectHash(
   B.push_back( base( k ) );
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
-   throw std::runtime_error( "MinimalPerfectHash: no seed separates the "
-                             "keys" );
+   throw( std::runtime_error( "MinimalPerfectHash: no seed separates the "
+                              "keys" ) );
   if( build( B ) )
    break;
   f_seed = hashWord( f_seed , f_trials );   // a new seed

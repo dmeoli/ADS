@@ -35,7 +35,7 @@ BinaryFuseFilter< T , F , H >::BinaryFuseFilter(
  bool unique = false;
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
-   throw std::runtime_error( "BinaryFuseFilter: no seed peels the keys" );
+   throw( std::runtime_error( "BinaryFuseFilter: no seed peels the keys" ) );
   f_seed = hashWord( f_seed , f_trials );   // a new seed at each trial
   if( build( B ) )
    break;

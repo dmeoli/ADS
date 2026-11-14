@@ -211,7 +211,7 @@ struct Bomb {
  explicit Bomb( int x ) : v( x ) {}
  Bomb( const Bomb & o ) : v( o.v ) {
   if( ( left >= 0 ) && ( left-- == 0 ) )
-   throw std::runtime_error( "copy" );
+   throw( std::runtime_error( "copy" ) );
   }
  Bomb & operator=( const Bomb & ) = default;
  };

@@ -200,7 +200,8 @@ int main( int argc , char ** argv )
   for( int set = 0 ; set < 2 ; ++set ) {
    const char * name = set == 0 ? "urls" : "words";
    const auto all = strings( set , n , o.seed );
-   const std::vector< std::string > K( all.begin() , all.begin() + long( n ) ) ,
+   const std::vector< std::string > K( all.begin() ,
+                                      all.begin() + long( n ) ) ,
                                     Q( all.begin() + long( n ) , all.end() );
    std::vector< std::string > H = K , R;
    std::shuffle( H.begin() , H.end() , std::mt19937_64( o.seed + 1 ) );

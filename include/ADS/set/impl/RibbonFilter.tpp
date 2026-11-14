@@ -37,7 +37,7 @@ RibbonFilter< T , F , H >::RibbonFilter( const std::vector< T > & keys ,
  const std::size_t grow = ( keys.size() / 50 + 63 ) & ~std::size_t( 63 );
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
-   throw std::runtime_error( "RibbonFilter: no seed solves the system" );
+   throw( std::runtime_error( "RibbonFilter: no seed solves the system" ) );
   f_seed = hashWord( f_seed , f_trials );   // a new seed at each trial
   if( build( keys ) )
    break;

@@ -620,7 +620,7 @@ class StandardRibbon {
     f_data( new char[ f_bytes ] ) , f_soln( f_data.get() , f_bytes ) {
   Banding b( f_m );
   if( ! b.ResetAndFindSeedToSolve( f_m , S.begin() , S.end() ) )
-   throw std::runtime_error( "StandardRibbon: no seed" );
+   throw( std::runtime_error( "StandardRibbon: no seed" ) );
   f_hasher.SetOrdinalSeed( b.GetOrdinalSeed() );
   f_soln.BackSubstFrom( b );
   }
