@@ -2719,6 +2719,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- offlineConnectivity() no longer asks the nodes of a COMPONENTS question,
+  which it does not use, to lie in [ 0 , n ), so that it answers 0 with no
+  nodes rather than failing its precondition; the test engineered_dynamic
+  offline-connectivity
+
 - BucketQueue refuses, by std::length_error and with its items as they
   were, a push that would hold more than 2^32 - 1 items at once or give a
   dense layer a second key past 2^32 - 2, where the 32-bit index of a cell

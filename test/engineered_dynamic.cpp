@@ -1228,6 +1228,8 @@ ADS_TEST( "offline-connectivity" )
 {
  using Op = ConnectivityOp;
  CHECK( offlineConnectivity( 0 , {} ).empty() );
+ CHECK( offlineConnectivity( 0 , { { Op::COMPONENTS , 0 , 0 } } ) ==
+        std::vector< int >{ 0 } );        // no nodes, no components
  CHECK( offlineConnectivity( 3 , { { Op::INSERT , 0 , 1 } } ).empty() );
  CHECK( offlineConnectivity( 1 , { { Op::COMPONENTS } } ) ==
         std::vector< int >{ 1 } );

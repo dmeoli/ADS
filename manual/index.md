@@ -24,8 +24,9 @@ This manual describes the library area by area. For each structure it
 gives the definitions and the invariants, figures of its state in memory
 before and after the operations, the pseudocode of the operations (the
 same that the comments of the headers carry), the analysis of their costs
-with its proofs, the code of the operations that matter, and exercises,
-each one solved by a test of the library. It is a companion to the API
+with its proofs, the declarations of the members that a user calls with
+short examples of their use, and exercises, each one solved by a test of
+the library. It is a companion to the API
 reference generated from the headers, not a replacement for it.
 
 ## License

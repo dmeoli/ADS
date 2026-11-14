@@ -266,8 +266,8 @@ struct ConnectivityOp {
 /// 13 & \quad \mathrm{rollback}( c_0 )
 /// \end{array}}
 /// \f]
-/// \pre \f$ n \ge 0 \f$, the nodes in \f$ [ 0 , n ) \f$, each `DELETE` of
-///      an edge alive
+/// \pre \f$ n \ge 0 \f$, the nodes of every operation but `COMPONENTS` in
+///      \f$ [ 0 , n ) \f$, each `DELETE` of an edge alive
 [[nodiscard]] inline std::vector< int > offlineConnectivity(
                           int n , const std::vector< ConnectivityOp > & ops );
 

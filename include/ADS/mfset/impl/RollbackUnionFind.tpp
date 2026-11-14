@@ -153,7 +153,8 @@ inline std::vector< int > offlineConnectivity(
   };
  for( int t = 0 ; t < k ; ++t ) {
   const Op & o = ops[ t ];
-  ADS_PRE( ( o.u >= 0 ) && ( o.u < n ) && ( o.v >= 0 ) && ( o.v < n ) );
+  ADS_PRE( ( o.kind == Op::COMPONENTS ) ||
+           ( ( o.u >= 0 ) && ( o.u < n ) && ( o.v >= 0 ) && ( o.v < n ) ) );
   if( o.kind == Op::INSERT ) {
    open[ key( o.u , o.v ) ].push_back( int( lives.size() ) );
    lives.push_back( { o.u , o.v , before[ t ] , q } );

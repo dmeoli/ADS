@@ -597,9 +597,8 @@ connectivity on a graph whose edges come and go, when the sequence of $k$
 insertions, deletions and questions (whether two nodes are connected, or
 how many components there are) is known in advance. Each operation is a
 `ConnectivityOp`, whose `kind` is `INSERT`, `DELETE`, `CONNECTED` or
-`COMPONENTS` and whose `u` and `v` are the two nodes (0 by default; a
-`COMPONENTS` does not use them, but the precondition still wants them in
-$[ 0 , n )$). The edges are unoriented, i.e., $[ v , u ]$ deletes the
+`COMPONENTS` and whose `u` and `v` are the two nodes, in $[ 0 , n )$ (0
+by default), which a `COMPONENTS` does not use. The edges are unoriented, i.e., $[ v , u ]$ deletes the
 edge inserted as $[ u , v ]$. The result holds the answers in the order of
 the questions, 1 or 0 for `CONNECTED` and the number of the components for
 `COMPONENTS`, as in the following use on 3 nodes:
