@@ -41,7 +41,7 @@ encoding of it, with the numbers written in binary; hence a number $k$
 counts $\Theta( \log k )$ instead of $k$, which is the distinction on which
 the pseudopolynomial algorithms of [§20.6](20-complexity.md#sec-20-6)
 rest. Then the class *P* holds the problems decided by an algorithm in time
-$O( \lvert x \rvert^c )$ for a constant $c$; the class *NP* those that have
+$O( \lvert x \rvert^c )$ for a constant $c$. The class *NP* holds those that have
 a polynomial *certificate*, i.e., a polynomial $p$ and an algorithm $V$ of
 polynomial time such that
 
@@ -95,7 +95,7 @@ success and false for failure. Internally, the `Chooser` keeps the sequence $P$ 
 pairs (choice, number of alternatives) of the current run and the number
 $t$ of the choices made in it ([Algorithm 20.1](20-complexity.md#alg-20-1)).
 A choice at a depth reached for the first time is 0, and one at a depth
-already in $P$ repeats the choice stored there. `run( alg )` replays the
+already in $P$ repeats the choice stored there. The function `run( alg )` replays the
 algorithm on each sequence of choices in lexicographic order, and stops at
 the first success; after a failure, it drops from $P$ the choices of the
 run beyond the depth reached and, from the end, those that have no
@@ -167,13 +167,13 @@ processors, or of the tiles, and $Y$ the family of the 3-sets.
 | EXACT COVER BY 3-SETS, 3-DIMENSIONAL MATCHING | `exactCover3()`, `threeDimensionalMatching()` | a subset of the sets | $2^{\lvert Y \rvert}$ |
 | BOUNDED TILING | `squareTiling()` | a tile per square | $m^{n^2 - 1}$ |
 
-**Graphs.** `clique()` (the `enCricca()` of the book) lists the sets of
+**Graphs.** The function `clique()` (the `enCricca()` of the book) lists the sets of
 $k$ nodes in increasing order, and extends a set only by a node adjacent
 to all of it; `independentSet()` is the same enumeration with the test
 negated, and `vertexCover()` lists the sets by increasing size up to $k$
 ([Algorithm 20.2](20-complexity.md#alg-20-2)). Note that the enumeration of the sets
 stops extending a partial set when the nodes left cannot complete it to
-$k$ nodes. `coloring()` (exercise 18.6) colors the nodes in order, and
+$k$ nodes. The function `coloring()` (exercise 18.6) colors the nodes in order, and
 numbers the colors in the order of their first use, so that two colorings
 that differ by a renaming of the colors are not both tried; `bisection()`
 looks for the halves of $n / 2$ nodes that contain the node 0, so that
@@ -199,7 +199,7 @@ COLORABILITY and BISECTION ([Montresor 2025, chapter 18 and exercise
 
 --8<-- "generated/Problems-bisection.pseudo.md"
 
-**Tours and paths.** `tsp()` (the `enTsp()` of the book) lists the
+**Tours and paths.** The function `tsp()` (the `enTsp()` of the book) lists the
 permutations that start with the city 0, which breaks the symmetry of the
 rotations, and does not extend a partial tour longer than $k$
 ([Algorithm 20.3](20-complexity.md#alg-20-3)); the pruning is correct only
@@ -211,13 +211,12 @@ order. It runs as `hamiltonianCircuit()` from $P = ( 0 )$ and closed,
 `hamiltonianCycle()` on the oriented edges (exercise 18.12),
 `hamiltonianPath()` from each possible start, or from a given $r$ to a
 given $t$ (exercise 18.13), and `hamiltonianChain()` on the unoriented
-edges (exercise 18.14). `longestPath()` (exercise 18.15) looks for a simple
+edges (exercise 18.14). The function `longestPath()` (exercise 18.15) looks for a simple
 path from $r$ to $t$ of at least $k$ edges, and does not extend a path that
-reaches $t$ too short, since it could not come back to $t$; on an acyclic
-graph the same problem is polynomial, since `longestPathDag()` computes the
+reaches $t$ too short, since it could not come back to $t$. On an acyclic graph the same problem is polynomial: `longestPathDag()` computes the
 longest path by one scan of the nodes in topological order (a path never
 comes back to a node already scanned), in $O( n^2 )$ on the matrix.
-`boundedSpanningTree()` (exercise 18.16) takes each edge and then leaves
+The function `boundedSpanningTree()` (exercise 18.16) takes each edge and then leaves
 it, in order, never taking an edge that closes a cycle or exceeds a degree
 $k$, and stops when the edges left cannot complete a tree.
 
@@ -243,7 +242,7 @@ problems, and the paths and the trees of exercises 18.12 to 18.16.
 
 --8<-- "generated/Problems-extend-3.pseudo.md"
 
-**Formulae and numbers.** `satisfiable()` assigns the variables in order,
+**Formulae and numbers.** The function `satisfiable()` assigns the variables in order,
 and checks a clause as soon as its largest variable is set, which cuts the
 tree at the first clause made false; `satCertificate()` checks an
 assignment in time linear in the size of the formula, and `lp01()` lists
@@ -252,7 +251,7 @@ the $2^n$ vectors of 0-1 integer programming in lexicographic order
 each element and then leaves it: `subsetSumExists()` does not extend a sum
 above $k$, `partition()` looks for a subset of half the sum, and
 `knapsackDecision()` (the `enZaino()` of the book, exercise 18.5) does not
-extend a volume above the capacity. `multiprocessorScheduling()` tries each
+extend a volume above the capacity. The function `multiprocessorScheduling()` tries each
 program on each processor on which it fits within the time $d$, but on one
 empty processor only, since the empty processors are all equal; it
 answers NO for $d < 0$, even with no programs, since an idle processor is
@@ -277,13 +276,13 @@ problems of chapter 18 ([Montresor 2025, chapter 18 and exercise
 
 --8<-- "generated/Problems-assign-2.pseudo.md"
 
-**Covers and matchings.** `exactCover3()` (the `enCopertura()` of the
+**Covers and matchings.** The function `exactCover3()` (the `enCopertura()` of the
 book, exercise 18.7) looks for sets of three elements of $\{ 0 , \ldots , m
 - 1 \}$ that partition it, taking each set that meets none of those chosen
 and then leaving it; `threeDimensionalMatching()` reduces 3-DIMENSIONAL
 MATCHING to it, by making the three coordinates of the triples disjoint
 (the triple $( w , x , v )$ becomes the set $\{ w , q + x , 2 q + v \}$).
-`bribes()` (the `mazzette()` of the book, exercises 18.1 and 18.4) gives
+The function `bribes()` (the `mazzette()` of the book, exercises 18.1 and 18.4) gives
 the $n$ bribes $M$ to the $n$ politicians in such a way that the party PS gets twice
 as much as the party PDF, by the permutations of the bribes in
 lexicographic order ([Algorithm 20.5](20-complexity.md#alg-20-5)).
@@ -306,8 +305,7 @@ quarters, never rotated, with the tile $d = D[ 0 ]$ in the corner $( 0 , 0
 A `Tile` holds the colors of its four sides, and the square $( i , j )$ is
 the column $i$ and the row $j$ from the bottom left; a covering is a
 `Tiling`, a matrix whose entry $( i , j )$ is the index in $D$ of the tile
-of that square. `legalTiling()` is the
-certificate, in $O( n^2 )$; `squareTiling()` fills the squares by rows from
+of that square. The function `legalTiling()` is the certificate, in $O( n^2 )$. The enumeration `squareTiling()` fills the squares by rows from
 the bottom, and places a tile only if it fits its left and lower
 neighbours, which prunes the enumeration of the $m^{n^2 - 1}$ coverings at
 the first wrong side ([Algorithm 20.6](20-complexity.md#alg-20-6)).
@@ -343,12 +341,10 @@ transitive, and $A \propto B$ with $B \in \mathrm{P}$ gives $A \in
 \mathrm{P}$.*
 
 *Proof.* An algorithm of polynomial time writes an output of polynomial
-size, and therefore $\lvert f( x ) \rvert \le q( \lvert x \rvert )$ for a
-polynomial $q$; a polynomial algorithm for $B$ run on $f( x )$, and a
-second reduction applied to $f( x )$, take time polynomial in $\lvert x
+size, and therefore $\lvert f( x ) \rvert \le q( \lvert x \rvert )$ for a polynomial $q$. Hence a polynomial algorithm for $B$ run on $f( x )$, and a second reduction applied to $f( x )$, take time polynomial in $\lvert x
 \rvert$, since a polynomial of a polynomial is a polynomial. $\square$
 
-A problem is *NP-hard* if every problem of NP reduces to it, and
+A problem is *NP-hard* if each problem of NP reduces to it, and
 *NP-complete* if it is also in NP; one NP-complete problem in P would give
 $\mathrm{P} = \mathrm{NP}$, and, by [Lemma 20.2](20-complexity.md#lem-20-2),
 a problem of NP to which a known NP-complete problem reduces is
@@ -415,11 +411,11 @@ For $n = 1$ an isolated node $u_{h00}$, $h \ne 0$, is a clique of one
 node too, but there both answers are YES (the tile $d$ alone covers the
 board), and the reduction still satisfies (20.3). $\square$
 
-`dominoToSat()` writes the same conditions as clauses on the variables
+The function `dominoToSat()` writes the same conditions as clauses on the variables
 $u_{hij}$, true if the tile $h$ is in $( i , j )$. They are the unit clause
 $u_{000}$, at least one tile and at most one tile in each square, and,
 for each pair of adjacent squares and each pair of tiles that do not fit
-there side by side, the clause that forbids both. `dominoToLp01()` writes
+there side by side, the clause that forbids both. The function `dominoToLp01()` writes
 them as linear constraints: $x_{000} = 1$, one tile per square (each
 equation as two inequalities), and $x_{hij}$ plus the tiles that do not fit
 next to it in a neighbouring square at most 1; the example of the text
@@ -528,7 +524,7 @@ comparisons, and the convex hull costs $\Omega( n \log n )$ comparisons in
 the worst case.*
 
 *Proof.* For a point $( b , b^2 )$ of the set, the line $y = 2 b x - b^2$
-leaves every other point $( a , a^2 )$ strictly above it, since $a^2 - 2 b
+leaves all the other points $( a , a^2 )$ strictly above it, since $a^2 - 2 b
 a + b^2 = ( a - b )^2 > 0$; hence $( b , b^2 )$ is the only point of the
 set that minimizes $y - 2 b x$, i.e., a vertex of the hull. The points
 below the segment that joins the leftmost and the rightmost point are the
@@ -558,10 +554,10 @@ L( d ) \ge n - 1 , \tag{20.4}
 $$
 
 *$L( d )$ being the number of the edges of the longest path from $d$.
-`linearTiling()` decides (20.4) in $O( m^2 )$ time, whatever $n$ is.*
+The function `linearTiling()` decides (20.4) in $O( m^2 )$ time, whatever $n$ is.*
 
 *Proof.* A walk may go round a reachable cycle as many times as it needs,
-and so has any length; without a reachable cycle, every walk from $d$ is a
+and so has any length; without a reachable cycle, each walk from $d$ is a
 path, and its length is at most $L( d )$. One visit in depth of $H$ from
 $d$ finds a reachable cycle as a back edge, i.e., an edge to a node still
 open, and computes $L$ in the postvisit, since without cycles the longest
@@ -609,8 +605,7 @@ topological order of the components satisfies the formula.*
 *Proof.* A path of implications from $v$ to $\neg v$ and one back would
 force $v$ to be both true and false. Conversely, write $\kappa( a )$ for
 the place of the component of the literal $a$ in the topological order, so
-that an edge $( a , b )$ gives $\kappa( a ) \le \kappa( b )$, and suppose
-that the assignment of the statement sets a literal $a$ true and a
+that an edge $( a , b )$ gives $\kappa( a ) \le \kappa( b )$. Suppose that the assignment of the statement sets a literal $a$ true and a
 successor $b$ of it false, i.e., $\kappa( \neg a ) < \kappa( a )$ and
 $\kappa( b ) < \kappa( \neg b )$. Since the graph is symmetric under negation
 (it has $( \neg b , \neg a )$ whenever it has $( a , b )$), one has
@@ -620,7 +615,7 @@ would give such a pair, the edge $( \neg a , b )$ from a true literal to a
 false one ([Aspvall, Plass and Tarjan
 1979](Z-bibliography.md#ref-aspvall1979)). $\square$
 
-`twoSat()` takes a clause of one literal $a$ as $a \vee a$, builds the
+The function `twoSat()` takes a clause of one literal $a$ as $a \vee a$, builds the
 graph of the $2 n$ literals (the literal $\pm( v + 1 )$ at the node $2 v$
 or $2 v + 1$, by `literalNode()`) with each implication once. Then it ranks
 each strongly connected component by its first node in the order of
@@ -659,7 +654,7 @@ ones at equal abscissa).
 
 <span id="lem-20-7"></span>**Lemma 20.7.** *(i) If the components $C$
 and $C'$ of a graph are joined by an edge from $C$ to $C'$, the node of $C$
-that finishes last in a visit in depth finishes after every node of $C'$;
+that finishes last in a visit in depth finishes after each node of $C'$;
 hence ranking the components by their first node in the order of
 decreasing finish time is a topological order of the components. (ii)
 `twoColoring()` returns a coloring with no edge between two nodes of the
@@ -702,7 +697,7 @@ of optimization requires, for an instance $x$, a feasible solution of least
 cost (or of largest value) among the set $F( x )$ of the feasible ones;
 $x^*$ is an optimal solution and $\mathit{OPT} = c( x^* )$ its cost. When
 the decision version is NP-complete, no algorithm is known that finds
-$x^*$ in polynomial time on every instance, and each strategy gives up
+$x^*$ in polynomial time on each instance, and each strategy gives up
 something. An algorithm is *pseudopolynomial* if its time is bounded by a
 polynomial in the size $d$ of the instance and in its largest integer
 $\#$ ([Montresor 2025, §19.1](Z-bibliography.md#ref-montresor2025)); since
@@ -716,14 +711,14 @@ i - 1 ][ j - A_i ] ) , \tag{20.5}
 $$
 
 since a subset of the first $i$ elements either avoids the $i$-th or takes
-it once. `subsetSumDP()` of `Pseudopolynomial.h` fills (20.5) in $O( n k )$
+it once. The function `subsetSumDP()` of `Pseudopolynomial.h` fills (20.5) in $O( n k )$
 time with one row of $k + 1$ bits, written from the right, so that $M[ j -
 A_i ]$ is still the value of the row before
 ([Algorithm 20.12](20-complexity.md#alg-20-12)). The row is a vector of
 `Bits`, which may be `std::vector< bool >` (the default),
 `boost::dynamic_bitset` or the `BitVector` of the library, with the same
 cells written. If a pointer `rows` is given, the function appends there the
-row after each element. `subsetSumSet()` keeps all the rows, and reads a
+row after each element. The function `subsetSumSet()` keeps all the rows, and reads a
 subset backwards (an element is needed when the row above does not have
 the sum), in $O( n k )$ time and space; `partitionDP()` (exercise 19.1) is
 the same with half the sum.
@@ -843,7 +838,7 @@ $$
 \frac{\lvert c( x' ) - \mathit{OPT} \rvert}{\mathit{OPT}} \le e \tag{20.7}
 $$
 
-on every instance, and an *approximation scheme* if it takes $\epsilon >
+on each instance, and an *approximation scheme* if it takes $\epsilon >
 0$ in input and satisfies (20.7) with $e = \epsilon$ in a time polynomial
 in $d$ for each fixed $\epsilon$ (fully polynomial if also in $1 /
 \epsilon$) ([Montresor 2025, §19.2](Z-bibliography.md#ref-montresor2025)).
@@ -864,7 +859,7 @@ used and the fewest possible.
 | VERTEX COVER | `vertexCoverApprox()` | $\lvert S \rvert \le 2 \, \mathit{OPT}$ | $O( n^2 )$ |
 | KNAPSACK | `knapsackApprox()` | $c( x' ) \ge ( 1 - \epsilon ) \mathit{OPT}$ | $O( n^3 / \epsilon )$ |
 
-**Bin packing.** `firstFit()` puts each object of volume in $[ 0 , k ]$
+**Bin packing.** The function `firstFit()` puts each object of volume in $[ 0 , k ]$
 in the first box with room for it, the objects in the order given (ff) or
 by decreasing volume (ffd), and opens a new box when none has room
 ([Algorithm 20.15](20-complexity.md#alg-20-15)).
@@ -889,13 +884,13 @@ asymptotically ([Johnson et al. 1974](Z-bibliography.md#ref-johnson1974)).
 Since a box is found by a scan, the time is $O( n N )$, i.e., $O( n^2 )$ in the
 worst case.
 
-**The triangular salesman.** `deltaTsp()` builds a minimum spanning tree
+**The triangular salesman.** The function `deltaTsp()` builds a minimum spanning tree
 $T$ of the complete graph of the symmetric distances (by `kruskal()` on
 the $n ( n - 1 ) / 2$ edges, whence the time $O( n^2 \log n )$), and
 returns the cities in the preorder of $T$ from 0, the children by
 increasing name ([Algorithm 20.16](20-complexity.md#alg-20-16);
 [Rosenkrantz, Stearns and Lewis 1977](Z-bibliography.md#ref-rosenkrantz1977)).
-`tourCost()` gives the cost of a circuit.
+The function `tourCost()` gives the cost of a circuit.
 
 <span id="lem-20-11"></span>**Lemma 20.11.** *If the distances satisfy the
 triangle inequality, the circuit of `deltaTsp()` costs at most $2 \,
@@ -947,9 +942,8 @@ $$
 
 *Proof.* Let $S^*$ be optimal. If $\lvert S^* \rvert \le h$, the algorithm
 tries $S^*$ itself. Otherwise it tries the $h$ largest elements of $S^*$,
-and the greedy completion either takes all of $S^*$, or leaves out an
-element $a$ of $S^*$, not larger than those $h$, with $z + a > k \ge z^*$.
-Since $( h + 1 ) a \le z^*$, one has $z > z^* - a \ge z^* ( 1 - 1 / ( h +
+and the greedy completion either takes all of $S^*$ or leaves out an
+element $a$ of $S^*$, not larger than those $h$, with $z + a > k \ge z^*$. Since $( h + 1 ) a \le z^*$, one has $z > z^* - a \ge z^* ( 1 - 1 / ( h +
 1 ) )$. As for the time, the $O( n^h )$ sets of at most $h$ elements are
 each built in $O( h )$ and completed in $O( n )$. $\square$
 
@@ -963,7 +957,7 @@ scheme of KNAPSACK.
 
 --8<-- "generated/Approximation-knapsackApprox.pseudo.md"
 
-**Vertex cover.** `vertexCoverApprox()` (exercise 19.6) takes both the
+**Vertex cover.** The function `vertexCoverApprox()` (exercise 19.6) takes both the
 ends of each edge $[ u , v ]$, $u < v$, whose ends are both out of the
 cover so far.
 
@@ -980,7 +974,7 @@ ends out of $S$, i.e., they form a matching $M$, and $\lvert S \rvert = 2
 are distinct; hence $\mathit{OPT} \ge \lvert M \rvert$. The loop
 examines the $n ( n - 1 ) / 2$ pairs $u < v$. $\square$
 
-**Knapsack.** `knapsackApprox()` (exercise 19.8) is the scheme of [Ibarra
+**Knapsack.** The function `knapsackApprox()` (exercise 19.8) is the scheme of [Ibarra
 and Kim 1975](Z-bibliography.md#ref-ibarra1975): it keeps the objects that
 fit by themselves, divides their profits by $K = \max\{ 1 , \epsilon \, p_{\max}
 / n' \}$, $n'$ being their number and $p_{\max}$ their largest profit, and
@@ -1019,23 +1013,20 @@ $$
 returns an optimum.*
 
 *Proof.* A solution $x$ in the subtree of a skipped $S$ has $c( x ) \ge
-\mathit{lb}( S ) \ge \mathit{minCost}$, and the best found so far is at
-least as good; the solutions not skipped are all compared. $\square$
+\mathit{lb}( S ) \ge \mathit{minCost}$, and the best found so far is at least as good. The solutions not skipped are all compared. $\square$
 
 Note that the guarantee holds whatever the order of the visit and the bound, and the
 time in the worst case stays that of the enumeration; what changes is the
 number of the nodes in practice, which `bbTsp()`, `littleTsp()`,
 `maxWeightClique()` and the knapsacks report in `*generated`, if given.
 
-**The salesman, depth first.** `bbTsp()` chooses the cities of the circuit
+**The salesman, depth first.** The function `bbTsp()` chooses the cities of the circuit
 one after the other from $S[ 0 ] = 0$, in increasing order, depth first,
 starting from the circuit `start` if one is given
 ([Algorithm 20.18](20-complexity.md#alg-20-18)). A child is generated for
 each city not in $S$, and visited only if its bound is below the best; a
 complete circuit is the bound of its last node, i.e., its cost.
-`tspLowerBound()` computes two bounds, chosen by `TspBound`. Let $S = S[ 0
-.. i ]$ be the path chosen, $C_i$ its length, $R$ the cities out of $S$, $A$
-the least distance from a city of $R$ back to $S[ 0 ]$, $B$ the least
+The function `tspLowerBound()` computes two bounds, chosen by `TspBound`. Let $S = S[ 0 .. i ]$ be the path chosen, $C_i$ its length and $R$ the cities out of $S$. We write $A$ for the least distance from a city of $R$ back to $S[ 0 ]$, $B$ the least
 distance from $S[ i ]$ to a city of $R$, and $D_h$, for $h \in R$, the least
 cost $D[ p ][ h ] + D[ h ][ q ]$ of entering and leaving $h$ over the
 cities $p \ne q$ different from $h$.
@@ -1092,7 +1083,7 @@ branch-and-bound with the bound of the text or of the 1-tree
 
 --8<-- "generated/BranchAndBound-oneTree.pseudo.md"
 
-**The salesman, by the reduction of the matrix.** `littleTsp()` (exercise
+**The salesman, by the reduction of the matrix.** The function `littleTsp()` (exercise
 19.11, the algorithm of [Little et al. 1963](Z-bibliography.md#ref-little1963))
 branches on including or excluding an edge, the entry 0 of the reduced
 matrix whose exclusion raises the bound the most, visits the nodes by
@@ -1100,8 +1091,7 @@ least bound with a priority queue, and bounds a node by reducing the rows
 and the columns of its matrix to a least entry 0
 ([Algorithm 20.19](20-complexity.md#alg-20-19)). Subtracting a constant
 from a row or a column lowers the cost of each circuit by that constant,
-since a circuit uses one entry of each row and one of each column; hence
-the sum of the constants subtracted is a lower bound, and the entries 0
+since a circuit uses one entry of each row and one of each column. Hence the sum of the constants subtracted is a lower bound, and the entries 0
 left are the edges that a circuit of that cost would use. Including an edge
 $( i , j )$ marks its row and its column as done and sets to $\infty$ the
 edge that would close a subcircuit, and excluding it sets $M[ i ][ j ] =
@@ -1138,20 +1128,19 @@ returned. A node of $n$ edges has a single circuit, with $H \setminus I_x
 each other circuit belongs to a node of $Q$ whose bound is at least
 $\mathit{lb}_x$, and therefore costs at least $\mathit{lb}_x$. $\square$
 
-**Cliques and knapsacks.** `maxWeightClique()` (exercise 19.9) extends a
+**Cliques and knapsacks.** The function `maxWeightClique()` (exercise 19.9) extends a
 set by the candidates adjacent to all of it, and prunes it when its weight
-plus that of all its candidates is not above the best. `knapsackBB()`
+plus that of all its candidates is not above the best. The function `knapsackBB()`
 (exercise 19.12) takes the objects by decreasing profit per volume, each
 in and then out, and prunes a node when the fractional knapsack of the
 objects left within the capacity left ([§13.11](13-algorithm.md#sec-13-11))
 does not beat the best. This is an upper bound of the best profit of the
 objects left, since the fractional greedy is optimal for the relaxation
-([Lemma 13.15](13-algorithm.md#lem-13-15)). `knapsackBacktrack()` is the
+([Lemma 13.15](13-algorithm.md#lem-13-15)). The function `knapsackBacktrack()` is the
 same visit with the objects in their order and the simple bound, the sum
-of the profits still to decide, and `knapsackGreedy()` the heuristic that
+of the profits still to decide. In turn, `knapsackGreedy()` is the heuristic that
 takes the objects by decreasing profit per volume while they fit, which is
-not optimal in general ([Algorithm 20.20](20-complexity.md#alg-20-20)); the
-test `beyond.knapsack-heuristics` checks that the two visits find the
+not optimal in general ([Algorithm 20.20](20-complexity.md#alg-20-20)). The test `beyond.knapsack-heuristics` checks that the two visits find the
 optimum of `knapsack()` and that the greedy finds no more.
 
 <span id="alg-20-20"></span>**Algorithm 20.20.** The clique of largest
@@ -1175,19 +1164,19 @@ judged by its time and by its results in practice, and the contracts of
 `Heuristics.h` check that each result is feasible, not that it is "good".
 
 **Constructive heuristics.** The constructive heuristics of the header are
-greedy ([Algorithm 20.21](20-complexity.md#alg-20-21)). `greedyTsp()`
+greedy ([Algorithm 20.21](20-complexity.md#alg-20-21)). The function `greedyTsp()`
 keeps the lightest edges that leave each city with at most two of them
 and close no cycle, as `kruskal()` does with an MFSET (chapter 11), and
 so it ends with a Hamiltonian chain, which the edge of its two ends
 closes; the sort of the $n ( n - 1 ) / 2$ edges gives $O( n^2 \log n )$.
-`greedySuperstring()` (exercise 19.13) is the same greedy on the oriented
+The function `greedySuperstring()` (exercise 19.13) is the same greedy on the oriented
 edges weighed by the overlaps of the strings (`overlap( a , b )`, the
 longest suffix of $a$ that is a prefix of $b$), which leaves oriented
-paths, after dropping the strings contained in another. `dsatur()`
+paths, after dropping the strings contained in another. The function `dsatur()`
 (exercise 19.19, [Brélaz 1979](Z-bibliography.md#ref-brelaz1979)) colors
 first the node that sees the most colors among its neighbours, i.e., the
 most constrained, with the least color not on its neighbours, in $O( n^3 )$.
-`starAlignment()` (exercise 19.18, after [Gusfield
+The function `starAlignment()` (exercise 19.18, after [Gusfield
 1993](Z-bibliography.md#ref-gusfield1993)) aligns $k$ strings against the
 center, i.e., the string with the largest sum of the global scores against
 the others. This takes $O( k^2 \ell^2 )$ time for strings of length at most $\ell$.
@@ -1207,16 +1196,15 @@ star alignment ([Montresor 2025, §19.4.1 and exercises 19.13, 19.18 and
 
 --8<-- "generated/Heuristics-starAlignment.pseudo.md"
 
-**The bisection by buckets.** `minMaxGreedy()` (the min-max-greedy of the
+**The bisection by buckets.** The function `minMaxGreedy()` (the min-max-greedy of the
 book) grows the two halves $V_0$ and $V_1$ of a bisection in turn, from a
 node $a$ in $V_0$ and a node $b$ in $V_1$, each time with the node out of
 them that has the fewest edges to the other half and, among those, the
 most to its own ([Algorithm 20.22](20-complexity.md#alg-20-22)). The
 structure `Buckets` of exercise 19.17 keeps, for $k = 0 , 1$, the nodes not
-placed by the number $h$ of their edges to $V_k$: `bucket( k , h )` is a
-vector of nodes, whose size is `dim( k , h )`, each node knows its place in its two buckets, and
+placed by the number $h$ of their edges to $V_k$. There `bucket( k , h )` is a vector of nodes, whose size is `dim( k , h )`, each node knows its place in its two buckets, and
 `min( k )` and `max( k )` are the least and the largest bucket not empty
-([Figure 20.3](20-complexity.md#fig-20-3)). `inc( k , u )` moves $u$ to
+([Figure 20.3](20-complexity.md#fig-20-3)). The function `inc( k , u )` moves $u$ to
 the next bucket of side $k$, by taking it out of its bucket (the last node
 of the bucket fills its place) and appending it to the next one. In
 turn, `choose( k )` scans the least bucket of the other side for the node with the most
@@ -1253,8 +1241,7 @@ the BISECTION, and the removal of a node from a `Buckets` ([Montresor 2025,
 --8<-- "generated/Heuristics-Buckets-remove.pseudo.md"
 
 **Local search.** A *local search* starts from a solution $\pi$ and moves
-to a better solution of its neighbourhood $I( \pi )$ while there is one; it
-ends at a *local optimum*, since the cost decreases strictly at each step
+to a better solution of its neighbourhood $I( \pi )$ while there is one. It ends at a *local optimum*, since the cost decreases strictly at each step
 and the solutions are finitely many ([Montresor 2025,
 §19.4.2](Z-bibliography.md#ref-montresor2025)). For the salesman, the
 neighbourhood $I_2( \pi )$ of `twoOpt()` holds the circuits obtained by
@@ -1270,7 +1257,7 @@ $$
 the pairs of edges less the $n$ that touch. Since the change of cost of a move
 depends only on the four edges that change, a step of the search, which takes the
 best circuit of the neighbourhood, costs $O( n^2 )$
-([Algorithm 20.23](20-complexity.md#alg-20-23)). `twoOptMove( pi , i , j )`
+([Algorithm 20.23](20-complexity.md#alg-20-23)). The function `twoOptMove( pi , i , j )`
 applies one move, reversing $\pi[ i + 1 .. j ]$, and the costs of the
 circuits visited go to `*trace`, if given.
 
@@ -1287,10 +1274,10 @@ $I_2$, the size of $I_k$, and the local search for PARTITION
 
 --8<-- "generated/Heuristics-partitionLocalSearch.pseudo.md"
 
-`kOptNeighbours()` (exercise 19.15) counts $\lvert I_k( \pi ) \rvert$, the
+The function `kOptNeighbours()` (exercise 19.15) counts $\lvert I_k( \pi ) \rvert$, the
 circuits that share $n - k$ edges with $\pi$, by enumerating all the
 circuits in $O( n! )$, which checks (20.11) for $k = 2$.
-`partitionLocalSearch()` (exercise 19.16) does the same for PARTITION, with
+The function `partitionLocalSearch()` (exercise 19.16) does the same for PARTITION, with
 the moves of one element and the swaps of two, each changing the
 difference of the sums by twice the elements moved, the best move first,
 in $O( n^2 )$ per step. Arguably, the classical local search for the bisection,
@@ -1306,7 +1293,7 @@ tile next to the hole into it, and the goal has the tiles in increasing
 order and the hole last ([Montresor 2025, §19.5](Z-bibliography.md#ref-montresor2025)).
 A configuration is a `Board`, the tile of each square by rows, 0 the hole;
 `puzzleGoal()` gives the goal and `puzzleMoves()` the configurations one
-move away. `solvePuzzle()` is the branch-and-bound of the text, whose
+move away. The function `solvePuzzle()` is the branch-and-bound of the text, whose
 nodes are the configurations and whose children are those one move away.
 The cost of a node $x$, $g( x )$,
 is the number of moves from the root, its lower bound $h( x )$ is the sum
@@ -1364,7 +1351,7 @@ the library (e.g., `FlatHashTable`) and visits the same nodes; if a pointer
 `visited` is given, the function counts there the nodes extracted. Beyond
 the text, two searches work with any goal, e.g., the spiral one of
 `puzzleSpiralGoal()` ([Algorithm 20.24](20-complexity.md#alg-20-24)).
-`puzzleBFS()` is the case $h = 0$, the visit in breadth, whose first goal
+The function `puzzleBFS()` is the case $h = 0$, the visit in breadth, whose first goal
 reached is one of the fewest moves, and which examines many more
 configurations than A*. In turn, `puzzleDFS()` is the backtracking that goes back
 when a configuration is already on the current path or the moves exceed a
@@ -1387,13 +1374,10 @@ the goal.*
 unchanged. A move along a column moves one tile past the $n - 1$ tiles
 between its two places in the order by rows, which changes $I$ by an
 amount of the parity of $n - 1$, and changes $r$ by one. With $n$ odd,
-$n - 1$ is even; with $n$ even, $I$ and $r$ change parity together. Since
-exchanging two tiles changes the parity of $I$ and leaves $r$, it maps the
-configurations of one parity one to one onto those of the other, and the
-two classes have the same size; those of the parity other than that of
+$n - 1$ is even; with $n$ even, $I$ and $r$ change parity together. Exchanging two tiles changes the parity of $I$ and leaves $r$, and it therefore maps the configurations of one parity one to one onto those of the other. The two classes thus have the same size, and those of the parity other than that of
 the goal cannot reach it. $\square$
 
-`solvable()` compares that parity with the one of the goal ([Johnson and
+The function `solvable()` compares that parity with the one of the goal ([Johnson and
 Story 1879](Z-bibliography.md#ref-johnson1879)), which is also sufficient,
 as they proved; `solvePuzzle()` calls it first, and answers nothing on a
 configuration that cannot reach the goal, instead of exhausting the half

@@ -253,7 +253,7 @@ $L$ by the iterative scaling of the frequencies.
 The codewords of Huffman can be rather long. Frequencies that grow as the numbers
 of Fibonacci give a codeword of 33 bits after about $10^7$ symbols
 ([Ferragina 2023, chapter 12](Z-bibliography.md#ref-ferragina2023)), while a "fast" decoder typically wants the codewords to fit in a word, or in the index of a
-table. `limitedLengths()` bounds them to a given $L$ by halving the
+table. The function `limitedLengths()` bounds them to a given $L$ by halving the
 frequencies, rounding up, until the code of Huffman of the halved ones has
 no length above $L$.
 
@@ -285,7 +285,7 @@ optimal code of lengths at most $L$ in $O( \sigma L )$ time (see
 
 ## 21.3 The code of Huffman with tables {#sec-21-3}
 
-`huffmanCompress()` and `huffmanDecompress()` of `HuffmanCoder.h` code a
+The functions `huffmanCompress()` and `huffmanDecompress()` of `HuffmanCoder.h` code a
 string of bytes as the fast coders do, with the code of Huffman of the
 bytes and four choices that the canonical code of
 [§21.2](21-compression.md#sec-21-2) does not make. First, the lengths are
@@ -331,7 +331,7 @@ tables of up to 3 symbols, on four streams.
 
 Four lookups of at most 12 bits fit in the bits of a word after a refill,
 which leaves at least 57 bits to read, and the loop of the decoder
-therefore loads each word once every four lookups. Note that each lookup
+therefore loads each word once each four lookups. Note that each lookup
 stores the 4 bytes of its entry, of which the next lookup overwrites those
 past its symbols.
 
@@ -387,7 +387,7 @@ d \le 2 + \sum_i \log_2 \frac{1}{P[ s[ i ] ]} = 2 + n H_0 . \tag{21.7}
 $$
 
 *Proof.* Truncating $x = l_n + s_n / 2$ to $d$ bits loses less than
-$2^{-d} \le s_n / 2$. Hence the fraction $x'$ written, and every fraction
+$2^{-d} \le s_n / 2$. Hence the fraction $x'$ written, and each fraction
 that begins with its bits, lie in $[ x' , x' + 2^{-d} ) \subseteq
 [ l_n , l_n + s_n )$. Moreover, the intervals of two texts of $n$ symbols
 are disjoint, since (21.6) splits each interval into disjoint parts, and
@@ -397,7 +397,7 @@ $d < \log_2( 2 / s_n ) + 1 = 2 + \log_2( 1 / s_n )$. $\square$
 
 We see that the arithmetic code is within 2 bits of $n H_0$ for the whole text,
 against the up to $n$ bits more of (21.4). Furthermore, one can code equally well probabilities that change at each symbol, as long as the decoder
-changes them in the same way. `arithmeticInterval()`,
+changes them in the same way. The functions `arithmeticInterval()`,
 `arithmeticCodeExact()` and `arithmeticDecodeExact()` compute (21.6) and
 the code in exact rationals (`ADS/numeric/Rational.h`), in a time that may grow quickly with the length of the numbers
 ([Algorithm 21.6](21-compression.md#alg-21-6)). We use them as the reference for the integer coder below, and they give the numbers of the example of
@@ -463,7 +463,7 @@ follow. On its side, the decoder keeps the $w$ bits read in $v$ and inverts (21.
 (cf. [Algorithm 21.7](21-compression.md#alg-21-7)). It then applies the
 same expansions to $v$, reading zeros past the end of the code. With $w = 32$ the rounding of (21.8) typically costs about $10^{-4}$ bits per symbol
 against the exact code, as Witten, Neal and Cleary measured.
-`arithmeticEncode()` and `arithmeticDecode()` code a text with a static
+The functions `arithmeticEncode()` and `arithmeticDecode()` code a text with a static
 model of counts, whose total must not exceed $M / 4 = 2^{w-2}$ by
 [Lemma 21.4](21-compression.md#lem-21-4)
 ([Algorithm 21.8](21-compression.md#alg-21-8)).
@@ -729,7 +729,7 @@ that is short for the small integers. We write them on the streams of bits of `A
 significant bit first, and the stream thus equals the codeword on paper. By
 [Lemma 21.1](21-compression.md#lem-21-1) a code of lengths $\ell( x )$ is
 optimal for the distribution $P[ x ] = 2^{-\ell( x )}$, and choosing a code is therefore (implicitly) choosing the distribution of the data. For instance, the *d-gaps* of a sorted list (its first item and the differences of consecutive items, `dGaps()`) are small and skewed, and a code with short codewords for
-the small integers takes few bits on them. `signedToNatural()` maps an
+the small integers takes few bits on them. The function `signedToNatural()` maps an
 integer of any sign to a natural number ($x \ge 0$ to $2 x$, $x < 0$ to
 $-2 x + 1$), and the codes then apply to differences of any sign.
 Each code has its encoder (`encodeUnary()` for the unary one) and its decoder (`decodeUnary()`, `decodeGamma()`,
@@ -904,7 +904,7 @@ $$
 
 on the lane $l$ of the words $w$ of the block, the second word only where
 the field crosses a word. A block of each width has a separate unrolled code,
-a template with every shift a constant, chosen by a table of 33 functions.
+a template with each shift a constant, chosen by a table of 33 functions.
 For a sorted sequence, the code is that of the differences at a distance of 4,
 $d_i = x_i - x_{i-4}$, the differential code D4 of
 [Lemire, Boytsov and Kurz 2016](Z-bibliography.md#ref-lemire2016). Its decoder adds the previous register of four integers to each register it
@@ -999,7 +999,7 @@ over the levels that $x_i$ reaches. Each level costs $O( 1 )$ time with
 the rank of `RankSelect` ([§22.3](22-succinct.md#sec-22-3)), i.e., one load
 of the directory and one sideways sum.
 
-![Figure 21.6. The sequence 5, 1, 18, 3, 260, 7, 40 in directly addressable codes with chunks of 3 bits: the level 0 holds the low chunk of every integer and the bits that mark which continue; the three that continue are, in their order, the items of the level 1, and so on. The access to $x_4$ (violet) reads a chunk per level and moves by the rank of its bit.](../figures/compression-dac.svg){#fig-21-6}
+![Figure 21.6. The sequence 5, 1, 18, 3, 260, 7, 40 in directly addressable codes with chunks of 3 bits: the level 0 holds the low chunk of each integer and the bits that mark which continue; the three that continue are, in their order, the items of the level 1, and so on. The access to $x_4$ (violet) reads a chunk per level and moves by the rank of its bit.](../figures/compression-dac.svg){#fig-21-6}
 
 We write $n_s$ for the integers of more than $s$ bits ($n_0 = n$) and $w$ for the bits of the largest one; then a level that holds the bits $[ s , t )$ costs
 $n_s ( t - s )$ bits of chunks. Unless it is the last, it also costs $n_s$
@@ -1139,7 +1139,7 @@ for a phrase of length $\ell$, hence $O( n w )$ in all.*
 the decoder has already written, whether it lies before $p$ or inside the
 phrase; and by the definition of the phrase $s[ p + j ] = s[ p + j - d ]$
 for $j < \ell$. (ii) The empty phrase is in the dictionary, and a new
-phrase $f c$ is added only when $f$ is in it; by induction every prefix of
+phrase $f c$ is added only when $f$ is in it; by induction each prefix of
 a phrase is a phrase, and $f c$ is the child of $f$ by the edge $c$. (iii)
 The encoder adds $f c$ after emitting $f$, where $c$ is the symbol after
 $f$ in the text, and the next phrase $f'$ starts at $c$. If the identifier
@@ -1155,7 +1155,7 @@ $\square$
 All these compressors are *universal*: on the texts of an "ergodic" source
 their bits per symbol tend to its entropy
 ([Ziv and Lempel 1978](Z-bibliography.md#ref-ziv1978)). Furthermore, the code of the $z$ phrases of LZ78 takes at most $n H_k + O( n \log \log n / \log n )$
-bits for every fixed $k$ ([Kosaraju and Manzini 2000](Z-bibliography.md#ref-kosaraju2000)),
+bits for each fixed $k$ ([Kosaraju and Manzini 2000](Z-bibliography.md#ref-kosaraju2000)),
 but with a term that vanishes rather slowly. In practice LZ77 is used with long windows and "fast" searches, and with no window at all the parse is found in
 $O( n )$ time from the suffix array of the text (`lz77ParseLinear()` of
 `LZ77Linear.h`). This rests on the following property of the suffixes,
@@ -1202,14 +1202,14 @@ and the suffix array.*
 *Proof.* We first show that lines 3 to 6 of
 [Algorithm 21.22](21-compression.md#alg-21-22) compute (21.18). After the
 scan of $\mathit{SA}[ 0 .. j ]$, the stack holds, from the bottom, the
-places of $\mathit{SA}[ 0 .. j ]$ that are smaller than every place
+places of $\mathit{SA}[ 0 .. j ]$ that are smaller than each place
 scanned after them, in increasing order: this holds before the scan, and
 the place $x = \mathit{SA}[ j + 1 ]$ removes from the set exactly the
 places larger than $x$, which are at the top since the stack increases,
-and then enters it. A place $y$ popped by $x$ was smaller than every place
+and then enters it. A place $y$ popped by $x$ was smaller than each place
 scanned between them; hence $x$ is the first place after $y$ in the order
 of $\mathit{SA}$ that is smaller than $y$, i.e., $\mathit{NSV}( y )$. The
-top $z$ that remains is smaller than $x$, and every place $w$ scanned after
+top $z$ that remains is smaller than $x$, and each place $w$ scanned after
 $z$ and before $x$ is larger than $x$: otherwise $w$, or a place smaller
 than $w$ that popped it, would be in the stack above $z$; hence $z =
 \mathit{PSV}( x )$. A place that is never popped has no next smaller
@@ -1368,7 +1368,7 @@ of 50 symbols coded by up to 6 tables, which we do not reproduce. Coding $L$ in 
 $( 5 + \epsilon ) n H_k^*( s )$ bits plus lower terms
 ([Manzini 2001](Z-bibliography.md#ref-manzini2001)), with $H_k^*$ a variant
 of (21.2). Coding instead the pieces of $L$ of each context of $k$ symbols
-by a code of order 0 reaches $n H_k$ plus lower terms for every $k$ at once,
+by a code of order 0 reaches $n H_k$ plus lower terms for each $k$ at once,
 which is the compression boosting of
 [Ferragina, Giancarlo, Manzini and Sciortino 2005](Z-bibliography.md#ref-ferragina2005b).
 
@@ -1432,7 +1432,7 @@ multiple of $\mu$ are marked, with their places. From any row, the
 LF-mapping, which moves one place to the left in $s$, reaches a marked row
 in $t < \mu$ steps, and the place is that of the marked row plus $t$. Since the marks are a vector of bits with the rank of `RankSelect` ([§22.3](22-succinct.md#sec-22-3)), a row is tested and its sample
 found in $O( 1 )$ time; the samples take $O( ( n / \mu ) \log n )$ bits.
-`extract( i , j )` gives $s[ i .. j - 1 ]$ from the row of the first
+The function `extract( i , j )` gives $s[ i .. j - 1 ]$ from the row of the first
 sampled suffix at or after $j$, by $j - i + O( \mu )$ steps of the
 LF-mapping, each of which reads the symbol before the current suffix.
 
@@ -1453,7 +1453,7 @@ symbol $L$ of the current row, which precedes the current suffix.
 $\square$
 
 In `FMIndex`, the rank of a symbol in $L$ is the count of the symbol
-stored every $b$ places for each symbol of the text, plus a scan of fewer
+stored each $b$ places for each symbol of the text, plus a scan of fewer
 than $b$ symbols, 8 at a time by the zero bytes of a word. This is $O( b )$
 time and $\sigma ( n / b )$ counts of 32 bits, with the defaults $b = 64$
 and $\mu = 32$. These counts are the simplest rank on a sequence, which a
@@ -1487,7 +1487,7 @@ the location in the FM-index on the wavelet tree of Huffman
 
 --8<-- "generated/HuffmanFMIndex-locate.pseudo.md"
 
-Also, the samples every $\mu$ places cost $O( ( n / \mu ) \log n )$ bits. This may be far more than $L$ on a "repetitive" text (the versions of a document, the
+Also, the samples each $\mu$ places cost $O( ( n / \mu ) \log n )$ bits. This may be far more than $L$ on a "repetitive" text (the versions of a document, the
 genomes of a species), where the number $r$ of the runs of $L$ is far
 smaller than $n$. The r-index of
 [Gagie, Navarro and Prezza 2020](Z-bibliography.md#ref-gagie2020)
@@ -1508,7 +1508,7 @@ where $j$ is the run of the place $i - 1$ (one predecessor search),
 $S_c[ k ]$ the total length of the first $k$ runs of $c$ (read from the
 starts in $F$, where the run $k$ of $c$ starts at $C[ c ] + S_c[ k ]$), and
 $k$ the rank of $c$ among the heads before $j$ (one descent of the tree).
-`count( P )` is the backward search of (21.21) with it, and
+The function `count( P )` is the backward search of (21.21) with it, and
 [Table 21.7](21-compression.md#tab-21-7) lists the runs of the example.
 
 <span id="tab-21-7"></span>**Table 21.7.** The $r = 8$ runs of the
@@ -1528,7 +1528,7 @@ LF-mapping of their first rows, onto which each run is shifted alike.
 | 7 | $[ 10 , 11 ]$ | b | 9 | 2 | 6 |
 
 To locate the occurrences, two properties of the suffix array on the runs
-replace the samples every $\mu$ places.
+replace the samples each $\mu$ places.
 
 <span id="lem-21-15"></span>**Lemma 21.15 (the toehold).** *Let
 $[ \mathit{first} , \mathit{last} )$ be the rows prefixed by $Q$, and
@@ -1615,7 +1615,7 @@ next interval of $c$, if its own is not of $c$), and $e$ to the last one at
 or before it (the end of the previous interval of $c$). Both moves are a
 rank and a select of $c$ on the tags of the intervals, kept in a wavelet
 tree of Huffman on `RankSelect`; the search then maps both rows by the
-LF-mapping, in $O( 1 )$ time each. `locate( P )` keeps $\mathit{SA}[ e ]$
+LF-mapping, in $O( 1 )$ time each. The function `locate( P )` keeps $\mathit{SA}[ e ]$
 along the search, from the samples of $\mathit{SA}$ at the end of each
 interval with the interval of $\phi$ of each. It then lists the
 occurrences by $e - s$ steps of $\phi$, each in $O( 1 )$ time
@@ -1641,7 +1641,7 @@ occurrences.
 
 | Index | Space | `count( P )` | `locate( P )`, beyond the count |
 |---|---|---|---|
-| `FMIndex` | $8 n + 32 \sigma n / b$ bits, and the samples | $O( p b )$, a count every $b$ places and a scan | $O( \mathit{occ} \, \mu b )$ |
+| `FMIndex` | $8 n + 32 \sigma n / b$ bits, and the samples | $O( p b )$, a count each $b$ places and a scan | $O( \mathit{occ} \, \mu b )$ |
 | `HuffmanFMIndex` | $n ( H_0 + 1 ) ( 1 + o( 1 ) )$ bits, and the samples | $O( p ( H_0 + 1 ) )$ on average, a descent of the tree per step | $O( \mathit{occ} \, \mu ( H_0 + 1 ) )$ on average |
 | `RIndex` | $O( r )$ words | $O( p )$ ranks on the runs, each with a predecessor search | $O( \mathit{occ} )$ predecessor searches |
 | `MoveRIndex` | $O( r )$ words, a few more per run | $O( p )$ steps of $O( 1 )$, plus the ranks for the intervals of another symbol | $O( \mathit{occ} )$, each in $O( 1 )$ |
