@@ -60,6 +60,7 @@
 #include <numeric>
 #include <random>
 #include <set>
+#include <sstream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -1324,6 +1325,218 @@ ADS_TEST( "ods-ex9.13.avl" )
 int main( int argc , char ** argv )
 {
  return( ADS::test::main( argc , argv ) );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*------------------ THE FIGURES OF THE EXERCISES OF MORIN -----------------*/
+/*--------------------------------------------------------------------------*/
+
+namespace {
+
+/// a binary search tree as ( key left right ), "-" for nil and no children
+/// written for a leaf
+template< class T >
+std::string bstShape( const T & t , typename T::Link * u )
+{
+ if( t.isNil( u ) )
+  return( "-" );
+ std::ostringstream o;
+ o << "(" << T::key( u );
+ if( ! t.isNil( u->left ) || ! t.isNil( u->right ) )
+  o << " " << bstShape( t , u->left ) << " " << bstShape( t , u->right );
+ o << ")";
+ return( o.str() );
+ }
+
+/// a tree read through its `Shape`, as `bstShape()` writes it, each red
+/// node of a red-black tree followed by r if `colours`
+template< class T , class N >
+std::string shapeOf( const N * n , bool colours )
+{
+ using S = typename T::Shape;
+ if( ! n )
+  return( "-" );
+ std::ostringstream o;
+ o << "(" << S::read( n ).first;
+ if constexpr( requires { n->colour; } )
+  if( colours && ( n->colour == 0 ) )
+   o << "r";
+ if( S::left( n ) || S::right( n ) )
+  o << " " << shapeOf< T >( S::left( n ) , colours ) << " "
+    << shapeOf< T >( S::right( n ) , colours );
+ o << ")";
+ return( o.str() );
+ }
+
+/// the whole tree `t` as `shapeOf()` writes it
+template< class T >
+std::string shapeOf( const T & t , bool colours = false )
+{
+ return( shapeOf< T >( T::Shape::root( t ) , colours ) );
+ }
+
+/// the binary search tree of figure 6.5 of Morin's book
+BinarySearchTree< double , int > figureSearchTree( void )
+{
+ BinarySearchTree< double , int > t;
+ for( double k : { 7 , 3 , 11 , 1 , 5 , 9 , 13 , 4 , 6 , 8 , 12 , 14 } )
+  t.insert( k , 0 );
+ return( t );
+ }
+
+/// the left-leaning red-black tree of the exercises 9.2 and 9.3 of Morin's
+/// book, built by insertions and two removals
+LeftLeaningRedBlackTree< double , int > figureRedBlackTree( void )
+{
+ LeftLeaningRedBlackTree< double , int > t;
+ for( double k : { 7 , 0 , 6 , 10 , 8 , 12 , 1 , 4 , 5 , 2 , 3 , 9 , 11 ,
+                   13 } )
+  t.insert( k , 0 );
+ t.remove( 0 );
+ t.remove( 13 );
+ return( t );
+ }
+
+}  // end( namespace )
+
+// ods ex 6.12: 3.5 and then 4.5 inserted into the tree of figure 6.5, both
+// below 4 (figure 8.23 of the manual)
+ADS_TEST( "ods-ex6.12.bst-insert-figure" )
+{
+ auto t = figureSearchTree();
+ const std::string right = "(11 (9 (8) -) (13 (12) (14)))";
+ CHECK( bstShape( t , t.root() ) == "(7 (3 (1) (5 (4) (6))) " + right + ")" );
+ t.insert( 3.5 , 0 );
+ CHECK( bstShape( t , t.root() ) ==
+        "(7 (3 (1) (5 (4 (3.5) -) (6))) " + right + ")" );
+ t.insert( 4.5 , 0 );
+ CHECK( bstShape( t , t.root() ) ==
+        "(7 (3 (1) (5 (4 (3.5) (4.5)) (6))) " + right + ")" );
+ }
+
+// ods ex 6.13: 3 removed, its successor 4 taking its node, and then 5,
+// whose only child 6 is hung to 4 (figure 8.24 of the manual)
+ADS_TEST( "ods-ex6.13.bst-remove-figure" )
+{
+ auto t = figureSearchTree();
+ const std::string right = "(11 (9 (8) -) (13 (12) (14)))";
+ t.remove( 3 );
+ CHECK( bstShape( t , t.root() ) == "(7 (4 (1) (5 - (6))) " + right + ")" );
+ t.remove( 5 );
+ CHECK( bstShape( t , t.root() ) == "(7 (4 (1) (6)) " + right + ")" );
+ }
+
+// ods ex 8.1: 1.5 and then 1.6 inserted into the scapegoat tree of figure
+// 8.1, at the depths 5 and 6, within log_{3/2} q, with no rebuild (figure
+// 8.46 of the manual)
+ADS_TEST( "ods-ex8.1.scapegoat-figure" )
+{
+ ScapegoatTree< double , int > t;
+ for( double k : { 7 , 6 , 8 , 5 , 9 , 2 , 1 , 4 , 0 , 3 } )
+  t.insert( k , 0 );
+ const std::string up = "(7 (6 (5 (2 " , down = " (4 (3) -)) -) -) (8 - (9)))";
+ CHECK( ( shapeOf( t ) == up + "(1 (0) -)" + down ) && ( t.height() == 5 ) );
+ t.insert( 1.5 , 0 );
+ CHECK( shapeOf( t ) == up + "(1 (0) (1.5))" + down );
+ t.insert( 1.6 , 0 );
+ CHECK( shapeOf( t ) == up + "(1 (0) (1.5 - (1.6)))" + down );
+ CHECK( ( t.height() == 6 ) && ( t.rebuilds() == 0 ) );
+ }
+
+// ods ex 8.2: 1, 5, 2, 4, 3 inserted into an empty scapegoat tree; the
+// insertion of 3 rebuilds the subtree of 5 (4 nodes) by the rule WEIGHT,
+// and the whole tree (5 nodes) by the rule HEIGHT (figure 8.47 of the
+// manual)
+ADS_TEST( "ods-ex8.2.scapegoat-credits" )
+{
+ using S = ScapegoatTree< double , int >;
+ for( auto w : { S::Scapegoats::WEIGHT , S::Scapegoats::HEIGHT } ) {
+  S t( 1.5 , S::Sizes::REUSE , S::Rebuilds::ARRAY , w );
+  for( double k : { 1 , 5 , 2 , 4 } )
+   t.insert( k , 0 );
+  CHECK( ( shapeOf( t ) == "(1 - (5 (2 - (4)) -))" ) &&
+         ( t.rebuilds() == 0 ) );
+  t.insert( 3 , 0 );
+  CHECK( t.rebuilds() == 1 );
+  if( w == S::Scapegoats::WEIGHT )
+   CHECK( ( shapeOf( t ) == "(1 - (3 (2) (4 - (5))))" ) &&
+          ( t.rebuiltNodes() == 4 ) );
+  else
+   CHECK( ( shapeOf( t ) == "(3 (1 - (2)) (4 - (5)))" ) &&
+          ( t.rebuiltNodes() == 5 ) );
+  }
+ }
+
+// ods ex 9.2: 13, 3.5 and 3.3 inserted into the tree of the exercises,
+// with their colours (figure 8.54 of the manual)
+ADS_TEST( "ods-ex9.2.red-black-insert-figure" )
+{
+ auto t = figureRedBlackTree();
+ CHECK( shapeOf( t , true ) ==
+        "(6 (4 (2r (1) (3)) (5)) (10 (8r (7) (9)) (12 (11r) -)))" );
+ t.insert( 13 , 0 );
+ CHECK( shapeOf( t , true ) ==
+        "(6 (4 (2r (1) (3)) (5)) (10 (8r (7) (9)) (12 (11r) (13r))))" );
+ t.insert( 3.5 , 0 );
+ CHECK( shapeOf( t , true ) == "(6 (4 (2r (1) (3.5 (3r) -)) (5)) "
+                               "(10 (8r (7) (9)) (12 (11r) (13r))))" );
+ t.insert( 3.3 , 0 );
+ CHECK( shapeOf( t , true ) == "(6 (4 (2r (1) (3.3 (3r) (3.5r))) (5)) "
+                               "(10 (8r (7) (9)) (12 (11r) (13r))))" );
+ }
+
+// ods ex 9.3: 11, 9 and 5 removed from the same tree, a red leaf, case 3
+// and then case 1 followed by case 3 of removeFixup, and 1, case 2
+// (figures 8.55 and 8.53 of the manual)
+ADS_TEST( "ods-ex9.3.red-black-remove-figure" )
+{
+ auto t = figureRedBlackTree();
+ t.remove( 11 );
+ CHECK( shapeOf( t , true ) ==
+        "(6 (4 (2r (1) (3)) (5)) (10 (8r (7) (9)) (12)))" );
+ t.remove( 9 );
+ CHECK( shapeOf( t , true ) ==
+        "(6 (4 (2r (1) (3)) (5)) (10 (8 (7r) -) (12)))" );
+ t.remove( 5 );
+ CHECK( shapeOf( t , true ) == "(6 (2 (1) (4 (3r) -)) (10 (8 (7r) -) (12)))" );
+ auto u = figureRedBlackTree();
+ u.remove( 1 );
+ CHECK( shapeOf( u , true ) ==
+        "(6 (4 (3 (2r) -) (5)) (10 (8r (7) (9)) (12 (11r) -)))" );
+ }
+
+// ods ex 14.1 and 14.2 on BTree, the insertion and the removal in one
+// pass: the class shows no node, and the test checks the height, the keys
+// and, at the contract level 3, the invariant of the B-tree after each
+// step, on the keys 0, ..., 23 of figure 14.2 (figures 8.56 to 8.58 of the
+// manual)
+ADS_TEST( "ods-ex14.1.btree-one-pass" )
+{
+ auto keys = []( const BTree< double , int > & t ) {
+  std::vector< double > k;
+  for( const auto & [ x , v ] : t )
+   k.push_back( x );
+  return( k );
+  };
+ BTree< double , int > t( 2 );
+ for( int k = 0 ; k < 24 ; ++k )
+  t.insert( k , k );
+ std::vector< double > want( 24 );
+ std::iota( want.begin() , want.end() , 0.0 );
+ CHECK( keys( t ) == want );
+ const int h = t.height();
+ for( double k : { 1.5 , 7.5 } ) {
+  t.insert( k , 0 );
+  want.insert( std::lower_bound( want.begin() , want.end() , k ) , k );
+  CHECK( ( keys( t ) == want ) && ( t.height() >= h ) &&
+         ( t.height() <= h + 1 ) );
+  }
+ for( double k : { 3.0 , 4.0 , 5.0 , 0.0 , 6.0 } ) {
+  t.remove( k );
+  want.erase( std::lower_bound( want.begin() , want.end() , k ) );
+  CHECK( ( keys( t ) == want ) && ! t.contains( k ) &&
+         ( t.size() == want.size() ) );
+  }
  }
 
 /*--------------------------------------------------------------------------*/

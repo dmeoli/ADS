@@ -6065,10 +6065,11 @@ a proof by the lemmas cited.
 30. Illustrate the insertion of 3.5 and then of 4.5 in the binary search
     tree of Morin's figure 6.5 ([Morin 2013, exercise
     6.12](Z-bibliography.md#ref-morin-cpp)). Solved by [Figure
-    8.23](08-tree.md#fig-8-23).
+    8.23](08-tree.md#fig-8-23). Test: `ods_trees.ods-ex6.12.bst-insert-figure`.
 31. Illustrate the removal of 3 and then of 5 from the same tree ([Morin
     2013, exercise 6.13](Z-bibliography.md#ref-morin-cpp)). Solved by
-    [Figure 8.24](08-tree.md#fig-8-24).
+    [Figure 8.24](08-tree.md#fig-8-24). Test:
+    `ods_trees.ods-ex6.13.bst-remove-figure`.
 32. Insert $1 , \ldots , n$ in an empty binary search tree so that its
     height is $n - 1$, and count the orders that do so ([Morin 2013,
     exercise 6.15](Z-bibliography.md#ref-morin-cpp), and [Lemma
@@ -6264,12 +6265,14 @@ a proof by the lemmas cited.
 68. Illustrate the insertions of 1.5 and then 1.6 into the scapegoat tree
     of [Morin 2013, figure 8.1](Z-bibliography.md#ref-morin-cpp) ([Morin
     2013, exercise 8.1](Z-bibliography.md#ref-morin-cpp)). Solved by
-    [Figure 8.46](08-tree.md#fig-8-46).
+    [Figure 8.46](08-tree.md#fig-8-46). Test:
+    `ods_trees.ods-ex8.1.scapegoat-figure`.
 69. Illustrate the insertions of 1, 5, 2, 4, 3 into an empty scapegoat
     tree, and show where the credits of the proof of [Lemma
     8.39](08-tree.md#lem-8-39) go and how they are spent
     ([Morin 2013, exercise 8.2](Z-bibliography.md#ref-morin-cpp)). Solved
-    by [Figure 8.47](08-tree.md#fig-8-47).
+    by [Figure 8.47](08-tree.md#fig-8-47). Test:
+    `ods_trees.ods-ex8.2.scapegoat-credits`.
 70. Show that the insertions of $1 , 2 , \ldots , n$ into an empty
     scapegoat tree spend $\Omega( n \log n )$ time in the rebuilds ([Morin
     2013, exercise 8.3](Z-bibliography.md#ref-morin-cpp), [Lemma
@@ -6323,11 +6326,13 @@ a proof by the lemmas cited.
     `ods_trees.ods-ex9.1.two-four-tree`.
 79. Illustrate the insertions of 13, 3.5 and 3.3 into the same tree ([Morin
     2013, exercise 9.2](Z-bibliography.md#ref-morin-cpp)). Solved by
-    [Figure 8.54](08-tree.md#fig-8-54).
+    [Figure 8.54](08-tree.md#fig-8-54). Test:
+    `ods_trees.ods-ex9.2.red-black-insert-figure`.
 80. Illustrate the removals of 11, 9 and 5 from the same tree ([Morin 2013,
     exercise 9.3](Z-bibliography.md#ref-morin-cpp)). Solved by [Figure
     8.55](08-tree.md#fig-8-55) and [Figure
-    8.53](08-tree.md#fig-8-53).
+    8.53](08-tree.md#fig-8-53). Test:
+    `ods_trees.ods-ex9.3.red-black-remove-figure`.
 81. Show that there are red-black trees of $n$ nodes and height $2 \log_2 n
     - O( 1 )$ for arbitrarily large $n$, and sequences of insertions and
     removals that build them ([Morin 2013, exercises 9.4 and
@@ -6385,13 +6390,15 @@ a proof by the lemmas cited.
     bottom-up insertion of [§23.3.2](23-external.md#sec-23-3-2) ([Morin
     2013, exercise 14.1](Z-bibliography.md#ref-morin-cpp)). Solved by
     [Figure 8.56](08-tree.md#fig-8-56); the bottom-up tree is
-    checked by `ods_ints.ods.ex14.1.figure`.
+    checked by `ods_ints.ods.ex14.1.figure`, and the one-pass tree by
+    `ods_trees.ods-ex14.1.btree-one-pass` (its keys, height and
+    invariant, since `BTree` shows no node).
 91. Show what happens when the keys 3 and then 4 are removed from the same
     B-tree by the removal in one pass ([Morin 2013, exercise
     14.2](Z-bibliography.md#ref-morin-cpp)), and then 5, 0 and 6, so that
     every case of the fill occurs. Solved by [Figure
     8.57](08-tree.md#fig-8-57) and [Figure
-    8.58](08-tree.md#fig-8-58).
+    8.58](08-tree.md#fig-8-58). Test: `ods_trees.ods-ex14.1.btree-one-pass`.
 92. Realize a B+-tree with the removal by borrowings and merges, the search
     of the smallest key not smaller than $x$ and the report of the keys in
     $( x , y ]$, and explain why the keys repeated above the leaves cost
