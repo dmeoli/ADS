@@ -1028,7 +1028,7 @@ in and then out, and prunes a node when the fractional knapsack of the
 objects left within the capacity left ([§13.11](13-algorithm.md#sec-13-11))
 does not beat the best. This is an upper bound of the best profit of the
 objects left, since the fractional greedy is optimal for the relaxation
-([Lemma 13.18](13-algorithm.md#lem-13-18)). `knapsackBacktrack()` is the
+([Lemma 13.26](13-algorithm.md#lem-13-26)). `knapsackBacktrack()` is the
 same visit with the objects in their order and the simple bound, the sum
 of the profits still to decide, and `knapsackGreedy()` the heuristic that
 takes the objects by decreasing profit per volume while they fit, which is

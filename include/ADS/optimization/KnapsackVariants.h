@@ -36,7 +36,7 @@
  *   \f$ n \f$. The dynamic programming
  *   \f$ S[ i ] = 1 + \min_{t^2 \le i} S[ i - t^2 ] \f$ takes
  *   \f$ \Theta( n \sqrt{n} ) \f$ time; number theory answers in
- *   \f$ O( \sqrt{n} ) \f$: 0 for \f$ n = 0 \f$, 1 for a square, 4 for
+ *   \f$ O( \sqrt{n} \log n ) \f$: 0 for \f$ n = 0 \f$, 1 for a square, 4 for
  *   \f$ n = 4^a ( 8 b + 7 ) \f$ (Legendre's three-square theorem), 2 if
  *   \f$ n - t^2 \f$ is a square for some \f$ t \f$, 3 otherwise; at most 4 by
  *   Lagrange's four-square theorem. Taking the largest square first is not
