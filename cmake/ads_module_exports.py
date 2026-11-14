@@ -215,7 +215,7 @@ def write_module( out_file , headers , names ):
                  "be edited by hand." )
     out += [ " *" , " * \\author Donato Meoli \\n" ,
              " *         Dipartimento di Informatica \\n" ,
-             " *         Universita' di Pisa \\n" , " *" ,
+             " *         Università di Pisa \\n" , " *" ,
              " * \\copyright &copy; by Donato Meoli" , " */" ,
              BANNER , title( "GLOBAL MODULE FRAGMENT" ) , BANNER , "" ,
              "module;" , "" ]
