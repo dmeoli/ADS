@@ -49,7 +49,6 @@ bool freivalds( const std::vector< std::vector< T > > & A ,
    for( std::size_t j = 0 ; j < n ; ++j ) r[ i ] += M[ i ][ j ] * v[ j ];
    }
   };
-//! [freivalds]
  for( int k = 0 ; k < K ; ++k ) {
   for( auto & xi : x ) xi = ( rng() & 1 ) ? T( 1 ) : T( -1 );
   mul( B , x , y );
@@ -58,7 +57,6 @@ bool freivalds( const std::vector< std::vector< T > > & A ,
   if( z != w )
    return( false );                        // surely A B != C
   }
-//! [freivalds]
  return( true );
  }
 

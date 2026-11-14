@@ -45,6 +45,19 @@ stack. A sort *by comparisons* learns about the items only through `less`,
 and works therefore with any order. The sorts *by digits* (counting,
 pigeonhole and radix sorts) read the keys as integers or strings instead,
 and are not bound by the lower bound of [§12.2](12-sort.md#sec-12-2).
+Unless stated otherwise, a sort of the library sorts a
+`std::vector` in place, with the comparator as its last parameter but the
+optional counters, e.g.,
+
+```cpp
+template< class T , class C = std::less<> >
+void sort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void stableSort( std::vector< T > & A , C less = C() );
+```
+
+so that `ADS::sort( A )` sorts $A$ in increasing order and
+`ADS::sort( A , std::greater<>() )` in decreasing order.
 [Table 12.1](12-sort.md#tab-12-1) fixes the symbols that the rest of the
 chapter uses.
 
@@ -261,6 +274,25 @@ this order, each into a prefix of the chain of at most $2^j - 1$ items
 (those before its partner); each binary search thus costs $j$ comparisons,
 and none is wasted on a prefix that is not one less than a power of 2.
 
+The functions of `KnuthSorts.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void binaryInsertionSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void listInsertionSort( std::vector< T > & A , C less = C() ,
+                        std::size_t *moves = nullptr );
+template< class T >
+void addressCalculationSort( std::vector< T > & A , std::size_t M = 0 );
+template< RadixKey T >
+void radixExchangeSort( std::vector< T > & A );
+template< class T , class C = std::less<> >
+void tournamentSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void mergeInsertionSort( std::vector< T > & A , C less = C() );
+long fordJohnsonBound( std::size_t n );
+```
+
 <span id="alg-12-1"></span>**Algorithm 12.1.** The merge insertion of
 Ford and Johnson ([Knuth 1998, §5.3.1](Z-bibliography.md#ref-knuth1998v3)).
 
@@ -296,11 +328,30 @@ all the hybrid sorts of the area, and `insertionSortSentinel()` first moves
 the minimum to $A[ 0 ]$, and its inner loop then needs no test of the left
 end ([Knuth 1998, §5.2.1](Z-bibliography.md#ref-knuth1998v3)).
 
+The functions of `SelectionSort.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void selectionSort( std::vector< T > & A , C less = C() );
+```
+
 <span id="alg-12-2"></span>**Algorithm 12.2.** Selection Sort, Insertion
 Sort, and Insertion Sort with a sentinel ([Montresor 2025, §2.7.1 and
 §2.7.2](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/SelectionSort-selectionSort.pseudo.md"
+
+The functions of `InsertionSort.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void insertionSort( std::vector< T > & A , std::size_t lo ,
+                    std::size_t hi , C less = C() );
+template< class T , class C = std::less<> >
+void insertionSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void insertionSortSentinel( std::vector< T > & A , C less = C() );
+```
 
 --8<-- "generated/InsertionSort-insertionSort.pseudo.md"
 
@@ -374,6 +425,22 @@ and moves left otherwise: it is the insertion sort with swaps and with no
 nested loop. All but the comb sort are stable
 ([Algorithm 12.4](12-sort.md#alg-12-4)).
 
+The functions of `ExchangeSorts.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void bubbleSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void cocktailShakerSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void oddEvenSort( std::vector< T > & A , C less = C() ,
+                  std::size_t *rounds = nullptr );
+template< class T , class C = std::less<> >
+void combSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void gnomeSort( std::vector< T > & A , C less = C() );
+```
+
 <span id="alg-12-4"></span>**Algorithm 12.4.** The sorts by adjacent
 exchanges, and the comb sort.
 
@@ -399,6 +466,21 @@ pass, an insertion sort, usually finds few inversions;
 [Figure 12.3](12-sort.md#fig-12-3) shows two passes on twelve items. The
 book sees it as a local search that lowers the inversions. One may ask why
 the passes do not undo each other, and the following property answers it.
+
+The functions of `ShellSort.h` are declared as
+
+```cpp
+std::vector< std::size_t > knuthGaps( std::size_t n );
+std::vector< std::size_t > shellGaps( std::size_t n );
+std::vector< std::size_t > hibbardGaps( std::size_t n );
+std::vector< std::size_t > prattGaps( std::size_t n );
+std::vector< std::size_t > ciuraGaps( std::size_t n );
+template< class T , class C = std::less<> >
+void shellSort( std::vector< T > & A ,
+                const std::vector< std::size_t > & gaps , C less = C() );
+template< class T , class C = std::less<> >
+void shellSort( std::vector< T > & A , C less = C() );
+```
 
 <span id="alg-12-5"></span>**Algorithm 12.5.** Shell Sort on the gaps
 $H$, and with the gaps of the book ([Montresor 2025,
@@ -464,7 +546,29 @@ sorted recursively and then merged ([Algorithm
 12.6](12-sort.md#alg-12-6)). The merge, `mergeParts()`, the Merge() of the
 book, writes into a vector $B$ allocated once by `mergeSort()` the smaller
 of the first items of the two halves, until one of them runs out, and then
-copies the merged items back.
+copies the merged items back. The recursion is `mergeSortRec()`, which
+the other two call:
+
+```cpp
+template< class T , class C = std::less<> >
+void mergeParts( std::vector< T > & A , std::vector< T > & B ,
+                 std::size_t start , std::size_t mid , std::size_t end ,
+                 C less = C() , long long *inv = nullptr );
+template< class T , class C = std::less<> >
+void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 ,
+                C less = C() );
+template< class T , class C = std::less<> >
+void mergeSort( List< T > & L , C less = C() );
+template< class T , class C = std::less<> >
+void mergeSortBottomUp( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+long long countInversions( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
+                   std::size_t start , std::size_t end ,
+                   std::size_t cutoff , C less = C() ,
+                   long long *inv = nullptr );
+```
 
 <span id="alg-12-6"></span>**Algorithm 12.6.** Merge Sort and its merge
 ([Montresor 2025, §2.7.3](Z-bibliography.md#ref-montresor2025)), with the
@@ -480,11 +584,7 @@ cutoff of section 2.8. The counter $\mathit{inv}$ is used by
 Its code follows the pseudocode. We remark that the test is `!
 less( A[ j ] , A[ i ] )`: an item of the left half goes first
 when the two are equal, which makes the merge, and hence the sort, stable,
-and that the items are moved, not copied:
-
-```cpp
---8<-- "generated/MergeSort-merge.cpp"
-```
+and that the items are moved, not copied.
 
 When the right half runs out first, the rest of the left one is copied to
 $B$. When the left one does, the rest of the right one is already in its
@@ -603,7 +703,8 @@ in the left part are exactly those larger than it (the smaller or equal
 ones were taken before it), i.e., $\mathit{mid} - i + 1$ items, each of
 which forms an inversion with it. $\square$
 
-The strand sort of `StrandSort.h` ([Knuth 1998,
+The strand sort of `StrandSort.h`, `strandSort( L , less , strands )`, which
+counts the strands in `*strands` if given ([Knuth 1998,
 §5.2.4](Z-bibliography.md#ref-knuth1998v3), exercise 12) is a variant of
 the natural merge sort on a `List`: a *strand*, i.e., the first item and
 every later one not smaller than the last item taken, is pulled out of the
@@ -617,6 +718,14 @@ before it, which belongs to that strand, so that going back strand by
 strand gives a strictly decreasing subsequence of $i$ items; hence the sort takes $O( n )$ on a
 sorted list and $O( n^2 )$ on a decreasing one. It is stable, the result
 going first on a tie, and it can report the number of its strands.
+
+The functions of `StrandSort.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void strandSort( List< T > & L , C less = C() ,
+                 std::size_t *strands = nullptr );
+```
 
 <span id="alg-12-8"></span>**Algorithm 12.8.** The strand sort.
 
@@ -654,9 +763,23 @@ first bit in which the midpoints of the two runs, as fractions of $n$,
 differ. The function `nodePower()` computes it from twice the midpoints, one
 bit at a time:
 
+The functions of `RunSorts.h` are declared as
+
 ```cpp
---8<-- "generated/RunSorts-nodePower.cpp"
+template< class T , class C = std::less<> >
+void powerSort( std::vector< T > & A , C less = C() ,
+                std::size_t *runs = nullptr );
 ```
+
+--8<-- "generated/RunSorts-nodePower.pseudo.md"
+
+Here $l / 2 n$ and $r / 2 n$ are the two midpoints, and the test of line 3
+compares their $( k + 1 )$-th bits, which are $[ l \ge n ]$ and
+$[ r \ge n ]$ after the first $k$ bits have been removed by lines 4 and 5.
+The loop keeps $0 \le l < r < 2 n$, and each step doubles $r - l$ (the
+subtraction of line 4 leaves it unchanged); since the two bits differ as
+soon as $r - l \ge n$, the loop ends after at most
+$\lceil \log_2 n \rceil$ steps.
 
 The runs wait on a stack whose powers increase upwards, and a new boundary
 first merges the runs on the stack whose power is larger than its own. Hence
@@ -749,10 +872,28 @@ $x$ are smaller than it and those after it are not, and the two parts are
 then sorted recursively ([Algorithm 12.10](12-sort.md#alg-12-10)). It scans
 the part once, keeping $A[ \mathit{start} + 1 .. j ]$ the
 items smaller than $x$ seen so far. Each smaller item is swapped to the
-place $j + 1$:
+place $j + 1$.
+
+The functions of `QuickSort.h` are declared as
 
 ```cpp
---8<-- "generated/QuickSort-partition.cpp"
+template< class T , class C = std::less<> >
+std::size_t partition( std::vector< T > & A , std::size_t start ,
+                       std::size_t end , C less = C() );
+template< class T , class C = std::less<> >
+void quickSort( std::vector< T > & A , std::size_t start ,
+                std::size_t end , C less = C() );
+template< class T , class C = std::less<> >
+void quickSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void quickSort( List< T > & L , C less = C() );
+template< class T , class C = std::less<> >
+void quickSortTuned( std::vector< T > & A , std::size_t cutoff = 16 ,
+                     C less = C() , std::size_t *depth = nullptr );
+template< class T , class C = std::less<> >
+std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
+                              std::size_t end , const T & x ,
+                              C less = C() );
 ```
 
 <span id="alg-12-10"></span>**Algorithm 12.10.** The partition and
@@ -917,7 +1058,7 @@ and the entropy of the multiplicities is at most $\ln k$. $\square$
 On distinct keys the bound is that of (12.4) up to $O( n )$, and with
 $k = O( 1 )$ keys it is linear. `threeWayQuickSort()`
 ([§12.7](12-sort.md#sec-12-7)) draws its pivot by a generator of fixed seed,
-so that the sort is the same on every run, asks `less` once for an item
+so that the sort is the same on every run, calls `less` once per item
 smaller than the pivot and twice for the others, and leaves the parts of at
 most 16 items to `insertionSort()`; on an input independent of the
 generator it thus makes at most $4 n \ln k + O( n )$ calls of `less` in
@@ -967,10 +1108,20 @@ value given. When two gas items are compared, one of them is frozen to the
 next value, the smallest still free, and the adversary prefers to freeze the
 item that was last compared with a frozen one, i.e., the candidate for the
 pivot, since a quicksort compares its pivot with all the other items of its
-part ([Algorithm 12.12](12-sort.md#alg-12-12)):
+part ([Algorithm 12.12](12-sort.md#alg-12-12)).
+
+The public members of `QuicksortAdversary` are
 
 ```cpp
---8<-- "generated/QuicksortAdversary-QuicksortAdversary-less.cpp"
+class QuicksortAdversary {
+ public:
+ explicit QuicksortAdversary( std::size_t n );
+ class Less;                     // the comparator of the adversary
+ Less less( void );
+ std::vector< std::size_t > items( void ) const;
+ std::size_t comparisons( void ) const;
+ std::vector< std::size_t > input( void ) const;
+ };
 ```
 
 <span id="alg-12-12"></span>**Algorithm 12.12.** The comparator of the
@@ -1044,6 +1195,17 @@ equals on its left and skips them, with the result that $k$ distinct keys
 take $O( n \log k )$; and a partition too unbalanced swaps a few items of each
 side to break the pattern that caused it.
 
+The functions of `EngineeredQuickSorts.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void pdqSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void dualPivotQuickSort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void threeWayQuickSort( std::vector< T > & A , C less = C() );
+```
+
 <span id="alg-12-13"></span>**Algorithm 12.13.** The pattern-defeating
 quicksort ([Peters 2021](Z-bibliography.md#ref-peters2021)),
 $\mathit{bad}$ starting from $\lfloor \log_2 n \rfloor + 1$.
@@ -1072,12 +1234,8 @@ blocks, as in the BlockQuicksort of [Edelkamp and Weiß
 2016](Z-bibliography.md#ref-edelkamp2016): the items to swap, i.e., those
 on the left that belong to the right and those on the right that belong to
 the left, are first collected, 64 at a time, as offsets by an increment with
-no branch,
-
-```cpp
---8<-- "generated/EngineeredQuickSorts-blocks.cpp"
-```
-
+no branch (the offset of the item $A[ i ]$ is written at the end of the
+buffer, and the end advances by the outcome of the comparison, 0 or 1),
 and then moved along a cycle, or swapped in pairs when the two blocks have
 as many (the first with the last, so that a part in reverse order leaves
 both its sides sorted, which the insertion sort above then finds in
@@ -1134,6 +1292,15 @@ real, since without AVX-512 or AVX2 (or with `ADS_VECTOR_SORT` set to
 same algorithm runs in portable code, which the compiler vectorizes as it
 can. Its overloads take a `std::vector` or a pointer and a length. We
 describe its five parts in turn.
+
+The functions of `VectorQuickSort.h` are declared as
+
+```cpp
+template< VectorKey T >
+void vectorQuickSort( std::vector< T > & A );
+template< VectorKey T >
+void vectorQuickSort( T *a , std::size_t n );
+```
 
 <span id="alg-12-15"></span>**Algorithm 12.15.** The quicksort in the
 vector registers.
@@ -1230,6 +1397,13 @@ al. 2022](Z-bibliography.md#ref-axtmann2022) ([Algorithm
 12.16](12-sort.md#alg-12-16)). It sorts by comparisons only, and therefore
 takes any order; it is not stable.
 
+The functions of `SampleSort.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+void sampleSort( std::vector< T > & A , C less = C() );
+```
+
 <span id="alg-12-16"></span>**Algorithm 12.16.** The in-place super scalar
 samplesort ([Sanders and Winkel 2004](Z-bibliography.md#ref-sanders2004);
 [Axtmann et al. 2022](Z-bibliography.md#ref-axtmann2022)).
@@ -1249,11 +1423,7 @@ $i = | \{ h : s_h \le x \} |$ by $\log_2 k$ steps
 $j \gets 2 j + [ t_j \le x ]$ from $j = 1$, and $i = j - k$ at the end
 ([Figure 12.6](12-sort.md#fig-12-6)): an addition per step and no branch,
 hence no comparison mispredicted. Also, four items go down the tree
-together, and their loads overlap:
-
-```cpp
---8<-- "generated/SampleSort-classify.cpp"
-```
+together, one level of the four at a time, and their loads overlap.
 
 ![Figure 12.6. The classification of `sampleSort()` with $k = 8$ buckets and the splitters $10 , 20 , \ldots , 70$ laid out as a tree in $t[ 1 .. 7 ]$ (the indices above the nodes): $x = 55$ follows $j \gets 2 j + [ t_j \le x ]$ along the nodes in violet and lands in the bucket $13 - 8 = 5$, the number of splitters not larger than 55.](../figures/sort-samplesort.svg){#fig-12-6}
 
@@ -1327,6 +1497,13 @@ recursive model index of the learned indexes of
 [§6.4](06-search.md#sec-6-4); the grid is the simplest model with the same
 guarantee.
 
+The functions of `LearnedSort.h` are declared as
+
+```cpp
+template< VectorKey T >
+void learnedSort( std::vector< T > & A );
+```
+
 <span id="alg-12-17"></span>**Algorithm 12.17.** The learned sort, $b$ the
 size of a block and $c_{\max}$ the most splitters in a cell.
 
@@ -1370,10 +1547,21 @@ swapping it with its larger child, when the subtrees of the children are
 max-heaps in $A[ 0 .. \mathit{dim} - 1 ]$. It is a loop, not the recursion
 of the book (exercise 10.4 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025)), so that the sort uses $O( 1 )$
-extra space:
+extra space.
+
+The functions of `Heapsort.h` are declared as
 
 ```cpp
---8<-- "generated/Heapsort-maxHeapRestore.cpp"
+template< class T , class C = std::less<> >
+void maxHeapRestore( std::vector< T > & A , std::size_t i ,
+                     std::size_t dim , C less = C() );
+template< class T , class C = std::less<> >
+void heapBuild( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+void heapsort( std::vector< T > & A , C less = C() );
+template< class T , class C = std::less<> >
+bool isMaxHeap( const std::vector< T > & A , std::size_t dim ,
+                C less = C() );
 ```
 
 <span id="alg-12-18"></span>**Algorithm 12.18.** The restoration of a
@@ -1521,6 +1709,13 @@ of the cost of the balance.
 
 --8<-- "generated/KnuthSorts-tournamentSort.pseudo.md"
 
+The functions of `TreeSort.h` are declared as
+
+```cpp
+template< std::totally_ordered T >
+void treeSort( std::vector< T > & A , bool balanced = true );
+```
+
 --8<-- "generated/TreeSort-treeSort.pseudo.md"
 
 ## 12.10 The sorts by digits {#sec-12-10}
@@ -1544,11 +1739,26 @@ $( \mathit{key} , \mathit{value} )$, appending each value to the `List` of
 its key and reading the lists in the order of the keys, in $O( n + k )$
 time, and it is stable.
 
+The functions of `CountingSort.h` are declared as
+
+```cpp
+template< class T >
+void countingSort( std::vector< T > & A , std::size_t k );
+```
+
 <span id="alg-12-20"></span>**Algorithm 12.20.** Counting Sort and
 Pigeonhole Sort ([Montresor 2025, §2.7.5 and exercise
 4.11](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/CountingSort-countingSort.pseudo.md"
+
+The functions of `PigeonholeSort.h` are declared as
+
+```cpp
+template< class V >
+std::vector< std::pair< int , V > >
+pigeonholeSort( const std::vector< std::pair< int , V > > & A , int k );
+```
 
 --8<-- "generated/PigeonholeSort-pigeonholeSort.pseudo.md"
 
@@ -1626,10 +1836,19 @@ the numbers: the sign bit flipped for a signed integer (exercise 11.13 of
 [Morin 2013](Z-bibliography.md#ref-morin-cpp), whose radix sort takes the
 unsigned integers only), and for a floating point number all the bits
 flipped if it is negative and the sign bit otherwise ([Herf
-2001](Z-bibliography.md#ref-herf2001)):
+2001](Z-bibliography.md#ref-herf2001)). The key is the unsigned integer
+of the width of the type, and it is declared as
 
 ```cpp
---8<-- "generated/RadixSort-radixKey.cpp"
+template< RadixKey T >
+void radixSort( std::vector< T > & A );
+template< class T , class K >
+void radixSortBy( std::vector< T > & A , K key );
+template< RadixKey T >
+void americanFlagSort( std::vector< T > & A );
+void msdRadixSort( std::vector< std::string > & A );
+template< RadixKey T >
+auto radixKey( T x );
 ```
 
 <span id="lem-12-18"></span>**Lemma 12.18.** *For numbers of the same type,
@@ -1652,11 +1871,10 @@ numbers by bytes.
 --8<-- "generated/RadixSort-radixSort.pseudo.md"
 
 A pass scatters the items from one array into the other by the prefix sums
-of the counts of its byte, as in the stable counting sort above:
-
-```cpp
---8<-- "generated/RadixSort-scatter.cpp"
-```
+of the counts of its byte, as in the stable counting sort above: the
+count of each value of the byte becomes the place of the first item with
+that value, and each item, in order, goes to the place of its value, which
+then advances by one.
 
 Three refinements make the passes fewer and cheaper. A first sweep finds
 the bytes in which some keys differ, and only those make a pass; small keys
@@ -1765,6 +1983,12 @@ paper, and it makes $O( D + n \log n )$ comparisons of characters, against
 the $O( n \log n )$ comparisons of whole strings of a quicksort, each as
 long as a common prefix (which may be "long"). It sorts in place and is not stable.
 
+The functions of `MultikeyQuickSort.h` are declared as
+
+```cpp
+void multikeyQuickSort( std::vector< std::string > & A );
+```
+
 <span id="alg-12-25"></span>**Algorithm 12.25.** The multikey quicksort
 ([Bentley and Sedgewick 1997](Z-bibliography.md#ref-bentley1997)), $v < 0$
 for the end of a string.
@@ -1794,6 +2018,12 @@ beyond the reads of the characters, which are $O( D + n \log n )$; the extra
 room is $n$ keys of 64 bits and $n$ strings. In their string samplesort,
 [Bingmann and Sanders 2013](Z-bibliography.md#ref-bingmann2013) use keys of
 prefixes in a similar way.
+
+The functions of `StringSort.h` are declared as
+
+```cpp
+void prefixKeySort( std::vector< std::string > & A );
+```
 
 <span id="alg-12-26"></span>**Algorithm 12.26.** The sort of strings by
 integer keys of their prefixes, $w_i$ the 8 characters of the string $i$
@@ -1870,6 +2100,16 @@ $k , \ldots , 2$ items sort a bitonic sequence of zeros and ones, and the
 0-1 principle extends this to any input. The comparators of
 `bitonicNetwork()` point the other way in the blocks that must come out
 decreasing, which is the test $i \mathbin{\&} k \ne 0$ of its pseudocode.
+
+The functions of `SortingNetworks.h` are declared as
+
+```cpp
+std::vector< Comparator > mergeExchangeNetwork( std::size_t n );
+std::vector< Comparator > bitonicNetwork( std::size_t n );
+template< class T , class C = std::less<> >
+void applyNetwork( std::vector< T > & A ,
+                   const std::vector< Comparator > & N , C less = C() );
+```
 
 <span id="alg-12-27"></span>**Algorithm 12.27.** The application of a
 network, the bitonic sorter and the merge exchange ([Batcher
@@ -1954,6 +2194,23 @@ $\log_\phi r$ merges for $r$ runs with three tapes, $\phi$ the golden ratio,
 fewer with more tapes, and no tape is ever only copied, which is, in fact,
 the advantage of the polyphase merge over the balanced one. `externalSort()` is
 the two phases together, and the function can report the phases it made.
+
+The functions of `ExternalSort.h` are declared as
+
+```cpp
+template< class T , class C = std::less<> >
+std::vector< std::vector< T > >
+replacementSelection( const std::vector< T > & input , std::size_t M ,
+                      C less = C() );
+template< class T , class C = std::less<> >
+std::vector< T > polyphaseMerge( std::vector< std::vector< T > > runs ,
+                                 std::size_t tapes , C less = C() ,
+                                 std::size_t *phases = nullptr );
+template< class T , class C = std::less<> >
+std::vector< T > externalSort( const std::vector< T > & input ,
+                               std::size_t M , std::size_t tapes ,
+                               C less = C() );
+```
 
 <span id="alg-12-28"></span>**Algorithm 12.28.** The replacement selection,
 the polyphase merge and the external sort ([Knuth 1998, §5.4.1 and

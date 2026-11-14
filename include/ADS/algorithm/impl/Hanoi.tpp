@@ -31,7 +31,6 @@ void hanoi_recursive( int n , int source , int dest , int middle , F && f )
  }
 
 template< class F >
-//! [hanoi_iterative]
 void hanoi_iterative( int n , int source , int dest , int middle , F && f )
 {
  ADS_PRE( ( n >= 1 ) && ( source != dest ) && ( source != middle ) &&
@@ -55,7 +54,6 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f )
    }
   }
  }
-//! [hanoi_iterative]
 
 template< class F >
 void hanoi_iterative_labels( int n , int source , int dest , int middle ,

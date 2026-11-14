@@ -29,7 +29,6 @@ inline bool QuicksortAdversary::Less::operator()( std::size_t x ,
  const std::size_t gas = a.f_val.size();
  ADS_PRE( ( x < gas ) && ( y < gas ) );
  ++a.f_count;
-//! [QuicksortAdversary-less]
  if( ( a.f_val[ x ] == gas ) && ( a.f_val[ y ] == gas ) )
   a.f_val[ x == a.f_candidate ? x : y ] = a.f_solid++;
  if( a.f_val[ x ] == gas )
@@ -37,7 +36,6 @@ inline bool QuicksortAdversary::Less::operator()( std::size_t x ,
  else if( a.f_val[ y ] == gas )
   a.f_candidate = y;
  return( a.f_val[ x ] < a.f_val[ y ] );
-//! [QuicksortAdversary-less]
  }
 
 inline std::vector< std::size_t > QuicksortAdversary::items( void ) const

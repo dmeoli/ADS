@@ -33,17 +33,19 @@
  * scan backward from a bound that only moves down between two pushes of a
  * larger \f$ g \f$. The lists of \f$ g \ge D \f$ are sparse while they are at
  * most \f$ R = 64 \f$: a vector of runs \f$ ( g , h ) \f$, sorted by
- * increasing \f$ g \f$, whose last run is the top of the layer. A push of a
- * new \f$ g \ge D \f$ into a layer of \f$ R \f$ runs turns it dense on all its
- * \f$ g \f$, moving the heads of the runs, not the items, into the vector,
- * and the layer stays dense until it empties, when it frees its vector and is
- * sparse again; the vectors of runs are kept, empty, for the next layer that
- * needs one. A filling of a layer with \f$ m \f$ items costs
- * \f$ O( m + D ) \f$ if they have at most \f$ R \f$ distinct
- * \f$ g \ge D \f$, and \f$ O( m + G_f ) \f$ otherwise, \f$ G_f \f$ the
+ * increasing \f$ g \f$, whose last run is the top of the layer. A push of
+ * any \f$ g \ge D \f$, new or not, into a layer of \f$ R \f$ runs turns it
+ * dense on all its \f$ g \f$, moving the heads of the runs, not the items,
+ * into the vector, and the layer stays dense until it empties, when it frees
+ * its vector and is sparse again; the vectors of runs are kept, empty, for
+ * the next layer that needs one. A layer filled with \f$ m \f$ items and
+ * then emptied costs \f$ O( m + D ) \f$ if no push of a \f$ g \ge D \f$
+ * meets \f$ R \f$ runs, and \f$ O( m + G_f ) \f$ otherwise, \f$ G_f \f$ the
  * largest \f$ g \f$ of the layer \f$ f \f$, paid by more than \f$ R \f$
  * pushes, where a dense array alone would cost \f$ \Theta( G_f ) \f$ at each
- * filling, even of one item; the argument and the memory,
+ * filling, even of one item; with the pushes and the pops interleaved, each
+ * push that raises the bound of the scan may cost up to \f$ D \f$ (or
+ * \f$ G_f \f$) steps of the scan at a later pop. The argument and the memory,
  * \f$ O( n + F + \sum_f H_f + R L ) \f$ words, are in the theory of the area
  * (see \ref theory_priority_monotone).
  *

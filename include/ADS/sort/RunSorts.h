@@ -113,6 +113,20 @@ namespace ADS {
 /// \f]
 /// where a run is ascending, or strictly descending and reversed, and is
 /// extended to \f$ \mathit{minrun} \f$ items by binary insertion if shorter.
+/// The power is found with no fraction, on the doubled midpoints, one bit at
+/// a time:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{nodePower}( s_1 , s_2 , e_2 , n ) \cr
+/// 2 & \quad l \gets s_1 + s_2;\ r \gets s_2 + e_2;\ k \gets 0 \cr
+/// 3 & \quad \textbf{while}\ [ l \ge n ] = [ r \ge n ]\ \textbf{do}\quad
+///     \triangleright\ \text{the same } ( k + 1 ) \text{-th bit} \cr
+/// 4 & \qquad k \gets k + 1;\ \textbf{if}\ l \ge n\ \textbf{then}
+///     \ l \gets l - n;\ r \gets r - n \cr
+/// 5 & \qquad l \gets 2 l;\ r \gets 2 r \cr
+/// 6 & \quad \textbf{return}\ k + 1
+/// \end{array}}
+/// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
 void powerSort( std::vector< T > & A , C less = C() ,

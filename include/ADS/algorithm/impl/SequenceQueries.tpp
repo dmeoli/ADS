@@ -41,7 +41,6 @@ std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
  const std::size_t n = A.size();
  std::vector< std::size_t > c( n , 0 ) , P( n ) , B( n );
  std::iota( P.begin() , P.end() , std::size_t( 0 ) );
-//! [smallerToTheRight]
  for( std::size_t w = 1 ; w < n ; w *= 2 )  // the runs P[ lo .. lo + w )
   for( std::size_t lo = 0 ; lo + w < n ; lo += 2 * w ) {
    const std::size_t mid = lo + w , hi = std::min( lo + 2 * w , n );
@@ -63,7 +62,6 @@ std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
               B.begin() + std::ptrdiff_t( hi ) ,
               P.begin() + std::ptrdiff_t( lo ) );
    }
-//! [smallerToTheRight]
  ADS_AUDIT( detail::contract( [ & ]( void ) {
   std::vector< T > D( A );
   return( std::accumulate( c.begin() , c.end() , std::size_t( 0 ) ) ==

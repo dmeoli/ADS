@@ -108,7 +108,6 @@ void MeldableHeap< T , Less , A >::drop( Node * u )
 template< class T , class Less , class A >
 auto MeldableHeap< T , Less , A >::merge( Node * a , Node * b ) -> Node *
 {
-//! [MeldableHeap-merge]
  if( ! a )
   return( b );
  if( ! b )
@@ -133,7 +132,6 @@ auto MeldableHeap< T , Less , A >::merge( Node * a , Node * b ) -> Node *
   else
    a = c;
   }
-//! [MeldableHeap-merge]
  }
 
 template< class T , class Less , class A >
@@ -177,7 +175,6 @@ template< class T , class Less , class A >
 T MeldableHeap< T , Less , A >::erase( Handle h )
 {
  ADS_PRE( ( h != nullptr ) && ( f_n > 0 ) );
-//! [MeldableHeap-erase]
  Node * m = merge( h->left , h->right );
  Node * p = h->parent;
  if( m )
@@ -190,7 +187,6 @@ T MeldableHeap< T , Less , A >::erase( Handle h )
   p->left = m;
  else
   p->right = m;
-//! [MeldableHeap-erase]
  T x = std::move( h->x );
  drop( h );
  --f_n;

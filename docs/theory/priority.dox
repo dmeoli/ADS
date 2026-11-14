@@ -430,27 +430,35 @@
  increasing \f$ g \f$, whose last pair is the top of the layer. A push of a
  \f$ g \f$ larger than the last appends a run, a push of the last
  \f$ g \f$ prepends to its list, and any other push finds its place by a
- binary search and shifts the larger runs by one place. A push of a new
- \f$ g \ge D \f$ into a layer of \f$ R \f$ runs turns the layer dense on all
- its \f$ g \f$: the heads of the runs, not the items, move into an array as
- long as the largest \f$ g \f$, and the layer stays dense until it empties,
- when it frees the array and is sparse again.
+ binary search and shifts the larger runs by one place. A push of any
+ \f$ g \ge D \f$, new or not, into a layer of \f$ R \f$ runs turns the layer
+ dense on all its \f$ g \f$: the heads of the runs, not the items, move into
+ an array as long as the largest \f$ g \f$, and the layer stays dense until it
+ empties, when it frees the array and is sparse again.
 
  <em>Lemma 5 (the cost of a layer).</em> Between two times at which a layer is
- empty, \f$ m \f$ pushes into it and as many pops cost \f$ O( m + D ) \f$ if
- its items have at most \f$ R \f$ distinct \f$ g \ge D \f$, and
- \f$ O( m + D + G ) \f$ otherwise, \f$ G \f$ the largest \f$ g \f$ pushed
- into it, i.e., \f$ O( 1 + ( D + G ) / R ) \f$ per push in the second case.
+ empty, let it receive \f$ m \f$ pushes and as many pops, and let \f$ u \f$ be
+ the sum of the amounts by which the pushes raise the bound of the scan of
+ the dense lists. The operations cost \f$ O( m + u ) \f$ if no push of a
+ \f$ g \ge D \f$ meets \f$ R \f$ runs, and \f$ O( m + u + G ) \f$ otherwise,
+ \f$ G \f$ the largest \f$ g \f$ pushed into the layer; when all the pushes
+ come before all the pops, \f$ u \f$ is below \f$ D \f$ in the first case and
+ at most \f$ G \f$ in the second, while with pushes and pops interleaved it
+ may reach \f$ \Theta( m D ) \f$.
 
  Indeed, a push to the runs costs \f$ O( 1 ) \f$ when its \f$ g \f$ is not
  below the last, and \f$ O( \log R + R ) = O( 1 ) \f$ otherwise, since
  \f$ R \f$ is a constant and the shift moves at most \f$ R \f$ runs, while a
- pop takes the head of the last run in \f$ O( 1 ) \f$; the dense lists of the
- \f$ g < D \f$ cost at most \f$ D \f$ for their scan between two fillings.
- Only the conversion and the array that follows it cost \f$ \Theta( G ) \f$,
- to allocate, to set and to scan down, and the conversion comes only with the
- \f$ ( R + 1 ) \f$-th distinct \f$ g \ge D \f$, i.e., after more than
- \f$ R \f$ pushes. A dense array alone would instead cost
+ pop takes the head of the last run in \f$ O( 1 ) \f$. A step of the scan
+ lowers the bound by one, the bound is never negative and only a push raises
+ it, and hence the steps of the scan are at most \f$ u \f$. The conversion and
+ the array that follows it cost \f$ \Theta( G ) \f$, and the conversion
+ needs \f$ R \f$ runs, i.e., more than \f$ R \f$ pushes. When the pushes come
+ first, the bound grows from 0 to the largest \f$ g \f$ of the dense lists
+ while they last; with \f$ m / 2 \f$ items of \f$ g = 0 \f$ pushed first, each
+ round of a push of \f$ g = D - 1 \f$ and two pops costs instead a scan of
+ \f$ D - 1 \f$ steps.
+ A dense array alone would instead cost
  \f$ \Theta( G ) \f$ at each filling, even of one item, which is the case of
  the least layer of a search whose nodes come in small batches; a binary heap
  per layer would cost \f$ O( \log m ) \f$ per operation, more than the dense
@@ -584,7 +592,8 @@
  and one with the item, so that the pop makes
  \f$ D \log_D n = ( D / \log_2 D ) \log_2 n \f$ comparisons, the least for
  \f$ D = 3 \f$ and as many for \f$ D = 4 \f$ as for \f$ D = 2 \f$, with half
- the levels and the four children in one line of cache (exercise 10.5).
+ the levels and the four children consecutive in the array (exercise
+ 10.5), in at most two lines of cache.
  The insertions of 7 and 3 and the removals of 6 and 8 of exercises 10.1
  and 10.2 give the arrays that the test `ods10.1.binary-heap` checks, from
  the heap of figures 10.2 and 10.3.

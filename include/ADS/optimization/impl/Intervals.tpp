@@ -31,7 +31,6 @@ inline std::vector< std::size_t > independentSet(
                            const std::vector< std::pair< long , long > > & I )
 {
  ADS_PRE( detail::proper( I ) );
-//! [independentSet]
  std::vector< std::size_t > by( I.size() );
  std::iota( by.begin() , by.end() , 0 );
  std::stable_sort( by.begin() , by.end() ,
@@ -41,7 +40,6 @@ inline std::vector< std::size_t > independentSet(
  for( std::size_t i : by )
   if( S.empty() || ( I[ i ].first >= I[ S.back() ].second ) )
    S.push_back( i );
-//! [independentSet]
  std::sort( S.begin() , S.end() );
  ADS_AUDIT( ( [ & ] {                     // pairwise disjoint
   for( std::size_t x = 0 ; x < S.size() ; ++x )

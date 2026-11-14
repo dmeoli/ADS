@@ -318,7 +318,6 @@ class RunMerger {
 inline int nodePower( std::size_t s1 , std::size_t s2 , std::size_t e2 ,
                       std::size_t n )
 {
-//! [nodePower]
  std::size_t l = s1 + s2 , r = s2 + e2;     // twice the midpoints
  int k = 0;
  for( bool a = l >= n , b = r >= n ; a == b ; a = l >= n , b = r >= n ) {
@@ -331,7 +330,6 @@ inline int nodePower( std::size_t s1 , std::size_t s2 , std::size_t e2 ,
   r <<= 1;
   }
  return( k + 1 );
-//! [nodePower]
  }
 
 /// the merges of Powersort over the runs of the n items from 0 on, where

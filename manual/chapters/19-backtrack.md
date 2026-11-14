@@ -148,12 +148,19 @@ soon as $s + A[ j ] > k$.
 
 --8<-- "generated/Enumeration-subsetSum.pseudo.md"
 
-In the code of `subsets()` one sees the pattern that all the functions of
-the area follow: a recursive lambda over the state, a counter of the
-solutions, and a flag that stops the visit as soon as `f` returns true.
+All the functions of the area are written on the same pattern (a
+recursive lambda over the state, a counter of the solutions, and a flag
+that stops the visit as soon as `f` returns true), and they are called as
+in the following lines, which print the six subsets of
+[Figure 19.1](19-backtrack.md#fig-19-1) in the order of the figure and
+return 6:
 
 ```cpp
---8<-- "generated/Enumeration-subsets.cpp"
+long c = ADS::subsets( 4 , 2 , []( const std::vector< bool > & S ) {
+ for( bool b : S ) std::cout << b;          // 1100 , 1010 , ... , 0011
+ std::cout << '\n';
+ return( false );                           // go on: all the subsets
+ } );
 ```
 
 ## 19.3 The $n$ queens {#sec-19-3}
@@ -221,13 +228,12 @@ leads to a solution; at the row 0 the column 0 is tried first and fails).
 | 2 | $\{ 1 , 3 \}$ | $\{ 3 \}$ | $\{ 2 \}$ | $\{ 0 \}$ | 0 |
 | 3 | $\{ 0 , 1 , 3 \}$ | $\{ 1 \}$ | $\{ 1 \}$ | $\{ 2 \}$ | 2 |
 
-```cpp
---8<-- "generated/NQueens-nQueens.cpp"
-```
-
 For $n = 1 , \ldots , 10$ the solutions are $1 , 0 , 0 , 2 ,
 10 , 4 , 40 , 92 , 352 , 724$, and the tests check them. Note that the
-masks need $n \le 32$, which the contract checks; at the contract level 3 each solution is also checked by `admissible()`. Many more results
+masks need $n \le 32$, which the contract checks; at the contract level 3
+each solution is also checked by `admissible()`. Finally, `board( Q )`
+draws a placement as a string of $n$ lines, one per row, with the letter Q
+for a queen and a dot for an empty square. Many more results
 on the problem, including the placements that can be written down directly
 without search, are in the survey of [Bell and Stevens
 2009](Z-bibliography.md#ref-bell2009).
@@ -381,8 +387,32 @@ links ([Knuth 2022, §7.2.2.1](Z-bibliography.md#ref-knuth2022); [Knuth
 
 --8<-- "generated/DancingLinks-ExactCover-search.pseudo.md"
 
+The interface of the class is made of four members: the items are numbered
+from 0, the first `primary` of them primary and the next `secondary` ones
+secondary, and `solve()` calls `visit( options )` on each solution, with
+the indices of its options in the order in which they were chosen, until
+`visit` returns true; it returns the number of the solutions visited.
+
 ```cpp
---8<-- "generated/DancingLinks-cover.cpp"
+ExactCover( int primary , int secondary = 0 );
+int addOption( const std::vector< int > & items );   // its index
+template< class F > long solve( F && visit );
+long updates( void ) const;                          // the links updated
+```
+
+For instance, on the three primary items $0 , 1 , 2$ and the options
+$\{ 0 , 1 \}$, $\{ 2 \}$, $\{ 1 , 2 \}$ and $\{ 0 \}$ (with the indices 0 to 3),
+the search branches on the item 0, which has two options, and visits the
+two exact covers $( 0 , 1 )$ and $( 3 , 2 )$:
+
+```cpp
+ADS::ExactCover X( 3 );
+for( auto o : std::vector< std::vector< int > >{ { 0 , 1 } , { 2 } ,
+                                               { 1 , 2 } , { 0 } } )
+ X.addOption( o );
+long s = X.solve( []( const std::vector< int > & o ) {
+ return( false );                           // ( 0 , 1 ) , then ( 3 , 2 )
+ } );                                       // s == 2
 ```
 
 <span id="lem-19-6"></span>**Lemma 19.6.** *`ExactCover::solve()` visits
@@ -477,10 +507,51 @@ Hiding an option checks the size of each primary item that it leaves: a
 size 0 abandons the choice at once, before going deeper, and a size 1
 makes the item a *forced move*, taken at the next level without saving the
 sizes (its only option needs no return). This check is made in the loop
-that updates the sets, which therefore serves both purposes:
+that updates the sets (lines 17 and 18 of
+[Algorithm 19.5](19-backtrack.md#alg-19-5)), which therefore serves both
+purposes. Note that the hiding of line 6 is made without it: an item $u$
+whose options all contain $x$ drops to the size 0 there, and yet it is no
+dead end, since the option of $x$ chosen at line 8 covers it too.
+
+<span id="lem-19-8"></span>**Lemma 19.8.** *`FastExactCover::solve()`
+visits each exact cover with colors once, as the list of its options.*
+
+*Proof.* We show that, at the entry of a level, (i) the active items are
+the primary items not covered by the options chosen and the secondary items
+that they do not contain, and (ii) the first $\mathrm{size}( u )$ entries of
+$\mathit{set}( u )$, for an active item $u$, are the options that contain
+$u$ and are compatible with the options chosen, i.e., that contain no
+primary or uncolored item covered by them and give each colored item met
+by them its color. Both hold at the root, where nothing is chosen. When the
+option $o$ of $x$ is chosen, lines 6 and 9 take $x$ and the other items of
+$o$ out of the active ones, and lines 6 and 10 remove from the sets of the
+items left active exactly the options that $o$ makes incompatible: those
+with $x$ or with a primary or uncolored item of $o$ (all of the options of
+such an item), and those that give a colored item of $o$ another color.
+Hence (i) and (ii) hold one level deeper, and by
+[Lemma 19.7](19-backtrack.md#lem-19-7) they hold again at each option
+tried after the sizes are written back at line 12. By (i) a solution is
+visited when no primary item is active, and by (ii) the options chosen are
+then compatible, i.e., an exact cover with colors. The branches cut are
+those of lines 5 and 17, where an active primary item has no compatible
+option left, and which therefore hold no solution; and a forced item (line
+2) is a branch with one choice, for which the sizes saved by the level
+above suffice, since it changes only the sizes of items active there.
+Finally, a solution has exactly one option with the item $x$ chosen at a
+level, so that it lies below one child of each node of its path, and
+[Lemma 19.1](19-backtrack.md#lem-19-1) gives the claim. $\square$
+
+The interface is that of `ExactCover`, with the colors of the items of an
+option (0, or no `colors`, for none) and the count of the nodes of the
+tree:
 
 ```cpp
---8<-- "generated/FastExactCover-hide.cpp"
+FastExactCover( int primary , int secondary = 0 );
+int addOption( const std::vector< int > & items ,
+               const std::vector< int > & colors = {} );
+template< class F > long solve( F && visit );
+long updates( void ) const;                          // the options moved
+long nodes( void ) const;                            // the nodes visited
 ```
 
 The time is $O( 1 )$ per update of a set, and `updates()` and `nodes()`
@@ -505,7 +576,7 @@ of its literals is true, *conflicting* if all are false, and *unit* if all
 are false but one, which is free and then must be true in each model that
 extends the assignment.
 
-<span id="lem-19-8"></span>**Lemma 19.8.** *Making true the free literal
+<span id="lem-19-9"></span>**Lemma 19.9.** *Making true the free literal
 of a unit clause, until no clause is unit or one is conflicting, loses no
 model of the formula that extends the assignment; a conflicting clause
 proves that there is none.*
@@ -531,7 +602,7 @@ propagation of the branch likely to produce more units. It returns a model
 --8<-- "generated/SatSolvers-dpll.pseudo.md"
 
 By [Lemma 19.1](19-backtrack.md#lem-19-1) and
-[Lemma 19.8](19-backtrack.md#lem-19-8) the procedure is complete, and its
+[Lemma 19.9](19-backtrack.md#lem-19-9) the procedure is complete, and its
 tree has at most $2^n$ leaves for $n$ variables. It is fair to remark,
 however, that the propagation of `dpll()` scans all the clauses at each
 pass, and possibly $n$ passes per node; the procedure is thus simple and
@@ -553,19 +624,48 @@ the first unique implication point.
 
 --8<-- "generated/SatSolvers-BasicCdcl-solve.pseudo.md"
 
-*Watched literals.* Each clause *watches* two of its literals, the first
-two of its vector, with the invariant that a clause whose watched literals
-are both false is satisfied or conflicting. When a literal becomes false,
+*Watched literals.* Each clause of at least two literals *watches* two of
+them, the first two of its vector (a unit clause is an assignment of the
+level 0). When a literal becomes false,
 the propagation visits only the clauses that watch it. If the other watched
 literal is true, the clause is satisfied; otherwise the propagation looks
 for another literal that is not false and watches it instead, and if there
 is none the clause is unit (the other watch is forced) or conflicting.
-Going back only cancels assignments, which cannot break the invariant, and
-therefore needs no update of the watches:
+This is $\mathrm{propagate}()$, lines 15 to 22 of
+[Algorithm 19.7](19-backtrack.md#alg-19-7), where a watch moved is swapped
+into the second place of the vector. Its invariant, and the reason why going back needs
+no update of the watches, are as follows; we call *pending* a literal of
+the trail that $\mathrm{propagate}()$ has not visited yet.
 
-```cpp
---8<-- "generated/SatSolvers-propagate.cpp"
-```
+<span id="lem-19-10"></span>**Lemma 19.10.** *At each call of
+$\mathrm{propagate}()$, for each clause $c$ of at least two literals and
+each watched literal $w$ of $c$ that is false, either $\lnot w$ is pending,
+or the other watched literal $w'$ of $c$ is true and its level is at most
+that of $w$. Hence, when $\mathrm{propagate}()$ returns no conflict, no
+clause is unit or conflicting.*
+
+*Proof.* At the first call only the unit clauses of the formula are
+assigned, all of them pending. Within a call, the pending literals are of
+the current level: after the constructor only the level 0 exists, and a
+jump back or a restart sets the head of the trail to its end before the
+first literal of the new level is assigned. When the pending $\lnot w$ is
+visited, $\mathrm{propagate}()$ looks at each clause $c$ that watches $w$.
+If $w'$ is true, its level is at most the current one, which is that of
+$w$. If a literal not watched is not false, it replaces $w$, and $c$ has a
+false watch only if $w'$ is false, in which case $\lnot w'$ is pending
+(otherwise, by the invariant when it was visited, $w$ would have been
+true). Otherwise $w'$ is either false, a conflict, or free, and then it is
+assigned at the current level with the reason $c$, which satisfies the
+condition with equal levels. Cancelling the levels above $b$ removes $w'$
+only if its level exceeds $b$, and then also the false $w$, of a level at
+least as large; the pending literals skipped at a conflict are all of the
+current level, which the jump back cancels. A learned clause watches
+$\lnot p$, assigned at the level $b$ of the jump, and a literal of the level
+$b$ (the code moves one of the largest level of $C$ to the second place).
+Finally, if no conflict is returned, nothing is pending, and each clause
+with a false watch has a true one, i.e., it is satisfied; the others have
+two literals that are not false, and are neither unit nor conflicting.
+$\square$
 
 *The analysis of a conflict.* One resolves the conflicting clause with the
 reasons of its literals of the current level, from the last one assigned
@@ -576,14 +676,14 @@ of $\lnot p$ together with the literals of the lower levels met on the way;
 the search then jumps back to the largest of their levels, where the clause
 forces $\lnot p$.
 
-<span id="lem-19-9"></span>**Lemma 19.9.** *The learned clause $C$ is
+<span id="lem-19-11"></span>**Lemma 19.11.** *The learned clause $C$ is
 implied by the formula, it is false under the trail at the conflict, and
 after the levels above the second largest level of its literals are
 cancelled it is unit, with $\lnot p$ free; hence it forces $\lnot p$ there,
 and the assignment of the conflict cannot occur again. The search is
 complete, and `solve()` ends with SAT or UNSAT when no bound of conflicts is
 given.* (With a bound `maxConflicts`, the third value of the enumeration
-`Result`, UNKNOWN, says that the conflicts allowed are over.)
+`Result`, UNKNOWN, is returned when the conflicts allowed are over.)
 
 *Proof.* Resolution preserves the models, and each step resolves the
 clause at hand with a clause of the formula or a learned one, which are
@@ -594,7 +694,8 @@ which is $b$; after the levels above $b$ are cancelled they are still false
 while $p$ is free, and the clause is unit. Moreover, $C$ was not among the
 clauses of the solver before the conflict: it would have been unit at the
 level $b$, and since a decision is taken only when the propagation has no
-literal left to force, $\lnot p$ would have been assigned at that level,
+literal left to force
+([Lemma 19.10](19-backtrack.md#lem-19-10)), $\lnot p$ would have been assigned at that level,
 before the decision of the current one. Hence each conflict adds a new
 clause (a learned unit clause is kept as an assignment of the level 0,
 which neither a jump back nor a restart cancels), the clauses on $n$
@@ -604,12 +705,8 @@ two conflicts at most $n$ decisions are taken, and hence the search ends.
 It answers SAT only when every variable is assigned with no conflict, i.e.,
 on a model; and it answers UNSAT only on a conflict at the level 0, where
 every literal of the trail is forced by the formula and by clauses implied
-by it, so that by [Lemma 19.8](19-backtrack.md#lem-19-8) no model exists.
+by it, so that by [Lemma 19.9](19-backtrack.md#lem-19-9) no model exists.
 $\square$
-
-```cpp
---8<-- "generated/SatSolvers-analyze.cpp"
-```
 
 *Decisions and restarts.* Each decision takes the free variable of largest
 *activity*, which grows at each conflict for the variables met in

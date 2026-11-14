@@ -55,7 +55,8 @@ compare as their functions do for $n$ large, i.e., lexicographically on
 $( c , p , q , r )$, since each factor dominates any power of the factors
 after it; this is the comparison `operator<=>` of `Growth` (with the `operator==` that
 follows from it), which ignores `upper`, while `at( n )` evaluates the function
-(13.1) at $n$; the comparison gives the hierarchy $1 \prec \log n \prec n \prec n \log n
+(13.1) at $n$, with natural logarithms (the base changes the value, not
+the order); the comparison gives the hierarchy $1 \prec \log n \prec n \prec n \log n
 \prec n^2 \prec n^3 \prec 2^n$. Note that $2^{\log_2 n} = n$ is a
 polynomial, and that the orders that lie between two families, such as
 $n^{\log n}$ (which grows faster than every polynomial and slower than
@@ -209,6 +210,18 @@ orders that `master()`, `akraBazzi()` and `linear()` return for them.
 | towers of Hanoi | $2 T( n - 1 ) + 1$ | `linear(2,0)` | $O( 2^n )$ |
 | insertion sort | $T( n - 1 ) + n$ | `linear(1,1)` | $\Theta( n^2 )$ |
 
+In the library the three solvers of the recurrences are declared as
+follows, `Growth` being the structure of (13.1):
+
+```cpp
+Growth master( double a , double b , double beta , double k = 0 );
+Growth linear( double a , double beta );
+double akraBazziExponent( const std::vector< std::pair< double ,
+                          double > > & ab );
+Growth akraBazzi( const std::vector< std::pair< double ,
+                  double > > & ab , double beta , double k = 0 );
+```
+
 ## 13.2 Amortized analysis {#sec-13-2}
 
 We call amortized cost of an operation its share of the total cost of any
@@ -229,10 +242,6 @@ is full of ones (all of them are cleared, and none is set).
 counter ([Montresor 2025, §4.2.1](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/BinaryCounter-add.pseudo.md"
-
-```cpp
---8<-- "generated/BinaryCounter-add.cpp"
-```
 
 <span id="lem-13-1"></span>**Lemma 13.1.** *Starting from a counter of
 zeros, $n$ increments change fewer than $2 n$ bits; hence the amortized
@@ -258,6 +267,13 @@ library typically use, e.g., the splay tree ([§8.8](08-tree.md#sec-8-8)) and th
 each operation by the state that it leaves instead of by a count over the
 sequence. Also, the contracts of `add()` check, as an audit, that the items of
 $A$ are bits, and that at most $k$ of them change.
+
+The counter is a vector of `int`, each 0 or 1, and the increment is
+declared as
+
+```cpp
+std::size_t add( std::vector< int > & A );
+```
 
 ## 13.3 Recursion and its elimination {#sec-13-3}
 
@@ -315,10 +331,6 @@ the calls (1) on a stack and the call (2) eliminated.
 
 --8<-- "generated/Hanoi-hanoiIterative.pseudo.md"
 
-```cpp
---8<-- "generated/Hanoi-hanoi_iterative.cpp"
-```
-
 <span id="alg-13-7"></span>**Algorithm 13.7.** The towers of Hanoi by the
 systematic rules, with the label of the point of return on the stack.
 
@@ -347,6 +359,21 @@ that is open, i.e., fewer than $n$ frames, since in the second procedure
 the frame with the label `END` replaces the one with `AFTER1` that was just
 popped; the time of all three procedures is $\Theta( 2^n )$, i.e., a
 constant per move.
+
+The three procedures have the same parameters, the number of the disks,
+the three pegs and the function that receives each move:
+
+```cpp
+template< class F >
+void hanoi_recursive( int n , int source , int dest , int middle ,
+                      F && f );
+template< class F >
+void hanoi_iterative( int n , int source , int dest , int middle ,
+                      F && f );
+template< class F >
+void hanoi_iterative_labels( int n , int source , int dest , int middle ,
+                             F && f );
+```
 
 ## 13.4 The general schemes {#sec-13-4}
 
@@ -438,6 +465,30 @@ knapsack by the enumeration of the subsets (checked against `knapsack()` of
 minimum and the maximum by divide et impera, the change by the greedy
 scheme, and the maximal words of a list for three partial orders.
 
+Each part of a scheme is a callable given by the caller, and the schemes
+are declared as follows:
+
+```cpp
+template< class Z , class Next , class Last , class A , class O >
+auto enumerateSearch( Z z , Next && next , Last && last , A && a , O && o )
+ -> std::optional< decltype( o( z ) ) >;
+template< class Z , class Next , class Last , class A , class O ,
+          class M , class B >
+auto enumerateOptimize( Z z , Next && next , Last && last , A && a ,
+                        O && o , M && m , B && better )
+ -> std::optional< decltype( o( z ) ) >;
+template< class N , class C , class P , class L , class V >
+bool backtrack( const N & node , C && children , P && prune , L && leaf ,
+                V && visit );
+template< class X , class Cand , class Best >
+std::vector< X > greedy( int k , Cand && candidates , Best && best );
+template< class X , class S , class D , class V , class C >
+auto divideEtImpera( const X & x , S && small , D && direct , V && divide ,
+                     C && combine ) -> decltype( direct( x ) );
+template< class T , class B >
+std::vector< T > maximal( const std::vector< T > & X , B && better );
+```
+
 ## 13.5 Segments of largest sum {#sec-13-5}
 
 Given an array $D[ 0 .. n - 1 ]$ of numbers, a *segment* $D[ b .. s ]$ is a
@@ -494,10 +545,6 @@ sums not negative, while $D[ b' .. r ]$ has a negative one. Then $D[ b^* ..
 r ]$, which is $D[ b' .. r ]$ without the prefix $D[ b' .. b^* - 1 ]$ of
 sum not negative, has a negative sum, and it is a proper prefix of the
 optimum, against (i). $\square$
-
-```cpp
---8<-- "generated/MaximumSegments-maxSumSegment.cpp"
-```
 
 [Table 13.3](13-algorithm.md#tab-13-3) follows the scan on an example.
 Note that the scan reads the array once, from left to right; in a memory of blocks of
@@ -562,10 +609,6 @@ and the head is removed when it falls out of the window.
 sum with the length in $[ L , U ]$, by the sliding minimum.
 
 --8<-- "generated/MaximumSegments-maxSumSegmentLength.pseudo.md"
-
-```cpp
---8<-- "generated/MaximumSegments-maxSumSegmentLength.cpp"
-```
 
 <span id="lem-13-4"></span>**Lemma 13.4.** *After the step $i$, the
 starts in $W$ lie in $[ i - U , i - L ]$ and have strictly increasing
@@ -677,6 +720,34 @@ argument, and also handle an upper bound on the length; we kept the binary searc
 in the library, since it keeps the code short and exact on integers, at the price of a
 factor $\log n$ that is usually "small".
 
+All the functions of the section return a `Segment< T >`, but
+`gcIndicator()` and `maxSubarraySum()`:
+
+```cpp
+template< class T >
+Segment< T > maxSumSegmentCubic( const std::vector< T > & D );
+template< class T >
+Segment< T > maxSumSegmentQuadratic( const std::vector< T > & D );
+template< class T >
+Segment< T > maxSumSegment( const std::vector< T > & D );
+template< class T >
+Segment< T > maxSumSegmentPrefix( const std::vector< T > & D );
+template< class T >
+Segment< T > maxSumSegmentLength( const std::vector< T > & D ,
+                                  std::size_t L , std::size_t U );
+template< class T >
+Segment< T > longestSegmentAtLeast( const std::vector< T > & D , T t );
+template< class T >
+Segment< T >
+longestSegmentAverageAtLeast( const std::vector< T > & D , T p , T q );
+template< class T >
+Segment< T > maxDensitySegment( const std::vector< T > & D ,
+                                std::size_t L );
+std::vector< int > gcIndicator( const std::string & dna );
+template< class T >
+T maxSubarraySum( const std::vector< T > & A );
+```
+
 ## 13.6 Sorts, sweeps and sliding windows {#sec-13-6}
 
 Most questions of `SequenceQueries.h`, and two of `SequenceProblems.h`, are
@@ -699,10 +770,6 @@ the smaller ones on its right in that run
 items on the right, by mergesort.
 
 --8<-- "generated/SequenceQueries-smallerToTheRight.pseudo.md"
-
-```cpp
---8<-- "generated/SequenceQueries-smallerToTheRight.cpp"
-```
 
 <span id="lem-13-7"></span>**Lemma 13.7.** *At the end, $c[ i ]$ is the
 number of the places $j > i$ with $A[ j ] < A[ i ]$; the algorithm takes
@@ -737,10 +804,8 @@ with no value repeated ([Montresor 2025, Esercizi Programmazione
 dinamica](Z-bibliography.md#ref-montresor2025), exercise A3 of 04/09/2020),
 where the left end jumps past the last occurrence of the repeated value,
 kept in a hash table of the last places, in $\Theta( n )$ expected time.
-Both are correct for the same reason, which we state for the first one: if $S[ s .. e ]$ is the longest
-admissible run that ends in $e$, no admissible run ending after $e$ starts
-before $s$, since it would contain $S[ s - 1 .. e ]$, which is not
-admissible.
+Both are correct for the same reason, which we state for the first one
+([Lemma 13.8](13-algorithm.md#lem-13-8)).
 
 <span id="alg-13-20"></span>**Algorithm 13.20.** The longest run with at
 most $k$ distinct values, and the longest segment with no value repeated.
@@ -748,6 +813,23 @@ most $k$ distinct values, and the longest segment with no value repeated.
 --8<-- "generated/SequenceQueries-longestKDistinctRun.pseudo.md"
 
 --8<-- "generated/SequenceProblems-longestDistinctSegment.pseudo.md"
+
+<span id="lem-13-8"></span>**Lemma 13.8.** *After the step $e$ of
+`longestKDistinctRun()`, $S[ s .. e ]$ is the longest run that ends in $e$
+with at most $k$ distinct values; hence the function returns the first
+longest such run, in $O( n \log k )$ time.*
+
+*Proof.* Call *admissible* a run with at most $k$ distinct values; a run
+contained in an admissible one is admissible. Let $s$ be the least
+admissible start for the end $e - 1$ (by induction; $s = 0$ before the
+first step). An admissible run $S[ s' .. e ]$ with $s' < s$ would contain
+the admissible run $S[ s' .. e - 1 ]$, against the choice of $s$; hence the
+least admissible start for $e$ is at least $s$, and the loop of lines 5 and
+6, which advances $s$ while $S[ s .. e ]$ is not admissible, stops exactly
+at it. Line 7 keeps the first of the longest runs, since it replaces the
+best one only by a strictly longer one. Each of $s$ and $e$ advances at
+most $n$ times, and each step costs $O( \log k )$ on the map, which holds
+at most $k + 1$ keys. $\square$
 
 **Sweeps of the line.** `largestGap()` finds the longest stretch between
 the first start and the last end of a set of closed intervals $[ a , b ]$
@@ -763,6 +845,25 @@ type does not overflow.
 of intervals.
 
 --8<-- "generated/SequenceQueries-largestGap.pseudo.md"
+
+<span id="lem-13-9"></span>**Lemma 13.9.** *`largestGap()` returns the
+first of the longest open stretches between the first start and the last
+end that no interval covers, or none if there is no such stretch.*
+
+*Proof.* Let the intervals be sorted by start. Before the interval
+$[ a , b ]$ is examined, $e$ is the largest end among the intervals
+before it, whose union is a set of closed intervals contained in
+$( -\infty , e ]$. If $e < a$, no point of $( e , a )$ is covered: the
+intervals before $[ a , b ]$ end by $e$, and the others start at or after
+$a$; the stretch is maximal, since $e$ is covered and $a$ is too.
+Conversely, let $( x , y )$ be a maximal uncovered stretch between the
+first start and the last end; then $x$ is the end of an interval, $y$ the
+start of one, and when the sweep reaches the first interval that starts at
+$y$, all the intervals that start before $y$ end at or before $x$ (one of
+them at $x$), so that $e = x$ and line 5 compares the stretch. Since line 5
+replaces the best stretch only by a strictly longer one, the first of the
+longest is kept. The sort costs $O( n \log n )$, the rest $O( n )$.
+$\square$
 
 **The water among the columns.** `trappingRainWater()` computes the water
 that columns of heights $h_0 , \ldots , h_{n-1}$ hold after the rain, with
@@ -790,6 +891,47 @@ columns, by two indices.
 
 --8<-- "generated/SequenceProblems-trappingRainWater.pseudo.md"
 
+<span id="lem-13-10"></span>**Lemma 13.10.** *`trappingRainWater()`
+returns (13.8), in $\Theta( n )$ time and $O( 1 )$ space.*
+
+*Proof.* Let $\omega_c$ be the term of (13.8) of the column $c$, which is
+0 for $c = 0$ and $c = n - 1$. We show that, at each test of line 3,
+$\ell = \max_{c \le i} h_c$, $r = \max_{c \ge j} h_c$, and $w$ is the sum
+of $\omega_c$ over the columns $0 < c \le i$ and $j \le c < n - 1$, which
+are disjoint since $i < j$; this holds at the start. Suppose that
+$\ell < r$, and let $c = i + 1$ and $\ell' = \max\{ \ell , h_c \}$, the
+largest column on the left of $c$, $c$ included. The largest column on its
+right is at least $r > \ell$ and at least $h_c$, hence at least $\ell'$,
+and therefore $\omega_c = \ell' - h_c$, which line 5 adds. If $c < j$,
+this keeps the invariant. If $c = j$, the column is the column $n - 1$ or
+one already counted, and the increment is 0 in both cases. In the first,
+$r = h_c$ and the increment is $\max\{ \ell , h_c \} - h_c = 0$. In the
+second, the last move of $j$, onto $c$, was made with $r$ not above
+$\ell$, which has not decreased since; hence $r$ grew to $h_c$ at that
+move, has not changed after it, and again $r = h_c$. The case $\ell \ge r$ is symmetric. The loop ends
+with $i = j$, when $w$ is the sum of all the $\omega_c$, after $n - 1$
+steps of $O( 1 )$. $\square$
+
+The functions of the section are declared as follows; a run or a segment
+is returned as the pair of its first place and of its length:
+
+```cpp
+template< class T , class C = std::less<> >
+std::vector< std::size_t >
+smallerToTheRight( const std::vector< T > & A , C less = C() );
+template< std::ranges::random_access_range R >
+std::pair< std::size_t , std::size_t >
+longestKDistinctRun( const R & S , std::size_t k );
+template< class T , class Hash = std::hash< T >
+> std::pair< std::size_t , std::size_t >
+longestDistinctSegment( const std::vector< T > & A );
+template< class T >
+std::optional< std::pair< T , T > >
+largestGap( std::vector< std::pair< T , T > > I );
+template< class T >
+T trappingRainWater( const std::vector< T > & h );
+```
+
 ## 13.7 Dynamic programming: the principle and the knapsack {#sec-13-7}
 
 A problem of optimization has *optimal substructure* when an optimal
@@ -801,7 +943,7 @@ optimal value of each subproblem in a *table*, indexed by the parameters
 that name the subproblem ([Montresor 2025,
 chapter 13](Z-bibliography.md#ref-montresor2025)).
 
-<span id="lem-13-8"></span>**Lemma 13.8 (the principle of optimality).**
+<span id="lem-13-11"></span>**Lemma 13.11 (the principle of optimality).**
 *If an optimal solution of an instance is made of a choice and of the
 solution of a subproblem that the choice leaves, then that solution is
 optimal for the subproblem.*
@@ -849,10 +991,6 @@ up ([Montresor 2025, §13.6](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/Knapsack-knapsack.pseudo.md"
 
-```cpp
---8<-- "generated/Knapsack-knapsack.cpp"
-```
-
 `zaino()` is the memoization of the book ([Algorithm 13.24](13-algorithm.md#alg-13-24)),
 which solves only the subproblems that the recursion from $( n , C )$
 reaches. Its memo is a hash table per object (a `ChainedHashTable` of
@@ -870,12 +1008,12 @@ called as $\mathrm{zaino}( n , C )$.
 
 --8<-- "generated/Knapsack-zaino.pseudo.md"
 
-<span id="lem-13-9"></span>**Lemma 13.9.** *`knapsack()` returns a set of
+<span id="lem-13-12"></span>**Lemma 13.12.** *`knapsack()` returns a set of
 largest profit among those of volume at most $C$, in $\Theta( n C )$ time
 and space; `zaino()` returns its profit in $O( \min\{ n C , 2^n \} )$ expected time and
 space.*
 
-*Proof.* The correctness of (13.9) is [Lemma 13.8](13-algorithm.md#lem-13-8)
+*Proof.* The correctness of (13.9) is [Lemma 13.11](13-algorithm.md#lem-13-11)
 with the two choices for the last object, and the reading back retraces a
 choice that attains each optimum. Also, the table has $( n + 1 ) ( C + 1 )$
 entries, each computed in $O( 1 )$. `zaino()` solves each pair $( i , c )$
@@ -912,6 +1050,19 @@ transactions, and $m \times n$ the size of a grid.
 | a prefix and a number of parts | `linearPartition()` | $k \times n$ | $O( k n^2 )$ |
 | a cell of a grid | `largestSquare()`, `countLatticePaths()` | one row of $n$ | $\Theta( m n )$ |
 
+Both functions take the profits and the volumes as vectors of `long`;
+`knapsack()` returns the best profit with the places of the objects
+taken:
+
+```cpp
+std::pair< long , std::vector< std::size_t > >
+knapsack( const std::vector< long > & p , const std::vector< long > & v ,
+          long C );
+long zaino( const std::vector< long > & p ,
+            const std::vector< long > & v , long C ,
+            long *solved = nullptr );
+```
+
 ## 13.8 Dynamic programming on a capacity {#sec-13-8}
 
 In `KnapsackVariants.h` and `CoinChange.h`, the relatives of the knapsack
@@ -946,6 +1097,27 @@ and the cut of a rod.
 
 --8<-- "generated/KnapsackVariants-rodCutting.pseudo.md"
 
+<span id="lem-13-13"></span>**Lemma 13.13.** *$P[ c ]$ of (13.10) is the
+largest profit of a multiset of the objects of total volume at most $c$;
+$R[ l ]$ is the largest price of the cut of a rod of length $l$ into
+pieces of lengths at most $m$; $N[ c ]$ of `optimalChange()` is the fewest
+coins that pay exactly $c$, and $D[ x ]$ of `minValueExactWeight()` the
+least value of coins that weigh exactly $x$ ($\textbf{nil}$ if none
+does).*
+
+*Proof.* By induction on $c$. A multiset of volume at most $c$ either has
+volume at most $c - 1$, and its profit is at most $P[ c - 1 ]$, or it has
+volume exactly $c$ and contains some object $i$, whose removal leaves a
+multiset of volume at most $c - v_i$ and profit at most $P[ c - v_i ]$,
+since $v_i > 0$; conversely each term of (13.10) is the profit of such a
+multiset, built from one that attains the term. The other three are the
+same argument with the volume exact: the last piece, or a coin of the
+change, of size $t$ leaves an exact subproblem of size $l - t$ (or
+$c - d$), which is optimal by
+[Lemma 13.11](13-algorithm.md#lem-13-11), and an amount that no coin
+leaves reachable stays $\textbf{nil}$. Each entry compares at most $n$
+(or $m$) terms. $\square$
+
 Problems of change minimize the same kind of
 recurrence over the amounts that are reached with no remainder.
 `minValueExactWeight()` (exercise B4 of 02/02/2015) finds the least value
@@ -978,7 +1150,7 @@ amount, and the subsets of a given sum.
 
 --8<-- "generated/KnapsackVariants-subsetSumCount.pseudo.md"
 
-<span id="lem-13-10"></span>**Lemma 13.10.** *In `coinChangeWays()`, after
+<span id="lem-13-14"></span>**Lemma 13.14.** *In `coinChangeWays()`, after
 the coins $d_1 , \ldots , d_j$ have entered, $N[ x ]$ is the number of
 multisets of those coins of sum $x$; in `subsetSumCount()`, after the
 items $a_1 , \ldots , a_j$, $N[ x ]$ is the number of the subsets of their
@@ -1004,7 +1176,8 @@ times, reduces to the 0-1 one by splitting $b_i$ into powers of two
 **Sums of squares.** `minimumSquares()` finds the fewest squares of
 positive integers that sum to $n$. A dynamic programming $S[ i ] = 1 +
 \min_{t^2 \le i} S[ i - t^2 ]$ asked by the exercise B4 of 26/01/2016
-takes $\Theta( n \sqrt n )$ time; number theory answers in $O( \sqrt n )$
+takes $\Theta( n \sqrt n )$ time; number theory answers in
+$O( \sqrt n \log n )$
 ([Algorithm 13.28](13-algorithm.md#alg-13-28)), since the answer is at most
 4 by the four-square theorem of Lagrange, it is 4 exactly when $n = 4^a ( 8
 b + 7 )$ by the three-square theorem of Legendre, and the cases 1 and 2
@@ -1018,6 +1191,45 @@ therefore never overflows.
 sum to $n$.
 
 --8<-- "generated/KnapsackVariants-minimumSquares.pseudo.md"
+
+<span id="lem-13-15"></span>**Lemma 13.15.** *`minimumSquares()` returns
+the fewest squares of positive integers that sum to $n$, in
+$O( \sqrt n \log n )$ time.*
+
+*Proof.* Every $n \ge 0$ is a sum of four squares (Lagrange), and $n$ is a
+sum of three squares if and only if it is not of the form $4^a ( 8 b + 7 )$
+(Legendre); both are classic results of number theory, for which we refer
+to [Rabin and Shallit 1986](Z-bibliography.md#ref-rabin1986). Hence the
+answer is 1 if $n$ is a square (line 3), 4 if and only if line 5 returns,
+2 if and only if some $n - t^2$, $1 \le t \le \lfloor \sqrt n \rfloor$, is
+a square (lines 6 and 7; $t^2 = n$ was excluded at line 3), and 3
+otherwise. Each test of a square is a binary search of $O( \log n )$ steps
+on the bits of the root, and line 6 makes at most $\sqrt n$ of them.
+$\square$
+
+The functions of the section are declared as follows, the counters
+being of the type `C`:
+
+```cpp
+template< class T , class V >
+std::pair< T , std::vector< std::size_t > >
+unboundedKnapsack( const std::vector< T > & p ,
+                   const std::vector< V > & v , V C );
+template< class T >
+std::pair< T , std::vector< std::size_t > >
+rodCutting( const std::vector< T > & price , std::size_t L );
+template< class T , class V >
+std::optional< T >
+minValueExactWeight( const std::vector< V > & w ,
+                     const std::vector< T > & v , V W );
+std::optional< long > optimalChange( const std::vector< long > & coins ,
+                                     long c );
+template< class C = std::uint64_t , class V >
+C coinChangeWays( const std::vector< V > & coins , V T );
+template< class C = std::uint64_t , class V >
+C subsetSumCount( const std::vector< V > & A , V k );
+int minimumSquares( std::int64_t n );
+```
 
 ## 13.9 Dynamic programming on a prefix {#sec-13-9}
 
@@ -1058,10 +1270,6 @@ weighted intervals ([Montresor 2025, §13.2](Z-bibliography.md#ref-montresor2025
 
 --8<-- "generated/WeightedIntervals-maxinterval.pseudo.md"
 
-```cpp
---8<-- "generated/WeightedIntervals-maxinterval.cpp"
-```
-
 **Rows of houses.** `maxNonAdjacentSum()` finds the largest sum of items
 of $A$ no two of them adjacent (the donations of houses no two of which
 are neighbours, exercise B3 of 17/06/2013 in the book), i.e., the maximum
@@ -1093,6 +1301,28 @@ no two of them adjacent, and the cheapest painting of a row of houses.
 --8<-- "generated/HouseProblems-maxNonAdjacentSum.pseudo.md"
 
 --8<-- "generated/HouseProblems-paintHouses.pseudo.md"
+
+<span id="lem-13-16"></span>**Lemma 13.16.** *(13.11) gives the largest
+weight of a set of disjoint intervals among the first $i$, the scan of the
+sorted ends gives $\mathit{pred}$, and (13.12) the least cost of a
+painting of the first $h + 1$ houses with the house $h$ of the color $c$;
+in Algorithm 13.30 the minimum over $q \ne c$ is the entry of the color
+$s$ when $c = b$ and that of $b$ otherwise.*
+
+*Proof.* The intervals that end at or before $a_i$ are a prefix of the
+order by right end, of length $\mathit{pred}[ i ]$, and when the left end
+of $i$ is met in the scan, the right ends met are exactly those not above
+$a_i$ (a right end equal to $a_i$ comes first). An optimal set of the first
+$i$ intervals either leaves out the interval $i$, or contains it with a set
+of intervals disjoint from it, i.e., among the first $\mathit{pred}[ i ]$,
+which is optimal by [Lemma 13.11](13-algorithm.md#lem-13-11); this gives
+(13.11), and the case of `maxNonAdjacentSum()` is that of the unit
+intervals. In the same way, a painting of the houses up to $h$ with $h$ of
+the color $c$ is one of the houses up to $h - 1$ with $h - 1$ of a color
+$q \ne c$, which gives (13.12). Finally, if $c$ is not the color $b$ of
+the least entry of the row $h - 1$, that entry is the minimum over
+$q \ne c$; otherwise the minimum over the other colors is the second least
+entry, of the color $s$. $\square$
 
 **Transactions on a stock.** Given the prices of a stock on $n$ days,
 `maxProfit()` finds the largest gain of at most $k$ transactions, each one
@@ -1131,9 +1361,29 @@ most $k$ transactions, and of exactly $k$.
 
 --8<-- "generated/StockTrading-maxProfitExactly.pseudo.md"
 
-```cpp
---8<-- "generated/StockTrading-closedTransactions.cpp"
-```
+<span id="lem-13-17"></span>**Lemma 13.17.** *Let $\mathit{free}[ 0 ] = 0$
+and the other balances be $-\infty$ (an empty `std::optional`) at the
+start. Then, after the day $d$, $\mathit{free}[ l ]$ is the largest balance of
+$l$ transactions $b_1 < s_1 < \cdots < b_l < s_l \le d$, and
+$\mathit{hold}[ l ]$ that of $l - 1$ such transactions followed by a
+purchase $b_l \le d$, $b_l > s_{l-1}$; hence `maxProfit()` and
+`maxProfitExactly()` are correct, in $O( n k )$ time and $O( k )$ space.*
+
+*Proof.* By induction on $d$. A sequence of $l$ transactions closed by the
+day $d$ either makes no sale on the day $d$, and its best balance is the
+old $\mathit{free}[ l ]$, or sells on the day $d$ the stock bought on a day
+$b_l < d$, and its best balance is $x$ plus the $\mathit{hold}[ l ]$ of the
+day $d - 1$; this is the value that (13.13) reads, since $\mathit{hold}[ l ]$
+is updated after $\mathit{free}[ l ]$. Similarly, a purchase on the day $d$
+follows $l - 1$ sales on days before $d$, whose best balance is the
+$\mathit{free}[ l - 1 ]$ of the day $d - 1$, still unchanged when
+$\mathit{hold}[ l ]$ reads it, since $l$ goes down. For $k \ge n / 2$,
+a transaction gains $x_s - x_b$, the sum of the differences of consecutive
+prices from $b$ to $s$, and therefore no set of transactions gains more
+than the sum of the positive differences. This sum is gained by one
+transaction per maximal run of days of rising price. These runs are
+disjoint and of at least two days each, and hence at most $n / 2 \le k$.
+$\square$
 
 **Increasing subsequences.** The longest increasing subsequence of $A[ 0
 .. n - 1 ]$ ([Montresor 2025, exercise 13.6](Z-bibliography.md#ref-montresor2025))
@@ -1153,7 +1403,7 @@ subsequence, in $\Theta( n^2 )$ and in $O( n \log n )$.
 
 --8<-- "generated/Subsequences-lisLength.pseudo.md"
 
-<span id="lem-13-11"></span>**Lemma 13.11.** *After each item, for each
+<span id="lem-13-18"></span>**Lemma 13.18.** *After each item, for each
 $\ell$,*
 
 $$
@@ -1172,10 +1422,6 @@ item is below $a$, the longest of which has $\ell$ items, $\ell$ being the
 first place with $\mathit{tails}[ \ell ] \ge a$ (found by binary search);
 it gives a subsequence of $\ell + 1$ items that ends with $a \le
 \mathit{tails}[ \ell ]$, and it changes no other entry of (13.14). $\square$
-
-```cpp
---8<-- "generated/Subsequences-lisLength.cpp"
-```
 
 One can use the same recurrence over all the predecessors for the problems of
 `SequenceProblems.h` in which the order between two items is not total
@@ -1197,7 +1443,7 @@ the measure a weight, a structure on the predecessors helps again:
 subsequence with the items as weights ([Jacobson and Vo
 1992](Z-bibliography.md#ref-jacobson1992)), taking the maximum over the
 smaller values from a Fenwick tree of the prefix maxima on the ranks of the
-values, in $O( n \log n )$ time instead of $\Theta( n^2 )$ (cf. [Lemma 13.11](13-algorithm.md#lem-13-11), whose bound it matches). A negative item
+values, in $O( n \log n )$ time instead of $\Theta( n^2 )$ (cf. [Lemma 13.18](13-algorithm.md#lem-13-18), whose bound it matches). A negative item
 starts no subsequence, since the empty one, of sum 0, is better.
 
 <span id="alg-13-33"></span>**Algorithm 13.33.** The longest chain in a
@@ -1209,6 +1455,63 @@ subsequence.
 --8<-- "generated/SequenceProblems-largestDivisibleSubset.pseudo.md"
 
 --8<-- "generated/SequenceProblems-maxSumIncreasingSubsequence.pseudo.md"
+
+<span id="lem-13-19"></span>**Lemma 13.19.** *In `lis()` and
+`longestChainSubsequence()`, $L[ i ]$ is the length of a longest
+subsequence that ends in the item $i$ and each item of which precedes the
+next; in `largestDivisibleSubset()`, on the items sorted, $L[ i ]$ is the
+size of a largest divisible subset whose largest item is $a_i$; in
+`maxSumIncreasingSubsequence()`, $D[ i ]$ is the largest sum of an
+increasing subsequence that ends in $a_i$.*
+
+*Proof.* A longest subsequence that ends in the item $i$ is the item $i$
+alone, or a subsequence that ends in some $j < i$ preceding it, followed by
+$i$, and the former is then longest among those that end in $j$ by
+[Lemma 13.11](13-algorithm.md#lem-13-11); the maximum over $j$ is thus
+$L[ i ]$, and the same holds for the sums. For the divisible subsets, a
+set of distinct positive integers, sorted, in which each item divides the
+next, is divisible, since divisibility is transitive; conversely, in a
+divisible set sorted the smaller of two consecutive items divides the
+larger. Hence the divisible subsets are the chains of the order "divides"
+on the sorted items, and the first claim applies. Finally, the Fenwick
+tree of `maxSumIncreasingSubsequence()` holds, at the rank $r$ of a value,
+the largest $D[ j ]$ of the items $j < i$ of that value, and its query of
+the prefix of the ranks below that of $a_i$ gives the maximum over the
+smaller values in $O( \log n )$. $\square$
+
+The functions of the section are declared as follows; those that
+return a pair give the optimum together with the places, or the colors,
+that attain it:
+
+```cpp
+template< class W >
+std::pair< std::vector< std::size_t > , W >
+maxinterval( const std::vector< WeightedInterval< W > > & I );
+template< class T >
+T maxNonAdjacentSum( const std::vector< T > & A );
+template< class T >
+std::pair< T , std::vector< std::size_t > >
+nonAdjacentSelection( const std::vector< T > & A );
+template< class T >
+std::pair< T , std::vector< std::size_t > >
+paintHouses( const std::vector< std::vector< T > > & cost );
+template< class T >
+T maxProfit( const std::vector< T > & prices , std::size_t k );
+template< class T >
+std::optional< T > maxProfitExactly( const std::vector< T > & prices ,
+                                     std::size_t k );
+template< class T >
+std::vector< T > lis( const std::vector< T > & A );
+template< class T >
+std::size_t lisLength( const std::vector< T > & A );
+template< class T , class Less >
+std::vector< std::size_t >
+longestChainSubsequence( const std::vector< T > & S , Less less );
+template< std::integral T >
+std::vector< T > largestDivisibleSubset( std::vector< T > A );
+template< class T >
+T maxSumIncreasingSubsequence( const std::vector< T > & A );
+```
 
 ## 13.10 Dynamic programming on a range and on a grid {#sec-13-10}
 
@@ -1248,6 +1551,26 @@ a line.
 
 --8<-- "generated/CoinGame-coinsInALine.pseudo.md"
 
+<span id="lem-13-20"></span>**Lemma 13.20.** *(13.15) gives the largest
+difference that the player to move on $V[ i .. j - 1 ]$ can be sure of
+against any play of the other; the first player gets
+$( S + D[ 0 ][ n ] ) / 2$, and for $n$ even at least $S / 2$.*
+
+*Proof.* By induction on $j - i$, the case $i = j$ being clear. If the
+player to move takes $V_i$, the other becomes the player to move on
+$V[ i + 1 .. j - 1 ]$ and can be sure of the difference $D[ i + 1 ][ j ]$,
+and no more, against the best play of the first; the first thus gets
+$V_i - D[ i + 1 ][ j ]$, and symmetrically for $V_{j-1}$, and the better
+of the two moves gives (13.15). With $x$ and $y$ the coins of the two
+players, $x - y = D[ 0 ][ n ]$ and $x + y = S$. For $n$ even, let the first
+player fix a parity. Before each of its moves the coins left are a run of
+even length, whose two ends have places of different parity, and it takes
+the end of the parity fixed; the run left has odd length and both its ends
+of the other parity, one of which the other player must take. Hence the
+first player can take all the coins of the even places, or all those of
+the odd places, and the larger of the two sums is at least $S / 2$; the
+optimal play gets at least as much. $\square$
+
 **Optimal binary search trees.** The keys $0 , \ldots , n - 1$ are
 searched with the weights $p_i$ (frequencies or probabilities), and the
 gaps between them, the unsuccessful searches, with the weights $q_0 ,
@@ -1280,11 +1603,13 @@ $$
 This theorem was proved by [Knuth 1971](Z-bibliography.md#ref-knuth1971)
 for the search trees, and derived by [Yao
 1980](Z-bibliography.md#ref-yao1980) from the quadrangle inequality, which
-the weights of the keys and of the gaps satisfy with equality; we refer to
+the weights of the keys and of the gaps satisfy with equality (and $W$ is
+monotone, the weights being not negative, as the precondition of
+`optimalSearchTree()` requires); we refer to
 the latter for the proof (which is somewhat long), which shows first that $C$ inherits the
 quadrangle inequality from $W$.
 
-<span id="lem-13-12"></span>**Lemma 13.12.** *With the roots looked for
+<span id="lem-13-21"></span>**Lemma 13.21.** *With the roots looked for
 in the ranges (13.17), `optimalSearchTree()` takes $O( n^2 )$ time and
 space.*
 
@@ -1302,10 +1627,6 @@ weight 0.
 --8<-- "generated/OptimalSearchTree-optimalSearchTree.pseudo.md"
 
 --8<-- "generated/OptimalSearchTree-optimalSearchTree-2.pseudo.md"
-
-```cpp
---8<-- "generated/OptimalSearchTree-optimalSearchTree.cpp"
-```
 
 In the code, the loop keeps the largest best root, the one of (13.17), by preferring a
 later candidate on a tie; the tree is then built from $R[ 0 ][ n ]$ down,
@@ -1338,7 +1659,7 @@ $$
 with the best cut kept for each entry, in $O( k n^2 )$ time and $O( k n )$
 space ([Algorithm 13.36](13-algorithm.md#alg-13-36)). `painterPartition()`
 solves it for integer items not negative and at most $k$ parts by a
-binary search on the answer $x$ (cf. [Lemma 13.13](13-algorithm.md#lem-13-13)), each candidate checked by the greedy
+binary search on the answer $x$ (cf. [Lemma 13.23](13-algorithm.md#lem-13-23)), each candidate checked by the greedy
 `fits()`, which closes a part only when the next item does not fit in it.
 
 <span id="alg-13-36"></span>**Algorithm 13.36.** The linear partition by
@@ -1349,7 +1670,20 @@ the answer.
 
 --8<-- "generated/LinearPartition-fits.pseudo.md"
 
-<span id="lem-13-13"></span>**Lemma 13.13.** *For items not negative, the
+<span id="lem-13-22"></span>**Lemma 13.22.** *$D[ t ][ i ]$ of (13.18) is
+the least largest sum of a split of $A[ 0 .. i - 1 ]$ into $t$ nonempty
+contiguous parts, and `linearPartition()` takes $O( k n^2 )$ time.*
+
+*Proof.* In a split into $t \ge 2$ parts, the last part is
+$A[ j .. i - 1 ]$ for some $j \in [ t - 1 , i )$, since the first $t - 1$
+parts need $t - 1$ items at least; its largest sum is the larger of
+$S[ i ] - S[ j ]$ and of the largest sum of the other $t - 1$ parts, and
+the split of $A[ 0 .. j - 1 ]$ may be taken optimal, which can only lower
+the maximum. Hence (13.18) by induction on $t$, with $D[ 1 ][ i ] = S[ i ]$
+for one part. Each of the $k n$ entries compares at most $n$ cuts.
+$\square$
+
+<span id="lem-13-23"></span>**Lemma 13.23.** *For items not negative, the
 greedy `fits()` uses the fewest parts of sum at most $x$; hence $x$ is
 feasible if and only if it needs at most $k$ parts, and `painterPartition()`
 takes $O( n \log \sum_i A_i )$ time and $O( 1 )$ space.*
@@ -1396,6 +1730,50 @@ ones, and the lattice paths through a grid.
 
 --8<-- "generated/GridPaths-countLatticePaths.pseudo.md"
 
+<span id="lem-13-24"></span>**Lemma 13.24.** *$S[ i ][ j ]$ is the side of
+the largest square of nonzero cells with its lower right corner in
+$( i , j )$, and $N[ i ][ j ]$ the number of monotone paths from the upper
+left cell to $( i , j )$ through nonzero cells.*
+
+*Proof.* A square of side $s \ge 2$ with the corner $( i , j )$ is the
+union of the cell $( i , j )$ and of three squares of side $s - 1$ with the
+corners $( i - 1 , j )$, $( i - 1 , j - 1 )$ and $( i , j - 1 )$; hence it
+exists if and only if the cell is nonzero and the three sides are at least
+$s - 1$, which gives the recurrence by induction on $i + j$ (the cells
+outside the matrix counting as sides 0). A path to a free cell
+$( i , j )$ ends with a step from $( i - 1 , j )$ or from $( i , j - 1 )$,
+the two sets of paths are disjoint, and a path to a blocked cell does not
+exist. $\square$
+
+The functions of the section are declared as follows, the tree of
+`optimalSearchTree()` being the structure of its cost, of its root and
+of the two children of each key ($-1$ for none):
+
+```cpp
+template< class T > struct OptimalSearchTree {
+ T cost;                       // the weighted path length
+ int root;                     // the key at the root
+ std::vector< int > left , right;
+ };
+template< class T >
+T coinsInALine( const std::vector< T > & V );
+template< class T >
+OptimalSearchTree< T >
+optimalSearchTree( const std::vector< T > & p ,
+                   const std::vector< T > & q );
+template< class T >
+OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p );
+template< class T >
+std::pair< T , std::vector< std::size_t > >
+linearPartition( const std::vector< T > & A , std::size_t k );
+template< std::integral T >
+T painterPartition( const std::vector< T > & A , std::size_t k );
+template< class T >
+GridSquare largestSquare( const std::vector< std::vector< T > > & A );
+template< class C = std::uint64_t , class T >
+C countLatticePaths( const std::vector< std::vector< T > > & B );
+```
+
 ## 13.11 Greedy algorithms {#sec-13-11}
 
 A greedy algorithm builds a solution by stages, and fixes at each one the
@@ -1403,7 +1781,7 @@ component that looks best, with no going back ([Montresor 2025,
 chapter 14](Z-bibliography.md#ref-montresor2025)); it is correct when the
 following property holds.
 
-<span id="lem-13-14"></span>**Lemma 13.14 (the greedy choice).** *If, for
+<span id="lem-13-25"></span>**Lemma 13.25 (the greedy choice).** *If, for
 every instance, some optimal solution contains the greedy choice, and the
 rest of it is an optimal solution of the subproblem that the choice
 leaves, then the greedy algorithm is optimal.*
@@ -1448,7 +1826,7 @@ $p_a v_b > p_b v_a$, with no division, and the capacity left is clamped at
 
 --8<-- "generated/FractionalKnapsack-fractionalKnapsack.pseudo.md"
 
-<span id="lem-13-15"></span>**Lemma 13.15.** *The fractions by decreasing
+<span id="lem-13-26"></span>**Lemma 13.26.** *The fractions by decreasing
 $p_i / v_i$ are optimal for the fractional knapsack.*
 
 *Proof.* If an optimal solution has $x_j > 0$ while an object $i$ of
@@ -1485,10 +1863,6 @@ exercises 14.6 and 14.7](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/Intervals-towers.pseudo.md"
 
-```cpp
---8<-- "generated/Intervals-independentSet.cpp"
-```
-
 `intervalColoring()` (exercise 14.6) gives the fewest colors such that
 intersecting intervals have different colors: it scans the $2 n$ ends by
 position, a right end before a left one equal to it, and a left end takes
@@ -1499,7 +1873,7 @@ is within $d$ of one of them: a tower at $k_0 + d$, $k_0$ the first house,
 serves the houses up to $k_0 + 2 d$, and so on from the first house left
 out.
 
-<span id="lem-13-16"></span>**Lemma 13.16.** *`intervalColoring()` uses
+<span id="lem-13-27"></span>**Lemma 13.27.** *`intervalColoring()` uses
 as many colors as the largest number of intervals over a point, and
 `towers()` the fewest towers.*
 
@@ -1522,9 +1896,9 @@ With the part $[ \mathit{lo} , x ]$ already covered, the greedy takes,
 among the intervals that start at $x$ or before, the one that ends
 farthest; if none ends beyond $x$, the points just after $x$ stay
 uncovered and there is no cover ([Algorithm 13.40](13-algorithm.md#alg-13-40)).
-Any interval of an optimal cover that contains $x$ ends no farther than the
-greedy one, which can therefore replace it; on the intervals sorted by
-left end one scan suffices, in $O( n \log n )$ time for the sort. The
+On the intervals sorted by left end one scan finds the candidates of line
+4, in $O( n \log n )$ time for the sort, and the greedy is optimal
+([Lemma 13.28](13-algorithm.md#lem-13-28)). The
 problem is the dual of the independent set of intervals, and the
 one-dimensional case of the set cover, which in general is NP-hard and is
 approximated within a factor $\ln n$ by the greedy that takes the set with
@@ -1536,12 +1910,34 @@ by the fewest intervals.
 
 --8<-- "generated/IntervalCover-minimumIntervalCover.pseudo.md"
 
+<span id="lem-13-28"></span>**Lemma 13.28.** *If the intervals cover
+$[ \mathit{lo} , \mathit{hi} ]$, `minimumIntervalCover()` returns a cover
+by the fewest of them; otherwise it returns none.*
+
+*Proof.* Let $g_1 , g_2 , \ldots$ be the intervals taken, and $x_j$ the
+right end of $g_j$ ($x_0 = \mathit{lo}$). Let $o_1 , \ldots , o_q$ be a
+cover by the fewest intervals, sorted by right end; no $o_j$ is contained
+in another, which could be dropped, and therefore the left ends are sorted
+too, and $o_{j+1}$ starts at or before the end of $o_j$, since otherwise
+the points between them would not be covered. We show $x_j \ge b( o_j )$
+by induction. The interval $o_1$ contains $\mathit{lo}$, and hence it is a
+candidate of line 4 at the first step. If $x_j \ge b( o_j )$, then
+$a( o_{j+1} ) \le b( o_j ) \le x_j$, and $o_{j+1}$ is a candidate at the
+step $j + 1$, unless it was taken before, in which case $b( o_{j+1} ) \le
+x_j$. In both cases $x_{j+1} \ge b( o_{j+1} )$. Also, the greedy does not
+stop at line 5 while $x_j < \mathit{hi}$, since $b( o_{j+1} ) > x_j$ there.
+Hence $x_q \ge b( o_q ) \ge \mathit{hi}$, and the greedy takes at most $q$
+intervals. Conversely, if line 5 stops at $x < \mathit{hi}$, every interval
+that starts at or before $x$ ends at or before it, and the points between
+$x$ and the least left end above $x$ (or $\mathit{hi}$) are covered by no
+interval. $\square$
+
 **Scheduling.** `shortestJobFirst()` orders $n$ programs of durations
 $t_i$, run one after the other, in the order of least average time of
 completion ([Montresor 2025, exercise 14.5](Z-bibliography.md#ref-montresor2025)):
 by increasing duration, since swapping two adjacent programs of which the
 longer runs first does not increase the sum of the times of completion
-([Lemma 13.17](13-algorithm.md#lem-13-17) below, with unit weights). With the weights $w_i$
+([Lemma 13.29](13-algorithm.md#lem-13-29) below, with unit weights). With the weights $w_i$
 of the programs (e.g., the probabilities of the files on a tape, which are
 read, in fact, at the times of completion), the order of least weighted sum $\sum_i
 w_i C_i$ of the times of completion $C_i$ is the rule of [Smith
@@ -1557,7 +1953,7 @@ and the rule of Smith.
 
 --8<-- "generated/ShortestJobFirst-smithOrder.pseudo.md"
 
-<span id="lem-13-17"></span>**Lemma 13.17.** *Swapping two adjacent
+<span id="lem-13-29"></span>**Lemma 13.29.** *Swapping two adjacent
 programs $a$ and $b$, $a$ first, leaves the times of completion of the
 others unchanged, and changes the weighted sum by*
 
@@ -1593,9 +1989,28 @@ $$
 \rvert + \lvert h_2 - l_1 \rvert , \tag{13.20}
 $$
 
-which one can check on the possible orders of the four points, and any
-crossing of an optimal matching can thus be undone by an exchange. The
-same order is optimal for any convex function of the difference, which is
+and the same holds for any convex function in place of the absolute
+value, as the next lemma shows.
+
+<span id="lem-13-30"></span>**Lemma 13.30.** *Let $f$ be convex. For
+$h_1 \le h_2$ and $l_1 \le l_2$, $f( h_1 - l_1 ) + f( h_2 - l_2 ) \le
+f( h_1 - l_2 ) + f( h_2 - l_1 )$; hence matching the two sets in sorted
+order minimizes $\sum_i f( h_i - l_{\pi( i )} )$, and `lineAssignment()`
+is optimal.*
+
+*Proof.* Let $\alpha = h_1 - l_1$, $\delta = h_2 - l_2$, $\beta = h_1 -
+l_2$ and $\gamma = h_2 - l_1$. Then $\beta \le \alpha \le \gamma$,
+$\beta \le \delta \le \gamma$ and $\alpha + \delta = \beta + \gamma$;
+hence $\alpha$ and $\delta$ are the convex combinations
+$\lambda \beta + ( 1 - \lambda ) \gamma$ and $( 1 - \lambda ) \beta +
+\lambda \gamma$ for some $\lambda \in [ 0 , 1 ]$ (any, if $\beta =
+\gamma$), and adding the two inequalities of convexity gives the claim.
+Thus a matching with a crossing, i.e., $h_i \le h_j$ and $l_{\pi( i )} >
+l_{\pi( j )}$, does not get worse when the two partners are exchanged,
+and each exchange lowers the number of the crossings, which is finite,
+until the matching is the sorted one. $\square$
+
+With $f = \lvert \cdot \rvert$ this is (13.20); for any convex $f$ it is
 the optimal transport on the line. Its sum is computed in a type `W` given
 by the caller, wider than the points if needed.
 
@@ -1639,6 +2054,39 @@ a system is canonical can be decided in polynomial time; we do
 not dwell further on it here, since the library does not implement the
 test.
 
+The greedy algorithms of the section are declared as follows:
+
+```cpp
+std::vector< double >
+fractionalKnapsack( const std::vector< double > & p ,
+                    const std::vector< double > & v , double C );
+std::vector< std::size_t >
+independentSet( const std::vector< std::pair< long , long > > & I );
+std::vector< int > intervalColoring( const std::vector< std::pair< long ,
+                                     long > > & I );
+std::vector< double > towers( std::vector< double > k , double d );
+template< class T >
+std::optional< std::vector< std::size_t > >
+minimumIntervalCover( const std::vector< std::pair< T , T > > & I ,
+                      T lo , T hi );
+template< class T >
+std::vector< std::size_t > shortestJobFirst( const std::vector< T > & t );
+template< class T , class W >
+std::vector< std::size_t >
+smithOrder( const std::vector< T > & t , const std::vector< W > & w );
+template< class T >
+T totalCompletion( const std::vector< T > & t ,
+                   const std::vector< std::size_t > & A );
+template< class T , class W >
+auto weightedCompletion( const std::vector< T > & t ,
+                         const std::vector< W > & w ,
+                         const std::vector< std::size_t > & A );
+template< class T , class W = T >
+W lineAssignment( std::vector< T > H , std::vector< T > L );
+std::optional< std::vector< long > >
+greedyChange( std::vector< long > coins , long c );
+```
+
 ## 13.12 Monte Carlo algorithms {#sec-13-12}
 
 An algorithm of Monte Carlo always ends within its bound, and it may
@@ -1649,7 +2097,7 @@ numbers as a parameter, and either have a one-sided error, which $K$
 independent runs lower to its $K$-th power, or an error that $K$ samples
 lower exponentially ([Table 13.7](13-algorithm.md#tab-13-7)).
 
-<span id="lem-13-18"></span>**Lemma 13.18 (Schwartz and Zippel).** *A
+<span id="lem-13-31"></span>**Lemma 13.31 (Schwartz and Zippel).** *A
 nonzero polynomial of total degree $d$ in $n$ variables vanishes at a point
 drawn uniformly from $S^n$ with probability at most $d / \lvert S \rvert$.*
 
@@ -1686,11 +2134,7 @@ satisfying assignments.
 
 --8<-- "generated/MonteCarlo-halfSatisfiable.pseudo.md"
 
-```cpp
---8<-- "generated/MonteCarlo-freivalds.cpp"
-```
-
-<span id="lem-13-19"></span>**Lemma 13.19.** *If $A B \ne C$, a run of
+<span id="lem-13-32"></span>**Lemma 13.32.** *If $A B \ne C$, a run of
 `freivalds()` answers that they are equal with probability at most $1 /
 2$; each run costs $O( n^2 )$ time.*
 
@@ -1723,6 +2167,21 @@ of `MonteCarlo.h` and their errors after $K$ runs or samples.
 | `zeroPolynomial()` | one-sided, on "zero" | $2^{-K}$ | $K$ evaluations of $p$ |
 | `freivalds()` | one-sided, on "equal" | $2^{-K}$ | $O( K n^2 )$ |
 | `halfSatisfiable()` | two-sided | $e^{-2 K \epsilon^2}$ | $K$ evaluations of the formula |
+
+The three algorithms take the generator `rng` of the caller and the
+number $K$ of the runs or of the samples:
+
+```cpp
+template< class F , class R >
+bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
+template< class T , class R >
+bool freivalds( const std::vector< std::vector< T > > & A ,
+                const std::vector< std::vector< T > > & B ,
+                const std::vector< std::vector< T > > & C , int K ,
+                R & rng );
+template< class F , class R >
+bool halfSatisfiable( F && f , std::size_t n , int K , R & rng );
+```
 
 ## 13.13 Discussion and references {#sec-13-13}
 
@@ -1813,7 +2272,7 @@ Each exercise names the test of the library that solves it (run it with
 14. Count the ways of paying an amount with coins in unlimited supply and
     the subsets of a given sum, and explain why the two loops run in
     opposite directions. Test: `lib_optimization.coin-change-ways`.
-15. Find the fewest squares that sum to $n$ in $O( \sqrt n )$ time. Test:
+15. Find the fewest squares that sum to $n$ in $O( \sqrt n \log n )$ time. Test:
     `lib_optimization.minimum-squares`.
 16. Solve the independent set of weighted intervals in $O( n \log n )$
     time ([Montresor 2025, §13.2](Z-bibliography.md#ref-montresor2025)).

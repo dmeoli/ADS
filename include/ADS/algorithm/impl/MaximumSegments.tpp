@@ -72,7 +72,6 @@ template< class T >
 Segment< T > maxSumSegment( const std::vector< T > & D )
 {
  ADS_PRE( ! D.empty() );
-//! [maxSumSegment]
  Segment< T > best{ D[ 0 ] , 0 , 1 };
  T tmp{};
  for( std::size_t b = 0 , s = 0 ; s < D.size() ; ++s ) {
@@ -83,7 +82,6 @@ Segment< T > maxSumSegment( const std::vector< T > & D )
    b = s + 1;
    }
   }
-//! [maxSumSegment]
  ADS_AUDIT( detail::segmentSum( D , best ) );
  ADS_AUDIT( ( best.sum < T{} ) || ( best.sum == maxSubarraySum( D ) ) );
  return( best );
@@ -113,7 +111,6 @@ Segment< T > maxSumSegmentLength( const std::vector< T > & D ,
                                   std::size_t L , std::size_t U )
 {
  ADS_PRE( ( L >= 1 ) && ( L <= U ) && ( L <= D.size() ) );
-//! [maxSumSegmentLength]
  const auto P = detail::prefixSums( D );
  std::deque< std::size_t > W;               // starts, increasing P
  Segment< T > best;
@@ -127,7 +124,6 @@ Segment< T > maxSumSegmentLength( const std::vector< T > & D ,
   if( ( best.length == 0 ) || ( best.sum < s ) )
    best = Segment< T >{ s , W.front() , i - W.front() };
   }
-//! [maxSumSegmentLength]
  ADS_AUDIT( detail::segmentSum( D , best ) );
  return( best );
  }

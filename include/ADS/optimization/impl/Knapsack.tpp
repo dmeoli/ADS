@@ -31,7 +31,6 @@ inline bool knapsackInput( const std::vector< long > & p ,
 
 }  // end( namespace detail )
 
-//! [knapsack]
 inline std::pair< long , std::vector< std::size_t > > knapsack(
                                             const std::vector< long > & p ,
                                             const std::vector< long > & v ,
@@ -62,7 +61,6 @@ inline std::pair< long , std::vector< std::size_t > > knapsack(
   return( ( tv <= C ) && ( tp == DP[ n ][ C ] ) ); }() ) );
  return( std::pair( DP[ n ][ C ] , S ) );
  }
-//! [knapsack]
 
 inline long zaino( const std::vector< long > & p ,
                    const std::vector< long > & v , long C ,
