@@ -17,25 +17,7 @@
  * \copyright &copy; by Donato Meoli
  */
 /*--------------------------------------------------------------------------*/
-/*------------------------------ #include "ADS/dictionary/IndexedSkipList.h"
-#include "ADS/dictionary/RandomHashing.h"
-#include "ADS/dictionary/SkipList.h"
-#include "ADS/sequence/OrderMaintenanceList.h"
-#include "ADS/sequence/Rearrangements.h"
-#include "ADS/sequence/SkipListSequence.h"
-#include "ADS/sequence/TreapList.h"
-#include "ADS/set/SpaceEfficientSortedSet.h"
-#include "ADS/tree/AVLTree.h"
-#include "ADS/tree/BinaryTreeAlgorithms.h"
-#include "ADS/tree/BinaryTree.h"
-#include "ADS/tree/FingerTreap.h"
-#include "ADS/tree/HashedTreap.h"
-#include "ADS/tree/LeftLeaningRedBlackTree.h"
-#include "ADS/tree/MeasuredSearchTree.h"
-#include "ADS/tree/PartialRebuildingTree.h"
-#include "ADS/tree/RandomizedSearchTree.h"
-#include "ADS/tree/ScapegoatTree.h"
-#include "ADS/tree/Treap.h" ----------------------------------*/
+/*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 #include "ADSTest.h"
@@ -58,6 +40,7 @@
 #include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/RandomizedSearchTree.h"
 #include "ADS/tree/ScapegoatTree.h"
+#include "ADS/tree/SearchTree.h"
 #include "ADS/tree/Treap.h"
 
 #include <algorithm>
@@ -566,6 +549,40 @@ ADS_TEST( "ods-ex6.14.getLE" )
   const auto it = ref.lower_bound( x );
   CHECK( ( it == ref.end() ) ? ! lb : ( lb && ( lb->first == it->first ) ) );
   }
+ }
+
+ADS_TEST( "ods6.2.searchtree-lowerbound" )
+{
+ // section 6.2.1: the successor search of the binary search tree and of
+ // the red-black tree of the book, against std::map::lower_bound
+ auto check = [ & ]< class T >( T & t , unsigned seed ) {
+  std::mt19937 g( seed );
+  std::map< int , int > ref;
+  for( int s = 0 ; s < 6000 ; ++s ) {
+   const int k = int( g() % 800 );
+   if( g() % 3 ) { t.insert( k , s ); ref[ k ] = s; }
+   else { t.remove( k ); ref.erase( k ); }
+   const int x = int( g() % 802 ) - 1;
+   const auto it = ref.lower_bound( x );
+   const auto lb = t.lowerBound( x );
+   const int * p = t.lowerBoundKey( x ) , * q = t.findKey( x );
+   const auto u = t.lowerBoundNode( x );
+   if( it == ref.end() )
+    CHECK( ! lb && ! p && t.isNil( u ) );
+   else {
+    CHECK( lb && ( lb->first == it->first ) && ( lb->second == it->second ) );
+    CHECK( p && ( *p == it->first ) && ( p == &T::key( u ) ) );
+    }
+   CHECK( ( it != ref.end() && it->first == x ) ? ( q && ( *q == x ) &&
+                                                    ( q == p ) ) : ! q );
+   }
+  };
+ BinarySearchTree< int , int > B;
+ RedBlackTree< int , int > R;
+ check( B , 61 );
+ check( R , 62 );
+ const RedBlackTree< int , int > E;         // nothing in it
+ CHECK( ! E.lowerBound( 0 ) && ! E.lowerBoundKey( 0 ) && ! E.findKey( 0 ) );
  }
 
 ADS_TEST( "ods-ex6.19.size-depth-height" )

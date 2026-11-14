@@ -55,6 +55,12 @@
  * black heights. The binary search tree, whose height may be \f$ n \f$, has
  * none of them.
  *
+ * `lowerBoundNode()` is the successor search, the `find( x )` of a sorted
+ * set of Morin (section 6.2.1), the smallest key not smaller than
+ * \f$ x \f$; `lowerBound()` gives it with its value, and `findKey()` and
+ * `lowerBoundKey()` give the address of the key found, so that
+ * `DictionarySet` over either tree is an SSet [see `SetInterfaces.h`].
+ *
  * The contracts [see `Contract.h`]: after `insert()` the key is there and
  * after `remove()` it is not; `key()`, `value()`, `successorNode()` and
  * `predecessorNode()` need a node; the invariant is the order of the keys,
@@ -73,6 +79,9 @@
  * \see R. E. Tarjan, Data Structures and Network Algorithms, SIAM, 1983,
  *      chapter 4 (the join of the Red-Black trees),
  *      doi:10.1137/1.9781611970265
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, sections 1.2.4 and
+ *      6.2.1
  * \see G. E. Blelloch, D. Ferizovic, Y. Sun, Just join for parallel
  *      ordered sets, Proceedings of the 28th ACM Symposium on Parallelism
  *      in Algorithms and Architectures (SPAA), 253-264, 2016,
@@ -300,6 +309,24 @@ class SearchTree
  /// true if the key \f$ k \f$ is present
  [[nodiscard]] bool contains( const K & k ) const;
 
+ /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
+ /// (the `find( x )` of an SSet of Morin), by `lowerBoundNode()` in
+ /// \f$ O( h ) \f$ time
+ [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
+  const K & k ) const;
+
+ /// the address of the key \f$ k \f$ in the tree, nil if absent, in
+ /// \f$ O( h ) \f$ time: the `find( x )` of a USet of Morin, which makes
+ /// `DictionarySet` a `USet` [see `SetInterfaces.h`]; valid until the key
+ /// is removed
+ [[nodiscard]] const K * findKey( const K & k ) const;
+
+ /// the address of the smallest key not smaller than \f$ k \f$, nil if
+ /// none, by `lowerBoundNode()` in \f$ O( h ) \f$ time: the `find( x )` of
+ /// an SSet of Morin, which makes `DictionarySet` an `SSet`; valid until
+ /// the key is removed
+ [[nodiscard]] const K * lowerBoundKey( const K & k ) const;
+
  /// the number \f$ n \f$ of keys
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -344,6 +371,28 @@ class SearchTree
  /// \end{array}}
  /// \f]
  [[nodiscard]] Link * lookupNode( const K & x ) const;
+
+ /// the node of the smallest key not smaller than \f$ x \f$, nil if none,
+ /// in \f$ O( h ) \f$ time (the successor search of the `find( x )` of an
+ /// SSet of Morin)
+ ///
+ /// In pseudocode (section 6.2.1 of Morin, beyond the book), the last node
+ /// at which the path turns left being the best so far, and the search
+ /// stopping at a key equal to \f$ x \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{lowerBoundNode}( T , x ) \cr
+ /// 2 & \quad b \gets \textbf{nil} \cr
+ /// 3 & \quad \textbf{while}\ T \ne \textbf{nil}\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{if}\ T.\mathit{key} < x\ \textbf{then}\ T \gets
+ ///     T.\mathit{right} \cr
+ /// 5 & \qquad \textbf{else if}\ x < T.\mathit{key}\ \textbf{then}\ b
+ ///     \gets T;\ T \gets T.\mathit{left} \cr
+ /// 6 & \qquad \textbf{else return}\ T \cr
+ /// 7 & \quad \textbf{return}\ b
+ /// \end{array}}
+ /// \f]
+ [[nodiscard]] Link * lowerBoundNode( const K & x ) const;
 
  /// the node of the smallest key, nil if the tree is empty, by the left
  /// path from the root

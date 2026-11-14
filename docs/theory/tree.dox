@@ -222,6 +222,21 @@
  \f$ x \f$, which keeps the order of the keys and changes the depths of the
  subtrees by \f$ \pm 1 \f$, in \f$ O( 1 ) \f$ (figure 6.4 of the book).
 
+ The successor search, the `find( x )` of the sorted set of Morin (section
+ 6.2.1 of his book), returns the smallest key not smaller than \f$ x \f$
+ along the same path: it remembers the last node at which the path turned
+ left, and stops at a key equal to \f$ x \f$. The answer is that node.
+ Indeed, a node \f$ u \f$ at which the path turns right is smaller than
+ \f$ x \f$, and so is its left subtree; a node at which it turns left is
+ not, and its right subtree holds only larger keys; and the nodes of the
+ left turns decrease along the path, each in the left subtree of the
+ previous one; hence the last of them is the least key not smaller than
+ \f$ x \f$. `lowerBoundNode()` of `SearchTree` gives the node, in
+ \f$ O( h ) \f$ like the search, and every ordered dictionary of the
+ library gives the same answer by `lowerBound()`, as a pair, and by
+ `lowerBoundKey()`, as the address of the key, which makes
+ `DictionarySet` over it a sorted set [see \ref theory_set_morin].
+
  <table>
  <caption>The binary search trees of the area and the cost of their
           operations</caption>

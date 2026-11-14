@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- SearchTree, the binary search tree and the red-black tree of the book,
+  takes the successor search of Morin's sorted set (section 6.2.1):
+  lowerBoundNode( x ), the node of the smallest key not smaller than x,
+  lowerBound( x ), that key with its value as in the other trees, and
+  findKey( x ) and lowerBoundKey( x ), the address of the key found, the
+  find() of a USet and of an SSet; the test ods6.2.searchtree-lowerbound
+  checks them against std::map on both trees
+
 - the manual (manual/), one chapter for each area of include/ADS on the
   plan of manual/OUTLINE.md, in Markdown built by Pandoc into
   manual/ADS-manual.pdf and by MkDocs into the folder manual of the site,
