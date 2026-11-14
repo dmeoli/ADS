@@ -1826,39 +1826,39 @@ engineered_search  affinity               thread fissati ai processori
 
 # P. Morin, Open Data Structures (in C++), chapters 5, 10, 11, 12, 13 and
 # 14, beyond the book
-ods_ints  ods13.1.binary-trie            Morin 13.1, trie binario
-ods_ints  ods.ex13.1.simple-binary-trie  Morin es. 13.1, trie senza salti
-ods_ints  ods13.2.x-fast-trie            Morin 13.2, x-fast trie
-ods_ints  ods.ex13.2.list-x-fast-trie    Morin es. 13.2, x-fast trie su lista
-ods_ints  ods.ex13.4.find-near           Morin es. 13.4, ricerca vicina
-ods_ints  ods13.3.y-fast-trie            Morin 13.3, y-fast trie
-ods_ints  ods.ex13.3.bitmap-trie         Morin es. 13.3, trie di stringhe
-ods_ints  ods10.1.binary-heap            Morin 10.1 ed es. 10.1-10.2, heap binario
-ods_ints  ods.ex10.3.remove-place        Morin es. 10.3-10.4, rimozione di un posto
-ods_ints  ods.ex10.5.dary-heap           Morin es. 10.5, heap d-ario
-ods_ints  ods10.2.meldable-heap          Morin 10.2 ed es. 10.6-10.9, heap fondibile
-ods_ints  ods.ex10.10.k-smallest         Morin es. 10.10, i k minimi
-ods_ints  ods.ex10.11.k-way-merge        Morin es. 10.11, fusione di k liste
-ods_ints  ods5.1.chained-hash-table      Morin 5.1, liste di trabocco e regole di Morin
-ods_ints  ods5.1.multiplicative-hash     Morin 5.1.1 ed es. 5.2-5.3, hash moltiplicativo
-ods_ints  ods5.2.linear-hash-table       Morin 5.2, ispezione lineare e tabulazione
-ods_ints  ods5.3.hash-codes              Morin 5.3 ed es. 5.6-5.10, codici hash
-ods_ints  ods11.1.sorts                  Morin 11.1 ed es. 11.1, ordinamenti per confronto
-ods_ints  ods.ex11.2.list-merge-sort     Morin es. 11.2, merge sort di una lista
-ods_ints  ods.ex11.6.quicksort-adversary Morin es. 11.3-11.6, avversario di McIlroy
-ods_ints  ods.ex11.7.quicksort-expectation Morin es. 11.7, confronti attesi di quicksort
-ods_ints  ods.ex11.8.heapsort-worst      Morin es. 11.8, caso pessimo di heapsort
-ods_ints  ods.ex11.10.comparison-tree    Morin es. 11.10-11.13, albero dei confronti
-ods_ints  ods.ex11.15.signed-radix-sort  Morin es. 11.15, radix sort con segno
-ods_ints  ods12.1.adjacency              Morin 12.1-12.2, matrice e liste di adiacenza
-ods_ints  ods.ex12.2.incidence-matrix    Morin es. 12.2, matrice di incidenza
-ods_ints  ods12.3.visits                 Morin 12.3 ed es. 12.3, 12.8, 12.9, visite
-ods_ints  ods.ex12.4.components          Morin es. 12.4-12.7, componenti e foresta
-ods_ints  ods.ex12.10.universal-sink     Morin es. 12.10, pozzo universale
-ods_ints  ods14.1.block-store            Morin 14.1, memoria a blocchi
-ods_ints  ods14.2.b-tree                 Morin 14.2, B-albero sui blocchi
-ods_ints  ods.ex14.1.figure              Morin es. 14.1-14.2, B-albero della figura
-ods_ints  ods.ex14.3.internal-nodes      Morin es. 14.3, nodi interni
-ods_ints  ods.ex14.4.memory              Morin es. 14.4, memoria interna
-ods_ints  ods.ex14.6.restructures        Morin es. 14.6-14.7, ristrutturazioni
-ods_ints  ods.ex14.8.bplus-tree          Morin es. 14.8, B+-albero con rimozione
+ods_ints  ods13.1.binary-trie               Morin 13.1, trie binario
+ods_ints  ods.ex13.1.simple-binary-trie     Morin es. 13.1, trie semplice
+ods_ints  ods13.2.x-fast-trie               Morin 13.2, x-fast trie
+ods_ints  ods.ex13.2.list-x-fast-trie       Morin es. 13.2, x-fast su lista
+ods_ints  ods.ex13.4.find-near              Morin es. 13.4, ricerca vicina
+ods_ints  ods13.3.y-fast-trie               Morin 13.3, y-fast trie
+ods_ints  ods.ex13.3.bitmap-trie            Morin es. 13.3, trie di stringhe
+ods_ints  ods10.1.binary-heap               Morin 10.1, es. 10.1-10.2, heap
+ods_ints  ods.ex10.3.remove-place           Morin es. 10.3-10.4, rimozione
+ods_ints  ods.ex10.5.dary-heap              Morin es. 10.5, heap d-ario
+ods_ints  ods10.2.meldable-heap             Morin 10.2, es. 10.6-10.9
+ods_ints  ods.ex10.10.k-smallest            Morin es. 10.10, i k minimi
+ods_ints  ods.ex10.11.k-way-merge           Morin es. 10.11, fusione di k liste
+ods_ints  ods5.1.chained-hash-table         Morin 5.1, liste di trabocco
+ods_ints  ods5.1.multiplicative-hash        Morin 5.1.1, es. 5.2-5.3
+ods_ints  ods5.2.linear-hash-table          Morin 5.2, ispezione lineare
+ods_ints  ods5.3.hash-codes                 Morin 5.3, es. 5.6-5.10
+ods_ints  ods11.1.sorts                     Morin 11.1, es. 11.1, ordinamenti
+ods_ints  ods.ex11.2.list-merge-sort        Morin es. 11.2, merge sort di lista
+ods_ints  ods.ex11.6.quicksort-adversary    Morin es. 11.3-11.6, McIlroy
+ods_ints  ods.ex11.7.quicksort-expectation  Morin es. 11.7, confronti attesi
+ods_ints  ods.ex11.8.heapsort-worst         Morin es. 11.8, heapsort pessimo
+ods_ints  ods.ex11.10.comparison-tree       Morin es. 11.10-11.13, confronti
+ods_ints  ods.ex11.15.signed-radix-sort     Morin es. 11.15, radix con segno
+ods_ints  ods12.1.adjacency                 Morin 12.1-12.2, adiacenza
+ods_ints  ods.ex12.2.incidence-matrix       Morin es. 12.2, incidenza
+ods_ints  ods12.3.visits                    Morin 12.3, es. 12.3, 12.8, 12.9
+ods_ints  ods.ex12.4.components             Morin es. 12.4-12.7, componenti
+ods_ints  ods.ex12.10.universal-sink        Morin es. 12.10, pozzo universale
+ods_ints  ods14.1.block-store               Morin 14.1, memoria a blocchi
+ods_ints  ods14.2.b-tree                    Morin 14.2, B-albero sui blocchi
+ods_ints  ods.ex14.1.figure                 Morin es. 14.1-14.2, figura
+ods_ints  ods.ex14.3.internal-nodes         Morin es. 14.3, nodi interni
+ods_ints  ods.ex14.4.memory                 Morin es. 14.4, memoria interna
+ods_ints  ods.ex14.6.restructures           Morin es. 14.6-14.7
+ods_ints  ods.ex14.8.bplus-tree             Morin es. 14.8, B+-albero

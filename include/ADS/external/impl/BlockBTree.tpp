@@ -171,7 +171,8 @@ void BlockBTree< K >::fixOverflow( Node & p , std::size_t i , const Node & u )
                                             std::size_t( 3 ) ); } );
   }
  else
-  deal( p , i , 1 , i , u , []( std::size_t ) { return( std::size_t( 2 ) ); } );
+  deal( p , i , 1 , i , u , []( std::size_t ) {
+   return( std::size_t( 2 ) ); } );
 //! [BlockBTree-fixOverflow]
  }
 

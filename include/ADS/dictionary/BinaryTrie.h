@@ -5,8 +5,8 @@
  * The binary tries of the integers of \f$ w \f$ bits, beyond the book: a
  * SORTED SET of keys \f$ x \in \{ 0 , \ldots , 2^w - 1 \} \f$, each with a
  * value, in which `lowerBound( x )` gives the smallest key \f$ \ge x \f$
- * (the successor, the `find( x )` of the SSet of Morin's book), in time that depends on \f$ w \f$ and not on the number
- * \f$ n \f$ of keys.
+ * (the successor, the `find( x )` of the SSet of Morin's book), in time
+ * that depends on \f$ w \f$ and not on the number \f$ n \f$ of keys.
  *
  * - `BinaryTrie` is the digital search tree of section 13.1 of Morin's
  *   book: the node at depth \f$ i \f$ stands for a prefix of \f$ i \f$ bits,

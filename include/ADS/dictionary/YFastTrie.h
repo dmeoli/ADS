@@ -5,8 +5,9 @@
  * The y-fast trie of Willard, beyond the book, in the form of section 13.3
  * of Morin's book: a SORTED SET of the integers of \f$ w \f$ bits, each
  * with a value, in \f$ O( n ) \f$ space, whose `lowerBound( x )` (the
- * smallest key \f$ \ge x \f$, the `find( x )` of the SSet of the book), `insert()` and `remove()` take
- * \f$ O( \log w ) \f$ expected time, the last two amortized.
+ * smallest key \f$ \ge x \f$, the `find( x )` of the SSet of the book),
+ * `insert()` and `remove()` take \f$ O( \log w ) \f$ expected time, the
+ * last two amortized.
  *
  * The keys are cut into groups of consecutive keys, each kept in a
  * `Treap` [see `Treap.h`], and the largest key of each group, its
@@ -151,7 +152,8 @@ class YFastTrie {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( x , v ) \cr
- /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{lowerBound}( x ) \cr
+ /// 2 & \quad ( r , T ) \gets \text{the pair of }
+ ///     X.\mathrm{lowerBound}( x ) \cr
  /// 3 & \quad \textbf{if}\ x \in T\ \textbf{then}\ \text{give it the value }
  ///     v;\ \textbf{return false} \cr
  /// 4 & \quad T.\mathrm{insert}( x , v ) \cr
@@ -174,7 +176,8 @@ class YFastTrie {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{lowerBound}( x ) \cr
+ /// 2 & \quad ( r , T ) \gets \text{the pair of }
+ ///     X.\mathrm{lowerBound}( x ) \cr
  /// 3 & \quad \textbf{if}\ x \notin T\ \textbf{then return false} \cr
  /// 4 & \quad T.\mathrm{remove}( x ) \cr
  /// 5 & \quad \textbf{if}\ x = r \ne 2^w - 1\ \textbf{then} \cr

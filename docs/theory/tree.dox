@@ -536,6 +536,21 @@
      <td>main, a node a few lines of cache</td></tr>
  </table>
 
+ The B+-tree of `BPlusTree.h` also removes (exercise 14.8 of Morin's
+ book): a leaf left with fewer than \f$ \lceil m / 2 \rceil \f$ keys takes the
+ nearest key of a sibling that has more, through their separator, which
+ becomes the largest key of the left one, or is merged with it, the parent
+ losing the separator and a child; an internal node left with fewer than
+ \f$ \lceil m / 2 \rceil \f$ children rotates a child through the separator,
+ or is merged with a sibling and the separator between them. A separator
+ bounds the keys on its two sides and need not be a key still there, so
+ that a removal changes only the separators of its borrows and merges, and
+ the keys of the B-tree above the leaves are at most one per leaf, a share
+ \f$ 1 / \lceil m / 2 \rceil \f$ of the keys that vanishes as \f$ m \f$
+ grows. `findRange( x , y )`, the keys in \f$ ( x , y ] \f$, goes down to
+ the leaf of \f$ x \f$ and along the list, \f$ O( \log_m n + k ) \f$ nodes
+ for \f$ k \f$ keys.
+
  \section theory_tree_dynamic Dynamic trees
 
  Beyond the book, the link-cut trees of Sleator and Tarjan (`LinkCutTree.h`)
@@ -695,6 +710,8 @@
  \see R. E. Tarjan, R. F. Werneck, Dynamic trees in practice, ACM Journal
       of Experimental Algorithmics 14, article 4.5, 2009,
       doi:10.1145/1498698.1594231
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, chapter 14
 */
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File tree.dox ----------------------------*/

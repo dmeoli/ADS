@@ -160,8 +160,9 @@ class BitmapTrie {
  /// 1 & \textbf{function}\ \mathrm{insert}( s , v ) \cr
  /// 2 & \quad \textbf{if}\ s \text{ is there}\ \textbf{then}\ \text{give it }
  ///     \text{the value } v;\ \textbf{return false} \cr
- /// 3 & \quad \text{link } s \text{ before the string of } \mathrm{lowerBound}( s )
- ///     \text{, add the missing nodes of its path} \cr
+ /// 3 & \quad \text{link } s \text{ before the string of }
+ ///     \mathrm{lowerBound}( s ) \text{, add the missing nodes of its path}
+ ///     \cr
  /// 4 & \quad \textbf{for}\ i \gets |s|\ \textbf{downto}\ 0\ \textbf{do}
  ///     \quad \triangleright\ u \text{ the node of depth } i \cr
  /// 5 & \qquad \textbf{if}\ \text{nothing of } u \text{ precedes the path }

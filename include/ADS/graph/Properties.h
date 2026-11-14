@@ -37,8 +37,8 @@
  *   `EasyCases.h` takes a matrix of adjacency, in \f$ \Theta( n^2 ) \f$);
  * - `universalSink()`, on a matrix or on a graph with `hasEdge()` (exercise
  *   12.10 of Morin's book), the node of an oriented graph with an edge from
- *   every other node and no edge out, `NIL` if there is none, from the matrix of
- *   adjacency in \f$ \Theta( n ) \f$ entries read out of the
+ *   every other node and no edge out, `NIL` if there is none, from the
+ *   matrix of adjacency in \f$ \Theta( n ) \f$ entries read out of the
  *   \f$ n^2 \f$, by the elimination of King and Smith-Thomas: the entry
  *   ( c , j ) rules out c (an edge out) or j (an edge missing in), so one
  *   scan leaves one candidate, checked on its row and its column, at most

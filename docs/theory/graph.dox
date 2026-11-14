@@ -867,6 +867,54 @@
  against the \f$ O( n^3 ) \f$ of a solution from scratch, which
  `Assignment::solve()` chooses when \f$ 2 k > n \f$.
 
+ \section theory_graph_morin Morin's representations and exercises
+
+ The `AdjacencyMatrix` and the `AdjacencyLists` of chapter 12 of Morin's
+ book are `MatrixGraph` and `ListGraph`, whose `adj( u )` is its
+ `outEdges()` and `inAdj( u )` its `inEdges()`, the column of \f$ u \f$ in
+ \f$ \Theta( n ) \f$ on the matrix and a scan of all the lists in
+ \f$ O( n + m ) \f$ on the lists. The matrix of incidence of exercise 12.2,
+ \f$ n \times m \f$ with \f$ -1 \f$ at the source and \f$ +1 \f$ at the
+ target of each edge, is `IncidenceGraph`: kept by columns, it takes
+ \f$ n m \f$ bytes, `insertEdge()` appends a column in \f$ O( n ) \f$
+ amortized, `hasEdge( i , j )` reads the row \f$ i \f$ and, at each
+ \f$ -1 \f$, the entry \f$ j \f$, \f$ O( m ) \f$, `deleteEdge()` copies the
+ last column over the one found, \f$ O( m + n ) \f$, and `adj( i )` and
+ `inAdj( i )` search the column of each edge of \f$ i \f$ for its other end,
+ \f$ O( m + n \deg( i ) ) \f$; no operation beats the other two
+ representations, and its use is the algebra of the graph [see
+ `incidence()`], not the visits.
+
+ <em>Lemma 10 (the universal sink).</em> A universal sink, a node with an
+ edge from each of the other \f$ n - 1 \f$ nodes and no edge out, is found or
+ shown not to exist with at most \f$ 3 ( n - 1 ) \f$ calls of
+ `hasEdge()`, \f$ O( n ) \f$ time on the adjacency matrix (exercise 12.10).
+
+ Indeed, the test of \f$ ( c , j ) \f$ rules out \f$ c \f$ if the edge is
+ there, since a sink has no edge out, and \f$ j \f$ otherwise, since the
+ sink has an edge from every node: a scan of \f$ j = 1 , \ldots , n - 1 \f$
+ that moves \f$ c \f$ to \f$ j \f$ at each edge found leaves one candidate,
+ \f$ n - 1 \f$ tests, and \f$ 2 ( n - 1 ) \f$ more check it (`universalSink()`
+ of `Properties.h`, on a matrix or on any graph with `hasEdge()`).
+
+ The other exercises of the chapter are solved by the visits of
+ `Visit.h`, each in \f$ O( n + m ) \f$: an unoriented graph is connected if
+ `cc()` gives one component, whose numbers are the labels of the components
+ (exercises 12.4 and 12.5); the parents that `distance()` gives from one
+ node of each component are the edges of a spanning forest, \f$ n - c \f$ of
+ them for \f$ c \f$ components (exercise 12.6); an oriented graph is
+ strongly connected if `scc()` gives one component, or if every node is
+ reached from a node \f$ r \f$ in \f$ G \f$ and in its transpose (exercise
+ 12.7); and the distances of `distance()` are the lengths of the shortest
+ paths from \f$ r \f$, by Lemma 1 (exercise 12.8). The `dfs2()` of the book
+ pushes all the neighbours of a node when it pops it, so that the last
+ neighbour pushed is visited first: on \f$ 0 \to 1 \f$, \f$ 0 \to 2 \f$,
+ \f$ 1 \to 2 \f$ it visits \f$ 0 , 2 , 1 \f$ where the recursion visits
+ \f$ 0 , 1 , 2 \f$; `dfs()` keeps instead on its stack the node and the
+ position in its list of neighbours, which visits them in the order of the
+ recursion (exercise 12.9). Exercises 12.1 and 12.3 are the drawings of the
+ representations and of the visits of figure 12.7.
+
  \section theory_graph_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 9, 11, 13,
@@ -973,6 +1021,8 @@
  \see K. Hanauer, M. Henzinger, C. Schulz, Recent advances in fully
       dynamic graph algorithms - a quick reference guide, ACM Journal of
       Experimental Algorithmics 27, 1-45, 2022, doi:10.1145/3555806
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, doi:10.15215/aupress/9781927356388.01, chapter 12
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File graph.dox ----------------------------*/

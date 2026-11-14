@@ -43,7 +43,7 @@
  * In both, a node touched needs \f$ \Omega( B ) \f$ operations below it
  * before it is touched again, so that a potential of the distance of each
  * node from its bounds pays the restructurings, \f$ O( m / B ) \f$ in all
- * (see the theory of the external memory).
+ * (see \ref theory_external_btree).
  *
  * The internal memory is \f$ O( B + \log_B n ) \f$, the claim of the
  * introduction of chapter 14 that the recursive code of the book does not

@@ -59,7 +59,7 @@
  *      2013, doi:10.15215/aupress/9781927356388.01, section 10.1 and
  *      exercises 10.3 to 10.5, 10.9 and 10.10
  * \see J. W. J. Williams, Algorithm 232: Heapsort, Communications of the
- *      ACM 7(6), 347-348, 1964, doi:10.1145/512274.512284
+ *      ACM 7(6), 347-348, 1964, doi:10.1145/512274.3734138
  * \see D. B. Johnson, Priority queues with update and finding minimum
  *      spanning trees, Information Processing Letters 4(3), 53-57, 1975,
  *      doi:10.1016/0020-0190(75)90001-0

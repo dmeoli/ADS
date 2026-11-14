@@ -499,8 +499,9 @@ ADS_TEST( "ods10.1.binary-heap" )
 {
  auto h = figureHeap();
  h.push( 6 );
- CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 , 16 ,
-                                              19 , 69 , 32 , 93 , 55 , 50 } ) );
+ CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 ,
+                                              16 , 19 , 69 , 32 , 93 , 55 ,
+                                              50 } ) );
  auto r = h;
  h.push( 7 );
  CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 , 7 ,
@@ -659,7 +660,7 @@ void meldableAgainstMultiset( H & h , H & o , int ops , std::uint64_t seed )
 // ods 10.2, ods ex 10.8 and ex 10.9: the randomized meldable heap against a
 // std::multiset, with the removal by handle (exercise 10.8) and the second
 // smallest item (exercise 10.9), on the default allocator and on a pool;
-// the keys of figure 10.5 with the operations of exercises 10.6 and 10.7
+// the keys of figure 10.4 with the operations of exercises 10.6 and 10.7
 ADS_TEST( "ods10.2.meldable-heap" )
 {
  {
@@ -1327,7 +1328,8 @@ void graphAgainstSet( G & g , int n , int ops , std::uint64_t seed )
  std::set< std::pair< int , int > > E;
  std::mt19937_64 rng( seed );
  for( int k = 0 ; k < ops ; ++k ) {
-  const int i = int( rng() % unsigned( n ) ) , j = int( rng() % unsigned( n ) );
+  const int i = int( rng() % unsigned( n ) );
+  const int j = int( rng() % unsigned( n ) );
   if( i == j )
    continue;
   if( rng() % 3 ) {
@@ -1767,8 +1769,8 @@ ADS_TEST( "ods.ex14.6.restructures" )
  }
 
 // ods ex 14.8: the B+-tree with the removal by borrows and merges,
-// lowerBound() the smallest key >= x and findRange( x , y ) the keys in ( x , y ],
-// against a std::map, the shape checked at each operation
+// lowerBound() the smallest key >= x and findRange( x , y ) the keys in
+// ( x , y ], against a std::map, the shape checked at each operation
 ADS_TEST( "ods.ex14.8.bplus-tree" )
 {
  for( int m : { 3 , 4 , 5 , 8 } ) {

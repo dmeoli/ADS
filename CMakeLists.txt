@@ -251,7 +251,7 @@ if (ADS_BENCHMARKS)
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
                parallel joins dynamic greedy learned stringdicts flows
-               assignment runtime bestfirst)
+               assignment runtime bestfirst hashattack)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
