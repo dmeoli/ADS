@@ -152,7 +152,7 @@ T oneTree( const std::vector< std::vector< T > > & D , int r );
 ///     ][ S[ 0 ] ] \cr
 /// 4 & \quad A \gets \min_{h \in R} D[ h ][ S[ 0 ] ];\ B \gets \min_{h \in R}
 ///     D[ S[ i ] ][ h ] \cr
-/// 5 & \quad \textbf{if}\ \mathit{how} = \text{ONE_TREE}
+/// 5 & \quad \textbf{if}\ \mathit{how} = \text{ONE\_TREE}
 ///     \ \textbf{then return}\ C + A + B + \mathrm{spanningTreeWeight}( D , R
 ///     ) \cr
 /// 6 & \quad \textbf{foreach}\ h \in R\ \textbf{do}\ D_h \gets \min_{p \ne q ,

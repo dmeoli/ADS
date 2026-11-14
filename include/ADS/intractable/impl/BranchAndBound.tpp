@@ -61,6 +61,7 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
  ADS_PRE( detail::square( D ) && ! S.empty() );
  ADS_PRE( detail::places( S , D.size() ) );
  ADS_PRE( ( how == TspBound::BOOK ) || detail::symmetricMatrix( D ) );
+//! [tspLowerBound]
  const int n = int( D.size() ) , i = int( S.size() ) - 1;
  T C = T( 0 );
  for( int k = 0 ; k < i ; ++k ) C += D[ S[ k ] ][ S[ k + 1 ] ];
@@ -92,6 +93,7 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
   return( C + ( sum + 1 ) / 2 );
  else
   return( C + sum / 2 );
+//! [tspLowerBound]
  }
 
 /*--------------------------------------------------------------------------*/

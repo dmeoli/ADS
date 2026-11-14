@@ -246,6 +246,7 @@ inline Nodes vertexCoverApprox( const Adjacency & G )
   const int n = int( G.size() );
   std::vector< bool > in( n , false );
   Nodes S;
+//! [vertexCoverApprox]
   for( int u = 0 ; u < n ; ++u )
    for( int v = u + 1 ; v < n ; ++v )
     if( G[ u ][ v ] && ! in[ u ] && ! in[ v ] ) {
@@ -253,6 +254,7 @@ inline Nodes vertexCoverApprox( const Adjacency & G )
      S.push_back( u );
      S.push_back( v );
      }
+//! [vertexCoverApprox]
   return( S );
   }();
  ADS_POST( detail::covers( G , result ) );

@@ -149,8 +149,8 @@ inline Nodes twoOptMove( Nodes pi , int i , int j );
 /// 3 & \quad \textbf{loop} \cr
 /// 4 & \qquad ( b_i , b_j ) \gets \text{the } i < j \text{, not consecutive,}
 ///     \ \text{of least } c' = c - D[ a ][ b ] - D[ x ][ y ] + D[ a ][ x ] +
-///     D[
-///     b ][ y ] \text{, with } a = \pi[ i ] \text{, } b = \pi[ i + 1 ]
+///     D[ b ][ y ] \text{,} \cr
+///   & \qquad\quad \text{with } a = \pi[ i ] \text{, } b = \pi[ i + 1 ]
 ///     \text{, } x = \pi[ j ] \text{, } y = \pi[ ( j + 1 ) \bmod n ] \cr
 /// 5 & \qquad \textbf{if}\ c' \ge c\ \textbf{then return}\ \pi\quad
 ///     \triangleright\ \text{a local optimum} \cr
@@ -407,8 +407,9 @@ starAlignment( const std::vector< std::string > & P );
 ///     \textbf{nil} \cr
 /// 3 & \quad \textbf{repeat}\ n\ \text{times} \cr
 /// 4 & \qquad u \gets \text{the node not colored of most distinct colors}
-///     \ \text{among its neighbors, then of most neighbors colored, then}
-///     \ \text{the first} \cr
+///     \ \text{among its neighbors,} \cr
+///   & \qquad\quad \text{then of most neighbors colored, then the first}
+///     \cr
 /// 5 & \qquad c[ u ] \gets \text{the least color not on a neighbor of } u \cr
 /// 6 & \quad \textbf{return}\ c
 /// \end{array}}

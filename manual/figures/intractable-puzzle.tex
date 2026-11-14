@@ -1,0 +1,27 @@
+% Source for the figure of the fifteen puzzle (sec. 20.11): a configuration
+% of the 3 x 3 puzzle, the move of the tile 5, and the goal, with the moves g
+% and the bound h. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \cells{a0}{0,0}{1/cell,2/cell,3/cell}
+  \cells{a1}{0,-7mm}{4/cell,/free,6/cell}
+  \cells{a2}{0,-14mm}{7/cell,5/touched,8/cell}
+  \node[var] at (7mm,-22mm) {$g = 0$, $h = 2$};
+  \cells{b0}{34mm,0}{1/cell,2/cell,3/cell}
+  \cells{b1}{34mm,-7mm}{4/cell,5/touched,6/cell}
+  \cells{b2}{34mm,-14mm}{7/cell,/free,8/touched}
+  \node[var] at (41mm,-22mm) {$g = 1$, $h = 1$};
+  \cells{c0}{68mm,0}{1/cell,2/cell,3/cell}
+  \cells{c1}{68mm,-7mm}{4/cell,5/cell,6/cell}
+  \cells{c2}{68mm,-14mm}{7/cell,8/touched,/free}
+  \node[var] at (75mm,-22mm) {$g = 2$, $h = 0$};
+  \draw[ptr] (20mm,-7mm) -- (28mm,-7mm);
+  \draw[ptr] (54mm,-7mm) -- (62mm,-7mm);
+\end{tikzpicture}
+\end{document}

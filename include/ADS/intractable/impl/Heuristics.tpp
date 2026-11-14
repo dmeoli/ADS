@@ -121,6 +121,7 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
   const int n = int( pi.size() );
   T c = tourCost( D , pi );
   if( trace ) trace->push_back( c );
+//! [twoOpt]
   for( ; ; ) {
    T best = c;
    int bi = -1 , bj = -1;
@@ -141,6 +142,7 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
    c = best;
    if( trace ) trace->push_back( c );
    }
+//! [twoOpt]
   }();
  ADS_POST( detail::permutation( result , D.size() ) );
  return( result );
@@ -313,6 +315,7 @@ inline void Buckets::put( int k , int u )
  f_max[ k ] = std::max( f_max[ k ] , h );
  }
 
+//! [take]
 inline void Buckets::take( int k , int u )
 {
  const int h = f_h[ k ][ u ];
@@ -331,6 +334,7 @@ inline void Buckets::take( int k , int u )
     --f_max[ k ];
   }
  }
+//! [take]
 
 inline bool Buckets::consistent( void ) const
 {
