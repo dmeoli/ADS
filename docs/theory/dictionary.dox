@@ -14,10 +14,11 @@
  them (see \ref theory_dictionary_notation), the realizations and the costs of
  their operations (see \ref theory_dictionary_repr), and, for each family, the
  property on which its correctness rests and the argument behind its bound
- (from \ref theory_dictionary_hash to \ref theory_dictionary_tries). The
- pseudocode of each algorithm is instead on the page of its header, in the
- comment of its function, together with the section of the book, or the paper,
- that it follows.
+ (from \ref theory_dictionary_hash to \ref theory_dictionary_tries), with the
+ skip lists of chapter 4 of Morin and their exercises (see
+ \ref theory_dictionary_skiplists). The pseudocode of each algorithm is instead
+ on the page of its header, in the comment of its function, together with the
+ section of the book, or the paper, that it follows.
 
  \tableofcontents
 
@@ -96,6 +97,9 @@
  <tr><td><tt>SkipList</tt></td><td>\f$ O( \log n ) \f$ expected</td>
      <td>\f$ O( \log n ) \f$ expected</td><td>\f$ \Theta( n ) \f$
      expected</td><td>yes</td></tr>
+ <tr><td><tt>IndexedSkipList</tt></td><td>\f$ O( \log n ) \f$
+     expected, also by rank</td><td>\f$ O( \log n ) \f$ expected</td>
+     <td>\f$ \Theta( n ) \f$ expected</td><td>yes</td></tr>
  <tr><td><tt>ChainedHashTable</tt></td><td>\f$ O( 1 + \alpha ) \f$
      expected</td><td>\f$ O( 1 + \alpha ) \f$ expected, amortized if it
      restructures itself</td><td>\f$ \Theta( n + m ) \f$</td><td>no</td></tr>
@@ -515,6 +519,87 @@
  Ottaviano and the dictionaries of Martínez-Prieto et al. compress the labels
  as well (by Re-Pair or by Hu-Tucker codes), which is not done here.
 
+ \section theory_dictionary_skiplists The skip lists of Open Data Structures
+
+ The skip lists of chapter 4 of Morin, Open Data Structures, are
+ `SkipList`, his `SkiplistSSet`, whose `lowerBound()` is the `find(x)` of
+ an SSet (the smallest key not smaller than \f$ x \f$), `IndexedSkipList`,
+ the skip list with access by rank of exercise 4.9, and, in the area of the
+ sequences, `SkipListSequence`, his `SkiplistList`; the space-efficient
+ SSet of exercise 4.13 is in the area of the sets
+ (`SpaceEfficientSortedSet.h`). Let each node be promoted from a level to
+ the next with probability \f$ p \f$, \f$ p = 1 / 2 \f$ in the code.
+
+ <em>Lemma 9 (the skip list with promotion probability \f$ p \f$, exercise
+ 4.7).</em> The expected height is \f$ \log_{1/p} n + O( 1 ) \f$, the
+ expected number of links is \f$ n / ( 1 - p ) \f$, and the expected length
+ of a search path is at most \f$ \frac1p \log_{1/p} n + O( 1 ) \f$, least for
+ \f$ p = 1 / e \f$.
+
+ Indeed, a node reaches the level \f$ j \f$ with probability \f$ p^j \f$, so
+ that the level \f$ j \f$ holds \f$ n p^j \f$ nodes in expectation, which is
+ below 1 above \f$ \log_{1/p} n \f$, and the links are
+ \f$ \sum_j n p^j = n / ( 1 - p ) \f$. Read backwards from its end, a search
+ path goes up at each node with probability \f$ p \f$ (the node has a
+ further level) and left otherwise, so that it makes \f$ 1 / p \f$ steps per
+ level in expectation over \f$ \log_{1/p} n \f$ levels, and the levels above
+ add \f$ O( 1 ) \f$. The factor \f$ \frac{1}{p \ln( 1 / p )} \f$ of
+ \f$ \ln n \f$ has derivative zero where \f$ \ln( 1 / p ) = 1 \f$; at
+ \f$ p = 1 / e \f$ the path is \f$ e \ln n \approx 1.88 \log_2 n \f$ steps,
+ against \f$ 2 \log_2 n \f$ for \f$ p = 1 / 2 \f$, a gain that the cost of
+ drawing a level with probability \f$ 1 / e \f$ instead of counting the bits
+ of a word does not repay.
+
+ An insertion or a removal changes in expectation a constant number of
+ links (exercise 4.6): the \f$ \ell \f$ links of the node and the
+ \f$ \ell \f$ links into it, \f$ \ell \f$ its levels, whose expectation is
+ \f$ 1 / ( 1 - p ) = 2 \f$. The search of Morin compares the key again with
+ the node that stopped it on the level above whenever the link it drops
+ to on the next level leads to that same node (exercise 4.8), i.e., at
+ every level where the search makes no step to the right. A search compares
+ the key once per step to the right and once per level to stop, about
+ \f$ \frac1p \log_{1/p} n \f$ times, and makes no step at a level with
+ probability \f$ p \f$, so that keeping the last node found not smaller than
+ the key, and dropping without a comparison when the next link leads to it,
+ saves \f$ p \log_{1/p} n \f$ comparisons in expectation, down to
+ \f$ ( \frac1p - p ) \log_{1/p} n + O( 1 ) \f$, i.e.,
+ \f$ 1.5 \log_2 n \f$ for \f$ p = 1 / 2 \f$ (the test of exercise 4.8
+ counts 16.2 comparisons per search, against 22.6 without the saving, on
+ 3000 keys).
+
+ A finger search (exercise 4.10, `fingerLookup()`) starts from the nodes
+ where the previous search went down: it climbs them from the bottom while
+ the node of the level is not before the key or its successor is, and goes
+ down from the first one that brackets the key; the levels climbed and the
+ steps of the descent are \f$ O( 1 + \log r ) \f$ in expectation for
+ \f$ r \f$ keys between the two, since the level from which a key at
+ distance \f$ r \f$ is reached is \f$ \log_{1/p} r + O( 1 ) \f$ in
+ expectation, and the descent from it is a search in a skip list of
+ \f$ O( r ) \f$ keys. The finger stays valid along the levels above the one
+ the search starts from, whose nodes still bracket the new key, and an
+ insertion or a removal brings it back to the head. The widths of
+ `IndexedSkipList` (exercise 4.9) are kept as in `SkiplistList`, and a
+ search by rank is the search by key on the sums of the widths.
+
+ Every substring of a text is a prefix of one of its suffixes, so that an
+ SSet of the suffixes, each a view of the text from its first character,
+ finds a substring \f$ q \f$ as the first suffix not smaller than \f$ q \f$,
+ when \f$ q \f$ is a prefix of it (exercise 4.14): each keystroke costs
+ \f$ O( |q| \log n ) \f$ expected time, the comparisons of a search being of
+ \f$ |q| \f$ characters at most, and the test of the exercise runs such a
+ search after each character typed. A suffix array (Manber and Myers) holds
+ the same suffixes in \f$ n \f$ words with no links, the SSet allowing
+ changes of the text.
+
+ A skip list whose links point only right on each level and down from each
+ node to the same node on the level below is a binary tree: the right link
+ and the down link are the two children of a pair (node, level), and the
+ search follows a path of it as in a binary search tree (exercise 4.15).
+ It uses its links better: a binary search tree of \f$ n \f$ nodes has
+ \f$ 2 n \f$ links of which \f$ n + 1 \f$ are nil, while a skip list has
+ \f$ 2 n \f$ links in expectation of which only those at the end of each
+ level, \f$ O( \log n ) \f$, are nil.
+
  \section theory_dictionary_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 7,
@@ -584,6 +669,13 @@
  \see M. A. Martínez-Prieto, N. R. Brisaboa, R. Cánovas, F. Claude,
       G. Navarro, Practical compressed string dictionaries, Information
       Systems 56, 73-108, 2016, doi:10.1016/j.is.2015.08.008
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, chapter 4, doi:10.15215/aupress/9781927356388.01
+ \see W. Pugh, A skip list cookbook, Technical report CS-TR-2286.1,
+      University of Maryland, 1990
+ \see U. Manber, G. Myers, Suffix arrays: a new method for on-line string
+      searches, SIAM Journal on Computing 22(5), 935-948, 1993,
+      doi:10.1137/0222058
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File dictionary.dox -------------------------*/

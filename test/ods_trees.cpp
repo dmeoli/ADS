@@ -1010,6 +1010,13 @@ ADS_TEST( "ods-ex9.1.two-four-tree" )
   CHECK( D[ 0 ] + 2 * D[ 1 ] + 3 * D[ 2 ] == T.size() );
   CHECK( ( 3 * ni >= nl - 1 ) && ( ni <= nl - 1 ) );
   }
+ // exercises 9.4 and 9.6: the keys in decreasing order give the height
+ // 2 log2 n - 3
+ for( int k = 6 ; k <= 12 ; ++k ) {
+  LeftLeaningRedBlackTree< int , int > D;
+  for( int i = 1 << k ; i > 0 ; --i ) D.insert( i , i );
+  CHECK( D.height() == 2 * k - 3 );
+  }
  // the 2-4 tree of the black height: all its leaves at that depth, and
  // the height of the red-black tree at most twice it
  CHECK( T.height() < 2 * T.blackHeight() );

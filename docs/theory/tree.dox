@@ -18,8 +18,10 @@
  visits and the problems on binary trees (see \ref theory_tree_visits and
  \ref theory_tree_problems), the search trees and the arguments behind their
  bounds (see \ref theory_tree_search), the algorithms by joins (see
- \ref theory_tree_join), the B-trees (see \ref theory_tree_btree) and the
- dynamic trees (see \ref theory_tree_dynamic). The
+ \ref theory_tree_join), the B-trees (see \ref theory_tree_btree), the
+ dynamic trees (see \ref theory_tree_dynamic), and the trees of chapters 6
+ to 9 of Morin, Open Data Structures, with their exercises (from
+ \ref theory_tree_morin to \ref theory_tree_llrb). The
  pseudocode of each operation and of each algorithm is on the page of its
  header, in the comment of its function, together with the section of the
  book, or the paper, that it follows.
@@ -243,6 +245,30 @@
      root</td><td>\f$ n - 1 \f$ in the worst case</td>
      <td>\f$ O( \log n ) \f$ amortized</td><td>\f$ O( \log n ) \f$
      amortized</td></tr>
+ <tr><td><tt>HashedTreap</tt>, <tt>FingerTreap</tt></td><td>a heap of
+     hashed or random priorities</td><td>\f$ O( \log n ) \f$
+     expected</td><td>\f$ O( \log n ) \f$ expected, a search from a
+     finger \f$ O( 1 + \log r ) \f$</td><td>fewer than 2
+     expected</td></tr>
+ <tr><td><tt>RandomizedSearchTree</tt></td><td>the sizes, random
+     choices</td><td>\f$ O( \log n ) \f$ expected</td>
+     <td>\f$ O( \log n ) \f$ expected</td><td>none, splits and
+     joins</td></tr>
+ <tr><td><tt>ScapegoatTree</tt></td><td>none (or the sizes)</td>
+     <td>\f$ \le \log_b q \f$, \f$ 1 < b < 2 \f$</td>
+     <td>\f$ O( \log n ) \f$, the updates amortized</td><td>none,
+     rebuilds</td></tr>
+ <tr><td><tt>PartialRebuildingTree</tt></td><td>the sizes (and
+     timers)</td><td>\f$ O( \log n ) \f$ (expected for the dynamite
+     tree)</td><td>\f$ O( \log n ) \f$ amortized or
+     expected</td><td>none, rebuilds</td></tr>
+ <tr><td><tt>LeftLeaningRedBlackTree</tt></td><td>colors, left-leaning
+     (a 2-4 tree)</td><td>\f$ \le 2 \log_2( n + 1 ) \f$</td>
+     <td>\f$ O( \log n ) \f$</td><td>\f$ O( 1 ) \f$
+     amortized</td></tr>
+ <tr><td><tt>MeasuredSearchTree</tt></td><td>none; size, depth, height
+     kept</td><td>\f$ n - 1 \f$ in the worst case</td>
+     <td>\f$ O( h ) \f$</td><td>none</td></tr>
  </table>
 
  A Red-Black tree colors its nodes red or black, with (V1) the root black,
@@ -611,6 +637,341 @@
  costs of the operations are then \f$ O( d ) \f$ for a depth \f$ d \f$
  below the bound and \f$ O( \log n ) \f$ amortized after it.
 
+ \section theory_tree_morin The trees of Open Data Structures
+
+ The binary trees, the random binary search trees, the scapegoat trees and
+ the red-black trees of chapters 6 to 9 of Morin, Open Data Structures, are
+ in the area with every exercise of those chapters that asks for code:
+ the traversals and the measures of chapter 6 in `BinaryTreeAlgorithms.h`
+ and `MeasuredSearchTree.h`, the treaps of chapter 7 in `Treap.h`,
+ `HashedTreap.h` and `FingerTreap.h`, with `RandomizedSearchTree.h` and,
+ in the area of the sequences, `TreapList.h`, the trees of chapter 8 in
+ `ScapegoatTree.h` and `PartialRebuildingTree.h` (see
+ \ref theory_tree_partial), and the tree of chapter 9 in
+ `LeftLeaningRedBlackTree.h` (see \ref theory_tree_llrb). The exercises that
+ ask for a proof or an answer are answered here, in the order of the book;
+ those that ask to illustrate an operation on a figure of the book are not
+ reproduced, the operations being tested on random sequences instead.
+
+ <em>The binary trees (chapter 6).</em> A tree of \f$ n \ge 1 \f$ nodes has
+ \f$ n - 1 \f$ edges, one from each node but the root to its parent
+ (exercise 6.1), and \f$ n + 1 \f$ external nodes, since each of the
+ \f$ n \f$ nodes has two child places and \f$ n - 1 \f$ of them hold nodes
+ (exercise 6.2); if a tree has a leaf and its root has two children, each
+ subtree of the root holds a leaf, hence there are two (exercise 6.3). The
+ functions `nextPreorder()`, `nextInorder()` and `nextPostorder()` find the
+ next node by the links to the parents (exercise 6.8): over a whole visit
+ each edge is walked down once and up once, so that \f$ n \f$ calls cost
+ \f$ O( n ) \f$ although one call may cost \f$ \Theta( h ) \f$; `subtreeSize()`
+ and `subtreeHeight()` walk a subtree in the same way, entering each node
+ from its parent, from its left child and from its right child, and
+ knowing which one from the node they leave (exercises 6.4 and 6.5). The
+ test of the balance of the sizes (exercise 6.6) returns the size of each
+ subtree from the postvisit, so that each node is examined once, where a
+ test that calls `size()` at each node costs \f$ \Theta( n h ) \f$.
+
+ <em>Lemma 9 (the three numbers, exercises 6.7 and 6.9).</em> Let
+ \f$ \mathrm{pre}( u ) \f$, \f$ \mathrm{in}( u ) \f$ and
+ \f$ \mathrm{post}( u ) \f$ be the numbers of \f$ u \f$ in the three visits,
+ \f$ d( u ) \f$ its depth and \f$ n_u \f$ the size of its subtree. Then
+ \f$ u \f$ is an ancestor of \f$ w \f$ if and only if
+ \f$ \mathrm{pre}( u ) \le \mathrm{pre}( w ) \f$ and
+ \f$ \mathrm{post}( w ) \le \mathrm{post}( u ) \f$, and
+ \f[
+   \mathrm{post}( u ) - \mathrm{pre}( u ) = n_u - 1 - d( u ) ; \tag{9}
+ \f]
+ the three numbers of a node do not determine \f$ n_u \f$ nor \f$ d( u ) \f$.
+
+ Indeed, the previsit lists the subtree of \f$ u \f$ as an interval that
+ starts at \f$ u \f$, and the postvisit as an interval that ends at
+ \f$ u \f$, which gives the test of the ancestors. Let \f$ L \f$ be the
+ nodes that precede \f$ u \f$ in both visits, those of the subtrees hanging
+ to the left of the path to \f$ u \f$: the previsit puts before \f$ u \f$ the
+ \f$ d( u ) \f$ ancestors and \f$ L \f$, the postvisit puts \f$ L \f$ and the
+ \f$ n_u - 1 \f$ descendants, whence (9). The tree of the five nodes 0 to 4
+ along a path of right children and the tree whose root 0 has the leaf 1
+ on the left and 2 on the right, 2 with a right leaf 3, give the node 2 the
+ numbers \f$ ( 2 , 2 , 2 ) \f$ in both, with \f$ n_u = 3 \f$ and
+ \f$ d( u ) = 2 \f$ in the first, 2 and 1 in the second (the test of
+ exercise 6.7 builds the two); hence the size and the depth need a
+ number more, e.g., the size kept in the node. The previsit and the
+ invisit together determine the tree (exercise 6.10, by
+ `fromPreorderInorder()`, Lemma 1): the first node of the previsit is the
+ root and splits the invisit into the two subtrees, recursively.
+
+ The shape of a tree of \f$ n \ge 1 \f$ nodes fits in \f$ 2 ( n - 1 ) \f$ bits
+ (exercise 6.11): `shapeCode()` writes, in the previsit, whether each node
+ has a left and a right child, and drops the two bits of the last node,
+ which is a leaf; `fromShapeCode()` reads them back by a stack of the nodes
+ whose right child is due. There are \f$ C_n = \binom{2n}{n} / ( n + 1 ) \f$
+ shapes, the Catalan numbers, and \f$ \log_2 C_n = 2 n - \frac32 \log_2 n
+ + O( 1 ) \f$, so that the code exceeds the least one by
+ \f$ O( \log n ) \f$ bits.
+
+ The keys \f$ 1 , \ldots , n \f$ make a binary search tree of height
+ \f$ n - 1 \f$ when every key inserted after the first is the smallest or
+ the largest of those left, i.e., when the first key is \f$ 1 \f$ or
+ \f$ n \f$ and so on recursively: \f$ 2^{n-1} \f$ of the \f$ n! \f$ orders
+ (exercise 6.15, counted for \f$ n \le 7 \f$ by the test of exercise
+ 6.19). An `add(x)` followed by `remove(x)` gives the tree back, since the
+ node of \f$ x \f$ is then a leaf, which the removal unlinks (exercise
+ 6.16). A removal never raises a node: the splice of a node with one child
+ lifts that subtree by one level and leaves the rest where it was, so that
+ the heights decrease or stay (exercise 6.17); an insertion adds one leaf,
+ which raises the heights of its ancestors by 1 at most and that of the
+ tree by 1 at most (exercise 6.18). The getLE of exercise 6.14 goes down
+ the path of \f$ x \f$ and visits whole every left subtree that hangs from a
+ node not larger than \f$ x \f$, \f$ O( n' + h ) \f$; and `MeasuredSearchTree`
+ keeps the size, the depth and the height of each node (exercise 6.19),
+ removing always a leaf so that no depth changes (see its header).
+
+ <em>The random binary search trees (chapter 7).</em> Let \f$ f( h ) \f$ be
+ the number of orders of insertion of \f$ 2^{h+1} - 1 \f$ keys that build the
+ complete tree of height \f$ h \f$: the middle key comes first, and the two
+ halves, \f$ 2^h - 1 \f$ keys each, interleave in any of
+ \f$ \binom{2^{h+1} - 2}{2^h - 1} \f$ ways, each in one of its
+ \f$ f( h - 1 ) \f$ orders, so that
+ \f[
+   f( h ) = \binom{2^{h+1} - 2}{2^h - 1} f( h - 1 )^2 , \quad f( 0 ) = 1 ,
+   \tag{10}
+ \f]
+ \f$ f( 1 ) = 2 \f$, \f$ f( 2 ) = 20 \cdot 4 = 80 \f$ and
+ \f$ f( 3 ) = 3432 \cdot 6400 = 21964800 \f$ (exercise 7.3, checked by the
+ test, which counts the 80 orders of 7 keys). `permute()` [see
+ `Rearrangements.h`] is the uniform shuffle of exercise 7.4. An insertion
+ into a treap makes \f$ O( 1 ) \f$ rotations in expectation (exercise 7.5):
+ each rotation that lifts the new node adds a node to the right spine of
+ its left subtree or to the left spine of its right one, and the node
+ \f$ y < x \f$ lies on the right spine of the left subtree of \f$ x \f$
+ exactly when \f$ x \f$ and \f$ y \f$ have the larger priorities of the keys
+ from \f$ y \f$ to \f$ x \f$ and \f$ y \f$ the second one, probability
+ \f$ \frac{1}{k ( k + 1 )} \f$ for \f$ k \f$ keys between them (the two parts
+ of Lemma 7.2 of Morin, on the treap as a random tree); summed over
+ \f$ k \f$, each spine has less than one node in expectation, and the
+ removal reverses the insertion.
+
+ A rotation at \f$ u \f$ changes the subtrees of the two nodes it turns, and
+ their sizes and heights follow from those of their children in
+ \f$ O( 1 ) \f$, the lower one first (exercise 7.7); the depths do not: a
+ rotation moves a whole subtree one level up or down, and all its depths
+ change. The treap of sorted keys is built in \f$ O( n ) \f$ by the stack of
+ the right spine (exercise 7.8, `Treap::fromSorted()`): each key is pushed
+ once and popped once, and the priorities, drawn in the order of the keys,
+ are those that the insertions in that order would draw, so that the
+ tree is the same. The finger search of exercise 7.9 and the treap whose
+ priorities are hashes of the addresses (exercise 7.6) are discussed in
+ their headers, `FingerTreap.h` and `HashedTreap.h`; the access by rank of
+ exercise 7.10 is `select()`, the list of exercise 7.11 `TreapList`, and the
+ split and the absorb of exercises 7.12 and 7.13 the `split()` and the
+ `join2()` of `Treap` (see \ref theory_tree_join). The randomized search
+ trees of Martínez and Roura (exercise 7.14) make at each node of an
+ insertion the choice that a treap makes by the priorities, the new key at
+ the root of a subtree of \f$ m \f$ keys with probability
+ \f$ 1 / ( m + 1 ) \f$, and in a removal the root of the join of two
+ subtrees of sizes \f$ a \f$ and \f$ b \f$ from the first with probability
+ \f$ a / ( a + b ) \f$; both are the probabilities that the largest of the
+ priorities fall where the treap would put it, so that the two trees have
+ the same distribution of shapes, the test checking it on the paths of 5
+ keys, of probability \f$ 2^4 / 5! \f$.
+
+ <em>The scapegoat trees (chapter 8).</em> Let \f$ 1 < b < 2 \f$ and keep
+ \f$ q / 2 \le n \le q \f$ and every depth at most \f$ \log_b q \f$.
+
+ <em>Lemma 10 (the scapegoat).</em> If a leaf \f$ u \f$ has the depth
+ \f$ d > \log_b q \f$, an ancestor \f$ w \f$ of \f$ u \f$ has
+ \f$ b^{d - d( w )} > n_w \f$, and the deepest one has a child \f$ c \f$ on
+ the path with \f$ n_c > n_w / b \f$; rebuilding its subtree perfectly
+ balanced leaves every node at depth at most \f$ d - 1 \f$.
+
+ Indeed, the root qualifies, since \f$ b^d > q \ge n \f$, and the leaf does
+ not, since \f$ b^0 = n_u \f$. If \f$ w \f$ is the deepest that qualifies
+ and its child \f$ c \f$ on the path had \f$ n_c \le n_w / b \f$, then
+ \f$ n_c < b^{d - d( w ) - 1} = b^{d - d( c )} \f$, i.e., \f$ c \f$ would
+ qualify too, against the choice of \f$ w \f$. The perfectly balanced
+ tree of \f$ n_w \f$ nodes has height
+ \f$ \lfloor \log_2 n_w \rfloor \le \log_b n_w < d - d( w ) \f$, i.e., at most
+ \f$ d - d( w ) - 1 \f$, and the parent of \f$ u \f$ was at depth \f$ d - 1 \le
+ \log_b ( q - 1 ) \f$ before the insertion.
+
+ The rule of Morin takes instead the first ancestor with a child too large
+ (`Scapegoats::WEIGHT`), and his argument that its subtree is not complete
+ and loses a level does not hold for a node of 4 whose child has 3 (see
+ `ScapegoatTree.h`); his rule kept the bound on every sequence that the
+ tests tried, and the class keeps it as an option checked by the
+ invariant. The cost is that of Lemma 8.3 of Morin with \f$ b \f$ for
+ \f$ 3 / 2 \f$: after a rebuild of \f$ w \f$ its two children differ by one
+ node at most, and before the next rebuild of \f$ w \f$ one of them must
+ hold more than \f$ n_w / b \f$ of them, i.e., at least
+ \f$ ( 1 / b - 1 / 2 ) n_w \f$ insertions and removals must pass through
+ \f$ w \f$; giving each node of the path of an operation
+ \f$ c = 1 / ( 1 / b - 1 / 2 ) = 2 b / ( 2 - b ) \f$ credits pays the
+ rebuild, and the removals pay the rebuild of the whole tree at
+ \f$ q > 2 n \f$ with one credit each. Hence the amortized cost of an
+ insertion or a removal is \f$ O( \frac{b}{2 - b} \log_b n ) \f$ and that of a
+ search \f$ O( \log_b n ) \f$ in the worst case (exercise 8.4): the searches
+ get faster as \f$ b \f$ grows to 2 and the updates slower, without bound,
+ which the test of exercise 8.4 sees in the work of the rebuilds.
+
+ The insertions of \f$ 1 , \ldots , n \f$ make rebuilds of
+ \f$ \Omega( n \log n ) \f$ nodes in all (exercise 8.3): every insertion adds
+ the largest key at the end of the right spine, and once the spine below a
+ node holds a fraction \f$ 1 / b \f$ more than its share the node is
+ rebuilt; a rebuild of \f$ s \f$ nodes leaves the right subtree with
+ \f$ s / 2 \f$, so that the next \f$ \Theta( s ) \f$ insertions trigger it
+ again, and summing over the levels of the right spine, each of
+ \f$ \log_b n \f$ levels rebuilds \f$ \Theta( n ) \f$ nodes over the whole
+ sequence (the test measures \f$ \Theta( n \log n ) \f$ with a ratio within
+ a factor 2 for \f$ n \f$ from \f$ 2^8 \f$ to \f$ 2^{12} \f$). The sizes
+ recomputed at each step cost \f$ \sum_i n_{u_i} \f$ along the climb, at
+ most \f$ b / ( b - 1 ) \cdot n_w \f$ by the growth of the sizes below the
+ scapegoat (exercise 8.5 reduces it to \f$ n_w \f$, counting only the other
+ child of each node), and the sizes stored in the nodes cost one addition
+ per level of every update instead (exercise 8.6); the rebuild by a list
+ (exercise 8.7) threads the subtree by its right links in symmetric order,
+ the right spine by a loop and the left subtrees by recursion, and builds
+ the tree of the first \f$ s \f$ nodes as the tree of the first
+ \f$ \lfloor ( s - 1 ) / 2 \rfloor \f$, the next node and the tree of the
+ rest, advancing along the list, \f$ O( s ) \f$ time with no buffer and a
+ recursion of \f$ O( \log s ) \f$ for the building.
+
+ \section theory_tree_partial Trees of partial rebuilding
+
+ The trees of exercises 8.8 to 8.10 of Morin (`PartialRebuildingTree.h`)
+ are binary search trees that keep the size of each subtree and, after an
+ insertion or a removal, rebuild perfectly balanced the subtree of the
+ highest node of the path that a rule selects. A rebuild of \f$ s \f$ nodes
+ costs \f$ O( s ) \f$ and leaves the two children of each of its nodes with
+ \f$ \lfloor ( s - 1 ) / 2 \rfloor \f$ and \f$ \lceil ( s - 1 ) / 2 \rceil \f$
+ nodes. In each case the rule must keep the children of every node within a
+ constant fraction \f$ \beta < 1 \f$ of its subtree, so that the height is
+ \f$ \log_{1/\beta} n \f$, and must let \f$ \Omega( s ) \f$ operations pass
+ through a node between two of its rebuilds, so that the rebuilds cost
+ \f$ O( 1 ) \f$ per operation and per node of its path.
+
+ <em>Lemma 11 (the drift of a balanced subtree).</em> Let a node be rebuilt
+ with \f$ s \f$ nodes, and let \f$ k \f$ operations pass through it after,
+ \f$ i \f$ insertions and \f$ r \f$ removals. Then each of its children holds
+ at most \f$ \frac34 \f$ of its subtree if \f$ k \le s / 3 \f$, and at most
+ \f$ \frac23 \f$ of it if \f$ k \le s / 4 \f$.
+
+ Indeed, a child holds at most \f$ s / 2 + i \f$ nodes and the subtree at
+ least \f$ s + i - r \f$; the ratio is at most \f$ \beta \f$ as long as
+ \f$ s / 2 + i \le \beta ( s + i - r ) \f$, which for \f$ \beta = \frac34 \f$
+ reads \f$ i + 3 r \le s \f$ and holds when \f$ 3 k \le s \f$, and for
+ \f$ \beta = \frac23 \f$ reads \f$ i + 4 r \le s \f$, which holds when
+ \f$ 4 k \le s \f$.
+
+ For `WeightRebuildTree` (exercise 8.8) the rule is the invariant itself,
+ every child at most \f$ \frac23 \f$ of its parent's subtree: the height is
+ at most \f$ \log_{3/2} n \f$, and by Lemma 11 at least \f$ s / 4 \f$
+ operations pass through a node between its rebuilds, hence
+ \f$ O( \log n ) \f$ amortized time; a removal can break the invariant only
+ at a child out of its path, which shrinks relatively, and the rule checks
+ both children of each node of the path. For `CountdownTree` (exercise
+ 8.9) the timer of a node rebuilt with \f$ s \f$ nodes is
+ \f$ \lfloor s / 3 \rfloor \f$: at most \f$ s / 3 \f$ operations pass through
+ it before its next rebuild, hence by Lemma 11 its children stay within
+ \f$ \frac34 \f$ of it and the height is at most \f$ \log_{4/3} n + O( 1 ) \f$
+ (the subtrees of fewer than 3 nodes, whose timer is 0, are rebuilt by the
+ next operation, at a constant cost); the rebuild costs \f$ O( s ) \f$, paid
+ by the \f$ s / 3 \f$ operations that ran its timer out, and the nodes
+ rebuilt with an ancestor start their timers again with the new sizes.
+ For `DynamiteTree` (exercise 8.10) a node of size \f$ s \f$ on the path
+ explodes with probability \f$ 1 / s \f$, at a cost \f$ s \f$, i.e.,
+ \f$ O( 1 ) \f$ expected per node and per operation; by Lemma 11, a node
+ rebuilt with \f$ s \f$ nodes goes past \f$ \frac34 \f$ only after
+ \f$ s / 3 \f$ operations, during which its size stays below \f$ 4 s / 3 \f$,
+ so that it survives them with probability at most
+ \f$ ( 1 - \frac{3}{4 s} )^{s / 3} \le e^{-1/4} \f$. Along a path from the
+ root, the sizes shrink by \f$ \frac43 \f$ at each node that is not past
+ \f$ \frac34 \f$, which happens at each node with probability at least
+ \f$ 1 - e^{-1/4} \f$; the expected depth is then \f$ O( \log n ) \f$, and an
+ operation costs \f$ O( \log n ) \f$ in expectation. This is a sketch: the
+ events of the nodes of a path are not independent, and the bound needs
+ them to be dominated by independent ones, which the explosions, drawn
+ afresh at each operation, give.
+
+ The order maintenance of exercise 8.11 is in the area of the sequences
+ (`OrderMaintenanceList.h`): its labels, which encode the paths, change
+ for a whole subtree at each rotation and are rewritten for free by the
+ rebuild of a scapegoat tree, the case where Morin remarks that the
+ partial rebuilding is the right choice.
+
+ \section theory_tree_llrb Left-leaning red-black trees
+
+ A <em>2-4 tree</em> has all its leaves at the same depth and every internal
+ node with 2 to 4 children; with \f$ n \f$ keys it has \f$ n + 1 \f$ leaves,
+ and its height \f$ h \f$ satisfies \f$ 2^h \le n + 1 \f$ (Lemma 9.1 of
+ Morin). `BTree` of minimum degree 2 [see `BTree.h`] is a 2-4 tree. The
+ `RedBlackTree` of Morin, `LeftLeaningRedBlackTree` here, stores it in a
+ binary tree: a node of degree \f$ k \f$ is a black node with
+ \f$ k - 2 \f$ red children, the red one on the left for \f$ k = 3 \f$, and
+ the black height is the height of the 2-4 tree (exercise 9.1 asks for this
+ correspondence on a figure; `twoFourDegrees()` counts the nodes of each
+ degree).
+
+ <em>Lemma 12 (the counts of a 2-4 tree, exercise 9.8).</em> A 2-4 tree with
+ \f$ n_\ell \f$ leaves has \f$ ( n_\ell - 1 ) / 3 \le n_i \le n_\ell - 1 \f$
+ internal nodes, and the red-black tree of it has
+ \f$ n_3 + 2 n_4 = n - n_i \f$ red nodes, \f$ n_k \f$ the internal nodes of
+ degree \f$ k \f$ and \f$ n = n_\ell - 1 \f$ the keys.
+
+ Indeed, a node of degree \f$ k \f$ holds \f$ k - 1 \f$ keys, so that
+ \f$ n = n_2 + 2 n_3 + 3 n_4 \f$, between \f$ n_i \f$ and \f$ 3 n_i \f$;
+ the black nodes are the \f$ n_i \f$ internal nodes and the others are red.
+ The bounds are reached by the trees of degree 2 only and of degree 4 only;
+ the test checks the identity and the bounds at each step of a random
+ sequence.
+
+ Red-black trees of height \f$ 2 \log_2 n - O( 1 ) \f$ exist (exercise
+ 9.4), and sequences of operations build them (exercise 9.6): the
+ insertions of \f$ n , n - 1 , \ldots , 1 \f$ in decreasing order build in
+ `LeftLeaningRedBlackTree` a tree of height exactly \f$ 2 \log_2 n - 3 \f$
+ for \f$ n = 2^k \f$, as measured for \f$ k = 6 \f$ to 16 and checked by
+ the test for \f$ 6 \le k \le 12 \f$, which is \f$ 2 \log_2 n - O( 1 ) \f$
+ for arbitrarily large \f$ n \f$. The other sequences measured, the
+ insertions in increasing order and random insertions and removals, stayed
+ no higher for \f$ n \ge 256 \f$.
+ `pushBlack()` splits a
+ 2-4 node of degree 5 into two of degree 2 and 3 and sends a key to the
+ parent, `pullBlack()` merges two 2-4 nodes and the key between them into
+ one (exercise 9.5). The removal sets the parent of the spliced child since
+ the child may be the sentinel nil, whose parent the splice does not write
+ and `removeFixup()` reads (exercise 9.7); here a node of no key stands for
+ the nil for the time of `removeFixup()`.
+
+ A binary search tree of height at most \f$ 2 \log_2 n - 2 \f$ cannot always
+ be colored (exercise 9.9): let the root have a leaf on the left and a
+ complete tree of height \f$ H \ge 4 \f$ on the right, so that
+ \f$ n = 2^{H+1} + 1 \f$ and the height \f$ H + 1 \le 2 \log_2 n - 2 \f$; the
+ path through the leaf has at most 2 black nodes, while a path of
+ \f$ H + 2 \f$ nodes with no two red ones in a row has at least
+ \f$ ( H + 2 ) / 2 \ge 3 \f$, so that no coloring gives the same black height
+ to both. When a coloring exists the left-leaning property may still fail:
+ a node with a right child and no left one needs that child red, since its
+ nil on the left has no black node below it, and a red right child under a
+ black left nil breaks the property; the complete tree of 7 nodes with one
+ more key below its largest leaf is colorable, of height
+ \f$ 3 \le 2 \log_2 8 - 2 \f$, and not left-leaning.
+ Two red-black trees whose keys are
+ separated join in \f$ O( |h_1 - h_2| + \log n ) \f$ (exercises 9.10 and
+ 9.11, `absorb()`): the smallest key of the second becomes a red node over
+ the second tree and the subtree of the right spine of the first with the
+ same black height, which keeps the black heights, and `addFixup()`
+ restores the other two properties going up.
+
+ For the AVL trees (exercises 9.12 and 9.13, `AVLTree.h`), an insertion
+ rebalances once at most: the lowest unbalanced node gets back, by one or two
+ rotations, the height it had before the insertion, so that nothing above
+ changes. A removal from the tree of Fibonacci of height \f$ h \f$ (the
+ smallest AVL tree of that height, see (2)) of the deepest leaf on the side
+ of the shorter subtrees makes every node of its path unbalanced in turn,
+ \f$ \Theta( \log n ) \f$ rebalancings. The AVL tree, shallower
+ (\f$ 1.44 \log_2 n \f$ against \f$ 2 \log_2 n \f$), searches faster, the
+ red-black tree changes less; the benchmark `bench/ssets.cpp` measures the
+ searches, the insertions and the removals of all the sorted sets of the
+ book on random, sorted and reverse-sorted keys (exercise 9.14).
+
  \section theory_tree_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 5 and 6,
@@ -695,6 +1056,27 @@
  \see R. E. Tarjan, R. F. Werneck, Dynamic trees in practice, ACM Journal
       of Experimental Algorithmics 14, article 4.5, 2009,
       doi:10.1145/1498698.1594231
+ \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+      2013, chapters 6 to 9, doi:10.15215/aupress/9781927356388.01
+ \see C. Martínez, S. Roura, Randomized binary search trees, Journal of the
+      ACM 45(2), 288-323, 1998, doi:10.1145/274787.274812
+ \see M. Pătraşcu, M. Thorup, The power of simple tabulation hashing,
+      Journal of the ACM 59(3), 14:1-14:50, 2012,
+      doi:10.1145/2220357.2220361
+ \see I. Galperin, R. L. Rivest, Scapegoat trees, Proceedings of the 4th
+      ACM-SIAM Symposium on Discrete Algorithms (SODA), 165-174, 1993
+ \see A. Andersson, Improving partial rebuilding by using simple balance
+      criteria, Algorithms and Data Structures (WADS 1989), Lecture Notes
+      in Computer Science 382, 393-402, 1989, doi:10.1007/3-540-51542-9_33
+ \see A. Andersson, General balanced trees, Journal of Algorithms 30(1),
+      1-18, 1999, doi:10.1006/jagm.1998.0967
+ \see M. H. Overmars, The Design of Dynamic Data Structures, Lecture Notes
+      in Computer Science 156, Springer, 1983, doi:10.1007/BFb0014927
+ \see A. Andersson, Balanced search trees made simple, Algorithms and Data
+      Structures (WADS 1993), Lecture Notes in Computer Science 709, 60-71,
+      1993, doi:10.1007/3-540-57155-8_236
+ \see R. Sedgewick, Left-leaning red-black trees, Department of Computer
+      Science, Princeton University, 2008
 */
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File tree.dox ----------------------------*/
