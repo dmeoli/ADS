@@ -1,0 +1,20 @@
+% Source for the figure of SparseTable (sec. 6.9): the query of the range
+% [2, 8], of length 7, by the two entries of length 2^2 that start at 2 and
+% end at 8, whose ranges overlap. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \cells{a}{0,0}{6/cell,4/cell,7/touched,5/touched,9/touched,3/touched,8/touched,2/touched,6/touched,1/cell}
+  \indices{a}{10}
+  \draw[decorate,decoration={brace,amplitude=3pt}] (14mm-3mm,4.5mm) -- (35mm+3mm,4.5mm)
+    node[midway,above=2mm,var] {$M[ 2 ][ 2 ]$, the minimum 3 at 5};
+  \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (35mm-3mm,-8.5mm) -- (56mm+3mm,-8.5mm)
+    node[midway,below=2mm,var] {$M[ 2 ][ 5 ]$, the minimum 2 at 7};
+\end{tikzpicture}
+\end{document}

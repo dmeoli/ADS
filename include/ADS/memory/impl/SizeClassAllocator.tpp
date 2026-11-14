@@ -18,6 +18,7 @@
 
 namespace ADS {
 
+//! [sizeClass]
 inline unsigned SizeClassAllocator::sizeClass( std::size_t n )
 {
  if( n <= 8 )
@@ -30,6 +31,7 @@ inline unsigned SizeClassAllocator::sizeClass( std::size_t n )
                               >> ( e - 2 ) );
  return( 9 + ( e - 7 ) * 4 + j - 1 );
  }
+//! [sizeClass]
 
 inline std::size_t SizeClassAllocator::classSize( unsigned c )
 {

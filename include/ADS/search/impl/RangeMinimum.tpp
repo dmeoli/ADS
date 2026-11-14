@@ -50,6 +50,7 @@ inline std::size_t rmqLog2( std::size_t x )
 
 }  // end( namespace detail )
 
+//! [cartesianTree]
 template< class T , class Compare >
 std::vector< std::size_t > cartesianTree( const std::vector< T > & A ,
                                           Compare less )
@@ -69,6 +70,7 @@ std::vector< std::size_t > cartesianTree( const std::vector< T > & A ,
  ADS_AUDIT( detail::heapOrdered( A , P , less ) );
  return( P );
  }
+//! [cartesianTree]
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- SparseTable ---------------------------------*/

@@ -1,0 +1,30 @@
+% Source for the figure of SizeClassAllocator (sec. 5.6): the page of the
+% class 2 (blocks of 32 bytes) after its header of 16 bytes; allocate(20)
+% pops the block given back, allocate(25) cuts the next one of the page.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+% \page{name}{y}{list}: the header, then the blocks of the list
+\newcommand{\page}[3]{%
+  \node[cell,minimum width=5mm,font=\scriptsize\ttfamily] (#1-h) at (3.5mm,#2)
+    {};
+  \cells{#1}{9.5mm,#2}{#3}
+  \node[index] at (3.5mm,#2-5.5mm) {hdr};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5mm,0) {before};
+  \page{a}{0}{x/cell,-/free,y/cell,/free,/free,/free}
+  \node[var,anchor=west] at (55mm,0) {$F_2 = \{ 1 \}$, $\mathit{next}_2 = 3$};
+  \node[var,anchor=east] at (-5mm,-13mm) {\texttt{allocate(20)}};
+  \page{b}{-13mm}{x/cell,u/touched,y/cell,/free,/free,/free}
+  \node[var,anchor=west] at (55mm,-13mm) {$F_2 = \emptyset$, $\mathit{next}_2 = 3$};
+  \node[var,anchor=east] at (-5mm,-26mm) {\texttt{allocate(25)}};
+  \page{c}{-26mm}{x/cell,u/cell,y/cell,w/touched,/free,/free}
+  \node[var,anchor=west] at (55mm,-26mm) {$F_2 = \emptyset$, $\mathit{next}_2 = 4$};
+  \indices{c}{6}
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,23 @@
+% Source for the figure of WordRangeMinimum (sec. 6.9): a block of 8 items
+% (64 in the structure), and the mask of the place 6, the stack of the
+% minima from the right of A[0 .. 6]; the leftmost minimum of A[3 .. 6] is
+% the lowest bit of the mask at or above 3. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5mm,0) {$A$};
+  \cells{a}{0,0}{4/cell,7/cell,2/cell,6/cell,5/cell,9/cell,3/touched,8/cell}
+  \indices{a}{8}
+  \node[var,anchor=east] at (-5mm,-14mm) {$\mathit{mask}[ 6 ]$};
+  \cells{m}{0,-14mm}{0/cell,0/cell,1/touched,0/cell,0/cell,0/cell,1/touched,0/free}
+  \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (21mm-3mm,-18.5mm) -- (42mm+3mm,-18.5mm)
+    node[midway,below=2mm,var] {the bits at or above $i = 3$: the lowest is 6};
+\end{tikzpicture}
+\end{document}

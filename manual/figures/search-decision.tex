@@ -1,0 +1,27 @@
+% Source for the figure of the decision tree of the binary search (sec.
+% 6.2): the vector of 7 items and the tree whose root is its middle item,
+% each node labelled by the place it compares. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{t/.style={circle,draw,minimum size=7mm,font=\small\ttfamily},
+  e/.style={thick}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \cells{a}{0,0}{2/cell,3/cell,5/cell,7/touched,11/cell,13/cell,17/cell}
+  \indices{a}{7}
+  \node[t,fill=adsTouched] (r) at (85mm,0) {7};
+  \node[t] (l) at (70mm,-12mm) {3}; \node[t] (h) at (100mm,-12mm) {13};
+  \node[t] (ll) at (62mm,-24mm) {2}; \node[t] (lh) at (78mm,-24mm) {5};
+  \node[t] (hl) at (92mm,-24mm) {11}; \node[t] (hh) at (108mm,-24mm) {17};
+  \draw[e] (r) -- (l); \draw[e] (r) -- (h); \draw[e] (l) -- (ll);
+  \draw[e] (l) -- (lh); \draw[e] (h) -- (hl); \draw[e] (h) -- (hh);
+  \node[index,right=1.5mm of r] {place 3};
+  \node[index,left=1.5mm of l] {place 1};
+  \node[index,right=1.5mm of h] {place 5};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,41 @@
+% Source for the figure of ConcurrentPoolResource (sec. 5.8): the batch of
+% the thread B for the class c, slots of the heap of A, and the stack of
+% the returns of A for c, before and after send(), which links the batch
+% whole on the stack by one compare-and-swap. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,node distance=6mm]
+  % before
+  \node[var,anchor=east] at (-4mm,6mm) {before};
+  \node[var,anchor=west] at (0,0) (rA) {$A.\mathit{returns}_c$};
+  \node[node,right=of rA] (a9) {s9};
+  \node[node,right=of a9] (a4) {s4};
+  \node[var,inner sep=1.5pt,right=4mm of a4] (n1) {nil};
+  \draw[ptr] (rA) -- (a9); \draw[ptr] (a9) -- (a4); \draw[ptr] (a4) -- (n1);
+  \node[var,anchor=west] at (0,-10mm) (bB) {$B.\mathit{out}_c$};
+  \node[node,right=of bB] (b7) {s7};
+  \node[node,right=of b7] (b2) {s2};
+  \node[var,inner sep=1.5pt,right=4mm of b2] (n2) {nil};
+  \draw[ptr] (bB) -- (b7); \draw[ptr] (b7) -- (b2); \draw[ptr] (b2) -- (n2);
+  \node[index,below=1.2mm of b7] {head};
+  \node[index,below=1.2mm of b2] {tail};
+  \node[var,anchor=west] at (68mm,-10mm) {$\mathit{to} = A$, $n = 2$};
+  % after
+  \node[var,anchor=east] at (-4mm,-24mm) {after};
+  \node[var,anchor=west] at (0,-30mm) (rA2) {$A.\mathit{returns}_c$};
+  \node[node,fill=adsTouched,right=of rA2] (c7) {s7};
+  \node[node,fill=adsTouched,right=of c7] (c2) {s2};
+  \node[node,right=of c2] (c9) {s9};
+  \node[node,right=of c9] (c4) {s4};
+  \node[var,inner sep=1.5pt,right=4mm of c4] (n3) {nil};
+  \draw[ptr] (rA2) -- (c7); \draw[ptr] (c7) -- (c2); \draw[ptr] (c2) -- (c9);
+  \draw[ptr] (c9) -- (c4); \draw[ptr] (c4) -- (n3);
+  \node[var,anchor=west] at (0,-40mm) {$B.\mathit{out}_c$ empty, $n = 0$};
+\end{tikzpicture}
+\end{document}

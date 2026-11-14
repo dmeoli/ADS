@@ -90,6 +90,7 @@ WordRangeMinimum< T , Compare >::WordRangeMinimum( std::vector< T > A ,
   }
  }
 
+//! [query]
 template< class T , class Compare >
 inline std::size_t WordRangeMinimum< T , Compare >::query(
                                        std::size_t i , std::size_t j ) const
@@ -121,6 +122,7 @@ inline std::size_t WordRangeMinimum< T , Compare >::query(
   return( true ); }() );
  return( r );
  }
+//! [query]
 
 template< class T , class Compare >
 const T & WordRangeMinimum< T , Compare >::operator[]( std::size_t i ) const

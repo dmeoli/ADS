@@ -1,0 +1,35 @@
+% Source for the figure of RangeMinimum (sec. 6.9): an array of 7 items, its
+% Cartesian tree (each node labelled by its item, its place below), and the
+% nodes and the depths of the Euler tour of the tree; the query of the range
+% [2, 4] is the node of least depth between the first visits of 2 and 4.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\usetikzlibrary{decorations.pathreplacing}
+\tikzset{t/.style={circle,draw,minimum size=6.5mm,font=\small\ttfamily},
+  e/.style={thick}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5mm,0) {$A$};
+  \cells{a}{0,0}{5/cell,2/cell,8/touched,1/touched,9/touched,3/cell,6/cell}
+  \indices{a}{7}
+  \node[t,fill=adsTouched] (n3) at (90mm,4mm) {1};
+  \node[t] (n1) at (76mm,-8mm) {2}; \node[t] (n5) at (104mm,-8mm) {3};
+  \node[t] (n0) at (69mm,-20mm) {5}; \node[t] (n2) at (83mm,-20mm) {8};
+  \node[t] (n4) at (97mm,-20mm) {9}; \node[t] (n6) at (111mm,-20mm) {6};
+  \draw[e] (n3) -- (n1); \draw[e] (n3) -- (n5); \draw[e] (n1) -- (n0);
+  \draw[e] (n1) -- (n2); \draw[e] (n5) -- (n4); \draw[e] (n5) -- (n6);
+  \foreach \p in {0,2,4,6} \node[index,below=0.8mm of n\p] {\p};
+  \node[index,left=1mm of n1] {1}; \node[index,right=1mm of n5] {5};
+  \node[index,right=1mm of n3] {3};
+  \node[var,anchor=east] at (-5mm,-34mm) {$E$};
+  \cells{e}{0,-34mm}{3/cell,1/cell,0/cell,1/cell,2/touched,1/touched,3/touched,5/touched,4/touched,5/cell,6/cell,5/cell,3/cell}
+  \node[var,anchor=east] at (-5mm,-41mm) {$D$};
+  \cells{d}{0,-41mm}{0/cell,1/cell,2/cell,1/cell,2/touched,1/touched,0/touched,1/touched,2/touched,1/cell,2/cell,1/cell,0/cell}
+  \indices{d}{13}
+\end{tikzpicture}
+\end{document}

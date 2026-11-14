@@ -1,0 +1,39 @@
+% Source for the figure of MFSet (sec. 11.3): two trees of the forest of the
+% parents with their ranks, before and after merge(0, 4) with the union by
+% rank, which hangs the root of lower rank under the other; below, the
+% vector of the parents after the merge. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\tikzset{t/.style={circle,draw,minimum size=6mm,font=\small\ttfamily},
+  up/.style={->,thick,shorten >=0.5pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before
+  \node[var] at (12mm,10mm) {before};
+  \node[t] (b2) at (0,0) {2};  \node[t] (b0) at (0,-12mm) {0};
+  \node[t] (b5) at (25mm,0) {5};
+  \node[t] (b3) at (18mm,-12mm) {3}; \node[t] (b6) at (32mm,-12mm) {6};
+  \node[t] (b4) at (18mm,-24mm) {4};
+  \draw[up] (b0) -- (b2); \draw[up] (b3) -- (b5); \draw[up] (b6) -- (b5);
+  \draw[up] (b4) -- (b3);
+  \node[index,left=1.5mm of b2] {rank 1};
+  \node[index,right=1.5mm of b5] {rank 2};
+  % after
+  \node[var] at (78mm,10mm) {after \texttt{merge(0, 4)}};
+  \node[t] (a5) at (78mm,0) {5};
+  \node[t] (a3) at (64mm,-12mm) {3}; \node[t] (a6) at (78mm,-12mm) {6};
+  \node[t,fill=adsTouched] (a2) at (92mm,-12mm) {2};
+  \node[t] (a4) at (64mm,-24mm) {4}; \node[t] (a0) at (92mm,-24mm) {0};
+  \draw[up] (a3) -- (a5); \draw[up] (a6) -- (a5); \draw[up] (a2) -- (a5);
+  \draw[up] (a4) -- (a3); \draw[up] (a0) -- (a2);
+  \node[index,right=1.5mm of a5] {rank 2};
+  % the vector of the parents after
+  \node[var,anchor=east] at (36mm,-38mm) {$p$};
+  \cells{p}{42mm,-38mm}{2/cell,1/cell,5/touched,5/cell,3/cell,5/cell,5/cell}
+  \indices{p}{7}
+\end{tikzpicture}
+\end{document}

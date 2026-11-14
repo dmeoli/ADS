@@ -74,6 +74,7 @@ BinaryTree< T > * decisionTree( const std::vector< T > & A )
  return( t );
  }
 
+//! [lowerBound]
 template< class T , class C >
 std::size_t lowerBound( const std::vector< T > & A , const T & v ,
                         std::size_t lo , std::size_t hi , C less )
@@ -95,6 +96,7 @@ std::size_t lowerBound( const std::vector< T > & A , const T & v ,
                     ( ( lo == lo0 ) || less( A[ lo - 1 ] , v ) ) ); } ) );
  return( lo );
  }
+//! [lowerBound]
 
 template< class T , class C >
 std::size_t lowerBound( const std::vector< T > & A , const T & v ,

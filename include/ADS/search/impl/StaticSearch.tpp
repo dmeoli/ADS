@@ -23,6 +23,7 @@ namespace ADS {
 /*------------------------- THE BRANCHLESS SEARCH --------------------------*/
 /*--------------------------------------------------------------------------*/
 
+//! [branchlessLowerBound]
 template< class T , class C >
 inline std::size_t branchlessLowerBound( const std::vector< T > & A ,
                                          const T & v , C less )
@@ -47,6 +48,7 @@ inline std::size_t branchlessLowerBound( const std::vector< T > & A ,
            ( ( r == 0 ) || less( A[ r - 1 ] , v ) ) );
  return( r );
  }
+//! [branchlessLowerBound]
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- SPlusTree --------------------------------*/
@@ -154,6 +156,7 @@ inline std::size_t ADS_SPT::count( const T * a , const T & v ,
  return( r );
  }
 
+//! [search]
 ADS_SPT_T
 template< bool Up >
 inline std::size_t ADS_SPT::search( const T & v ) const
@@ -173,6 +176,7 @@ inline std::size_t ADS_SPT::search( const T & v ) const
  return( std::min( f_n , k * B + count< Up >( a + f_off[ H - 1 ] + k * B ,
                                               v , m ) ) );
  }
+//! [search]
 
 ADS_SPT_T
 inline std::size_t ADS_SPT::lowerBound( const T & v ) const
