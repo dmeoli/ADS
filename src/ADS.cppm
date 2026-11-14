@@ -1590,7 +1590,10 @@ export namespace ADS {
 #endif
 
  // ADS/parallel/Mailbox.h
+ using ADS::CoalesceBy;
  using ADS::Mailbox;
+ using ADS::MailboxCoalescing;
+ using ADS::NoCoalescing;
  using ADS::ownerOf;
 
  // ADS/parallel/OpenMPExecutor.h

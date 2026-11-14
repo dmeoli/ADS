@@ -1639,7 +1639,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `parallel/Channels.h` | `ChannelPort`, `LockedChannels`, `InboxChannels`, `LaneChannels`, `MeshChannels`, `ChannelsOf` | [25](25-parallel.md#ch-25) |
 | `parallel/Executor.h` | `Sequential` | [25](25-parallel.md#ch-25) |
 | `parallel/FastFlowExecutor.h` | `FastFlowLock`, `FastFlowExecutor` | [25](25-parallel.md#ch-25) |
-| `parallel/Mailbox.h` | `Mailbox` | [25](25-parallel.md#ch-25) |
+| `parallel/Mailbox.h` | `Mailbox`, `NoCoalescing`, `CoalesceBy` | [25](25-parallel.md#ch-25) |
 | `parallel/OpenMPExecutor.h` | `OpenMPLock`, `OpenMPExecutor` | [25](25-parallel.md#ch-25) |
 | `parallel/SpeculativeFor.h` | `Reservation`, `SpeculativeCounts` | [25](25-parallel.md#ch-25) |
 | `parallel/TBBExecutor.h` | `TBBExecutor` | [25](25-parallel.md#ch-25) |

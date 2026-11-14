@@ -1794,6 +1794,9 @@ engineered_runtime  mailbox-termination  terminazione su alberi a caso
 engineered_runtime  mailbox-stop         arresto e messaggi rimasti, una volta
 engineered_runtime  mailbox-full         invii che non aspettano, code piene
 engineered_runtime  mailbox-rearm        una casella per più calcoli, barriere
+engineered_runtime  mailbox-coalesce     fusione dei messaggi di una chiave
+engineered_runtime  mailbox-coalesce-paths cammini minimi con fusioni, più lavoratori
+engineered_runtime  mailbox-audit        audit a un punto di quiete, stato corrotto
 engineered_runtime  stealing-frontier    ricerca best-first con i furti
 engineered_runtime  stealing-frontier-stop arresto, eccezioni e coppie rimaste
 engineered_runtime  stealing-frontier-bound potatura per bound minimo e drain

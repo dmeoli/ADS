@@ -19,7 +19,12 @@
  * of the workers and of the master of the farm; the stop of the mailbox by
  * a worker and by another thread racing with the sends, every message
  * handed once by a poll or by leftovers(), and the sends that never wait
- * on full queues.
+ * on full queues; the coalescing of the outboxes (the runs of a key closed
+ * by a refused merge, the map emptied by a push that takes part of a batch
+ * and kept by one that takes nothing, the merges after a stop) and the
+ * shortest paths by many workers with merges on every family, against
+ * Dijkstra's; the audit at a quiescent point by a Shadow and by a
+ * predicate of the consumer, which catch a corrupted state.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -33,6 +38,7 @@
 
 #include "ADSTest.h"
 
+#include "ADS/Modification.h"
 #include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/parallel/Channels.h"
 #include "ADS/parallel/Executor.h"
@@ -48,12 +54,16 @@
 #include <barrier>
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <mutex>
+#include <queue>
 #include <random>
 #include <set>
 #include <span>
 #include <stdexcept>
 #include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
@@ -1056,6 +1066,457 @@ ADS_TEST( "mailbox-rearm" )
  CHECK( mb.quiescent( 1 ) && mb.terminated() );
  CHECK( ( mb.sent( 0 ) == 2 ) && ( mb.sent( 1 ) == 1 ) &&
         ( mb.received( 0 ) == 1 ) && ( mb.received( 1 ) == 1 ) );
+ }
+
+namespace {
+
+/// a message of the shortest paths: a relaxation of the vertex v to the
+/// distance d, or a probe of v (kind 1), whose order with the relaxations
+/// of v the merge keeps
+struct Label {
+ std::uint32_t v;
+ std::uint64_t d;
+ std::uint8_t kind;
+ };
+
+/// the key of a label, its vertex
+struct LabelHead {
+ std::uint32_t operator()( const Label & x ) const { return( x.v ); }
+ };
+
+/// the merge of two relaxations of one vertex by the least distance; a
+/// probe is never merged
+bool lowest( Label & p , const Label & x )
+{
+ if( ( p.kind != 0 ) || ( x.kind != 0 ) )
+  return( false );
+ p.d = std::min( p.d , x.d );
+ return( true );
+ }
+
+/// a mailbox of labels coalesced by their vertex on the channels C
+template< class C >
+using LabelBox = Mailbox< Label , C , CoalesceBy< LabelHead > >;
+
+/// no distance
+constexpr std::uint64_t kFar = ~std::uint64_t( 0 );
+
+/// a random digraph of n vertices, 1 to 4 arcs out of each, of costs 1 to 9
+using Arcs = std::vector< std::vector< std::pair< std::uint32_t ,
+                                                  std::uint64_t > > >;
+
+Arcs randomArcs( std::uint32_t n , std::uint64_t seed )
+{
+ Arcs a( n );
+ std::mt19937_64 g( seed );
+ for( std::uint32_t v = 0 ; v < n ; ++v )
+  for( std::uint64_t j = 1 + g() % 4 ; j > 0 ; --j )
+   a[ v ].emplace_back( std::uint32_t( g() % n ) , 1 + g() % 9 );
+ return( a );
+ }
+
+/// the distances from s by Dijkstra, on one thread
+std::vector< std::uint64_t > dijkstra( const Arcs & a , std::uint32_t s )
+{
+ std::vector< std::uint64_t > d( a.size() , kFar );
+ using Item = std::pair< std::uint64_t , std::uint32_t >;
+ std::priority_queue< Item , std::vector< Item > , std::greater<> > q;
+ d[ s ] = 0;
+ q.emplace( 0 , s );
+ while( ! q.empty() ) {
+  const auto [ dv , v ] = q.top();
+  q.pop();
+  if( dv > d[ v ] )
+   continue;
+  for( const auto & [ w , c ] : a[ v ] )
+   if( dv + c < d[ w ] ) {
+    d[ w ] = dv + c;
+    q.emplace( d[ w ] , w );
+    }
+  }
+ return( d );
+ }
+
+/// what a worker of the shortest paths counts
+struct PathCounts {
+ std::uint64_t sends = 0;     ///< the calls of send()
+ std::uint64_t taken = 0;     ///< the messages handed by poll()
+ };
+
+/// the loop of the worker me of p over the mailbox mb of labels, the
+/// distances from s by relaxations in any order (label correcting): lower(
+/// v , d ) lowers the distance of a vertex of me, true if it was larger,
+/// dist( v ) is that distance; the worker 0 stops the mailbox after `stop`
+/// vertices (never if negative); every seventh send is followed by a probe
+template< class MB , class Lower , class Dist >
+PathCounts pathWorker( MB & mb , const Arcs & a , std::uint32_t s ,
+                       std::size_t me , long stop , Lower && lower ,
+                       Dist && dist )
+{
+ const std::size_t p = mb.size();
+ PathCounts c;
+ std::vector< std::uint32_t > stack;
+ if( ( ownerOf( s , p ) == me ) && lower( s , 0 ) )
+  stack.push_back( s );
+ long done = 0;
+ unsigned spin = 0;
+ auto take = [ & ]( Label && x ) {
+  ++c.taken;
+  if( ( x.kind == 0 ) && lower( x.v , x.d ) )
+   stack.push_back( x.v );
+  };
+ for( ;; ) {
+  mb.poll( me , take );
+  if( ! stack.empty() && ! mb.stopped() ) {
+   for( int j = 0 ; ( j < 16 ) && ! stack.empty() ; ++j ) {
+    const std::uint32_t v = stack.back();
+    stack.pop_back();
+    if( ( me == 0 ) && ( ++done == stop ) )
+     mb.stop();
+    for( const auto & [ w , cost ] : a[ v ] ) {
+     const std::uint64_t nd = dist( v ) + cost;
+     const std::size_t o = ownerOf( w , p );
+     if( o == me ) {
+      if( lower( w , nd ) )
+       stack.push_back( w );
+      continue;
+      }
+     mb.send( me , o , Label{ w , nd , 0 } , lowest );
+     if( ++c.sends % 7 == 0 ) {
+      mb.send( me , o , Label{ w , 0 , 1 } , lowest );
+      ++c.sends;
+      }
+     }
+    }
+   spin = 0;
+   continue;
+   }
+  if( mb.quiescent( me ) )
+   break;
+  detail::spinPause( spin );
+  }
+ return( c );
+ }
+
+/// the distances from 0 on a random digraph by the p workers of a pool over
+/// a mailbox of the channels C with batches of b messages, coalesced: the
+/// same as Dijkstra's, and every message sent handed once or merged; with
+/// a stop by the worker 0, every message sent handed once, by a poll or by
+/// leftovers(), or merged; the merges, summed into *merged
+template< class C , class ... A >
+void coalescedPaths( std::size_t p , std::size_t b , std::uint64_t seed ,
+                     long stop , std::uint64_t * merged , A ... args )
+{
+ const std::uint32_t n = 400;
+ const Arcs a = randomArcs( n , seed );
+ const auto ref = dijkstra( a , 0 );
+ LabelBox< C > mb( p , b , args... );
+ std::vector< std::uint64_t > d( n , kFar );   // d[ v ] of its owner only
+ std::atomic< std::uint64_t > sends{ 0 } , taken{ 0 };
+ ThreadPool pool( p );
+ pool.run( p , [ & ]( std::size_t me ) {
+  const PathCounts c = pathWorker( mb , a , 0 , me , stop ,
+   [ & ]( std::uint32_t v , std::uint64_t x ) {
+    if( x >= d[ v ] )
+     return( false );
+    d[ v ] = x;
+    return( true ); } ,
+   [ & ]( std::uint32_t v ) { return( d[ v ] ); } );
+  sends += c.sends;
+  taken += c.taken;
+  } );
+ std::uint64_t got = 0 , pushed = 0 , m = 0;
+ for( std::size_t i = 0 ; i < p ; ++i ) {
+  got += mb.received( i );
+  pushed += mb.sent( i );
+  m += mb.merged( i );
+  }
+ const std::uint64_t left = mb.leftovers( []( Label && ) {} );
+ CHECK( got == taken.load() );
+ CHECK( sends.load() == got + left + m );
+ CHECK( pushed <= sends.load() - m );
+ if( stop < 0 ) {
+  CHECK( left == 0 );
+  CHECK( pushed == got );
+  CHECK( d == ref );
+  }
+ *merged += m;
+ }
+
+/// the paths of a family on 1, 2 and 4 workers, batches of 1, 16 and 64,
+/// to the end and stopped after few and many vertices; some merge
+template< class C , class ... A >
+void coalescedFamily( A ... args )
+{
+ std::uint64_t merged = 0;
+ for( std::size_t p : { 1 , 2 , 4 } )
+  for( std::size_t b : { 1 , 16 , 64 } )
+   for( std::uint64_t seed : { 1 , 2 } ) {
+    coalescedPaths< C >( p , b , seed , -1 , & merged , args... );
+    for( long stop : { 1L , 30L } )
+     coalescedPaths< C >( p , b , seed + 10 , stop , & merged , args... );
+    }
+ CHECK( merged > 0 );
+ }
+
+/// the distance of a vertex as an observer keeps it, incrementally: the
+/// state of the consumer
+struct LeastLabel {
+ std::vector< std::uint64_t > d;
+ void on( const Label & e ) { d[ e.v ] = std::min( d[ e.v ] , e.d ); }
+ };
+
+/// the distances recomputed from scratch from all the labels seen
+struct LabelLog {
+ std::size_t n = 0;
+ std::vector< Label > log;
+ void on( const Label & e ) { log.push_back( e ); }
+ [[nodiscard]] std::vector< std::uint64_t > distances( void ) const {
+  std::vector< std::uint64_t > d( n , kFar );
+  for( const Label & e : log )
+   d[ e.v ] = std::min( d[ e.v ] , e.d );
+  return( d );
+  }
+ };
+
+/// the phases of the shortest paths from the sources 0 , 7 , 14 , ... on
+/// one random digraph, by p threads on one mailbox of the channels C with
+/// batches of b messages, coalesced, the distances of each worker kept by
+/// LeastLabel under a Shadow with LabelLog; the completion of a
+/// std::barrier audits the phase by audit() before it rearms the mailbox,
+/// with the predicate of each worker: the shadow agrees, and the distances
+/// of its vertices are Dijkstra's. The phase 1 corrupts a distance of the
+/// incremental state, which the shadow sees, the phase 2 one of both, which
+/// only Dijkstra's sees, the phase 3 is stopped, its messages recovered by
+/// leftovers() and audited by the shadow alone, which holds; the others
+/// are kept as they are, and the audit holds
+template< class C , class ... A >
+void auditedPhases( std::size_t p , std::size_t b , A ... args )
+{
+ const std::uint32_t n = 300;
+ const int phases = 6;
+ const Arcs a = randomArcs( n , 5 );
+ using Sd = Shadow< LeastLabel , LabelLog >;
+ std::vector< LeastLabel > inc( p );
+ std::vector< LabelLog > scr( p );
+ std::vector< Sd > sd;
+ for( std::size_t me = 0 ; me < p ; ++me ) {
+  inc[ me ].d.assign( n , kFar );
+  scr[ me ].n = n;
+  sd.emplace_back( inc[ me ] , scr[ me ] );
+  }
+ LabelBox< C > mb( p , b , args... );
+ auto source = []( int t ) { return( std::uint32_t( 7 * t ) ); };
+ auto stopped = []( int t ) { return( t == 3 ); };
+ auto both = []( auto & o ) {
+  if constexpr( std::is_same_v< std::decay_t< decltype( o ) > ,
+                                LeastLabel > )
+   return( o.d );
+  else
+   return( o.distances() );
+  };
+ int phase = 0 , bad = 0;
+ std::vector< std::uint64_t > ref = dijkstra( a , source( 0 ) );
+ auto exact = [ & ]( std::size_t me ) {
+  for( std::uint32_t v = 0 ; v < n ; ++v )
+   if( ( ownerOf( v , p ) == me ) && ( inc[ me ].d[ v ] != ref[ v ] ) )
+    return( false );
+  return( true );
+  };
+ auto check = [ & ]( void ) noexcept {      // the phase, by one thread
+  bool fired = false;
+  try {
+   if( stopped( phase ) ) {
+    mb.leftovers( []( Label && ) {} );
+    mb.audit( [ & ]( std::size_t me ) { return( sd[ me ].agree( both ) ); } );
+    }
+   else {
+    // a vertex reached by its owner, other than the source
+    std::uint32_t v = source( phase ) + 1;
+    while( ( ref[ v % n ] == kFar ) || ( ref[ v % n ] == 0 ) )
+     ++v;
+    v %= n;
+    const std::size_t o = ownerOf( v , p );
+    if( phase == 1 )
+     inc[ o ].d[ v ] -= 1;
+    if( phase == 2 )
+     sd[ o ].on( Label{ v , ref[ v ] - 1 , 0 } );
+    mb.audit( [ & ]( std::size_t me ) {
+     return( sd[ me ].agree( both ) && exact( me ) ); } );
+    }
+   }
+  catch( const contract_violation & ) {
+   fired = true;
+   }
+  bad += fired != ( ( phase == 1 ) || ( phase == 2 ) );
+  for( std::size_t me = 0 ; me < p ; ++me ) {
+   inc[ me ].d.assign( n , kFar );
+   scr[ me ].log.clear();
+   }
+  ref = dijkstra( a , source( ++phase ) );
+  mb.rearm();
+  };
+ std::barrier sync( std::ptrdiff_t( p ) , check );
+ std::vector< std::thread > T;
+ for( std::size_t me = 0 ; me < p ; ++me )
+  T.emplace_back( [ & , me ] {
+   for( int t = 0 ; t < phases ; ++t ) {
+    auto lower = [ & ]( std::uint32_t v , std::uint64_t x ) {
+     if( x >= inc[ me ].d[ v ] )
+      return( false );
+     sd[ me ].on( Label{ v , x , 0 } );
+     return( true );
+     };
+    pathWorker( mb , a , source( t ) , me , stopped( t ) ? 25 : -1 ,
+                lower , [ & ]( std::uint32_t v ) {
+                 return( inc[ me ].d[ v ] ); } );
+    sync.arrive_and_wait();
+    }
+   } );
+ for( auto & t : T )
+  t.join();
+ CHECK( bad == 0 );
+ CHECK( phase == phases );
+ }
+
+}  // end( namespace )
+
+// the coalescing of the outboxes on one thread: two relaxations of a
+// vertex merged into the least, a probe that closes the run of its vertex,
+// a merge with no result, the map emptied by a push and by leftovers();
+// on a mesh of capacity 2, a push that takes part of the outbox empties
+// the map, so that no merge reaches a place shifted, and one that takes
+// nothing keeps it; a merge after a stop, the counts of merged() and
+// sent(), and the plain send() unknown to the map
+ADS_TEST( "mailbox-coalesce" )
+{
+ static_assert( MailboxCoalescing< NoCoalescing , Label > &&
+                MailboxCoalescing< CoalesceBy< LabelHead > , Label > &&
+                ! MailboxCoalescing< CoalesceBy< LabelHead > , int > );
+ std::vector< Label > got;
+ auto take = [ & ]( Label && x ) { got.push_back( x ); };
+ auto is = [ & ]( std::size_t i , std::uint32_t v , std::uint64_t d ,
+                  std::uint8_t k ) {
+  return( ( got[ i ].v == v ) && ( got[ i ].d == d ) &&
+          ( got[ i ].kind == k ) );
+  };
+ {
+  LabelBox< LockedChannels< Label > > mb( 2 , 4 );
+  mb.send( 0 , 1 , Label{ 5 , 10 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 5 , 7 , 0 } , lowest );    // merged
+  mb.send( 0 , 1 , Label{ 6 , 3 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 5 , 0 , 1 } , lowest );    // a probe, kept
+  CHECK( ( mb.merged( 0 ) == 1 ) && ( mb.sent( 0 ) == 0 ) );
+  mb.send( 0 , 1 , Label{ 5 , 3 , 0 } , lowest );    // after the probe
+  CHECK( mb.sent( 0 ) == 4 );                        // pushed, 4 messages
+  mb.send( 0 , 1 , Label{ 5 , 2 , 0 } , lowest );    // the map is empty
+  mb.send( 0 , 1 , Label{ 5 , 1 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 6 , 9 , 0 } );             // unknown to the map
+  mb.send( 0 , 1 , Label{ 6 , 8 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 6 , 4 , 0 } ,
+           []( Label & q , const Label & x ) { q.d += x.d; } );
+  CHECK( mb.merged( 0 ) == 3 );
+  CHECK( mb.flush( 0 ) );
+  CHECK( mb.poll( 1 , take ) == 7 );
+  CHECK( got.size() == 7 );
+  CHECK( is( 0 , 5 , 7 , 0 ) && is( 1 , 6 , 3 , 0 ) && is( 2 , 5 , 0 , 1 ) &&
+         is( 3 , 5 , 3 , 0 ) && is( 4 , 5 , 1 , 0 ) && is( 5 , 6 , 9 , 0 ) &&
+         is( 6 , 6 , 12 , 0 ) );
+  CHECK( ( mb.sent( 0 ) == 7 ) && ( mb.received( 1 ) == 7 ) );
+  CHECK( ! mb.quiescent( 0 ) && mb.quiescent( 1 ) && mb.quiescent( 0 ) &&
+         mb.terminated() );
+  // after a stop the merges go on in the outbox, and leftovers() hands
+  // what they left and empties the map
+  mb.rearm();
+  mb.stop();
+  mb.send( 1 , 0 , Label{ 2 , 9 , 0 } , lowest );
+  mb.send( 1 , 0 , Label{ 2 , 4 , 0 } , lowest );
+  got.clear();
+  CHECK( mb.leftovers( take ) == 1 );
+  CHECK( is( 0 , 2 , 4 , 0 ) && ( mb.merged( 1 ) == 1 ) );
+  mb.rearm();
+  mb.send( 1 , 0 , Label{ 2 , 8 , 0 } , lowest );   // no stale place
+  CHECK( mb.flush( 1 ) );
+  got.clear();
+  CHECK( ( mb.poll( 0 , take ) == 1 ) && is( 0 , 2 , 8 , 0 ) );
+  }
+ {
+  // a mesh of capacity 2, batches of 4: the push at 4 takes 1 and 2
+  LabelBox< MeshChannels< Label > > mb( 2 , 4 , std::size_t( 2 ) );
+  for( std::uint32_t v = 1 ; v <= 4 ; ++v )
+   mb.send( 0 , 1 , Label{ v , 10 * v , 0 } , lowest );
+  CHECK( mb.sent( 0 ) == 2 );
+  mb.send( 0 , 1 , Label{ 3 , 5 , 0 } , lowest );    // places shifted
+  CHECK( mb.merged( 0 ) == 0 );
+  mb.send( 0 , 1 , Label{ 3 , 4 , 0 } , lowest );    // into the last 3
+  CHECK( mb.merged( 0 ) == 1 );
+  mb.send( 0 , 1 , Label{ 5 , 50 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 6 , 60 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 7 , 70 , 0 } , lowest );   // 6: a push refused
+  CHECK( mb.sent( 0 ) == 2 );
+  mb.send( 0 , 1 , Label{ 5 , 1 , 0 } , lowest );    // the map was kept
+  CHECK( mb.merged( 0 ) == 2 );
+  got.clear();
+  while( ! mb.flush( 0 ) )
+   mb.poll( 1 , take );
+  mb.poll( 1 , take );
+  CHECK( got.size() == 8 );
+  CHECK( is( 0 , 1 , 10 , 0 ) && is( 1 , 2 , 20 , 0 ) &&
+         is( 2 , 3 , 30 , 0 ) && is( 3 , 4 , 40 , 0 ) &&
+         is( 4 , 3 , 4 , 0 ) && is( 5 , 5 , 1 , 0 ) &&
+         is( 6 , 6 , 60 , 0 ) && is( 7 , 7 , 70 , 0 ) );
+  CHECK( ( mb.sent( 0 ) == 8 ) && ( mb.received( 1 ) == 8 ) );
+  }
+ }
+
+// the coalescing by many workers: the shortest paths by relaxations in any
+// order, merged by the least distance with probes in between, on every
+// family, the mesh also of capacity 2 (pushes of part of a batch), to the
+// end against Dijkstra and stopped, every message handed once or merged
+ADS_TEST( "mailbox-coalesce-paths" )
+{
+ coalescedFamily< LockedChannels< Label > >();
+ coalescedFamily< InboxChannels< Label > >();
+ coalescedFamily< LaneChannels< Label > >();
+ coalescedFamily< MeshChannels< Label > >( std::size_t( 2 ) );
+ coalescedFamily< MeshChannels< Label > >( std::size_t( 1024 ) );
+ }
+
+// the audit at a quiescent point: the phases of auditedPhases on every
+// family, the predicate that fails on a corrupted state caught; on one
+// thread, audit() refused while an outbox holds a message, while a worker
+// is active and after a stop with messages in an inbox, and a predicate
+// false of no worker caught
+ADS_TEST( "mailbox-audit" )
+{
+ for( std::size_t p : { 1 , 2 , 4 } )
+  for( std::size_t b : { 1 , 16 } ) {
+   auditedPhases< LockedChannels< Label > >( p , b );
+   auditedPhases< InboxChannels< Label > >( p , b );
+   auditedPhases< LaneChannels< Label > >( p , b );
+   auditedPhases< MeshChannels< Label > >( p , b , std::size_t( 2 ) );
+   }
+ Mailbox< std::uint64_t > mb( 2 , 4 );
+ auto none = []( std::uint64_t && ) {};
+ auto yes = []( void ) { return( true ); };
+ mb.send( 0 , 1 , 7 );                        // in the outbox
+ CHECK_THROWS( mb.audit( yes ) , contract_violation );
+ CHECK( ! mb.quiescent( 0 ) );                // pushed, 1 active
+ CHECK_THROWS( mb.audit( yes ) , contract_violation );
+ CHECK( mb.poll( 1 , none ) == 1 );
+ CHECK( mb.quiescent( 1 ) && mb.quiescent( 0 ) );
+ mb.audit( yes );
+ mb.audit( []( std::size_t me ) { return( me < 2 ); } );
+ CHECK_THROWS( mb.audit( []( void ) { return( false ); } ) ,
+               contract_violation );
+ CHECK_THROWS( mb.audit( []( std::size_t me ) { return( me == 0 ); } ) ,
+               contract_violation );
+ mb.rearm();
+ mb.send( 0 , 1 , 9 );
+ CHECK( mb.flush( 0 ) );
+ mb.stop();                                   // 9 left in the inbox of 1
+ CHECK_THROWS( mb.audit( yes ) , contract_violation );   // drains it
+ mb.audit( yes );
  }
 
 // the owners of the keys: in range, all of them used, one worker

@@ -919,6 +919,103 @@
  how many workers are active at the start, provided every worker with work
  from the start is among them.
 
+ A worker of a search sends many messages for the same key between two
+ pushes (the relaxations of one state by its neighbours, each with its own
+ distance), of which the receiver keeps only one, the least; the mailbox
+ of the policy `CoalesceBy` merges them in the outbox, before they cost a
+ place in the channel and a call at the receiver. `send( me , to , x ,
+ merge )` looks up the key of \f$ x \f$ in a map of the outbox, from a key
+ to the place of the last message of that key sent with a merge since the
+ last push; if there is one, `merge( pending , x )` merges \f$ x \f$ into
+ it, or refuses, and \f$ x \f$ is then appended and becomes the last of
+ its key, as it does when there is none. One probe of the map does both
+ the search and the update. A push that the channel takes \f$ j > 0 \f$
+ messages of removes the first \f$ j \f$ of the outbox and shifts the
+ others by \f$ j \f$ places, so it empties the map; a push refused whole
+ moves nothing, and keeps it.
+
+ <em>Lemma 12 (the coalescing).</em> Let each merge be made by `send()`
+ with a merge, with a function that does not throw and does not change
+ the key of the message pending. Then (i) the map gives, for each key, the
+ place in the outbox of the last message of that key sent with a merge
+ since the last push that took a message, if that message is still there,
+ and no other place; (ii) Lemmas 8, 9 and 11 hold as they are, and Lemma
+ 10 holds with each message given to `send()` either handed once or
+ merged, by a merge counted by `merged()`, into a message handed once;
+ (iii) a message \f$ x \f$ merged into a pending message \f$ y \f$ reaches
+ the receiver with \f$ y \f$, in a batch pushed after the call that sent
+ \f$ x \f$, so that every write of the sender before that call happens
+ before the receiver handles \f$ y \f$.
+
+ Indeed, (i) holds at the start, with the outbox and the map empty, and is
+ kept by each operation of the owner, the only one to touch them: a send
+ with a merge either merges into the place it finds, which removes the new
+ message and changes neither the places nor the keys, or appends at the
+ end and records that place for its key, the last one of that key; a send
+ without a merge appends past every place recorded; a push that takes
+ \f$ j > 0 \f$ messages empties the map, so that no place survives the
+ shift, and one that takes none changes neither; `leftovers()` empties the
+ outbox and the map together. For (ii), a merge acts only on the outbox of
+ its caller, whose messages are not counted in \f$ C \f$, which counts a
+ message only from the addition before its push (Lemma 8): the message
+ merged is removed before it is ever counted, while \f$ y \f$ stays where
+ it was, uncounted. Hence a merge changes neither \f$ C \f$, nor \f$ A \f$,
+ nor \f$ M \f$, and (10) with the argument of Lemma 8 is unchanged; it
+ does not lengthen an outbox, so that a `flush()` succeeds no later than
+ without it, and Lemma 9 is unchanged too. After a stop the merges go on
+ in the outboxes, which `leftovers()` hands as they are, and the three
+ places of the proof of Lemma 10 receive every message once, but for
+ those merged, which leave the computation inside the outbox of their
+ sender and are counted there; the outboxes empty, the maps are empty by
+ (i), so that `rearm()` leaves no place of a past computation and Lemma
+ 11 holds. For (iii), \f$ y \f$ is in the outbox when \f$ x \f$ is sent,
+ hence not yet pushed; the push that later takes it is made by the same
+ thread after the call, and the release of the push with the acquire of
+ the drain gives the order of the writes, as for a message not merged.
+
+ The merged message keeps the place of \f$ y \f$, so that \f$ x \f$
+ overtakes the messages of other keys sent between them, and those of its
+ own key sent without a merge (a message that the map does not know). The
+ order among the messages of one key is that of the runs that a refused
+ merge closes: a merge refused for \f$ x \f$ appends it as the last of its
+ key, and the messages of that key sent later merge into it, or after it,
+ never into one before it. Whether the receiver may see the merged message
+ in place of the two is the consumer's to prove, e.g., for the relaxations
+ of a search by the least distance (a dominated relaxation changes
+ nothing), and for an invalidation between two relaxations of a state,
+ which the merge refuses so that it stays between them.
+
+ An incremental computation by messages (the repair of a search after the
+ costs of some arcs changed) keeps a state that must equal what a
+ computation from scratch would give, and an audit compares them; but the
+ state of a worker changes while messages are on their way, so that the
+ comparison is exact only where no message exists and no worker writes.
+ `audit( pred )`, at the level of the audits of `Contract.h`, checks the
+ predicate of the consumer at such a point: called by one thread where
+ `rearm()` may be called, it asserts the precondition of `rearm()` (the
+ outboxes empty, \f$ C = 0 \f$ or the mailbox stopped, the inboxes
+ drained), then `pred( me )` for each worker, or `pred()`. The predicate is
+ the consumer's (for the search, that each value equals the minimum over
+ the predecessors, or a `Shadow` that compares the incremental state with
+ one computed from scratch), so that the mailbox gives the point and not
+ the property; below the level of the audits the call compiles to nothing.
+
+ <em>Lemma 13 (the audit at a quiescent point).</em> Let `audit()` be
+ called at a barrier, after every worker has returned from its last call
+ of the computation and before any makes its first call of the next one.
+ If its precondition holds, the predicate reads the state that the
+ workers left, with no message on its way and none pending in an outbox,
+ and no worker writes while it runs.
+
+ Indeed, with the outboxes and the inboxes empty, no message exists: in a
+ channel there is none when \f$ C = 0 \f$, by (10), and none after a stop
+ once `leftovers()` has drained them, which the drain of the precondition
+ checks. The barrier orders every operation of the workers before the
+ call and the call before every operation of the next computation, so
+ that the thread of the audit reads each write of every worker and none
+ races with it; the predicate of the worker \f$ \mathit{me} \f$ may then
+ read the state of the others, as the minimum over the predecessors does.
+
  \section theory_parallel_refs References
 
  \see U. Drepper, What every programmer should know about memory, Red

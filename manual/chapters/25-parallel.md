@@ -1805,8 +1805,8 @@ emptied it (an audit drains the inboxes to check it). The barrier is the
 caller's, e.g., the completion function of a `std::barrier` or the end of
 a `run()`: every worker returns from its last call of the computation
 before `rearm()`, and makes its first call of the next one after it. The
-counts of `sent()`, `batches()` and `received()` go on across the
-computations.
+counts of `sent()`, `batches()`, `merged()` and `received()` go on
+across the computations.
 
 <span id="alg-25-29"></span>**Algorithm 25.29.** `rearm()` of `Mailbox`,
 with $\mathit{active}_{\mathit{me}}$ the activity of the worker
@@ -1828,6 +1828,115 @@ operation of the next computation, which thus starts from the state of a
 new mailbox with $A$ active workers; the arguments of the two lemmas do not
 depend on how many workers are active at the start, provided each worker
 that has work from the start is among them. $\square$
+
+**Coalescing.** Between two pushes a worker of a search often sends several
+messages for the same key (e.g., the relaxations of one state by its
+neighbours, each with a distance), of which the receiver usually keeps
+only the least. A mailbox of the policy `CoalesceBy< K , M >`, the third
+parameter of the template, merges them in the outbox, before they take a
+place in the channel and a call at the receiver; the default policy,
+`NoCoalescing`, adds no member and no code. `send( me , to , x , merge )`
+looks up the key `K()( x )` in a map `M` of the outbox (by default a
+`std::unordered_map`), which gives the place of the last message of that
+key sent with a merge since the last push. If there is one, `merge(
+pending , x )` either merges $x$ into it and returns true, or returns
+false; in the second case, as when the key is not found, $x$ is appended
+and becomes the last of its key ([Algorithm 25.30](25-parallel.md#alg-25-30)).
+A merge with no result always merges, and one probe of the map serves both
+the search and the update. Note that a push that the channel takes $j > 0$
+messages of shifts the rest of the outbox by $j$ places, and therefore
+empties the map, while a push of which the channel takes no message (the
+full queue of a mesh) keeps it. Last, `merged( me )` counts the messages
+merged; with `sent( me )` and the messages still in the outboxes, it
+accounts for the calls of `send()`.
+
+<span id="alg-25-30"></span>**Algorithm 25.30.** `send()` with a merge, with
+$S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and
+`audit()` of `Mailbox`.
+
+--8<-- "generated/Mailbox-send-2.pseudo.md"
+
+--8<-- "generated/Mailbox-audit.pseudo.md"
+
+```cpp
+--8<-- "generated/Mailbox-send-merge.cpp"
+```
+
+<span id="lem-25-24"></span>**Lemma 25.24.** *Let the merges be made by
+`send()` with a merge whose function does not throw and does not change the
+key of the message pending. Then (i) the map gives, for each key, the place
+of the last message of that key sent with a merge since the last push that
+took a message, if it is still in the outbox, and no other place. (ii)
+[Lemma 25.20](25-parallel.md#lem-25-20), [Lemma
+25.21](25-parallel.md#lem-25-21) and [Lemma 25.23](25-parallel.md#lem-25-23)
+hold as they are, and [Lemma 25.22](25-parallel.md#lem-25-22) holds with
+each message given to `send()` either handed once or merged into a message
+handed once. (iii) A message $x$ merged into a pending message $y$ reaches
+the receiver with $y$, in a batch pushed after the call that sent $x$.*
+
+*Proof.* Only the owner touches the outbox and its map, and (i) holds at
+the start, when both are empty. A merge removes the new message and moves
+no place; an append records the last place of its key, or, without a
+merge, lies past the places recorded. A push that takes $j > 0$ messages
+empties the map before a shifted place can be read, one that takes none
+moves no message, and `leftovers()` empties the outbox and the map
+together; hence, (i) is kept. For (ii), recall that the counter $C$ counts
+a message only from the addition before its push, so that the messages of
+an outbox are not in $C$ (cf. (25.10)). A merge removes $x$ before it is
+counted, and leaves $y$ uncounted where it was; $C$, $A$ and $M$ do not
+change, and the argument of [Lemma 25.20](25-parallel.md#lem-25-20) stays
+as it is. Also, a `flush()` faces an outbox no longer than without the
+merge, and succeeds no later. After a stop the merges go on in the
+outboxes, which `leftovers()` hands as they are. When the outboxes are
+empty the maps are empty by (i), and `rearm()` thus leaves no place of a
+past computation. For (iii), $y$ is still in the outbox when $x$ is sent,
+and the push that later takes it is made by the same thread after that
+call; the release of the push and the acquire of the drain then order the
+writes made before the call with the handling of $y$. $\square$
+
+The merged message keeps the place of $y$, and $x$ therefore overtakes the
+messages of other keys sent between the two, as well as those of its
+key sent without a merge, which the map does not know. Among the messages
+of one key the order is that of the runs closed by a refused merge: once
+refused, $x$ is the last of its key, and the later ones are merged into it
+or placed after it. Whether the receiver may see one message in place of
+two is a property of the consumer, which we do not check (it holds, e.g.,
+for the relaxations of a search by the least distance, since a dominated
+relaxation changes no distance; an invalidation between two relaxations of
+a state, instead, is refused by the merge, and stays between them).
+
+**Audits at a quiescent point.** An incremental computation by messages
+keeps a state that should equal the one we would compute from scratch. However,
+the comparison is exact only where no message exists and no worker writes,
+and `audit( pred )` gives such a point, at the level of the audits of
+`Contract.h` ([§1.7.1](01-introduction.md#sec-1-7-1)). Called by one thread
+where `rearm()` may be called, it checks the precondition of `rearm()`,
+i.e., the outboxes empty, $C = 0$ or the mailbox stopped, and the inboxes
+drained. Then it checks `pred( me )` for each worker, or `pred()` once, a
+false value being a violated audit. The predicate is the consumer's, e.g.,
+that each distance of a search is the least over its predecessors, or a
+`Shadow` of `Modification.h` ([§1.13](01-introduction.md#sec-1-13)) that
+compares the incremental state with a recomputation. Below the level of the
+audits the call compiles to no code; after a stop, `leftovers()` comes
+first, since the audit drains the inboxes to check them.
+
+<span id="lem-25-25"></span>**Lemma 25.25.** *Let `audit()` be called at a
+barrier, after each worker has returned from its last call of the
+computation and before any makes its first call of the next one. If its
+precondition holds, the predicate reads the state that the workers left,
+with no message in a channel or in an outbox, and no worker writes while it
+runs.*
+
+*Proof.* With the outboxes empty, a channel holds no message when $C = 0$,
+by (25.10), and none after a stop once `leftovers()` has drained them,
+which the drain of the precondition checks. The barrier orders the
+operations of the workers before the call, and the call before those of the
+next computation. Hence, the thread of the audit reads the writes of all the
+workers, and none of them races with its reads. $\square$
+
+The predicate of a worker may thus read the state of the others, as the
+minimum over the predecessors of a state does, which a worker cannot do
+while the computation runs (at least, not without a lock).
 
 ## 25.16 Discussion and references {#sec-25-16}
 

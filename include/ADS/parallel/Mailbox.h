@@ -51,8 +51,39 @@
  * call and before any makes its first of the next computation (in the
  * completion function of a `std::barrier`, or between two `run()` of the
  * executor), which orders its writes with the calls of all the workers.
- * The counts of `sent()`, `batches()` and `received()` go on across the
- * computations.
+ * The counts of `sent()`, `batches()`, `merged()` and `received()` go on
+ * across the computations.
+ *
+ * A mailbox of the policy `CoalesceBy< K , M >` (the third parameter,
+ * `NoCoalescing` by default, which adds no member and no code) merges in
+ * the outbox the messages that carry the same key: `send( me , to , x ,
+ * merge )` looks up the key `K()( x )` in a map `M` of the worker for the
+ * destination, from the key to the place in the outbox of its last message
+ * sent so, and if there is one calls `merge( pending , x )`, which merges
+ * \f$ x \f$ into it (e.g., keeps the least of two distances) and returns
+ * true, or returns false and leaves both, \f$ x \f$ then becoming the last
+ * of its key; a merge with no result always merges. One probe of the map
+ * per send, which is emptied at each push that the channels take some of
+ * the outbox from, so that no place in it outlives a shift of the outbox.
+ * A merge removes a message before it is counted, so that the detection of
+ * the termination, the stop and `leftovers()` stay as they are, with each
+ * message sent either handed once or merged into one that is (see \ref
+ * theory_parallel_quiescence); `merged()` counts the messages merged. A
+ * message sent by `send( me , to , x )` is unknown to the map, so that a
+ * later merge may move a message of its key ahead of it: a message whose
+ * order with those of its key matters is sent with a merge that refuses
+ * it (e.g., an invalidation between two relaxations of a search).
+ *
+ * At the level of the audits of `Contract.h`, `audit( pred )`, called by
+ * one thread where `rearm()` may be called (the computation ended, or
+ * stopped and its messages recovered by `leftovers()`, and no worker
+ * calling the mailbox), checks the predicate of the consumer on the state
+ * that the workers have left, `pred()` once or `pred( me )` for each worker,
+ * e.g., the comparison of an incremental state with its recomputation from
+ * scratch by `Shadow` of `Modification.h`; a predicate false is a violated
+ * audit. The barrier orders every write of the workers before the call,
+ * so that the predicate reads the state of all of them exactly; below the
+ * level of the audits the call costs nothing.
  *
  * The termination is detected by counting: a counter \f$ C \f$ shared by the
  * workers holds the number of the workers <em>active</em> (all of them at
@@ -80,7 +111,8 @@
  * does not throw; a mailbox serves one computation between two calls of
  * `rearm()`, which needs the last one ended or stopped, the outboxes
  * empty and, after a stop, the inboxes drained by `leftovers()` (an audit,
- * which drains them).
+ * which drains them), and so does `audit()`; a merge does not throw, and
+ * changes neither the key of the message pending nor the mailbox.
  *
  * \see E. W. Dijkstra, C. S. Scholten, Termination detection for diffusing
  *      computations, Information Processing Letters 11(1), 1-4, 1980,
@@ -110,6 +142,7 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Portable.h"
 #include "ADS/parallel/Channels.h"
 
 #include <atomic>
@@ -119,6 +152,8 @@
 #include <functional>
 #include <memory>
 #include <span>
+#include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -140,21 +175,115 @@ template< class K , class H = std::hash< K > >
  }
 
 /*--------------------------------------------------------------------------*/
+/*--------------------- THE POLICIES OF THE COALESCING ---------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// no coalescing of the messages in the outboxes of `Mailbox`: no member
+/// and no code, and no `send()` with a merge; the default
+struct NoCoalescing {};
+
+/// the coalescing of the messages of one key in an outbox of `Mailbox`:
+/// `K()( x )` the key of the message \f$ x \f$, and `M` the map from a key
+/// to the place of its last message in an outbox (`try_emplace()`,
+/// `clear()` and `empty()` as those of `std::unordered_map`), by default
+/// (`void`) a `std::unordered_map` of the keys to `std::size_t`
+template< class K , class M = void >
+struct CoalesceBy {
+ using KeyOf = K;   ///< the function of the key
+ using Map = M;     ///< the map, or void for the default
+ };
+
+namespace detail {
+
+/// the function of the key and the map of the policy C, if it merges
+template< class C >
+struct CoalescePolicy {
+ static constexpr bool on = false;
+ };
+
+/// those of CoalesceBy< K , M >
+template< class K , class M >
+struct CoalescePolicy< CoalesceBy< K , M > > {
+ static constexpr bool on = true;
+ using KeyOf = K;
+ };
+
+/// the coalescing of the policy C for the messages Msg: none
+template< class C , class Msg >
+struct Coalescing {
+ static constexpr bool on = false;
+ struct Slots {};                          ///< no map
+ };
+
+/// the coalescing of CoalesceBy< K , M >: the key, the map, a map per
+/// outbox
+template< class K , class M , class Msg >
+struct Coalescing< CoalesceBy< K , M > , Msg > {
+ static constexpr bool on = true;
+ using KeyOf = K;
+ using Key = std::remove_cvref_t< std::invoke_result_t< const K & ,
+                                                        const Msg & > >;
+ using Map = std::conditional_t< std::is_void_v< M > ,
+                                 std::unordered_map< Key , std::size_t > ,
+                                 M >;
+ using Slots = std::vector< Map >;
+ };
+
+}  // end( namespace detail )
+
+/// a policy of the coalescing of `Mailbox` for the messages `Msg`:
+/// `NoCoalescing`, or `CoalesceBy< K , M >` with `K` a function object made
+/// by default that gives the key of a message, and a map from the key to a
+/// place of `std::size_t` by `try_emplace()`, `clear()` and `empty()`
+template< class C , class Msg >
+concept MailboxCoalescing =
+ std::same_as< C , NoCoalescing > ||
+ ( detail::CoalescePolicy< C >::on &&
+   std::default_initializable< typename detail::CoalescePolicy< C >::KeyOf >
+   && std::invocable< const typename detail::CoalescePolicy< C >::KeyOf & ,
+                      const Msg & > &&
+   requires( typename detail::Coalescing< C , Msg >::Map & m ,
+             const typename detail::Coalescing< C , Msg >::Key & k ,
+             std::size_t i ) {
+    { m.try_emplace( k , i ).first->second } -> std::same_as< std::size_t & >;
+    { m.try_emplace( k , i ).second } -> std::convertible_to< bool >;
+    m.clear();
+    { m.empty() } -> std::convertible_to< bool >;
+    } );
+
+/*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Mailbox ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the mailbox of \f$ p \f$ workers on the channels `Ch` (by default the
 /// mesh, the family that `DefaultChannels` gives every executor), with
 /// outboxes of batches, the detection of the termination, the stop and the
-/// recovery of the messages left
-template< class Msg , ChannelFamily Ch = MeshChannels< Msg > >
+/// recovery of the messages left, and the coalescing of the messages of one
+/// key in an outbox by the policy `Co`
+template< class Msg , ChannelFamily Ch = MeshChannels< Msg > ,
+          class Co = NoCoalescing >
 class Mailbox {
+
+ static_assert( MailboxCoalescing< Co , Msg > ,
+                "the policy of the coalescing is NoCoalescing or a "
+                "CoalesceBy with a key and a map" );
+
+ /// the coalescing of the policy
+ using Coalesce = detail::Coalescing< Co , Msg >;
+
+ /// whether the policy merges
+ static constexpr bool coalescing = Coalesce::on;
+
+ /// whether \f$ f \f$ merges a message into one pending
+ template< class F >
+ static constexpr bool merges = std::invocable< F & , Msg & , const Msg & >;
 
 /*--------------------------------------------------------------------------*/
  public:
 
- using Message = Msg;   ///< the type of the messages
- using Channels = Ch;   ///< the family of the channels
+ using Message = Msg;      ///< the type of the messages
+ using Channels = Ch;      ///< the family of the channels
+ using Coalescing = Co;    ///< the policy of the coalescing
 
  /// the mailbox of \f$ p \f$ workers, all active, pushing batches of
  /// `batch` messages, on channels built from \f$ p \f$ and `args`
@@ -169,6 +298,8 @@ class Mailbox {
    w->out.resize( p );
    w->next.assign( p , batch );
    w->listed.assign( p , 0 );
+   if constexpr( coalescing )
+    w->slots.resize( p );
    }
   f_count.value.store( std::int64_t( p ) , std::memory_order_relaxed );
   }
@@ -206,6 +337,66 @@ class Mailbox {
   if( ( o.size() >= w.next[ to ] ) && ! stopped() )
    push( me , to );
   }
+
+ /// `send( me , to , x )` with the coalescing of the policy: \f$ x \f$
+ /// merged into the last message of its key in the outbox sent with a
+ /// merge since the last push, if there is one and `merge( pending , x )`
+ /// returns true (or nothing), appended otherwise; one probe of the map of
+ /// the outbox
+ ///
+ /// In pseudocode (beyond the book), \f$ S_{\mathit{to}} \f$ the map of the
+ /// outbox, from a key to a place in it, and \f$ \kappa \f$ the key:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{send}( \mathit{me} , \mathit{to} , x ,
+ ///     \mathit{merge} ) \cr
+ /// 2 & \quad \text{append } x \text{ to } O_{\mathit{to}};\ i \gets
+ ///     |O_{\mathit{to}}| \cr
+ /// 3 & \quad \textbf{if}\ S_{\mathit{to}}[ \kappa( x ) ] = j
+ ///     \ \textbf{then} \cr
+ /// 4 & \qquad \textbf{if}\ \mathit{merge}( O_{\mathit{to}}[ j ] , x )
+ ///     \ \textbf{then}\ \text{remove } x \text{ from } O_{\mathit{to}};
+ ///     \ \mathit{merged} \gets \mathit{merged} + 1;\ \textbf{return} \cr
+ /// 5 & \quad S_{\mathit{to}}[ \kappa( x ) ] \gets i\quad
+ ///     \triangleright\ \text{one probe for lines 3 and 5} \cr
+ /// 6 & \quad \textbf{if}\ |O_{\mathit{to}}| \ge N_{\mathit{to}}
+ ///     \ \textbf{and not stopped then}\ \mathrm{push}( \mathit{me} ,
+ ///     \mathit{to} )
+ /// \end{array}}
+ /// \f]
+ /// and \f$ \mathrm{push} \f$ empties \f$ S_{\mathit{to}} \f$ when the
+ /// channel takes a message.
+ /// \pre as `send( me , to , x )`; `merge` does not throw and does not
+ /// change the key of the message pending
+//! [send-merge]
+ template< class F >
+  requires( coalescing && merges< F > )
+ void send( std::size_t me , std::size_t to , Msg x , F && merge ) {
+  ADS_PRE( ( me < size() ) && ( to < size() ) );
+  Worker & w = *f_worker[ me ];
+  ADS_PRE( w.active || stopped() );
+  auto & o = w.out[ to ];
+  if( ! w.listed[ to ] ) {
+   w.listed[ to ] = 1;
+   w.dirty.push_back( to );
+   }
+  o.push_back( std::move( x ) );
+  const std::size_t i = o.size() - 1;
+  auto [ it , fresh ] = w.slots[ to ].try_emplace(
+                         typename Coalesce::KeyOf()( o.back() ) , i );
+  if( ! fresh ) {
+   ADS_INVARIANT( it->second < i );
+   if( absorb( merge , o[ it->second ] , o.back() ) ) {
+    o.pop_back();                         // never counted, never pushed
+    ++w.merged;
+    return;
+    }
+   it->second = i;
+   }
+  if( ( o.size() >= w.next[ to ] ) && ! stopped() )
+   push( me , to );
+  }
+//! [send-merge]
 
  /// the outboxes of `me` pushed, true if all of them are empty after it:
  /// a bounded family may refuse some messages, which stay in their outbox
@@ -385,6 +576,41 @@ class Mailbox {
  /// \pre as `rearm( active )`
  void rearm( void ) { rearm( []( std::size_t ) { return( true ); } ); }
 
+ /// at the level of the audits, the predicate of the consumer checked at a
+ /// quiescent point: `pred( me )` for each worker, if it takes one, or
+ /// `pred()`, a violated audit if it is false; called by one thread at a
+ /// barrier, while no worker calls the mailbox, under the precondition of
+ /// `rearm()`, so that the predicate reads the state that the workers left
+ /// with no message on its way; nothing below the level of the audits
+ ///
+ /// In pseudocode (beyond the book):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{audit}( \mathit{pred} ) \cr
+ /// 2 & \quad \textbf{assert}\ \text{the outboxes and the inboxes are}
+ ///     \text{ empty, and } C = 0 \text{ or stopped} \cr
+ /// 3 & \quad \textbf{foreach}\ \text{worker}\ \mathit{me}
+ ///     \ \textbf{do}\ \textbf{assert}\ \mathit{pred}( \mathit{me} )
+ /// \end{array}}
+ /// \f]
+ /// \pre as `rearm()`, checked at the level of the audits
+//! [audit]
+ template< class P >
+  requires( std::predicate< P & , std::size_t > || std::predicate< P & > )
+ void audit( [[maybe_unused]] P && pred ) {
+  if constexpr( ADS_CONTRACTS >= 3 ) {
+   ADS_AUDIT( rearmable() );
+   ADS_AUDIT( drained() );
+   if constexpr( std::predicate< P & , std::size_t > ) {
+    for( std::size_t me = 0 ; me < size() ; ++me )
+     ADS_AUDIT( pred( me ) );
+    }
+   else
+    ADS_AUDIT( pred() );
+   }
+  }
+//! [audit]
+
  /// the calls `f( x )` on the messages left to `me`: those of its outboxes,
  /// for each destination in the order of their sends, then those of its
  /// inbox; their number. Called after the workers have returned from
@@ -416,6 +642,8 @@ class Mailbox {
    for( auto & x : o )
     f( std::move( x ) );
    o.clear();
+   if constexpr( coalescing )
+    w.slots[ to ].clear();
    w.listed[ to ] = 0;
    w.next[ to ] = f_batch;
    }
@@ -448,6 +676,13 @@ class Mailbox {
   return( f_worker[ me ]->batches );
   }
 
+ /// the messages that `me` has merged so far into one pending, by
+ /// `send()` with a merge; 0 with `NoCoalescing`
+ [[nodiscard]] std::uint64_t merged( std::size_t me ) const {
+  ADS_PRE( me < size() );
+  return( f_worker[ me ]->merged );
+  }
+
  /// the messages that `me` has drained so far by `poll()`
  [[nodiscard]] std::uint64_t received( std::size_t me ) const {
   ADS_PRE( me < size() );
@@ -470,6 +705,10 @@ class Mailbox {
   std::uint64_t sent = 0;                  ///< the messages pushed
   std::uint64_t batches = 0;               ///< the pushes taken
   std::uint64_t received = 0;              ///< the messages drained
+  std::uint64_t merged = 0;                ///< the messages merged
+  /// the maps of the outboxes, from a key to its place; nothing with
+  /// NoCoalescing
+  ADS_NO_UNIQUE_ADDRESS typename Coalesce::Slots slots{};
   };
 
  /// the shared counter, on lines of its own
@@ -502,6 +741,19 @@ class Mailbox {
   return( n == 0 );
   }
 
+ /// `merge( p , x )`, true if it merged \f$ x \f$ into \f$ p \f$: its
+ /// result, or true if it has none
+ template< class F >
+ static bool absorb( F & merge , Msg & p , const Msg & x ) {
+  if constexpr( std::is_void_v< std::invoke_result_t< F & , Msg & ,
+                                                      const Msg & > > ) {
+   merge( p , x );
+   return( true );
+   }
+  else
+   return( bool( merge( p , x ) ) );
+  }
+
  /// the outbox of `me` for `to` pushed, as many messages as the channel
  /// takes; the next push when a batch more has come
 //! [push]
@@ -521,6 +773,9 @@ class Mailbox {
    w.sent += j;
    ++w.batches;
    o.erase( o.begin() , o.begin() + std::ptrdiff_t( j ) );
+   if constexpr( coalescing )             // the places have shifted
+    if( ! w.slots[ to ].empty() )
+     w.slots[ to ].clear();
    }
   w.next[ to ] = o.size() + f_batch;
   }

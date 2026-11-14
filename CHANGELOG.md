@@ -77,6 +77,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for a search that numbers its nodes as it generates them; the test
   engineered_search indexed-heap-grow and section 9.5 of the manual
 
+- The coalescing of the outboxes of parallel/Mailbox.h, by the policy
+  CoalesceBy< K , M > (the third parameter of the template, NoCoalescing
+  by default, which adds no member and no code, the plain send() compiling
+  to the same instructions): send( me , to , x , merge ) merges x into the
+  last message of its key K()( x ) in the outbox, found by one probe of a
+  map M of the outbox (std::unordered_map by default) that each push
+  taking some of the outbox empties, so that no place survives the shift;
+  a merge that returns false keeps both and closes the run of the key,
+  merged() counts the messages merged; audit( pred ), at the level of the
+  audits only, checks the predicate of the consumer, pred() or pred( me )
+  for each worker (e.g., a Shadow of Modification.h), at a quiescent point
+  under the precondition of rearm(); Lemmas 12 and 13 of the theory of the
+  parallel algorithms (a merge removes a message before the counter of the
+  termination counts it, and the audit reads the state of every worker
+  with no message on its way), section 25.15 of the manual, and the tests
+  engineered_runtime mailbox-coalesce (the runs, the map emptied by a push
+  of part of a batch of a mesh and kept by a push refused, the merges after
+  a stop), mailbox-coalesce-paths (the shortest paths by many workers on
+  every family, merged by the least distance, against Dijkstra and
+  stopped) and mailbox-audit (a Shadow and a predicate of the consumer
+  that catch a corrupted state at a barrier)
+
 - rearm() and rearm( active ) in parallel/Mailbox.h, which make one
   mailbox serve a sequence of computations separated by barriers (the
   phases of an episode of an incremental search, or its episodes): called
