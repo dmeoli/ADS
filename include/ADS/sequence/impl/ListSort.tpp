@@ -97,19 +97,21 @@ void listSort( List< T , P > & L , C less )
    Cell * r = x;                            // the next run
    Cell * y = x->succ;
    if( y && less( y->value , x->value ) ) { // strictly decreasing: reversed
-    Cell * rev = x;
-    rev->succ = nullptr;
-    while( y && less( y->value , rev->value ) ) {
+    Cell * rev = x;                         // x and y, compared, the first
+    rev->succ = nullptr;                    // two of it
+    do {
      Cell * z = y->succ;
      y->succ = rev;
      rev = y;
      y = z;
-     }
+     } while( y && less( y->value , rev->value ) );
     r = rev;
     x = y;
     }
    else {                                   // not decreasing
-    Cell * last = x;
+    Cell * last = y ? y : x;                // x and y, compared, in it
+    if( y )
+     y = y->succ;
     while( y && ! less( y->value , last->value ) ) {
      last = y;
      y = y->succ;

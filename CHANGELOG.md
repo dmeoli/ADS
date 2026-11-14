@@ -2719,6 +2719,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- listSort() compared again, at the start of each run, the first two items
+  that the test of the direction of the run had compared, n comparisons on
+  a sorted or reversed list of n items and n - 1 + r on r runs; each pair
+  of adjacent items is now compared once, n - 1 in all, as Lemma 2.13 of the
+  manual and the header say; the test sequences list-sort-comparisons
+
 - TreapList and SkipListSequence took the seed 1 by default, so that the
   lists of one item made with it had all the same priority or level, and
   absorb() of n of them gave a treap of depth n and a skip list of 2
