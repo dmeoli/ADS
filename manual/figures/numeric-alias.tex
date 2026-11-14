@@ -12,11 +12,11 @@
 \begin{document}
 \begin{tikzpicture}[ads]
   \foreach \i/\k/\a in {0/0.5/2,1/1/1,2/1/2,3/0.5/2} {
-    \fill[adsTint,rounded corners=1.6pt] (\i*14mm,0) rectangle (\i*14mm+10mm,\k*24mm);
-    \node[font=\small\ttfamily,text=adsInk] at (\i*14mm+5mm,\k*12mm) {\i};
+    \node[cell,anchor=south west,minimum width=10mm,minimum height=\k*24mm]
+      at (\i*14mm,0) {\i};
     \ifdim\k pt<1pt
-      \fill[adsPrimary,rounded corners=1.6pt] (\i*14mm,\k*24mm+0.6pt) rectangle (\i*14mm+10mm,24mm);
-      \node[font=\small\ttfamily\bfseries,text=adsOnPrimary] at (\i*14mm+5mm,\k*12mm+12mm) {\a};
+      \node[touched,anchor=south west,minimum width=10mm,
+            minimum height=24mm-\k*24mm] at (\i*14mm,\k*24mm) {\a};
     \fi
     \node[index] at (\i*14mm+5mm,-3mm) {cell \i};
   }

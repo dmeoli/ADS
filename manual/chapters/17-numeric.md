@@ -54,8 +54,8 @@ for the time of the product of two integers of $n$ digits, the unit in
 which the costs of the quotients, of the roots and of the conversions are
 usually measured. Also, $\gcd( a , b )$ is the greatest common divisor
 and $a \bmod m \in [ 0 , m )$ the remainder. A matrix is $m \times n$,
-and a sparse one has $\mathit{nnz}$ nonzero entries, the others being 0
-and not stored. In the sections on the random numbers, $g$ is a generator
+and a sparse one has $\mathit{nnz}$ nonzero entries, the others being 0,
+which are not stored. In the sections on the random numbers, $g$ is a generator
 of words of 64 bits, uniform and independent by assumption, and $U$ a
 real uniform in $[ 0 , 1 )$ or in $( 0 , 1 )$.
 [Table 17.1](17-numeric.md#tab-17-1) lists the representations of the
@@ -251,7 +251,10 @@ Both thresholds are round lengths near where each method overtakes the
 one before, not tuned to a processor, since the fast route is the backend
 discussed below. Each method can also be called by name
 (`multiplySchool()`, `multiplyKaratsuba()`, `multiplyFFT()`), and the
-audits of the contracts compare them with each other.
+audits of the contracts compare them with each other. We remark that these
+three run the code of ADS also when the backend below is present, and that
+a factor of fewer than 4 digits goes to the school whatever the method
+named.
 
 <span id="alg-17-3"></span>**Algorithm 17.3.** Product of
 `BigInteger` without the backend: the dispatch, the school ([Knuth 1998,
@@ -497,6 +500,25 @@ where it cannot allocate, while the code of ADS throws `std::bad_alloc`.
 [Lemma 17.9](17-numeric.md#lem-17-9) states that the route does not
 change the results.
 
+**Interface.** A `BigInteger` is built from a `long long` (0 by default)
+or from a string in a base from 2 to 36, with an optional sign; `sign()`
+returns $-1$, 0 or 1, `abs()` the absolute value and `limbs()` the number
+of digits. The operators `+`, `-`, `*`, `/` and `%` (the last two those of
+`divMod()`), the unary `-`, the compound `+=`, `-=` and `*=`, the equality
+and the three-way comparison (by the signs, the lengths and the digits
+from the most significant one) complete the arithmetic, and
+`addMul(r, a, b)` makes $r \gets r + a b$. Next to the conversions,
+`toStringSchool()` and `fromStringSchool()` are those of
+[Algorithm 17.6](17-numeric.md#alg-17-6) with no backend, with which the
+audits of `toString()` and of the constructor compare. Finally, the
+product of two words of 64 bits into 128, on which the school, the short
+division and the steps of Lehmer rest, is that of the compiler: by
+default, the type `unsigned __int128` where it exists, the intrinsics of
+MSVC on x64 otherwise, and four products of halves of 32 bits where
+neither is available (or with `ADS_BIGINT_PORTABLE` defined); the macro
+`ADS_BIGINT_WIDE`, which records the choice as 128, 64 or 0, can also be
+set by hand.
+
 ## 17.4 Rational numbers {#sec-17-4}
 
 `Rational` is the exact rational number of [Knuth 1998,
@@ -565,7 +587,13 @@ copied from the fraction of GMP that receives it; the reductions of the
 constructor go to GMP through the gcd and the exact quotient of
 `BigInteger`. With `ADS_RATIONAL_GMP` defined to 0, `Rational` keeps the
 code of [Algorithm 17.9](17-numeric.md#alg-17-9) on the operations of
-`BigInteger`.
+`BigInteger`. As for the interface, `Rational(u, u')` requires $u' \ne 0$
+and reduces the fraction by one gcd (the defaults give 0 and, with one
+argument, the integers), `num()` and `den()` return the terms, and
+`toString()` writes `u/u'`, or `u` when $u' = 1$. The operators are `+`,
+`-`, `*` and `/`, the last one being the product by the reciprocal, which
+is in lowest terms already, together with the unary `-`, the equality of
+the terms and the three-way comparison.
 
 ## 17.5 Recurrences that count {#sec-17-5}
 
@@ -622,9 +650,11 @@ satisfies the same recurrence, i.e., $\Theta( \phi^n )$ with $\phi = ( 1 +
 of $n + 1$ places in $O( n )$ time, and `fibonacci()` keeps only the last
 two values, in $O( n )$ time and $O( 1 )$ space ([Algorithm
 17.11](17-numeric.md#alg-17-11)). A `FibonacciCache` keeps the numbers
-already computed between the calls, in a mutable member: a number already
-asked for costs $O( 1 )$, and a new one only the steps from the largest
-one known (a memoization that survives the calls).
+already computed between the calls, in a mutable member: a number requested
+before costs $O( 1 )$, and a new one only the steps from the largest
+one known (a memoization that survives the calls); its `size()` returns the
+number of the values kept, $F_0 , \ldots , F_{\mathrm{size}() - 1}$, two at
+the start.
 
 <span id="alg-17-11"></span>**Algorithm 17.11.** Numbers of Fibonacci
 with a table, with three variables, and with a cache between the calls.
@@ -654,8 +684,9 @@ $\Theta( n )$ bits ([Algorithm 17.12](17-numeric.md#alg-17-12)). Both the
 closed form $C_n = \binom{2n}{n} / ( n + 1 )$ and the recurrence
 $C_{n+1} = 2 ( 2 n + 1 ) C_n / ( n + 2 )$ take only $O( n )$ operations.
 Yet, their intermediate values exceed the result, and in 64 bits they stop
-before the table does, which reaches $C_{36}$; with `T` a `BigInteger`,
-the table has no limit. Asymptotically, $C_n \sim 4^n / ( n^{3/2}
+before the table does, which reaches $C_{36}$ with the default type
+`T = std::uint64_t` of `catalan<T>()`; with `T` a `BigInteger`, the table
+has no limit. Asymptotically, $C_n \sim 4^n / ( n^{3/2}
 \sqrt{\pi} )$ ([Knuth 1997, §2.3.4.4](Z-bibliography.md#ref-knuth1997)).
 
 <span id="alg-17-12"></span>**Algorithm 17.12.** Numbers of Catalan by
@@ -790,6 +821,16 @@ the other types, `gemm()` is the product of the definition, $2 m n k$
 operations, by the loops in the order $i , p , j$. These are blocked on
 $j$ and on $p$ by $L$ = `kGemmBlock` $= 256$, and a block of $L \times L$
 entries of $B$ thus stays in the cache while the rows of $C$ run over it.
+The route is chosen by the macro `ADS_GEMM_BLAS`, which is 1 when
+`ADS_WITH_BLAS` is defined and which, defined to 0, keeps the loops of ADS
+even with a CBLAS. On the class, `DenseMatrix(m, n, v)` fills the
+entries with $v$ (0 by default), `uninitialized(m, n)` leaves them
+unwritten for an output that will be overwritten, and the constructor from
+a `Matrix` and `toMatrix()` convert between the two layouts; `rows()`,
+`cols()`, the entry `A(i, j)`, the pointer `data()` to the first entry
+(the leading dimension being `cols()`) and the equality complete it, and
+`multiply(A, B)` is `gemm()` with $\alpha = 1$ and $\beta = 0$ on a new
+matrix.
 
 <span id="alg-17-15"></span>**Algorithm 17.15.** Product of the BLAS
 in `DenseMatrix.h`, by blocks of $L$ columns and rows of $B$.
@@ -918,8 +959,13 @@ the node of an entry that becomes 0, or links a new node into both (after
 the node $p$ that precedes it on the row and the node $u$ that precedes
 it on the column). An audit checks the invariant, i.e., that the lists are
 sorted and that each node is on the lists of its row and of its column.
+Besides `get()`, `set()` and `pivot()`, the class has `rows()`, `cols()`
+and `nonzeros()`, and it gives the nonzeros of a row or of a column either
+as a vector of pairs (column or row, value), by `row()` and `col()`, or as
+a range that walks the list with no copy, by `rowEntries()` and
+`colEntries()`, whose `const_iterator` is a forward iterator.
 
-![Figure 17.4. Orthogonal lists of a $3 \times 3$ matrix after the pivot step on the entry $( 0 , 0 )$, which has created the entry $( 2 , 2 )$ (the fill-in, orange) on the lists of the row 2 and of the column 2; the last node of each list points back to its head, which the figure does not draw.](../figures/numeric-orthogonal.svg){#fig-17-4}
+![Figure 17.4. Orthogonal lists of a $3 \times 3$ matrix after the pivot step on the entry $( 0 , 0 )$, which has read the pivot $a$, its row and its column (violet) and has created the entry $( 2 , 2 )$ (the fill-in, orange) on the lists of the row 2 and of the column 2; the last node of each list points back to its head, which the figure does not draw.](../figures/numeric-orthogonal.svg){#fig-17-4}
 
 <span id="alg-17-17"></span>**Algorithm 17.17.** Update of an entry
 and the pivot step on the orthogonal lists ([Knuth 1997, Algorithm
@@ -960,7 +1006,13 @@ the orthogonal lists are scattered, and more than three times as large
 triplets $( i , j , v )$ in any order. In the latter case a counting sort
 on the rows, a sort of the columns of each row and the sum of the entries
 in the same place take $O( \mathit{nnz} + m )$ time plus the sorts of the
-rows.
+rows; the columns of 32 bits require $n \le 2^{32}$. The default
+constructor makes the $m \times n$ zero matrix (0 by 0 by default), and
+`get()` finds an entry by a binary search in its row, in $O( \log ( 1 +
+\text{the length of the row} ) )$ time. The product exists both on vectors
+and on pointers, `multiply(x, y)` writing $y$ in place, and the three
+arrays are read by `rowStart()`, `columns()` and `values()`, as a solver
+takes them; two matrices are equal when their arrays are.
 
 ![Figure 17.5. A $3 \times 4$ matrix in compressed sparse rows, and its transpose (violet), i.e., the same matrix by columns: the row $i$ of the transpose holds the entries of the column $i$, by increasing row.](../figures/numeric-csr.svg){#fig-17-5}
 
@@ -1066,7 +1118,11 @@ permutation of the rows. Its product makes $2 ( \mathit{nnz} +
 slots of the last chunk beyond the $m$ rows carry no row (line 6), and
 that the bounds `first` and
 `last` let the parallel product of `ADS/parallel` split the chunks among
-the threads.
+the threads, which find their number in `chunks()` and the first place of
+a chunk in `chunkStart()`. The class also has `rows()`, `cols()`,
+`nonzeros()` and `places()`, the last being $\mathit{nnz} +
+\mathit{pad}$; its parameter $C$, 4 by default, must be a power of 2, and
+the default $\sigma$ of the constructor is 256.
 
 **A compressed matrix that grows by rows.** A `DynamicCsr` is a
 compressed sparse matrix that grows and shrinks by whole rows (or by whole
@@ -1086,7 +1142,16 @@ $r$ rows given in the same form, in time linear in its entries amortized
 over the growth of the vectors. Conversely, `remove()` takes a strictly
 increasing set $E$ of rows and closes the gaps in one pass
 ([Algorithm 17.20](17-numeric.md#alg-17-20) and
-[Figure 17.7](17-numeric.md#fig-17-7)).
+[Figure 17.7](17-numeric.md#fig-17-7)), while `remove(first, last)` erases
+a range of consecutive rows at once. Each `append()` returns the index of
+the first row that it adds. The types of the indices and of the values are
+the parameters `I` (`int` by default, the `Index` of the class) and `V`
+(`double`, its `Value`), and the vectors that hold them are not zeroed
+when they grow. The rest of the interface reads and sizes the matrix:
+`rows()`, `nonzeros()` and `empty()`, `reserve(r, z)` for $r$ rows and
+$z$ entries, `clear()`, which keeps the memory, the spans `indices(i)` and
+`values(i)` of a row (the values writable), and the pointers `beg()`,
+`ind()` and `val()` that a solver takes.
 
 <span id="alg-17-20"></span>**Algorithm 17.20.** Append of a row and
 of a block of rows ($\delta$ the shift of the offsets of the block), and
@@ -1170,7 +1235,10 @@ the pairs of the longest major index past 32 entries. Entries summed to 0
 stay, as the solvers accept them. We remark that the mark of a minor
 index (a place plus 1) never needs to be cleared between the major
 indices, since the comparison with $f$ makes the marks of the earlier ones
-stale by themselves.
+stale by themselves. The workspace is an `AssemblyWorkspace<I, V>`, whose
+vectors grow to the largest assembly seen; a form of `compressTriplets()`
+without it allocates a temporary one. All three functions return the number
+of the entries written, i.e., $\mathit{beg}[ \mathit{nmajor} ]$.
 
 ## 17.8 Number theory {#sec-17-8}
 
@@ -1202,17 +1270,28 @@ of Euclid ([Montresor 2025, exercise 17.2](Z-bibliography.md#ref-montresor2025))
 --8<-- "generated/NumberTheory-extendedEuclid.pseudo.md"
 
 <span id="lem-17-13"></span>**Lemma 17.13 (Lamé).** *The algorithm of
-Euclid on $s \ge m > 0$ makes $O( \log m )$ steps; its worst case is that
-of two consecutive numbers of Fibonacci.*
+Euclid on $s \ge m > 0$ makes at most $2 \log_2 m + 2$ steps, i.e.,
+$O( \log m )$. Moreover, if $s > m$ and the algorithm makes $k$ steps,
+then $s \ge F_{k+1}$ and $m \ge F_k$ (with the indexing of
+[§17.5](17-numeric.md#sec-17-5)), and the pair $( F_{k+1} , F_k )$ needs
+$k$ steps; hence two consecutive numbers of Fibonacci are the worst
+case.*
 
 *Proof.* After two steps the pair $( s , m )$ has become
 $( r , m \bmod r )$, $r = s \bmod m$, and $r < s / 2$: if $m \le s / 2$,
-since $r < m$, and otherwise since $r = s - m$. Hence the first number
-halves at least every two steps. Furthermore, by induction on $k$, a pair
-that needs $k$ steps is at least the pair $( F_{k+1} , F_k )$ of numbers
-of Fibonacci (with the indexing of [§17.5](17-numeric.md#sec-17-5)), on
-which all the quotients are 1 ([Knuth 1998,
-§4.5.3](Z-bibliography.md#ref-knuth1998v2)). $\square$
+since $r < m$, and otherwise since $r = s - m$. Hence the first number,
+which is $m$ after the first step, halves at least every two steps, and it
+reaches 0 after at most $2 \log_2 m + 2$ steps in all. For the second
+claim we proceed by induction on $k$. If $k = 1$, then $m \ge 1 = F_1$ and
+$s > m$ gives $s \ge 2 = F_2$. If $k \ge 2$, the pair $( m , r )$, with
+$m > r > 0$, makes $k - 1$ steps, so that $m \ge F_k$ and $r \ge F_{k-1}$
+by the inductive hypothesis; then $s = \lfloor s / m \rfloor m + r \ge m + r
+\ge F_k + F_{k-1} = F_{k+1}$. Finally, for $j \ge 2$ the pair
+$( F_{j+1} , F_j )$ has the quotient 1 and becomes $( F_j , F_{j-1} )$,
+while $( F_2 , F_1 ) = ( 2 , 1 )$ becomes $( 1 , 0 )$; hence
+$( F_{k+1} , F_k )$ needs $k - 1$ steps to reach $( F_2 , F_1 )$ and one
+more to end ([Knuth 1998, §4.5.3](Z-bibliography.md#ref-knuth1998v2)).
+$\square$
 
 **Binary gcd.** `binaryGcd()` is the algorithm of Stein ([Stein
 1967](Z-bibliography.md#ref-stein1967); [Knuth 1998, Algorithm
@@ -1229,7 +1308,7 @@ counts the trailing zeros of a word.
 
 --8<-- "generated/NumberTheory-binaryGcd.pseudo.md"
 
-<span id="lem-17-14"></span>**Lemma 17.14.** *`binaryGcd(a, b)` returns
+<span id="lem-17-14"></span>**Lemma 17.14.** *For $a , b > 0$, `binaryGcd(a, b)` returns
 $\gcd( a , b )$ after at most $\log_2 a + \log_2 b + 2$ iterations of its
 loop.*
 
@@ -1239,7 +1318,8 @@ only, while the other is odd. From the second iteration on, $b = | a - b
 |$ of the iteration before is even and nonzero, and the shift removes at
 least one bit from it; since $| a - b | < \max( a , b )$, the product of
 the two numbers after the shift is at most half of what it was. Since this
-product is at least 1 while the loop runs, and hence there are at most
+product is at most $a b$ after the first iteration and at least 1 while
+the loop runs, there are at most
 $\log_2 ( a b ) + 2$ iterations, counting the first one and the last.
 $\square$
 
@@ -1252,7 +1332,7 @@ a shift, with the two conditional moves beside them.
 **Products and powers modulo $m$.** In `mulMod()`, the product $a b \bmod
 m$ is exact for any modulus of 64 bits, and it is the modular
 product of all of ADS. It uses the product of 64 bits for $m \le 2^{32}$,
-`mulMod61()` for the Mersenne prime $p = 2^{61} - 1$ of the universal
+`mulMod61()` for the Mersenne prime $p = 2^{61} - 1$ (`kMersenne61`) of the universal
 hashing (four products of 32 bits folded by $2^{61} \equiv 1 \pmod{p}$,
 faster than a division of 128 bits), and the product of 128 bits where the
 compiler has one (e.g., GCC and Clang on 64-bit processors). Where it has not (MSVC), it uses the doubling of Ahmes
@@ -1297,7 +1377,12 @@ $m^{-1} \bmod 2^{64}$, $R \bmod m$ and $R^2 \bmod m$. Its inverse comes
 from $x_0 = 3 m \oplus 2$, right on 5 bits, by 4 steps of Newton
 $x_{i+1} = x_i ( 2 - m x_i )$, each of which doubles the bits that are
 right ($5 \to 10 \to 20 \to 40 \to 80 \ge 64$), while each of the two
-residues takes one division of 128 by 64 bits.
+residues takes one division of 128 by 64 bits. Its members are those of
+the arithmetic in the forms: `to()` gives the form of a number,
+`from()` the number of a form (one REDC), `one()` the form of 1,
+`mul()` the form of a product and `pow()` that of a power, while
+`modulus()` returns $m$; an odd $m$ is required. Throughout the header the
+words are the alias `U64` of `std::uint64_t`.
 
 ```cpp
 --8<-- "generated/NumberTheory-montgomery.cpp"
@@ -1381,9 +1466,11 @@ primality on 64 bits.
 The bases of one $n$ run in lockstep, as $k$ chains of products that the
 processor overlaps, and 2 bases cost about as much as 1. With 3 or more,
 the exponent goes by windows of 4 bits with a table of $b^0 , \ldots ,
-b^{15}$, i.e., $\lceil \log_2 d \rceil + \lceil \log_2 d / 4 \rceil + 14$
-products per base instead of up to $2 \lceil \log_2 d \rceil$, for the odd
-part $d$ of $n - 1$. The arithmetic is that of Montgomery of 32 bits below
+b^{15}$ (14 products), and then 4 squarings and one product for each
+window but the first. For the odd part $d$ of $n - 1$, of $\ell_d$ bits,
+this makes at most $\ell_d + \lceil \ell_d / 4 \rceil + 12$ products per
+base, against the $2 \ell_d$ of the method from the lowest bit, which
+runs when there are only 1 or 2 bases. The arithmetic is that of Montgomery of 32 bits below
 $2^{32}$, the lazy one below $2^{62}$, and `Montgomery64` above. Finally,
 `isPrimeTrial()`, the divisions up to $\sqrt{n}$, is the reference that
 the audits compare with; it costs $O( 2^{\ell / 2} )$ for $n$ of $\ell$
@@ -1440,9 +1527,13 @@ integers of 64 bits. This is a toy that shows the method and is not
 secure, since real keys need some thousand bits. In it, `rsaKeys()`
 draws three primes by `randomPrime()`, $x$ and $y$ of 31 bits and $s$ of
 24 ([Algorithm 17.29](17-numeric.md#alg-17-29)); `randomPrime()` draws odd
-numbers of the given number of bits until `millerRabin()` with 40 bases
-accepts one. Then $N = x y$, the private exponent is $s$, and the public
-one is $p = s^{-1} \bmod ( x - 1 ) ( y - 1 )$. One encrypts by $C = M^p
+numbers of the given number of bits (from 2 to 63, the top bit set) until
+`millerRabin()` with 40 bases accepts one. The draw is repeated when
+$x = y$, or when $s$ divides $( x - 1 ) ( y - 1 )$ and has no inverse
+modulo it. Then $N = x y$, the private exponent is $s$, and the public
+one is $p = s^{-1} \bmod ( x - 1 ) ( y - 1 )$, the two keys being the
+pairs `RsaKey` $( N , p )$ and $( N , s )$ that `rsaKeys()` returns, in
+this order. One encrypts by $C = M^p
 \bmod N$ and decrypts by $M = C^s \bmod N$; signing is decrypting with
 the private key, and checking is encrypting with the public one.
 
@@ -1505,7 +1596,10 @@ detection
 of [Brent 1980](Z-bibliography.md#ref-brent1980): a tortoise jumps to the
 hare at each power of 2, and the hare counts its steps from the last
 jump, in $O( \lambda + \mu )$ steps for a period $\lambda$ after $\mu$
-numbers.
+numbers; `period(limit)` returns 0 when the period exceeds the limit. The
+constructor takes $a$, $c$, $m$ (0 standing for $2^{64}$) and the seed
+$X_0$, and `min()` is 1 when $c = 0$, since a multiplicative generator
+never gives 0.
 
 --8<-- "generated/RandomNumbers-LinearCongruential-period.pseudo.md"
 
@@ -1549,7 +1643,12 @@ two dimensions; $\lfloor \cdot \rceil$ rounds to the nearest integer.
 tests (BigCrush of TestU01, PractRand) on which the linear congruential
 ones usually fail. They meet `std::uniform_random_bit_generator`, with
 $\min() = 0$ and $\max() = 2^{64} - 1$, and hence serve the distributions
-of the standard library ([Algorithm 17.31](17-numeric.md#alg-17-31)).
+of the standard library ([Algorithm 17.31](17-numeric.md#alg-17-31)). The
+concept `FullWordGenerator` names exactly these generators, whose words are
+uniform on all the $2^{64}$ values, and it is the requirement of the
+functions below that use a word without a reduction (`uniformBelow()`,
+`uniformReal()`, the ziggurats, `shuffleFast()` and `AliasTable`); each
+generator also compares equal to another in the same state.
 
 - `Xoshiro256` is xoshiro256++ of [Blackman and Vigna
   2021](Z-bibliography.md#ref-blackman2021): the state $s \in
@@ -1578,7 +1677,11 @@ of the standard library ([Algorithm 17.31](17-numeric.md#alg-17-31)).
   its own, as a parallel computation needs; this sequence is that of
   `std::philox4x32` and `std::philox4x64` of C++26. Two blocks are
   computed at once, their rounds interleaved, and the products of one may
-  thus fill the latency of those of the other.
+  thus fill the latency of those of the other. The seed $\sigma$ gives the
+  key $( \sigma , 0 )$ and the counter 0 (the default seed is 20111115,
+  that of C++26), `setCounter()` moves to the counter of a given `Block`,
+  whose block then gives the next outputs, and the static `block(c, k)`
+  computes the bijection for a counter and a `Key`.
 
 <span id="alg-17-31"></span>**Algorithm 17.31.** Steps of xoshiro256++,
 of the jump, of WyRand and of Philox.
@@ -1621,9 +1724,12 @@ give $l = x s - h 2^{64}$, which runs through the integers of $[ 0 ,
 interval $[ t , 2^{64} )$ has length $2^{64} - t$, a multiple of $s$, and
 it therefore holds $( 2^{64} - t ) / s$ integers of each residue class
 modulo $s$. Hence each $h$ is accepted for $\lfloor 2^{64} / s \rfloor$
-words, the same number for all. Rejected words are those with $l <
-t$, i.e., $t$ of the $2^{64}$ words (one per value of $l$); since $t <
-s$, the test $l < s$ is necessary for a rejection. $\square$
+words, the same number for all. As for the counts, let $g = \gcd( s ,
+2^{64} )$: the low words $l = x s \bmod 2^{64}$ are the multiples of $g$,
+each reached by $g$ words $x$, and both $t$ and $s$ are multiples of $g$
+(as $g$ divides $2^{64}$ and $s$). Hence exactly $t$ words have $l < t$
+and are rejected, and exactly $s$ words have $l < s$; since $t < s$, the
+test $l < s$ is necessary for a rejection. $\square$
 
 `uniformReal()` is $\lfloor x / 2^{11} \rfloor 2^{-53}$, uniform on the
 $2^{53}$ doubles $k 2^{-53}$ of $[ 0 , 1 )$.
@@ -1647,19 +1753,37 @@ $\square$
 
 The draw $g() \bmod j$ of the book is off the uniform by at most
 $j / 2^{64}$ for a generator of 64 bits, and by much more on a narrow
-range; `shuffle()` draws instead by the method of Lemire on a full word
-and by rejection on a narrower range, so that its indices are exact on
-any generator. Moreover,
+range (with a generator of the three numbers 1, 2, 3 and $j = 2$, one
+index comes twice as often as the other). Instead, `shuffle()` draws each
+index by `detail::uniformIndex()`, which is exact on any generator $g$ of
+the $r + 1$ numbers from `g.min()` to `g.max()`, by three cases: (i) on a
+full word, $r + 1 = 2^{64}$, it is the method of Lemire of
+[Lemma 17.17](17-numeric.md#lem-17-17); (ii) when $j \le r + 1 < 2^{64}$,
+it returns $\lfloor x / q \rfloor$ for $q = \lfloor ( r + 1 ) / j
+\rfloor$ and the offset $x$ of the number from `g.min()`, rejecting the
+$x \ge q j$, so that each result has exactly $q$ values of $x$; (iii) when
+$j > r + 1$, it returns $( r + 1 ) y + x$, with $y$ drawn recursively below
+$\lceil j / ( r + 1 ) \rceil$ and $x$ a fresh offset, rejecting the
+results from $j$ on. In (iii) the pair $( y , x )$ is uniform, and it is
+the pair of digits in base $r + 1$ of a number uniform below $( r + 1 )
+\lceil j / ( r + 1 ) \rceil$, whose restriction to $[ 0 , j )$ is uniform;
+a sum that wraps around $2^{64}$ is detected as smaller than $( r + 1 ) y$
+and rejected too. Each case thus gives the uniform $k$ that
+[Lemma 17.18](17-numeric.md#lem-17-18) assumes, and `reservoirSampling()`
+draws in the same way. Moreover,
 `shuffleFast()` of `RandomGenerators.h` draws exact indices, and
 fewer words, after [Brackett-Rozinsky and Lemire
 2025](Z-bibliography.md#ref-brackettrozinsky2025). One word $x$ gives the
 indices of $k$ consecutive steps of bounds $b_1 , \ldots , b_k$ of product
 $p \le 2^{64}$, the $j$-th being the high word of $l_{j-1} b_j$, with
-$l_0 = x$ and $l_j$ its low word. By the argument of
-[Lemma 17.17](17-numeric.md#lem-17-17) applied to the mixed radix $b_1 ,
-\ldots , b_k$, the tuple is uniform on the $\prod b_j$ tuples once
-$l_k < 2^{64} \bmod p$ is rejected, which happens with probability below
-$p / 2^{64}$. In the header, 6 steps are taken per word while the bounds are below
+$l_0 = x$ and $l_j$ its low word. By induction on $j$, $x b_1 \cdots b_j =
+H_j 2^{64} + l_j$, where $H_j$ is the number of digits $h_1 , \ldots ,
+h_j$ in the mixed radix $b_1 , \ldots , b_j$ (indeed, $H_j 2^{64} + l_j =
+( H_{j-1} 2^{64} + l_{j-1} ) b_j = ( H_{j-1} b_j + h_j ) 2^{64} + l_j$).
+Thus the tuple is the draw of Lemire below $p$ on the word $x$, and by
+[Lemma 17.17](17-numeric.md#lem-17-17) it is uniform on the $p$ tuples
+once $l_k < 2^{64} \bmod p$ is rejected, which happens with probability
+below $p / 2^{64}$. In the header, 6 steps are taken per word while the bounds are below
 $2^{10}$ ($p < 2^{60}$) and 2 below $2^{32}$; a shuffle of $n$ items thus
 draws about $n / 2$ words instead of $n$.
 
@@ -1733,7 +1857,10 @@ probability $1 / n$, the claim follows. $\square$
 In floating point the remaining shares are 1 up to the rounding, and the
 code sets them to 1; the cells and the coins drawn from a word are off the
 exact ones by at most $n / 2^{64}$ each, as for the products of Lemire with
-no rejection.
+no rejection. The weights must be finite and nonnegative, with a positive sum,
+and at most $2^{32} - 1$ in number; a draw is `table(g)`, `size()` returns $n$, and
+`probability(i)` gives the probability of $i$ as the table holds it, which
+the tests compare with $w_i / \sum_j w_j$.
 
 ## 17.10 Random sampling {#sec-17-10}
 
@@ -1754,7 +1881,9 @@ $N$ positions: $n$ random numbers, but $\Theta( N )$ space. Alternatively,
 draws again those already there. With $n \le N / 2$, a draw repeats with
 probability below $1 / 2$, hence $O( n )$ expected time and space; for $n
 > N / 2$, the $N - n$ positions left out are drawn instead. Finally,
-`sampleBySorting()` draws $k$ positions at a time and sorts them by a
+`sampleBySorting()` draws at each round as many positions $k$ as are
+still missing (the $N - n$ left out when $n > N / 2$, as above) and
+sorts them by a
 bucket sort ($k$ buckets of width $\lceil N / k \rceil$, $O( 1 )$
 expected items each, sorted by insertion). It merges them with those
 already drawn, removing the repetitions, and draws again only the
@@ -1794,8 +1923,11 @@ for $v$ positions still to select among $V$. Its Algorithm D draws by
 rejection with a continuous envelope, with about $n$ random numbers and
 $O( n )$ expected time. It falls back to Algorithm A (the gap by the
 sequential search of its distribution, $O( N )$ time but $n$ random
-numbers) once $n$ exceeds $N / 13$, where A is faster ([Algorithm
-17.36](17-numeric.md#alg-17-36)).
+numbers) when $13 n \ge N$ at the start, or as soon as $13 v \ge V$ during
+the draws, where A is faster ([Algorithm 17.36](17-numeric.md#alg-17-36)).
+Its optional argument `randoms` receives the count of the random numbers
+drawn, as `rounds` of `sampleBySorting()` receives the count of its
+rounds; the tests bound both.
 
 <span id="alg-17-36"></span>**Algorithm 17.36.** Selection of [Knuth
 1998, Algorithm 3.4.2S](Z-bibliography.md#ref-knuth1998v2), and the skips
@@ -1839,7 +1971,12 @@ uniform item of the reservoir. Since the item $t > n$ enters with probability
 $n / t$, about $n ( H_N - H_n ) \approx n \ln( N / n )$ items enter in
 expectation, each for 3 random numbers; hence the method draws $O( n ( 1 +
 \log( N / n ) ) )$ random numbers in all and, on a random access range,
-takes as much time, the skipped items never being touched.
+takes as much time, the skipped items never being touched. On input
+iterators, instead, the skipped items are read and passed over one by one,
+and the function accepts any pair of an input iterator and a sentinel (a
+stream read once, for instance); a stream of at most $n$ items is returned
+whole, in its order, while a longer one gives the sample in no particular
+order.
 
 <span id="alg-17-37"></span>**Algorithm 17.37.** Samplings of a
 stream of unknown length: by a heap, by Algorithm R, and by Algorithm L.
@@ -1996,3 +2133,24 @@ Each exercise names the test of the library that solves it (run it with
     by the skips of Vitter, and $n$ items of a stream of unknown length by
     a heap and by Algorithm L. Tests: `pearls_io.ch3.samplers-uniform`,
     `pearls_io.ch3.heap-sampling`, `engineered_numeric.reservoir-l`.
+24. Find the largest $n$ whose factorial fits a word of 64 bits, and show
+    that $21!$ wraps around modulo $2^{64}$. Test: `ch02.sec2.10.factorial`.
+25. Check the products of two words into 128 bits, the carries and the
+    division of 128 by 64 bits on which `BigInteger` rests, also with
+    the four products of halves of `ADS_BIGINT_PORTABLE`. Test:
+    `taocp.big-integer-words`.
+26. Multiply, transpose and scale rectangular matrices of `Matrix.h`, and
+    check that $( A B )^T = B^T A^T$. Test: `beyond.rectangular-matrix`.
+27. Sample a stream read once by Algorithm L, on input iterators and
+    sentinels, and check the counts of the random numbers drawn by the
+    skips of Vitter and of the rounds of the sampling by sorting, and the
+    transfers of blocks that reading a sorted sample costs. Tests:
+    `engineered_numeric.reservoir-l-input`, `pearls_io.ch3.sampler-costs`,
+    `pearls_io.ch3.sample-ios`.
+28. Check that the contracts of the area reject the arguments out of
+    their ranges (e.g., $\binom{68}{1}$ and $F_{93}$ in 64 bits) and accept
+    those at the bounds. Tests: `contract_numeric.binary-integer`,
+    `contract_numeric.combinatorics`, `contract_numeric.matrix`,
+    `contract_numeric.matrix-chain`, `contract_numeric.number-theory`,
+    `contract_numeric.polynomial`, `contract_numeric.rsa`,
+    `contract_numeric.other-numeric`.
