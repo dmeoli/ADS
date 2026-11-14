@@ -4,8 +4,8 @@
 /** @file
  * The y-fast trie of Willard, beyond the book, in the form of section 13.3
  * of Morin's book: a SORTED SET of the integers of \f$ w \f$ bits, each
- * with a value, in \f$ O( n ) \f$ space, whose `find( x )` (the smallest
- * key \f$ \ge x \f$), `insert()` and `remove()` take
+ * with a value, in \f$ O( n ) \f$ space, whose `lowerBound( x )` (the
+ * smallest key \f$ \ge x \f$, the `find( x )` of the SSet of the book), `insert()` and `remove()` take
  * \f$ O( \log w ) \f$ expected time, the last two amortized.
  *
  * The keys are cut into groups of consecutive keys, each kept in a
@@ -94,6 +94,7 @@ class YFastTrie {
  public:
 
  using Key = U;     ///< the type of the keys
+ using Item = U;    ///< the items of the SSet, the keys
  using Value = V;   ///< the type of the values
 
  /// the empty trie, its coins drawn from the seed
@@ -113,21 +114,27 @@ class YFastTrie {
 
 /*--------------------------------------------------------------------------*/
 
- /// the smallest key \f$ \ge x \f$, or nothing, in \f$ O( \log w ) \f$
- /// expected time
+ /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of the
+ /// SSet of Morin's book), in \f$ O( \log w ) \f$ expected time
  ///
  /// In pseudocode (section 13.3 of Morin's book), \f$ X \f$ the x-fast
  /// trie of the representatives:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
- /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{find}( x ) \cr
+ /// 1 & \textbf{function}\ \mathrm{lowerBound}( x ) \cr
+ /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{lowerBound}( x )
+ ///     \cr
  /// 3 & \quad \textbf{return}\ \text{the smallest key} \ge x \text{ of }
  ///     T \text{, or } \textbf{nil}
  /// \end{array}}
  /// \f]
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] std::optional< U > find( U x ) const;
+ [[nodiscard]] const U * lowerBound( U x ) const;
+
+ /// the key \f$ x \f$, nil if it is not there, in \f$ O( \log w ) \f$
+ /// expected time
+ /// \pre \f$ x < 2^w \f$
+ [[nodiscard]] const U * find( U x ) const;
 
  /// the value of \f$ x \f$, or nothing
  /// \pre \f$ x < 2^w \f$
@@ -144,7 +151,7 @@ class YFastTrie {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{insert}( x , v ) \cr
- /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{find}( x ) \cr
+ /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{lowerBound}( x ) \cr
  /// 3 & \quad \textbf{if}\ x \in T\ \textbf{then}\ \text{give it the value }
  ///     v;\ \textbf{return false} \cr
  /// 4 & \quad T.\mathrm{insert}( x , v ) \cr
@@ -167,7 +174,7 @@ class YFastTrie {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{remove}( x ) \cr
- /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{find}( x ) \cr
+ /// 2 & \quad ( r , T ) \gets \text{the pair of } X.\mathrm{lowerBound}( x ) \cr
  /// 3 & \quad \textbf{if}\ x \notin T\ \textbf{then return false} \cr
  /// 4 & \quad T.\mathrm{remove}( x ) \cr
  /// 5 & \quad \textbf{if}\ x = r \ne 2^w - 1\ \textbf{then} \cr

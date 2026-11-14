@@ -69,15 +69,20 @@ const U * YFastTrie< U , V , W >::ceiling( const Group & T , U x )
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-std::optional< U > YFastTrie< U , V , W >::find( U x ) const
+const U * YFastTrie< U , V , W >::lowerBound( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [YFastTrie-find]
- const Group * T = ( *f_x.lowerBound( x ) ).second;
- if( const U * k = ceiling( *T , x ) )
-  return( *k );
- return( std::nullopt );
-//! [YFastTrie-find]
+//! [YFastTrie-lowerBound]
+ return( ceiling( *( *f_x.seek( x ) ).second , x ) );
+//! [YFastTrie-lowerBound]
+ }
+
+template< std::unsigned_integral U , class V , int W >
+ requires TrieWidth< U , W >
+const U * YFastTrie< U , V , W >::find( U x ) const
+{
+ const U * k = lowerBound( x );
+ return( k && ( *k == x ) ? k : nullptr );
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -85,7 +90,7 @@ template< std::unsigned_integral U , class V , int W >
 std::optional< V > YFastTrie< U , V , W >::lookup( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
- return( ( *f_x.lowerBound( x ) ).second->lookup( x ) );
+ return( ( *f_x.seek( x ) ).second->lookup( x ) );
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -93,7 +98,7 @@ template< std::unsigned_integral U , class V , int W >
 bool YFastTrie< U , V , W >::contains( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
- return( ( *f_x.lowerBound( x ) ).second->contains( x ) );
+ return( ( *f_x.seek( x ) ).second->contains( x ) );
  }
 
 template< std::unsigned_integral U , class V , int W >
@@ -102,7 +107,7 @@ bool YFastTrie< U , V , W >::insert( U x , const V & v )
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
 //! [YFastTrie-insert]
- const auto [ r , T ] = *f_x.lowerBound( x );
+ const auto [ r , T ] = *f_x.seek( x );
  const bool fresh = ! T->contains( x );
  T->insert( x , v );
  if( fresh ) {
@@ -128,7 +133,7 @@ bool YFastTrie< U , V , W >::remove( U x )
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
 //! [YFastTrie-remove]
- auto it = f_x.lowerBound( x );
+ auto it = f_x.seek( x );
  const auto [ r , T ] = *it;
  if( ! T->contains( x ) )
   return( false );

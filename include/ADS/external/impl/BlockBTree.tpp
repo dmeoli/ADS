@@ -60,9 +60,9 @@ void BlockBTree< K >::path( std::size_t len ) const
  }
 
 template< std::totally_ordered K >
-std::optional< K > BlockBTree< K >::find( const K & x ) const
+std::optional< K > BlockBTree< K >::lowerBound( const K & x ) const
 {
-//! [BlockBTree-find]
+//! [BlockBTree-lowerBound]
  std::optional< K > z;
  std::size_t u = f_root;
  Held cur( this , f_bs.readBlock( u ) );
@@ -79,13 +79,13 @@ std::optional< K > BlockBTree< K >::find( const K & x ) const
   u = a.kids[ i ];
   cur.node = f_bs.readBlock( u );
   }
-//! [BlockBTree-find]
+//! [BlockBTree-lowerBound]
  }
 
 template< std::totally_ordered K >
 bool BlockBTree< K >::contains( const K & x ) const
 {
- const auto z = find( x );
+ const auto z = lowerBound( x );
  return( z && ( *z == x ) );
  }
 

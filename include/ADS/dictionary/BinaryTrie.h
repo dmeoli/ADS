@@ -4,8 +4,8 @@
 /** @file
  * The binary tries of the integers of \f$ w \f$ bits, beyond the book: a
  * SORTED SET of keys \f$ x \in \{ 0 , \ldots , 2^w - 1 \} \f$, each with a
- * value, in which `find( x )` gives the smallest key \f$ \ge x \f$ (the
- * successor), in time that depends on \f$ w \f$ and not on the number
+ * value, in which `lowerBound( x )` gives the smallest key \f$ \ge x \f$
+ * (the successor, the `find( x )` of the SSet of Morin's book), in time that depends on \f$ w \f$ and not on the number
  * \f$ n \f$ of keys.
  *
  * - `BinaryTrie` is the digital search tree of section 13.1 of Morin's
@@ -16,7 +16,7 @@
  *   a jump pointer to the smallest leaf below it, if its child 0 is
  *   missing, or to the largest, if its child 1 is. A search that falls off
  *   the trie at depth \f$ i \f$ thus reaches the successor through the jump
- *   pointer and at most one step of the list; `find()`, `insert()` and
+ *   pointer and at most one step of the list; `lowerBound()`, `insert()` and
  *   `remove()` take \f$ O( w ) \f$ time, and the trie has at most
  *   \f$ n w + 1 \f$ nodes. The leaves are the nodes themselves, their two
  *   children used as the links of the list, and the nodes come from an
@@ -151,6 +151,7 @@ class JumpTrie {
  public:
 
  using Key = U;     ///< the type of the keys
+ using Item = U;    ///< the items of the SSet, the keys
  using Value = V;   ///< the type of the values
 
  /// the empty trie
@@ -170,7 +171,8 @@ class JumpTrie {
 
 /*--------------------------------------------------------------------------*/
 
- /// the smallest key \f$ \ge x \f$, or nothing, in \f$ O( w ) \f$ time, or
+ /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of the
+ /// SSet of Morin's book), in \f$ O( w ) \f$ time, or
  /// \f$ O( \log w ) \f$ expected for the x-fast trie
  ///
  /// In pseudocode (section 13.1 of Morin's book), \f$ u \f$ the deepest
@@ -178,7 +180,7 @@ class JumpTrie {
  /// \f$ c \f$ the bit \f$ i \f$ of \f$ x \f$, whose child is missing:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
+ /// 1 & \textbf{function}\ \mathrm{lowerBound}( x ) \cr
  /// 2 & \quad ( u , i ) \gets \text{the deepest node of the path of } x \cr
  /// 3 & \quad \textbf{if}\ i = w\ \textbf{then return}\ x \cr
  /// 4 & \quad \textbf{if}\ c = 0\ \textbf{then}\ l \gets u.\mathit{jump}
@@ -190,7 +192,13 @@ class JumpTrie {
  /// \end{array}}
  /// \f]
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] std::optional< U > find( U x ) const;
+ [[nodiscard]] const U * lowerBound( U x ) const;
+
+ /// the key \f$ x \f$, nil if it is not there (the `find( x )` of the USet
+ /// of Morin's book), in \f$ O( w ) \f$ time, or \f$ O( 1 ) \f$ expected
+ /// for the x-fast trie
+ /// \pre \f$ x < 2^w \f$
+ [[nodiscard]] const U * find( U x ) const;
 
  /// the value of \f$ x \f$, or nothing
  /// \pre \f$ x < 2^w \f$
@@ -211,7 +219,7 @@ class JumpTrie {
  /// 3 & \quad \textbf{if}\ i = w\ \textbf{then}\ u.\mathit{value} \gets v;
  ///     \ \textbf{return false} \cr
  /// 4 & \quad p \gets \text{the predecessor of } x \text{, by }
- ///     u.\mathit{jump} \text{ as in } \mathrm{find} \cr
+ ///     u.\mathit{jump} \text{ as in } \mathrm{lowerBound} \cr
  /// 5 & \quad \text{add the nodes of the path of } x \text{ from depth }
  ///     i + 1 \text{ to } w \cr
  /// 6 & \quad \text{link the leaf } \ell \text{ of } x \text{ after } p \cr
@@ -371,7 +379,7 @@ class JumpTrie {
 
  /// the iterator on the smallest key \f$ \ge x \f$, `end()` if none
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] const_iterator lowerBound( U x ) const;
+ [[nodiscard]] const_iterator seek( U x ) const;
 
 /*--------------------------------------------------------------------------*/
  protected:
@@ -454,6 +462,7 @@ class SimpleBinaryTrie {
  public:
 
  using Key = U;     ///< the type of the keys
+ using Item = U;    ///< the items of the SSet, the keys
  using Value = V;   ///< the type of the values
 
  /// the empty trie
@@ -471,7 +480,8 @@ class SimpleBinaryTrie {
  /// frees the nodes
  ~SimpleBinaryTrie();
 
- /// the smallest key \f$ \ge x \f$, or nothing, in \f$ O( w ) \f$ time
+ /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of the
+ /// SSet of Morin's book), in \f$ O( w ) \f$ time
  ///
  /// In pseudocode (exercise 13.1 of Morin's book), \f$ a \f$ the deepest
  /// node of the path of \f$ x \f$ where the path goes to the child 0 and
@@ -479,7 +489,7 @@ class SimpleBinaryTrie {
  /// \f$ x \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
+ /// 1 & \textbf{function}\ \mathrm{lowerBound}( x ) \cr
  /// 2 & \quad u \gets \mathit{root};\ a \gets \textbf{nil} \cr
  /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ w - 1\ \textbf{do} \cr
  /// 4 & \qquad c \gets \text{the bit } i \text{ of } x \cr
@@ -494,7 +504,11 @@ class SimpleBinaryTrie {
  /// \end{array}}
  /// \f]
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] std::optional< U > find( U x ) const;
+ [[nodiscard]] const U * lowerBound( U x ) const;
+
+ /// the key \f$ x \f$, nil if it is not there, in \f$ O( w ) \f$ time
+ /// \pre \f$ x < 2^w \f$
+ [[nodiscard]] const U * find( U x ) const;
 
  /// the value of \f$ x \f$, or nothing
  /// \pre \f$ x < 2^w \f$

@@ -5,7 +5,8 @@
  * The B-tree of chapter 14 of Morin's book, beyond the book, on a
  * `BlockStore` [see `BlockStore.h`]: a SORTED SET whose nodes are blocks
  * of the external memory, each read and written by one I/O, and whose
- * `find( x )` (the smallest key \f$ \ge x \f$), `insert()` and `remove()`
+ * `lowerBound( x )` (the smallest key \f$ \ge x \f$, the `find( x )` of
+ * the SSet of the book), `insert()` and `remove()`
  * take \f$ O( \log_B n ) \f$ I/Os, \f$ O( B \log_B n ) \f$ time with a
  * binary search in each node.
  *
@@ -143,7 +144,8 @@ class BlockBTree {
 /*--------------------------------------------------------------------------*/
  public:
 
- using Key = K;   ///< the type of the keys
+ using Key = K;    ///< the type of the keys
+ using Item = K;   ///< the items of the sorted set, the keys
 
  /// the empty tree of the parameter \f$ B \f$ and of the policy `p`, whose
  /// I/Os are also counted by `mem`, if given
@@ -154,12 +156,13 @@ class BlockBTree {
 /*--------------------------------------------------------------------------*/
 
  /// the smallest key \f$ \ge x \f$, or nothing, in \f$ O( \log_B n ) \f$
- /// I/Os
+ /// I/Os: a copy, since the blocks of the external memory are copied into
+ /// the internal one, not pointed to
  ///
  /// In pseudocode (section 14.2.1 of Morin's book):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
+ /// 1 & \textbf{function}\ \mathrm{lowerBound}( x ) \cr
  /// 2 & \quad u \gets \mathit{root};\ z \gets \textbf{nil} \cr
  /// 3 & \quad \textbf{loop} \cr
  /// 4 & \qquad \text{read } u;\ i \gets \text{the first place with }
@@ -172,7 +175,7 @@ class BlockBTree {
  /// 8 & \qquad u \gets u.\mathit{children}[ i ]
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::optional< K > find( const K & x ) const;
+ [[nodiscard]] std::optional< K > lowerBound( const K & x ) const;
 
  /// true if \f$ x \f$ is there, in \f$ O( \log_B n ) \f$ I/Os
  [[nodiscard]] bool contains( const K & x ) const;

@@ -23,13 +23,13 @@ namespace ADS {
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-std::optional< U > XFastTrie< U , V , W >::findNear( U x ) const
+const U * XFastTrie< U , V , W >::findNear( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
  if( this->f_n == 0 )
-  return( std::nullopt );
- if( this->node( x , W ) )
-  return( x );
+  return( nullptr );
+ if( const auto * l = this->node( x , W ) )
+  return( &l->key );
 //! [XFastTrie-findNear]
  int h = W;   // a depth whose prefix of x is not there
  for( int K = 1 ; ; K = std::min( 2 * K , W ) ) {
@@ -38,15 +38,13 @@ std::optional< U > XFastTrie< U , V , W >::findNear( U x ) const
   if( auto * u = this->node( p , d ) ) {   // the root, at d = 0, is there
    const auto [ v , i ] = this->deepest( x , d , h , u );
    const auto * l = this->successor( x , v , i );
-   if( l == this->f_dummy )
-    return( std::nullopt );
-   return( l->key );
+   return( l == this->f_dummy ? nullptr : &l->key );
    }
   // no key in the block of x: the successor is the smallest of the next
   // block, if that is there
   if( p < U( ( U( 1 ) << d ) - 1 ) )
    if( auto * u = this->node( U( p + 1 ) , d ) )
-    return( this->leftmost( u , d )->key );
+    return( &this->leftmost( u , d )->key );
   h = d;
   }
 //! [XFastTrie-findNear]
@@ -160,18 +158,25 @@ auto ListXFastTrie< U , V , W >::successor( U x ) const -> Leaf *
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-std::optional< U > ListXFastTrie< U , V , W >::find( U x ) const
+const U * ListXFastTrie< U , V , W >::lowerBound( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
  const Leaf * l = successor( x );
- if( l == f_dummy )
-  return( std::nullopt );
- return( l->key );
+ return( l == f_dummy ? nullptr : &l->key );
  }
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-auto ListXFastTrie< U , V , W >::lowerBound( U x ) const -> const_iterator
+const U * ListXFastTrie< U , V , W >::find( U x ) const
+{
+ ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
+ const Entry * e = f_t[ W ].find( x );
+ return( e ? &e->min->key : nullptr );
+ }
+
+template< std::unsigned_integral U , class V , int W >
+ requires TrieWidth< U , W >
+auto ListXFastTrie< U , V , W >::seek( U x ) const -> const_iterator
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
  return( const_iterator( successor( x ) ) );
@@ -179,13 +184,13 @@ auto ListXFastTrie< U , V , W >::lowerBound( U x ) const -> const_iterator
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-std::optional< U > ListXFastTrie< U , V , W >::findNear( U x ) const
+const U * ListXFastTrie< U , V , W >::findNear( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
  if( f_n == 0 )
-  return( std::nullopt );
- if( f_t[ W ].contains( x ) )
-  return( x );
+  return( nullptr );
+ if( const Entry * f = f_t[ W ].find( x ) )
+  return( &f->min->key );
 //! [ListXFastTrie-findNear]
  int h = W;
  for( int K = 1 ; ; K = std::min( 2 * K , W ) ) {
@@ -195,12 +200,10 @@ std::optional< U > ListXFastTrie< U , V , W >::findNear( U x ) const
   if( entry( p , d , e ) ) {
    const int l = deepest( x , d , h , e );
    const Leaf * s = follow( x , e , l );
-   if( s == f_dummy )
-    return( std::nullopt );
-   return( s->key );
+   return( s == f_dummy ? nullptr : &s->key );
    }
   if( p < U( ( U( 1 ) << d ) - 1 ) && entry( U( p + 1 ) , d , e ) )
-   return( e.min->key );
+   return( &e.min->key );
   h = d;
   }
 //! [ListXFastTrie-findNear]

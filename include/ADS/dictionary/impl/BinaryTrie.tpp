@@ -176,19 +176,32 @@ auto JumpTrie< U , V , W , Hashed >::leftmost( Node * u , int i ) const
 
 template< std::unsigned_integral U , class V , int W , bool Hashed >
  requires TrieWidth< U , W >
-std::optional< U > JumpTrie< U , V , W , Hashed >::find( U x ) const
+const U * JumpTrie< U , V , W , Hashed >::lowerBound( U x ) const
 {
  ADS_PRE( ( trieKey< U , W >( x ) ) );
  const auto [ u , i ] = deepest( x );
  const Node * l = successor( x , u , i );
- if( l == f_dummy )
-  return( std::nullopt );
- return( l->key );
+ return( l == f_dummy ? nullptr : &l->key );
  }
 
 template< std::unsigned_integral U , class V , int W , bool Hashed >
  requires TrieWidth< U , W >
-auto JumpTrie< U , V , W , Hashed >::lowerBound( U x ) const
+const U * JumpTrie< U , V , W , Hashed >::find( U x ) const
+{
+ ADS_PRE( ( trieKey< U , W >( x ) ) );
+ if constexpr( Hashed ) {
+  const Node * l = node( x , W );
+  return( l ? &l->key : nullptr );
+  }
+ else {
+  const auto [ u , i ] = deepest( x );
+  return( i == W ? &u->key : nullptr );
+  }
+ }
+
+template< std::unsigned_integral U , class V , int W , bool Hashed >
+ requires TrieWidth< U , W >
+auto JumpTrie< U , V , W , Hashed >::seek( U x ) const
  -> const_iterator
 {
  ADS_PRE( ( trieKey< U , W >( x ) ) );
@@ -491,10 +504,19 @@ auto SimpleBinaryTrie< U , V , W >::leaf( U x ) const -> const Leaf *
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-std::optional< U > SimpleBinaryTrie< U , V , W >::find( U x ) const
+const U * SimpleBinaryTrie< U , V , W >::find( U x ) const
 {
  ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
-//! [SimpleBinaryTrie-find]
+ const Leaf * l = leaf( x );
+ return( l ? &l->key : nullptr );
+ }
+
+template< std::unsigned_integral U , class V , int W >
+ requires TrieWidth< U , W >
+const U * SimpleBinaryTrie< U , V , W >::lowerBound( U x ) const
+{
+ ADS_PRE( ( detail::trieKey< U , W >( x ) ) );
+//! [SimpleBinaryTrie-lowerBound]
  const Node * u = &f_root;
  const Node * a = nullptr;   // the nearest subtree of larger keys
  int d = 0;                  // its depth
@@ -510,13 +532,13 @@ std::optional< U > SimpleBinaryTrie< U , V , W >::find( U x ) const
   u = u->child[ c ];
   }
  if( i == W )
-  return( x );
+  return( &static_cast< const Leaf * >( u )->key );
  if( ! a )
-  return( std::nullopt );
+  return( nullptr );
  for( ; d < W ; ++d )   // the leftmost leaf below a
   a = a->child[ 0 ] ? a->child[ 0 ] : a->child[ 1 ];
- return( static_cast< const Leaf * >( a )->key );
-//! [SimpleBinaryTrie-find]
+ return( &static_cast< const Leaf * >( a )->key );
+//! [SimpleBinaryTrie-lowerBound]
  }
 
 template< std::unsigned_integral U , class V , int W >

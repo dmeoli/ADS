@@ -67,11 +67,32 @@
 #include <variant>
 #include <vector>
 
+// the sorted sets of integers and of strings are SSets, and the tables of
+// chapter 5 dictionaries [see SetInterfaces.h, where it is there]
+#if __has_include( "ADS/set/SetInterfaces.h" )
+ #include "ADS/set/SetInterfaces.h"
+static_assert( ADS::SSet< ADS::BinaryTrie< std::uint32_t > > );
+static_assert( ADS::SSet< ADS::SimpleBinaryTrie< std::uint32_t > > );
+static_assert( ADS::SSet< ADS::XFastTrie< std::uint32_t > > );
+static_assert( ADS::SSet< ADS::ListXFastTrie< std::uint32_t > > );
+static_assert( ADS::SSet< ADS::YFastTrie< std::uint32_t > > );
+static_assert( ADS::SSet< ADS::BitmapTrie<> > );
+#endif
+
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 namespace {
+
+/// the item that a pointer gives, or nothing for nil
+template< class T >
+std::optional< T > opt( const T * p )
+{
+ if( ! p )
+  return( std::nullopt );
+ return( *p );
+ }
 
 /// the successor of \f$ x \f$ in \f$ S \f$, the find( x ) of Morin's SSet
 template< class S , class K >
@@ -120,14 +141,15 @@ void againstSet( T & t , int b , int ops , std::uint64_t seed )
     CHECK( t.contains( x ) == ( s.count( x ) == 1 ) );
    }
   const U y = U( ( key() + U( g() % 3 ) - U( 1 ) ) & mask );
-  CHECK( t.find( y ) == successorIn( s , y ) );
+  CHECK( opt( t.lowerBound( y ) ) == successorIn( s , y ) );
+  CHECK( ( t.find( y ) != nullptr ) == ( s.count( y ) == 1 ) );
   CHECK( t.size() == s.size() );
   }
  // the keys in order, and all of them removed
  std::vector< U > all( s.begin() , s.end() );
  for( const U x : all )
   CHECK( t.remove( x ) );
- CHECK( t.empty() && ! t.find( 0 ) );
+ CHECK( t.empty() && ! t.lowerBound( 0 ) );
  }
 
 /// the keys of a container with an iterator of pairs, in order
@@ -167,13 +189,14 @@ void trieTests( std::uint64_t seed )
  {
   // the values, and the extreme keys
   typename F::template type< std::uint32_t , int , 32 > t;
-  CHECK( ! t.find( 0 ) );
+  CHECK( ! t.lowerBound( 0 ) );
   CHECK( t.insert( 0xffffffffu , 7 ) && t.insert( 0 , 3 ) );
   CHECK( ! t.insert( 0 , 4 ) );
   CHECK( t.lookup( 0 ) == 4 && t.lookup( 0xffffffffu ) == 7 );
   CHECK( ! t.lookup( 5 ) );
-  CHECK( t.find( 1 ) == 0xffffffffu && t.find( 0 ) == 0u );
-  CHECK( t.remove( 0xffffffffu ) && ! t.find( 1 ) );
+  CHECK( *t.lowerBound( 1 ) == 0xffffffffu && *t.lowerBound( 0 ) == 0u );
+  CHECK( *t.find( 0 ) == 0u && ! t.find( 1 ) );
+  CHECK( t.remove( 0xffffffffu ) && ! t.lowerBound( 1 ) );
   }
  }
 
@@ -221,7 +244,7 @@ void iteratorTests( void )
   CHECK( ( *--it ).first == *r );
  CHECK( it == t.begin() );
  for( std::uint32_t x = 0 ; x < 5100 ; x += 7 ) {
-  const auto lb = t.lowerBound( x );
+  const auto lb = t.seek( x );
   const auto sb = s.lower_bound( x );
   CHECK( ( lb == t.end() ) == ( sb == s.end() ) );
   if( sb != s.end() )
@@ -248,9 +271,9 @@ ADS_TEST( "ods13.1.binary-trie" )
  CHECK( t.min() == 0 && t.max() == 999 );
  // moved, the source left empty and usable
  ADS::BinaryTrie< std::uint16_t > u( std::move( t ) );
- CHECK( u.size() == 334 && t.empty() && ! t.find( 0 ) );
+ CHECK( u.size() == 334 && t.empty() && ! t.lowerBound( 0 ) );
  t.insert( 5 );
- CHECK( t.find( 0 ) == 5 );
+ CHECK( *t.lowerBound( 0 ) == 5 );
  t.clear();
  CHECK( t.empty() && t.nodes() == 1 );
  }
@@ -315,7 +338,8 @@ ADS_TEST( "ods.ex13.2.list-x-fast-trie" )
  CHECK( x.entries() + 1 == b.nodes() );
  }
 
-// ods ex 13.4: findNear() of both x-fast tries equals find() on every key
+// ods ex 13.4: findNear() of both x-fast tries equals lowerBound() on every
+// key
 // near the keys and far from them, also when the successor is past a carry
 // (0111...1 and 1000...0, at distance 1, with no common prefix)
 ADS_TEST( "ods.ex13.4.find-near" )
@@ -326,8 +350,8 @@ ADS_TEST( "ods.ex13.4.find-near" )
  const std::uint64_t half = std::uint64_t( 1 ) << 63;
  x.insert( half );
  l.insert( half );
- CHECK( x.findNear( half - 1 ) == half && l.findNear( half - 1 ) == half );
- CHECK( x.findNear( 0 ) == half && l.findNear( 0 ) == half );
+ CHECK( *x.findNear( half - 1 ) == half && *l.findNear( half - 1 ) == half );
+ CHECK( *x.findNear( 0 ) == half && *l.findNear( 0 ) == half );
  CHECK( ! x.findNear( half + 1 ) && ! l.findNear( half + 1 ) );
  std::mt19937_64 g( 6 );
  std::vector< std::uint64_t > K;
@@ -341,13 +365,14 @@ ADS_TEST( "ods.ex13.4.find-near" )
   for( std::uint64_t d : { 0ULL , 1ULL , 2ULL , 3ULL , 100ULL , 1ULL << 20 ,
                            1ULL << 40 } ) {
    const std::uint64_t y = k - d;
-   CHECK( x.findNear( y ) == x.find( y ) );
-   CHECK( l.findNear( y ) == x.find( y ) );
-   CHECK( l.find( y ) == x.find( y ) );
+   const auto e = opt( x.lowerBound( y ) );
+   CHECK( opt( x.findNear( y ) ) == e && opt( l.findNear( y ) ) == e );
+   CHECK( opt( l.lowerBound( y ) ) == e );
    }
  for( int i = 0 ; i < 20000 ; ++i ) {
   const std::uint64_t y = g();
-  CHECK( x.findNear( y ) == x.find( y ) && l.findNear( y ) == x.find( y ) );
+  const auto e = opt( x.lowerBound( y ) );
+  CHECK( opt( x.findNear( y ) ) == e && opt( l.findNear( y ) ) == e );
   }
  // a trie of w = 10 bits, every key searched
  ADS::ListXFastTrie< std::uint16_t , std::monostate , 10 > s;
@@ -357,8 +382,9 @@ ADS_TEST( "ods.ex13.4.find-near" )
   t.insert( std::uint16_t( k ) );
   }
  for( unsigned y = 0 ; y < 1024 ; ++y ) {
-  CHECK( s.findNear( std::uint16_t( y ) ) == s.find( std::uint16_t( y ) ) );
-  CHECK( t.findNear( std::uint16_t( y ) ) == s.find( std::uint16_t( y ) ) );
+  const auto e = opt( s.lowerBound( std::uint16_t( y ) ) );
+  CHECK( opt( s.findNear( std::uint16_t( y ) ) ) == e );
+  CHECK( opt( t.findNear( std::uint16_t( y ) ) ) == e );
   }
  }
 
@@ -384,7 +410,7 @@ ADS_TEST( "ods13.3.y-fast-trie" )
  using Pairs = std::vector< std::pair< std::uint32_t , int > >;
  CHECK( P == Pairs( m.begin() , m.end() ) );
  ADS::YFastTrie< std::uint32_t , int > u( std::move( t ) );
- CHECK( u.size() == m.size() && t.empty() && ! t.find( 0 ) );
+ CHECK( u.size() == m.size() && t.empty() && ! t.lowerBound( 0 ) );
  }
 
 // ods ex 13.3: the trie of strings of any length against a std::set of
@@ -407,7 +433,7 @@ ADS_TEST( "ods.ex13.3.bitmap-trie" )
    return( std::nullopt );
   return( it->first );
   };
- CHECK( ! t.find( "" ) );
+ CHECK( ! t.lowerBound( "" ) );
  for( int i = 0 ; i < 6000 ; ++i ) {
   const std::string w = word();
   switch( g() % 3 ) {
@@ -419,7 +445,8 @@ ADS_TEST( "ods.ex13.3.bitmap-trie" )
     CHECK( t.remove( w ) == ( s.erase( w ) == 1 ) );
    }
   const std::string y = word();
-  CHECK( t.find( y ) == succ( y ) );
+  CHECK( opt( t.lowerBound( y ) ) == succ( y ) );
+  CHECK( ( t.find( y ) != nullptr ) == ( s.count( y ) == 1 ) );
   CHECK( t.contains( y ) == ( s.count( y ) == 1 ) );
   CHECK( t.size() == s.size() );
   }
@@ -434,11 +461,11 @@ ADS_TEST( "ods.ex13.3.bitmap-trie" )
                      return( a == b.first ); } ) );
  // a long string, and all removed
  const std::string L( 100000 , 'z' );
- CHECK( t.insert( L ) && t.find( "z" ) == L );
+ CHECK( t.insert( L ) && *t.lowerBound( "z" ) == L );
  CHECK( t.remove( L ) );
  for( const auto & [ w , v ] : s )
   CHECK( t.remove( w ) );
- CHECK( t.empty() && t.nodes() == 1 && ! t.find( "" ) );
+ CHECK( t.empty() && t.nodes() == 1 && ! t.lowerBound( "" ) );
  }
 
 
@@ -1598,8 +1625,9 @@ void btreeAgainstSet( int B , ADS::BTreePolicy pol , int ops ,
          std::uint64_t( 8 * t.height() + 8 ) );
   const int y = int( g() % 3100 );
   const auto it = s.lower_bound( y );
-  CHECK( t.find( y ) == ( it == s.end() ? std::optional< int >() :
-                          std::optional< int >( *it ) ) );
+  const auto lb = t.lowerBound( y );
+  CHECK( lb.has_value() == ( it != s.end() ) );
+  CHECK( ! lb || ( *lb == *it ) );
   }
  std::vector< int > K;
  t.forEach( [ & ]( int k ) { K.push_back( k ); } );
@@ -1641,7 +1669,7 @@ ADS_TEST( "ods.ex14.1.figure" )
 {
  using L = std::vector< std::vector< std::vector< int > > >;
  auto t = figureBTree();
- CHECK( t.size() == 25 && t.height() == 3 );
+ CHECK( t.size() == 24 && t.height() == 3 );
  CHECK( t.insert( 3 ) && t.insert( 15 ) );
  CHECK( ( t.levels() == L{ { { 12 , 20 } } ,
                          { { 3 , 6 } , { 16 } , { 28 , 34 , 42 } } ,
@@ -1680,15 +1708,17 @@ ADS_TEST( "ods.ex14.3.internal-nodes" )
     t.insert( int( g() % 20000 ) );
    else
     t.remove( int( g() % 20000 ) );
+   // the bound for a root that is not a leaf
    const double n = double( t.size() );
-   CHECK( double( t.internalNodes() ) <=
-          ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) + 1e-9 );
+   CHECK( ( t.height() == 1 ) ||
+          ( double( t.internalNodes() ) <=
+            ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) + 1e-9 ) );
    }
   }
  }
 
 // ods ex 14.4: the internal memory of the operations, at most 5 nodes at
-// once and the path of the indices, whatever the height, where the
+// once and the path of the indices, on trees of 5 levels and more, where the
 // recursion of the book holds one node per level
 ADS_TEST( "ods.ex14.4.memory" )
 {
@@ -1700,7 +1730,7 @@ ADS_TEST( "ods.ex14.4.memory" )
    t.insert( int( g() ) );
   for( int i = 0 ; i < 30000 ; ++i )
    t.remove( int( g() ) );
-  CHECK( t.height() >= 8 );
+  CHECK( t.height() >= 5 );
   CHECK( t.peakNodes() <= 5 );
   CHECK( t.peakPath() < std::size_t( t.height() + 2 ) );
   }
@@ -1736,8 +1766,8 @@ ADS_TEST( "ods.ex14.6.restructures" )
   }
  }
 
-// ods ex 14.8: the B+-tree with the removal by borrows and merges, find()
-// the smallest key >= x and findRange( x , y ) the keys in ( x , y ],
+// ods ex 14.8: the B+-tree with the removal by borrows and merges,
+// lowerBound() the smallest key >= x and findRange( x , y ) the keys in ( x , y ],
 // against a std::map, the shape checked at each operation
 ADS_TEST( "ods.ex14.8.bplus-tree" )
 {
@@ -1759,8 +1789,9 @@ ADS_TEST( "ods.ex14.8.bplus-tree" )
    t.check();
    const int x = int( g() % 620 ) , y = x + int( g() % 50 );
    const auto it = s.lower_bound( x );
-   CHECK( t.find( x ) == ( it == s.end() ? std::optional< int >() :
-                           std::optional< int >( it->first ) ) );
+   const int * lb = t.lowerBound( x );
+   CHECK( ( lb == nullptr ) == ( it == s.end() ) );
+   CHECK( ! lb || ( *lb == it->first ) );
    std::vector< std::pair< int , int > > R;
    for( auto j = s.upper_bound( x ) ; j != s.end() && j->first <= y ; ++j )
     R.push_back( *j );

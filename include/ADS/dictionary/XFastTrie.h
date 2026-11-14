@@ -3,8 +3,9 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The x-fast tries of Willard, beyond the book: SORTED SETs of the integers
- * of \f$ w \f$ bits, each with a value, in which `find( x )` gives the
- * smallest key \f$ \ge x \f$ in \f$ O( \log w ) \f$ expected time.
+ * of \f$ w \f$ bits, each with a value, in which `lowerBound( x )` gives
+ * the smallest key \f$ \ge x \f$ (the `find( x )` of the SSet of Morin's
+ * book) in \f$ O( \log w ) \f$ expected time.
  *
  * - `XFastTrie` is the trie of section 13.2 of Morin's book: a
  *   `BinaryTrie` [see `BinaryTrie.h`] with, for each depth
@@ -126,7 +127,7 @@ class XFastTrie : public detail::JumpTrie< U , V , W , true > {
 
  using Base::Base;
 
- /// the smallest key \f$ \ge x \f$, or nothing, in
+ /// the smallest key \f$ \ge x \f$, nil if none, in
  /// \f$ O( 1 + \log d( x ) ) \f$ expected time
  ///
  /// In pseudocode (exercise 13.4 of Morin's book), \f$ t[ i ]( p ) \f$ the
@@ -143,14 +144,14 @@ class XFastTrie : public detail::JumpTrie< U , V , W , true > {
  /// 7 & \qquad\quad u \gets \text{the deepest node of the path of } x
  ///     \text{, by a binary search between } d \text{ and } h \cr
  /// 8 & \qquad\quad \textbf{return}\ \text{the successor of } x \text{ from }
- ///     u \text{, as in } \mathrm{find} \cr
+ ///     u \text{, as in } \mathrm{lowerBound} \cr
  /// 9 & \qquad \textbf{if}\ t[ d ]( p + 1 ) \ne \textbf{nil}\ \textbf{then}
  ///     \ \textbf{return}\ \text{its smallest leaf} \cr
  /// 10 & \qquad h \gets d;\ K \gets \min\{ 2 K , w \}
  /// \end{array}}
  /// \f]
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] std::optional< U > findNear( U x ) const;
+ [[nodiscard]] const U * findNear( U x ) const;
 
  };  // end( class XFastTrie )
 
@@ -169,6 +170,7 @@ class ListXFastTrie {
  public:
 
  using Key = U;     ///< the type of the keys
+ using Item = U;    ///< the items of the SSet, the keys
  using Value = V;   ///< the type of the values
 
  /// the empty trie
@@ -188,15 +190,15 @@ class ListXFastTrie {
 
 /*--------------------------------------------------------------------------*/
 
- /// the smallest key \f$ \ge x \f$, or nothing, in \f$ O( \log w ) \f$
- /// expected time
+ /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of the
+ /// SSet of Morin's book), in \f$ O( \log w ) \f$ expected time
  ///
  /// In pseudocode (exercise 13.2 of Morin's book), \f$ t[ i ]( p ) \f$ the
  /// entry of the prefix \f$ p \f$ of depth \f$ i \f$, with the smallest
  /// and the largest key that have it:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{find}( x ) \cr
+ /// 1 & \textbf{function}\ \mathrm{lowerBound}( x ) \cr
  /// 2 & \quad l \gets 0;\ h \gets w + 1 \cr
  /// 3 & \quad \textbf{while}\ h - l > 1\ \textbf{do} \cr
  /// 4 & \qquad i \gets \lfloor ( l + h ) / 2 \rfloor \cr
@@ -211,16 +213,21 @@ class ListXFastTrie {
  /// \end{array}}
  /// \f]
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] std::optional< U > find( U x ) const;
+ [[nodiscard]] const U * lowerBound( U x ) const;
 
- /// the smallest key \f$ \ge x \f$, or nothing, in
+ /// the key \f$ x \f$, nil if it is not there, in \f$ O( 1 ) \f$ expected
+ /// time
+ /// \pre \f$ x < 2^w \f$
+ [[nodiscard]] const U * find( U x ) const;
+
+ /// the smallest key \f$ \ge x \f$, nil if none, in
  /// \f$ O( 1 + \log \log d( x ) ) \f$ expected time
  ///
  /// It is the pseudocode of `XFastTrie::findNear()`, the smallest key of
  /// the prefix \f$ p + 1 \f$ read from its entry (exercise 13.4 of Morin's
  /// book).
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] std::optional< U > findNear( U x ) const;
+ [[nodiscard]] const U * findNear( U x ) const;
 
  /// the value of \f$ x \f$, or nothing, in \f$ O( 1 ) \f$ expected time
  /// \pre \f$ x < 2^w \f$
@@ -240,7 +247,7 @@ class ListXFastTrie {
  /// 2 & \quad \textbf{if}\ t[ w ]( x ) \ne \textbf{nil}\ \textbf{then}
  ///     \ \text{give it the value } v;\ \textbf{return false} \cr
  /// 3 & \quad \text{link a new key } x \text{ before the one of }
- ///     \mathrm{find}( x ) \cr
+ ///     \mathrm{lowerBound}( x ) \cr
  /// 4 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ w\ \textbf{do} \cr
  /// 5 & \qquad e \gets t[ i ]( \lfloor x / 2^{w-i} \rfloor ) \cr
  /// 6 & \qquad \textbf{if}\ e = \textbf{nil}\ \textbf{then}\ e \gets ( x , x )
@@ -383,7 +390,7 @@ class ListXFastTrie {
 
  /// the iterator on the smallest key \f$ \ge x \f$, `end()` if none
  /// \pre \f$ x < 2^w \f$
- [[nodiscard]] const_iterator lowerBound( U x ) const;
+ [[nodiscard]] const_iterator seek( U x ) const;
 
 /*--------------------------------------------------------------------------*/
  private:

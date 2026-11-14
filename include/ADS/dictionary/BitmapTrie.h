@@ -3,7 +3,7 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The trie of exercise 13.3 of Morin's book, beyond the book: a SORTED SET
- * of strings of any length, each with a value, whose `find( s )` (the
+ * of strings of any length, each with a value, whose `lowerBound( s )` (the
  * smallest string \f$ \ge s \f$ in the lexicographic order of the bytes, a
  * prefix before its extensions), `insert( s )` and `remove( s )` take
  * \f$ O( |s| ) \f$ time, whatever the number of strings.
@@ -100,6 +100,7 @@ class BitmapTrie {
  public:
 
  using Key = std::string;   ///< the type of the keys
+ using Item = std::string;  ///< the items of the SSet, the strings
  using Value = V;           ///< the type of the values
 
  /// the empty trie
@@ -119,14 +120,15 @@ class BitmapTrie {
 
 /*--------------------------------------------------------------------------*/
 
- /// the smallest string \f$ \ge s \f$, or nothing, in \f$ O( |s| ) \f$ time
+ /// the smallest string \f$ \ge s \f$, nil if none (the `find( s )` of the
+ /// SSet of Morin's book), in \f$ O( |s| ) \f$ time
  ///
  /// In pseudocode (exercise 13.3 of Morin's book), \f$ u.\mathit{min} \f$
  /// and \f$ u.\mathit{max} \f$ the smallest and the largest string below
  /// \f$ u \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{find}( s ) \cr
+ /// 1 & \textbf{function}\ \mathrm{lowerBound}( s ) \cr
  /// 2 & \quad u \gets \mathit{root} \cr
  /// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ |s| - 1\ \textbf{do} \cr
  /// 4 & \qquad \textbf{if}\ u \text{ has a child of } s_i\ \textbf{then}
@@ -138,8 +140,10 @@ class BitmapTrie {
  /// 7 & \quad \textbf{return}\ u.\mathit{min}
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::optional< std::string > find( std::string_view s )
-  const;
+ [[nodiscard]] const std::string * lowerBound( std::string_view s ) const;
+
+ /// the string \f$ s \f$, nil if it is not there, in \f$ O( |s| ) \f$ time
+ [[nodiscard]] const std::string * find( std::string_view s ) const;
 
  /// the value of \f$ s \f$, or nothing, in \f$ O( |s| ) \f$ time
  [[nodiscard]] std::optional< V > lookup( std::string_view s ) const;
@@ -156,7 +160,7 @@ class BitmapTrie {
  /// 1 & \textbf{function}\ \mathrm{insert}( s , v ) \cr
  /// 2 & \quad \textbf{if}\ s \text{ is there}\ \textbf{then}\ \text{give it }
  ///     \text{the value } v;\ \textbf{return false} \cr
- /// 3 & \quad \text{link } s \text{ before the string of } \mathrm{find}( s )
+ /// 3 & \quad \text{link } s \text{ before the string of } \mathrm{lowerBound}( s )
  ///     \text{, add the missing nodes of its path} \cr
  /// 4 & \quad \textbf{for}\ i \gets |s|\ \textbf{downto}\ 0\ \textbf{do}
  ///     \quad \triangleright\ u \text{ the node of depth } i \cr
@@ -210,11 +214,11 @@ class BitmapTrie {
  struct Node;
 
  /// a string in the list
- struct Item {
+ struct Cell {
   std::string key;         ///< the string
   V value{};               ///< its value
-  Item * prev = nullptr;   ///< the previous string, or the dummy
-  Item * next = nullptr;   ///< the next string, or the dummy
+  Cell * prev = nullptr;   ///< the previous string, or the dummy
+  Cell * next = nullptr;   ///< the next string, or the dummy
   };
 
  /// a node: the bitmap and the array of its children, the string that
@@ -222,9 +226,9 @@ class BitmapTrie {
  struct Node {
   std::array< std::uint64_t , 4 > bits{};   ///< the bytes of the children
   std::vector< Node * > kids;               ///< the children, by byte
-  Item * term = nullptr;                    ///< the string ending here
-  Item * min = nullptr;                     ///< the smallest string below
-  Item * max = nullptr;                     ///< the largest string below
+  Cell * term = nullptr;                    ///< the string ending here
+  Cell * min = nullptr;                     ///< the smallest string below
+  Cell * max = nullptr;                     ///< the largest string below
   };
 
  public:
@@ -252,7 +256,7 @@ class BitmapTrie {
   const_iterator( void ) = default;
 
   /// on the item \f$ l \f$
-  explicit const_iterator( const Item * l ) : f_l( l ) {}
+  explicit const_iterator( const Cell * l ) : f_l( l ) {}
 
   /// the pair of the item
   reference operator*( void ) const {
@@ -275,7 +279,7 @@ class BitmapTrie {
   bool operator==( const const_iterator & o ) const = default;
 
   private:
-  const Item * f_l = nullptr;
+  const Cell * f_l = nullptr;
   };
 
  /// the type of the items, for the standard library
@@ -305,7 +309,7 @@ class BitmapTrie {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  /// the iterator on the smallest string \f$ \ge s \f$, `end()` if none
- [[nodiscard]] const_iterator lowerBound( std::string_view s ) const;
+ [[nodiscard]] const_iterator seek( std::string_view s ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
@@ -329,7 +333,7 @@ class BitmapTrie {
  [[nodiscard]] Node * node( std::string_view s ) const;
 
  /// the item of the smallest string \f$ \ge s \f$, or the dummy
- [[nodiscard]] Item * successor( std::string_view s ) const;
+ [[nodiscard]] Cell * successor( std::string_view s ) const;
 
  /// frees the subtree of \f$ u \f$
  static void destroy( Node * u );
@@ -339,11 +343,11 @@ class BitmapTrie {
 
  /// whether the subtree of \f$ u \f$ is well formed: its smallest and
  /// largest string in `lo` and `hi`, its strings in `n`
- [[nodiscard]] bool subtree( const Node * u , const Item * & lo ,
-                             const Item * & hi , std::size_t & n ) const;
+ [[nodiscard]] bool subtree( const Node * u , const Cell * & lo ,
+                             const Cell * & hi , std::size_t & n ) const;
 
  Node * f_root;             ///< the root
- Item * f_dummy;            ///< the head of the list
+ Cell * f_dummy;            ///< the head of the list
  std::size_t f_n = 0;       ///< the number of strings
  std::size_t f_nodes = 1;   ///< the number of nodes
 

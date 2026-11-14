@@ -18,7 +18,7 @@ namespace ADS {
 
 template< class V >
 BitmapTrie< V >::BitmapTrie( void )
- : f_root( new Node ) , f_dummy( new Item )
+ : f_root( new Node ) , f_dummy( new Cell )
 {
  f_dummy->prev = f_dummy->next = f_dummy;
  }
@@ -43,8 +43,8 @@ template< class V >
 BitmapTrie< V >::~BitmapTrie()
 {
  destroy( f_root );
- for( Item * l = f_dummy->next ; l != f_dummy ; ) {
-  Item * n = l->next;
+ for( Cell * l = f_dummy->next ; l != f_dummy ; ) {
+  Cell * n = l->next;
   delete l;
   l = n;
   }
@@ -112,7 +112,7 @@ auto BitmapTrie< V >::node( std::string_view s ) const -> Node *
  }
 
 template< class V >
-auto BitmapTrie< V >::successor( std::string_view s ) const -> Item *
+auto BitmapTrie< V >::successor( std::string_view s ) const -> Cell *
 {
 //! [BitmapTrie-successor]
  const Node * u = f_root;
@@ -131,16 +131,21 @@ auto BitmapTrie< V >::successor( std::string_view s ) const -> Item *
  }
 
 template< class V >
-std::optional< std::string > BitmapTrie< V >::find( std::string_view s ) const
+const std::string * BitmapTrie< V >::lowerBound( std::string_view s ) const
 {
- const Item * l = successor( s );
- if( l == f_dummy )
-  return( std::nullopt );
- return( l->key );
+ const Cell * l = successor( s );
+ return( l == f_dummy ? nullptr : &l->key );
  }
 
 template< class V >
-auto BitmapTrie< V >::lowerBound( std::string_view s ) const
+const std::string * BitmapTrie< V >::find( std::string_view s ) const
+{
+ const Node * u = node( s );
+ return( u && u->term ? &u->term->key : nullptr );
+ }
+
+template< class V >
+auto BitmapTrie< V >::seek( std::string_view s ) const
  -> const_iterator
 {
  return( const_iterator( successor( s ) ) );
@@ -170,8 +175,8 @@ bool BitmapTrie< V >::insert( std::string_view s , const V & v )
   return( false );
   }
 //! [BitmapTrie-insert]
- Item * succ = successor( s );
- Item * it = new Item{ std::string( s ) , v , succ->prev , succ };
+ Cell * succ = successor( s );
+ Cell * it = new Cell{ std::string( s ) , v , succ->prev , succ };
  succ->prev->next = it;
  succ->prev = it;
 
@@ -228,13 +233,13 @@ bool BitmapTrie< V >::remove( std::string_view s )
                               static_cast< unsigned char >( s[ i ] ) ) ) )
    return( false );
  Node * e = P[ s.size() ];
- Item * it = e->term;
+ Cell * it = e->term;
  if( ! it )
   return( false );
  e->term = nullptr;
 //! [BitmapTrie-remove]
- Item * prev = it->prev;
- Item * next = it->next;
+ Cell * prev = it->prev;
+ Cell * next = it->next;
  prev->next = next;
  next->prev = prev;
  --f_n;
@@ -267,8 +272,8 @@ bool BitmapTrie< V >::remove( std::string_view s )
  }
 
 template< class V >
-bool BitmapTrie< V >::subtree( const Node * u , const Item * & lo ,
-                               const Item * & hi , std::size_t & n ) const
+bool BitmapTrie< V >::subtree( const Node * u , const Cell * & lo ,
+                               const Cell * & hi , std::size_t & n ) const
 {
  std::size_t k = 0;
  for( const auto b : u->bits )
@@ -279,7 +284,7 @@ bool BitmapTrie< V >::subtree( const Node * u , const Item * & lo ,
  if( u->term )
   ++n;
  for( const Node * c : u->kids ) {
-  const Item * a , * b;
+  const Cell * a , * b;
   if( ! subtree( c , a , b , n ) || ! a )   // a child is never empty
    return( false );
   if( ! lo )
@@ -297,11 +302,11 @@ bool BitmapTrie< V >::consistent( void ) const
  if( f_n > 256 )
   return( true );
  std::size_t k = 0;
- for( const Item * l = f_dummy->next ; l != f_dummy ; l = l->next , ++k )
+ for( const Cell * l = f_dummy->next ; l != f_dummy ; l = l->next , ++k )
   if( ( l->next->prev != l ) ||
       ( ( l->next != f_dummy ) && ! ( l->key < l->next->key ) ) )
    return( false );
- const Item * lo , * hi;
+ const Cell * lo , * hi;
  std::size_t n = 0;
  return( ( k == f_n ) && subtree( f_root , lo , hi , n ) && ( n == f_n ) );
  }

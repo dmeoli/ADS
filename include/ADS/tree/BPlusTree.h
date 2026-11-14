@@ -36,8 +36,9 @@
  * going down between the two, and a root left with one child gives its
  * place to it. A separator need not be a key that is still there, only a
  * bound of the keys on its two sides, so that a removal changes no
- * separator but those of the borrows and of the merges. `find( x )` gives
- * the smallest key \f$ \ge x \f$ and `findRange( x , y )` the keys in
+ * separator but those of the borrows and of the merges. `lowerBound( x )`
+ * gives the smallest key \f$ \ge x \f$ (the `find( x )` of the exercise)
+ * and `findRange( x , y )` the keys in
  * \f$ ( x , y ] \f$, the operations of the exercise, the latter along the
  * list of the leaves in \f$ O( \log_m n + k ) \f$ for \f$ k \f$ keys.
  * The separators repeat a key per leaf but the last, at most
@@ -216,9 +217,9 @@ class BPlusTree {
  /// true if the key \f$ x \f$ is there
  [[nodiscard]] bool contains( const K & x ) const;
 
- /// the smallest key \f$ \ge x \f$, or nothing (the `find( x )` of
+ /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of
  /// exercise 14.8 of Morin's book), in \f$ O( \log_m n ) \f$ nodes
- [[nodiscard]] std::optional< K > find( const K & x ) const;
+ [[nodiscard]] const K * lowerBound( const K & x ) const;
 
  /// the pairs with keys in \f$ ( x , y ] \f$, the `findRange( x , y )` of
  /// exercise 14.8 of Morin's book: `range()` with the first bound left out
