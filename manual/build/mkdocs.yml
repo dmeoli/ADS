@@ -19,7 +19,8 @@ use_directory_urls: false
 # docs_dir is the manual root, which also holds files that are not manual
 # pages; keep them out of the generated site. NOTE: build/katex-init.js IS
 # needed at runtime (math rendering), so exclude build/ selectively rather
-# than wholesale. generated/ holds the snippets that the chapters include.
+# than wholesale (the same holds for build/figcaption.js). generated/ holds
+# the snippets that the chapters include.
 exclude_docs: |
   build/Makefile
   build/*.yml
@@ -65,6 +66,7 @@ markdown_extensions:
 extra_javascript:
   - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js
   - https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js
+  - build/figcaption.js
   - build/katex-init.js
 
 extra_css:

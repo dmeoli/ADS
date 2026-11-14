@@ -2,9 +2,9 @@
 % after push(e) and pop(). Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads]
@@ -12,12 +12,12 @@
   \cells{a}{0,0}{a/cell,b/cell,c/cell,d/cell,/free,/free,/free,/free}
   \node[var,anchor=west] at (58mm,0) {$n = 4$, $c = 8$};
   \node[var,anchor=east] at (-6mm,-13mm) {\texttt{push(e)}};
-  \cells{b}{0,-13mm}{a/cell,b/cell,c/cell,d/cell,e/touched,/free,/free,/free}
+  \cells{b}{0,-13mm}{a/cell,b/cell,c/cell,d/cell,e/added,/free,/free,/free}
   \node[var,anchor=west] at (58mm,-13mm) {$n = 5$};
-  \draw[ptr] ($(b-4.north)+(0,5mm)$) -- (b-4.north);
+  \draw[ptr] ($(b-4.north)+(0,4mm)$) -- (b-4.north);
   \node[var,anchor=east] at (-6mm,-26mm) {\texttt{pop()}};
-  \cells{c}{0,-26mm}{a/cell,b/cell,c/cell,d/cell,/touched,/free,/free,/free}
+  \cells{c}{0,-26mm}{a/cell,b/cell,c/cell,d/cell,e/touched,/free,/free,/free}
   \node[var,anchor=west] at (58mm,-26mm) {$n = 4$, returns \texttt{e}};
-  \indices{c}{8}
+  \indices{a}{8}
 \end{tikzpicture}
 \end{document}

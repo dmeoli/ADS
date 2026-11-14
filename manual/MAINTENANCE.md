@@ -27,7 +27,10 @@ the two read as one family.
   `build/preamble.tex`. Number new sections by hand, without gaps.
 - **Labelled items** carry an anchor, `<span id="..."></span>`, before
   their bold label, and are numbered by chapter: `lem-3-1` (Lemma 3.1),
-  `alg-3-1`, `fig-3-1`, `tab-3-1`, `rem-3-1`. Equations are numbered with
+  `alg-3-1`, `tab-3-1`, `rem-3-1`. A figure instead takes its id on the
+  image, in a paragraph of its own, `![Figure 3.1. caption](../figures/x.svg){#fig-3-1}`:
+  a span in the same paragraph would stop Pandoc from making a figure, and
+  the PDF would lose the caption. Equations are numbered with
   `\tag{3.1}` inside the display and cited as "(3.1)".
 - **Cross-references** are Markdown links to `FILE.md#id`, from a chapter
   to a sibling file (`[§3.2](03-stack.md#sec-3-2)`); `build/crossref-link.lua`
@@ -81,7 +84,7 @@ manual/
   build/
     Makefile  pandoc.yaml  preamble.tex  mkdocs.yml  snarf.py
     snippets.lua  figure-ext.lua  crossref-link.lua  break-code.lua
-    katex-init.js
+    katex-init.js  figcaption.js   # the second shows the captions on the site
 ```
 
 ---
@@ -109,11 +112,19 @@ figures keep their natural size, since the TikZ figures are drawn at it.
 ## 6. Adding or updating a figure
 
 1. Write `figures/<chapter>-<name>.tex` as a `standalone` TikZ file that
-   `\input`s `tikz-ads` (see `stack-array.tex`); a cell of a vector is
-   `cell`, the cell an operation touches `touched`, a free one `free`.
+   loads `lmodern`, `tikz` and `lamalunga` and then `\input`s `tikz-ads`
+   (see `stack-array.tex`). The style is flat, one colour per role, with
+   the palette that lamalunga computes from the primary (`7030A0`): what
+   the operation reads or follows is in the primary (`touched`,
+   `node-touched`, `vertex-touched`, `edge-touched`), what it adds in the
+   first colour of its triad (`added`, `node-added`, `vertex-added`), the
+   rest in golden tints of the primary (`cell`, `node`, `vertex`, `edge`,
+   and `free` for a free place); no outlines, gradients or shadows, and no
+   colour outside the palette. The Makefile finds lamalunga in
+   `~/GDrive/lamalunga` (variable `LAMALUNGA`).
 2. `make figures` writes the `.pdf` and the `.svg`.
-3. Reference it as `![Figure N.M. caption](../figures/<name>.svg)`, after
-   its anchor `<span id="fig-N-M"></span>`.
+3. Reference it as `![Figure N.M. caption](../figures/<name>.svg){#fig-N-M}`,
+   a paragraph of its own (see section 2).
 4. Commit the `.tex`, the `.pdf` and the `.svg`.
 
 ---
