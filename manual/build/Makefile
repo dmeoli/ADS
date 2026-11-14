@@ -42,8 +42,11 @@ figures: $(FIGTEX:.tex=.pdf) $(FIGTEX:.tex=.svg)
 
 .PRECIOUS: $(FIGDIR)/%.pdf
 
+# SOURCE_DATE_EPOCH and FORCE_SOURCE_DATE make the PDF of a figure the same
+# bytes at each build, so that rebuilding unchanged figures changes no file
 $(FIGDIR)/%.pdf: $(FIGDIR)/%.tex $(FIGDIR)/tikz-ads.tex
-	cd $(FIGDIR) && TEXINPUTS=$(LAMALUNGA)//: pdflatex -interaction=nonstopmode -halt-on-error \
+	cd $(FIGDIR) && SOURCE_DATE_EPOCH=0 FORCE_SOURCE_DATE=1 \
+	  TEXINPUTS=$(LAMALUNGA)//: pdflatex -interaction=nonstopmode -halt-on-error \
 	  $*.tex > /dev/null && rm -f $*.aux $*.log
 
 $(FIGDIR)/%.svg: $(FIGDIR)/%.pdf
