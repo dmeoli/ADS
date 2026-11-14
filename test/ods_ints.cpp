@@ -29,6 +29,11 @@
 #include "ADS/dictionary/BitmapTrie.h"
 #include "ADS/dictionary/XFastTrie.h"
 #include "ADS/dictionary/YFastTrie.h"
+#include "ADS/graph/IncidenceGraph.h"
+#include "ADS/graph/ListGraph.h"
+#include "ADS/graph/MatrixGraph.h"
+#include "ADS/graph/Properties.h"
+#include "ADS/graph/Visit.h"
 #include "ADS/memory/PoolAllocator.h"
 #include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/MeldableHeap.h"
@@ -1276,6 +1281,270 @@ ADS_TEST( "ods.ex11.15.signed-radix-sort" )
  signedRadix< std::int16_t >( 2 );
  signedRadix< std::int32_t >( 3 );
  signedRadix< std::int64_t >( 4 );
+ }
+
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CHAPTER 12, GRAPHS ----------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// a differential test of an oriented graph of n nodes against a set of
+/// pairs: insertions and removals of edges, hasEdge(), the nodes out of
+/// (adj) and into (inAdj) a node
+template< class G >
+void graphAgainstSet( G & g , int n , int ops , std::uint64_t seed )
+{
+ std::set< std::pair< int , int > > E;
+ std::mt19937_64 rng( seed );
+ for( int k = 0 ; k < ops ; ++k ) {
+  const int i = int( rng() % unsigned( n ) ) , j = int( rng() % unsigned( n ) );
+  if( i == j )
+   continue;
+  if( rng() % 3 ) {
+   if( ! E.count( { i , j } ) ) {
+    g.insertEdge( i , j );
+    E.insert( { i , j } );
+    }
+   }
+  else {
+   g.deleteEdge( i , j );
+   E.erase( { i , j } );
+   }
+  CHECK( g.hasEdge( i , j ) == ( E.count( { i , j } ) == 1 ) );
+  CHECK( g.m() == int( E.size() ) );
+  }
+ for( int i = 0 ; i < n ; ++i ) {
+  std::vector< int > out , in;
+  for( const auto & [ a , b ] : E ) {
+   if( a == i ) out.push_back( b );
+   if( b == i ) in.push_back( a );
+   }
+  auto A = g.adj( i ) , I = g.inAdj( i );
+  std::sort( A.begin() , A.end() );
+  std::sort( I.begin() , I.end() );
+  CHECK( A == out && I == in );
+  }
+ }
+
+// ods 12.1 and 12.2: the adjacency matrix and the adjacency lists, with
+// the operations of Morin's interface, inEdges() included, against a set
+// of pairs
+ADS_TEST( "ods12.1.adjacency" )
+{
+ ADS::MatrixGraph<> M( 40 );
+ ADS::ListGraph<> L( 40 );
+ graphAgainstSet( M , 40 , 20000 , 1 );
+ graphAgainstSet( L , 40 , 20000 , 2 );
+ ADS::ListGraph<> U( 5 , false );
+ U.insertEdge( 0 , 3 );
+ U.insertEdge( 4 , 0 );
+ CHECK( ( U.inAdj( 0 ) == std::vector< int >{ 3 , 4 } ) );
+ }
+
+// ods ex 12.2: the matrix of incidence, against a set of pairs; n m bytes,
+// one -1 and one +1 per column; the visit in breadth on it equals the one on
+// the lists of the same edges
+ADS_TEST( "ods.ex12.2.incidence-matrix" )
+{
+ ADS::IncidenceGraph g( 30 );
+ graphAgainstSet( g , 30 , 6000 , 3 );
+ CHECK( g.bytes() == std::size_t( 30 ) * std::size_t( g.m() ) );
+ for( int e = 0 ; e < g.m() ; ++e ) {
+  int sum = 0 , nonzero = 0;
+  for( int i = 0 ; i < 30 ; ++i ) {
+   sum += g.entry( i , e );
+   nonzero += g.entry( i , e ) != 0;
+   }
+  CHECK( sum == 0 && nonzero == 2 );
+  }
+ ADS::ListGraph<> L( 30 );
+ for( int i = 0 ; i < 30 ; ++i )
+  for( int j : g.adj( i ) )
+   L.insertEdge( i , j );
+ CHECK( ADS::distance( g , 0 ).first == ADS::distance( L , 0 ).first );
+ }
+
+/// the order of the recursive visit in depth of Morin's book, dfs( g , r )
+template< class G >
+void recursiveDfs( const G & g , int u , std::vector< bool > & seen ,
+                   std::vector< int > & order )
+{
+ seen[ std::size_t( u ) ] = true;
+ order.push_back( u );
+ for( int v : g.adj( u ) )
+  if( ! seen[ std::size_t( v ) ] )
+   recursiveDfs( g , v , seen , order );
+ }
+
+/// the order of the dfs2( g , r ) of Morin's book: a stack of nodes, each
+/// node marked when it is popped and all its neighbours pushed
+template< class G >
+std::vector< int > stackDfs( const G & g , int r )
+{
+ std::vector< bool > seen( std::size_t( g.bound() ) , false );
+ std::vector< int > S{ r } , order;
+ while( ! S.empty() ) {
+  const int u = S.back();
+  S.pop_back();
+  if( seen[ std::size_t( u ) ] )
+   continue;
+  seen[ std::size_t( u ) ] = true;
+  order.push_back( u );
+  for( int v : g.adj( u ) )
+   S.push_back( v );
+  }
+ return( order );
+ }
+
+// ods 12.3 and ods ex 12.3, ex 12.9: the visit in depth of ADS, with its
+// stack of iterators, gives the order of the recursive dfs of the book, on
+// random graphs; the dfs2 of the book does not, on the graph 0 -> 1,
+// 0 -> 2, 1 -> 2 (exercise 12.9); the visit in breadth gives the
+// distances of the brute force
+ADS_TEST( "ods12.3.visits" )
+{
+ ADS::ListGraph<> t( 3 );
+ t.insertEdge( 0 , 1 );
+ t.insertEdge( 0 , 2 );
+ t.insertEdge( 1 , 2 );
+ std::vector< bool > seen( 3 , false );
+ std::vector< int > rec , ads;
+ recursiveDfs( t , 0 , seen , rec );
+ CHECK( ( rec == std::vector< int >{ 0 , 1 , 2 } ) );
+ CHECK( ( stackDfs( t , 0 ) == std::vector< int >{ 0 , 2 , 1 } ) );
+ std::mt19937 rng( 17 );
+ for( int round = 0 ; round < 30 ; ++round ) {
+  const int n = 60;
+  ADS::ListGraph<> g( n );
+  for( int k = 0 ; k < 150 ; ++k ) {
+   const int i = int( rng() % n ) , j = int( rng() % n );
+   if( i != j && ! g.hasEdge( i , j ) )
+    g.insertEdge( i , j );
+   }
+  std::vector< bool > s1( n , false ) , s2( n , false );
+  std::vector< int > r1 , r2;
+  recursiveDfs( g , 0 , s1 , r1 );
+  ADS::dfs( g , 0 , s2 , [ & ]( int u ) { r2.push_back( u ); } ,
+            []( int , int ) {} , []( int ) {} );
+  CHECK( r1 == r2 );
+  // the distances of bfs against the iterated relaxations of Bellman
+  std::vector< int > d( n , ADS::INF );
+  d[ 0 ] = 0;
+  for( int it = 0 ; it < n ; ++it )
+   for( int u = 0 ; u < n ; ++u )
+    if( d[ std::size_t( u ) ] != ADS::INF )
+     for( int v : g.adj( u ) )
+      d[ std::size_t( v ) ] = std::min( d[ std::size_t( v ) ] ,
+                                        d[ std::size_t( u ) ] + 1 );
+  CHECK( ADS::distance( g , 0 ).first == d );   // exercise 12.8
+  }
+ }
+
+// ods ex 12.4 to ex 12.7: connectivity, the labels of the components, a
+// spanning forest (the trees of the visits in breadth, n - c edges of G
+// for c components) and the strong connectivity, each in O( n + m ),
+// against the closure of the reachability
+ADS_TEST( "ods.ex12.4.components" )
+{
+ std::mt19937 rng( 18 );
+ for( int round = 0 ; round < 40 ; ++round ) {
+  const int n = 50;
+  ADS::ListGraph<> u( n , false ) , o( n );
+  const int edges = round * 3;
+  for( int k = 0 ; k < edges ; ++k ) {
+   const int i = int( rng() % n ) , j = int( rng() % n );
+   if( i != j && ! o.hasEdge( i , j ) ) {
+    o.insertEdge( i , j );
+    if( ! u.hasEdge( i , j ) )
+     u.insertEdge( i , j );
+    }
+   }
+  // the reachability, by Warshall
+  auto closure = [ & ]( const auto & g ) {
+   std::vector< std::vector< bool > > R( n , std::vector< bool >( n ) );
+   for( int i = 0 ; i < n ; ++i ) {
+    R[ i ][ i ] = true;
+    for( int j : g.adj( i ) )
+     R[ i ][ j ] = true;
+    }
+   for( int k = 0 ; k < n ; ++k )
+    for( int i = 0 ; i < n ; ++i )
+     if( R[ i ][ k ] )
+      for( int j = 0 ; j < n ; ++j )
+       if( R[ k ][ j ] )
+        R[ i ][ j ] = true;
+   return( R );
+   };
+  const auto RU = closure( u ) , RO = closure( o );
+  const auto id = ADS::cc( u );   // exercise 12.5
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j )
+    CHECK( ( id[ i ] == id[ j ] ) == RU[ i ][ j ] );
+  const int c = *std::max_element( id.begin() , id.end() );
+  bool connected = true;   // exercise 12.4
+  for( int j = 0 ; j < n ; ++j )
+   connected = connected && RU[ 0 ][ j ];
+  CHECK( connected == ( c == 1 ) );
+  // exercise 12.6: a forest of the trees of the visits from one node of
+  // each component
+  std::vector< int > parent( n , ADS::NIL );
+  std::vector< bool > done( n , false );
+  int trees = 0;
+  for( int r = 0 ; r < n ; ++r )
+   if( ! done[ r ] ) {
+    ++trees;
+    const auto [ d , p ] = ADS::distance( u , r );
+    for( int v = 0 ; v < n ; ++v )
+     if( d[ v ] != ADS::INF ) {
+      done[ v ] = true;
+      parent[ v ] = p[ v ];
+      }
+    }
+  int forest = 0;
+  for( int v = 0 ; v < n ; ++v )
+   if( parent[ v ] != ADS::NIL ) {
+    ++forest;
+    CHECK( u.hasEdge( parent[ v ] , v ) && id[ parent[ v ] ] == id[ v ] );
+    }
+  CHECK( trees == c && forest == n - c );
+  // exercise 12.7
+  const auto sid = ADS::scc( o );
+  bool strong = true;
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j ) {
+    strong = strong && RO[ i ][ j ];
+    CHECK( ( sid[ i ] == sid[ j ] ) == ( RO[ i ][ j ] && RO[ j ][ i ] ) );
+    }
+  CHECK( strong == ( *std::max_element( sid.begin() , sid.end() ) == 1 ) );
+  }
+ }
+
+// ods ex 12.10: the universal sink on the adjacency matrix in O( n ), by
+// at most 3 ( n - 1 ) calls of hasEdge(), against the in- and
+// out-degrees, on graphs with a sink, with a node that misses one edge in
+// to be one, and random ones
+ADS_TEST( "ods.ex12.10.universal-sink" )
+{
+ std::mt19937 rng( 19 );
+ for( int round = 0 ; round < 300 ; ++round ) {
+  const int n = 1 + int( rng() % 40 );
+  ADS::MatrixGraph<> g( n );
+  const int s = int( rng() % unsigned( n ) );
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j )
+    if( i != j && ( ( round % 3 < 2 && j == s ) ||
+                    ( i != s && rng() % 4 == 0 ) ) )
+     g.insertEdge( i , j );
+  if( round % 3 == 1 && n > 1 )
+   g.deleteEdge( ( s + 1 ) % n , s );
+  int expected = ADS::NIL;
+  for( int v = 0 ; v < n ; ++v )
+   if( g.adj( v ).empty() && int( g.inAdj( v ).size() ) == n - 1 )
+    expected = v;
+  CHECK( ADS::universalSink( g ) == expected );
+  if( round % 3 == 0 )
+   CHECK( expected == s );
+  }
  }
 
 }  // end( namespace )

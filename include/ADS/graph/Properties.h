@@ -35,8 +35,9 @@
  *   in breadth from each node not coloured finds as an edge between two nodes
  *   of the same level parity, \f$ O( n + m ) \f$ (the `twoColoring()` of
  *   `EasyCases.h` takes a matrix of adjacency, in \f$ \Theta( n^2 ) \f$);
- * - `universalSink()`, the node of an oriented graph with an edge from every
- *   other node and no edge out, `NIL` if there is none, from the matrix of
+ * - `universalSink()`, on a matrix or on a graph with `hasEdge()` (exercise
+ *   12.10 of Morin's book), the node of an oriented graph with an edge from
+ *   every other node and no edge out, `NIL` if there is none, from the matrix of
  *   adjacency in \f$ \Theta( n ) \f$ entries read out of the
  *   \f$ n^2 \f$, by the elimination of King and Smith-Thomas: the entry
  *   ( c , j ) rules out c (an edge out) or j (an edge missing in), so one
@@ -69,6 +70,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 9.5 and
  *      18, https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, exercise 12.10
  * \see D. Konig, Grafok es matrixok, Matematikai es Fizikai Lapok 38,
  *      116-119, 1931
  * \see R. Seidel, On the all-pairs-shortest-path problem in unweighted
@@ -298,6 +301,18 @@ std::optional< std::vector< int > > twoColoring( const G & g );
 /// \pre \f$ A \f$ is square
 template< class T >
 int universalSink( const std::vector< std::vector< T > > & A );
+
+/// the universal sink of the graph \f$ G \f$, `NIL` if there is none, by
+/// the elimination of `universalSink( A )` above on `hasEdge()`, at most
+/// \f$ 3 ( n - 1 ) \f$ calls of it, \f$ O( n ) \f$ time on the adjacency
+/// matrix of `MatrixGraph` (exercise 12.10 of Morin's book), where the
+/// in-degrees would take \f$ \Theta( n^2 ) \f$
+/// \pre the graph is oriented
+template< Graph G >
+ requires requires( const G g , int u , int v ) {
+  { g.hasEdge( u , v ) } -> std::convertible_to< bool >;
+  }
+int universalSink( const G & g );
 
 /// the topological order of the oriented graph
 /// if it is the only one, nothing if it has a cycle or more orders

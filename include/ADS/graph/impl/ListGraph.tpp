@@ -108,6 +108,25 @@ std::vector< int > ListGraph< W , T >::adj( int u ) const
  }
 
 template< class W , class T >
+std::vector< int > ListGraph< W , T >::inAdj( int u ) const
+{
+ ( void ) B::check( u );
+ std::vector< int > in;
+ if( ! B::directed() ) {
+  in = adj( u );
+  std::sort( in.begin() , in.end() );
+  return( in );
+  }
+ for( int v = 0 ; v < B::bound() ; ++v )
+  if( B::hasNode( v ) )
+   forEachAdj( v , [ & ]( int w ) {
+    if( w == u )
+     in.push_back( v );
+    } );
+ return( in );
+ }
+
+template< class W , class T >
 template< class F >
 void ListGraph< W , T >::forEachAdj( int u , F && f ) const
 {

@@ -18,6 +18,8 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 9.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, section 12.1
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -100,6 +102,12 @@ class MatrixGraph : public GraphNodes< T > {
  /// \f$ \Theta( n ) \f$ time
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::vector< int > adj( int u ) const;
+
+ /// the nodes with an edge to \f$ u \f$, in increasing order, the
+ /// column of \f$ u \f$, \f$ \Theta( n ) \f$ time (the `inEdges( i )` of
+ /// the `AdjacencyMatrix` of section 12.1 of Morin's book)
+ /// \pre \f$ u \f$ is a node
+ [[nodiscard]] std::vector< int > inAdj( int u ) const;
 
  /// \pre \f$ u \f$ is a node
  template< class F >
