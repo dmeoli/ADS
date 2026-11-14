@@ -5,6 +5,7 @@ The entries are all the works that the library cites, i.e., those of the
 and those cited by the chapters of this manual, together with the
 textbooks and the libraries with which it is compared; each one carries
 its DOI when it has one.
+
 1. <span id="ref-abouelhoda2004"></span>M. I. Abouelhoda, S. Kurtz, E.
    Ohlebusch. *Replacing suffix trees with enhanced suffix arrays.* Journal
    of Discrete Algorithms **2**(1) (2004), 53–86,
