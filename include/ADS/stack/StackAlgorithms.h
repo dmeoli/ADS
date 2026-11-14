@@ -18,7 +18,22 @@
  * - `forEachBottomUp()`, which visits the items from the bottom to the top
  *   and leaves the stack as it was: the top is popped, the rest visited
  *   recursively, then the top visited and pushed back, in \f$ O( n ) \f$
- *   time and \f$ O( n ) \f$ space for the recursion.
+ *   time and \f$ O( n ) \f$ space for the recursion;
+ * - `isDyckWord()`, whether a sequence of \f$ +1 \f$ and \f$ -1 \f$ has no
+ *   negative prefix sum (exercise 1.2 of Morin's book): it does exactly
+ *   when the pushes for \f$ +1 \f$ and the pops for \f$ -1 \f$, run on an
+ *   empty stack, never pop an empty stack, the prefix sum being the size
+ *   of the stack; a stack of items all alike is a counter, which the
+ *   function keeps;
+ * - `isMatched()`, whether a string of the brackets `()`, `[]` and `{}` is
+ *   matched (exercise 1.3 of Morin's book): an open bracket is pushed, a
+ *   closed one must find its open twin on top and pops it, and the stack
+ *   must be empty at the end, \f$ O( n ) \f$; it is the Dyck word of the
+ *   sizes of the stack with the kinds of the brackets on its items;
+ * - `reverseWithQueue()`, the order of a stack reversed by a QUEUE alone
+ *   (exercise 1.4 of Morin's book): the items popped into the queue come
+ *   out of it in the order they went in, the old top first, and pushed back
+ *   in that order they leave the old top at the bottom, \f$ O( n ) \f$.
  *
  * The contracts [see `Contract.h`]: `sortStack()` ensures a sorted stack
  * with the same number of items, and `removeGreater()` a stack with no item
@@ -28,6 +43,9 @@
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 4.3.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
+ *      2013, doi:10.15215/aupress/9781927356388.01, exercises 1.2, 1.3 and
+ *      1.4
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -49,10 +67,15 @@
 
 #include "ADS/ADT.h"
 #include "ADS/Contract.h"
+#include "ADS/queue/LinkedQueue.h"
 #include "ADS/sequence/List.h"
+#include "ADS/stack/ArrayStack.h"
 #include "ADS/stack/SequenceStack.h"
 
+#include <algorithm>
+#include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -137,6 +160,65 @@ void removeGreater( S & s , const typename S::Item & k );
 /// \post \f$ s \f$ is as it was (an audit)
 template< Stack S , class F >
 void forEachBottomUp( S & s , F && f );
+
+/// whether the sequence \f$ w \f$ of \f$ +1 \f$ and \f$ -1 \f$ is a Dyck word,
+/// i.e., has no negative prefix sum
+///
+/// In pseudocode (Morin, exercise 1.2), the stack of items all alike kept
+/// as its size \f$ h \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{isDyckWord}( w ) \cr
+/// 2 & \quad h \gets 0 \cr
+/// 3 & \quad \textbf{foreach}\ c \in w\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ c = +1\ \textbf{then}\ h \gets h + 1
+///     \quad \triangleright\ \mathrm{push} \cr
+/// 5 & \qquad \textbf{else if}\ h = 0\ \textbf{then return false}
+///     \ \textbf{else}\ h \gets h - 1\quad \triangleright\ \mathrm{pop} \cr
+/// 6 & \quad \textbf{return true}
+/// \end{array}}
+/// \f]
+/// \pre each item of \f$ w \f$ is \f$ +1 \f$ or \f$ -1 \f$
+inline bool isDyckWord( std::span< const int > w );
+
+/// whether \f$ s \f$, a string of the brackets `()`, `[]` and `{}`, is
+/// matched, in \f$ O( n ) \f$
+///
+/// In pseudocode (Morin, exercise 1.3):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{isMatched}( s ) \cr
+/// 2 & \quad S \gets \text{an empty stack} \cr
+/// 3 & \quad \textbf{foreach}\ \text{character } c \text{ of } s
+///     \ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ c \text{ opens}\ \textbf{then}\ \mathrm{push}(
+///     S , c ) \cr
+/// 5 & \qquad \textbf{else if}\ \mathrm{empty}( S )\ \textbf{or}
+///     \ \mathrm{pop}( S ) \text{ does not open } c
+///     \ \textbf{then return false} \cr
+/// 6 & \quad \textbf{return}\ \mathrm{empty}( S )
+/// \end{array}}
+/// \f]
+/// \pre \f$ s \f$ holds only brackets
+inline bool isMatched( std::string_view s );
+
+/// the order of the items of \f$ s \f$ reversed by a QUEUE, the only
+/// operations of \f$ s \f$ being `push()` and `pop()`
+///
+/// In pseudocode (Morin, exercise 1.4):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{procedure}\ \mathrm{reverseWithQueue}( s ) \cr
+/// 2 & \quad Q \gets \text{an empty queue} \cr
+/// 3 & \quad \textbf{while not}\ \mathrm{empty}( s )\ \textbf{do}
+///     \ \mathrm{enqueue}( Q , \mathrm{pop}( s ) ) \cr
+/// 4 & \quad \textbf{while not}\ \mathrm{empty}( Q )\ \textbf{do}
+///     \ \mathrm{push}( s , \mathrm{dequeue}( Q ) )
+/// \end{array}}
+/// \f]
+/// \post the items of \f$ s \f$ in the reverse order (an audit)
+template< Stack S , Queue Q = LinkedQueue< typename S::Item > >
+void reverseWithQueue( S & s );
 
 /*--------------------------------------------------------------------------*/
 
