@@ -35,12 +35,12 @@ the choices*: its root is the empty vector, and the node $S[ 0 .. i - 1 ]$
 has a child $S[ 0 .. i ]$ for each choice of $C( S , i )$. The feasible
 solutions are some of its nodes (usually leaves), and to *prune* is to leave
 a subtree unvisited because a test on its root proves that it holds no
-feasible solution. The backtrack is the recursive visit of this tree. At
+feasible solution, and the backtrack is the recursive visit of this tree. At
 the node $S[ 0 .. i - 1 ]$ it tries each choice $c \in C( S , i )$ in turn,
 sets $S[ i ] \gets c$, processes $S$ if it is a feasible solution, and goes
 on from $S[ 0 .. i ]$ unless a test prunes it; when the choices of the
 place $i$ are over, it goes back to the place $i - 1$, whence the name of
-the method. The only state is $S$, updated in place and restored on the way
+the method. Its only state is $S$, updated in place and restored on the way
 back. Hence the space is that of the deepest path, $O( n )$ items, while
 the tree may well have exponentially many nodes.
 
@@ -52,7 +52,7 @@ choices.*
 
 *Proof.* Two nodes of the tree are distinct vectors, a visit in depth meets
 once each node of the subtrees that it enters, and the subtrees that it
-skips hold no solution by hypothesis. The order follows since the visit in
+skips hold no solution by hypothesis. As for the order, it follows since the visit in
 depth of an ordered tree meets its nodes in the lexicographic order of
 their paths from the root. $\square$
 
@@ -94,7 +94,7 @@ that the text of the book counts the subsets as $n! / ( n - k )!$, which is
 the number of their orderings; the subsets of $k$ items are
 $\binom{n}{k} = n! / ( k! ( n - k )! )$, as the header states.
 
-<span id="lem-19-2"></span>**Lemma 19.2.** *`subsets( n , k , f )` visits
+<span id="lem-19-2"></span>**Lemma 19.2.** *For $k \le n$, `subsets( n , k , f )` visits
 at most $( n + 1 ) \binom{n}{k}$ nodes that are not pruned, and at most as
 many pruned ones; hence it costs $O( n \binom{n}{k} )$ time, i.e., $O( n )$
 per subset, and $O( n )$ space.*
@@ -197,7 +197,7 @@ $( r , c )$ attacks the queen $( r' , Q[ r' ] )$ along a diagonal if and
 only if $c = Q[ r' ] \pm ( r - r' )$. $\square$
 
 As masks of $n \le 32$ bits, the three sets cost a few operations on a
-word. The shift of $D_1$ is a shift left by one place with the mask of the
+word: the shift of $D_1$ is a shift left by one place with the mask of the
 $n$ places, that of $D_2$ a shift right, and the free columns are visited
 from the lowest 1 of $\lnot ( C \mid D_1 \mid D_2 )$, by the identities of
 [§18.2](18-combinatorial.md#sec-18-2) (cf. (18.1)). Each node of the tree
@@ -235,7 +235,7 @@ for a path of the knight that visits each square of an $n \times n$ board
 once, from the square $( x , y )$ (exercise 16.6 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025)). This is a Hamiltonian path
 from $( x , y )$ in the graph of the moves of the knight, whose nodes are
-the $n^2$ squares and have degree at most 8. The backtrack extends the path
+the $n^2$ squares and have degree at most 8. Our backtrack extends the path
 by a move to a square not visited yet, and goes back from a square with no
 such move. It returns the board with the step of each square, from 1, or
 no board if there is no tour from $( x , y )$.
@@ -278,8 +278,8 @@ that color has 12 squares against 13. The backtrack proves the
 absence by exhausting the tree, and the test `ch16.ex16.6` checks these
 cases with both orders of the moves.
 
-**The Sudoku.** `sudoku( S )` fills the empty squares (the zeros) of a grid
-of side $N = n^2$ in the order of the rows, each with a number of
+**The Sudoku.** `sudoku( S )` fills the empty squares (the zeros) of a
+`Grid`, i.e., a vector of rows of `int`, of side $N = n^2$ in the order of the rows, each with a number of
 $1 , \ldots , N$ that is not on its row, its column or its block of
 $n \times n$ squares (`check()`, $O( N )$), and skips the squares given
 (section 16.3 and exercise 16.7 of [Montresor
@@ -337,8 +337,10 @@ are a circular doubly linked list (the links $L$ and $R$, with the head 0),
 and each secondary item is a list with no other item. An option is a set
 of nodes, one per item, each in the vertical circular list of the nodes of
 its item (the links $U$ and $D$, with the head of the item, whose
-$\mathit{len}$ counts the nodes). The nodes of an option are consecutive
-in the arrays, which lets the code walk an option by the index. The method
+$\mathit{len}$ counts the nodes). Furthermore, the nodes of an option are consecutive
+in the arrays, which lets the code walk an option by the index, and
+`addOption( items )` appends one at the bottom of the list of each of its
+items and returns its index. The method
 rests on the following property of the doubly
 linked lists ([Figure 19.2](19-backtrack.md#fig-19-2)).
 
@@ -389,14 +391,14 @@ Hence the choices at the item $i$ are the options that may still cover it, and a
 empty. Furthermore, an exact cover contains one option with the item $i$
 chosen at a node, and hence it lies below one child only of each node on
 its path; by [Lemma 19.1](19-backtrack.md#lem-19-1) it is
-visited once. The calls of `uncover()` mirror those of
+visited once. Finally, the calls of `uncover()` mirror those of
 `cover()` in the reverse order, and by
 [Lemma 19.5](19-backtrack.md#lem-19-5) they restore the links; the class
 checks this as an audit. $\square$
 
 Each removal and each reinsertion costs $O( 1 )$, and the work of a node
 of the tree is the number of links updated, the measure of Knuth that
-`updates()` returns. The search branches on the primary item with the
+`updates()` returns. At each level the search branches on the primary item with the
 fewest options left (the "minimum remaining values" heuristic, MRV): an
 item with none ends the branch at once, and an item with one forces its
 option without branching, which usually keeps the tree small. Note that an
@@ -413,7 +415,9 @@ in which an option may give a color to a secondary item, and several
 options may share the item if they give it the same color (an uncolored
 secondary item is still taken at most once). Without colors it is the
 exact cover of [§19.5](19-backtrack.md#sec-19-5), with the same solutions
-visited in another order (possibly). The engineering replaces the linked
+visited in another order (possibly); its `addOption( items , colors )`
+takes the color of each item, 0 (or no `colors`) for none. The engineering
+replaces the linked
 lists by
 *sparse sets* ([Briggs and Torczon 1993](Z-bibliography.md#ref-briggs1993)),
 the "dancing cells" of Knuth's program SSXCC ([Knuth
@@ -468,7 +472,7 @@ Knuth.
 Hiding an option checks the size of each primary item that it leaves: a
 size 0 abandons the choice at once, before going deeper, and a size 1
 makes the item a *forced move*, taken at the next level without saving the
-sizes (its only option needs no return). The check is made in the loop
+sizes (its only option needs no return). This check is made in the loop
 that updates the sets, which therefore serves both purposes:
 
 ```cpp
@@ -573,7 +577,8 @@ after the levels above the second largest level of its literals are
 cancelled it is unit, with $\lnot p$ free; hence it forces $\lnot p$ there,
 and the assignment of the conflict cannot occur again. The search is
 complete, and `solve()` ends with SAT or UNSAT when no bound of conflicts is
-given.*
+given.* (With a bound `maxConflicts`, the third value of the enumeration
+`Result`, UNKNOWN, says that the conflicts allowed are over.)
 
 *Proof.* Resolution preserves the models, and each step resolves the
 clause at hand with a clause of the formula or a learned one, which are
@@ -595,10 +600,10 @@ learned clauses. $\square$
 ```
 
 *Decisions and restarts.* The decisions take the free variable of largest
-*activity*. The activity grows at each conflict for the variables met in
-the analysis, and it decays by the increase of the increment (the factor
+*activity*, which grows at each conflict for the variables met in
+the analysis, and decays by the increase of the increment (the factor
 $1 / 0.95$ at each conflict, the VSIDS rule of [Moskewicz et al.
-2001](Z-bibliography.md#ref-moskewicz2001)). The variable takes the value
+2001](Z-bibliography.md#ref-moskewicz2001)). A variable chosen takes the value
 that it had last (the *phase saving* of [Pipatsrisawat and Darwiche
 2007](Z-bibliography.md#ref-pipatsrisawat2007)). The heap of the variables
 is lazy: a raised activity pushes a new pair $( \mathit{activity} , v )$,
@@ -612,7 +617,7 @@ unknown length is within a logarithmic factor of the best strategy of
 restarts (in their model of Las Vegas algorithms, at least). The learned
 clauses are never deleted, which suits formulae of moderate size; also, an
 unsatisfiable formula comes with no certificate (a proof of the learned
-clauses, as in the format DRAT, would be one). The heap is a parameter of the class:
+clauses, as in the format DRAT, would be one). Note that the heap is a parameter of the class:
 `Cdcl` is `BasicCdcl` on `std::priority_queue`, and the heaps of Boost and
 the `DaryHeap` of Chapter 9 give the same decisions
 and conflicts, since the pairs are ordered totally.
@@ -632,7 +637,7 @@ colors; the sparse sets are due to [Briggs and Torczon
 to the program SSXCC of [Knuth 2023](Z-bibliography.md#ref-knuth2023ssxcc).
 The procedure DPLL is that of [Davis and Putnam
 1960](Z-bibliography.md#ref-davis1960) with the branching of [Davis et al.
-1962](Z-bibliography.md#ref-davis1962). The learning of clauses is that of
+1962](Z-bibliography.md#ref-davis1962), and the learning of clauses is that of
 GRASP ([Marques-Silva and Sakallah
 1999](Z-bibliography.md#ref-marquessilva1999)), with the watched literals
 and the activities of Chaff ([Moskewicz et al.
