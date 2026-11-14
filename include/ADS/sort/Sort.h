@@ -95,7 +95,7 @@
  * `Sort.tpp`.
  *
  * \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123,
- *      2021
+ *      2021, doi:10.48550/arXiv.2106.05123
  * \see J. I. Munro, S. Wild, Nearly-optimal mergesorts: fast, practical
  *      sorting methods that optimally adapt to existing runs, Proceedings
  *      of ESA 2018, LIPIcs 112, article 63, 2018,

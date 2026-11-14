@@ -39,7 +39,8 @@
  *      multiplicative hashing)
  * \see E. Burns, M. Hatem, M. J. Leighton, W. Ruml, Implementing fast
  *      heuristic search code, Proceedings of the 5th Symposium on
- *      Combinatorial Search (SoCS), 25-32, 2012
+ *      Combinatorial Search (SoCS), 25-32, 2012,
+ *      doi:10.1609/socs.v3i1.18245
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
