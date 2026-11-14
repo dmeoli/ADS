@@ -702,12 +702,12 @@ nodes are the binary operators `+`, `-`, `*`, `/` and `^` (the power), the left
 subtree being the left operand ([Montresor 2025, §5.5 and
 §5.6](Z-bibliography.md#ref-montresor2025)). In `ExpressionTree.h`,
 `expressionTree(e)` builds it as a `BinaryTree< std::string >` from the postfix
-form of the expression (cf. [§3.5](03-stack.md#sec-3-5)), with a stack of
+form of the expression (cf. [§3.6](03-stack.md#sec-3-6)), with a stack of
 trees. An operand is pushed as a leaf, and an operator pops its right and then
 its left subtree and pushes the tree they make under it ([Algorithm
 8.14](08-tree.md#alg-8-14) and [Figure
 8.12](08-tree.md#fig-8-12)), in $O( n )$ time for $n$ tokens by the
-argument of [Lemma 3.2](03-stack.md#lem-3-2). Then `evaluate(t, env)` computes
+argument of [Lemma 3.3](03-stack.md#lem-3-3). Then `evaluate(t, env)` computes
 the value by a postvisit, the values of the variables being given by the
 dictionary `env`. We write the expression in prefix form by `prefixForm(t)`,
 each subtree in parentheses (e.g.,
