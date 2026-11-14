@@ -206,7 +206,7 @@ insertion writes a constant number of fields ([Algorithm
 `CursorTree` and `CursorBinaryTree` the links are fields of the place of
 the node in a vector, and an insertion takes a place from the head of the
 free list in $O( 1 )$ or appends one to the vector, which costs $O( 1 )$
-amortized by [Lemma 3.1](03-stack.md#lem-3-1). `ChildListTree` reads the
+amortized by [Lemma 3.3](03-stack.md#lem-3-3). `ChildListTree` reads the
 first child at the head of the list of the node and the next sibling at the
 cell after `where` in the list of the parent, and an insertion adds one
 node and one cell, both in $O( 1 )$ amortized; its space is that of $n$
@@ -347,7 +347,7 @@ copied, saved and moved in one piece, the indices staying valid when the vector
 grows, and its nodes are close in memory, which usually makes the visits faster
 than on nodes scattered in the heap. Of course, the price is that an insertion
 costs $O( 1 )$ amortized time rather than in the worst case, by the argument of
-[Lemma 3.1](03-stack.md#lem-3-1) on the growth of the vector. All the
+[Lemma 3.3](03-stack.md#lem-3-3) on the growth of the vector. All the
 operations take a node as an index. Here `insertChild(n, v)` and
 `insertSibling(n, v)` hang a new node of value $v$ and return its place.
 Similarly, `insertChildTree(n, t, s)` and `insertSiblingTree(n, t, s)` hang a
@@ -747,7 +747,7 @@ trees. An operand is pushed as a leaf, and an operator pops its right and then
 its left subtree and pushes the tree they make under it ([Algorithm
 8.14](08-tree.md#alg-8-14) and [Figure
 8.12](08-tree.md#fig-8-12)), in $O( n )$ time for $n$ tokens by the
-argument of [Lemma 3.3](03-stack.md#lem-3-3). Then `evaluate(t, env)` computes
+argument of [Lemma 3.5](03-stack.md#lem-3-5). Then `evaluate(t, env)` computes
 the value by a postvisit, the values of the variables being given by the
 dictionary `env`. We write the expression in prefix form by `prefixForm(t)`,
 each subtree in parentheses (e.g.,

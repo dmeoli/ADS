@@ -689,7 +689,7 @@ $2^k$ places copies $b - t = 2^k$ items. It happens
 only after at least $2^{k - 1}$ pushes since the previous doubling (or $c_0$
 pushes for the first), since a push adds one item and the vector was at
 most half full after the previous doubling. Hence the copies are at most
-twice the pushes, as for the vector of [Lemma 3.1](03-stack.md#lem-3-1).
+twice the pushes, as for the vector of [Lemma 3.3](03-stack.md#lem-3-3).
 The sizes of the vectors form the geometric series
 $c_0 , 2 c_0 , \ldots , 2^j c_0$, whose sum is less than
 $2^{j + 1} c_0$. $\square$
