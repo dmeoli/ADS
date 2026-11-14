@@ -27,19 +27,22 @@
  * segments are themselves approximated, with an error \f$ \epsilon_r \f$, by
  * the segments of a level above, and so on up to a single segment: for
  * \f$ m \f$ segments at the level below, a level has at most
- * \f$ m / ( 2 \epsilon_r ) \f$ of them (a segment of the optimal
- * approximation covers at least \f$ 2 \epsilon \f$ points, since the
- * horizontal line through the middle of any \f$ 2 \epsilon \f$ consecutive
- * ranks is within the error), the levels are
- * \f$ 1 + \lceil \log_{2 \epsilon_r} m \rceil \f$ at most, and the index
- * takes 28 bytes per segment (its first key, the two doubles of its line and
- * its first place), \f$ m \f$ at most \f$ n / ( 2 \epsilon ) \f$ and much
- * fewer on regular keys.
+ * \f$ \lceil m / ( 2 \epsilon_r + 1 ) \rceil \f$ of them (each segment of
+ * the optimal approximation but the last covers points whose first places
+ * span at least \f$ 2 \epsilon + 1 \f$ places, since the horizontal line
+ * through the middle of any \f$ 2 \epsilon + 1 \f$ consecutive places is
+ * within the error), the levels are
+ * \f$ 1 + \lceil \log_{2 \epsilon_r + 1} m \rceil \f$ at most, and the
+ * index takes 28 bytes per segment (its first key, the two doubles of its
+ * line and its first place), \f$ m \f$ at most
+ * \f$ \lceil n / ( 2 \epsilon + 1 ) \rceil \f$ and much fewer on regular
+ * keys.
  *
  * A search starts from the segment at the top, and at each level the
  * prediction of its line, clamped to the range of the segment, is the place
- * of the next segment within \f$ \pm ( \epsilon_r + 1 ) \f$ places (one more
- * for the rounding of the line in `double`), found by a binary search with
+ * of the next segment within \f$ \pm ( \epsilon_r + 1 ) \f$ places, and the
+ * window searched has \f$ \epsilon_r + 2 \f$ on each side (one more for the
+ * rounding of the line in `double`), by a binary search with
  * no branch of the last first key not larger than the key; at the last level
  * the prediction is the place of the answer within
  * \f$ \pm ( \epsilon + 2 ) \f$, whose lines of cache are all prefetched at

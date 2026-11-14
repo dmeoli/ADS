@@ -54,9 +54,13 @@
  * Each round that does not cut the range by at least a quarter counts
  * against a budget of \f$ 2 \lceil \log_2 ( n + 1 ) \rceil \f$ rounds; past
  * it the pivot is the median of the medians of the groups of 5, which has at
- * least \f$ 3 n / 10 \f$ items on each side, so that
- * \f$ T( n ) \le T( n / 5 ) + T( 7 n / 10 ) + O( n ) = O( n ) \f$ in the
- * worst case. A range of at most 24 items is sorted by insertion.
+ * least \f$ 3 n / 10 \f$ items on each side, so that what is left costs
+ * \f$ T( n ) \le T( n / 5 ) + T( 7 n / 10 ) + O( n ) = O( n ) \f$. The
+ * rounds before it cost \f$ O( n ) \f$ each, at most
+ * \f$ 2 \lceil \log_2 ( n + 1 ) \rceil \f$ of them cutting little, and the
+ * others shrinking the range geometrically: \f$ O( n \log n ) \f$ in the
+ * worst case (a budget counted in items, not in rounds, would make it
+ * linear). A range of at most 24 items is sorted by insertion.
  *
  * The contracts [see `Contract.h`]: `nth` in
  * \f$ [ \mathit{first} , \mathit{last} ) \f$; the items before `nth` are not
