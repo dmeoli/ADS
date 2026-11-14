@@ -23,7 +23,8 @@ enters a benchmark.
 
 There are 45 programs in `bench/`, one per family of structures or of
 algorithms, each a file `bench/<name>.cpp` built as `bench-<name>` (by
-`make bench`, or with the CMake option `-DADS_BENCHMARKS=ON`). Each
+`make bench`, or with the CMake option `-DADS_BENCHMARKS=ON`, which builds
+all of them but `compression`, `succinct` and `mpi`). Each
 program states in its `@file` comment the cases, the sizes, the unit of a
 cell and what the clock excludes. It also lists the competitors,
 each with the macro or the variable of the makefile that compiles it in
@@ -31,8 +32,11 @@ when its library is found. [Table B.1](B-benchmarks.md#tab-B-1)
 summarizes them, with the chapter whose comparison each program measures.
 
 Two auxiliary headers serve the programs. One is `bench/Bench.h`, with the
-timing and the output that all of them share
-([§B.2](B-benchmarks.md#sec-B-2)), while `bench/Texts.h` holds the
+timing, the options and the output that all of them share
+([§B.2](B-benchmarks.md#sec-B-2)), the selection of the structures of
+[§B.4](B-benchmarks.md#sec-B-4), and `keys(n, seed)`, which gives $n$
+distinct random keys of 63 bits (from `std::mt19937_64`, so that they fit
+a signed key too); while `bench/Texts.h` holds the
 texts of the benchmarks on strings, each of $n$ bytes from a seed: random
 bytes over alphabets of 4, 26 and 256 symbols, words of a Zipf vocabulary
 with the frequencies of the English letters, the Fibonacci word, a highly
@@ -71,22 +75,22 @@ program), and the chapter where its comparison belongs.
 | `joins` | union, intersection, difference, batch insertion and building of trees based on join, on $t$ threads | `std::map`, (PAM) | [8](08-tree.md#ch-8), [§25.16](25-parallel.md#sec-25-16) |
 | `lce` | longest common extensions | the suffix array of the textbook, direct comparison, (sdsl-lite) | [§15.9](15-string.md#sec-15-9) |
 | `learned` | LA-vector, PGM-index, dynamic PGM-index | Elias-Fano, `std::map`, `BTreeMap`, (sdsl-lite, la_vector, PGM-index) | [§6.10](06-search.md#sec-6-10), [§22.12](22-succinct.md#sec-22-12) |
-| `matrix` | dense products and transposition | the products of the book, Eigen, (OpenBLAS) | [§17.11](17-numeric.md#sec-17-11) |
+| `matrix` | dense products and transposition | the products of the book, (Eigen, OpenBLAS) | [§17.11](17-numeric.md#sec-17-11) |
 | `memory` | arenas, object pools, allocators of blocks of any size | `new`/`delete`, `std::pmr`, Boost.Pool, (mimalloc, jemalloc) | [§5.11](05-memory.md#sec-5-11) |
 | `mpi` | the sort and the mailbox over the processes of MPI | none (the scaling over $P$) | [§26.6](26-distributed.md#sec-26-6) |
 | `multi` | search of many patterns at once | `std::string_view::find()`, (Vectorscan) | [§15.9](15-string.md#sec-15-9) |
 | `numeric` | gcd, modular powers, primality, factorization, generators, deviates, shuffles, alias tables, sampling | `std`, Boost, (GMP, hurchalla, PCG, Random123) | [§17.11](17-numeric.md#sec-17-11) |
 | `ordered` | ordered dictionaries: insertions, lookups, lower bounds, removals, scans | `std::map`, `boost::container::flat_map`, Boost.Intrusive trees, (Abseil and tlx B-trees) | [8](08-tree.md#ch-8) |
-| `parallel` | parallel sorts, patterns, merges, sparse and dense products, graphs, shortest paths, succinct builds, LCP, concurrent tables and queues, branch and bound, on $t$ threads | oneTBB, `std::execution`, GNU parallel mode, OpenMP, (IPS4o, ParlayLib, FastFlow, tlx, GAP benchmark suite, Eigen, OpenBLAS, sdsl-lite, libcuckoo, growt, MultiQueue, k-LSM, SprayList) | [§25.16](25-parallel.md#sec-25-16) |
+| `parallel` | parallel sorts, patterns, merges, sparse and dense products, graphs, shortest paths, succinct builds, LCP, concurrent tables and queues, branch and bound, on $t$ threads | GNU parallel mode, OpenMP, (oneTBB, `std::execution` on oneTBB, IPS4o, ParlayLib, FastFlow, tlx, GAP benchmark suite, Eigen, OpenBLAS, sdsl-lite, libcuckoo, growt, MultiQueue, k-LSM, SprayList) | [§25.16](25-parallel.md#sec-25-16) |
 | `positions` | indices from the addresses of objects to their positions | `std::unordered_map`, `FlatHashTable`, `boost::unordered_flat_map` | [7](07-dictionary.md#ch-7) |
 | `priority` | heaps, sequence heap, bucket queues and radix heap in the hold model, double-ended queues, Dijkstra, best-first searches | `std::priority_queue`, `std::multiset`, Boost.Heap, (tlx, radix-heap) | [§9.13](09-priority.md#sec-9-13) |
 | `queues` | queues, deques and stacks | `std::deque`, `std::vector`, `boost::circular_buffer`, `boost::container::devector` | [3](03-stack.md#sec-3-7), [4](04-queue.md#ch-4) |
-| `runtime` | the channels, the mailbox and the termination of the long-lived workers | the workers of OpenMP and oneTBB, (FastFlow) | [§25.13](25-parallel.md#sec-25-13) |
+| `runtime` | the channels, the mailbox and the termination of the long-lived workers | the workers of OpenMP, (oneTBB, FastFlow) | [§25.13](25-parallel.md#sec-25-13) |
 | `search` | exact search of a pattern | `std::string_view::find()`, the searchers of `std`, `memmem()`, Boost.Algorithm | [§15.9](15-string.md#sec-15-9) |
 | `sequences` | sequences, tiered and small vectors, stacks, rearrangements and sorts of lists | `std::vector`, `std::list`, `std::forward_list`, `std::deque`, `std::stack`, Boost.Container | [2](02-sequence.md#ch-2), [3](03-stack.md#sec-3-7), [§12.15](12-sort.md#sec-12-15) |
 | `sets` | intersections of sorted lists, union-find, boolean vectors, compressed bitmaps | `std::set_intersection`, `boost::disjoint_sets`, `boost::dynamic_bitset`, (SIMD intersections of Lemire et al., CRoaring) | [§10.6](10-set.md#sec-10-6), [§10.12](10-set.md#sec-10-12), [§11.6](11-mfset.md#sec-11-6) |
 | `sort` | sorts of integers, doubles, strings and records in six patterns | `std::sort`, `std::stable_sort`, Boost.Sort, (IPS4o, IPS2Ra, x86-simd-sort, ska_sort, fluxsort, crumsort, quadsort, vqsort) | [§12.15](12-sort.md#sec-12-15) |
-| `sparse` | sparse products by a vector and transposition | the orthogonal lists of the book, Eigen | [§17.11](17-numeric.md#sec-17-11) |
+| `sparse` | sparse products by a vector and transposition | the orthogonal lists of the book, (Eigen) | [§17.11](17-numeric.md#sec-17-11) |
 | `ssets` | the sorted sets of Open Data Structures (exercise 9.14 of Morin's book) | `std::set`, (the code of Morin) | [7](07-dictionary.md#ch-7), [8](08-tree.md#ch-8), [§B.6](B-benchmarks.md#sec-B-6) |
 | `stringdicts` | static dictionaries of strings by rank and by prefix | sorted `std::string`, (HAT-trie, marisa-trie, tx-trie, path-decomposed tries) | [7](07-dictionary.md#ch-7), [§15.9](15-string.md#sec-15-9) |
 | `succinct` | rank and select, compressed bit vectors, Elias-Fano, balanced parentheses, wavelet structures, directly addressable codes, space | (sdsl-lite, sux, pasta, succinct) | [§22.12](22-succinct.md#sec-22-12) |
@@ -101,8 +105,34 @@ built with `ADS_BENCH_OWN` when the backends are on, measure the code of
 ADS without them, under the labels `... own`. Also, `external` takes as
 its first argument the part to run (`merge`, `book` or `sampling`).
 Finally, `mpi` is not among the programs of `make bench`: one builds it
-with `mpicxx` by `make build-make/bench-mpi` and runs it by `mpirun` on
-$P$ processes, and with `-m` it measures the mailbox in place of the sort.
+with `mpicxx` (the variable `MPICXX`) by `make build-make/bench-mpi` and
+runs it by `mpirun` on $P$ processes, and with `-m` it measures the
+mailbox in place of the sort.
+
+Besides the options of `bench/Bench.h` ([§B.2](B-benchmarks.md#sec-B-2)),
+some programs take options of their own, all of which default to running
+everything. The programs of several threads take `-t`, the number of the
+threads (1 by default in `parallel`, `joins`, `greedy` and `mpi`, 4 in
+`runtime`); `parallel` also takes `-b`, one of its parts (`sort`,
+`patterns`, `merge`, `spmv`, `gemm`, `graphs`, `sssp`, `succinct`, `lcp`,
+`hash`, `closed`, `pq`, `rank` and `bnb`), and `-w`, one family of
+executors (`pool`, `fastflow`, `ff`, `openmp`, `tbb`, `parlay`, `ips` or
+`seq`). Variables of the environment select the rest: `ONLY=a|b|...` the
+structures whose label contains one of the words (in `arrays`, `ordered`,
+`sets` and `tries`); `PART` one part of `arrays` (`array search`, `select`
+or `rmq`) or of `sets` (`intersection`, `mfset`, `boolset` or `bitmap`);
+`PARTS` the parts of `hashing` named by their first words (e.g.,
+`PARTS=filters,perfect`), and `THREADS` the threads of its concurrent maps
+(`1,2` by default); `ADS_GRAPHS` the benchmarks of `graphs`, separated by
+commas; `ADS_BESTFIRST_CASE` one family of `bestfirst` (`closed`,
+`frontier`, `ordered` or `packed`). In `parallel`, `ADS_SSSP_DELTA` and
+`ADS_SSSP_RHO` set the parameters of the shortest paths (32 and $2^{20}$
+by default, 256 and $2^{12}$ on the grid), `ADS_SSSP_CASE` keeps one graph
+(e.g., `kronecker20`), and `ADS_SSSP_DUMP` and `ADS_WAVELET_DUMP` name
+folders where the graphs and the sequences are written for the programs
+of GBBS and of pwm. Finally, `joins` sets `PARLAY_NUM_THREADS` to the
+number of its threads unless it is given, and `numeric` built with the
+macro `ADS_BENCH_OLD` leaves out what the previous release lacks.
 
 ## B.2 The measure of a cell {#sec-B-2}
 
@@ -181,8 +211,8 @@ of the processors in `/proc/stat` (the count of the processes is not a
 reliable measure). In the header of its file, `bench/run.sh` records the
 model of the processor, the number of cores, the compiler, the load
 average at the start and at the end, the date, the core, the runs per
-cell and the mode of the processes; thus each file carries the conditions
-of its measurements. A campaign whose load rose during the run is
+cell, the mode of the processes and the text of the compressors; thus
+each file carries the conditions of its measurements. A campaign whose load rose during the run is
 repeated, not reported (its A/A noise would usually show it, cf.
 [§B.3](B-benchmarks.md#sec-B-3)).
 
@@ -191,8 +221,11 @@ of two threads (`concurrent` and `allocators`) run on `CORE` and on `CORE2`, by
 default the core after `CORE`, and `concurrent` pins its two threads to the
 first two processors that the process may use. As for the parallel programs
 (`parallel`, `joins`, `greedy` and `runtime`), they run on the cores of
-`PCORES`, at 1, 2, 4, and so on threads up to their number. With `ISOLATE=1`,
-the default, each structure of each benchmark runs in a separate process. To
+`PCORES` (by default `CORE` alone), at 1, 2, 4, and so on threads up to
+their number (and at most 128); the lines that the GAP benchmark suite
+prints by itself inside `parallel` are left out. With `ISOLATE=1`, the
+default, each structure of each benchmark runs in a separate process
+(`ISOLATE=0` runs each benchmark in one process). To
 this aim, `run.sh` first obtains from the binary the labels of its structures
 (`ADS_BENCH_LIST=1`), and then runs it once per label
 (`ADS_BENCH_WHO=<label>`); hence no cell depends on the structures measured
@@ -229,7 +262,11 @@ competitor; a competitor whose variable is not given is left out, and its
 benchmark still builds. Then `run.sh` runs the programs at the sizes of its
 lines (e.g., $10^5$ and $10^6$ for the dictionaries, and from 16 to 32768 words
 for the long integers), with `RUNS` runs per cell (11 by default), and writes
-`results/<host>-<date>.tsv`, whose name it prints at the end.
+`results/<host>-<date>.tsv`, whose name it prints at the end. It takes
+the programs from the folder `BUILD` (`build-make` by default), runs
+`bignum-own` and `matrix-own` only if they were built, and renames the
+benchmark of each type of the sorts as `sort <type>` (e.g., `sort
+uint32`), its pattern being the case.
 
 Two inputs come from outside the repository when they are given. For instance,
 the text of the compressors is the file of `ADS_BENCH_TEXT`, repeated up to
@@ -239,8 +276,11 @@ each size (otherwise, words drawn from a Zipf law). Also, the road networks of
 nearest neighbours). Then `bench/tables.py` turns a file into one Markdown
 table per benchmark, with a row per structure and a column per case and size,
 each cell the time followed, in parentheses, by its ratio to the first
-structure (the one run again as A/A). Finally, `bench/summary.py` turns the two
-files into the summary of [Table B.2](B-benchmarks.md#tab-B-2).
+structure (the one run again as A/A), both to 3 and 2 significant digits.
+It leaves out the lines of the benchmarks named `<name>:count`, with which
+`graphs` records the counts that identify a run, and it notes the tables
+that have no A/A row. Finally, `bench/summary.py` turns the two
+files into the summary of [Table B.3](B-benchmarks.md#tab-B-3).
 
 Three programs are not in `run.sh`, and we run them by hand in the same
 conditions: `ssets` and `hashattack` ([§B.6](B-benchmarks.md#sec-B-6)),
@@ -276,10 +316,10 @@ the campaign must patch before it runs. First, the constructor of its
 rebuild at random or climb past its root. Second, its `SkiplistSSet`
 frees with `delete` the nodes that it allocates with `malloc`. Both
 defects crashed runs of 2000 keys. Hence the campaign tests the claims of
-[Table B.3](B-benchmarks.md#tab-B-3), each against the class of Morin
+[Table B.2](B-benchmarks.md#tab-B-2), each against the class of Morin
 that the header names.
 
-<span id="tab-B-3"></span>**Table B.3.** The claims of the headers that
+<span id="tab-B-2"></span>**Table B.2.** The claims of the headers that
 `ssets` tests against the code of Morin, the class of ADS and that of
 Morin in the same row, and the reasons that each header gives; the
 measured ratios of each case of `ssets` are filled in from the files of
@@ -319,9 +359,15 @@ which the chapter of the dictionaries reports.
 
 The numbers of the campaign enter the manual in two forms. One is the
 summary that `bench/summary.py` writes from the two files of a
-campaign, with the structure of [Table B.2](B-benchmarks.md#tab-B-2) and
+campaign, with the structure of [Table B.3](B-benchmarks.md#tab-B-3) and
 one row per pair of a structure of ADS and a library in the list `PAIRS`
-of the script. Its rows go in this appendix, and those of the structures
+of the script, as an HTML table. To `PAIRS` the script adds, for each
+algorithm of `parallel` and each number of threads, the pool of ADS
+against the parallel libraries, against the same algorithm of ADS on the
+executors of FastFlow, OpenMP and oneTBB, and against the sequential
+algorithm. A cell enters the summary only if both runs measured it with a
+positive time; hence a result marked $-1$ as wrong
+([§B.2](B-benchmarks.md#sec-B-2)) is left out, rather than counted. Its rows go in this appendix, and those of the structures
 of a chapter also go in the section of that chapter that Table B.1
 names. The other is the table of a single benchmark, which
 `bench/tables.py` writes from one file, with one row per structure and
@@ -338,7 +384,7 @@ benchmarks of the sorts, of the dictionaries, of the priority queues, of
 the sequences and of the long integers, which `results/README.md`
 tabulates. No number of this manual is taken from elsewhere.
 
-<span id="tab-B-2"></span>**Table B.2.** The structure of the summary of
+<span id="tab-B-3"></span>**Table B.3.** The structure of the summary of
 a campaign, as `bench/summary.py` writes it: for each benchmark and each
 structure of ADS, the library it is compared with, the number of cells
 (cases times sizes) where both were measured, and the median and the
