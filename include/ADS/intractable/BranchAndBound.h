@@ -25,10 +25,12 @@
  * (\f$ \mathit{lb} = 18 \f$ for \f$ S = 1 , 3 \f$ of figure 19.5). Two
  * values of figure 19.6 do not follow from this formula, 21 for 1 2 3 and
  * for 1 5 (it gives 19 and 20), and no rule on \f$ p \f$ and \f$ q \f$ found
- * gives all the values of the figure; with the formula the tree has 25 nodes
- * instead of 23 and ends with the same circuit of cost 19. The bound of the
- * 1-tree (exercise 19.10) replaces the sum by the weight of a minimum
- * spanning tree of the cities out of \f$ S \f$, for the symmetric distances.
+ * gives all the values of the figure; with the formula, from the circuit
+ * 1 4 3 2 5 of cost 21, the tree has 25 nodes instead of 23 (30 with no
+ * circuit to start from) and ends with the same circuit of cost 19. The
+ * bound of the 1-tree (exercise 19.10) replaces the sum by the weight of a
+ * minimum spanning tree of the cities out of \f$ S \f$, for the symmetric
+ * distances.
  * `littleTsp()` (exercise 19.11, the algorithm of Little, Murty, Sweeney and
  * Karel) branches on including or excluding an edge, the one of reduced cost
  * 0 whose exclusion raises the bound the most, visits by least bound, and
