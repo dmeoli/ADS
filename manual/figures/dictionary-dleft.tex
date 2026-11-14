@@ -1,0 +1,32 @@
+% Source for the figure of DLeftHashTable (sec. 7.4): d = 2 tables of 4
+% lists each; the new key x goes to the shorter of its two lists, list 3
+% of table 0 (3 keys) and list 1 of table 1 (2 keys). Build: make figures
+% (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+% \lists{name}{x}{lists}{touched}: a row of 4 list cells, the keys of each
+% stacked above it; items text/style
+\newcommand{\lists}[4]{%
+  \foreach \L [count=\i from 0] in {#3} {
+    \ifnum\i=#4 \node[touched] (#1-\i) at ($(#2,0)+(\i*7.4mm,0)$) {\i};
+    \else \node[cell] (#1-\i) at ($(#2,0)+(\i*7.4mm,0)$) {\i}; \fi
+    \foreach \v/\s [count=\j from 1] in \L {
+      \ifx\v\empty\else
+      \node[\s,minimum width=6mm,minimum height=5.6mm] at ($(#1-\i)+(0,\j*6.6mm+1mm)$) {\v};
+      \fi}}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \lists{a}{0}{{a/node,b/node},{c/node},{/},{d/node,e/node,f/node}}{3}
+  \lists{b}{40mm}{{g/node},{h/node,i/node,x/node-added},{j/node,k/node},{/}}{1}
+  \node[var,anchor=north] at ($(a-0)!0.5!(a-3)+(0,-5mm)$) {table 0};
+  \node[var,anchor=north] at ($(b-0)!0.5!(b-3)+(0,-5mm)$) {table 1};
+  \node[var,anchor=west] at (72mm,10mm) {$L_0( x ) = 3$, 3 keys};
+  \node[var,anchor=west] at (72mm,4mm) {$L_1( x ) = 1$, 2 keys};
+  \node[var,anchor=west] at (72mm,-2mm) {\texttt{insert(x)}: list 1 of table 1};
+\end{tikzpicture}
+\end{document}

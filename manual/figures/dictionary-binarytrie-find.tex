@@ -1,0 +1,109 @@
+% Source for the figure of BinaryTrie::lowerBound() (sec. 7.11): the paths of
+% lowerBound(5), which leaves the trie at 0*** and follows its jump pointer to
+% 3 and the list to 9, and of lowerBound(8), which leaves it at 100* and
+% follows its jump pointer to 9. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  ptr-touched/.style={edge-touched,->},
+  ptr-faint/.style={edge,->},
+  wd/.style={index,font=\footnotesize\ttfamily,fill=white,inner sep=0.6pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+\tikzset{tn/.style={node,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily},
+  tn-touched/.style={node-touched,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily\bfseries},
+  tn-added/.style={node-added,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily\bfseries},
+  tn-gone/.style={free,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily},
+  jmp/.style={ptr,dashed,line width=0.9pt},
+  jmp-touched/.style={edge-touched,->,dashed},
+  ed-touched/.style={edge-touched},
+  lst/.style={ptr,<->,line width=0.9pt}}
+  \node[tn-touched] (an0x0) at (61.5mm,0.0mm) {****};
+  \node[tn-touched] (an1x0) at (28.7mm,-13.0mm) {0***};
+  \draw[ed-touched] (an0x0) -- (an1x0);
+  \node[tn] (an1x1) at (94.3mm,-13.0mm) {1***};
+  \draw[edge] (an0x0) -- (an1x1);
+  \node[tn] (an2x0) at (12.3mm,-26.0mm) {00**};
+  \draw[edge] (an1x0) -- (an2x0);
+  \node[tn] (an2x2) at (77.9mm,-26.0mm) {10**};
+  \draw[edge] (an1x1) -- (an2x2);
+  \node[tn] (an2x3) at (110.7mm,-26.0mm) {11**};
+  \draw[edge] (an1x1) -- (an2x3);
+  \node[tn] (an3x1) at (20.5mm,-39.0mm) {001*};
+  \draw[edge] (an2x0) -- (an3x1);
+  \node[tn] (an3x4) at (69.7mm,-39.0mm) {100*};
+  \draw[edge] (an2x2) -- (an3x4);
+  \node[tn] (an3x6) at (102.5mm,-39.0mm) {110*};
+  \draw[edge] (an2x3) -- (an3x6);
+  \node[tn] (an4x3) at (24.6mm,-52.0mm) {0011};
+  \draw[edge] (an3x1) -- (an4x3);
+  \node[tn-touched] (an4x9) at (73.8mm,-52.0mm) {1001};
+  \draw[edge] (an3x4) -- (an4x9);
+  \node[tn] (an4x12) at (98.4mm,-52.0mm) {1100};
+  \draw[edge] (an3x6) -- (an4x12);
+  \node[tn] (an4x13) at (106.6mm,-52.0mm) {1101};
+  \draw[edge] (an3x6) -- (an4x13);
+  \node[nullptr,font=\small\itshape] (adl) at (-10.7mm,-52.0mm) {dummy};
+  \node[nullptr,font=\small\itshape] (adr) at (133.7mm,-52.0mm) {dummy};
+  \draw[lst] (adl.south) to[out=-40,in=-140] (an4x3.south);
+  \draw[lst] (an4x3.south) to[out=-40,in=-140] (an4x9.south);
+  \draw[lst] (an4x9.south) to[out=-40,in=-140] (an4x12.south);
+  \draw[lst] (an4x12.south) to[out=-40,in=-140] (an4x13.south);
+  \draw[lst] (an4x13.south) to[out=-40,in=-140] (adr.south);
+  \draw[jmp-touched] (an1x0) to[bend left=38] (an4x3.north);
+  \draw[jmp] (an3x4) to[bend right=38] (an4x9.north);
+  \draw[jmp] (an2x0) to[bend right=38] (an4x3.north);
+  \draw[jmp] (an2x2) to[bend left=38] (an4x9.north);
+  \draw[jmp] (an2x3) to[bend left=38] (an4x13.north);
+  \draw[jmp] (an3x1) to[bend right=38] (an4x3.north);
+  \node[var,anchor=west] at (-16.4mm,6.0mm) {lowerBound(5)};
+  \draw[edge-touched,->] (an4x3.south) to[out=-40,in=-140] (an4x9.south);
+  \node[tn-touched] (bn0x0) at (61.5mm,-82.0mm) {****};
+  \node[tn] (bn1x0) at (28.7mm,-95.0mm) {0***};
+  \draw[edge] (bn0x0) -- (bn1x0);
+  \node[tn-touched] (bn1x1) at (94.3mm,-95.0mm) {1***};
+  \draw[ed-touched] (bn0x0) -- (bn1x1);
+  \node[tn] (bn2x0) at (12.3mm,-108.0mm) {00**};
+  \draw[edge] (bn1x0) -- (bn2x0);
+  \node[tn-touched] (bn2x2) at (77.9mm,-108.0mm) {10**};
+  \draw[ed-touched] (bn1x1) -- (bn2x2);
+  \node[tn] (bn2x3) at (110.7mm,-108.0mm) {11**};
+  \draw[edge] (bn1x1) -- (bn2x3);
+  \node[tn] (bn3x1) at (20.5mm,-121.0mm) {001*};
+  \draw[edge] (bn2x0) -- (bn3x1);
+  \node[tn-touched] (bn3x4) at (69.7mm,-121.0mm) {100*};
+  \draw[ed-touched] (bn2x2) -- (bn3x4);
+  \node[tn] (bn3x6) at (102.5mm,-121.0mm) {110*};
+  \draw[edge] (bn2x3) -- (bn3x6);
+  \node[tn] (bn4x3) at (24.6mm,-134.0mm) {0011};
+  \draw[edge] (bn3x1) -- (bn4x3);
+  \node[tn-touched] (bn4x9) at (73.8mm,-134.0mm) {1001};
+  \draw[edge] (bn3x4) -- (bn4x9);
+  \node[tn] (bn4x12) at (98.4mm,-134.0mm) {1100};
+  \draw[edge] (bn3x6) -- (bn4x12);
+  \node[tn] (bn4x13) at (106.6mm,-134.0mm) {1101};
+  \draw[edge] (bn3x6) -- (bn4x13);
+  \node[nullptr,font=\small\itshape] (bdl) at (-10.7mm,-134.0mm) {dummy};
+  \node[nullptr,font=\small\itshape] (bdr) at (133.7mm,-134.0mm) {dummy};
+  \draw[lst] (bdl.south) to[out=-40,in=-140] (bn4x3.south);
+  \draw[lst] (bn4x3.south) to[out=-40,in=-140] (bn4x9.south);
+  \draw[lst] (bn4x9.south) to[out=-40,in=-140] (bn4x12.south);
+  \draw[lst] (bn4x12.south) to[out=-40,in=-140] (bn4x13.south);
+  \draw[lst] (bn4x13.south) to[out=-40,in=-140] (bdr.south);
+  \draw[jmp] (bn1x0) to[bend left=38] (bn4x3.north);
+  \draw[jmp-touched] (bn3x4) to[bend right=38] (bn4x9.north);
+  \draw[jmp] (bn2x0) to[bend right=38] (bn4x3.north);
+  \draw[jmp] (bn2x2) to[bend left=38] (bn4x9.north);
+  \draw[jmp] (bn2x3) to[bend left=38] (bn4x13.north);
+  \draw[jmp] (bn3x1) to[bend right=38] (bn4x3.north);
+  \node[var,anchor=west] at (-16.4mm,-76.0mm) {lowerBound(8)};
+\end{tikzpicture}
+\end{document}

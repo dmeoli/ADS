@@ -1,0 +1,51 @@
+% Source for the figure of PatriciaTrie (sec. 7.10): the Patricia trie of
+% abcde, abcxy, abq, bad, bed (each node with the length of its prefix, each
+% edge with its branching character) and the blind search of P = azcz,
+% which skips P[1], reads the one string abcde and finds the position 3.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{lab/.style={font=\small\ttfamily,text=adsInk,inner sep=1.2pt},
+  lf/.style={node,minimum width=6mm},
+  lft/.style={node-touched,minimum width=6mm},
+  str/.style={cell,minimum width=13mm}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (r) at (0,0) {0};
+  \node[vertex-touched] (u) at (-24mm,-14mm) {2};
+  \node[vertex] (v) at (30mm,-14mm) {1};
+  \node[vertex-touched] (w) at (-38mm,-28mm) {3};
+  \node[lf] (l2) at (-10mm,-28mm) {2};
+  \node[lft] (l0) at (-48mm,-42mm) {0};
+  \node[lf] (l1) at (-28mm,-42mm) {1};
+  \node[lf] (l3) at (20mm,-28mm) {3};
+  \node[lf] (l4) at (40mm,-28mm) {4};
+  \draw[edge-touched] (r) -- node[lab,above left] {a} (u);
+  \draw[edge] (r) -- node[lab,above right] {b} (v);
+  \draw[edge-touched] (u) -- node[lab,above left] {c} (w);
+  \draw[edge] (u) -- node[lab,above right] {q} (l2);
+  \draw[edge] (w) -- node[lab,left] {d} (l0);
+  \draw[edge] (w) -- node[lab,right] {x} (l1);
+  \draw[edge] (v) -- node[lab,left] {a} (l3);
+  \draw[edge] (v) -- node[lab,right] {e} (l4);
+  \node[var,anchor=west] at (-62mm,9mm) {the descent compares $P[ 0 ]$ and $P[ 2 ]$, skipping $P[ 1 ]$};
+  \node[var,anchor=east] at (-29mm,-13mm) {$u$};
+  \node[var,anchor=east] at (-43mm,-27mm) {$w$};
+  \node[var,anchor=west] at (34mm,-13mm) {$v$};
+  \node[var,anchor=west] at (-22mm,-42mm) {$w$ has no child for $P[ 3 ] = $ \texttt{z}: stop};
+  % the strings, stored apart
+  \node[var,anchor=east] at (-56mm,-58mm) {$D$};
+  \foreach \s/\t [count=\i from 0] in {abcde/touched,abcxy/str,abq/str,bad/str,bed/str}
+    \node[\t,minimum width=13mm] (s\i) at (-48mm+\i*14.4mm,-58mm) {\s};
+  \foreach \i in {0,...,4} \node[index,below=1.2mm of s\i] {\i};
+  \draw[ptr] (l0.south) -- (s0.north);
+  \node[var,anchor=west] at (26mm,-58mm) {$P = $ \texttt{azcz}: $\ell = \mathrm{lcp}( P , \texttt{abcde} ) = 1$,};
+  \node[var,anchor=west] at (26mm,-64mm) {$0 \le \ell < 2$ on the edge $( \mathit{root} , u )$, \texttt{z} $>$ \texttt{b}:};
+  \node[var,anchor=west] at (26mm,-70mm) {position $u.\mathit{hi} = 3$};
+\end{tikzpicture}
+\end{document}

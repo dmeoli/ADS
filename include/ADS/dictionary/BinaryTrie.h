@@ -483,10 +483,10 @@ class SimpleBinaryTrie {
  /// the smallest key \f$ \ge x \f$, nil if none (the `find( x )` of the
  /// SSet of Morin's book), in \f$ O( w ) \f$ time
  ///
- /// In pseudocode (exercise 13.1 of Morin's book), \f$ a \f$ the deepest
- /// node of the path of \f$ x \f$ where the path goes to the child 0 and
- /// the child 1 is there, the root of the larger keys nearest to
- /// \f$ x \f$:
+ /// In pseudocode (exercise 13.1 of Morin's book), \f$ a \f$ the child 1
+ /// of the deepest node of the path of \f$ x \f$ where the path goes to
+ /// the child 0 and the child 1 is there, i.e., the root of the larger keys
+ /// nearest to \f$ x \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{lowerBound}( x ) \cr

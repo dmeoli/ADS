@@ -1,0 +1,29 @@
+% Source for the figure of PointerTable (sec. 7.6): m = 8 places, each with
+% the hash of 64 bits of its object (shown by its first byte) and a pointer;
+% find_or_insert of a key with hash 4B starts at the place 5, passes 5, 6,
+% 7, 0 and puts the new object in the place 1. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \cells{h}{0,0}{91/touched,4B/added,/free,/free,/free,2C/touched,E7/touched,05/touched}
+  \cells{p}{0,-7.4mm}{/touched,/added,/free,/free,/free,/touched,/touched,/touched}
+  \foreach \i in {0,...,7} \node[index,above=1.6mm of h-\i] {\i};
+  \node[index,anchor=east] at ($(h-0.west)+(-2mm,0)$) {hash};
+  \node[index,anchor=east] at ($(p-0.west)+(-2mm,0)$) {pointer};
+  \foreach \i/\s in {0/node,1/node-added,5/node,6/node,7/node} {
+    \node[\s,minimum width=6mm] (o-\i) at ($(p-\i)+(0,-14mm)$) {};
+    \draw[ptr] (p-\i.center) -- (o-\i.north);}
+  \foreach \i/\k in {5/1,6/2,7/3,0/4,1/5}
+    \node[var] at ($(h-\i.north)+(0,7.5mm)$) {\k};
+  \node[var,anchor=west] at (62mm,0) {$h = \mathtt{4B}$, first place 5};
+  \node[var,anchor=west] at (62mm,-7.4mm) {probes 5, 6, 7, 0, then 1};
+  \node[var,anchor=west] at (62mm,-21.4mm) {objects (the new one from \texttt{make()})};
+\end{tikzpicture}
+\end{document}

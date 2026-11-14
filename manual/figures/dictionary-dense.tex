@@ -1,0 +1,39 @@
+% Source for the figure of DenseHashMap (sec. 7.6): an index group of 12
+% places (control byte above, position below) and the dense vector A of the
+% pairs; remove(q) empties the place 7, moves the last pair t into A[1] and
+% gives its place 5 the position 1. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{cb/.style={cell,minimum width=6.4mm,minimum height=5.6mm,font=\scriptsize\ttfamily},
+         cbt/.style={touched,minimum width=6.4mm,minimum height=5.6mm,font=\scriptsize\ttfamily\bfseries},
+         cba/.style={added,minimum width=6.4mm,minimum height=5.6mm,font=\scriptsize\ttfamily\bfseries},
+         cbf/.style={free,minimum width=6.4mm,minimum height=5.6mm,font=\scriptsize\ttfamily}}
+\newcommand{\crow}[4]{% name, x, y, items
+  \foreach \v/\s [count=\i from 0] in {#4}
+    \node[\s] (#1-\i) at (#2+\i*6.8mm,#3) {\v};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before
+  \node[var,anchor=east] at (-6mm,-3mm) {before};
+  \crow{c}{0}{0}{2C/cb,/cbf,/cbf,81/cb,/cbf,4E/cb,/cbf,17/cb,/cbf,B5/cb,/cbf,/cbf}
+  \crow{q}{0}{-6.2mm}{2/cb,/cbf,/cbf,0/cb,/cbf,4/cb,/cbf,1/cb,/cbf,3/cb,/cbf,/cbf}
+  \foreach \i in {0,...,11} \node[index,above=1.6mm of c-\i] {\i};
+  \node[index,anchor=west] at ($(c-11.east)+(1mm,0)$) {control};
+  \node[index,anchor=west] at ($(q-11.east)+(1mm,0)$) {position};
+  \node[var,anchor=east] at (104mm,-3mm) {$A$};
+  \crow{A}{110mm}{-3mm}{p/cb,q/cb,r/cb,s/cb,t/cb}
+  \foreach \i in {0,...,4} \node[index,above=1.6mm of A-\i] {\i};
+  % after
+  \node[var,anchor=east] at (-6mm,-25mm) {\texttt{remove(q)}};
+  \crow{d}{0}{-22mm}{2C/cb,/cbf,/cbf,81/cb,/cbf,4E/cb,/cbf,/cbt,/cbf,B5/cb,/cbf,/cbf}
+  \crow{r}{0}{-28.2mm}{2/cb,/cbf,/cbf,0/cb,/cbf,1/cba,/cbf,/cbt,/cbf,3/cb,/cbf,/cbf}
+  \node[var,anchor=east] at (104mm,-25mm) {$A$};
+  \crow{B}{110mm}{-25mm}{p/cb,t/cba,r/cb,s/cb,/cbf}
+  \draw[ptr] (B-4.north) to[bend right=50] (B-1.north);
+\end{tikzpicture}
+\end{document}

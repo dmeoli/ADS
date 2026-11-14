@@ -1,0 +1,118 @@
+% Source for the figure of IndexedSkipList (sec. 7.9): the skip list of the keys
+% 0 to 6 with the width of each link (the lengths of Morin's Figure 4.5, with
+% the links to nil too), and the search of select(3). Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  ptr-touched/.style={edge-touched,->},
+  ptr-faint/.style={edge,->},
+  wd/.style={index,font=\footnotesize\ttfamily,fill=white,inner sep=0.6pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[lvl] (ahl0) at (0.0mm,0.0mm) {};
+  \node[lvl] (ahl1) at (0.0mm,8.0mm) {};
+  \node[lvl] (ahl2) at (0.0mm,16.0mm) {};
+  \node[lvl-touched] (ahl3) at (0.0mm,24.0mm) {};
+  \node[lvl-touched] (ahl4) at (0.0mm,32.0mm) {};
+  \node[lvl-touched] (ahl5) at (0.0mm,40.0mm) {};
+  \node[var,font=\small\itshape,anchor=north] at (0.0mm,-3.6mm) {head};
+  \node[lvl] (a0l0) at (12.5mm,0.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (12.5mm,-3.6mm) {0};
+  \node[lvl] (a1l0) at (25.0mm,0.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (25.0mm,-3.6mm) {1};
+  \node[lvl] (a2l0) at (37.5mm,0.0mm) {};
+  \node[lvl] (a2l1) at (37.5mm,8.0mm) {};
+  \node[lvl-touched] (a2l2) at (37.5mm,16.0mm) {};
+  \node[lvl-touched] (a2l3) at (37.5mm,24.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (37.5mm,-3.6mm) {2};
+  \node[lvl-touched] (a3l0) at (50.0mm,0.0mm) {};
+  \node[lvl-touched] (a3l1) at (50.0mm,8.0mm) {};
+  \node[lvl-touched] (a3l2) at (50.0mm,16.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (50.0mm,-3.6mm) {3};
+  \node[lvl] (a4l0) at (62.5mm,0.0mm) {};
+  \node[lvl] (a4l1) at (62.5mm,8.0mm) {};
+  \node[lvl] (a4l2) at (62.5mm,16.0mm) {};
+  \node[lvl] (a4l3) at (62.5mm,24.0mm) {};
+  \node[lvl] (a4l4) at (62.5mm,32.0mm) {};
+  \node[lvl] (a4l5) at (62.5mm,40.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (62.5mm,-3.6mm) {4};
+  \node[lvl] (a5l0) at (75.0mm,0.0mm) {};
+  \node[lvl] (a5l1) at (75.0mm,8.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (75.0mm,-3.6mm) {5};
+  \node[lvl] (a6l0) at (87.5mm,0.0mm) {};
+  \node[lvl] (a6l1) at (87.5mm,8.0mm) {};
+  \node[index,font=\small\ttfamily,anchor=north] at (87.5mm,-3.6mm) {6};
+  \node[index,anchor=east] at (-6.0mm,0.0mm) {0};
+  \node[index,anchor=east] at (-6.0mm,8.0mm) {1};
+  \node[index,anchor=east] at (-6.0mm,16.0mm) {2};
+  \node[index,anchor=east] at (-6.0mm,24.0mm) {3};
+  \node[index,anchor=east] at (-6.0mm,32.0mm) {4};
+  \node[index,anchor=east] at (-6.0mm,40.0mm) {5};
+  \node[nullptr] (anil0) at (97.0mm,0.0mm) {nil};
+  \draw[ptr] (ahl0.east) -- (a0l0.west);
+  \node[wd] at (6.2mm,2.9mm) {1};
+  \draw[ptr] (a0l0.east) -- (a1l0.west);
+  \node[wd] at (18.8mm,2.9mm) {1};
+  \draw[ptr] (a1l0.east) -- (a2l0.west);
+  \node[wd] at (31.2mm,2.9mm) {1};
+  \draw[ptr] (a2l0.east) -- (a3l0.west);
+  \node[wd] at (43.8mm,2.9mm) {1};
+  \draw[ptr] (a3l0.east) -- (a4l0.west);
+  \node[wd] at (56.2mm,2.9mm) {1};
+  \draw[ptr] (a4l0.east) -- (a5l0.west);
+  \node[wd] at (68.8mm,2.9mm) {1};
+  \draw[ptr] (a5l0.east) -- (a6l0.west);
+  \node[wd] at (81.2mm,2.9mm) {1};
+  \draw[ptr] (a6l0.east) -- (anil0.west);
+  \node[wd] at (93.5mm,2.9mm) {1};
+  \node[nullptr] (anil1) at (97.0mm,8.0mm) {nil};
+  \draw[ptr] (ahl1.east) -- (a2l1.west);
+  \node[wd] at (18.8mm,10.9mm) {3};
+  \draw[ptr] (a2l1.east) -- (a3l1.west);
+  \node[wd] at (43.8mm,10.9mm) {1};
+  \draw[ptr] (a3l1.east) -- (a4l1.west);
+  \node[wd] at (56.2mm,10.9mm) {1};
+  \draw[ptr] (a4l1.east) -- (a5l1.west);
+  \node[wd] at (68.8mm,10.9mm) {1};
+  \draw[ptr] (a5l1.east) -- (a6l1.west);
+  \node[wd] at (81.2mm,10.9mm) {1};
+  \draw[ptr] (a6l1.east) -- (anil1.west);
+  \node[wd] at (93.5mm,10.9mm) {1};
+  \node[nullptr] (anil2) at (97.0mm,16.0mm) {nil};
+  \draw[ptr] (ahl2.east) -- (a2l2.west);
+  \node[wd] at (18.8mm,18.9mm) {3};
+  \draw[ptr-touched] (a2l2.east) -- (a3l2.west);
+  \node[wd] at (43.8mm,18.9mm) {1};
+  \draw[ptr] (a3l2.east) -- (a4l2.west);
+  \node[wd] at (56.2mm,18.9mm) {1};
+  \draw[ptr] (a4l2.east) -- (anil2.west);
+  \node[wd] at (81.0mm,18.9mm) {3};
+  \node[nullptr] (anil3) at (97.0mm,24.0mm) {nil};
+  \draw[ptr-touched] (ahl3.east) -- (a2l3.west);
+  \node[wd] at (18.8mm,26.9mm) {3};
+  \draw[ptr] (a2l3.east) -- (a4l3.west);
+  \node[wd] at (50.0mm,26.9mm) {2};
+  \draw[ptr] (a4l3.east) -- (anil3.west);
+  \node[wd] at (81.0mm,26.9mm) {3};
+  \node[nullptr] (anil4) at (97.0mm,32.0mm) {nil};
+  \draw[ptr] (ahl4.east) -- (a4l4.west);
+  \node[wd] at (31.2mm,34.9mm) {5};
+  \draw[ptr] (a4l4.east) -- (anil4.west);
+  \node[wd] at (81.0mm,34.9mm) {3};
+  \node[nullptr] (anil5) at (97.0mm,40.0mm) {nil};
+  \draw[ptr] (ahl5.east) -- (a4l5.west);
+  \node[wd] at (31.2mm,42.9mm) {5};
+  \draw[ptr] (a4l5.east) -- (anil5.west);
+  \node[wd] at (81.0mm,42.9mm) {3};
+  \node[var,anchor=east] at (101.0mm,49.0mm) {select(3) $=$ 3};
+\end{tikzpicture}
+\end{document}

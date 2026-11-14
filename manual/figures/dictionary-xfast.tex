@@ -1,0 +1,99 @@
+% Source for the figure of XFastTrie (sec. 7.11): the trie of 3, 9, 12 and 13
+% with the hash tables t[i] of the prefixes of each depth, and lowerBound(14):
+% the binary search on the depth finds 11 in t[2] and not 111 in t[3], the
+% node 11** follows its jump pointer to 13, and the list ends; below, the
+% entries (smallest, largest key) of t[2] in ListXFastTrie. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  ptr-touched/.style={edge-touched,->},
+  ptr-faint/.style={edge,->},
+  wd/.style={index,font=\footnotesize\ttfamily,fill=white,inner sep=0.6pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+\tikzset{tn/.style={node,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily},
+  tn-touched/.style={node-touched,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily\bfseries},
+  tn-added/.style={node-added,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily\bfseries},
+  tn-gone/.style={free,minimum width=7.8mm,minimum height=5.4mm,font=\scriptsize\ttfamily},
+  jmp/.style={ptr,dashed,line width=0.9pt},
+  jmp-touched/.style={edge-touched,->,dashed},
+  ed-touched/.style={edge-touched},
+  lst/.style={ptr,<->,line width=0.9pt}}
+\tikzset{tc/.style={cell,minimum width=9mm,minimum height=5.4mm,font=\scriptsize\ttfamily},tc-touched/.style={touched,minimum width=9mm,minimum height=5.4mm,font=\scriptsize\ttfamily\bfseries},tc-free/.style={free,minimum width=9mm,minimum height=5.4mm,font=\scriptsize\ttfamily}}
+  \node[tn-touched] (an0x0) at (61.5mm,0.0mm) {****};
+  \node[tn] (an1x0) at (28.7mm,-13.0mm) {0***};
+  \draw[edge] (an0x0) -- (an1x0);
+  \node[tn-touched] (an1x1) at (94.3mm,-13.0mm) {1***};
+  \draw[ed-touched] (an0x0) -- (an1x1);
+  \node[tn] (an2x0) at (12.3mm,-26.0mm) {00**};
+  \draw[edge] (an1x0) -- (an2x0);
+  \node[tn] (an2x2) at (77.9mm,-26.0mm) {10**};
+  \draw[edge] (an1x1) -- (an2x2);
+  \node[tn-touched] (an2x3) at (110.7mm,-26.0mm) {11**};
+  \draw[ed-touched] (an1x1) -- (an2x3);
+  \node[tn] (an3x1) at (20.5mm,-39.0mm) {001*};
+  \draw[edge] (an2x0) -- (an3x1);
+  \node[tn] (an3x4) at (69.7mm,-39.0mm) {100*};
+  \draw[edge] (an2x2) -- (an3x4);
+  \node[tn] (an3x6) at (102.5mm,-39.0mm) {110*};
+  \draw[edge] (an2x3) -- (an3x6);
+  \node[tn] (an4x3) at (24.6mm,-52.0mm) {0011};
+  \draw[edge] (an3x1) -- (an4x3);
+  \node[tn] (an4x9) at (73.8mm,-52.0mm) {1001};
+  \draw[edge] (an3x4) -- (an4x9);
+  \node[tn] (an4x12) at (98.4mm,-52.0mm) {1100};
+  \draw[edge] (an3x6) -- (an4x12);
+  \node[tn] (an4x13) at (106.6mm,-52.0mm) {1101};
+  \draw[edge] (an3x6) -- (an4x13);
+  \node[nullptr,font=\small\itshape] (adl) at (-10.7mm,-52.0mm) {dummy};
+  \node[nullptr,font=\small\itshape] (adr) at (133.7mm,-52.0mm) {dummy};
+  \draw[lst] (adl.south) to[out=-40,in=-140] (an4x3.south);
+  \draw[lst] (an4x3.south) to[out=-40,in=-140] (an4x9.south);
+  \draw[lst] (an4x9.south) to[out=-40,in=-140] (an4x12.south);
+  \draw[lst] (an4x12.south) to[out=-40,in=-140] (an4x13.south);
+  \draw[lst] (an4x13.south) to[out=-40,in=-140] (adr.south);
+  \draw[jmp] (an1x0) to[bend left=38] (an4x3.north);
+  \draw[jmp] (an3x4) to[bend right=38] (an4x9.north);
+  \draw[jmp] (an2x0) to[bend right=38] (an4x3.north);
+  \draw[jmp] (an2x2) to[bend left=38] (an4x9.north);
+  \draw[jmp-touched] (an2x3) to[bend left=38] (an4x13.north);
+  \draw[jmp] (an3x1) to[bend right=38] (an4x3.north);
+  \draw[edge-touched,->] (an4x13.south) to[out=-40,in=-140] (adr.south);
+  \node[var,anchor=east] at (7mm,-71.0mm) {$t[ 1 ]$};
+  \node[tc] at (13.0mm,-71.0mm) {0};
+  \node[tc] at (22.6mm,-71.0mm) {1};
+  \node[var,anchor=east] at (7mm,-78.5mm) {$t[ 2 ]$};
+  \node[tc] at (13.0mm,-78.5mm) {00};
+  \node[tc] at (22.6mm,-78.5mm) {10};
+  \node[tc-touched] at (32.2mm,-78.5mm) {11};
+  \node[var,anchor=west] at (39.8mm,-78.5mm) {$\mathit{lo} = 2$: $11 \in t[ 2 ]$};
+  \node[var,anchor=east] at (7mm,-86.0mm) {$t[ 3 ]$};
+  \node[tc] at (13.0mm,-86.0mm) {001};
+  \node[tc] at (22.6mm,-86.0mm) {100};
+  \node[tc] at (32.2mm,-86.0mm) {110};
+  \node[var,anchor=west] at (39.8mm,-86.0mm) {$\mathit{hi} = 3$: $111 \notin t[ 3 ]$};
+  \node[var,anchor=east] at (7mm,-93.5mm) {$t[ 4 ]$};
+  \node[tc] at (13.0mm,-93.5mm) {0011};
+  \node[tc] at (22.6mm,-93.5mm) {1001};
+  \node[tc] at (32.2mm,-93.5mm) {1100};
+  \node[tc] at (41.8mm,-93.5mm) {1101};
+  \node[var,anchor=west] at (-12mm,8mm) {lowerBound(14), $14 = 1110$: $\ell = 2$, no key $\ge 14$};
+  \node[var,anchor=east] at (79mm,-71mm) {ListXFastTrie, $t[ 2 ]$:};
+
+  \node[tc] at (86mm,-71.0mm) {00};
+  \node[tc-free,minimum width=14mm] at (98mm,-71.0mm) {(3, 3)};
+  \node[tc] at (86mm,-78.5mm) {10};
+  \node[tc-free,minimum width=14mm] at (98mm,-78.5mm) {(9, 9)};
+  \node[tc] at (86mm,-86.0mm) {11};
+  \node[tc-free,minimum width=14mm] at (98mm,-86.0mm) {(12, 13)};
+\end{tikzpicture}
+\end{document}

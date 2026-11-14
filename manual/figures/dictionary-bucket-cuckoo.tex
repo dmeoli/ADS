@@ -1,0 +1,42 @@
+% Source for the figure of BucketCuckooTable (sec. 7.7): B = 4 buckets of
+% 4 places, each place with its key and 8-bit tag; the new key x, whose
+% buckets 0 and 2 are full, takes the place of c, which moves to its other
+% bucket 3. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{bc/.style={cell,minimum width=11mm,font=\scriptsize\ttfamily},
+         bt/.style={touched,minimum width=11mm,font=\scriptsize\ttfamily\bfseries},
+         ba/.style={added,minimum width=11mm,font=\scriptsize\ttfamily\bfseries},
+         bf/.style={free,minimum width=11mm}}
+\newcommand{\bucket}[4]{% name, x, y, items
+  \foreach \v/\s [count=\i from 0] in {#4}
+    \node[\s] (#1-\i) at (#2+\i*11.4mm,#3) {\v};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (17mm,12mm) {before};
+  \node[touched] (ba0) at (-10mm,0mm) {0};
+  \bucket{A0}{0}{0mm}{a:3F/bc,b:91/bc,c:5D/bc,d:07/bc}
+  \node[cell] (ba1) at (-10mm,-8mm) {1};
+  \bucket{A1}{0}{-8mm}{e:A2/bc,f:1C/bc,/bf,/bf}
+  \node[touched] (ba2) at (-10mm,-16mm) {2};
+  \bucket{A2}{0}{-16mm}{g:6E/bc,h:B8/bc,i:44/bc,j:E1/bc}
+  \node[cell] (ba3) at (-10mm,-24mm) {3};
+  \bucket{A3}{0}{-24mm}{k:2B/bc,l:73/bc,m:C9/bc,/bf}
+  \node[var] at (87mm,12mm) {\texttt{insert(x)}, $b_1 = 0$, $b_2 = 2$};
+  \node[touched] (bb0) at (60mm,0mm) {0};
+  \bucket{B0}{70mm}{0mm}{a:3F/bc,b:91/bc,x:8A/ba,d:07/bc}
+  \node[cell] (bb1) at (60mm,-8mm) {1};
+  \bucket{B1}{70mm}{-8mm}{e:A2/bc,f:1C/bc,/bf,/bf}
+  \node[touched] (bb2) at (60mm,-16mm) {2};
+  \bucket{B2}{70mm}{-16mm}{g:6E/bc,h:B8/bc,i:44/bc,j:E1/bc}
+  \node[cell] (bb3) at (60mm,-24mm) {3};
+  \bucket{B3}{70mm}{-24mm}{k:2B/bc,l:73/bc,m:C9/bc,c:5D/ba}
+  \draw[ptr,rounded corners=3mm] (B0-2.north) -- ++(0,4.5mm) -| node[var,pos=0.75,right=1mm] {$c$ to 3} ($(B3-3.east)+(5mm,0)$) -- (B3-3.east);
+  \node[index,anchor=east] at (-15mm,-12mm) {bucket};
+\end{tikzpicture}
+\end{document}

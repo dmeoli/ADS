@@ -72,6 +72,24 @@ class DirectTable {
  DirectTable( long a , long b );
 
  /// the value of \f$ k \f$, the place \f$ A[ k - a ] \f$, or nothing
+ ///
+ /// In pseudocode (chapter 7), \f$ A[ 0 .. m - 1 ] \f$ the places, each
+ /// empty (nil) or holding a value, and \f$ n \f$ the places not empty:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{lookup}( k ) \cr
+ /// 2 & \quad \textbf{return}\ A[ k - a ]\quad \triangleright\ \text{a }
+ ///     \text{value, or nil} \cr
+ /// 3 & \textbf{procedure}\ \mathrm{insert}( k , v ) \cr
+ /// 4 & \quad \textbf{if}\ A[ k - a ] = \textbf{nil}\ \textbf{then}\ n
+ ///     \gets n + 1 \cr
+ /// 5 & \quad A[ k - a ] \gets v \cr
+ /// 6 & \textbf{procedure}\ \mathrm{remove}( k ) \cr
+ /// 7 & \quad \textbf{if}\ A[ k - a ] \ne \textbf{nil}\ \textbf{then}\ n
+ ///     \gets n - 1 \cr
+ /// 8 & \quad A[ k - a ] \gets \textbf{nil}
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ k \in [ a , b ] \f$
  [[nodiscard]] std::optional< V > lookup( long k ) const;
 

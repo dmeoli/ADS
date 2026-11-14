@@ -1,0 +1,29 @@
+% Source for the figure of DirectTable (sec. 7.2): the table of the keys in
+% [10, 17], before and after insert(14, w) and remove(11).
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{/free,x/cell,/free,y/cell,/free,/free,z/cell,/free}
+  \node[var,anchor=west] at (58mm,0) {$n = 3$, $m = 8$};
+  \node[var,anchor=east] at (-6mm,-13mm) {\texttt{insert(14, w)}};
+  \cells{b}{0,-13mm}{/free,x/cell,/free,y/cell,w/added,/free,z/cell,/free}
+  \node[var,anchor=west] at (58mm,-13mm) {$n = 4$};
+  \node[var,anchor=east] at (-6mm,-26mm) {\texttt{remove(11)}};
+  \cells{c}{0,-26mm}{/free,/touched,/free,y/cell,w/cell,/free,z/cell,/free}
+  \node[var,anchor=west] at (58mm,-26mm) {$n = 3$};
+  \indices{a}{8}
+  \node[index,anchor=east] at ($(a-0.north)+(-5mm,3.4mm)$) {place};
+  \foreach \i [evaluate=\i as \k using int(\i+10)] in {0,...,7}
+    \node[index,below=1.6mm of c-\i] {\k};
+  \node[index,anchor=east] at ($(c-0.south)+(-5mm,-3.4mm)$) {key};
+  \node[var,anchor=west] at (58mm,-35mm) {$H( k ) = k - a$, $a = 10$};
+\end{tikzpicture}
+\end{document}

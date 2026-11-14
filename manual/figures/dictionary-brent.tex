@@ -1,0 +1,24 @@
+% Source for the figure of BrentHashTable (sec. 7.5): m = 7 places, the
+% double hashing; the new key K, whose inspection is 1, 4, 6, 3, takes the
+% place 1, and A moves along its own inspection 1, 2, 5 to the place 5.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{/free,A/cell,B/cell,/free,C/cell,/free,D/cell}
+  \node[var,anchor=east] at (-6mm,-20mm) {\texttt{insert(K)}};
+  \cells{b}{0,-20mm}{/free,K/added,B/touched,/free,C/cell,A/added,D/cell}
+  \draw[ptr] (b-1.north) to[bend left=40] (b-5.north);
+  \indices{a}{7}
+  \node[var,anchor=west] at (56mm,-14mm) {$K$: 1, 4, 6, 3};
+  \node[var,anchor=west] at (56mm,-20mm) {$A$: 1, 2, 5};
+  \node[var,anchor=west] at (56mm,-26mm) {plain: $K$ in 3, 4 probes};
+\end{tikzpicture}
+\end{document}

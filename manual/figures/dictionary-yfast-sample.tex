@@ -1,0 +1,46 @@
+% Source for the figure of the lemma on the groups of YFastTrie (sec. 7.11):
+% the group of x runs from the key after the last head before x to the first
+% head from x on, k keys before x and j keys from x on. Build: make figures
+% (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  ptr-touched/.style={edge-touched,->},
+  ptr-faint/.style={edge,->},
+  wd/.style={index,font=\footnotesize\ttfamily,fill=white,inner sep=0.6pt}}
+\begin{document}
+\begin{tikzpicture}[ads]
+\usetikzlibrary{decorations.pathreplacing}
+\tikzset{wk/.style={cell,minimum width=15mm,font=\small},wk-t/.style={touched,minimum width=15mm,font=\small}}
+  \node[wk-t] (k0) at (0mm,0) {$x_{i-k-1}$};
+  \node[index,font=\small\ttfamily] at (0mm,7mm) {H};
+  \node[wk] (k1) at (16mm,0) {$x_{i-k}$};
+  \node[index,font=\small\ttfamily] at (16mm,7mm) {T};
+  \node[wk] (k2) at (32mm,0) {$\cdots$};
+  \node[index,font=\small\ttfamily] at (32mm,7mm) {T};
+  \node[wk] (k3) at (48mm,0) {$x_{i-1}$};
+  \node[index,font=\small\ttfamily] at (48mm,7mm) {T};
+  \node[wk] (k4) at (64mm,0) {$x_i = x$};
+  \node[index,font=\small\ttfamily] at (64mm,7mm) {T};
+  \node[wk] (k5) at (80mm,0) {$\cdots$};
+  \node[index,font=\small\ttfamily] at (80mm,7mm) {T};
+  \node[wk] (k6) at (96mm,0) {$x_{i+j-2}$};
+  \node[index,font=\small\ttfamily] at (96mm,7mm) {T};
+  \node[wk-t] (k7) at (112mm,0) {$x_{i+j-1}$};
+  \node[index,font=\small\ttfamily] at (112mm,7mm) {H};
+  \node[wk] (k8) at (128mm,0) {$x_{i+j}$};
+  \draw[edge,decorate,decoration={brace,mirror,amplitude=4pt}] ($(k1.south west)+(0,-1.5mm)$) -- ($(k3.south east)+(0,-1.5mm)$) node[midway,below=2.4mm,var] {$k$ keys};
+  \draw[edge,decorate,decoration={brace,mirror,amplitude=4pt}] ($(k4.south west)+(0,-1.5mm)$) -- ($(k7.south east)+(0,-1.5mm)$) node[midway,below=2.4mm,var] {$j$ keys};
+  \draw[edge,decorate,decoration={brace,amplitude=4pt}] ($(k1.north west)+(0,10mm)$) -- ($(k7.north east)+(0,10mm)$) node[midway,above=2.4mm,var] {the group of $x$, $n_x = j + k$};
+  \node[index,anchor=east,font=\small\itshape] at (-9mm,7mm) {coin};
+
+\end{tikzpicture}
+\end{document}

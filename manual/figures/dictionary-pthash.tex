@@ -1,0 +1,36 @@
+% Source for the figure of MinimalPerfectHash (sec. 7.8): PTHash on n = 6
+% keys in 3 buckets and a table of m = 8 places (alpha = 0.75), the buckets
+% placed by decreasing size, the pilots, and the place beyond n sent to the
+% free place below n. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % step 1: B0 with pilot 0
+  \node[var,anchor=east] at (-6mm,0) {$B_0$, $k_0 = 0$};
+  \cells{a}{0,0}{/free,/free,k1/added,/free,/free,k2/added,/free,k3/added}
+  \foreach \i in {0,...,7} \node[index,above=1.6mm of a-\i] {\i};
+  % step 2: B2 with pilot 0 fails
+  \node[var,anchor=east] at (-6mm,-12mm) {$B_2$, $k_2 = 0$};
+  \cells{b}{0,-12mm}{/free,/free,k1/cell,/free,/free,k2/touched,/free,k3/cell}
+  \node[var,anchor=west] at (62mm,-12mm) {$k_4 \mapsto 5$, taken: fails};
+  % step 3: B2 with pilot 1
+  \node[var,anchor=east] at (-6mm,-24mm) {$B_2$, $k_2 = 1$};
+  \cells{c}{0,-24mm}{k4/added,/free,k1/cell,k5/added,/free,k2/cell,/free,k3/cell}
+  % step 4: B1 with pilot 0
+  \node[var,anchor=east] at (-6mm,-36mm) {$B_1$, $k_1 = 0$};
+  \cells{d}{0,-36mm}{k4/cell,/free,k1/cell,k5/cell,k6/added,k2/cell,/free,k3/touched}
+  % separator n
+  \draw[edge] ($(a-5)!0.5!(a-6)+(0,8mm)$) -- ($(d-5)!0.5!(d-6)+(0,-5mm)$);
+  \node[var] at ($(a-5)!0.5!(a-6)+(0,11mm)$) {$n = 6$};
+  \node[index] at (d-1) {free};
+  \draw[ptr] (d-7.south) .. controls +(0,-9mm) and +(0,-9mm) .. (d-1.south);
+  \node[var,anchor=north] at ($(d-4)+(0,-12mm)$) {$F[ 7 - n ] = 1$};
+  \node[var,anchor=west] at (62mm,-36mm) {pilots $( k_0 , k_1 , k_2 ) = ( 0 , 0 , 1 )$};
+\end{tikzpicture}
+\end{document}

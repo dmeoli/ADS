@@ -84,8 +84,10 @@ inline bool PerfectHashTable::contains( std::uint64_t k ) const
 {
  if( k >= kMersenne61 )                     // out of the universe
   return( false );
+ //! [contains]
  const Bucket & B = f_B[ f_h( k ) ];
  return( ( B.size > 0 ) && ( f_T[ B.offset + B.h( k ) ] == k ) );
+ //! [contains]
  }
 
 inline std::size_t PerfectHashTable::size( void ) const

@@ -1,0 +1,32 @@
+% Source for the figure of PerfectHashTable (sec. 7.8): the two levels of
+% the scheme of Fredman, Komlos and Szemeredi on the keys 10 22 37 40 52 60,
+% and the search of 40. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (0,9mm) {first level};
+  \foreach \v/\s [count=\j from 0] in {2/cell,0/free,1/cell,3/touched,0/free,0/free}
+    \node[\s] (F-\j) at (0,-\j*12mm) {\v};
+  \foreach \j in {0,...,5} \node[index,left=1.6mm of F-\j] {\j};
+  \cells{A}{24mm,0}{/free,10/cell,/free,52/cell}
+  \cells{B}{24mm,-24mm}{37/cell}
+  \cells{C}{24mm,-36mm}{22/cell,/free,/free,/free,/free,40/touched,/free,60/cell,/free}
+  \foreach \i in {0,...,3} \node[index,below=1.2mm of A-\i] {\i};
+  \node[index,below=1.2mm of B-0] {0};
+  \foreach \i in {0,...,8} \node[index,below=1.2mm of C-\i] {\i};
+  \draw[ptr] (F-0.east) -- (A-0.west);
+  \draw[ptr] (F-2.east) -- (B-0.west);
+  \draw[ptr,draw=adsPrimary] (F-3.east) .. controls +(8mm,0) and +(-8mm,0) .. (C-0.west);
+  \node[var,anchor=west] at ($(A-3.east)+(4mm,0)$) {table 0, $h_0$, $n_0^2 = 4$ places};
+  \node[var,anchor=west] at ($(B-0.east)+(4mm,0)$) {table 2, $h_2$, 1 place};
+  \node[var,anchor=west] at ($(C-8.east)+(4mm,0)$) {table 3, $h_3$, 9 places};
+  \node[var,anchor=west] at (24mm,-60mm) {$n_j$ in the first level, $\sum_j n_j^2 = 14 < 4 n = 24$;};
+  \node[var,anchor=west] at (24mm,-66mm) {contains(40): $h( 40 ) = 3$, $h_3( 40 ) = 5$, one key compared};
+\end{tikzpicture}
+\end{document}

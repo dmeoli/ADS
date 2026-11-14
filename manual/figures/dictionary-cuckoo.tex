@@ -1,0 +1,40 @@
+% Source for the figure of CuckooHashTable (sec. 7.7): m = 8 places, the
+% insertion of x with h1(x) = 1 and h2(x) = 4, which evicts a, b, c and d
+% along the walk 1, 4, 6, 3, 0, and the cuckoo graph after it.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{/free,a/cell,/free,d/cell,b/cell,e/cell,c/cell,/free}
+  \indices{a}{8}
+  \node[var,anchor=east] at (-6mm,-22mm) {\texttt{insert(x)}};
+  \cells{b}{0,-22mm}{d/touched,x/added,/free,c/touched,a/touched,e/cell,b/touched,/free}
+  \draw[ptr] (b-1.north) to[bend left=45] (b-4.north);
+  \draw[ptr] (b-4.north) to[bend left=45] (b-6.north);
+  \draw[ptr] (b-6.south) to[bend left=45] (b-3.south);
+  \draw[ptr] (b-3.south) to[bend left=45] (b-0.south);
+  \node[var,anchor=west] at (62mm,-22mm) {$h_1( x ) = 1$, $h_2( x ) = 4$};
+  % the cuckoo graph
+  \begin{scope}[shift={(0,-48mm)}]
+    \node[var,anchor=east] at (-6mm,0) {cuckoo graph};
+    \foreach \v/\x in {0/0,3/14,6/28,4/42,1/56}
+      \node[vertex] (v\v) at (\x mm,0) {\v};
+    \node[vertex] (v5) at (72mm,0) {5};
+    \node[vertex] (v2) at (86mm,0) {2};
+    \node[vertex] (v7) at (100mm,0) {7};
+    \draw[edge-touched] (v0) -- node[index,above=1mm] {d} (v3);
+    \draw[edge-touched] (v3) -- node[index,above=1mm] {c} (v6);
+    \draw[edge-touched] (v6) -- node[index,above=1mm] {b} (v4);
+    \draw[edge-touched] (v4) to[bend left=30] node[index,above=1mm] {a} (v1);
+    \draw[edge] (v4) to[bend right=30] node[index,below=1mm] {x} (v1);
+    \draw[edge] (v5) -- node[index,above=1mm] {e} (v2);
+  \end{scope}
+\end{tikzpicture}
+\end{document}
