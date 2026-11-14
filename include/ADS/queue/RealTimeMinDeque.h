@@ -179,6 +179,29 @@ class RealTimeMinDeque {
 
  /// the item removed from the side \f$ s \f$, or from the other one if
  /// \f$ s \f$ is empty, which then has one item
+ ///
+ /// In pseudocode, \f$ A_0 = F \f$ and \f$ A_1 = B \f$, \f$ A'_x \f$
+ /// the copy of the side \f$ x \f$ in a rebuild, and \f$ c_x \f$ the end
+ /// of the prefix of \f$ A_x \f$ that it holds (\f$ c_G \f$ or
+ /// \f$ c_S \f$ of `rebuild()`):
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{pop}( s ) \cr
+ /// 2 & \quad x \gets s;\ \textbf{if}\ A_s = \emptyset\ \textbf{then}
+ ///     \ x \gets 1 - s\quad \triangleright\ \text{the only item} \cr
+ /// 3 & \quad v \gets \mathrm{pop}( A_x );\ n \gets n - 1 \cr
+ /// 4 & \quad \textbf{if}\ \text{a rebuild is going on}\ \textbf{and}
+ ///     \ |A_x| < c_x\ \textbf{then}\ \mathrm{pop}( A'_x );\ c_x
+ ///     \gets c_x - 1 \cr
+ /// 5 & \quad \text{destroy up to 12 cells of the old arrays} \cr
+ /// 6 & \quad \textbf{if}\ \text{a rebuild is going on}\ \textbf{then}
+ ///     \ \text{12 steps of } \mathrm{rebuild}()
+ ///     \ \textbf{else if}\ \mathrm{due}()\ \textbf{then}\ \text{start }
+ ///     \text{one} \cr
+ /// 7 & \quad \textbf{return}\ v
+ /// \end{array}}
+ /// \f]
+ /// (`push()` runs the lines 5 and 6 after its push on \f$ A_s \f$).
  T pop( int s );
 
  /// the item at the end \f$ s \f$
@@ -186,6 +209,17 @@ class RealTimeMinDeque {
 
  /// whether a rebuild is due: a side larger than \f$ 3 m + 1 \f$, or
  /// half full
+ ///
+ /// In pseudocode, \f$ \mathrm{cap}( A ) \f$ the cells of the array
+ /// \f$ A \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{due}() \cr
+ /// 2 & \quad \textbf{return}\ \max\{ |F| , |B| \} > 3 \min\{ |F| ,
+ ///     |B| \} + 1\ \textbf{or}\ 2 |F| \ge \mathrm{cap}( F )
+ ///     \ \textbf{or}\ 2 |B| \ge \mathrm{cap}( B )
+ /// \end{array}}
+ /// \f]
  [[nodiscard]] bool due( void ) const;
 
  /// the work of an operation: the old arrays destroyed a little more, the

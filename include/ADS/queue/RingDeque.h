@@ -482,6 +482,23 @@ class RingDeque {
  /// \f$ D[ k ] \gets D[ k + 1 ] \f$ for \f$ k = \mathit{lo} , \ldots ,
  /// \mathit{hi} - 1 \f$, by `std::move()` on the runs that are contiguous
  /// in the vector, three at most (exercise 2.6 of Morin's book)
+ ///
+ /// In pseudocode, \f$ d \f$ and \f$ s \f$ the places of
+ /// \f$ D[ k ] \f$ and \f$ D[ k + 1 ] \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{shiftDown}( \mathit{lo} ,
+ ///     \mathit{hi} ) \cr
+ /// 2 & \quad k \gets \mathit{lo} \cr
+ /// 3 & \quad \textbf{while}\ k < \mathit{hi}\ \textbf{do} \cr
+ /// 4 & \qquad d \gets ( h + k ) \bmod m;\ s \gets ( d + 1 ) \bmod m
+ ///     \cr
+ /// 5 & \qquad \ell \gets \min\{ \mathit{hi} - k , m - s , m - d \}
+ ///     \quad \triangleright\ \text{neither run meets the end} \cr
+ /// 6 & \qquad A[ d .. d + \ell ) \gets A[ s .. s + \ell );\ k \gets
+ ///     k + \ell
+ /// \end{array}}
+ /// \f]
  void shiftDown( std::size_t lo , std::size_t hi );
 
  /// \f$ D[ k ] \gets D[ k - 1 ] \f$ for \f$ k = \mathit{hi} , \ldots ,
