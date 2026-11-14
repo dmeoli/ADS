@@ -1491,7 +1491,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `tree/ThreadedTree.h` | `ThreadedTree` | [8](08-tree.md#ch-8) |
 | `tree/Treap.h` | `Treap` | [8](08-tree.md#ch-8) |
 | `tree/Tree.h` | `Tree` | [8](08-tree.md#ch-8) |
-| `priority/BucketQueue.h` | `BucketQueue` | [9](09-priority.md#ch-9) |
+| `priority/BucketQueue.h` | `BucketQueue`, `LargestSecondKey`, `LeastSecondKey` | [9](09-priority.md#ch-9) |
 | `priority/DaryHeap.h` | `DaryHeap` | [9](09-priority.md#ch-9) |
 | `priority/DialQueue.h` | `DialQueue` | [9](09-priority.md#ch-9) |
 | `priority/FibonacciHeapPriorityQueue.h` | `FibonacciHeapPriorityQueue` | [9](09-priority.md#ch-9) |
@@ -1626,7 +1626,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `external/TwoLevelMemory.h` | `TwoLevelMemory`, `MemoryLease`, `DiskFile`, `DiskReader`, `DiskWriter` | [23](23-external.md#ch-23) |
 | `concurrent/Backoff.h` | `Backoff` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentCuckooTable.h` | `ConcurrentCuckooTable` | [24](24-concurrent.md#ch-24) |
-| `concurrent/ConcurrentFlatTable.h` | `ConcurrentFlatTable` | [24](24-concurrent.md#ch-24) |
+| `concurrent/ConcurrentFlatTable.h` | `ConcurrentFlatTable`, `ZeroingClear`, `EpochClear` | [24](24-concurrent.md#ch-24) |
 | `concurrent/ConcurrentUnionFind.h` | `ConcurrentUnionFind` | [24](24-concurrent.md#ch-24) |
 | `concurrent/EventCount.h` | `EventCount` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPMCQueue.h` | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
