@@ -104,6 +104,7 @@ module;
 #include "ADS/dictionary/FingerprintPerfectHash.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/HashFunctions.h"
+#include "ADS/dictionary/IndexedSkipList.h"
 #include "ADS/dictionary/KnuthHashing.h"
 #include "ADS/dictionary/MinimalPerfectHash.h"
 #include "ADS/dictionary/OpenHashTable.h"
@@ -294,14 +295,17 @@ module;
 #include "ADS/sequence/IndexedList.h"
 #include "ADS/sequence/List.h"
 #include "ADS/sequence/ListSort.h"
+#include "ADS/sequence/OrderMaintenanceList.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/RootishArrayStack.h"
 #include "ADS/sequence/SEList.h"
 #include "ADS/sequence/SequenceAlgorithms.h"
 #include "ADS/sequence/SequenceRange.h"
 #include "ADS/sequence/SinglyList.h"
+#include "ADS/sequence/SkipListSequence.h"
 #include "ADS/sequence/SmallVector.h"
 #include "ADS/sequence/TieredVector.h"
+#include "ADS/sequence/TreapList.h"
 #include "ADS/sequence/Treque.h"
 #include "ADS/sequence/XorList.h"
 #include "ADS/set/Bag.h"
@@ -323,6 +327,7 @@ module;
 #include "ADS/set/SetOperations.h"
 #include "ADS/set/SortedIntersection.h"
 #include "ADS/set/SortedListSet.h"
+#include "ADS/set/SpaceEfficientSortedSet.h"
 #include "ADS/set/VectorIntersection.h"
 #include "ADS/sort/CountingSort.h"
 #include "ADS/sort/EngineeredQuickSorts.h"
@@ -412,12 +417,19 @@ module;
 #include "ADS/tree/CursorBinaryTree.h"
 #include "ADS/tree/CursorTree.h"
 #include "ADS/tree/ExpressionTree.h"
+#include "ADS/tree/FingerTreap.h"
+#include "ADS/tree/HashedTreap.h"
 #include "ADS/tree/HeapByInsertion.h"
 #include "ADS/tree/JoinAlgorithms.h"
 #include "ADS/tree/JoinTree.h"
+#include "ADS/tree/LeftLeaningRedBlackTree.h"
 #include "ADS/tree/LinkCutTree.h"
+#include "ADS/tree/MeasuredSearchTree.h"
 #include "ADS/tree/ParentTree.h"
+#include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/PreorderArrayTree.h"
+#include "ADS/tree/RandomizedSearchTree.h"
+#include "ADS/tree/ScapegoatTree.h"
 #include "ADS/tree/SearchTree.h"
 #include "ADS/tree/SplayTree.h"
 #include "ADS/tree/ThreadedTree.h"
@@ -867,6 +879,9 @@ export namespace ADS {
  using ADS::hash_multiplication;
  using ADS::hash_xor;
  using ADS::int_bin;
+
+ // ADS/dictionary/IndexedSkipList.h
+ using ADS::IndexedSkipList;
 
  // ADS/dictionary/KnuthHashing.h
  using ADS::BrentHashTable;
@@ -1771,6 +1786,9 @@ export namespace ADS {
  // ADS/sequence/ListSort.h
  using ADS::listSort;
 
+ // ADS/sequence/OrderMaintenanceList.h
+ using ADS::OrderMaintenanceList;
+
  // ADS/sequence/Rearrangements.h
  using ADS::dutchNationalFlag;
  using ADS::minimumSwapSort;
@@ -1801,11 +1819,17 @@ export namespace ADS {
  // ADS/sequence/SinglyList.h
  using ADS::SinglyList;
 
+ // ADS/sequence/SkipListSequence.h
+ using ADS::SkipListSequence;
+
  // ADS/sequence/SmallVector.h
  using ADS::SmallVector;
 
  // ADS/sequence/TieredVector.h
  using ADS::TieredVector;
+
+ // ADS/sequence/TreapList.h
+ using ADS::TreapList;
 
  // ADS/sequence/Treque.h
  using ADS::Treque;
@@ -1897,6 +1921,9 @@ export namespace ADS {
  // ADS/set/SortedListSet.h
  using ADS::SortedListSet;
  using ADS::merge;
+
+ // ADS/set/SpaceEfficientSortedSet.h
+ using ADS::SpaceEfficientSortedSet;
 
  // ADS/set/VectorIntersection.h
  using ADS::intersect;
@@ -2296,12 +2323,24 @@ export namespace ADS {
  using ADS::ParentBinaryNode;
  using ADS::cartesianBinaryTree;
  using ADS::equalTrees;
+ using ADS::firstInorder;
+ using ADS::firstPostorder;
  using ADS::fromPreorderInorder;
+ using ADS::fromShapeCode;
  using ADS::isRedBlackTree;
  using ADS::isSearchTree;
+ using ADS::isSizeBalanced;
+ using ADS::lessOrEqual;
  using ADS::lowestCommonAncestor;
  using ADS::minimumHeightSearchTree;
+ using ADS::nextInorder;
+ using ADS::nextPostorder;
+ using ADS::nextPreorder;
+ using ADS::orderNumbers;
  using ADS::searchTreeRange;
+ using ADS::shapeCode;
+ using ADS::subtreeHeight;
+ using ADS::subtreeSize;
 
  // ADS/tree/ChildListTree.h
  using ADS::ChildListTree;
@@ -2317,6 +2356,12 @@ export namespace ADS {
  using ADS::expressionTree;
  using ADS::infixForm;
  using ADS::prefixForm;
+
+ // ADS/tree/FingerTreap.h
+ using ADS::FingerTreap;
+
+ // ADS/tree/HashedTreap.h
+ using ADS::HashedTreap;
 
  // ADS/tree/HeapByInsertion.h
  using ADS::heapBuildByInsertion;
@@ -2351,14 +2396,33 @@ export namespace ADS {
  using ADS::WeightBalance;
  using ADS::WeightBalancedTree;
 
+ // ADS/tree/LeftLeaningRedBlackTree.h
+ using ADS::LeftLeaningRedBlackTree;
+
  // ADS/tree/LinkCutTree.h
  using ADS::LinkCutTree;
+
+ // ADS/tree/MeasuredSearchTree.h
+ using ADS::MeasuredSearchTree;
 
  // ADS/tree/ParentTree.h
  using ADS::ParentTree;
 
+ // ADS/tree/PartialRebuildingTree.h
+ using ADS::CountdownTree;
+ using ADS::DynamiteTree;
+ using ADS::PartialRebuildingTree;
+ using ADS::RebuildPolicy;
+ using ADS::WeightRebuildTree;
+
  // ADS/tree/PreorderArrayTree.h
  using ADS::PreorderArrayTree;
+
+ // ADS/tree/RandomizedSearchTree.h
+ using ADS::RandomizedSearchTree;
+
+ // ADS/tree/ScapegoatTree.h
+ using ADS::ScapegoatTree;
 
  // ADS/tree/SearchTree.h
  using ADS::BinarySearchTree;

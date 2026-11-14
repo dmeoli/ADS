@@ -251,7 +251,7 @@ if (ADS_BENCHMARKS)
                sparse external graphs combinatorial backtrack ordered arrays
                sets tries allocators positions assembly fingerprints multi lce
                parallel joins dynamic greedy learned stringdicts flows
-               assignment runtime bestfirst hashattack)
+               assignment runtime bestfirst hashattack ssets)
         add_executable(bench-${b} bench/${b}.cpp)
         target_link_libraries(bench-${b} PRIVATE ADS::ADS)
         target_compile_definitions(bench-${b} PRIVATE ADS_CONTRACTS=0)
@@ -260,6 +260,13 @@ if (ADS_BENCHMARKS)
                                        PRIVATE ${Boost_INCLUDE_DIRS})
         endif ()
     endforeach ()
+    # the sets of Morin in ssets, from the C++ sources of Open Data
+    # Structures in ODS_DIR
+    set(ODS_DIR "" CACHE PATH "the C++ sources of Open Data Structures")
+    if (ODS_DIR)
+        target_compile_definitions(bench-ssets PRIVATE ADS_HAS_ODS)
+        target_include_directories(bench-ssets PRIVATE ${ODS_DIR})
+    endif ()
     # bignum and matrix on the code of ADS alone, when ADS::ADS runs on the
     # backends
     if (ADS_USE_GMP)

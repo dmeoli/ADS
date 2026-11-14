@@ -110,6 +110,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     sorting, graphs, trees and external memory, with the notes on the
     exercises that ask for a proof or an explanation
 
+- the skip lists, the binary trees, the random binary search trees, the
+  scapegoat trees and the red-black trees of chapters 4 and 6 to 9 of
+  Morin's Open Data Structures and of their exercises, each against the
+  standard library in test/ods_trees.cpp, the sections on them in the
+  theories of the trees, the dictionaries, the sequences and the sets, and
+  bench/ssets.cpp, the sorted sets of the book on random, sorted and
+  reverse-sorted keys (exercise 9.14, with ODS=<dir> the code of Morin
+  too): IndexedSkipList (access by rank, exercise 4.9), SkipListSequence
+  (the SkiplistList, one block per node with its links and their widths,
+  truncate() and absorb() in O( log n ), exercises 4.11 and 4.12),
+  SpaceEfficientSortedSet (the SESSet of exercise 4.13, n + O( n / b + b )
+  places), MeasuredSearchTree (size, depth and height of every node kept by
+  removing always a leaf, exercise 6.19, with getLE() of exercise 6.14),
+  HashedTreap (priorities by the tabulation hash of the address, exercise
+  7.6), FingerTreap (finger search in O( 1 + log r ), exercise 7.9),
+  TreapList (exercise 7.11), RandomizedSearchTree (Martinez and Roura,
+  exercise 7.14), ScapegoatTree (the base b, the sizes recomputed, reused
+  or stored, the rebuild by an array or by a list and the scapegoat of
+  Galperin and Rivest or of Morin as options, exercises 8.4 to 8.7, with the
+  counters of the rebuilds for exercise 8.3), PartialRebuildingTree with
+  WeightRebuildTree, CountdownTree and DynamiteTree (exercises 8.8 to
+  8.10), OrderMaintenanceList (the Sequence of exercise 8.11, testBefore()
+  in O( 1 ) by the labels of the paths of a scapegoat tree) and
+  LeftLeaningRedBlackTree (the RedBlackTree of Morin, with no sentinel, its
+  2-4 view and absorb() for exercises 9.1, 9.8, 9.10 and 9.11)
+- nextPreorder(), nextInorder(), nextPostorder(), firstInorder(),
+  firstPostorder(), subtreeSize(), subtreeHeight(), isSizeBalanced(),
+  orderNumbers(), shapeCode(), fromShapeCode() and lessOrEqual(): the
+  exercises 6.4 to 6.14 of Morin on any binary node
+- Treap::lowerBound(), select(), rank() and fromSorted() (exercises 7.8
+  and 7.10 of Morin), SkipList::lowerBound() and fingerLookup() (the find(x)
+  of an SSet and exercise 4.10)
+
 - ConcurrentFlatTable::findOrInsertKey( k , h ), for a set kept in the
   words (`packed`, an empty value): the key held equal to k by the
   equality of the table, k itself if it was absent, so that a set of
@@ -1550,6 +1583,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and refilled with other keys no longer grows for ever
 - BPlusTree is a Dictionary, with remove(): the test of chapter 6 that
   asserted the opposite asserts it
+
+- SkipList keeps each node and the tower of its links in one block and the
+  head as a tower of its own, so that a step of a search reads one line and
+  tests no special case, and compares the key once with each node (16.2
+  comparisons per search against 22.6 on 3000 keys, exercise 4.8 of Morin)
 
 - ConcurrentFlatTable::findOrInsert() and findOrInsertKey() compare the
   tag of a place they pass with the one of the key before the key, as a

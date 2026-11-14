@@ -1899,3 +1899,41 @@ ods_ints  ods.ex14.3.internal-nodes         Morin es. 14.3, nodi interni
 ods_ints  ods.ex14.4.memory                 Morin es. 14.4, memoria interna
 ods_ints  ods.ex14.6.restructures           Morin es. 14.6-14.7
 ods_ints  ods.ex14.8.bplus-tree             Morin es. 14.8, B+-albero
+
+# the skip lists and the search trees of Morin, Open Data Structures,
+# chapters 4 and 6 to 9, with their exercises, beyond the book
+ods_trees  ods4.2.skiplist-sset                section 4.2, SkiplistSSet
+ods_trees  ods-ex4.8.no-redundant-comparisons  no comparison repeated
+ods_trees  ods-ex4.10.finger-search            finger search
+ods_trees  ods4.3.skiplist-list                section 4.3, SkiplistList
+ods_trees  ods-ex4.11.truncate-absorb          ex. 4.11 and 4.12, cut and glue
+ods_trees  ods-ex4.9.rank-skiplist             access by rank
+ods_trees  ods-ex4.13.sesset                   space-efficient SSet
+ods_trees  ods-ex4.14.substring-search         substrings by an SSet
+ods_trees  ods-ex6.8.next-in-traversals        next node of each visit
+ods_trees  ods-ex6.4.size2-height2             ex. 6.4 and 6.5, size2, height2
+ods_trees  ods-ex6.6.size-balanced             size-balanced test
+ods_trees  ods-ex6.7.order-numbers             ex. 6.7 and 6.9, three numbers
+ods_trees  ods-ex6.10.pre-in-rebuild           tree from two visits
+ods_trees  ods-ex6.11.shape-code               shape in 2(n-1) bits
+ods_trees  ods-ex6.14.getLE                    getLE(x)
+ods_trees  ods-ex6.19.size-depth-height        ex. 6.15, 6.18, 6.19, measures
+ods_trees  ods-ex7.4.permute                   permute(a), shuffleFast()
+ods_trees  ods-ex7.3.count-sequences           21964800 orders of a tree
+ods_trees  ods7.2.treap-exercises              ex. 7.8, 7.10, 7.12, 7.13
+ods_trees  ods-ex7.6.hashed-treap              priorities by hashing
+ods_trees  ods-ex7.9.finger-treap              finger search in a treap
+ods_trees  ods-ex7.11.treap-list               TreapList
+ods_trees  ods-ex7.14.randomized-bst           Martinez-Roura trees
+ods_trees  ods8.1.scapegoat                    section 8.1, ScapegoatTree
+ods_trees  ods-ex8.5.scapegoat-variants        ex. 8.5 to 8.7, same rebuilds
+ods_trees  ods-ex8.3.rebuild-nlogn             rebuilds of n log n nodes
+ods_trees  ods-ex8.4.scapegoat-base            height log_b q, any b
+ods_trees  ods-ex8.8.weight-rebuild            WeightBalancedTree by rebuilds
+ods_trees  ods-ex8.9.countdown                 CountdownTree
+ods_trees  ods-ex8.10.dynamite                 DynamiteTree
+ods_trees  ods-ex8.11.order-maintenance        Sequence, order maintenance
+ods_trees  ods9.2.left-leaning-red-black       section 9.2, RedBlackTree
+ods_trees  ods-ex9.1.two-four-tree             ex. 9.1 and 9.8, 2-4 view
+ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join
+ods_trees  ods-ex9.13.avl                      AVLTree

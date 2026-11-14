@@ -208,14 +208,15 @@ BLASON    = $(if $(filter 1,$(ADSBLASON)),-DADS_WITH_BLAS $(libBLASINC) \
 # its sdsl-lite) the la_vector of Boffa et al.; HTRIE=<dir> adds
 # tsl::htrie_map to stringdicts, MARISA=<prefix> marisa-trie, TX=<prefix>
 # the tx-trie (tx/tx.hpp and libtx.a) and PDT=<dir> (its source, with its
-# succinct) the path-decomposed tries of Grossi and Ottaviano
+# succinct) the path-decomposed tries of Grossi and Ottaviano; ODS=<dir>
+# (the C++ sources of Open Data Structures) adds the sets of Morin to ssets
 BENCHES   = sort dictionaries priority sequences memory bignum hashing \
             search suffix edit numeric queues concurrent geometry matrix \
             sparse succinct compression external graphs combinatorial \
             backtrack ordered arrays sets tries allocators positions \
             assembly fingerprints multi lce parallel joins dynamic greedy \
             learned stringdicts flows assignment runtime bestfirst \
-            hashattack \
+            hashattack ssets \
             $(if $(GMPON),bignum-own) $(if $(BLASON),matrix-own)
 # on x86 the branches are kept off the 32-byte boundaries, where the
 # erratum JCC of Skylake slows a loop by the alignment alone (about 10%):
@@ -501,6 +502,9 @@ $(BUILD)/bench-assignment: bench/assignment.cpp bench/Bench.h $(HEADERS) \
 # [-m]
 $(BUILD)/bench-mpi: bench/mpi.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(MPICXX) $(BENCHFLAGS) -DADS_WITH_MPI -o $@ $< -pthread
+
+$(BUILD)/bench-ssets: bench/ssets.cpp bench/Bench.h $(HEADERS) | $(BUILD)
+	$(CXX) $(BENCHFLAGS) -o $@ $< $(if $(ODS),-DADS_HAS_ODS -I$(ODS))
 
 $(BUILD)/bench-%: bench/%.cpp bench/Bench.h $(HEADERS) | $(BUILD)
 	$(CXX) $(BENCHFLAGS) -o $@ $<

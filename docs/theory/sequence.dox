@@ -22,7 +22,9 @@
  behind its bound (see \ref theory_sequence_sort and
  \ref theory_sequence_rearr), and the lists by rank of chapters 2 and 3 of
  Morin's Open Data Structures with the answers to their exercises (see
- \ref theory_sequence_ods). The pseudocode of each operation and of each
+ \ref theory_sequence_ods), and the sequences by rank on skip lists and
+ treaps and the order maintenance of his chapters 4, 7 and 8 (see
+ \ref theory_sequence_morin). The pseudocode of each operation and of each
  algorithm is on the page of its header, in the comment of its function,
  together with the section of the book, or the paper, that it follows.
 
@@ -115,6 +117,10 @@
      <td>\f$ n + O( \sqrt{n} ) \f$</td><td>none</td><td>none</td>
      <td>\f$ O( \sqrt{n} ) \f$ amortized anywhere</td>
      <td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>SkipListSequence</tt>, <tt>TreapList</tt></td><td>none</td>
+     <td>\f$ \Theta( n ) \f$ expected</td><td>none</td><td>none</td>
+     <td>\f$ O( \log n ) \f$ expected anywhere</td>
+     <td>\f$ O( \log n ) \f$ expected</td></tr>
  </table>
 
  An insertion in a vector at the index \f$ i \f$ moves the \f$ n - i \f$
@@ -715,6 +721,84 @@
  \f$ i \mapsto ( i + r ) \bmod n \f$, each item moved once, plus one move
  per cycle.
 
+ \section theory_sequence_morin Sequences by rank and order maintenance
+
+ Three sequences of Morin, Open Data Structures, reach an item by its
+ rank in \f$ O( \log n ) \f$ expected time: `SkipListSequence`, the
+ `SkiplistList` of section 4.3, whose links carry their widths, the number
+ of items they jump over; `TreapList`, the list on a treap of exercise
+ 7.11, whose nodes carry the sizes of their subtrees; and, for the order
+ between two items rather than the access by rank, `OrderMaintenanceList`,
+ the `Sequence` of exercise 8.11; the shuffle of exercise 7.4 closes the
+ section.
+
+ <em>Lemma 13 (the widths).</em> In `SkipListSequence`, if the link of each
+ node \f$ x \f$ on the level \f$ l \f$ has the width
+ \f$ \mathrm{index}( x.\mathit{next}[ l ] ) - \mathrm{index}( x ) \f$, the head
+ having the index \f$ -1 \f$ and nil the index \f$ n \f$, then the search of
+ the index \f$ i \f$ that sums the widths and goes right while the sum
+ stays at most \f$ i \f$ ends at the item of index \f$ i \f$, in
+ \f$ O( \log n ) \f$ expected time, and an insertion, a removal, a
+ truncation and an absorption keep the widths in \f$ O( \log n ) \f$
+ expected time.
+
+ Indeed, the sum of the widths along the search is the index of the node
+ reached, so the search is that of a skip list whose keys are the indices,
+ and Lemma 7 of \ref theory_dictionary_tries bounds it. An insertion at
+ \f$ i \f$ shifts by one the indices from \f$ i \f$ on: a link that passes
+ over the new node grows by 1, and a link that the new node splits, from
+ \f$ x \f$ of index \f$ j \f$, becomes two of widths \f$ i - j \f$ and the
+ rest; the removal is the reverse. A truncation at \f$ i \f$ cuts on each
+ level the link that crosses the index \f$ i \f$ and gives its end to the
+ head of the new list, with the width reduced by \f$ i \f$; an absorption
+ walks to the last node of each level, \f$ O( \log n ) \f$ steps in
+ expectation since the walk is the search of the index \f$ n - 1 \f$, and
+ links it to the first node of that level of the other list. The links to
+ nil keep their widths, to the index \f$ n \f$, so that no level needs a
+ special case.
+
+ `TreapList` reads the rank of a node as the size of the left subtrees
+ passed on the right along its path; its shape is that of a treap on the
+ indices, a random binary search tree of expected depth \f$ O( \log n ) \f$
+ whatever the order of the operations (Lemma 7.1 of Morin), and its split
+ and join at an index are those of a treap on the keys.
+
+ `OrderMaintenanceList` labels each node of a scapegoat tree by its path,
+ so that `testBefore()` compares two words: the root has the label
+ \f$ 2^{63} \f$ and the children of a node of label \f$ \ell \f$, whose lowest
+ bit set is \f$ 2^j \f$, the labels \f$ \ell \pm 2^{j-1} \f$, which keeps the
+ labels in symmetric order and holds a tree of height up to 63. The
+ scapegoat tree with \f$ b = 3 / 2 \f$ has height at most
+ \f$ \log_{3/2} q \f$, below 63 for fewer than \f$ 10^{11} \f$ nodes; a rebuild
+ relabels the subtree it rebuilds in \f$ O( s ) \f$, inside the
+ \f$ O( s ) \f$ of the rebuild, so that an insertion costs
+ \f$ O( \log n ) \f$ amortized (Lemma 10 of \ref theory_tree_morin). A
+ removal cannot splice its node, which would lift a subtree and change its
+ labels, and marks it dead instead; the whole tree is rebuilt without the
+ dead nodes when they are half of them, which costs \f$ O( n ) \f$ every
+ \f$ n / 2 \f$ removals. Dietz and Sleator, and Bender et al. with a simpler
+ relabeling, reach \f$ O( 1 ) \f$ amortized insertions with labels of
+ \f$ O( \log n ) \f$ bits; the scapegoat labels are the solution of the
+ exercise, \f$ O( \log n ) \f$.
+
+ <em>Lemma 14 (the shuffle, exercise 7.4 of Morin).</em> The shuffle of Fisher
+ and Yates in the form of Durstenfeld, `shuffleFast()` [see
+ `RandomGenerators.h`], gives each of the \f$ n! \f$ orders with probability
+ \f$ 1 / n! \f$, in \f$ n - 1 \f$ swaps.
+
+ Indeed, by induction on the places from the last: the item put in the place
+ \f$ i \f$ is drawn uniformly among the \f$ i + 1 \f$ items of
+ \f$ A[ 0 .. i ] \f$, independently of the draws for the places above
+ \f$ i \f$, and each order is the outcome of exactly one sequence of draws,
+ of probability \f$ \prod_{i=1}^{n-1} \frac{1}{i + 1} = \frac{1}{n!} \f$.
+ The draw below \f$ m \f$ multiplies a word of 64 bits by \f$ m \f$ and takes
+ the high word, rejecting the \f$ 2^{64} \bmod m \f$ values of the low word
+ that would bias it (Lemire), which needs a division only when the low
+ word is below \f$ m \f$, with probability \f$ m / 2^{64} \f$, and
+ `shuffleFast()` draws several indices from one word when their product
+ fits; the `shuffle()` of `RandomNumbers.h`, Algorithm 3.4.2P of Knuth with
+ \f$ g() \bmod j \f$, carries the bias of the remainder.
+
  \section theory_sequence_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 3.2.1, 4.1,
@@ -744,7 +828,8 @@
       Addison-Wesley, 1997, sections 1.3.3 (the permutations) and 2.2.3
       (the available space list)
  \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
-      2013, doi:10.15215/aupress/9781927356388.01, chapters 1, 2 and 3
+      2013, doi:10.15215/aupress/9781927356388.01, chapters 1, 2, 3, 4, 7
+      and 8
  \see A. Brodnik, S. Carlsson, E. D. Demaine, J. I. Munro, R. Sedgewick,
       Resizable arrays in optimal time and space, Algorithms and Data
       Structures (WADS 1999), Lecture Notes in Computer Science 1663,
@@ -756,6 +841,18 @@
       2004
  \see J. Bentley, Programming Pearls, 2nd ed., Addison-Wesley, 2000,
       section 2.3 (the rotations)
+ \see P. F. Dietz, D. D. Sleator, Two algorithms for maintaining order in a
+      list, Proceedings of the 19th ACM Symposium on Theory of Computing
+      (STOC), 365-372, 1987, doi:10.1145/28395.28434
+ \see M. A. Bender, R. Cole, E. D. Demaine, M. Farach-Colton, J. Zito, Two
+      simplified algorithms for maintaining order in a list, Algorithms -
+      ESA 2002, Lecture Notes in Computer Science 2461, 152-164, 2002,
+      doi:10.1007/3-540-45749-6_17
+ \see R. Durstenfeld, Algorithm 235: Random permutation, Communications
+      of the ACM 7(7), 420, 1964, doi:10.1145/364520.364540
+ \see D. Lemire, Fast random integer generation in an interval, ACM
+      Transactions on Modeling and Computer Simulation 29(1), 3:1-3:12,
+      2019, doi:10.1145/3230636
 */
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File sequence.dox --------------------------*/
