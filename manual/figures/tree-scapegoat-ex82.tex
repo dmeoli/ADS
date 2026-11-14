@@ -1,0 +1,76 @@
+% Exercise 8.2 of Morin: 1, 5, 2, 4, 3 inserted into an empty
+% ScapegoatTree (b = 3/2), the credits of the proof of his Lemma 8.3
+% beside each node, and the rebuilds of the rule of Morin (WEIGHT) and of
+% that of Galperin and Rivest (HEIGHT). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-added] (s01) at (0.00mm,0.00mm) {1};
+  \node[var,anchor=west] at (-3mm,8mm) {\texttt{insert(1)}};
+  \draw[edge] (20.00mm,0.00mm) -- (26.00mm,-10.00mm);
+  \node[vertex] (s11) at (20.00mm,0.00mm) {1};
+  \node[index,anchor=east] at (15.60mm,0.00mm) {1};
+  \node[vertex-added] (s15) at (26.00mm,-10.00mm) {5};
+  \node[var,anchor=west] at (17.0mm,8mm) {\texttt{insert(5)}};
+  \draw[edge] (58.00mm,-10.00mm) -- (52.00mm,-20.00mm);
+  \draw[edge] (46.00mm,0.00mm) -- (58.00mm,-10.00mm);
+  \node[vertex] (s21) at (46.00mm,0.00mm) {1};
+  \node[index,anchor=east] at (41.60mm,0.00mm) {2};
+  \node[vertex-added] (s22) at (52.00mm,-20.00mm) {2};
+  \node[vertex] (s25) at (58.00mm,-10.00mm) {5};
+  \node[index,anchor=west] at (62.40mm,-10.00mm) {1};
+  \node[var,anchor=west] at (43.0mm,8mm) {\texttt{insert(2)}};
+  \draw[edge] (96.00mm,-10.00mm) -- (84.00mm,-20.00mm);
+  \draw[edge] (84.00mm,-20.00mm) -- (90.00mm,-30.00mm);
+  \draw[edge] (78.00mm,0.00mm) -- (96.00mm,-10.00mm);
+  \node[vertex] (s31) at (78.00mm,0.00mm) {1};
+  \node[index,anchor=east] at (73.60mm,0.00mm) {3};
+  \node[vertex] (s32) at (84.00mm,-20.00mm) {2};
+  \node[index,anchor=east] at (79.60mm,-20.00mm) {1};
+  \node[vertex-added] (s34) at (90.00mm,-30.00mm) {4};
+  \node[vertex] (s35) at (96.00mm,-10.00mm) {5};
+  \node[index,anchor=west] at (100.40mm,-10.00mm) {2};
+  \node[var,anchor=west] at (75.0mm,8mm) {\texttt{insert(4)}};
+  \draw[edge] (140.00mm,-10.00mm) -- (122.00mm,-20.00mm);
+  \draw[edge] (134.00mm,-30.00mm) -- (128.00mm,-40.00mm);
+  \draw[edge] (122.00mm,-20.00mm) -- (134.00mm,-30.00mm);
+  \draw[edge] (116.00mm,0.00mm) -- (140.00mm,-10.00mm);
+  \node[vertex] (s41) at (116.00mm,0.00mm) {1};
+  \node[index,anchor=east] at (111.60mm,0.00mm) {4};
+  \node[vertex] (s42) at (122.00mm,-20.00mm) {2};
+  \node[index,anchor=east] at (117.60mm,-20.00mm) {2};
+  \node[vertex-added] (s43) at (128.00mm,-40.00mm) {3};
+  \node[vertex] (s44) at (134.00mm,-30.00mm) {4};
+  \node[index,anchor=west] at (138.40mm,-30.00mm) {1};
+  \node[vertex-touched] (s45) at (140.00mm,-10.00mm) {5};
+  \node[index,anchor=west] at (144.40mm,-10.00mm) {3};
+  \node[var,anchor=west] at (113.0mm,8mm) {\texttt{insert(3)}};
+  \draw[edge] (32.00mm,-66.00mm) -- (26.00mm,-76.00mm);
+  \draw[edge] (20.00mm,-56.00mm) -- (32.00mm,-66.00mm);
+  \draw[edge] (32.00mm,-66.00mm) -- (38.00mm,-76.00mm);
+  \draw[edge] (38.00mm,-76.00mm) -- (44.00mm,-86.00mm);
+  \node[vertex] (w1) at (20.00mm,-56.00mm) {1};
+  \node[index,anchor=east] at (15.60mm,-56.00mm) {4};
+  \node[vertex-added] (w2) at (26.00mm,-76.00mm) {2};
+  \node[vertex-added] (w3) at (32.00mm,-66.00mm) {3};
+  \node[vertex-added] (w4) at (38.00mm,-76.00mm) {4};
+  \node[vertex-added] (w5) at (44.00mm,-86.00mm) {5};
+  \node[var,anchor=west] at (14mm,-48mm) {\texttt{WEIGHT}: the subtree of 5 rebuilt, its 3 credits spent};
+  \draw[edge] (132.00mm,-56.00mm) -- (120.00mm,-66.00mm);
+  \draw[edge] (120.00mm,-66.00mm) -- (126.00mm,-76.00mm);
+  \draw[edge] (132.00mm,-56.00mm) -- (138.00mm,-66.00mm);
+  \draw[edge] (138.00mm,-66.00mm) -- (144.00mm,-76.00mm);
+  \node[vertex-added] (h1) at (120.00mm,-66.00mm) {1};
+  \node[vertex-added] (h2) at (126.00mm,-76.00mm) {2};
+  \node[vertex-added] (h3) at (132.00mm,-56.00mm) {3};
+  \node[vertex-added] (h4) at (138.00mm,-66.00mm) {4};
+  \node[vertex-added] (h5) at (144.00mm,-76.00mm) {5};
+  \node[var,anchor=west] at (104mm,-48mm) {\texttt{HEIGHT}: the whole tree rebuilt, the 4 credits of 1 spent};
+\end{tikzpicture}
+\end{document}

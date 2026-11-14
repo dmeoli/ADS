@@ -1,0 +1,37 @@
+% Source for the figure of the rotations (sec. 8.5): rotateRight(u) lifts
+% its left child w and rotateLeft(w) is its inverse; A, B and C are
+% subtrees, and the links that change are in violet before and in orange after. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (24.00mm,0.00mm) -- (32.00mm,-10.00mm);
+  \draw[edge-touched] (8.00mm,-10.00mm) -- (16.00mm,-20.00mm);
+  \draw[edge] (8.00mm,-10.00mm) -- (0.00mm,-20.00mm);
+  \draw[edge-touched] (24.00mm,0.00mm) -- (8.00mm,-10.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a0) at (0.00mm,-20.00mm) {A};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a1) at (8.00mm,-10.00mm) {w};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a2) at (16.00mm,-20.00mm) {B};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a3) at (24.00mm,0.00mm) {u};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a4) at (32.00mm,-10.00mm) {C};
+  \draw[ptr] (46mm,-8mm) -- (54mm,-8mm);
+  \node[var,above=0.8mm] at (50mm,-8mm) {\texttt{rotateRight(u)}};
+  \draw[ptr] (54mm,-13mm) -- (46mm,-13mm);
+  \node[var,below=0.8mm] at (50mm,-13mm) {\texttt{rotateLeft(w)}};
+  \draw[edge] (86.00mm,-10.00mm) -- (94.00mm,-20.00mm);
+  \draw[edge-added] (86.00mm,-10.00mm) -- (78.00mm,-20.00mm);
+  \draw[edge-added] (70.00mm,0.00mm) -- (86.00mm,-10.00mm);
+  \draw[edge] (70.00mm,0.00mm) -- (62.00mm,-10.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b0) at (62.00mm,-10.00mm) {A};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b1) at (70.00mm,0.00mm) {w};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b2) at (78.00mm,-20.00mm) {B};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b3) at (86.00mm,-10.00mm) {u};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b4) at (94.00mm,-20.00mm) {C};
+\end{tikzpicture}
+\end{document}

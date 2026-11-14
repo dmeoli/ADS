@@ -1,0 +1,63 @@
+% Source for the figure of the join of two AVL trees (sec. 8.12): above,
+% L of height 3, the key 15 and R of height 1; join(L, 15, R) walks the
+% right spine of L from 4 to the subtree of 8, whose height 2 is not above
+% h(R) + 1, makes the node (8, 15, R) of height 3, and a double rotation
+% at 4 restores the balance. Below, the result, as JoinAVLTree builds it;
+% the small numbers are the heights. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,x=9mm,y=-11mm]
+  % before
+  \node[vertex-touched] (a4) at (0,0) {4};
+  \node[vertex] (a2) at (-1.5,1) {2};
+  \node[vertex-touched] (a8) at (1.5,1) {8};
+  \node[vertex] (a1) at (-2.2,2) {1};
+  \node[vertex] (a3) at (-0.8,2) {3};
+  \node[vertex] (a6) at (0.8,2) {6};
+  \node[vertex] (a9) at (2.3,2) {9};
+  \node[vertex] (a5) at (0.2,3) {5};
+  \node[vertex] (a7) at (1.4,3) {7};
+  \node[vertex] (a10) at (2.9,3) {10};
+  \draw[edge] (a4) -- (a2); \draw[edge-touched] (a4) -- (a8);
+  \draw[edge] (a2) -- (a1); \draw[edge] (a2) -- (a3);
+  \draw[edge] (a8) -- (a6); \draw[edge] (a8) -- (a9);
+  \draw[edge] (a6) -- (a5); \draw[edge] (a6) -- (a7);
+  \draw[edge] (a9) -- (a10);
+  \node[vertex-added] (ak) at (4.6,1) {15};
+  \node[vertex] (a20) at (6.3,1) {20};
+  \node[vertex] (a22) at (7.0,2) {22};
+  \draw[edge] (a20) -- (a22);
+  \node[var] at (0,-0.75) {$L$, $h = 3$};
+  \node[var] at (4.6,0.25) {$k$};
+  \node[var] at (6.3,0.25) {$R$, $h = 1$};
+  % after
+  \begin{scope}[yshift=-50mm]
+  \node[vertex-touched] (b8) at (2.4,0) {8};
+  \node[vertex-touched] (b4) at (0,1) {4};
+  \node[vertex-added] (b15) at (4.8,1) {15};
+  \node[vertex] (b2) at (-1.2,2) {2};
+  \node[vertex] (b6) at (1.2,2) {6};
+  \node[vertex] (b9) at (3.8,2) {9};
+  \node[vertex] (b20) at (5.8,2) {20};
+  \node[vertex] (b1) at (-1.85,3) {1};
+  \node[vertex] (b3) at (-0.55,3) {3};
+  \node[vertex] (b5) at (0.55,3) {5};
+  \node[vertex] (b7) at (1.85,3) {7};
+  \node[vertex] (b10) at (4.45,3) {10};
+  \node[vertex] (b22) at (6.45,3) {22};
+  \draw[edge-added] (b8) -- (b4); \draw[edge-added] (b8) -- (b15);
+  \draw[edge] (b4) -- (b2); \draw[edge-added] (b4) -- (b6);
+  \draw[edge-added] (b15) -- (b9); \draw[edge-added] (b15) -- (b20);
+  \draw[edge] (b2) -- (b1); \draw[edge] (b2) -- (b3);
+  \draw[edge] (b6) -- (b5); \draw[edge] (b6) -- (b7);
+  \draw[edge] (b9) -- (b10); \draw[edge] (b20) -- (b22);
+  \node[var] at (2.4,-0.75) {$\mathrm{join}( L , 15 , R )$, $h = 3$};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

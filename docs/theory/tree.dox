@@ -383,8 +383,10 @@
 
  <em>Lemma 4 (the join).</em> For each of the four schemes,
  \f$ \mathrm{join}( L , k , R ) \f$ costs \f$ O( | r( L ) - r( R ) | + 1 ) \f$
- (in expectation for the treaps), and the rank of its result is between
- \f$ \max( r( L ) , r( R ) ) \f$ and that plus 1.
+ for the first three, and \f$ O( \log n ) \f$ in expectation for the
+ treaps, whose join merges two spines; the rank of its result is between
+ \f$ \max( r( L ) , r( R ) ) \f$ and that plus 1 (in expectation for the
+ treaps).
 
  Indeed, if \f$ L \f$ is higher, the join goes down the right spine of
  \f$ L \f$ until it meets a subtree \f$ c \f$ of the rank of \f$ R \f$,
@@ -492,7 +494,8 @@
    h \le \log_t \frac{ n + 1 }{ 2 } , \tag{7}
  \f]
  and a search reads \f$ h + 1 = O( \log_t n ) \f$ nodes, with
- \f$ O( t \log_t n ) \f$ comparisons in all.
+ \f$ O( \log t ) \f$ comparisons in each, by a binary search, i.e.,
+ \f$ O( \log n ) \f$ in all.
 
  Indeed, by (6) the root has at least 2 children, and every other node that
  is not a leaf at least \f$ t \f$; hence there are at least \f$ 2 t^{d-1} \f$
@@ -537,7 +540,9 @@
  at least \f$ t \f$ keys, and is then removed from that leaf; if both
  children have \f$ t - 1 \f$ keys, they are merged around it, and it goes
  down with them. A root left with no key gives way to its only child, which
- is the only way the height falls.
+ is the only way the height falls. A replacement by the predecessor or by
+ the successor walks down to its leaf and then down again from the node it
+ left, so that the removal reads at most \f$ 2 ( h + 1 ) \f$ nodes.
 
  The B+-tree of section 6.3 of the book (`BPlusTree.h`) keeps the values in
  the leaves alone, the internal nodes holding the bounds of their children,
@@ -567,7 +572,8 @@
      <td>\f$ O( t \log_t n + k ) \f$, by the iterator</td>
      <td>secondary, a node a block</td></tr>
  <tr><td><tt>BPlusTree.h</tt></td><td>in the leaves, linked</td>
-     <td>\f$ O( m \log_m n ) \f$</td><td>none, as in the book</td>
+     <td>\f$ O( m \log_m n ) \f$</td><td>\f$ O( m \log_m n ) \f$, exercise
+     14.8 of Morin</td>
      <td>\f$ O( m \log_m n + k ) \f$</td>
      <td>secondary, a node a page</td></tr>
  <tr><td><tt>BTreeMap.h</tt></td><td>in the leaves, linked</td>
@@ -743,17 +749,19 @@
  the largest of those left, i.e., when the first key is \f$ 1 \f$ or
  \f$ n \f$ and so on recursively: \f$ 2^{n-1} \f$ of the \f$ n! \f$ orders
  (exercise 6.15, counted for \f$ n \le 7 \f$ by the test of exercise
- 6.19). An `add(x)` followed by `remove(x)` gives the tree back, since the
- node of \f$ x \f$ is then a leaf, which the removal unlinks (exercise
- 6.16). A removal never raises a node: the splice of a node with one child
- lifts that subtree by one level and leaves the rest where it was, so that
- the heights decrease or stay (exercise 6.17); an insertion adds one leaf,
- which raises the heights of its ancestors by 1 at most and that of the
- tree by 1 at most (exercise 6.18). The getLE of exercise 6.14 goes down
- the path of \f$ x \f$ and visits whole every left subtree that hangs from a
- node not larger than \f$ x \f$, \f$ O( n' + h ) \f$; and `MeasuredSearchTree`
- keeps the size, the depth and the height of each node (exercise 6.19),
- removing always a leaf so that no depth changes (see its header).
+ 6.19). An `add(x)` followed by `remove(x)` gives the tree back when
+ \f$ x \f$ was absent, since the node of \f$ x \f$ is then a leaf, which
+ the removal unlinks, and not when \f$ x \f$ was there, since the removal
+ takes the key away (exercise 6.16). A removal never raises a node: the
+ splice of a node with one child lifts that subtree by one level and
+ leaves the rest where it was, so that the heights decrease or stay (exercise
+ 6.17); an insertion adds one leaf, which raises the heights of its ancestors
+ by 1 at most and that of the tree by 1 at most (exercise 6.18). The getLE of
+ exercise 6.14 goes down the path of \f$ x \f$ and visits whole every left
+ subtree that hangs from a node not larger than \f$ x \f$, \f$ O( n' + h ) \f$;
+ and `MeasuredSearchTree` keeps the size, the depth and the height of each node
+ (exercise 6.19), removing always a leaf so that no depth changes (see its
+ header).
 
  <em>The random binary search trees (chapter 7).</em> Let \f$ f( h ) \f$ be
  the number of orders of insertion of \f$ 2^{h+1} - 1 \f$ keys that build the
@@ -776,7 +784,8 @@
  \f$ y < x \f$ lies on the right spine of the left subtree of \f$ x \f$
  exactly when \f$ x \f$ and \f$ y \f$ have the larger priorities of the keys
  from \f$ y \f$ to \f$ x \f$ and \f$ y \f$ the second one, probability
- \f$ \frac{1}{k ( k + 1 )} \f$ for \f$ k \f$ keys between them (the two parts
+ \f$ \frac{1}{k ( k + 1 )} \f$ for \f$ k \f$ the difference of their
+ ranks (the two parts
  of Lemma 7.2 of Morin, on the treap as a random tree); summed over
  \f$ k \f$, each spine has less than one node in expectation, and the
  removal reverses the insertion.
@@ -826,10 +835,15 @@
 
  The rule of Morin takes instead the first ancestor with a child too large
  (`Scapegoats::WEIGHT`), and his argument that its subtree is not complete
- and loses a level does not hold for a node of 4 whose child has 3 (see
- `ScapegoatTree.h`); his rule kept the bound on every sequence that the
- tests tried, and the class keeps it as an option checked by the
- invariant. The cost is that of Lemma 8.3 of Morin with \f$ b \f$ for
+ and loses a level needs a step that he leaves unstated: before the
+ insertion the tree was at most \f$ \log_b ( q - 1 ) < d \f$ high, so that
+ the new leaf is the only node at the depth \f$ d \f$; a subtree of height
+ \f$ H \f$ with one node at its last level has at most \f$ 2^H \f$ nodes,
+ and exactly \f$ 2^H \f$ only when its other levels are complete, which
+ leaves no child with more than half of it, so that the subtree of the
+ scapegoat has fewer than \f$ 2^H \f$ nodes and its rebuild loses a level
+ (see `ScapegoatTree.h`); the class keeps his rule as an option, checked by
+ the invariant. The cost is that of Lemma 8.3 of Morin with \f$ b \f$ for
  \f$ 3 / 2 \f$: after a rebuild of \f$ w \f$ its two children differ by one
  node at most, and before the next rebuild of \f$ w \f$ one of them must
  hold more than \f$ n_w / b \f$ of them, i.e., at least
@@ -859,7 +873,7 @@
  child of each node), and the sizes stored in the nodes cost one addition
  per level of every update instead (exercise 8.6); the rebuild by a list
  (exercise 8.7) threads the subtree by its right links in symmetric order,
- the right spine by a loop and the left subtrees by recursion, and builds
+ the left spine by a loop and the right subtrees by recursion, and builds
  the tree of the first \f$ s \f$ nodes as the tree of the first
  \f$ \lfloor ( s - 1 ) / 2 \rfloor \f$, the next node and the tree of the
  rest, advancing along the list, \f$ O( s ) \f$ time with no buffer and a

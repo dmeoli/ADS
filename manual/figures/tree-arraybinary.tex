@@ -1,0 +1,39 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (X-ol) at (0.00mm,-11.00mm) {b};
+  \node[vertex] (X-olr) at (9.00mm,-22.00mm) {d};
+  \node[vertex] (X-o) at (18.00mm,0.00mm) {a};
+  \node[vertex] (X-orl) at (27.00mm,-22.00mm) {e};
+  \node[vertex] (X-or) at (36.00mm,-11.00mm) {c};
+  \draw[edge] (X-ol) -- (X-olr);
+  \draw[edge] (X-or) -- (X-orl);
+  \draw[edge] (X-o) -- (X-ol);
+  \draw[edge] (X-o) -- (X-or);
+  \node[vertex-added] (Y-olll) at (75.00mm,-33.00mm) {y};
+  \node[vertex-added] (Y-oll) at (84.00mm,-22.00mm) {x};
+  \node[vertex] (Y-ol) at (93.00mm,-11.00mm) {b};
+  \node[vertex] (Y-olr) at (102.00mm,-22.00mm) {d};
+  \node[vertex] (Y-o) at (111.00mm,0.00mm) {a};
+  \node[vertex] (Y-orl) at (120.00mm,-22.00mm) {e};
+  \node[vertex] (Y-or) at (129.00mm,-11.00mm) {c};
+  \draw[edge-added] (Y-oll) -- (Y-olll);
+  \draw[edge-added] (Y-ol) -- (Y-oll);
+  \draw[edge] (Y-ol) -- (Y-olr);
+  \draw[edge] (Y-or) -- (Y-orl);
+  \draw[edge] (Y-o) -- (Y-ol);
+  \draw[edge] (Y-o) -- (Y-or);
+  \cells{A}{0,-46mm}{a/cell,b/cell,c/cell,/free,d/cell,e/cell,/free}
+  \foreach \i in {0,...,6} \node[index,below=1.6mm of A-\i] {\i};
+  \cells{B}{75mm,-46mm}{a/cell,b/cell,c/cell,x/added,d/cell,e/cell,/free,y/added}
+  \foreach \i in {0,...,7} \node[index,below=1.6mm of B-\i] {\i};
+  \node[var,anchor=center] at (22.00mm,-60.00mm) {before};
+  \node[var,anchor=center] at (101.00mm,-60.00mm) {\texttt{insertLeft(1,t)}};
+\end{tikzpicture}
+\end{document}

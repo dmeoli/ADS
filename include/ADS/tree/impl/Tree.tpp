@@ -140,6 +140,7 @@ void dfs( Tree< T > * t , Pre && pre , Post && post )
  // iterative, as the height may be n: each node on the stack with the child
  // being visited, nil before the first one; the children are read after
  // pre( u ), the next sibling after the subtree, as the recursion would
+ //! [dfs]
  struct Item { Tree< T > * u; Tree< T > * c; };
  std::vector< Item > S;
  pre( t );                                    // (1)
@@ -157,6 +158,7 @@ void dfs( Tree< T > * t , Pre && pre , Post && post )
    post( u );                                 // (2)
    }
   }
+ //! [dfs]
  }
 
 template< class T , class F >

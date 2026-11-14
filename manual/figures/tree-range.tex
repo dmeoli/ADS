@@ -1,0 +1,36 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (R-oll) at (0.00mm,-22.00mm) {1};
+  \node[vertex] (R-ollr) at (8.00mm,-33.00mm) {2};
+  \node[vertex] (R-ol) at (16.00mm,-11.00mm) {3};
+  \node[vertex-touched] (R-olrl) at (24.00mm,-33.00mm) {4};
+  \node[vertex-touched] (R-olr) at (32.00mm,-22.00mm) {6};
+  \node[vertex-touched] (R-olrr) at (40.00mm,-33.00mm) {7};
+  \node[vertex-touched] (R-o) at (48.00mm,0.00mm) {8};
+  \node[vertex-touched] (R-orll) at (56.00mm,-33.00mm) {9};
+  \node[vertex-touched] (R-orl) at (64.00mm,-22.00mm) {10};
+  \node[vertex] (R-orlr) at (72.00mm,-33.00mm) {11};
+  \node[vertex] (R-or) at (80.00mm,-11.00mm) {12};
+  \node[vertex] (R-orrl) at (88.00mm,-33.00mm) {13};
+  \node[vertex] (R-orr) at (96.00mm,-22.00mm) {14};
+  \draw[edge] (R-oll) -- (R-ollr);
+  \draw[edge-touched] (R-olr) -- (R-olrl);
+  \draw[edge-touched] (R-olr) -- (R-olrr);
+  \draw[edge] (R-ol) -- (R-oll);
+  \draw[edge-touched] (R-ol) -- (R-olr);
+  \draw[edge-touched] (R-orl) -- (R-orll);
+  \draw[edge-touched] (R-orl) -- (R-orlr);
+  \draw[edge] (R-orr) -- (R-orrl);
+  \draw[edge-touched] (R-or) -- (R-orl);
+  \draw[edge] (R-or) -- (R-orr);
+  \draw[edge-touched] (R-o) -- (R-ol);
+  \draw[edge-touched] (R-o) -- (R-or);
+\end{tikzpicture}
+\end{document}

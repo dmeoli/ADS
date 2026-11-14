@@ -1,0 +1,50 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (T0-oll) at (0.00mm,-36.00mm) {1};
+  \node[vertex] (T0-ol) at (11.00mm,-25.00mm) {2};
+  \node[vertex] (T0-olr) at (22.00mm,-36.00mm) {3};
+  \node[vertex] (T0-o) at (33.00mm,-14.00mm) {4};
+  \node[vertex] (T0-or) at (44.00mm,-25.00mm) {6};
+  \draw[edge] (T0-ol) -- (T0-oll);
+  \draw[edge] (T0-ol) -- (T0-olr);
+  \draw[edge] (T0-o) -- (T0-ol);
+  \draw[edge] (T0-o) -- (T0-or);
+  \node[node] (T0-h) at (22.0mm,0) {head};
+  \draw[edge] (T0-h) -- (T0-o);
+  \draw[guide,->] (T0-oll.west) .. controls +(-1*8mm,0mm) and +(-1*30mm,0mm) .. (T0-h.west);
+  \draw[guide,->] (T0-oll) to[bend left=25] (T0-ol);
+  \draw[guide,->] (T0-olr) to[bend left=25] (T0-ol);
+  \draw[guide,->] (T0-olr) to[bend left=25] (T0-o);
+  \draw[guide,->] (T0-or) to[bend left=25] (T0-o);
+  \draw[guide,->] (T0-or.east) .. controls +(1*8mm,0mm) and +(1*30mm,0mm) .. (T0-h.east);
+  \node[vertex] (T1-oll) at (80.00mm,-36.00mm) {1};
+  \node[vertex] (T1-ol) at (91.00mm,-25.00mm) {2};
+  \node[vertex] (T1-olr) at (102.00mm,-36.00mm) {3};
+  \node[vertex] (T1-o) at (113.00mm,-14.00mm) {4};
+  \node[vertex-added] (T1-orl) at (124.00mm,-36.00mm) {5};
+  \node[vertex] (T1-or) at (135.00mm,-25.00mm) {6};
+  \draw[edge] (T1-ol) -- (T1-oll);
+  \draw[edge] (T1-ol) -- (T1-olr);
+  \draw[edge-added] (T1-or) -- (T1-orl);
+  \draw[edge] (T1-o) -- (T1-ol);
+  \draw[edge] (T1-o) -- (T1-or);
+  \node[node] (T1-h) at (107.5mm,0) {head};
+  \draw[edge] (T1-h) -- (T1-o);
+  \draw[guide,->] (T1-oll.west) .. controls +(-1*8mm,0mm) and +(-1*30mm,0mm) .. (T1-h.west);
+  \draw[guide,->] (T1-oll) to[bend left=25] (T1-ol);
+  \draw[guide,->] (T1-olr) to[bend left=25] (T1-ol);
+  \draw[guide,->] (T1-olr) to[bend left=25] (T1-o);
+  \draw[edge-added,dash pattern=on 3pt off 2pt,->] (T1-orl) to[bend left=25] (T1-o);
+  \draw[edge-added,dash pattern=on 3pt off 2pt,->] (T1-orl) to[bend left=25] (T1-or);
+  \draw[guide,->] (T1-or.east) .. controls +(1*8mm,0mm) and +(1*30mm,0mm) .. (T1-h.east);
+  \node[var,anchor=center] at (17.00mm,-50.00mm) {after 4, 2, 6, 1, 3};
+  \node[var,anchor=center] at (102.00mm,-50.00mm) {\texttt{insert(5)}};
+\end{tikzpicture}
+\end{document}

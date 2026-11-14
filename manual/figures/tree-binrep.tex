@@ -1,0 +1,39 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (T-00) at (0.00mm,-22.00mm) {e};
+  \node[vertex] (T-01) at (10.00mm,-22.00mm) {f};
+  \node[vertex] (T-0) at (5.00mm,-11.00mm) {b};
+  \node[vertex] (T-10) at (20.00mm,-22.00mm) {g};
+  \node[vertex] (T-1) at (20.00mm,-11.00mm) {c};
+  \node[vertex] (T-2) at (30.00mm,-11.00mm) {d};
+  \node[vertex] (T-r) at (17.50mm,0.00mm) {a};
+  \draw[edge] (T-0) -- (T-00);
+  \draw[edge] (T-0) -- (T-01);
+  \draw[edge] (T-r) -- (T-0);
+  \draw[edge] (T-1) -- (T-10);
+  \draw[edge] (T-r) -- (T-1);
+  \draw[edge] (T-r) -- (T-2);
+  \node[vertex] (B-oll) at (60.00mm,-22.00mm) {e};
+  \node[vertex] (B-ollr) at (68.00mm,-33.00mm) {f};
+  \node[vertex] (B-ol) at (76.00mm,-11.00mm) {b};
+  \node[vertex] (B-olrl) at (84.00mm,-33.00mm) {g};
+  \node[vertex] (B-olr) at (92.00mm,-22.00mm) {c};
+  \node[vertex] (B-olrr) at (100.00mm,-33.00mm) {d};
+  \node[vertex] (B-o) at (108.00mm,0.00mm) {a};
+  \draw[edge-touched] (B-oll) -- (B-ollr);
+  \draw[edge] (B-olr) -- (B-olrl);
+  \draw[edge-touched] (B-olr) -- (B-olrr);
+  \draw[edge] (B-ol) -- (B-oll);
+  \draw[edge-touched] (B-ol) -- (B-olr);
+  \draw[edge] (B-o) -- (B-ol);
+  \node[var,anchor=center] at (15.00mm,-38.00mm) {$T$};
+  \node[var,anchor=center] at (84.00mm,-38.00mm) {$B = \mathrm{to\_binary}( T )$};
+\end{tikzpicture}
+\end{document}

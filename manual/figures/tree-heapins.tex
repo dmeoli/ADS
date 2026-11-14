@@ -1,0 +1,31 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-added] (H0-oll) at (0.00mm,-22.00mm) {10};
+  \node[vertex] (H0-ol) at (10.00mm,-11.00mm) {4};
+  \node[vertex] (H0-o) at (20.00mm,0.00mm) {9};
+  \node[vertex] (H0-or) at (30.00mm,-11.00mm) {7};
+  \draw[edge-touched] (H0-ol) -- (H0-oll);
+  \draw[edge-touched] (H0-o) -- (H0-ol);
+  \draw[edge] (H0-o) -- (H0-or);
+  \cells{V0}{0.0mm,-30mm}{9/cell,4/cell,7/cell,10/added}
+  \foreach \i in {0,...,3} \node[index,below=1.6mm of V0-\i] {\i};
+  \node[vertex] (H1-oll) at (60.00mm,-22.00mm) {4};
+  \node[vertex] (H1-ol) at (70.00mm,-11.00mm) {9};
+  \node[vertex-added] (H1-o) at (80.00mm,0.00mm) {10};
+  \node[vertex] (H1-or) at (90.00mm,-11.00mm) {7};
+  \draw[edge] (H1-ol) -- (H1-oll);
+  \draw[edge] (H1-o) -- (H1-ol);
+  \draw[edge] (H1-o) -- (H1-or);
+  \cells{V1}{60.0mm,-30mm}{10/added,9/cell,7/cell,4/cell}
+  \foreach \i in {0,...,3} \node[index,below=1.6mm of V1-\i] {\i};
+  \node[var,anchor=center] at (11.00mm,-42.00mm) {before};
+  \node[var,anchor=center] at (71.00mm,-42.00mm) {\texttt{maxHeapSiftUp(A,3)}};
+\end{tikzpicture}
+\end{document}

@@ -66,6 +66,7 @@ struct JoinTreeNodes {
   t->left = t->right = nullptr;
   }
 
+ //! [connect]
  static Node * connect( Node * m , Node * l , Node * r ) {
   m->left = l;
   m->right = r;
@@ -80,6 +81,7 @@ struct JoinTreeNodes {
                         aug( r ) );
   return( m );
   }
+ //! [connect]
 
  static void dispose( Node * t ) {
   if( ! t ) return;
@@ -299,6 +301,7 @@ auto JoinTree< K , V , B , G >::augValue( void ) const -> AugValue
  return( Nodes::aug( f_root ) );
  }
 
+//! [augVisit]
 template< std::totally_ordered K , class V , class B , class G >
  requires Augmentation< G , K , V >
 template< class F >
@@ -336,6 +339,7 @@ void JoinTree< K , V , B , G >::augVisit( const K & lo , const K & hi ,
    u = u->right;
    }
  }
+//! [augVisit]
 
 template< std::totally_ordered K , class V , class B , class G >
  requires Augmentation< G , K , V >

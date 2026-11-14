@@ -1,0 +1,108 @@
+% Morin's scapegoat tree of 10 nodes and height 5 (his figures 8.1 and
+% 8.2), the insertion of 3.5 with the sizes along the path climbed, and
+% the trees that ScapegoatTree leaves with the rule of Morin (WEIGHT) and
+% with that of Galperin and Rivest (HEIGHT); drawn from the states the
+% code prints. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (6.60mm,-40.00mm) -- (0.00mm,-50.00mm);
+  \draw[edge] (13.20mm,-30.00mm) -- (6.60mm,-40.00mm);
+  \draw[edge] (33.00mm,-20.00mm) -- (13.20mm,-30.00mm);
+  \draw[edge] (26.40mm,-40.00mm) -- (19.80mm,-50.00mm);
+  \draw[edge] (13.20mm,-30.00mm) -- (26.40mm,-40.00mm);
+  \draw[edge] (39.60mm,-10.00mm) -- (33.00mm,-20.00mm);
+  \draw[edge] (46.20mm,0.00mm) -- (39.60mm,-10.00mm);
+  \draw[edge] (46.20mm,0.00mm) -- (52.80mm,-10.00mm);
+  \draw[edge] (52.80mm,-10.00mm) -- (59.40mm,-20.00mm);
+  \node[vertex] (a0) at (0.00mm,-50.00mm) {0};
+  \node[vertex] (a1) at (6.60mm,-40.00mm) {1};
+  \node[vertex] (a2) at (13.20mm,-30.00mm) {2};
+  \node[vertex] (a3) at (19.80mm,-50.00mm) {3};
+  \node[vertex] (a4) at (26.40mm,-40.00mm) {4};
+  \node[vertex] (a5) at (33.00mm,-20.00mm) {5};
+  \node[vertex] (a6) at (39.60mm,-10.00mm) {6};
+  \node[vertex] (a7) at (46.20mm,0.00mm) {7};
+  \node[vertex] (a8) at (52.80mm,-10.00mm) {8};
+  \node[vertex] (a9) at (59.40mm,-20.00mm) {9};
+  \node[var,anchor=west] at (-2mm,8mm) {(a) $n = q = 10$, $h = 5$};
+  \draw[edge] (98.60mm,-40.00mm) -- (92.00mm,-50.00mm);
+  \draw[edge] (105.20mm,-30.00mm) -- (98.60mm,-40.00mm);
+  \draw[edge-touched] (131.60mm,-20.00mm) -- (105.20mm,-30.00mm);
+  \draw[edge-touched] (125.00mm,-40.00mm) -- (111.80mm,-50.00mm);
+  \draw[edge-touched] (105.20mm,-30.00mm) -- (125.00mm,-40.00mm);
+  \draw[edge-touched] (138.20mm,-10.00mm) -- (131.60mm,-20.00mm);
+  \draw[edge-touched] (144.80mm,0.00mm) -- (138.20mm,-10.00mm);
+  \draw[edge] (144.80mm,0.00mm) -- (151.40mm,-10.00mm);
+  \draw[edge] (151.40mm,-10.00mm) -- (158.00mm,-20.00mm);
+  \draw[edge-touched] (111.80mm,-50.00mm) -- (118.40mm,-60.00mm);
+  \node[vertex] (b0) at (92.00mm,-50.00mm) {0};
+  \node[vertex] (b1) at (98.60mm,-40.00mm) {1};
+  \node[vertex-touched] (b2) at (105.20mm,-30.00mm) {2};
+  \node[index,anchor=east] at (100.80mm,-30.00mm) {6};
+  \node[vertex-touched] (b3) at (111.80mm,-50.00mm) {3};
+  \node[index,anchor=east] at (107.40mm,-50.00mm) {2};
+  \node[vertex-touched] (b4) at (125.00mm,-40.00mm) {4};
+  \node[index,anchor=west] at (129.40mm,-40.00mm) {3};
+  \node[vertex-touched] (b5) at (131.60mm,-20.00mm) {5};
+  \node[index,anchor=east] at (127.20mm,-20.00mm) {7};
+  \node[vertex-touched] (b6) at (138.20mm,-10.00mm) {6};
+  \node[index,anchor=east] at (133.80mm,-10.00mm) {8};
+  \node[vertex-touched] (b7) at (144.80mm,0.00mm) {7};
+  \node[index,anchor=east] at (140.40mm,0.00mm) {11};
+  \node[vertex] (b8) at (151.40mm,-10.00mm) {8};
+  \node[vertex] (b9) at (158.00mm,-20.00mm) {9};
+  \node[vertex-added] (b3p5) at (118.40mm,-60.00mm) {3.5};
+  \node[var,anchor=west] at (90mm,8mm) {(b) \texttt{insert(3.5)}: depth $6 > \log_{3/2} 11$};
+  \draw[edge] (6.60mm,-108.00mm) -- (0.00mm,-118.00mm);
+  \draw[edge] (19.80mm,-98.00mm) -- (6.60mm,-108.00mm);
+  \draw[edge] (6.60mm,-108.00mm) -- (13.20mm,-118.00mm);
+  \draw[edge] (46.20mm,-88.00mm) -- (19.80mm,-98.00mm);
+  \draw[edge] (33.00mm,-108.00mm) -- (26.40mm,-118.00mm);
+  \draw[edge] (19.80mm,-98.00mm) -- (33.00mm,-108.00mm);
+  \draw[edge] (33.00mm,-108.00mm) -- (39.60mm,-118.00mm);
+  \draw[edge] (52.80mm,-78.00mm) -- (46.20mm,-88.00mm);
+  \draw[edge] (52.80mm,-78.00mm) -- (59.40mm,-88.00mm);
+  \draw[edge] (59.40mm,-88.00mm) -- (66.00mm,-98.00mm);
+  \node[vertex-added] (c0) at (0.00mm,-118.00mm) {0};
+  \node[vertex-added] (c1) at (6.60mm,-108.00mm) {1};
+  \node[vertex-added] (c2) at (13.20mm,-118.00mm) {2};
+  \node[vertex-added] (c3) at (19.80mm,-98.00mm) {3};
+  \node[vertex-added] (c3p5) at (26.40mm,-118.00mm) {3.5};
+  \node[vertex-added] (c4) at (33.00mm,-108.00mm) {4};
+  \node[vertex-added] (c5) at (39.60mm,-118.00mm) {5};
+  \node[vertex] (c6) at (46.20mm,-88.00mm) {6};
+  \node[vertex] (c7) at (52.80mm,-78.00mm) {7};
+  \node[vertex] (c8) at (59.40mm,-88.00mm) {8};
+  \node[vertex] (c9) at (66.00mm,-98.00mm) {9};
+  \node[var,anchor=west] at (-2mm,-70mm) {(c) \texttt{WEIGHT}: the subtree of 5 rebuilt, $h = 4$};
+  \draw[edge] (105.20mm,-88.00mm) -- (92.00mm,-98.00mm);
+  \draw[edge] (92.00mm,-98.00mm) -- (98.60mm,-108.00mm);
+  \draw[edge] (125.00mm,-78.00mm) -- (105.20mm,-88.00mm);
+  \draw[edge] (105.20mm,-88.00mm) -- (111.80mm,-98.00mm);
+  \draw[edge] (111.80mm,-98.00mm) -- (118.40mm,-108.00mm);
+  \draw[edge] (144.80mm,-88.00mm) -- (131.60mm,-98.00mm);
+  \draw[edge] (131.60mm,-98.00mm) -- (138.20mm,-108.00mm);
+  \draw[edge] (125.00mm,-78.00mm) -- (144.80mm,-88.00mm);
+  \draw[edge] (144.80mm,-88.00mm) -- (151.40mm,-98.00mm);
+  \draw[edge] (151.40mm,-98.00mm) -- (158.00mm,-108.00mm);
+  \node[vertex-added] (d0) at (92.00mm,-98.00mm) {0};
+  \node[vertex-added] (d1) at (98.60mm,-108.00mm) {1};
+  \node[vertex-added] (d2) at (105.20mm,-88.00mm) {2};
+  \node[vertex-added] (d3) at (111.80mm,-98.00mm) {3};
+  \node[vertex-added] (d3p5) at (118.40mm,-108.00mm) {3.5};
+  \node[vertex-added] (d4) at (125.00mm,-78.00mm) {4};
+  \node[vertex-added] (d5) at (131.60mm,-98.00mm) {5};
+  \node[vertex-added] (d6) at (138.20mm,-108.00mm) {6};
+  \node[vertex-added] (d7) at (144.80mm,-88.00mm) {7};
+  \node[vertex-added] (d8) at (151.40mm,-98.00mm) {8};
+  \node[vertex-added] (d9) at (158.00mm,-108.00mm) {9};
+  \node[var,anchor=west] at (90mm,-70mm) {(d) \texttt{HEIGHT}: the whole tree rebuilt, $h = 3$};
+\end{tikzpicture}
+\end{document}

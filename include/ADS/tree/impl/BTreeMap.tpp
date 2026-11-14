@@ -104,6 +104,7 @@ inline void ADS_BTM::fetch( const void * x , std::size_t bytes )
 #endif
  }
 
+//! [place]
 ADS_BTM_T
 template< std::size_t C >
 inline std::size_t ADS_BTM::place( const K * a , std::uint32_t n ,
@@ -116,6 +117,7 @@ inline std::size_t ADS_BTM::place( const K * a , std::uint32_t n ,
  else
   return( std::size_t( std::lower_bound( a , a + n , x , f_less ) - a ) );
  }
+//! [place]
 
 ADS_BTM_T
 inline bool ADS_BTM::equal( const K & a , const K & b ) const
@@ -538,6 +540,7 @@ void ADS_BTM::split( Leaf * x , std::uint32_t p , const K & k , const V & v ,
  climb( x->k[ m - 1 ] , r , path , d , 0 );
  }
 
+//! [climb]
 ADS_BTM_T
 void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
 {
@@ -605,6 +608,7 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   before = false;
   }
  }
+//! [climb]
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ REMOVAL -----------------------------------*/

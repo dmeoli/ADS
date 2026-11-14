@@ -1,0 +1,41 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (C0p) at (14.0mm,0.0mm) {$p$};
+  \node[vertex-touched] (C0u) at (14.0mm,-14.0mm) {$u$};
+  \node[vertex] (C0l) at (4.0mm,-28.0mm) {$\ell$};
+  \node[vertex] (C0r) at (24.0mm,-28.0mm) {$r$};
+  \draw[edge] (C0p) -- (C0u);
+  \draw[edge] (C0u) -- (C0l);
+  \draw[edge] (C0u) -- (C0r);
+  \draw[arc-touched] (C0p) to[bend left=35] (C0u);
+  \draw[arc-added] (C0u) to[bend left=35] (C0l);
+  \node[var,anchor=center] at (14.00mm,-38.00mm) {from the parent};
+  \node[vertex] (C1p) at (59.0mm,0.0mm) {$p$};
+  \node[vertex-touched] (C1u) at (59.0mm,-14.0mm) {$u$};
+  \node[vertex] (C1l) at (49.0mm,-28.0mm) {$\ell$};
+  \node[vertex] (C1r) at (69.0mm,-28.0mm) {$r$};
+  \draw[edge] (C1p) -- (C1u);
+  \draw[edge] (C1u) -- (C1l);
+  \draw[edge] (C1u) -- (C1r);
+  \draw[arc-touched] (C1l) to[bend left=35] (C1u);
+  \draw[arc-added] (C1u) to[bend left=35] (C1r);
+  \node[var,anchor=center] at (59.00mm,-38.00mm) {from the left};
+  \node[vertex] (C2p) at (104.0mm,0.0mm) {$p$};
+  \node[vertex-touched] (C2u) at (104.0mm,-14.0mm) {$u$};
+  \node[vertex] (C2l) at (94.0mm,-28.0mm) {$\ell$};
+  \node[vertex] (C2r) at (114.0mm,-28.0mm) {$r$};
+  \draw[edge] (C2p) -- (C2u);
+  \draw[edge] (C2u) -- (C2l);
+  \draw[edge] (C2u) -- (C2r);
+  \draw[arc-touched] (C2r) to[bend right=35] (C2u);
+  \draw[arc-added] (C2u) to[bend right=35] (C2p);
+  \node[var,anchor=center] at (104.00mm,-38.00mm) {from the right};
+\end{tikzpicture}
+\end{document}

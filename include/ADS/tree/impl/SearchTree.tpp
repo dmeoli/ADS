@@ -469,6 +469,7 @@ auto SearchTree< K , V , RB >::removeNode( Link * T , const K & x0 ) -> Link *
 template< std::totally_ordered K , class V , bool RB >
 auto SearchTree< K , V , RB >::rotateLeft( Link * x ) -> Link *
 {
+ //! [rotateLeft]
  Link * y = x->right;
  Link * p = x->parent;
  x->right = y->left;                            // (1) B right of x
@@ -483,6 +484,7 @@ auto SearchTree< K , V , RB >::rotateLeft( Link * x ) -> Link *
  x->size = 1 + x->left->size + x->right->size;
  y->size = 1 + y->left->size + y->right->size;
  return( y );
+ //! [rotateLeft]
  }
 
 template< std::totally_ordered K , class V , bool RB >

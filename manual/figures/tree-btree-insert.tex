@@ -1,0 +1,125 @@
+% Exercise 14.1 of Morin's book on the B-tree of his figure 14.2 (t = 2),
+% by the one-pass insertion of BTree, which splits each full node it is
+% about to enter: the nodes written in orange, those only read in violet.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (56.55mm,0mm) {10};
+  \draw[edge] (53.75mm,-3mm) -- (25.4mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (22.6mm,-13mm) {3};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (28.2mm,-13mm) {6};
+  \draw[edge] (19.8mm,-16mm) -- (8.4mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-26mm) {0};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.4mm,-26mm) {1};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (14mm,-26mm) {2};
+  \draw[edge] (25.4mm,-16mm) -- (25.4mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (22.6mm,-26mm) {4};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (28.2mm,-26mm) {5};
+  \draw[edge] (31mm,-16mm) -- (42.4mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (36.8mm,-26mm) {7};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (42.4mm,-26mm) {8};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (48mm,-26mm) {9};
+  \draw[edge] (59.35mm,-3mm) -- (87.7mm,-10mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (82.1mm,-13mm) {14};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (87.7mm,-13mm) {17};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (93.3mm,-13mm) {21};
+  \draw[edge] (79.3mm,-16mm) -- (62.2mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (56.6mm,-26mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (62.2mm,-26mm) {12};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (67.8mm,-26mm) {13};
+  \draw[edge] (84.9mm,-16mm) -- (79.2mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (76.4mm,-26mm) {15};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (82mm,-26mm) {16};
+  \draw[edge] (90.5mm,-16mm) -- (96.2mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (90.6mm,-26mm) {18};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (96.2mm,-26mm) {19};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (101.8mm,-26mm) {20};
+  \draw[edge] (96.1mm,-16mm) -- (113.2mm,-23mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (110.4mm,-26mm) {22};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (116mm,-26mm) {23};
+  \node[var,anchor=east] at (-4mm,0mm) {before};
+  \node[touched,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (57.4mm,-42mm) {10};
+  \draw[edge-touched] (54.6mm,-45mm) -- (24.1mm,-52mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (18.5mm,-55mm) {1};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (24.1mm,-55mm) {3};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (29.7mm,-55mm) {6};
+  \draw[edge] (15.7mm,-58mm) -- (2.8mm,-65mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-68mm) {0};
+  \draw[edge-touched] (21.3mm,-58mm) -- (14.2mm,-65mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (11.4mm,-68mm) {1.5};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (17mm,-68mm) {2};
+  \draw[edge] (26.9mm,-58mm) -- (28.4mm,-65mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-68mm) {4};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.2mm,-68mm) {5};
+  \draw[edge] (32.5mm,-58mm) -- (45.4mm,-65mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (39.8mm,-68mm) {7};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (45.4mm,-68mm) {8};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (51mm,-68mm) {9};
+  \draw[edge] (60.2mm,-45mm) -- (90.7mm,-52mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (85.1mm,-55mm) {14};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (90.7mm,-55mm) {17};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (96.3mm,-55mm) {21};
+  \draw[edge] (82.3mm,-58mm) -- (65.2mm,-65mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (59.6mm,-68mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (65.2mm,-68mm) {12};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (70.8mm,-68mm) {13};
+  \draw[edge] (87.9mm,-58mm) -- (82.2mm,-65mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (79.4mm,-68mm) {15};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (85mm,-68mm) {16};
+  \draw[edge] (93.5mm,-58mm) -- (99.2mm,-65mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (93.6mm,-68mm) {18};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (99.2mm,-68mm) {19};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (104.8mm,-68mm) {20};
+  \draw[edge] (99.1mm,-58mm) -- (116.2mm,-65mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (113.4mm,-68mm) {22};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (119mm,-68mm) {23};
+  \node[var,anchor=east] at (-4mm,-42mm) {\texttt{insert(1.5)}};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (48.3mm,-84mm) {3};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (53.9mm,-84mm) {10};
+  \draw[edge] (45.5mm,-87mm) -- (8.5mm,-94mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (8.5mm,-97mm) {1};
+  \draw[edge] (5.7mm,-100mm) -- (2.8mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (2.8mm,-110mm) {0};
+  \draw[edge] (11.3mm,-100mm) -- (14.2mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (11.4mm,-110mm) {1.5};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (17mm,-110mm) {2};
+  \draw[edge-touched] (51.1mm,-87mm) -- (41.2mm,-94mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (38.4mm,-97mm) {6};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (44mm,-97mm) {8};
+  \draw[edge] (35.6mm,-100mm) -- (28.4mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (25.6mm,-110mm) {4};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (31.2mm,-110mm) {5};
+  \draw[edge-touched] (41.2mm,-100mm) -- (42.6mm,-107mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (39.8mm,-110mm) {7};
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (45.4mm,-110mm) {7.5};
+  \draw[edge] (46.8mm,-100mm) -- (54mm,-107mm);
+  \node[added,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (54mm,-110mm) {9};
+  \draw[edge] (56.7mm,-87mm) -- (93.7mm,-94mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (88.1mm,-97mm) {14};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (93.7mm,-97mm) {17};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (99.3mm,-97mm) {21};
+  \draw[edge] (85.3mm,-100mm) -- (68.2mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (62.6mm,-110mm) {11};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (68.2mm,-110mm) {12};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (73.8mm,-110mm) {13};
+  \draw[edge] (90.9mm,-100mm) -- (85.2mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (82.4mm,-110mm) {15};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (88mm,-110mm) {16};
+  \draw[edge] (96.5mm,-100mm) -- (102.2mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (96.6mm,-110mm) {18};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (102.2mm,-110mm) {19};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (107.8mm,-110mm) {20};
+  \draw[edge] (102.1mm,-100mm) -- (119.2mm,-107mm);
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (116.4mm,-110mm) {22};
+  \node[cell,minimum width=5.6mm,minimum height=6mm,font=\scriptsize\ttfamily] at (122mm,-110mm) {23};
+  \node[var,anchor=east] at (-4mm,-84mm) {\texttt{insert(7.5)}};
+\end{tikzpicture}
+\end{document}

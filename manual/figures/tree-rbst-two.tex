@@ -1,0 +1,52 @@
+% Two binary search trees on 0..14 (Morin, figure 7.1): the path built
+% only by the increasing order and the complete tree. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (p0) at (0mm,0mm) {0};
+  \node[vertex] (p1) at (8mm,-9mm) {1};
+  \node[vertex] (p2) at (16mm,-18mm) {2};
+  \node[vertex] (p3) at (24mm,-27mm) {3};
+  \node[font=\small] (pd) at (32mm,-36mm) {$\ddots$};
+  \node[vertex] (p14) at (40mm,-45mm) {14};
+  \draw[edge] (p0) -- (p1);
+  \draw[edge] (p1) -- (p2);
+  \draw[edge] (p2) -- (p3);
+  \draw[edge] (p3) -- (pd); \draw[edge] (pd) -- (p14);
+  \node[vertex] (v17-0) at (62mm,-39mm) {0};
+  \node[vertex] (v17-1) at (70.5mm,-26mm) {1};
+  \node[vertex] (v17-2) at (79mm,-39mm) {2};
+  \node[vertex] (v17-3) at (87.5mm,-13mm) {3};
+  \node[vertex] (v17-4) at (96mm,-39mm) {4};
+  \node[vertex] (v17-5) at (104.5mm,-26mm) {5};
+  \node[vertex] (v17-6) at (113mm,-39mm) {6};
+  \node[vertex] (v17-7) at (121.5mm,0mm) {7};
+  \node[vertex] (v17-8) at (130mm,-39mm) {8};
+  \node[vertex] (v17-9) at (138.5mm,-26mm) {9};
+  \node[vertex] (v17-10) at (147mm,-39mm) {10};
+  \node[vertex] (v17-11) at (155.5mm,-13mm) {11};
+  \node[vertex] (v17-12) at (164mm,-39mm) {12};
+  \node[vertex] (v17-13) at (172.5mm,-26mm) {13};
+  \node[vertex] (v17-14) at (181mm,-39mm) {14};
+  \draw[edge] (v17-7) -- (v17-3);
+  \draw[edge] (v17-3) -- (v17-1);
+  \draw[edge] (v17-1) -- (v17-0);
+  \draw[edge] (v17-1) -- (v17-2);
+  \draw[edge] (v17-3) -- (v17-5);
+  \draw[edge] (v17-5) -- (v17-4);
+  \draw[edge] (v17-5) -- (v17-6);
+  \draw[edge] (v17-7) -- (v17-11);
+  \draw[edge] (v17-11) -- (v17-9);
+  \draw[edge] (v17-9) -- (v17-8);
+  \draw[edge] (v17-9) -- (v17-10);
+  \draw[edge] (v17-11) -- (v17-13);
+  \draw[edge] (v17-13) -- (v17-12);
+  \draw[edge] (v17-13) -- (v17-14);
+\end{tikzpicture}
+\end{document}

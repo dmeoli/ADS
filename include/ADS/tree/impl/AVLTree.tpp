@@ -107,6 +107,7 @@ void AVLTree< K , V >::rotateLeft( Ptr & t )
 template< std::totally_ordered K , class V >
 void AVLTree< K , V >::balance( Ptr & t )
 {
+ //! [balance]
  update( t );
  const int b = h( t->left ) - h( t->right );
  if( ( b > 1 ) || ( b < -1 ) ) {
@@ -127,6 +128,7 @@ void AVLTree< K , V >::balance( Ptr & t )
    }
   rotateLeft( t );
   }
+ //! [balance]
  }
 
 template< std::totally_ordered K , class V >

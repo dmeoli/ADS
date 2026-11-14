@@ -1,0 +1,90 @@
+% removeFixup of LeftLeaningRedBlackTree step by step on two removals
+% from the tree of Morin's figure 9.11, drawn on the subtree that changes:
+% remove(1), case 2, and remove(5), case 1 and then case 3; red nodes in
+% orange, the double black (a nil carried by a node of no key) in violet.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (6.00mm,0.00mm) -- (0.00mm,-10.00mm);
+  \draw[edge] (6.00mm,0.00mm) -- (12.00mm,-10.00mm);
+  \node[vertex-added] (r02) at (6.00mm,0.00mm) {2};
+  \node[vertex] (r01) at (0.00mm,-10.00mm) {1};
+  \node[vertex] (r03) at (12.00mm,-10.00mm) {3};
+  \node[var,anchor=west] at (-3.0mm,8.0mm) {\texttt{remove(1)}};
+  \draw[edge] (40.00mm,0.00mm) -- (34.00mm,-10.00mm);
+  \draw[edge] (40.00mm,0.00mm) -- (46.00mm,-10.00mm);
+  \node[vertex-added] (r12) at (40.00mm,0.00mm) {2};
+  \node[vertex-touched] (r1nil) at (34.00mm,-10.00mm) {nil};
+  \node[vertex] (r13) at (46.00mm,-10.00mm) {3};
+  \node[var,anchor=west] at (31.0mm,8.0mm) {splice};
+  \draw[edge] (74.00mm,0.00mm) -- (80.00mm,-10.00mm);
+  \node[vertex] (r22) at (74.00mm,0.00mm) {2};
+  \node[vertex-added] (r23) at (80.00mm,-10.00mm) {3};
+  \node[var,anchor=west] at (65.0mm,8.0mm) {\texttt{pullBlack(2)}};
+  \draw[edge] (108.00mm,0.00mm) -- (102.00mm,-10.00mm);
+  \node[vertex] (r33) at (108.00mm,0.00mm) {3};
+  \node[vertex-added] (r32) at (102.00mm,-10.00mm) {2};
+  \node[var,anchor=west] at (99.0mm,8.0mm) {\texttt{flipLeft(2)}};
+  \draw[edge] (15.60mm,-42.00mm) -- (5.20mm,-52.00mm);
+  \draw[edge] (5.20mm,-52.00mm) -- (0.00mm,-62.00mm);
+  \draw[edge] (5.20mm,-52.00mm) -- (10.40mm,-62.00mm);
+  \draw[edge] (15.60mm,-42.00mm) -- (20.80mm,-52.00mm);
+  \node[vertex] (s04) at (15.60mm,-42.00mm) {4};
+  \node[vertex-added] (s02) at (5.20mm,-52.00mm) {2};
+  \node[vertex] (s01) at (0.00mm,-62.00mm) {1};
+  \node[vertex] (s03) at (10.40mm,-62.00mm) {3};
+  \node[vertex] (s05) at (20.80mm,-52.00mm) {5};
+  \node[var,anchor=west] at (-3.0mm,-34.0mm) {\texttt{remove(5)}};
+  \draw[edge] (46.60mm,-42.00mm) -- (36.20mm,-52.00mm);
+  \draw[edge] (36.20mm,-52.00mm) -- (31.00mm,-62.00mm);
+  \draw[edge] (36.20mm,-52.00mm) -- (41.40mm,-62.00mm);
+  \draw[edge] (46.60mm,-42.00mm) -- (51.80mm,-52.00mm);
+  \node[vertex] (s14) at (46.60mm,-42.00mm) {4};
+  \node[vertex-added] (s12) at (36.20mm,-52.00mm) {2};
+  \node[vertex] (s11) at (31.00mm,-62.00mm) {1};
+  \node[vertex] (s13) at (41.40mm,-62.00mm) {3};
+  \node[vertex-touched] (s1nil) at (51.80mm,-52.00mm) {nil};
+  \node[var,anchor=west] at (28.0mm,-34.0mm) {splice};
+  \draw[edge] (67.20mm,-42.00mm) -- (62.00mm,-52.00mm);
+  \draw[edge] (67.20mm,-42.00mm) -- (77.60mm,-52.00mm);
+  \draw[edge] (77.60mm,-52.00mm) -- (72.40mm,-62.00mm);
+  \draw[edge] (77.60mm,-52.00mm) -- (82.80mm,-62.00mm);
+  \node[vertex] (s22) at (67.20mm,-42.00mm) {2};
+  \node[vertex] (s21) at (62.00mm,-52.00mm) {1};
+  \node[vertex-added] (s24) at (77.60mm,-52.00mm) {4};
+  \node[vertex] (s23) at (72.40mm,-62.00mm) {3};
+  \node[vertex-touched] (s2nil) at (82.80mm,-62.00mm) {nil};
+  \node[var,anchor=west] at (59.0mm,-34.0mm) {\texttt{flipRight(4)}};
+  \draw[edge] (98.20mm,-42.00mm) -- (93.00mm,-52.00mm);
+  \draw[edge] (98.20mm,-42.00mm) -- (108.60mm,-52.00mm);
+  \draw[edge] (108.60mm,-52.00mm) -- (103.40mm,-62.00mm);
+  \node[vertex] (s32) at (98.20mm,-42.00mm) {2};
+  \node[vertex] (s31) at (93.00mm,-52.00mm) {1};
+  \node[vertex] (s34) at (108.60mm,-52.00mm) {4};
+  \node[vertex-added] (s33) at (103.40mm,-62.00mm) {3};
+  \node[var,anchor=west] at (90.0mm,-34.0mm) {\texttt{pullBlack(4)}};
+  \draw[edge] (129.20mm,-42.00mm) -- (124.00mm,-52.00mm);
+  \draw[edge] (129.20mm,-42.00mm) -- (134.40mm,-52.00mm);
+  \draw[edge] (134.40mm,-52.00mm) -- (139.60mm,-62.00mm);
+  \node[vertex] (s42) at (129.20mm,-42.00mm) {2};
+  \node[vertex] (s41) at (124.00mm,-52.00mm) {1};
+  \node[vertex] (s43) at (134.40mm,-52.00mm) {3};
+  \node[vertex-added] (s44) at (139.60mm,-62.00mm) {4};
+  \node[var,anchor=west] at (121.0mm,-34.0mm) {\texttt{flipRight(4)}};
+  \draw[edge] (160.20mm,-42.00mm) -- (155.00mm,-52.00mm);
+  \draw[edge] (160.20mm,-42.00mm) -- (170.60mm,-52.00mm);
+  \draw[edge] (170.60mm,-52.00mm) -- (165.40mm,-62.00mm);
+  \node[vertex] (s52) at (160.20mm,-42.00mm) {2};
+  \node[vertex] (s51) at (155.00mm,-52.00mm) {1};
+  \node[vertex] (s54) at (170.60mm,-52.00mm) {4};
+  \node[vertex-added] (s53) at (165.40mm,-62.00mm) {3};
+  \node[var,anchor=west] at (152.0mm,-34.0mm) {\texttt{flipLeft(3)}};
+\end{tikzpicture}
+\end{document}

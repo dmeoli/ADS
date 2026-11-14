@@ -1,0 +1,106 @@
+% A 2-4 tree as a BTree of minimum degree 2, which splits and merges in
+% one pass from the root: insert(6) splits the full leaf it is about to
+% enter, insert(9) splits the full root, and remove(1) merges the two
+% children of the root and then two leaves; the nodes read in violet, the
+% nodes written in orange (states printed by the code, the tree built by
+% inserting 1, ..., 9). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (13.50mm,-3.00mm) -- (18.00mm,-9.00mm);
+  \draw[edge] (7.50mm,-3.00mm) -- (3.00mm,-9.00mm);
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (3.00mm,-12.00mm) {1};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (12.00mm,-12.00mm) {3};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (18.00mm,-12.00mm) {4};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (24.00mm,-12.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (10.50mm,0.00mm) {2};
+  \node[var,anchor=west] at (-3mm,7mm) {\texttt{insert(6)}: a full leaf on the way};
+  \draw[edge] (115.50mm,-3.00mm) -- (120.00mm,-9.00mm);
+  \draw[edge] (109.50mm,-3.00mm) -- (108.00mm,-9.00mm);
+  \draw[edge] (103.50mm,-3.00mm) -- (99.00mm,-9.00mm);
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (99.00mm,-12.00mm) {1};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (108.00mm,-12.00mm) {3};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (117.00mm,-12.00mm) {5};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (123.00mm,-12.00mm) {6};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (106.50mm,0.00mm) {2};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (112.50mm,0.00mm) {4};
+  \node[var,anchor=west] at (93mm,7mm) {split, then 6 into the leaf};
+  \draw[edge] (27.00mm,-37.00mm) -- (33.00mm,-43.00mm);
+  \draw[edge] (21.00mm,-37.00mm) -- (21.00mm,-43.00mm);
+  \draw[edge] (15.00mm,-37.00mm) -- (12.00mm,-43.00mm);
+  \draw[edge] (9.00mm,-37.00mm) -- (3.00mm,-43.00mm);
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (3.00mm,-46.00mm) {1};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (12.00mm,-46.00mm) {3};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (21.00mm,-46.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (30.00mm,-46.00mm) {7};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (36.00mm,-46.00mm) {8};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (12.00mm,-34.00mm) {2};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (18.00mm,-34.00mm) {4};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (24.00mm,-34.00mm) {6};
+  \node[var,anchor=west] at (-3mm,-27mm) {\texttt{insert(9)}: a full root};
+  \draw[edge] (127.50mm,-49.00mm) -- (132.00mm,-55.00mm);
+  \draw[edge] (121.50mm,-49.00mm) -- (117.00mm,-55.00mm);
+  \draw[edge] (117.00mm,-37.00mm) -- (124.50mm,-43.00mm);
+  \draw[edge] (106.50mm,-49.00mm) -- (108.00mm,-55.00mm);
+  \draw[edge] (100.50mm,-49.00mm) -- (99.00mm,-55.00mm);
+  \draw[edge] (111.00mm,-37.00mm) -- (103.50mm,-43.00mm);
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (99.00mm,-58.00mm) {1};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (108.00mm,-58.00mm) {3};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (103.50mm,-46.00mm) {2};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (117.00mm,-58.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (126.00mm,-58.00mm) {7};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (132.00mm,-58.00mm) {8};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (138.00mm,-58.00mm) {9};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (124.50mm,-46.00mm) {6};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (114.00mm,-34.00mm) {4};
+  \node[var,anchor=west] at (93mm,-27mm) {the root split, one level more};
+  \draw[edge] (31.50mm,-95.00mm) -- (36.00mm,-101.00mm);
+  \draw[edge] (25.50mm,-95.00mm) -- (21.00mm,-101.00mm);
+  \draw[edge] (21.00mm,-83.00mm) -- (28.50mm,-89.00mm);
+  \draw[edge] (10.50mm,-95.00mm) -- (12.00mm,-101.00mm);
+  \draw[edge] (4.50mm,-95.00mm) -- (3.00mm,-101.00mm);
+  \draw[edge] (15.00mm,-83.00mm) -- (7.50mm,-89.00mm);
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (3.00mm,-104.00mm) {1};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (12.00mm,-104.00mm) {3};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (7.50mm,-92.00mm) {2};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (21.00mm,-104.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (30.00mm,-104.00mm) {7};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (36.00mm,-104.00mm) {8};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (42.00mm,-104.00mm) {9};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (28.50mm,-92.00mm) {6};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (18.00mm,-80.00mm) {4};
+  \node[var,anchor=west] at (-3mm,-73mm) {\texttt{remove(1)}: two children of one key};
+  \draw[edge] (92.50mm,-83.00mm) -- (100.00mm,-89.00mm);
+  \draw[edge] (86.50mm,-83.00mm) -- (85.00mm,-89.00mm);
+  \draw[edge] (80.50mm,-83.00mm) -- (76.00mm,-89.00mm);
+  \draw[edge] (74.50mm,-83.00mm) -- (67.00mm,-89.00mm);
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (67.00mm,-92.00mm) {1};
+  \node[touched,minimum width=6.0mm,minimum height=6mm] at (76.00mm,-92.00mm) {3};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (85.00mm,-92.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (94.00mm,-92.00mm) {7};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (100.00mm,-92.00mm) {8};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (106.00mm,-92.00mm) {9};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (77.50mm,-80.00mm) {2};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (83.50mm,-80.00mm) {4};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (89.50mm,-80.00mm) {6};
+  \node[var,anchor=west] at (61mm,-73mm) {merged, one level less};
+  \draw[edge] (153.50mm,-83.00mm) -- (161.00mm,-89.00mm);
+  \draw[edge] (147.50mm,-83.00mm) -- (146.00mm,-89.00mm);
+  \draw[edge] (141.50mm,-83.00mm) -- (134.00mm,-89.00mm);
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (131.00mm,-92.00mm) {2};
+  \node[added,minimum width=6.0mm,minimum height=6mm] at (137.00mm,-92.00mm) {3};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (146.00mm,-92.00mm) {5};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (155.00mm,-92.00mm) {7};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (161.00mm,-92.00mm) {8};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (167.00mm,-92.00mm) {9};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (144.50mm,-80.00mm) {4};
+  \node[cell,minimum width=6.0mm,minimum height=6mm] at (150.50mm,-80.00mm) {6};
+  \node[var,anchor=west] at (125mm,-73mm) {merged again, 1 removed};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,125 @@
+% Source for the figure of the cases (3), (4a) and (5a) of balanceInsert()
+% (sec. 8.5): red nodes in orange, black ones in the faint tint, A to E
+% subtrees whose roots are black; the mirrors (4b), (5b) are not drawn.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (44.80mm,-9.00mm) -- (51.20mm,-18.00mm);
+  \draw[edge] (44.80mm,-9.00mm) -- (38.40mm,-18.00mm);
+  \draw[edge] (32.00mm,0.00mm) -- (44.80mm,-9.00mm);
+  \draw[edge] (19.20mm,-9.00mm) -- (25.60mm,-18.00mm);
+  \draw[edge] (6.40mm,-18.00mm) -- (12.80mm,-27.00mm);
+  \draw[edge] (6.40mm,-18.00mm) -- (0.00mm,-27.00mm);
+  \draw[edge] (19.20mm,-9.00mm) -- (6.40mm,-18.00mm);
+  \draw[edge] (32.00mm,0.00mm) -- (19.20mm,-9.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a0) at (0.00mm,-27.00mm) {A};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a1) at (6.40mm,-18.00mm) {t};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a2) at (12.80mm,-27.00mm) {B};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a3) at (19.20mm,-9.00mm) {p};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a4) at (25.60mm,-18.00mm) {C};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a5) at (32.00mm,0.00mm) {n};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a6) at (38.40mm,-18.00mm) {D};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a7) at (44.80mm,-9.00mm) {z};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a8) at (51.20mm,-18.00mm) {E};
+  \node[var,anchor=west] at (0mm,6mm) {(3)};
+  \draw[ptr] (55.6mm,-9mm) -- (63.6mm,-9mm);
+  \draw[edge] (108.80mm,-9.00mm) -- (115.20mm,-18.00mm);
+  \draw[edge] (108.80mm,-9.00mm) -- (102.40mm,-18.00mm);
+  \draw[edge] (96.00mm,0.00mm) -- (108.80mm,-9.00mm);
+  \draw[edge] (83.20mm,-9.00mm) -- (89.60mm,-18.00mm);
+  \draw[edge] (70.40mm,-18.00mm) -- (76.80mm,-27.00mm);
+  \draw[edge] (70.40mm,-18.00mm) -- (64.00mm,-27.00mm);
+  \draw[edge] (83.20mm,-9.00mm) -- (70.40mm,-18.00mm);
+  \draw[edge] (96.00mm,0.00mm) -- (83.20mm,-9.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b0) at (64.00mm,-27.00mm) {A};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b1) at (70.40mm,-18.00mm) {t};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b2) at (76.80mm,-27.00mm) {B};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b3) at (83.20mm,-9.00mm) {p};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b4) at (89.60mm,-18.00mm) {C};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b5) at (96.00mm,0.00mm) {n};
+  \node[var,anchor=west] at ($(b5.east)+(0.8mm,0)$) {$t$};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b6) at (102.40mm,-18.00mm) {D};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b7) at (108.80mm,-9.00mm) {z};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b8) at (115.20mm,-18.00mm) {E};
+  \draw[edge] (44.80mm,-53.00mm) -- (51.20mm,-62.00mm);
+  \draw[edge] (44.80mm,-53.00mm) -- (38.40mm,-62.00mm);
+  \draw[edge] (32.00mm,-44.00mm) -- (44.80mm,-53.00mm);
+  \draw[edge] (19.20mm,-62.00mm) -- (25.60mm,-71.00mm);
+  \draw[edge] (19.20mm,-62.00mm) -- (12.80mm,-71.00mm);
+  \draw[edge] (6.40mm,-53.00mm) -- (19.20mm,-62.00mm);
+  \draw[edge] (6.40mm,-53.00mm) -- (0.00mm,-62.00mm);
+  \draw[edge] (32.00mm,-44.00mm) -- (6.40mm,-53.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c0) at (0.00mm,-62.00mm) {A};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c1) at (6.40mm,-53.00mm) {p};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c2) at (12.80mm,-71.00mm) {B};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c3) at (19.20mm,-62.00mm) {t};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c4) at (25.60mm,-71.00mm) {C};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c5) at (32.00mm,-44.00mm) {n};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c6) at (38.40mm,-62.00mm) {D};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (c7) at (44.80mm,-53.00mm) {z};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c8) at (51.20mm,-62.00mm) {E};
+  \node[var,anchor=west] at (0mm,-38mm) {(4a)};
+  \draw[ptr] (55.6mm,-53mm) -- (63.6mm,-53mm);
+  \draw[edge] (108.80mm,-53.00mm) -- (115.20mm,-62.00mm);
+  \draw[edge] (108.80mm,-53.00mm) -- (102.40mm,-62.00mm);
+  \draw[edge] (96.00mm,-44.00mm) -- (108.80mm,-53.00mm);
+  \draw[edge] (83.20mm,-53.00mm) -- (89.60mm,-62.00mm);
+  \draw[edge] (70.40mm,-62.00mm) -- (76.80mm,-71.00mm);
+  \draw[edge] (70.40mm,-62.00mm) -- (64.00mm,-71.00mm);
+  \draw[edge] (83.20mm,-53.00mm) -- (70.40mm,-62.00mm);
+  \draw[edge] (96.00mm,-44.00mm) -- (83.20mm,-53.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d0) at (64.00mm,-71.00mm) {A};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d1) at (70.40mm,-62.00mm) {p};
+  \node[var,anchor=west] at ($(d1.east)+(0.8mm,0)$) {$t$};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d2) at (76.80mm,-71.00mm) {B};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d3) at (83.20mm,-53.00mm) {t};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d4) at (89.60mm,-62.00mm) {C};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (d5) at (96.00mm,-44.00mm) {n};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d6) at (102.40mm,-62.00mm) {D};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (d7) at (108.80mm,-53.00mm) {z};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d8) at (115.20mm,-62.00mm) {E};
+  \draw[edge] (178.80mm,-53.00mm) -- (185.20mm,-62.00mm);
+  \draw[edge] (178.80mm,-53.00mm) -- (172.40mm,-62.00mm);
+  \draw[edge] (166.00mm,-44.00mm) -- (178.80mm,-53.00mm);
+  \draw[edge] (153.20mm,-53.00mm) -- (159.60mm,-62.00mm);
+  \draw[edge] (140.40mm,-62.00mm) -- (146.80mm,-71.00mm);
+  \draw[edge] (140.40mm,-62.00mm) -- (134.00mm,-71.00mm);
+  \draw[edge] (153.20mm,-53.00mm) -- (140.40mm,-62.00mm);
+  \draw[edge] (166.00mm,-44.00mm) -- (153.20mm,-53.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e0) at (134.00mm,-71.00mm) {A};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e1) at (140.40mm,-62.00mm) {t};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e2) at (146.80mm,-71.00mm) {B};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e3) at (153.20mm,-53.00mm) {p};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e4) at (159.60mm,-62.00mm) {C};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (e5) at (166.00mm,-44.00mm) {n};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e6) at (172.40mm,-62.00mm) {D};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (e7) at (178.80mm,-53.00mm) {z};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (e8) at (185.20mm,-62.00mm) {E};
+  \node[var,anchor=west] at (134.0mm,-38mm) {(5a)};
+  \draw[ptr] (189.60000000000002mm,-53mm) -- (197.60000000000002mm,-53mm);
+  \draw[edge] (242.80mm,-62.00mm) -- (249.20mm,-71.00mm);
+  \draw[edge] (242.80mm,-62.00mm) -- (236.40mm,-71.00mm);
+  \draw[edge] (230.00mm,-53.00mm) -- (242.80mm,-62.00mm);
+  \draw[edge] (230.00mm,-53.00mm) -- (223.60mm,-62.00mm);
+  \draw[edge] (217.20mm,-44.00mm) -- (230.00mm,-53.00mm);
+  \draw[edge] (204.40mm,-53.00mm) -- (210.80mm,-62.00mm);
+  \draw[edge] (204.40mm,-53.00mm) -- (198.00mm,-62.00mm);
+  \draw[edge] (217.20mm,-44.00mm) -- (204.40mm,-53.00mm);
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f0) at (198.00mm,-62.00mm) {A};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f1) at (204.40mm,-53.00mm) {t};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f2) at (210.80mm,-62.00mm) {B};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (f3) at (217.20mm,-44.00mm) {p};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f4) at (223.60mm,-62.00mm) {C};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f5) at (230.00mm,-53.00mm) {n};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f6) at (236.40mm,-71.00mm) {D};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (f7) at (242.80mm,-62.00mm) {z};
+  \node[node,minimum width=6.6mm,minimum height=5mm,font=\scriptsize\itshape,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (f8) at (249.20mm,-71.00mm) {E};
+\end{tikzpicture}
+\end{document}

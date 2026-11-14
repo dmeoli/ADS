@@ -1,0 +1,35 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (X-oll) at (0.00mm,-22.00mm) {d};
+  \node[vertex-touched] (X-ol) at (9.00mm,-11.00mm) {b};
+  \node[vertex-touched] (X-olr) at (18.00mm,-22.00mm) {e};
+  \node[vertex] (X-o) at (27.00mm,0.00mm) {a};
+  \node[vertex] (X-or) at (36.00mm,-11.00mm) {c};
+  \node[vertex] (X-orr) at (45.00mm,-22.00mm) {f};
+  \draw[edge] (X-ol) -- (X-oll);
+  \draw[edge] (X-ol) -- (X-olr);
+  \draw[edge] (X-or) -- (X-orr);
+  \draw[edge-touched] (X-o) -- (X-ol);
+  \draw[edge] (X-o) -- (X-or);
+  \node[vertex] (Y-o) at (62.00mm,0.00mm) {a};
+  \node[vertex-touched] (Y-orll) at (71.00mm,-33.00mm) {d};
+  \node[vertex-touched] (Y-orl) at (80.00mm,-22.00mm) {b};
+  \node[vertex-touched] (Y-orlr) at (89.00mm,-33.00mm) {e};
+  \node[vertex] (Y-or) at (98.00mm,-11.00mm) {c};
+  \node[vertex] (Y-orr) at (107.00mm,-22.00mm) {f};
+  \draw[edge] (Y-orl) -- (Y-orll);
+  \draw[edge] (Y-orl) -- (Y-orlr);
+  \draw[edge-added] (Y-or) -- (Y-orl);
+  \draw[edge] (Y-or) -- (Y-orr);
+  \draw[edge] (Y-o) -- (Y-or);
+  \node[var,anchor=center] at (18.00mm,-44.00mm) {before};
+  \node[var,anchor=center] at (84.00mm,-44.00mm) {\texttt{c.insertLeft(a.detachLeft())}};
+\end{tikzpicture}
+\end{document}

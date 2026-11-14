@@ -19,11 +19,11 @@
  * The cost of join is bounded through a rank \f$ r( T ) \f$ of each tree,
  * which is \f$ \Theta( \log n ) \f$ for a tree of \f$ n \f$ keys: the height
  * \f$ h \f$ for the AVL trees; the black height \f$ \hat{h} \f$ (the black
- * nodes on a path from the root to a leaf, the root excluded if it is
- * black) for the Red-Black trees; \f$ \log_2 w( T ) \f$, \f$ w \f$ the
- * weight (the keys plus 1), for the trees balanced by weight and, in
- * expectation, for the treaps. Each join below goes down the right spine
- * of the higher tree (the left one of the lower, symmetrically) until it
+ * nodes on a path from the root to a leaf, the root included if it is
+ * black, 0 for nil) for the Red-Black trees; \f$ \log_2 w( T ) \f$,
+ * \f$ w \f$ the weight (the keys plus 1), for the trees balanced by weight
+ * and, in expectation, for the treaps. Each join below goes down the right
+ * spine of the higher tree (the left one of the lower, symmetrically) until it
  * meets a subtree \f$ c \f$ of the rank of the other tree, hangs \f$ k \f$
  * there with \f$ c \f$ and the other tree as its children, and fixes the
  * balance on the way back by at most a double rotation per level; hence it

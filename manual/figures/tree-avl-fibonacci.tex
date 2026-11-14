@@ -1,0 +1,62 @@
+% Source for the figure of exercise 9.12 of Morin's book (sec. 8.7), by
+% AVLTree: remove(11) from the tree of Fibonacci of height 4, built level
+% by level; the path to the leaf in violet, and after the removal the two
+% nodes found unbalanced (10 and then 7) and the links of their
+% rotations in orange. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge-touched] (72.00mm,-10.00mm) -- (79.20mm,-20.00mm);
+  \draw[edge] (64.80mm,-20.00mm) -- (57.60mm,-30.00mm);
+  \draw[edge] (72.00mm,-10.00mm) -- (64.80mm,-20.00mm);
+  \draw[edge-touched] (50.40mm,0.00mm) -- (72.00mm,-10.00mm);
+  \draw[edge] (43.20mm,-20.00mm) -- (36.00mm,-30.00mm);
+  \draw[edge] (28.80mm,-10.00mm) -- (43.20mm,-20.00mm);
+  \draw[edge] (14.40mm,-20.00mm) -- (21.60mm,-30.00mm);
+  \draw[edge] (7.20mm,-30.00mm) -- (0.00mm,-40.00mm);
+  \draw[edge] (14.40mm,-20.00mm) -- (7.20mm,-30.00mm);
+  \draw[edge] (28.80mm,-10.00mm) -- (14.40mm,-20.00mm);
+  \draw[edge] (50.40mm,0.00mm) -- (28.80mm,-10.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a0) at (0.00mm,-40.00mm) {0};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a1) at (7.20mm,-30.00mm) {1};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a2) at (14.40mm,-20.00mm) {2};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a3) at (21.60mm,-30.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a4) at (28.80mm,-10.00mm) {4};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a5) at (36.00mm,-30.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a6) at (43.20mm,-20.00mm) {6};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a7) at (50.40mm,0.00mm) {7};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a8) at (57.60mm,-30.00mm) {8};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (a9) at (64.80mm,-20.00mm) {9};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a10) at (72.00mm,-10.00mm) {10};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a11) at (79.20mm,-20.00mm) {11};
+  \draw[ptr] (87.4mm,-15mm) -- (95.4mm,-15mm);
+  \node[var,above=0.8mm] at (91.4mm,-15mm) {\texttt{remove(11)}};
+  \draw[edge-added] (165.20mm,-20.00mm) -- (172.40mm,-30.00mm);
+  \draw[edge] (165.20mm,-20.00mm) -- (158.00mm,-30.00mm);
+  \draw[edge-added] (150.80mm,-10.00mm) -- (165.20mm,-20.00mm);
+  \draw[edge] (143.60mm,-20.00mm) -- (136.40mm,-30.00mm);
+  \draw[edge] (150.80mm,-10.00mm) -- (143.60mm,-20.00mm);
+  \draw[edge-added] (129.20mm,0.00mm) -- (150.80mm,-10.00mm);
+  \draw[edge] (114.80mm,-10.00mm) -- (122.00mm,-20.00mm);
+  \draw[edge] (107.60mm,-20.00mm) -- (100.40mm,-30.00mm);
+  \draw[edge] (114.80mm,-10.00mm) -- (107.60mm,-20.00mm);
+  \draw[edge] (129.20mm,0.00mm) -- (114.80mm,-10.00mm);
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b0) at (100.40mm,-30.00mm) {0};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b1) at (107.60mm,-20.00mm) {1};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b2) at (114.80mm,-10.00mm) {2};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b3) at (122.00mm,-20.00mm) {3};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b4) at (129.20mm,0.00mm) {4};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b5) at (136.40mm,-30.00mm) {5};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b6) at (143.60mm,-20.00mm) {6};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b7) at (150.80mm,-10.00mm) {7};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b8) at (158.00mm,-30.00mm) {8};
+  \node[vertex,minimum size=6.6mm,font=\scriptsize\ttfamily] (b9) at (165.20mm,-20.00mm) {9};
+  \node[vertex-added,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b10) at (172.40mm,-30.00mm) {10};
+\end{tikzpicture}
+\end{document}

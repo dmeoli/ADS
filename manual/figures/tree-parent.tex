@@ -1,0 +1,44 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4.0mm,0) {$p$};
+  \cells{P0}{0.0mm,0}{-1/cell,0/cell,0/cell,1/cell,1/cell,2/cell,-1/cell}
+  \foreach \i in {0,...,6} \node[index,above=1.6mm of P0-\i] {\i};
+  \node[vertex] (P0-v0) at (14.0mm,-16.0mm) {0};
+  \node[vertex] (P0-v1) at (6.0mm,-27.0mm) {1};
+  \node[vertex] (P0-v2) at (22.0mm,-27.0mm) {2};
+  \node[vertex] (P0-v3) at (0.0mm,-38.0mm) {3};
+  \node[vertex] (P0-v4) at (12.0mm,-38.0mm) {4};
+  \node[vertex] (P0-v5) at (22.0mm,-38.0mm) {5};
+  \node[vertex] (P0-v6) at (36.0mm,-16.0mm) {6};
+  \draw[edge] (P0-v0) -- (P0-v1);
+  \draw[edge] (P0-v0) -- (P0-v2);
+  \draw[edge] (P0-v1) -- (P0-v3);
+  \draw[edge] (P0-v1) -- (P0-v4);
+  \draw[edge] (P0-v2) -- (P0-v5);
+  \node[var,anchor=east] at (66.0mm,0) {$p$};
+  \cells{P1}{70.0mm,0}{-1/cell,0/cell,0/cell,1/cell,1/cell,2/cell,2/added}
+  \foreach \i in {0,...,6} \node[index,above=1.6mm of P1-\i] {\i};
+  \node[vertex] (P1-v0) at (84.0mm,-16.0mm) {0};
+  \node[vertex] (P1-v1) at (76.0mm,-27.0mm) {1};
+  \node[vertex] (P1-v2) at (92.0mm,-27.0mm) {2};
+  \node[vertex] (P1-v3) at (70.0mm,-38.0mm) {3};
+  \node[vertex] (P1-v4) at (82.0mm,-38.0mm) {4};
+  \node[vertex] (P1-v5) at (92.0mm,-38.0mm) {5};
+  \node[vertex-added] (P1-v6) at (102.0mm,-38.0mm) {6};
+  \draw[edge] (P1-v0) -- (P1-v1);
+  \draw[edge] (P1-v0) -- (P1-v2);
+  \draw[edge] (P1-v1) -- (P1-v3);
+  \draw[edge] (P1-v1) -- (P1-v4);
+  \draw[edge] (P1-v2) -- (P1-v5);
+  \draw[edge-added] (P1-v2) -- (P1-v6);
+  \node[var,anchor=center] at (92.00mm,-50.00mm) {\texttt{setParent(6,2)}};
+  \node[var,anchor=center] at (22.00mm,-50.00mm) {before};
+\end{tikzpicture}
+\end{document}

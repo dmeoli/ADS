@@ -1,0 +1,67 @@
+% Source for the figure of the rebalancing of an AVL tree (sec. 8.7),
+% after an insertion below y: the single rotation when the higher
+% grandchild is outside, the double one when it is inside; the boxes are
+% subtrees with their heights, the nodes rotated in violet. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \draw[edge] (25.20mm,0.00mm) -- (33.60mm,-9.00mm);
+  \draw[edge] (8.40mm,-9.00mm) -- (16.80mm,-18.00mm);
+  \draw[edge] (8.40mm,-9.00mm) -- (0.00mm,-18.00mm);
+  \draw[edge] (25.20mm,0.00mm) -- (8.40mm,-9.00mm);
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a0) at (0.00mm,-18.00mm) {$h{+}1$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a1) at (8.40mm,-9.00mm) {y};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a2) at (16.80mm,-18.00mm) {$h$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a3) at (25.20mm,0.00mm) {z};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (a4) at (33.60mm,-9.00mm) {$h$};
+  \node[var,anchor=west] at (0mm,6mm) {single};
+  \draw[ptr] (48mm,-9mm) -- (56mm,-9mm);
+  \node[var,above=0.8mm] at (52mm,-9mm) {\texttt{rotateRight(z)}};
+  \draw[edge] (95.20mm,-9.00mm) -- (103.60mm,-18.00mm);
+  \draw[edge] (95.20mm,-9.00mm) -- (86.80mm,-18.00mm);
+  \draw[edge] (78.40mm,0.00mm) -- (95.20mm,-9.00mm);
+  \draw[edge] (78.40mm,0.00mm) -- (70.00mm,-9.00mm);
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b0) at (70.00mm,-9.00mm) {$h{+}1$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b1) at (78.40mm,0.00mm) {y};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b2) at (86.80mm,-18.00mm) {$h$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b3) at (95.20mm,-9.00mm) {z};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (b4) at (103.60mm,-18.00mm) {$h$};
+  \draw[edge] (42.00mm,-36.00mm) -- (50.40mm,-45.00mm);
+  \draw[edge] (25.20mm,-54.00mm) -- (33.60mm,-63.00mm);
+  \draw[edge] (25.20mm,-54.00mm) -- (16.80mm,-63.00mm);
+  \draw[edge] (8.40mm,-45.00mm) -- (25.20mm,-54.00mm);
+  \draw[edge] (8.40mm,-45.00mm) -- (0.00mm,-54.00mm);
+  \draw[edge] (42.00mm,-36.00mm) -- (8.40mm,-45.00mm);
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c0) at (0.00mm,-54.00mm) {$h$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c1) at (8.40mm,-45.00mm) {y};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c2) at (16.80mm,-63.00mm) {$h$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c3) at (25.20mm,-54.00mm) {x};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c4) at (33.60mm,-63.00mm) {$h{-}1$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c5) at (42.00mm,-36.00mm) {z};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (c6) at (50.40mm,-45.00mm) {$h$};
+  \node[var,anchor=west] at (0mm,-30mm) {double};
+  \draw[ptr] (64mm,-45mm) -- (72mm,-45mm);
+  \node[var,above=0.8mm] at (68mm,-45mm) {\texttt{rotateLeft(y)}};
+  \node[var,below=0.8mm] at (68mm,-45mm) {\texttt{rotateRight(z)}};
+  \draw[edge] (132.00mm,-45.00mm) -- (140.40mm,-54.00mm);
+  \draw[edge] (132.00mm,-45.00mm) -- (123.60mm,-54.00mm);
+  \draw[edge] (115.20mm,-36.00mm) -- (132.00mm,-45.00mm);
+  \draw[edge] (98.40mm,-45.00mm) -- (106.80mm,-54.00mm);
+  \draw[edge] (98.40mm,-45.00mm) -- (90.00mm,-54.00mm);
+  \draw[edge] (115.20mm,-36.00mm) -- (98.40mm,-45.00mm);
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d0) at (90.00mm,-54.00mm) {$h$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d1) at (98.40mm,-45.00mm) {y};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d2) at (106.80mm,-54.00mm) {$h$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d3) at (115.20mm,-36.00mm) {x};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d4) at (123.60mm,-54.00mm) {$h{-}1$};
+  \node[vertex-touched,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d5) at (132.00mm,-45.00mm) {z};
+  \node[node,minimum width=8.6mm,minimum height=5mm,font=\scriptsize,minimum size=6.6mm,font=\scriptsize\ttfamily\bfseries] (d6) at (140.40mm,-54.00mm) {$h$};
+\end{tikzpicture}
+\end{document}

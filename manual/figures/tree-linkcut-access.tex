@@ -1,0 +1,85 @@
+% Source for the figure of LinkCutTree (sec. 8.13): a tree of 10 nodes
+% rooted at 0 after access(6) and access(9), its preferred paths in violet,
+% then access(7), the edges it makes preferred in orange, and the splay
+% trees of the paths after it, the path-parent pointers dashed; the state
+% printed by a program on the class. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % (a) the tree before, preferred paths 0-2-5-9 and 1-3-6
+  \begin{scope}
+    \node[vertex] (a0) at (30mm,0) {0};
+    \node[vertex] (a1) at (15mm,-13mm) {1};
+    \node[vertex] (a2) at (45mm,-13mm) {2};
+    \node[vertex] (a3) at (8mm,-26mm) {3};
+    \node[vertex] (a4) at (22mm,-26mm) {4};
+    \node[vertex] (a5) at (45mm,-26mm) {5};
+    \node[vertex] (a6) at (8mm,-39mm) {6};
+    \node[vertex] (a7) at (22mm,-39mm) {7};
+    \node[vertex] (a8) at (38mm,-39mm) {8};
+    \node[vertex] (a9) at (52mm,-39mm) {9};
+    \draw[edge] (a0) -- (a1);
+    \draw[edge-touched] (a0) -- (a2);
+    \draw[edge-touched] (a1) -- (a3);
+    \draw[edge] (a1) -- (a4);
+    \draw[edge-touched] (a2) -- (a5);
+    \draw[edge-touched] (a3) -- (a6);
+    \draw[edge] (a4) -- (a7);
+    \draw[edge] (a5) -- (a8);
+    \draw[edge-touched] (a5) -- (a9);
+    \node[var] at (30mm,-50mm) {(a) before};
+  \end{scope}
+  % (b) the tree after access(7)
+  \begin{scope}[xshift=70mm]
+    \node[vertex] (b0) at (30mm,0) {0};
+    \node[vertex] (b1) at (15mm,-13mm) {1};
+    \node[vertex] (b2) at (45mm,-13mm) {2};
+    \node[vertex] (b3) at (8mm,-26mm) {3};
+    \node[vertex] (b4) at (22mm,-26mm) {4};
+    \node[vertex] (b5) at (45mm,-26mm) {5};
+    \node[vertex] (b6) at (8mm,-39mm) {6};
+    \node[vertex-touched] (b7) at (22mm,-39mm) {7};
+    \node[vertex] (b8) at (38mm,-39mm) {8};
+    \node[vertex] (b9) at (52mm,-39mm) {9};
+    \draw[edge-added] (b0) -- (b1);
+    \draw[edge] (b0) -- (b2);
+    \draw[edge] (b1) -- (b3);
+    \draw[edge-added] (b1) -- (b4);
+    \draw[edge-touched] (b2) -- (b5);
+    \draw[edge-touched] (b3) -- (b6);
+    \draw[edge-added] (b4) -- (b7);
+    \draw[edge] (b5) -- (b8);
+    \draw[edge-touched] (b5) -- (b9);
+    \node[var] at (30mm,-50mm) {(b) after \texttt{access(7)}};
+  \end{scope}
+  % (c) the splay trees after access(7) and the path-parent pointers
+  \begin{scope}[xshift=40mm,yshift=-62mm]
+    \node[vertex-touched] (c7) at (40mm,0) {7};
+    \node[vertex] (c0) at (16mm,-11mm) {0};
+    \node[vertex] (c4) at (32mm,-22mm) {4};
+    \node[vertex] (c1) at (24mm,-33mm) {1};
+    \node[vertex] (c5) at (2mm,-24mm) {5};
+    \node[vertex] (c2) at (-6mm,-35mm) {2};
+    \node[vertex] (c9) at (10mm,-35mm) {9};
+    \node[vertex] (c8) at (2mm,-48mm) {8};
+    \node[vertex] (c3) at (24mm,-46mm) {3};
+    \node[vertex] (c6) at (32mm,-57mm) {6};
+    \draw[edge-added] (c7) -- (c0);
+    \draw[edge-added] (c0) -- (c4);
+    \draw[edge-added] (c4) -- (c1);
+    \draw[edge-touched] (c5) -- (c2);
+    \draw[edge-touched] (c5) -- (c9);
+    \draw[edge-touched] (c3) -- (c6);
+    \draw[guide,->] (c5) -- (c0);
+    \draw[guide,->] (c3) -- (c1);
+    \draw[guide,->] (c8) -- (c5);
+    \node[var,anchor=west] at (46mm,-24mm) {(c) the splay trees};
+  \end{scope}
+\end{tikzpicture}
+\end{document}

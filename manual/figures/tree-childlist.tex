@@ -1,0 +1,30 @@
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,0.00mm) {value};
+  \cells{N0}{0.00mm,0.00mm}{a/cell,b/cell,c/cell,e/cell,f/cell,g/cell,d/added}
+  \node[var,anchor=east,text=adsInk] at (-4.00mm,-7.40mm) {parent};
+  \cells{N1}{0.00mm,-7.40mm}{-1/cell,0/cell,0/cell,1/cell,1/cell,2/cell,0/added}
+  \foreach \i in {0,...,6} \node[index,above=1.6mm of N0-\i] {\i};
+  \node[var,anchor=east] at (80.0mm,0.0mm) {$C_0$};
+  \node[added] (L0-0) at (84.0mm,0.0mm) {6};
+  \node[touched] (L0-1) at (95.0mm,0.0mm) {1};
+  \draw[edge] (L0-0) -- (L0-1);
+  \node[cell] (L0-2) at (106.0mm,0.0mm) {2};
+  \draw[edge] (L0-1) -- (L0-2);
+  \node[var,anchor=east] at (80.0mm,-9.0mm) {$C_1$};
+  \node[cell] (L1-0) at (84.0mm,-9.0mm) {3};
+  \node[cell] (L1-1) at (95.0mm,-9.0mm) {4};
+  \draw[edge] (L1-0) -- (L1-1);
+  \node[var,anchor=east] at (80.0mm,-18.0mm) {$C_2$};
+  \node[cell] (L2-0) at (84.0mm,-18.0mm) {5};
+  \draw[ptr] (N0-1.south) .. controls +(0,-14mm) and +(0,-12mm) .. (L0-1.south);
+  \node[var] at (40mm,-19mm) {\textit{where}};
+\end{tikzpicture}
+\end{document}
