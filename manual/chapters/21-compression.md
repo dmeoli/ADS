@@ -264,11 +264,18 @@ largest frequency.*
 
 *Proof.* Halving with rounding up maps 1 to 1 and any frequency
 $f \ge 2$ to $\lceil f / 2 \rceil < f$, and after
-$\lceil \log_2 f_{\max} \rceil$ halvings all the frequencies are 1. On
-$\sigma$ equal frequencies the code of Huffman is a complete tree with its
-leaves on two consecutive levels, and thus of lengths at most
-$\lceil \log_2 \sigma \rceil \le L$, and the loop ends there at the latest.
-$\square$
+$\lceil \log_2 f_{\max} \rceil$ halvings all the frequencies are 1,
+since $f \le 2^k$ gives $\lceil f / 2 \rceil \le 2^{k-1}$. On $\sigma \ge
+2$ equal frequencies, the tree of the code of Huffman is full and optimal
+(Theorem 21.1), and its leaves lie on two consecutive levels: if a leaf
+were at a depth $d \le D - 2$, with $D$ the largest depth, moving two
+sibling leaves of depth $D$ below it would turn their parent into a leaf
+and change the sum of the depths by $-2 D + ( D - 1 ) - d + 2 ( d + 1 ) =
+d + 1 - D < 0$, against the optimality. With the leaves on the levels $D -
+1$ and $D$, each of the $2^{D-1}$ nodes of the level $D - 1$ is a leaf or
+has two children, and at least one has children; hence $\sigma \ge
+2^{D-1} + 1$, i.e., $D \le \lceil \log_2 \sigma \rceil \le L$, and the
+loop ends there at the latest. $\square$
 
 Halving is simple but (possibly) not optimal: when it comes to the end it gives a
 code of fixed length, whereas the package-merge of
@@ -1061,8 +1068,9 @@ search of the window, and its decoding.
 
 --8<-- "generated/LempelZiv-lz77Decode.pseudo.md"
 
-A search of the window takes $O( w \ell )$ time for a phrase of length
-$\ell$, hence $O( n w )$ in the worst case. LZSS
+A search of the window takes $O( w ( \ell + 1 ) )$ time for a phrase of
+length $\ell$, hence $O( n w )$ in the worst case
+([Lemma 21.8](21-compression.md#lem-21-8) below). LZSS
 ([Storer and Szymanski 1982](Z-bibliography.md#ref-storer1982),
 `lzssParse()`, decoded by `lzssDecode()`) emits either a copy $\langle d , \ell \rangle$ or a literal
 $\langle 0 , c \rangle$, a copy only if $\ell$ reaches a minimum (1 in
@@ -1109,14 +1117,40 @@ decoders.
 
 --8<-- "generated/LempelZiv-lzwDecode.pseudo.md"
 
-Note that the decoder of LZW adds $f c$ one step late, when it reads the next phrase
-$f'$, whose first symbol is $c$. However, the identifier of $f'$ may be the one of
-the phrase about to be added, which the decoder does not know yet. This
-happens when the phrase that follows $f$ in the parse is $f c$ itself, the
-phrase just added by the encoder. Then $f'$ starts with $c$, since it
-starts where $c$ is, and with $f[ 1 ]$, since it is $f c$; hence
-$c = f[ 1 ]$, and the phrase is $f f[ 1 ]$, which is the case that the
-decoder handles apart.
+The decoder of LZW adds $f c$ one step late, when it reads the next phrase
+$f'$, whose first symbol is $c$; the identifier of $f'$ may then be the one
+of the phrase about to be added, which the decoder does not know yet. We
+prove that the decoders are right in this case and in the overlapping
+copies of LZ77, and that the dictionary of LZ78 is a trie with one symbol
+per edge.
+
+<span id="lem-21-8"></span>**Lemma 21.8.** *(i) The decoder of LZ77,
+which copies one symbol at a time, writes $s[ p .. p + \ell - 1 ]$ for a
+phrase $\langle d , \ell , c \rangle$ at the place $p$ also when $d <
+\ell$. (ii) The dictionary of LZ78 is closed under prefixes, and each
+phrase is a node of the trie whose parent is the phrase without its last
+symbol. (iii) If the decoder of LZW, after the phrase $f$, reads the
+identifier of the phrase that it is about to add, that phrase is $f$
+followed by the first symbol of $f$. (iv) The search of the window of
+[Algorithm 21.19](21-compression.md#alg-21-19) costs $O( w ( \ell + 1 ) )$
+for a phrase of length $\ell$, hence $O( n w )$ in all.*
+
+*Proof.* (i) The symbol $p + j$ is copied from $p + j - d < p + j$, which
+the decoder has already written, whether it lies before $p$ or inside the
+phrase; and by the definition of the phrase $s[ p + j ] = s[ p + j - d ]$
+for $j < \ell$. (ii) The empty phrase is in the dictionary, and a new
+phrase $f c$ is added only when $f$ is in it; by induction every prefix of
+a phrase is a phrase, and $f c$ is the child of $f$ by the edge $c$. (iii)
+The encoder adds $f c$ after emitting $f$, where $c$ is the symbol after
+$f$ in the text, and the next phrase $f'$ starts at $c$. If the identifier
+of $f'$ is that of $f c$, then $f' = f c$, whose first symbol is that of
+$f$; since $f'$ also starts with $c$, the first symbol of $f$ is $c$, and
+the phrase is $f$ followed by its first symbol, which the decoder writes
+without knowing $c$ in advance. (iv) Each of the at most $w$ places of the
+window is compared with $s[ p .. ]$ for at most $\ell + 1$ symbols, since
+a match longer than $\ell$ would give a longer phrase; the phrases cover
+the $n$ symbols, and the sum of $\ell + 1$ over them is at most $2 n$.
+$\square$
 
 All these compressors are *universal*: on the texts of an "ergodic" source
 their bits per symbol tend to its entropy
@@ -1128,7 +1162,7 @@ $O( n )$ time from the suffix array of the text (`lz77ParseLinear()` of
 which [Kärkkäinen, Kempa and Puglisi 2013](Z-bibliography.md#ref-karkkainen2013)
 exploit.
 
-<span id="lem-21-8"></span>**Lemma 21.8.** *Let $r$ be the rank of the
+<span id="lem-21-9"></span>**Lemma 21.9.** *Let $r$ be the rank of the
 suffix $i$ in $\mathit{SA}$, and let*
 
 $$
@@ -1180,7 +1214,7 @@ $z$ and before $x$ is larger than $x$: otherwise $w$, or a place smaller
 than $w$ that popped it, would be in the stack above $z$; hence $z =
 \mathit{PSV}( x )$. A place that is never popped has no next smaller
 value, and one that finds the stack empty has no previous one. By
-[Lemma 21.8](21-compression.md#lem-21-8) the length of each phrase is then
+[Lemma 21.9](21-compression.md#lem-21-9) the length of each phrase is then
 that of the longest earlier copy. Also, the scan costs $O( n )$, and so does the suffix array of SA-IS
 ([Nong, Zhang and Chan 2011](Z-bibliography.md#ref-nong2011)), which is
 freed before the parse. At the start $i$ of a phrase of length $\ell$ the
@@ -1237,7 +1271,7 @@ LF-mapping and the inverse transform
 
 The transform can be inverted, by a property that links its two columns.
 
-<span id="lem-21-9"></span>**Lemma 21.9 (the LF-mapping).** *The $k$-th
+<span id="lem-21-10"></span>**Lemma 21.10 (the LF-mapping).** *The $k$-th
 occurrence of a symbol $c$ in $L$ and the $k$-th occurrence of $c$ in $F$
 are the same symbol of $s$; hence the row*
 
@@ -1255,10 +1289,25 @@ row $j$ (without its last symbol), which compare as the rows $i$ and $j$
 did. Hence the rows that start with $c$ are in the order of the occurrences
 of $c$ in $L$, and they begin at the row $C[ c ]$ of $F$. $\square$
 
-Since $L[ \mathit{LF}( i ) ]$ is the symbol before $L[ i ]$ in $s$, the
-inverse transform starts from the row 0, which is $\$ s$ and ends with
-$s[ n - 1 ]$, and spells $s$ backward by $n$ steps of (21.20). This takes
-$O( n + \sigma )$ time, with the counts of $L$ taken in one scan. The
+<span id="lem-21-11"></span>**Lemma 21.11.** *Starting from the row 0,
+the $n$ symbols $L[ i_0 ] , L[ i_1 ] , \ldots , L[ i_{n-1} ]$ with $i_0 = 0$
+and $i_{j+1} = \mathit{LF}( i_j )$ are $s[ n - 1 ] , s[ n - 2 ] , \ldots ,
+s[ 0 ]$; hence the inverse transform of
+[Algorithm 21.23](21-compression.md#alg-21-23) gives back $s$ in $O( n +
+\sigma )$ time.*
+
+*Proof.* The row 0 is the rotation $\$ s$, whose last symbol is $s[ n -
+1 ]$. By [Lemma 21.10](21-compression.md#lem-21-10) the row $\mathit{LF}( i
+)$ is the row $i$ rotated by one place to the right, and its last symbol is
+therefore the symbol that precedes, in the cyclic string $s \$$, the last
+symbol of the row $i$. By induction the row $i_j$ is $s \$$ rotated right
+by $j$ places, whose last symbol is $s[ n - 1 - j ]$ for $j < n$. The
+counts of $L$, hence $C$ and the ranks of (21.20) for all the rows, are
+found by one scan of $L$ and a prefix sum over the $\sigma$ symbols, and
+the $n$ steps cost $O( 1 )$ each. $\square$
+
+The inverse transform thus spells $s$ backward by $n$ steps of (21.20),
+with the counts of $L$ taken in one scan. The
 implementation takes the symbols of $L$ as the bytes plus 1 and the $\$$
 as 0, and computes the LF-mapping as a counting sort of the rows by their
 last symbol.
@@ -1278,7 +1327,7 @@ small integers (on the alphabet abcno, bananacocco becomes
 1 1 3 1 1 1 3 4 1 0 1), in $O( \sigma )$ time per symbol here
 ([Algorithm 21.24](21-compression.md#alg-21-24)).
 
-<span id="lem-21-10"></span>**Lemma 21.10.** *Writing the place $p$ of each
+<span id="lem-21-12"></span>**Lemma 21.12.** *Writing the place $p$ of each
 symbol in the move-to-front of $s$ as $\gamma( p + 1 )$ takes at most
 $n ( 2 H_0 + 1 ) + O( \sigma \log \sigma )$ bits.*
 
@@ -1336,7 +1385,7 @@ space by `sizeInBits()`)
 ([Ferragina and Manzini 2005](Z-bibliography.md#ref-ferragina2005a)). Indeed, the occurrences of a pattern $P$ are the rows of $M'$ prefixed by $P$, a range
 of rows, and the range can be found from $L$ with no access to the text.
 
-<span id="lem-21-11"></span>**Lemma 21.11 (the backward search).** *If the
+<span id="lem-21-13"></span>**Lemma 21.13 (the backward search).** *If the
 rows prefixed by a string $Q$ are $[ \mathit{first} , \mathit{last} )$,
 those prefixed by $c Q$ are*
 
@@ -1350,7 +1399,7 @@ $$
 of $c$ in $L[ \mathit{first} .. \mathit{last} - 1 ]$ are those of ranks
 $\mathrm{rank}_c( L , \mathit{first} )$ to
 $\mathrm{rank}_c( L , \mathit{last} ) - 1$ among the occurrences of $c$ in
-$L$, and by [Lemma 21.9](21-compression.md#lem-21-9) their images are the
+$L$, and by [Lemma 21.10](21-compression.md#lem-21-10) their images are the
 consecutive rows that (21.21) gives. $\square$
 
 Hence `count( P )` of `FMIndex.h` applies (21.21) from the last symbol of
@@ -1386,6 +1435,22 @@ found in $O( 1 )$ time; the samples take $O( ( n / \mu ) \log n )$ bits.
 `extract( i , j )` gives $s[ i .. j - 1 ]$ from the row of the first
 sampled suffix at or after $j$, by $j - i + O( \mu )$ steps of the
 LF-mapping, each of which reads the symbol before the current suffix.
+
+<span id="lem-21-14"></span>**Lemma 21.14.** *From any row, at most $\mu
+- 1$ steps of the LF-mapping reach a marked row, and the suffix of the
+starting row is the sample of the marked row plus the number of steps;
+`extract( i , j )` makes at most $j - i + \mu$ steps.*
+
+*Proof.* By [Lemma 21.10](21-compression.md#lem-21-10), a step from the row
+of the suffix $x \ge 1$ leads to the row of the suffix $x - 1$. Among $x ,
+x - 1 , \ldots , x - \mu + 1$ one is a multiple of $\mu$ (or the suffix 0
+is reached first, which is a multiple of $\mu$), and the row of a multiple
+of $\mu$ is marked; after $t$ steps the suffix is $x - t$, hence $x$ is
+the sample plus $t$. For `extract()`, the first sampled suffix at or after
+$j$ is below $j + \mu$ (or it is the end of the text, the row 0), and the
+steps from it down to $i$ are at most $j + \mu - i$; each reads the
+symbol $L$ of the current row, which precedes the current suffix.
+$\square$
 
 In `FMIndex`, the rank of a symbol in $L$ is the count of the symbol
 stored every $b$ places for each symbol of the text, plus a scan of fewer
@@ -1465,7 +1530,7 @@ LF-mapping of their first rows, onto which each run is shifted alike.
 To locate the occurrences, two properties of the suffix array on the runs
 replace the samples every $\mu$ places.
 
-<span id="lem-21-12"></span>**Lemma 21.12 (the toehold).** *Let
+<span id="lem-21-15"></span>**Lemma 21.15 (the toehold).** *Let
 $[ \mathit{first} , \mathit{last} )$ be the rows prefixed by $Q$, and
 $v = \mathit{SA}[ \mathit{last} - 1 ]$. If $L[ \mathit{last} - 1 ] = c$,
 the last row prefixed by $c Q$ is $\mathit{LF}( \mathit{last} - 1 )$, of
@@ -1474,7 +1539,7 @@ last occurrence of $c$ in $L[ \mathit{first} .. \mathit{last} - 2 ]$,
 which ends a run, and its suffix is the sample at the end of that run less
 1.*
 
-*Proof.* By [Lemma 21.11](21-compression.md#lem-21-11), the last row
+*Proof.* By [Lemma 21.13](21-compression.md#lem-21-13), the last row
 prefixed by $c Q$ is the image of the last row $k$ of the range with
 $L[ k ] = c$. Since the LF-mapping moves one place to the left in $s$, the
 suffix of the image is $\mathit{SA}[ k ] - 1$. If
@@ -1489,7 +1554,7 @@ the ranks. All the other occurrences follow from the function
 $\phi( \mathit{SA}[ i ] ) = \mathit{SA}[ i - 1 ]$, which lists the suffixes
 of the range from the last row up.
 
-<span id="lem-21-13"></span>**Lemma 21.13 (the function $\phi$).** *With
+<span id="lem-21-16"></span>**Lemma 21.16 (the function $\phi$).** *With
 $p_j$ the first row of the run $j$,*
 
 $$
@@ -1501,7 +1566,7 @@ $$
 the end of the run $j - 1$.*
 
 *Proof.* If the row $i$ of $x = \mathit{SA}[ i ]$ starts no run, then
-$L[ i - 1 ] = L[ i ]$, and [Lemma 21.9](21-compression.md#lem-21-9) maps
+$L[ i - 1 ] = L[ i ]$, and [Lemma 21.10](21-compression.md#lem-21-10) maps
 the rows $i - 1$ and $i$ to adjacent rows, those of the suffixes
 $\phi( x ) - 1$ and $x - 1$. Hence $\phi( x - 1 ) = \phi( x ) - 1$, i.e.,
 $\phi$ shifts $x - 1$ and $x$ alike. Now, the places $x$ whose row starts
@@ -2132,7 +2197,7 @@ Each exercise names the test of the library that solves it (run it with
     LF-mapping of a step of `locate()` in one descent. Test:
     `engineered_succinct.huffman-fm-index`.
 19. Realize the r-index, with the rank on the runs (21.22), the toehold
-    and the function $\phi$ ([Lemma 21.12](21-compression.md#lem-21-12)
-    and [Lemma 21.13](21-compression.md#lem-21-13)), and then replace its
+    and the function $\phi$ ([Lemma 21.15](21-compression.md#lem-21-15)
+    and [Lemma 21.16](21-compression.md#lem-21-16)), and then replace its
     predecessor searches with move structures. Tests:
     `engineered_succinct.r-index`, `engineered_succinct.move-r-index`.

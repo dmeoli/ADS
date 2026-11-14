@@ -109,14 +109,35 @@ a block only when it is not the one in its buffer. Hence a *coordinated
 scan*, i.e., a sorted file of requests read together with the file that
 answers them, costs the scans of the two files, and no more.
 
+<span id="lem-23-1"></span>**Lemma 23.1.** *A `DiskReader` that reads a
+file of $n$ items in order, or a `DiskWriter` that appends $n$ items, makes
+$\lceil n / B \rceil$ I/Os; $m$ calls of `at()` at nondecreasing positions
+make at most $\min\{ m , \lceil n / B \rceil \}$ reads; hence a coordinated
+scan of a sorted file of $m$ requests and of a file of $n$ items costs at
+most $\lceil m / B \rceil + \lceil n / B \rceil$ reads.*
+
+*Proof.* The reader loads a block only when the next item is not in its
+buffer, which in a scan happens once per block; the writer stores its
+buffer when it holds $B$ items and once more for the last partial block.
+A call of `at( i )` reads only when the block of $i$ is not the one in the
+buffer (Algorithm 23.1); with nondecreasing positions the blocks loaded are
+nondecreasing too, and each block is loaded at most once, since a block
+left behind is never needed again. Hence the reads are at most the calls
+and at most the blocks of the file. The requests are read by a scan, and
+the answers by such calls. $\square$
+
 <span id="tab-23-2"></span>**Table 23.2.** The patterns of access of the
-area and their I/Os.
+area and their I/Os (the scans and the reads by
+[Lemma 23.1](23-external.md#lem-23-1), the sorts by
+[Lemma 23.8](23-external.md#lem-23-8) and [Lemma 23.9](23-external.md#lem-23-9),
+the permutations by [Theorem 23.4](23-external.md#thm-23-4), the ranking
+by [§23.5](23-external.md#sec-23-5)).
 
 | Pattern | I/Os | Realization |
 |---|---|---|
 | scan of $n$ items, read or written | $\lceil n / B \rceil$ | `DiskReader::next()`, `DiskWriter::push()` |
-| $m$ reads at sorted positions | $\min\{ m , \lceil n / B \rceil \}$ | `DiskReader::at()` with increasing positions |
-| sort of $n$ items | $\Theta( \mathrm{sort}( n ) )$ | `multiwayMergeSort()`, `distributionSort()` (on average) |
+| $m$ reads at sorted positions | $\min\{ m , \lceil n / B \rceil \}$ | `DiskReader::at()` with nondecreasing positions |
+| sort of $n$ items | $\Theta( \mathrm{sort}( n ) )$ | `multiwayMergeSort()`, `distributionSort()` (when its samples succeed) |
 | permutation of $n$ items | $\Theta( \min\{ n , \mathrm{sort}( n ) \} )$ | `permuteDirect()` or `permuteBySorting()` |
 | ranking of a list of $n$ items | $\Theta( \mathrm{sort}( n ) )$ | `externalListRank()` |
 
@@ -183,7 +204,7 @@ keys of the subtree of its child $i$ and smaller than those of its child
 $i + 1$. [Figure 23.3](23-external.md#fig-23-3) shows a B-tree with
 $B = 2$.
 
-<span id="lem-23-1"></span>**Lemma 23.1.** *A B-tree whose leaves are at
+<span id="lem-23-2"></span>**Lemma 23.2.** *A B-tree whose leaves are at
 depth $h \ge 1$ (i.e., of $h + 1$ levels, as `height()` counts them) and
 which has $\ell$ leaves satisfies $2 B^{h-1} \le \ell \le ( 2 B )^h$, and hence
 $h \le \log_B \ell + 1$; since each leaf holds at least one key (when the
@@ -231,12 +252,22 @@ the internal one, not pointed to.
 
 ![Figure 23.3. A B-tree with $B = 2$ (the data of figure 14.2 of Morin 2013): the nodes and the edges that `lowerBound(4)` reads, and those that `lowerBound(16.5)` reads, which ends at a leaf and returns 17, the last key $\ge 16.5$ met on the way.](../figures/external-btree.svg){#fig-23-3}
 
-<span id="thm-23-1"></span>**Theorem 23.1.** *`lowerBound()` reads
-$O( \log_B n )$ blocks, and takes $O( \log n )$ time in the word-RAM
-model.*
+<span id="thm-23-1"></span>**Theorem 23.1.** *`lowerBound( x )` returns
+the smallest key $\ge x$ of the tree, if any; it reads $O( \log_B n )$
+blocks, and takes $O( \log n )$ time in the word-RAM model.*
 
-*Proof.* It reads one node per level, and there are $O( \log_B n )$ levels
-by [Lemma 23.1](23-external.md#lem-23-1); the binary search in a node of at
+*Proof.* Let $u$ be the node of the current step, $i$ the first place of a
+key $\ge x$ in $u$, and $K$ the keys of the subtree of $u$. The keys of
+$K$ that are $\ge x$ are the keys of $u$ from the place $i$ on, the keys of
+the subtrees of the children after $i$, which are larger than the key $i$
+of $u$, and those of the subtree of the child $i$, which are smaller than
+the key $i$ (if any) and larger than the key $i - 1$. Hence the smallest
+key $\ge x$ of $K$ is $x$ itself if the key $i$ is $x$, and otherwise the
+smallest key $\ge x$ of the child $i$, if any, or else the key $i$. The
+search keeps as its candidate the last key $i$ met, and by induction on the
+levels the candidate at the leaf is the smallest key $\ge x$ of the
+tree. As for the cost, it reads one node per level, and there are $O( \log_B n )$ levels
+by [Lemma 23.2](23-external.md#lem-23-2); the binary search in a node of at
 most $2 B$ keys costs $O( \log B )$, and
 $O( \log_B n ) \cdot O( \log B ) = O( \log n )$. $\square$
 
@@ -350,10 +381,35 @@ it frees the blocks of the children it drops, or places the new ones.
 `splits()`, `merges()`, `borrows()` and their sum `restructures()` count
 the restructurings so far.
 
+<span id="lem-23-3"></span>**Lemma 23.3.** *With the rules of the
+book, `insert()` and `remove()` keep the tree a B-tree of the keys after
+the operation; a removal makes zero or more merges and at most one borrow,
+after which it stops.*
+
+*Proof.* A split deals the $2 B$ keys of a node into nodes of $B$ and $B -
+1$ keys and the separator between them, which goes up; both new nodes are
+within $[ B - 1 , 2 B - 1 ]$, and the parent gains one key and one child.
+A root that splits gives a new root of one key and two children, which
+deepens all the leaves by one. In an underflow, a node of $B - 2$ keys and
+its sibling of $s \in [ B - 1 , 2 B - 1 ]$ keys gather $t = s + B - 1$
+keys with their separator. If $s \ge B$, the borrow deals $t - 1$ keys to
+two nodes of at least $\lfloor ( t - 1 ) / 2 \rfloor \ge B - 1$ and at
+most $\lceil ( t - 1 ) / 2 \rceil \le \lceil ( 3 B - 3 ) / 2 \rceil \le 2
+B - 1$ keys, and the parent keeps its number of keys, so that nothing above
+changes and the removal stops. If $s = B - 1$, the merge makes one node of
+$t = 2 B - 2$ keys and the parent loses one key, which may cause an
+underflow above; a root left with no key is replaced by its only child,
+which raises all the leaves by one. In every case `deal()` writes the keys
+gathered back in their order, with the separators between the children,
+so that the order of the keys is kept, and the leaves stay at one depth.
+Replacing a key $x$ of an internal node by its successor $y$, the least key
+of its right subtree, keeps the order, since $y$ is larger than the keys
+on the left of $x$ and smaller than the other keys on its right. $\square$
+
 <span id="thm-23-2"></span>**Theorem 23.2.** *`insert()` and `remove()`
 read and write $O( \log_B n )$ blocks; in the word-RAM model they take
 $O( B \log_B n )$ time, i.e., $O( B \log n / \log B )$, and $O( B + \log n )$
-amortized time by [Lemma 23.2](23-external.md#lem-23-2) when a read gives
+amortized time by [Lemma 23.4](23-external.md#lem-23-4) when a read gives
 access to a node in place (the copies of `BlockStore` cost $O( B )$ more
 per level).*
 
@@ -363,7 +419,7 @@ the way up costs $O( \log_B n )$ I/Os; the replacement of a removed key
 costs at most one more read and write. In the word-RAM model each node
 costs a binary search on the way down, and each restructuring, as well as
 the insertion or the removal of a key in a leaf, moves $O( B )$ keys and
-indices. By [Lemma 23.2](23-external.md#lem-23-2) the restructurings are
+indices. By [Lemma 23.4](23-external.md#lem-23-4) the restructurings are
 $O( 1 )$ per operation, amortized. $\square$
 
 ### 23.3.5 The amortized number of restructurings {#sec-23-3-5}
@@ -371,7 +427,7 @@ $O( 1 )$ per operation, amortized. $\square$
 A single insertion may split a node at each level, but such cascades are
 rare.
 
-<span id="lem-23-2"></span>**Lemma 23.2.** *From the empty tree, $m$
+<span id="lem-23-4"></span>**Lemma 23.4.** *From the empty tree, $m$
 insertions and removals make at most $3 m / 2$ splits, merges and borrows
 ([Morin 2013, Lemma 14.1](Z-bibliography.md#ref-morin-cpp)). Also, a
 sequence of two insertions and two removals at a leaf of $2 B - 2$ keys
@@ -413,7 +469,7 @@ it leaves.
 
 ### 23.3.6 Nodes far from their bounds {#sec-23-3-6}
 
-The cycle of [Lemma 23.2](23-external.md#lem-23-2) costs a restructuring
+The cycle of [Lemma 23.4](23-external.md#lem-23-4) costs a restructuring
 per operation because each restructuring leaves its nodes at one key from a
 bound. The enumeration `BTreePolicy` names the rules of the book (`STANDARD`,
 the default) and two variants that leave each
@@ -440,7 +496,7 @@ two leaves of a root are merged into one only while it keeps $\lfloor B /
 
 --8<-- "generated/BlockBTree-fixOverflow.pseudo.md"
 
-<span id="lem-23-3"></span>**Lemma 23.3.** *If every node that a
+<span id="lem-23-5"></span>**Lemma 23.5.** *If every node that a
 restructuring writes has at least $\alpha B$ keys more than its lower bound
 and fewer than its upper bound, for a constant $\alpha > 0$, then $m$
 operations make $O( m / B )$ restructurings.*
@@ -458,10 +514,34 @@ restructurings in $m$ operations, $R ( \alpha B - 1 ) \le m$, i.e.,
 $R \le m / ( \alpha B - 1 ) = O( m / B )$ for $B > 2 / \alpha$, say.
 $\square$
 
-Both policies meet the condition, with $\alpha = 1 / 4$ for `WIDE` and
-$\alpha = 1 / 8$ for `THREE` when $B \ge 8$, and the cycle of
-[Lemma 23.2](23-external.md#lem-23-2) costs them nothing after its first
-round. The moves of `THREE` need a sibling for an overflow and two for an
+<span id="lem-23-6"></span>**Lemma 23.6.** *There is a constant
+$c$ such that every node that a restructuring of `WIDE` writes is at least
+$B / 4 - c$ keys from both of its bounds, and every node that a
+restructuring of `THREE` writes, but in a tree of two leaves, at least $B /
+6 - c$ keys from its lower bound and $B / 4 - c$ from its upper one; hence
+both policies meet the hypothesis of
+[Lemma 23.5](23-external.md#lem-23-5) with $\alpha = 1 / 8$ for $B$ large
+enough.*
+
+*Proof.* We count the keys up to additive constants, which go into $c$.
+With `WIDE` the bounds are $B$ and $3 B$. A split deals $3 B$ keys into two
+nodes of $1.5 B$; a merge happens when the two nodes gather at most $2.5
+B$ keys, and gives a node of at least $( B - 2 ) + ( B - 1 ) \approx 2 B$
+and at most $2.5 B$ keys; a share happens when they gather more than $2.5
+B$, and gives two nodes of more than $1.25 B$ and at most $( ( B - 2 ) + 3
+B ) / 2 \approx 2 B$ keys. With `THREE` the bounds are $B$ and $2 B$, and
+$t$ is the number of keys gathered (line 3, 7 and 9 of the pseudocode
+above). An overflow gathers $t \in [ 3 B , 4 B ]$ keys of a node and a
+sibling: into two nodes when $t / 2 \le 2 B - B / 4$, each of $t / 2 \ge
+1.5 B$ keys, and otherwise into three, each of $t / 3 \in ( 7 B / 6 , 4 B
+/ 3 ]$ keys. An underflow gathers $t \in [ 3 B , 5 B ]$ keys of a node and
+two siblings: into two nodes of $t / 2 \in [ 1.5 B , 1.75 B ]$ keys, or
+into three of $t / 3 \in ( 7 B / 6 , 5 B / 3 ]$. The least distance from
+a lower bound is thus $7 B / 6 - B = B / 6$, and from an upper bound $B /
+4$ (the room that the test of $t$ keeps). $\square$
+
+Hence the cycle of [Lemma 23.4](23-external.md#lem-23-4) costs them
+nothing after its first round. The moves of `THREE` need a sibling for an overflow and two for an
 underflow, which a tree of two leaves lacks; there the leaves may hold down
 to $\lambda = \max( 1 , \lfloor B / 2 \rfloor )$ keys, and a leaf below
 $\lambda$ is merged with the other one into a root leaf if that leaf has at
@@ -481,7 +561,7 @@ $3 B - 1$ keys, and so needs a larger block for the same $B$.
 
 ### 23.3.7 Internal nodes and internal memory {#sec-23-3-7}
 
-<span id="lem-23-4"></span>**Lemma 23.4.** *A B-tree of $n$ keys whose
+<span id="lem-23-7"></span>**Lemma 23.7.** *A B-tree of $n$ keys whose
 root is not a leaf has at most $( ( n + 1 ) / B + B - 3 ) / ( B - 1 )$
 internal nodes, i.e., $O( n / B^2 )$ ([Morin 2013, exercise
 14.3](Z-bibliography.md#ref-morin-cpp)).*
@@ -510,7 +590,7 @@ pairs of indices, $O( \log_B n )$ words, and at most five nodes counted in
 memory at once: the node, its parent and the at most three children whose
 keys a restructuring gathers (the node among them). A parent is read again
 on the way up only when a restructuring or the successor of a removed key
-reaches it, which [Lemma 23.2](23-external.md#lem-23-2) keeps at $O( 1 )$
+reaches it, which [Lemma 23.4](23-external.md#lem-23-4) keeps at $O( 1 )$
 reads per operation, amortized, beyond the descent. `peakNodes()` gives the
 most nodes held at once, and `peakPath()` the longest path kept, in pairs
 of indices. Finally, the other functions read the tree with no I/O, for the tests:
@@ -550,17 +630,35 @@ logarithms, $t \log \binom{M}{B} \ge n \log ( n / B ) - O( n )$, and
 $\log \binom{M}{B} = O( B \log ( M / B ) )$, which gives the bound on $t$.
 $\square$
 
-Furthermore, a permutation is no easier once the writes are counted too, since a write
-can put its block in any of $n + 1$ places of the output. The condition
+A permutation, whose order is known in advance, is no easier once the
+writes are counted too, since a write can put its block in any of $n + 1$
+places of the output.
+
+<span id="thm-23-4"></span>**Theorem 23.4.** *A permutation of $n$
+atomic items in the two-level memory needs $t$ I/Os with*
 
 $$
 \Bigl( ( n + 1 ) \binom{M}{B} \Bigr)^t ( B! )^{\lceil n / B \rceil}
-\ge n! \tag{23.2}
+\ge n! , \tag{23.2}
 $$
 
-gives $t = \Omega( \min\{ n , \mathrm{sort}( n ) \} )$, and the minimum is
-$n$, one read per item, only when $B$ is smaller than the logarithm of the
-sort. Hence on the disk the cost of a sort lies in moving the items, while
+*whence $t = \Omega( \min\{ n , \mathrm{sort}( n ) \} )$ ([Aggarwal and
+Vitter 1988](Z-bibliography.md#ref-aggarwal1988)).*
+
+*Proof.* As in the proof of [Theorem 23.3](23-external.md#thm-23-3), the
+executions of an algorithm that realizes every permutation form a tree
+whose leaves give the $n!$ outputs; a read has at most $\binom{M}{B}$
+outcomes (and $B!$ more the first time each block is read), and a write
+at most $n + 1$, the place of its block among the blocks of the output.
+This gives (23.2). Taking the logarithms, $t ( \log( n + 1 ) + B \log( e
+M / B ) ) \ge n \log( n / B ) - O( n )$, from which Aggarwal and Vitter
+derive $t = \Omega( \min\{ n , \mathrm{sort}( n ) \} )$ by comparing the
+two terms of the denominator: the first dominates when $B \log( M / B ) <
+\log n$ and gives $\Omega( n )$, the second gives $\Omega(
+\mathrm{sort}( n ) )$ otherwise. $\square$
+
+The minimum is $n$, one I/O per item, only when $B$ is smaller than the
+logarithm of the sort. Hence on the disk the cost of a sort lies in moving the items, while
 finding their order costs no I/O. `sortingLowerBound(n, M, B)` computes the
 least $t$ of (23.1) plus the writes, with the logarithms of the factorials
 by the function $\Gamma$ (and never fewer than $\lceil n / B \rceil$
@@ -577,7 +675,7 @@ pass merges groups of $k$ runs, with a block of each in memory and one for
 the output, and reads and writes each block once
 ([Figure 23.9](23-external.md#fig-23-9)).
 
-<span id="lem-23-5"></span>**Lemma 23.5.** *A mergesort of fan-in at most
+<span id="lem-23-8"></span>**Lemma 23.8.** *A mergesort of fan-in at most
 $k$ makes at most*
 
 $$
@@ -640,7 +738,7 @@ partition of quicksort, so that equal keys stop the recursion). Then it
 sorts the buckets in turn, in memory once they fit
 ([Algorithm 23.8](23-external.md#alg-23-8)).
 
-<span id="lem-23-6"></span>**Lemma 23.6.** *Let the $k - 1$ pivots be the
+<span id="lem-23-9"></span>**Lemma 23.9.** *Let the $k - 1$ pivots be the
 items of ranks $a + 1 , 2 ( a + 1 ) , \ldots$ of a sorted random sample of
 $( a + 1 ) k - 1$ items, with $a + 1 = \lceil 12 \ln k \rceil$. Then with
 probability at least $1 / 2$ every bucket between two consecutive pivots
@@ -666,8 +764,13 @@ and writes each item once. The memory holds a block of the input, a block
 for each of the $k$ buckets between the pivots and of the $k - 1$ buckets
 of the items equal to a pivot, a block of the output and the pivots. Hence
 $k = \lfloor ( M - B ) / ( 2 B + 1 ) \rfloor$, half the fan-in of the
-merge, and the sort needs $M \ge 5 B + 2$; the I/Os are
-$O( \mathrm{sort}( n ) )$ on average (cf. [Lemma 23.6](23-external.md#lem-23-6)). Its sample has
+merge, and the sort needs $M \ge 5 B + 2$. By
+[Lemma 23.9](23-external.md#lem-23-9) each of the up to three samples of
+a distribution succeeds with probability at least $1 / 2$, independently,
+so that a distribution ends with buckets of fewer than $4 n / k$ items
+with probability at least $7 / 8$; when all the distributions do so, the
+I/Os are $O( ( n / B ) \log_{k / 4} ( n / M ) ) = O( \mathrm{sort}( n ) )$,
+since each level reads and writes each item once. Its sample has
 $s = \min\{ \lceil 12 \ln k \rceil k - 1 , ( M - 2 B ) / 2 , n \}$ items.
 
 <span id="alg-23-8"></span>**Algorithm 23.8.** The distribution sort
@@ -682,7 +785,7 @@ $s = \min\{ \lceil 12 \ln k \rceil k - 1 , ( M - 2 B ) / 2 , n \}$ items.
 |---|---|---|---|
 | `binaryMergeSort()` | $M \ge 3 B$ | $O( ( n / B ) \log_2 ( n / M ) )$ | deterministic, the logarithm in base 2 |
 | `multiwayMergeSort()` | $M \ge 3 B$ | $O( \mathrm{sort}( n ) )$ | deterministic, optimal; fewer runs with the snow plow |
-| `distributionSort()` | $M \ge 5 B + 2$ | $O( \mathrm{sort}( n ) )$ on average | randomized, fan-in about half that of the merge |
+| `distributionSort()` | $M \ge 5 B + 2$ | $O( \mathrm{sort}( n ) )$ when the samples succeed | randomized, fan-in about half that of the merge |
 
 On $D$ disks read in parallel, the striping (the $D$ disks as one, with
 blocks of $D B$ items) turns either sort into one of
@@ -730,7 +833,7 @@ two ways, both taken from the parallel algorithms.
 
 --8<-- "generated/ListRanking-listRank.pseudo.md"
 
-<span id="lem-23-7"></span>**Lemma 23.7.** *Start from
+<span id="lem-23-10"></span>**Lemma 23.10.** *Start from
 $s[ i ] = \mathit{succ}[ i ]$, and $r[ i ] = 1$ but at the tail, where it
 is 0. If each round sets, for all the items at once,*
 
@@ -778,6 +881,21 @@ in one record, costs $\tilde O( ( n / B ) \log n )$ I/Os.
 
 --8<-- "generated/ListRanking-externalPointerJumping.pseudo.md"
 
+<span id="lem-23-11"></span>**Lemma 23.11.** *`parallelStep()` writes
+$\mathit{out}[ a_i ] = \mathrm{op}( A[ a_i ] , A[ b_i ] )$ for each
+request and $\mathit{out}[ j ] = A[ j ]$ elsewhere, with the values of
+$A$ before the step, in two sorts and three scans; hence $T$ steps on $n$
+items cost $O( T \, \mathrm{sort}( n ) )$ I/Os.*
+
+*Proof.* After the sort of the requests by $b_i$, one scan of $A$ in step
+with the requests attaches $A[ b_i ]$ to each of them
+([Lemma 23.1](23-external.md#lem-23-1)), reading $A$ only; after the
+sort by $a_i$, a second scan of $A$ in step with the requests writes
+$\mathit{out}$, applying to $A[ a_i ]$ the one request of destination
+$a_i$ (the destinations are distinct) and copying the other items. The
+values read are those of $A$, which the step does not change, and the
+third scan is that of the output. $\square$
+
 ### 23.5.2 Independent sets {#sec-23-5-2}
 
 The logarithm goes away by recursion. If $I$ is an *independent set*,
@@ -786,7 +904,7 @@ the items whose successor is in $I$ can jump over it, adding its rank to
 theirs. Then the remaining list is ranked recursively, and each item of $I$
 then gets the rank of its successor plus the rank of the item.
 
-<span id="lem-23-8"></span>**Lemma 23.8.** *If each level removes an
+<span id="lem-23-12"></span>**Lemma 23.12.** *If each level removes an
 independent set of at least $n / 8$ items, with a constant number of sorts
 and scans, then*
 
@@ -794,22 +912,21 @@ $$
 T( n ) = \tilde O( n / B ) + T( 7 n / 8 ) = \tilde O( n / B ) . \tag{23.5}
 $$
 
-*Proof.* The sizes of the levels decrease geometrically, and so do their
-costs, whose sum is a constant times the first. $\square$
+*Proof.* The level $j$ works on at most $( 7 / 8 )^j n$ items, and its
+sorts and scans cost $c \, \mathrm{sort}( ( 7 / 8 )^j n ) \le c \, ( 7 /
+8 )^j \, \mathrm{sort}( n )$ I/Os for a constant $c$, since
+$\mathrm{sort}( n ) / n$ does not decrease with $n$; the sum over $j$ is
+at most $8 c \, \mathrm{sort}( n )$. $\square$
 
 `randomIndependentSet(succ, g)` tosses a coin per item and takes the heads
-whose successor shows tails. An item enters the set with probability
-$1 / 4$ (its coin heads, that of its successor tails), and two items
-of the set cannot be consecutive, since the successor of one shows tails;
-the set has $n / 4$ items on average, and at least $n / 8$ after $O( 1 )$
-attempts on average. `deterministicCoinTossing(succ)` is the technique of
+whose successor shows tails. `deterministicCoinTossing(succ)` is the technique of
 [Cole and Vishkin 1986](Z-bibliography.md#ref-cole1986). It starts from the
 colors $c[ i ] = i$, which differ on adjacent items, and replaces at each
 round $c[ i ]$ by $2 \pi + z$, with $\pi$ the lowest bit in which $c[ i ]$
 and $c[ \mathit{succ}[ i ] ]$ differ and $z$ the value of that bit in
 $c[ i ]$ (the tail compares with its bit 0).
 
-<span id="lem-23-9"></span>**Lemma 23.9.** *If adjacent colors differ
+<span id="lem-23-13"></span>**Lemma 23.13.** *If adjacent colors differ
 before a round, they differ after it, and colors of $b$ bits become colors
 of $\lceil \log_2 b \rceil + 1$ bits.*
 
@@ -826,9 +943,8 @@ colors 5, 4 and 3 in turn take the least color of $\{ 0 , 1 , 2 \}$ that
 neither neighbour has. This keeps the colors proper, since the items of one
 color are not adjacent. `independentSetOfColors(succ, color)` takes the
 local minima of the three colors, the tail excluded and not counted as a
-neighbour; they are independent, and between two consecutive local minima
-there are at most 3 other items, and hence the set has at least about
-$n / 4$ items. [Table 23.4](23-external.md#tab-23-4) compares the two
+neighbour; they are independent and at least about $n / 4$
+([Lemma 23.14](23-external.md#lem-23-14) below). [Table 23.4](23-external.md#tab-23-4) compares the two
 kinds.
 
 --8<-- "generated/ListRanking-randomIndependentSet.pseudo.md"
@@ -837,12 +953,36 @@ kinds.
 
 --8<-- "generated/ListRanking-independentSetOfColors.pseudo.md"
 
+<span id="lem-23-14"></span>**Lemma 23.14.** *(i) The set of
+`randomIndependentSet()` is independent, has $( n - 1 ) / 4$ items on
+average, and has at least $n / 8$ items with probability at least $( n - 2 ) / ( 4 (
+n + 1 ) )$; hence, for $n \ge 4$, at most 10 attempts are needed on
+average. (ii) The local minima of a proper coloring of the list with the
+colors $\{ 0 , 1 , 2 \}$ are independent, and at most 3 items lie between
+two consecutive ones, so that they are at least $( n - 7 ) / 4$.*
+
+*Proof.* (i) Two items of the set are not consecutive, since the successor
+of one shows tails, and the tail, excluded, is no item of the set. Each of
+the $n - 1$ items other than the tail enters with probability $1 / 4$ (its
+coin heads, that of its successor tails), which gives the mean. Since no
+two items of the set are consecutive, it has at most $\lceil n / 2 \rceil$
+items, and with $p = \Pr[ X \ge n / 8 ]$ one has $( n - 1 ) / 4 \le n / 8
++ p \lceil n / 2 \rceil$ and $\lceil n / 2 \rceil \le ( n + 1 ) / 2$,
+whence the bound on $p$, at least $1 / 10$ for $n \ge 4$. (ii) A local minimum is smaller than both its neighbours, so that
+two local minima are not adjacent. Between two consecutive local minima
+the colors first increase and then decrease (a stretch that went down and
+then up would hold a local minimum), and with three colors each of the two
+monotone parts has at most two items besides the ends; since the two parts
+share their top, at most 3 items lie between. The stretches before the
+first local minimum and after the last one have at most 3 items each in
+the same way. $\square$
+
 <span id="tab-23-4"></span>**Table 23.4.** The independent sets of
 `ListRanking.h`.
 
 | Set | Size | Rounds |
 |---|---|---|
-| `randomIndependentSet()`: a coin per item, the heads whose successor shows tails | $n / 4$ on average, at least $n / 8$ after $O( 1 )$ attempts on average | 1 |
+| `randomIndependentSet()`: a coin per item, the heads whose successor shows tails | $( n - 1 ) / 4$ on average, at least $n / 8$ after at most 10 attempts on average | 1 |
 | `independentSetOfColors()` on `deterministicCoinTossing()`: the local minima of three colors | at least about $n / 4$ | $O( \log^* n )$ |
 
 `listRankIndependentSet(succ, g, deterministic)` runs the recursion in
@@ -1208,14 +1348,14 @@ Each exercise names the test of the library that solves it (run it with
    the solution. Test: `ods_ints.ods.ex14.1.figure`.
 4. Find the largest number of internal nodes of a B-tree of $n$ keys
    ([Morin 2013, exercise 14.3](Z-bibliography.md#ref-morin-cpp);
-   [Lemma 23.4](23-external.md#lem-23-4)). Test:
+   [Lemma 23.7](23-external.md#lem-23-7)). Test:
    `ods_ints.ods.ex14.3.internal-nodes`.
 5. Show that the recursive insertion and removal hold
    $\Theta( B \log_B n )$ words of internal memory, and reduce it to
    $O( B + \log_B n )$ ([Morin 2013, exercise
    14.4](Z-bibliography.md#ref-morin-cpp); [§23.3.7](23-external.md#sec-23-3-7)).
    Test: `ods_ints.ods.ex14.4.memory`.
-6. Draw the credits of the proof of [Lemma 23.2](23-external.md#lem-23-2)
+6. Draw the credits of the proof of [Lemma 23.4](23-external.md#lem-23-4)
    on the trees of an insertion and of a removal, and check that three new
    credits per operation pay the splits, the merges and the borrows
    ([Morin 2013, exercise 14.5](Z-bibliography.md#ref-morin-cpp));
@@ -1226,7 +1366,7 @@ Each exercise names the test of the library that solves it (run it with
    with up to three nodes, and show that they make $O( m / B )$
    restructurings in $m$ operations, while the rules of the book make
    $\Theta( m )$ ([Morin 2013, exercises 14.6 and
-   14.7](Z-bibliography.md#ref-morin-cpp); [Lemma 23.3](23-external.md#lem-23-3)).
+   14.7](Z-bibliography.md#ref-morin-cpp); [Lemma 23.5](23-external.md#lem-23-5)).
    Test: `ods_ints.ods.ex14.6.restructures`.
 8. Realize a B+-tree, with its removal, the search of the smallest key
    $\ge x$ and the report of the keys in $( x , y ]$, and explain why its
