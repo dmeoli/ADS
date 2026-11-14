@@ -2479,6 +2479,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- texts that disagreed with the code: the theory of the parallel
+  algorithms said that the threads of gemm() share a packed panel of B,
+  while each runs the blocked loops of the sequential product on its rows
+  of C reading B in place, and only a CBLAS packs; the theory of the
+  strings gave editDistance() Theta( m n ) space and a solution read back,
+  while it keeps two rows on the shorter string and returns the value;
+  SizeClassAllocator.h gave the waste as below 25% of a block, while it is
+  below 20% of the block and below 25% of the request; the recurrence of
+  the selection of Hoare in Selection.h started at n, while the partition
+  makes n - 1 comparisons, as the theory of the searches has it; the
+  comment of the cuts of distributed::sort() gave the piece j as
+  ( s_{j-1} , s_j ], while it takes the items strictly between two
+  splitters and shares those equal to a run of splitters, the remainder to
+  the highest part, which the header now states
+
 - the comment of shuffle() and the theories of the numerics and of the
   sequences still said that it draws by g() % j, biased, while it draws by
   Lemire's method on a full word and by rejection on a narrower range

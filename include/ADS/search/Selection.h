@@ -11,10 +11,11 @@
  *   smallest items before it, and the search goes on in the part that holds
  *   rank \f$ k \f$; with the pivot chosen at random, swapped to
  *   \f$ A[ \mathit{start} ] \f$ before the partition, the expected number of
- *   comparisons satisfies
+ *   comparisons satisfies, the partition comparing the pivot with the other
+ *   \f$ n - 1 \f$ items,
  *   \f[
- *     T( n ) \le n + \frac{2}{n} \sum_{q = \lfloor n / 2 \rfloor}^{n-1} T( q )
- *     \le c n ,
+ *     T( n ) \le n - 1 + \frac{2}{n} \sum_{q = \lfloor n / 2 \rfloor}^{n-1}
+ *     T( q ) \le c n ,
  *   \f]
  *   linear for every input;
  * - `medianOfMedians()`, of Blum, Floyd, Pratt, Rivest and Tarjan, which

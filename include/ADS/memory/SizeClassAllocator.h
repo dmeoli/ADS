@@ -11,8 +11,10 @@
  * class not below it: 8, the multiples of 16 up to 128, then four classes
  * per power of 2 (160, 192, 224, 256, 320, ...), i.e., the sizes
  * \f$ 2^e + j \, 2^{e - 2} \f$ for \f$ j = 1 , \ldots , 4 \f$ and
- * \f$ 7 \le e \le 14 \f$, so that the waste is below 25% of a block past
- * 128 bytes (and below 16 bytes up to it), and the class is found by a
+ * \f$ 7 \le e \le 14 \f$, so that past 128 bytes the waste is below
+ * \f$ 2^{e-2} \f$, i.e., below 20% of the block, at least
+ * \f$ 1.25 \cdot 2^e \f$, and below 25% of the request, more than
+ * \f$ 2^e \f$ (below 16 bytes up to 128), and the class is found by a
  * shift and a count of the leading zeros, with no table and no loop. Each
  * class has a free list of the blocks given back, the last one first (whose
  * memory is still in the cache), and a page of 64 KB (the size of the
