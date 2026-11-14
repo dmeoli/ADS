@@ -570,6 +570,30 @@ class BigInteger {
  /// 5 & \quad \textbf{return}\ \sum_i c_i 2^{32 i} \text{, by the carries}
  /// \end{array}}
  /// \f]
+ /// where each convolution is the product of the transforms, of length
+ /// \f$ N \f$ a power of 2, taken in place and without recursion, with
+ /// \f$ g \f$ a generator of the units modulo \f$ p \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{transform}( a , \mathit{inverse} ) \cr
+ /// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ N - 1\ \textbf{do}
+ ///     \ \textbf{if}\ i < \mathrm{rev}( i )\ \textbf{then}\ \text{swap }
+ ///     a_i , a_{\mathrm{rev}( i )}\quad \triangleright\ \text{the bits }
+ ///     \text{of } i \text{ reversed} \cr
+ /// 3 & \quad \textbf{for}\ \ell \gets 2 , 4 , \ldots , N\ \textbf{do} \cr
+ /// 4 & \qquad \omega \gets g^{( p - 1 ) / \ell} \bmod p;\ \textbf{if}
+ ///     \ \mathit{inverse}\ \textbf{then}\ \omega \gets \omega^{-1} \cr
+ /// 5 & \qquad \textbf{for}\ i \gets 0 , \ell , 2 \ell , \ldots , N - \ell
+ ///     \ \textbf{do} \cr
+ /// 6 & \qquad\quad \textbf{for}\ k \gets 0\ \textbf{to}\ \ell / 2 - 1
+ ///     \ \textbf{do}\quad \triangleright\ \text{a butterfly} \cr
+ /// 7 & \qquad\qquad u \gets a_{i+k};\ v \gets \omega^k a_{i+k+\ell/2}
+ ///     \bmod p;\ a_{i+k} \gets u + v \bmod p;\ a_{i+k+\ell/2} \gets
+ ///     u - v \bmod p \cr
+ /// 8 & \quad \textbf{if}\ \mathit{inverse}\ \textbf{then}\ a_i \gets
+ ///     N^{-1} a_i \bmod p \text{ for each } i
+ /// \end{array}}
+ /// \f]
  /// \post the result equals `multiplySchool( a , b )` (audit)
  static BigInteger multiplyFFT( const BigInteger & a , const BigInteger & b );
 

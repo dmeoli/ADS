@@ -172,10 +172,6 @@ they are multiplied, which gives the two factors of each call the same
 length (the precondition of the recursion). Note that the same function
 makes the four products of (17.2) when `three` is false.
 
-```cpp
---8<-- "generated/Polynomial-multiplyRec.cpp"
-```
-
 In `*mults`, if it is given, the functions count the products of two
 coefficients: $n^2$ for the school and for the four halves when $n$ is a
 power of two, and $3^{\log_2 n}$ for Karatsuba. Also, the audits of the
@@ -233,10 +229,6 @@ one carry or one borrow per digit, in $\Theta( n )$ time. In the code,
 `addN()` adds a shorter span $b$ to a span $a$, the carry running through
 the digits of $a$ beyond $b$ only while it is 1, and it works in place
 when $r = a$.
-
-```cpp
---8<-- "generated/BigInteger-addN.cpp"
-```
 
 A sum of two numbers of opposite signs is the difference of the
 magnitudes, the larger minus the smaller (`compareMag()` decides), with
@@ -324,12 +316,9 @@ $\omega^{N / 2} = -1$, the outputs $k$ and $k + N / 2$ are $E_k \pm
 In `detail::Ntt`, (17.5) runs in place and without recursion: the items
 first go to the places of the reversed bits of their indices, and then the
 rounds of butterflies on the blocks of length $2 , 4 , \ldots , N$
-combine the transforms of each length into those of the double length (cf.
-the code below).
+combine the transforms of each length into those of the double length:
 
-```cpp
---8<-- "generated/BigInteger-transform.cpp"
-```
+--8<-- "generated/BigInteger-transform.pseudo.md"
 
 As for `multiplyFFT()` ([Algorithm 17.4](17-numeric.md#alg-17-4)), it
 cuts each digit into two pieces of 32 bits and pads the pieces to a length
@@ -837,10 +826,6 @@ in `DenseMatrix.h`, by blocks of $L$ columns and rows of $B$.
 
 --8<-- "generated/DenseMatrix-gemm.pseudo.md"
 
-```cpp
---8<-- "generated/DenseMatrix-gemmBlocked.cpp"
-```
-
 The innermost loop is an update $c \gets c + a \, b$ of a row of $C$ by a
 row of $B$, with no dependence between its iterations, which the compiler
 may vectorize. Each entry of $C$ is the sum of its terms in the order of
@@ -1003,7 +988,8 @@ and offsets of 64, the matrix takes $12 \, \mathit{nnz} + 8 ( m + 1 )$
 bytes, read in order by a product with a vector; by contrast, the nodes of
 the orthogonal lists are scattered, and more than three times as large
 (40 bytes each). We build the matrix either from a `SparseMatrix` or from
-triplets $( i , j , v )$ in any order. In the latter case a counting sort
+triplets $( i , j , v )$ in any order (each a `Triplet`, the tuple of two
+`std::size_t` and a `double`). In the latter case a counting sort
 on the rows, a sort of the columns of each row and the sum of the entries
 in the same place take $O( \mathit{nnz} + m )$ time plus the sorts of the
 rows; the columns of 32 bits require $n \le 2^{32}$. The default
@@ -1024,10 +1010,6 @@ them once, in $\Theta( m + \mathit{nnz} )$ time:
 in compressed sparse rows by a vector, and its transpose.
 
 --8<-- "generated/CsrMatrix-multiply.pseudo.md"
-
-```cpp
---8<-- "generated/CsrMatrix-multiply.cpp"
-```
 
 --8<-- "generated/CsrMatrix-transpose.pseudo.md"
 
@@ -1103,10 +1085,6 @@ on the chunks from $\mathit{first}$ to $\mathit{last} - 1$.
 --8<-- "generated/SellMatrix-SellMatrix.pseudo.md"
 
 --8<-- "generated/SellMatrix-multiply.pseudo.md"
-
-```cpp
---8<-- "generated/SellMatrix-multiply.cpp"
-```
 
 Building the format costs $O( \mathit{nnz} + m \log \sigma )$ time: the
 stable sort of each window (the rows of equal length keep their order),
@@ -1374,19 +1352,27 @@ $0 \le q m < m R$, the quotient lies in $( - m , m )$. $\square$
 
 The class `Montgomery64` keeps $m$ (written $n$ in the code),
 $m^{-1} \bmod 2^{64}$, $R \bmod m$ and $R^2 \bmod m$. Its inverse comes
-from $x_0 = 3 m \oplus 2$, right on 5 bits, by 4 steps of Newton
-$x_{i+1} = x_i ( 2 - m x_i )$, each of which doubles the bits that are
-right ($5 \to 10 \to 20 \to 40 \to 80 \ge 64$), while each of the two
-residues takes one division of 128 by 64 bits. Its members are those of
+from $x_0 = 3 m \oplus 2$ ($\oplus$ the exclusive or of the bits) by 4
+steps of Newton $x_{i+1} = x_i ( 2 - m x_i ) \bmod 2^{64}$, while each of
+the two residues takes one division of 128 by 64 bits.
+
+<span id="lem-17-16"></span>**Lemma 17.16.** *For an odd $m$,
+$m x_0 \equiv 1 \pmod{2^5}$, and $m x_i \equiv 1 \pmod{2^k}$ implies
+$m x_{i+1} \equiv 1 \pmod{2^{2 k}}$; hence $x_4 = m^{-1} \bmod 2^{64}$.*
+
+*Proof.* The value of $x_0 \bmod 2^5$ depends only on $m \bmod 2^5$,
+since the exclusive or with 2 changes only the bit 1, and the 16 odd
+residues modulo $2^5$ satisfy $m x_0 \equiv 1$, as one checks one by one.
+If $m x_i = 1 - e$ with $2^k \mid e$, then $m x_{i+1} = ( 1 - e ) ( 1 + e )
+= 1 - e^2$, and $2^{2 k} \mid e^2$; the reduction modulo $2^{64}$ does not
+change the residue modulo $2^{2 k}$ while $2 k \le 64$, and the last step
+only needs it modulo $2^{64}$. Thus the bits that are right grow as $5 \to
+10 \to 20 \to 40 \to 64$. $\square$ Its members are those of
 the arithmetic in the forms: `to()` gives the form of a number,
 `from()` the number of a form (one REDC), `one()` the form of 1,
 `mul()` the form of a product and `pow()` that of a power, while
 `modulus()` returns $m$; an odd $m$ is required. Throughout the header the
 words are the alias `U64` of `std::uint64_t`.
-
-```cpp
---8<-- "generated/NumberTheory-montgomery.cpp"
-```
 
 The function `powMod()` refines this further. First, the products and the
 squarings are two chains that do not depend on each other (from the
@@ -1509,7 +1495,7 @@ Eratosthenes.
 
 --8<-- "generated/NumberTheory-sieve.pseudo.md"
 
-<span id="lem-17-16"></span>**Lemma 17.16.** *`sieve(n)` returns the
+<span id="lem-17-17"></span>**Lemma 17.17.** *`sieve(n)` returns the
 primes up to $n$ in increasing order, in $O( n \log \log n )$ time.*
 
 *Proof.* A number $p$ left in the set when the loop reaches it has no
@@ -1584,7 +1570,11 @@ We refer to [Hull and Dobell 1962](Z-bibliography.md#ref-hull1962) and to
 the proof, which counts the period modulo each prime power of $m$. In the
 code, `minstd()` gives the multiplicative generator of [Park and
 Miller 1988](Z-bibliography.md#ref-park1988) ($c = 0$, $m = 2^{31} - 1$,
-$a = 16807$, of period $m - 1$, which the theorem does not cover), and
+$a = 16807$, of period $m - 1$ for $X_0 \ne 0$, since $m$ is prime and
+$16807 = 7^5$ is a primitive root modulo $m$, which [Knuth 1998,
+Theorem 3.2.1.2B](Z-bibliography.md#ref-knuth1998v2) shows to be the
+condition of the largest period when $c = 0$, a case that the theorem
+does not cover), and
 `mmix()` that of Knuth for MMIX, with $m = 2^{64}$. In
 `LinearCongruential` the parameters are values at run time, and so are its `min()` and
 `max()`, which a UniformRandomBitGenerator of the standard library must
@@ -1708,11 +1698,7 @@ $[ 0 , s )$ of [Lemire 2019](Z-bibliography.md#ref-lemire2019).
 
 --8<-- "generated/RandomGenerators-uniformBelow.pseudo.md"
 
-```cpp
---8<-- "generated/RandomGenerators-uniformBelow.cpp"
-```
-
-<span id="lem-17-17"></span>**Lemma 17.17 (Lemire).** *If $x$ is uniform
+<span id="lem-17-18"></span>**Lemma 17.18 (Lemire).** *If $x$ is uniform
 on the words, the result of `uniformBelow(g, s)` is uniform in $[ 0 , s )$;
 a word is rejected with probability $t / 2^{64} < s / 2^{64}$, and the
 division that computes $t$ is made only when $l < s$, i.e., with
@@ -1741,7 +1727,7 @@ Yates in the form of [Durstenfeld 1964](Z-bibliography.md#ref-durstenfeld1964)
 
 --8<-- "generated/RandomNumbers-shuffle.pseudo.md"
 
-<span id="lem-17-18"></span>**Lemma 17.18.** *If each $k$ is uniform in
+<span id="lem-17-19"></span>**Lemma 17.19.** *If each $k$ is uniform in
 $[ 0 , j )$, the shuffle gives each of the $n!$ permutations of $n$ items
 with probability $1 / n!$.*
 
@@ -1758,7 +1744,7 @@ index comes twice as often as the other). Instead, `shuffle()` draws each
 index by `detail::uniformIndex()`, which is exact on any generator $g$ of
 the $r + 1$ numbers from `g.min()` to `g.max()`, by three cases: (i) on a
 full word, $r + 1 = 2^{64}$, it is the method of Lemire of
-[Lemma 17.17](17-numeric.md#lem-17-17); (ii) when $j \le r + 1 < 2^{64}$,
+[Lemma 17.18](17-numeric.md#lem-17-18); (ii) when $j \le r + 1 < 2^{64}$,
 it returns $\lfloor x / q \rfloor$ for $q = \lfloor ( r + 1 ) / j
 \rfloor$ and the offset $x$ of the number from `g.min()`, rejecting the
 $x \ge q j$, so that each result has exactly $q$ values of $x$; (iii) when
@@ -1769,7 +1755,7 @@ the pair of digits in base $r + 1$ of a number uniform below $( r + 1 )
 \lceil j / ( r + 1 ) \rceil$, whose restriction to $[ 0 , j )$ is uniform;
 a sum that wraps around $2^{64}$ is detected as smaller than $( r + 1 ) y$
 and rejected too. Each case thus gives the uniform $k$ that
-[Lemma 17.18](17-numeric.md#lem-17-18) assumes, and `reservoirSampling()`
+[Lemma 17.19](17-numeric.md#lem-17-19) assumes, and `reservoirSampling()`
 draws in the same way. Moreover,
 `shuffleFast()` of `RandomGenerators.h` draws exact indices, and
 fewer words, after [Brackett-Rozinsky and Lemire
@@ -1781,7 +1767,7 @@ H_j 2^{64} + l_j$, where $H_j$ is the number of digits $h_1 , \ldots ,
 h_j$ in the mixed radix $b_1 , \ldots , b_j$ (indeed, $H_j 2^{64} + l_j =
 ( H_{j-1} 2^{64} + l_{j-1} ) b_j = ( H_{j-1} b_j + h_j ) 2^{64} + l_j$).
 Thus the tuple is the draw of Lemire below $p$ on the word $x$, and by
-[Lemma 17.17](17-numeric.md#lem-17-17) it is uniform on the $p$ tuples
+[Lemma 17.18](17-numeric.md#lem-17-18) it is uniform on the $p$ tuples
 once $l_k < 2^{64} \bmod p$ is rejected, which happens with probability
 below $p / 2^{64}$. In the header, 6 steps are taken per word while the bounds are below
 $2^{10}$ ($p < 2^{60}$) and 2 below $2^{32}$; a shuffle of $n$ items thus
@@ -1838,7 +1824,7 @@ Vose and the draw.
 
 --8<-- "generated/RandomGenerators-AliasTable-draw.pseudo.md"
 
-<span id="lem-17-19"></span>**Lemma 17.19.** *The construction ends in
+<span id="lem-17-20"></span>**Lemma 17.20.** *The construction ends in
 $O( n )$ time, and in exact arithmetic the draw returns $i$ with
 probability $w_i / \sum_j w_j$.*
 
@@ -1875,7 +1861,7 @@ return them sorted, and the items can then be read by one pass, with at
 most $\min\{ n , \lceil N / B \rceil \}$ transfers of blocks of $B$ items.
 
 **$N$ known.** By swaps, `sampleBySwaps()` makes the first $n$ steps of
-the shuffle of [Lemma 17.18](17-numeric.md#lem-17-18) on an array of the
+the shuffle of [Lemma 17.19](17-numeric.md#lem-17-19) on an array of the
 $N$ positions: $n$ random numbers, but $\Theta( N )$ space. Alternatively,
 `sampleByDictionary()` keeps the positions drawn in a hash table, and
 draws again those already there. With $n \le N / 2$, a draw repeats with
@@ -1947,7 +1933,7 @@ hold the $n$ largest keys. As for the reservoir, Algorithm 3.4.2R of
 optimal in this model ([Vitter 1985](Z-bibliography.md#ref-vitter1985);
 [Algorithm 17.37](17-numeric.md#alg-17-37)).
 
-<span id="lem-17-20"></span>**Lemma 17.20 (the reservoir).** *If the item
+<span id="lem-17-21"></span>**Lemma 17.21 (the reservoir).** *If the item
 $t > n$ of a stream (counted from 1) replaces a uniform item of a
 reservoir of $n$ with probability $n / t$, then after $N \ge n$ items each
 of them is in the reservoir with probability $n / N$.*
