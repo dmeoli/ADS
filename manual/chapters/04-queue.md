@@ -615,22 +615,23 @@ items are kept, the copy is removed in $O( 1 )$ time but found by a scan.
 
 --8<-- "generated/UniqueQueue-enqueue.pseudo.md"
 
-Hence `enqueue()` takes $O( n )$ comparisons in the worst case (about $n /
-2$ on average when a copy is in the queue, at a place drawn uniformly), and
-so does `contains(v)`, while `dequeue()`, `top()` and `size()` take $O( 1 )$
-time. Note that the invariant that no item occurs twice (an $O( n^2 )$ check
-of the contracts) requires the equality of the items to be an equivalence.
-An item unequal to itself, such as a NaN, would be enqueued again at each
-`enqueue()`; the postcondition, which checks that $v$ is in the queue,
-refuses it. With `FORGET_OLD`, the item $v$ is copied before the old copy is
-removed, since $v$ may refer to that copy (as in `q.enqueue( q.top() )`).
-Also, the view of the items from the front to the back is read-only, since a
-change through it could create a duplicate. A dictionary from the items to
-their cells would bring `enqueue()` to $O( 1 )$ expected time (see [chapter
-7](07-dictionary.md#ch-7)), at the price of a hash of the items and of a
-second structure. We kept the specification of [Montresor 2025,
-§4.3](Z-bibliography.md#ref-montresor2025), in which the items need only an
-equality.
+Hence `enqueue()` makes a single scan, i.e., at most $n$ comparisons (about
+$n / 2$ on average when a copy is in the queue, at a place drawn uniformly),
+since with `FORGET_OLD` the item, once the old copy is removed, is the only one
+and goes to the back with no other scan; so does `contains(v)`, while
+`dequeue()`, `top()` and `size()` take $O( 1 )$ time. Note that the invariant
+that no item occurs twice (an $O( n^2 )$ check of the contracts) requires the
+equality of the items to be an equivalence. An item unequal to itself, such as
+a NaN, would be enqueued again at each `enqueue()`; the postcondition, which
+checks that $v$ is in the queue, refuses it. With `FORGET_OLD`, the item $v$ is
+copied before the old copy is removed, since $v$ may refer to that copy (as in
+`q.enqueue( q.top() )`). Also, the view of the items from the front to the back
+is read-only, since a change through it could create a duplicate. A dictionary
+from the items to their cells would bring `enqueue()` to $O( 1 )$ expected time
+(see [chapter 7](07-dictionary.md#ch-7)), at the price of a hash of the items
+and of a second structure. We kept the specification of
+[Montresor 2025, §4.3](Z-bibliography.md#ref-montresor2025), in which the items
+need only an equality.
 
 In `ADS/queue/UniqueQueue.h`, the declarations of `UniqueQueue` that a user
 calls are

@@ -3173,6 +3173,44 @@ ADS_TEST( "stack-bottom-up" )
  CHECK( rising && sum == 9999L * 10000 / 2 && D.top() == 9999 );
  }
 
+namespace {
+
+/// an int whose equalities are counted
+struct CountedEq {
+ int x;
+ inline static long eqs = 0;
+ friend bool operator==( const CountedEq & a , const CountedEq & b ) {
+  ++eqs;
+  return( a.x == b.x );
+  }
+ };
+
+}  // end( namespace )
+
+// the comparisons of UniqueQueue< FORGET_OLD >::enqueue() of the item at
+// the place i of n: the scan up to it, i + 1, with no second scan after the
+// removal, plus those of the contracts: the item written, checked by
+// List::insert(), a scan of the n items by contains() and the test of the
+// back in the postcondition, and the n ( n - 1 ) / 2 pairs of the
+// invariant; the item ends at the back
+ADS_TEST( "unique-queue-one-scan" )
+{
+ for( long n = 1 ; n <= 12 ; ++n )
+  for( long i = 0 ; i < n ; ++i ) {
+   UniqueQueue< CountedEq , Duplicate::FORGET_OLD > Q;
+   for( long k = 0 ; k < n ; ++k ) Q.enqueue( CountedEq{ int( k ) } );
+   CountedEq::eqs = 0;
+   Q.enqueue( CountedEq{ int( i ) } );
+   const long post = ADS_CONTRACTS >= 2 ? 1 + n + 1 : 0 ,
+              audit = ADS_CONTRACTS >= 3 ? n * ( n - 1 ) / 2 : 0;
+   CHECK( CountedEq::eqs == i + 1 + post + audit );
+   CHECK( Q.size() == std::size_t( n ) );
+   Ints out;
+   while( ! Q.empty() ) out.push_back( Q.dequeue().x );
+   CHECK( out.back() == int( i ) );
+   }
+ }
+
 // the positive items of a queue, the queue emptied or kept, and the queue
 // with no duplicates under its two policies; the edge cases: the empty
 // queue, no positive item (0 and the smallest int), an out queue not

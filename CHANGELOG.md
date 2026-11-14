@@ -2719,6 +2719,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- UniqueQueue< T , FORGET_OLD >::enqueue() of an item already in the queue
+  removed the old copy and called itself, which scanned the list a second
+  time, up to 2 n - 1 comparisons; the item, now the only copy, goes to the
+  back with no second scan, at most n comparisons, as chapter 4 of the
+  manual says; the test beyond unique-queue-one-scan counts them
+
 - fibonacciSearch() did not count in *cmp the test of the last item left
   after its loop, so that the search of a vector of one item reported 0
   comparisons; the test is now counted, and the bound of about 1.44 log2 n

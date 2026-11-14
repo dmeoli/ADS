@@ -428,6 +428,7 @@ beyond  postfix             espressioni postfisse e conversione
 beyond  lifo-fifo-traces    tracce di una pila e di una coda
 beyond  stack-bottom-up     visita di una pila dal fondo
 beyond  queue-algorithms    positivi di una coda, coda senza doppi
+beyond  unique-queue-one-scan coda senza doppi, una sola scansione
 beyond  sieve               crivello di Eratostene su un insieme
 beyond  sorted-array-dictionary dizionario su vettore ordinato
 

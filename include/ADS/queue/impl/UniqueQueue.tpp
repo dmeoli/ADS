@@ -26,21 +26,19 @@ template< std::equality_comparable T , Duplicate D >
 void UniqueQueue< T , D >::enqueue( const T & v )
 {
  const auto p = find( v );
- if( ! f_L.finished( p ) ) {
-  if constexpr( D == Duplicate::IGNORE_NEW ) {
-   ADS_INVARIANT( unique() );
-   return;
-   }
+ if( f_L.finished( p ) ) {                  // a new item
+  f_L.insert( f_L.next( f_L.tail() ) , v );
+  ++f_size;
+  ADS_POST( contains( v ) &&
+            ( D == Duplicate::IGNORE_NEW || f_L.read( f_L.tail() ) == v ) );
+  }
+ else if constexpr( D == Duplicate::FORGET_OLD ) {
   const T w = v;                            // v may be the copy that
   f_L.remove( p );                          // remove() destroys, as in
-  --f_size;                                 // enqueue( top() )
-  enqueue( w );
-  return;
+  f_L.insert( f_L.next( f_L.tail() ) , w ); // enqueue( top() ); w the only
+  ADS_POST( contains( w ) &&                // copy left: no second scan
+            ( f_L.read( f_L.tail() ) == w ) );
   }
- f_L.insert( f_L.next( f_L.tail() ) , v );
- ++f_size;
- ADS_POST( contains( v ) &&
-           ( D == Duplicate::IGNORE_NEW || f_L.read( f_L.tail() ) == v ) );
  ADS_INVARIANT( unique() );
  }
 
