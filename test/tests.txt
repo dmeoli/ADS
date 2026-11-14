@@ -1849,3 +1849,15 @@ ods_trees  ods-ex7.6.hashed-treap              priorities by hashing
 ods_trees  ods-ex7.9.finger-treap              finger search in a treap
 ods_trees  ods-ex7.11.treap-list               TreapList
 ods_trees  ods-ex7.14.randomized-bst           Martinez-Roura trees
+ods_trees  ods8.1.scapegoat                    section 8.1, ScapegoatTree
+ods_trees  ods-ex8.5.scapegoat-variants        ex. 8.5 to 8.7, same rebuilds
+ods_trees  ods-ex8.3.rebuild-nlogn             rebuilds of n log n nodes
+ods_trees  ods-ex8.4.scapegoat-base            height log_b q, any b
+ods_trees  ods-ex8.8.weight-rebuild            WeightBalancedTree by rebuilds
+ods_trees  ods-ex8.9.countdown                 CountdownTree
+ods_trees  ods-ex8.10.dynamite                 DynamiteTree
+ods_trees  ods-ex8.11.order-maintenance        Sequence, order maintenance
+ods_trees  ods9.2.left-leaning-red-black       section 9.2, RedBlackTree
+ods_trees  ods-ex9.1.two-four-tree             ex. 9.1 and 9.8, 2-4 view
+ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join
+ods_trees  ods-ex9.13.avl                      AVLTree

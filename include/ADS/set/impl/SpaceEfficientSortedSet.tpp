@@ -63,20 +63,26 @@ template< std::totally_ordered T >
  requires std::semiregular< T >
 bool SpaceEfficientSortedSet< T >::contains( const T & x ) const
 {
- const Block * B = blockOf( x );
- return( B && ( at( B , place( B , x ) ) == x ) );
+ return( find( x ) != nullptr );
  }
 
 template< std::totally_ordered T >
  requires std::semiregular< T >
-std::optional< T > SpaceEfficientSortedSet< T >::lowerBound(
- const T & x ) const
+const T * SpaceEfficientSortedSet< T >::find( const T & x ) const
+{
+ const T * y = lowerBound( x );
+ return( y && !( x < *y ) ? y : nullptr );
+ }
+
+template< std::totally_ordered T >
+ requires std::semiregular< T >
+const T * SpaceEfficientSortedSet< T >::lowerBound( const T & x ) const
 {
 //! [find]
  const Block * B = blockOf( x );
  if( ! B )
-  return( std::nullopt );
- return( at( B , place( B , x ) ) );
+  return( nullptr );
+ return( &at( B , place( B , x ) ) );
 //! [find]
  }
 
@@ -128,8 +134,9 @@ void SpaceEfficientSortedSet< T >::shiftBack( Block * B , Block * C )
 
 template< std::totally_ordered T >
  requires std::semiregular< T >
-void SpaceEfficientSortedSet< T >::insert( const T & x )
+bool SpaceEfficientSortedSet< T >::insert( const T & x )
 {
+ bool fresh = true;
 //! [add]
  for( ; ; ) {
   Block * B = blockOf( x );
@@ -143,8 +150,10 @@ void SpaceEfficientSortedSet< T >::insert( const T & x )
    break;
    }
   std::size_t i = place( B , x );
-  if( ( i < B->s ) && ( at( B , i ) == x ) )
+  if( ( i < B->s ) && !( x < at( B , i ) ) ) {
+   fresh = false;
    break;
+   }
   if( B->s <= f_b ) {                       // room: x in its place
    if( i == B->s ) {                        // a new largest item of the
     f_index.remove( Key{ this , B , nullptr } );   // last block: indexed
@@ -191,22 +200,25 @@ void SpaceEfficientSortedSet< T >::insert( const T & x )
 //! [add]
  ADS_POST( contains( x ) );
  ADS_INVARIANT( valid() );
+ return( fresh );
  }
 
 template< std::totally_ordered T >
  requires std::semiregular< T >
-void SpaceEfficientSortedSet< T >::remove( const T & x )
+bool SpaceEfficientSortedSet< T >::remove( const T & x )
 {
 //! [remove]
  Block * B = blockOf( x );
+ bool gone = false;
  if( B ) {
   const std::size_t i = place( B , x );
-  if( at( B , i ) == x ) {
+  if( !( x < at( B , i ) ) ) {
+   gone = true;
    if( B->s == 1 ) {                        // the last block, now empty
     freeBlock( B );
     --f_size;
     ADS_INVARIANT( valid() );
-    return;
+    return( true );
     }
    if( i == B->s - 1 )                      // the largest item goes: the
     f_index.remove( Key{ this , B , nullptr } );   // block indexed again
@@ -255,6 +267,7 @@ void SpaceEfficientSortedSet< T >::remove( const T & x )
 //! [remove]
  ADS_POST( ! contains( x ) );
  ADS_INVARIANT( valid() );
+ return( gone );
  }
 
 template< std::totally_ordered T >

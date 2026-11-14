@@ -3,36 +3,35 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The space-efficient sorted set of Morin (his `SESSet`, exercise 4.13),
- * beyond the book: a SET [see `ADT.h`] of ordered items, with the `find(x)`
- * of an SSet (`lowerBound()`), that stores \f$ n \f$ items in the space of
- * \f$ n \f$ items plus \f$ O( n / b + b ) \f$ words, \f$ b \f$ a parameter.
+ * beyond the book: a SET [see `ADT.h`] of ordered items and an SSet of Morin,
+ * with `find()` and `lowerBound()`, that stores \f$ n \f$ items in the space
+ * of \f$ n \f$ items plus \f$ O( n / b + b ) \f$ words, \f$ b \f$ a parameter.
  *
- * The items are kept in order in a list of blocks, as in the `SEList` of
- * Morin (section 3.3): each block is a circular buffer of \f$ b + 1 \f$
- * places, and every block but the last holds from \f$ b - 1 \f$ to
- * \f$ b + 1 \f$ items, so that at most 2 places per block and the
- * \f$ b + 1 \f$ of the last one are empty. The blocks are indexed by a
- * `SkipList` [see `SkipList.h`] ordered by their largest items: since the
- * blocks partition the sorted items into intervals, their order never
- * changes when items move between neighbors, so that the skip list sees
- * only the creation and the removal of a block, and a search compares the
- * item sought with the largest item of a block. A search finds the first
- * block whose largest item is not smaller than \f$ x \f$ and then \f$ x \f$
- * in it by binary search, \f$ O( \log n ) \f$ expected time.
+ * The items are kept in order in a list of blocks, as in the `SEList` of Morin
+ * (section 3.3): each block is a circular buffer of \f$ b + 1 \f$ places, and
+ * every block but the last holds from \f$ b - 1 \f$ to \f$ b + 1 \f$ items, so
+ * that at most 2 places per block and the \f$ b + 1 \f$ of the last one are
+ * empty. The blocks are indexed by a `SkipList` [see `SkipList.h`] ordered by
+ * their largest items: since the blocks partition the sorted items into
+ * intervals, their order never changes when items move between neighbors, so
+ * that the skip list sees only the creation and the removal of a block, and a
+ * search compares the item sought with the largest item of a block. A search
+ * finds the first block whose largest item is not smaller than \f$ x \f$ and
+ * then \f$ x \f$ in it by binary search, \f$ O( \log n ) \f$ expected time.
  *
- * An insertion into a full block looks for a block that is not full among
- * the next \f$ b \f$ ones and moves one item from the end of each block to
- * the front of the next one up to it, \f$ O( 1 ) \f$ per block in a
- * circular buffer; if the \f$ b \f$ blocks are full a new block follows them
- * and the \f$ b ( b + 1 ) \f$ items are spread over the \f$ b + 1 \f$ blocks,
+ * An insertion into a full block looks for a block that is not full among the
+ * next \f$ b \f$ ones and moves one item from the end of each block to the
+ * front of the next one up to it, \f$ O( 1 ) \f$ per block in a circular
+ * buffer; if the \f$ b \f$ blocks are full a new block follows them and the
+ * \f$ b ( b + 1 ) \f$ items are spread over the \f$ b + 1 \f$ blocks,
  * \f$ b \f$ each. A removal that leaves a block with \f$ b - 2 \f$ items
  * borrows one item from the next ones in the same way, or, if the next
- * \f$ b - 1 \f$ blocks hold \f$ b - 1 \f$ items each, gathers the items of
- * the \f$ b \f$ blocks into \f$ b - 1 \f$ of them and frees the last. A
- * spread or a gather costs \f$ O( b^2 ) \f$ and leaves the \f$ b \f$ blocks
- * \f$ \Omega( b ) \f$ operations away from the next one, hence an insertion
- * or a removal costs \f$ O( \log n + b ) \f$ amortized time, the argument
- * of Lemma 3.1 of Morin.
+ * \f$ b - 1 \f$ blocks hold \f$ b - 1 \f$ items each, gathers the items of the
+ * \f$ b \f$ blocks into \f$ b - 1 \f$ of them and frees the last. A spread or
+ * a gather costs \f$ O( b^2 ) \f$ and leaves the \f$ b \f$ blocks
+ * \f$ \Omega( b ) \f$ operations away from the next one, hence an insertion or
+ * a removal costs \f$ O( \log n + b ) \f$ amortized time, the argument of
+ * Lemma 3.1 of Morin.
  *
  * Morin gives no code for it; what the benchmarks are to check is the
  * space, \f$ n + O( n / b + b ) \f$ items against the \f$ 3 n \f$ words of
@@ -131,8 +130,13 @@ class SpaceEfficientSortedSet {
  /// true if \f$ x \f$ is an item, by `lowerBound()`
  [[nodiscard]] bool contains( const T & x ) const;
 
- /// the smallest item not smaller than \f$ x \f$, or nothing (the `find(x)`
- /// of an SSet), in \f$ O( \log n ) \f$ expected time
+ /// the address of the item equal to \f$ x \f$, nil if there is none (the
+ /// `find(x)` of a USet), valid until the next change, by `lowerBound()`
+ [[nodiscard]] const T * find( const T & x ) const;
+
+ /// the address of the smallest item not smaller than \f$ x \f$, nil if
+ /// there is none (the `find(x)` of an SSet), valid until the next change,
+ /// in \f$ O( \log n ) \f$ expected time
  ///
  /// In pseudocode (exercise 4.13 of Morin, beyond the book), \f$ S \f$ the
  /// skip list of the blocks by their largest items:
@@ -146,10 +150,10 @@ class SpaceEfficientSortedSet {
  ///     \text{smaller than } x \text{, by binary search}
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::optional< T > lowerBound( const T & x ) const;
+ [[nodiscard]] const T * lowerBound( const T & x ) const;
 
  /// \f$ x \f$ added, if it is not there, in \f$ O( \log n + b ) \f$
- /// amortized expected time
+ /// amortized expected time; true if it was not there
  ///
  /// In pseudocode (exercise 4.13 of Morin, beyond the book), the blocks
  /// \f$ B_0 , B_1 , \ldots \f$ from the block of \f$ x \f$ on:
@@ -176,7 +180,7 @@ class SpaceEfficientSortedSet {
  /// \end{array}}
  /// \f]
  /// \post \f$ x \f$ is there
- void insert( const T & x );
+ bool insert( const T & x );
 
  /// \f$ x \f$ removed, if it is there, in \f$ O( \log n + b ) \f$ amortized
  /// expected time: a block left with \f$ b - 2 \f$ items takes the first
@@ -184,8 +188,8 @@ class SpaceEfficientSortedSet {
  /// \f$ b - 1 \f$ items, or the last one, within \f$ b \f$ blocks, and if
  /// there is none the items of the \f$ b \f$ blocks are gathered into the
  /// first \f$ b - 1 \f$, the last one freed (the reverse of `insert()`)
- /// \post \f$ x \f$ is not there
- void remove( const T & x );
+ /// \post \f$ x \f$ is not there, true if it was
+ bool remove( const T & x );
 
  /// `f( x )` on the items in increasing order
  template< class F >

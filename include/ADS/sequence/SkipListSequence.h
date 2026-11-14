@@ -167,6 +167,30 @@ class SkipListSequence {
  /// \pre \f$ i \le n \f$
  void add( std::size_t i , const T & v );
 
+ /// the item of index \f$ i \f$, as `get( i )` (the name of `IndexedList`)
+ /// \pre \f$ i < n \f$
+ [[nodiscard]] const T & operator[]( std::size_t i ) const {
+  return( get( i ) );
+  }
+
+ /// the item of index \f$ i \f$, to be read or written, by the search of
+ /// `get()`
+ /// \pre \f$ i < n \f$
+ [[nodiscard]] T & operator[]( std::size_t i ) {
+  ADS_PRE( i < size() );
+  return( nodeAt( i )->item );
+  }
+
+ /// \f$ v \f$ inserted at \f$ i \f$, `add( i , v )` (the name of
+ /// `IndexedList`)
+ /// \pre \f$ i \le n \f$
+ void insert( std::size_t i , const T & v ) { add( i , v ); }
+
+ /// the item of index \f$ i \f$ removed, `remove( i )` (the name of
+ /// `IndexedList`)
+ /// \pre \f$ i < n \f$
+ void erase( std::size_t i ) { ( void ) remove( i ); }
+
  /// \f$ v \f$ appended, `add( size() , v )`
  void push_back( const T & v ) { add( f_size , v ); }
 

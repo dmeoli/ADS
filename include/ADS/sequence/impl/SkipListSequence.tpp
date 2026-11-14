@@ -91,7 +91,6 @@ auto SkipListSequence< T >::nodeAt( std::size_t i ) const -> Node *
 {
  // the indices are shifted by one, the head at 0 and nil at n + 1, so
  // that they stay unsigned
-//! [get]
  Node * x = nullptr;
  std::size_t j = 0;
  for( int l = f_levels - 1 ; l >= 0 ; --l )
@@ -100,7 +99,6 @@ auto SkipListSequence< T >::nodeAt( std::size_t i ) const -> Node *
    j += t[ l ].w;
    x = t[ l ].next;
    }
-//! [get]
  return( x );
  }
 
@@ -122,7 +120,6 @@ template< class T >
 void SkipListSequence< T >::add( std::size_t i , const T & v )
 {
  ADS_PRE( i <= f_size );
-//! [add]
  const int L = std::min( kMax , 1 + std::countr_one( f_g() ) );
  Node * y = make( v , L );
  Link * ty = tower( y );
@@ -147,7 +144,6 @@ void SkipListSequence< T >::add( std::size_t i , const T & v )
  for( int l = f_levels ; l < kMax ; ++l )   // the empty levels too
   ++f_head[ l ].w;
  ++f_size;
-//! [add]
  ADS_INVARIANT( valid() );
  }
 
@@ -155,7 +151,6 @@ template< class T >
 T SkipListSequence< T >::remove( std::size_t i )
 {
  ADS_PRE( i < f_size );
-//! [remove]
  Node * x = nullptr , * y = nullptr;
  std::size_t j = 0;
  for( int l = f_levels - 1 ; l >= 0 ; --l ) {
@@ -174,7 +169,6 @@ T SkipListSequence< T >::remove( std::size_t i )
   }
  for( int l = f_levels ; l < kMax ; ++l )
   --f_head[ l ].w;
-//! [remove]
  T v = std::move( y->item );
  dispose( y );
  --f_size;
@@ -187,7 +181,6 @@ template< class T >
 auto SkipListSequence< T >::truncate( std::size_t i ) -> SkipListSequence
 {
  ADS_PRE( i <= f_size );
-//! [truncate]
  SkipListSequence r( f_g() );
  Node * x = nullptr;
  std::size_t j = 0;
@@ -201,7 +194,6 @@ auto SkipListSequence< T >::truncate( std::size_t i ) -> SkipListSequence
   r.f_head[ l ] = Link{ t[ l ].next , j + t[ l ].w - i };
   t[ l ] = Link{ nullptr , i + 1 - j };
   }
-//! [truncate]
  r.f_size = f_size - i;
  for( int l = f_levels ; l < kMax ; ++l ) {
   r.f_head[ l ].w = r.f_size + 1;
@@ -221,7 +213,6 @@ void SkipListSequence< T >::absorb( SkipListSequence & s )
 {
  if( ( &s == this ) || s.empty() )
   return;
-//! [absorb]
  const int L = std::max( f_levels , s.f_levels );
  Node * x = nullptr;
  std::size_t j = 0;
@@ -234,7 +225,6 @@ void SkipListSequence< T >::absorb( SkipListSequence & s )
    }
   t[ l ] = Link{ s.f_head[ l ].next , f_size + s.f_head[ l ].w - j };
   }
-//! [absorb]
  f_size += s.f_size;
  for( int l = L ; l < kMax ; ++l )
   f_head[ l ].w = f_size + 1;

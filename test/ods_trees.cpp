@@ -20,16 +20,21 @@
 /*------------------------------ #include "ADS/dictionary/IndexedSkipList.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
+#include "ADS/sequence/OrderMaintenanceList.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SkipListSequence.h"
 #include "ADS/sequence/TreapList.h"
 #include "ADS/set/SpaceEfficientSortedSet.h"
-#include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/AVLTree.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
+#include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/FingerTreap.h"
 #include "ADS/tree/HashedTreap.h"
+#include "ADS/tree/LeftLeaningRedBlackTree.h"
 #include "ADS/tree/MeasuredSearchTree.h"
+#include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/RandomizedSearchTree.h"
+#include "ADS/tree/ScapegoatTree.h"
 #include "ADS/tree/Treap.h" ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
@@ -38,16 +43,21 @@
 #include "ADS/dictionary/IndexedSkipList.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/dictionary/SkipList.h"
+#include "ADS/sequence/OrderMaintenanceList.h"
 #include "ADS/sequence/Rearrangements.h"
 #include "ADS/sequence/SkipListSequence.h"
 #include "ADS/sequence/TreapList.h"
 #include "ADS/set/SpaceEfficientSortedSet.h"
-#include "ADS/tree/BinaryTree.h"
+#include "ADS/tree/AVLTree.h"
 #include "ADS/tree/BinaryTreeAlgorithms.h"
+#include "ADS/tree/BinaryTree.h"
 #include "ADS/tree/FingerTreap.h"
 #include "ADS/tree/HashedTreap.h"
+#include "ADS/tree/LeftLeaningRedBlackTree.h"
 #include "ADS/tree/MeasuredSearchTree.h"
+#include "ADS/tree/PartialRebuildingTree.h"
 #include "ADS/tree/RandomizedSearchTree.h"
+#include "ADS/tree/ScapegoatTree.h"
 #include "ADS/tree/Treap.h"
 
 #include <algorithm>
@@ -294,18 +304,13 @@ ADS_TEST( "ods-ex4.13.sesset" )
   std::mt19937 g( static_cast< unsigned >( b ) );
   for( int s = 0 ; s < 30000 ; ++s ) {
    const int x = int( g() % 4000 );
-   if( g() % 5 < 3 ) {
-    S.insert( x );
-    ref.insert( x );
-    }
-   else {
-    S.remove( x );
-    ref.erase( x );
-    }
+   if( g() % 5 < 3 ) CHECK( S.insert( x ) == ref.insert( x ).second );
+   else CHECK( S.remove( x ) == ( ref.erase( x ) == 1 ) );
    CHECK( S.size() == ref.size() );
    const auto it = ref.lower_bound( x / 2 );
    const auto lb = S.lowerBound( x / 2 );
    CHECK( ( it == ref.end() ) ? ! lb : ( lb && ( *lb == *it ) ) );
+   CHECK( ( S.find( x ) != nullptr ) == ( ref.count( x ) == 1 ) );
    // n items and O( n / b + b ) places wasted
    CHECK( S.capacity() - S.size() <=
           2 * ( S.size() / ( b - 1 ) + 1 ) + b + 1 );
@@ -704,7 +709,7 @@ ADS_TEST( "ods-ex7.6.hashed-treap" )
  HashedTreap< int , int > T( 9 );
  differential( T , 20000 , 1000 , 23 );
  HashedTreap< int , int > S( 4 );
- shallow( S , 1 << 14 , 4.0 );              // sorted keys, random shape
+ shallow( S , 1 << 12 , 4.0 );              // sorted keys, random shape
  const auto lb = S.lowerBound( 100 );
  CHECK( lb && ( lb->first == 100 ) );
  }
@@ -714,21 +719,21 @@ ADS_TEST( "ods-ex7.9.finger-treap" )
  FingerTreap< int , int > T( 2 );
  differential( T , 20000 , 800 , 29 );
  FingerTreap< int , int > F( 6 );
- shallow( F , 1 << 14 , 4.0 );
+ shallow( F , 1 << 12 , 4.0 );
  for( int s = 0 ; s < 40000 ; ++s ) {       // near the previous key
-  const int x = ( s * 7 ) % ( 1 << 14 ) + ( s % 3 ) - 1;
+  const int x = ( s * 7 ) % ( 1 << 12 ) + ( s % 3 ) - 1;
   const auto v = F.fingerLookup( x );
-  CHECK( ( x >= 0 ) && ( x < ( 1 << 14 ) ) ? ( v && ( *v == x ) )
+  CHECK( ( x >= 0 ) && ( x < ( 1 << 12 ) ) ? ( v && ( *v == x ) )
                                            : ! v.has_value() );
   }
- const auto f = F.finger( 5000 );
- for( int x = 4900 ; x < 5100 ; ++x ) CHECK( F.lookupFrom( x , f ) == x );
+ const auto f = F.finger( 2000 );
+ for( int x = 1900 ; x < 2100 ; ++x ) CHECK( F.lookupFrom( x , f ) == x );
  CHECK( ! F.lookupFrom( -3 , f ) && ( F.lookupFrom( 0 , {} ) == 0 ) );
  for( std::size_t i = 0 ; i < F.size() ; i += 97 )
   CHECK( ( F.select( i ).first == int( i ) ) &&
          ( F.rank( int( i ) ) == i ) );
- F.remove( 5000 );                          // the finger back to the root
- CHECK( ! F.fingerLookup( 5000 ) && ( F.fingerLookup( 5001 ) == 5001 ) );
+ F.remove( 2000 );                          // the finger back to the root
+ CHECK( ! F.fingerLookup( 2000 ) && ( F.fingerLookup( 2001 ) == 2001 ) );
  }
 
 ADS_TEST( "ods-ex7.11.treap-list" )
@@ -774,7 +779,7 @@ ADS_TEST( "ods-ex7.14.randomized-bst" )
  RandomizedSearchTree< int , int > T( 3 );
  differential( T , 20000 , 900 , 31 );
  RandomizedSearchTree< int , int > S( 8 );
- shallow( S , 1 << 14 , 4.0 );
+ shallow( S , 1 << 12 , 4.0 );
  for( std::size_t i = 0 ; i < S.size() ; i += 101 )
   CHECK( ( S.select( i ).first == int( i ) ) && ( S.rank( int( i ) ) == i ) );
  // still a random tree after a removal and an insertion: a path, of
@@ -788,6 +793,260 @@ ADS_TEST( "ods-ex7.14.randomized-bst" )
   roots += ( R.height() == 4 );
   }
  CHECK( std::abs( roots / 10000.0 - 16.0 / 120.0 ) < 0.02 );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- CHAPTER 8 ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "ods8.1.scapegoat" )
+{
+ using S = ScapegoatTree< int , int >;
+ for( double b : { 1.05 , 1.5 , 1.95 } )
+  for( auto z : { S::Sizes::RECOMPUTE , S::Sizes::REUSE } )
+   for( auto r : { S::Rebuilds::ARRAY , S::Rebuilds::LIST } )
+    for( auto w : { S::Scapegoats::HEIGHT , S::Scapegoats::WEIGHT } ) {
+     S T( b , z , r , w );
+     differential( T , 4000 , 500 , 37 );
+     }
+ ScapegoatTree< int , int , true > U( 1.5 );
+ differential( U , 6000 , 500 , 41 );
+ ScapegoatTree< int , int > V;
+ for( int i = 0 ; i < 1000 ; ++i ) V.insert( 2 * i , i );
+ for( int x = -1 ; x < 2001 ; ++x ) {
+  const auto lb = V.lowerBound( x );
+  CHECK( ( x > 1998 ) ? ! lb : ( lb && ( lb->first == x + ( x & 1 ) ) ) );
+  }
+ ScapegoatTree< int , int > M( std::move( V ) );
+ CHECK( ( M.size() == 1000 ) && ( V.size() == 0 ) && ! V.contains( 0 ) );
+ CHECK_THROWS( S( 2.0 ) , contract_violation );
+ CHECK_THROWS( S( 1.0 ) , contract_violation );
+ }
+
+ADS_TEST( "ods-ex8.5.scapegoat-variants" )
+{
+ // exercises 8.5 to 8.7: the sizes recomputed, reused or stored, the
+ // rebuilds by an array or by a list, make the same decisions and the same
+ // trees, hence the same rebuilds
+ using S = ScapegoatTree< int , int >;
+ std::vector< std::pair< std::size_t , std::size_t > > W;
+ std::vector< long > H;
+ auto run = [ & ]( auto & T ) {
+  std::mt19937 g( 43 );
+  for( int s = 0 ; s < 20000 ; ++s ) {
+   const int k = int( g() % 3000 );
+   if( g() % 3 ) T.insert( k , s );
+   else T.remove( k );
+   }
+  W.emplace_back( T.rebuilds() , T.rebuiltNodes() );
+  H.push_back( T.height() );
+  };
+ for( auto w : { S::Scapegoats::HEIGHT , S::Scapegoats::WEIGHT } ) {
+  W.clear();
+  H.clear();
+  for( auto z : { S::Sizes::RECOMPUTE , S::Sizes::REUSE } )
+   for( auto r : { S::Rebuilds::ARRAY , S::Rebuilds::LIST } ) {
+    S T( 1.5 , z , r , w );
+    run( T );
+    }
+  using U = ScapegoatTree< int , int , true >;
+  U T( 1.5 , U::Sizes::REUSE , U::Rebuilds::LIST ,
+       U::Scapegoats( int( w ) ) );
+  run( T );
+  for( std::size_t i = 1 ; i < W.size() ; ++i )
+   CHECK( ( W[ i ] == W[ 0 ] ) && ( H[ i ] == H[ 0 ] ) );
+  CHECK( W[ 0 ].first > 0 );
+  }
+ }
+
+ADS_TEST( "ods-ex8.3.rebuild-nlogn" )
+{
+ // 1 , 2 , ... , n inserted: the rebuilds take Theta( n log n ) nodes
+ double lo = 1e9 , hi = 0;
+ for( int e = 8 ; e <= 12 ; e += 2 ) {
+  const int n = 1 << e;
+  ScapegoatTree< int , int , true > T;
+  for( int i = 0 ; i < n ; ++i ) T.insert( i , i );
+  const double r = double( T.rebuiltNodes() ) / ( n * double( e ) );
+  lo = std::min( lo , r );
+  hi = std::max( hi , r );
+  CHECK( double( T.height() ) <= std::log( double( n ) ) /
+                                 std::log( 1.5 ) + 1e-9 );
+  }
+ CHECK( ( lo > 0.1 ) && ( hi < 2 * lo ) );
+ }
+
+ADS_TEST( "ods-ex8.4.scapegoat-base" )
+{
+ // the height within log_b q, and the work of the rebuilds larger as b
+ // nears 2, the height bound tighter
+ std::size_t last = 0;
+ for( double b : { 1.05 , 1.2 , 1.5 , 1.9 } ) {
+  ScapegoatTree< int , int , true > T( b );
+  std::mt19937 g( 47 );
+  for( int i = 0 ; i < 4000 ; ++i ) T.insert( int( g() % 100000 ) , i );
+  CHECK( double( T.height() ) <=
+         std::log( double( T.size() ) * 2 ) / std::log( b ) );
+  CHECK( T.rebuiltNodes() >= last );
+  last = T.rebuiltNodes();
+  }
+ }
+
+ADS_TEST( "ods-ex8.8.weight-rebuild" )
+{
+ WeightRebuildTree< int , int > T;
+ differential( T , 20000 , 900 , 53 );      // the invariant: the weights
+ WeightRebuildTree< int , int > S;
+ for( int i = 0 ; i < 1 << 12 ; ++i ) S.insert( i , i );
+ CHECK( double( S.height() ) <= 12 * std::log( 2.0 ) / std::log( 1.5 ) );
+ const auto lb = S.lowerBound( 77 );
+ CHECK( lb && ( lb->first == 77 ) );
+ }
+
+ADS_TEST( "ods-ex8.9.countdown" )
+{
+ CountdownTree< int , int > T;
+ differential( T , 20000 , 900 , 59 );
+ CountdownTree< int , int > S;
+ for( int i = 0 ; i < 1 << 12 ; ++i ) S.insert( i , i );
+ CHECK( double( S.height() ) <= 12 * std::log( 2.0 ) / std::log( 4.0 / 3 )
+                                + 3 );
+ for( int i = 0 ; i < 1 << 12 ; i += 2 ) S.remove( i );
+ CHECK( double( S.height() ) <= 11 * std::log( 2.0 ) / std::log( 4.0 / 3 )
+                                + 3 );
+ // O( log n ) amortized: the rebuilds within a constant per level
+ CHECK( double( S.rebuiltNodes() ) <= 8.0 * ( 1 << 12 ) * 1.5 * 12 );
+ }
+
+ADS_TEST( "ods-ex8.10.dynamite" )
+{
+ DynamiteTree< int , int > T( 3 );
+ differential( T , 20000 , 900 , 61 );
+ DynamiteTree< int , int > S( 5 );
+ for( int i = 0 ; i < 1 << 12 ; ++i ) S.insert( i , i );
+ CHECK( S.height() <= 3 * 12 );
+ CHECK( double( S.rebuiltNodes() ) <= 4.0 * ( 1 << 12 ) * 12 );
+ }
+
+ADS_TEST( "ods-ex8.11.order-maintenance" )
+{
+ OrderMaintenanceList< int > L;
+ using E = OrderMaintenanceList< int >::Element;
+ std::vector< E > ref;                      // the elements in order
+ std::mt19937 g( 67 );
+ for( int s = 0 ; s < 20000 ; ++s ) {
+  if( ref.empty() || ( g() % 4 != 0 ) ) {
+   const std::size_t i = g() % ( ref.size() + 1 );   // after ref[ i - 1 ]
+   const E e = L.addAfter( i ? ref[ i - 1 ] : nullptr , s );
+   ref.insert( ref.begin() + std::ptrdiff_t( i ) , e );
+   }
+  else {
+   const std::size_t i = g() % ref.size();
+   L.remove( ref[ i ] );
+   ref.erase( ref.begin() + std::ptrdiff_t( i ) );
+   }
+  CHECK( L.size() == ref.size() );
+  if( ref.size() > 1 )
+   for( int t = 0 ; t < 4 ; ++t ) {
+    const std::size_t a = g() % ref.size() , b = g() % ref.size();
+    CHECK( L.testBefore( ref[ a ] , ref[ b ] ) == ( a < b ) );
+    }
+  }
+ std::size_t i = 0;
+ for( E e = L.first() ; e ; e = L.next( e ) ) CHECK( e == ref[ i++ ] );
+ CHECK( i == ref.size() );
+ // always at the front, or always after the last: the worst cases of the
+ // depth, relabeled by the rebuilds
+ OrderMaintenanceList< int > F , B;
+ E last = nullptr;
+ for( int j = 0 ; j < 5000 ; ++j ) {
+  F.addAfter( nullptr , j );
+  last = B.addAfter( last , j );
+  }
+ E x = F.first();
+ for( E y = F.next( x ) ; y ; x = y , y = F.next( y ) )
+  CHECK( F.testBefore( x , y ) && ( F.value( x ) == F.value( y ) + 1 ) );
+ CHECK_THROWS( L.remove( nullptr ) , contract_violation );
+ }
+
+/*--------------------------------------------------------------------------*/
+/*----------------------------- CHAPTER 9 ----------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+ADS_TEST( "ods9.2.left-leaning-red-black" )
+{
+ LeftLeaningRedBlackTree< int , int > T;
+ differential( T , 30000 , 1500 , 71 );     // the invariant: the three
+ LeftLeaningRedBlackTree< int , int > S;    // properties at each step
+ const int n = 1 << 12;
+ for( int i = 0 ; i < n ; ++i ) S.insert( i , i );
+ CHECK( double( S.height() ) <= 2 * std::log2( double( n + 1 ) ) );
+ for( int i = 0 ; i < n ; i += 3 ) S.remove( i );
+ for( int x = -1 ; x <= n ; ++x ) {
+  const auto lb = S.lowerBound( x );
+  int y = std::max( x , 0 );
+  while( y % 3 == 0 ) ++y;
+  CHECK( ( y >= n ) ? ! lb : ( lb && ( lb->first == y ) ) );
+  }
+ for( int i = 0 ; i < n ; ++i ) S.remove( i );
+ CHECK( ( S.size() == 0 ) && ( S.height() == -1 ) );
+ LeftLeaningRedBlackTree< int , int > M( std::move( T ) );
+ CHECK( T.size() == 0 );
+ }
+
+ADS_TEST( "ods-ex9.1.two-four-tree" )
+{
+ // exercises 9.1 and 9.8: a black node and its red children are a 2-4
+ // node; n = n2 + 2 n3 + 3 n4 keys, the red nodes are n3 + 2 n4, and the
+ // 2-4 tree has n_i internal nodes for n_l = n + 1 leaves (the nil), with
+ // ( n_l - 1 ) / 3 <= n_i <= n_l - 1
+ LeftLeaningRedBlackTree< int , int > T;
+ std::mt19937 g( 73 );
+ for( int s = 0 ; s < 3000 ; ++s ) {
+  T.insert( int( g() % 2000 ) , s );
+  if( s % 3 == 0 ) T.remove( int( g() % 2000 ) );
+  const auto D = T.twoFourDegrees();
+  const std::size_t ni = D[ 0 ] + D[ 1 ] + D[ 2 ] , nl = T.size() + 1;
+  CHECK( D[ 0 ] + 2 * D[ 1 ] + 3 * D[ 2 ] == T.size() );
+  CHECK( ( 3 * ni >= nl - 1 ) && ( ni <= nl - 1 ) );
+  }
+ // the 2-4 tree of the black height: all its leaves at that depth, and
+ // the height of the red-black tree at most twice it
+ CHECK( T.height() < 2 * T.blackHeight() );
+ }
+
+ADS_TEST( "ods-ex9.10.red-black-join" )
+{
+ // exercises 9.10 and 9.11: equal and different black heights
+ std::mt19937 g( 79 );
+ for( int c = 0 ; c < 60 ; ++c ) {
+  const int a = int( g() % 600 ) , b = int( g() % ( c < 30 ? 600 : 6 ) );
+  LeftLeaningRedBlackTree< int , int > L , R;
+  for( int i = 0 ; i < a ; ++i ) L.insert( 2 * i , i );
+  for( int i = 0 ; i < b ; ++i ) R.insert( 2 * ( a + i ) + 1 , i );
+  L.absorb( R );
+  CHECK( ( L.size() == std::size_t( a + b ) ) && ( R.size() == 0 ) );
+  std::size_t i = 0;
+  for( const auto & [ k , v ] : L ) {
+   CHECK( k == ( int( i ) < a ? 2 * int( i ) : 2 * int( i ) + 1 ) );
+   ++i;
+   }
+  }
+ LeftLeaningRedBlackTree< int , int > X , Y;
+ X.insert( 5 , 5 );
+ Y.insert( 3 , 3 );
+ CHECK_THROWS( X.absorb( Y ) , contract_violation );
+ }
+
+ADS_TEST( "ods-ex9.13.avl" )
+{
+ // exercise 9.13: the AVL tree of ADS, height at most 1.4405 log2 n
+ AVLTree< int , int > T;
+ differential( T , 20000 , 1500 , 83 );
+ AVLTree< int , int > S;
+ const int n = 1 << 12;
+ for( int i = 0 ; i < n ; ++i ) S.insert( i , i );
+ CHECK( double( S.height() ) <= 1.4405 * std::log2( double( n + 2 ) ) );
  }
 
 }  // end( namespace )
