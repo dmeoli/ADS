@@ -5,9 +5,10 @@
 % (grey). Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
+\usepackage{amsmath}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,bb/.style={cell,minimum width=8mm},
@@ -25,7 +26,7 @@
   \foreach \v [count=\i from 0] in {00,04,0C,70,11,01,05}
     \node[bb] (d-\i) at (\i*8mm,-14mm) {\v};
   \foreach \a/\e/\t in {0/1/{1024},2/2/{12},3/5/{70000},6/6/{5}}
-    \draw ($(d-\a.north west)+(0.5mm,1mm)$) -- ++(0,1mm)
+    \draw[edge] ($(d-\a.north west)+(0.5mm,1mm)$) -- ++(0,1mm)
           -| node[index,pos=0.25,above=0.6mm] {\t}
           ($(d-\e.north east)+(-0.5mm,1mm)$);
   % the register filled by one shuffle
@@ -36,6 +37,6 @@
   \foreach \i/\x in {0/x_0,4/x_1,8/x_2,12/x_3}
     \node[index,below=1.2mm of r-\i,anchor=north west,xshift=-4mm] {$\x$};
   \foreach \f/\t in {0/0,1/1,2/4,3/8,4/9,5/10,6/12}
-    \draw[ptr,black!40,shorten >=0.5mm,shorten <=0.5mm] (d-\f.south) -- (r-\t.north);
+    \draw[ptr,shorten >=0.5mm,shorten <=0.5mm] (d-\f.south) -- (r-\t.north);
 \end{tikzpicture}
 \end{document}

@@ -4,20 +4,26 @@
 % Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
+\usepackage{amsmath}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
-\begin{tikzpicture}[ads,lab/.style={font=\scriptsize,text=black!70}]
+\begin{tikzpicture}[ads,lab/.style={font=\scriptsize,text=adsInk!70}]
   \def\W{100mm}
   % one row: \row{y}{left label}{right label}{chosen part 0,1,2}{symbol}
   \newcommand{\row}[5]{%
     \foreach \a/\b/\s [count=\k from 0] in {0/0.5/a,0.5/0.75/b,0.75/1/c}
       {\ifnum\k=#4\relax
-         \fill[adsTouched] (\a*\W,#1) rectangle (\b*\W,#1+5mm);\fi
-       \draw (\a*\W,#1) rectangle (\b*\W,#1+5mm);
-       \node[font=\small\ttfamily] at ({(\a+\b)/2*\W},#1+2.5mm) {\s};}
+         \filldraw[fill=adsPrimary,draw=white,line width=1.2pt,rounded corners=1.6pt]
+           (\a*\W,#1) rectangle (\b*\W,#1+5mm);
+         \node[font=\small\ttfamily\bfseries,text=adsOnPrimary] at ({(\a+\b)/2*\W},#1+2.5mm) {\s};
+       \else
+         \filldraw[fill=adsTint,draw=white,line width=1.2pt,rounded corners=1.6pt]
+           (\a*\W,#1) rectangle (\b*\W,#1+5mm);
+         \node[font=\small\ttfamily,text=adsInk] at ({(\a+\b)/2*\W},#1+2.5mm) {\s};
+       \fi}
     \node[lab,anchor=north east] at (-1mm,#1) {#2};
     \node[lab,anchor=north west] at (\W+1mm,#1) {#3};
     \node[var,anchor=east] at (-9mm,#1+2.5mm) {#5};}
@@ -27,14 +33,13 @@
   \row{-48mm}{$1/4$}{$5/16$}{2}{\texttt{c}}
   % the zoom from the chosen part to the next row
   \foreach \y/\a/\b in {0mm/0/0.5,-16mm/0.5/0.75,-32mm/0/0.5,-48mm/0.75/1}
-    {\draw[densely dashed,black!45] (\a*\W,\y) -- (0,\y-11mm+5mm);
-     \draw[densely dashed,black!45] (\b*\W,\y) -- (\W,\y-11mm+5mm);}
+    {\draw[edge,densely dashed] (\a*\W,\y) -- (0,\y-11mm+5mm);
+     \draw[edge,densely dashed] (\b*\W,\y) -- (\W,\y-11mm+5mm);}
   % the last interval and the point of the code
-  \fill[adsTouched] (0,-64mm) rectangle (\W,-59mm);
-  \draw (0,-64mm) rectangle (\W,-59mm);
+  \fill[adsPrimary,rounded corners=1.6pt] (0,-64mm) rectangle (\W,-59mm);
   \node[lab,anchor=north east] at (-1mm,-64mm) {$19/64$};
   \node[lab,anchor=north west] at (\W+1mm,-64mm) {$20/64$};
-  \draw[thick] (0.5*\W,-65mm) -- (0.5*\W,-58mm);
+  \draw[line width=1.6pt,adsAdded] (0.5*\W,-65.5mm) -- (0.5*\W,-57.5mm);
   \node[lab,anchor=south] at (0.5*\W,-58mm)
     {$x = 39/128 = 0.0100111_2$};
   \node[var,anchor=east] at (-9mm,-61.5mm) {end};

@@ -5,9 +5,10 @@
 % Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
+\usepackage{amsmath}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,bit/.style={cell,minimum width=6mm},
@@ -19,7 +20,7 @@
        {quarter \k};
      \node[touched,minimum width=22mm] (st-\k) at (11mm+\k*30mm,-12mm)
        {stream \k};
-     \draw[ptr,black!45] (q-\k.south) -- (st-\k.north);}
+     \draw[ptr] (q-\k.south) -- (st-\k.north);}
   \node[var,anchor=east] at (-3mm,-12mm) {code};
   % a window of W = 6 bits of a stream, in the order of reading
   \node[var,anchor=east] at (-5mm,-27mm) {window};
@@ -27,7 +28,7 @@
                                        1/touched,0/free,1/free}
     \node[bit,\s] (w-\i) at (\i*6mm,-27mm) {\v};
   \foreach \a/\e/\t in {0/1/d,2/3/e,4/5/{cut}}
-    \draw ($(w-\a.south west)+(0.5mm,-1mm)$) -- ++(0,-1mm)
+    \draw[edge] ($(w-\a.south west)+(0.5mm,-1mm)$) -- ++(0,-1mm)
           -| node[index,pos=0.25,below=0.6mm] {\t}
           ($(w-\e.south east)+(-0.5mm,-1mm)$);
   % the entry of the table for the window
@@ -41,6 +42,6 @@
     \node[index,above=1.2mm of e-\i] {\t};
   \foreach \i/\t in {1/count,2/bits,3/symbol 2,4/symbol 1,5/symbol 0}
     \node[index,below=1.2mm of e-\i] {\t};
-  \draw[ptr,black!45] ($(w-5.east)+(1mm,0)$) -- ($(tv.west)+(-1mm,0)$);
+  \draw[ptr] ($(w-5.east)+(1mm,0)$) -- ($(tv.west)+(-1mm,0)$);
 \end{tikzpicture}
 \end{document}

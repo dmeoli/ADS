@@ -4,9 +4,10 @@
 % (shaded). Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
+\usepackage{amsmath}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,c/.style={cell,minimum width=10mm},
@@ -32,8 +33,8 @@
   \node[t] (a2-0) at (0,-40mm) {100};
   % the integers that continue, and the place of each at the next level
   \foreach \f/\t in {2/0,4/1,6/2}
-    \draw[ptr,black!45] (b0-\f.south) -- (a1-\t.north);
-  \draw[ptr,black!45] (b1-1.south) -- (a2-0.north);
+    \draw[ptr] (b0-\f.south) -- (a1-\t.north);
+  \draw[ptr] (b1-1.south) -- (a2-0.north);
   \node[var,anchor=west] at (40mm,-23.5mm)
     {$\mathrm{rank}_1( B_0 , 4 ) = 1$};
   \node[var,anchor=west] at (40mm,-40mm)

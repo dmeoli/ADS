@@ -5,14 +5,15 @@
 % ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
+\usepackage{amsmath}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \begin{document}
 \begin{tikzpicture}[ads,
     ch/.style={font=\small\ttfamily,minimum width=4mm,minimum height=4.6mm},
-    col/.style={draw,fill=adsTouched,font=\small\ttfamily,minimum width=4.6mm,
+    col/.style={fill=adsPrimary,text=adsOnPrimary,rounded corners=1pt,draw=white,line width=0.8pt,font=\small\ttfamily,minimum width=4.6mm,
                 minimum height=4.6mm,outer sep=0pt},
     hd/.style={font=\small\itshape}]
   \node[hd] at (0,5.5mm) {$i$};
@@ -187,13 +188,13 @@
   \node[ch] (m-11-9) at (56mm,-55mm) {\$};
   \node[ch] (m-11-10) at (60mm,-55mm) {a};
   \node[col] (m-11-11) at (64mm,-55mm) {b};
-  \draw[thick] (72mm,-2.7mm) -- ++(-1.2mm,0) -- (70.8mm,-27.3mm) -- (72mm,-27.3mm);
+  \draw[edge] (72mm,-2.7mm) -- ++(-1.2mm,0) -- (70.8mm,-27.3mm) -- (72mm,-27.3mm);
   \node[font=\scriptsize\ttfamily,anchor=west] at (72.5mm,-15.0mm) {a};
-  \draw[thick] (83mm,-47.7mm) -- ++(-1.2mm,0) -- (81.8mm,-57.3mm) -- (83mm,-57.3mm);
+  \draw[edge] (83mm,-47.7mm) -- ++(-1.2mm,0) -- (81.8mm,-57.3mm) -- (83mm,-57.3mm);
   \node[font=\scriptsize\ttfamily,anchor=west] at (83.5mm,-52.5mm) {ra};
-  \draw[thick] (94mm,-27.7mm) -- ++(-1.2mm,0) -- (92.8mm,-37.3mm) -- (94mm,-37.3mm);
+  \draw[edge] (94mm,-27.7mm) -- ++(-1.2mm,0) -- (92.8mm,-37.3mm) -- (94mm,-37.3mm);
   \node[font=\scriptsize\ttfamily,anchor=west] at (94.5mm,-32.5mm) {bra};
-  \draw[thick] (105mm,-7.7mm) -- ++(-1.2mm,0) -- (103.8mm,-17.3mm) -- (105mm,-17.3mm);
+  \draw[edge] (105mm,-7.7mm) -- ++(-1.2mm,0) -- (103.8mm,-17.3mm) -- (105mm,-17.3mm);
   \node[font=\scriptsize\ttfamily,anchor=west] at (105.5mm,-12.5mm) {abra};
 \end{tikzpicture}
 \end{document}
