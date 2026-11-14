@@ -43,10 +43,11 @@
  *
  * The contracts [see `Contract.h`]: the nodes are in \f$ [ 0 , n ) \f$;
  * `link()` joins two nodes of two distinct trees, `cut()` removes an edge
- * that is there, `aggregate()` and `lca()` need two nodes of the same tree;
- * at the level of the audits each operation checks the parents, the
- * children and the aggregates of the splay trees it touched. The
- * operations are defined in `LinkCutTree.tpp`.
+ * that is there, `aggregate()` and `lca()` need two nodes of the same tree,
+ * checks left out of the count of the walks [see `joined()`]; at the level
+ * of the audits each operation checks the parents, the children and the
+ * aggregates of the splay trees it touched. The operations are defined in
+ * `LinkCutTree.tpp`.
  *
  * \see D. D. Sleator, R. E. Tarjan, A data structure for dynamic trees,
  *      Journal of Computer and System Sciences 26(3), 362-391, 1983,
@@ -323,6 +324,12 @@ class LinkCutTree {
  /// the parents on the path from \f$ v \f$ to its root reversed, which
  /// makes \f$ v \f$ the root
  void reverseUp( int v );
+
+ /// whether \f$ u \f$ and \f$ v \f$ are in the same tree, for the
+ /// contracts: on the vector of parents, by two walks counted neither
+ /// among the operations nor among the steps, so that the level of the
+ /// contracts does not move the change to the splay trees
+ [[nodiscard]] bool joined( int u , int v );
 
  /// an operation on the vector of parents counted, and every 16 of
  /// them `recount()`

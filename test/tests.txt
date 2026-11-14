@@ -1835,6 +1835,7 @@ engineered_dynamic  reopt-lazy             coda pigra, soglia del ricalcolo
 engineered_dynamic  assignment             ungherese, riottimizzazione per righe
 engineered_dynamic  reopt-assignment       assegnamento sul grafo osservabile
 engineered_dynamic  link-cut-tree          link-cut tree contro un vettore di padri
+engineered_dynamic  link-cut-tree-contracts  link-cut tree, contratti non contati
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline
 

@@ -5714,20 +5714,23 @@ everts $u$ and clears the parent of $v$, `lca()` climbs by the depths and
 `aggregate( u , v )` everts $u$ and combines the values from $v$ up to it. Each
 costs the depth of the nodes, as in [Table 8.9](08-tree.md#tab-8-9). In
 `connected( u , v )` the walk keeps the path from $u$ to its root. An evert of
-$u$ that follows with no change in between (e.g., in `link()`, whose
-precondition calls `connected()`) then rewrites the parents from that path, and
-no load of a parent waits for the one before.
+$u$ that follows with no change in between (e.g., in `link( u , v )` after the
+caller has asked `connected( u , v )`) then rewrites the parents from that
+path, and no load of a parent waits for the one before.
 
 Our class counts the steps of its walks, and every 16 operations it updates
 their recent mean per operation, an exponential mean with the weight $1 / 4$ on
-the last group. Its bound of 512 steps is about where an operation on the splay
-trees costs as much as the walks (a few nanoseconds a step while the vector
-stays in the caches of the core, a bound measured). Once the mean exceeds it,
-and at least 64 operations have been counted, the vector becomes splay trees in
-$O( n )$ time and stays so; `useSplay()` makes the change at once, and
-`splayed()` reports whether it was made. No restructuring is needed: each node
-becomes a splay tree by itself, whose path-parent is its parent, which is a
-valid virtual tree with no preferred child.
+the last group. The walks of the preconditions (whether two nodes are in one
+tree, for `link()`, `lca()` and `aggregate()`) are counted neither as steps nor
+as operations, and they keep no path; thus the moment of the change below does
+not depend on the level of the contracts. Its bound of 512 steps is about where
+an operation on the splay trees costs as much as the walks (a few nanoseconds a
+step while the vector stays in the caches of the core, a bound measured). Once
+the mean exceeds it, and at least 64 operations have been counted, the vector
+becomes splay trees in $O( n )$ time and stays so; `useSplay()` makes the
+change at once, and `splayed()` reports whether it was made. No restructuring
+is needed: each node becomes a splay tree by itself, whose path-parent is its
+parent, which is a valid virtual tree with no preferred child.
 
 Hence the operations cost $O( d )$ for a mean depth $d$ below the bound and
 $O( \log n )$ amortized after the change. Its test

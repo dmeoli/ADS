@@ -2719,6 +2719,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the preconditions of LinkCutTree::link(), lca() and aggregate() called
+  connected(), whose walks on the vector of parents were counted as steps
+  and as an operation, so that the moment of the change to the splay trees
+  depended on the level of the contracts; they now ask joined(), two walks
+  counted neither way and keeping no path, as the header and chapter 8 of
+  the manual say; the test engineered_dynamic link-cut-tree-contracts
+
 - BTreeMap with the ranks recounted every child of a node after a split, a
   merge or a borrow, each count the sum of the counts of the child, O( I^2 )
   time per node above the last internal level; the counts now move with

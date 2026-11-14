@@ -232,6 +232,17 @@ void LinkCutTree< T , Op >::reverseUp( int v )
  }
 
 template< class T , class Op >
+bool LinkCutTree< T , Op >::joined( int u , int v )
+{
+ if( f_splay )                             // no count on the splay trees
+  return( connected( u , v ) );
+ const int * const p = f_p.data();
+ while( p[ u ] != NONE ) u = p[ u ];
+ while( p[ v ] != NONE ) v = p[ v ];
+ return( u == v );
+ }
+
+template< class T , class Op >
 void LinkCutTree< T , Op >::recount( void )
 {
  // the mean of the recent operations, by groups of 16, which follows the
@@ -320,7 +331,7 @@ template< class T , class Op >
 void LinkCutTree< T , Op >::link( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          ! connected( u , v ) );
+          ! joined( u , v ) );
  if( ! f_splay ) {
   reverseUp( u );
   f_p[ u ] = v;
@@ -390,7 +401,7 @@ template< class T , class Op >
 int LinkCutTree< T , Op >::lca( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          connected( u , v ) );
+          joined( u , v ) );
  if( ! f_splay ) {                         // by the depths
   int du = 0 , dv = 0;
   for( int x = u ; f_p[ x ] != NONE ; x = f_p[ x ] ) ++du;
@@ -413,7 +424,7 @@ template< class T , class Op >
 T LinkCutTree< T , Op >::aggregate( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          connected( u , v ) );
+          joined( u , v ) );
  if( ! f_splay ) {                         // up from v to u, the root
   reverseUp( u );
   const int * const p = f_p.data();
