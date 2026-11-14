@@ -111,6 +111,7 @@ constexpr std::uint64_t unaryLength( std::uint64_t x )
  return( x );
  }
 
+//! [encodeGamma]
 inline void encodeGamma( BitWriter & w , std::uint64_t x )
 {
  ADS_PRE( x >= 1 );
@@ -126,13 +127,16 @@ inline void encodeGamma( BitWriter & w , std::uint64_t x )
   }
  ADS_POST( w.size() - n == std::size_t( gammaLength( x ) ) );
  }
+//! [encodeGamma]
 
+//! [decodeGamma]
 inline std::uint64_t decodeGamma( BitReader & r )
 {
  const std::uint64_t L = r.readUnary();
  ADS_PRE( L < 64 );
  return( ( std::uint64_t( 1 ) << L ) | r.readBinary( int( L ) ) );
  }
+//! [decodeGamma]
 
 constexpr int gammaLength( std::uint64_t x )
 {

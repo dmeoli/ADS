@@ -1,0 +1,42 @@
+% Source for the figure of the arithmetic code (sec. 21.4): the interval of
+% abac narrowed symbol by symbol with P[a] = 1/2, P[b] = P[c] = 1/4, and
+% the dyadic fraction of 7 bits inside the last interval.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,lab/.style={font=\scriptsize,text=black!70}]
+  \def\W{100mm}
+  % one row: \row{y}{left label}{right label}{chosen part 0,1,2}{symbol}
+  \newcommand{\row}[5]{%
+    \foreach \a/\b/\s [count=\k from 0] in {0/0.5/a,0.5/0.75/b,0.75/1/c}
+      {\ifnum\k=#4\relax
+         \fill[adsTouched] (\a*\W,#1) rectangle (\b*\W,#1+5mm);\fi
+       \draw (\a*\W,#1) rectangle (\b*\W,#1+5mm);
+       \node[font=\small\ttfamily] at ({(\a+\b)/2*\W},#1+2.5mm) {\s};}
+    \node[lab,anchor=north east] at (-1mm,#1) {#2};
+    \node[lab,anchor=north west] at (\W+1mm,#1) {#3};
+    \node[var,anchor=east] at (-9mm,#1+2.5mm) {#5};}
+  \row{0mm}{$0$}{$1$}{0}{\texttt{a}}
+  \row{-16mm}{$0$}{$1/2$}{1}{\texttt{b}}
+  \row{-32mm}{$1/4$}{$3/8$}{0}{\texttt{a}}
+  \row{-48mm}{$1/4$}{$5/16$}{2}{\texttt{c}}
+  % the zoom from the chosen part to the next row
+  \foreach \y/\a/\b in {0mm/0/0.5,-16mm/0.5/0.75,-32mm/0/0.5,-48mm/0.75/1}
+    {\draw[densely dashed,black!45] (\a*\W,\y) -- (0,\y-11mm+5mm);
+     \draw[densely dashed,black!45] (\b*\W,\y) -- (\W,\y-11mm+5mm);}
+  % the last interval and the point of the code
+  \fill[adsTouched] (0,-64mm) rectangle (\W,-59mm);
+  \draw (0,-64mm) rectangle (\W,-59mm);
+  \node[lab,anchor=north east] at (-1mm,-64mm) {$19/64$};
+  \node[lab,anchor=north west] at (\W+1mm,-64mm) {$20/64$};
+  \draw[thick] (0.5*\W,-65mm) -- (0.5*\W,-58mm);
+  \node[lab,anchor=south] at (0.5*\W,-58mm)
+    {$x = 39/128 = 0.0100111_2$};
+  \node[var,anchor=east] at (-9mm,-61.5mm) {end};
+\end{tikzpicture}
+\end{document}

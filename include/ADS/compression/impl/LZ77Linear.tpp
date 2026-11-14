@@ -30,6 +30,7 @@ inline std::vector< LZ77Phrase > lz77ParseLinear( std::string_view s )
  {
  const auto sa = suffixArraySais( s );
  stack.reserve( 1024 );
+ //! [psvNsv]
  for( const std::size_t x : sa ) {
   while( ! stack.empty() && ( stack.back() > x ) ) {
    nsv[ stack.back() ] = std::uint32_t( x );
@@ -38,6 +39,7 @@ inline std::vector< LZ77Phrase > lz77ParseLinear( std::string_view s )
   if( ! stack.empty() ) psv[ x ] = stack.back();
   stack.push_back( std::uint32_t( x ) );
   }
+ //! [psvNsv]
  }
  // the common prefix of the suffixes i and j < i, overlap included
  auto lcp = [ & ]( std::size_t i , std::uint32_t j ) -> std::size_t {
