@@ -324,10 +324,14 @@
  with high probability, so that one partition leaves the part of rank \f$ k \f$
  with \f$ o( n ) \f$ items, and the expected number of comparisons is
  \f$ n + \min( k , n - k ) + o( n ) \f$ (Kiwiel), which is optimal up to the
- term \f$ o( n ) \f$. After \f$ 2 \lceil \log_2 ( n + 1 ) \rceil \f$
- partitions that cut little it falls back to the median of the medians, whose
- rounds cost (9); the partitions before it cost \f$ O( n ) \f$ each, and the
- worst case is therefore \f$ O( n \log n ) \f$.
+ term \f$ o( n ) \f$. Each round charges the items of its part to a budget
+ of \f$ 4 n \f$ items, and a round whose part the rest of the budget does not
+ cover falls back to the median of the medians, whose rounds cost (9) (the
+ introselect of Musser, with the budget counted in items rather than in
+ rounds); the other rounds partition at most \f$ 4 n \f$ items, and their
+ samples, of \f$ O( m^{2/3} ) \f$ items for a part of \f$ m > 600 \f$, less
+ than \f$ m / 16 \f$, are selected within their own budgets, so that by
+ induction the worst case is \f$ O( n ) \f$.
 
  <table>
  <caption>The selection of the item of rank \f$ k \f$</caption>
@@ -341,7 +345,7 @@
  <tr><td><tt>nthElement()</tt></td><td>the sample of Floyd and Rivest,
      the median of three on short parts</td>
      <td>\f$ n + \min( k , n - k ) + o( n ) \f$ expected,
-         \f$ O( n \log n ) \f$ in the worst case</td></tr>
+         \f$ O( n ) \f$ in the worst case</td></tr>
  </table>
 
  \section theory_search_rmq Range minima

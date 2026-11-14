@@ -33,6 +33,7 @@
 #include "ADS/set/BoolSet.h"
 #include "ADS/set/RoaringBitmap.h"
 #include "ADS/set/VectorIntersection.h"
+#include "ADS/sort/QuicksortAdversary.h"
 #include "ADS/tree/BTreeMap.h"
 
 #include <algorithm>
@@ -427,6 +428,26 @@ ADS_TEST( "nth-element" )
  std::vector< int > Z;
  nthElement( Z.begin() , Z.begin() , Z.end() );   // an empty range
  CHECK_THROWS( nthElement( Z , 0 ) , contract_violation );
+ }
+
+// the selection against the adversary of McIlroy, which fixes the order of
+// the items while they are compared: the budget of 4 n items keeps the
+// comparisons linear, below 16 n for n = 2^12 to 2^18 and the ranks n / 2
+// and n / 10, where a budget of rounds let them grow with log n (38 n at
+// 2^16); the item put at its place is the right one for the values given
+ADS_TEST( "nth-element-adversary" )
+{
+ for( std::size_t n : { std::size_t( 1 ) << 12 , std::size_t( 1 ) << 16 ,
+                        std::size_t( 1 ) << 18 } )
+  for( std::size_t k : { n / 2 , n / 10 } ) {
+   QuicksortAdversary a( n );
+   std::vector< std::size_t > A = a.items();
+   const auto nth = A.begin() + std::ptrdiff_t( k );
+   nthElement( A.begin() , nth , A.end() , a.less() );
+   CHECK( a.comparisons() <= 16 * n );
+   const auto v = a.input();
+   CHECK( v[ *nth ] == k );
+   }
  }
 
 // the range minima against a scan: the empty array, one item, sizes around

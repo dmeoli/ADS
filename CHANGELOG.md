@@ -2555,6 +2555,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- nthElement() counted its budget in rounds, 2 ceil( log2( n + 1 ) ) of them
+  cutting less than a quarter before the median of the medians, so that its
+  worst case was O( n log n ) (38 n comparisons at n = 2^16 against the
+  adversary of McIlroy); each round now charges the items of its part to a
+  budget of 4 n items, and a round that the rest of the budget does not
+  cover takes the median of the medians, so that the worst case is O( n ),
+  as the header, the theory of the searches and the chapter of the manual
+  now say, with the inputs at random unchanged; the test ordered
+  nth-element-adversary
+
 - gallopSearch() ran its binary search on [ lo , min( hi + 1 , n ) ), the
   place hi included although the doubling had already found A[ hi ] >= v,
   one comparison too many (7 instead of 6 on a vector of 11 items and the

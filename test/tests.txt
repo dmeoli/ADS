@@ -609,6 +609,7 @@ ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  pgm-compressed       PGM compresso, pendenze condivise ed Elias-Fano
 ordered  pgm-dynamic          PGM dinamico, metodo logaritmico e tombstone
 ordered  nth-element          selezione di Floyd e Rivest, Lomuto senza salti
+ordered  nth-element-adversary  selezione lineare contro l'avversario di McIlroy
 ordered  word-range-minimum   minimo di un intervallo, pile in una parola
 ordered  vector-intersection  intersezione a blocchi di 8 e a galoppo
 ordered  rem-union-find       algoritmo di Rem con lo splicing

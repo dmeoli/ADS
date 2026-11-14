@@ -932,14 +932,22 @@ $n$ comparisons. When the pivot is the smallest item of the range, the
 items equal to it go to its left, so that many equal items end in one step;
 since the items of a range cut on its left by a pivot are not smaller than
 it, a later pivot equal to it is known to be the smallest with no pass.
-Finally, each round that does not cut the range by at least a quarter
-counts against a budget of $2 \lceil \log_2 ( n + 1 ) \rceil$ rounds, and
-past it the pivot is the median of the medians, whose rounds cost (6.11).
-Each round before it costs $O( n )$ at most; those that cut by a
-quarter shrink the range geometrically, but those that cut less may each
-leave almost all of it, and the bound in the worst case is therefore
-$O( n \log n )$. (A budget counted in the items partitioned, e.g., stopping
-when their sum exceeds a constant times $n$, would make it linear.)
+Finally, each round charges the items of its part to a budget of $4 n$
+items, which a random order hardly ever exhausts (by (6.12), the rounds of
+a random range of more than 600 items partition about $1.5 n$ items at
+most),
+and a round whose part the rest of the budget does not cover takes as its
+pivot the median of the medians, whose rounds cost (6.11). Hence the other
+rounds partition at most $4 n$ items in all, and their samples, selected
+recursively within their own budgets, hold $O( m^{2/3} )$ items of a part
+of $m > 600$, i.e., less than $m / 16$. By induction on $n$, the selection
+therefore takes $O( n )$ time in the worst case, as the selection of
+[Musser 1997](Z-bibliography.md#ref-musser1997) does by the same device;
+against the adversary of [McIlroy 1999](Z-bibliography.md#ref-mcilroy1999),
+which fixes the order of the items while they are compared, the
+comparisons stay below $16 n$ from $n = 2^{12}$ to $2^{18}$ (the test
+`ordered.nth-element-adversary`), where a budget counted in rounds let them
+grow with $\log n$.
 [Table 6.2](06-search.md#tab-6-2) compares the three selections.
 
 <span id="tab-6-2"></span>**Table 6.2.** The selections of the item of
@@ -949,7 +957,7 @@ rank $k$ in `ADS/search`.
 |---|---|---|
 | `selection()` | at random, or the first item | $O( n )$ expected by (6.10), $\Theta( n^2 )$ in the worst case |
 | `medianOfMedians()` | the median of the medians of the groups of 5 | $O( n )$ in the worst case, by (6.11) |
-| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n \log n )$ in the worst case |
+| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case |
 
 ## 6.9 Range minima {#sec-6-9}
 
