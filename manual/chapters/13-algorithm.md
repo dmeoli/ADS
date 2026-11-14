@@ -94,8 +94,7 @@ for $k > -1$, the harmonic sum $\Theta( \log \log n )$ for $k = -1$, and a
 convergent series for $k < -1$. One can check that the floors and the ceilings of the sizes
 change no order. $\square$
 
-<span id="fig-13-1"></span>
-![Figure 13.1. The tree of the recursion of (13.2), drawn for $a = 2$ in its first levels: each node is labelled with the cost of dividing and combining its instance, and the cost of a level is written on its right.](../figures/algorithm-recursion.svg)
+![Figure 13.1. The tree of the recursion of (13.2), drawn for $a = 2$ in its first levels: each node is labelled with the cost of dividing and combining its instance, and the cost of a level is written on its right.](../figures/algorithm-recursion.svg){#fig-13-1}
 
 For $k = 0$ this is Theorem 2.2 of [Montresor
 2025](Z-bibliography.md#ref-montresor2025), and the general case is its
@@ -222,8 +221,7 @@ the first zero ([Algorithm 13.4](13-algorithm.md#alg-13-4) and
 that it has changed, i.e., its actual cost, which is $k$ when the counter
 is full of ones (all of them are cleared, and none is set).
 
-<span id="fig-13-2"></span>
-![Figure 13.2. A counter of $k = 8$ bits before and after `add()`; the shaded cells are the four bits that the increment changes, and $\Phi$ is the number of ones.](../figures/algorithm-counter.svg)
+![Figure 13.2. A counter of $k = 8$ bits before and after `add()`; the shaded cells are the four bits that the increment changes, and $\Phi$ is the number of ones.](../figures/algorithm-counter.svg){#fig-13-2}
 
 <span id="alg-13-4"></span>**Algorithm 13.4.** The increment of a binary
 counter ([Montresor 2025, §4.2.1](Z-bibliography.md#ref-montresor2025)).
@@ -550,8 +548,7 @@ from the tail the starts $y$ with $P[ y ] \ge P[ x ]$, which $x$ dominates
 for all the ends to come (it is as good and it stays in the window longer),
 and the head is removed when it falls out of the window.
 
-<span id="fig-13-3"></span>
-![Figure 13.3. `maxSumSegmentLength()` on $D = ( 2 , -3 , 4 , -1 , -2 , 1 , 5 , -3 )$ with $L = 2$ and $U = 4$, at the end $i = 7$: the prefix sums, the admissible starts (shaded), and the deque of the starts before and after the step; the head of $W$ after the step is the start of the segment $D[ 5 .. 6 ]$, of sum $P[ 7 ] - P[ 5 ] = 6$.](../figures/algorithm-window.svg)
+![Figure 13.3. `maxSumSegmentLength()` on $D = ( 2 , -3 , 4 , -1 , -2 , 1 , 5 , -3 )$ with $L = 2$ and $U = 4$, at the end $i = 7$: the prefix sums, the admissible starts (shaded), and the deque of the starts before and after the step; the head of $W$ after the step is the start of the segment $D[ 5 .. 6 ]$, of sum $P[ 7 ] - P[ 5 ] = 6$.](../figures/algorithm-window.svg){#fig-13-3}
 
 <span id="alg-13-16"></span>**Algorithm 13.16.** The segment of largest
 sum with the length in $[ L , U ]$, by the sliding minimum.
@@ -590,8 +587,7 @@ sum $P[ i ] - P[ C_j ]$ stays at least $t$
 ([Algorithm 13.17](13-algorithm.md#alg-13-17) and
 [Figure 13.4](13-algorithm.md#fig-13-4)).
 
-<span id="fig-13-4"></span>
-![Figure 13.4. The prefix sums of $D = ( -1 , 3 , -4 , 2 , -3 , 1 , 4 , -1 , 2 , 1 )$ and the walk of `longestSegmentAtLeast()` with $t = 3$ at the end $i = 7$, when the best length so far is $\ell = 1$: the chain $5 , 3 , 1$ stays below the dashed line $P[ i ] - t$, the next start 0 does not, and the best segment becomes $D[ 1 .. 6 ]$, of sum 3.](../figures/algorithm-lmin.svg)
+![Figure 13.4. The prefix sums of $D = ( -1 , 3 , -4 , 2 , -3 , 1 , 4 , -1 , 2 , 1 )$ and the walk of `longestSegmentAtLeast()` with $t = 3$ at the end $i = 7$, when the best length so far is $\ell = 1$: the chain $5 , 3 , 1$ stays below the dashed line $P[ i ] - t$, the next start 0 does not, and the best segment becomes $D[ 1 .. 6 ]$, of sum 3.](../figures/algorithm-lmin.svg){#fig-13-4}
 
 <span id="alg-13-17"></span>**Algorithm 13.17.** The longest segment of
 sum at least $t$.
@@ -642,8 +638,7 @@ point of tangency by a binary search on the turns
 turns and the comparisons of the averages are cross products, i.e., the
 algorithm makes no division, and it is exact on integers.
 
-<span id="fig-13-5"></span>
-![Figure 13.5. `maxDensitySegment()` on $D = ( -2 , -2 , 2 , -2 , 3 , 1 , 0 , 2 , -3 )$ with $L = 2$, at the end $i = 9$: the points $( x , P[ x ] )$ of the starts $x \le 7$, their lower hull (the dark vertices), and the tangent from $( 9 , P[ 9 ] )$, which touches the hull at $b = 4$; the segment $D[ 4 .. 8 ]$ has the average $3 / 5$.](../figures/algorithm-hull.svg)
+![Figure 13.5. `maxDensitySegment()` on $D = ( -2 , -2 , 2 , -2 , 3 , 1 , 0 , 2 , -3 )$ with $L = 2$, at the end $i = 9$: the points $( x , P[ x ] )$ of the starts $x \le 7$, their lower hull (the dark vertices), and the tangent from $( 9 , P[ 9 ] )$, which touches the hull at $b = 4$; the segment $D[ 4 .. 8 ]$ has the average $3 / 5$.](../figures/algorithm-hull.svg){#fig-13-5}
 
 <span id="alg-13-18"></span>**Algorithm 13.18.** The segment of largest
 average with the length at least $L$ (after [Goldwasser, Kao and Lu
@@ -839,8 +834,7 @@ c ]$, and then the capacity drops by its volume
 the column $c = 0$ is therefore filled by the same maximum instead of being
 set to 0, as it is in the book.
 
-<span id="fig-13-6"></span>
-![Figure 13.6. The table of `knapsack()` for the profits $( 3 , 2 , 4 , 2 )$, the volumes $( 2 , 1 , 3 , 2 )$ and $C = 5$; the row $i$ is for the first $i$ objects, and on its left are the profit and the volume of the object $i - 1$. The shaded cells are those that the reading back visits from $\mathit{DP}[ 4 ][ 5 ] = 7$, and on the right is the decision taken at each row.](../figures/optimization-knapsack.svg)
+![Figure 13.6. The table of `knapsack()` for the profits $( 3 , 2 , 4 , 2 )$, the volumes $( 2 , 1 , 3 , 2 )$ and $C = 5$; the row $i$ is for the first $i$ objects, and on its left are the profit and the volume of the object $i - 1$. The shaded cells are those that the reading back visits from $\mathit{DP}[ 4 ][ 5 ] = 7$, and on the right is the decision taken at each row.](../figures/optimization-knapsack.svg){#fig-13-6}
 
 <span id="alg-13-23"></span>**Algorithm 13.23.** The 0-1 knapsack, bottom
 up ([Montresor 2025, §13.6](Z-bibliography.md#ref-montresor2025)).
@@ -1470,8 +1464,7 @@ and the others start after that one ends; hence the greedy is optimal, in
 $O( n \log n )$ time for the sort. It is (13.11) with all the weights
 equal, where the dynamic programming is not needed.
 
-<span id="fig-13-7"></span>
-![Figure 13.7. Seven intervals: the shaded ones are those that `independentSet()` takes (by increasing right end, those that start at or after the end of the last one taken), and each one carries the color that `intervalColoring()` gives it; three colors are needed, since the point 2.5 lies in three intervals.](../figures/optimization-intervals.svg)
+![Figure 13.7. Seven intervals: the shaded ones are those that `independentSet()` takes (by increasing right end, those that start at or after the end of the last one taken), and each one carries the color that `intervalColoring()` gives it; three colors are needed, since the point 2.5 lies in three intervals.](../figures/optimization-intervals.svg){#fig-13-7}
 
 <span id="alg-13-39"></span>**Algorithm 13.39.** The greedy algorithms
 on intervals and on points of a line ([Montresor 2025, §14.2 and
