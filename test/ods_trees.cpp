@@ -145,10 +145,12 @@ struct Counted {
   seen.push_back( a.q ? 2 * b.k + 1 : 2 * a.k );
   return( a.k < b.k );
   }
- friend bool operator==( const Counted & a , const Counted & b ) {
+ [[maybe_unused]] friend bool operator==( const Counted & a ,
+                                         const Counted & b ) {
   return( a.k == b.k );
   }
- friend auto operator<=>( const Counted & a , const Counted & b ) {
+ [[maybe_unused]] friend auto operator<=>( const Counted & a ,
+                                           const Counted & b ) {
   return( a.k <=> b.k );
   }
  };
@@ -614,7 +616,7 @@ ADS_TEST( "ods-ex7.4.permute" )
  std::map< std::vector< int > , int > count;
  for( int s = 0 ; s < 24000 ; ++s ) {
   std::vector< int > A = { 0 , 1 , 2 , 3 };
-  permute( A , g );
+  shuffleFast( A.begin() , A.end() , g );
   ++count[ A ];
   }
  CHECK( count.size() == 24 );
@@ -626,7 +628,7 @@ ADS_TEST( "ods-ex7.4.permute" )
                           ( 1ull << 63 ) + 5 } )
   for( int s = 0 ; s < 100 ; ++s ) CHECK( uniformBelow( g , m ) < m );
  std::vector< int > E;
- permute( E , g );
+ shuffleFast( E.begin() , E.end() , g );
  CHECK( E.empty() );
  }
 

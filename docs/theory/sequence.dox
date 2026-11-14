@@ -371,7 +371,8 @@
  of items they jump over; `TreapList`, the list on a treap of exercise
  7.11, whose nodes carry the sizes of their subtrees; and, for the order
  between two items rather than the access by rank, `OrderMaintenanceList`,
- the `Sequence` of exercise 8.11.
+ the `Sequence` of exercise 8.11; the shuffle of exercise 7.4 closes the
+ section.
 
  <em>Lemma 7 (the widths).</em> In `SkipListSequence`, if the link of each
  node \f$ x \f$ on the level \f$ l \f$ has the width
@@ -422,9 +423,10 @@
  \f$ O( \log n ) \f$ bits; the scapegoat labels are the solution of the
  exercise, \f$ O( \log n ) \f$.
 
- <em>Lemma 8 (the shuffle, exercise 7.4 of Morin).</em> `permute()` gives each
- of the \f$ n! \f$ orders with probability \f$ 1 / n! \f$, in \f$ n - 1 \f$
- draws and swaps.
+ <em>Lemma 8 (the shuffle, exercise 7.4 of Morin).</em> The shuffle of Fisher
+ and Yates in the form of Durstenfeld, `shuffleFast()` [see
+ `RandomGenerators.h`], gives each of the \f$ n! \f$ orders with probability
+ \f$ 1 / n! \f$, in \f$ n - 1 \f$ swaps.
 
  Indeed, by induction on the places from the last: the item put in the place
  \f$ i \f$ is drawn uniformly among the \f$ i + 1 \f$ items of
@@ -434,7 +436,10 @@
  The draw below \f$ m \f$ multiplies a word of 64 bits by \f$ m \f$ and takes
  the high word, rejecting the \f$ 2^{64} \bmod m \f$ values of the low word
  that would bias it (Lemire), which needs a division only when the low
- word is below \f$ m \f$, with probability \f$ m / 2^{64} \f$.
+ word is below \f$ m \f$, with probability \f$ m / 2^{64} \f$, and
+ `shuffleFast()` draws several indices from one word when their product
+ fits; the `shuffle()` of `RandomNumbers.h`, Algorithm 3.4.2P of Knuth with
+ \f$ g() \bmod j \f$, carries the bias of the remainder.
 
  \section theory_sequence_refs References
 

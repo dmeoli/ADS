@@ -31,8 +31,9 @@
  * Where it is meant to differ from the `Treap` of Morin, for the benchmarks to
  * check: a node is smaller by the priority and the parent, which may make it
  * fit a smaller class of the allocator; the price is a hash of 8 lookups in a
- * table of 16 KB, done only for the rotations, i.e., 2 per insertion on
- * average.
+ * table of 16 KB, two per level climbed by the new node, which stops at the
+ * first parent of larger priority (fewer than 2 rotations on average), and
+ * two per rotation of a removal.
  *
  * The contracts [see `Contract.h`]: `insert()` ensures that the key is there
  * and `remove()` that it is not; the invariant is the order of the keys and
@@ -196,7 +197,7 @@ class HashedTreap {
   }
  static void rotateRight( Ptr & t );
  static void rotateLeft( Ptr & t );
- bool insert( Ptr & t , const K & k , const V & v );
+ int insert( Ptr & t , const K & k , const V & v );
  bool remove( Ptr & t , const K & k );
  static int height( const Ptr & t );
  bool valid( const Ptr & t , const K * lo , const K * hi ) const;

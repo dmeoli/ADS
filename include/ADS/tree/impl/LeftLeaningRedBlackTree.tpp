@@ -262,7 +262,7 @@ void LeftLeaningRedBlackTree< K , V >::absorb( LeftLeaningRedBlackTree & t )
  Link * m = t.f_root;                       // the smallest of t, out
  while( m->left ) m = m->left;
  Node * x = new Node( key( m ) , static_cast< Node * >( m )->value );
- t.remove( key( m ) );
+ t.remove( x->key );                       // a copy: m is freed
  if( ! t.f_root ) {                         // t had one key: a leaf at the
   Link * p = f_root;                        // end of the right spine
   while( p->right ) p = p->right;

@@ -102,6 +102,13 @@ class MeasuredSearchTree {
  /// no copy, since the nodes are linked by pointers
  MeasuredSearchTree & operator=( const MeasuredSearchTree & ) = delete;
 
+ /// the nodes of `other`, which is left empty
+ MeasuredSearchTree( MeasuredSearchTree && other ) noexcept
+  : f_root( other.f_root ) , f_size( other.f_size ) {
+  other.f_root = nullptr;
+  other.f_size = 0;
+  }
+
  /// frees the nodes
  ~MeasuredSearchTree();
 

@@ -68,34 +68,35 @@ void HashedTreap< K , V >::rotateLeft( Ptr & t )
  }
 
 template< std::totally_ordered K , class V >
-bool HashedTreap< K , V >::insert( Ptr & t , const K & k , const V & v )
+int HashedTreap< K , V >::insert( Ptr & t , const K & k , const V & v )
 {
  //! [add]
+ // 0: k was there; 1: a new node that may still go up; 2: settled
  if( ! t ) {
   t = std::make_unique< Node >( Node{ k , v , nullptr , nullptr } );
-  return( true );
+  return( 1 );
   }
- if( k < t->key ) {
-  const bool fresh = insert( t->left , k , v );
-  if( fresh && ( priority( t->left.get() ) > priority( t.get() ) ) )
-   rotateRight( t );
-  return( fresh );
+ if( !( k < t->key ) && !( t->key < k ) ) {
+  t->value = v;
+  return( 0 );
   }
- if( t->key < k ) {
-  const bool fresh = insert( t->right , k , v );
-  if( fresh && ( priority( t->right.get() ) > priority( t.get() ) ) )
-   rotateLeft( t );
-  return( fresh );
-  }
- t->value = v;
- return( false );
+ const bool left = k < t->key;
+ Ptr & c = left ? t->left : t->right;
+ const int r = insert( c , k , v );
+ if( r != 1 )
+  return( r );
+ if( !( priority( c.get() ) > priority( t.get() ) ) )   // the heap holds:
+  return( 2 );                                    // no hash above
+ if( left ) rotateRight( t );
+ else rotateLeft( t );
+ return( 1 );
  //! [add]
  }
 
 template< std::totally_ordered K , class V >
 void HashedTreap< K , V >::insert( const K & k , const V & v )
 {
- if( insert( f_root , k , v ) )
+ if( insert( f_root , k , v ) )               // 1 or 2: a new key
   ++f_size;
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid( f_root , nullptr , nullptr ) );

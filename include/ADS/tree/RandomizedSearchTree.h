@@ -3,12 +3,12 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * The randomized binary search tree of Martínez and Roura (exercise 7.14 of
- * Morin), beyond the book: a binary search tree that stores no priorities
- * but the size of each subtree, and stays a random binary search tree, i.e.,
- * of the shape that the insertions of its keys in a uniformly random order
- * give, whatever the order of the operations; the expected depth of a node
- * is \f$ O( \log n ) \f$, as in a treap [see `Treap.h`], and the sizes give
- * the access by rank for free (`select()`, `rank()`).
+ * Morin), beyond the book: a binary search tree that stores no priorities but
+ * the size of each subtree, and stays a random binary search tree, i.e., of
+ * the shape that the insertions of its keys in a uniformly random order give,
+ * whatever the order of the operations; the expected depth of a node is
+ * \f$ O( \log n ) \f$, as in a treap [see `Treap.h`], and the sizes give the
+ * access by rank for free (`select()`, `rank()`).
  *
  * An insertion into the subtree \f$ t \f$ of \f$ m \f$ nodes puts the new key
  * at its root with probability \f$ 1 / ( m + 1 ) \f$, splitting \f$ t \f$ by
@@ -26,13 +26,13 @@
  *
  * The random choices are words of `SplitMix64` [see `RandomHashing.h`] turned
  * into an integer below \f$ m + 1 \f$ by `uniformBelow()` [see
- * `Rearrangements.h`], with no bias. It is a DICTIONARY [see `ADT.h`] with the
- * `find(x)` of an SSet (`lowerBound()`).
+ * `RandomGenerators.h`], with no bias. It is a DICTIONARY [see `ADT.h`] with
+ * the `find(x)` of an SSet (`lowerBound()`).
  *
  * Where it is meant to compare with the `Treap` of Morin, for the benchmarks
- * to check (exercise 7.14 asks for this comparison): a node has a size
- * instead of a priority, the same space, and the access by rank comes with
- * it; an insertion draws a random number per level until the coin falls,
+ * to check (exercise 7.14 asks for this comparison): a node has a size instead
+ * of a priority, the same space, and the access by rank comes with it; an
+ * insertion draws a random number per level until the coin falls,
  * \f$ O( 1 ) \f$ expected at each level but \f$ O( \log n ) \f$ in all,
  * against one per insertion in a treap, which is where it should lose.
  *
@@ -68,7 +68,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
-#include "ADS/sequence/Rearrangements.h"
+#include "ADS/numeric/RandomGenerators.h"
 
 #include <algorithm>
 #include <concepts>

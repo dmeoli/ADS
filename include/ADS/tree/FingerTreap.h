@@ -121,6 +121,13 @@ class FingerTreap {
  /// no copy, since the nodes are linked by pointers
  FingerTreap & operator=( const FingerTreap & ) = delete;
 
+ /// the nodes of `other`, which is left empty
+ FingerTreap( FingerTreap && other ) noexcept
+  : f_root( other.f_root ) , f_size( other.f_size ) , f_g( other.f_g ) {
+  other.f_root = other.f_finger = nullptr;
+  other.f_size = 0;
+  }
+
  /// frees the nodes
  ~FingerTreap();
 

@@ -11,6 +11,13 @@
  * Morin, on n distinct random keys of 31 bits, the sets of Morin holding
  * the keys alone and those of ADS a value of 4 bytes with each.
  *
+ * Two defects of the code of Morin show in these runs, and the later
+ * comparisons must patch them: the constructor of his ScapegoatTree leaves
+ * the bound q uninitialized (ScapegoatTree.h, the constructor sets
+ * nothing), so that a tree may rebuild at random or climb past its root,
+ * and his SkiplistSSet frees with delete the nodes it allocates with malloc
+ * (SkiplistSSet.h, remove(x)); both crashed the runs of 2000 keys here.
+ *
  * The cases are those that the exercise asks for: the n insertions in
  * random order and in increasing order into an empty set, n searches of
  * present keys in random order, n searches of the first key not smaller

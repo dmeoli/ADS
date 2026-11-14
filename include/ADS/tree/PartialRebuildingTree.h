@@ -46,7 +46,7 @@
  *
  * The analyses are in \ref theory_tree_partial. The random choices of
  * `DynamiteTree` come from `SplitMix64` [see `RandomHashing.h`] by
- * `uniformBelow()` [see `Rearrangements.h`].
+ * `uniformBelow()` [see `RandomGenerators.h`].
  *
  * Morin gives no code for them: the benchmarks compare them with
  * `ScapegoatTree`, which pays its rebuilds by \f$ q \f$ and needs no field
@@ -88,7 +88,7 @@
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/dictionary/RandomHashing.h"
-#include "ADS/sequence/Rearrangements.h"
+#include "ADS/numeric/RandomGenerators.h"
 #include "ADS/tree/ScapegoatTree.h"
 
 #include <algorithm>

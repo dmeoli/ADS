@@ -45,19 +45,6 @@
  *   come from different sequences of swaps; \f$ O( n \log n ) \f$ for the
  *   sort that gives the permutation.
  *
- * - `permute()`: a random permutation of the items, each of the \f$ n! \f$
- *   equally likely (exercise 7.4 of Morin), by the shuffle of Fisher and
- *   Yates in the form of Durstenfeld: \f$ A[ i ] \f$, for \f$ i \f$ from
- *   \f$ n - 1 \f$ down to 1, swapped with an item drawn uniformly from
- *   \f$ A[ 0 .. i ] \f$; the item that ends in the place \f$ i \f$ is each of
- *   the \f$ i + 1 \f$ left with probability \f$ 1 / ( i + 1 ) \f$, whatever
- *   was drawn before, so that a permutation has probability
- *   \f$ \prod_i 1 / ( i + 1 ) = 1 / n! \f$. The integer below \f$ i + 1 \f$
- *   comes from a word of 64 bits by the multiplication of Lemire, with no
- *   bias and almost never a division, where `std::uniform_int_distribution`
- *   of libstdc++ divides at every draw and the `rand() % ( i + 1 )` of the
- *   textbooks is biased.
- *
  * The contracts [see `Contract.h`]: the colors must be 0, 1 or 2, and come
  * out in order (an audit); `wiggleSort()` and `sortKSorted()` give a
  * permutation of the items (an audit) alternating and sorted;
@@ -72,13 +59,6 @@
  *      chapter 14
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 1.3.3
- * \see R. Durstenfeld, Algorithm 235: Random permutation, Communications
- *      of the ACM 7(7), 420, 1964, doi:10.1145/364520.364540
- * \see D. Lemire, Fast random integer generation in an interval, ACM
- *      Transactions on Modeling and Computer Simulation 29(1), 3:1-3:12,
- *      2019, doi:10.1145/3230636
- * \see P. Morin, Open Data Structures (in C++), Athabasca University Press,
- *      2013, exercise 7.4, doi:10.15215/aupress/9781927356388.01
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -99,12 +79,10 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
-#include "ADS/Portable.h"
 #include "ADS/sort/Sorted.h"
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <numeric>
 #include <type_traits>
@@ -217,43 +195,6 @@ void sortKSorted( std::vector< T > & A , std::size_t k , C less = C() );
 template< class T , class W = T >
  requires std::is_arithmetic_v< T >
 std::pair< std::size_t , W > minimumSwapSort( const std::vector< T > & A );
-
-/// an integer drawn uniformly from \f$ [ 0 , m ) \f$ by the generator
-/// \f$ g \f$ of words of 64 bits, by the multiplication of Lemire
-///
-/// In pseudocode (Lemire, beyond the book), \f$ x \f$ a random word and the
-/// product of 128 bits split into its high and low halves:
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{below}( m ) \cr
-/// 2 & \quad ( h , \ell ) \gets x \cdot m \cr
-/// 3 & \quad \textbf{if}\ \ell < m\ \textbf{then} \cr
-/// 4 & \qquad t \gets ( 2^{64} - m ) \bmod m \cr
-/// 5 & \qquad \textbf{while}\ \ell < t\ \textbf{do}\ ( h , \ell ) \gets x'
-///     \cdot m \text{ for a new word } x' \cr
-/// 6 & \quad \textbf{return}\ h
-/// \end{array}}
-/// \f]
-/// \pre \f$ m > 0 \f$, `g()` gives words of 64 bits
-template< class G >
-[[nodiscard]] std::uint64_t uniformBelow( G & g , std::uint64_t m );
-
-/// the items of \f$ A \f$ in a random order, each of the \f$ n! \f$ with
-/// probability \f$ 1 / n! \f$, by the generator \f$ g \f$ of words of 64
-/// bits; \f$ n - 1 \f$ draws and swaps
-///
-/// In pseudocode (Durstenfeld, exercise 7.4 of Morin):
-/// \f[
-/// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{permute}( A ) \cr
-/// 2 & \quad \textbf{for}\ i \gets n - 1\ \textbf{downto}\ 1\ \textbf{do} \cr
-/// 3 & \qquad j \gets \mathrm{below}( i + 1 );\ \text{swap } A[ i ]
-///     \text{ and } A[ j ]
-/// \end{array}}
-/// \f]
-/// \post a permutation of the items (an audit)
-template< class T , class G >
-void permute( std::vector< T > & A , G & g );
 
 /*--------------------------------------------------------------------------*/
 

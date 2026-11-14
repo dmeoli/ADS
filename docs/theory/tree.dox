@@ -737,8 +737,9 @@
  \f]
  \f$ f( 1 ) = 2 \f$, \f$ f( 2 ) = 20 \cdot 4 = 80 \f$ and
  \f$ f( 3 ) = 3432 \cdot 6400 = 21964800 \f$ (exercise 7.3, checked by the
- test, which counts the 80 orders of 7 keys). `permute()` [see
- `Rearrangements.h`] is the uniform shuffle of exercise 7.4. An insertion
+ test, which counts the 80 orders of 7 keys). `shuffleFast()` [see
+ `RandomGenerators.h`] is the uniform shuffle of exercise 7.4 (Lemma 8 of
+ \ref theory_sequence_morin). An insertion
  into a treap makes \f$ O( 1 ) \f$ rotations in expectation (exercise 7.5):
  each rotation that lifts the new node adds a node to the right spine of
  its left subtree or to the left spine of its right one, and the node
