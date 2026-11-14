@@ -52,6 +52,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -930,6 +931,58 @@ ADS_TEST( "ods-ex7.11.treap-list" )
   }
  CHECK( std::vector< int >( L.begin() , L.end() ) == ref );
  CHECK_THROWS( L.add( ref.size() + 1 , 0 ) , contract_violation );
+ }
+
+namespace {
+
+/// the depth of the subtree of the node `x` of a TreapList
+int treapDepth( const auto * x )
+{
+ if( ! x )
+  return( 0 );
+ using S = TreapList< int >::Shape;
+ return( 1 + std::max( treapDepth( S::left( x ) ) ,
+                       treapDepth( S::right( x ) ) ) );
+ }
+
+}  // end( namespace )
+
+// a TreapList and a SkipListSequence that absorb n lists of one item, each
+// made with its default seed: the seeds differ from list to list, so that
+// the treap keeps a logarithmic depth and the skip list about log2 n
+// levels, where one seed for all gave a path of depth n and 2 levels; the
+// same seed given twice gives the same shape
+ADS_TEST( "absorb-default-seeds" )
+{
+ const int n = 2000;
+ TreapList< int > T;
+ SkipListSequence< int > K;
+ for( int i = 0 ; i < n ; ++i ) {
+  TreapList< int > t;
+  t.push_back( i );
+  T.absorb( t );
+  SkipListSequence< int > k;
+  k.push_back( i );
+  K.absorb( k );
+  }
+ std::vector< int > want( n );
+ std::iota( want.begin() , want.end() , 0 );
+ CHECK( std::vector< int >( T.begin() , T.end() ) == want );
+ for( int i = 0 ; i < n ; i += 7 ) CHECK( K.get( i ) == i );
+ CHECK( treapDepth( TreapList< int >::Shape::root( T ) ) <=
+        6 * std::bit_width( unsigned( n ) ) );
+ CHECK( K.levels() >= 6 );
+ TreapList< int > A( 9 ) , B( 9 );
+ SkipListSequence< int > C( 9 ) , D( 9 );
+ for( int i = 0 ; i < 100 ; ++i ) {
+  A.push_back( i );
+  B.push_back( i );
+  C.push_back( i );
+  D.push_back( i );
+  }
+ CHECK( treapDepth( TreapList< int >::Shape::root( A ) ) ==
+        treapDepth( TreapList< int >::Shape::root( B ) ) &&
+        C.levels() == D.levels() );
  }
 
 ADS_TEST( "ods-ex7.14.randomized-bst" )

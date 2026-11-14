@@ -17,7 +17,10 @@
  * `truncate( i )` splits the treap at the index \f$ i \f$ and `absorb( s )`
  * joins the treap of another sequence at the end, both along two spines in
  * \f$ O( \log n ) \f$ expected time, as `SkipListSequence` does on a skip
- * list. The priorities come from `SplitMix64` [see `RandomHashing.h`].
+ * list. The priorities come from `SplitMix64` [see `RandomHashing.h`],
+ * seeded by default with a seed of its own per sequence, so that the
+ * sequences absorbed one into another do not repeat their priorities; a
+ * seed given makes them reproducible.
  *
  * Morin gives no code for it: the benchmarks compare it with
  * `SkipListSequence`, whose operations it has, and with his `SkiplistList`;
@@ -82,8 +85,10 @@ class TreapList {
 
  using Item = T;    ///< the type of the items
 
- /// the empty sequence, its priorities drawn from the seed
- explicit TreapList( std::uint64_t seed = 1 ) : f_g( seed ) {}
+ /// the empty sequence, its priorities drawn from the seed, by default
+ /// one of its own [see `detail::instanceSeed()`]
+ explicit TreapList( std::uint64_t seed = detail::instanceSeed() )
+  : f_g( seed ) {}
 
  /// the number \f$ n \f$ of items
  [[nodiscard]] std::size_t size( void ) const { return( sz( f_root ) ); }

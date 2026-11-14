@@ -2719,6 +2719,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- TreapList and SkipListSequence took the seed 1 by default, so that the
+  lists of one item made with it had all the same priority or level, and
+  absorb() of n of them gave a treap of depth n and a skip list of 2
+  levels; the default seed is now one per instance, the count of the
+  instances made mixed by splitmix64 (detail::instanceSeed() of
+  RandomHashing.h), a seed given still making the shape reproducible, as
+  the headers and chapter 2 of the manual say; the test ods_trees
+  absorb-default-seeds
+
 - the preconditions of LinkCutTree::link(), lca() and aggregate() called
   connected(), whose walks on the vector of parents were counted as steps
   and as an operation, so that the moment of the change to the splay trees

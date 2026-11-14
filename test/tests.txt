@@ -1985,6 +1985,7 @@ ods_trees  ods7.2.treap-exercises              ex. 7.8, 7.10, 7.12, 7.13
 ods_trees  ods-ex7.6.hashed-treap              priorities by hashing
 ods_trees  ods-ex7.9.finger-treap              finger search in a treap
 ods_trees  ods-ex7.11.treap-list               TreapList
+ods_trees  absorb-default-seeds                absorb() with a seed per list
 ods_trees  ods-ex7.14.randomized-bst           Martinez-Roura trees
 ods_trees  ods8.1.scapegoat                    section 8.1, ScapegoatTree
 ods_trees  ods-ex8.1.scapegoat-figure          ex. 8.1, figure 8.1, no rebuild
