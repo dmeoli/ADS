@@ -864,14 +864,16 @@ others onto the free list ([Algorithm 5.10](05-memory.md#alg-5-10)).
 A field is of the type `CellHeap::Value` (a `long`); the constant `nil` is
 $-1$, `atom(k)` gives the atom $k \ge 0$ and `isCell(v)` is true when $v$ is the address of a cell. We read the fields of a cell in use by `car(c)`
 and `cdr(c)`, and write them by `setCar(c, v)` and `setCdr(c, v)`, whose
-precondition is that $c$ is a cell of the heap in use; `addRoot(c)`
-adds one more occurrence of the cell $c$ to the roots, and `removeRoot(c)`
-removes one of them, if there is one (and does nothing otherwise).
+precondition is that $c$ is a cell of the heap in use; `addRoot(c)`,
+with the same precondition, adds one more occurrence of the cell $c$ to
+the roots, and `removeRoot(c)` removes one of them, if there is one (and
+does nothing otherwise).
 Finally, `freeCells()` is the number of the free cells, and `collect()`
 returns the number of the cells that it frees, i.e., of the cells in use before it that are unreachable. The heap relies on the program for what it
-does not check: the fields of the cells in use and the roots hold only nil,
-atoms and cells in use (a free cell named by a root, for instance, would
-bring the free list into the marking).
+does not check: the fields of the cells in use hold only nil, atoms and
+cells in use, and a root stays a cell in use until it is removed (a free
+cell named by a root, for instance, would bring the free list into the
+marking, which is why `addRoot()` refuses a free cell).
 
 A marking by a visit in depth needs a stack as deep as the longest path of
 cells, which a collector (run when the memory is exhausted) cannot

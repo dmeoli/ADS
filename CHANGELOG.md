@@ -2555,6 +2555,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CellHeap::addRoot() took a free cell as a root, whose marking would then
+  walk the free list; its precondition is now a cell of the heap in use, as
+  for car(), cdr(), setCar() and setCdr(), stated in the header, the theory
+  of the memory and the chapter of the manual; the test taocp
+  cell-heap-roots
+
 - ObjectPool::adopt() took the limit of the blocks of the other pool when
   this one had no block (a swap) and the larger of the two limits otherwise;
   the rule is now the same in both cases, the larger limit, the other pool

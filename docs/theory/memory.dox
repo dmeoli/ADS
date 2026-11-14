@@ -238,9 +238,10 @@
  In `CellHeap` the cells have two fields, each nil, an atom or the address
  of a cell, and the cells not reachable from the roots are garbage, which
  `collect()` finds by marking the reachable cells and sweeping the others
- onto the free list. A marking by a visit in depth needs a stack as deep as
- the longest path of cells, which a collector, run when the memory is
- exhausted, cannot allocate.
+ onto the free list; a root is a cell in use (`addRoot()` refuses a free
+ one, whose marking would walk the free list). A marking by a visit in depth
+ needs a stack as deep as the longest path of cells, which a collector, run
+ when the memory is exhausted, cannot allocate.
 
  <em>Lemma 3 (Deutsch, Schorr and Waite).</em> During the marking by
  pointer reversal (Algorithm 2.3.5E of Knuth), with \f$ c \f$ the current

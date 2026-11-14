@@ -462,6 +462,7 @@ taocp  external-sort         replacement selection e merge polifase
 taocp  threaded-tree         albero infilato
 taocp  allocators            boundary tag e buddy system
 taocp  cell-heap             garbage collector, Deutsch-Schorr-Waite
+taocp  cell-heap-roots       radici solo su celle in uso
 taocp  sparse-matrix         liste ortogonali e passo di pivot
 taocp  sparse-pivot          pivot lungo le liste, Algoritmo 2.2.6S
 taocp  bitwise               trucchi sui bit, volume 4A

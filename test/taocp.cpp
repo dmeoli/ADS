@@ -865,6 +865,24 @@ ADS_TEST( "cell-heap" )
  CHECK_THROWS( CellHeap( 0 ) , contract_violation );
  }
 
+// addRoot() refuses a free cell, never handed out or freed by a
+// collection, and takes it again once cons() hands it out
+ADS_TEST( "cell-heap-roots" )
+{
+ CellHeap H( 2 );
+ CHECK_THROWS( H.addRoot( 0 ) , contract_violation );    // never handed out
+ const auto c = H.cons( CellHeap::atom( 1 ) , CellHeap::nil );
+ H.addRoot( c );
+ H.removeRoot( c );
+ CHECK( H.collect() == 1 && H.freeCells() == 2 );
+ CHECK_THROWS( H.addRoot( c ) , contract_violation );    // freed
+ CHECK( H.freeCells() == 2 && H.collect() == 0 );         // nothing changed
+ const auto d = H.cons( CellHeap::nil , CellHeap::nil );
+ H.addRoot( d );
+ CHECK( H.collect() == 0 && H.freeCells() == 1 );
+ CHECK_THROWS( H.addRoot( CellHeap::atom( 3 ) ) , contract_violation );
+ }
+
 // the pivot step on orthogonal lists against the dense one, and the
 // inverse of a matrix by a pivot step on each diagonal place; zeros set
 // and removed, empty rows and columns, a 1 x 1 matrix, and the bounds of
