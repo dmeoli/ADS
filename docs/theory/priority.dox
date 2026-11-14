@@ -393,11 +393,18 @@
  move to the buckets that (5) gives for it, all in rows below \f$ r \f$,
  while the other buckets keep their items. An item thus only moves to lower
  rows, at most \f$ \lceil W / B \rceil - 1 \f$ times, and with the potential
- \f$ \Phi = \sum_x \mathrm{row}( x ) \f$ the extractions cost
- \f$ O( W / B + 2^B W / ( 64 B ) ) \f$ amortized, the second term the scan of
- the mask; the keys of a band of width \f$ C \f$ above \f$ \ell \f$ use only
- the lowest \f$ \lceil \log_2 ( C + 1 ) / B \rceil \f$ rows, and with
- \f$ B = 1 \f$ an extraction costs \f$ O( \log C ) \f$ amortized.
+ \f$ \Phi = \sum_x \mathrm{row}( x ) \f$ a push costs \f$ O( W / B ) \f$
+ amortized and an extraction \f$ O( 2^B W / ( 64 B ) ) \f$, the scan of the
+ mask, i.e., \f$ O( 1 ) \f$ per push and \f$ O( W / B + 2^B W / ( 64 B ) ) \f$
+ per extraction when every item pushed is extracted. A key of a band of width
+ \f$ C \f$ above \f$ \ell \f$ may still lie in a high row, since a carry
+ changes high bits (\f$ 7 \f$ and \f$ 8 \f$ differ in the bit 3); however,
+ after its first move the key and every later \f$ \ell \f$ lie in one
+ interval \f$ [ Q , Q + C ) \f$, \f$ Q \f$ a multiple of \f$ 2^{B r} \f$
+ and \f$ r \f$ the row it left, so that its row is then at most
+ \f$ \lceil \log_2 C \rceil / B \f$: an item moves at most
+ \f$ 1 + \lceil \log_2 C \rceil / B \f$ times, and with \f$ B = 1 \f$ an
+ extraction costs \f$ O( \log C + W / 64 ) \f$ amortized.
 
  The two levels of `BucketQueue.h` apply the scan of Dial to two keys, the
  first \f$ f \f$ of the order and the second \f$ g \f$ that breaks its ties

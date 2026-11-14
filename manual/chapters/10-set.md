@@ -5,7 +5,8 @@
 `RoaringBitmap.h`, `SortedIntersection.h`, `VectorIntersection.h`,
 `BloomFilter.h`, `BloomVariants.h`, `BlockedBloomFilter.h`,
 `CuckooFilter.h`, `PrefixFilter.h`, `BinaryFuseFilter.h`, `RibbonFilter.h`,
-`GrafiteFilter.h`]
+`GrafiteFilter.h`, `SpaceEfficientSortedSet.h`; `SetInterfaces.h` and
+`Bag.h` are described in [Chapter 1](01-introduction.md#ch-1)]
 
 We are concerned in this chapter with the SET, i.e., a finite collection of
 distinct items of a universe $U$, queried for membership and combined with
@@ -14,7 +15,8 @@ headers of `ADS/set` realize the SET of [Montresor 2025, chapter
 8](Z-bibliography.md#ref-montresor2025) on a boolean vector
 ([§10.2](10-set.md#sec-10-2)), on an unsorted and on a sorted list
 ([§10.3](10-set.md#sec-10-3)) and on any dictionary
-([§10.4](10-set.md#sec-10-4)). Beyond the book, they add three families
+([§10.4](10-set.md#sec-10-4)), where the sets of Morin and his
+space-efficient sorted set on blocks also find their place. Beyond the book, they add three families
 that the engineering of the sets has produced. The first one is the
 compressed bitmaps of Roaring ([§10.5](10-set.md#sec-10-5)), and the
 second one the intersection of sorted sequences of [Ferragina 2023,
@@ -67,6 +69,7 @@ Roaring bitmap.
 | `OpenHashSet` | $\Theta( m_X )$ | $O( 1 )$ expected | $O( m_X )$ | as above |
 | `LinkedHashSet` | $\Theta( n_X + m_X )$ | $O( 1 )$ expected | $O( n )$ | as above |
 | `TreeSet` | $\Theta( n )$ | $O( \log n )$ | $O( n )$, in order | $O( n + m \log( n + m ) )$ |
+| `SpaceEfficientSortedSet` | $n + O( n / b + b )$ items | $O( \log n )$ expected, $O( \log n + b )$ amortized for the changes | $O( n )$, in order | as `TreeSet` |
 | `RoaringBitmap` | $\lesssim \min( 2 n , \vert U \vert / 8 )$ bytes | $O( \log c )$ plus a container | $O( n + c )$ | merge of the containers |
 
 A *filter* of a set $S$ of $n$ keys answers a query $\mathrm{maybe}( x )$
@@ -89,11 +92,11 @@ invariant (the counter equals the number of bits set) is checked at the
 contract level 3. Hence `contains()`, `insert()` and `remove()` read or
 write one bit, in $O( 1 )$ time ([Figure 10.1](10-set.md#fig-10-1)), and
 `contains()` answers false for an $x$ out of $[ 0 , N )$, whereas
-`insert()` requires one in it.
+`insert()` requires one in it; `dim()` gives $N$.
 
 ![Figure 10.1. A `BoolSet` of dimension $N = 16$ holding $\{ 1 , 3 , 4 , 9 , 14 \}$, before and after `insert(6)`, which sets one bit (in colour) and increments the size.](../figures/set-bool.svg){#fig-10-1}
 
-The scans go one word at a time. `min()` returns $64 k$ plus the trailing
+The scans go one word at a time: `min()` returns $64 k$ plus the trailing
 zeros of the first word $W[ k ] \ne 0$, `max()` does the same from the last
 word with the leading zeros, and `forEach()` visits the bits set of each
 word from the lowest, clearing it at each step by
@@ -219,23 +222,68 @@ and $O( \log n )$ on the tree; `forEach()` costs $O( n + m )$ on the table
 with lists, since it reads the $m$ heads and the $n$ cells, $O( m )$ on the
 table with open addressing, and $O( n )$, in order, on the tree.
 
-The same adaptor makes every dictionary of the library a set of Morin.
-A dictionary that gives `findKey( k )`, the address of the key $k$ it
-holds (a `KeyedDictionary`), makes `DictionarySet` a `USet`, whose
-`find( x )` is that address; one that also gives `lowerBoundKey( k )`, the
-address of the smallest key not smaller than $k$ (an `OrderedDictionary`),
-makes it an `SSet`, whose `lowerBound( x )` is the successor search. The
-hash tables are of the first kind, and the search trees, the skip lists,
-the B-trees and the sorted array of the second, each at the cost of its
-own search; `insert()` and `remove()` say whether they changed the set.
-The trees keep their own `lowerBound()`, which gives the key with its
-value as a map does, and the adaptor reads the address instead, the item
+The same adaptor makes every dictionary of the library a set of Morin
+([Morin 2013, §1.2.3 and §1.2.4](Z-bibliography.md#ref-morin-cpp)), whose
+interfaces `USet` and `SSet` are the concepts of `SetInterfaces.h`
+described in [§1.3](01-introduction.md#sec-1-3), with their realizations
+on a vector, `ArrayUSet` and `ArraySSet`, and the multiset `Bag` (with its
+`findAll()`) of [§1.4](01-introduction.md#sec-1-4). Two more concepts of
+the same header state what the adaptor needs of a dictionary `D`. A `KeyedDictionary` has the types `D::Key` and `D::Value`, an
+`insert(k, v)`, a `remove(k)` and a `findKey(k)` that gives the address of
+the key equal to $k$ that it holds (nil if there is none). Its search may
+change the dictionary, but not the set of its keys. An
+`OrderedDictionary` is a `KeyedDictionary` with `lowerBoundKey(k)`, the
+address of the smallest key not smaller than $k$, nil if none. On the
+first `DictionarySet< D >` is a `USet`, whose `find(x)` is `findKey(x)`,
+and on the second also an `SSet`, whose `lowerBound(x)` is
+`lowerBoundKey(x)`, i.e., the successor search; both members are
+constrained by `requires`, and hence a hash table, which has no order,
+gives no `lowerBound()`. The hash tables are of the first kind, and the
+search trees, the skip lists, the B-trees and the sorted array of the
+second, each at the cost of its own search. The trees keep their own
+`lowerBound()`, which gives the key with its value as a map does (a pair or
+an iterator), and the adaptor reads the address instead, which is the item
 of the interfaces of Morin. A splay tree, whose searches move its nodes,
 sits in the adaptor as a `mutable` member, so that the constant `find()`
-of a `USet` still splays and keeps the amortized bound.
+of a `USet` still splays and keeps the amortized bound of the tree.
+
+The concepts `USet` and `SSet` require `insert()` and `remove()` to say
+whether they changed the set. Hence the adaptor takes the answer of the
+dictionary when its own `insert()` and `remove()` return a `bool`, and
+otherwise asks first whether the item is there
+([Algorithm 10.2](10-set.md#alg-10-2)); a new key gets the value `true`
+when the values are `bool`, and the value made by default otherwise.
+Its `contains(x)` is `findKey(x)` on a `KeyedDictionary`, and the `contains()`
+of the dictionary on any other, while `size()` and `empty()` are those of the
+dictionary, which `dictionary()` gives, and `forEach(f)` calls $f$ on the keys in the order of the dictionary (by its
+own `forEach()` when it has one, by its iterators otherwise). When the
+dictionary is a range, `begin()` and `end()` make the set a constant range
+of its keys, in the same order.
+
+<span id="alg-10-2"></span>**Algorithm 10.2.** The insertion and the
+removal of `DictionarySet` ([Montresor 2025,
+§8.4](Z-bibliography.md#ref-montresor2025)); "$D.\mathrm{insert}$ answers"
+means that the `insert()` of the dictionary returns whether it added the
+key.
+
+--8<-- "generated/DictionarySet-insert.pseudo.md"
+
+--8<-- "generated/DictionarySet-remove.pseudo.md"
+
+<span id="lem-10-3"></span>**Lemma 10.3.** *Each operation of
+`DictionarySet< D >` costs one operation of `D`, plus one search of `D`
+for an `insert()` or a `remove()` of a dictionary that does not say
+whether it changed its keys; hence the set has the bounds of the
+dictionary, up to a factor of at most 2.*
+
+*Proof.* The operations of the adaptor are those of
+[Algorithm 10.2](10-set.md#alg-10-2) and calls of a single member of `D`,
+whose answers they pass on; the dictionary keeps its own invariant, and
+the postconditions of `insert()` and `remove()` hold since the key was
+added, or removed, by `D` or was already there, or already absent. $\square$
 
 The operations of two sets of `SetOperations.h` take any SET that can be
-copied and has a `forEach()`. The union copies $A$ and inserts the items of
+copied and has a `forEach()` (the concept `IterableSet` of the header). The union copies $A$ and inserts the items of
 $B$, and the intersection copies the smaller set and removes its items not
 in the other one; the difference copies $A$ and removes its items in $B$,
 and the symmetric difference adds to $A \setminus B$ the items of $B$ not
@@ -265,7 +313,7 @@ list and indexes its position, and a removal looks the position up and
 unlinks it, both in $O( 1 )$ expected time, while `forEach()` scans the
 list in $O( n )$ instead of the $O( n + m )$ of the table.
 
-![Figure 10.3. A `LinkedHashSet` after the insertions of `c`, `a`, `b` and `d` (in colour, the last): the list of the order, whose positions are $p_1 , \ldots , p_4$, and the table of 5 lists that maps each item to its position.](../figures/set-linked.svg){#fig-10-3}
+![Figure 10.3. A `LinkedHashSet` after the insertions of `c`, `a`, `b` and `d` (in colour, the last): the list of the order, whose positions are $p_1 , \ldots , p_4$, and the table of lists that maps each item to its position, drawn with 5 lists for brevity (the class starts with 7).](../figures/set-linked.svg){#fig-10-3}
 
 --8<-- "generated/LinkedHashSet-insert.pseudo.md"
 
@@ -277,11 +325,106 @@ Finally, `HashMultiset` realizes a multiset on a hash table with lists of
 overflow that maps each item to its multiplicity (exercise 8.10): the
 insertion of a new item sets its counter to 1 and that of an item already
 there increments it, while a removal decrements the counter and removes the
-item when it reaches 0. Each operation costs $O( 1 )$ expected time, and
-the invariant is that the size equals the sum of the counters, none of
-which is 0.
+item when it reaches 0. Each operation costs $O( 1 )$ expected time, `count(x)` gives the
+multiplicity of $x$, and the invariant is that the size equals the sum of
+the counters, none of which is 0. We remark that `ListSet`,
+`SortedListSet`, `LinkedHashSet`, `HashMultiset` (whose items are the
+pairs of an item and its count), `BoolSet` and `RoaringBitmap` are also
+constant ranges, with `begin()` and `end()` (and `cbegin()` and `cend()`),
+which visit the items in the order of their `forEach()`.
 
 --8<-- "generated/HashMultiset-remove.pseudo.md"
+
+Finally, `SpaceEfficientSortedSet` is the space-efficient sorted set of
+[Morin 2013, exercise 4.13](Z-bibliography.md#ref-morin-cpp) (his
+`SESSet`), an `SSet` of ordered items that needs only the space of its $n$
+items and $O( n / b + b )$ more places, $b \ge 3$ a parameter of the
+constructor (32 by default, with the seed of the skip list). The items are
+kept in increasing order in a list of *blocks*, as in the `SEList` of
+[Morin 2013, §3.3](Z-bibliography.md#ref-morin-cpp) (cf.
+[Chapter 2](02-sequence.md#ch-2)). Each block is a circular buffer of
+$b + 1$ places, and each block but the last holds from $b - 1$ to $b + 1$
+items. The blocks are indexed by a `SkipList`
+([Chapter 7](07-dictionary.md#ch-7)) whose key of a block is its largest
+item, read in the block at each comparison. The blocks partition the
+sorted items into intervals; hence their order never changes when items
+move between neighbours, and the skip list sees only the creation and the
+removal of a block (and of a largest item of the last one, which is
+indexed again). Its `lowerBound(x)` finds the first block whose largest item is
+not smaller than $x$ and then $x$ in it by a binary search, and `find(x)`
+and `contains(x)` are a `lowerBound(x)` followed by a test of equality:
+
+--8<-- "generated/SpaceEfficientSortedSet-lowerBound.pseudo.md"
+
+```cpp
+--8<-- "generated/SpaceEfficientSortedSet-find.cpp"
+```
+
+An insertion into a block with room moves the shorter side of the block by
+one place, at most $b / 2$ items. If the block of $x$ is full, the
+insertion looks for a block with room among the next $b - 1$ ones. It then
+moves the last item of each full block before it to the front of the next
+one, in $O( 1 )$ time per block in a circular buffer, after which the
+block of $x$ has room ([Figure 10.4](10-set.md#fig-10-4)). If those $b - 1$ blocks are
+all full too, a new block follows them, and the $b ( b + 1 )$ items of the
+$b$ full blocks are spread over the $b + 1$ blocks, $b$ each. A removal
+that leaves a block with $b - 2$ items borrows one item from the next
+blocks in the same way, up to the first one with more than $b - 1$ items
+or to the last one. If the next $b - 1$ blocks hold $b - 1$ items each, the
+items of the $b$ blocks are gathered into the first $b - 1$ of them and the
+last one is freed ([Algorithm 10.3](10-set.md#alg-10-3)). The class has no
+copy, since its blocks are linked by pointers; `capacity()` gives its
+places, `size()`, `empty()` and `forEach()` the rest.
+
+![Figure 10.4. A `SpaceEfficientSortedSet` with $b = 4$, i.e., blocks of 5 places, and above each block its key in the skip list, its largest item, before and after `insert(9)`: the block $B_0$ of 9 is full, the last items 14 and 31 of the full blocks $B_0$ and $B_1$ move to the front of the next blocks (violet), and 9 then takes its place in $B_0$ (orange).](../figures/set-sesset.svg){#fig-10-4}
+
+<span id="alg-10-3"></span>**Algorithm 10.3.** The insertion and the
+removal of `SpaceEfficientSortedSet` ([Morin 2013, exercise
+4.13](Z-bibliography.md#ref-morin-cpp)); $B_0 , B_1 , \ldots$ are the
+blocks from that of $x$ on.
+
+--8<-- "generated/SpaceEfficientSortedSet-insert.pseudo.md"
+
+--8<-- "generated/SpaceEfficientSortedSet-remove.pseudo.md"
+
+<span id="lem-10-4"></span>**Lemma 10.4.** *A `SpaceEfficientSortedSet`
+of $n$ items has at most $n / ( b - 1 ) + 1$ blocks and at most
+$2 ( n / ( b - 1 ) + 1 ) + b + 1$ empty places, i.e., it takes the space
+of $n + O( n / b + b )$ items; a search costs $O( \log n )$ expected time,
+and any sequence of $m$ insertions and removals from the empty set costs
+$O( m ( \log n + b ) )$ expected time, $n$ being the largest size reached.*
+
+*Proof.* The blocks but the last hold at least $b - 1$ items each, which
+bounds their number; each of them has at most 2 empty places, and the last
+at most $b + 1$ (as the test `ods_trees.ods-ex4.13.sesset` checks). A search
+is one search of the skip list on at most $n / ( b - 1 ) + 1$ keys, in
+$O( \log n )$ expected time, and a binary search in a block, in
+$O( \log b )$. An insertion or a removal costs a search, $O( b )$ for the
+moves inside a block and the shifts along at most $b$ blocks, $O( 1 )$
+operations of the skip list, and possibly a spread or a gather, each of
+$O( b^2 )$ moves. To bound the latter, we follow the proof of [Morin 2013,
+Lemma 3.1](Z-bibliography.md#ref-morin-cpp) and call a block *fragile* if
+it is not the last and holds $b - 1$ or $b + 1$ items. An operation with no
+spread or gather changes the number of items only of the blocks at the
+ends of its shifts, plus possibly a new last block. There are at most two
+rounds of shifts, since after a round the item may belong to the next
+block, which is then full; hence it increases the number $\Phi$ of fragile
+blocks by at most a constant $c$. A
+spread finds $b$ fragile blocks (full), and leaves $b + 1$ blocks of $b$
+items; a gather finds $b - 1$ fragile blocks (of $b - 1$ items) after the
+one of $b - 2$, and leaves $b - 2$ blocks of $b$ items and one of $b - 1$.
+Each thus decreases $\Phi$ by at least $b - 2 \ge b / 3$, and since
+$\Phi \ge 0$ starts at 0, the spreads and the gathers are at most
+$3 c m / b$, at the cost of $O( b^2 )$ each, i.e., $O( b m )$ in all.
+$\square$
+
+Hence $b$ trades space for time: with $b = \Theta( \log n )$ the set takes
+the space of its items plus $O( n / \log n )$, and its operations keep the
+bound $O( \log n )$ of a skip list, with $n / b$ nodes of the skip list
+instead of $n$ (each with its links and its allocation). Whether the
+binary search in a block of contiguous items makes the search faster than
+that of a skip list on all the items, which misses the cache at each step,
+belongs to the campaign of [Appendix B](B-benchmarks.md#app-B).
 
 ## 10.5 Compressed bitmaps {#sec-10-5}
 
@@ -292,7 +435,7 @@ et al. 2016](Z-bibliography.md#ref-chambi2016) interpolates between the
 two. It cuts the universe into *chunks* of $2^{16}$ integers by their top
 16 bits. Each chunk that holds some item is a *container* of the low 16
 bits of its items, kept in a vector sorted by the chunks
-([Figure 10.4](10-set.md#fig-10-4)):
+([Figure 10.5](10-set.md#fig-10-5)):
 
 * an *array container*, the sorted array of the low bits, when the chunk
   holds at most 4096 items (2 bytes per item, at most 8 KB);
@@ -302,9 +445,9 @@ bits of its items, kept in a vector sorted by the chunks
 Note that the two forms take the same space at 4096 items ($4096 \cdot 16 = 2^{16}$
 bits), and the threshold chooses the smaller one in either case.
 
-![Figure 10.4. A `RoaringBitmap` with three containers: the chunks $K$, kept apart for the searches, an array container of 3 items, a bitmap container of 5000 items, and the array into which `insert`$( 5 \cdot 2^{16} + 7 )$ puts the low bits 7 (in colour).](../figures/set-roaring.svg){#fig-10-4}
+![Figure 10.5. A `RoaringBitmap` with three containers: the chunks $K$, kept apart for the searches, an array container of 3 items, a bitmap container of 5000 items, and the array into which `insert`$( 5 \cdot 2^{16} + 7 )$ puts the low bits 7 (in colour).](../figures/set-roaring.svg){#fig-10-5}
 
-<span id="lem-10-3"></span>**Lemma 10.3.** *No container of a
+<span id="lem-10-5"></span>**Lemma 10.5.** *No container of a
 `RoaringBitmap` takes more than 8 KB, and a set of $n$ items in $c$
 containers takes at most $\min( 2 n , 2^{29} ) + O( c )$ bytes, i.e., about
 the smaller of the space of a sorted array of 16 bits per item and that of
@@ -328,13 +471,13 @@ has no branch: the comparison chooses the half by a conditional move.
 
 Furthermore, it then tests a bit, or searches the array in the same way, in
 $O( \log c )$ time plus $O( \log 4096 )$ in an array
-([Algorithm 10.2](10-set.md#alg-10-2)). An insertion sets a bit, or shifts
+([Algorithm 10.4](10-set.md#alg-10-4)). An insertion sets a bit, or shifts
 the array to make room (at most 4096 items, a few lines of cache), and an
 array that passes 4096 items becomes a bitmap; a removal clears a bit or
 shifts the array, removes a container left empty, and turns into an array a
 bitmap that falls to 4096 items.
 
-<span id="alg-10-2"></span>**Algorithm 10.2.** The search and the
+<span id="alg-10-4"></span>**Algorithm 10.4.** The search and the
 insertion of a Roaring bitmap ([Chambi et al.
 2016](Z-bibliography.md#ref-chambi2016)).
 
@@ -349,10 +492,10 @@ dropped, according to the operation.
 
 --8<-- "generated/RoaringBitmap-setIntersection.pseudo.md"
 
-Two containers are combined according to their forms: (i) two bitmaps
-word by word, with the bits of the result counted in the same pass (four
-words at a time with AVX2, as in `BoolSet`), and a result of at most 4096
-items written as an array; (ii) a bitmap and an array, by testing,
+Two containers are combined according to their forms. Two bitmaps are
+combined word by word, with the bits of the result counted in the same
+pass (four words at a time with AVX2, as in `BoolSet`), and a result of at
+most 4096 items is written as an array. Otherwise, the pair is (ii) a bitmap and an array, by testing,
 setting, clearing or flipping the bits of the array in a copy of the
 bitmap; (iii) two arrays, with SSE4.2, by blocks of 8 items. For the
 intersection and the difference, a block of each array is compared all
@@ -367,10 +510,10 @@ array with the smaller head; a union or a symmetric difference of more than
 4096 items becomes a bitmap. Each pair of containers thus costs
 $O( 4096 )$ word operations at most, and typically much less.
 
-The class also has `rank( x )`, the number of items smaller than $x$,
-which sums the counts of the containers before that of $x$ and adds the
-place of $x$ in it, in $O( c )$ time plus a search or the counts of at most
-1024 words; `select( i )`, the item of rank $i$, by the same counts; and
+The class also has `rank( x )`, the number of items smaller than $x$. It
+sums the counts of the containers before that of $x$ and adds the place of
+$x$ in it, in $O( c )$ time plus a search or the counts of at most 1024
+words. Also, `select( i )` gives the item of rank $i$, by the same counts; and
 `lowerBound( x )`, an iterator on the first item not smaller than $x$.
 
 --8<-- "generated/RoaringBitmap-select.pseudo.md"
@@ -394,7 +537,7 @@ gives the algorithms of that chapter, on vectors of any type with a strict
 order, strictly increasing, and [Table 10.2](10-set.md#tab-10-2)
 summarizes them.
 
-<span id="lem-10-4"></span>**Lemma 10.4.** *An algorithm that intersects
+<span id="lem-10-6"></span>**Lemma 10.6.** *An algorithm that intersects
 by comparisons a sorted array of $n$ items with one of $m \le n$ items
 makes, in the worst case,*
 
@@ -425,19 +568,19 @@ list is the shorter; its cost $O( m ( 1 + \log( n / m ) ) )$ meets (10.2).
 --8<-- "generated/SortedIntersection-partition.pseudo.md"
 
 The search by doubling reaches the same bound with no recursion
-([Algorithm 10.3](10-set.md#alg-10-3)). Each item of $B$ is searched in
+([Algorithm 10.5](10-set.md#alg-10-5)). Each item of $B$ is searched in
 $A$ from the place of the previous one, by probes at the distances
 $1 , 2 , 4 , \ldots$ and then a binary search in the last gap (the
 exponential search of [Bentley and Yao
 1976](Z-bibliography.md#ref-bentley1976)).
 
-<span id="alg-10-3"></span>**Algorithm 10.3.** The intersection by
+<span id="alg-10-5"></span>**Algorithm 10.5.** The intersection by
 doubling ([Ferragina 2023, chapter 6](Z-bibliography.md#ref-ferragina2023);
 [Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)).
 
 --8<-- "generated/SortedIntersection-intersectDoubling.pseudo.md"
 
-<span id="lem-10-5"></span>**Lemma 10.5.** *Let the $j$-th item of $B$ be
+<span id="lem-10-7"></span>**Lemma 10.7.** *Let the $j$-th item of $B$ be
 found (or placed) $\Delta_j$ places after the previous one in $A$. Then
 the intersection by doubling makes $O( \sum_j ( 1 + \log \Delta_j ) )$
 comparisons, and*
@@ -467,7 +610,9 @@ $B$ (`intersectTwoLevel()`), in $O( n / L + m L )$ time, i.e.,
 $O( \sqrt{n m} )$ for $L = \sqrt{n / m}$. On the disk, with blocks of $B$
 items (cf. Chapter 23), a block of $A$ met costs
 at most $\lceil L / B \rceil + 1$ reads, and
-`intersectTwoLevelExternal()` takes $O( n / L B + m L / B + m )$ I/Os,
+`intersectTwoLevelExternal()`, after `twoLevelHeaders()` has written the
+first item of each block of $A$ into a file of its own by one scan, takes
+$O( n / L B + m L / B + m )$ I/Os,
 against the $\lceil n / B \rceil + \lceil m / B \rceil$ of
 `intersectMergeExternal()`.
 
@@ -543,7 +688,7 @@ We now turn to the filters, which trade exactness for space: a filter does
 not store its keys, and can therefore take fewer bits than any exact set,
 but no fewer than the following bound allows.
 
-<span id="lem-10-6"></span>**Lemma 10.6.** *A filter of any $n$ keys of a
+<span id="lem-10-8"></span>**Lemma 10.8.** *A filter of any $n$ keys of a
 universe $U$, with $n \ll \varepsilon | U |$ and false positive rate
 $\varepsilon$, takes at least*
 
@@ -551,7 +696,8 @@ $$
 n \log_2 \frac{1}{\varepsilon} \tag{10.4}
 $$
 
-*bits ([Carter et al. 1978](Z-bibliography.md#ref-carter1978)).*
+*bits, up to terms of lower order ([Carter et al.
+1978](Z-bibliography.md#ref-carter1978)).*
 
 *Proof.* A filter of $s$ bits has at most $2^s$ states, and a state answers
 yes on a set of about $n + \varepsilon | U |$ keys, which contains at most
@@ -573,11 +719,12 @@ them. The oldest one is the filter of [Bloom
 1970](Z-bibliography.md#ref-bloom1970): `BloomFilter` keeps $m$ bits, an
 insertion sets the bits of $k$ places of the key, and a query answers yes
 when the $k$ bits of its key are all set
-([Figure 10.5](10-set.md#fig-10-5)).
+([Algorithm 10.6](10-set.md#alg-10-6) and
+[Figure 10.6](10-set.md#fig-10-6)).
 
-![Figure 10.5. A `BloomFilter` of $m = 16$ bits: `insert(x)` sets the $k = 3$ bits $2 , 7 , 12$, i.e., $h_1 + i h_2 \bmod m$ with $h_1 = 2$ and $h_2 = 5$, and `maybe(y)`, whose places are $7 , 12 , 1$, answers false at the bit 1.](../figures/set-bloom.svg){#fig-10-5}
+![Figure 10.6. A `BloomFilter` of $m = 16$ bits: `insert(x)` sets the $k = 3$ bits $2 , 7 , 12$, i.e., $h_1 + i h_2 \bmod m$ with $h_1 = 2$ and $h_2 = 5$, and `maybe(y)`, whose places are $7 , 12 , 1$, answers false at the bit 1.](../figures/set-bloom.svg){#fig-10-6}
 
-<span id="alg-10-4"></span>**Algorithm 10.4.** The insertion and the query
+<span id="alg-10-6"></span>**Algorithm 10.6.** The insertion and the query
 of the filter of Bloom ([Bloom 1970](Z-bibliography.md#ref-bloom1970);
 [Kirsch and Mitzenmacher 2006](Z-bibliography.md#ref-kirsch2006)).
 
@@ -585,7 +732,7 @@ of the filter of Bloom ([Bloom 1970](Z-bibliography.md#ref-bloom1970);
 
 --8<-- "generated/BloomFilter-maybe.pseudo.md"
 
-<span id="lem-10-7"></span>**Lemma 10.7.** *Let a filter of $m$ bits set,
+<span id="lem-10-9"></span>**Lemma 10.9.** *Let a filter of $m$ bits set,
 for each of $n$ keys, the bits of $k$ hash functions taken as independent
 and uniform. A bit is still 0 with probability
 $p = ( 1 - 1 / m )^{k n} \approx e^{-k n / m}$, and the false positive
@@ -639,14 +786,14 @@ of $x$ has received all the occurrences of $x$; hence the estimate is never
 below the multiplicity, and it is above it only if each counter of $x$ is
 shared with another key, i.e., with the probability (10.5). A removal
 subtracts the multiplicity, and a counter that reaches its largest value
-sticks there, so that a removal never makes a false negative (the counting
+sticks there (`stuck()` counts them), so that a removal never makes a false negative (the counting
 filter of [Fan et al. 2000](Z-bibliography.md#ref-fan2000)).
 
 --8<-- "generated/BloomVariants-SpectralBloomFilter-count.pseudo.md"
 
 --8<-- "generated/BloomVariants-SpectralBloomFilter-remove.pseudo.md"
 
-The other functions of the header are the analysis and two applications.
+The other functions of the header are the analysis and two applications:
 `bloomFalsePositive()` computes (10.5) exactly, `bloomBestHashes()` the
 number of hashes that minimizes it (the better of the two integers around
 $( m / n ) \ln 2$), `bloomLowerBound()` the bound (10.4), and `bloomBits()`
@@ -675,14 +822,14 @@ and a query of a key of $S$ therefore misses the cache $k$ times. The
 blocked filter of [Putze et al. 2009](Z-bibliography.md#ref-putze2009)
 puts them in one block of 256 bits, one line of cache: `BlockedBloomFilter`
 cuts its bits into blocks of 8 words of 32 bits, and a key sets 8 bits of
-one block, one in each word ([Figure 10.6](10-set.md#fig-10-6)). The block
+one block, one in each word ([Figure 10.7](10-set.md#fig-10-7)). The block
 is $\lfloor h_1 B / 2^{32} \rfloor$ for $B$ blocks (a product instead of a
 remainder, as in [Lemire 2019](Z-bibliography.md#ref-lemire2019)), and the
 bit of the word $i$ is the top 5 bits of $h_0 s_i \bmod 2^{32}$ for 8 odd
 constants $s_i$, where $h_1$ and $h_0$ are the high and the low halves of
 the hash of the key.
 
-![Figure 10.6. A block of a `BlockedBloomFilter`, 8 words of 32 bits, and the 8 bits (in colour) that a key sets, one per word.](../figures/set-blocked.svg){#fig-10-6}
+![Figure 10.7. A block of a `BlockedBloomFilter`, 8 words of 32 bits, and the 8 bits (in colour) that a key sets, one per word.](../figures/set-blocked.svg){#fig-10-7}
 
 --8<-- "generated/BlockedBloomFilter-maybeHash.pseudo.md"
 
@@ -713,7 +860,7 @@ Impala and of the format Parquet ([Apache Parquet
 2019](Z-bibliography.md#ref-parquet2019)); the number of blocks is any,
 not a power of 2, so that the bits per key are those asked. The filter
 also takes the union with a filter of the same number of blocks, by an or
-of the blocks, and serves as the spare of the prefix filter of
+of the blocks (`unite()`), and serves as the spare of the prefix filter of
 [§10.9](10-set.md#sec-10-9).
 
 ## 10.9 Filters of fingerprints {#sec-10-9}
@@ -744,13 +891,13 @@ either bucket, $b_1 = b_2 \oplus g( t )$, and a fingerprint can be moved
 with no key at hand. An insertion puts $t$ in a free place of $b_1$ or of
 $b_2$; if both are full, it evicts the fingerprint of a random place of one
 of them and moves it to its other bucket, and so on, at most 500 times
-([Figure 10.7](10-set.md#fig-10-7)). If the last fingerprint evicted finds
+([Figure 10.8](10-set.md#fig-10-8)). If the last fingerprint evicted finds
 no place, it is kept in a stash of one entry, the *victim*, that the
 queries read too ([Kirsch et al. 2009](Z-bibliography.md#ref-kirsch2009)),
 and the next insertion fails: a filter keeps no key and cannot be rehashed,
 so an insertion into a full filter returns false and changes nothing.
 
-![Figure 10.7. A `CuckooFilter` of 8 buckets of 4 places: the fingerprint $t$ has the buckets 1 and 6, both full, and takes the place of $u$ in the bucket 1, which moves to its other bucket 3.](../figures/set-cuckoo.svg){#fig-10-7}
+![Figure 10.8. A `CuckooFilter` of 8 buckets of 4 places: the fingerprint $t$ has the buckets 1 and 6, both full, and takes the place of $u$ in the bucket 1, which moves to its other bucket 3.](../figures/set-cuckoo.svg){#fig-10-8}
 
 --8<-- "generated/CuckooFilter-insertHash.pseudo.md"
 
@@ -790,7 +937,10 @@ evictions reach about 0.95 in practice ([Fan et al.
 2014](Z-bibliography.md#ref-fan2014)), from 0.97 at $2^{10}$ buckets to
 0.95 at $2^{22}$ in the tests of the library. The constructor for $n$ keys
 takes the fewest buckets, a power of 2, that hold them at the load 0.94. A
-removal clears one place holding $t$ in $b_1$ or $b_2$; it must concern a
+removal clears one place holding $t$ in $b_1$ or $b_2$. (The members
+`insertHash()` and `removeHash()` take a hash already computed, as
+`maybeHash()` does, and `capacity()`, `load()` and `bits()` give the
+places, $\alpha$ and the space.) The removal must concern a
 key that was inserted, which no contract can check, since the removal of
 another key may clear the fingerprint of a key of $S$, a false negative.
 
@@ -811,9 +961,9 @@ quotient, $1^{c_0} 0 \, 1^{c_1} 0 \cdots 1^{c_{24}} 0$ from the low bit;
 the 6 bits hold the quotient of the largest fingerprint of the bin once it
 has overflowed; and the body holds the remainders in the order of their
 quotients, those of one quotient (its *run*) in increasing order
-([Figure 10.8](10-set.md#fig-10-8)).
+([Figure 10.9](10-set.md#fig-10-9)).
 
-![Figure 10.8. A bin of a `PrefixFilter`, with 4 quotients instead of 25 for brevity: the header writes the counts 2, 0, 3, 1 of the runs in unary from the low bit, and the body holds the remainders; the run of the quotient 2 (in colour) is the slots $[ z_1 + 1 - 2 , z_2 - 2 )$, $z_q$ the place of the zero of rank $q$ of the header.](../figures/set-prefix.svg){#fig-10-8}
+![Figure 10.9. A bin of a `PrefixFilter`, with 4 quotients instead of 25 for brevity: the header writes the counts 2, 0, 3, 1 of the runs in unary from the low bit, and the body holds the remainders; the run of the quotient 2 (in colour) is the slots $[ z_1 + 1 - 2 , z_2 - 2 )$, $z_q$ the place of the zero of rank $q$ of the header.](../figures/set-prefix.svg){#fig-10-9}
 
 The run of $q$ is the slots $[ z_{q-1} + 1 - q , z_q - q )$ of the body,
 where $z_q$ is the place of the zero of rank $q$ of the header (and
@@ -839,7 +989,7 @@ bin has overflowed and $x > x_{\max}$. Hence a query of a key of $S$ is
 always answered yes, and a query typically reads one line of cache, against
 the two of the cuckoo filter.
 
-<span id="lem-10-8"></span>**Lemma 10.8.** *Let $n$ keys fall into
+<span id="lem-10-10"></span>**Lemma 10.10.** *Let $n$ keys fall into
 $m = n / ( \alpha k )$ bins, so that the load $B$ of a bin is binomial of
 mean $\alpha k$. The fingerprints sent to the spare are, on the average,*
 
@@ -874,7 +1024,12 @@ $n$ keys are in. When the filter is full, the false positive rate is 0.39
 per cent (0.37 from the fingerprints and 0.02 from the spare), about the
 $1 / 256$ of a filter of fingerprints of 8 bits. The bins take
 $256 / ( \alpha k ) = 10.78$ bits per key and the spare about 0.77, i.e.,
-11.55 in all.
+11.55 in all. The class reports these quantities. Its `capacity()` is $n$,
+`bins()` is $m$, `load()` the fraction of the $25 m$ places taken,
+`spareSize()` the fingerprints sent to the spare, `expectedSpareSize()` the
+$\mathrm{E}[ X ]$ of (10.9), `bits()` the space and `falsePositiveRate()`
+the expected rate at the current load, the sum over the loads of a bin
+that [Lemma 10.10](10-set.md#lem-10-10) bounds.
 
 ## 10.10 Static filters {#sec-10-10}
 
@@ -883,7 +1038,7 @@ system over $\mathbb{F}_2$ whose unknowns are its cells: each key gives an
 equation, and a key out of $S$ meets its equation with the probability that
 a fixed value equals its fingerprint.
 
-<span id="lem-10-9"></span>**Lemma 10.9.** *Let a filter answer
+<span id="lem-10-11"></span>**Lemma 10.11.** *Let a filter answer
 $\mathrm{maybe}( x )$ by testing whether a value $v( x )$, computed from
 the cells of the filter at places given by the hash of $x$, equals a
 fingerprint $f( x )$ of $b$ bits of the hash, independent of the places.
@@ -903,7 +1058,7 @@ fingerprints of $b = 8$ or 16 bits, and is maybe in $S$ if
 $F[ h_0 ] \oplus F[ h_1 ] \oplus F[ h_2 ] = f( h )$. The array is cut into
 segments of $L$ places, a power of 2: $h_0$ is a place of the first $C L$
 ones, and $h_1$, $h_2$ are in the two segments that follow
-([Figure 10.9](10-set.md#fig-10-9)). This *spatial coupling* lets the
+([Figure 10.10](10-set.md#fig-10-10)). This *spatial coupling* lets the
 array have only about $1.125 n$ places for large $n$, against the
 $1.23 n$ of 3 places anywhere ([Dietzfelbinger and Walzer
 2019a](Z-bibliography.md#ref-dietzfelbinger2019a)); the header takes
@@ -911,9 +1066,9 @@ $L = 2^{\lfloor \log_{3.33} n + 2.25 \rfloor}$ (at most $2^{18}$) and
 about $\max( 1.125 , 0.875 + 0.25 \ln 10^6 / \ln n ) \, n$ places, the
 choices of the paper.
 
-![Figure 10.9. The array of a `BinaryFuseFilter`, in segments of $L = 4$ places, and the 3 places of a key (in colour) in 3 consecutive segments.](../figures/set-fuse.svg){#fig-10-9}
+![Figure 10.10. The array of a `BinaryFuseFilter`, in segments of $L = 4$ places, and the 3 places of a key (in colour) in 3 consecutive segments.](../figures/set-fuse.svg){#fig-10-10}
 
-The build solves the system by *peeling* ([Algorithm 10.5](10-set.md#alg-10-5)):
+The build solves the system by *peeling* ([Algorithm 10.7](10-set.md#alg-10-7)):
 a place reached by one key only is solved last for that key, which is then
 removed from its other two places, and so on. Each place keeps the number
 of its keys, the exclusive or of their hashes and the exclusive or of the
@@ -930,7 +1085,7 @@ cache; a key repeated in the input has twice the same hash and cannot be
 peeled, and a failed build removes the equal hashes before drawing a new
 seed.
 
-<span id="alg-10-5"></span>**Algorithm 10.5.** The build of the binary
+<span id="alg-10-7"></span>**Algorithm 10.7.** The build of the binary
 fuse filter by peeling ([Graf and Lemire
 2022](Z-bibliography.md#ref-graf2022)).
 
@@ -950,23 +1105,23 @@ $$
 The build solves the system by Gauss elimination *on the fly*: the
 equations are kept in echelon form, the row $i$ holding either no equation
 or one whose first coefficient is in the column $i$
-([Figure 10.10](10-set.md#fig-10-10)). A new equation goes to the row of
+([Figure 10.11](10-set.md#fig-10-11)). A new equation goes to the row of
 its start if it is free; otherwise it is reduced by the equation of that
 row and shifted to the first column of the result that is 1, until it
 finds a free row. An equation that becomes 0 is redundant if its right side
 is 0 too (a repeated key), and makes the system unsolvable otherwise, in
 which case the build draws a new seed.
 
-![Figure 10.10. The system of a `RibbonFilter` in echelon form, with windows of 4 coefficients instead of 64: each row holds an equation whose first coefficient (in colour) is in its column, or none (faintest tint), and $f$ is the right side.](../figures/set-ribbon.svg){#fig-10-10}
+![Figure 10.11. The system of a `RibbonFilter` in echelon form, with windows of 4 coefficients instead of 64: each row holds an equation, whose window of 4 coefficients is written from the column of the row, its first coefficient, always 1, in violet, or none (faintest tint), and $f$ is the right side.](../figures/set-ribbon.svg){#fig-10-11}
 
 --8<-- "generated/RibbonFilter-build.pseudo.md"
 
 The rows are then solved from the last, keeping for each of the $r$
 columns the word of the 64 rows below, so that a row costs $r$ parities of
-a word; with AVX-512 the back substitution takes 4 rows at a time. The
-solution is stored interleaved, $r$ words per block of 64 rows, and a
+a word; with AVX-512 the back substitution takes 4 rows at a time.
+The solution is stored interleaved, $r$ words per block of 64 rows. A
 query reads the consecutive words of the two blocks of its 64 rows and
-makes each bit of its result by a parity; a query compares the 8 bits of
+makes each bit of its result by a parity. Also, it compares the 8 bits of
 each line of cache with those of $f( h )$ before reading the next line,
 and a key out of $S$ reads 2 lines in most cases.
 
@@ -974,12 +1129,14 @@ and a key out of $S$ reads 2 lines in most cases.
 
 A system of $n = ( 1 - \delta ) m$ equations with random windows of
 length $O( \log n / \delta )$ has full rank with high probability
-([Dietzfelbinger and Walzer 2019b](Z-bibliography.md#ref-dietzfelbinger2019b));
-with windows of 64 fixed, the overhead needed grows with $\log n$, and the
-build takes $m = n ( 1 + \delta )$ rows with $\delta = \max( 0.01 ,
+([Dietzfelbinger and Walzer 2019b](Z-bibliography.md#ref-dietzfelbinger2019b)).
+With windows of 64 fixed, the overhead needed grows with $\log n$. Thus,
+the build takes $m = n ( 1 + \delta )$ rows with $\delta = \max( 0.01 ,
 0.0083 \log_2 n - 0.025 )$, i.e., about 11 per cent at $10^5$ keys and 14
-per cent at $10^6$, or 8.9 and 9.1 bits per key for $r = 8$. After each 4
-failed seeds it adds $2$ per cent of $n$ rows.
+per cent at $10^6$, or 8.9 and 9.1 bits per key for $r = 8$. The number of rows is rounded up to a multiple of 64 (and is at least
+64), and after each 4 failed seeds the build adds $2$ per cent of $n$ rows,
+at least 64. It gives up with an exception after 1000 seeds, and
+`trials()` gives the seeds drawn, here and in `BinaryFuseFilter`.
 
 <span id="tab-10-3"></span>**Table 10.3.** The filters of the library,
 their operations, their space and the lines of cache that a query reads,
@@ -1024,10 +1181,10 @@ keys into $[ 0 , r )$, and keeps the codes $h( S )$ by Elias-Fano
 (Chapter 22) in $n B$ bits. Inside a block, (10.11)
 is a rotation; hence a range of $\ell \le r$ keys, which meets at most two
 blocks, has for image at most two cyclic ranges of $[ 0 , r )$ of $\ell$
-codes in all ([Figure 10.11](10-set.md#fig-10-11)), and a successor query
+codes in all ([Figure 10.12](10-set.md#fig-10-12)), and a successor query
 of Elias-Fano answers each in $O( 1 )$.
 
-![Figure 10.11. A range $[ a , b ]$ that meets two blocks of $r$ keys, each rotated into $[ 0 , r )$ by the hash $q$ of its block, and its image, two cyclic ranges of the same total length.](../figures/set-grafite.svg){#fig-10-11}
+![Figure 10.12. A range $[ a , b ]$ that meets two blocks of $r$ keys, each rotated into $[ 0 , r )$ by the hash $q$ of its block, and its image, two cyclic ranges of the same total length.](../figures/set-grafite.svg){#fig-10-12}
 
 --8<-- "generated/GrafiteFilter-build.pseudo.md"
 
@@ -1035,7 +1192,7 @@ of Elias-Fano answers each in $O( 1 )$.
 --8<-- "generated/GrafiteFilter-mayContain.cpp"
 ```
 
-<span id="lem-10-10"></span>**Lemma 10.10.** *For every set $S$ and every
+<span id="lem-10-12"></span>**Lemma 10.12.** *For every set $S$ and every
 range of $\ell$ keys,*
 
 $$
@@ -1069,14 +1226,25 @@ need a prime above the $2^{64} / r$ blocks. The keys may be any type that
 `radixKey()` maps in order onto unsigned words, floating point numbers
 included.
 
+Besides `mayContain(a, b)` and `maybe(x)`, i.e., `mayContain(x, x)`,
+`GrafiteFilter` gives `falsePositiveBound(l)`, the bound (10.12) for a
+range of $\ell$ keys, `reduced()`, i.e., $r$, `codes()`, the distinct
+codes, and `sizeInBits()`, the bits of the codes and of the directory of
+`select()` of Elias-Fano.
+
 `BucketingFilter`, the heuristic of the same paper, cuts the universe into
 buckets of $s = \lceil 2^{64} / ( n \, 2^{B-2} ) \rceil$ keys and keeps by
 Elias-Fano the buckets that hold a key of $S$; a range may hold a key if a
 kept bucket meets it. It needs no hash and is faster to build and to
-query, and it is exact on keys and queries drawn independently at random;
+query. On keys and queries drawn independently at random, a range of
+$\ell$ keys meets at most $\ell / s + 2$ buckets, each kept with
+probability at most about $n s / 2^{64} \approx 2^{-(B-2)}$. Hence it is
+a false positive with probability at most about
+$( \ell / s + 2 ) \, 2^{-(B-2)}$ by the union bound;
 however, an empty range inside the bucket of a key, at distance below $s$
 from it, is always a false positive, and no bound like (10.12) holds for
-every query.
+every query (`bucketWidth()` gives $s$, `buckets()` the kept buckets and
+`sizeInBits()` the space).
 
 --8<-- "generated/GrafiteFilter-BucketingFilter-mayContain.pseudo.md"
 
@@ -1141,36 +1309,43 @@ Each exercise names the test of the library that solves it (run it with
 7. Realize a set whose iteration follows the order of insertion, with each
    operation in $O( 1 )$ expected time. Test: `ch08.ex8.9`.
 8. Realize a multiset on a hash table, with a counter per item. Test:
-   `ch08.ex8.10`.
-9. Realize the compressed bitmaps of Roaring, with the conversions between
+      `ch08.ex8.10`.
+9. Make each dictionary of the library a USet, and each ordered one an
+   SSet, of Morin through one adaptor, and check it against `std::set`.
+   Test: `ods_trees.ods1.2.dictionary-sets`.
+10. Realize the sorted set of Morin on a list of blocks of $b \pm 1$ items
+   indexed by a skip list, in the space of $n + O( n / b + b )$ items
+   ([Morin 2013, exercise 4.13](Z-bibliography.md#ref-morin-cpp)). Test:
+   `ods_trees.ods-ex4.13.sesset`.
+11. Realize the compressed bitmaps of Roaring, with the conversions between
    arrays and bitmaps at 4096 items, `rank()` and `select()`. Test:
    `ordered.roaring-bitmap`.
-10. Intersect two sorted lists by the merge, the binary searches, the
+12. Intersect two sorted lists by the merge, the binary searches, the
     mutual partition, the doubling and the two-level storage, and check the
     numbers of comparisons against the bounds. Tests:
     `pearls_io.ch6.intersection-example`,
     `pearls_io.ch6.intersection-random`.
-11. Intersect two lists by the permuted buckets of Sanders and Transier,
+13. Intersect two lists by the permuted buckets of Sanders and Transier,
     and on the disk by the two-level storage. Tests:
     `pearls_io.ch6.permuted-buckets`, `pearls_io.ch6.intersection-ios`.
-12. Intersect two sorted lists with no branch, by blocks of 8 items and
+14. Intersect two sorted lists with no branch, by blocks of 8 items and
     through a window of 64 items. Test: `ordered.vector-intersection`.
-13. Build the filter of Bloom and check its false positives against
+15. Build the filter of Bloom and check its false positives against
     (10.5), and its places $h_1 + i h_2 \bmod m$. Tests:
     `pearls_hashing.bloom-analysis`, `taocp.bloom-filter`,
     `taocp.bloom-probes`.
-14. Estimate the multiplicities of a multiset by a spectral filter, and
+16. Estimate the multiplicities of a multiset by a spectral filter, and
     intersect two sets on two machines by sending a filter. Tests:
     `pearls_hashing.spectral-bloom`, `pearls_hashing.bloom-intersection`.
-15. Build the blocked filter of Bloom and compare its false positives with
+17. Build the blocked filter of Bloom and compare its false positives with
     (10.6). Test: `hashing.blocked-bloom`.
-16. Build the cuckoo filter, with insertions by evictions and removals, and
+18. Build the cuckoo filter, with insertions by evictions and removals, and
     measure its largest load. Test: `hashing.cuckoo-filter`.
-17. Build the prefix filter, with its pocket dictionaries and its spare.
+19. Build the prefix filter, with its pocket dictionaries and its spare.
     Test: `hashing.prefix-filter`.
-18. Build the binary fuse filter by peeling and the Ribbon filter by
+20. Build the binary fuse filter by peeling and the Ribbon filter by
     banding, and check that their false positives are about $2^{-b}$.
     Tests: `hashing.binary-fuse`, `hashing.ribbon-filter`.
-19. Build the range filter Grafite, and check its bound on correlated
+21. Build the range filter Grafite, and check its bound on correlated
     queries, where the bucketing filter fails. Tests:
     `hashing.grafite-filter`, `hashing.bucketing-filter`.

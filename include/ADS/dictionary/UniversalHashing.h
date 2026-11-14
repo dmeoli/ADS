@@ -38,8 +38,9 @@
  *   character 0 counts too (the strings of zeros of different lengths, or
  *   a string and the same followed by zeros, would collide otherwise): two
  *   distinct strings of length at most \f$ L \f$ collide with probability
- *   at most \f$ L / p \f$, since their difference is a polynomial of degree
- *   at most \f$ L \f$, not zero, with at most \f$ L \f$ roots; it turns a
+ *   at most \f$ L / ( p - 1 ) \f$, since their difference is a polynomial
+ *   of degree at most \f$ L \f$, not zero, with at most \f$ L \f$ roots
+ *   among the \f$ p - 1 \f$ points \f$ x \ne 0 \f$ drawn; it turns a
  *   string into a key for the classes above;
  * - `MultiplicativeHash`, the multiplicative hashing of section 5.1.1 of
  *   Morin's book, the class above with \f$ h = 64 \f$ and \f$ l \f$ chosen
@@ -404,7 +405,8 @@ class SequenceHash {
  /// multiplicative hashing [see `MultiplicativeHash`], so that it lies in
  /// \f$ \{ 0 , \ldots , p - 2 \} \f$ and \f$ p - 1 \f$ marks the end: two
  /// distinct arrays, the longer of \f$ r \f$ words, collide with
- /// probability at most \f$ 2 / 2^{60} + r / p \f$
+ /// probability at most \f$ 2 / 2^{60} + r / ( p - 1 ) \f$ (the point
+ /// \f$ z \f$ drawn in \f$ [ 1 , p ) \f$)
  ///
  /// In pseudocode (section 5.3.3 of Morin's book), by the rule of Horner
  /// from the end marker:
@@ -423,7 +425,8 @@ class SequenceHash {
 
  /// \f$ h \f$ of a string, its bytes \f$ x_i < p - 1 \f$ taken as they
  /// are: two distinct strings, the longer of \f$ r \f$ bytes, collide with
- /// probability at most \f$ r / p \f$ (Theorem 5.5 of Morin's book)
+ /// probability at most \f$ r / ( p - 1 ) \f$ (Theorem 5.5 of Morin's
+ /// book, \f$ z \f$ drawn in \f$ [ 1 , p ) \f$)
  [[nodiscard]] std::uint64_t operator()( std::string_view s ) const;
 
  private:

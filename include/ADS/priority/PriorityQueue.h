@@ -10,8 +10,10 @@
  *
  * `HeapPriorityQueue` realizes it on a \f$ d \f$-ary heap,
  * `ListPriorityQueue` on a sorted or unsorted list, `TreePriorityQueue` on a
- * Red-Black tree; `LinkedHeapPriorityQueue`, `FibonacciHeapPriorityQueue`,
- * `PairingHeap` and `IndexedDaryHeap` are realizations beyond the book.
+ * Red-Black tree; `FibonacciHeapPriorityQueue`, `PairingHeap` and
+ * `IndexedDaryHeap` are realizations beyond the book.
+ * `LinkedHeapPriorityQueue`, a heap on a tree with pointers, has no handles
+ * and no `decrease()`, and is therefore not a model of the concept.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
