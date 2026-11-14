@@ -14,8 +14,9 @@ and the runtime that lets the processes act as the workers of one
 computation: an executor and a distributed minimum
 ([§26.3](26-distributed.md#sec-26-3)), and a mailbox
 ([§26.4](26-distributed.md#sec-26-4)) that also detects the termination of
-the computation ([§26.5](26-distributed.md#sec-26-5)). As for the threads inside a process, and the mailbox of the threads of which the one of the
-processes is the counterpart, are those of chapter 25.
+the computation ([§26.5](26-distributed.md#sec-26-5)). The threads inside a process, and the mailbox of the threads of which the
+one of the processes is the counterpart, are those of
+[chapter 25](25-parallel.md#ch-25).
 
 ## 26.1 The model {#sec-26-1}
 
@@ -35,7 +36,7 @@ The model leaves out the topology of the network, the contention of the
 messages on the links, and the overlap of the communication with the work
 (which the operations that do not block try to obtain, cf.
 [§26.3](26-distributed.md#sec-26-3) to [§26.5](26-distributed.md#sec-26-5)); it is nevertheless the usual one for the analysis of the
-collective operations, and the costs below are stated in it. We leave the measurements on a cluster to the benchmarks of the appendix B.
+collective operations, and the costs below are stated in it. We leave the measurements on a cluster to the benchmarks of [appendix B](B-benchmarks.md#app-B).
 
 ## 26.2 Sorting by regular sampling {#sec-26-2}
 
@@ -52,8 +53,10 @@ $n / P$ items.
 regular sampling of [Shi and Schaeffer 1992](Z-bibliography.md#ref-shi1992),
 in one round of communication ([Algorithm 26.1](26-distributed.md#alg-26-1)).
 Each process sorts its $n_i$ items and takes $P - 1$ samples at the ranks
-$\lfloor ( j + 1 ) n_i / P \rfloor$, one every $w = n_i / P$ items. The samples, gathered in all the processes by `MPI_Allgather` and sorted, give the
-$P - 1$ splitters, every $( P - 1 )$-th of them. Each process then cuts
+$\lfloor ( j + 1 ) n_i / P \rfloor$, one every $w = n_i / P$ items. The samples, gathered in all the processes by `MPI_Allgather` and sorted
+into a vector $S$, give the $P - 1$ splitters, the splitter $j$ being
+$S[ \lfloor j |S| / P \rfloor ]$ (every $( P - 1 )$-th sample when all
+the processes have items, since then $|S| = P ( P - 1 )$). Each process then cuts
 its sorted items at the splitters by binary searches, sends to the process
 $j$ its piece $j$ by one `MPI_Alltoallv` (after an `MPI_Alltoall` of the
 sizes of the pieces), and merges the $P$ sorted pieces that it receives by
@@ -77,23 +80,35 @@ merge is sorted; hence the vectors in the order of the ranks are the sorted
 items. Regular sampling owes its name to the bound on the sizes of the parts.
 
 <span id="lem-26-1"></span>**Lemma 26.1 (regular sampling).** *With
-$n / P$ items in each process and distinct keys, each process receives
-fewer than $2 n / P$ items.*
+$n / P$ items in each process, $n / P$ a multiple of $P$, and distinct
+keys, each process receives at most $( 2 P - 1 ) n / P^2 < 2 n / P$
+items.*
 
-*Proof.* The interval of a process holds the $P - 1$ samples between two
-consecutive splitters; let $t_i$ be those of the process $i$, so that
-$\sum_i t_i \le P - 1$. The items of the process $i$ in the interval lie
-between its sample before the first of its $t_i$ samples and its sample
-after the last one, i.e., in at most $t_i + 1$ of its gaps of
-$w = n / P^2$ items. Hence the interval holds at most $\sum_i ( t_i + 1 )
-w \le ( 2 P - 1 ) n / P^2 < 2 n / P$ items. $\square$
+*Proof.* With distinct keys a run of equal splitters has length 1, and
+line 10 sends the single item equal to the splitter $j$ (if any) to the
+piece $j$; hence the process $j$ receives the items $x$ with
+$s_j \le x < s_{j + 1}$, where $s_0 = - \infty$ and $s_P = + \infty$.
+Since $s_j$ and $s_{j + 1}$ are the samples of the places $j ( P - 1 )$
+and $( j + 1 ) ( P - 1 )$ of $S$, the interval holds exactly $P - 1$
+samples. Let $t_i$ be those of the process $i$, so that
+$\sum_i t_i = P - 1$. The samples of the process $i$ are its items of the
+places $w , 2 w , \ldots , ( P - 1 ) w$, with $w = n / P^2$, and the
+interval is a range of keys. Hence its items of the process $i$ lie
+strictly between the sample of the process $i$ just before its $t_i$
+samples in the interval (or the place $- 1$, if there is none) and the one
+just after them (or the place $n / P$). These two bounds are $t_i + 1$
+gaps apart, and the items strictly between them are at most
+$( t_i + 1 ) w$. Hence the interval
+holds at most $\sum_i ( t_i + 1 ) w = ( 2 P - 1 ) n / P^2$ items.
+$\square$
 
 The bound is tight up to a constant, but in practice the parts are
 usually far closer to $n / P$ ([Shi and Schaeffer
 1992](Z-bibliography.md#ref-shi1992)). With repeated keys the lemma may
 fail, since the items of one key all fall in one interval; `sort()`
 therefore cuts the items equal to a run of $k$ equal splitters into
-$k + 1$ parts of the same size (line 10), and a key repeated many times is
+$k + 1$ parts whose sizes differ by at most one, the lowest part
+being the smallest (line 10), and a key repeated many times is
 thus spread over as many processes as it fills. Also, the merge keeps the result sorted, since the parts of the run are of equal items.
 
 ```cpp
@@ -101,11 +116,14 @@ thus spread over as many processes as it fills. Also, the merge keeps the result
 ```
 
 A process with no items takes no samples (as its flag, gathered first, records), and the splitters come from the samples of the others; when no process
-has items, all the cuts are at the end. Finally, the last loop makes the cuts nondecreasing, which the equal runs of different processes may otherwise
-violate by one place.
+has items, all the cuts are at the end. Finally, the last loop makes the
+cuts nondecreasing. It is a safeguard, which leaves them unchanged when `less`
+is a strict weak order: the cut of a splitter $x$ lies between the first
+item equal to $x$ and the place after the last one, and within a run of
+equal splitters the cuts grow with $j$.
 
-<span id="lem-26-2"></span>**Lemma 26.2.** *With $n / P \ge P^2$ items
-in each process, `sort()` makes $O( ( n / P ) \log n )$ work per process,
+<span id="lem-26-2"></span>**Lemma 26.2.** *Under the hypotheses of
+[Lemma 26.1](26-distributed.md#lem-26-1) and with $n / P \ge P^2$, `sort()` makes $O( ( n / P ) \log n )$ work per process,
 and its communication takes*
 
 $$
@@ -132,7 +150,7 @@ reduction that checks that the bytes of each piece fit the counts of MPI
 If they do not fit in some process, all the processes throw
 `std::length_error`, instead of passing MPI a number wrapped around or
 leaving the others to wait in the exchange. An executor of threads
-(chapter 25) may also be given: the local sort and
+([chapter 25](25-parallel.md#ch-25)) may also be given: the local sort and
 the merge then run on its threads, with MPI between the nodes and threads
 within each, the hybrid scheme of the clusters of today.
 
@@ -148,9 +166,14 @@ messages per level over $\ell$ levels; ADS does not realize them.
 `MPIEnvironment` starts MPI for the life of the object, by
 `MPI_Init_thread()` at the funneled level unless it is already started,
 and ends it by `MPI_Finalize()` if it started it; the funneled level (only
-the thread that started MPI calls it) suffices for the mailbox.
-`MPIExecutor` holds a communicator and gives the rank of the process and
-the number of the processes, and its `run(f)` makes the call `f(rank)`,
+the thread that started MPI calls it) suffices for the mailbox, and another
+level may be asked by the third argument of the constructor, `level()`
+giving the one that MPI provides (or `MPI_THREAD_SINGLE`, if the object did
+not start MPI). The object cannot be copied, since MPI ends once.
+`MPIExecutor` holds a communicator (`MPI_COMM_WORLD` by default, given back
+by `comm()`), requires MPI to be initialized when it is built, and gives
+the rank of the process and the number of the processes (`rank()` and
+`size()`), and its `run(f)` makes the call `f(rank)`,
 i.e., the worker of the process. A program written for the workers of
 `run()` of the executors of threads thus runs with one worker per process, all the processes calling `run()`; we remark that `run()` returns
 when the worker of the calling process returns, and `barrier()` is the
@@ -164,10 +187,15 @@ does not block, `MPI_Iallreduce` ([Hoefler et al.
 works ([Algorithm 26.2](26-distributed.md#alg-26-2)); `test()` gives the
 minimum when the reduction has completed, and `wait()` waits for it.
 Hence a process learns the bounds of the others at most one reduction
-late, with no message for each improvement. Since a reduction is a
-collective operation, all the processes must start the same number of them,
-and destroy the object after the last one has completed, which are the
-preconditions of the class.
+late, with no message for each improvement. While a reduction is in flight (i.e., while `inFlight()` is true), `start(v)`
+starts none and returns false. Also, `test()` gives no value when no
+reduction was started, `wait()` requires one in flight, and the destructor
+waits for it. The values are of an arithmetic type, mapped to the type of
+MPI of the same size (`MPI_FLOAT`, `MPI_DOUBLE`, `MPI_LONG_DOUBLE`, and
+the integers of 8 to 64 bits). Since a reduction is a collective operation,
+all the processes must start the same number of them, and destroy the
+object after the last one has completed, which are the preconditions of
+the class (which, as MPI writes into it, cannot be copied).
 
 <span id="alg-26-2"></span>**Algorithm 26.2.** Start of a reduction of
 `DistributedMin`.
@@ -205,7 +233,13 @@ with its request, in a list of the sends in flight until MPI has completed
 it, which `MPI_Testsome` finds at each poll ([Figure 26.2](26-distributed.md#fig-26-2)).
 Hence a process never waits for a receiver. Incoming batches are found by `MPI_Iprobe` from any source and received by `MPI_Recv`, at
 most 64 batches per poll, and `poll(f)` calls `f(x)` on each of their
-messages; the messages of a process to itself do not go through MPI. Note that the mailbox duplicates the communicator, and its messages and reductions
+messages. The messages of a process to itself do not go through MPI: a
+post to itself moves the outbox to a list, which the next poll hands
+first. Each message is passed to $f$ as `const Msg &`, read in place in
+the buffer that `MPI_Recv` filled and that the next batch reuses; hence
+$f$ copies what it keeps. (`Mailbox::poll()` of the threads passes
+instead `Msg &&`, since there a message is an object moved out of a
+queue.) Note that the mailbox duplicates the communicator, and its messages and reductions
 therefore never meet those of the program. This is the asynchronous
 mailbox of the library YGM of [Priest et al.
 2019](Z-bibliography.md#ref-priest2019); the exchange NBX of [Hoefler et
@@ -228,9 +262,19 @@ packed into a batch until it holds `batch` bytes (65536 by default),
 of a type that is not trivially copyable is an `MPIByteMailbox` whose
 bytes are those of `MPICodec<Msg>`, the customization point that encodes
 and decodes a message, given for `std::string` and for the vectors of
-trivially copyable items. Whatever their form, the messages are counted
-one by one, and the waves of [§26.5](26-distributed.md#sec-26-5) see all
-of them.
+trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The bytes $b$ that `poll(f)`
+of `MPIByteMailbox` passes to `f(t, b)` are valid during the call, at an
+offset multiple of 8 of a buffer that `new` allocated (hence aligned for
+the types of up to 8 bytes). `MPIMailbox<Msg>` of a type that is not
+trivially copyable sends its records with the tag 0, and passes to $f$ the
+message rebuilt by `decode()`, a temporary. Whatever their form, the
+messages are counted one by one, and the waves of
+[§26.5](26-distributed.md#sec-26-5) see all of them. Every form also gives
+`rank()`, `size()`, the communicator of the mailbox (`comm()`, the
+duplicate), the alias `Message` of `Msg`, and the counters `sent()`,
+`received()`, `batches()` (those posted to other processes by MPI) and
+`waves()` (those completed). None of them can be copied, since MPI holds
+their buffers.
 
 ![Figure 26.3. Two records of a batch of `MPIByteMailbox`: a message of tag 7 and 5 bytes, padded to 8, and an empty message of tag 2.](../figures/distributed-records.svg){#fig-26-3}
 
@@ -246,8 +290,9 @@ of them.
 A process is *active* while it has work and *passive* otherwise; it
 becomes active only by receiving, and it sends only while it is active.
 The computation has terminated when all the processes are passive and no
-message is on its way, a global condition that no single process can see. Each process counts the messages it has sent, $s_i$, and those it
-has received, $r_i$, both of which only grow. A *wave* reads the counters
+message is on its way, a global condition that no single process can see. Each process counts the messages it has sent, $s_i$, when it posts
+their batch (or moves it to the messages to itself), and those it has
+received, $r_i$, when a poll hands them, both of which only grow. A *wave* reads the counters
 of all the processes and sums them, $S = \sum_i s_i$ and $R = \sum_i r_i$;
 here it is a reduction that does not block (`MPI_Iallreduce`), to which a
 process contributes the pair $( s_i , r_i )$ copied when it is passive,
@@ -272,8 +317,8 @@ $$
 
 *the computation had terminated when the last process contributed to the
 wave $k - 1$; conversely, once the computation has terminated, (26.2)
-holds at most two waves later, and all the processes stop at the same
-wave.*
+holds at the latest at the second wave whose contributions all follow the
+termination, and all the processes stop at the same wave.*
 
 *Proof.* Let $T$ be the moment of the last contribution to the wave
 $k - 1$, which precedes all the contributions to the wave $k$, and $S( T )$,
@@ -285,8 +330,13 @@ them all equal. Thus at $T$ no message was on its way ($R( T ) = S( T )$),
 and no process had received a message after it contributed to the wave
 $k - 1$ ($R_{k - 1} = R( T )$). Each process was passive when it
 contributed, and a passive process becomes active only by receiving;
-hence all were passive at $T$, which is the termination. Conversely, after the termination each process eventually finds no work and contributes to
-each wave, and the counters stop growing; two waves later (26.2) holds.
+hence all were passive at $T$, which is the termination. Conversely, after the termination no process receives or sends, and
+each one, finding no work, keeps calling `quiescent()`; hence the waves
+keep completing, and the counters stay at their final values $S^* = R^*$
+(no message is on its way). Let the wave $j$ be the first one whose
+contributions all follow the termination (the one after the wave in flight
+at that moment, if any): it reads $R_j = R^*$, and the wave $j + 1$ reads
+$S_{j + 1} = S^* = R_j$, which is (26.2).
 Since all the processes get the same sums, all the processes stop at the same
 wave. $\square$
 
@@ -328,7 +378,8 @@ poll finds a note stops in the same way, and leaves its work for
 `quiescent()`. A stopped process contributes to the waves the triple
 $( s_i , r_i , 1 )$, the others $( s_i , r_i , 0 )$, and the third sum
 $\sigma$ of a wave counts the processes stopped when they contributed to
-it.
+it. A call of `stop()` after the end, or a second one, has no effect, and
+a process should leave its work once `stopped()` is true.
 
 <span id="lem-26-4"></span>**Lemma 26.4 (the stop).** *If a process calls
 `stop()`, all the processes see the end at the same wave, at most two waves
@@ -380,9 +431,10 @@ to it, since MPI delivers each message once. $\square$
 The cost is one reduction of $2 P$ integers and the messages left, i.e.,
 $O( \alpha \log P + \beta P )$ time besides them, paid once at the end;
 during the computation it costs only the counters of each send. If
-`leftovers()` is not called, the destructor makes the same exchange and
-drops the messages, so that no send stays in flight when the duplicate of
-the communicator is freed.
+`leftovers()` is not called, the destructor of a mailbox whose computation
+has terminated makes the same exchange and drops the messages, so that no
+send stays in flight when the duplicate of the communicator is freed. In
+any case, it then waits for the sends and the wave still in flight.
 
 ## 26.6 Discussion and references {#sec-26-6}
 
@@ -402,8 +454,8 @@ exchange of a single round of sparse messages, which ADS does not realize,
 is the NBX of [Hoefler et al. 2010](Z-bibliography.md#ref-hoefler2010).
 Our tests run each program on 1 to 4 processes, which checks the
 correctness of the protocols (including the stop and the leftovers on a
-random traffic) but it does not measure their scaling; the latter is left to
-the benchmarks of the appendix B.
+random traffic). They do not measure the scaling, which is left to the
+benchmarks of [appendix B](B-benchmarks.md#app-B).
 
 ## 26.7 Exercises {#sec-26-7}
 
