@@ -19,7 +19,7 @@ namespace ADS {
 template< class F , class R >
 bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng )
 {
- ADS_PRE( K >= 0 );
+ ADS_PRE( ( K >= 0 ) && ( d <= std::numeric_limits< long >::max() / 2 ) );
  std::uniform_int_distribution< long > v( 1 , 2 * ( d < 1 ? 1 : d ) );
  std::vector< long > x( n );
  for( int k = 0 ; k < K ; ++k ) {

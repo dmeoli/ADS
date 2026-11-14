@@ -23,8 +23,9 @@
  *   when the true fraction is \f$ 1 / 2 + \epsilon \f$ or
  *   \f$ 1 / 2 - \epsilon \f$.
  *
- * The contracts [see `Contract.h`]: \f$ K \ge 0 \f$ repetitions, and
- * `freivalds()` needs three \f$ n \times n \f$ matrices. The functions are
+ * The contracts [see `Contract.h`]: \f$ K \ge 0 \f$ repetitions,
+ * `zeroPolynomial()` needs a degree \f$ d \f$ whose \f$ 2 d \f$ is a `long`,
+ * and `freivalds()` needs three \f$ n \times n \f$ matrices. The functions are
  * defined in `MonteCarlo.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 17 and
@@ -63,6 +64,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <random>
 #include <vector>
 
@@ -87,7 +89,8 @@ namespace ADS {
 /// 5 & \quad \textbf{return true}
 /// \end{array}}
 /// \f]
-/// \pre \f$ K \ge 0 \f$
+/// \pre \f$ K \ge 0 \f$ and \f$ 2 d \f$ is a `long`, i.e.,
+///      \f$ d \le \mathrm{LONG\_MAX} / 2 \f$
 template< class F , class R >
 bool zeroPolynomial( F && p , std::size_t n , long d , int K , R & rng );
 

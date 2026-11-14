@@ -2555,6 +2555,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- zeroPolynomial() drew its points from { 1 , ... , 2 d } computing 2 d as a
+  long, which overflows when d > LONG_MAX / 2; its precondition now requires
+  d <= LONG_MAX / 2, as the header, the theory of the algorithms and the
+  chapter of the manual say; the test ch17 sec17.monte-carlo-degree
+
 - StaticGraph.h defined the macro ADS_GRAPH_PREFETCH, not guarded by #ifndef
   and used by no code of the library; with no measure to argue a prefetch in
   the scans of the rows, it is removed, and the chapter of the manual no

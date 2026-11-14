@@ -301,6 +301,7 @@ ch16  ex16.8             Esercizio 16.8, anagrammi
 
 # chapter 17, Algoritmi probabilistici
 ch17  sec17.monte-carlo  testa o croce, espressione polinomiale nulla
+ch17  sec17.monte-carlo-degree  espressione nulla, grado al limite del long
 ch17  sec17.1.selection  sezione 17.1, selezione
 ch17  sec17.2.primality  sezione 17.2, primalità, Miller-Rabin
 ch17  sec17.3.rsa        sezione 17.3, RSA
