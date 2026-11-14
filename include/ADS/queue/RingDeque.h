@@ -355,7 +355,7 @@ class RingDeque {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insert}( i , v ) \cr
- /// 2 & \quad \textbf{if}\ i < n / 2\ \textbf{then} \cr
+ /// 2 & \quad \textbf{if}\ i < \lfloor n / 2 \rfloor\ \textbf{then} \cr
  /// 3 & \qquad \mathrm{pushFront}( D[ 0 ] ) \cr
  /// 4 & \qquad \textbf{for}\ k \gets 1\ \textbf{to}\ i - 1\ \textbf{do}
  ///     \ D[ k ] \gets D[ k + 1 ] \cr
@@ -378,7 +378,7 @@ class RingDeque {
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{erase}( i ) \cr
- /// 2 & \quad \textbf{if}\ i < n / 2\ \textbf{then} \cr
+ /// 2 & \quad \textbf{if}\ i < \lfloor n / 2 \rfloor\ \textbf{then} \cr
  /// 3 & \qquad \textbf{for}\ k \gets i\ \textbf{downto}\ 1\ \textbf{do}
  ///     \ D[ k ] \gets D[ k - 1 ] \cr
  /// 4 & \qquad \mathrm{popFront}() \cr

@@ -2555,6 +2555,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the pseudocode of RingDeque::insert() and erase() tested i < n / 2 where
+  the code divides integers; it now writes floor( n / 2 ), as the code and
+  chapter 4 of the manual do
+
 - BigInteger.tpp had its own mulWide(), a copy of wideProduct() of
   Portable.h with the same three paths; the integers of any length now take
   their products of digits from Portable.h, whose computation on the halves
