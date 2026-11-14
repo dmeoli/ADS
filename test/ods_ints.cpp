@@ -33,8 +33,18 @@
 #include "ADS/priority/DaryHeap.h"
 #include "ADS/priority/MeldableHeap.h"
 #include "ADS/priority/MultiwayMerge.h"
+#include "ADS/sequence/List.h"
+#include "ADS/sequence/ListSort.h"
+#include "ADS/sort/CountingSort.h"
+#include "ADS/sort/EngineeredQuickSorts.h"
+#include "ADS/sort/Heapsort.h"
+#include "ADS/sort/MergeSort.h"
+#include "ADS/sort/QuickSort.h"
+#include "ADS/sort/QuicksortAdversary.h"
+#include "ADS/sort/RadixSort.h"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <cmath>
 #include <span>
@@ -932,6 +942,340 @@ ADS_TEST( "ods5.3.hash-codes" )
    CHECK( ( x == M ? 0 : x ) == r );
    }
   }
+ }
+
+
+/*--------------------------------------------------------------------------*/
+/*-------------------------- CHAPTER 11, SORTING ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// ods 11.1 and ods ex 11.1: merge sort, quicksort (the first item as the
+// pivot, and the random pivot with the partition in three of Morin's
+// book), heapsort, counting sort and radix sort on the array of exercise
+// 11.1 and on random arrays, against std::sort; the list merge sort that
+// relinks the cells, with no auxiliary array (exercise 11.2)
+ADS_TEST( "ods11.1.sorts" )
+{
+ const std::vector< int > a{ 1 , 7 , 4 , 6 , 2 , 8 , 3 , 5 };
+ const std::vector< int > e{ 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 };
+ std::mt19937 g( 13 );
+ for( int round = 0 ; round < 50 ; ++round ) {
+  std::vector< int > v = a;
+  if( round > 0 ) {
+   v.resize( g() % 2000 );
+   for( auto & x : v )
+    x = int( g() % 1000 );
+   }
+  std::vector< int > w = v;
+  std::sort( w.begin() , w.end() );
+  auto m = v , q = v , t = v , h = v , c = v , r = v;
+  ADS::mergeSort( m );
+  ADS::quickSort( q );
+  ADS::threeWayQuickSort( t );
+  ADS::heapsort( h );
+  ADS::countingSort( c , 1000 );
+  ADS::radixSort( r );
+  CHECK( m == w && q == w && t == w && h == w && c == w && r == w );
+  if( round == 0 )
+   CHECK( w == e );
+  ADS::List< int > L( v.begin() , v.end() );
+  ADS::listSort( L );
+  CHECK( std::equal( L.begin() , L.end() , w.begin() , w.end() ) );
+  }
+ }
+
+// ods ex 11.2: the list merge sort keeps the cells, only relinked: the
+// address of each item is the same before and after, and it is stable
+ADS_TEST( "ods.ex11.2.list-merge-sort" )
+{
+ ADS::List< std::pair< int , int > > L;
+ std::mt19937 g( 14 );
+ for( int i = 0 ; i < 5000 ; ++i )
+  L.push_back( { int( g() % 100 ) , i } );
+ std::set< const std::pair< int , int > * > before;
+ for( const auto & x : L )
+  before.insert( &x );
+ ADS::listSort( L , []( const auto & a , const auto & b ) {
+  return( a.first < b.first ); } );
+ std::set< const std::pair< int , int > * > after;
+ const std::pair< int , int > * prev = nullptr;
+ for( const auto & x : L ) {
+  after.insert( &x );
+  if( prev )
+   CHECK( prev->first < x.first ||
+          ( prev->first == x.first && prev->second < x.second ) );
+  prev = &x;
+  }
+ CHECK( before == after );
+ }
+
+/// a quicksort of \f$ A[ i .. i + n - 1 ] \f$ whose pivot is the middle
+/// item, \f$ A[ i + \lfloor n / 2 \rfloor ] \f$, moved to the front and
+/// compared with the other \f$ n - 1 \f$ items, the rule of exercise 11.4
+template< class T , class C >
+void middlePivotQuickSort( std::vector< T > & A , std::size_t i ,
+                           std::size_t n , C less )
+{
+ while( n > 1 ) {
+  std::swap( A[ i ] , A[ i + n / 2 ] );
+  std::size_t p = i;   // A[ i + 1 .. p ] < pivot
+  for( std::size_t j = i + 1 ; j < i + n ; ++j )
+   if( less( A[ j ] , A[ i ] ) )
+    std::swap( A[ ++p ] , A[ j ] );
+  std::swap( A[ i ] , A[ p ] );
+  middlePivotQuickSort( A , i , p - i , less );
+  n -= p - i + 1;
+  i = p + 1;
+  }
+ }
+
+// ods ex 11.3 to ex 11.6: the adversary of McIlroy, a comparator that does
+// not look at the values, forces binom( n , 2 ) comparisons or more out of
+// the quicksort with the first item as the pivot (exercise 11.3), with the
+// middle one (exercise 11.4), and with the random pivot and the partition
+// in three of Morin's book (exercises 11.5 and 11.6); the input it leaves
+// makes the deterministic sorts do the same comparisons again, the sorted
+// array is the killer input of the first rule, and a random input costs
+// O( n log n )
+ADS_TEST( "ods.ex11.6.quicksort-adversary" )
+{
+ const std::size_t n = 2000 , all = n * ( n - 1 ) / 2;
+ struct Counting {
+  std::size_t * c;
+  bool operator()( std::size_t a , std::size_t b ) const {
+   ++*c;
+   return( a < b );
+   }
+  };
+ {
+  ADS::QuicksortAdversary adv( n );
+  auto I = adv.items();
+  ADS::quickSort( I , adv.less() );
+  CHECK( adv.comparisons() >= all );
+  // the killer input, replayed with a plain comparator
+  auto K = adv.input();
+  std::size_t c = 0;
+  ADS::quickSort( K , Counting{ &c } );
+  CHECK( c == adv.comparisons() );
+  // exercise 11.3: the sorted array, binom( n , 2 ) comparisons by the
+  // partitions (and those of the audits of the partitions, which the
+  // contracts of the tests check, on top)
+  std::vector< std::size_t > S( n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   S[ i ] = i;
+  c = 0;
+  ADS::quickSort( S , Counting{ &c } );
+  CHECK( c >= all );
+  }
+ {
+  ADS::QuicksortAdversary adv( n );
+  auto I = adv.items();
+  middlePivotQuickSort( I , 0 , n , adv.less() );
+  CHECK( adv.comparisons() == all );
+  auto K = adv.input();
+  std::size_t c = 0;
+  middlePivotQuickSort( K , 0 , n , Counting{ &c } );
+  CHECK( c == all && std::is_sorted( K.begin() , K.end() ) );
+  }
+ {
+  ADS::QuicksortAdversary adv( n );
+  auto I = adv.items();
+  ADS::threeWayQuickSort( I , adv.less() );
+  CHECK( adv.comparisons() >= all / 2 );
+  // the values given are a total order, and the sort agrees with it
+  const auto V = adv.input();
+  for( std::size_t i = 1 ; i < n ; ++i )
+   CHECK( V[ I[ i - 1 ] ] < V[ I[ i ] ] );
+  // a random input: O( n log n ) comparisons (the audits included), an
+  // order of magnitude fewer
+  std::vector< std::size_t > R = adv.items();
+  std::shuffle( R.begin() , R.end() , std::mt19937( 15 ) );
+  std::size_t c = 0;
+  ADS::threeWayQuickSort( R , Counting{ &c } );
+  CHECK( c < all / 8 );
+  }
+ }
+
+// ods ex 11.7: the expected comparisons of the quicksort of Morin's book,
+// which compares each of the n items of a part with the pivot (itself
+// included) and stops on the parts of one item, satisfy
+// T( n ) = n + ( 2 / n ) sum_{k<n} T( k ), whose solution is
+// 2 ( n + 1 ) H_n - 4 n + ( 2 n - 1 ) / 3 for n >= 2, and not the
+// 2 n H_n - n + H_n of the exercise; checked exactly up to 2000 and against
+// the average of a run of that quicksort
+ADS_TEST( "ods.ex11.7.quicksort-expectation" )
+{
+ std::vector< double > T( 2001 , 0.0 );
+ double sum = 0 , H = 1;   // sum of T( 0 .. n - 1 ), H_n
+ for( std::size_t n = 2 ; n <= 2000 ; ++n ) {
+  sum += T[ n - 1 ];
+  H += 1.0 / double( n );
+  T[ n ] = double( n ) + 2.0 * sum / double( n );
+  const double closed = 2.0 * double( n + 1 ) * H - 4.0 * double( n ) +
+                        ( 2.0 * double( n ) - 1.0 ) / 3.0;
+  CHECK( std::abs( T[ n ] - closed ) < 1e-9 * T[ n ] );
+  const double exercise = 2.0 * double( n ) * H - double( n ) + H;
+  CHECK( std::abs( T[ n ] - exercise ) > 1.0 );
+  }
+ // the quicksort of the book on distinct keys, its comparisons averaged
+ std::mt19937 g( 16 );
+ const std::size_t n = 200 , runs = 4000;
+ double total = 0;
+ std::vector< int > A( n );
+ for( std::size_t r = 0 ; r < runs ; ++r ) {
+  for( std::size_t i = 0 ; i < n ; ++i )
+   A[ i ] = int( i );
+  std::shuffle( A.begin() , A.end() , g );
+  std::size_t c = 0;
+  std::vector< std::pair< std::size_t , std::size_t > > S{ { 0 , n } };
+  while( ! S.empty() ) {
+   const auto [ i , m ] = S.back();
+   S.pop_back();
+   if( m <= 1 )
+    continue;
+   const int x = A[ i + g() % m ];
+   std::size_t p = i , j = i , q = i + m;
+   while( j < q ) {
+    ++c;
+    if( A[ j ] < x )
+     std::swap( A[ j++ ] , A[ p++ ] );
+    else if( A[ j ] > x )
+     std::swap( A[ j ] , A[ --q ] );
+    else
+     ++j;
+    }
+   S.push_back( { i , p - i } );
+   S.push_back( { q , i + m - q } );
+   }
+  CHECK( std::is_sorted( A.begin() , A.end() ) );
+  total += double( c );
+  }
+ CHECK( std::abs( total / runs - T[ n ] ) < 0.01 * T[ n ] );
+ }
+
+/// the comparisons of the heap sort of section 11.1.3 of Morin's book on
+/// \f$ A \f$: a heap of the minimum built by Floyd, then the root swapped
+/// with the last item n times and the new root moved down, the smaller
+/// child compared with the item, two comparisons per level (its
+/// trickleDown)
+std::size_t bookHeapSort( std::vector< std::size_t > & A )
+{
+ std::size_t c = 0;
+ auto down = [ & ]( std::size_t i , std::size_t n ) {
+  for( ; ; ) {
+   const std::size_t l = 2 * i + 1 , r = l + 1;
+   std::size_t j = n;
+   if( r < n ) {
+    ++c;
+    if( A[ r ] < A[ i ] ) {
+     ++c;
+     j = A[ l ] < A[ r ] ? l : r;
+     }
+    else if( ( ++c , A[ l ] < A[ i ] ) )
+     j = l;
+    }
+   else if( l < n && ( ++c , A[ l ] < A[ i ] ) )
+    j = l;
+   if( j == n )
+    return;
+   std::swap( A[ i ] , A[ j ] );
+   i = j;
+   }
+  };
+ const std::size_t n = A.size();
+ for( std::size_t i = n / 2 ; i-- > 0 ; )
+  down( i , n );
+ for( std::size_t m = n ; m > 1 ; ) {
+  std::swap( A[ 0 ] , A[ --m ] );
+  down( 0 , m );
+  }
+ std::reverse( A.begin() , A.end() );
+ return( c );
+ }
+
+// ods ex 11.8: the heap sort of Morin's book on an array in increasing
+// order, already a heap of the minimum, makes at least
+// 2 n log2 n - 4 n comparisons: the last leaf moved to the root is larger
+// than all the items of the upper levels and sinks to the bottom, with two
+// comparisons per level; the heapsort of ADS, on the decreasing array,
+// makes no fewer
+ADS_TEST( "ods.ex11.8.heapsort-worst" )
+{
+ for( std::size_t n : { std::size_t( 1 ) << 10 , std::size_t( 1 ) << 14 ,
+                        std::size_t( 100000 ) } ) {
+  const double bound = 2.0 * double( n ) * std::log2( double( n ) ) -
+                       4.0 * double( n );
+  std::vector< std::size_t > A( n );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   A[ i ] = i;
+  const std::size_t c = bookHeapSort( A );
+  CHECK( std::is_sorted( A.begin() , A.end() ) );
+  CHECK( double( c ) >= bound );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   A[ i ] = n - i;
+  std::size_t d = 0;
+  ADS::heapsort( A , [ & ]( std::size_t a , std::size_t b ) {
+   ++d;
+   return( a < b ); } );
+  CHECK( std::is_sorted( A.begin() , A.end() ) && double( d ) >= bound );
+  }
+ }
+
+// ods ex 11.10: the comparison tree of figure 11.6, with 4 leaves for the
+// 6 permutations of 1, 2, 3, sorts all of them but 2, 3, 1 and 3, 2, 1,
+// which reach the leaf of 3, 1, 2; the binary tree of k leaves has height
+// at least log2 k (exercises 11.11 to 11.13), so that 3 comparisons are
+// needed
+ADS_TEST( "ods.ex11.10.comparison-tree" )
+{
+ // the tree: a[ 0 ] vs a[ 2 ]; if smaller, a[ 0 ] vs a[ 1 ]; if that is
+ // smaller, a[ 1 ] vs a[ 2 ]
+ auto order = []( const std::array< int , 3 > & a ) {
+  if( a[ 0 ] > a[ 2 ] )
+   return( std::array< int , 3 >{ 1 , 2 , 0 } );
+  if( a[ 0 ] > a[ 1 ] )
+   return( std::array< int , 3 >{ 1 , 0 , 2 } );
+  if( a[ 1 ] < a[ 2 ] )
+   return( std::array< int , 3 >{ 0 , 1 , 2 } );
+  return( std::array< int , 3 >{ 0 , 2 , 1 } );
+  };
+ std::array< int , 3 > p{ 1 , 2 , 3 };
+ std::vector< std::array< int , 3 > > wrong;
+ do {
+  const auto o = order( p );
+  if( !( p[ o[ 0 ] ] < p[ o[ 1 ] ] && p[ o[ 1 ] ] < p[ o[ 2 ] ] ) )
+   wrong.push_back( p );
+  } while( std::next_permutation( p.begin() , p.end() ) );
+ CHECK( ( wrong == std::vector< std::array< int , 3 > >{ { 2 , 3 , 1 } ,
+                                                          { 3 , 2 , 1 } } ) );
+ CHECK( std::ceil( std::log2( 6.0 ) ) == 3.0 );
+ }
+
+// ods ex 11.15: the radix sort of signed integers, the sign bit flipped in
+// the key, against std::sort, with the extremes of each width
+template< class T >
+void signedRadix( std::uint64_t seed )
+{
+ std::mt19937_64 g( seed );
+ std::vector< T > v( 20000 );
+ for( auto & x : v )
+  x = T( g() );
+ v.push_back( std::numeric_limits< T >::min() );
+ v.push_back( std::numeric_limits< T >::max() );
+ v.push_back( 0 );
+ v.push_back( -1 );
+ auto w = v;
+ std::sort( w.begin() , w.end() );
+ ADS::radixSort( v );
+ CHECK( v == w );
+ }
+
+ADS_TEST( "ods.ex11.15.signed-radix-sort" )
+{
+ signedRadix< std::int8_t >( 1 );
+ signedRadix< std::int16_t >( 2 );
+ signedRadix< std::int32_t >( 3 );
+ signedRadix< std::int64_t >( 4 );
  }
 
 }  // end( namespace )
