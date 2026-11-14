@@ -36,6 +36,7 @@ std::pair< std::vector< std::size_t > , W > maxinterval(
   E.emplace_back( I[ by[ i ] ].b , -LL( i + 1 ) );
   }
  std::sort( E.begin() , E.end() );
+//! [maxinterval]
  std::vector< std::size_t > pred( n + 1 , 0 );
  std::size_t h = 0;
  for( auto [ x , e ] : E )
@@ -46,6 +47,7 @@ std::pair< std::vector< std::size_t > , W > maxinterval(
  std::vector< W > DP( n + 1 , W( 0 ) );
  for( std::size_t i = 1 ; i <= n ; ++i )
   DP[ i ] = std::max( DP[ i - 1 ] , I[ by[ i - 1 ] ].w + DP[ pred[ i ] ] );
+//! [maxinterval]
  std::vector< std::size_t > S;
  for( std::size_t i = n ; i > 0 ; )
   if( DP[ i - 1 ] >= I[ by[ i - 1 ] ].w + DP[ pred[ i ] ] )

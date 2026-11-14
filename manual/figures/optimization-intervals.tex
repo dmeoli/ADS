@@ -1,0 +1,19 @@
+% Source for the figure of independentSet() and intervalColoring()
+% (sec. 13.11): seven intervals [a, b), those taken by the greedy shaded,
+% and the color of each. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,x=8mm,y=6mm]
+  \foreach \x in {0,...,12} {
+    \draw[black!25] (\x,0.4) -- (\x,-7);
+    \node[index] at (\x,0.75) {\x}; }
+  \foreach \a/\b/\k/\s/\c in {0/3/1/touched/0,1/5/2/cell/1,4/7/3/touched/0,2/8/4/cell/2,6/9/5/cell/1,8/11/6/touched/2,9/12/7/cell/1}
+    \node[fill=white,\s,minimum width=\b*8mm-\a*8mm,minimum height=4.5mm,anchor=west,font=\scriptsize\ttfamily]
+      at (\a,-\k+0.2) {[\a, \b): color \c};
+\end{tikzpicture}
+\end{document}

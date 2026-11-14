@@ -73,6 +73,7 @@ OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p ,
                                                               T( 0 ) ) );
  std::vector< std::vector< int > > R( n + 1 , std::vector< int >( n + 1 ,
                                                                   -1 ) );
+//! [optimalSearchTree]
  for( int h = 1 ; h <= n ; ++h )
   for( int i = 0 ; i + h <= n ; ++i ) {
    const int j = i + h;
@@ -87,6 +88,7 @@ OptimalSearchTree< T > optimalSearchTree( const std::vector< T > & p ,
    C[ i ][ j ] = C[ i ][ best ] + C[ best + 1 ][ j ] + ( P[ j ] - P[ i ] )
                  + ( Q[ j + 1 ] - Q[ i ] );
    }
+//! [optimalSearchTree]
  OptimalSearchTree< T > B{ C[ 0 ][ n ] , -1 , std::vector< int >( n , -1 ) ,
                            std::vector< int >( n , -1 ) };
  B.root = detail::buildOptimalSearchTree( R , 0 , n , B );

@@ -1,0 +1,19 @@
+% Source for the figure of the binary counter (sec. 13.2): the bits before
+% and after add(). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{newpxtext,newpxmath}
+\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{tikz}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{1/cell,1/cell,1/cell,0/cell,1/cell,0/cell,0/cell,0/cell}
+  \node[var,anchor=west] at (58mm,0) {the value 23, $\Phi = 4$};
+  \node[var,anchor=east] at (-6mm,-13mm) {\texttt{add(A)}};
+  \cells{b}{0,-13mm}{0/touched,0/touched,0/touched,1/touched,1/cell,0/cell,0/cell,0/cell}
+  \node[var,anchor=west] at (58mm,-13mm) {the value 24, $\Phi = 2$, returns 4};
+  \indices{b}{8}
+\end{tikzpicture}
+\end{document}

@@ -42,9 +42,10 @@
  * `SequenceProblems.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapter 13 and the
- * Esercizi Programmazione dinamica, exercises B4 of 06/06/2011, * A3 of
- 04/09/2020, B3 of 16/06/2021, B2 of 20/07/2026 and B3 of * 28/08/2026,
- https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
+ *      Esercizi Programmazione dinamica, exercises B4 of 06/06/2011, A3 of
+ *      04/09/2020, B3 of 16/06/2021, B2 of 20/07/2026 and B3 of
+ *      28/08/2026,
+ *      https://algoritmicamente.it/materiali/libro/capitoli/cap13.pdf
  * \see G. Jacobson, K.-P. Vo, Heaviest increasing/common subsequence
  *      problems, Proc. 3rd Symposium on Combinatorial Pattern Matching,
  *      LNCS 644, 52-66, 1992, doi:10.1007/3-540-56024-6_5

@@ -133,6 +133,7 @@ std::optional< T > minValueExactWeight( const std::vector< V > & w ,
 /*--------------------------------------------------------------------------*/
 
 template< class C , class V >
+//! [coinChangeWays]
 C coinChangeWays( const std::vector< V > & coins , V T )
 {
  ADS_PRE( T >= V( 0 ) );
@@ -148,10 +149,12 @@ C coinChangeWays( const std::vector< V > & coins , V T )
   }
  return( N[ t ] );
  }
+//! [coinChangeWays]
 
 /*--------------------------------------------------------------------------*/
 
 template< class C , class V >
+//! [subsetSumCount]
 C subsetSumCount( const std::vector< V > & A , V k )
 {
  ADS_PRE( k >= V( 0 ) );
@@ -169,6 +172,7 @@ C subsetSumCount( const std::vector< V > & A , V k )
   }
  return( N[ K ] );
  }
+//! [subsetSumCount]
 
 /*--------------------------------------------------------------------------*/
 
