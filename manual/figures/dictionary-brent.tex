@@ -14,11 +14,11 @@
   \node[var,anchor=east] at (-6mm,0) {before};
   \cells{a}{0,0}{/free,A/cell,B/cell,/free,C/cell,/free,D/cell}
   \node[var,anchor=east] at (-6mm,-20mm) {\texttt{insert(K)}};
-  \cells{b}{0,-20mm}{/free,K/added,B/touched,/free,C/cell,A/added,D/cell}
-  \draw[ptr] (b-1.north) to[bend left=40] (b-5.north);
+  \cells{b}{0,-20mm}{/free,K/added,B/touched,A/added,C/cell,/free,D/cell}
+  \draw[ptr] (b-1.north) to[bend left=50] (b-3.north);
   \indices{a}{7}
-  \node[var,anchor=west] at (56mm,-14mm) {$K$: 1, 4, 6, 3};
-  \node[var,anchor=west] at (56mm,-20mm) {$A$: 1, 2, 5};
-  \node[var,anchor=west] at (56mm,-26mm) {plain: $K$ in 3, 4 probes};
+  \node[var,anchor=west] at (56mm,-14mm) {$K$: 1, 6, 4, 2, 0};
+  \node[var,anchor=west] at (56mm,-20mm) {$A$: 1, 2, 3};
+  \node[var,anchor=west] at (56mm,-26mm) {plain: $K$ in 0, 5 probes};
 \end{tikzpicture}
 \end{document}

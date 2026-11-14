@@ -14,15 +14,15 @@
 We are concerned in this chapter with the DICTIONARY, i.e., a finite map
 from a set of keys to a set of values that is searched by key, and with
 its ordered variant, the SORTED SET of [Morin 2013,
-§1.2.4](Z-bibliography.md#ref-morin-cpp), which also answers for a key
-$x$ with the smallest key not smaller than $x$. The headers of
-`ADS/dictionary` realize the first one on a vector indexed by the key and
+§1.2.4](Z-bibliography.md#ref-morin-cpp). This variant also answers for a
+key $x$ with the smallest key not smaller than $x$. In `ADS/dictionary`
+the first one is realized on a vector indexed by the key and
 on a sorted vector ([§7.2](07-dictionary.md#sec-7-2)), and on the hash
 tables of [Montresor 2025, chapter 7](Z-bibliography.md#ref-montresor2025)
 and of [Morin 2013, chapter 5](Z-bibliography.md#ref-morin-cpp), with
 their lists of overflow ([§7.4](07-dictionary.md#sec-7-4)) and their open
-addressing ([§7.5](07-dictionary.md#sec-7-5)), after the hash functions
-on which all of them rest ([§7.3](07-dictionary.md#sec-7-3)). Beyond the
+addressing ([§7.5](07-dictionary.md#sec-7-5)); the hash functions on
+which all of them rest come first ([§7.3](07-dictionary.md#sec-7-3)). Beyond the
 books, they add the engineered tables that compare the fingerprints of a
 full group of places at once ([§7.6](07-dictionary.md#sec-7-6)), the
 cuckoo hashing, whose searches look at two places in the worst case
@@ -32,8 +32,9 @@ the skip lists of [Morin 2013, chapter 4](Z-bibliography.md#ref-morin-cpp)
 ([§7.9](07-dictionary.md#sec-7-9)), the digital search trees of strings
 ([§7.10](07-dictionary.md#sec-7-10)) and those of the integers of $w$
 bits of [Morin 2013, chapter 13](Z-bibliography.md#ref-morin-cpp)
-([§7.11](07-dictionary.md#sec-7-11)), whose searches take a time that
-depends on the length of the key rather than on the number of keys. The
+([§7.11](07-dictionary.md#sec-7-11)). In the last two, the searches
+take a time that depends on the length of the key rather than on the
+number of keys. The
 three chapters of Morin are covered section by section, with each of his
 lemmas, figures and exercises restated on the code of the library. The
 exercises that ask to illustrate an operation are solved by the figures of
@@ -44,9 +45,9 @@ this chapter, and the others by the tests named in
 
 A DICTIONARY is a univocal relation from a set of keys to a set of values
 ([Montresor 2025, §3.2.3](Z-bibliography.md#ref-montresor2025)), with three
-operations: `lookup(k)`, which returns the value of the key $k$ or nothing,
-`insert(k, v)`, which associates the value $v$ to $k$ (replacing the value
-that $k$ may have had), and `remove(k)`, which removes $k$ and its value
+operations. Of these, `lookup(k)` returns the value of the key $k$ or nothing,
+`insert(k, v)` associates the value $v$ to $k$ (replacing the value
+that $k$ may have had), and `remove(k)` removes $k$ and its value
 if $k$ is there. Their meaning is fixed by the axioms
 
 $$
@@ -54,20 +55,29 @@ $$
 \mathrm{lookup}( \mathrm{remove}( D , k ) , k ) = \textbf{nil} , \tag{7.1}
 $$
 
-together with the two axioms which say that `insert(k, v)` and
-`remove(k)` leave the value of every other key as it was. The
-realizations check the first two as postconditions of their contracts,
-and the concept `Dictionary` of `ADS/ADT.h` requires the three operations.
-Most realizations also have `contains(k)`, `size()` and the iterators of
-the standard library on their pairs, and the engineered ones a `find(k)`
-that returns a pointer to the value, to change it in place. The USET of
-[Morin 2013, §1.2.3](Z-bibliography.md#ref-morin-cpp) is a dictionary
-whose values are not used, and his SSET adds `find(x)`, the smallest key
-$y \ge x$ (the *successor* of $x$), which the ordered realizations of this
-chapter call `lowerBound(x)`, after `std::lower_bound`, since their
-`find(x)` is the search of $x$ itself.
+together with the two axioms which say that `insert(k, v)` and `remove(k)`
+leave the value of each other key as it was. The realizations check the
+first two as postconditions of their contracts, and the concept
+`Dictionary` of `ADS/ADT.h` requires the three operations. Most
+realizations also have `contains(k)`, `size()` and the iterators of the
+standard library on their pairs, and the engineered ones a `find(k)` that
+returns a pointer to the value, to change it in place. The USET of [Morin
+2013, §1.2.3](Z-bibliography.md#ref-morin-cpp) is a dictionary whose values
+are not used. His SSET adds `find(x)`, the smallest key $y \ge x$ (the
+*successor* of $x$), which the ordered realizations of this chapter call
+`lowerBound(x)`, after `std::lower_bound`, since their `find(x)` is the
+search of $x$ itself. For the sets of [Chapter 10](10-set.md#ch-10),
+`ChainedHashTable`, `OpenHashTable`, `SortedArrayDictionary`, `SkipList`
+and `IndexedSkipList` also have `findKey(k)`, the address of the key $k$
+they hold (nil if absent), and the last three `lowerBoundKey(k)`, the
+address of the smallest key not smaller than $k$ (nil if none), each valid
+until the key is removed (or, in the hash tables, until the next change).
+These are the operations that the concepts `KeyedDictionary` and
+`OrderedDictionary` of `SetInterfaces.h` require and through which
+`DictionarySet` makes a USET or an SSET of a dictionary, as described in
+[Chapter 10](10-set.md#ch-10).
 
-The realizations share a few conventions, which we state once. Each one
+All the realizations share a few conventions, which we state once. Each one
 declares the types `Key` and `Value` (and `Item`, the keys, for the SSETs
 of [§7.11](07-dictionary.md#sec-7-11)) and the types of the standard
 library for its items, with `begin()`, `end()`, `cbegin()`, `cend()` and a
@@ -77,29 +87,32 @@ whose items lie in places (`DirectTable`, `OpenHashTable`,
 `PerfectHashTable` and `PointerTable`) describe their places by a nested
 `Places`, with `size()`, `occupied()` and `read()`, from which the
 `SlotIterator` of `ADS/Iterators.h` ([Chapter 1](01-introduction.md#ch-1))
-makes the iterator that skips the empty places. The hash tables take the
-hash as a template parameter `H` (`std::hash` for those of the textbooks,
-`DefaultHash` for the engineered ones, [§7.3.6](07-dictionary.md#sec-7-3-6)),
-and the engineered ones also an equality `Eq`, `std::equal_to` by default.
-The contracts follow `ADS/Contract.h`: the postconditions of (7.1) and the
-invariant of each structure are checked at the levels stated in each
-section, and the invariants that cost a scan of the structure are checked
-in full only on small structures (up to 1024 places, or 256 keys for the
-tries of integers), and on the key of the operation beyond, and hence a long
-sequence of operations at the contract level 3 stays linear.
+makes the iterator that skips the empty places. Their `capacity()` is the
+number of places (of lists in `ChainedHashTable`, the stash excluded in
+`CuckooHashTable`, 4 per bucket in `BucketCuckooTable`). The hash tables
+take the hash as a template parameter `H` (`std::hash` for those of the
+textbooks, `DefaultHash` for the engineered ones,
+[§7.3.6](07-dictionary.md#sec-7-3-6)), and the engineered ones also an
+equality `Eq`, `std::equal_to` by default. The contracts follow
+`ADS/Contract.h`: the postconditions of (7.1) and the invariant of each
+structure are checked at the levels stated in each section. An invariant
+that costs a scan of the structure is checked in full only on small
+structures (up to 1024 places, or 256 keys for the tries of integers), and
+on the key of the operation beyond; hence, a long sequence of operations at
+the contract level 3 stays linear.
 
-The keys are drawn from a *universe* $U$, and a dictionary holds $n$ of
+Keys are drawn from a *universe* $U$, and a dictionary holds $n$ of
 them at a time. When $U$ is a small interval of integers, a vector with a
 place for each key of $U$ is enough ([§7.2](07-dictionary.md#sec-7-2)).
 Otherwise a *hash function* $H : U \rightarrow \{ 0 , \ldots , m - 1 \}$
 maps the keys to the $m$ places of a table, and two distinct keys
-$k \ne k'$ with $H( k ) = H( k' )$ make a *collision*, which the table
-must resolve, either by lists of overflow (*chaining*,
+$k \ne k'$ with $H( k ) = H( k' )$ make a *collision*. The table
+must resolve it, either by lists of overflow (*chaining*,
 [§7.4](07-dictionary.md#sec-7-4)) or by further places of the table itself
 (*open addressing*, [§7.5](07-dictionary.md#sec-7-5)). Throughout the
-chapter $\alpha = n / m$ is the *load factor* of a table, $h( k )$ is the
+chapter $\alpha = n / m$ is the *load factor* of a table and $h( k )$ is the
 hash of a key, a word of 64 bits (or of the type `std::size_t`), from
-which the place $H( k )$ is computed, often as $h( k ) \bmod m$, and
+which the place $H( k )$ is computed, often as $h( k ) \bmod m$. Also,
 $I( \alpha )$ and $S( \alpha )$ are the expected numbers of places (or of
 cells of a list) examined by an unsuccessful and by a successful search.
 For the strings, $\sigma$ is the size of the alphabet and $|k|$ the length
@@ -147,31 +160,31 @@ of the random levels.
 | `XFastTrie`, `ListXFastTrie` | $O( \log w )$ expected | $O( w )$ expected | $O( n w )$ | yes |
 | `YFastTrie` | $O( \log w )$ expected | $O( \log w )$ expected amortized | $O( n )$ | yes |
 
-The table with direct access is preferable when $| U |$ is of the order
-of $n$, and the sorted vector when the lookups far outnumber the changes
-or the keys are wanted in order. A hash table fits every other case, the
-engineered tables when the speed counts. The cuckoo tables are the choice when the
-lookups must be fast in the worst case, the perfect hashing when the set
-is static, and the tries when the keys are strings to be searched by
-prefix or integers whose successors are wanted in time independent of
-$n$.
+A table with direct access is preferable when $| U |$ is of the order of
+$n$, and the sorted vector when the lookups far outnumber the changes or
+the keys are wanted in order. A hash table fits the other cases, the
+engineered tables when the speed counts. Among the others, the cuckoo
+tables are usually the choice when the lookups must be fast in the worst
+case, and the perfect hashing when the set is static. Finally, the tries
+fit when the keys are strings to be searched by prefix or integers whose
+successors are wanted in time independent of $n$.
 
 ## 7.2 Direct access and sorted vectors {#sec-7-2}
 
-When the keys are the integers of an interval $[ a , b ]$ of size
-$m = b - a + 1$, the function $H( k ) = k - a$ is injective, i.e., a
-perfect hash in the sense of [§7.8](07-dictionary.md#sec-7-8), and the
-dictionary is a vector $A$ of $m$ places, each empty or holding the value
-of its key ([Montresor 2025, chapter 7](Z-bibliography.md#ref-montresor2025)).
-`DirectTable` realizes it with a counter $n$ of the places not empty,
-which its invariant checks ([Algorithm 7.1](07-dictionary.md#alg-7-1),
-[Figure 7.1](07-dictionary.md#fig-7-1)); each operation costs $O( 1 )$
-time, while the space is $\Theta( m )$ whatever $n$. The contracts require
-$a \le b$, $m$ places that fit in a `std::size_t` (which the full range
-of `long` does not), and each key in $[ a , b ]$, a condition checked
-without overflow for any `long`. The iterators visit the places in order,
-and give the pairs $( a + i , A[ i ] )$ of the places $i$ not empty; hence
-the keys come out in increasing order.
+When the keys are the integers of an interval $[ a , b ]$ of size $m = b -
+a + 1$, the function $H( k ) = k - a$ is injective, i.e., a perfect hash in
+the sense of [§7.8](07-dictionary.md#sec-7-8). In this case the dictionary is a
+vector $A$ of $m$ places, each empty or holding the value of its key
+([Montresor 2025, chapter 7](Z-bibliography.md#ref-montresor2025)).
+`DirectTable` realizes it with a counter $n$ of the places not empty, which
+its invariant checks ([Algorithm 7.1](07-dictionary.md#alg-7-1), [Figure
+7.1](07-dictionary.md#fig-7-1)); each operation costs $O( 1 )$ time, while
+the space is $\Theta( m )$ whatever $n$. Its contracts require $a \le b$,
+$m$ places that fit in a `std::size_t` (which the full range of `long` does
+not), and each key in $[ a , b ]$, a condition checked without overflow for
+any `long`. Its iterators visit the places in order, and give the pairs $(
+a + i , A[ i ] )$ of the places $i$ not empty; hence the keys come out in
+increasing order.
 
 ![Figure 7.1. A `DirectTable` of the keys in $[ a , b ] = [ 10 , 17 ]$, the place $i$ for the key $a + i$: before (the values `x`, `y`, `z` of the keys 11, 13 and 16), after `insert(14, w)`, which writes the place 4 (in orange), and after `remove(11)`, which empties the place 1 (in violet).](../figures/dictionary-direct.svg){#fig-7-1}
 
@@ -181,19 +194,19 @@ the keys come out in increasing order.
 --8<-- "generated/DirectTable-lookup.pseudo.md"
 
 `SortedArrayDictionary` keeps the $n$ pairs in a vector sorted by key, an
-invariant (the keys strictly increasing) that its contracts check: a
-lookup is the binary search of [Montresor 2025,
+invariant (the keys strictly increasing) that its contracts check. A lookup
+is the binary search of [Montresor 2025,
 §1.2](Z-bibliography.md#ref-montresor2025), which finds the first place
-$\mathit{lo}$ whose key is not smaller than $k$ in $O( \log n )$ time
-(cf. [Chapter 6](06-search.md#ch-6)), while an insertion and a removal
-move the pairs after $\mathit{lo}$ one place to the right or to the left
-([Algorithm 7.2](07-dictionary.md#alg-7-2), [Figure 7.2](07-dictionary.md#fig-7-2)).
-These take $\Theta( n - \mathit{lo} )$ moves, $O( n )$ time, whereas the
-pairs come out in order at no cost and the keys between two values are a
-range of places found by two binary searches. The vector is therefore
-preferable when the dictionary is built once and searched often, and its
-pairs, contiguous and with no links, take the least space of the
-realizations of this chapter.
+$\mathit{lo}$ whose key is not smaller than $k$ in $O( \log n )$ time (cf.
+[Chapter 6](06-search.md#ch-6)), whereas an insertion and a removal move
+the pairs after $\mathit{lo}$ one place to the right or to the left
+([Algorithm 7.2](07-dictionary.md#alg-7-2), [Figure
+7.2](07-dictionary.md#fig-7-2)). These take $\Theta( n - \mathit{lo} )$
+moves, $O( n )$ time, whereas the pairs come out in order at no cost and
+the keys between two values are a range of places found by two binary
+searches. A sorted vector is therefore preferable when the dictionary is built
+once and searched often, and its pairs, contiguous and with no links, take
+the least space of the realizations of this chapter.
 
 ![Figure 7.2. A `SortedArrayDictionary` of the keys 3, 8, 12, 19, 31, 40 in a vector of 8 places, before and after `insert(15)`: the binary search stops at the place 3 of the first key not smaller than 15 (in violet), the pairs from it on move one place to the right, and 15 takes the place 3 (in orange).](../figures/dictionary-sorted.svg){#fig-7-2}
 
@@ -209,23 +222,24 @@ insertion of `SortedArrayDictionary`.
 A hash table is only as good as its hash function: a function that sends
 the keys of the dictionary to few places makes each table of
 [§7.4](07-dictionary.md#sec-7-4) to [§7.7](07-dictionary.md#sec-7-7) a
-list. We now go through the functions of the area, from the fixed ones of
-the textbooks to the classes from which a function is drawn at random, the
-hash codes of the compound objects, and the engineered functions of 64
-bits on which the tables of [§7.6](07-dictionary.md#sec-7-6) rest.
+list. We now go through the functions of the area. Fixed ones of the
+textbooks come first, then the classes from which a function is drawn at
+random, the hash codes of the compound objects, and the engineered
+functions of 64 bits on which the tables of
+[§7.6](07-dictionary.md#sec-7-6) rest.
 
 ### 7.3.1 The functions of a key {#sec-7-3-1}
 
 The functions of `HashFunctions.h` ([Montresor 2025,
 §7.1](Z-bibliography.md#ref-montresor2025)) read a key $k$ as the string
 $\mathrm{bin}( k )$ of its bits, the bytes of a string one after the other
-from the first and the most significant bit of each first (`bin_bit()`
-gives one bit of it, and `int_bin()` the integer
-$\mathrm{int}( \mathrm{bin}( k ) )$ of a key of at most 8 characters).
-The *extraction* (`hash_extraction()`) takes a block of $p$ bits of
+from the first, and the most significant bit of each first. In it, `bin_bit()`
+gives one bit, and `int_bin()` the integer
+$\mathrm{int}( \mathrm{bin}( k ) )$ of a key of at most 8 characters.
+Of these, the *extraction* (`hash_extraction()`) takes a block of $p$ bits of
 $\mathrm{bin}( k )$ from a given place, and the *XOR* (`hash_xor()`) the
 exclusive or of all the blocks of $p$ bits, the last one padded with
-zeros. The two give a place in $[ 0 , 2^p )$, and the second depends on
+zeros. Both give a place in $[ 0 , 2^p )$, and the second depends on
 each bit of the key.
 
 --8<-- "generated/HashFunctions-extraction.pseudo.md"
@@ -235,7 +249,7 @@ each bit of the key.
 The *division*, $H( k ) = \mathrm{int}( \mathrm{bin}( k ) ) \bmod m$, reads
 the characters $c_1 , \ldots , c_\ell$ of the key as the digits of a number
 in a base $\beta$ and computes it by the rule of Horner, taking the
-remainder at each step (`hash_division()`). The result is the same, since
+remainder at each step (`hash_division()`). This gives the same result, since
 $( x \bmod m ) \beta + c \equiv x \beta + c \pmod{m}$, and no intermediate
 value exceeds $( m - 1 ) \beta + 255$, which the contract requires to fit in 64
 bits. A leading digit (the seed) is allowed; hence, the familiar
@@ -243,10 +257,10 @@ $h \gets 5$, $h \gets 3 h + c$ is the base 3 with the seed 5.
 
 --8<-- "generated/HashFunctions-division.pseudo.md"
 
-The remainder depends on all the bits of the key only if $m$ is not a
+In it, the remainder depends on all the bits of the key only if $m$ is not a
 power of 2 (otherwise it is the last $\log_2 m$ bits of the last
 characters). [Montresor 2025, §7.1](Z-bibliography.md#ref-montresor2025)
-recommends a prime far from a power of 2. The test of the simple uniformity
+recommends a prime far from a power of 2. A test of the simple uniformity
 by the statistic $\chi^2$ in `ch07.sec7.1.uniformity` shows the division
 by a prime spreading random strings as a uniform distribution would, and
 the extraction of the first bits sending the keys with a common prefix to
@@ -266,7 +280,7 @@ gaps left by the points before it ([Knuth 1998,
 §6.4](Z-bibliography.md#ref-knuth1998v3)). In floating point
 (`hash_multiplication()`) the formula is exact only while $C i$ keeps
 enough digits after the point, i.e., for $i$ well below the $2^{64}$ of
-the mantissa of a `long double`. The version of Knuth for $m = 2^p$
+the mantissa of a `long double`. Its version of Knuth for $m = 2^p$
 (`hash_fibonacci()`) works on integers instead: with
 $s = \lfloor C 2^{64} \rfloor$ and $i s = r_1 2^{64} + r_0$, the place is
 made of the $p$ most significant bits of $r_0$, i.e.,
@@ -280,7 +294,7 @@ bits in the middle of the 64 least significant bits of $i^2$.
 --8<-- "generated/HashFunctions-midsquare.pseudo.md"
 
 Each of these functions is fixed, and a fixed function, however good, has
-a set of keys on which it fails: if $| U | > ( n - 1 ) m$, some place
+a set of keys on which it fails. If $| U | > ( n - 1 ) m$, some place
 receives at least $n$ keys of $U$ by the pigeonhole principle, and a
 dictionary of those $n$ keys is a single list. Hence the bounds in the
 worst case of the input need a function drawn at random after the keys
@@ -305,7 +319,7 @@ share the place of a key $k$ is
 $\sum_{k' \ne k} \Pr[ H( k ) = H( k' ) ] \le ( n - 1 ) / m < \alpha$,
 whatever the keys. Each bound of the chaining in
 [§7.4](07-dictionary.md#sec-7-4) thus holds in expectation over the
-function, for every set of keys ([Ferragina 2023,
+function, for each set of keys ([Ferragina 2023,
 chapter 8](Z-bibliography.md#ref-ferragina2023)). `UniversalHashing.h`
 has four classes of this kind.
 
@@ -329,10 +343,10 @@ $p = 2^{61} - 1$, a Mersenne prime, and therefore the product $a k \bmod p$ is
 made of four products of 32 bits and a few shifts, with no integer of 128
 bits (`mulMod61()` and `mulMod()` of `ADS/numeric/NumberTheory.h`,
 [Chapter 17](17-numeric.md#ch-17)). Its keys are below $p$, and its
-accessors `p()`, `a()`, `b()` and `m()` give the parameters. The same
+accessors `p()`, `a()`, `b()` and `m()` give the parameters. A similar
 argument on the digits of a key gives `DotProductHash`,
 $h_a( k ) = \sum_i a_i k_i \bmod m$ for a prime $m$, the key cut into its
-$r$ digits $k_i$ in base $m$ and $a$ a vector of $r$ random digits: if
+$r$ digits $k_i$ in base $m$ and $a$ a vector of $r$ random digits. If
 two keys differ in the digit $j$, the collision fixes $a_j$ once the
 other digits of $a$ are chosen, since $k_j - k'_j$ has an inverse modulo
 $m$, and the two keys collide under exactly $m^{r-1} = | \mathcal{H} | / m$
@@ -341,22 +355,24 @@ functions (`universe()` gives $m^r$, or 0 past $2^{64} - 1$).
 --8<-- "generated/UniversalHashing-DotProductHash-operator.pseudo.md"
 
 `MultiplyShiftHash` is the class of [Dietzfelbinger et al.
-1997](Z-bibliography.md#ref-dietzfelbinger1997),
-$h_a( k ) = ( a k \bmod 2^h ) \operatorname{div} 2^{h - l}$ with $a$ odd,
-for keys of $h$ bits and $m = 2^l$: it is 2-universal, two keys colliding
-with probability at most $2 / m$ by an argument on the lowest bit in which
-they differ (the one of [Lemma 7.3](07-dictionary.md#lem-7-3) below), and it costs only a product and a
-shift, the fastest of the classes (`ofMultiplier()` builds it from a given
-$a$). `StringHash` turns a string into a key for the classes above, by the
-polynomial $\sum_i ( s_i + 1 ) x^i \bmod p$ of its characters at a random
-point $x$, $p = 2^{61} - 1$. Each character counts one more, and hence the
-character 0 counts too (the strings of zeros of different lengths, or a
-string and the same followed by zeros, would collide otherwise). Two
-distinct strings of length at most $L$ collide with probability at most
-$L / p$, since their difference is a polynomial of degree at most $L$, not
-zero, with at most $L$ roots (cf. [Lemma 7.4](07-dictionary.md#lem-7-4) below). In the test
-`pearls_hashing.universal-classes` we enumerate all the functions of
-small classes and check the three bounds exactly.
+1997](Z-bibliography.md#ref-dietzfelbinger1997), $h_a( k ) = ( a k \bmod
+2^h ) \operatorname{div} 2^{h - l}$ with $a$ odd, for keys of $h$ bits and
+$m = 2^l$. It is 2-universal, two keys colliding with probability at most
+$2 / m$ by an argument on the lowest bit in which they differ (the one of
+[Lemma 7.3](07-dictionary.md#lem-7-3) below). Also, it costs only a product
+and a shift, the fastest of the classes (`ofMultiplier()` builds it from a
+given $a$). `StringHash` turns a string into a key for the classes above,
+by the polynomial $\sum_i ( s_i + 1 ) x^i \bmod p$ of its characters at a
+random point $x$, $p = 2^{61} - 1$. Each character counts one more, and
+hence the character 0 counts too (the strings of zeros of different
+lengths, or a string and the same followed by zeros, would collide
+otherwise). Two distinct strings of length at most $L$ collide with
+probability at most $L / ( p - 1 )$, since their difference is a polynomial
+of degree at most $L$, not zero, with at most $L$ roots among the $p - 1$
+points $x \ne 0$ from which $x$ is drawn (cf. [Lemma
+7.4](07-dictionary.md#lem-7-4) below). In the test
+`pearls_hashing.universal-classes` we enumerate all the functions of small
+classes and check the three bounds exactly.
 
 --8<-- "generated/UniversalHashing-StringHash-operator.pseudo.md"
 
@@ -375,7 +391,7 @@ $$
 
 where $a \operatorname{div} b = \lfloor a / b \rfloor$ and $z$ is a random
 odd integer of $w$ bits ([Dietzfelbinger et al.
-1997](Z-bibliography.md#ref-dietzfelbinger1997)). The product modulo
+1997](Z-bibliography.md#ref-dietzfelbinger1997)). Here the product modulo
 $2^w$ is what the arithmetic of the processor computes anyway, and the
 division by $2^{w-d}$ is a shift; [Figure 7.3](07-dictionary.md#fig-7-3)
 follows (7.4) on a word of 16 bits. `MultiplicativeHash` realizes it with
@@ -394,7 +410,7 @@ A table that grows and shrinks keeps the same $z$, and only $d$ changes.
 --8<-- "generated/UniversalHashing-MultiplicativeHash-place.cpp"
 ```
 
-The analysis rests on a fact of number theory, by which the
+Its analysis rests on a fact of number theory, by which the
 products of a fixed odd number by the odd numbers modulo $2^w$ are again
 all the odd numbers ([Morin 2013, Lemma 5.3](Z-bibliography.md#ref-morin-cpp)).
 
@@ -431,31 +447,31 @@ $d$ bits are the 1 and $d - 1$ uniform bits, all 1 with probability
 $2^{-( d - 1 )} = 2 / 2^d$. If $r < w - d$, the top $d$ bits are uniform,
 all 0 or all 1 with probability $2 / 2^d$. $\square$
 
-The bound of [Lemma 7.3](07-dictionary.md#lem-7-3) is twice the $1 / 2^d$ of a random function, and it
-cannot be improved ([Morin 2013, exercise 5.3](Z-bibliography.md#ref-morin-cpp)):
-for $x = 2^{w-d-2}$ and $y = 3 x$, the products $z x \bmod 2^w$ and
-$3 z x \bmod 2^w$ depend only on the $d + 2$ lowest bits $z'$ of $z$, the
-two hashes being $\lfloor z' / 4 \rfloor$ and
-$\lfloor ( 3 z' \bmod 2^{d+2} ) / 4 \rfloor$, and since
-$3 z' = z' + 2 z'$ they agree for exactly 2 in $2^d$ of the odd $z'$. The
-test `ods_ints.ods5.1.multiplicative-hash` counts the collisions of this
-pair on $2^{17}$ random multipliers. For a fixed $z$ and $n = 2^d$ with
-$d \le w / 2$, on the other hand, $n$ keys share a hash already by the
-pigeonhole principle, $2^w$ keys going to $2^d$ places
-([Morin 2013, exercise 5.2](Z-bibliography.md#ref-morin-cpp)), and they
-can be named: with $z^{-1}$ the inverse of the odd $z$ modulo $2^w$, the
-keys $x_j = z^{-1} j \bmod 2^w$, $j = 0 , \ldots , 2^d - 1$, have the
-products $z x_j \bmod 2^w = j < 2^{w-d}$, which all hash to 0 (the test
-computes $z^{-1}$ by the iteration of Newton, $y \gets y ( 2 - z y )$,
-each step doubling the bits that are right). The multiply-add hashing
-$( ( z x + b ) \bmod 2^{2w} ) \operatorname{div} 2^{2w-d}$, with $z$ and
-$b$ random words of $2 w$ bits, has collision probability $1 / 2^d$
-([Dietzfelbinger 1996](Z-bibliography.md#ref-dietzfelbinger1996)), at the
-price of products of $2 w$ bits.
+This bound is twice the $1 / 2^d$
+of a random function, and it cannot be improved ([Morin 2013, exercise
+5.3](Z-bibliography.md#ref-morin-cpp)). Indeed, for $x = 2^{w-d-2}$ and $y
+= 3 x$, the products $z x \bmod 2^w$ and $3 z x \bmod 2^w$ depend only on
+the $d + 2$ lowest bits $z'$ of $z$. Then the two hashes are $\lfloor z' / 4
+\rfloor$ and $\lfloor ( 3 z' \bmod 2^{d+2} ) / 4 \rfloor$, and since $3 z'
+= z' + 2 z'$ they agree for exactly 2 in $2^d$ of the odd $z'$. The test
+`ods_ints.ods5.1.multiplicative-hash` counts the collisions of this pair on
+$2^{17}$ random multipliers. For a fixed $z$ and $n = 2^d$ with $d \le w /
+2$, on the other hand, $n$ keys share a hash already by the pigeonhole
+principle, $2^w$ keys going to $2^d$ places ([Morin 2013, exercise
+5.2](Z-bibliography.md#ref-morin-cpp)), and they can be named. With
+$z^{-1}$ the inverse of the odd $z$ modulo $2^w$, the keys $x_j = z^{-1} j
+\bmod 2^w$, $j = 0 , \ldots , 2^d - 1$, have the products $z x_j \bmod 2^w
+= j < 2^{w-d}$, which all hash to 0. (The test computes $z^{-1}$ by the
+iteration of Newton, $y \gets y ( 2 - z y )$, each step doubling the bits
+that are right.) The multiply-add hashing $( ( z x + b ) \bmod 2^{2w} )
+\operatorname{div} 2^{2w-d}$, with $z$ and $b$ random words of $2 w$ bits,
+has collision probability $1 / 2^d$ ([Dietzfelbinger
+1996](Z-bibliography.md#ref-dietzfelbinger1996)), at the price of products
+of $2 w$ bits.
 
 ### 7.3.4 Tabulation and random tables {#sec-7-3-4}
 
-The analysis of the linear inspection in [§7.5](07-dictionary.md#sec-7-5)
+Our analysis of the linear inspection in [§7.5](07-dictionary.md#sec-7-5)
 assumes the places of the keys independent and uniform, which a table of
 $2^w$ random words indexed by the key would give, at a prohibitive space.
 The *simple tabulation* of [Carter and Wegman
@@ -463,7 +479,7 @@ The *simple tabulation* of [Carter and Wegman
 characters of $r$ bits and keeps a table of $2^r$ random words for each,
 the hash being the XOR of the words of the characters. `TabulationHash`
 takes $w = 64$ and $r = 8$, i.e., 8 tables of 256 words drawn from a seed
-(16 KB, which stay in the cache of level 2), and its `place(x, m)` takes
+(16 KB, which typically stay in the cache of level 2). Its `place(x, m)` takes
 the top $d$ bits of the hash on $m = 2^d$ places, as the `LinearHashTable`
 of [Morin 2013, §5.2.3](Z-bibliography.md#ref-morin-cpp) does, which makes
 it a `PlaceHash` too.
@@ -474,9 +490,9 @@ it a `PlaceHash` too.
 --8<-- "generated/RandomHashing-tabulation.cpp"
 ```
 
-The hash of any key is uniform, since the word of one of its characters
+With it, the hash of any key is uniform, since the word of one of its characters
 is, and those of two distinct keys are independent, since the keys differ
-in a character whose word appears in one hash only; the tabulation could
+in a character whose word appears in one hash only. Hence, the tabulation could
 thus replace the multiplicative hashing in the chaining. It is
 3-independent but not 4-independent (the four keys $( a , c )$,
 $( a , d )$, $( b , c )$, $( b , d )$ of two characters have hashes whose
@@ -486,11 +502,11 @@ linear inspection, the cuckoo hashing and the minwise estimates the bounds
 of a fully random function, which is why the tables of this chapter that
 need independence use it.
 
-The other tools of `RandomHashing.h` serve the tables and the searches of
+Other tools of `RandomHashing.h` serve the tables and the searches of
 the library. `splitmix64()` is the finalizer of the generator SplitMix64
 of [Steele et al. 2014](Z-bibliography.md#ref-steele2014), a bijection of
 the words of 64 bits made of steps that are each a bijection (a sum, a
-product by an odd constant, or $x \oplus ( x \gg s )$), which mixes every
+product by an odd constant, or $x \oplus ( x \gg s )$). It mixes each
 input bit into each output bit. `SplitMix64` is the generator itself, a
 `UniformRandomBitGenerator` (with `min()` and `max()`) whose state grows
 by $\lfloor 2^{64} / \phi \rfloor$ at each word and which seeds the tables
@@ -507,8 +523,8 @@ bits are regular (cf. `PointerTable` in [§7.6](07-dictionary.md#sec-7-6)).
 `ZobristTable` ([Zobrist 1970](Z-bibliography.md#ref-zobrist1970)) keeps a
 random word $R[ f ][ v ]$ for each feature $f$ of a state and each value
 $v$ it may take, and the hash of a state is the XOR of the words of its
-pairs (the operator `()` gives one word, `hash(S)` the hash of a state
-given as any range with access by index). A move that changes the value of
+pairs. Its operator `()` gives one word, and `hash(S)` the hash of a state
+given as any range with access by index. A move that changes the value of
 a feature from $a$ to $b$ updates the hash in $O( 1 )$ time by two XOR,
 $h \oplus R[ f ][ a ] \oplus R[ f ][ b ]$ (`update()`), since
 $y \oplus y = 0$ takes the old word away. This makes it the hash of the
@@ -519,20 +535,20 @@ in a table of positions already seen (cf. [Chapter 19](19-backtrack.md#ch-19)).
 
 ### 7.3.5 Hash codes {#sec-7-3-5}
 
-The tables work on keys of $w$ bits, and a key that is not an integer (a
+Our tables work on keys of $w$ bits, and a key that is not an integer (a
 string, an array, an object of several parts) must first be mapped to such
 a *hash code* ([Morin 2013, §5.3](Z-bibliography.md#ref-morin-cpp)). A
-mapping of hash codes should have two properties: equal objects have equal
-codes, and hence a key stored in a table is found by an equal one, and
-distinct objects have equal codes with probability close to $1 / 2^w$, so
-that little is lost in the conversion. The primitive types of at most $w$
-bits are their own codes (the bits read as an integer), and those of
-$c w$ bits, e.g., a `long double`, are compound objects of $c$ parts. For
-a compound object, the combinations of the codes of the parts by a XOR or
-by a sum are easily foiled (we come back to this below). A sum of products
-by random words, reduced by a multiplicative hashing on $2 w$ bits, is not.
-`CompoundHash` computes, for an object of $r$ parts with the codes
-$x_0 , \ldots , x_{r-1}$,
+mapping of hash codes should have two properties. First, equal objects have
+equal codes, and hence a key stored in a table is found by an equal one;
+second, distinct objects have equal codes with probability close to $1 /
+2^w$, so that little is lost in the conversion. Primitive types of at most
+$w$ bits are their own codes (the bits read as an integer), and those of $c
+w$ bits, e.g., a `long double`, are compound objects of $c$ parts. For a
+compound object, the combinations of the codes of the parts by a XOR or by
+a sum are easily foiled (we come back to this below). A sum of products by
+random words, reduced by a multiplicative hashing on $2 w$ bits, is not.
+`CompoundHash` computes, for an object of $r$ parts with the codes $x_0 ,
+\ldots , x_{r-1}$,
 
 $$
 h( x_0 , \ldots , x_{r-1} ) =
@@ -549,8 +565,8 @@ $2 w$ bits, all from a seed (`parts()` gives $r$).
 --8<-- "generated/UniversalHashing-CompoundHash-hash.cpp"
 ```
 
-The sum is kept on 128 bits, as two words with the carry, and only the
-high half of $z s \bmod 2^{128}$ is wanted, which the low halves of $z$
+The sum is kept on 128 bits, as two words with the carry, while only the
+high half of $z s \bmod 2^{128}$ is wanted. This half the low halves of $z$
 and $s$ give on 128 bits and the two crossed products only on their low 64
 bits; hence, (7.5) costs $r + 3$ products of words.
 
@@ -563,7 +579,7 @@ $\Pr[ h( x_0 , \ldots , x_{r-1} ) = h( y_0 , \ldots , y_{r-1} ) ] \le
 
 *Proof.* Let
 $h'( x ) = ( \sum_j z_j x_j ) \bmod 2^{2w}$ be the sum before the last
-step. The equality $h'( x ) = h'( y )$ reads
+step. Here $h'( x ) = h'( y )$ reads
 $z_i ( x_i - y_i ) \bmod 2^{2w} = t$, with $t$ the sum of the terms
 $z_j ( y_j - x_j )$ of the other $j$, modulo $2^{2w}$. Assume
 $x_i > y_i$; then $z_i ( x_i - y_i ) < 2^{2w}$, and therefore the equation is
@@ -574,7 +590,7 @@ bits, which the multiplicative hashing of $2 w$ bits into $w$ bits sends to
 the same value with probability at most $2 / 2^w$ by [Lemma 7.3](07-dictionary.md#lem-7-3). The two
 cases give $1 / 2^w + 2 / 2^w$. $\square$
 
-The method needs a random word per part, and the arrays and the strings,
+This method needs a random word per part, and the arrays and the strings,
 whose length varies, take instead the polynomials over a prime field, which
 behave as the ordinary ones ([Morin 2013, Theorem
 5.4](Z-bibliography.md#ref-morin-cpp)).
@@ -599,7 +615,7 @@ h( x_0 , \ldots , x_{r-1} ) = \Bigl( \sum_{i=0}^{r-1} x_i z^i +
 $$
 
 whose last term is an end marker: $p - 1$ is the item $x_r$ of the
-sequence, different from every other item ([Morin 2013,
+sequence, different from each other item ([Morin 2013,
 §5.3.3](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="thm-7-2"></span>**Theorem 7.2.** *Let $p$ be a prime and two
@@ -610,22 +626,24 @@ $r = r'$.*
 
 *Proof.* If $r = r'$ and $x_i \ne y_i$ for some $i$, the equality of the
 hashes is $\sum_i ( x_i - y_i ) z^i \bmod p = 0$ (the end markers cancel),
-a nonzero polynomial of degree at most $r - 1$, which by [Lemma 7.4](07-dictionary.md#lem-7-4) has at
-most $r - 1$ roots, i.e., is satisfied by at most $r - 1$ of the $p$
+a nonzero polynomial of degree at most $r - 1$. By [Lemma 7.4](07-dictionary.md#lem-7-4) it has at
+most $r - 1$ roots, i.e., it is satisfied by at most $r - 1$ of the $p$
 values of $z$. If $r > r'$, the two sequences differ at the place $r'$,
 where the shorter one has its end marker $p - 1$ and the longer one an
-item $x_{r'} \le p - 2$: the difference of the hashes is a polynomial of
+item $x_{r'} \le p - 2$. In that case the difference of the hashes is a polynomial of
 degree $r$ with the leading coefficient $p - 1$, not zero, with at most $r$
 roots. $\square$
 
 `SequenceHash` evaluates (7.6) by the rule of Horner from the end marker,
 with $p = 2^{61} - 1$, whose products `mulMod61()` reduces by shifts and
-masks: the words of an array are first reduced to 60 bits by a
-multiplicative hashing, and hence they lie below $p - 1$, which costs a
-collision probability of $2 / 2^{60}$ more (two distinct arrays, the
-longer of $r$ words, collide with probability at most
-$2 / 2^{60} + r / p$), while the bytes of a string are taken as they are
-($r / p$). Against the code of [Morin 2013,
+masks. Here the words of an array are first reduced to 60 bits by a
+multiplicative hashing, and hence they lie below $p - 1$. This costs a
+collision probability of $2 / 2^{60}$ more (two distinct arrays, the longer
+of $r$ words, collide with probability at most $2 / 2^{60} + r / ( p - 1
+)$), while the bytes of a string are taken as they are ($r / ( p - 1 )$).
+Both denominators are $p - 1$ rather than the $p$ of [Theorem
+7.2](07-dictionary.md#thm-7-2), since the point $z$ is drawn from $\{ 1 ,
+\ldots , p - 1 \}$. Against the code of [Morin 2013,
 §5.3](Z-bibliography.md#ref-morin-cpp), which has $w = 32$, the prime
 $2^{32} - 5$ and a division, the words are of 64 bits and the bounds are
 $2^{32}$ times smaller for the same work per word.
@@ -643,11 +661,11 @@ while $x \ge 2^w$. Hence $x \bmod ( 2^w - 1 )$ is the fixed point of
 $x \gets ( x \bmod 2^w ) + ( x \operatorname{div} 2^w )$, taken to 0 if it
 is $2^w - 1$, the two lines after the product in the code above. The other
 exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin-cpp) on the
-hash codes ask why the easy combinations fail, and the answers are short.
+hash codes are about why the easy combinations fail, and the answers are short.
 A code that reads only the characters of even place, as the early
 `String.hashCode()` of Java did on long strings, gives one code to the
 $2^{\ell / 2}$ strings of $\ell$ characters that differ only in the others
-(exercise 5.6). The XOR of the two words of a pair gives 0 to each pair
+(exercise 5.6). Also, the XOR of the two words of a pair gives 0 to each pair
 $( x , x )$, and their sum gives $c$ to each pair $( x , c - x )$
 (exercises 5.7 and 5.8). Each deterministic function of two words into
 one has some value taken by at least $2^{2w} / 2^w = 2^w$ pairs, by the
@@ -662,25 +680,27 @@ The engineered tables, filters and perfect hash functions of the library
 use the hashes of 64 bits of `FastHash.h`, made of the *folded product*,
 the product $a b$ of two words on 128 bits whose two halves are XORed,
 $( a b \bmod 2^{64} ) \oplus \lfloor a b / 2^{64} \rfloor$
-(`foldedProduct()`, after `product128()`, which falls back to four
-products of 32 bits where the compiler has no type of 128 bits). Each bit
-of the folded product depends on every bit of the factors that the low
+(`foldedProduct()`). It rests on `product128()`, which falls back to four
+products of 32 bits where the compiler has no type of 128 bits. Each bit
+of the folded product depends on each bit of the factors that the low
 half loses, since the high half carries them, and a processor of 64 bits
 computes it by one multiplication. A word thus costs one product, and a
 string one product per 16 bytes ([Thorup 2015](Z-bibliography.md#ref-thorup2015)
 analyzes the multiply-shift hashing on which this rests). `hashWord(x,
 seed)` is the folded product of $x$ and of the seed XOR a constant.
 `hashBytes(p, n, seed)` hashes $n$ bytes by their length, with no loop up
-to 64 bytes: a string of at most 8 bytes is read as one word by two loads
+to 64 bytes. A string of at most 8 bytes is read as one word by two loads
 of 4 bytes at its ends (overlapping below 8) or by its first, middle and
-last byte below 4, the overlapping loads of the short tails of
-[wyhash](Z-bibliography.md#ref-wangyi). From 9 to 16 bytes, the product of
+last byte below 4 (the overlapping loads of the short tails of
+[wyhash](Z-bibliography.md#ref-wangyi)). From 9 to 16 bytes, the product of
 the two words that end at its ends; from 17 to 32 and from 33 to 64, two
 and four products at once of its first and last blocks, folded by a last
-one. Past 64 bytes, out of line, the blocks of 16 bytes are folded into 6
-independent states up to 256 bytes, and past 256 the string is cut into
+one. Past 64 bytes, out of line, the blocks of 16 bytes are folded into
+one state up to 96 bytes and into 6 independent states (a block of 96 bytes
+at a time) up to 256 bytes, the last 16 bytes with the length closing the
+hash. Past 256 bytes the string is cut into
 stripes of 64 bytes, 8 lanes of a word each, as in
-[XXH3](Z-bibliography.md#ref-collet2019), which vectors of AVX2 or AVX-512
+[XXH3](Z-bibliography.md#ref-collet2019); the vectors of AVX2 or AVX-512
 process 4 or 8 lanes at a time with the same result as the scalar code.
 
 --8<-- "generated/FastHash-hashBytes.pseudo.md"
@@ -689,44 +709,43 @@ process 4 or 8 lanes at a time with the same result as the scalar code.
 the floating point numbers ($+0$ and $-0$ hashing the same, since they are
 equal) and the strings (`std::string`, `std::string_view` and the C
 strings, which hash alike for the same characters), by `hashWord()` and
-`hashBytes()`. It declares the member type `is_avalanching` (the
-convention of Boost); hence, `FlatHashTable` and the tables of Boost take
-its hash as it is, and the one of the strings declares `is_transparent`,
-for the lookups by any string. `DefaultHash<K>` is `FastHash<K>` when it
-is defined and `std::hash<K>` otherwise (by the trait
-`detail::DefaultHashOf`), the default hash of the
-engineered tables and filters (`Product128` is the pair of halves of
-`product128()`). `kIndirectKey<K>` is true when the hash of a `K` reads
-memory that the key points to, as for the strings, and `prefetchKey()`
-then brings the first line of that memory into the cache, which the
-rebuilds of the tables use some keys ahead. We remark that a single
-product does not give the full avalanche that the statistical batteries
-require (one bit of a key flips each bit of the hash with probability near
-$1 / 2$, not exactly $1 / 2$), and that the functions are not
-cryptographic: whoever knows the seed can make collisions, and a table that
-faces adversarial keys must use a seed drawn at random. A word is read in
-the byte order of the machine, so the hashes differ between little and big
-endian machines. We check each path of
-`hashBytes()` against known hashes in the test `hashing.fast-hash`, the
-same with and without AVX2 and AVX-512.
+`hashBytes()`. It declares the member type `is_avalanching` (the convention
+of Boost); hence, `FlatHashTable` and the tables of Boost take its hash as
+it is, and the one of the strings declares `is_transparent`, for the
+lookups by any string. `DefaultHash<K>` is `FastHash<K>` when it is defined
+and `std::hash<K>` otherwise (by the trait `detail::DefaultHashOf`), the
+default hash of the engineered tables and filters (`Product128` is the pair
+of halves of `product128()`). `kIndirectKey<K>` is true when the hash of a
+`K` reads memory that the key points to, as for the strings, and
+`prefetchKey()` then brings the first line of that memory into the cache,
+which the rebuilds of the tables use some keys ahead. We remark that a
+single product does not give the full avalanche that the statistical
+batteries require (one bit of a key flips each bit of the hash with
+probability near $1 / 2$, not exactly $1 / 2$), and that the functions are
+not cryptographic. Whoever knows the seed can make collisions, and hence a
+table that faces adversarial keys must use a seed drawn at random. A word
+is read in the byte order of the machine, so the hashes differ between
+little and big endian machines. We check each path of `hashBytes()` against
+known hashes in the test `hashing.fast-hash`, the same with and without
+AVX2 and AVX-512.
 
 `RowFingerprint.h` gives the fingerprints of 64 bits of the rows of
 doubles, dense or sparse (the indices and the values in their order), for
 finding the rows already seen, e.g., a cut generated twice, in a table of
 the fingerprints ([Rabin 1981](Z-bibliography.md#ref-rabin1981)). The
 values are compared as numbers, not as bit patterns: `canonicalWord()`
-maps $+0$ and $-0$ to 0 and every NaN to one quiet NaN ([IEEE
+maps $+0$ and $-0$ to 0 and each NaN to one quiet NaN ([IEEE
 2019](Z-bibliography.md#ref-ieee2019)), and `rowFingerprint()` hashes the
-canonical words a block of 64 at a time by `hashBytes()`, each block
-seeded by the hash of the one before (a sparse row hashes its indices
-first, as bytes). Two rows with different words collide with probability
+canonical words a block of 64 at a time by `hashBytes()`. Each block is
+seeded by the hash of the one before, and a sparse row hashes its indices
+first, as bytes. Two rows with different words collide with probability
 about $2^{-64}$ for a hash that behaves at random, so that a table of $k$
 fingerprints holds a false match with probability about $k^2 2^{-65}$ by
 the bound of the birthday problem. Since `hashBytes()` is not
-cryptographic, `sameRow()` confirms a match in time linear in the row,
-first by a comparison of the bytes, which settles the common case of two
-copies of the same row, and then, if some byte differs, by the comparison
-of the values as numbers.
+cryptographic, `sameRow()` confirms a match in time linear in the row.
+It first compares the bytes, which settles the common case of two
+copies of the same row, and then, if some byte differs, it compares
+the values as numbers.
 
 --8<-- "generated/RowFingerprint-rowFingerprint.pseudo.md"
 
@@ -734,26 +753,26 @@ of the values as numbers.
 
 ## 7.4 Hash tables with lists of overflow {#sec-7-4}
 
-In the table with lists of overflow ([Montresor 2025,
+The table with lists of overflow ([Montresor 2025,
 §7.2.1](Z-bibliography.md#ref-montresor2025); [Morin 2013,
-§5.1](Z-bibliography.md#ref-morin-cpp)), which goes back to an internal
-memorandum of IBM of 1953 and to [Peterson 1957](Z-bibliography.md#ref-peterson1957),
-the place $i$ of a vector $T$ of $m$ places holds the list of the pairs
-whose keys have $H( k ) = i$. `ChainedHashTable` keeps each list in the
-`List` of ADS ([Chapter 2](02-sequence.md#ch-2)), and `insert()` puts a
-new key at the head of its list after a scan that rules out the key,
-while `lookup()` and `remove()` go along the list
-([Algorithm 7.3](07-dictionary.md#alg-7-3), [Figure 7.4](07-dictionary.md#fig-7-4)).
-The template parameter `Chain` chooses how a list is kept: `FRONT`, a new
+§5.1](Z-bibliography.md#ref-morin-cpp)) goes back to an internal memorandum
+of IBM of 1953 and to [Peterson 1957](Z-bibliography.md#ref-peterson1957).
+In it, the place $i$ of a vector $T$ of $m$ places holds the list of the
+pairs whose keys have $H( k ) = i$. `ChainedHashTable` keeps each list in
+the `List` of ADS ([Chapter 2](02-sequence.md#ch-2)), and `insert()` puts a
+new key at the head of its list after a scan that rules out the key, while
+`lookup()` and `remove()` go along the list ([Algorithm
+7.3](07-dictionary.md#alg-7-3), [Figure 7.4](07-dictionary.md#fig-7-4)).
+Its template parameter `Chain` chooses how a list is kept: `FRONT`, a new
 key at the head and nothing else moves. `MOVE_TO_FRONT`, also the key found
-by `lookup()` goes to the head, and hence the keys looked up often stay near
-it ([Montresor 2025, exercise 7.5](Z-bibliography.md#ref-montresor2025)).
-`SORTED`, the keys of a list in increasing order; hence, an unsuccessful
-search stops at the first larger key ([Montresor 2025, exercise
-7.10](Z-bibliography.md#ref-montresor2025)). The place is
-$H( k ) = h( k ) \bmod m$, or `h.place(k, m)` for a `PlaceHash` such as
-the multiplicative hashing of [§7.3.3](07-dictionary.md#sec-7-3-3), on a
-table of $2^d$ lists.
+by `lookup()` goes to the head, and hence the keys looked up often stay
+near it ([Montresor 2025, exercise
+7.5](Z-bibliography.md#ref-montresor2025)). `SORTED`, the keys of a list in
+increasing order; hence, an unsuccessful search stops at the first larger
+key ([Montresor 2025, exercise 7.10](Z-bibliography.md#ref-montresor2025)).
+Its place is $H( k ) = h( k ) \bmod m$, or `h.place(k, m)` for a
+`PlaceHash` such as the multiplicative hashing of
+[§7.3.3](07-dictionary.md#sec-7-3-3), on a table of $2^d$ lists.
 
 ![Figure 7.4. A `ChainedHashTable` of $m = 8$ lists and $n = 10$ keys, before and after `insert(x)` with $H( x ) = 6$: the list of the place 6 is scanned (in violet), and `x` goes to its head (in orange).](../figures/dictionary-chained.svg){#fig-7-4}
 
@@ -766,9 +785,9 @@ are the lists, and $g$ is the load past which the table doubles.
 
 --8<-- "generated/ChainedHashTable-insert.pseudo.md"
 
-The scan of a list counts the cells it examines, the nil that ends an
+Each scan of a list counts the cells it examines, the nil that ends an
 unsuccessful search included, which `probes()` returns for the last
-operation. The code of the scan is the same for the three kinds of lists,
+operation. Its code is the same for the three kinds of lists,
 but for the test that stops a sorted list at the first larger key:
 
 ```cpp
@@ -805,7 +824,7 @@ A list kept sorted stops an unsuccessful search, on average, halfway
 through the list, and so does the scan that an insertion of keys in
 random order makes first, while the successful search costs the same. The
 test `ch07.ex7.10` measures it, and `ch07.sec7.3.complexity` compares the
-averages of (7.7) with those measured. The multiplicative hashing of
+averages of (7.7) with those measured. Also, the multiplicative hashing of
 [§7.3.3](07-dictionary.md#sec-7-3-3) gives a bound of the same kind for
 each set of keys, without (7.2) ([Morin 2013,
 Lemma 5.2](Z-bibliography.md#ref-morin-cpp)).
@@ -826,13 +845,14 @@ The table may restructure itself ([Montresor 2025,
 doubles $m$ when $\alpha$ exceeds $g = 2$ and halves it, down to the
 initial size, when $\alpha$ falls below $s = 1 / 2$, while
 `ChainedHashTable( m , g , s )` takes any two loads with $g > 2 s \ge 0$.
-The new size is that of `resized()` of `TableSize.h`: a power of 2 doubles
-or halves, any other size goes to the first prime not smaller than its
+Its new size is that of `resized()` of `TableSize.h`. A power of 2 doubles
+or halves, while any other size goes to the first prime not smaller than its
 double or its half (`next_prime()`, by trial divisions up to the square
-root, `is_prime()`), and therefore the inspections of [§7.5](07-dictionary.md#sec-7-5)
-that need a prime size keep working. By the theorem of Chebyshev there is
-a prime between $x$ and $2 x$, and the new size is therefore less than
-twice the one asked. `is_pow2()` distinguishes the two cases.
+root, `is_prime()`); hence, the inspections of
+[§7.5](07-dictionary.md#sec-7-5) that need a prime size keep working. By
+the theorem of Chebyshev there is a prime between $x$ and $2 x$, and the
+new size is therefore less than twice the one asked. `is_pow2()`
+distinguishes the two cases.
 
 --8<-- "generated/TableSize-resized.pseudo.md"
 
@@ -853,17 +873,18 @@ removals, which pay for it. $\square$
 
 With the thresholds of the example of [Montresor 2025,
 §7.4](Z-bibliography.md#ref-montresor2025), $1 / 2$ and $1 / 4$, a table
-just doubled sits at the lower threshold, and a sequence that alternates
-an insertion and a removal pays $\Theta( m )$ per operation. This is why
-the defaults are 4 times apart, as the test `ch07.sec7.4.restructure`
-checks on such a sequence. `restructures()` and `moved()` count the
-restructurings and the pairs they moved. With a `PlaceHash`, $g = 1$ and
-$s = 1 / 3$, the table is the `ChainedHashTable` of [Morin 2013,
+just doubled sits at the lower threshold, and a sequence that alternates an
+insertion and a removal pays $\Theta( m )$ per operation. This is why the
+defaults are 4 times apart, as the test `ch07.sec7.4.restructure` checks on
+such a sequence. `restructures()` and `moved()` count the restructurings
+and the pairs they moved. With a `PlaceHash`, $g = 1$ and $s = 1 / 3$, the
+table is the `ChainedHashTable` of [Morin 2013,
 §5.1](Z-bibliography.md#ref-morin-cpp), its lists in the `List` of ADS
-instead of an array each: after a restructuring the load is about
-$1 / 2$ or $2 / 3$, the lists are shorter ($1 + \alpha \le 2$ cells per
-unsuccessful search) at the price of a table up to twice as large, and
-[Lemma 7.6](07-dictionary.md#lem-7-6) and [Lemma 7.7](07-dictionary.md#lem-7-7) give the theorem of the book.
+instead of an array each. After a restructuring the load is about $1 / 2$
+or $2 / 3$, the lists are shorter ($1 + \alpha \le 2$ cells per
+unsuccessful search) at the price of a table up to twice as large. Then
+[Lemma 7.6](07-dictionary.md#lem-7-6) and [Lemma
+7.7](07-dictionary.md#lem-7-7) give the theorem of the book.
 
 <span id="thm-7-3"></span>**Theorem 7.3.** *([Morin 2013, Theorem
 5.1](Z-bibliography.md#ref-morin-cpp).) The `ChainedHashTable` with the
@@ -873,34 +894,33 @@ the DICTIONARY): ignoring the restructurings, `insert()`, `remove()` and
 insertions and removals from an empty table spends $O( q )$ time in all
 the restructurings.*
 
-The bound of [Lemma 7.5](07-dictionary.md#lem-7-5) is on the average list; the longest list of a
-table with $m = \Theta( n )$ lists has $\Theta( \log n / \log \log n )$
-keys with high probability for a random function, and
+The bound of [Lemma 7.5](07-dictionary.md#lem-7-5) is on the average list.
+Yet, the longest list of a table with $m = \Theta( n )$ lists has $\Theta( \log
+n / \log \log n )$ keys with high probability for a random function, and
 $O( \log n / \log \log n )$ in expectation for a universal class
-([Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023); the
+([Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023)). The
 test `pearls_hashing.universal-chaining` measures both bounds on the
-multiples of $m$, which $h( k ) = k \bmod m$ would put in one list).
+multiples of $m$, which $h( k ) = k \bmod m$ would put in one list.
 
 `DLeftHashTable` in `UniversalHashing.h` shortens the longest list by
-choice: it keeps $d$ tables of $w = \max\{ 1 , \lfloor m / d \rfloor \}$
+choice. It keeps $d$ tables of $w = \max\{ 1 , \lfloor m / d \rfloor \}$
 lists each, each table with a function of its own (a simple tabulation of
 the hash of the key), and puts a key in the shortest of its $d$ lists, the
-leftmost one on a tie ([Algorithm 7.4](07-dictionary.md#alg-7-4),
-[Figure 7.5](07-dictionary.md#fig-7-5)); a search looks at the $d$ lists.
-For $n = m$ keys the longest list is then
-$\ln \ln n / ( d \ln \phi_d ) + O( 1 )$ with high probability, $\phi_d$
-being the growth rate of the generalized Fibonacci numbers of order $d$,
-against $\Theta( \log n / \log \log n )$ with one function: the power of
-two choices of [Azar et al. 1999](Z-bibliography.md#ref-azar1999), with
-the asymmetric (leftmost) tie-breaking of [Vöcking
-2003](Z-bibliography.md#ref-vocking2003), an exponential gain for one more
-probe, which allows each list to be a bucket of fixed size
-$O( \log \log n )$ instead of a linked list. For the simple tabulation,
-[Dahlgaard et al. 2016](Z-bibliography.md#ref-dahlgaard2016) proved a
-longest list of $O( \log \log n )$ with high probability. `maxLoad()` gives
-the length of the longest list and `tables()` the number $d$; the
-invariant, that each key is in one of its $d$ lists and is counted once,
-is checked on the key of the operation only past 1024 keys.
+leftmost one on a tie ([Algorithm 7.4](07-dictionary.md#alg-7-4), [Figure
+7.5](07-dictionary.md#fig-7-5)). A search looks at the $d$ lists. For $n =
+m$ keys the longest list is then $\ln \ln n / ( d \ln \phi_d ) + O( 1 )$
+with high probability, $\phi_d$ being the growth rate of the generalized
+Fibonacci numbers of order $d$, against $\Theta( \log n / \log \log n )$
+with one function. This is the power of two choices of [Azar et al.
+1999](Z-bibliography.md#ref-azar1999), with the asymmetric (leftmost)
+tie-breaking of [Vöcking 2003](Z-bibliography.md#ref-vocking2003), an
+exponential gain for one more probe; it allows each list to be a bucket of
+fixed size $O( \log \log n )$ instead of a linked list. For the simple
+tabulation, [Dahlgaard et al. 2016](Z-bibliography.md#ref-dahlgaard2016)
+proved a longest list of $O( \log \log n )$ with high probability.
+`maxLoad()` gives the length of the longest list and `tables()` the number
+$d$; the invariant, that each key is in one of its $d$ lists and is counted
+once, is checked on the key of the operation only past 1024 keys.
 
 ![Figure 7.5. A `DLeftHashTable` with $d = 2$ tables of 4 lists: the key `x` may go to the list 3 of the table 0 (3 keys) or to the list 1 of the table 1 (2 keys), both examined (in violet), and goes to the shorter one (in orange).](../figures/dictionary-dleft.svg){#fig-7-5}
 
@@ -913,20 +933,20 @@ is checked on the key of the operation only past 1024 keys.
 
 With open addressing ([Montresor 2025,
 §7.2.2](Z-bibliography.md#ref-montresor2025)) the pairs lie in the places
-of the vector itself: the key $k$ goes into the first free place of its
+of the vector itself. A key $k$ goes into the first free place of its
 *inspection* $H( k , 0 ) , H( k , 1 ) , \ldots , H( k , m - 1 )$, and a
 search follows the same sequence until it meets $k$ or a place that has
 never been used. A place of `OpenHashTable` is in one of three states
 (`Slot`): `NIL`, never used, which stops an inspection; `FULL`, holding a
-pair. Finally, a `DELETED` place has been emptied by `remove()`; an inspection
-goes past it and an insertion reuses it, since emptying the place would cut the inspection
-of the keys placed after it. Hence $\alpha < 1$, and the cost of a search
-depends on how the inspections of different keys overlap. The scan of
-[Montresor 2025, §7.2.2](Z-bibliography.md#ref-montresor2025) stops at the
-key, at a nil place or after $m$ inspections, and, for an insertion,
-remembers the first deleted place met, where the new key goes if it is not
-found ([Algorithm 7.5](07-dictionary.md#alg-7-5),
-[Figure 7.6](07-dictionary.md#fig-7-6)).
+pair. Finally, a `DELETED` place has been emptied by `remove()`; an
+inspection goes past it and an insertion reuses it, since emptying the
+place would cut the inspection of the keys placed after it. Hence $\alpha <
+1$, and the cost of a search depends on how the inspections of different
+keys overlap. The scan of [Montresor 2025,
+§7.2.2](Z-bibliography.md#ref-montresor2025) stops at the key, at a nil
+place or after $m$ inspections, and, for an insertion, remembers the first
+deleted place met, where the new key goes if it is not found ([Algorithm
+7.5](07-dictionary.md#alg-7-5), [Figure 7.6](07-dictionary.md#fig-7-6)).
 
 ![Figure 7.6. An `OpenHashTable` of $m = 11$ places with the linear inspection: before (the place 4 deleted), after `insert(d)` with $H_0( d ) = 2$, whose inspection examines the places 2, 3, 5 and 6 (in violet), passing the deleted 4 and stopping at the nil 6, and puts `d` in 4, the first deleted place it met (in orange), and after `remove(b)`, which leaves the place 3 deleted.](../figures/dictionary-open.svg){#fig-7-6}
 
@@ -939,7 +959,7 @@ are the places.
 
 --8<-- "generated/OpenHashTable-insert.pseudo.md"
 
-The code of the scan adds a constant stride to the place when the
+Our code of the scan adds a constant stride to the place when the
 inspection has one (the linear inspection and the double hashing), instead
 of computing $H( k , i )$ from scratch, and it records the places examined
 for `probes()`. This count is atomic, and hence the lookups of a constant
@@ -965,14 +985,16 @@ The inspections of [Table 7.2](07-dictionary.md#tab-7-2) are the factories
 of `Probing`, each of a `Kind`, with $H_0( k ) = h( k ) \bmod m$ (or the
 place of a `PlaceHash`): `linear(delta)`, `quadratic(c1, c2)`,
 `double_hashing()` and `double_hashing(g)`, whose step comes from a second
-function $g$ of the hash (of the type `Probing::Step`), `triangular()` and `pseudo_random(seed)`. `at()`
-gives $H( k , i )$ from $h( k )$, `step()` the step of the double hashing,
-coprime with $m$ when $m$ is prime or a power of 2,
-$H_\delta( k ) = 1 + ( h( k ) \bmod ( m - 1 ) )$ for a prime and
-$( \lfloor h( k ) / m \rfloor \bmod m ) \lor 1$, an odd number, for a
-power of 2, and `stride()` the constant difference of two consecutive
-places, 0 for the inspections that have none. `works(m)` checks whether
-the inspection is a valid one on $m$ places, which `check()` asserts.
+function $g$ of the hash (of the type `Probing::Step`), `triangular()` and
+`pseudo_random(seed)`. Also, `at()` gives $H( k , i )$ from $h( k )$, and
+`step()` the step of the double hashing, coprime with $m$ when $m$ is prime
+or a power of 2, i.e., $H_\delta( k ) = 1 + ( h( k ) \bmod ( m - 1 ) )$ for
+a prime and $( \lfloor h( k ) / m \rfloor \bmod m ) \lor 1$, an odd number,
+for a power of 2. Finally, `stride()` gives the constant difference of two
+consecutive places, 0 for the inspections that have none. `kind()` gives
+the `Kind` of an inspection (`LINEAR`, `QUADRATIC`, `DOUBLE`, and so on),
+and `works(m)` checks whether the inspection is a valid one on $m$ places,
+which `check()` asserts.
 
 <span id="tab-7-2"></span>**Table 7.2.** The inspections of
 `OpenHashTable` and how they compare.
@@ -987,8 +1009,8 @@ the inspection is a valid one on $m$ places, which `check()` asserts.
 
 Here $p_0 = 0 , p_1 , \ldots , p_{m-1}$ is a fixed random permutation of
 $0 , \ldots , m - 1$, drawn from the seed for each size $m$; hence, the
-pseudo-random inspection works with every $m$ and two keys with different
-$H_0$ do not share the rest of their inspection. The model of the
+pseudo-random inspection works with any $m$ and two keys with different
+$H_0$ do not share the rest of their inspection. As a model of the
 analysis is the *uniform hashing*, in which the inspection of each key is
 a random permutation of the places, independent of the others
 ([Knuth 1998, §6.4](Z-bibliography.md#ref-knuth1998v3)).
@@ -1011,24 +1033,24 @@ $j = 0 , \ldots , n - 1$ of $m / ( m - j )$ is at most
 $\frac{1}{\alpha} \int_0^\alpha \frac{dx}{1 - x}$, the second bound of
 (7.8). $\square$
 
-The linear inspection makes the full places gather in runs, and a key that
+In the linear inspection, the full places gather in runs, and a key that
 falls anywhere in a run lengthens it. This is the *primary clustering*,
 whose cost [Knuth 1998, §6.4](Z-bibliography.md#ref-knuth1998v3) computed
-exactly for random places,
-$I( \alpha ) \approx \frac{1}{2} ( 1 + 1 / ( 1 - \alpha )^2 )$ and
-$S( \alpha ) \approx \frac{1}{2} ( 1 + 1 / ( 1 - \alpha ) )$, against the
-$1 / ( 1 - \alpha )$ and $- \ln( 1 - \alpha ) / \alpha$ of the double
-hashing. Yet, its places are consecutive in memory, and at a moderate load
-it is usually the fastest in practice. The quadratic and the triangular
-inspections spread the keys of different $H_0$, while the keys with the
-same $H_0$ still share their entire inspection (*secondary clustering*).
-The double hashing comes close to (7.8), since the inspections of two keys
-coincide only if both $H_0$ and $H_\delta$ do. The quadratic inspection is
-not a permutation in general: with $m = 11$, the inspection
-$( k \bmod 11 + 3 i + i^2 ) \bmod 11$ of the key 7 visits only the places
-7, 0, 6, 3, 2 and 5, and an insertion may fail while the place 8 is free
-([Montresor 2025, exercise 7.2](Z-bibliography.md#ref-montresor2025)). The
-triangular one is a permutation on a power of 2.
+exactly for random places, $I( \alpha ) \approx \frac{1}{2} ( 1 + 1 / ( 1 -
+\alpha )^2 )$ and $S( \alpha ) \approx \frac{1}{2} ( 1 + 1 / ( 1 - \alpha )
+)$, against the $1 / ( 1 - \alpha )$ and $- \ln( 1 - \alpha ) / \alpha$ of
+the double hashing. Yet, its places are consecutive in memory, and at a
+moderate load it is usually the fastest in practice. The quadratic and the
+triangular inspections spread the keys of different $H_0$, while the keys
+with the same $H_0$ still share their entire inspection (*secondary
+clustering*). In contrast, the double hashing comes close to (7.8), since
+the inspections of two keys coincide only if both $H_0$ and $H_\delta$ do.
+Note that the quadratic inspection is not a permutation in general. With $m
+= 11$, the inspection $( k \bmod 11 + 3 i + i^2 ) \bmod 11$ of the key 7
+visits only the places 7, 0, 6, 3, 2 and 5, and an insertion may fail while
+the place 8 is free ([Montresor 2025, exercise
+7.2](Z-bibliography.md#ref-montresor2025)). The triangular one is a
+permutation on a power of 2.
 
 <span id="lem-7-9"></span>**Lemma 7.9.** *If $m$ is a power of 2, the
 places $i ( i + 1 ) / 2 \bmod m$, $0 \le i < m$, are distinct.*
@@ -1036,25 +1058,25 @@ places $i ( i + 1 ) / 2 \bmod m$, $0 \le i < m$, are distinct.*
 *Proof.* If $i ( i + 1 ) / 2 \equiv j ( j + 1 ) / 2 \pmod{m}$ with
 $0 \le j < i < m$, then $( i - j ) ( i + j + 1 ) \equiv 0 \pmod{2 m}$.
 The two factors add up to $2 i + 1$, which is odd, and therefore one of
-them is odd. The other one is positive and below $2 m$, and their product,
+them is odd. Its companion is positive and below $2 m$, and their product,
 whose factors 2 all come from the even one, cannot be a multiple of the
 power of 2 $2 m$, a contradiction. $\square$
 
 The table may restructure itself ([Montresor 2025,
-§7.4](Z-bibliography.md#ref-montresor2025)): it doubles $m$ when the full
+§7.4](Z-bibliography.md#ref-montresor2025)). It doubles $m$ when the full
 and deleted places are more than $m / 2$, so that $\alpha \le 1 / 2$ and
 the deleted places go away, and halves it, down to the initial size, when
-$\alpha < 1 / 8$; the two thresholds are 4 times apart, by [Lemma 7.7](07-dictionary.md#lem-7-7). A
-new size that the inspection does not work with, a prime that divides the
-step of a linear inspection, is replaced by the next prime that it works
-with, and since only a removal halves $m$, a table emptied may stay above
-its initial size. When the places in use exceed $m / 2$ because of the
-deleted ones, with at most $m / 4$ keys, the table is rebuilt at the same
-size instead: the deleted places go away and at least $m / 4$ insertions
-come before the next rebuild, and hence the cost stays $O( 1 )$ amortized
-without the doubling that a table emptied by removals and refilled with
-other keys would otherwise repeat (`restructures()` and `moved()` count
-them, as in the chaining).
+$\alpha < 1 / 8$; the two thresholds are 4 times apart, by [Lemma
+7.7](07-dictionary.md#lem-7-7). A new size that the inspection does not
+work with, a prime that divides the step of a linear inspection, is
+replaced by the next prime that it works with. Since only a removal halves
+$m$, a table emptied may stay above its initial size. When the places in
+use exceed $m / 2$ because of the deleted ones, with at most $m / 4$ keys,
+the table is rebuilt at the same size instead. Then the deleted places go
+away and at least $m / 4$ insertions come before the next rebuild, and
+hence the cost stays $O( 1 )$ amortized without the doubling that a table
+emptied by removals and refilled with other keys would otherwise repeat. As
+in the chaining, `restructures()` and `moved()` count them.
 
 With a `PlaceHash`, the places of the inspection come from $H_0( k )$
 alone; hence, the double hashing degenerates into the linear inspection,
@@ -1098,18 +1120,18 @@ $( k / 2 q )^k ( ( 2 q - k ) / 2 q )^{q - k} \, q^q / ( k^k ( q - k )^{q - k} )
 = 2^{-k} ( 1 + k / ( 2 ( q - k ) ) )^{q - k} \le 2^{-k} e^{k / 2}$,
 since $( 1 + 1 / x )^x \le e$ for $x > 0$. $\square$
 
-The book replaces $r!$ by $( r / e )^r$ and loses the factor
-$O( 1 / \sqrt{k} )$, which (7.9) keeps ([Morin 2013, exercise
-5.4](Z-bibliography.md#ref-morin-cpp)); for $k = q$ the probability is
-$( q / m )^q \le 2^{-q}$ directly. A search for an absent key starts at a
-random place, and if the place belongs to a run of length $k$ it costs
-$O( 1 + k )$. A run of length $k$ is counted by each of its $k$ places, so
-that the expected cost is
-$O( 1 + \frac{1}{m} \sum_i \sum_k k^2 \Pr[ \text{a run of length } k
-\text{ starts at } i ] ) = O( 1 + \sum_k k^2 p_k ) = O( 1 )$, a series
-that decreases exponentially. An insertion costs as much, a successful
-search as much as the insertion that placed its key, and a removal as a
-search; with [Lemma 7.7](07-dictionary.md#lem-7-7) for the rebuilds, this is the theorem of the book.
+Morin replaces $r!$ by $( r / e )^r$ and loses the factor $O( 1 /
+\sqrt{k} )$, which (7.9) keeps ([Morin 2013, exercise
+5.4](Z-bibliography.md#ref-morin-cpp)); for $k = q$ the probability is $( q
+/ m )^q \le 2^{-q}$ directly. A search for an absent key starts at a random
+place, and if the place belongs to a run of length $k$ it costs $O( 1 + k
+)$. A run of length $k$ is counted by each of its $k$ places, so that the
+expected cost is $O( 1 + \frac{1}{m} \sum_i \sum_k k^2 \Pr[ \text{a run of
+length } k \text{ starts at } i ] ) = O( 1 + \sum_k k^2 p_k ) = O( 1 )$, a
+series that decreases exponentially. An insertion costs as much, a
+successful search as much as the insertion that placed its key, and a
+removal as a search; with [Lemma 7.7](07-dictionary.md#lem-7-7) for the
+rebuilds, this is the theorem of the book.
 
 <span id="thm-7-4"></span>**Theorem 7.4.** *([Morin 2013, Theorem
 5.2](Z-bibliography.md#ref-morin-cpp).) The `OpenHashTable` with the
@@ -1119,23 +1141,23 @@ realizes the USET: ignoring the rebuilds, `insert()`, `remove()` and
 insertions and removals from an empty table spends $O( q )$ time in all
 the rebuilds.*
 
-Three exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin-cpp)
-ask for an explanation. The student numbers of a class of first year
-students differ in their last two digits, which spread them over 100
+Three exercises of [Morin 2013, §5.4](Z-bibliography.md#ref-morin-cpp) call
+for an explanation. For instance, the student numbers of a class of first
+year students differ in their last two digits, which spread them over 100
 places, while their first two digits are those of the year of their
 registration, nearly the same for all (exercise 5.1). An insertion that
 puts the key in the first nil place, skipping the deleted ones, makes a
 table of $n$ keys spend $\Theta( n^2 )$ time on $O( n )$ insertions and
-removals of one key $x$: each insertion walks past the deleted places
-left by the earlier copies of $x$ in its run, $i$ of them at the $i$-th
-one, until the deleted places fill half of the table and a rebuild clears
-them, $\Theta( n )$ insertions later (exercise 5.5), which is why the scan
-above reuses the first deleted place it meets. Finally, the keys of a
-table with a fixed hash can be chosen to fall in one place, which makes
-each search linear (exercise 5.11): the multiples of the number of buckets
-for the `std::unordered_map` of libstdc++, whose hash of the integers is
-the identity, or the multiples of $2^{20}$ for a table of at most
-$2^{20}$ places on `std::hash` and $h( k ) \bmod m$. A random $z$ or
+removals of one key $x$. Each insertion walks past the deleted places left
+by the earlier copies of $x$ in its run, $i$ of them at the $i$-th one,
+until the deleted places fill half of the table and a rebuild clears them,
+$\Theta( n )$ insertions later (exercise 5.5). This is why the scan above
+reuses the first deleted place it meets. Finally, the keys of a table with
+a fixed hash can be chosen to fall in one place, which makes each search
+linear (exercise 5.11). Two examples are the multiples of the number of
+buckets for the `std::unordered_map` of libstdc++, whose hash of the
+integers is the identity, or the multiples of $2^{20}$ for a table of at
+most $2^{20}$ places on `std::hash` and $h( k ) \bmod m$. A random $z$ or
 random tables hide the places from whoever chooses the keys, an attack on
 the servers of the web described by [Crosby and Wallach
 2003](Z-bibliography.md#ref-crosby2003). In the test
@@ -1146,15 +1168,16 @@ Two tables of [Knuth 1998, §6.4](Z-bibliography.md#ref-knuth1998v3) in
 `KnuthHashing.h` go beyond the book, both without removal.
 `CoalescedHashTable` (Algorithm 6.4C, with the cellar of [Vitter
 1982](Z-bibliography.md#ref-vitter1982)) keeps the lists of overflow in
-the table itself: a key that collides is put in the empty place of largest
+the table itself. A key that collides is put in the empty place of largest
 index, found by a pointer $r$ that only goes down, and linked at the end
-of the list of its place, and therefore the lists may merge (*coalesce*). The
+of the list of its place; hence, the lists may merge (*coalesce*). The
 first places taken are those of a *cellar* beyond the $m$ places addressed
-by the hash, and with a cellar of about 14 % of the table the searches are
+by the hash. With a cellar of about 14 % of the table the searches are
 nearly as fast as with separate lists, with no memory out of the table
-([Algorithm 7.6](07-dictionary.md#alg-7-6), [Figure 7.7](07-dictionary.md#fig-7-7)).
-Its invariant, an audit, is that each key is on the list of its place, and
-`probes()` counts the places of the last `lookup()` or `insert()`.
+([Algorithm 7.6](07-dictionary.md#alg-7-6), [Figure
+7.7](07-dictionary.md#fig-7-7)). Its invariant, an audit, is that each key
+is on the list of its place, and `probes()` counts the places of the last
+`lookup()` or `insert()`.
 
 ![Figure 7.7. A `CoalescedHashTable` of $m = 7$ places and a cellar of 2 (the places 7 and 8), after the insertion of `A`, `B`, `C`, `D`, `E` with the places 2, 4, 2, 4, 2, before and after `insert(F)` with the place 6: the place 6, which holds `E`, is used (in violet), so `F` takes the empty place 5 of largest index (in orange) at the end of the list of 6, which is also the tail of the list of 2; the pointer $r$ goes down from 6 to 5.](../figures/dictionary-coalesced.svg){#fig-7-7}
 
@@ -1164,23 +1187,23 @@ Its invariant, an audit, is that each key is on the list of its place, and
 
 --8<-- "generated/KnuthHashing-CoalescedHashTable-insert.pseudo.md"
 
-`BrentHashTable` is the double hashing on a prime $m$ with the
-improvement of [Brent 1973](Z-bibliography.md#ref-brent1973) to the
-insertions: the new key $k$ is placed at the $j$-th place of its
-inspection, and the key found there moved forward by $s - j$ places of its
-own inspection, for the least $s$, and then the least $j$, that find an
-empty place ([Algorithm 7.7](07-dictionary.md#alg-7-7),
-[Figure 7.8](07-dictionary.md#fig-7-8)). Since a successful search costs
-the place of its key in its inspection, the insertion trades a long
-inspection of the new key for a short move of an old one, and the expected
-number of probes of a successful search stays below 2.5 even in a full
-table ([Knuth 1998, exercise 6.4-49](Z-bibliography.md#ref-knuth1998v3)),
-against $- \ln( 1 - \alpha ) / \alpha$ of the plain double hashing, at no
-cost for the searches. `at(k, i)` gives the place $i$ of the inspection of
-$k$, and `probes()` the places of the last `lookup()`. We check the bound at a load of 95 % in the test
+`BrentHashTable` is the double hashing on a prime $m$ with the improvement
+of [Brent 1973](Z-bibliography.md#ref-brent1973) to the insertions. The new
+key $k$ is placed at the $j$-th place of its inspection, and the key found
+there moved forward by $s - j$ places of its own inspection, for the least
+$s$, and then the least $j$, that find an empty place ([Algorithm
+7.7](07-dictionary.md#alg-7-7), [Figure 7.8](07-dictionary.md#fig-7-8)).
+Since a successful search costs the place of its key in its inspection, the
+insertion trades a long inspection of the new key for a short move of an
+old one. In this way the expected number of probes of a successful search
+stays below 2.5 even in a full table ([Knuth 1998, exercise
+6.4-49](Z-bibliography.md#ref-knuth1998v3)), against $- \ln( 1 - \alpha ) /
+\alpha$ of the plain double hashing, at no cost for the searches. `at(k,
+i)` gives the place $i$ of the inspection of $k$, and `probes()` the places
+of the last `lookup()`. We check the bound at a load of 95 % in the test
 `taocp.knuth-hashing`.
 
-![Figure 7.8. The insertion of Brent in a `BrentHashTable` of $m = 7$ places: the inspection of `K` is 1, 4, 6, 3, and the plain double hashing would put it in 3 after 4 probes; the inspection of `A` goes on from its place 1 to 2 and then to the empty 5 (in violet), so that `A` moves to 5 and `K` takes 1 (in orange), found by one probe.](../figures/dictionary-brent.svg){#fig-7-8}
+![Figure 7.8. The insertion of Brent in a `BrentHashTable` of $m = 7$ places: the inspection of `K` is 1, 6, 4, 2, 0 (the step 5) and that of `A` is 1, 2, 3 (the step 1), and the plain double hashing would put `K` in 0 after 5 probes; no move of one place is possible, since the place 2 after `A` and the place 6 of `K` are full, but the inspection of `A` goes on from its place 1 past 2 (in violet) to the empty 3, so that `A` moves to 3 and `K` takes 1 (in orange), found by one probe.](../figures/dictionary-brent.svg){#fig-7-8}
 
 <span id="alg-7-7"></span>**Algorithm 7.7.** The insertion of
 `BrentHashTable` ([Brent 1973](Z-bibliography.md#ref-brent1973));
@@ -1194,42 +1217,43 @@ the index of the key $y$ in its own inspection.
 The tables of [§7.4](07-dictionary.md#sec-7-4) and
 [§7.5](07-dictionary.md#sec-7-5) follow the textbooks, and their costs are
 dominated by the misses of the cache rather than by the operations they
-count: a list costs a pointer, i.e., a miss, per cell, and the linear
+count. A list costs a pointer, i.e., a miss, per cell, and the linear
 inspection compares entire keys along its run. The tables of this section
 are engineered on the layout of the Swiss tables of [Kulukundis
 2017](Z-bibliography.md#ref-kulukundis2017) and of
-`boost::unordered_flat_map` ([Lopez Munoz 2022](Z-bibliography.md#ref-lopezmunoz2022)):
-the places come in groups, each with a control byte per place that holds a
-fingerprint of 8 bits of the hash of its key, and a search compares the
-fingerprint of its key with the bytes of an entire group by one instruction,
-touching the pairs only where a fingerprint matches. The benchmark of the
-dictionaries compares `FlatHashTable` with `boost::unordered_flat_map`;
-we give no numbers here, since they come from a campaign on an idle
-machine that is still to be run.
+`boost::unordered_flat_map` ([Lopez Munoz
+2022](Z-bibliography.md#ref-lopezmunoz2022)). Their places come in groups,
+each with a control byte per place that holds a fingerprint of 8 bits of
+the hash of its key; a search compares the fingerprint of its key with the
+bytes of an entire group by one instruction,
+and it touches the pairs only where
+a fingerprint matches. Our benchmark of the dictionaries compares
+`FlatHashTable` with `boost::unordered_flat_map`; we give no numbers here,
+since they come from a campaign on an idle machine that is still to be run.
 
-`FlatHashTable` keeps the places in groups of 15, after the Boost table:
-beside the vector of the pairs, each group has 16 bytes aligned to 16, one
+`FlatHashTable` keeps the places in groups of 15, after the Boost table.
+Beside the vector of the pairs, each group has 16 bytes aligned to 16, one
 control byte per place, empty (0) or full, in which case the byte is the
 fingerprint of its key (never 0), and a 16th byte of *overflow*. The 15
 control bytes are compared with the fingerprint of a key all at once, by
 one comparison of SSE2 on x86-64 or of NEON on ARM64, and elsewhere by
 broadword operations on two words of 64 bits ([Knuth 2011,
-§7.1.3](Z-bibliography.md#ref-knuth2011)). The macro `ADS_FLAT_SIMD`,
+§7.1.3](Z-bibliography.md#ref-knuth2011)). A macro, `ADS_FLAT_SIMD`,
 defined as 0 before the header, selects the broadword operations on any
-machine. A false match typically costs a comparison of keys and little else. The
-hash $h( k )$ is mixed as in Boost, by the folded product (`mulx()`, or
-`mulxPortable()` by products of 32 bits) of $h( k )$ and
-$\lfloor 2^{64} / \phi \rfloor$, and hence each bit of the result depends
+machine. A false match typically costs a comparison of keys and little
+else. The hash $h( k )$ is mixed as in Boost, by the folded product
+(`mulx()`, or `mulxPortable()` by products of 32 bits) of $h( k )$ and
+$\lfloor 2^{64} / \phi \rfloor$. Hence, each bit of the result depends
 on each bit of $h( k )$ and even the identity hash of the integers of
 `std::hash` spreads over the table. A hash that declares `is_avalanching`
 on 64 bits, as `DefaultHash<K>` does for the integers and the strings
-([§7.3.6](07-dictionary.md#sec-7-3-6)), is taken as it is. The top bits of
+([§7.3.6](07-dictionary.md#sec-7-3-6)), is taken as it is. Then the top bits of
 the mixed hash give the first group of the key, its low 8 bits the
 fingerprint $t$ (1 in place of 0), and its low 3 bits the bit $\beta$ of
 the key in the bytes of overflow. The $G$ groups, a power of 2, are
-inspected in the triangular order $g_i = ( g_0 + i ( i + 1 ) / 2 ) \bmod G$,
-a permutation by [Lemma 7.9](07-dictionary.md#lem-7-9) ([Algorithm 7.8](07-dictionary.md#alg-7-8),
-[Figure 7.9](07-dictionary.md#fig-7-9)).
+inspected in the triangular order $g_i = ( g_0 + i ( i + 1 ) / 2 ) \bmod
+G$, a permutation by [Lemma 7.9](07-dictionary.md#lem-7-9) ([Algorithm
+7.8](07-dictionary.md#alg-7-8), [Figure 7.9](07-dictionary.md#fig-7-9)).
 
 ![Figure 7.9. Two groups of a `FlatHashTable`, each with 15 control bytes (in hexadecimal, 00 for an empty place) and a byte of overflow (its 8 bits); the search of a key with the fingerprint `5A` and the bit of overflow 3 compares the keys of the places 1 and 4 of the group $g$, whose bytes match (in violet), goes on to the group $g + 1$ since the overflow of $g$ has the bit 3, and finds the key in its place 2; a key with the bit 6 stops after the group $g$.](../figures/dictionary-flat.svg){#fig-7-9}
 
@@ -1244,24 +1268,24 @@ but still counted.
 
 --8<-- "generated/FlatHashTable-insert.pseudo.md"
 
-An insertion that goes past a full group sets the bit $\beta$ of its key
-in the overflow of that group, and a search stops at the first group whose
+An insertion that goes past a full group sets the bit $\beta$ of its key in
+the overflow of that group, and a search stops at the first group whose
 overflow lacks $\beta$, after the places of that group whose fingerprint
 matches. A search for an absent key thus reads one group of 16 bytes, one
 line of the cache, in the common case, and never touches the pairs.
 `remove()` empties the place with no deleted mark; a place emptied in a
 group whose overflow is not 0, however, still counts as full, since the
 bits stay set until the next rebuild and the searches keep going past the
-group. A removal counts the places it may leave counted by a bound $d$,
-one more per removal, with no load from memory: when $n + d$ reaches
-$7 m / 8$, the places counted are counted exactly (`deleted()`, in
-$O( m / 15 )$ time), and the table is rebuilt only if fewer than $m / 16$
-places are left; hence, the next count comes at least $m / 16$
-operations later and costs $O( 1 )$ amortized. Past $7 / 8$ of the places
-the table is rebuilt, twice as large if the pairs exceed half of that
-bound and of the same size otherwise (only the bits of overflow and the
-places counted go away), which costs $O( 1 )$ amortized per insertion by
-the argument of [Lemma 7.7](07-dictionary.md#lem-7-7). These rules keep every inspection finite.
+group. A removal counts the places it may leave counted by a bound $d$, one
+more per removal, with no load from memory. When $n + d$ reaches $7 m / 8$,
+the places counted are counted exactly (`deleted()`, in $O( m / 15 )$
+time), and the table is rebuilt only if fewer than $m / 16$ places are
+left. Hence, the next count comes at least $m / 16$ operations later and
+costs $O( 1 )$ amortized. Past $7 / 8$ of the places the table is rebuilt,
+twice as large if the pairs exceed half of that bound and of the same size
+otherwise (only the bits of overflow and the places counted go away). This
+costs $O( 1 )$ amortized per insertion by the argument of [Lemma
+7.7](07-dictionary.md#lem-7-7). These rules keep each inspection finite.
 
 <span id="lem-7-11"></span>**Lemma 7.11.** *In a `FlatHashTable` (and in
 the index of a `DenseHashMap` below) some group has its overflow 0 and an
@@ -1277,35 +1301,36 @@ and not counted, and its group has an empty place and its overflow 0. The
 triangular order visits all the $G$ groups ([Lemma 7.9](07-dictionary.md#lem-7-9)), and a search stops
 at that group at the latest, an insertion at its empty place. $\square$
 
-With a hash that behaves as random and a load at most $7 / 8$, the
-expected number of groups inspected by a search is bounded by a constant,
-and each operation costs $O( 1 )$ expected amortized time. Some details of
-the engineering may be worth remarking, each of which the header explains
-with the reason. When some fingerprint matches, the first line of the
-pairs of the group is prefetched, at an address that depends only on the
-group, and hence the two misses of a search overlap in part. A removal in
-the first group of its key writes the 16 control bytes whole, at an address
-that depends only on the hash, since the store of a single byte would have
-an address known only once the control bytes arrive, and the loads of the
-next operations could not pass it ([Intel Corporation](Z-bibliography.md#ref-intel)). The rebuild fills each new group
-in the order of its places, keeping the counts of the groups apart, so
-that it never reads a group it has just written, and it prefetches the
+With a hash that behaves as random and a load at most $7 / 8$, the expected
+number of groups inspected by a search is bounded by a constant, and each
+operation costs $O( 1 )$ expected amortized time. Some details of the
+engineering may be worth remarking, each of which the header explains with
+the reason. When some fingerprint matches, the first line of the pairs of
+the group is prefetched, at an address that depends only on the group, and
+hence the two misses of a search overlap in part. A removal in the first
+group of its key writes the 16 control bytes whole, at an address
+that depends only on the hash. A store of a single byte would have an
+address known only once the control bytes arrive, and the loads of the next
+operations could not pass it ([Intel
+Corporation](Z-bibliography.md#ref-intel)). A rebuild fills each new
+group in the order of its places, keeping the counts of the groups apart, so
+that it never reads a group it has just written. It also prefetches the
 memory of a key that its hash reads 8 places ahead ([Chen et al.
-2004](Z-bibliography.md#ref-chen2004)). The new pair is built in the new
-places before the old ones move; hence, a key or a value that lives in
-the table is still there to copy. `find()` runs the entire inspection in
-line, as Boost does, while the groups after the first and the rebuild are
-out of line.
+2004](Z-bibliography.md#ref-chen2004)). Also, the new pair is built in the new
+places before the old ones move; hence, a key or a value that lives in the
+table is still there to copy. `find()` runs the entire inspection in line,
+as Boost does, while the groups after the first and the rebuild are out of
+line.
 
-The iterators visit the pairs in the order of the places, a group at a
-time by the mask of its full places, and skip the empty groups whole up to
-a sentinel group after the last, and therefore a step tests no bound
-([Algorithm 7.9](07-dictionary.md#alg-7-9)). `erase(it)` removes a pair and
-returns the iterator on the next one. A removal moves no other pair and
-keeps the iterators valid but the one on the removed pair, while an
-insertion of a new key that rebuilds the table invalidates them all.
-`reserve(n)` makes room for $n$ pairs, `clear()` keeps the places, and
-`capacity()`, `load()`, `forEach()` and `swap()` have their usual meaning.
+The iterators visit the pairs in the order of the places, a group at a time
+by the mask of its full places, and skip the empty groups whole up to a
+sentinel group after the last. Hence, a step tests no bound ([Algorithm
+7.9](07-dictionary.md#alg-7-9)). `erase(it)` removes a pair and returns the
+iterator on the next one. A removal moves no other pair and keeps the
+iterators valid but the one on the removed pair, while an insertion of a
+new key that rebuilds the table invalidates them all. `reserve(n)` makes
+room for $n$ pairs, `clear()` keeps the places, and `capacity()`, `load()`,
+`forEach()` and `swap()` have their usual meaning.
 
 <span id="alg-7-9"></span>**Algorithm 7.9.** The step of the iterator of
 `FlatHashTable`; $M$ is the mask of the full places of the group $g$ from
@@ -1314,28 +1339,29 @@ the current one on, its lowest bit the current place.
 --8<-- "generated/FlatHashTable-next.pseudo.md"
 
 `DenseHashMap` separates the pairs from the index ([Hettinger
-2012](Z-bibliography.md#ref-hettinger2012) describes the same layout of
-the dictionaries of CPython): the pairs are the items $0 , \ldots , n - 1$
-of a vector $A$, in the order of their insertions up to the removals, and
-an index of open addressing maps a key to the position of its pair in $A$.
-A visit of the pairs is then a scan of $n$ contiguous pairs, with no empty
+2012](Z-bibliography.md#ref-hettinger2012) describes the same layout of the
+dictionaries of CPython). The pairs are the items $0 , \ldots , n - 1$ of a
+vector $A$, in the order of their insertions up to the removals, while an
+index of open addressing maps a key to the position of its pair in $A$. A
+visit of the pairs is then a scan of $n$ contiguous pairs, with no empty
 place in between (`data()` gives them), and the index is rebuilt from $A$
-without moving a pair. The price is one more access per search (the index,
-then the pair) and iterators that an insertion or a removal may
-invalidate, as for a vector. The index is made of groups of one line of
-cache, 64 bytes: 12 control bytes, as in `FlatHashTable`, 3 bytes never
+without moving a pair. Its price is one more access per search (the index,
+then the pair) and iterators that an insertion or a removal may invalidate,
+as for a vector. The index is made of groups of one line of cache, 64
+bytes, i.e., 12 control bytes, as in `FlatHashTable`, 3 bytes never
 matched, a byte of overflow and the 12 positions of 32 bits of the places,
-in the same line, and hence a search costs one miss in the index and one in
-the vector. A removal empties the place of the key and moves the last pair
-of $A$ into the position left free (a swap with the last and a pop), and
-the place of the last pair in the index, found by the inspection of its key
-comparing the positions rather than the keys, takes the new position
-([Algorithm 7.10](07-dictionary.md#alg-7-10), [Figure 7.10](07-dictionary.md#fig-7-10)).
-The places counted, the recount and the rebuilds follow the rules of
-`FlatHashTable` (with $m / 16$ and $7 m / 8$), and the space is $16 n$
-bytes for pairs of 16 bytes plus 64 bytes per 12 places of the index,
-about 5.3 bytes per place, at a load between $7 / 16$ and $7 / 8$ after the
-first growth. There are fewer than $2^{32}$ pairs.
+all in the same line. Hence, a search typically costs one miss in the index
+and one in the vector. A removal empties the place of the key and moves the
+last pair of $A$ into the position left free (a swap with the last and a
+pop). Then the place of the last pair in the index, found by the inspection
+of its key comparing the positions rather than the keys, takes the new
+position ([Algorithm 7.10](07-dictionary.md#alg-7-10), [Figure
+7.10](07-dictionary.md#fig-7-10)). As for the places counted, the recount
+and the rebuilds follow the rules of `FlatHashTable` (with $m / 16$ and $7
+m / 8$). The space is $16 n$ bytes for pairs of 16 bytes plus 64 bytes per
+12 places of the index, about 5.3 bytes per place, at a load between $7 /
+16$ and $7 / 8$ after the first growth. There are fewer than $2^{32}$
+pairs.
 
 ![Figure 7.10. A `DenseHashMap`: a group of the index (12 control bytes and the 12 positions of their places) and the dense vector $A$ of the pairs; `remove(q)` empties the place 7, which held the position 1 (in violet), moves the last pair `t` from the position 4 to 1, and writes 1 in the place 5 that held the position 4 (in orange).](../figures/dictionary-dense.svg){#fig-7-10}
 
@@ -1349,31 +1375,31 @@ $g.\mathit{at}[ j ]$ the position of the place $j$ of the group $g$.
 
 --8<-- "generated/DenseHashMap-remove.pseudo.md"
 
-`PointerTable` is the closed list of a search, i.e., the set of the
-objects already met (e.g., the nodes of the states of a search), each
-found from its key: a place holds the pointer and the full hash of 64
-bits of the key of its object; hence, a probe compares two keys only when
-their hashes are equal and a growth moves the places without touching the
-objects. The inspection is linear, along consecutive places and lines of
-cache, which beats the lists of overflow when the table does not fit in
-the cache ([Burns et al. 2012](Z-bibliography.md#ref-burns2012)), and the
-first place of a hash is `fibonacciPlace()`, so that the hashes whose low
-bits are regular (e.g., the owner of a state in a parallel search,
-$h \bmod p$) still spread over the table. The load stays below $7 / 10$,
-the table doubling past it; there is no removal, which a search does not
-need. `find_or_insert(key, hash, make)` inserts the object that `make()`
-returns only if the key is not there, with one inspection
-([Algorithm 7.11](07-dictionary.md#alg-7-11), [Figure 7.11](07-dictionary.md#fig-7-11)),
-`find()` stops at the first empty place, and `prefetch(hash)` requests the
-first place of a hash, and hence the misses of the lookups of all the
-successors of a node overlap. Two keys are equal by `eq(p, key)`, by
-default `StateEqual`, i.e., `p->state == key`. The places come from an
-allocator, which may give huge pages ([Chapter 5](05-memory.md#ch-5)),
-and `slotsFor(n)`, the least power of 2, at least 16, above $10 n / 7$,
-tells how many places $n$ objects take; hence, a table built with them or
-reserved by `reserve(n)` never grows on the way (`bytes()` gives the
-memory of the places, and `capacity()`, `size()`, `clear()` and
-`forEach()` the obvious).
+`PointerTable` is the closed list of a search, i.e., the set of the objects
+already met (e.g., the nodes of the states of a search), each found from
+its key. A place holds the pointer and the full hash of 64 bits of the key
+of its object; hence, a probe compares two keys only when their hashes are
+equal and a growth moves the places without touching the objects. The
+inspection is linear, along consecutive places and lines of cache, which
+usually beats the lists of overflow when the table does not fit in the
+cache ([Burns et al. 2012](Z-bibliography.md#ref-burns2012)). The first
+place of a hash is `fibonacciPlace()`, so that the hashes whose low bits
+are regular (e.g., the owner of a state in a parallel search, $h \bmod p$)
+still spread over the table. Its load stays below $7 / 10$, the table
+doubling past it; there is no removal, which a search does not need.
+`find_or_insert(key, hash, make)` inserts the object that `make()` returns
+only if the key is not there, with one inspection ([Algorithm
+7.11](07-dictionary.md#alg-7-11), [Figure
+7.11](07-dictionary.md#fig-7-11)). Its `find()` stops at the first empty
+place, and `prefetch(hash)` requests the first place of a hash, and hence
+the misses of the lookups of all the successors of a node overlap. Two keys
+are equal by `eq(p, key)`, by default `StateEqual`, i.e., `p->state ==
+key`. Its places come from an allocator, which may give huge pages
+([Chapter 5](05-memory.md#ch-5)), and `slotsFor(n)`, the least power of 2,
+at least 16, above $10 n / 7$, gives the number of places that $n$ objects take.
+Hence, a table built with them or reserved by `reserve(n)` never grows on
+the way; `bytes()` gives the memory of the places, and `capacity()`,
+`size()`, `clear()` and `forEach()` have their usual meaning.
 
 ![Figure 7.11. A `PointerTable` of 8 places, each with a hash and a pointer to its object: `find_or_insert` of a key with the hash `4B` starts at the place 5 given by `fibonacciPlace()`, passes the places 5, 6, 7 and 0, whose hashes differ (in violet), and puts the object that `make()` returns in the empty place 1 (in orange).](../figures/dictionary-pointer.svg){#fig-7-11}
 
@@ -1384,28 +1410,29 @@ places, $m$ a power of 2.
 
 --8<-- "generated/PointerTable-findOrInsert.pseudo.md"
 
-`PositionIndex` maps the address of an object to its position, of 32 bits (the type
-`Position`),
-in a vector that holds it, e.g., the constraints or the variables of a
-model, whose positions change when some of them are erased. It is a
-`FlatHashTable` from the address to the position, with the hash of ADS, so
-that `find()`, `insert()` and `erase()` cost what they cost there (`NONE`
-is the position of an absent key, and `assign(v)` indexes an entire vector
-of pointers, $v[ i ]$ at the position $i$). Besides the operations of a
+`PositionIndex` maps the address of an object to its position, of 32 bits
+(the type `Position`), in a vector that holds it, e.g., the constraints or
+the variables of a model, whose positions change when some of them are
+erased. It is a `FlatHashTable` from the address to the position, with the
+hash of ADS, so that `find()`, `insert()` and `erase()` cost what they cost
+there. Its `NONE` is the position of an absent key, `contains()` checks
+whether an address is indexed, and `assign(v)` indexes an entire vector of
+pointers, $v[ i ]$ at the position $i$. Besides the operations of a
 dictionary, `renumber(E)` takes the sorted positions $E$ just erased from
-the vector and, in one pass over the table, drops the objects that were
-there and moves every other position $p$ to
-$p - | \{ e \in E : e < p \} |$, its place in the vector after the erasure
-([Algorithm 7.12](07-dictionary.md#alg-7-12), [Figure 7.12](07-dictionary.md#fig-7-12)).
-The count $\mathrm{rank}( p )$ of the erased positions below $p$ is that of
-the erased positions before the word of 64 bits of $p$ in a bit vector of
-$E$ plus the population count of the bits of that word below $p$, in
-$O( 1 )$ time and with no branch ([Jacobson 1989](Z-bibliography.md#ref-jacobson1989);
-cf. [Chapter 22](22-succinct.md#ch-22)); a position past the largest erased
-one moves by $| E |$. The word and its count sit side by side, and therefore a
-rank costs one access to the memory, and the pass takes
-$O( N + | E | + \max E / 64 )$ time for $N$ places, the keys of the erased
-positions being gathered on the way and removed afterwards.
+the vector. In one pass over the table, it drops the objects that were
+there and moves each other position $p$ to $p - | \{ e \in E : e < p \}
+|$, its place in the vector after the erasure ([Algorithm
+7.12](07-dictionary.md#alg-7-12), [Figure
+7.12](07-dictionary.md#fig-7-12)). The count $\mathrm{rank}( p )$ of the
+erased positions below $p$ is that of the erased positions before the word
+of 64 bits of $p$ in a bit vector of $E$ plus the population count of the
+bits of that word below $p$, in $O( 1 )$ time and with no branch ([Jacobson
+1989](Z-bibliography.md#ref-jacobson1989); cf. [Chapter
+22](22-succinct.md#ch-22)). A position past the largest erased one moves by
+$| E |$. Each word and its count sit side by side, and therefore a rank
+costs one access to the memory, and the pass takes $O( N + | E | + \max E /
+64 )$ time for $N$ places, the keys of the erased positions being gathered
+on the way and removed afterwards.
 
 ![Figure 7.12. The renumbering of a `PositionIndex` after the erasure of the positions $E = \{ 2 , 5 \}$ from a vector of 8 objects: the pairs of the table in the order of its places, before and after; the bits of $E$ (in violet) give each remaining position $p$ its new value $p - \mathrm{rank}( p )$ (in orange), and the objects `o2` and `o5` leave the index.](../figures/dictionary-position.svg){#fig-7-12}
 
@@ -1418,23 +1445,24 @@ $m = | E |$.
 
 ## 7.7 Cuckoo hashing {#sec-7-7}
 
-The cuckoo hashing of [Pagh and Rodler 2004](Z-bibliography.md#ref-pagh2004)
-gives each key $k$ two places, $h_1( k )$ and $h_2( k )$, of a table of $m$
-places, and keeps it in one of them, and hence a lookup and a removal look at
-two places, $O( 1 )$ time in the worst case. An insertion puts $k$ in the
-first empty one of its two places, else in $h_1( k )$, evicting the key $y$
-there, which moves to its other place, possibly evicting another key, and
-so on. After $\mathit{MaxLoop}$ evictions the insertion gives up and the
-table is rebuilt with two new functions (a *rehash*). The *cuckoo graph*
-has the places as vertices and an edge $\{ h_1( k ) , h_2( k ) \}$ per key,
-and a placement of the keys is an orientation of the edges in which each
-vertex receives at most one edge ([Ferragina 2023,
-chapter 8](Z-bibliography.md#ref-ferragina2023)). `CuckooHashTable` puts
-both functions on one table; hence, the graph is a random graph of $m$
-vertices and $n$ edges, and adds a *stash* of $s$ places ([Kirsch et al.
-2009](Z-bibliography.md#ref-kirsch2009)), which keeps the keys whose
-insertion fails and which a search also looks at
-([Algorithm 7.13](07-dictionary.md#alg-7-13), [Figure 7.13](07-dictionary.md#fig-7-13)).
+The cuckoo hashing of [Pagh and Rodler
+2004](Z-bibliography.md#ref-pagh2004) gives each key $k$ two places, $h_1(
+k )$ and $h_2( k )$, of a table of $m$ places, and keeps it in one of them.
+Hence, a lookup and a removal look at two places, $O( 1 )$ time in the
+worst case. An insertion puts $k$ in the first empty one of its two places,
+else in $h_1( k )$, evicting the key $y$ there, which moves to its other
+place, possibly evicting another key, and so on. After $\mathit{MaxLoop}$
+evictions the insertion gives up and the table is rebuilt with two new
+functions (a *rehash*). The *cuckoo graph* has the places as vertices and
+an edge $\{ h_1( k ) , h_2( k ) \}$ per key, and a placement of the keys is
+an orientation of the edges in which each vertex receives at most one edge
+([Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023)).
+`CuckooHashTable` puts both functions on one table, and hence its graph is
+a random graph of $m$ vertices and $n$ edges. It also adds a *stash* of $s$
+places ([Kirsch et al. 2009](Z-bibliography.md#ref-kirsch2009)), which
+keeps the keys whose insertion fails and which a search also looks at
+([Algorithm 7.13](07-dictionary.md#alg-7-13), [Figure
+7.13](07-dictionary.md#fig-7-13)).
 
 ![Figure 7.13. A `CuckooHashTable` of 8 places, before and after `insert(x)` with $h_1( x ) = 1$ and $h_2( x ) = 4$, both full: `x` takes the place 1, evicting `a`, which goes to its other place 4, evicting `b`, and so on along the walk 1, 4, 6, 3, 0 (the keys moved in violet, `x` in orange); below, the cuckoo graph after the insertion, an edge per key between its two places, the edges of the walk in violet.](../figures/dictionary-cuckoo.svg){#fig-7-13}
 
@@ -1463,84 +1491,83 @@ ends at an empty place.*
 in its $v$ places only if $e \le v$, i.e., if it is a tree or has a single
 cycle. Conversely, a tree oriented away from any vertex, and a cycle
 oriented around with the trees hanging from it oriented away from it, give
-each vertex at most one edge. The walk follows a path of the component
+each vertex at most one edge. Moreover, the walk follows a path of the component
 from a place of the new key, each step moving one key along its edge. If
-it meets no cycle, it ends at a free vertex of the tree, and if it enters
-the single cycle, it goes around it, comes back along the path with the
-keys moved to their other places, and leaves by the other place of the new
-key, ending at a free vertex on that side; only a second cycle would trap
+it meets no cycle, it ends at a free vertex of the tree. If it enters
+the single cycle, it goes around it, comes back along the path with the keys moved to their other places, and leaves by the other place of the new key,
+ending at a free vertex on that side. Only a second cycle would trap
 it. $\square$
 
 The probabilistic part rests on the random graph. With $m \ge 2 c n$ places
 and random functions, two places are joined by a shortest path of length
-$L$ with probability at most $c^{-L} / m$, so that the expected size of the
+$L$ with probability at most $c^{-L} / m$. Hence, the expected size of the
 component of a key is $O( 1 )$ and so is the expected number of evictions
-of an insertion. Summing the same bound over the pairs of places, the
-final graph has a component with two cycles with probability $O( 1 / n )$,
-and a cycle at all with probability at most $1 / ( c - 1 )$, at most
-$1 / 2$ for $m \ge 6 n ( 1 + \epsilon )$, and hence an insertion costs
-$O( 1 )$ amortized expected time, the rehashes included ([Ferragina 2023,
-chapter 8](Z-bibliography.md#ref-ferragina2023); the test
-`pearls_hashing.cuckoo-analysis` checks the corollary). With one table
-and both functions on it, the components have at most one cycle with high
-probability while $n / m < 1 / 2$: the table doubles past the load
-`maxLoad` (0.4 by default) and halves below $\mathit{maxLoad} / 4$, the
-global rebuilding of [Ferragina 2023, chapter
-8](Z-bibliography.md#ref-ferragina2023). The stash lowers the probability
-of a rehash from $\Theta( 1 / n )$ to $\Theta( 1 / n^{s+1} )$. The two
-functions are simple tabulations of the hash of the key: [Pătrașcu and
-Thorup 2012](Z-bibliography.md#ref-patrascu2012) proved that they keep the
-failure probability of the cuckoo hashing at $O( 1 / n^{1/3} )$, while the
-analysis of Pagh and Rodler needs $O( \log n )$-independent functions,
-and [Aumüller et al. 2014](Z-bibliography.md#ref-aumuller2014) give
-explicit families that suffice with a stash. $\mathit{MaxLoop}$ is
-$8 \lceil \log_2 m \rceil + 16$, against the $3 \log_{1 + \epsilon} m$ of
-the analysis of Pagh and Rodler. `rehashes()`, `evictions()` and
-`stashed()` count the rebuilds, the evictions and the keys in the stash,
-and the invariant, that each key is in one of its places or in the stash
-and is counted once, is checked on the key of the operation only past 1024
-places. Compared with the open addressing, a search has no run to walk;
-the variants of today put several keys in a place (the blocked cuckoo
-hashing, with loads above 90 %) or use $d > 2$ functions ([Fotakis et al.
-2005](Z-bibliography.md#ref-fotakis2005)).
+of an insertion. Summing the same bound over the pairs of places, the final
+graph has a component with two cycles with probability $O( 1 / n )$, and a
+cycle at all with probability at most $1 / ( c - 1 )$, at most $1 / 2$ for
+$m \ge 6 n ( 1 + \epsilon )$. Hence, an insertion costs $O( 1 )$ amortized
+expected time, the rehashes included ([Ferragina 2023, chapter
+8](Z-bibliography.md#ref-ferragina2023)), a corollary that the test
+`pearls_hashing.cuckoo-analysis` checks. With one table and both functions
+on it, the components have at most one cycle with high probability while $n
+/ m < 1 / 2$: the table doubles past the load `maxLoad` (0.4 by default)
+and halves below $\mathit{maxLoad} / 4$, the global rebuilding of
+[Ferragina 2023, chapter 8](Z-bibliography.md#ref-ferragina2023). Also, the
+stash lowers the probability of a rehash from $\Theta( 1 / n )$ to $\Theta(
+1 / n^{s+1} )$. The two functions are simple tabulations of the hash of the
+key. [Pătrașcu and Thorup 2012](Z-bibliography.md#ref-patrascu2012) proved
+that they keep the failure probability of the cuckoo hashing at $O( 1 /
+n^{1/3} )$, while the analysis of Pagh and Rodler needs $O( \log n
+)$-independent functions; also, [Aumüller et al.
+2014](Z-bibliography.md#ref-aumuller2014) give explicit families that
+suffice with a stash. $\mathit{MaxLoop}$ is $8 \lceil \log_2 m \rceil +
+16$, against the $3 \log_{1 + \epsilon} m$ of the analysis of Pagh and
+Rodler. `rehashes()`, `evictions()` and `stashed()` count the rebuilds, the
+evictions and the keys in the stash. The invariant, that each key is in one
+of its places or in the stash and is counted once, is checked on the key of
+the operation only past 1024 places. Compared with the open addressing, a
+search has no run to walk; the variants of today put several keys in a
+place (the blocked cuckoo hashing, with loads above 90 %) or use $d > 2$
+functions ([Fotakis et al. 2005](Z-bibliography.md#ref-fotakis2005)).
 
-`BucketCuckooTable` is the first of these variants, the cuckoo hashing
-with buckets of 4 places and a search in breadth of [Li et al.
+`BucketCuckooTable` is the first of these variants, the cuckoo hashing with
+buckets of 4 places and a search in breadth of [Li et al.
 2014](Z-bibliography.md#ref-li2014), the table of MemC3 ([Fan et al.
 2013](Z-bibliography.md#ref-fan2013)) and of libcuckoo. A key with the hash
-$h$ may be in any of the 4 places of two buckets; hence, a search looks at
-8 places in the worst case, and the table reaches a load of 95 % and more
-before an insertion fails, against less than 50 % with one key per place
-(the analysis of the bins of constant size is that of [Dietzfelbinger and
-Weidling 2007](Z-bibliography.md#ref-dietzfelbinger2007)). Each place has
-a *tag* of 8 bits, 0 when empty and otherwise 8 bits of the hash of its key
-(1 in place of 0). The 4 tags of a bucket are a word of 32 bits, compared
-with the tag of a key all at once by broadword operations, and therefore a key is
-compared only in the places whose tag matches. The first bucket of a key
-is given by the top bits of $h$, and the second by the first and the tag,
-$b_2 = b_1 \oplus ( g( t ) \wedge ( B - 1 ) \vee 1 )$ for $B$ buckets (a
-power of 2) and a mixing $g$ of the tag: this is the partial-key cuckoo
-hashing of MemC3, an involution, and hence a key moves to its other bucket
+$h$ may be in any of the 4 places of two buckets, and hence a search looks at
+8 places in the worst case. The table reaches a load of 95 % and more
+before an insertion fails, against less than 50 % with one key per place.
+(The analysis of the bins of constant size is that of [Dietzfelbinger and
+Weidling 2007](Z-bibliography.md#ref-dietzfelbinger2007).) Each place has a
+*tag* of 8 bits, 0 when empty and otherwise 8 bits of the hash of its key
+(1 in place of 0). All 4 tags of a bucket are a word of 32 bits, compared
+with the tag of a key all at once by broadword operations, and therefore a
+key is compared only in the places whose tag matches. The first bucket of a
+key is given by the top bits of $h$, and the second by the first and the
+tag, $b_2 = b_1 \oplus ( g( t ) \wedge ( B - 1 ) \vee 1 )$ for $B$ buckets
+(a power of 2) and a mixing $g$ of the tag. This is the partial-key cuckoo
+hashing of MemC3, an involution; hence, a key moves to its other bucket
 with no need to hash it again.
 
 An insertion puts a new key in a free place of its two buckets if any.
 Otherwise it searches in breadth, from the places of its buckets, a path of
 at most 5 moves that ends in a bucket with a free place (each key of a
-bucket of the path moving to its other bucket), and moves the keys along it
-from the end; hence, the new key takes the first place of the path
-([Algorithm 7.14](07-dictionary.md#alg-7-14), [Figure 7.14](07-dictionary.md#fig-7-14)).
-The search in breadth usually finds a shorter path than the walk of the
-cuckoo hashing, and moves fewer keys. When no path is found within 5 moves and
-1024 buckets, or past the load of 98 %, the table doubles and each key is
-placed again, which costs $O( 1 )$ amortized per insertion. For the keys
-whose hash reads memory, the doubling hashes all the keys first,
-prefetching 8 keys ahead, and then places them, prefetching 8 buckets
-ahead, so that the misses overlap ([Chen et al. 2004](Z-bibliography.md#ref-chen2004)).
-A removal clears the tag of its place. `load()`, `rehashes()` and `moves()`
-report the load, the doublings and the keys moved, and `find()` gives a
-value to change in place; an insertion of a new key may move other keys and
-invalidates the iterators. The concurrent version of the table, with a
-lock per region of buckets, is in [§24.7](24-concurrent.md#sec-24-7).
+bucket of the path moving to its other bucket). It then moves the keys along it
+from the end, and the new key takes the first place of the path
+([Algorithm 7.14](07-dictionary.md#alg-7-14), [Figure
+7.14](07-dictionary.md#fig-7-14)). A search in breadth usually finds a
+shorter path than the walk of the cuckoo hashing, and moves fewer keys.
+When no path is found within 5 moves and 1024 buckets, or past the load of
+98 %, the table doubles and each key is placed again, which costs $O( 1 )$
+amortized per insertion. For the keys whose hash reads memory, the doubling
+hashes all the keys first, prefetching 8 keys ahead, and then places them,
+prefetching 8 buckets ahead, so that the misses overlap ([Chen et al.
+2004](Z-bibliography.md#ref-chen2004)). A removal clears the tag of its
+place. `load()`, `rehashes()` and `moves()` report the load, the doublings
+and the keys moved, and `find()` gives a value to change in place; an
+insertion of a new key may move other keys and invalidates the iterators.
+A concurrent version of the table, with a lock per region of buckets, is
+in [§24.7](24-concurrent.md#sec-24-7).
 
 ![Figure 7.14. A `BucketCuckooTable` of 4 buckets of 4 places, each place with a key and its tag: the two buckets 0 and 2 of the new key `x` are full (in violet); the search in breadth finds `c`, in the bucket 0, whose other bucket 3 has a free place, so that `c` moves there and `x` takes its place (in orange).](../figures/dictionary-bucket-cuckoo.svg){#fig-7-14}
 
@@ -1559,7 +1586,7 @@ $S$, *minimal* if its range is $\{ 0 , \ldots , n - 1 \}$, and *order
 preserving* if it maps the keys in their order. A table built on a perfect
 function searches in $O( 1 )$ time in the worst case, as the table with
 direct access of [§7.2](07-dictionary.md#sec-7-2), but in space $O( n )$
-instead of $| U |$. The price is that $S$ is static, or changes at a cost
+instead of $| U |$. Its price is that $S$ is static, or changes at a cost
 (the dynamic perfect hashing of [Dietzfelbinger et al.
 1994](Z-bibliography.md#ref-dietzfelbinger1994) inserts and removes in
 $O( 1 )$ amortized expected time). `PerfectHashing.h` has the two schemes
@@ -1569,15 +1596,16 @@ three more headers the compressed minimal perfect functions of today.
 ### 7.8.1 Two levels of universal hashing {#sec-7-8-1}
 
 `PerfectHashTable` is the scheme of [Fredman et al.
-1984](Z-bibliography.md#ref-fredman1984): the $n$ keys are hashed into $n$
-lists by a function $h$ of the class $\mathcal{H}_{p,n}$ of [Lemma 7.1](07-dictionary.md#lem-7-1)
-(`CarterWegmanHash`, with $p = 2^{61} - 1$, and hence the keys are integers
-below $p$), drawn again until $\sum_j n_j^2 < 4 n$, $n_j$ being the keys
-of the list $j$. The list $j$ then becomes a table of $n_j^2$ places with a
-function $h_j$ of its own, drawn again until it has no collision on the
-$n_j$ keys ([Algorithm 7.15](07-dictionary.md#alg-7-15),
-[Figure 7.15](07-dictionary.md#fig-7-15)). A search computes $h$ and
-$h_j$ and compares one key, two accesses in the worst case:
+1984](Z-bibliography.md#ref-fredman1984). The $n$ keys are hashed into $n$
+lists by a function $h$ of the class $\mathcal{H}_{p,n}$ of [Lemma
+7.1](07-dictionary.md#lem-7-1) (`CarterWegmanHash`, with $p = 2^{61} - 1$,
+and hence the keys are integers below $p$). This function is drawn again
+until $\sum_j n_j^2 < 4 n$, $n_j$ being the keys of the list $j$. The list
+$j$ then becomes a table of $n_j^2$ places with a function $h_j$ of its
+own, drawn again until it has no collision on the $n_j$ keys ([Algorithm
+7.15](07-dictionary.md#alg-7-15), [Figure
+7.15](07-dictionary.md#fig-7-15)). A search computes $h$ and $h_j$ and
+compares one key, two accesses in the worst case:
 
 ```cpp
 --8<-- "generated/PerfectHashing-contains.cpp"
@@ -1602,7 +1630,7 @@ second level fewer than $4 n$ places.*
 
 *Proof.* One has $\sum_j n_j^2 = n + 2 C$, $C$ the number of the pairs of
 keys that collide, and by (7.3) $E[ C ] \le \binom{n}{2} / n
-= ( n - 1 ) / 2$; hence $E[ \sum_j n_j^2 ] \le 2 n - 1$. The variable
+= ( n - 1 ) / 2$; hence $E[ \sum_j n_j^2 ] \le 2 n - 1$. Also, the variable
 $\sum_j n_j^2 - n = 2 C \ge 0$ has expectation below $n$, and by the
 inequality of Markov it is at least $3 n$, i.e., $\sum_j n_j^2 \ge 4 n$,
 with probability below $1 / 3$; the first level is thus accepted with
@@ -1642,7 +1670,7 @@ when $n^2 / u$ tends to 0, and $\log_2 ( n^n / n! ) = n \log_2 e -
 member of the family needs at least the logarithm of its size in bits.
 $\square$
 
-The schemes of the area approach the bound at different costs, as
+Various schemes approach the bound at different costs, as
 [Table 7.3](07-dictionary.md#tab-7-3) summarizes; the bits per key are
 those that the papers report, and those of the library are to be measured
 by the benchmarks.
@@ -1661,32 +1689,32 @@ parameters of the schemes described below.
 ### 7.8.2 Order preserving functions on random graphs {#sec-7-8-2}
 
 `OrderedMinimalPerfectHash` is the scheme of [Czech et al.
-1992](Z-bibliography.md#ref-czech1992): $r = 2$ functions map each key
-$t_i$ to the edge $( h_1( t_i ) , h_2( t_i ) )$ of a random graph of
-$m' = c n$ vertices, labeled by the value wanted for $t_i$, its place $i$
-in the input (i.e., its rank, if the input is sorted), and the function is
-$h( t ) = ( g( h_1( t ) ) + g( h_2( t ) ) ) \bmod n$ for a labeling $g$ of
-the vertices that satisfies every edge. If the graph is acyclic, a visit in
-depth of each tree from its least vertex with $g = 0$ assigns each other
-vertex once, from the edge by which the visit reaches it
-(`labelAcyclicGraph()`, [Figure 7.16](07-dictionary.md#fig-7-16)), and a
-random graph is acyclic with probability about $\sqrt{( c - 2 ) / c}$ for
-$c > 2$, i.e., after about $\sqrt{3}$ graphs on average for $c = 3$. With
-$r = 3$ functions into three blocks of vertices the edges are triples of a
-hypergraph, solved in the reverse order of its *peeling*, the repeated
-removal of a vertex of degree 1 with its edge (`labelByPeeling()`, after
-[Majewski et al. 1996](Z-bibliography.md#ref-majewski1996)), which
-succeeds if the hypergraph has no 2-core, i.e., with high probability for
-$c > 1.23$, and $1.23 n$ values replace $3 n$ ([Algorithm
+1992](Z-bibliography.md#ref-czech1992). Here $r = 2$ functions map each key
+$t_i$ to the edge $( h_1( t_i ) , h_2( t_i ) )$ of a random graph of $m' =
+c n$ vertices, labeled by the value wanted for $t_i$, its place $i$ in the
+input (i.e., its rank, if the input is sorted). The function is $h( t ) = (
+g( h_1( t ) ) + g( h_2( t ) ) ) \bmod n$ for a labeling $g$ of the vertices
+that satisfies all the edges. If the graph is acyclic, a visit in depth of
+each tree from its least vertex with $g = 0$ assigns each other vertex
+once, from the edge by which the visit reaches it (`labelAcyclicGraph()`,
+[Figure 7.16](07-dictionary.md#fig-7-16)). A random graph is acyclic with
+probability about $\sqrt{( c - 2 ) / c}$ for $c > 2$, i.e., after about
+$\sqrt{3}$ graphs on average for $c = 3$. With $r = 3$ functions into three
+blocks of vertices the edges are triples of a hypergraph. These are solved
+in the reverse order of its *peeling*, the repeated removal of a vertex of
+degree 1 with its edge (`labelByPeeling()`, after [Majewski et al.
+1996](Z-bibliography.md#ref-majewski1996)). The peeling succeeds if the
+hypergraph has no 2-core, i.e., with high probability for $c > 1.23$, and
+$1.23 n$ values replace $3 n$ ([Algorithm
 7.16](07-dictionary.md#alg-7-16)).
 
 ![Figure 7.16. The graph of `OrderedMinimalPerfectHash` with $r = 2$ for the keys $t_0 , \ldots , t_3$ on 7 vertices, each edge with its key and its value, each vertex with its label $g$: the visits start from the least vertices 0 and 2 of their trees with $g = 0$ (in violet), and each edge $( u , v )$ gives $g( v ) = ( i - g( u ) ) \bmod 4$; e.g., $h( t_2 ) = ( g( 1 ) + g( 5 ) ) \bmod 4 = 2$.](../figures/dictionary-chm.svg){#fig-7-16}
 
 <span id="alg-7-16"></span>**Algorithm 7.16.** The construction of
-`OrderedMinimalPerfectHash` ([Czech et al. 1992](Z-bibliography.md#ref-czech1992)),
-the labeling of an acyclic graph by visits in depth, and the labeling of a
-hypergraph by peeling, a vertex of degree 1 knowing its edge as the XOR of
-the edges on it.
+`OrderedMinimalPerfectHash` ([Czech et al.
+1992](Z-bibliography.md#ref-czech1992)), the labeling of an acyclic graph
+by visits in depth, and the labeling of a hypergraph by peeling, a vertex
+of degree 1 knowing its edge as the XOR of the edges on it.
 
 --8<-- "generated/PerfectHashing-OrderedMinimalPerfectHash-build.pseudo.md"
 
@@ -1713,7 +1741,7 @@ It stores no key: $O( m' )$ words, $O( 1 )$ time to evaluate (`vertices()`
 gives $m'$, `trials()` the graphs drawn, and `vertex()` and
 `fingerprint()` the vertex and the integer of a key for each function).
 Unlike a trie ([§7.10](07-dictionary.md#sec-7-10)) it gives nothing
-meaningful for a key out of $S$, but its space does not depend on the
+meaningful for a key out of $S$. However, its space does not depend on the
 length of the keys, which may be integers or strings, the latter turned
 into integers by `StringHash` or `splitmix64()` before the functions of
 Carter and Wegman. A build that draws 1000 graphs with no success throws
@@ -1726,7 +1754,7 @@ labeling of [Ferragina 2023, Table 8.1](Z-bibliography.md#ref-ferragina2023).
 `FingerprintPerfectHash` is the method of [Müller et al.
 2014](Z-bibliography.md#ref-muller2014), engineered as BBHash by
 [Limasset et al. 2017](Z-bibliography.md#ref-limasset2017) and as FMPH by
-[Beling 2023](Z-bibliography.md#ref-beling2023). The keys go through
+[Beling 2023](Z-bibliography.md#ref-beling2023). Keys go through
 levels $0 , 1 , \ldots$: the level $i$ is a vector of
 $m_i = \lceil \gamma n_i \rceil$ bits for the $n_i$ keys that reach it
 ($n_0 = n$, the sizes rounded up to blocks of 512 bits), each key hashed to
@@ -1735,7 +1763,7 @@ there, and the keys that share their place with others go to the next
 level ([Figure 7.17](07-dictionary.md#fig-7-17)). A key is then mapped to
 the number of 1s before its bit in the concatenation of the levels, which
 is a bijection of $S$ onto $\{ 0 , \ldots , n - 1 \}$, since each key has
-one bit of its own and every 1 belongs to one key. A key is alone in its
+one bit of its own and each 1 belongs to one key. A key is alone in its
 place with probability $( 1 - 1 / m_i )^{n_i - 1} \approx e^{-1/\gamma}$,
 so that
 
@@ -1746,27 +1774,27 @@ E[ n_{i+1} ] \approx n_i ( 1 - e^{-1/\gamma} ) , \qquad
 $$
 
 i.e., 3.30 bits per key for $\gamma = 2$ and 2.72 ($e$) for $\gamma = 1$,
-the least, while a key of $S$ goes through $e^{1 / \gamma}$ levels in
-expectation, 1.65 for $\gamma = 2$: a smaller $\gamma$ saves bits and
-costs levels, in the build and in the queries, and the number of levels is
+the least. A key of $S$ goes through $e^{1 / \gamma}$ levels in
+expectation, 1.65 for $\gamma = 2$; hence, a smaller $\gamma$ saves bits and
+costs levels, in the build and in the queries. Also, the number of levels is
 $O( \log n )$ with high probability.
 
 ![Figure 7.17. A `FingerprintPerfectHash` of 6 keys with $\gamma = 2$ (the sizes of the levels not rounded, for the example): the keys `b` and `c`, and `e` and `f`, collide on the level 0 of 12 bits and go to the level 1 of 8 bits, where `c` and `e` collide again and go to the level 2 of 4 bits; the bits set (in violet) give the values by their ranks in the concatenation of the levels, `a` 0, `d` 1, `f` 2, `b` 3, `c` 4, `e` 5 (in orange).](../figures/dictionary-fingerprint.svg){#fig-7-17}
 
-The build hashes each key once to a word $x$ of 64 bits, and each level
+Its build hashes each key once to a word $x$ of 64 bits, and each level
 hashes $x$ again by a folded product with a constant of its own. A level is
-two passes over its keys, the first setting in a vector $A$ the bit of each
-place and in a vector $C$ the bits of the places met twice, then
-$A \gets A \wedge \lnot C$ a word at a time, and the second keeping the
-keys whose place is in $C$ ([Algorithm 7.17](07-dictionary.md#alg-7-17)).
-The vectors of a level take $2 \gamma n_i$ bits and stay in the cache of
-level 2 for a million keys. A query computes $h_0( k )$, tests its bit
-and, if it is 1, gives its rank. The number of 1s before each block of 512
-bits is kept in 32 bits, $1 / 16$ of the bits more, and therefore a rank costs at
-most 8 counts of the bits of a word. `bits()` and `levels()` report the
-space and the depth. Two keys with the same hash of 64 bits meet at every
-level and cannot be separated, and the build then throws
-`std::runtime_error`.
+two passes over its keys. The first one sets in a vector $A$ the bit of each
+place and in a vector $C$ the bits of the places met twice, after which
+$A \gets A \wedge \lnot C$ a word at a time; the second one keeps the
+keys whose
+place is in $C$ ([Algorithm 7.17](07-dictionary.md#alg-7-17)). The vectors
+of a level take $2 \gamma n_i$ bits and stay in the cache of level 2 for a
+million keys. A query computes $h_0( k )$, tests its bit and, if it is 1,
+gives its rank. The number of 1s before each block of 512 bits is kept in
+32 bits, $1 / 16$ of the bits more, and therefore a rank costs at most 8
+counts of the bits of a word. `bits()` and `levels()` report the space and
+the depth. Two keys with the same hash of 64 bits meet at each level and
+cannot be separated, and the build then throws `std::runtime_error`.
 
 <span id="alg-7-17"></span>**Algorithm 7.17.** The construction and the
 evaluation of `FingerprintPerfectHash` ([Müller et al.
@@ -1783,34 +1811,34 @@ of the level $i$.
 2021](Z-bibliography.md#ref-pibiri2021), in the line of [Fox et al.
 1992](Z-bibliography.md#ref-fox1992) and of the compressed displacement of
 [Belazzougui et al. 2009](Z-bibliography.md#ref-belazzougui2009). A key
-with the hashes $( h , h' )$ goes to the bucket $b( h )$ of about
-$n / \lambda$ buckets, 60 % of the keys into 30 % of the buckets (the
-skewed buckets of PTHash, and hence the large buckets are placed while the
-table is still empty), and to the place
-$p = \lfloor m \, g( h' \oplus \pi_{b( h )} ) / 2^{64} \rfloor$ of a table
-of $m = \lceil n / \alpha \rceil$ places, where $g$ is a folded product and
-$\pi_b$ the pilot of the bucket, a product of the stored integer $k_b$ by
-an odd constant. The build places the buckets from the largest to the
-smallest, trying for each one the integers $k_b = 0 , 1 , 2 , \ldots$
-until all its keys fall in free places, distinct among them
-([Algorithm 7.18](07-dictionary.md#alg-7-18), [Figure 7.18](07-dictionary.md#fig-7-18)).
-The expected number of trials of a bucket of $s$ keys grows as
-$1 / ( 1 - \text{load} )^s$, which is why the larger buckets go first. The
-integers $k_b$ are stored in $\lceil \log_2 ( \max_b k_b + 1 ) \rceil$ bits
-each (the compact encoding of PTHash), and a place $p \ge n$ of a key is
-sent to one of the places below $n$ left free, by a table $F$ of the
-$m - n$ places beyond $n$. An $\alpha < 1$ makes the search of the last
-buckets much faster, at the cost of this table. The search of the last
-buckets is the bottleneck of the build: with $\alpha$ near 1 some bucket
-may find no pilot within its limit; hence, $\lambda$ should stay below
-about 7 for $\alpha = 0.99$, the defaults being $\lambda = 5$ and
-$\alpha = 0.99$. A bucket that tries $2^{24}$ pilots, or two keys with the
-same hashes, make the build draw a new seed, and 100 seeds with no success
-throw `std::runtime_error`; `buckets()`, `trials()` and `bits()` report
-the buckets, the seeds drawn and the space. The parallel and external
-construction of [Pibiri and Trani 2024](Z-bibliography.md#ref-pibiri2024)
-and the optimized bucket sizes of PHOBIC ([Hermann et al.
-2024](Z-bibliography.md#ref-hermann2024)) are not done here.
+with the hashes $( h , h' )$ goes to the bucket $b( h )$ of about $n /
+\lambda$ buckets, 60 % of the keys into 30 % of the buckets (the skewed
+buckets of PTHash, so that the large buckets are placed while the table is
+still empty). It also goes to the place $p = \lfloor m \, g( h' \oplus
+\pi_{b( h )} ) / 2^{64} \rfloor$ of a table of $m = \lceil n / \alpha
+\rceil$ places, where $g$ is a folded product and $\pi_b$ is the pilot of
+the bucket, a product of the stored integer $k_b$ by an odd constant. The
+build places the buckets from the largest to the smallest, trying for each
+one the integers $k_b = 0 , 1 , 2 , \ldots$ until all its keys fall in free
+places, distinct among them ([Algorithm 7.18](07-dictionary.md#alg-7-18),
+[Figure 7.18](07-dictionary.md#fig-7-18)). On average, the number of trials of
+a bucket of $s$ keys grows as $1 / ( 1 - \text{load} )^s$, which is why the
+larger buckets go first. The integers $k_b$ are stored in $\lceil \log_2 (
+\max_b k_b + 1 ) \rceil$ bits each (the compact encoding of PTHash), and a
+place $p \ge n$ of a key is sent to one of the places below $n$ left free,
+by a table $F$ of the $m - n$ places beyond $n$. An $\alpha < 1$ makes the
+search of the last buckets much faster, at the cost of this table. The
+search of the last buckets is the bottleneck of the build: with $\alpha$
+near 1 some bucket may find no pilot within its limit; hence, $\lambda$
+should stay below about 7 for $\alpha = 0.99$, the defaults being $\lambda
+= 5$ and $\alpha = 0.99$. A bucket that tries $2^{24}$ pilots, or two keys
+with the same hashes, make the build draw a new seed, and 100 seeds with no
+success throw `std::runtime_error`; `buckets()`, `trials()` and `bits()`
+report the buckets, the seeds drawn and the space. Both the parallel and
+external construction of [Pibiri and Trani
+2024](Z-bibliography.md#ref-pibiri2024) and the optimized bucket sizes of
+PHOBIC ([Hermann et al. 2024](Z-bibliography.md#ref-hermann2024)) are not
+done here.
 
 ![Figure 7.18. A `MinimalPerfectHash` of 6 keys in 3 buckets on $m = 8$ places ($\alpha = 0.75$): the bucket of 3 keys takes the pilot 0 and the places 2, 5, 7; the bucket of 2 keys fails with the pilot 0 on the place 5 (in violet) and takes the places 0 and 3 with the pilot 1; the bucket of one key takes 4 with the pilot 0; each row shows the places taken in its step (in orange), and the place 7, beyond $n = 6$ (in violet), is sent by $F$ to the free place 1.](../figures/dictionary-pthash.svg){#fig-7-18}
 
@@ -1824,26 +1852,28 @@ $k$, and $F$ the table of the free places below $n$.
 
 --8<-- "generated/MinimalPerfectHash-value.pseudo.md"
 
-`RecSplit` is the method of [Esposito et al. 2020](Z-bibliography.md#ref-esposito2020),
-which comes closest to the bound of [Lemma 7.14](07-dictionary.md#lem-7-14). A key goes to the bucket
+`RecSplit` is the method of [Esposito et al.
+2020](Z-bibliography.md#ref-esposito2020), which comes closest to the bound
+of [Lemma 7.14](07-dictionary.md#lem-7-14). A key goes to the bucket
 $\lfloor h_1 \lceil n / b \rceil / 2^{64} \rfloor$ of $\lceil n / b \rceil$
 buckets, $b$ keys each on average (100 by default), by its first hash
-$h_1$, and the $m$ keys of a bucket are then split recursively by their
+$h_1$. The $m$ keys of a bucket are then split recursively by their
 second hash $h_2$, so that each leaf of the splitting tree holds at most
 $\ell$ keys (the template parameter `L`, 8 by default). A node of $m$ keys
-with the seed $x$ sends a key to the place
-$\rho_x = \lfloor g_{x,d}( h_2 ) \, m / 2^{64} \rfloor$, $g_{x,d}$ a folded
-product salted by $x$ and by the depth $d$, and its children by the place:
-a leaf ($m \le \ell$) needs a bijection, the seed for which the $m$ places
-are distinct. A node of $\ell < m \le s \ell$ keys,
-$s = \max\{ 2 , \lceil 0.35 \ell + 0.5 \rceil \}$ (the lower aggregation),
-goes into parts of $\ell$ keys. A node of $s \ell < m \le t s \ell$ keys,
-$t = \lceil 0.21 \ell + 0.9 \rceil$ for $\ell \ge 7$ and 2 below (the upper
-aggregation), goes into parts of $s \ell$ keys; a larger node goes into two parts of
-$u = \lceil \lfloor m / 2 \rfloor / ( t s \ell ) \rceil \, t s \ell$ and
-$m - u$ keys ([Algorithm 7.19](07-dictionary.md#alg-7-19),
-[Figure 7.19](07-dictionary.md#fig-7-19)). The seed of a node is the first
-$x$ that gives each part its size, a geometric variable of parameter
+with the seed $x$ sends a key to the place $\rho_x = \lfloor g_{x,d}( h_2 )
+\, m / 2^{64} \rfloor$, $g_{x,d}$ a folded product salted by $x$ and by the
+depth $d$, and its children by the place.
+A leaf ($m \le \ell$) needs a
+bijection, the seed for which the $m$ places are distinct. A node of $\ell
+< m \le s \ell$ keys, $s = \max\{ 2 , \lceil 0.35 \ell + 0.5 \rceil \}$
+(the lower aggregation), goes into parts of $\ell$ keys. A node of $s \ell
+< m \le t s \ell$ keys, $t = \lceil 0.21 \ell + 0.9 \rceil$ for $\ell \ge
+7$ and 2 below (the upper aggregation), goes into parts of $s \ell$ keys; a
+larger node goes into two parts of $u = \lceil \lfloor m / 2 \rfloor / ( t
+s \ell ) \rceil \, t s \ell$ and $m - u$ keys ([Algorithm
+7.19](07-dictionary.md#alg-7-19), [Figure
+7.19](07-dictionary.md#fig-7-19)). A node takes as seed the first $x$ that
+gives each part its size, a geometric variable of parameter
 
 $$
 p = \frac{ m! }{ k_0! \cdots k_{s-1}! } \prod_{i}
@@ -1870,54 +1900,55 @@ $\square$
 The seeds are written in preorder by a code of [Golomb
 1966](Z-bibliography.md#ref-golomb1966) and Rice, whose parameter for a
 geometric source of parameter $p$ is the optimal one of [Kiely
-2004](Z-bibliography.md#ref-kiely2004),
-$r( p ) = \max\{ 0 , \lceil \log_2 ( - \log_2 \varphi / \log_2 ( 1 - p ) )
-\rceil \}$ with $\varphi$ the golden ratio, a function of $m$ alone. The
-code of a seed then takes $c + \log_2 ( 1 / p )$ bits in expectation with
-$1.56 \le c < 2.56$, and by [Lemma 7.16](07-dictionary.md#lem-7-16) a tree of $m$ keys with $t$ nodes
-takes $c t + m \log_2 e + O( \log m )$ bits, the bound of [Lemma 7.14](07-dictionary.md#lem-7-14) plus
-the price of the nodes. The $r( p )$ low bits of all the seeds of a bucket
-come first, then all their unary parts. The tables `RecSplitTables`,
-computed once for each $\ell$ and the sizes $m < 4096$, give $r$, the low
-bits of a subtree and its number of nodes, and hence a subtree is skipped by
-moving a pointer on the low bits and by a select on the unary parts
-(`recSplitSelect()`, one PDEP and one count of the trailing zeros where the
-machine has BMI2). The numbers of keys before each bucket and the places
-of their codes are two sequences of Elias and Fano ([Elias
-1974](Z-bibliography.md#ref-elias1974); `RecSplitSequence`, with an
-inventory of the place of every 64th 1 of its high bits and `access()`,
-`pair()`, `select()`, `low()` and `sizeInBits()`; cf.
-[Chapter 22](22-succinct.md#ch-22)), less their linear estimates, so that
-a query costs two selects of one or two words each.
+2004](Z-bibliography.md#ref-kiely2004), $r( p ) = \max\{ 0 , \lceil \log_2
+( - \log_2 \varphi / \log_2 ( 1 - p ) ) \rceil \}$ with $\varphi$ the
+golden ratio, a function of $m$ alone. A code of a seed then takes $c +
+\log_2 ( 1 / p )$ bits in expectation with $1.56 \le c < 2.56$, and by
+[Lemma 7.16](07-dictionary.md#lem-7-16) a tree of $m$ keys with $t$ nodes
+takes $c t + m \log_2 e + O( \log m )$ bits, the bound of [Lemma
+7.14](07-dictionary.md#lem-7-14) plus the price of the nodes. The $r( p )$
+low bits of all the seeds of a bucket come first, then all their unary
+parts. The tables `RecSplitTables`, computed once for each $\ell$ and the
+sizes $m < 4096$, give $r$, the low bits of a subtree and its number of
+nodes. Hence, a subtree is skipped by moving a pointer on the low bits and
+by a select on the unary parts (`recSplitSelect()`, one PDEP and one count
+of the trailing zeros where the machine has BMI2). The numbers of keys
+before each bucket and the places of their codes are two sequences of Elias
+and Fano ([Elias 1974](Z-bibliography.md#ref-elias1974); cf. [Chapter
+22](22-succinct.md#ch-22)), less their linear estimates, so that a query
+costs two selects of one or two words each. They are of the type
+`RecSplitSequence`, with an inventory of the place of every 64th 1 of its
+high bits and `access()`, `pair()`, `select()`, `low()` and `sizeInBits()`.
 
 The search of a leaf uses the rotation fitting of [Bez et al.
-2023](Z-bibliography.md#ref-bez2023): the keys of the leaf go to two sets
+2023](Z-bibliography.md#ref-bez2023). The keys of the leaf go to two sets
 $A$ and $B$ by the highest bit of $h_2$, and for each $x$ the places of $A$
-and of $B$ are two masks of $m$ bits. The leaf takes the seed $x m + r$
-for the first rotation $r$ of the mask of $B$ that fills the holes of the
-mask of $A$, a key of $B$ going to $( \rho_x + r ) \bmod m$; hence, each
-$x$ tries $m$ rotations and the leaf evaluates about $m$ times fewer
-hashes for the same expected seed. The leaves of $\ell \le 24$ keys fit in
-a word, and the search grows as $e^\ell$, and therefore $1 \le L \le 24$ (a
-build at $\ell = 16$ is already slow) and the build takes
-$O( n \, e^\ell / ( \ell \sqrt{\ell} ) )$ expected time. An evaluation
-computes the two hashes and the bucket, reads the values of the two
-sequences, and descends the $O( \log ( b / \ell ) )$ levels of the tree,
-each a read of the low bits, a scan of the unary part and, to skip the
-earlier siblings, a select in a word or a few. Two keys of a bucket with
-the same $h_2$, or a bucket of 4096 keys or more, make the build draw a new
-seed, and 100 seeds with no success throw `std::runtime_error`. `bits()`,
-`buckets()` and `trials()` report the space, the buckets and the seeds
-drawn. Consensus-RecSplit of [Lehmann et al.
-2025](Z-bibliography.md#ref-lehmann2025), which searches the seeds of
-consecutive nodes together, takes $( 1 + \varepsilon ) n \log_2 e$ bits in
-$O( n / \varepsilon )$ expected time, the space frontier of this family.
+and of $B$ are two masks of $m$ bits. A leaf takes the seed $x m + r$ for
+the first rotation $r$ of the mask of $B$ that fills the holes of the mask
+of $A$, a key of $B$ going to $( \rho_x + r ) \bmod m$. Each $x$ thus tries
+$m$ rotations and the leaf evaluates about $m$ times fewer hashes for the
+same expected seed. The leaves of $\ell \le 24$ keys fit in a word, and the
+search grows as $e^\ell$, and therefore $1 \le L \le 24$ (a build at $\ell
+= 16$ is already slow) and the build takes $O( n \, e^\ell / ( \ell
+\sqrt{\ell} ) )$ expected time. An evaluation computes the two hashes and
+the bucket, reads the values of the two sequences, and descends the $O(
+\log ( b / \ell ) )$ levels of the tree. Each level costs a read of the low
+bits, a scan of the unary part and, to skip the earlier siblings, a select
+in a word or a few. Two keys of a bucket with the same $h_2$, or a bucket
+of 4096 keys or more, make the build draw a new seed, and 100 seeds with no
+success throw `std::runtime_error`. `bits()`, `buckets()` and `trials()`
+report the space, the buckets and the seeds drawn. Consensus-RecSplit of
+[Lehmann et al. 2025](Z-bibliography.md#ref-lehmann2025), which searches
+the seeds of consecutive nodes together, takes $( 1 + \varepsilon ) n
+\log_2 e$ bits in $O( n / \varepsilon )$ expected time, the space frontier
+of this family.
 
 <span id="alg-7-19"></span>**Algorithm 7.19.** The construction and the
-evaluation of `RecSplit` ([Esposito et al. 2020](Z-bibliography.md#ref-esposito2020)):
-the recursive splitting of a node of $m$ keys at the depth $d$, its seeds
-written in preorder, and the descent of the tree of the bucket of $k$, the
-earlier siblings skipped by the tables of the sizes.
+evaluation of `RecSplit` ([Esposito et al.
+2020](Z-bibliography.md#ref-esposito2020)): the recursive splitting of a
+node of $m$ keys at the depth $d$, its seeds written in preorder, and the
+descent of the tree of the bucket of $k$, the earlier siblings skipped by
+the tables of the sizes.
 
 --8<-- "generated/RecSplit-split.pseudo.md"
 
@@ -1925,20 +1956,20 @@ earlier siblings skipped by the tables of the sizes.
 
 ## 7.9 Skip lists {#sec-7-9}
 
-The skip list of [Pugh 1990](Z-bibliography.md#ref-pugh1990) is a sorted
-list of the keys with express lanes, whose balance comes from random
-levels rather than from rotations: it realizes the SORTED SET with every
-operation in $O( \log n )$ expected time, and, with the widths of the
-links, the search by rank ([Morin 2013, chapter 4](Z-bibliography.md#ref-morin-cpp)).
-The expectations of this section are over the random levels, which the
-code draws from a `SplitMix64` seeded at the construction, and hence a run is
+A skip list, after [Pugh 1990](Z-bibliography.md#ref-pugh1990), is a sorted
+list of the keys with express lanes, whose balance comes from random levels
+rather than from rotations. It realizes the SORTED SET with each operation
+in $O( \log n )$ expected time, and, with the widths of the links, the
+search by rank ([Morin 2013, chapter 4](Z-bibliography.md#ref-morin-cpp)).
+All the expectations of this section are over the random levels, which the code
+draws from a `SplitMix64` seeded at the construction, and hence a run is
 reproducible.
 
 ### 7.9.1 The basic structure {#sec-7-9-1}
 
 A skip list is a sequence of sorted singly linked lists
 $L_0 , L_1 , \ldots , L_{h}$, where $L_0$ holds the $n$ keys and each
-$L_r$ holds a subset of the keys of $L_{r-1}$: $L_r$ is obtained by tossing
+$L_r$ holds a subset of the keys of $L_{r-1}$. Each $L_r$ is obtained by tossing
 a coin for each key of $L_{r-1}$ and keeping the key if the coin comes up
 heads, until a list comes out empty. A key is thus in the lists
 $L_0 , \ldots , L_{\ell - 1}$ for a number of levels $\ell$ with
@@ -1953,14 +1984,14 @@ the first $L$ (`levels()`) are in use. A step of a search thus reads one
 line and tests no special case; Morin's node has $\ell + 1$ links where
 ours has $\ell$ ([Figure 7.20](07-dictionary.md#fig-7-20)).
 
-The *search path* of a key $x$ goes from the head on the top level: at a
+The *search path* of a key $x$ goes from the head on the top level. At a
 node $u$ of the level $r$, it goes right if the next key on that level is
 smaller than $x$, and down to the level $r - 1$ otherwise, until it reaches
-the last node before $x$ on the level 0. The nodes where the path goes down
+the last node before $x$ on the level 0. Those nodes where the path goes down
 are kept in a vector $U$, $U[ r ]$ the last node before $x$ on the level
 $r$ (the head where there is none), which an insertion and a removal use.
-The next result, proved in [§7.9.3](07-dictionary.md#sec-7-9-3),
-shows that the path is short.
+The next result, proved in [§7.9.3](07-dictionary.md#sec-7-9-3), shows that
+the path is short.
 
 <span id="lem-7-17"></span>**Lemma 7.17.** *([Morin 2013, Lemma
 4.1](Z-bibliography.md#ref-morin-cpp).) The expected length of the search
@@ -1978,13 +2009,13 @@ $2 \log_2 n + O( 1 ) = O( \log n )$.*
 passing $k$, and returns the node after the last one met on the level 0
 together with $U$ ([Algorithm 7.20](07-dictionary.md#alg-7-20)). `lookup()`
 and `contains()` compare that node with $k$, and `lowerBound()` returns it.
-The search of Morin compares $k$ again with the node that stopped it on the
-level above whenever the link it drops to on the next level leads to that
-same node, i.e., when $u.\mathit{next}[ r ] = u.\mathit{next}[ r - 1 ]$
-([Morin 2013, exercise 4.8](Z-bibliography.md#ref-morin-cpp)). Ours keeps
-in $s$ the last node found not smaller than $k$, and drops a level with no
-comparison when the next link leads to it, so that $k$ is compared once
-with each node.
+In contrast, the search of Morin compares $k$ again with the node that
+stopped it on the level above whenever the link it drops to on the next
+level leads to that same node, i.e., when $u.\mathit{next}[ r ] =
+u.\mathit{next}[ r - 1 ]$ ([Morin 2013, exercise
+4.8](Z-bibliography.md#ref-morin-cpp)). Ours keeps in $s$ the last node
+found not smaller than $k$, and drops a level with no comparison when the
+next link leads to it, so that $k$ is compared once with each node.
 
 <span id="alg-7-20"></span>**Algorithm 7.20.** The search of `SkipList`
 ([Pugh 1990](Z-bibliography.md#ref-pugh1990), with [Morin 2013, exercise
@@ -2008,21 +2039,22 @@ comparison, moves to 5, and stops before 6.
 
 ![Figure 7.21. The searches of 2.5 and of 5.5 in the `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) ([Morin 2013, exercise 4.1](Z-bibliography.md#ref-morin-cpp)): the boxes where they stay and the links they follow (in violet); the first ends before 3 with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, the second before 6 with $U = [ 5 , 5 , 4 , 4 , 4 , 4 ]$.](../figures/dictionary-skiplist-paths.svg){#fig-7-21}
 
-The number of levels of a new node is drawn as the number of trailing 1s
-of a random word plus one, i.e., $\ell$ with probability $2^{-\ell}$, cut
-at `kMax` = 32. The cut changes nothing unless the list holds far more than
+The number of levels of a new node is drawn as the number of trailing 1s of
+a random word plus one, i.e., $\ell$ with probability $2^{-\ell}$, cut at
+`kMax` = 32. This cut changes nothing unless the list holds far more than
 $2^{32}$ keys (Morin's code counts the trailing 1s of a word of 32 bits,
 with the same limit). An insertion of a new key draws $\ell$, extends the
 levels in use if $\ell > L$ (the new levels start at the head), and splices
-the node after $U[ l ]$ on each of its levels. An insertion of a key already
-there replaces its value ([Algorithm 7.21](07-dictionary.md#alg-7-21)).
-A removal unlinks the node from each of its levels after `before(k)`, i.e.,
-after $U[ l ]$, and drops the levels left empty. The vector $U$ is the
-*stack* of Morin, and [Figure 7.22](07-dictionary.md#fig-7-22) shows the
-insertion of 0.5 with 2 levels and then of 3.5 with 3 levels ([Morin 2013,
-exercise 4.2](Z-bibliography.md#ref-morin-cpp)), [Figure 7.23](07-dictionary.md#fig-7-23)
-the removal of 1 and then of 3 ([Morin 2013, exercise
-4.3](Z-bibliography.md#ref-morin-cpp)).
+the node after $U[ l ]$ on each of its levels. An insertion of a key
+already there replaces its value ([Algorithm
+7.21](07-dictionary.md#alg-7-21)). A removal unlinks the node from each of
+its levels after `before(k)`, i.e., after $U[ l ]$, and drops the levels
+left empty. The vector $U$ is the *stack* of Morin, and [Figure
+7.22](07-dictionary.md#fig-7-22) shows the insertion of 0.5 with 2 levels
+and then of 3.5 with 3 levels ([Morin 2013, exercise
+4.2](Z-bibliography.md#ref-morin-cpp)), [Figure
+7.23](07-dictionary.md#fig-7-23) the removal of 1 and then of 3 ([Morin
+2013, exercise 4.3](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="alg-7-21"></span>**Algorithm 7.21.** The insertion of
 `SkipList` ([Pugh 1990](Z-bibliography.md#ref-pugh1990)), the level of a
@@ -2042,14 +2074,15 @@ new node drawn as the number of trailing 1s of a random word plus one.
 
 ![Figure 7.23. The `SkipList` of [Figure 7.20](07-dictionary.md#fig-7-20) after `remove(1)`, which redirects the link of 0 on the level 0 to 2, and then after `remove(3)`, with $U = [ 2 , 2 , 2 , 2 , \mathit{head} , \mathit{head} ]$, which redirects the links of 2 on the levels 0, 1 and 2 to 4 ([Morin 2013, exercise 4.3](Z-bibliography.md#ref-morin-cpp)); the links changed and their nodes in violet.](../figures/dictionary-skiplist-remove.svg){#fig-7-23}
 
-The contracts check that `insert()` leaves the key there and `remove()`
+Its contracts check that `insert()` leaves the key there and `remove()`
 takes it away, and the invariant, that each level is sorted and a sublist
 of the level below, in $O( n \log n )$ time at the contract level 3.
 `forEach()` and the forward iterators visit the pairs along the level 0 in
 increasing order, and `size()`, `empty()` and `levels()` have the obvious
 meaning; the list cannot be copied, since its nodes are linked by pointers,
-but it can be moved. Each step of a search, an insertion or a removal
-takes constant time, and [Lemma 7.17](07-dictionary.md#lem-7-17) gives the theorem of the book.
+but it can be moved. Each step of a search, an insertion or a removal takes
+constant time, and [Lemma 7.17](07-dictionary.md#lem-7-17) gives the
+theorem of the book.
 
 <span id="thm-7-5"></span>**Theorem 7.5.** *([Morin 2013, Theorem
 4.1](Z-bibliography.md#ref-morin-cpp).) `SkipList` realizes the SSET (and
@@ -2059,8 +2092,8 @@ the DICTIONARY), with `insert()`, `remove()`, `lookup()` and
 An insertion or a removal also changes few links ([Morin 2013, exercise
 4.6](Z-bibliography.md#ref-morin-cpp)).
 
-<span id="lem-7-18"></span>**Lemma 7.18.** *An insertion or a removal of
-a key changes 4 links in expectation, 2 for a removal.*
+<span id="lem-7-18"></span>**Lemma 7.18.** *An insertion of a key changes
+4 links in expectation, and a removal 2.*
 
 *Proof.* An insertion of a node of $\ell$ levels writes its $\ell$ links
 and the $\ell$ links into it, those of $U[ 0 ] , \ldots , U[ \ell - 1 ]$; a
@@ -2070,9 +2103,10 @@ $\square$
 
 ### 7.9.3 The analysis {#sec-7-9-3}
 
-We now prove [Lemma 7.17](07-dictionary.md#lem-7-17), and bound the size and the height of a skip list,
-following [Morin 2013, §4.4](Z-bibliography.md#ref-morin-cpp); the proofs
-rest on a simple fact about the tosses of a coin.
+We now prove [Lemma 7.17](07-dictionary.md#lem-7-17), and bound the size
+and the height of a skip list, following [Morin 2013,
+§4.4](Z-bibliography.md#ref-morin-cpp); the proofs rest on a simple fact
+about the tosses of a coin.
 
 <span id="lem-7-19"></span>**Lemma 7.19.** *Let $T$ be the number of tosses
 of a fair coin up to and including the first heads. Then $E[ T ] = 2$.*
@@ -2094,7 +2128,7 @@ $n / 2^r$ keys in expectation and all the lists $\sum_{r \ge 0} n / 2^r
 $h = \sum_{r \ge 1} I_r$, and $E[ I_r ] \le \min\{ 1 , E[ | L_r | ] \}
 = \min\{ 1 , n / 2^r \}$, so that
 $E[ h ] \le \lfloor \log_2 n \rfloor + \sum_{r > \lfloor \log_2 n \rfloor}
-n / 2^r \le \log_2 n + 2$. The head occurs once per level, $h + 1$ times.
+n / 2^r \le \log_2 n + 2$. Finally, the head occurs once per level, $h + 1$ times.
 $\square$
 
 *Proof of [Lemma 7.17](07-dictionary.md#lem-7-17).* Consider the search path backwards, from the last
@@ -2102,7 +2136,7 @@ node before $x$ on the level 0: at each node it goes up if the node has a
 further level, and left otherwise, and this *reverse search path* is the
 search path reversed. On a level $r$, the steps to the left before going up
 are those of a coin tossed until it comes up heads (the node has a further
-level), at most $E[ T ] - 1 = 1$ in expectation by [Lemma 7.19](07-dictionary.md#lem-7-19), a bound that
+level), at most $E[ T ] - 1 = 1$ in expectation by [Lemma 7.19](07-dictionary.md#lem-7-19). The bound
 also holds when the head stops the path earlier. Let $S_r$ be the number of
 the steps to the right of the search on the level $r$, with
 $E[ S_r ] \le \min\{ 1 , E[ | L_r | ] \} = \min\{ 1 , n / 2^r \}$, since
@@ -2117,7 +2151,7 @@ $\square$
 $O( n )$ expected space, and the expected length of the search path of any
 key is at most $2 \log_2 n + O( 1 )$.*
 
-The analysis carries over to a promotion with any probability $p$,
+This analysis carries over to a promotion with any probability $p$,
 $0 < p < 1$, instead of $1 / 2$ ([Morin 2013, exercise
 4.7](Z-bibliography.md#ref-morin-cpp)).
 
@@ -2130,8 +2164,7 @@ $\frac{1}{p} \log_{1/p} n + O( 1 )$, least for $p = 1 / e$.*
 *Proof.* A key reaches the level $j$ with probability $p^j$; hence, the
 level $j$ holds $n p^j$ keys in expectation, below 1 above
 $\log_{1/p} n$, and the nodes are $\sum_j n p^j = n / ( 1 - p )$. Read
-backwards, a search path goes up at each node with probability $p$ and left
-otherwise, and therefore it makes $1 / p$ steps per level in expectation (Lemma
+backwards, a search path goes up at each node with probability $p$ and left otherwise. It thus makes $1 / p$ steps per level in expectation (Lemma
 7.19 with a biased coin) over $\log_{1/p} n$ levels, and the levels above
 add $O( 1 )$, as in the proofs above. The factor
 $\frac{1}{p \ln( 1 / p )}$ of $\ln n$ in $\frac{1}{p} \log_{1/p} n$ has
@@ -2139,11 +2172,12 @@ derivative zero where $\ln( 1 / p ) = 1$, i.e., at $p = 1 / e$, where the
 path is $e \ln n \approx 1.88 \log_2 n$ steps, against $2 \log_2 n$ for
 $p = 1 / 2$. $\square$
 
-The gain of $p = 1 / e$ is rather small, and the cost of drawing a level with
-probability $1 / e$, instead of counting the trailing 1s of a word, does
-not repay it in our view; the code keeps $p = 1 / 2$. The saving of the
-comparisons of [Algorithm 7.20](07-dictionary.md#alg-7-20) can be counted
-in the same model ([Morin 2013, exercise 4.8](Z-bibliography.md#ref-morin-cpp)).
+Yet, the gain of $p = 1 / e$ is rather small, and the cost of drawing a
+level with probability $1 / e$, instead of counting the trailing 1s of a
+word, does not repay it in our view; the code keeps $p = 1 / 2$. The saving
+of the comparisons of [Algorithm 7.20](07-dictionary.md#alg-7-20) can be
+counted in the same model ([Morin 2013, exercise
+4.8](Z-bibliography.md#ref-morin-cpp)).
 
 <span id="lem-7-22"></span>**Lemma 7.22.** *With the promotion probability
 $p$, the search of [Algorithm 7.20](07-dictionary.md#alg-7-20) compares the
@@ -2156,14 +2190,14 @@ and once per level to stop, about $\frac{1}{p}$ times per level by the
 proof of [Lemma 7.21](07-dictionary.md#lem-7-21). Ours skips the comparison that stops the level $l$
 when the successor on the level $l$ of the node where the search stands is
 the node $s$ that stopped the level $l + 1$, i.e., when that successor has a
-further level, which has probability $p$ independently of the nodes before
-the key, which the search has examined. Hence it saves $p$ comparisons per
+further level. This happens with probability $p$, independently of the nodes before
+the key that the search has examined. Hence it saves $p$ comparisons per
 level in expectation, $p \log_{1/p} n + O( 1 )$ in all. $\square$
 
 In the test `ods_trees.ods-ex4.8.no-redundant-comparisons` we count the
 comparisons of the searches of a list of 3000 keys and check that no node
 is compared twice and that their mean lies between $1.2 \log_2 n$ and
-$1.8 \log_2 n + 2$. The saving counts when comparing a key costs more than
+$1.8 \log_2 n + 2$. This saving counts when comparing a key costs more than
 a word, e.g., for the strings.
 
 ### 7.9.4 Finger search {#sec-7-9-4}
@@ -2172,9 +2206,9 @@ A *finger* is the sequence of the nodes where a search path goes down, $U$
 above; it points out the path to a node of $L_0$ ([Morin 2013, exercise
 4.10](Z-bibliography.md#ref-morin-cpp)). `fingerLookup(k)` keeps the finger
 $F$ of the previous `fingerLookup()`, $F[ l ]$ the last node before the
-previous key on the level $l$ (the head counting as $-\infty$): it climbs
+previous key on the level $l$ (the head counting as $-\infty$). It climbs
 the finger from the bottom while the node of the level is not before $k$
-or its successor is, and goes down from the first one that brackets $k$,
+or its successor is, and then goes down from the first one that brackets $k$,
 updating $F$ ([Algorithm 7.22](07-dictionary.md#alg-7-22)). The finger
 stays valid along the levels above the one the search starts from, whose
 nodes still bracket the new key, and an insertion or a removal brings it
@@ -2200,7 +2234,7 @@ $j$, fails to bracket $k$ only if some node of the level $j$ has its key in
 $[ x' , k )$. At most $r + 1$ keys lie there, each on the level $j$ with
 probability $2^{-j}$, and hence the climb passes the level $j$ with
 probability at most $( r + 1 ) 2^{-j}$, and the level $l$ where it stops is
-$\log_2 ( r + 1 ) + O( 1 )$ in expectation. The descent from $F[ l ]$ goes
+$\log_2 ( r + 1 ) + O( 1 )$ in expectation. Then the descent from $F[ l ]$ goes
 right only over keys before $k$ on each level $j \le l$. Read backwards
 from its end, it goes up at each node with probability $1 / 2$ and left
 otherwise, at most 2 steps per level in expectation by [Lemma 7.19](07-dictionary.md#lem-7-19), i.e.,
@@ -2215,23 +2249,25 @@ in between.
 
 The *width* of a link of the level $r$ is the number of links of $L_0$
 below it, i.e., the difference of the ranks of its two ends, a link of the
-level 0 having width 1 ([Morin 2013, §4.3](Z-bibliography.md#ref-morin-cpp)
-calls it the length of the edge; [Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
-If a search stands at a node of rank $j$ and follows a link of width $w$,
-it reaches the node of rank $j + w$. A search by key that sums the widths
-of the links it follows thus knows the rank of the node where it stands,
-and a search by rank goes along a level while the widths summed stay below
-the rank. `IndexedSkipList` is the skip list of Pugh whose links carry
-their widths, an SSET that also reaches a key by its rank (`select(i)`, the
-`get(i)` of [Morin 2013, exercise 4.9](Z-bibliography.md#ref-morin-cpp))
-and gives the rank of a key (`rank(k)`, the number of keys smaller than
-$k$), both in $O( \log n )$ expected time. The ranks are shifted by one,
-the head at 0 and the nil at $n + 1$; hence, the widths of each level sum
-to $n + 1$, the invariant that its contracts check
-([Figure 7.24](07-dictionary.md#fig-7-24), [Algorithm 7.23](07-dictionary.md#alg-7-23)).
-Morin gives no code for it, and `SkipListSequence` of
-[Chapter 2](02-sequence.md#ch-2) is his `SkiplistList`, which uses the
-same widths for a sequence searched by index.
+level 0 having width 1 ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b);
+[Morin 2013, §4.3](Z-bibliography.md#ref-morin-cpp) calls it the length of
+the edge). If a search stands at a node of rank $j$ and follows a link of
+width $w$, it reaches the node of rank $j + w$. A search by key that sums
+the widths of the links it follows thus knows the rank of the node where it
+stands, and a search by rank goes along a level while the widths summed
+stay below the rank. `IndexedSkipList` is the skip list of Pugh whose links
+carry their widths. It is an SSET that also reaches a key by its rank
+(`select(i)`, the `get(i)` of [Morin 2013, exercise
+4.9](Z-bibliography.md#ref-morin-cpp)) and gives the rank of a key
+(`rank(k)`, the number of keys smaller than $k$), both in $O( \log n )$
+expected time; `forEach(f)` visits the pairs by increasing keys. The ranks
+are shifted by one, the head at 0 and the nil at $n + 1$; hence, the widths
+of each level sum to $n + 1$, the invariant that its contracts check
+([Figure 7.24](07-dictionary.md#fig-7-24), [Algorithm
+7.23](07-dictionary.md#alg-7-23)). Morin gives no code for it, and
+`SkipListSequence` of [Chapter 2](02-sequence.md#ch-2) is his
+`SkiplistList`, which uses the same widths for a sequence searched by
+index.
 
 ![Figure 7.24. The `IndexedSkipList` of the keys 0 to 6 of [Figure 7.20](07-dictionary.md#fig-7-20) with the width of each link (the lengths of [Morin 2013, Figure 4.5](Z-bibliography.md#ref-morin-cpp), and the links to the nil), each level summing to $n + 1 = 8$, and `select(3)` (in violet): it moves from the head to 2 on the level 3 ($j = 3$) and from 2 to 3 on the level 2 ($j = 4$), and returns the key 3.](../figures/dictionary-skiplist-widths.svg){#fig-7-24}
 
@@ -2284,54 +2320,55 @@ $r[ l ] + w + 1$, with width $r[ l ] + w + 1 - i$. On a level above $y$,
 the link of $U[ l ]$ passes over $y$ and its end moves up by one rank, so
 that its width grows by 1. No other link has an end before $y$ and the
 other after it on its level, and the widths of the other links do not
-change. The removal is the same computation backwards; the links of the
+change. A removal is the same computation backwards; the links of the
 head of the levels not in use pass over each key and grow and shrink with
 $n$. $\square$
 
 [Figure 7.25](07-dictionary.md#fig-7-25) applies the two operations to the
-list of [Figure 7.24](07-dictionary.md#fig-7-24): the removal of the key of
-rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin-cpp), his
-`remove(2)`) and the insertion at the rank 3 of a node of 5 levels ([Morin
-2013, exercise 4.5](Z-bibliography.md#ref-morin-cpp), his `add(3,x)` with
-a height of 4, the splice of his Figures 4.6 and 4.7), which in
-`IndexedSkipList` is the insertion of a key between 2 and 3, here 2.5;
-`SkipListSequence` makes the same changes by index. It also has
-`truncate(i)` and `absorb(l)` ([Morin 2013, exercises 4.11 and
-4.12](Z-bibliography.md#ref-morin-cpp)), described in
-[Chapter 2](02-sequence.md#ch-2) with the theorem of the `SkiplistList`
-([Morin 2013, Theorem 4.2](Z-bibliography.md#ref-morin-cpp)).
+list of [Figure 7.24](07-dictionary.md#fig-7-24), i.e., the removal of the
+key of rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin-cpp),
+his `remove(2)`) and the insertion at the rank 3 of a node of 5 levels
+([Morin 2013, exercise 4.5](Z-bibliography.md#ref-morin-cpp), his
+`add(3,x)` with a height of 4, the splice of his Figures 4.6 and 4.7). In
+`IndexedSkipList` the latter is the insertion of a key between 2 and 3,
+here 2.5, and `SkipListSequence` makes the same changes by index. It also
+has `truncate(i)` and `absorb(l)` ([Morin 2013, exercises 4.11 and
+4.12](Z-bibliography.md#ref-morin-cpp)), described in [Chapter
+2](02-sequence.md#ch-2) with the theorem of the `SkiplistList` ([Morin
+2013, Theorem 4.2](Z-bibliography.md#ref-morin-cpp)).
 
 ![Figure 7.25. The widths of the `IndexedSkipList` of [Figure 7.24](07-dictionary.md#fig-7-24) after the removal of the key of rank 2 ([Morin 2013, exercise 4.4](Z-bibliography.md#ref-morin-cpp)) and after the insertion of the key 2.5 at the rank 3 with $\ell = 5$ ([Morin 2013, exercise 4.5](Z-bibliography.md#ref-morin-cpp)): the new node in orange, the links whose width or end changed in violet.](../figures/dictionary-skiplist-rank.svg){#fig-7-25}
 
 ### 7.9.6 Applications and the comparison with the trees {#sec-7-9-6}
 
-Every substring of a text is a prefix of one of its suffixes, so that an
+Each substring of a text is a prefix of one of its suffixes. Hence, an
 SSET of the suffixes, each a view of the text from its first character
 (i.e., an integer), finds a substring $q$ as the first suffix not smaller
 than $q$, when $q$ is a prefix of it ([Morin 2013, exercise
-4.14](Z-bibliography.md#ref-morin-cpp)). Each keystroke costs
-$O( | q | \log n )$ expected time, the comparisons of a search being of
-$| q |$ characters at most, and the test
-`ods_trees.ods-ex4.14.substring-search` runs such a search after each
-character typed. A suffix array ([Manber and Myers
-1993](Z-bibliography.md#ref-manber1993); [§15.5](15-string.md#sec-15-5))
-holds the same suffixes in $n$ words with no links, while the SSET allows
-changes of the text. The space-efficient SSET of [Morin 2013, exercise
-4.13](Z-bibliography.md#ref-morin-cpp), which stores the keys in blocks of
-a space-efficient list and the blocks in a skip list, is
-`SpaceEfficientSortedSet` of `ADS/set` ([Chapter 10](10-set.md#ch-10)).
+4.14](Z-bibliography.md#ref-morin-cpp)). Each keystroke costs $O( | q |
+\log n )$ expected time, the comparisons of a search being of $| q |$
+characters at most, and the test `ods_trees.ods-ex4.14.substring-search`
+runs such a search after each character typed. A suffix array ([Manber and
+Myers 1993](Z-bibliography.md#ref-manber1993);
+[§15.5](15-string.md#sec-15-5)) holds the same suffixes in $n$ words with
+no links, while the SSET allows changes of the text. A space-efficient
+SSET of [Morin 2013, exercise 4.13](Z-bibliography.md#ref-morin-cpp), which
+stores the keys in blocks of a space-efficient list and the blocks in a
+skip list, is `SpaceEfficientSortedSet` of `ADS/set` ([Chapter
+10](10-set.md#ch-10)).
 
 A skip list whose links point only right on each level, and down from each
 node to the same node on the level below, is a binary tree once the right
 links into a node below its top level are dropped (that node is reached
-from above): the right link and the down link are the two children of a
+from above). The right link and the down link are the two children of a
 pair (node, level), and the search follows a path of it as in a binary
 search tree ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp),
-[Figure 7.26](07-dictionary.md#fig-7-26); cf. [Chapter 8](08-tree.md#ch-8)).
-It uses its links better, however: a binary search tree of $n$ nodes has
-$2 n$ links of which $n + 1$ are nil, while a skip list has $2 n$ links in
-expectation ([Lemma 7.20](07-dictionary.md#lem-7-20)) of which only those at the end of each level,
-$O( \log n )$, are nil.
+[Figure 7.26](07-dictionary.md#fig-7-26); cf. [Chapter
+8](08-tree.md#ch-8)). It uses its links better, however: a binary search
+tree of $n$ nodes has $2 n$ links of which $n + 1$ are nil, while a skip
+list has $2 n$ links in expectation ([Lemma
+7.20](07-dictionary.md#lem-7-20)) of which only those at the end of each
+level, $O( \log n )$, are nil.
 
 ![Figure 7.26. A skip list of the keys 1 to 4 with 1, 3, 1, 2 levels, the links that enter a node below its top level drawn faint, and the binary tree of the pairs (node, level) that the other links make ([Morin 2013, exercise 4.15](Z-bibliography.md#ref-morin-cpp)): the down link is the left child, the kept right link the right child.](../figures/dictionary-skiplist-tree.svg){#fig-7-26}
 
@@ -2340,14 +2377,14 @@ $O( \log n )$, are nil.
 A *trie* ([Fredkin 1960](Z-bibliography.md#ref-fredkin1960)) stands for a
 set of strings by a tree whose node at depth $d$ is a prefix of $d$
 characters, the children of a node indexed by the next character and the
-nodes that end a key marked: a search reads one node per character, in time
-that depends on the length of the key and not on the number of the keys,
-and the keys with a given prefix are the marked nodes below the node of the
-prefix, in lexicographic order ([Knuth 1998, §6.3](Z-bibliography.md#ref-knuth1998v3)).
-The headers of this section go from the trie of the textbooks to the
-compact, the blind, the adaptive and the succinct tries; the search by
-prefix on sorted arrays and the front coding are in
-[§15.6](15-string.md#sec-15-6).
+nodes that end a key marked. A search reads one node per character, in time
+that depends on the length of the key and not on the number of the keys;
+also, the keys with a given prefix are the marked nodes below the node of
+the prefix, in lexicographic order ([Knuth 1998,
+§6.3](Z-bibliography.md#ref-knuth1998v3)). Headers of this section go
+from the trie of the textbooks to the compact, the blind, the adaptive and
+the succinct tries; the search by prefix on sorted arrays and the front
+coding are in [§15.6](15-string.md#sec-15-6).
 
 ### 7.10.1 The trie and the compact trie {#sec-7-10-1}
 
@@ -2373,17 +2410,18 @@ shared with another key.
 
 `RadixTree` is the compact trie (the Patricia of [Morrison
 1968](Z-bibliography.md#ref-morrison1968), on characters rather than on
-bits): each chain of nodes with a single child and no mark is merged into
-one edge labeled by a string, the children of a node indexed by the first
-characters of their labels, which are distinct. An insertion splits an
-edge where the new key departs from its label, and a removal merges back a
-node left with a single child and no value (`compress()`); hence, the
+bits). Each chain of nodes with a single child and no mark is merged into
+one edge labeled by a string, and the children of a node are indexed by the
+first characters of their labels, which are distinct. An insertion splits
+an edge where the new key departs from its label, and a removal merges back
+a node left with a single child and no value (`compress()`). Hence, the
 invariant (no node but the root has a single child and no mark, checked by
-`compact()`) holds after each operation ([Figure 7.27](07-dictionary.md#fig-7-27)).
-Both tries are DICTIONARIES whose keys are strings, and their iterators
-(`TrieIterator`) visit the keys in lexicographic order by a visit in depth
-with a stack of the children still to see, rebuilding the key along the
-path, a character per edge or the label of the child.
+`compact()`) holds after each operation ([Figure
+7.27](07-dictionary.md#fig-7-27)). Both tries are DICTIONARIES whose keys
+are strings, and their iterators (`TrieIterator`) visit the keys in
+lexicographic order by a visit in depth with a stack of the children still
+to see. They rebuild the key along the path, a character per edge or the
+label of the child.
 
 ![Figure 7.27. The `Trie` of the keys `tea`, `ted`, `ten`, `to`, `inn` (left), each edge with its character, and the `RadixTree` of the same keys before and after `insert(in)` (right), each edge with its label; the nodes that end a key are in violet, and the insertion splits the edge `inn` at the new node `in` (in orange).](../figures/dictionary-trie.svg){#fig-7-27}
 
@@ -2399,26 +2437,26 @@ most $n - 1$ of them. $\square$
 
 `PatriciaTrie` is the compact trie of a sorted dictionary $D$ of $n$
 strings stripped of the labels, each edge keeping only its first character
-(the branching one) and each node the length of the prefix it stands for,
-so that it takes $O( n )$ space whatever the length of the strings, which
-are stored apart, e.g., on disk ([Ferragina and Grossi
-1999](Z-bibliography.md#ref-ferragina1999); [Ferragina 2023,
-chapter 9](Z-bibliography.md#ref-ferragina2023)). A string that is a prefix
-of another ends with a character smaller than all the others, and therefore the
-leaf of a string $s$ has length $| s | + 1$. The *blind search* of a
+(the branching one) and each node the length of the prefix it stands for.
+It thus takes $O( n )$ space whatever the length of the strings, which are
+stored apart, e.g., on disk ([Ferragina and Grossi
+1999](Z-bibliography.md#ref-ferragina1999); [Ferragina 2023, chapter
+9](Z-bibliography.md#ref-ferragina2023)). A string that is a prefix of
+another ends with a character smaller than all the others, and therefore
+the leaf of a string $s$ has length $| s | + 1$. The *blind search* of a
 pattern $P$ of $p$ characters finds its lexicographic position, the number
-of the strings smaller than $P$, reading a single string, in three stages
-([Algorithm 7.25](07-dictionary.md#alg-7-25), [Figure 7.28](07-dictionary.md#fig-7-28)):
-it goes down from the root comparing only the branching characters with
-the characters of $P$ at the lengths of the nodes, possibly skipping
-characters that do not match, until a leaf or a node with no edge for $P$,
-and takes a leaf below it (`blindLeaf()`). It computes the longest common
-prefix $\ell$ of $P$ and of the string $s$ of that leaf. Finally, it finds on
-the path the edge $( u , v )$ where $\ell$ falls,
-$| u | \le \ell < | v |$, the position of $P$ being among the children of
-$u$, by the character $P[ \ell ]$, if $\ell = | u |$, and otherwise just
-before or just after the strings below $v$, by the comparison of
-$P[ \ell ]$ with $s[ \ell ]$.
+of the strings smaller than $P$, reading a single string. It works in three
+stages ([Algorithm 7.25](07-dictionary.md#alg-7-25), [Figure
+7.28](07-dictionary.md#fig-7-28)). First, it goes down from the root
+comparing only the branching characters with the characters of $P$ at the
+lengths of the nodes, possibly skipping characters that do not match, until
+a leaf or a node with no edge for $P$, and takes a leaf below it
+(`blindLeaf()`). It computes the longest common prefix $\ell$ of $P$ and of
+the string $s$ of that leaf. Finally, it finds on the path the edge $( u ,
+v )$ where $\ell$ falls, $| u | \le \ell < | v |$, and the position of $P$
+is among the children of $u$, by the character $P[ \ell ]$, if $\ell = | u
+|$, and otherwise just before or just after the strings below $v$, by the
+comparison of $P[ \ell ]$ with $s[ \ell ]$.
 
 ![Figure 7.28. The `PatriciaTrie` of `abcde`, `abcxy`, `abq`, `bad`, `bed`, each node with the length of its prefix and each edge with its branching character, the strings stored apart: the blind search of $P$ = `azcz` descends by $P[ 0 ]$ and $P[ 2 ]$, skipping $P[ 1 ]$, and stops at $w$, which has no child for `z`; it reads the one string `abcde`, finds $\ell = 1$ on the edge from the root to $u$, and since `z` > `b` returns the position $u.\mathit{hi} = 3$ (the path and the string read in violet).](../figures/dictionary-patricia.svg){#fig-7-28}
 
@@ -2451,54 +2489,53 @@ characters with $P$ and have $s[ \ell ]$ at the place $\ell$, and hence they
 all precede $P$ if $P[ \ell ] > s[ \ell ]$ and all follow it otherwise.
 $\square$
 
-The two traversals take $O( p \log \sigma )$ time with the edges of a node
-in a sorted array, and touch no string. The comparison reads one string,
-i.e., $O( p / B )$ transfers of blocks of $B$ characters, against the
-$O( p )$ of the compact trie, which reads a label per edge, and the
-$O( ( p / B ) \log n )$ of the binary search over the strings
+Both traversals take $O( p \log \sigma )$ time with the edges of a node in
+a sorted array, and touch no string. The comparison of the third stage
+reads one string, i.e., $O( p / B )$ transfers of blocks of $B$ characters,
+against the $O( p )$ of the compact trie, which reads a label per edge, and
+the $O( ( p / B ) \log n )$ of the binary search over the strings
 ([§15.6.1](15-string.md#sec-15-6-1)). The positions of $P$ and of $P\#$,
 $\#$ a character larger than all the others, give the range of the strings
 prefixed by $P$ (`lexicographicPosition()`, `prefixEnd()` and
-`prefixRange()`). The trie is built from the sorted strings and the longest
-common prefixes of adjacent ones in $O( N )$ time with a stack of the nodes
-of the rightmost path, $N$ the characters of the strings. `contains()`,
-`size()`, `nodes()`, `string(i)` and `shape()` (the length of each node
-and its branching character, in preorder) complete the interface. Its
-invariant is that each node but the root has at least two children, whose
-characters increase and whose strings are consecutive, and the test
-`pearls_hashing.patricia` replays the example of [Ferragina 2023,
-Figures 9.7 and 9.8](Z-bibliography.md#ref-ferragina2023).
+`prefixRange()`). This trie is built from the sorted strings and the
+longest common prefixes of adjacent ones in $O( N )$ time with a stack of
+the nodes of the rightmost path, $N$ the characters of the strings.
+`contains()`, `size()`, `nodes()`, `string(i)` and `shape()` (the length of
+each node and its branching character, in preorder) complete the interface.
+Its invariant is that each node but the root has at least two children,
+whose characters increase and whose strings are consecutive, and the test
+`pearls_hashing.patricia` replays the example of [Ferragina 2023, Figures
+9.7 and 9.8](Z-bibliography.md#ref-ferragina2023).
 
 `TwoLevelDictionary` puts a Patricia trie over the front coding of the
 sorted strings with anchors (`FrontCodedDictionary` of
-`ADS/string/FrontCoding.h`, [§15.6.2](15-string.md#sec-15-6-2)): the
+`ADS/string/FrontCoding.h`, [§15.6.2](15-string.md#sec-15-6-2)). The
 anchors are the strings stored whole, one every $b$ (the bucketing) or as
 the locality-preserving coding decides, and the trie holds the anchors
 alone ([Figure 7.29](07-dictionary.md#fig-7-29)). A search by prefix is the
 blind search of the pattern among the anchors, which reads one anchor, and
 the scan of the one bucket where the pattern falls, decoded on the fly
-([Algorithm 7.26](07-dictionary.md#alg-7-26)): with the trie in memory and
+([Algorithm 7.26](07-dictionary.md#alg-7-26)). With the trie in memory and
 the coding on disk, it costs $O( p / B + | s | / B )$ transfers of blocks
-plus the bucket, $s$ being the string read by the blind search, in
-$O( n_a )$ words of memory for $n_a$ anchors, and
-$( 1 + \epsilon ) \mathrm{FC}( D )$ characters on disk with the
-locality-preserving coding ([Ferragina 2023,
+plus the bucket, $s$ being the string read by the blind search, in $O( n_a
+)$ words of memory for $n_a$ anchors, and $( 1 + \epsilon ) \mathrm{FC}( D
+)$ characters on disk with the locality-preserving coding ([Ferragina 2023,
 chapter 9](Z-bibliography.md#ref-ferragina2023)). The binary search on the
-anchors costs $O( ( p / B ) \log n_a )$ transfers instead; when even the
+anchors costs $O( ( p / B ) \log n_a )$ transfers instead. When even the
 trie does not fit in memory, the string B-tree of [Ferragina and Grossi
-1999](Z-bibliography.md#ref-ferragina1999) splits it into Patricia tries
-of a block each, linked as a B-tree, for
-$O( ( p + N_{\mathit{occ}} ) / B + \log_B n )$ transfers (and the
-cache-oblivious version of [Bender et al. 2006](Z-bibliography.md#ref-bender2006)
-drops $B$ from the code). `upper()` and `lower()` give the two levels,
-`access(i)` decodes the string $i$ from its bucket, and `anchorsOf()`
-extracts the anchors of a coding.
+1999](Z-bibliography.md#ref-ferragina1999) splits it into Patricia tries of
+a block each, linked as a B-tree, for $O( ( p + N_{\mathit{occ}} ) / B +
+\log_B n )$ transfers, and the cache-oblivious version of [Bender et al.
+2006](Z-bibliography.md#ref-bender2006) drops $B$ from the code. `upper()`
+and `lower()` give the two levels, `access(i)` decodes the string $i$ from
+its bucket, and `anchorsOf()` extracts the anchors of a coding.
 
 ![Figure 7.29. A `TwoLevelDictionary` of nine sorted strings front-coded in three buckets of $b = 3$ (each string after the first of its bucket as the length of the prefix shared with the previous one and the rest), with a Patricia trie on the anchors `alpha`, `bamboo`, `cobalt`: the search of `banjo` reads the anchor `bamboo` and scans its bucket, decoding `banana` and `band` (in violet), and returns the position 6.](../figures/dictionary-twolevel.svg){#fig-7-29}
 
 <span id="alg-7-26"></span>**Algorithm 7.26.** The search of
-`TwoLevelDictionary` ([Ferragina 2023, chapter 9](Z-bibliography.md#ref-ferragina2023)),
-the trie $T$ in memory and the buckets of the coding on disk.
+`TwoLevelDictionary` ([Ferragina 2023, chapter
+9](Z-bibliography.md#ref-ferragina2023)), the trie $T$ in memory and the
+buckets of the coding on disk.
 
 --8<-- "generated/TwoLevelDictionary-lexicographicPosition.pseudo.md"
 
@@ -2512,44 +2549,45 @@ DICTIONARY of the library whose keys are strings, which the benchmark of
 the tries compares with the HAT-trie of tsl, with libart and with the
 B-trees of strings. A node at depth $d$ stands for the prefixes of $d$
 bytes of its keys and branches on their byte $d$, and it adapts its layout
-to the number of its children; hence, a node is never much larger than
-its pointers ([Figure 7.30](07-dictionary.md#fig-7-30)): `Node4` and
-`Node16` keep up to 4 and 16 bytes sorted beside the pointers to the
-children of the same places, a `Node16` being searched by one comparison
-of vectors of SSE2 (or NEON), the 16 bytes against the byte of the key at
-once. `Node48` keeps an index of 256 bytes, the place of the child of each
-byte among its 48 pointers (0 for none); `Node256` keeps the 256 pointers,
-the byte of the key being the place. A node grows to the next layout when
-it is full and shrinks to the previous one when it holds fewer than a
-quarter of its places (3 in a `Node16`, 12 in a `Node48`, 37 in a
-`Node256`), a slack against the repeated changes of layout of an insertion
-and a removal at the threshold.
+to the number of its children, and hence a node is never much larger than
+its pointers ([Figure 7.30](07-dictionary.md#fig-7-30)). The layouts
+`Node4` and `Node16` keep up to 4 and 16 bytes sorted beside the pointers
+to the children of the same places; a `Node16` is searched by one
+comparison of vectors of SSE2 (or NEON), the 16 bytes against the byte of
+the key at once. `Node48` keeps an index of 256 bytes, the place of the
+child of each byte among its 48 pointers (0 for none); `Node256` keeps the
+256 pointers, the byte of the key being the place. A node grows to the next
+layout when it is full and shrinks to the previous one when it holds fewer
+than a quarter of its places (3 in a `Node16`, 12 in a `Node48`, 37 in a
+`Node256`). This is a slack against the repeated changes of layout of an
+insertion and a removal at the threshold.
 
 ![Figure 7.30. The layouts of the nodes of `AdaptiveRadixTree`: `Node4` and `Node16`, with the sorted key bytes beside the pointers to their children; `Node48`, with an index of 256 bytes into 48 pointers (the byte `a`, its index 1 and its child in violet); `Node256`, where the byte is the place; and below, the path compression, a node with the prefix `ndom` of length 4 (in violet), which the search of `random` enters at $d = 2$ and leaves at $d = 6 = | k |$.](../figures/dictionary-art.svg){#fig-7-30}
 
 A chain of nodes with a single child is compressed into the prefix of the
-first node that branches (the *path compression*): the prefix is the length
-of the chain and its first 8 bytes, a search skipping the bytes past 8 (the
-optimistic compression of the paper, the hybrid of its section III.E) and
-comparing the full key at the leaf, where each search ends
-([Algorithm 7.27](07-dictionary.md#alg-7-27)). A leaf holds the whole key,
-in one allocation with its value, and a pointer to a child is a leaf if its
-lowest bit is set (`isLeaf()`, `asLeaf()`, `tag()`). The key that ends at
-a node, a prefix of all the keys below it, hangs from the node apart from
-the children, so that any string, null bytes included, can be a key. An
+first node that branches (the *path compression*). The prefix is the length
+of the chain and its first 8 bytes, and a search skips the bytes past 8
+(the optimistic compression of the paper, the hybrid of its section III.E)
+and compares the full key at the leaf, where each search ends ([Algorithm
+7.27](07-dictionary.md#alg-7-27)). A leaf holds the whole key, in one
+allocation with its value, and a pointer to a child is a leaf if its lowest
+bit is set (`isLeaf()`, `asLeaf()`, `tag()`). A key that ends at a node,
+a prefix of all the keys below it, hangs from the node apart from the
+children, so that any string, null bytes included, can be a key. An
 insertion first descends as a search: if no prefix on the way was longer
 than its 8 bytes, the way is the one of the key, and the key goes where the
 search stopped, in one pass. Otherwise the search ends at a leaf $l$ below
-the last node that the key reaches, and a second pass goes down again to
+the last node that the key reaches. A second pass then goes down again to
 the node or the leaf whose prefix parts from the key at the first byte
 where the key and $l$ differ, the full prefixes of the nodes on the way
 being those of $l$. A removal shrinks the node of its key below a quarter
 of its places and merges a node left with a single child into its prefix.
 
-<span id="alg-7-27"></span>**Algorithm 7.27.** The search and the
-insertion of `AdaptiveRadixTree` ([Leis et al. 2013](Z-bibliography.md#ref-leis2013));
-$d$ is the number of the bytes of $k$ consumed, a prefix being compared on
-its first 8 bytes only and the leaf on the whole key.
+<span id="alg-7-27"></span>**Algorithm 7.27.** The search and the insertion
+of `AdaptiveRadixTree` ([Leis et al.
+2013](Z-bibliography.md#ref-leis2013)); $d$ is the number of the bytes of
+$k$ consumed, a prefix being compared on its first 8 bytes only and the
+leaf on the whole key.
 
 --8<-- "generated/AdaptiveRadixTree-search.pseudo.md"
 
@@ -2570,27 +2608,28 @@ node whatever its layout, while the comparison of the prefixes and of the
 leaf reads each byte of the key $O( 1 )$ times. An insertion and a removal
 make at most two passes and change $O( 1 )$ nodes. $\square$
 
-A leaf of a key of $k$ bytes and a value of 8 takes
-$\lceil ( 16 + k ) / 16 \rceil$ slots of 16 bytes. A search prefetches the
-lines of the next node that it reads for its byte, whatever the layout,
-while the first line is on its way (`ahead()`), and the visits prefetch the
-children of a `Node4` or a `Node16` (`children()`). The iterators visit
-the pairs by increasing keys, a key before the longer ones that begin with
-it and the children of a node by their bytes, as a `string_view` on the
-key of the leaf and a constant reference to its value, with a stack of the
-nodes on the way. `forEach()` and `forPrefix()` visit all the pairs, and
-those whose key begins with a prefix, by a recursion with no stack,
-`keysWithPrefix()` returns those keys, and `find()` gives a value to
-change in place. An insertion or a removal invalidates the iterators. The
-internal nodes come from pools on huge pages ([Chapter 5](05-memory.md#ch-5)),
-the leaves from slabs of 16 to 512 bytes in steps of 16 (`Slab`, after the
-slab allocator of [Bonwick 1994](Z-bibliography.md#ref-bonwick1994)), each
-size with the list of its free slots, cut from blocks that double up to
-2 MB, and hence a leaf costs no call to the allocator. The invariant, checked
-at the contract level 3 on the trees of up to 2048 keys, is that the keys
-of the leaves extend the paths that lead to them, that every node but the
-root branches or ends a key, that the bytes of a node are sorted and its
-layout the one of its count, and that the leaves are `size()`.
+A leaf of a key of $k$ bytes and a value of 8 takes $\lceil ( 16 + k ) / 16
+\rceil$ slots of 16 bytes. A search prefetches the lines of the next node
+that it reads for its byte, whatever the layout, while the first line is on
+its way (`ahead()`), and the visits prefetch the children of a `Node4` or a
+`Node16` (`children()`). The iterators visit the pairs by increasing keys,
+a key before the longer ones that begin with it and the children of a node
+by their bytes, as a `string_view` on the key of the leaf and a constant
+reference to its value. They keep a stack of the nodes on the way.
+`forEach()` and `forPrefix()` visit all the pairs, and those whose key
+begins with a prefix, by a recursion with no stack, `keysWithPrefix()`
+returns those keys, and `find()` gives a value to change in place, and
+`clear()` frees all the nodes and the leaves. An insertion or a removal
+invalidates the iterators. Its internal nodes come from pools on huge pages
+([Chapter 5](05-memory.md#ch-5)), the leaves from slabs of 16 to 512 bytes
+in steps of 16 (`Slab`, after the slab allocator of [Bonwick
+1994](Z-bibliography.md#ref-bonwick1994)), each size with the list of its
+free slots, cut from blocks that double up to 2 MB. Hence, a leaf costs no
+call to the allocator. Its invariant, checked at the contract level 3 on
+the trees of up to 2048 keys, requires that the keys of the leaves extend
+the paths that lead to them. It also requires that each node but the root
+branches or ends a key, that the bytes of a node are sorted and its layout
+the one of its count, and that the leaves are `size()`.
 
 ### 7.10.4 The Patricia trie in succinct space {#sec-7-10-4}
 
@@ -2598,18 +2637,19 @@ layout the one of its count, and that the leaves are `size()`.
 dictionary of $n$ strings by the degrees of its nodes in depth (DFUDS) of
 [Benoit et al. 2005](Z-bibliography.md#ref-benoit2005), with the first
 character of each edge in a byte and the rest of its label in a string
-apart, and maps a string to its rank in the lexicographic order. The $N$
-nodes of the compact trie, at most $2 n$ by [Lemma 7.25](07-dictionary.md#lem-7-25), are visited in
-depth, the children of a node by their first characters, and the node of
-$d$ children is written as $d$ open parentheses and a closed one, after an
-open parenthesis that balances the whole: $2 N$ bits, in which the node of
-rank $v$ in the visit begins after the $v$-th closed parenthesis
-([Figure 7.31](07-dictionary.md#fig-7-31)). With the matching of the
-parentheses (`BalancedParentheses.h`, [Chapter 22](22-succinct.md#ch-22)),
-the $i$-th child of the node at the place $p$, of degree $d$, begins after
-the closed parenthesis that matches the open one at $p + d - 1 - i$: the
-last open parenthesis of the node is matched by the closed one that ends
-it, right after which the first child begins. The first characters of the
+apart. It maps a string to its rank in the lexicographic order. The $N$
+nodes of the compact trie, at most $2 n$ by [Lemma
+7.25](07-dictionary.md#lem-7-25), are visited in depth, the children of a
+node by their first characters. The node of $d$ children is written as $d$
+open parentheses and a closed one, after an open parenthesis that balances
+the whole. This takes $2 N$ bits, in which the node of rank $v$ in the
+visit begins after the $v$-th closed parenthesis ([Figure
+7.31](07-dictionary.md#fig-7-31)). With the matching of the parentheses
+(`BalancedParentheses.h`, [Chapter 22](22-succinct.md#ch-22)), the $i$-th
+child of the node at the place $p$, of degree $d$, begins after the closed
+parenthesis that matches the open one at $p + d - 1 - i$. Indeed, the last
+open parenthesis of the node is matched by the closed one that ends it,
+right after which the first child begins. The first characters of the
 children of a node are consecutive, in the order of the open parentheses,
 so that the child of a character is found by a binary search on at most
 $\sigma$ bytes.
@@ -2634,25 +2674,28 @@ with a closed parenthesis. $\square$
 Hence, with a vector of bits $T$ that marks the nodes where a string ends,
 the rank of a string among the marks is its rank in the lexicographic
 order (a node comes before its subtree, which holds the strings it
-prefixes, and the subtrees follow the order of their first characters),
-and the strings with a prefix $P$ are the marks of the subtree where the
+prefixes, and the subtrees follow the order of their first characters).
+Also, the strings with a prefix $P$ are the marks of the subtree where the
 walk of $P$ ends, a range of ranks found by one forward search
 ([Algorithm 7.28](07-dictionary.md#alg-7-28)). A lookup of $Q$ walks down
 $O( | Q | )$ nodes, each in $O( \log \sigma )$ time besides a rank, a
 select of Elias and Fano for the rest of its label and, but for the first
-child, a `findClose()`. `access(i)` walks up from the node of the string of
+child, a `findClose()`, and `contains(Q)` is a lookup that found $Q$.
+In turn, `lexicographicPosition(Q)`, the number of strings smaller than $Q$,
+walks as the lookup up to the first mismatch and takes the rank of the end
+of a subtree there. `access(i)` walks up from the node of the string of
 rank $i$ by `findOpen()`, prepending the labels. The space is
 $2 N + o( N )$ bits for the parentheses with their range min-max tree,
 $8 ( N - 1 )$ for the first characters, $2 N + o( N )$ for the marks of the
 ends and of the nodes with a rest, and the rests of the labels, one after
-the other, with their places by Elias and Fano (`bytes()` reports the
-total). The path-decomposed tries of [Grossi and Ottaviano
+the other, with their places by Elias and Fano. The method `bytes()` reports the
+total. In contrast, the path-decomposed tries of [Grossi and Ottaviano
 2015](Z-bibliography.md#ref-grossi2015) and the dictionaries of
 [Martínez-Prieto et al. 2016](Z-bibliography.md#ref-martinezprieto2016)
 compress the labels as well, by Re-Pair or by the codes of Hu and Tucker,
-which is not done here. The front coding with buckets of `RearCoding.h`
+which is not done here. Instead, the front coding with buckets of `RearCoding.h`
 ([§15.6.3](15-string.md#sec-15-6-3)) may be smaller still on strings with
-long shared prefixes. The audit of the construction is that `access()` and
+long shared prefixes. Its audit of the construction checks that `access()` and
 `lookup()` invert each other, and the test
 `engineered_strings.string-dictionaries` exercises both.
 
@@ -2688,8 +2731,8 @@ headers also have the simplified tries of the exercises of the book and its
 extension to strings. In all of them `lowerBound(x)` is the `find(x)` of
 the SSET of the book, `find(x)` the search of $x$ itself (the `find(x)` of
 his USET), and the keys are below $2^w$, a precondition of each operation.
-The parameter `W` is the width $w$, between 1 and the bits of the type of
-the keys (the concept `TrieWidth`), and the helpers `triePrefix()`,
+Its parameter `W` is the width $w$, between 1 and the bits of the type of
+the keys (the concept `TrieWidth`). The helpers `triePrefix()`,
 `trieBit()` and `trieKey()` of the namespace `detail` give the prefix of
 $i$ bits $\lfloor x / 2^{w - i} \rfloor$, the bit $i$ counted from the most
 significant one, and whether $x < 2^w$.
@@ -2697,7 +2740,7 @@ significant one, and whether $x < 2^w$.
 ### 7.11.1 The binary trie {#sec-7-11-1}
 
 `BinaryTrie` encodes a set of integers of $w$ bits in a binary tree whose
-leaves are all at depth $w$, each integer being the path from the root to a
+leaves are all at depth $w$. Each integer is the path from the root to a
 leaf that turns to the child 0 at the depth $i$ if the bit $i$ of the key,
 counted from the most significant one, is 0, and to the child 1 otherwise
 ([Morin 2013, §13.1](Z-bibliography.md#ref-morin-cpp), after
@@ -2715,12 +2758,13 @@ child 0 is missing, and to the largest if its child 1 is missing
 A search of $x$ follows its path down to the deepest node $u$ of the path
 (`deepest()`), at depth $i$. If $i = w$, $u$ is the leaf of $x$; otherwise
 the child of $u$ for the bit $i$ of $x$, $c$, is missing, and the other
-child is there; hence, all the keys below $u$ are larger than $x$ if
-$c = 0$, and smaller if $c = 1$: the jump pointer of $u$ leads to the
-smallest of them, which is the successor of $x$, in the first case, and to
-the largest of them, whose next in the list is the successor, in the second
-case ([Algorithm 7.29](07-dictionary.md#alg-7-29), [Figure 7.33](07-dictionary.md#fig-7-33)).
-The time is that of the walk down, $O( w )$.
+child is there. Hence, all the keys below $u$ are larger than $x$ if $c =
+0$, and smaller if $c = 1$. The jump pointer of $u$ leads to the smallest
+of them, which is the successor of $x$, in the first case, and to the
+largest of them, whose next in the list is the successor, in the second
+case ([Algorithm 7.29](07-dictionary.md#alg-7-29), [Figure
+7.33](07-dictionary.md#fig-7-33)). Its time is that of the walk down, $O( w
+)$.
 
 <span id="alg-7-29"></span>**Algorithm 7.29.** The successor, the
 insertion and the removal of `BinaryTrie` ([Morin 2013,
@@ -2743,16 +2787,16 @@ $x$.
 An insertion has more to do. It follows the path of $x$ down to the deepest
 node $u$; it creates the rest of the path, down to a new leaf of $x$. It
 links the leaf in the list after its predecessor, which the jump pointer of
-$u$ gives as in the search. Finally, it walks back up the path, setting to the
-new leaf the jump pointer of each ancestor whose child 0 is missing and
+$u$ gives as in the search. Finally, it walks back up the path, setting to
+the new leaf the jump pointer of each ancestor whose child 0 is missing and
 whose smallest leaf is now $x$, or whose child 1 is missing and whose
 largest leaf is now $x$ ([Figure 7.34](07-dictionary.md#fig-7-34)). A
-removal undoes it: it unlinks the leaf of $x$ from the list, removes the
+removal undoes it. It unlinks the leaf of $x$ from the list, removes the
 nodes of the path of $x$ from the leaf up while they are left with no
-child, and walks up from the lowest node left to the root, redirecting to
-the next or to the previous leaf the jump pointers that pointed to the leaf
-of $x$ ([Figure 7.35](07-dictionary.md#fig-7-35)). Each of the two walks
-takes $O( w )$ time.
+child. Then it walks up from the lowest node left to the root, redirecting
+to the next or to the previous leaf the jump pointers that pointed to the
+leaf of $x$ ([Figure 7.35](07-dictionary.md#fig-7-35)). Each of the two
+walks takes $O( w )$ time.
 
 ```cpp
 --8<-- "generated/BinaryTrie-JumpTrie-insert.cpp"
@@ -2772,11 +2816,11 @@ the integers of $w$ bits, with `insert()`, `remove()` and `lowerBound()`
 in $O( w )$ time each, in $O( n w )$ space: the trie has at most
 $n w + 1$ nodes.*
 
-Against the code of the book, the nodes come from an `ObjectPool`
-([Chapter 5](05-memory.md#ch-5)) instead of one call to the allocator
-each, and those made one after another lie next to each other, and therefore the
-$w$ nodes of a new path seldom cost an allocation and the walk from the root
-misses the cache less. The keys have any width up to 64 bits, where the book
+Against the code of the book, the nodes come from an `ObjectPool` ([Chapter
+5](05-memory.md#ch-5)) instead of one call to the allocator each, and those
+made one after another lie next to each other. Hence, the $w$ nodes of a
+new path seldom cost an allocation and the walk from the root misses the
+cache less. Also, the keys have any width up to 64 bits, where the book
 fixes $w = 32$; and `remove()` reads the links of the leaf before it frees
 it, while the code of the book reads them from the freed leaf. The class
 template `detail::JumpTrie` holds the code that `BinaryTrie` and the x-fast
@@ -2784,25 +2828,27 @@ trie share, and adds `find()`, `lookup()`, `contains()`, `min()`, `max()`,
 `clear()`, `size()`, `empty()`, `nodes()` and the bidirectional iterators
 along the list (`seek(x)` returns the iterator on the successor of $x$).
 Its invariant (the depth of the leaves, the order of the list, the jump
-pointers and, for the x-fast trie, the tables of the prefixes) is checked in
-$O( n w )$ time at the contract level 3 while $n \le 256$, and at the leaf
-of the operation beyond (`consistent()`).
+pointers and, for the x-fast trie, the tables of the prefixes) is checked
+in $O( n w )$ time at the contract level 3 while $n \le 256$, and at the
+leaf of the operation beyond (`consistent()`).
 
 `SimpleBinaryTrie` is the trie of [Morin 2013, exercise
 13.1](Z-bibliography.md#ref-morin-cpp), with neither the list nor the jump
 pointers, its internal nodes being two pointers each and its leaves also a
 key and a value. A search that falls off the trie keeps, on its walk down,
 the child 1 of the deepest node where the path of $x$ goes to the child 0
-while the child 1 is there, the root $a$ of the nearest larger keys, and
-returns the leftmost leaf below $a$, $O( w )$ more steps
-([Algorithm 7.30](07-dictionary.md#alg-7-30), [Figure 7.36](07-dictionary.md#fig-7-36)).
-An insertion adds the missing nodes of its path, a removal removes the
-nodes of its path left with no child, both in $O( w )$ time, and
-`forEach()` visits the pairs by increasing keys. It takes less memory than
-`BinaryTrie`, at the price of the walk down to the leftmost leaf.
+while the child 1 is there, the root $a$ of the nearest larger keys. It then
+returns the leftmost leaf below $a$, $O( w )$ more steps ([Algorithm
+7.30](07-dictionary.md#alg-7-30), [Figure
+7.36](07-dictionary.md#fig-7-36)). An insertion adds the missing nodes of
+its path, a removal removes the nodes of its path left with no child, both
+in $O( w )$ time, and `forEach()` visits the pairs by increasing keys. It
+takes less memory than `BinaryTrie`, at the price of the walk down to the
+leftmost leaf.
 
 <span id="alg-7-30"></span>**Algorithm 7.30.** The successor in
-`SimpleBinaryTrie` ([Morin 2013, exercise 13.1](Z-bibliography.md#ref-morin-cpp)).
+`SimpleBinaryTrie` ([Morin 2013, exercise
+13.1](Z-bibliography.md#ref-morin-cpp)).
 
 --8<-- "generated/BinaryTrie-SimpleBinaryTrie-lowerBound.pseudo.md"
 
@@ -2815,17 +2861,17 @@ nodes of its path left with no child, both in $O( w )$ time, and
 ### 7.11.2 The x-fast trie {#sec-7-11-2}
 
 The search of the binary trie is almost over once it reaches the deepest
-node $u$ of the path of $x$, and `XFastTrie` finds $u$ by a binary search on
-the depth instead of a walk ([Morin 2013, §13.2](Z-bibliography.md#ref-morin-cpp),
-after [Willard 1983](Z-bibliography.md#ref-willard1983)). It is a
-`BinaryTrie` with, for each depth $i = 1 , \ldots , w$, a hash table
-$t[ i ]$ from the prefixes of $i$ bits to their nodes (`TrieTables`, and
-`node(p, i)` the lookup of a prefix). The node $u$ is at depth $i$ or below
-exactly when the prefix of $i$ bits of $x$ is in $t[ i ]$
-([Figure 7.37](07-dictionary.md#fig-7-37)).
+node $u$ of the path of $x$, and `XFastTrie` finds $u$ by a binary search
+on the depth instead of a walk ([Morin 2013,
+§13.2](Z-bibliography.md#ref-morin-cpp), after [Willard
+1983](Z-bibliography.md#ref-willard1983)). It is a `BinaryTrie` with, for
+each depth $i = 1 , \ldots , w$, a hash table $t[ i ]$ from the prefixes of
+$i$ bits to their nodes (`TrieTables`, and `node(p, i)` the lookup of a
+prefix). The node $u$ is at depth $i$ or below exactly when the prefix of
+$i$ bits of $x$ is in $t[ i ]$ ([Figure 7.37](07-dictionary.md#fig-7-37)).
 
 <span id="lem-7-29"></span>**Lemma 7.29.** *If the prefix of $i$ bits of
-$x$ is the prefix of some key, so is its prefix of $j$ bits for every
+$x$ is the prefix of some key, so is its prefix of $j$ bits for each
 $j < i$. Hence the depth $\ell$ of the deepest node of the path of $x$ is
 found by a binary search on $[ 0 , w ]$, with
 $\lceil \log_2 ( w + 1 ) \rceil$ lookups in the tables, and the successor
@@ -2857,7 +2903,7 @@ the integers of $w$ bits, with `insert()` and `remove()` in $O( w )$
 expected time and `lowerBound()` in $O( \log w )$ expected time, in
 $O( n w )$ space.*
 
-The tables are `FlatHashTable`s ([§7.6](07-dictionary.md#sec-7-6)), which
+Its tables are `FlatHashTable`s ([§7.6](07-dictionary.md#sec-7-6)), which
 compare a fingerprint of the hash with 15 places at once and touch about
 one line of cache per lookup, where the book uses its `LinearHashTable` of
 pairs, whose probes compare full keys. The $\lceil \log_2 ( w + 1 ) \rceil$
@@ -2865,17 +2911,19 @@ lookups of the binary search depend on each other; hence, the latency of
 each one is what counts.
 
 `ListXFastTrie` is the x-fast trie of [Morin 2013, exercise
-13.2](Z-bibliography.md#ref-morin-cpp), with no trie at all: the keys are a
+13.2](Z-bibliography.md#ref-morin-cpp), with no trie at all. The keys are a
 doubly linked list in increasing order, and the table $t[ i ]$ maps each
-prefix of $i$ bits to the smallest and the largest key with that prefix
-(an `Entry`), which are all that [Lemma 7.29](07-dictionary.md#lem-7-29) needs. The binary search finds
-$\ell$ as above, and the entry gives the successor directly. An insertion
-links the new key before its successor and widens the entries of its $w$
-prefixes, and a removal replaces the smallest key of a prefix by the next
-one in the list and the largest by the previous one, the keys of a prefix
-being consecutive in the list ([Algorithm 7.31](07-dictionary.md#alg-7-31)).
-`find()`, `lookup()` and `contains()` look at $t[ w ]$ alone, in $O( 1 )$
-expected time, and `entries()` counts the entries of the tables.
+prefix of $i$ bits to the smallest and the largest key with that prefix (an
+`Entry`), which are all that [Lemma 7.29](07-dictionary.md#lem-7-29) needs.
+The binary search finds $\ell$ as above, and the entry gives the successor
+directly. An insertion links the new key before its successor and widens
+the entries of its $w$ prefixes. A removal replaces the smallest key of
+a prefix by the next one in the list and the largest by the previous one,
+the keys of a prefix being consecutive in the list ([Algorithm
+7.31](07-dictionary.md#alg-7-31)). `find()`, `lookup()` and `contains()`
+look at $t[ w ]$ alone, in $O( 1 )$ expected time, `seek(x)` gives the
+iterator on the successor, as in `XFastTrie`, and `entries()` counts the
+entries of the tables.
 
 <span id="alg-7-31"></span>**Algorithm 7.31.** The successor, the
 insertion and the removal of `ListXFastTrie` ([Morin 2013, exercise
@@ -2903,7 +2951,7 @@ $O( 1 + \log \log d( x ) )$ expected time in `ListXFastTrie` and
 $O( 1 + \log d( x ) )$ in `XFastTrie`.*
 
 *Proof.* The successor lies in $[ x , x + 2^k )$, which meets at most two
-blocks of $2^K$ keys aligned to $2^K$ for every $K \ge k$, those of the
+blocks of $2^K$ keys aligned to $2^K$ for each $K \ge k$, those of the
 prefixes $p = \lfloor x / 2^K \rfloor$ and $p + 1$ of depth $w - K$. The
 search tries $K = 1 , 2 , 4 , \ldots$, one or two lookups each, and stops at
 the first $K$ for which one of the two prefixes is there, after
@@ -2916,10 +2964,10 @@ $x$, and the successor is the smallest key of the block $p + 1$, which
 $K = O( k )$ nodes down the trie. Since $\log k = O( \log \log d( x ) )$,
 the two bounds follow. $\square$
 
-The hint of the exercise, a scan of the depths from $w$ upwards, takes
-$\Theta( w )$ when the successor is past a carry ($x = 01 \ldots 1$ and its
-successor $10 \ldots 0$, at distance 1, share no prefix), which the block
-$p + 1$ covers.
+In comparison, the hint of the exercise, a scan of the depths from $w$
+upwards, takes $\Theta( w )$ when the successor is past a carry ($x = 01
+\ldots 1$ and its successor $10 \ldots 0$, at distance 1, share no prefix),
+which the block $p + 1$ covers.
 
 <span id="alg-7-32"></span>**Algorithm 7.32.** The search near the
 successor of `XFastTrie` ([Morin 2013, exercise
@@ -2939,17 +2987,17 @@ the prefix $p + 1$ from its entry.
 
 ### 7.11.3 The y-fast trie {#sec-7-11-3}
 
-The x-fast trie is exponentially faster than the binary trie in its
+Thus, the x-fast trie is exponentially faster than the binary trie in its
 searches, but its updates are not, and its space is $O( n w )$. The two
-defects are related, since $n$ insertions that build a structure of size
-$n w$ take at least that time. `YFastTrie` ([Morin 2013,
-§13.3](Z-bibliography.md#ref-morin-cpp), after
-[Willard 1983](Z-bibliography.md#ref-willard1983)) stores in an
-`XFastTrie` only a random sample of the keys, the *representatives*, each
-key being one with probability $1 / w$ independently of the others, and
-the key $2^w - 1$ always, so that the x-fast trie holds $O( n / w )$ keys in
-$O( n )$ space. The keys between two consecutive representatives, the
-larger one included, form a *group*, kept in a `Treap` (the alias `Group`) ([Chapter
+defects are related, since $n$ insertions that build a structure of size $n
+w$ take at least that time. `YFastTrie` ([Morin 2013,
+§13.3](Z-bibliography.md#ref-morin-cpp), after [Willard
+1983](Z-bibliography.md#ref-willard1983)) stores in an `XFastTrie` only a
+random sample of the keys, the *representatives*, each key being one with
+probability $1 / w$ independently of the others, and the key $2^w - 1$
+always. Hence, the x-fast trie holds $O( n / w )$ keys in $O( n )$ space.
+The keys between two consecutive representatives, the larger one included,
+form a *group*, kept in a `Treap` (the alias `Group`) ([Chapter
 8](08-tree.md#ch-8)) that is the value of its representative in the x-fast
 trie. Each key has a group, the one of the smallest representative not
 smaller than it ([Figure 7.38](07-dictionary.md#fig-7-38)).
@@ -2957,17 +3005,17 @@ smaller than it ([Figure 7.38](07-dictionary.md#fig-7-38)).
 ![Figure 7.38. The representatives of a `YFastTrie` with $w = 4$ (the leaves of its x-fast trie, with 15 = $2^w - 1$ always there, in the faintest tint) over their groups ([Morin 2013, Figures 13.7 to 13.9](Z-bibliography.md#ref-morin-cpp)): the keys 0 1 3 4 5 8 9 10 11 13; after `insert(2)` and `insert(6)`, where the coin of 6 comes up heads, so that 6 becomes a representative and splits its group (2, 6 and the new representative in orange); and after `remove(1)` and `remove(9)`, where the removed representative 9 lets its key 8 join the group of 15 (in violet).](../figures/dictionary-yfast.svg){#fig-7-38}
 
 A search of $x$ finds in the x-fast trie the smallest representative not
-smaller than $x$, in $O( \log w )$ expected time, and then the smallest key
-not smaller than $x$ in its group, by the descent of the treap
+smaller than $x$, in $O( \log w )$ expected time. It then finds the
+smallest key not smaller than $x$ in its group, by the descent of the treap
 (`ceiling()`), in $O( \log r )$ expected time for a group of $r$ keys. An
-insertion adds $x$ to its group and tosses a coin of bias $1 / w$: if it
+insertion adds $x$ to its group and tosses a coin of bias $1 / w$. If it
 comes up, the group is split at $x$, the keys up to $x$ go into a new group
 whose representative is $x$, and $x$ is inserted in the x-fast trie. A
 removal takes $x$ out of its group, and if $x$ was a representative (other
-than $2^w - 1$), it joins its group to the next one and removes $x$ from the
-x-fast trie ([Algorithm 7.33](07-dictionary.md#alg-7-33)). The split and
-the join of the treaps take $O( \log w )$ expected time, and the change of
-the x-fast trie $O( w )$, with probability $1 / w$.
+than $2^w - 1$), it joins its group to the next one and removes $x$ from
+the x-fast trie ([Algorithm 7.33](07-dictionary.md#alg-7-33)). The split
+and the join of the treaps take $O( \log w )$ expected time, and the change
+of the x-fast trie $O( w )$, with probability $1 / w$.
 
 <span id="alg-7-33"></span>**Algorithm 7.33.** The successor, the
 insertion and the removal of `YFastTrie` ([Morin 2013,
@@ -3001,7 +3049,7 @@ y-fast trie has $n_x$ keys with $E[ n_x ] \le 2 w - 1$.*
 
 *Proof.* Let $x_1 < \cdots < x_i = x < \cdots < x_n$ be the keys. The keys
 of the group not smaller than $x$ are $x_i , \ldots , x_{i+j-1}$, where
-$x_{i+j-1}$ is the first of them whose coin came up heads, and $j$ is at most
+$x_{i+j-1}$ is the first of them whose coin came up heads. Hence, $j$ is at most
 the number of the tosses of a coin of bias $1 / w$ up to the first heads,
 whose expectation is $w$ (the cut at the last key only lowers it). The keys
 of the group smaller than $x$ are $x_{i-1} , \ldots , x_{i-k}$, all with
@@ -3023,61 +3071,61 @@ the integers of $w$ bits, with `insert()`, `remove()` and `lowerBound()`
 in $O( \log w )$ expected time each (amortized for the first two, the x-fast
 trie changing its tables), in $O( n + w )$ space.*
 
-The term $w$ of the space comes from the representative $2^w - 1$, which
-is always in the x-fast trie (`TOP`). The code could avoid it at the price
-of some special cases, as Morin remarks, and it keeps it, and therefore each key
-has a group. Against the code of the book, the x-fast trie of the
-representatives is the one of `XFastTrie.h`, with its faster tables, the
+The term $w$ of the space comes from the representative $2^w - 1$, which is
+always in the x-fast trie (`TOP`). Our code could avoid it at the price of
+some special cases, as Morin remarks, and it keeps it, and therefore each
+key has a group. Against the code of the book, the x-fast trie of the
+representatives is the one of `XFastTrie.h`, with its faster tables. The
 search in a group descends its treap with no copy of a key, and the coin of
 an insertion is one word of `SplitMix64` reduced modulo $w$ instead of a
 call to `rand()`. `groups()` gives the number of groups, the last one
-included, and `forEach()` visits the pairs by increasing keys. The invariant
-(each group between two consecutive representatives, each representative in
-its group but the last, and the count of the keys) is checked in $O( n )$
-time at the contract level 3 while $n \le 256$.
+included, and `forEach()` visits the pairs by increasing keys. The
+invariant (each group between two consecutive representatives, each
+representative in its group but the last, and the count of the keys) is
+checked in $O( n )$ time at the contract level 3 while $n \le 256$.
 
 ### 7.11.4 The binary trie of strings {#sec-7-11-4}
 
 `BitmapTrie` is the trie of [Morin 2013, exercise
 13.3](Z-bibliography.md#ref-morin-cpp), which extends the binary trie from
-strings of $w$ bits to strings of bytes of any length: a SORTED SET of
-strings, each with a value, whose `lowerBound(s)` (the smallest string not
-smaller than $s$ in the lexicographic order of the bytes, a prefix before
-its extensions), `insert(s)` and `remove(s)` take $O( | s | )$ time,
+strings of $w$ bits to strings of bytes of any length. It is a SORTED SET
+of strings, each with a value, whose `lowerBound(s)` (the smallest string
+not smaller than $s$ in the lexicographic order of the bytes, a prefix
+before its extensions), `insert(s)` and `remove(s)` take $O( | s | )$ time,
 whatever the number of the strings. The node at depth $i$ stands for a
-prefix of $i$ bytes, a string ends at the node of its last byte, the
+prefix of $i$ bytes, and a string ends at the node of its last byte. The
 strings are also a doubly linked list in increasing order, and each node
 keeps the smallest and the largest string below it, which play the part of
 the jump pointers ([Figure 7.40](07-dictionary.md#fig-7-40)). The exercise
 suggests a hash table of the children in each node. Here a node has instead
 a bitmap of 256 bits of the bytes of its children and the children
-themselves in an array sorted by byte, and hence the child of the byte $c$ is
+themselves in an array sorted by byte. Hence, the child of the byte $c$ is
 at the rank of $c$ among the bits set, a population count as in the hash
 array mapped tries of [Bagwell 2001](Z-bibliography.md#ref-bagwell2001),
-with no hashing, and the next child after $c$ is the next bit set, which a
-hash table could not give (`has()`, `rank()`, `child()`, `after()` and
-`before()` are these primitives).
+with no hashing; the next child after $c$ is the next bit set, which a hash
+table could not give. The methods `has()`, `rank()`, `child()`, `after()`
+and `before()` are these primitives.
 
 ![Figure 7.40. The `BitmapTrie` of `car`, `cat`, `cow`, `do` ([Morin 2013, exercise 13.3](Z-bibliography.md#ref-morin-cpp)), each node with the smallest and the largest string below it and the strings in a doubly linked list; the node `c` enlarged, with its bitmap of 256 bits (the bytes `a` to `p` shown) and the array of its children sorted by byte; `lowerBound(cb)` finds no child for `b`, the next bit set is `o`, of rank 1, and the smallest string below `co`, `cow`, is the result (in violet).](../figures/dictionary-bitmaptrie.svg){#fig-7-40}
 
 A search that stops at the node $u$ of depth $i$, whose child of $s_i$ is
 missing, returns the smallest string below the next child of $u$, if there
-is one, and otherwise the string after the largest one below $u$, by the
-argument of [Lemma 7.29](07-dictionary.md#lem-7-29) on the bytes, in $O( 1 )$ time after the walk of
-$O( | s | )$ nodes ([Algorithm 7.34](07-dictionary.md#alg-7-34)). An
-insertion adds the missing nodes of the path of $s$, links the new string
-before its successor, and, going back to the root, makes it the smallest
-string of each node in which nothing precedes it (no string ends there and
-no child has a smaller byte) and the largest of each node in which nothing
-follows it. A removal unlinks it, removes the nodes of its path left
-empty, and replaces it, where it was the smallest or the largest string of
-a node, by the next or the previous one in the list, since the strings
-below a node are consecutive in the list. `find()`, `lookup()`,
-`contains()`, `seek()`, `size()`, `empty()`, `nodes()` and the
-bidirectional iterators along the list complete the interface, and the
-invariant (the list in order, the smallest and the largest string of each
-node, the bitmaps) is checked in $O( N )$ time for $N$ nodes at the contract
-level 3 while there are at most 256 strings.
+is one. Otherwise it returns the string after the largest one below $u$, by
+the argument of [Lemma 7.29](07-dictionary.md#lem-7-29) on the bytes, in
+$O( 1 )$ time after the walk of $O( | s | )$ nodes ([Algorithm
+7.34](07-dictionary.md#alg-7-34)). An insertion adds the missing nodes of
+the path of $s$, and links the new string before its successor. Going back
+to the root, it makes it the smallest string of each node in which nothing
+precedes it (no string ends there and no child has a smaller byte) and the
+largest of each node in which nothing follows it. A removal unlinks it,
+removes the nodes of its path left empty, and replaces it, where it was the
+smallest or the largest string of a node, by the next or the previous one
+in the list, since the strings below a node are consecutive in the list.
+`find()`, `lookup()`, `contains()`, `seek()`, `size()`, `empty()`,
+`nodes()` and the bidirectional iterators along the list complete the
+interface. Its invariant (the list in order, the smallest and the largest
+string of each node, the bitmaps) is checked in $O( N )$ time for $N$ nodes
+at the contract level 3 while there are at most 256 strings.
 
 <span id="alg-7-34"></span>**Algorithm 7.34.** The successor, the
 insertion and the removal of `BitmapTrie` ([Morin 2013, exercise
@@ -3102,11 +3150,11 @@ $\ell$ the item of $s$ in the list.
 Hashing is a large field, and this chapter only touches it; [Knuth 1998,
 §§6.3 and 6.4](Z-bibliography.md#ref-knuth1998v3) remains the reference on
 the tries and on the classical tables, with the exact analyses of the
-inspections that [§7.5](07-dictionary.md#sec-7-5) quotes. The chaining
-goes back to an internal memorandum of H. P. Luhn at IBM, of January 1953,
-which seems also to be one of the earliest descriptions of a linked list,
-and the open addressing to another group at IBM in the same years
-([Peterson 1957](Z-bibliography.md#ref-peterson1957); [Morris
+inspections that [§7.5](07-dictionary.md#sec-7-5) quotes. The chaining goes
+back to an internal memorandum of H. P. Luhn at IBM, of January 1953, which
+seems also to be one of the earliest descriptions of a linked list, and the
+open addressing to another group at IBM in the same years ([Peterson
+1957](Z-bibliography.md#ref-peterson1957); [Morris
 1968](Z-bibliography.md#ref-morris1968) surveys the scatter storage of the
 time). The universal hashing is due to [Carter and Wegman
 1979](Z-bibliography.md#ref-carter1979), who also introduced the simple
@@ -3115,22 +3163,23 @@ is due to [Pătrașcu and Thorup 2012](Z-bibliography.md#ref-patrascu2012).
 The multiplicative hashing is part of the folklore ([Knuth 1998,
 §6.4](Z-bibliography.md#ref-knuth1998v3)), but the random odd multiplier
 and the analysis of [§7.3.3](07-dictionary.md#sec-7-3-3) are due to
-[Dietzfelbinger et al. 1997](Z-bibliography.md#ref-dietzfelbinger1997),
-and the multiply-add variant, with the collision probability $1 / 2^d$, to
+[Dietzfelbinger et al. 1997](Z-bibliography.md#ref-dietzfelbinger1997), and
+the multiply-add variant, with the collision probability $1 / 2^d$, to
 [Dietzfelbinger 1996](Z-bibliography.md#ref-dietzfelbinger1996). A faster
-code for the tuples of fixed length multiplies the parts in pairs,
-$\sum_i ( ( x_{2i} + a_{2i} ) \bmod 2^w ) ( ( x_{2i+1} + a_{2i+1} )
-\bmod 2^w ) \bmod 2^{2w}$, with half the products of (7.5) and the
-collision probability $1 / 2^w$ ([Black et al.
-1999](Z-bibliography.md#ref-black1999)); the polynomials over a prime field
+code for the tuples of fixed length multiplies the parts in pairs, $\sum_i
+( ( x_{2i} + a_{2i} ) \bmod 2^w ) ( ( x_{2i+1} + a_{2i+1} ) \bmod 2^w )
+\bmod 2^{2w}$, with half the products of (7.5) and the collision
+probability $1 / 2^w$ ([Black et al.
+1999](Z-bibliography.md#ref-black1999)). The polynomials over a prime field
 for the sequences are due to [Dietzfelbinger et al.
 1992](Z-bibliography.md#ref-dietzfelbinger1992), and the reduction modulo a
-prime $2^w - 1$ by additions and masks is in [Knuth 1998, vol. 2, §3.2.1.1](Z-bibliography.md#ref-knuth1998v2). The attacks by keys chosen to
-collide, which motivate the random functions, were described by [Crosby
-and Wallach 2003](Z-bibliography.md#ref-crosby2003). The engineered tables
-of [§7.6](07-dictionary.md#sec-7-6) follow the Swiss tables of
-[Kulukundis 2017](Z-bibliography.md#ref-kulukundis2017) and the table of
-Boost described by [Lopez Munoz 2022](Z-bibliography.md#ref-lopezmunoz2022);
+prime $2^w - 1$ by additions and masks is in [Knuth 1998, vol. 2,
+§3.2.1.1](Z-bibliography.md#ref-knuth1998v2). Attacks by keys chosen to
+collide, which motivate the random functions, were described by [Crosby and
+Wallach 2003](Z-bibliography.md#ref-crosby2003). The engineered tables of
+[§7.6](07-dictionary.md#sec-7-6) follow the Swiss tables of [Kulukundis
+2017](Z-bibliography.md#ref-kulukundis2017) and the table of Boost
+described by [Lopez Munoz 2022](Z-bibliography.md#ref-lopezmunoz2022);
 their hash functions borrow from [wyhash](Z-bibliography.md#ref-wangyi) and
 [XXH3](Z-bibliography.md#ref-collet2019).
 
@@ -3139,56 +3188,60 @@ al. 1984](Z-bibliography.md#ref-fredman1984), and its dynamic version to
 [Dietzfelbinger et al. 1994](Z-bibliography.md#ref-dietzfelbinger1994); the
 cuckoo hashing to [Pagh and Rodler 2004](Z-bibliography.md#ref-pagh2004),
 with the stash of [Kirsch et al. 2009](Z-bibliography.md#ref-kirsch2009).
-The minimal perfect hash functions have been engineered in the last decade
-toward the bound of [Lemma 7.14](07-dictionary.md#lem-7-14), and [Ferragina 2023,
-chapter 8](Z-bibliography.md#ref-ferragina2023) is a good entry point to
-the schemes of [§7.8](07-dictionary.md#sec-7-8); [Hermann et al.
+Minimal perfect hash functions have been engineered in the last decade
+toward the bound of [Lemma 7.14](07-dictionary.md#lem-7-14). [Ferragina
+2023, chapter 8](Z-bibliography.md#ref-ferragina2023) is a good entry point
+to the schemes of [§7.8](07-dictionary.md#sec-7-8), and [Hermann et al.
 2024](Z-bibliography.md#ref-hermann2024) and [Lehmann et al.
 2025](Z-bibliography.md#ref-lehmann2025) report the state of the art at the
 time of writing.
 
-The skip lists were introduced by [Pugh 1990](Z-bibliography.md#ref-pugh1990),
-who also presented their applications and extensions, the finger search and
-the widths among them ([Pugh 1990b](Z-bibliography.md#ref-pugh1990b)).
-The length of the search path of the $i$-th key has been analyzed precisely,
-with its variance ([Papadakis et al. 1992](Z-bibliography.md#ref-papadakis1992);
-[Kirschenhofer and Prodinger 1994](Z-bibliography.md#ref-kirschenhofer1994);
-[Kirschenhofer et al. 1995](Z-bibliography.md#ref-kirschenhofer1995), the
-last one for the search that saves the comparisons of [Lemma 7.22](07-dictionary.md#lem-7-22)), and
-there are deterministic ([Munro et al. 1992](Z-bibliography.md#ref-munro1992)),
-biased ([Ergun et al. 2001](Z-bibliography.md#ref-ergun2001); [Bagchi et
-al. 2002](Z-bibliography.md#ref-bagchi2002)) and self-adjusting ([Bose et
-al. 2008](Z-bibliography.md#ref-bose2008)) versions; skip lists are also
-used in the indexes of databases, Redis among them, and in the kernel of
-some operating systems.
+Skip lists were introduced by [Pugh
+1990](Z-bibliography.md#ref-pugh1990), who also presented their
+applications and extensions, the finger search and the widths among them
+([Pugh 1990b](Z-bibliography.md#ref-pugh1990b)). The length of the search
+path of the $i$-th key has been analyzed precisely, with its variance
+([Papadakis et al. 1992](Z-bibliography.md#ref-papadakis1992);
+[Kirschenhofer and Prodinger
+1994](Z-bibliography.md#ref-kirschenhofer1994); [Kirschenhofer et al.
+1995](Z-bibliography.md#ref-kirschenhofer1995), the last one for the search
+that saves the comparisons of [Lemma 7.22](07-dictionary.md#lem-7-22)).
+Also, there are deterministic ([Munro et al.
+1992](Z-bibliography.md#ref-munro1992)), biased ([Ergun et al.
+2001](Z-bibliography.md#ref-ergun2001); [Bagchi et al.
+2002](Z-bibliography.md#ref-bagchi2002)) and self-adjusting ([Bose et al.
+2008](Z-bibliography.md#ref-bose2008)) versions, and skip lists are used in
+the indexes of databases, Redis among them, and in the kernel of some
+operating systems.
 
-The tries are due to [Fredkin 1960](Z-bibliography.md#ref-fredkin1960) and
-the compact ones to [Morrison 1968](Z-bibliography.md#ref-morrison1968); the
-blind search to [Ferragina and Grossi 1999](Z-bibliography.md#ref-ferragina1999),
-the adaptive radix tree to [Leis et al. 2013](Z-bibliography.md#ref-leis2013),
-and the succinct coding of the trees of higher degree to [Benoit et al.
+Tries are due to [Fredkin 1960](Z-bibliography.md#ref-fredkin1960) and
+the compact ones to [Morrison 1968](Z-bibliography.md#ref-morrison1968);
+the blind search to [Ferragina and Grossi
+1999](Z-bibliography.md#ref-ferragina1999), the adaptive radix tree to
+[Leis et al. 2013](Z-bibliography.md#ref-leis2013), and the succinct coding
+of the trees of higher degree to [Benoit et al.
 2005](Z-bibliography.md#ref-benoit2005). The first structure with the
 operations of the SSET of the integers in $O( \log w )$ time is the tree of
 [van Emde Boas 1977](Z-bibliography.md#ref-vanemdeboas1977), whose space
-$2^w$ makes it impractical for large integers; the x-fast and the y-fast
+$2^w$ makes it impractical for large integers. The x-fast and the y-fast
 tries are due to [Willard 1983](Z-bibliography.md#ref-willard1983), the
 hash tables of the x-fast trie replacing the arrays of the tree of van Emde
-Boas. The fusion trees of [Fredman and Willard 1993](Z-bibliography.md#ref-fredman1993)
-store $n$ integers of $w$ bits in $O( n )$ space with searches in
-$O( \log n / \log w )$ time, and the choice between a fusion tree and a
-y-fast trie, by whether $\log w > \sqrt{\log n}$, gives searches in
-$O( \sqrt{\log n} )$ time in $O( n )$ space; the lower bounds of
-[Pătrașcu and Thorup 2007](Z-bibliography.md#ref-patrascu2007) show that
-these results are more or less optimal for the structures in $O( n )$
-space.
+Boas. Also, the fusion trees of [Fredman and Willard
+1993](Z-bibliography.md#ref-fredman1993) store $n$ integers of $w$ bits in
+$O( n )$ space with searches in $O( \log n / \log w )$ time, and the choice
+between a fusion tree and a y-fast trie, by whether $\log w > \sqrt{\log
+n}$, gives searches in $O( \sqrt{\log n} )$ time in $O( n )$ space. The
+lower bounds of [Pătrașcu and Thorup
+2007](Z-bibliography.md#ref-patrascu2007) show that these results are more
+or less optimal for the structures in $O( n )$ space.
 
 ## 7.13 Exercises {#sec-7-13}
 
 Each exercise names the test of the library that solves it (run it with
-`ctest -R <name>`). The exercises of [Morin 2013](Z-bibliography.md#ref-morin-cpp)
-are numbered as in the book; those that ask to illustrate an operation are
-solved by the figures of this chapter, and the others by the lemmas and the
-code cited.
+`ctest -R <name>`). The exercises of [Morin
+2013](Z-bibliography.md#ref-morin-cpp) are numbered as in the book; those
+that ask to illustrate an operation are solved by the figures of this
+chapter, and the others by the lemmas and the code cited.
 
 1. Realize a dictionary on the trains numbered from 1 to 36799 and on the
    telephone extensions in $[ 280000 , 289999 ]$ with a table with direct

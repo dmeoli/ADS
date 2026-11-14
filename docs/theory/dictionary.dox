@@ -613,7 +613,8 @@
  such sets do not foil, by random multipliers: two distinct tuples collide
  with probability at most \f$ 3 / 2^w \f$ (Theorem 5.3 of the book), two
  distinct sequences, the longer of \f$ r \f$ items, at most
- \f$ r / p \f$ (Theorem 5.5), the end marker \f$ p - 1 \f$ telling apart a
+ \f$ r / ( p - 1 ) \f$ (Theorem 5.5 with the point drawn in
+ \f$ [ 1 , p ) \f$), the end marker \f$ p - 1 \f$ telling apart a
  sequence from its extensions. Since
  \f$ x = a 2^w + b \f$ and \f$ 2^w \equiv 1 \pmod{2^w - 1} \f$,
  \f$ x \equiv a + b \pmod{2^w - 1} \f$, and \f$ a + b < x \f$ while
