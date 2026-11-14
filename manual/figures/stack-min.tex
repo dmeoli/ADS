@@ -1,0 +1,31 @@
+% Source for the figure of MinStack (appendix A): the vector A of the items
+% and the vector M of the minima before and after push(9), push(2) and
+% pop(). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (18.5mm,7mm) {$A$};
+  \node[var] at (63.4mm,7mm) {$M$};
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{5/cell,3/cell,7/cell,3/cell}
+  \cells{m}{56mm,0}{5/cell,3/cell,3/cell}
+  \node[var,anchor=east] at (-6mm,-13mm) {\texttt{push(9)}};
+  \cells{b}{0,-13mm}{5/cell,3/cell,7/cell,3/cell,9/added}
+  \cells{n}{56mm,-13mm}{5/cell,3/cell,3/touched}
+  \node[var,anchor=west] at (90mm,-13mm) {$9 > 3$};
+  \node[var,anchor=east] at (-6mm,-26mm) {\texttt{push(2)}};
+  \cells{c}{0,-26mm}{5/cell,3/cell,7/cell,3/cell,9/cell,2/added}
+  \cells{o}{56mm,-26mm}{5/cell,3/cell,3/cell,2/added}
+  \node[var,anchor=west] at (90mm,-26mm) {$2 \le 3$};
+  \node[var,anchor=east] at (-6mm,-39mm) {\texttt{pop()}};
+  \cells{d}{0,-39mm}{5/cell,3/cell,7/cell,3/cell,9/cell,2/touched}
+  \cells{p}{56mm,-39mm}{5/cell,3/cell,3/cell,2/touched}
+  \node[var,anchor=west] at (90mm,-39mm) {returns \texttt{2}};
+\end{tikzpicture}
+\end{document}
