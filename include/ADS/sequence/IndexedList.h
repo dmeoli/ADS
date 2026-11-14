@@ -132,9 +132,11 @@ void rotateArray( std::span< T > a , std::size_t r );
 /// 2 & \quad \textbf{for}\ s \gets 0\ \textbf{to}\ \gcd( n , r ) - 1
 ///     \ \textbf{do} \cr
 /// 3 & \qquad x \gets l[ s ];\ j \gets s \cr
-/// 4 & \qquad \textbf{repeat}\ j \gets ( j - r ) \bmod n;\ l[ ( j + r )
-///     \bmod n ] \gets l[ j ]\ \textbf{until}\ j = s \cr
-/// 5 & \qquad l[ ( s + r ) \bmod n ] \gets x
+/// 4 & \qquad \textbf{loop} \cr
+/// 5 & \qquad\quad p \gets ( j - r ) \bmod n \cr
+/// 6 & \qquad\quad \textbf{if}\ p = s\ \textbf{then break} \cr
+/// 7 & \qquad\quad l[ j ] \gets l[ p ];\ j \gets p \cr
+/// 8 & \qquad l[ j ] \gets x
 /// \end{array}}
 /// \f]
 /// \post each item moved by \f$ r \f$ ranks, circularly (an audit)
