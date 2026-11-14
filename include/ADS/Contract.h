@@ -92,6 +92,7 @@ namespace detail {
 
 /// the check of the condition `cond`, a contract of the kind `kind`, when
 /// `ADS_CONTRACTS` is at least `level`: `contract_violation` if it is false
+//! [check]
 #define ADS_CONTRACT_CHECK( level , kind , cond )                         \
  do {                                                                     \
   if constexpr( ADS_CONTRACTS >= ( level ) )                              \
@@ -99,6 +100,7 @@ namespace detail {
     ::ADS::detail::violated( kind , #cond , __func__ , __FILE__ ,         \
                              __LINE__ );                                  \
   } while( false )
+//! [check]
 
 /// a precondition, checked from level 1
 #define ADS_PRE( cond ) ADS_CONTRACT_CHECK( 1 , "precondition" , cond )

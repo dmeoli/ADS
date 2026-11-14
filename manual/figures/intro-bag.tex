@@ -1,0 +1,39 @@
+% Source for the figure of Bag (sec. 1.4): the table of the groups, from an
+% item to the vector of the items equal to it in the order of insertion,
+% before and after insert(b3); find(b) gives the first item of the group,
+% remove(b) takes the last. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=west] at (-4mm,8mm) {before};
+  \node[var,anchor=west] at (58mm,8mm) {\texttt{insert(b3)}};
+  \foreach \i/\s/\k in {0/free/,1/cell/a,2/free/,3/cell/b,4/cell/c,5/free/}
+    \node[\s] (L-\i) at (0,-\i*7.4mm) {\k};
+  \foreach \i/\s/\k in {0/free/,1/cell/a,2/free/,3/touched/b,4/cell/c,5/free/}
+    \node[\s] (R-\i) at (62mm,-\i*7.4mm) {\k};
+  \foreach \i in {0,...,5} {
+    \node[index,left=1.6mm of L-\i] {\i};
+    \node[index,left=1.6mm of R-\i] {\i};
+  }
+  \cells{La}{12mm,-7.4mm}{a1/cell,a2/cell}
+  \cells{Lb}{12mm,-22.2mm}{b1/cell,b2/cell}
+  \cells{Lc}{12mm,-29.6mm}{c1/cell}
+  \draw[ptr] (L-1.east) -- (La-0.west);
+  \draw[ptr] (L-3.east) -- (Lb-0.west);
+  \draw[ptr] (L-4.east) -- (Lc-0.west);
+  \cells{Ra}{74mm,-7.4mm}{a1/cell,a2/cell}
+  \cells{Rb}{74mm,-22.2mm}{b1/cell,b2/cell,b3/added}
+  \cells{Rc}{74mm,-29.6mm}{c1/cell}
+  \draw[ptr] (R-1.east) -- (Ra-0.west);
+  \draw[edge-touched,->] (R-3.east) -- (Rb-0.west);
+  \draw[ptr] (R-4.east) -- (Rc-0.west);
+  \node[var,anchor=west] at ($(Lb-1.east)+(3mm,0)$) {$n = 5$};
+  \node[var,anchor=west] at ($(Rb-2.east)+(3mm,0)$) {$n = 6$};
+\end{tikzpicture}
+\end{document}

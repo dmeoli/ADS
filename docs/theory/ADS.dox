@@ -265,6 +265,9 @@
      indices</td><td>forward</td><td>\f$ O( 1 ) \f$</td></tr>
  <tr><td><tt>CircularIterator</tt></td><td>a circular vector</td>
      <td>random access</td><td>\f$ O( 1 ) \f$</td></tr>
+ <tr><td><tt>RankIterator</tt></td><td>a container read by rank,
+     <tt>c[ i ]</tt></td><td>random access</td><td>that of
+     <tt>c[ i ]</tt></td></tr>
  <tr><td><tt>IndirectIterator</tt></td><td>a vector of pointers, read
      through them</td><td>random access</td><td>\f$ O( 1 ) \f$</td></tr>
  <tr><td><tt>SlotIterator</tt></td><td>the occupied places of a table</td>

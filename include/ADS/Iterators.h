@@ -53,8 +53,11 @@
  *   `root`, or `P::none`: the children of a node, the preorder and the
  *   symmetric order by the links to the parents, with no stack.
  *
- * Each has a constant and a mutable form, by the parameter `Const`, and the
- * mutable one converts to the constant one. An iterator stays valid as long
+ * `LinkedIterator`, `IndexIterator`, `CircularIterator` and `RankIterator`
+ * have a constant and a mutable form, by the parameter `Const`, and the
+ * mutable one converts to the constant one; `IndirectIterator`,
+ * `SlotIterator`, `KeyIterator` and `PathIterator` read constant items, and
+ * `WalkIterator` gives the nodes by value. An iterator stays valid as long
  * as the cells (or the vector) it refers to do; the containers that keep an
  * invariant on their items (a heap, a set) expose only the constant form.
  * These are adaptors with no contracts of their own: the containers check
@@ -775,6 +778,7 @@ class PathIterator {
   }
 
  /// from `n` down to its first node (or last, if not `first`)
+ //! [path-step]
  void descend( N * n , bool first ) {
   for( ; n ; n = child( n , ! first ) ) f_path.push_back( n );
   }
@@ -791,6 +795,7 @@ class PathIterator {
    f_path.pop_back();
    } while( ! f_path.empty() && ( child( f_path.back() , forward ) == from ) );
   }
+ //! [path-step]
 
  const O * f_o = nullptr;
  std::vector< N * > f_path;   ///< from the root to the current node

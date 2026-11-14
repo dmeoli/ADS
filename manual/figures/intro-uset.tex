@@ -1,0 +1,22 @@
+% Source for the figure of ArrayUSet (sec. 1.4): remove(3) scans the vector
+% to the item, moves the last item into its place and shortens the vector.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{7/touched,3/touched,9/cell,4/cell,8/cell,/free,/free}
+  \indices{a}{7}
+  \node[var,anchor=west] at (51.4mm,0) {$n = 5$};
+  \node[var,anchor=east] at (-6mm,-16mm) {\texttt{remove(3)}};
+  \cells{b}{0,-16mm}{7/cell,8/added,9/cell,4/cell,/free,/free,/free}
+  \node[var,anchor=west] at (51.4mm,-16mm) {$n = 4$, returns true};
+  \draw[ptr] (a-4.south) .. controls +(0,-6mm) and +(0,6mm) .. (b-1.north);
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,27 @@
+% Source for the figure of the asymptotic growth (sec. 1.5): 50 n log n
+% against n^2, which cross near n = 439. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,x=0.09mm,y=0.06mm]
+  % the cost in thousands, up to 1000
+  \draw[edge] (0,0) -- (1060,0);
+  \draw[edge] (0,0) -- (0,1040);
+  \foreach \n in {0,200,400,600,800,1000}
+    \node[index,below=1.6mm] at (\n,0) {\n};
+  \foreach \c/\l in {0/0,250/250000,500/500000,750/750000,1000/1000000}
+    \node[index,left=1.6mm] at (0,\c) {\l};
+  \node[var,text=adsInk] at (530,-120) {$n$};
+  \draw[edge,densely dotted] (439,0) -- (439,192.7);
+  \node[index,anchor=south west] at (447,4) {439};
+  \draw[edge] plot[domain=1:1000,samples=100] (\x,{0.05*\x*ln(\x)/ln(2)});
+  \draw[edge-touched] plot[domain=0:1000,samples=100] (\x,{\x*(\x/1000)});
+  \node[var,text=adsInk,anchor=west] at (1010,498.3) {$50 n \log n$};
+  \node[var,anchor=west] at (1010,1000) {$n^2$};
+\end{tikzpicture}
+\end{document}

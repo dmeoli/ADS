@@ -71,6 +71,7 @@ constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
   return( a * b );
  #endif
   }
+ //! [wideProduct]
  constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
  const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW ,
                      b1 = b >> 32;
@@ -79,6 +80,7 @@ constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
  const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
  hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
  return( ( mid << 32 ) | ( p00 & LOW ) );
+ //! [wideProduct]
 #endif
  }
 
