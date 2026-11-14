@@ -10,7 +10,7 @@ which a contributor takes them. Each step is described as the repository
 does it at the time of writing. Our running example is `MinStack`, the
 STACK with its least item of [Morin 2013, exercise
 3.14](Z-bibliography.md#ref-morin-cpp). It is small enough to be read in
-full (a header of 166 lines and a `.tpp` of 66), and yet it goes through
+full (a header of 167 lines and a `.tpp` of 66), and yet it goes through
 almost all the steps: a concept that it models, contracts of three kinds,
 two operations with pseudocode, a lemma on its theory page, a test in the
 registry, a line of the module and one of the changelog. It has no
@@ -40,9 +40,11 @@ the operations that carry pseudocode and contracts are defined in the
 `.tpp`. Both files have the frame of all the sources of ADS, which opens
 with a box of 78 columns holding the name of the file:
 
-    /*--------------------------------------------------------------------------*/
-    /*---------------------------- File MinStack.h -----------------------------*/
-    /*--------------------------------------------------------------------------*/
+```cpp
+/*--------------------------------------------------------------------------*/
+/*---------------------------- File MinStack.h -----------------------------*/
+/*--------------------------------------------------------------------------*/
+```
 
 After it come the comment `/** @file`, which Doxygen shows as the
 description of the header, and then the boxes `DEFINITIONS`, `INCLUDES`,
@@ -135,13 +137,12 @@ and the invariant of the structure, in the sense of [Meyer
 1992](Z-bibliography.md#ref-meyer1992). ADS checks them at run time by
 the four macros of `ADS/Contract.h`, which mirror the contracts of C++26
 ([Berne et al. 2025](Z-bibliography.md#ref-berne2025)), so that the
-compilers that support those can replace them. All four expand to
-
-```cpp
---8<-- "generated/Contract-check.cpp"
-```
-
-each with its level and its kind. `ADS_PRE` is checked from the level
+compilers that support those can replace them. All four expand to the
+macro `ADS_CONTRACT_CHECK( level , kind , cond )`, each with its level and
+its kind, which tests the condition under `if constexpr( ADS_CONTRACTS >=
+level )` and, when the condition is false, calls a function of
+`ADS::detail` with the kind, the text of the condition, the function, the
+file and the line. `ADS_PRE` is checked from the level
 1 and `ADS_POST` from the level 2, while `ADS_INVARIANT` and `ADS_AUDIT`
 (a precondition or a postcondition that costs more than the operation,
 e.g., that a vector is sorted before a binary search) are checked from the
@@ -232,8 +233,10 @@ two branches of `push()` and a `pop()` that removes a minimum.
 ![Figure A.1. A `MinStack` with the items 5, 3, 7, 3 after `push(9)`, `push(2)` and `pop()`; what each operation adds is in orange, what it reads or removes in violet, the rest in the faint tint. The 9 does not enter $M$, while the 2 does, and leaves it with `pop()`.](../figures/stack-min.svg){#fig-A-1}
 
 The code of the two operations is the pseudocode with the names of the
-class. The listings of this manual leave out the contracts, which the
-text states:
+class. We show it here, as the example of how a structure is written,
+without the contracts, which the text states (the chapters of the areas,
+instead, give only the pseudocode, the signatures and short examples of
+use, see [§A.11](A-writing-structure.md#sec-A-11)):
 
 ```cpp
 --8<-- "generated/MinStack-push.cpp"
@@ -442,11 +445,12 @@ of the pseudocode on both sites, in the light and in the dark theme.
 A structure enters the chapter of its area (for `MinStack`, [Chapter
 3](03-stack.md#ch-3)) with the parts that `manual/MAINTENANCE.md` and the
 model chapter fix. These are the abstract data type and its axioms, the
-representation and its invariant, a figure of the state before and after
-the operation that matters, the pseudocode, the lemmas with their proofs,
-the code of the operations that teach something, the engineered variants,
-and the exercises, each naming its ctest. No code is copied into a
-chapter: instead, the script `manual/build/snarf.py` (run by `make snippets` in
+the representation and its invariant, a figure of the state before and after
+the operation that matters, the pseudocode, the lemmas and the theorems with
+their proofs, the signatures of the operations that a user calls with short
+examples of use, the engineered variants, and the exercises, each naming
+its ctest. A chapter shows no extract of an implementation, which the
+pseudocode replaces, and it copies neither pseudocode nor code: instead, the script `manual/build/snarf.py` (run by `make snippets` in
 `manual/build`) writes into `manual/generated` two kinds of files: (i) a
 file `<File>-<name>.cpp` for each pair of markers `//! [name]` of a `.h`
 or a `.tpp`, dedented and without the contracts and the copies that only
@@ -460,8 +464,10 @@ in a separate paragraph for the pseudocode and as the only line of a
 fenced `cpp` block for the code. On the site the line is expanded by
 `pymdownx.snippets`, and in the PDF by `build/snippets.lua`. For instance,
 [§A.4](A-writing-structure.md#sec-A-4) includes in this way
-`MinStack-push.pseudo.md`, `MinStack-pop.pseudo.md`, `MinStack-push.cpp`
-and `MinStack-pop.cpp`.
+`MinStack-push.pseudo.md` and `MinStack-pop.pseudo.md`, and, as the example
+of this appendix only, `MinStack-push.cpp` and `MinStack-pop.cpp`. A
+function whose comment has no pseudocode gets one in its header (a change
+of the comments only) before a chapter describes it.
 
 A figure is a standalone TikZ file, `manual/figures/<area>-<name>.tex`
 (here `stack-min.tex`), that loads `lmodern`, `amsmath` and `amssymb`,
@@ -507,4 +513,4 @@ corresponding file or entry of `MinStack`.
 | benchmark | `bench/<family>.cpp`, `bench/run.sh`, `bench/summary.py` | a campaign (Appendix B) | none |
 | module | `src/ADS.cppm` | the test `module` | `using ADS::MinStack;` |
 | changelog | `CHANGELOG.md` | under `[Unreleased]` | exercises 3.14 to 3.16 |
-| manual | `manual/chapters/NN-<area>.md`, `manual/figures` | `make check`, `make pdf` | `stack-min.tex`, two snippets |
+| manual | `manual/chapters/NN-<area>.md`, `manual/figures` | `make check`, `make pdf` | `stack-min.tex`, two pseudocodes |
