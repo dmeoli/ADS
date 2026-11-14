@@ -89,10 +89,6 @@ $i , i + 1 , \ldots , 7$, and no partial sum exceeds 64, so that no carry
 crosses a byte; hence the byte 7 of the product is the sum of the 8 bytes.
 $\square$
 
-```cpp
---8<-- "generated/Bitwise-sidewaysSum.cpp"
-```
-
 **The lowest and the highest 1.** The lowest 1 of $x \ne 0$ is in the
 place $\rho( x )$, and $x - 1$ has the same bits as $x$ above it, a 0 in
 it and 1s below it; hence
@@ -127,6 +123,40 @@ $O( \log w )$ operations on a word of $w$ bits (cf. [Knuth 2011,
 
 --8<-- "generated/Bitwise-reverseBits.pseudo.md"
 
+In line 3, $m_k$ is the word whose fields of $2^k$ bits are alternately
+all 1 and all 0, from the field of the places $0 , \ldots , 2^k - 1$, which
+is all 1 (i.e., $\mathtt{0x5555 \ldots 55}$, $\mathtt{0x3333 \ldots 33}$,
+$\mathtt{0x0F0F \ldots 0F}$, $\mathtt{0x00FF \ldots 00FF}$ and
+$\mathtt{0x0000FFFF0000FFFF}$ for $k = 0 , \ldots , 4$); hence $m_k$ has a
+1 in the place $p$ if and only if the bit $k$ of $p$ is 0.
+
+<span id="lem-18-2"></span>**Lemma 18.2.** *For any word $x \ne 0$,
+`lambda( x )` returns $\lambda( x )$ after 6 steps; for any word $x$,
+`reverseBits( x )` returns the word whose bit $63 - p$ is $x_p$ for each
+place $p$.*
+
+*Proof.* For `lambda()`, the invariant before the step of the shift $s$
+is $\lambda( x_0 ) = r + \lambda( x )$, where $x_0$ is the argument and
+$x < 2^{2 s}$: it holds before the first step, with $r = 0$ and $s = 32$.
+If $x \gg s \ne 0$, then $\lambda( x ) \ge s$ and $\lambda( x \gg s ) =
+\lambda( x ) - s$, and the step moves $s$ from $\lambda( x )$ to $r$;
+otherwise $x < 2^s$, and nothing changes. In both cases $x < 2^s$ after the
+step, which is the invariant for the next shift $s / 2$. After the step of
+the shift 1 one has $x < 2$, i.e., $x = 1$ since $x$ never becomes 0, and
+$r = \lambda( x_0 )$.
+
+For `reverseBits()`, we show that the step $k$ of line 3 moves the bit in
+the place $p$ to the place $p \oplus 2^k$, i.e., it complements the bit $k$
+of the place. A bit whose place has the bit $k$ equal to 0 is kept by
+$x \,\&\, m_k$ and shifted up by $2^k$, which sets the bit $k$ of its
+place with no carry; a bit whose place has the bit $k$ equal to 1 is
+shifted down by $2^k$, which clears it, and is then kept by the mask,
+whose 1s are the places with the bit $k$ equal to 0. No other bit
+survives the masks, and the two terms of the or have their 1s in disjoint
+places. The exchange of the halves in line 4 complements the bit 5 of the
+place in the same way. After the 6 steps the bit of the place $p$ is in
+the place $p \oplus 63 = 63 - p$. $\square$
+
 **The Gray code.** The binary *reflected Gray code* of [Gray
 1953](Z-bibliography.md#ref-gray1953) orders the $2^{64}$ words in such a
 way that two consecutive ones differ in one bit only. Then `gray()` gives
@@ -136,7 +166,7 @@ the $x$-th word of the order, and `grayInverse()` gives the rank of a word.
 
 --8<-- "generated/Bitwise-grayInverse.pseudo.md"
 
-<span id="lem-18-2"></span>**Lemma 18.2.** *Let $g( x ) = x \oplus ( x
+<span id="lem-18-3"></span>**Lemma 18.3.** *Let $g( x ) = x \oplus ( x
 \gg 1 )$. Then $g( x )$ and $g( x + 1 )$ differ in exactly one bit for
 $x < 2^{64} - 1$, and $g$ is a bijection whose inverse gives the bit $k$ of
 $x$ as $x_k = \bigoplus_{j \ge k} g_j$; `grayInverse()` computes it with 6
@@ -169,7 +199,7 @@ operations
 
 ![Figure 18.2. The words of [Algorithm 18.2](18-combinatorial.md#alg-18-2) on $x = 01011100$: the lowest run of 1s of $x$, the bit that the carry sets, and the $r - 1 = 2$ bits that go back to the bottom (in colour).](../figures/combinatorial-gosper.svg){#fig-18-2}
 
-<span id="lem-18-3"></span>**Lemma 18.3.** *For $x \ne 0$, with
+<span id="lem-18-4"></span>**Lemma 18.4.** *For $x \ne 0$, with
 $u = x \,\&\, -x$ and $v = x + u$, the next larger word with as many 1 bits
 as $x$ is*
 
@@ -190,13 +220,9 @@ $r + 1$ ones from the place $\rho( x )$. The division by $u$ brings it to
 the place 0, and the shift by 2 shortens it to $r - 1$ ones, which the sum
 adds to $v$ without carries. $\square$
 
-```cpp
---8<-- "generated/Bitwise-nextSameWeight.cpp"
-```
-
 Note that the contract on $v$ also catches $x = 2^{63}$, whose successor
-would need a 65th bit. Since the division typically costs a few tens of cycles, the engineered version of [§18.8](18-combinatorial.md#sec-18-8)
-replaces it by a shift.
+would need a 65th bit. The engineered version of
+[§18.8](18-combinatorial.md#sec-18-8) replaces the division by a shift.
 
 **The Morton code.** `interleave( x , y )` puts the 32 bits of $x$ in the
 even places of a word and those of $y$ in the odd ones, i.e., the *Morton
@@ -209,7 +235,41 @@ of matrices exploit. The spread of the 32 bits to the even
 places moves blocks of 16, 8, 4, 2 and 1 bits, each by an or with a shifted
 copy and a mask, and the gather undoes the steps in the reverse order.
 
+<span id="alg-18-3"></span>**Algorithm 18.3.** The Morton code of two
+coordinates of 32 bits ([Knuth 2011, §7.1.3](Z-bibliography.md#ref-knuth2011)).
+
 --8<-- "generated/Bitwise-interleave.pseudo.md"
+
+<span id="lem-18-5"></span>**Lemma 18.5.** *For any $x < 2^{32}$,
+$\mathrm{spread}( x )$ of [Algorithm 18.3](18-combinatorial.md#alg-18-3)
+returns the word whose bit $2 i$ is $x_i$ for $0 \le i < 32$ and whose odd
+bits are 0; hence `interleave( x , y )` has $x_i$ in the place $2 i$ and
+$y_i$ in the place $2 i + 1$, and `deinterleave()` is its inverse.*
+
+*Proof.* Let $\sigma_k( i ) = i + \sum_{b \ge k} i_b 2^b$, where
+$i_b$ is the bit $b$ of $i$; we show that after the step of the shift
+$2^k$ the bit $x_i$ is in the place $\sigma_k( i )$ and all the other
+places are 0. Before the first step this holds with $k = 5$, since
+$\sigma_5( i ) = i$ for $i < 32$. The terms of $\sigma_{k+1}( i ) - i$ are
+multiples of $2^{k+1}$; hence the bit $k$ of the place
+$\sigma_{k+1}( i )$ is $i_k$, and the step of the shift $2^k$ treats the
+bit $x_i$ as follows. The or with $x \ll 2^k$ makes a copy of it in the
+place $\sigma_{k+1}( i ) + 2^k$, and the mask keeps the places whose bit
+$k$ is 0 (as $m_k$ above). If $i_k = 0$, the bit stays where it is and its
+copy, whose place has the bit $k$ equal to 1, is cleared; if $i_k = 1$,
+the bit is cleared and its copy, in the place $\sigma_{k+1}( i ) + 2^k =
+\sigma_k( i )$, is kept. A copy of another bit cannot land on a place
+that is kept unless it is the copy kept above, since the places
+$\sigma_k( i )$ are distinct for distinct $i$ (the map $i \mapsto
+\sigma_k( i )$ is increasing). After the step of the shift 1, the bit
+$x_i$ is in the place $\sigma_0( i ) = 2 i$. The gather of
+`deinterleave()` clears the odd places and runs the steps of the spread
+backwards, for the shifts $1 , 2 , \ldots , 16$ to the right, each with the
+mask of the step that precedes it in the spread (and the low 32 bits at the
+end); the same argument, read from $\sigma_0$ to $\sigma_5$, shows that the
+step of the shift $2^k$ brings the bit from the place $\sigma_k( i )$ to
+the place $\sigma_{k+1}( i )$, and hence the bit of the place $2 i$ back to
+the place $i$. $\square$
 
 ![Figure 18.3. The Morton codes of the points of a grid of $4 \times 4$ (left, in binary, $y_1 x_1 y_0 x_0$) and their order on the grid, from 0 to 15 (right).](../figures/combinatorial-morton.svg){#fig-18-3}
 
@@ -219,7 +279,7 @@ lets `strlen()` scan a string 8 bytes at a time.
 
 --8<-- "generated/Bitwise-hasZeroByte.pseudo.md"
 
-<span id="lem-18-4"></span>**Lemma 18.4.** *$( ( x - \mathtt{0x0101 \ldots
+<span id="lem-18-6"></span>**Lemma 18.6.** *$( ( x - \mathtt{0x0101 \ldots
 01} ) \,\&\, \lnot x \,\&\, \mathtt{0x8080 \ldots 80} ) \ne 0$ if and only if
 one of the bytes of $x$ is 0.*
 
@@ -234,10 +294,6 @@ We remark that the borrow from the byte $i$ may turn a byte above it that is 1 i
 byte whose top bit is set, i.e., a "false" zero byte. This does not change
 the answer, since a zero byte exists anyway; yet, the word of the test
 locates with certainty only the lowest zero byte.
-
-```cpp
---8<-- "generated/Bitwise-hasZeroByte.cpp"
-```
 
 ## 18.3 Engineered operations on words and arrays {#sec-18-3}
 
@@ -279,19 +335,19 @@ least two of the three bits are). A tree of 15 such adders takes a block of 16
 vectors $v_0 , \ldots , v_{15}$ together with four accumulators $o$, $t$,
 $f$, $e$, whose bits weigh 1, 2, 4 and 8, and gives four new accumulators
 and a vector $s$ of the sixteens
-([Algorithm 18.3](18-combinatorial.md#alg-18-3)); only $s$ is counted.
+([Algorithm 18.4](18-combinatorial.md#alg-18-4)); only $s$ is counted.
 
-<span id="alg-18-3"></span>**Algorithm 18.3.** The population count of an
+<span id="alg-18-4"></span>**Algorithm 18.4.** The population count of an
 array by the method of Harley and Seal ([Muła et al.
 2018](Z-bibliography.md#ref-mula2018)); $V$ is the number of words of a
 vector.
 
 --8<-- "generated/FastBitwise-popcount.pseudo.md"
 
-<span id="lem-18-5"></span>**Lemma 18.5.** *After each block, the 1 bits
+<span id="lem-18-7"></span>**Lemma 18.7.** *After each block, the 1 bits
 of the vectors read so far are $16 T + 8 \nu( e ) + 4 \nu( f ) + 2 \nu( t )
 + \nu( o )$, where $T$ is the sum of the counts $\nu( s )$ of the blocks;
-hence [Algorithm 18.3](18-combinatorial.md#alg-18-3) returns the 1 bits of
+hence [Algorithm 18.4](18-combinatorial.md#alg-18-4) returns the 1 bits of
 the array, with one count of a vector and 15 carry-save adders per block of
 16 vectors.*
 
@@ -301,17 +357,14 @@ which by (18.3) keeps the weighted number of 1 bits. The adders of lines 5
 to 7 take the 16 new vectors and the old $o$, $t$, $f$, $e$, and leave one
 vector for each weight 1, 2, 4, 8 (the new accumulators) and one, $s$, of
 weight 16, whose count enters $T$. Line 9 then adds the accumulators with
-their weights, and lines 9 and 10 add the vectors and the words left after
-the last block with weight 1. $\square$
+their weights and the vectors left after the last block with weight 1, and
+line 10 adds the words left after the last vector, also with weight 1, so
+that every bit of the array is counted once with its weight. $\square$
 
 An adder costs five logical operations on AVX2 (two exclusive ors, two ands
 and an or). It costs two on AVX-512, whose instruction `vpternlogq`
 computes any function of three vectors of bits (the truth tables
-$\mathtt{0x96}$ for the sum and $\mathtt{0xE8}$ for the majority):
-
-```cpp
---8<-- "generated/FastBitwise-csa256.cpp"
-```
+$\mathtt{0x96}$ for the sum and $\mathtt{0xE8}$ for the majority).
 
 A vector is counted by the instruction `vpopcntq` of AVX-512 when the
 compiler may use it (AVX-512 VPOPCNTDQ). Otherwise, the method of [Muła et al.
@@ -347,11 +400,11 @@ BMI2 it is the trailing zeros of $\mathrm{pdep}( 2^r , x )$, i.e.,
 of the bit $r$ scattered to the place of the $r$-th 1 of $x$ ([Pandey et al.
 2017](Z-bibliography.md#ref-pandey2017)). Without it, the broadword method
 of [Vigna 2008](Z-bibliography.md#ref-vigna2008)
-([Algorithm 18.4](18-combinatorial.md#alg-18-4)) computes the prefix sums
+([Algorithm 18.5](18-combinatorial.md#alg-18-5)) computes the prefix sums
 $s_j$ of the 1 bits of the bytes $0 , \ldots , j$ as in
 [Lemma 18.1](18-combinatorial.md#lem-18-1), but keeps all of them (one per
 byte) in the product by $\mathtt{0x0101 \ldots 01}$. It then compares $r$
-with the 8 sums at once, as in [Lemma 18.4](18-combinatorial.md#lem-18-4):
+with the 8 sums at once, as in [Lemma 18.6](18-combinatorial.md#lem-18-6):
 the byte $j$ of $( ( r \cdot \mathtt{0x0101 \ldots 01} ) \mid
 \mathtt{0x8080 \ldots 80} ) - s$ keeps its top bit if and only if
 $s_j \le r$. Since the sums are nondecreasing, the bytes with
@@ -359,11 +412,36 @@ $s_j \le r$ are the lowest $k / 8$ ones, and the 1 of rank $r$ is the 1 of
 rank $r - s_{k/8 - 1}$ of the byte $k / 8$. At most 7 steps of
 $b \gets b \,\&\, ( b - 1 )$ and one count of the trailing zeros find it.
 
-<span id="alg-18-4"></span>**Algorithm 18.4.** The 1 of rank $r$ of a word
+<span id="alg-18-5"></span>**Algorithm 18.5.** The 1 of rank $r$ of a word
 ([Vigna 2008](Z-bibliography.md#ref-vigna2008); [Pandey et al.
 2017](Z-bibliography.md#ref-pandey2017) with BMI2).
 
 --8<-- "generated/FastBitwise-select.pseudo.md"
+
+<span id="lem-18-8"></span>**Lemma 18.8.** *For $0 \le r < \nu( x )$
+(the contract of `select()`), [Algorithm 18.5](18-combinatorial.md#alg-18-5)
+returns the place of the 1 of rank $r$ of $x$, with at most 7 iterations
+of line 7.*
+
+*Proof.* With BMI2, $\mathrm{pdep}( 2^r , x )$ deposits the bit $r$ of
+$2^r$, its only 1, in the place of the $r$-th 1 of $x$ (from 0), which
+exists since $r < \nu( x )$, and $\rho$ gives that place. Without BMI2,
+line 3 forms the counts $c_j \le 8$ of the bytes $j$ of $x$ as in the
+proof of [Lemma 18.1](18-combinatorial.md#lem-18-1), and the product by
+$\mathtt{0x0101 \ldots 01}$ leaves in the byte $j$ the prefix sum $s_j =
+c_0 + \cdots + c_j \le 64$, with no carry between the bytes. In line 4,
+the byte $j$ of $r \cdot \mathtt{0x0101 \ldots 01} \mid \mathtt{0x8080
+\ldots 80}$ is $r + 128$, since $r < 64$, and $r + 128 - s_j \ge 64$; hence
+the subtraction borrows from no byte, and the top bit of the byte $j$ of
+the difference is set if and only if $r + 128 - s_j \ge 128$, i.e.,
+$s_j \le r$. Since $s_0 \le s_1 \le \cdots \le s_7 = \nu( x ) > r$, the
+bytes with $s_j \le r$ are the bytes $0 , \ldots , c - 1$ for some $c \le
+7$, and $k = 8 c$ in line 5. Then $s_{c-1} \le r < s_c$ (with $s_{-1} =
+0$), i.e., the 1 of rank $r$ of $x$ is the 1 of rank $r' = r - s_{c-1}$ of
+the byte $c$, which line 6 extracts as $b$. Since $r' < c_c \le 8$, the $r'
+\le 7$ iterations of line 7 clear the $r'$ lowest 1s of $b$, and $\rho( b
+)$ is the place of the next one in the byte, to which line 8 adds the place
+$k$ of the byte. $\square$
 
 Finally, `mortonEncode()` and `mortonDecode()` are `interleave()` and
 `deinterleave()` of [§18.2](18-combinatorial.md#sec-18-2) by two
@@ -423,9 +501,9 @@ the order of the set partitions is that of their strings
 We remark that most lexicographic generators of the area follow one scheme: from the
 current object, find the last place that can grow, make it grow by the
 least amount, and set the places after it to their least values. Each step costs the length of the suffix that it scans. The arguments of
-[Lemma 18.6](18-combinatorial.md#lem-18-6),
-[Lemma 18.9](18-combinatorial.md#lem-18-9) and
-[Lemma 18.12](18-combinatorial.md#lem-18-12) are basically the same: a
+[Lemma 18.9](18-combinatorial.md#lem-18-9),
+[Lemma 18.13](18-combinatorial.md#lem-18-13) and
+[Lemma 18.16](18-combinatorial.md#lem-18-16) are basically the same: a
 long suffix changes rarely, and the objects whose scan reaches a given
 place are counted as the objects of a smaller size.
 
@@ -448,7 +526,7 @@ from the last such place $\ell$. A carry then walks over the places of
 radix larger than 1 only (lines 5 and 6), and the links cost $O( n )$ time
 before the first visit.
 
-<span id="lem-18-6"></span>**Lemma 18.6.** *For any radices
+<span id="lem-18-9"></span>**Lemma 18.9.** *For any radices
 $m_j \ge 1$, `mixedRadix()` costs $O( n )$ time before its first visit and
 $O( 1 )$ amortized time per tuple after it, with at most 4 evaluations of
 the condition of line 6 per tuple on the average; the same
@@ -481,19 +559,59 @@ to 0. `grayTuples()` is Algorithm 7.2.1.1H of [Knuth
 right (the place $j$ is `a[ n - 1 - j ]`) and keeps the direction $o_j$ of
 each place. It adds the *focus pointers* $f_j$, so that the place to change
 is read in $f_0$ instead of searched for
-([Algorithm 18.5](18-combinatorial.md#alg-18-5)).
+([Algorithm 18.6](18-combinatorial.md#alg-18-6)).
 
-<span id="alg-18-5"></span>**Algorithm 18.5.** The loopless reflected
+<span id="alg-18-6"></span>**Algorithm 18.6.** The loopless reflected
 Gray order of the tuples (Algorithm 7.2.1.1H of [Knuth
 2011](Z-bibliography.md#ref-knuth2011)).
 
 --8<-- "generated/Generation-grayTuples.pseudo.md"
 
 Roughly, the pointers skip the places that are at an end of their ranges
-and wait for a place on their left to move. Knuth proves that, with the
-updates of line 9, $f_0$ is always the place to change in the reflected
-order; since line 9 costs a constant number of assignments, the algorithm
-is loopless. [Table 18.2](18-combinatorial.md#tab-18-2) follows the algorithm on
+and wait for a place on their left to move. To state this precisely, we
+call a place $j < n$ *passive* when its last move brought it to an end of
+its range and no place $i > j$ has moved since (at the start no place is
+passive, since all are at 0 and none has moved). The reflected order is
+then the order in which each step moves the least place that is not
+passive, by 1 in its direction, and makes the places below it no longer
+passive; the generation ends when all the places are passive.
+
+<span id="lem-18-10"></span>**Lemma 18.10.** *Let $P$ be the set of the
+passive places, and $n \notin P$. Before each execution of line 5 of
+[Algorithm 18.6](18-combinatorial.md#alg-18-6), for $0 \le j \le n$,
+$f_j$ is the least place $i \ge j$ not in $P$ if $j = 0$ or $j - 1 \notin
+P$, and $f_j = j$ otherwise. Hence $f_0$ is the place that the reflected
+order changes next, and the algorithm is loopless.*
+
+*Proof.* At the start $P$ is empty and $f_j = j$, as claimed. Let the
+claim hold before line 5, and let $j = f_0$, the least place not in $P$;
+the places $0 , \ldots , j - 1$ are then in $P$, and by the claim $f_i = i$
+for $1 \le i \le j$. Line 7 moves the place $j$, and the places below it
+leave $P$. If the place $j$ does not reach an end, the new set is $P' = P
+\setminus \{ 0 , \ldots , j - 1 \}$, and the claim for $P'$ requires
+$f_i = i$ for $i \le j$, which holds after $f_0 \gets 0$ of line 5; for
+$i > j$ neither the membership of $i - 1$ nor the places from $i$ on have
+changed. If the place $j$ reaches an end, then $P' = ( P \setminus \{ 0 ,
+\ldots , j - 1 \} ) \cup \{ j \}$, and the claim for $P'$ requires three
+things: $f_i = i$ for $i < j$, which holds as before; $f_j$ equal to the
+least place $i \ge j + 1$
+not in $P$, which was $f_{j+1}$ since $j \notin P$, and which line 9 copies
+into $f_j$; and $f_{j+1} = j + 1$, since now $j \in P'$, which line 9 sets.
+For $i > j + 1$, the values on which the claim depends have not changed.
+Each step
+costs a constant number of assignments, and line 6 stops when all the
+places are passive. That the steps visit each tuple once follows by
+induction on $n$: between two moves of the place $n - 1$, the places
+$0 , \ldots , n - 2$ go through all their tuples in the reflected order of
+$n - 1$ places, forwards or backwards, and the place $n - 1$ moves $m_{n-1}
+- 1$ times. $\square$
+
+The argument needs the precondition $m_j \ge 2$: a place of one value
+would be at both ends of its range at once, and with $m_j = 1$, line 7
+would move it to the value 1, out of its range. Only `mixedRadix()`
+accepts the radices 1.
+
+[Table 18.2](18-combinatorial.md#tab-18-2) follows the algorithm on
 $m = ( 2 , 3 )$.
 
 <span id="tab-18-2"></span>**Table 18.2.** `grayTuples()` on the radices
@@ -510,14 +628,6 @@ numbering of the places from the right (the place 0 is $a_1$).
 | $( 1 , 1 )$ | $( -1 , -1 )$ | $( 0 , 2 , 2 )$ | $a_1$ down, to its end |
 | $( 1 , 0 )$ | $( 1 , -1 )$ | $( 2 , 1 , 2 )$ | none: $f_0 = n$ |
 
-```cpp
---8<-- "generated/Generation-grayTuples.cpp"
-```
-
-We need the precondition $m_j \ge 2$, since a place of one value would
-be at both ends of its range at once; with $m_j = 1$, line 7 would move it
-to the value 1, out of its range. Only `mixedRadix()` accepts the
-radices 1.
 
 ## 18.6 Permutations {#sec-18-6}
 
@@ -546,16 +656,16 @@ Algorithm 7.2.1.2P of [Knuth 2011](Z-bibliography.md#ref-knuth2011),
 which numbers the items from 1, as we do in its analysis: the item $j$ is
 the value $j - 1$ of the vector. It keeps a counter $c_j$ of the steps made
 by the item $j$ in its sweep and its direction $o_j$
-([Algorithm 18.6](18-combinatorial.md#alg-18-6)). In the inner loop, the offset $s$ counts the larger items that sit at the left end, since they shift the places of
+([Algorithm 18.7](18-combinatorial.md#alg-18-7)). In the inner loop, the offset $s$ counts the larger items that sit at the left end, since they shift the places of
 the smaller ones by one.
 
-<span id="alg-18-6"></span>**Algorithm 18.6.** The plain changes
+<span id="alg-18-7"></span>**Algorithm 18.7.** The plain changes
 (Algorithm 7.2.1.2P of [Knuth 2011](Z-bibliography.md#ref-knuth2011)), the
 places from 1.
 
 --8<-- "generated/Generation-plainChanges.pseudo.md"
 
-<span id="lem-18-7"></span>**Lemma 18.7.** *`plainChanges( n )` visits
+<span id="lem-18-11"></span>**Lemma 18.11.** *`plainChanges( n )` visits
 the $n!$ permutations of $0 , \ldots , n - 1$, each once, and two
 consecutive ones differ by a swap of adjacent items. Its inner loop (lines
 7 to 14) makes $\sum_{j=1}^{n} j!$ iterations over the whole generation,
@@ -599,7 +709,7 @@ most $1 / ( n ( n - 1 ) )$. $\square$
 i.e., $a_j$ at the index $j - 1$, and passes that vector to `visit`, as
 `heapPermutations()` and `forEachPermutation()` do: a new vector of the $n$
 items for each permutation would cost $\Theta( n )$ and hide the bound of
-Lemma 18.7.
+Lemma 18.11.
 
 *Heap's method* ([Heap 1963](Z-bibliography.md#ref-heap1963)) relaxes the
 adjacency and makes one swap per permutation with the least bookkeeping of
@@ -609,12 +719,12 @@ generates the arrangements of the first $k$ places by generating those of
 the first $k - 1$ places $k$ times. After the $i$-th of these calls, the
 place $k - 1$ is swapped with the place $i$ if $k$ is even, and with the
 place 0 if $k$ is odd. `heapPermutations()` is the iterative form
-([Algorithm 18.7](18-combinatorial.md#alg-18-7)), in which a counter $c_i$
+([Algorithm 18.8](18-combinatorial.md#alg-18-8)), in which a counter $c_i$
 of the swaps already made at the place $i$ replaces the stack of the
 calls. Since the place $i$ closes a prefix of $i + 1$ items, the rule reads
 "swap with $a_{c_i}$ if $i$ is odd, with $a_0$ if $i$ is even".
 
-<span id="alg-18-7"></span>**Algorithm 18.7.** Heap's method, the
+<span id="alg-18-8"></span>**Algorithm 18.8.** Heap's method, the
 iterative form ([Heap 1963](Z-bibliography.md#ref-heap1963); [Sedgewick
 1977](Z-bibliography.md#ref-sedgewick1977)).
 
@@ -640,7 +750,7 @@ $01 , 02 , 01 , 02 , 01$, and the swaps between the columns bring each item
 to the place 3 once. The proof that this happens for any $n$ hinges on the
 net effect of a call, which depends on the parity of $k$.
 
-<span id="lem-18-8"></span>**Lemma 18.8.** *Let $G( k )$ be the recursive
+<span id="lem-18-12"></span>**Lemma 18.12.** *Let $G( k )$ be the recursive
 form of Heap's method on the places $0 , \ldots , k - 1$. Then $G( k )$
 visits the $k!$ arrangements of those places, each once, with one swap
 between two consecutive ones; furthermore, its net effect on the order of
@@ -675,21 +785,19 @@ along the single cycle of places $0 \to m - 1 \to m - 2 \to 1 \to 2 \to
 applications of $Q$, the place $m$ holds the item that was $j$ steps before
 it along the cycle; hence the $m$ applications of $Q$ in $G( k )$ bring
 $k - 1$ distinct items to the place $m$, none of them $a_m$. Finally,
-$G( k )$ is $Q$ applied $m$ times followed by $G( m )$, i.e., $Q^{-1}$
-followed by $G( m )$, which is the swap $( 0 , m )$ since $Q$ is $G( m )$
-followed by that swap. $\square$
+$G( k )$ is $Q$ applied $m$ times followed by $G( m )$; since $Q$ is a
+single cycle of length $k = m + 1$, $Q^{m+1}$ is the identity and $Q^m =
+Q^{-1}$, and $G( k )$ is therefore $Q^{-1}$ followed by $G( m )$, which is
+the swap $( 0 , m )$ since $Q$ is $G( m )$ followed by that swap.
+$\square$
 
 The counters of the iterative form run through the $n!$ values of a mixed
 radix number with the radices $2 , 3 , \ldots , n$, and the place $i$
 changes once every $i!$ arrangements. Thus, the loop of
-[Algorithm 18.7](18-combinatorial.md#alg-18-7) makes one swap per
-arrangement (cf. [Lemma 18.8](18-combinatorial.md#lem-18-8)), and resets $\sum_{i \ge 1} 1 / ( i + 1 )!
+[Algorithm 18.8](18-combinatorial.md#alg-18-8) makes one swap per
+arrangement (cf. [Lemma 18.12](18-combinatorial.md#lem-18-12)), and resets $\sum_{i \ge 1} 1 / ( i + 1 )!
 = e - 2$ counters per arrangement on the average, i.e., $e - 1$ iterations
-in all:
-
-```cpp
---8<-- "generated/Generation-heapPermutations.cpp"
-```
+in all.
 
 ## 18.7 Combinations, partitions and parentheses {#sec-18-7}
 
@@ -702,7 +810,7 @@ after it consecutive.
 
 --8<-- "generated/Generation-combinationsLex.pseudo.md"
 
-<span id="lem-18-9"></span>**Lemma 18.9.** *The scans of line 5 of
+<span id="lem-18-13"></span>**Lemma 18.13.** *The scans of line 5 of
 `combinationsLex()` visit $\binom{n+1}{t}$ places over the whole
 generation, i.e., $( n + 1 ) / ( n + 1 - t )$ per combination; hence the
 cost is $O( 1 )$ amortized when $t \le \alpha n$ for a constant
@@ -730,11 +838,11 @@ part is the order $R( n - 1 , t - 1 )$ reversed, with the item $n - 1$
 added to each combination. `revolvingDoor()` follows (18.5) recursively,
 with a flag for the reversed orders: the reversal of (18.5) is the second
 part not reversed followed by the first part reversed
-([Algorithm 18.8](18-combinatorial.md#alg-18-8)). Knuth's Algorithm
+([Algorithm 18.9](18-combinatorial.md#alg-18-9)). Knuth's Algorithm
 7.2.1.3R generates the same order without recursion; the header follows
 the recursion, which is closer to (18.5).
 
-<span id="alg-18-8"></span>**Algorithm 18.8.** The revolving door, by the
+<span id="alg-18-9"></span>**Algorithm 18.9.** The revolving door, by the
 recursion (18.5) ([Knuth 2011, §7.2.1.3](Z-bibliography.md#ref-knuth2011)).
 
 --8<-- "generated/Generation-door.pseudo.md"
@@ -742,7 +850,7 @@ recursion (18.5) ([Knuth 2011, §7.2.1.3](Z-bibliography.md#ref-knuth2011)).
 For instance, we obtain for $R( 5 , 3 )$ the order $012 , 023 , 123 , 013 , 034 , 134 , 234 ,
 024 , 124 , 014$.
 
-<span id="lem-18-10"></span>**Lemma 18.10.** *Two consecutive combinations
+<span id="lem-18-14"></span>**Lemma 18.14.** *Two consecutive combinations
 of $R( n , t )$ differ by one item in and one out. The first one is
 $\{ 0 , \ldots , t - 1 \}$ and the last one, for $0 < t < n$, is
 $\{ 0 , \ldots , t - 2 , n - 1 \}$; `revolvingDoor()` costs $O( t )$ time
@@ -774,7 +882,7 @@ For $n = 6$ the order is $6 , 51 , 42 , 411 , 33 , 321 , 3111 , 222 ,
 
 --8<-- "generated/Generation-integerPartitions.pseudo.md"
 
-<span id="lem-18-11"></span>**Lemma 18.11.** *`integerPartitions( n )`
+<span id="lem-18-15"></span>**Lemma 18.15.** *`integerPartitions( n )`
 visits the $p( n )$ partitions of $n$, each once, in reverse lexicographic
 order, and writes fewer than $3 p( n )$ parts in all; hence it costs
 $O( 1 )$ amortized time per partition.*
@@ -831,7 +939,7 @@ A step that raises the place $j$ costs $O( n - j )$, i.e., $O( n )$ in the
 worst case. The steps that reach far to the left are rare, however, since
 a long scan needs a long run of new blocks at the end of the string.
 
-<span id="lem-18-12"></span>**Lemma 18.12.** *Let $n \ge 1$. Over the
+<span id="lem-18-16"></span>**Lemma 18.16.** *Let $n \ge 1$. Over the
 whole generation, `setPartitions( n )` evaluates the condition of line 6
 $\sum_{k=1}^{n} \varpi_k$ times, fewer than $2 \varpi_n$, and the loop of
 line 9 makes $\sum_{k=1}^{n-1} \varpi_k - ( n - 1 )$ iterations, fewer
@@ -884,7 +992,7 @@ is
 
 --8<-- "generated/Generation-parentheses.pseudo.md"
 
-<span id="lem-18-13"></span>**Lemma 18.13.** *Every leaf of the tree of
+<span id="lem-18-17"></span>**Lemma 18.17.** *Every leaf of the tree of
 the calls of `nestedParentheses()` is at the depth $2 n$ and visits a
 string; hence the generation costs $O( n )$ time per string and recursion
 depth $2 n$.*
@@ -910,22 +1018,22 @@ visits the $n!$ arrangements of a vector of any items (the duplicates are
 not merged), by Heap's method with the arrangements of the first 3 places
 written as the 5 fixed swaps $01 , 02 , 01 , 02 , 01$ of the first column
 of [Table 18.3](18-combinatorial.md#tab-18-3). The counters $c_i$ drive
-only the places $i \ge 3$ ([Algorithm 18.9](18-combinatorial.md#alg-18-9)).
+only the places $i \ge 3$ ([Algorithm 18.10](18-combinatorial.md#alg-18-10)).
 
-<span id="alg-18-9"></span>**Algorithm 18.9.** Heap's method with its
+<span id="alg-18-10"></span>**Algorithm 18.10.** Heap's method with its
 first 3 places unrolled.
 
 --8<-- "generated/FastGeneration-forEachPermutation.pseudo.md"
 
-<span id="lem-18-14"></span>**Lemma 18.14.** *`forEachPermutation()` makes
+<span id="lem-18-18"></span>**Lemma 18.18.** *`forEachPermutation()` makes
 one swap per arrangement, and the steps of the loop of its counters (the
 resets of line 6 and the swaps of line 8) are
 $\sum_{i \ge 3} 1 / i! = e - 5/2 < 0.22$ per arrangement on the average,
 against $\sum_{i \ge 1} 1 / i! = e - 1$ for the loop of
-[Algorithm 18.7](18-combinatorial.md#alg-18-7).*
+[Algorithm 18.8](18-combinatorial.md#alg-18-8).*
 
 *Proof.* The swaps are those of Heap's method in the same order
-([Lemma 18.8](18-combinatorial.md#lem-18-8)), one per arrangement. The
+([Lemma 18.12](18-combinatorial.md#lem-18-12)), one per arrangement. The
 counter of the place $i \ge 3$ goes through its $i + 1$ values once every
 $( i + 1 )!$ arrangements, with $i$ swaps and one reset; hence the steps
 per arrangement are $\sum_{i \ge 3} ( i + 1 ) / ( i + 1 )! = \sum_{i \ge
@@ -951,6 +1059,31 @@ i.e., once every $n - c_{t-2} - 1$ combinations.
 
 --8<-- "generated/FastGeneration-forEachCombination.pseudo.md"
 
+<span id="lem-18-19"></span>**Lemma 18.19.** *`forEachPermutationLex()`
+visits the distinct permutations of its multiset in the order of
+`permutationsLex()`, and `forEachCombination( n , t )` the
+$t$-combinations in the order of `combinationsLex()`.*
+
+*Proof.* For the permutations, let the vector be sorted, as after line 2,
+or be the result of a step of Algorithm L (lines 9 to 12), which leaves
+the suffix after the place of the ascent nondecreasing. In both cases the
+last three items satisfy $x \le y \le z$, and the lexicographic successors
+that change only the last three places are the distinct arrangements of
+$x , y , z$ in increasing order, which lines 5 to 8 list in the three
+cases (6, 3 and 1 of them). After the last of them the three places are
+nonincreasing, so that they contain no ascent, and the last ascent of the
+vector, if any, is at a place $j \le n - 4$: the scan of line 9 finds it
+from $n - 4$, and lines 11 and 12 make the step of L, i.e., the next
+permutation. For the combinations, the lexicographic successor of a
+combination whose last place is below its maximum $n - 1$ increments that
+place, which is what line 4 does, visiting each combination before the
+increment. When $c_{t-1}$ reaches $n$, lines 5 to 7 are the successor of
+`combinationsLex()` from the combination with $c_{t-1} = n - 1$: the
+scan starts at the place $t - 2$, since the place $t - 1$ is at its
+maximum, and the places after $j$ become consecutive. If no place can grow
+($j < 0$), the last combination has been visited, and line 6 restores its
+last place. $\square$
+
 **Combinations as words.** `forEachCombinationMask( n , t , visit )`
 visits the words of $t$ ones below $2^n$ (for $n \le 64$) in increasing
 order, i.e., the $t$-subsets of $\{ 0 , \ldots , n - 1 \}$ ordered as
@@ -965,30 +1098,61 @@ x' = ( u + 1 ) \mid \big( ( ( \lnot u \,\&\, ( u + 1 ) ) - 1 ) \gg
 ( \rho( x ) + 1 ) \big) . \tag{18.6}
 $$
 
-where $u$ is $x$ with its trailing zeros set (cf. (18.1)), $u + 1$ is $v$
-of [Lemma 18.3](18-combinatorial.md#lem-18-3), and $\lnot u \,\&\,
-( u + 1 )$ is the bit set by the carry. Subtracting 1 from that bit gives
-the run of 1s below it, which the shift by $\rho( x ) + 1$ shortens to the
-$r - 1$ bits that go back to the bottom.
+<span id="lem-18-20"></span>**Lemma 18.20.** *For $x \ne 0$ whose
+successor $v$ of [Lemma 18.4](18-combinatorial.md#lem-18-4) is not 0 and
+with $\rho( x ) < 63$, (18.6) gives the same word as (18.2), i.e., the next
+larger word with as many 1 bits as $x$.*
 
-```cpp
---8<-- "generated/FastGeneration-nextCombination.cpp"
-```
+*Proof.* Let the lowest run of 1s of $x$ have $r$ bits from the place
+$\rho = \rho( x )$. By (18.1), $u = x + 2^{\rho} - 1$ is $x$ with the
+places below $\rho$ set; its lowest run goes from the place 0 to the place
+$\rho + r - 1$, and the carry of $u + 1$ clears it and sets the place $\rho
++ r$, so that $u + 1$ is $v = x + 2^{\rho}$ of Lemma 18.4. The only 1 of
+$u + 1$ that is not in $u$ is the bit set by the carry, hence $\lnot u
+\,\&\, ( u + 1 ) = 2^{\rho + r}$. Subtracting 1 gives the $\rho + r$ ones
+of the places $0 , \ldots , \rho + r - 1$, and the shift by $\rho + 1$
+(smaller than 64 by the hypothesis) leaves $2^{r-1} - 1$, the $r - 1$ ones
+at the bottom. These lie below the place $\rho + r$, where $v$ has its
+lowest 1, and the or equals the sum $v + 2^{r-1} - 1$, which is (18.2),
+since $( ( v \oplus x ) / u ) \gg 2$ in (18.2) is the run of $r + 1$
+ones brought to the place 0 and shortened by 2 bits. $\square$
+
+The shift by $\rho( x ) + 1$ replaces the division of (18.2), which
+typically costs a few tens of cycles, by a count of the trailing zeros,
+one instruction of the processor.
 
 Furthermore, while the lowest 1 of $x$ has a 0 above it (and is below the
 place $n - 1$), the next word is simply $x + ( x \,\&\, -x )$, i.e., the
 lowest 1 moves one place up. The generator makes these moves by a loop of
 its own, with two operations each, and calls (18.6) only at the end of a
-run of the lowest 1 ([Algorithm 18.10](18-combinatorial.md#alg-18-10)).
+run of the lowest 1 ([Algorithm 18.11](18-combinatorial.md#alg-18-11), whose line 8 calls
+`nextCombination()`, the function that computes (18.6)).
 
-<span id="alg-18-10"></span>**Algorithm 18.10.** The $t$-subsets of
+<span id="alg-18-11"></span>**Algorithm 18.11.** The $t$-subsets of
 $n \le 64$ items as words, in increasing order.
 
 --8<-- "generated/FastGeneration-forEachCombinationMask.pseudo.md"
 
-```cpp
---8<-- "generated/FastGeneration-forEachCombinationMask.cpp"
-```
+<span id="lem-18-21"></span>**Lemma 18.21.** *For $0 \le t \le n \le
+64$, [Algorithm 18.11](18-combinatorial.md#alg-18-11) visits the
+$\binom{n}{t}$ words of $t$ ones below $2^n$, each once, in increasing
+order.*
+
+*Proof.* The first word $2^t - 1$ is the least one of $t$ ones, and
+$\mathit{last}$ is the largest one below $2^n$. In line 6, $\ell$ is the
+lowest 1 of $x$; when the place above it is 0, the lowest run of $x$ has
+$r = 1$ bit, and by [Lemma 18.4](18-combinatorial.md#lem-18-4) the
+successor of $x$ is $x + \ell$, with no bit going back to the bottom; the
+test $\ell < \mathit{top}$ keeps the new 1 below the place $n$. When the
+loop of line 6 stops, either $\ell = \mathit{top}$, in which case $x$ has
+its lowest 1 in the place $n - 1$, so that $t = 1$ and $x = \mathit{last}$,
+or the lowest run of $x$ has at least 2 bits. If $x \ne \mathit{last}$,
+some word of $t$ ones below $2^n$ is larger than $x$; hence the successor
+of $x$ is below $2^n$, so that $v \ne 0$; furthermore $\rho( x ) < n - 1
+\le 63$, since $\ell < \mathit{top}$, and line 8 computes the successor by
+[Lemma 18.20](18-combinatorial.md#lem-18-20). Each word is therefore
+followed by its successor until $\mathit{last}$, after which line 7 stops.
+For $t = 64$ the first word is $\mathit{last}$ itself. $\square$
 
 The run of the lowest 1 ends when it reaches another 1 or the place
 $n - 1$. For a random $t$-subset the 1 above the lowest one is at a
@@ -1054,11 +1218,11 @@ Each exercise names the test of the library that solves it (run it with
 6. Check that `plainChanges()` and `integerPartitions()` pass the same
    vector to every visit, never a copy, that `integerPartitions( n )`
    gives the partitions of a recursive generation in reverse lexicographic
-   order for $n \le 25$ ([Lemma 18.11](18-combinatorial.md#lem-18-11)),
+   order for $n \le 25$ ([Lemma 18.15](18-combinatorial.md#lem-18-15)),
    and that `mixedRadix()` gives the tuples of the radices larger than 1
    with zeros in the places of radix 1, visiting the 2 tuples of the
    radices $( 2 , 1 , \ldots , 1 )$ of $10^5$ places in $O( n )$ time
-   ([Lemma 18.6](18-combinatorial.md#lem-18-6)). Test:
+   ([Lemma 18.9](18-combinatorial.md#lem-18-9)). Test:
    `taocp.generation-costs`.
 7. Unroll the first 3 places of Heap's method and the last 3 places of
    Algorithm L, give the last place of a combination a loop of its own,

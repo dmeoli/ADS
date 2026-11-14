@@ -906,7 +906,7 @@ $f = 16$). A query compares $t$ with the 8 fingerprints of its two buckets
 by broadword operations: with $u = w \oplus t \cdot \mathbf{1}$,
 $\mathbf{1}$ the word with the bit 0 of each lane set, a lane of $u$ is 0
 where the fingerprint equals $t$, and the test of a zero lane is that of
-`hasZeroByte()` (cf. [Lemma 18.4](18-combinatorial.md#lem-18-4)). A borrow
+`hasZeroByte()` (cf. [Lemma 18.6](18-combinatorial.md#lem-18-6)). A borrow
 may mark a lane above a zero one, but never a word with no zero lane; the
 test is therefore exact. The victim is read only when there is one, a
 branch taken only once the filter is full:
