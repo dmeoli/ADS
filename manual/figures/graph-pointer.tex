@@ -1,0 +1,29 @@
+% PointerGraph (sec. 14.4): each node an object with its label and its
+% degree (the edges in and out), and its list of edges, each pointing at
+% its other end; forceDeleteNode(b) removes the edges into b from the
+% lists of the other nodes, then the edges of b, then b. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var] at (16mm,10mm) {before};
+  \node[node,minimum width=14mm] (ba) at (0mm,0mm) {a, 1};
+  \node[node-touched] (ba0) at (22mm,0mm) {$\to$b};
+  \draw[ptr] (ba.east) -- (ba0.west);
+  \node[node-touched,minimum width=14mm] (bb) at (0mm,-12mm) {b, 3};
+  \node[node] (bb0) at (22mm,-12mm) {$\to$c};
+  \draw[ptr] (bb.east) -- (bb0.west);
+  \node[node,minimum width=14mm] (bc) at (0mm,-24mm) {c, 2};
+  \node[node-touched] (bc0) at (22mm,-24mm) {$\to$b};
+  \draw[ptr] (bc.east) -- (bc0.west);
+  \node[var] at (68mm,10mm) {after};
+  \node[node,minimum width=14mm] (aa) at (52mm,0mm) {a, 0};
+  \node[node,minimum width=14mm] (ac) at (52mm,-12mm) {c, 0};
+\end{tikzpicture}
+\end{document}

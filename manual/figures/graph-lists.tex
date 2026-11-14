@@ -1,0 +1,101 @@
+% The lists of adjacency of the graph of sec. 14.1 (sec. 14.3), in the order
+% of figure 12.4 of Morin's book: insertEdge(8, 5) scans the list of 8 for
+% an edge to 5 and, finding none, appends one at its tail. Build: make
+% figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[cell] (h0) at (0mm,0mm) {0};
+  \node[node] (n0-0) at (12mm,0mm) {1};
+  \draw[ptr] (h0.east) -- (n0-0.west);
+  \node[node] (n0-1) at (22.5mm,0mm) {4};
+  \draw[ptr] (n0-0.east) -- (n0-1.west);
+  \node[cell] (h1) at (0mm,-8.2mm) {1};
+  \node[node] (n1-0) at (12mm,-8.2mm) {0};
+  \draw[ptr] (h1.east) -- (n1-0.west);
+  \node[node] (n1-1) at (22.5mm,-8.2mm) {2};
+  \draw[ptr] (n1-0.east) -- (n1-1.west);
+  \node[node] (n1-2) at (33mm,-8.2mm) {6};
+  \draw[ptr] (n1-1.east) -- (n1-2.west);
+  \node[node] (n1-3) at (43.5mm,-8.2mm) {5};
+  \draw[ptr] (n1-2.east) -- (n1-3.west);
+  \node[cell] (h2) at (0mm,-16.4mm) {2};
+  \node[node] (n2-0) at (12mm,-16.4mm) {1};
+  \draw[ptr] (h2.east) -- (n2-0.west);
+  \node[node] (n2-1) at (22.5mm,-16.4mm) {3};
+  \draw[ptr] (n2-0.east) -- (n2-1.west);
+  \node[node] (n2-2) at (33mm,-16.4mm) {6};
+  \draw[ptr] (n2-1.east) -- (n2-2.west);
+  \node[cell] (h3) at (0mm,-24.6mm) {3};
+  \node[node] (n3-0) at (12mm,-24.6mm) {2};
+  \draw[ptr] (h3.east) -- (n3-0.west);
+  \node[node] (n3-1) at (22.5mm,-24.6mm) {7};
+  \draw[ptr] (n3-0.east) -- (n3-1.west);
+  \node[cell] (h4) at (0mm,-32.8mm) {4};
+  \node[node] (n4-0) at (12mm,-32.8mm) {0};
+  \draw[ptr] (h4.east) -- (n4-0.west);
+  \node[node] (n4-1) at (22.5mm,-32.8mm) {5};
+  \draw[ptr] (n4-0.east) -- (n4-1.west);
+  \node[node] (n4-2) at (33mm,-32.8mm) {8};
+  \draw[ptr] (n4-1.east) -- (n4-2.west);
+  \node[cell] (h5) at (0mm,-41mm) {5};
+  \node[node] (n5-0) at (12mm,-41mm) {1};
+  \draw[ptr] (h5.east) -- (n5-0.west);
+  \node[node] (n5-1) at (22.5mm,-41mm) {2};
+  \draw[ptr] (n5-0.east) -- (n5-1.west);
+  \node[node] (n5-2) at (33mm,-41mm) {6};
+  \draw[ptr] (n5-1.east) -- (n5-2.west);
+  \node[node] (n5-3) at (43.5mm,-41mm) {9};
+  \draw[ptr] (n5-2.east) -- (n5-3.west);
+  \node[node] (n5-4) at (54mm,-41mm) {4};
+  \draw[ptr] (n5-3.east) -- (n5-4.west);
+  \node[cell] (h6) at (0mm,-49.2mm) {6};
+  \node[node] (n6-0) at (12mm,-49.2mm) {5};
+  \draw[ptr] (h6.east) -- (n6-0.west);
+  \node[node] (n6-1) at (22.5mm,-49.2mm) {2};
+  \draw[ptr] (n6-0.east) -- (n6-1.west);
+  \node[node] (n6-2) at (33mm,-49.2mm) {7};
+  \draw[ptr] (n6-1.east) -- (n6-2.west);
+  \node[node] (n6-3) at (43.5mm,-49.2mm) {10};
+  \draw[ptr] (n6-2.east) -- (n6-3.west);
+  \node[cell] (h7) at (0mm,-57.4mm) {7};
+  \node[node] (n7-0) at (12mm,-57.4mm) {6};
+  \draw[ptr] (h7.east) -- (n7-0.west);
+  \node[node] (n7-1) at (22.5mm,-57.4mm) {3};
+  \draw[ptr] (n7-0.east) -- (n7-1.west);
+  \node[node] (n7-2) at (33mm,-57.4mm) {11};
+  \draw[ptr] (n7-1.east) -- (n7-2.west);
+  \node[cell] (h8) at (0mm,-65.6mm) {8};
+  \node[node-touched] (n8-0) at (12mm,-65.6mm) {4};
+  \draw[ptr] (h8.east) -- (n8-0.west);
+  \node[node-touched] (n8-1) at (22.5mm,-65.6mm) {9};
+  \draw[ptr] (n8-0.east) -- (n8-1.west);
+  \node[node-added] (n8-2) at (33mm,-65.6mm) {5};
+  \draw[ptr] (n8-1.east) -- (n8-2.west);
+  \node[cell] (h9) at (0mm,-73.8mm) {9};
+  \node[node] (n9-0) at (12mm,-73.8mm) {8};
+  \draw[ptr] (h9.east) -- (n9-0.west);
+  \node[node] (n9-1) at (22.5mm,-73.8mm) {5};
+  \draw[ptr] (n9-0.east) -- (n9-1.west);
+  \node[node] (n9-2) at (33mm,-73.8mm) {10};
+  \draw[ptr] (n9-1.east) -- (n9-2.west);
+  \node[cell] (h10) at (0mm,-82mm) {10};
+  \node[node] (n10-0) at (12mm,-82mm) {9};
+  \draw[ptr] (h10.east) -- (n10-0.west);
+  \node[node] (n10-1) at (22.5mm,-82mm) {6};
+  \draw[ptr] (n10-0.east) -- (n10-1.west);
+  \node[node] (n10-2) at (33mm,-82mm) {11};
+  \draw[ptr] (n10-1.east) -- (n10-2.west);
+  \node[cell] (h11) at (0mm,-90.2mm) {11};
+  \node[node] (n11-0) at (12mm,-90.2mm) {10};
+  \draw[ptr] (h11.east) -- (n11-0.west);
+  \node[node] (n11-1) at (22.5mm,-90.2mm) {7};
+  \draw[ptr] (n11-0.east) -- (n11-1.west);
+\end{tikzpicture}
+\end{document}

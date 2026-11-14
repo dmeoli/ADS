@@ -171,6 +171,17 @@ class RecordWriter {
  ~RecordWriter();
 
  /// appends \f$ x \f$, writing the buffer when it is full
+ ///
+ /// In pseudocode, \f$ b \f$ the records of a full buffer:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{push}( x ) \cr
+ /// 2 & \quad \text{append } x \text{ to the buffer} \cr
+ /// 3 & \quad \textbf{if}\ \text{the buffer holds } b \text{ records}
+ ///     \ \textbf{then}\ \mathrm{flush}()\quad \triangleright\ \text{open }
+ ///     \text{the file, append the buffer, close the file}
+ /// \end{array}}
+ /// \f]
  void push( const T & x );
 
  /// the records of the buffer written to the file

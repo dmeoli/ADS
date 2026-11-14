@@ -1,0 +1,67 @@
+% The graph of exercises 12.1 to 12.3 of Morin's book (the Petersen graph),
+% unoriented, its lists in increasing order: the visits in breadth and in
+% depth from 0, the trees of the visits and the rank of each node in their
+% order (exercise 12.3). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex-touched] (b0) at (0.00mm,11.00mm) {0};
+  \node[vertex] (b1) at (10.46mm,3.40mm) {1};
+  \node[vertex] (b2) at (6.47mm,-8.90mm) {2};
+  \node[vertex] (b3) at (-6.47mm,-8.90mm) {3};
+  \node[vertex] (b4) at (-10.46mm,3.40mm) {4};
+  \node[vertex] (b5) at (0.00mm,22.00mm) {5};
+  \node[vertex] (b6) at (20.92mm,6.80mm) {6};
+  \node[vertex] (b7) at (12.93mm,-17.80mm) {7};
+  \node[vertex] (b8) at (-12.93mm,-17.80mm) {8};
+  \node[vertex] (b9) at (-20.92mm,6.80mm) {9};
+  \draw[edge-touched] (b0) -- (b2);
+  \draw[edge-touched] (b0) -- (b3);
+  \draw[edge-touched] (b0) -- (b5);
+  \draw[edge-touched] (b1) -- (b3);
+  \draw[edge] (b1) -- (b4);
+  \draw[edge] (b1) -- (b6);
+  \draw[edge-touched] (b2) -- (b4);
+  \draw[edge-touched] (b2) -- (b7);
+  \draw[edge-touched] (b3) -- (b8);
+  \draw[edge] (b4) -- (b9);
+  \draw[edge-touched] (b5) -- (b6);
+  \draw[edge-touched] (b5) -- (b9);
+  \draw[edge] (b6) -- (b7);
+  \draw[edge] (b7) -- (b8);
+  \draw[edge] (b8) -- (b9);
+  \node[vertex-touched] (d0) at (62.00mm,11.00mm) {0};
+  \node[vertex] (d1) at (72.46mm,3.40mm) {1};
+  \node[vertex] (d2) at (68.47mm,-8.90mm) {2};
+  \node[vertex] (d3) at (55.53mm,-8.90mm) {3};
+  \node[vertex] (d4) at (51.54mm,3.40mm) {4};
+  \node[vertex] (d5) at (62.00mm,22.00mm) {5};
+  \node[vertex] (d6) at (82.92mm,6.80mm) {6};
+  \node[vertex] (d7) at (74.93mm,-17.80mm) {7};
+  \node[vertex] (d8) at (49.07mm,-17.80mm) {8};
+  \node[vertex] (d9) at (41.08mm,6.80mm) {9};
+  \draw[edge-touched] (d0) -- (d2);
+  \draw[edge] (d0) -- (d3);
+  \draw[edge] (d0) -- (d5);
+  \draw[edge-touched] (d1) -- (d3);
+  \draw[edge-touched] (d1) -- (d4);
+  \draw[edge] (d1) -- (d6);
+  \draw[edge-touched] (d2) -- (d4);
+  \draw[edge] (d2) -- (d7);
+  \draw[edge-touched] (d3) -- (d8);
+  \draw[edge] (d4) -- (d9);
+  \draw[edge-touched] (d5) -- (d6);
+  \draw[edge-touched] (d5) -- (d9);
+  \draw[edge-touched] (d6) -- (d7);
+  \draw[edge-touched] (d7) -- (d8);
+  \draw[edge] (d8) -- (d9);
+  \node[var] at (0mm,-27mm) {\texttt{bfs(G, 0)}: 0 2 3 5 4 7 1 8 6 9};
+  \node[var] at (62mm,-27mm) {\texttt{dfs(G, 0)}: 0 2 4 1 3 8 7 6 5 9};
+\end{tikzpicture}
+\end{document}

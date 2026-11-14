@@ -1,0 +1,45 @@
+% The graph of twelve nodes of sec. 14.1 (the data of figure 12.1 of
+% Morin's book): an edge with two heads stands for the two edges (u, v) and
+% (v, u). Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (g0) at (0mm,0mm) {0};
+  \node[vertex] (g1) at (17mm,0mm) {1};
+  \node[vertex] (g2) at (34mm,0mm) {2};
+  \node[vertex] (g3) at (51mm,0mm) {3};
+  \node[vertex] (g4) at (0mm,-17mm) {4};
+  \node[vertex] (g5) at (17mm,-17mm) {5};
+  \node[vertex] (g6) at (34mm,-17mm) {6};
+  \node[vertex] (g7) at (51mm,-17mm) {7};
+  \node[vertex] (g8) at (0mm,-34mm) {8};
+  \node[vertex] (g9) at (17mm,-34mm) {9};
+  \node[vertex] (g10) at (34mm,-34mm) {10};
+  \node[vertex] (g11) at (51mm,-34mm) {11};
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g0) -- (g1);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g0) -- (g4);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g1) -- (g2);
+  \draw[edge,->,shorten <=0.6pt,shorten >=0.6pt] (g1) -- (g6);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g1) -- (g5);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g2) -- (g3);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g2) -- (g6);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g3) -- (g7);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g4) -- (g5);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g4) -- (g8);
+  \draw[edge,->,shorten <=0.6pt,shorten >=0.6pt] (g5) -- (g2);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g5) -- (g6);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g5) -- (g9);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g6) -- (g7);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g6) -- (g10);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g7) -- (g11);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g8) -- (g9);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g9) -- (g10);
+  \draw[edge,<->,shorten <=0.6pt,shorten >=0.6pt] (g10) -- (g11);
+\end{tikzpicture}
+\end{document}

@@ -39,6 +39,7 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
  std::vector< int > count( fifo ? n : 0 , 0 );
  FrontierCounts k;
 
+//! [prototype]
  R.d[ r ] = D( 0 );
  b[ r ] = true;
  frontier.add( r , D( 0 ) , true );                        // (1)
@@ -75,6 +76,7 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
     }
    } );
   }
+//! [prototype]
  if( c ) *c = k;
  ADS_AUDIT( isShortestPathTree( g , r , R ) );
  return( R );

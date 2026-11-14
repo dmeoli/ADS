@@ -50,8 +50,9 @@
  * keep (exercise 14.4), since its recursion holds a node per level,
  * \f$ \Theta( B \log_B n ) \f$: here the descent keeps the path as the
  * indices of its blocks and of the children taken, \f$ O( \log_B n ) \f$
- * words, and at most four nodes in memory at once (a node, its parent and
- * the two siblings that it shares its keys with); a node is read again on
+ * words, and at most five nodes counted in memory at once (a node, its
+ * parent and the at most three children whose keys a restructuring
+ * gathers, the node among them); a node is read again on
  * the way up only when a split, a merge, a borrow or the replacement of a
  * removed key reaches it, so that the I/Os stay \f$ O( \log_B n ) \f$.
  * `peakNodes()` gives the most nodes held at once, and `restructures()`

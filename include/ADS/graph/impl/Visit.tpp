@@ -110,6 +110,7 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
  ADS_PRE( g.hasNode( r ) && S.empty() );
  std::vector< int > d( g.bound() , INF ) , p( g.bound() , NIL );
  VisitCounts k;
+//! [distance]
  S.enqueue( r );
  d[ r ] = 0;
  while( ! S.empty() ) {
@@ -124,6 +125,7 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
     }
    } );
   }
+//! [distance]
  if( c ) *c = k;
  ADS_AUDIT( detail::bfsTree( g , r , d , p ) );
  return( std::pair( std::move( d ) , std::move( p ) ) );
@@ -165,6 +167,7 @@ void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
 {
  ADS_PRE( g.hasNode( u ) && ( int( visited.size() ) >= g.bound() ) &&
           ! visited[ u ] );
+//! [dfs]
  std::vector< detail::DfsFrame > S;                  // the recursion
  auto discover = [ & ]( int v ) {
   visited[ v ] = true;
@@ -185,6 +188,7 @@ void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
   if( ! visited[ v ] )                                // the call
    discover( v );
   }
+//! [dfs]
  }
 
 template< Graph G >

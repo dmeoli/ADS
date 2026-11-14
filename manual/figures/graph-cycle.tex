@@ -1,0 +1,24 @@
+% A cycle found by the visit in depth (sec. 14.5): the nodes on the stack, from
+% i down to j along the path P of the tree, and the back edge (j, i) that
+% closes the cycle. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[vertex] (r) at (0mm,0mm) {$r$};
+  \node[vertex-touched] (i) at (14mm,-10mm) {$i$};
+  \node[vertex-touched] (a) at (28mm,-20mm) {};
+  \node[vertex-touched] (j) at (42mm,-30mm) {$j$};
+  \node[vertex] (b) at (0mm,-20mm) {};
+  \draw[edge,->] (r) -- (i);
+  \draw[edge,->] (r) -- (b);
+  \draw[edge-touched,->] (i) -- node[var,above right=0.6mm] {$P$} (a);
+  \draw[edge-touched,->] (a) -- (j);
+  \draw[edge-touched,->] (j) .. controls (40mm,-6mm) .. node[var,above right=0.4mm] {$( j , i )$} (i);
+\end{tikzpicture}
+\end{document}

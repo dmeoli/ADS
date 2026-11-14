@@ -98,7 +98,7 @@ std::optional< std::vector< int > > eulerianCycle( const G & g );
 /// 3 & \quad \textbf{if}\ c_1 \ne c_{|c|}\ \textbf{then return false} \cr
 /// 4 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ |c| - 1\ \textbf{do} \cr
 /// 5 & \qquad \textbf{if}\ ( c_i , c_{i+1} ) \notin E\ \textbf{or}
-///     \text{it was used before }\ \textbf{then return false} \cr
+///     \ \text{it was used before }\ \textbf{then return false} \cr
 /// 6 & \qquad \text{mark } ( c_i , c_{i+1} ) \text{ used} \cr
 /// 7 & \quad \textbf{return}\ |c| - 1 = m
 /// \end{array}}

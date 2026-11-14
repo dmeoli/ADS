@@ -1,0 +1,48 @@
+% A RecordWriter with a buffer of b = 4 records (sec. 23.6): push(j) fills
+% the buffer, which is then appended to the file by one write of the system
+% and emptied. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0mm) {file};
+  \node[cell] (f-0) at (0mm,0mm) {a};
+  \node[cell] (f-1) at (7.4mm,0mm) {b};
+  \node[cell] (f-2) at (14.8mm,0mm) {c};
+  \node[cell] (f-3) at (22.2mm,0mm) {d};
+  \node[cell] (f-4) at (29.6mm,0mm) {e};
+  \node[cell] (f-5) at (37mm,0mm) {f};
+  \node[free] (f-6) at (44.4mm,0mm) {};
+  \node[free] (f-7) at (51.8mm,0mm) {};
+  \node[free] (f-8) at (59.2mm,0mm) {};
+  \node[free] (f-9) at (66.6mm,0mm) {};
+  \node[var,anchor=east] at (-4mm,-10mm) {buffer};
+  \node[cell] (b-0) at (0mm,-10mm) {g};
+  \node[cell] (b-1) at (7.4mm,-10mm) {h};
+  \node[cell] (b-2) at (14.8mm,-10mm) {i};
+  \node[free] (b-3) at (22.2mm,-10mm) {};
+  \node[var,anchor=east] at (-4mm,-26mm) {file};
+  \node[cell] (F-0) at (0mm,-26mm) {a};
+  \node[cell] (F-1) at (7.4mm,-26mm) {b};
+  \node[cell] (F-2) at (14.8mm,-26mm) {c};
+  \node[cell] (F-3) at (22.2mm,-26mm) {d};
+  \node[cell] (F-4) at (29.6mm,-26mm) {e};
+  \node[cell] (F-5) at (37mm,-26mm) {f};
+  \node[added] (F-6) at (44.4mm,-26mm) {g};
+  \node[added] (F-7) at (51.8mm,-26mm) {h};
+  \node[added] (F-8) at (59.2mm,-26mm) {i};
+  \node[added] (F-9) at (66.6mm,-26mm) {j};
+  \node[var,anchor=east] at (-4mm,-36mm) {buffer};
+  \node[free] (B-0) at (0mm,-36mm) {};
+  \node[free] (B-1) at (7.4mm,-36mm) {};
+  \node[free] (B-2) at (14.8mm,-36mm) {};
+  \node[free] (B-3) at (22.2mm,-36mm) {};
+  \node[var,anchor=west] at (80mm,-5mm) {before \texttt{push(j)}};
+  \node[var,anchor=west] at (80mm,-31mm) {after: \texttt{flush()}};
+\end{tikzpicture}
+\end{document}

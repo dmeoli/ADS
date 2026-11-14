@@ -1,0 +1,75 @@
+% The multiway mergesort with B = 2 and M = 8 (sec. 23.4): the runs of R = 8
+% items sorted in memory, and their merge with k = 3, a block of each run
+% and one of the output in memory; after the output 1, 2, 3, 4 (two blocks
+% written) the heads 7, 6 and 5 compete, the blocks read are in violet
+% (those emptied in the faintest tint), and 5 wins. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0mm) {input};
+  \node[cell] (i-0) at (0mm,0mm) {15};
+  \node[cell] (i-1) at (7.4mm,0mm) {3};
+  \node[cell] (i-2) at (16mm,0mm) {18};
+  \node[cell] (i-3) at (23.4mm,0mm) {7};
+  \node[cell] (i-4) at (32mm,0mm) {1};
+  \node[cell] (i-5) at (39.4mm,0mm) {12};
+  \node[cell] (i-6) at (48mm,0mm) {9};
+  \node[cell] (i-7) at (55.4mm,0mm) {20};
+  \node[cell] (i-8) at (64mm,0mm) {4};
+  \node[cell] (i-9) at (71.4mm,0mm) {16};
+  \node[cell] (i-10) at (80mm,0mm) {11};
+  \node[cell] (i-11) at (87.4mm,0mm) {6};
+  \node[cell] (i-12) at (96mm,0mm) {2};
+  \node[cell] (i-13) at (103.4mm,0mm) {19};
+  \node[cell] (i-14) at (112mm,0mm) {14};
+  \node[cell] (i-15) at (119.4mm,0mm) {8};
+  \node[cell] (i-16) at (128mm,0mm) {13};
+  \node[cell] (i-17) at (135.4mm,0mm) {5};
+  \node[cell] (i-18) at (144mm,0mm) {17};
+  \node[cell] (i-19) at (151.4mm,0mm) {10};
+  \node[var,anchor=east] at (-4mm,-14mm) {run 1};
+  \node[free] (r0-0) at (0mm,-14mm) {1};
+  \node[free] (r0-1) at (7.4mm,-14mm) {3};
+  \node[touched] (r0-2) at (16mm,-14mm) {7};
+  \node[touched] (r0-3) at (23.4mm,-14mm) {9};
+  \node[cell] (r0-4) at (32mm,-14mm) {12};
+  \node[cell] (r0-5) at (39.4mm,-14mm) {15};
+  \node[cell] (r0-6) at (48mm,-14mm) {18};
+  \node[cell] (r0-7) at (55.4mm,-14mm) {20};
+  \node[var,anchor=east] at (-4mm,-24mm) {run 2};
+  \node[free] (r1-0) at (0mm,-24mm) {2};
+  \node[free] (r1-1) at (7.4mm,-24mm) {4};
+  \node[touched] (r1-2) at (16mm,-24mm) {6};
+  \node[touched] (r1-3) at (23.4mm,-24mm) {8};
+  \node[cell] (r1-4) at (32mm,-24mm) {11};
+  \node[cell] (r1-5) at (39.4mm,-24mm) {14};
+  \node[cell] (r1-6) at (48mm,-24mm) {16};
+  \node[cell] (r1-7) at (55.4mm,-24mm) {19};
+  \node[var,anchor=east] at (-4mm,-34mm) {run 3};
+  \node[touched] (r2-0) at (0mm,-34mm) {5};
+  \node[touched] (r2-1) at (7.4mm,-34mm) {10};
+  \node[cell] (r2-2) at (16mm,-34mm) {13};
+  \node[cell] (r2-3) at (23.4mm,-34mm) {17};
+  \node[var,anchor=east] at (-4mm,-48mm) {memory};
+  \node[cell] (m-0) at (0mm,-48mm) {7};
+  \node[cell] (m-1) at (7.4mm,-48mm) {9};
+  \node[cell] (m-2) at (17.8mm,-48mm) {6};
+  \node[cell] (m-3) at (25.2mm,-48mm) {8};
+  \node[touched] (m-4) at (35.6mm,-48mm) {5};
+  \node[cell] (m-5) at (43mm,-48mm) {10};
+  \node[free] (m-6) at (53.4mm,-48mm) {};
+  \node[free] (m-7) at (60.8mm,-48mm) {};
+  \node[var,anchor=east] at (-4mm,-62mm) {output};
+  \node[added] (o-0) at (0mm,-62mm) {1};
+  \node[added] (o-1) at (7.4mm,-62mm) {2};
+  \node[added] (o-2) at (16mm,-62mm) {3};
+  \node[added] (o-3) at (23.4mm,-62mm) {4};
+\end{tikzpicture}
+\end{document}

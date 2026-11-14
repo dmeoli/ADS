@@ -232,7 +232,7 @@ std::pair< std::vector< int > , std::vector< int > > distance( const G & g ,
 /// 3 & \quad \textbf{while}\ x \ne r\ \textbf{do} \cr
 /// 4 & \qquad x \gets p[ x ] \cr
 /// 5 & \qquad \textbf{if}\ x = \textbf{nil}\ \textbf{then return}
-///     \text{the empty path} \cr
+///     \ \text{the empty path} \cr
 /// 6 & \qquad P \gets ( x ) \cdot P \cr
 /// 7 & \quad \textbf{return}\ P
 /// \end{array}}
@@ -397,7 +397,7 @@ class DfsSchema {
 /// 3 & \qquad \mathrm{visit}( u )\quad \triangleright\ \text{the visit of }
 ///     \text{DfsSchema} \cr
 /// 4 & \qquad \textbf{if}\  \text{it met a back edge }\ \textbf{then return }
-///     \text{true} \cr
+///     \textbf{true} \cr
 /// 5 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
