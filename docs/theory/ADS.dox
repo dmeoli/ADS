@@ -18,9 +18,11 @@
  of the iterators with the cost of their steps (see \ref theory_ADS_iterators),
  while the arithmetic of the portable primitives (see
  \ref theory_ADS_portable) and the typed modifications by which a structure
- tells its observers what changed (see \ref theory_ADS_modifications) close
- the page. The algorithms of the iterators have their
- pseudocode on the page of `Iterators.h`, in the comment of their function.
+ tells its observers what changed (see \ref theory_ADS_modifications) and
+ the capabilities that an algorithm may ask of a structure (see
+ \ref theory_ADS_capabilities) close the page. The algorithms of the
+ iterators have their pseudocode on the page of `Iterators.h`, in the
+ comment of their function.
 
  \tableofcontents
 
@@ -479,6 +481,70 @@
  otherwise. `UndoLog` keeps the events of a history, from which the inverses
  in the reverse order give a history back to any of its checkpoints.
 
+ \section theory_ADS_capabilities Capabilities
+
+ An algorithm that takes a structure as a type may ask what the structure
+ can do, and choose its faster path at compile time; `Capabilities.h`
+ gives the vocabulary of these questions, which is of three kinds because
+ the answers are of three kinds. A concept of C++20 decides a question of
+ syntax (whether `split()` exists and what it takes), but not one of
+ meaning: a structure whose `rank()` scans its items satisfies the same
+ concept as one whose `rank()` reads a counter, and the items of a heap
+ that moves them satisfy the same requirements as those of a heap of
+ nodes. The second kind is therefore an explicit opt-in of the structure,
+ a variable template that it specializes (`enable_stable_references< S >`,
+ as `std::ranges::enable_borrowed_range` of the standard) or a static
+ member that it declares (`Q::decrease_key`, `S::monotone`); a structure
+ that says nothing gets the conservative answer. The third kind is a
+ property that a wrapper must pass on without knowing it, since a wrapper
+ written today cannot list the properties of tomorrow: a query
+ `s.query( tag )`, answered by the structure if it has a static member for
+ the tag and by the default of the tag otherwise, which `ObservedGraph`
+ forwards to its graph and `Shadow` composes from its two observers by the
+ meet of the tag (the conjunction for the stable references and for the
+ reads that may run with writes, the worse of the two classes of time for
+ `rank()`), as the environments of P2300 forward their queries.
+
+ The customization point objects of Niebler are used only where a type
+ that ADS does not own may lack an operation that has a sensible default:
+ `reserve( s , n )` does nothing for a `std::list`, `prefetch( s , k )`
+ does nothing where no prefetch is known, and `insert_bulk( s , r )`
+ inserts the items one by one; each calls the member if there is one, else
+ a free function found by argument-dependent lookup, else the default. The
+ three of the priority queues in `PriorityQueue.h` read the members of the
+ book first and the spelling of the standard last, so that
+ `std::priority_queue` models the base `PriorityQueue` as it is.
+
+ A priority queue lowers the key of an item in one of two ways, and
+ `decrease_key_of< Q >()` tells them apart: natively, by `decrease()` on
+ the handle that the insertion gave, or lazily, by a new insertion of the
+ item with the lower key, the older copies left in the queue and skipped
+ when they come out. Neither is better in general: the lazy form needs no
+ handles and no table of positions, at the price of a queue that holds one
+ copy per decrease instead of one per item, and on sparse graphs it is
+ often the faster of the two (Chen et al.). The shortest paths of
+ `ShortestPaths.h` and Prim's algorithm of `MinimumSpanningTree.h` take
+ either; in the lazy case the frontier keeps, for each node, whether it is
+ in \f$ S \f$, and skips a copy whose node is not.
+
+ <b>Lemma 2.</b> <em>Let the priorities of the copies be the pairs
+ \f$ ( d , v ) \f$ of a distance and a node, inserted at each fall of the
+ distance of \f$ v \f$. Then the lazy frontier extracts the same nodes, in
+ the same order and with the same counts, as a native one on the same
+ graph.</em>
+
+ <em>Proof.</em> The distance of a node only falls, so that the last copy
+ of \f$ v \f$ inserted has the least priority among the copies of
+ \f$ v \f$ in the queue; while \f$ v \f$ is in \f$ S \f$, that copy is the
+ one with the priority \f$ ( d_v , v ) \f$ which the native queue holds.
+ When \f$ v \f$ leaves \f$ S \f$ its other copies have larger priorities and
+ are skipped, and if \f$ v \f$ enters \f$ S \f$ again (with negative weights)
+ its new copy is again the least of its copies. Hence at each extraction
+ the least copy of a node in \f$ S \f$ is the least entry of the native
+ queue, the pairs being distinct, and the stale copies before it are
+ skipped without counting; the additions and the decreases are the calls
+ of the prototype, the same in both. \f$ \square \f$
+
  \section theory_ADS_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 3 and 4,
@@ -503,6 +569,17 @@
       2013, chapter 33 (the iterators)
  \see D. Abrahams, Exception-safety in generic components, Generic
       Programming, LNCS 1766, 69-79, 2000, doi:10.1007/3-540-39953-4_6
+ \see E. Niebler, Suggested design for customization points, ISO/IEC JTC1
+      SC22 WG21 N4381, 2015,
+      https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4381.html
+ \see M. Dominiak, G. Evtushenko, L. Baker, L. R. Teodorescu, L. Howes,
+      K. Shoop, M. Garland, E. Niebler, B. A. Lelbach, std::execution,
+      ISO/IEC JTC1 SC22 WG21 P2300R10, 2024,
+      https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2024/p2300r10.html
+ \see M. Chen, R. A. Chowdhury, V. Ramachandran, D. Lan Roche, L. Tong,
+      Priority queues and Dijkstra's algorithm, Technical Report TR-07-54,
+      The University of Texas at Austin, 2007,
+      https://www3.cs.stonybrook.edu/~rezaul/papers/TR-07-54.pdf
  \see U. A. Acar, G. E. Blelloch, R. Harper, Adaptive functional
       programming, Proceedings of POPL, 247-259, 2002,
       doi:10.1145/503272.503296

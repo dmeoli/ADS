@@ -125,6 +125,9 @@ struct SetQueue {
 
 static_assert( PriorityQueue< SetQueue > );
 static_assert( PriorityQueue< IndexedDaryHeap< std::pair< int , int > > > );
+static_assert( AddressablePriorityQueue< SetQueue > );
+static_assert(
+ AddressablePriorityQueue< IndexedDaryHeap< std::pair< int , int > > > );
 
 /// std::queue with the names of the book
 struct StdQueue {

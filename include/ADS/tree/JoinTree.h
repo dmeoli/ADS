@@ -207,6 +207,7 @@ class JoinTree
  using Key = K;     ///< the type of the keys
  using Value = V;   ///< the type of the values
  using AugValue = typename G::Value;   ///< the type of the augmentation
+ using Augmented = G;                  ///< the augmentation
 
  /// a node: what the navigation below reads
  struct Node {

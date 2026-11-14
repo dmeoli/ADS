@@ -56,6 +56,7 @@ using WEdges = std::vector< std::tuple< int , int , int > >;
 using WG = ListGraph< int >;
 
 static_assert( PriorityQueue< FibonacciHeapPriorityQueue< int > > );
+static_assert( AddressablePriorityQueue< FibonacciHeapPriorityQueue< int > > );
 
 constexpr int INFI = infinity< int >();
 

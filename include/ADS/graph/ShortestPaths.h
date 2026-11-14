@@ -32,7 +32,10 @@
  *   the fastest in practice on road networks.
  *
  * With a priority queue a node already in S has its priority decreased
- * (the line (4) of the book); in the code of the book the new distance and
+ * (the line (4) of the book), by `decrease()` on its handle if the queue
+ * has handles and by a new insertion otherwise, whose stale copies are
+ * skipped when they come out (the lazy deletion, as `decrease_key_of()` of
+ * `Capabilities.h` chooses); in the code of the book the new distance and
  * parent of v are written in both branches of that test. The structure S
  * is a type [see `PrototypeFrontier`]: `shortestPaths()` with a Frontier runs
  * the prototype on the six structures of the book, and the prototype runs
@@ -97,6 +100,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Capabilities.h"
+#include "ADS/Portable.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/Visit.h"
 #include "ADS/priority/FibonacciHeapPriorityQueue.h"
@@ -112,6 +117,7 @@
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <type_traits>
 #include <vector>
 
 /*--------------------------------------------------------------------------*/
@@ -181,9 +187,40 @@ concept PrototypeFrontier = requires( S s , int v , const D & d , bool b ) {
 /// a priority queue of the nodes [see `PriorityQueue.h`] as \f$ S \f$: the
 /// priority of a node its distance or, if the priority is a pair, the pair
 /// ( distance , node ), which breaks the ties by the names of the nodes, so
-/// that any priority queue extracts the same nodes in the same order
+/// that any priority queue extracts the same nodes in the same order. The
+/// fall of a distance is a `decrease()` on the handle of the node if the
+/// queue lowers its keys natively, a new insertion of the node otherwise
+/// (`decrease_key_of()` of `Capabilities.h`): the copy of least priority of
+/// a node is then the one of its distance, which comes out first, and the
+/// others, which come out after it, are skipped
 template< PriorityQueue Q >
+ requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
+           requires { typename Q::Priority; } )
 class PriorityFrontier {
+
+ /// whether the queue lowers its keys by `decrease()`
+ static constexpr bool native =
+  ( decrease_key_of< Q >() == decrease_key_kind::native );
+
+ /// the handle of a node, nothing if the queue is lazy
+ template< class X , bool N >
+ struct HandleOf {
+  using type = char;
+  };
+
+ template< class X >
+ struct HandleOf< X , true > {
+  using type = typename X::Handle;
+  };
+
+ /// what a lazy queue keeps: whether each node is in S, and how many are
+ struct Lazy {
+  std::vector< bool > in;   ///< whether each node is in S
+  int live = 0;             ///< the nodes in S
+  };
+
+ /// nothing, for a native queue
+ struct Native {};
 
  public:
 
@@ -191,26 +228,55 @@ class PriorityFrontier {
  /// \pre \f$ q \f$ is empty, \f$ n \ge 0 \f$
  PriorityFrontier( Q & q , int n ) : f_q( q ) {
   ADS_PRE( n >= 0 );
-  f_h.resize( std::size_t( n ) );
+  if constexpr( native )
+   f_h.resize( std::size_t( n ) );
+  else
+   f_l.in.assign( std::size_t( n ) , false );
   }
 
  /// \f$ v \f$ into \f$ S \f$ at the distance \f$ d \f$
  template< class D >
  void add( int v , const D & d , bool ) {
-  f_h[ v ] = f_q.insert( v , key( v , d ) );
+  if constexpr( native )
+   f_h[ v ] = f_q.insert( v , key( v , d ) );
+  else {
+   f_q.insert( v , key( v , d ) );
+   f_l.in[ v ] = true;
+   ++f_l.live;
+   }
   }
 
- /// a node out of \f$ S \f$
- int extract( void ) { return( f_q.deleteMin() ); }
+ /// a node out of \f$ S \f$; the stale copies of a lazy queue skipped
+ int extract( void ) {
+  if constexpr( native )
+   return( f_q.deleteMin() );
+  else
+   for( ; ; ) {
+    const int v = f_q.deleteMin();
+    if( f_l.in[ v ] ) {
+     f_l.in[ v ] = false;
+     --f_l.live;
+     return( v );
+     }
+    }
+  }
 
  /// the priority of \f$ v \f$, already in \f$ S \f$, falls to \f$ d \f$
  template< class D >
  void update( int v , const D & d ) {
-  f_q.decrease( f_h[ v ] , key( v , d ) );
+  if constexpr( native )
+   f_q.decrease( f_h[ v ] , key( v , d ) );
+  else
+   f_q.insert( v , key( v , d ) );
   }
 
- /// whether \f$ S \f$ is empty
- [[nodiscard]] bool empty( void ) const { return( f_q.empty() ); }
+ /// whether \f$ S \f$ is empty; a lazy queue may still hold stale copies
+ [[nodiscard]] bool empty( void ) const {
+  if constexpr( native )
+   return( f_q.empty() );
+  else
+   return( f_l.live == 0 );
+  }
 
  /// the priority of \f$ v \f$ at the distance \f$ d \f$
  template< class D >
@@ -225,7 +291,10 @@ class PriorityFrontier {
  private:
 
  Q & f_q;
- std::vector< typename Q::Handle > f_h;   ///< the handle of each node
+ /// the handle of each node, if native
+ std::vector< typename HandleOf< Q , native >::type > f_h;
+ /// the nodes in S, if lazy
+ ADS_NO_UNIQUE_ADDRESS std::conditional_t< native , Native , Lazy > f_l;
 
  };  // end( class PriorityFrontier )
 

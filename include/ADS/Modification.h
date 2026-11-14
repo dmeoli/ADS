@@ -42,7 +42,8 @@
  * guarantee against an observer that throws, by the inverse events and the
  * undo of the structure; each kind has a revision counter. `UndoLog` makes
  * any structure with `apply()` undoable, and `Shadow` checks an incremental
- * observer against one that computes from scratch.
+ * observer against one that computes from scratch, and answers the queries
+ * of `Capabilities.h` by the meet of those of the two observers.
  *
  * The contracts [see `Contract.h`]: `on()` of `Erased`, `BulkErased`,
  * `Cleared`, `Rebuilt` and `Replaced` is `noexcept` (checked at compile
@@ -100,6 +101,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
 
@@ -1504,10 +1506,6 @@ struct events_of {
  using type = M;
  };
 
-/// whether \f$ s \f$ can go back to a checkpoint
-template< class S >
-concept undoable = requires( S & s ) { s.rollback( s.checkpoint() ); };
-
 /// the type of the checkpoints of \f$ s \f$, `int` if it has none
 template< class S >
 struct checkpoint_of {
@@ -1515,7 +1513,7 @@ struct checkpoint_of {
  };
 
 template< class S >
- requires undoable< S >
+ requires ADS::undoable< S >
 struct checkpoint_of< S > {
  using type = decltype( std::declval< S & >().checkpoint() );
  };
@@ -1601,7 +1599,7 @@ class Batch {
  explicit Batch( S & s )
   : f_s( & s ) , f_ex( std::uncaught_exceptions() ) ,
     f_mark( s.subject().buffered() ) {
-  if constexpr( mod::detail::undoable< S > )
+  if constexpr( undoable< S > )
    f_t = s.checkpoint();
   s.subject().open();
   }
@@ -1660,7 +1658,7 @@ class Batch {
 
  /// brings the structure back to where it was when the batch opened, and
  /// drops its events: the observers see nothing
- void rollback( void ) requires mod::detail::undoable< S > {
+ void rollback( void ) requires undoable< S > {
   if( f_s )
    undo( *std::exchange( f_s , nullptr ) );
   }
@@ -1671,7 +1669,7 @@ class Batch {
   S * s = std::exchange( f_s , nullptr );
   using L = typename std::remove_cvref_t<
                      decltype( s->subject() ) >::modifications;
-  if constexpr( mod::detail::undoable< S > )
+  if constexpr( undoable< S > )
    undo( *s );
   else {
    if constexpr( mod::contains_v< mod::Rebuilt , L > )
@@ -1924,11 +1922,19 @@ class Shadow {
  /// that of the other one (a violation at the level of the audits if they
  /// differ)
  template< class F >
+  requires( ! forwarding_query_tag< std::remove_cvref_t< F > > )
  auto query( F && f ) {
   auto a = f( f_inc );
   const bool same = agreeOn( a , f( f_scr ) );
   ADS_AUDIT( same );
   return( a );
+  }
+
+ /// the answer of the composition of the two observers to the forwarded
+ /// query of the tag `T` [see `Capabilities.h`], the meet of theirs
+ template< meetable_query T >
+ [[nodiscard]] static constexpr auto query( T ) noexcept {
+  return( query_meet_v< Inc , Scratch , T > );
   }
 
  /// whether the two observers give the same answer to \f$ f \f$

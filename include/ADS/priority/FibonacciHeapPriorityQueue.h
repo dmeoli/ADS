@@ -64,6 +64,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
 #include "ADS/memory/ObjectPool.h"
@@ -364,6 +365,12 @@ class FibonacciHeapPriorityQueue {
  ObjectPool< Node > f_pool;   ///< the nodes
 
  };  // end( class FibonacciHeapPriorityQueue )
+
+/// the items of a Fibonacci heap stay in their nodes, which the handles
+/// point to [see `Capabilities.h`]
+template< class T , std::totally_ordered P >
+inline constexpr bool
+ enable_stable_references< FibonacciHeapPriorityQueue< T , P > > = true;
 
 /*--------------------------------------------------------------------------*/
 

@@ -1401,7 +1401,10 @@ Also, `update(v, d)` records in $S$ that the distance of $v$, already in
 $S$, fell to $d$ (the line (4)), and `empty()` completes the concept.
 `PriorityFrontier` (whose static `key(v, d)` builds the priority of a node)
 adapts any priority queue of [chapter
-9](09-priority.md#ch-9), keeping the handle of each node for its decrease.
+9](09-priority.md#ch-9). It keeps the handle of each node for its decrease
+when the queue has handles, and otherwise it inserts the node again at each
+fall of its distance and skips the stale copies when they come out, as
+`decrease_key_of()` chooses ([§1.14](01-introduction.md#sec-1-14)).
 When the priority is a pair, it is the pair $( d , v )$, which breaks the
 ties by the names of the nodes. Thus all the priority queues extract the
 same nodes in the same order, and a `FrontierCounts` (the additions, the
@@ -1606,8 +1609,9 @@ heap and $O( m + n \log n )$ on the Fibonacci heap, [Montresor 2025,
 exercise 14.4](Z-bibliography.md#ref-montresor2025)), with `how` one of
 the three priority queues of `Frontier`. It returns the parents of the
 tree of the component of $r$. Also, `prim(g, r, q)` takes any priority
-queue, whose priority may again be the pair (weight, node); thus all the
-queues give the same tree with the same counts. Dually, a spanning forest
+queue, with handles or without them as the frontier of the shortest paths,
+whose priority may again be the pair (weight, node); thus all the queues
+give the same tree with the same counts. Dually, a spanning forest
 is minimum if and only if no edge out of it weighs less than the heaviest
 edge of the path of the forest between its ends (the property of the
 cycles). `isMinimumSpanningForest(n, A, T)` checks it in $O( m n )$,

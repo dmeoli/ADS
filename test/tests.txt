@@ -1840,6 +1840,13 @@ engineered_modification  mod-audit           audit e conteggi per osservatore
 engineered_modification  mod-shadow          Shadow contro il ricalcolo
 engineered_modification  mod-observed-graph  grafo osservato, osservatori nuovi
 
+# the capabilities of the structures, their queries and opt-ins, beyond
+# the book
+engineered_capabilities  cap-queue-points   punti di personalizzazione delle code
+engineered_capabilities  cap-lazy-frontier  cammini minimi e Prim su code pigre
+engineered_capabilities  cap-queries        query inoltrate e incontro in Shadow
+engineered_capabilities  cap-points         reserve, prefetch, insert_bulk
+
 # the deterministic reservations and the parallel greedy algorithms
 engineered_speculative  speculative-for        prenotazioni deterministiche
 engineered_speculative  parallel-kruskal       Kruskal, filter-Kruskal, foresta

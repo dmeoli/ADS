@@ -22,10 +22,11 @@
  * unoriented graph the ends of an edge in an event are in increasing order,
  * \f$ u < v \f$.
  *
- The wrapper is `ObservedGraph< G , Policy >`, whose subject is a policy
+ * The wrapper is `ObservedGraph< G , Policy >`, whose subject is a policy
  * of `Modification.h` (`NoObservers` by default, so that a change compiles
  * to the code of the graph), and whose events are the list
- * `GraphModifications< W >`; an observer of it is any object with an
+ * `GraphModifications< W >`, and which forwards the queries of
+ * `Capabilities.h` to the graph; an observer of it is any object with an
  * `on( e )` for one of the five events (see `Modification.h` for the
  * optional parts). `Observable< G , O... >` is the wrapper of the
  * observers of the first form, which have `mask()`, the set of the kinds of
@@ -106,6 +107,7 @@
 /*------------------------------ INCLUDES ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+#include "ADS/Capabilities.h"
 #include "ADS/Contract.h"
 #include "ADS/Modification.h"
 #include "ADS/Portable.h"
@@ -117,6 +119,7 @@
 #include <optional>
 #include <span>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -340,6 +343,17 @@ class ObservedGraph {
 
  /// the graph
  [[nodiscard]] const G & graph( void ) const { return( f_g ); }
+
+ /// the answer to the forwarded query of the tag `T` [see
+ /// `Capabilities.h`]: that of the graph, but for the events, which are
+ /// those of the wrapper
+ template< forwarding_query_tag T >
+ [[nodiscard]] static constexpr auto query( T ) noexcept {
+  if constexpr( std::same_as< T , event_set_t > )
+   return( std::type_identity< modifications >() );
+  else
+   return( query_v< G , T > );
+  }
 
  /// the union of the masks of the observers
  [[nodiscard]] unsigned mask( void ) const {
