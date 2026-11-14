@@ -14,7 +14,8 @@
  * each structure can run in a process of its own: with ADS_BENCH_WHO set
  * to a label only the cells of the structure of that label are measured,
  * with ADS_BENCH_LIST set none is, and the labels of the structures are
- * printed instead, once each, in the order of their first cell. *
+ * printed instead, once each, in the order of their first cell.
+ *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
  *         Università di Pisa \n

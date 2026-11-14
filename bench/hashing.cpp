@@ -2,7 +2,7 @@
 /*--------------------------- File hashing.cpp -----------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The benchmark of the hashing, in five parts, each with its competitors
+ * The benchmark of the hashing, in six parts, each with its competitors
  * when their headers are found (and Abseil when ADS_HAS_ABSL is defined,
  * since it is linked):
  *
