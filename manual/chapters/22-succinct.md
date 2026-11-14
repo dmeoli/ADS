@@ -528,15 +528,43 @@ counts the blocks of each of the three codes, and `contains( x )` is a
 
 ![Figure 22.6. The sequence 3, 4, 5, 6, 7, 8, 9, 10, 20, 41, 70, 99 in blocks of 4 items (128 in the library): the first block is a vector of 7 bits, the second (violet) holds all the values of its range and takes no bit, the third is coded by Elias-Fano; each block has a record with its last item and the place of its code.](../figures/succinct-pef.svg){#fig-22-6}
 
-<span id="lem-22-8"></span>**Lemma 22.8.** *The cost of a block is at most
-that of Elias-Fano on its universe, and the sum
-$\sum_j m_j ( 2 + \log_2( u_j / m_j ) )$ is at most
-$n ( 2 + \log_2( u / n ) )$.*
+<span id="lem-22-8"></span>**Lemma 22.8.** *A block of $m$ items with
+$u > m$ costs at most $\min\{ u , \, 2 m + m \lceil \log_2( u / m ) \rceil \}$
+bits, i.e., never more than Elias-Fano with the $\ell$ of
+[Theorem 22.6](22-succinct.md#thm-22-6) on its universe (with equality for
+$u = m 2^\ell$); hence the codes of all the blocks take at most*
 
-*Proof.* Our first claim holds by the choice of the cheapest code. For the second, $\sum_j u_j \le u$, since the universes of the blocks are disjoint ranges of $[ 0 , u )$. By the concavity of the logarithm (the
-inequality of Jensen on the weights $m_j / n$),
-$\sum_j m_j \log_2( u_j / m_j ) \le n \log_2( \sum_j u_j / n ) \le
-n \log_2( u / n )$. $\square$
+$$
+\sum_j m_j \Bigl( 2 + \Bigl\lceil \log_2 \frac{u_j}{m_j} \Bigr\rceil \Bigr)
+\le n \Bigl( 3 + \log_2 \frac{u}{n} \Bigr) \tag{22.10}
+$$
+
+*bits, at most one bit per item above the bound of Theorem 22.6 with the
+logarithm not rounded up.*
+
+*Proof.* Let $\ell = \lfloor \log_2( u / m ) \rfloor$, the width of the
+code, so that $m 2^\ell \le u < m 2^{\ell + 1}$. Its Elias-Fano form takes
+$m \ell + m + \lfloor ( u - 1 ) / 2^\ell \rfloor + 1$ bits, and
+$( u - 1 ) / 2^\ell < 2 m$ gives at most $m \ell + 3 m$. If $u / m$ is not
+a power of 2, $\lceil \log_2( u / m ) \rceil = \ell + 1$ and this is
+$2 m + m \lceil \log_2( u / m ) \rceil$. If $u = m 2^\ell$, the term
+$\lfloor ( u - 1 ) / 2^\ell \rfloor + 1$ is $m$, and the cost is
+$m \ell + 2 m = 2 m + m \log_2( u / m )$. The code taken is the cheapest of
+the vector of $u$ bits and of this form (and no bit when $u = m$), which
+gives the first claim. For the sum, $\lceil y \rceil < y + 1$ gives
+$\sum_j m_j ( 3 + \log_2( u_j / m_j ) )$, and $\sum_j u_j \le u$, since the
+universes of the blocks are disjoint ranges of $[ 0 , u )$; by the
+concavity of the logarithm (the inequality of Jensen on the weights
+$m_j / n$), $\sum_j m_j \log_2( u_j / m_j ) \le n \log_2( \sum_j u_j / n )
+\le n \log_2( u / n )$. $\square$
+
+We remark that the extra bit per item of (22.10) comes from the rounding
+of the logarithm in each block, and it can be reached: on two blocks with
+$u_1 / m = 1.5$ and $u_2 / m = 2.5$ the ceilings sum to 3 per item, while
+the whole sequence, with $u / n = 2$, has 1. A program that compares the
+Elias-Fano form of the code with the formula of Theorem 22.6 for all
+$m < 300$ and $m < u < 50 m$ finds it never above, and equal on the
+powers of 2.
 
 Besides, the records of the blocks cost a field of fixed width per block: the last item, the place of the code, and its kind with $\ell$ in 8 bits (so that a query computes no logarithm). Also, the last item of every eighth block is kept apart for the searches. On the dense runs of an inverted index the cost is usually far smaller than that of Elias-Fano. `access( i )` reads the
 records of the block of $i$ and of the one before (next to each other) and
@@ -577,7 +605,7 @@ take at most $2 \epsilon + 2$ values, and with $\beta_j = x_{p_j} +
 
 $$
 x_i = \beta_j + \lfloor \alpha ( i - p_j ) \rfloor + C[ i ] , \qquad
-0 \le C[ i ] < 2^c \text{ for } \epsilon = 2^{c-1} - 1 . \tag{22.10}
+0 \le C[ i ] < 2^c \text{ for } \epsilon = 2^{c-1} - 1 . \tag{22.11}
 $$
 
 *Proof.* $x_i - x_{p_j} - \alpha ( i - p_j )$ lies in
@@ -590,12 +618,12 @@ $C[ i ] = d_i - \min_i d_i$ takes $c$ bits. $\square$
 In the code the slope $\alpha$ is kept in a `double`, whose rounding may spread the
 $d_i$ by a few units on items of 64 bits. `LAVector` therefore computes the
 corrections with the rounded slope and gives each segment the width $w_j$
-of the range of the corrections of the segment, so that (22.10) holds with $w_j$ in
+of the range of the corrections of the segment, so that (22.11) holds with $w_j$ in
 place of $c$ ($c$, or one bit more). One can count the space as follows. A segment takes 24 bytes (the base, the slope, and the place of its corrections with their width; its first item is its base plus its first correction). Its first place takes a field of $\lceil \log_2 n \rceil$ bits, and the two tables that find a segment by a place and by a value about two fields of $\lceil \log_2 m \rceil$ bits per segment. Hence the sequence takes about
 
 $$
 \sum_j w_j ( p_{j+1} - p_j ) + m \big( 192 + \lceil \log_2 n \rceil +
-2 \lceil \log_2 m \rceil \big) \tag{22.11}
+2 \lceil \log_2 m \rceil \big) \tag{22.12}
 $$
 
 bits for $m$ segments ([Algorithm 22.11](22-succinct.md#alg-22-11)).
@@ -613,12 +641,12 @@ and the choice of the width of the corrections.
 
 --8<-- "generated/LAVector-tuned.pseudo.md"
 
-Accessing $x_i$ is (22.10) once the segment of $i$ is known, which a
+Accessing $x_i$ is (22.11) once the segment of $i$ is known, which a
 table of the segment of every $2^t$-th place gives in $O( 1 )$ expected
 time for $2^t \approx n / m$. In turn, the rank of $x$ first finds the last segment
 whose first item is below $x$, through a table of the first segment of each
 bucket of the high bits of the items, as the buckets of Elias-Fano. Then,
-since by (22.10) $\beta_j + \lfloor \alpha ( i - p_j ) \rfloor \le x_i <
+since by (22.11) $\beta_j + \lfloor \alpha ( i - p_j ) \rfloor \le x_i <
 \beta_j + \lfloor \alpha ( i - p_j ) \rfloor + 2^{w_j}$, the answer is
 among the places where the line goes from $x - 2^{w_j}$ to $x + 1$, about
 $2^{w_j} / \alpha$ of them. A binary search on the corrections settles it
@@ -662,11 +690,11 @@ A value of three states carries $\log_2 3 \approx 1.585$ bits of
 information, but takes 2 bits in a field of `PackedArray< 2 >`. We may put five such values (*trits*) $t_0 , \ldots , t_4$ in one byte as the number
 
 $$
-y = \sum_{j = 0}^{4} t_j 3^j \le 3^5 - 1 = 242 , \tag{22.12}
+y = \sum_{j = 0}^{4} t_j 3^j \le 3^5 - 1 = 242 , \tag{22.13}
 $$
 
 i.e., in 1.6 bits per value, 0.015 above the entropy and one fifth less than the fields of 2 bits ([Breyer and Korf 2010](Z-bibliography.md#ref-breyer2010), whose tables keep the distances modulo 3, from which the distance of a state is recovered along a path to the goal). `TritArray` reads the digit $j = i \bmod 5$ of the byte $\lfloor i / 5 \rfloor$ from a table of the five digits of each of the 243 bytes, 1215 bytes that stay in the cache of the first level. It writes the digit by adding $( v - t_j ) 3^j$ to the byte, which by
-(22.12) changes only that digit:
+(22.13) changes only that digit:
 
 ```cpp
 --8<-- "generated/PackedArray-tritSet.cpp"
@@ -752,7 +780,7 @@ are the 0s after the $( k + 1 )$-th 1. Hence, with the nodes numbered from
 
 $$
 \mathrm{parent}( v ) = \mathrm{select}_0( v + 1 ) - v - 1 , \qquad
-\mathrm{leftmostChild}( v ) = \mathrm{select}_1( v + 1 ) - v , \tag{22.13}
+\mathrm{leftmostChild}( v ) = \mathrm{select}_1( v + 1 ) - v , \tag{22.14}
 $$
 
 *the latter when a 0 follows the $( v + 1 )$-th 1, and
@@ -796,7 +824,7 @@ $E( -1 ) = 0$), one has
 
 $$
 \mathrm{findClose}( i ) = \min \{ j > i : E( j ) = E( i ) - 1 \} ,
-\tag{22.14}
+\tag{22.15}
 $$
 
 since the parentheses strictly inside the pair of $i$ are balanced and keep
@@ -901,23 +929,23 @@ first. Then the item at the place $i$ of a level is at the place*
 
 $$
 \mathrm{rank}_0( B_\ell , i ) \text{ if its bit is 0}, \qquad
-Z_\ell + \mathrm{rank}_1( B_\ell , i ) \text{ if it is 1} , \tag{22.15}
+Z_\ell + \mathrm{rank}_1( B_\ell , i ) \text{ if it is 1} , \tag{22.16}
 $$
 
 *of the next one, and the items equal to $c$ end consecutive, in the order
 of $S$, at the last level.*
 
 *Proof.* A stable partition by a bit sends an item to the place given by
-the items with its bit before it, which is (22.15), and keeps the order
+the items with its bit before it, which is (22.16), and keeps the order
 among the items with the same bit. By induction on the levels, the items
 that share the first $\ell$ bits stay consecutive, in the order of $S$, and
 the place of the range of $c$ at the last level depends on the bits of $c$
 alone. $\square$
 
-![Figure 22.11. The wavelet matrix of the sequence 4 7 6 5 3 2 1 0 2 1 4 1 of 3 bits: each level holds a bit of each item (the items above the bits, in the order of the level), the 0s first at the next level; the access to the item 2, the 6 = 110 (violet), moves to the places 9 and 11 by (22.15).](../figures/succinct-waveletmatrix.svg){#fig-22-11}
+![Figure 22.11. The wavelet matrix of the sequence 4 7 6 5 3 2 1 0 2 1 4 1 of 3 bits: each level holds a bit of each item (the items above the bits, in the order of the level), the 0s first at the next level; the access to the item 2, the 6 = 110 (violet), moves to the places 9 and 11 by (22.16).](../figures/succinct-waveletmatrix.svg){#fig-22-11}
 
 Hence `access()`, `rank()` and `select()` follow a place, or the two ends of
-a range, down the $w$ levels by (22.15), or up by the select, in $O( w )$
+a range, down the $w$ levels by (22.16), or up by the select, in $O( w )$
 time ([Figure 22.11](22-succinct.md#fig-22-11)); `rank( c , i )` follows
 the places 0 and $i$ down along the bits of $c$, and the difference at the
 last level is the answer:
@@ -960,7 +988,7 @@ from the place $o_v$, with $R_v = \mathrm{rank}_1( B , o_v )$ kept. An
 item of place $i$ in the node $v$ moves to the place
 
 $$
-i' = \mathrm{rank}_b( B , o_v + i ) - \mathrm{rank}_b( B , o_v ) \tag{22.16}
+i' = \mathrm{rank}_b( B , o_v + i ) - \mathrm{rank}_b( B , o_v ) \tag{22.17}
 $$
 
 of its child by the bit $b = B[ o_v + i ]$. A descent along the code of $c$ gives `access( i )`, together with the rank of the symbol found (`accessRank()`, the LF-mapping of an FM-index in one descent). It also gives $\mathrm{rank}_c( i )$, one rank a step, while $\mathrm{select}_c( k )$
@@ -1005,7 +1033,7 @@ keeps the starts $p_i$, their images $q_i$ and the interval $d_i$ that holds
 $q_i$, so that
 
 $$
-\pi( x ) = q_i + ( x - p_i ) , \qquad x \in [ p_i , p_{i+1} ) , \tag{22.17}
+\pi( x ) = q_i + ( x - p_i ) , \qquad x \in [ p_i , p_{i+1} ) , \tag{22.18}
 $$
 
 and the interval of $\pi( x )$ is found from $d_i$ forward, past the
@@ -1045,7 +1073,7 @@ of [Nishimoto and Tabei 2021](Z-bibliography.md#ref-nishimoto2021).
 |---|---|---|---|
 | `EliasFano` | $n ( 2 + \lceil \log_2( u / n ) \rceil )$, plus the directory of $H$ | $O( 1 )$ | `nextGEQ()` in $O( 1 )$ expected, $O( \log c )$ for a bucket of $c$ items |
 | `PartitionedEliasFano` | at most that of Elias-Fano on each block of 128 items, plus a record per block | a scan of the code of a block | `nextGEQ()` by a search of the records and the scan of a block |
-| `LAVector` | (22.11) | $O( 1 )$ expected | `nextGEQ()` in $O( w_j - \log_2 \alpha )$ once the segment is found |
+| `LAVector` | (22.12) | $O( 1 )$ expected | `nextGEQ()` in $O( w_j - \log_2 \alpha )$ once the segment is found |
 | `WaveletMatrix` | $n w$, plus a directory per level | $O( w )$ | rank, select, quantile and range counts in $O( w )$ |
 | `HuffmanWaveletTree` | less than $n ( H_0 + 1 )$, plus the directory and $O( \sigma )$ words | $O( \ell_c )$, $H_0 + 1$ on average | rank and select of $c$ in $O( \ell_c )$ |
 | `MoveStructure` | $O( r )$ words for a permutation of $r$ intervals | the image of a place and its interval in $O( 1 )$ | the interval of a place by a binary search |
@@ -1073,7 +1101,7 @@ graph in Elias-Fano.
 <span id="lem-22-14"></span>**Lemma 22.14.** *Coding each list apart, in the universe of the list, takes*
 
 $$
-\sum_u d_u \log_2 \frac{n}{d_u} \le m \log_2 \frac{n^2}{m} \tag{22.18}
+\sum_u d_u \log_2 \frac{n}{d_u} \le m \log_2 \frac{n^2}{m} \tag{22.19}
 $$
 
 *bits beyond the $2 m$ of the unary parts, $d_u$ being the outdegree of
@@ -1196,7 +1224,7 @@ let $b_j( c )$ be the bit at the level $\ell + j$ of the item $c$, and*
 
 $$
 \kappa_j( c ) = \sum_{i < j} 2^i \, b_i( c ) , \qquad 0 \le j \le k ,
-\tag{22.19}
+\tag{22.20}
 $$
 
 *the bits of the levels $\ell , \ldots , \ell + j - 1$ read from the last
@@ -1212,23 +1240,23 @@ Hence the place of an item $c$ at the level $\ell + j$ is
 
 $$
 P_j[ \kappa_j( c ) ] + | \{ c' \text{ before } c \text{ at the level }
-\ell : \kappa_j( c' ) = \kappa_j( c ) \} | , \tag{22.20}
+\ell : \kappa_j( c' ) = \kappa_j( c ) \} | , \tag{22.21}
 $$
 
 with $P_j[ a ]$ the items whose key is below $a$, and $Z_{\ell + j}$ is the
 number of the items with $b_j = 0$; both are sums of the counts of the $2^k$
 values of $\kappa_k$, from which each $\kappa_j = \kappa_k \bmod 2^j$
-follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.20), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.12](22-succinct.md#lem-22-12)
+follows. One scan of the items in the order of the level $\ell$ therefore writes the bits of the $k$ levels $\ell , \ldots , \ell + k - 1$ at the places (22.21), and moves the items to their order at the level $\ell + k$. By contrast, the construction by the partitions of [Lemma 22.12](22-succinct.md#lem-22-12)
 moves them $k$ times, once per level. With $k \le 8$ this is $\lceil w / 8 \rceil$ passes over the items instead of $w$, the bits being written into $2^k - 1$ streams, one per value of $\kappa_j$ for each $j < k$. We recognize here the sort by the prefixes of the bits of
 [Dinklage, Ellert, Fischer, Kurpicz and Löbel 2021](Z-bibliography.md#ref-dinklage2021),
 applied to $k$ levels at a time ([Algorithm 22.24](22-succinct.md#alg-22-24)).
 
 On several threads the items are cut into slices of at most $2^{18}$
 items, about four per thread, whose $k$ levels, of 256 KB at most, stay in
-the second level of the cache while the slice writes them. Each slice writes the levels of its items at the places that the counts of its keys give by (22.20) within the slice. The levels are then gathered from the slices: each block of words of a level copies the runs of bits of the slices that fall in it, in the order (22.20) of the runs, and therefore no two threads write a word. This is the domain decomposition of
+the second level of the cache while the slice writes them. Each slice writes the levels of its items at the places that the counts of its keys give by (22.21) within the slice. The levels are then gathered from the slices: each block of words of a level copies the runs of bits of the slices that fall in it, in the order (22.21) of the runs, and therefore no two threads write a word. This is the domain decomposition of
 [Fuentes-Sepúlveda et al. 2017](Z-bibliography.md#ref-fuentes2017) and of
 [Labeit, Shun and Blelloch 2017](Z-bibliography.md#ref-labeit2017), with
-the merge of Dinklage et al.; the items move to the places (22.20) of the
+the merge of Dinklage et al.; the items move to the places (22.21) of the
 level $\ell + k$ directly, since those of two slices never meet.
 
 <span id="alg-22-24"></span>**Algorithm 22.24.** The construction of the

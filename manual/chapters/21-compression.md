@@ -919,7 +919,7 @@ $d_i = x_i - x_{i-4}$, the differential code D4 of
 unpacks, i.e., one addition per four integers instead of the chain of a
 prefix sum, for (typically) a fraction of a bit more per integer
 ([Algorithm 21.16](21-compression.md#alg-21-16)). On a processor without
-SSE2 the same layout is packed and unpacked a lane at a time.
+SSE2 the same layout is packed and unpacked a lane at a time, into the same bytes.
 
 ![Figure 21.4. The vertical layout of SIMD-BP128 for $b = 5$: the integer $4 q + l$ is in the lane $l$ at the bit $5 q$, the words 0 of the four lanes form the register $r_0$ and the words 1 the register $r_1$, and the field of $x_{24}, \ldots , x_{27}$ (violet) crosses from one word of its lane to the next, which (21.13) reads from both.](../figures/compression-binarypacking.svg){#fig-21-4}
 
