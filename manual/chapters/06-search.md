@@ -168,7 +168,7 @@ comparisons, which depend on the answer but not on $n$. [Bentley and Yao
 idea to the search of $k$ gives $\log_2 h + \log_2 \log_2 h + \cdots$
 comparisons, close to the lower bound $\log_2 h$.
 
-![Figure 6.2. `gallopSearch()` for $v = 40$: the probes at the places 0, 1, 3 and 7 (shaded, numbered above in their order) double the bound until $A[ 7 ] \ge v$, and a binary search on the places 4 to 7 (grey) finds the answer $h = 5$.](../figures/search-gallop.svg){#fig-6-2}
+![Figure 6.2. `gallopSearch()` for $v = 40$: the probes at the places 0, 1, 3 and 7 (violet, numbered above in their order) double the bound until $A[ 7 ] \ge v$, and a binary search on the places 4 to 7 (the faintest tint) finds the answer $h = 5$.](../figures/search-gallop.svg){#fig-6-2}
 
 <span id="alg-6-3"></span>**Algorithm 6.3.** The searches with a bound that
 doubles ([Bentley and Yao 1976](Z-bibliography.md#ref-bentley1976)): on a
@@ -363,7 +363,7 @@ levels, and a search reads one line per level, against the
 $\log_2 n - \log_2 B$ misses of the binary search (3 lines for a million
 keys of 32 bits, against 20 probes, of which the last 4 share a line).
 
-![Figure 6.3. An `SPlusTree` with $B = 4$ on 16 sorted items: the root, whose key $j$ is the first item of the leaf $j + 1$ (the last key, with no leaf, padded with $\infty$), over the four leaves, which are the items themselves; the search of $v = 26$ counts 2 keys smaller than $v$ in the root and 2 in the leaf 2 (shaded), i.e., the place $2 B + 2 = 10$.](../figures/search-splus.svg){#fig-6-3}
+![Figure 6.3. An `SPlusTree` with $B = 4$ on 16 sorted items: the root, whose key $j$ is the first item of the leaf $j + 1$ (the last key, with no leaf, padded with $\infty$), over the four leaves, which are the items themselves; the search of $v = 26$ counts 2 keys smaller than $v$ in the root and 2 in the leaf 2 (violet), i.e., the place $2 B + 2 = 10$.](../figures/search-splus.svg){#fig-6-3}
 
 In a node, the child to take is the count of the keys smaller than $v$.
 On the arithmetic keys under `std::less`, the count runs on the whole line
@@ -442,7 +442,7 @@ approximated, with error $\epsilon_r$, by the segments of a level
 above, and so on up to a single segment. By default, $\epsilon = 64$
 and $\epsilon_r = 4$.
 
-![Figure 6.4. The points $( A[ i ] , i )$ of 14 keys covered by two segments whose lines predict each place within $\epsilon = 2$ (the shaded bands); a search predicts the place of $v$ on the line of its segment and searches the window of the places within the error.](../figures/search-pgm.svg){#fig-6-4}
+![Figure 6.4. The points $( A[ i ] , i )$ of 14 keys covered by two segments whose lines predict each place within $\epsilon = 2$ (the light bands); a search predicts the place of $v$ on the line of its segment and searches the window of the places within the error.](../figures/search-pgm.svg){#fig-6-4}
 
 The fewest segments, i.e., the *optimal* approximation, are found in one
 pass by the algorithm of [O'Rourke 1981](Z-bibliography.md#ref-orourke1981)
@@ -532,7 +532,7 @@ $$
 hence a set of slopes serves all the segments if it hits each of their
 intervals ([Figure 6.5](06-search.md#fig-6-5)).
 
-![Figure 6.5. The intervals of the slopes of five segments, sorted by their left ends, and the two groups of the greedy stabbing (segments 1 to 3, and 4 and 5): the shaded strips are the intersections of the groups, and the slope of each group, $S[ 0 ]$ and $S[ 1 ]$, is the middle of its intersection.](../figures/search-compressed.svg){#fig-6-5}
+![Figure 6.5. The intervals of the slopes of five segments, sorted by their left ends, and the two groups of the greedy stabbing (segments 1 to 3, and 4 and 5): the violet strips are the intersections of the groups, and the slope of each group, $S[ 0 ]$ and $S[ 1 ]$, is the middle of its intersection.](../figures/search-compressed.svg){#fig-6-5}
 
 <span id="lem-6-6"></span>**Lemma 6.6.** *Sort the intervals by their left
 ends, and grow a group while the next interval meets the intersection of
@@ -599,7 +599,7 @@ $L_t$, into the first level $L_t$ that has room for them all
 ([Algorithm 6.12](06-search.md#alg-6-12) and
 [Figure 6.6](06-search.md#fig-6-6)).
 
-![Figure 6.6. A `DynamicPGMIndex` with $b_0 = 4$ and $B = 2$ (for the figure; the defaults are 128 and 8): the buffer $L_0$ and the levels $L_1$ and $L_2$, of capacities 8 and 16, before and after an insertion that finds the buffer full and merges it, with the new pair, into $L_1$, which has room for them (shaded); `x` is a tombstone, kept since $L_1$ is not the last level, and the grey places are free.](../figures/search-dynamic.svg){#fig-6-6}
+![Figure 6.6. A `DynamicPGMIndex` with $b_0 = 4$ and $B = 2$ (for the figure; the defaults are 128 and 8): the buffer $L_0$ and the levels $L_1$ and $L_2$, of capacities 8 and 16, before and after an insertion that finds the buffer full and merges it, with the new pair, into $L_1$, which has room for them (violet); `x` is a tombstone, kept since $L_1$ is not the last level, and the places in the faintest tint are free.](../figures/search-dynamic.svg){#fig-6-6}
 
 <span id="alg-6-12"></span>**Algorithm 6.12.** The operations of
 `DynamicPGMIndex` (the logarithmic method of [Bentley and Saxe
@@ -877,7 +877,7 @@ $j$; they cover the range, and the minimum does not mind their overlap
 ([Algorithm 6.17](06-search.md#alg-6-17) and
 [Figure 6.7](06-search.md#fig-6-7)).
 
-![Figure 6.7. The query of the range from 2 to 8 (shaded) on a `SparseTable`: the two entries of length $2^2$ that start at 2 and end at 8 overlap, and the better of their minima, 2 at the place 7, is the answer.](../figures/search-sparse.svg){#fig-6-7}
+![Figure 6.7. The query of the range from 2 to 8 (violet) on a `SparseTable`: the two entries of length $2^2$ that start at 2 and end at 8 overlap, and the better of their minima, 2 at the place 7, is the answer.](../figures/search-sparse.svg){#fig-6-7}
 
 <span id="alg-6-17"></span>**Algorithm 6.17.** The sparse table ([Bender
 and Farach-Colton 2000](Z-bibliography.md#ref-bender2000)); the better of
@@ -917,7 +917,7 @@ thus lies in the subtree of $a$, whose root is its minimum. Between the
 two first visits the tour does not leave that subtree and returns to $a$,
 the only node of least depth there. $\square$
 
-![Figure 6.8. An array of 7 items and its Cartesian tree (each node labelled by its item, its place beside it), and the nodes $E$ and the depths $D$ of the Euler tour of the tree; the query of the range from 2 to 4 is the node of least depth, 3, between the first visits of 2 and 4 (the shaded part of the tour).](../figures/search-cartesian.svg){#fig-6-8}
+![Figure 6.8. An array of 7 items and its Cartesian tree (each node labelled by its item, its place beside it), and the nodes $E$ and the depths $D$ of the Euler tour of the tree; the query of the range from 2 to 4 is the node of least depth, 3, between the first visits of 2 and 4 (the violet part of the tour).](../figures/search-cartesian.svg){#fig-6-8}
 
 The depths along a tour differ by exactly 1 at each step, and the queries
 on such an array (`PlusMinusOneRangeMinimum`) are answered in $O( 1 )$

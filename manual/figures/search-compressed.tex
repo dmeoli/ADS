@@ -12,16 +12,18 @@
 \usetikzlibrary{decorations.pathreplacing}
 \begin{document}
 \begin{tikzpicture}[ads,x=100mm,y=5mm]
-  \draw[->] (0.1,0) -- (1.3,0) node[right,var] {slope};
-  \foreach \x in {0.2,0.4,0.6,0.8,1.0,1.2} {\draw (\x,-0.15) -- (\x,0.15);
+  \draw[axis] (0.1,0) -- (1.3,0) node[right,var] {slope};
+  \foreach \x in {0.2,0.4,0.6,0.8,1.0,1.2} {\draw[adsInk!45,line width=0.6pt] (\x,-0.15) -- (\x,0.15);
     \node[index,below=1mm] at (\x,0) {\x};}
-  \fill[adsTouched,opacity=0.7] (0.45,0.5) rectangle (0.5,5.5);
-  \fill[adsTouched,opacity=0.7] (0.95,0.5) rectangle (1.0,5.5);
+  \fill[adsPrimary] (0.45,0.5) rectangle (0.5,5.5);
+  \fill[adsPrimary] (0.95,0.5) rectangle (1.0,5.5);
   \foreach \a/\b/\y/\k in {0.2/0.6/1/1,0.3/0.5/2/2,0.45/0.9/3/3,0.7/1.0/4/4,0.95/1.2/5/5}{
-    \draw[very thick] (\a,\y) -- (\b,\y);
-    \fill (\a,\y) circle (0.5mm); \fill (\b,\y) circle (0.5mm);
+    \draw[adsInk,line width=1.1pt] (\a,\y) -- (\b,\y);
+    \fill[adsInk] (\a,\y) circle (0.6mm); \fill[adsInk] (\b,\y) circle (0.6mm);
     \node[index,anchor=east] at (0.13,\y) {segment \k};}
-  \draw[dashed] (0.475,0.3) -- (0.475,5.8) node[above,var] {$S[ 0 ]$};
-  \draw[dashed] (0.975,0.3) -- (0.975,5.8) node[above,var] {$S[ 1 ]$};
+  \draw[white,line width=0.8pt,dash pattern=on 3pt off 2pt] (0.475,0.5) -- (0.475,5.5);
+  \node[above,var] at (0.475,5.8) {$S[ 0 ]$};
+  \draw[white,line width=0.8pt,dash pattern=on 3pt off 2pt] (0.975,0.5) -- (0.975,5.5);
+  \node[above,var] at (0.975,5.8) {$S[ 1 ]$};
 \end{tikzpicture}
 \end{document}

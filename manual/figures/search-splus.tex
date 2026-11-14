@@ -20,7 +20,7 @@
   \cells{d}{96mm,-20mm}{33/cell,36/cell,40/cell,41/cell}
   \draw[ptr] (r-0.south west) -- (a-1.north east);
   \draw[ptr] (r-0.south east) -- (b-1.north east);
-  \draw[ptr,very thick] (r-1.south east) -- (c-1.north east);
+  \draw[arc-touched] (r-1.south east) -- (c-1.north east);
   \draw[ptr] (r-2.south east) -- (d-1.north east);
   \foreach \n/\k in {a/0,b/1,c/2,d/3}
     \node[index,below=1.2mm of \n-1.south east] {leaf \k};

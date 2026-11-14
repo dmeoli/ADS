@@ -15,8 +15,8 @@
   \cells{a}{0,0}{3/touched,8/touched,12/cell,20/touched,31/free,40/free,44/free,51/touched,60/cell,72/cell,85/cell}
   \indices{a}{11}
   \foreach \i/\k in {0/1,1/2,3/3,7/4}
-    \node[font=\scriptsize] at (\i*7mm,6.5mm) {\k};
-  \draw[decorate,decoration={brace,amplitude=3pt,mirror}] (28mm-3mm,-9mm) -- (49mm+3mm,-9mm)
+    \node[var,font=\scriptsize\itshape] at (\i*7mm,10.5mm) {\k};
+  \draw[adsInk!55,decorate,decoration={brace,amplitude=3pt,mirror}] (28mm-3mm,-9mm) -- (49mm+3mm,-9mm)
     node[midway,below=2mm,var] {the binary search, $h = 5$};
   \node[var,anchor=west] at (80mm,0) {$v = 40$};
 \end{tikzpicture}

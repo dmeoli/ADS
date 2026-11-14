@@ -10,21 +10,19 @@
 \usepackage{tikz}
 \usepackage{lamalunga}
 \input{tikz-ads}
-\tikzset{t/.style={circle,draw,minimum size=6mm,font=\small\ttfamily},
-  up/.style={->,thick,shorten >=0.5pt}}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var] at (6mm,10mm) {before};
-  \node[t] (a0) at (0,0) {0}; \node[t] (a1) at (12mm,0) {1};
+  \node[vertex] (a0) at (0,0) {0}; \node[vertex] (a1) at (12mm,0) {1};
   \node[index,below=1.5mm of a0] {rank 0}; \node[index,below=1.5mm of a1] {rank 0};
   \node[var,anchor=west] at (-4mm,-16mm) {$R = ( )$};
   \node[var] at (52mm,10mm) {after \texttt{merge(0, 1)}};
-  \node[t] (b1) at (52mm,0) {1}; \node[t,fill=adsTouched] (b0) at (52mm,-12mm) {0};
-  \draw[up] (b0) -- (b1);
+  \node[vertex] (b1) at (52mm,0) {1}; \node[vertex-touched] (b0) at (52mm,-12mm) {0};
+  \draw[arc] (b0) -- (b1);
   \node[index,right=1.5mm of b1] {rank 1};
   \node[var,anchor=west] at (40mm,-24mm) {$R = ( ( 0 , 1 , \mathbf{true} ) )$};
   \node[var] at (100mm,10mm) {after \texttt{undo()}};
-  \node[t] (c0) at (94mm,0) {0}; \node[t] (c1) at (106mm,0) {1};
+  \node[vertex] (c0) at (94mm,0) {0}; \node[vertex] (c1) at (106mm,0) {1};
   \node[index,below=1.5mm of c0] {rank 0}; \node[index,below=1.5mm of c1] {rank 0};
   \node[var,anchor=west] at (90mm,-16mm) {$R = ( )$};
 \end{tikzpicture}

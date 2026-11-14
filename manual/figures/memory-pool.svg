@@ -353,7 +353,7 @@
 </g>
 <path fill="none" stroke-width="1.0959" stroke-linecap="round" stroke-linejoin="miter" stroke="rgb(21.998596%, 21.998596%, 21.998596%)" stroke-opacity="1" stroke-miterlimit="10" d="M 195.59474 -34.015863 L 197.189599 -43.003636 " transform="matrix(0.994407, 0, 0, -0.994407, 45.018849, 43.678311)"/>
 <path fill-rule="nonzero" fill="rgb(21.998596%, 21.998596%, 21.998596%)" fill-opacity="1" stroke-width="1.05237" stroke-linecap="round" stroke-linejoin="miter" stroke="rgb(21.998596%, 21.998596%, 21.998596%)" stroke-opacity="1" stroke-miterlimit="10" d="M 4.965847 -0.000982201 L 1.517346 1.585487 L 2.671837 -0.000197015 L 1.51616 -1.586213 Z M 4.965847 -0.000982201 " transform="matrix(0.174021, 0.979053, 0.979053, -0.174021, 240.687581, 84.083315)"/>
-<g fill="rgb(0%, 0%, 0%)" fill-opacity="1">
+<g fill="rgb(21.998596%, 21.998596%, 21.998596%)" fill-opacity="1">
 <use xlink:href="#glyph-2-7" x="242.532841" y="80.998387"/>
 <use xlink:href="#glyph-2-8" x="246.217296" y="80.998387"/>
 <use xlink:href="#glyph-2-9" x="249.901751" y="80.998387"/>
