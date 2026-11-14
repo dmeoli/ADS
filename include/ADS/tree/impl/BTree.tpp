@@ -43,7 +43,6 @@ std::optional< V > BTree< K , V >::lookup( const K & key ) const
  return( std::nullopt );
  }
 
-//! [split]
 template< std::totally_ordered K , class V >
 void BTree< K , V >::split( Node * x , std::size_t i )
 {
@@ -63,7 +62,6 @@ void BTree< K , V >::split( Node * x , std::size_t i )
  if( ! y->leaf() )
   y->c.resize( t );
  }
-//! [split]
 
 template< std::totally_ordered K , class V >
 void BTree< K , V >::insert( const K & key , const V & val )
@@ -105,7 +103,6 @@ void BTree< K , V >::insert( const K & key , const V & val )
   return( valid( f_root.get() , nullptr , nullptr , 0 , d , true ) ); }() );
  }
 
-//! [fill]
 template< std::totally_ordered K , class V >
 std::size_t BTree< K , V >::fill( Node * x , std::size_t i )
 {
@@ -145,7 +142,6 @@ std::size_t BTree< K , V >::fill( Node * x , std::size_t i )
  merge( x , j );                            // with a sibling of t - 1 keys
  return( j );
  }
-//! [fill]
 
 template< std::totally_ordered K , class V >
 void BTree< K , V >::merge( Node * x , std::size_t j )

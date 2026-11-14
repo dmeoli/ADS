@@ -44,7 +44,6 @@ template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::split( Ptr t , const K & k )
  -> std::pair< Ptr , Ptr >
 {
- //! [split]
  if( ! t )
   return( std::pair< Ptr , Ptr >( nullptr , nullptr ) );
  if( k < t->key ) {
@@ -57,13 +56,11 @@ auto RandomizedSearchTree< K , V >::split( Ptr t , const K & k )
  t->right = std::move( a );
  update( t );
  return( std::pair< Ptr , Ptr >( std::move( t ) , std::move( b ) ) );
- //! [split]
  }
 
 template< std::totally_ordered K , class V >
 void RandomizedSearchTree< K , V >::insert( Ptr & t , Ptr & u )
 {
- //! [add]
  if( uniformBelow( f_g , sz( t ) + 1 ) == 0 ) {   // u the root of t
   auto [ a , b ] = split( std::move( t ) , u->key );
   u->left = std::move( a );
@@ -74,7 +71,6 @@ void RandomizedSearchTree< K , V >::insert( Ptr & t , Ptr & u )
   }
  insert( u->key < t->key ? t->left : t->right , u );
  ++t->s;
- //! [add]
  }
 
 template< std::totally_ordered K , class V >
@@ -93,7 +89,6 @@ void RandomizedSearchTree< K , V >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V >
 auto RandomizedSearchTree< K , V >::join( Ptr a , Ptr b ) -> Ptr
 {
- //! [join]
  if( ! a ) return( b );
  if( ! b ) return( a );
  if( uniformBelow( f_g , a->s + b->s ) < a->s ) {
@@ -104,13 +99,11 @@ auto RandomizedSearchTree< K , V >::join( Ptr a , Ptr b ) -> Ptr
  b->left = join( std::move( a ) , std::move( b->left ) );
  update( b );
  return( b );
- //! [join]
  }
 
 template< std::totally_ordered K , class V >
 bool RandomizedSearchTree< K , V >::remove( Ptr & t , const K & k )
 {
- //! [remove]
  if( ! t )
   return( false );
  bool gone;
@@ -122,7 +115,6 @@ bool RandomizedSearchTree< K , V >::remove( Ptr & t , const K & k )
   }
  if( gone ) --t->s;
  return( gone );
- //! [remove]
  }
 
 template< std::totally_ordered K , class V >

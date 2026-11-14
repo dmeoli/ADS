@@ -103,7 +103,6 @@ auto AVLJoin< A >::join( Node * l , Node * m , Node * r ) -> Node *
 /*---------------------------- RedBlackJoin --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-//! [RedBlackJoin-joinRight]
 template< class A >
 auto RedBlackJoin< A >::joinRight( Node * l , int bl , Node * m , Node * r ,
                                    int br ) -> Node *
@@ -123,7 +122,6 @@ auto RedBlackJoin< A >::joinRight( Node * l , int bl , Node * m , Node * r ,
   }
  return( u );
  }
-//! [RedBlackJoin-joinRight]
 
 template< class A >
 auto RedBlackJoin< A >::joinLeft( Node * l , int bl , Node * m , Node * r ,
@@ -295,7 +293,6 @@ auto JoinAlgorithms< A >::join( Tree l , Node * m , Tree r ) -> Tree
  return( Tree{ t , rk } );
  }
 
-//! [split]
 template< JoinAdaptor A >
 auto JoinAlgorithms< A >::split( Tree x , const Key & k , Tree & l ,
                                  Tree & r ) -> Node *
@@ -321,7 +318,6 @@ auto JoinAlgorithms< A >::split( Tree x , const Key & k , Tree & l ,
  r = e.r;
  return( e.m );
  }
-//! [split]
 
 template< JoinAdaptor A >
 auto JoinAlgorithms< A >::splitLast( Tree x , Tree & rest ) -> Node *
@@ -400,7 +396,6 @@ void JoinAlgorithms< A >::fork( E & ex , G && g , H && h )
  parallelInvoke( ex , std::forward< G >( g ) , std::forward< H >( h ) );
  }
 
-//! [small]
 template< JoinAdaptor A >
 template< Executor E >
 bool JoinAlgorithms< A >::small( E & ex , std::size_t n )
@@ -410,9 +405,7 @@ bool JoinAlgorithms< A >::small( E & ex , std::size_t n )
  else
   return( ( n < kJoinGrain ) || ( ex.concurrency() < 2 ) );
  }
-//! [small]
 
-//! [unite]
 template< JoinAdaptor A >
 template< Executor E , class F >
 auto JoinAlgorithms< A >::unite( E & ex , Tree a , Tree b , const F & f )
@@ -442,7 +435,6 @@ auto JoinAlgorithms< A >::unite( E & ex , Tree a , Tree b , const F & f )
   }
  return( join( tl , e.m , tr ) );
  }
-//! [unite]
 
 template< JoinAdaptor A >
 template< Executor E , class F >

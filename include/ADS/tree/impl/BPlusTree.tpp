@@ -83,7 +83,6 @@ void BPlusTree< K , V >::remove( const K & x )
                 f->k.begin();
  if( ( i == long( f->k.size() ) ) || ( f->k[ i ] != x ) )
   return;
-//! [BPlusTree-remove]
  f->k.erase( f->k.begin() + i );
  f->v.erase( f->v.begin() + i );
  --f_size;
@@ -96,7 +95,6 @@ void BPlusTree< K , V >::remove( const K & x )
   r->p.clear();
   delete r;
   }
-//! [BPlusTree-remove]
  ADS_POST( ! lookup( x ).has_value() );
  ADS_INVARIANT( shaped() );
  }
@@ -108,7 +106,6 @@ auto BPlusTree< K , V >::fix( Node * u ) -> Node *
  const std::size_t size = u->is_leaf ? u->k.size() : u->p.size();
  if( size >= h )
   return( nullptr );
-//! [BPlusTree-fix]
  Node * b = u->parent;
  const std::size_t j = std::size_t( std::find( b->p.begin() , b->p.end() ,
                                                u ) - b->p.begin() );
@@ -173,7 +170,6 @@ auto BPlusTree< K , V >::fix( Node * u ) -> Node *
  b->p.erase( b->p.begin() + std::ptrdiff_t( at + 1 ) );
  delete r;
  return( b );
-//! [BPlusTree-fix]
  }
 
 template< std::totally_ordered K , class V >

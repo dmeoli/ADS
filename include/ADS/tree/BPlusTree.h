@@ -199,8 +199,8 @@ class BPlusTree {
  /// 2 & \quad f \gets \mathrm{leaf}( x );\ \textbf{if}\ x \text{ is not }
  ///     \text{in } f\ \textbf{then return} \cr
  /// 3 & \quad \text{take } x \text{ out of } f \cr
- /// 4 & \quad \textbf{while}\ f \ne \mathit{root} \text{ has fewer than }
- ///     h \text{ keys or children}\ \textbf{do} \cr
+ /// 4 & \quad \textbf{while}\ f \ne \mathit{root}\ \textbf{and}\ f
+ ///     \text{ has fewer than } h \text{ pairs or children}\ \textbf{do} \cr
  /// 5 & \qquad s \gets \text{the sibling on the left of } f \text{, or on }
  ///     \text{the right};\ b \gets \text{their parent} \cr
  /// 6 & \qquad \textbf{if}\ s \text{ has more than } h\ \textbf{then}

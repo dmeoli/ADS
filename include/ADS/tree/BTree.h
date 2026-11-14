@@ -178,16 +178,20 @@ class BTree {
  ///     \ \text{the child to go down, with } t \text{ keys at least} \cr
  /// 13 & \quad \textbf{if}\ x.c[ i ] \text{ has } t \text{ keys or more}
  ///     \ \textbf{then return}\ i \cr
- /// 14 & \quad \textbf{if}\ x.c[ i - 1 ] \text{ has } t \text{ keys or }
- ///     \text{more}\ \textbf{then} \cr
+ /// 14 & \quad \textbf{if}\ i > 0\ \textbf{and}\ x.c[ i - 1 ] \text{ has }
+ ///     t \text{ keys or more}\ \textbf{then} \cr
  /// 15 & \qquad \text{move } x.k[ i - 1 ] \text{ down to the front of }
  ///     x.c[ i ] \text{, the last key of } x.c[ i - 1 ] \text{ up to its }
- ///     \text{place};\ \textbf{return}\ i \cr
- /// 16 & \quad \textbf{if}\ x.c[ i + 1 ] \text{ has } t \text{ keys or }
- ///     \text{more}\ \textbf{then} \cr
+ ///     \text{place,} \cr
+ /// & \qquad\quad \text{and the last child of } x.c[ i - 1 ] \text{ (if }
+ ///     \text{any) to the front of } x.c[ i ];\ \textbf{return}\ i \cr
+ /// 16 & \quad \textbf{if}\ x.c[ i + 1 ] \text{ exists and has } t
+ ///     \text{ keys or more}\ \textbf{then} \cr
  /// 17 & \qquad \text{move } x.k[ i ] \text{ down to the back of } x.c[ i ]
- ///     \text{, the first key of } x.c[ i + 1 ] \text{ up to its place};
- ///     \ \textbf{return}\ i \cr
+ ///     \text{, the first key of } x.c[ i + 1 ] \text{ up to its place,}
+ ///     \cr
+ /// & \qquad\quad \text{and the first child of } x.c[ i + 1 ] \text{ (if }
+ ///     \text{any) to the back of } x.c[ i ];\ \textbf{return}\ i \cr
  /// 18 & \quad \textbf{if}\ i \text{ is not the last child}
  ///     \ \textbf{then}\ \mathrm{merge}( x , i );\ \textbf{return}\ i \cr
  /// 19 & \quad \mathrm{merge}( x , i - 1 );\ \textbf{return}\ i - 1 \cr

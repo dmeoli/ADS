@@ -38,7 +38,6 @@ MeasuredSearchTree< K , V >::~MeasuredSearchTree()
 template< std::totally_ordered K , class V >
 auto MeasuredSearchTree< K , V >::findLast( const K & k ) const -> Node *
 {
- //! [find]
  Node * w = f_root , * prev = nullptr;
  while( w ) {
   prev = w;
@@ -47,7 +46,6 @@ auto MeasuredSearchTree< K , V >::findLast( const K & k ) const -> Node *
   else return( w );
   }
  return( prev );
- //! [find]
  }
 
 template< std::totally_ordered K , class V >
@@ -133,7 +131,6 @@ auto MeasuredSearchTree< K , V >::getLE( const K & x ) const
 template< std::totally_ordered K , class V >
 void MeasuredSearchTree< K , V >::insert( const K & k , const V & v )
 {
- //! [add]
  Node * p = findLast( k );
  if( p && !( p->key < k ) && !( k < p->key ) )
   p->value = v;
@@ -152,7 +149,6 @@ void MeasuredSearchTree< K , V >::insert( const K & k , const V & v )
    }
   ++f_size;
   }
- //! [add]
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid() );
  }
@@ -160,7 +156,6 @@ void MeasuredSearchTree< K , V >::insert( const K & k , const V & v )
 template< std::totally_ordered K , class V >
 void MeasuredSearchTree< K , V >::remove( const K & k )
 {
- //! [remove]
  Node * u = findLast( k );
  if( u && !( u->key < k ) && !( k < u->key ) ) {
   while( u->left || u->right ) {            // down to a leaf, pairs moved up
@@ -183,7 +178,6 @@ void MeasuredSearchTree< K , V >::remove( const K & k )
    }
   --f_size;
   }
- //! [remove]
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( valid() );
  }

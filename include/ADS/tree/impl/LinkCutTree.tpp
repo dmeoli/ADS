@@ -143,7 +143,6 @@ void LinkCutTree< T , Op >::splay( int x )
   }
  }
 
-//! [access]
 template< class T , class Op >
 int LinkCutTree< T , Op >::access( int v )
 {
@@ -157,7 +156,6 @@ int LinkCutTree< T , Op >::access( int v )
  splay( v );
  return( last );
  }
-//! [access]
 
 template< class T , class Op >
 bool LinkCutTree< T , Op >::wellFormed( void ) const
@@ -233,7 +231,6 @@ void LinkCutTree< T , Op >::reverseUp( int v )
  ++f_version;
  }
 
-//! [recount]
 template< class T , class Op >
 void LinkCutTree< T , Op >::recount( void )
 {
@@ -246,7 +243,6 @@ void LinkCutTree< T , Op >::recount( void )
  if( ( f_ops >= 64 ) && ( f_mean > f_limit ) )
   useSplay();
  }
-//! [recount]
 
 template< class T , class Op >
 void LinkCutTree< T , Op >::useSplay( void )
