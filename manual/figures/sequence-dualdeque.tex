@@ -1,0 +1,62 @@
+% Source for the figure of DualArrayDeque (sec. 2.4): the front stack F
+% drawn reversed at the left of the divider and the back stack B at its
+% right, so that the ranks read from left to right, through Morin's
+% operations of Figure 2.4; a star marks a balance.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-25.80mm,0.00mm) {initial};
+  \node[free] (F0-0) at (-20.80mm,0.00mm) {};
+  \node[free] (F0-1) at (-13.40mm,0.00mm) {};
+  \node[cell] (F0-2) at (-6.00mm,0.00mm) {a};
+  \node[cell] (B0-0) at (6.00mm,0.00mm) {b};
+  \node[cell] (B0-1) at (13.40mm,0.00mm) {c};
+  \node[cell] (B0-2) at (20.80mm,0.00mm) {d};
+  \node[free] (B0-3) at (28.20mm,0.00mm) {};
+  \node[var,anchor=west] at (36.70mm,0.00mm) {$n = 4$};
+  \node[var,anchor=east] at (-25.80mm,-11.00mm) {\texttt{add(3,x)}$^*$};
+  \node[free] (F1-0) at (-20.80mm,-11.00mm) {};
+  \node[cell] (F1-1) at (-13.40mm,-11.00mm) {a};
+  \node[touched] (F1-2) at (-6.00mm,-11.00mm) {b};
+  \node[cell] (B1-0) at (6.00mm,-11.00mm) {c};
+  \node[added] (B1-1) at (13.40mm,-11.00mm) {x};
+  \node[cell] (B1-2) at (20.80mm,-11.00mm) {d};
+  \node[free] (B1-3) at (28.20mm,-11.00mm) {};
+  \node[var,anchor=west] at (36.70mm,-11.00mm) {$n = 5$};
+  \node[var,anchor=east] at (-25.80mm,-22.00mm) {\texttt{add(4,y)}};
+  \node[free] (F2-0) at (-20.80mm,-22.00mm) {};
+  \node[cell] (F2-1) at (-13.40mm,-22.00mm) {a};
+  \node[cell] (F2-2) at (-6.00mm,-22.00mm) {b};
+  \node[cell] (B2-0) at (6.00mm,-22.00mm) {c};
+  \node[cell] (B2-1) at (13.40mm,-22.00mm) {x};
+  \node[added] (B2-2) at (20.80mm,-22.00mm) {y};
+  \node[touched] (B2-3) at (28.20mm,-22.00mm) {d};
+  \node[var,anchor=west] at (36.70mm,-22.00mm) {$n = 6$};
+  \node[var,anchor=east] at (-25.80mm,-33.00mm) {\texttt{remove(0)}$^*$};
+  \node[free] (F3-0) at (-20.80mm,-33.00mm) {};
+  \node[cell] (F3-1) at (-13.40mm,-33.00mm) {b};
+  \node[touched] (F3-2) at (-6.00mm,-33.00mm) {c};
+  \node[cell] (B3-0) at (6.00mm,-33.00mm) {x};
+  \node[cell] (B3-1) at (13.40mm,-33.00mm) {y};
+  \node[cell] (B3-2) at (20.80mm,-33.00mm) {d};
+  \node[free] (B3-3) at (28.20mm,-33.00mm) {};
+  \node[var,anchor=west] at (36.70mm,-33.00mm) {$n = 5$};
+  \draw[guide] (0,6mm) -- (0,-39.00mm);
+  \node[var] at ($(F0-1)+(0,7mm)$) {$F$};
+  \node[var] at ($(B0-1)!0.5!(B0-2)+(0,7mm)$) {$B$};
+  \node[index,below=1.6mm of F3-0] {2};
+  \node[index,below=1.6mm of F3-1] {1};
+  \node[index,below=1.6mm of F3-2] {0};
+  \node[index,below=1.6mm of B3-0] {0};
+  \node[index,below=1.6mm of B3-1] {1};
+  \node[index,below=1.6mm of B3-2] {2};
+  \node[index,below=1.6mm of B3-3] {3};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,73 @@
+% Source for the figure of IndexedSkipList (sec. 2.14): the splice of a new
+% node w at index i into a level, between the node u at index j and the
+% node z its link of width l reaches (Morin's Figure 4.7), with the widths
+% of the two links that replace it. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+% The layout shared by the skip-list figures of the chapter: column c at
+% x = 14c mm (the head in column 0), level l at y = 8l mm.
+%   \slmark{name}{l}{style}       the box of level l of a column in another
+%                                 style (given before the column);
+%   \slcol{c}{name}{text}{top}{i} a column of boxes of levels 0 .. top,
+%                                 text in the bottom box, index i under it;
+%   \slhead{top}                  the head, a column of levels 0 .. top;
+%   \slnil{c}{top}                the nil markers in column c;
+%   \sllink[style]{u}{v}{l}{w}    the link of level l from u to v, with its
+%                                 width w above the middle (style is arc,
+%                                 arc-touched or arc-added);
+%   \sllevels{top}                the labels L0 .. Ltop at the left.
+\tikzset{
+  lvl/.style={node,minimum width=7mm,minimum height=5.4mm},
+  lvl-touched/.style={node-touched,minimum width=7mm,minimum height=5.4mm},
+  lvl-added/.style={node-added,minimum width=7mm,minimum height=5.4mm},
+  nilm/.style={nullptr,inner sep=0.8mm},
+  wd-arc/.style={index,anchor=south,above=0.7mm},
+  wd-arc-touched/.style={wd-arc,text=adsPrimary,
+                         font=\scriptsize\ttfamily\bfseries},
+  wd-arc-added/.style={wd-arc,text=adsAdded,
+                       font=\scriptsize\ttfamily\bfseries}}
+\newcommand{\slmark}[3]{\expandafter\xdef\csname slS#1-#2\endcsname{#3}}
+\newcommand{\slcol}[5]{%
+  \foreach \l in {0,...,#4}{%
+    \ifcsname slS#2-\l\endcsname
+      \edef\st{\csname slS#2-\l\endcsname}\else\def\st{lvl}\fi
+    \node[\st] (#2-\l) at (#1*14mm,\l*8mm) {\ifnum\l=0 #3\fi};}
+  \node[index,below=1.6mm of #2-0] {#5};}
+\newcommand{\slhead}[1]{%
+  \slcol{0}{h}{}{#1}{}%
+  \node[var,below=1.2mm of h-0] {head};}
+\newcommand{\slnil}[2]{%
+  \foreach \l in {0,...,#2}
+    \node[nilm,anchor=west] (nil-\l) at (#1*14mm-4mm,\l*8mm) {nil};}
+\newcommand{\sllink}[5][arc]{%
+  \draw[#1] (#2-#4.east) -- (#3-#4.west)
+    node[midway,wd-#1] {#5};}
+\newcommand{\sllevels}[1]{%
+  \foreach \l in {0,...,#1}
+    \node[var,anchor=east] at (-6mm,\l*8mm) {$L_{\l}$};}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-4mm,0) {before};
+  \node[nullptr] at (3mm,0) {$\cdots$};
+  \slcol{1}{bu}{u}{0}{$j$}
+  \slcol{6}{bz}{z}{0}{}
+  \node[nullptr] at (6*14mm+11mm,0) {$\cdots$};
+  \sllink{bu}{bz}{0}{$\ell$}
+  \begin{scope}[yshift=-16mm]
+    \slmark{aw}{0}{lvl-added}
+    \node[var,anchor=east] at (-4mm,0) {after};
+    \node[nullptr] at (3mm,0) {$\cdots$};
+    \slcol{1}{au}{u}{0}{$j$}
+    \slcol{3.5}{aw}{w}{0}{$i$}
+    \slcol{6}{az}{z}{0}{}
+    \node[nullptr] at (6*14mm+11mm,0) {$\cdots$};
+    \sllink[arc-added]{au}{aw}{0}{$i-j$}
+    \sllink[arc-added]{aw}{az}{0}{$\ell+1-(i-j)$}
+  \end{scope}
+\end{tikzpicture}
+\end{document}

@@ -2,7 +2,7 @@
 /*------------------------ File CubishArrayStack.h -------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The cubish array stack of exercise 2.13 of Morin's book, beyond the book:
+ * The cubish array stack of exercise 2.12 of Morin's book, beyond the book:
  * a LIST by rank in three levels, whose `operator[]` takes \f$ O( 1 ) \f$
  * time and whose insertions and removals take \f$ O( n^{1/3} ) \f$
  * amortized time, with \f$ O( n^{2/3} ) \f$ places wasted. It is the tiered
@@ -47,7 +47,7 @@
  *      (WADS 1999), Lecture Notes in Computer Science 1663, 205-216, 1999,
  *      doi:10.1007/3-540-48447-7_21
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
- *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.13
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.12
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -153,7 +153,7 @@ class CubishArrayStack {
  /// puts \f$ x \f$ at the rank \f$ i \f$, in \f$ O( n^{1/3} ) \f$ amortized
  /// time
  ///
- /// In pseudocode (Morin, exercise 2.13), \f$ M_0 , \ldots , M_t \f$ the
+ /// In pseudocode (Morin, exercise 2.12), \f$ M_0 , \ldots , M_t \f$ the
  /// middle blocks:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
@@ -177,7 +177,7 @@ class CubishArrayStack {
  /// removes the item of rank \f$ i \f$, in \f$ O( n^{1/3} ) \f$ amortized
  /// time
  ///
- /// In pseudocode (Morin, exercise 2.13):
+ /// In pseudocode (Morin, exercise 2.12):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{erase}( i ) \cr

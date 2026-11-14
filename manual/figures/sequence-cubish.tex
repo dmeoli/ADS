@@ -1,0 +1,44 @@
+% Source for the figure of CubishArrayStack (sec. 2.8), with b = 2 for the
+% figure: the middle blocks M0, M1, M2 of b^2 items, each a sequence of
+% leaves of b places, before and after an insertion that passes one item
+% from each middle block to the next. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {before};
+  \node[cell] at (0.00mm,0.00mm) {a};
+  \node[cell] at (7.40mm,0.00mm) {b};
+  \node[cell] at (17.30mm,0.00mm) {c};
+  \node[cell] at (24.70mm,0.00mm) {d};
+  \node[cell] at (41.10mm,0.00mm) {e};
+  \node[cell] at (48.50mm,0.00mm) {f};
+  \node[cell] at (58.40mm,0.00mm) {g};
+  \node[cell] at (65.80mm,0.00mm) {h};
+  \node[cell] at (99.50mm,0.00mm) {i};
+  \node[cell] at (106.90mm,0.00mm) {j};
+  \node[var,anchor=east] at (-5.00mm,-12.00mm) {\texttt{insert(1,x)}};
+  \node[cell] at (0.00mm,-12.00mm) {a};
+  \node[added] at (7.40mm,-12.00mm) {x};
+  \node[touched] at (17.30mm,-12.00mm) {b};
+  \node[touched] at (24.70mm,-12.00mm) {c};
+  \node[free] at (41.10mm,-12.00mm) {};
+  \node[touched] at (48.50mm,-12.00mm) {d};
+  \node[cell] at (58.40mm,-12.00mm) {e};
+  \node[cell] at (65.80mm,-12.00mm) {f};
+  \node[cell] at (75.70mm,-12.00mm) {g};
+  \node[free] at (83.10mm,-12.00mm) {};
+  \node[free] at (99.50mm,-12.00mm) {};
+  \node[touched] at (106.90mm,-12.00mm) {h};
+  \node[cell] at (116.80mm,-12.00mm) {i};
+  \node[cell] at (124.20mm,-12.00mm) {j};
+  \node[var,anchor=south west] at (-3.50mm,5.5mm) {$M_0$};
+  \node[var,anchor=south west] at (37.60mm,5.5mm) {$M_1$};
+  \node[var,anchor=south west] at (96.00mm,5.5mm) {$M_2$};
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,42 @@
+% Source for the figure of insert(p, v) of List, i.e., addBefore(w)
+% (sec. 2.10): the nodes u.prev and w before, and the new node u between
+% them after, with the four links that change. Build: make figures (in
+% ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\tikzset{wnode/.style={node,minimum width=14mm},
+         wnode-added/.style={node-added,minimum width=14mm}}
+% \pair{a}{b}{next style}{prev style}: the next link a -> b (upper) and
+% the prev link b -> a (lower)
+\newcommand{\pair}[4]{%
+  \draw[#3] ($(#1.east)+(0,1.5mm)$) -- ($(#2.west)+(0,1.5mm)$);
+  \draw[#4] ($(#2.west)+(0,-1.5mm)$) -- ($(#1.east)+(0,-1.5mm)$);}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % before
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \node[nullptr,inner sep=1mm] (l0) at (0,0) {\dots};
+  \node[wnode] (p0) at (20mm,0) {u.prev};
+  \node[wnode] (w0) at (66mm,0) {w};
+  \node[nullptr,inner sep=1mm] (r0) at (86mm,0) {\dots};
+  \pair{l0}{p0}{arc}{arc}
+  \pair{p0}{w0}{arc}{arc}
+  \pair{w0}{r0}{arc}{arc}
+  % after
+  \node[var,anchor=east] at (-6mm,-16mm) {\texttt{insert(w, v)}};
+  \node[nullptr,inner sep=1mm] (l1) at (0,-16mm) {\dots};
+  \node[wnode] (p1) at (20mm,-16mm) {u.prev};
+  \node[wnode-added] (u1) at (43mm,-16mm) {u};
+  \node[wnode] (w1) at (66mm,-16mm) {w};
+  \node[nullptr,inner sep=1mm] (r1) at (86mm,-16mm) {\dots};
+  \pair{l1}{p1}{arc}{arc}
+  \pair{p1}{u1}{arc-added}{arc-added}
+  \pair{u1}{w1}{arc-added}{arc-added}
+  \pair{w1}{r1}{arc}{arc}
+\end{tikzpicture}
+\end{document}

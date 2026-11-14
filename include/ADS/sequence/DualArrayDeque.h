@@ -19,7 +19,7 @@
  * `S = RootishArrayStack< T >` [see `RootishArrayStack.h`] the deque wastes
  * \f$ O( \sqrt{n} ) \f$ places outside a balance and inserts and removes
  * at the rank \f$ i \f$ in \f$ O( 1 + \min\{ i , n - i \} ) \f$ amortized
- * time (exercise 2.10). A balance is done in place: the \f$ t \f$ items at
+ * time (exercise 2.9). A balance is done in place: the \f$ t \f$ items at
  * the bottom of the larger stack go to the bottom of the other, which grows
  * by \f$ t < n / 2 \f$ places, before the larger one shrinks, i.e., the
  * places of \f$ n + t \f$ items at the peak instead of those of
@@ -31,7 +31,7 @@
  * `rotate( r )` moves the item of rank \f$ i \f$ to the rank
  * \f$ ( i + r ) \bmod n \f$ by \f$ \min\{ r , n - r \} \f$ moves from one end
  * to the other, in \f$ O( 1 + \min\{ r , n - r \} ) \f$ amortized time
- * (exercise 2.6).
+ * (exercise 2.5).
  *
  * Against Morin's code, the claims for the benchmarks: the stacks are
  * `std::vector`, whose shifts are one `memmove()` for the items trivially
@@ -184,10 +184,10 @@ class DualArrayDeque {
  void pop_back( void ) { erase( size() - 1 ); }
 
  /// the item of rank \f$ i \f$ moved to the rank \f$ ( i + r ) \bmod n \f$,
- /// in \f$ O( 1 + \min\{ r , n - r \} ) \f$ amortized time (exercise 2.6 of
+ /// in \f$ O( 1 + \min\{ r , n - r \} ) \f$ amortized time (exercise 2.5 of
  /// Morin's book)
  ///
- /// In pseudocode (Morin, exercise 2.6), \f$ r \f$ reduced modulo
+ /// In pseudocode (Morin, exercise 2.5), \f$ r \f$ reduced modulo
  /// \f$ n \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}

@@ -34,8 +34,8 @@
  * once every \f$ b \f$ insertions at most. Hence an operation at
  * \f$ i \f$ moves \f$ O( 1 + \min\{ i , b , n - i \} + \min\{ i , n - i \}
  * / b ) \f$ items, i.e., \f$ O( 1 + \min\{ i , \sqrt{n} , n - i \} ) \f$
- * amortized, which is the bound of exercise 2.12 of Morin's book (that of
- * exercise 2.11, \f$ O( 1 + \min\{ \sqrt{n} , n - i \} ) \f$, holds already
+ * amortized, which is the bound of exercise 2.11 of Morin's book (that of
+ * exercise 2.10, \f$ O( 1 + \min\{ \sqrt{n} , n - i \} ) \f$, holds already
  * for the shifts toward the back), with \f$ O( \sqrt{n} ) \f$ places wasted:
  * the gap, the free places of the last block and the directory of the
  * blocks.
@@ -55,7 +55,7 @@
  *      2017), LIPIcs 87, 16:1-16:13, 2017,
  *      doi:10.4230/LIPIcs.ESA.2017.16
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
- *      https://opendatastructures.org/ods-cpp.pdf, exercises 2.11 and 2.12
+ *      https://opendatastructures.org/ods-cpp.pdf, exercises 2.10 and 2.11
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

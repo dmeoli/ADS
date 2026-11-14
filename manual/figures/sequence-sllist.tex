@@ -1,0 +1,77 @@
+% Source for the figure of SinglyList used as a stack and as a queue
+% (sec. 2.9): the list a b c d e, then push_back(x), pop_front() twice and
+% push_front(y), with the pointers head and tail and the nil after the last
+% node. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+% \lrow{name}{y}{x of the first node}{item/style list}{arc style list}
+% draws a row of nodes 14 mm apart, the arcs between them (the k-th arc
+% style is that of the arc out of node k) and nil after the last node
+\newcommand{\lrow}[5]{%
+  \foreach \v/\s [count=\i from 0] in {#4}
+    \node[\s] (#1-\i) at (#3+\i*14mm,#2) {\v};
+  \foreach \s [count=\i from 0] in {#5} {
+    \pgfmathtruncatemacro{\j}{\i+1}
+    \draw[\s] (#1-\i) -- (#1-\j);}}
+\begin{document}
+\begin{tikzpicture}[ads]
+  % initial
+  \node[var,anchor=east] at (-6mm,0) {initial};
+  \lrow{r0}{0}{0mm}{a/node,b/node,c/node,d/node,e/node}{arc,arc,arc,arc}
+  \node[nullptr,inner sep=1mm] (n0) at (70mm,0) {nil};
+  \draw[arc] (r0-4) -- (n0);
+  \node[var] (h0) at ($(r0-0)+(0,10mm)$) {head};
+  \draw[ptr] (h0) -- (r0-0);
+  \node[var] (t0) at ($(r0-4)+(0,10mm)$) {tail};
+  \draw[ptr] (t0) -- (r0-4);
+  \node[var,anchor=west] at (94mm,0) {$n = 5$};
+  % push_back(x)
+  \node[var,anchor=east] at (-6mm,-24mm) {\texttt{push\_back(x)}};
+  \lrow{r1}{-24mm}{0mm}{a/node,b/node,c/node,d/node,e/node,x/node-added}%
+    {arc,arc,arc,arc,arc-added}
+  \node[nullptr,inner sep=1mm] (n1) at (84mm,-24mm) {nil};
+  \draw[arc-added] (r1-5) -- (n1);
+  \node[var] (h1) at ($(r1-0)+(0,10mm)$) {head};
+  \draw[ptr] (h1) -- (r1-0);
+  \node[var] (t1) at ($(r1-5)+(0,10mm)$) {tail};
+  \draw[ptr] (t1) -- (r1-5);
+  \node[var,anchor=west] at (94mm,-24mm) {$n = 6$};
+  % pop_front()
+  \node[var,anchor=east] at (-6mm,-48mm) {\texttt{pop\_front()}};
+  \lrow{r2}{-48mm}{14mm}{b/node-touched,c/node,d/node,e/node,x/node}%
+    {arc,arc,arc,arc}
+  \node[nullptr,inner sep=1mm] (n2) at (84mm,-48mm) {nil};
+  \draw[arc] (r2-4) -- (n2);
+  \node[var] (h2) at ($(r2-0)+(0,10mm)$) {head};
+  \draw[ptr] (h2) -- (r2-0);
+  \node[var] (t2) at ($(r2-4)+(0,10mm)$) {tail};
+  \draw[ptr] (t2) -- (r2-4);
+  \node[var,anchor=west] at (94mm,-48mm) {$n = 5$, returns \texttt{a}};
+  % pop_front()
+  \node[var,anchor=east] at (-6mm,-72mm) {\texttt{pop\_front()}};
+  \lrow{r3}{-72mm}{28mm}{c/node-touched,d/node,e/node,x/node}{arc,arc,arc}
+  \node[nullptr,inner sep=1mm] (n3) at (84mm,-72mm) {nil};
+  \draw[arc] (r3-3) -- (n3);
+  \node[var] (h3) at ($(r3-0)+(0,10mm)$) {head};
+  \draw[ptr] (h3) -- (r3-0);
+  \node[var] (t3) at ($(r3-3)+(0,10mm)$) {tail};
+  \draw[ptr] (t3) -- (r3-3);
+  \node[var,anchor=west] at (94mm,-72mm) {$n = 4$, returns \texttt{b}};
+  % push_front(y)
+  \node[var,anchor=east] at (-6mm,-96mm) {\texttt{push\_front(y)}};
+  \lrow{r4}{-96mm}{14mm}{y/node-added,c/node,d/node,e/node,x/node}%
+    {arc-added,arc,arc,arc}
+  \node[nullptr,inner sep=1mm] (n4) at (84mm,-96mm) {nil};
+  \draw[arc] (r4-4) -- (n4);
+  \node[var] (h4) at ($(r4-0)+(0,10mm)$) {head};
+  \draw[ptr] (h4) -- (r4-0);
+  \node[var] (t4) at ($(r4-4)+(0,10mm)$) {tail};
+  \draw[ptr] (t4) -- (r4-4);
+  \node[var,anchor=west] at (94mm,-96mm) {$n = 5$};
+\end{tikzpicture}
+\end{document}

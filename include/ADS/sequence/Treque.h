@@ -2,7 +2,7 @@
 /*----------------------------- File Treque.h ------------------------------*/
 /*--------------------------------------------------------------------------*/
 /** @file
- * The treque (triple ended queue) of exercise 2.4 of Morin's book, beyond
+ * The treque (triple ended queue) of exercise 2.3 of Morin's book, beyond
  * the book: a LIST by rank whose `operator[]` takes \f$ O( 1 ) \f$ time and
  * whose insertions and removals at the rank \f$ i \f$ take
  * \f$ O( 1 + \min\{ i , n - i , | n / 2 - i | \} ) \f$ amortized time, fast
@@ -23,7 +23,7 @@
  * operations are defined in `Treque.tpp`.
  *
  * \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
- *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.4
+ *      https://opendatastructures.org/ods-cpp.pdf, exercise 2.3
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -121,7 +121,7 @@ class Treque {
  /// puts \f$ x \f$ at the rank \f$ i \f$, in
  /// \f$ O( 1 + \min\{ i , n - i , | n / 2 - i | \} ) \f$ amortized time
  ///
- /// In pseudocode (Morin, exercise 2.4), \f$ L \f$ and \f$ R \f$ the two
+ /// In pseudocode (Morin, exercise 2.3), \f$ L \f$ and \f$ R \f$ the two
  /// deques:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
@@ -138,7 +138,7 @@ class Treque {
  /// removes the item of rank \f$ i \f$, in
  /// \f$ O( 1 + \min\{ i , n - i , | n / 2 - i | \} ) \f$ time
  ///
- /// In pseudocode (Morin, exercise 2.4):
+ /// In pseudocode (Morin, exercise 2.3):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{erase}( i ) \cr
@@ -190,7 +190,7 @@ class Treque {
  /// one item from the longer deque to the shorter one, if they differ by
  /// more than one item
  ///
- /// In pseudocode (Morin, exercise 2.4):
+ /// In pseudocode (Morin, exercise 2.3):
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{balance}() \cr

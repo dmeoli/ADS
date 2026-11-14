@@ -1,0 +1,28 @@
+% Source for the figure of the invariant of the Dutch national flag
+% (sec. 2.17): the colours 0 in A[0..i), 1 in A[i..j), not examined in
+% A[j..k), 2 in A[k..n), before and after the step on A[j] = 0, which is
+% swapped with A[i]. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+% \at{row}{place}{label}: an arrow from below to a place of a row
+\newcommand{\at}[3]{%
+  \node[var,anchor=base] at ($(#1-#2)+(0,-14mm)$) {$#3$};
+  \draw[ptr] ($(#1-#2.south)+(0,-7mm)$) -- (#1-#2.south);}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-6mm,0) {before};
+  \cells{a}{0,0}{0/cell,0/cell,1/cell,1/cell,1/cell,0/free,2/free,1/free,2/cell,2/cell}
+  \indices{a}{10}
+  \at{a}{2}{i}\at{a}{5}{j}\at{a}{8}{k}
+  \node[var,anchor=west] at (74mm,0) {$i = 2$, $j = 5$, $k = 8$};
+  \node[var,anchor=east] at (-6mm,-26mm) {step on $A[5] = 0$};
+  \cells{b}{0,-26mm}{0/cell,0/cell,0/touched,1/cell,1/cell,1/touched,2/free,1/free,2/cell,2/cell}
+  \at{b}{3}{i}\at{b}{6}{j}\at{b}{8}{k}
+  \node[var,anchor=west] at (74mm,-26mm) {$i = 3$, $j = 6$, $k = 8$};
+\end{tikzpicture}
+\end{document}

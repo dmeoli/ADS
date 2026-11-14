@@ -1,0 +1,113 @@
+% Source for the figure of ContiguousDeque (sec. 2.5): one contiguous piece
+% of a vector, rebuilt at the centre of 3n + 8 places when it reaches an
+% end, and an insertion that moves the shorter side.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    sc/.style={cell,minimum width=5.8mm},st/.style={touched,minimum width=5.8mm},
+    sa/.style={added,minimum width=5.8mm},sf/.style={free,minimum width=5.8mm}]
+  \node[var,anchor=east] at (-4.00mm,0.00mm) {initial};
+  \node[sf] (r0-0) at (0.00mm,0.00mm) {};
+  \node[sf] (r0-1) at (6.20mm,0.00mm) {};
+  \node[sf] (r0-2) at (12.40mm,0.00mm) {};
+  \node[sf] (r0-3) at (18.60mm,0.00mm) {};
+  \node[sc] (r0-4) at (24.80mm,0.00mm) {a};
+  \node[sc] (r0-5) at (31.00mm,0.00mm) {b};
+  \node[sc] (r0-6) at (37.20mm,0.00mm) {c};
+  \node[sc] (r0-7) at (43.40mm,0.00mm) {d};
+  \node[var,anchor=west] at (50.40mm,0.00mm) {$c = 8$, $h = 4$, $n = 4$};
+  \node[var,anchor=east] at (-4.00mm,-15.00mm) {\texttt{push\_back(e)}};
+  \node[sf] (r1-0) at (0.00mm,-15.00mm) {};
+  \node[sf] (r1-1) at (6.20mm,-15.00mm) {};
+  \node[sf] (r1-2) at (12.40mm,-15.00mm) {};
+  \node[sf] (r1-3) at (18.60mm,-15.00mm) {};
+  \node[sf] (r1-4) at (24.80mm,-15.00mm) {};
+  \node[sf] (r1-5) at (31.00mm,-15.00mm) {};
+  \node[sf] (r1-6) at (37.20mm,-15.00mm) {};
+  \node[sf] (r1-7) at (43.40mm,-15.00mm) {};
+  \node[st] (r1-8) at (49.60mm,-15.00mm) {a};
+  \node[st] (r1-9) at (55.80mm,-15.00mm) {b};
+  \node[st] (r1-10) at (62.00mm,-15.00mm) {c};
+  \node[st] (r1-11) at (68.20mm,-15.00mm) {d};
+  \node[sa] (r1-12) at (74.40mm,-15.00mm) {e};
+  \node[sf] (r1-13) at (80.60mm,-15.00mm) {};
+  \node[sf] (r1-14) at (86.80mm,-15.00mm) {};
+  \node[sf] (r1-15) at (93.00mm,-15.00mm) {};
+  \node[sf] (r1-16) at (99.20mm,-15.00mm) {};
+  \node[sf] (r1-17) at (105.40mm,-15.00mm) {};
+  \node[sf] (r1-18) at (111.60mm,-15.00mm) {};
+  \node[sf] (r1-19) at (117.80mm,-15.00mm) {};
+  \node[var,anchor=south east] at (120.80mm,-10.20mm) {$c = 20$, $h = 8$, $n = 5$};
+  \node[var,anchor=east] at (-4.00mm,-30.00mm) {\texttt{push\_front(z)}};
+  \node[sf] (r2-0) at (0.00mm,-30.00mm) {};
+  \node[sf] (r2-1) at (6.20mm,-30.00mm) {};
+  \node[sf] (r2-2) at (12.40mm,-30.00mm) {};
+  \node[sf] (r2-3) at (18.60mm,-30.00mm) {};
+  \node[sf] (r2-4) at (24.80mm,-30.00mm) {};
+  \node[sf] (r2-5) at (31.00mm,-30.00mm) {};
+  \node[sf] (r2-6) at (37.20mm,-30.00mm) {};
+  \node[sa] (r2-7) at (43.40mm,-30.00mm) {z};
+  \node[sc] (r2-8) at (49.60mm,-30.00mm) {a};
+  \node[sc] (r2-9) at (55.80mm,-30.00mm) {b};
+  \node[sc] (r2-10) at (62.00mm,-30.00mm) {c};
+  \node[sc] (r2-11) at (68.20mm,-30.00mm) {d};
+  \node[sc] (r2-12) at (74.40mm,-30.00mm) {e};
+  \node[sf] (r2-13) at (80.60mm,-30.00mm) {};
+  \node[sf] (r2-14) at (86.80mm,-30.00mm) {};
+  \node[sf] (r2-15) at (93.00mm,-30.00mm) {};
+  \node[sf] (r2-16) at (99.20mm,-30.00mm) {};
+  \node[sf] (r2-17) at (105.40mm,-30.00mm) {};
+  \node[sf] (r2-18) at (111.60mm,-30.00mm) {};
+  \node[sf] (r2-19) at (117.80mm,-30.00mm) {};
+  \node[var,anchor=south east] at (120.80mm,-25.20mm) {$c = 20$, $h = 7$, $n = 6$};
+  \node[var,anchor=east] at (-4.00mm,-45.00mm) {\texttt{insert(2,x)}};
+  \node[sf] (r3-0) at (0.00mm,-45.00mm) {};
+  \node[sf] (r3-1) at (6.20mm,-45.00mm) {};
+  \node[sf] (r3-2) at (12.40mm,-45.00mm) {};
+  \node[sf] (r3-3) at (18.60mm,-45.00mm) {};
+  \node[sf] (r3-4) at (24.80mm,-45.00mm) {};
+  \node[sf] (r3-5) at (31.00mm,-45.00mm) {};
+  \node[st] (r3-6) at (37.20mm,-45.00mm) {z};
+  \node[st] (r3-7) at (43.40mm,-45.00mm) {a};
+  \node[sa] (r3-8) at (49.60mm,-45.00mm) {x};
+  \node[sc] (r3-9) at (55.80mm,-45.00mm) {b};
+  \node[sc] (r3-10) at (62.00mm,-45.00mm) {c};
+  \node[sc] (r3-11) at (68.20mm,-45.00mm) {d};
+  \node[sc] (r3-12) at (74.40mm,-45.00mm) {e};
+  \node[sf] (r3-13) at (80.60mm,-45.00mm) {};
+  \node[sf] (r3-14) at (86.80mm,-45.00mm) {};
+  \node[sf] (r3-15) at (93.00mm,-45.00mm) {};
+  \node[sf] (r3-16) at (99.20mm,-45.00mm) {};
+  \node[sf] (r3-17) at (105.40mm,-45.00mm) {};
+  \node[sf] (r3-18) at (111.60mm,-45.00mm) {};
+  \node[sf] (r3-19) at (117.80mm,-45.00mm) {};
+  \node[var,anchor=south east] at (120.80mm,-40.20mm) {$c = 20$, $h = 6$, $n = 7$};
+  \node[index,below=1.6mm of r3-0] {0};
+  \node[index,below=1.6mm of r3-1] {1};
+  \node[index,below=1.6mm of r3-2] {2};
+  \node[index,below=1.6mm of r3-3] {3};
+  \node[index,below=1.6mm of r3-4] {4};
+  \node[index,below=1.6mm of r3-5] {5};
+  \node[index,below=1.6mm of r3-6] {6};
+  \node[index,below=1.6mm of r3-7] {7};
+  \node[index,below=1.6mm of r3-8] {8};
+  \node[index,below=1.6mm of r3-9] {9};
+  \node[index,below=1.6mm of r3-10] {10};
+  \node[index,below=1.6mm of r3-11] {11};
+  \node[index,below=1.6mm of r3-12] {12};
+  \node[index,below=1.6mm of r3-13] {13};
+  \node[index,below=1.6mm of r3-14] {14};
+  \node[index,below=1.6mm of r3-15] {15};
+  \node[index,below=1.6mm of r3-16] {16};
+  \node[index,below=1.6mm of r3-17] {17};
+  \node[index,below=1.6mm of r3-18] {18};
+  \node[index,below=1.6mm of r3-19] {19};
+\end{tikzpicture}
+\end{document}

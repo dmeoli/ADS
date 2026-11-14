@@ -199,6 +199,25 @@ class SkipListSequence {
  /// level the link that reaches the node is replaced by the one that
  /// leaves it, their widths summed less 1, and the links that pass over it
  /// lose 1
+ ///
+ /// In pseudocode (section 4.3 of Morin), the search of `add()` for the
+ /// node \f$ y \f$ of index \f$ i \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{remove}( i ) \cr
+ /// 2 & \quad x \gets \mathit{head};\ j \gets -1 \cr
+ /// 3 & \quad \textbf{for}\ l \gets L - 1\ \textbf{downto}\ 0\ \textbf{do} \cr
+ /// 4 & \qquad \textbf{while}\ j + x.w[ l ] < i\ \textbf{do}\ j \gets j +
+ ///     x.w[ l ];\ x \gets x.\mathit{next}[ l ] \cr
+ /// 5 & \qquad \textbf{if}\ j + x.w[ l ] = i\ \textbf{and}
+ ///     \ x.\mathit{next}[ l ] \ne \mathrm{nil}\ \textbf{then}
+ ///     \ y \gets x.\mathit{next}[ l ] \cr
+ /// 6 & \qquad\quad x.w[ l ] \gets x.w[ l ] + y.w[ l ] - 1;
+ ///     \ x.\mathit{next}[ l ] \gets y.\mathit{next}[ l ] \cr
+ /// 7 & \qquad \textbf{else}\ x.w[ l ] \gets x.w[ l ] - 1 \cr
+ /// 8 & \quad \textbf{return}\ y.\mathit{item}
+ /// \end{array}}
+ /// \f]
  /// \pre \f$ i < n \f$
  T remove( std::size_t i );
 

@@ -1,0 +1,99 @@
+% Source for the figure of RingDeque by rank (sec. 2.3): add and remove at
+% any rank move the shorter side, and the doubling (star) copies the items
+% in rank order, on the data of Morin's Figure 2.3.
+% Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads,
+    sc/.style={cell,minimum width=6mm},st/.style={touched,minimum width=6mm},
+    sa/.style={added,minimum width=6mm},sf/.style={free,minimum width=6mm}]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {initial};
+  \node[sc] (r0-0) at (0.00mm,0.00mm) {a};
+  \node[sc] (r0-1) at (6.40mm,0.00mm) {b};
+  \node[sc] (r0-2) at (12.80mm,0.00mm) {c};
+  \node[sc] (r0-3) at (19.20mm,0.00mm) {d};
+  \node[sc] (r0-4) at (25.60mm,0.00mm) {e};
+  \node[sc] (r0-5) at (32.00mm,0.00mm) {f};
+  \node[sc] (r0-6) at (38.40mm,0.00mm) {g};
+  \node[sc] (r0-7) at (44.80mm,0.00mm) {h};
+  \node[var,anchor=west] at (101.50mm,0.00mm) {$m = 8$, $h = 0$, $n = 8$};
+  \node[var,anchor=east] at (-5.00mm,-11.00mm) {\texttt{remove(2)}};
+  \node[sf] (r1-0) at (0.00mm,-11.00mm) {};
+  \node[st] (r1-1) at (6.40mm,-11.00mm) {a};
+  \node[st] (r1-2) at (12.80mm,-11.00mm) {b};
+  \node[sc] (r1-3) at (19.20mm,-11.00mm) {d};
+  \node[sc] (r1-4) at (25.60mm,-11.00mm) {e};
+  \node[sc] (r1-5) at (32.00mm,-11.00mm) {f};
+  \node[sc] (r1-6) at (38.40mm,-11.00mm) {g};
+  \node[sc] (r1-7) at (44.80mm,-11.00mm) {h};
+  \node[var,anchor=west] at (101.50mm,-11.00mm) {$m = 8$, $h = 1$, $n = 7$};
+  \node[var,anchor=east] at (-5.00mm,-22.00mm) {\texttt{add(4,x)}};
+  \node[st] (r2-0) at (0.00mm,-22.00mm) {h};
+  \node[sc] (r2-1) at (6.40mm,-22.00mm) {a};
+  \node[sc] (r2-2) at (12.80mm,-22.00mm) {b};
+  \node[sc] (r2-3) at (19.20mm,-22.00mm) {d};
+  \node[sc] (r2-4) at (25.60mm,-22.00mm) {e};
+  \node[sa] (r2-5) at (32.00mm,-22.00mm) {x};
+  \node[st] (r2-6) at (38.40mm,-22.00mm) {f};
+  \node[st] (r2-7) at (44.80mm,-22.00mm) {g};
+  \node[var,anchor=west] at (101.50mm,-22.00mm) {$m = 8$, $h = 1$, $n = 8$};
+  \node[var,anchor=east] at (-5.00mm,-33.00mm) {\texttt{add(3,y)}$^*$};
+  \node[st] (r3-0) at (0.00mm,-33.00mm) {b};
+  \node[st] (r3-1) at (6.40mm,-33.00mm) {d};
+  \node[sa] (r3-2) at (12.80mm,-33.00mm) {y};
+  \node[sc] (r3-3) at (19.20mm,-33.00mm) {e};
+  \node[sc] (r3-4) at (25.60mm,-33.00mm) {x};
+  \node[sc] (r3-5) at (32.00mm,-33.00mm) {f};
+  \node[sc] (r3-6) at (38.40mm,-33.00mm) {g};
+  \node[sc] (r3-7) at (44.80mm,-33.00mm) {h};
+  \node[sf] (r3-8) at (51.20mm,-33.00mm) {};
+  \node[sf] (r3-9) at (57.60mm,-33.00mm) {};
+  \node[sf] (r3-10) at (64.00mm,-33.00mm) {};
+  \node[sf] (r3-11) at (70.40mm,-33.00mm) {};
+  \node[sf] (r3-12) at (76.80mm,-33.00mm) {};
+  \node[sf] (r3-13) at (83.20mm,-33.00mm) {};
+  \node[sf] (r3-14) at (89.60mm,-33.00mm) {};
+  \node[st] (r3-15) at (96.00mm,-33.00mm) {a};
+  \node[var,anchor=west] at (101.50mm,-33.00mm) {$m = 16$, $h = 15$, $n = 9$};
+  \node[var,anchor=east] at (-5.00mm,-44.00mm) {\texttt{add(4,z)}};
+  \node[sc] (r4-0) at (0.00mm,-44.00mm) {b};
+  \node[sc] (r4-1) at (6.40mm,-44.00mm) {d};
+  \node[sc] (r4-2) at (12.80mm,-44.00mm) {y};
+  \node[sa] (r4-3) at (19.20mm,-44.00mm) {z};
+  \node[st] (r4-4) at (25.60mm,-44.00mm) {e};
+  \node[st] (r4-5) at (32.00mm,-44.00mm) {x};
+  \node[st] (r4-6) at (38.40mm,-44.00mm) {f};
+  \node[st] (r4-7) at (44.80mm,-44.00mm) {g};
+  \node[st] (r4-8) at (51.20mm,-44.00mm) {h};
+  \node[sf] (r4-9) at (57.60mm,-44.00mm) {};
+  \node[sf] (r4-10) at (64.00mm,-44.00mm) {};
+  \node[sf] (r4-11) at (70.40mm,-44.00mm) {};
+  \node[sf] (r4-12) at (76.80mm,-44.00mm) {};
+  \node[sf] (r4-13) at (83.20mm,-44.00mm) {};
+  \node[sf] (r4-14) at (89.60mm,-44.00mm) {};
+  \node[sc] (r4-15) at (96.00mm,-44.00mm) {a};
+  \node[var,anchor=west] at (101.50mm,-44.00mm) {$m = 16$, $h = 15$, $n = 10$};
+  \node[index,below=1.6mm of r4-0] {0};
+  \node[index,below=1.6mm of r4-1] {1};
+  \node[index,below=1.6mm of r4-2] {2};
+  \node[index,below=1.6mm of r4-3] {3};
+  \node[index,below=1.6mm of r4-4] {4};
+  \node[index,below=1.6mm of r4-5] {5};
+  \node[index,below=1.6mm of r4-6] {6};
+  \node[index,below=1.6mm of r4-7] {7};
+  \node[index,below=1.6mm of r4-8] {8};
+  \node[index,below=1.6mm of r4-9] {9};
+  \node[index,below=1.6mm of r4-10] {10};
+  \node[index,below=1.6mm of r4-11] {11};
+  \node[index,below=1.6mm of r4-12] {12};
+  \node[index,below=1.6mm of r4-13] {13};
+  \node[index,below=1.6mm of r4-14] {14};
+  \node[index,below=1.6mm of r4-15] {15};
+\end{tikzpicture}
+\end{document}

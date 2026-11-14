@@ -1,0 +1,98 @@
+% Source for the figure of ArraySequence (sec. 2.2): the vector of c places
+% through add, remove and set on the data of Morin's Figure 2.1, a star
+% marking a resize. Build: make figures (in ../build).
+\documentclass[border=4pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{lamalunga}
+\input{tikz-ads}
+\begin{document}
+\begin{tikzpicture}[ads]
+  \node[var,anchor=east] at (-5.00mm,0.00mm) {initial};
+  \node[cell] (r0-0) at (0.00mm,0.00mm) {b};
+  \node[cell] (r0-1) at (7.40mm,0.00mm) {r};
+  \node[cell] (r0-2) at (14.80mm,0.00mm) {e};
+  \node[cell] (r0-3) at (22.20mm,0.00mm) {d};
+  \node[var,anchor=west] at (59.00mm,0.00mm) {$n = 4$, $c = 4$};
+  \node[var,anchor=east] at (-5.00mm,-11.00mm) {\texttt{add(2,e)}$^*$};
+  \node[cell] (r1-0) at (0.00mm,-11.00mm) {b};
+  \node[cell] (r1-1) at (7.40mm,-11.00mm) {r};
+  \node[added] (r1-2) at (14.80mm,-11.00mm) {e};
+  \node[touched] (r1-3) at (22.20mm,-11.00mm) {e};
+  \node[touched] (r1-4) at (29.60mm,-11.00mm) {d};
+  \node[free] (r1-5) at (37.00mm,-11.00mm) {};
+  \node[free] (r1-6) at (44.40mm,-11.00mm) {};
+  \node[free] (r1-7) at (51.80mm,-11.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-11.00mm) {$n = 5$, $c = 8$};
+  \node[var,anchor=east] at (-5.00mm,-22.00mm) {\texttt{add(5,r)}};
+  \node[cell] (r2-0) at (0.00mm,-22.00mm) {b};
+  \node[cell] (r2-1) at (7.40mm,-22.00mm) {r};
+  \node[cell] (r2-2) at (14.80mm,-22.00mm) {e};
+  \node[cell] (r2-3) at (22.20mm,-22.00mm) {e};
+  \node[cell] (r2-4) at (29.60mm,-22.00mm) {d};
+  \node[added] (r2-5) at (37.00mm,-22.00mm) {r};
+  \node[free] (r2-6) at (44.40mm,-22.00mm) {};
+  \node[free] (r2-7) at (51.80mm,-22.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-22.00mm) {$n = 6$, $c = 8$};
+  \node[var,anchor=east] at (-5.00mm,-33.00mm) {\texttt{add(5,e)}};
+  \node[cell] (r3-0) at (0.00mm,-33.00mm) {b};
+  \node[cell] (r3-1) at (7.40mm,-33.00mm) {r};
+  \node[cell] (r3-2) at (14.80mm,-33.00mm) {e};
+  \node[cell] (r3-3) at (22.20mm,-33.00mm) {e};
+  \node[cell] (r3-4) at (29.60mm,-33.00mm) {d};
+  \node[added] (r3-5) at (37.00mm,-33.00mm) {e};
+  \node[touched] (r3-6) at (44.40mm,-33.00mm) {r};
+  \node[free] (r3-7) at (51.80mm,-33.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-33.00mm) {$n = 7$, $c = 8$};
+  \node[var,anchor=east] at (-5.00mm,-44.00mm) {\texttt{remove(4)}};
+  \node[cell] (r4-0) at (0.00mm,-44.00mm) {b};
+  \node[cell] (r4-1) at (7.40mm,-44.00mm) {r};
+  \node[cell] (r4-2) at (14.80mm,-44.00mm) {e};
+  \node[cell] (r4-3) at (22.20mm,-44.00mm) {e};
+  \node[touched] (r4-4) at (29.60mm,-44.00mm) {e};
+  \node[touched] (r4-5) at (37.00mm,-44.00mm) {r};
+  \node[free] (r4-6) at (44.40mm,-44.00mm) {};
+  \node[free] (r4-7) at (51.80mm,-44.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-44.00mm) {$n = 6$, $c = 8$};
+  \node[var,anchor=east] at (-5.00mm,-55.00mm) {\texttt{remove(4)}};
+  \node[cell] (r5-0) at (0.00mm,-55.00mm) {b};
+  \node[cell] (r5-1) at (7.40mm,-55.00mm) {r};
+  \node[cell] (r5-2) at (14.80mm,-55.00mm) {e};
+  \node[cell] (r5-3) at (22.20mm,-55.00mm) {e};
+  \node[touched] (r5-4) at (29.60mm,-55.00mm) {r};
+  \node[free] (r5-5) at (37.00mm,-55.00mm) {};
+  \node[free] (r5-6) at (44.40mm,-55.00mm) {};
+  \node[free] (r5-7) at (51.80mm,-55.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-55.00mm) {$n = 5$, $c = 8$};
+  \node[var,anchor=east] at (-5.00mm,-66.00mm) {\texttt{remove(4)}};
+  \node[cell] (r6-0) at (0.00mm,-66.00mm) {b};
+  \node[cell] (r6-1) at (7.40mm,-66.00mm) {r};
+  \node[cell] (r6-2) at (14.80mm,-66.00mm) {e};
+  \node[cell] (r6-3) at (22.20mm,-66.00mm) {e};
+  \node[free] (r6-4) at (29.60mm,-66.00mm) {};
+  \node[free] (r6-5) at (37.00mm,-66.00mm) {};
+  \node[free] (r6-6) at (44.40mm,-66.00mm) {};
+  \node[free] (r6-7) at (51.80mm,-66.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-66.00mm) {$n = 4$, $c = 8$};
+  \node[var,anchor=east] at (-5.00mm,-77.00mm) {\texttt{set(2,i)}};
+  \node[cell] (r7-0) at (0.00mm,-77.00mm) {b};
+  \node[cell] (r7-1) at (7.40mm,-77.00mm) {r};
+  \node[added] (r7-2) at (14.80mm,-77.00mm) {i};
+  \node[cell] (r7-3) at (22.20mm,-77.00mm) {e};
+  \node[free] (r7-4) at (29.60mm,-77.00mm) {};
+  \node[free] (r7-5) at (37.00mm,-77.00mm) {};
+  \node[free] (r7-6) at (44.40mm,-77.00mm) {};
+  \node[free] (r7-7) at (51.80mm,-77.00mm) {};
+  \node[var,anchor=west] at (59.00mm,-77.00mm) {$n = 4$, $c = 8$};
+  \node[index,below=1.6mm of r7-0] {0};
+  \node[index,below=1.6mm of r7-1] {1};
+  \node[index,below=1.6mm of r7-2] {2};
+  \node[index,below=1.6mm of r7-3] {3};
+  \node[index,below=1.6mm of r7-4] {4};
+  \node[index,below=1.6mm of r7-5] {5};
+  \node[index,below=1.6mm of r7-6] {6};
+  \node[index,below=1.6mm of r7-7] {7};
+\end{tikzpicture}
+\end{document}
