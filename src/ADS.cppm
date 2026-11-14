@@ -34,6 +34,7 @@ module;
 #include "ADS/ADT.h"
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Modification.h"
 #include "ADS/Portable.h"
 #include "ADS/algorithm/AkraBazzi.h"
 #include "ADS/algorithm/BinaryCounter.h"
@@ -124,8 +125,6 @@ module;
 #include "ADS/dictionary/UniversalHashing.h"
 #include "ADS/dictionary/XFastTrie.h"
 #include "ADS/dictionary/YFastTrie.h"
-#include "ADS/external/BlockBTree.h"
-#include "ADS/external/BlockStore.h"
 #if defined( ADS_WITH_MPI )
  #include "ADS/distributed/DistributedSort.h"
 #endif
@@ -135,6 +134,8 @@ module;
 #if defined( ADS_WITH_MPI )
  #include "ADS/distributed/MPIMailbox.h"
 #endif
+#include "ADS/external/BlockBTree.h"
+#include "ADS/external/BlockStore.h"
 #include "ADS/external/ExternalSorting.h"
 #include "ADS/external/ListRanking.h"
 #include "ADS/external/RecordFile.h"
@@ -466,6 +467,21 @@ export namespace ADS {
  using ADS::RankIterator;
  using ADS::SlotIterator;
  using ADS::WalkIterator;
+
+ // ADS/Modification.h
+ using ADS::Batch;
+ using ADS::Dynamic;
+ using ADS::Keep;
+ using ADS::NoObservers;
+ using ADS::Quiet;
+ using ADS::Refused;
+ using ADS::Shadow;
+ using ADS::Static;
+ using ADS::UndoLog;
+ using ADS::batch;
+ using ADS::no_rebuild;
+ using ADS::no_rebuild_t;
+ using ADS::quiet;
 
  // ADS/algorithm/AkraBazzi.h
  using ADS::akraBazzi;
@@ -863,6 +879,7 @@ export namespace ADS {
 
  // ADS/dictionary/FastHash.h
  using ADS::DefaultHash;
+ using ADS::FastHash;
  using ADS::Product128;
  using ADS::foldedProduct;
  using ADS::hashBytes;
@@ -1057,7 +1074,9 @@ export namespace ADS {
 
  // ADS/graph/EulerianCycle.h
  using ADS::eulerianCycle;
+ using ADS::eulerianTrail;
  using ADS::isEulerianCycle;
+ using ADS::isEulerianTrail;
 
  // ADS/graph/FlowApplications.h
  using ADS::CapacityDecrease;
@@ -1105,6 +1124,8 @@ export namespace ADS {
 
  // ADS/graph/Matching.h
  using ADS::bipartiteBMatching;
+ using ADS::branchAndBoundMatching;
+ using ADS::maxCardinalityMatching;
  using ADS::maxWeightMatching;
 
  // ADS/graph/MatrixGraph.h
@@ -1130,10 +1151,12 @@ export namespace ADS {
  using ADS::EdgeInserted;
  using ADS::GraphEvent;
  using ADS::GraphEvents;
+ using ADS::GraphModifications;
  using ADS::GraphObserver;
  using ADS::NodeDeleted;
  using ADS::NodeInserted;
  using ADS::Observable;
+ using ADS::ObservedGraph;
  using ADS::WeightChanged;
  using ADS::coalesce;
  using ADS::endsOf;
@@ -1211,6 +1234,8 @@ export namespace ADS {
  using ADS::isTopologicalOrder;
  using ADS::path;
  using ADS::scc;
+ using ADS::sccPearce;
+ using ADS::sccTarjan;
  using ADS::topsort;
  using ADS::topsortKahn;
  using ADS::transpose;
@@ -2478,6 +2503,71 @@ export namespace ADS {
 #if defined( ADS_WITH_MPI )
   using ADS::distributed::sort;
 #endif
+ }
+}
+
+export namespace ADS {
+ namespace mod {
+
+  // ADS/Modification.h
+  using ADS::mod::Assigned;
+  using ADS::mod::BulkErased;
+  using ADS::mod::BulkInserted;
+  using ADS::mod::Changed;
+  using ADS::mod::Cleared;
+  using ADS::mod::Cost;
+  using ADS::mod::Counts;
+  using ADS::mod::Direct;
+  using ADS::mod::Erased;
+  using ADS::mod::Group;
+  using ADS::mod::Inserted;
+  using ADS::mod::Key;
+  using ADS::mod::KeyChanged;
+  using ADS::mod::Lower;
+  using ADS::mod::Permuted;
+  using ADS::mod::Rebuilt;
+  using ADS::mod::Relocated;
+  using ADS::mod::Replaced;
+  using ADS::mod::Role;
+  using ADS::mod::Shifted;
+  using ADS::mod::Supply;
+  using ADS::mod::Upper;
+  using ADS::mod::Value;
+  using ADS::mod::Via;
+  using ADS::mod::auditable;
+  using ADS::mod::coalesce_traits;
+  using ADS::mod::contains_v;
+  using ADS::mod::counted;
+  using ADS::mod::effect;
+  using ADS::mod::effects_of;
+  using ADS::mod::groups;
+  using ADS::mod::index_v;
+  using ADS::mod::inverse;
+  using ADS::mod::invertible;
+  using ADS::mod::lazy;
+  using ADS::mod::list;
+  using ADS::mod::masked;
+  using ADS::mod::must_not_throw;
+  using ADS::mod::observer_of;
+  using ADS::mod::observes;
+  using ADS::mod::observes_span;
+  using ADS::mod::reduction_of;
+  using ADS::mod::refuses;
+  using ADS::mod::role_of;
+  using ADS::mod::variant_t;
+ }
+}
+
+export namespace ADS {
+ namespace mod {
+  namespace reduce {
+
+   // ADS/Modification.h
+   using ADS::mod::reduce::last;
+   using ADS::mod::reduce::max;
+   using ADS::mod::reduce::min;
+   using ADS::mod::reduce::sum;
+  }
  }
 }
 

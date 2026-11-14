@@ -114,6 +114,13 @@ def collect( ast , inc ):
                 continue
             for n in node.get( "inner" , [] ):
                 follow( n )
+            # a class template declared only to be specialized (a
+            # customization point, e.g., MPICodec) is defined by its
+            # complete specializations
+            if ( kind == "ClassTemplateSpecializationDecl" ) and \
+               node.get( "completeDefinition" ) and ns and \
+               ( ns[ 0 ] == "ADS" ) and ( "detail" not in ns ):
+                defined.add( ( "::".join( ns ) , node.get( "name" ) ) )
             if ( not path.startswith( inc + os.sep ) ) or \
                ( kind not in EXPORTED ) or \
                node.get( "isImplicit" ) or ( not node.get( "name" ) ):
