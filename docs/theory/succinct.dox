@@ -279,8 +279,8 @@
  \f$ 2^{\max\{ \ell - 5 , 0 \}} \f$ in 16 bits from it, so that the select
  reads one place and scans the words from it to the bit asked for. A group
  that spans \f$ 2^{16} \f$ bits or more has offsets that do not fit in 16
- bits, and is searched by a binary search of the directory of rank between its ends
- instead; a group that spans less is scanned over less than
+ bits, and is searched by a binary search of the directory of rank between
+ its ends instead; a group that spans less is scanned over less than
  \f$ 2^{16} / 64 = 1024 \f$ words, and over a few words when the 1s are
  spread evenly. The search ends in a word, where the place of the
  \f$ k \f$-th 1 is found by the broadword select of Vigna: the sideways
