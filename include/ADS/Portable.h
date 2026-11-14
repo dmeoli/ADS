@@ -5,13 +5,16 @@
  * The primitives of the processor that the compilers spell each in their
  * own way, in one form for all: the product of two words of 64 bits in
  * two, the swap of the bytes of a word and the signed integers of 128 bits.
- * Each is the builtin of GCC and Clang where they have it, the intrinsic of
- * MSVC on x64 and ARM64 where it has one, and the arithmetic on halves of
- * 32 bits elsewhere; the signed integer of 128 bits is `__int128` where
- * the compiler has it, else a pair of words in two's complement with the
- * same results wherever those of `__int128` are defined. They are details of
- * the implementation, out of the API reference, and their arithmetic is on
- * the theory page of the area.
+ * The product is that of `unsigned __int128` where the compiler has it, the
+ * intrinsic of MSVC on x64 and ARM64 otherwise, and the arithmetic on halves
+ * of 32 bits elsewhere (and in a constant expression of MSVC); the swap is
+ * the builtin of GCC and Clang, else the `std::byteswap()` of C++23, else
+ * the intrinsic of MSVC, else three exchanges by masks, of the bytes, of the
+ * pairs of bytes and of the halves; the signed integer of 128 bits is
+ * `__int128` where the compiler has it, else a pair of words in two's
+ * complement with the same results wherever those of `__int128` are
+ * defined. They are details of the implementation, out of the API
+ * reference, and their arithmetic is on the theory page of the area.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

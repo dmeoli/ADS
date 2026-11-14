@@ -137,9 +137,11 @@
    \mathrm{dequeue}( \mathrm{enqueue}( Q , v ) ) =
    \mathrm{enqueue}( \mathrm{dequeue}( Q ) , v ) , \tag{2}
  \f]
- with \f$ \mathrm{top}( \mathrm{enqueue}( \mathrm{create} , v ) ) = v \f$ and
- \f$ \mathrm{dequeue}( \mathrm{enqueue}( \mathrm{create} , v ) ) =
- \mathrm{create} \f$; the difference between (1) and (2) is the whole
+ with \f$ \mathrm{empty}( \mathrm{create} ) = \mathbf{true} \f$,
+ \f$ \mathrm{empty}( \mathrm{enqueue}( Q , v ) ) = \mathbf{false} \f$ for
+ any \f$ Q \f$, \f$ \mathrm{top}( \mathrm{enqueue}( \mathrm{create} , v ) )
+ = v \f$ and \f$ \mathrm{dequeue}( \mathrm{enqueue}( \mathrm{create} , v ) )
+ = \mathrm{create} \f$; the difference between (1) and (2) is the whole
  difference between the two types, since their syntactic specifications are
  the same up to the names. Those of the SET and of the DICTIONARY define the
  observer on each constructor, e.g., for the SET
@@ -171,9 +173,14 @@
  are therefore <em>sufficiently complete</em>: they decide the value of every
  observer on every stack, which is what makes them a specification rather
  than a list of properties (Guttag and Horning). The same holds for the queues
- by (2), the normal form being made of \f$ \mathrm{enqueue} \f$ alone, and
- for the sets by (3), the normal form being made of \f$ \mathrm{insert} \f$
- alone, with distinct items in any order.
+ by (2), the normal form being made of \f$ \mathrm{enqueue} \f$ alone (a
+ \f$ \mathrm{dequeue} \f$ of a normal form of \f$ k \ge 1 \f$ items is, by
+ induction on \f$ k \f$, the normal form of its last \f$ k - 1 \f$ items).
+ For the sets, (3) decides \f$ \mathrm{contains}( x , A ) \f$ for every
+ \f$ x \f$ and every term \f$ A \f$, by induction on \f$ A \f$; hence, if
+ two sets are taken as equal when they contain the same items, every term is
+ equal to a term made of \f$ \mathrm{insert} \f$ alone, on the distinct
+ items that it contains, in any order.
 
  The SEQUENCE is specified in the constructive way, by its positions. As in
  the book, \f$ \mathrm{insert}( p , v ) \f$ with \f$ p = \mathit{pos}_i \f$
@@ -278,7 +285,8 @@
      <td>that of the other</td></tr>
  <tr><td><tt>PathIterator</tt></td><td>a binary tree in symmetric order, by
      the path from the root</td><td>bidirectional</td>
-     <td>\f$ O( 1 ) \f$ amortized, \f$ O( h ) \f$ at most</td></tr>
+     <td>\f$ O( 1 ) \f$ amortized over a whole visit, \f$ O( h ) \f$ at
+     most</td></tr>
  <tr><td><tt>WalkIterator</tt></td><td>the nodes of a tree by a policy</td>
      <td>forward</td><td>that of the policy</td></tr>
  </table>
