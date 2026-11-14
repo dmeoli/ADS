@@ -57,10 +57,15 @@ absolute value; the same bound holds for the sum of two squares. Since
 $2^{63} > 9.2 \cdot 10^{18}$, no intermediate result overflows. $\square$
 
 The functions convert the coordinates to `long long` before computing
-(16.1), since `long` has 32 bits on some platforms (Windows among them):
+(16.1), since `long` has 32 bits on some platforms (Windows among them);
+the predicates of this section are declared as
 
 ```cpp
---8<-- "generated/ConvexHull-cross.cpp"
+struct Point { long x , y; };
+long long cross( const Point & a , const Point & b , const Point & c );
+bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
+               const Point & q );
+double pseudoAngle( long dx , long dy );
 ```
 
 Two points $p$ and $q$ lie on the same side of the line through $p_1$ and
@@ -221,14 +226,7 @@ As for the time, each point is pushed once and popped at most once, and
 hence lines 7 to 10 cost $O( n )$; the sort costs $O( n \log n )$ and
 dominates. $\square$
 
-In the code, the stack is a `std::vector`, and the scan is the loop of
-lines 7 to 10:
-
-```cpp
---8<-- "generated/ConvexHull-graham.cpp"
-```
-
-Note that the test $\le 0$ (instead of $< 0$) also pops a vertex collinear
+In the code, the stack is a `std::vector`. Note that the test $\le 0$ (instead of $< 0$) also pops a vertex collinear
 with its neighbors. Together with the order of the ties and with the points
 collinear with $o$ dropped at line 5, it keeps out of the output the points
 strictly inside the edges. The output is thus the one fixed above.
@@ -281,11 +279,8 @@ $P$ finds the extreme points, and a second one drops each point that lies
 strictly to the left of all the edges of the octagon, with at most 8
 evaluations of (16.1) per point. When the octagon has fewer than three
 distinct vertices the filter drops nothing, and so it does when all of them
-lie on one line, since no point is then strictly to the left of an edge:
-
-```cpp
---8<-- "generated/ConvexHull-octagon.cpp"
-```
+lie on one line, since no point is then strictly to the left of an edge
+(lines 2 and 3 of [Algorithm 16.3](16-geometry.md#alg-16-3)).
 
 [Figure 16.2](16-geometry.md#fig-16-2) shows the filter on random points.
 On points uniform in a square the extreme points in the diagonal directions
@@ -330,13 +325,10 @@ to the rightmost one, and the upper chain by the same scan back from the
 rightmost point to the leftmost, with the invariant (16.4) on each chain
 ([Algorithm 16.3](16-geometry.md#alg-16-3)). Both scans run on one vector
 $H$ of $2 k$ places. The upper chain starts from the rightmost point, the
-last one that the lower chain pushed, and it never pops it (the test
-$k \ge t$ of the code keeps at least $t - 1$ points on $H$, $t - 1$ being
-the length of the lower chain):
-
-```cpp
---8<-- "generated/ConvexHull-chain.cpp"
-```
+last one that the lower chain pushed, and it never pops it, since the test
+of line 8 looks only at the points of the chain at hand (the code keeps on
+$H$ the $t - 1$ points of the lower chain, the rightmost one included,
+while it scans the upper one).
 
 <span id="alg-16-3"></span>**Algorithm 16.3.** The engineered hull: the
 filter of [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978), the sort
@@ -380,6 +372,17 @@ filter of the octagon.
 | `convexHullBrute()` | every segment checked by (16.3) | $O( n^3 )$ | [Montresor 2025, §16.1](Z-bibliography.md#ref-montresor2025) |
 | `graham()` | sort by angle, scan with a stack | $O( n \log n )$ | [Graham 1972](Z-bibliography.md#ref-graham1972) |
 | `convexHull()` | octagon, sort of the keys, monotone chain | $O( n + k \log k )$, $O( n + k )$ by the radix sort; $O( n )$ expected on points uniform in a square | [Akl and Toussaint 1978](Z-bibliography.md#ref-akl1978), [Andrew 1979](Z-bibliography.md#ref-andrew1979) |
+
+The three functions take the points by value (or by reference, when they
+do not sort them in place) and return the vertices in the order fixed at
+the start of this section, e.g., the 9 vertices of
+[Figure 16.2](16-geometry.md#fig-16-2) from $( 27 , 1 )$:
+
+```cpp
+std::vector< Point > convexHullBrute( std::vector< Point > P );
+std::vector< Point > graham( std::vector< Point > P );
+std::vector< Point > convexHull( const std::vector< Point > & P );
+```
 
 ## 16.3 The closest pair {#sec-16-3}
 
@@ -432,11 +435,8 @@ a range of at most 3 points is solved by comparing its pairs
 range of a vector $I$ of the places of the points, sorted by $x$ at the
 start, and the merge goes through a buffer $B$ of $n$ places, which also
 holds the strip. Each point of the strip is then compared with the next
-ones, until their difference in $y$ reaches the current $\delta$:
-
-```cpp
---8<-- "generated/ClosestPair-strip.cpp"
-```
+ones, until their difference in $y$ reaches the current $\delta$ (lines 7
+to 11).
 
 <span id="alg-16-4"></span>**Algorithm 16.4.** The closest pair by divide
 and conquer ([Shamos and Hoey 1975](Z-bibliography.md#ref-shamos1975)).
@@ -489,11 +489,26 @@ nearest one backwards, until their difference in $x$ reaches the current
 $\delta$ ([Algorithm 16.5](16-geometry.md#alg-16-5)). Since the points of
 one abscissa (a *column*) are sorted by $y$, a point of the same column that
 is not closer than $\delta$ in $y$ ends the scan of the column. The scan
-then jumps to the column before:
+then jumps to the column before (line 8).
 
-```cpp
---8<-- "generated/ClosestPair-sweep.cpp"
-```
+<span id="lem-16-7"></span>**Lemma 16.7.** *If the budget does not run
+out, $\mathrm{sweep}()$ of [Algorithm 16.5](16-geometry.md#alg-16-5)
+returns a closest pair of $P$.*
+
+*Proof.* Let $( v^* , u^* )$, $v^* < u^*$ in the order of $K$, be a closest
+pair, at the squared distance $d^2$; we show that the scan of $u^*$ meets
+$v^*$ while $\delta^2 > d^2$ (if not before, $\delta^2 = d^2$ already, and
+the claim holds since $\delta^2$ never grows and is always the squared
+distance of a pair). The abscissae are nondecreasing in the order of $K$;
+hence, for $v^* \le w < u^*$, the difference in $x$ of $K[ w ]$ and
+$K[ u^* ]$ is at most that of $K[ v^* ]$, whose square is at most $d^2 <
+\delta^2$, and line 6 does not stop the scan before $v^*$. A jump of line 8
+at some $w$ in the column of $u^*$ skips the points of the column below
+$w$, whose ordinates are at most that of $K[ w ]$; their squared distance
+from $K[ u^* ]$ is thus at least $\mathit{dy}^2 \ge \delta^2 > d^2$, and
+$v^*$ is not among them. Therefore line 7 compares $K[ v^* ]$ and
+$K[ u^* ]$, and sets $\delta^2 = d^2$. Finally, the code stops the loop on
+$u$ when $\delta^2 = 0$, a closest pair. $\square$
 
 On points spread in the plane, a point typically meets $O( 1 )$ points in
 the strip of width $\delta$ before it, and the sweep is then linear after
@@ -534,11 +549,7 @@ point closer than $\delta < s$. If the least distance falls, the grid is
 rebuilt on the first $i$ points with the side that the new $\delta$ gives;
 otherwise the point is added to its cell. Also, the table is rebuilt, twice
 as large, when its points would exceed half of its places, which keeps the
-expected number of probes $O( 1 )$:
-
-```cpp
---8<-- "generated/ClosestPair-grid.cpp"
-```
+expected number of probes $O( 1 )$.
 
 <span id="alg-16-5"></span>**Algorithm 16.5.** The sweep of [Hinrichs,
 Nievergelt and Schorn 1988](Z-bibliography.md#ref-hinrichs1988) and the
@@ -546,8 +557,9 @@ randomized grid of [Golin et al. 1995](Z-bibliography.md#ref-golin1995).
 
 --8<-- "generated/ClosestPair-sweep.pseudo.md"
 
-<span id="lem-16-7"></span>**Lemma 16.7.** *A cell of the grid holds at
-most 9 of the points of the grid, and `closestGrid()` takes $O( n )$
+<span id="lem-16-8"></span>**Lemma 16.8.** *`closestGrid()` returns a
+closest pair of $P$, a cell of the grid holds at most 9 of the points of
+the grid, and `closestGrid()` takes $O( n )$
 expected time on any input, the expectation being over the random order
 (which we assume to be uniform) and over the hashing of the cells (which we
 assume to behave as a random function).*
@@ -561,7 +573,10 @@ correctly rounded, so that $s$ is right; above, $s$ may be off by one, and
 $\delta \le s < \delta + 2$ with $\delta > 2^{26}$. In both cases
 $\delta \le s < 3 \delta / \sqrt{2}$. Thus a point at a distance below
 $\delta$ from the $i$-th one differs from it by less than $s$ in each
-coordinate, and lies in one of the 9 cells around its cell. Cut a cell into
+coordinate, and lies in one of the 9 cells around its cell. By induction
+on $i$, $\delta$ is therefore the least distance of $P[ 1 .. i ]$ after the
+$i$-th point, which gives the first claim at $i = n$ (or at the stop with
+$\delta = 0$). Cut a cell into
 9 squares of side $s / 3$; their diameter $\sqrt{2} \, s / 3$ is below
 $\delta$, and each holds at most one point. Besides the rebuilds, the
 $i$-th point therefore costs $O( 1 )$ comparisons and probes. One can then bound the rebuilds. A rebuild
@@ -602,6 +617,16 @@ pair in `ClosestPair.h`.
 | `closestPair()` | divide and conquer | $O( n \log n )$ |
 | `closestPairSweep()` | sweep on the sort of the keys, then the randomized grid | the sort ($O( n )$ by radix, $O( n \log n )$ otherwise), plus $O( n )$ when a sweep succeeds and $O( n )$ expected always |
 
+All three return the two places $i < j$ of the pair and its squared
+distance, and require $n \ge 2$ and the bounds of
+[Lemma 16.1](16-geometry.md#lem-16-1):
+
+```cpp
+std::int64_t squaredDistance( const Point & p , const Point & q );
+std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
+closestPair( const std::vector< Point > & P );       // and the other two
+```
+
 ## 16.4 Stabbing and range counting {#sec-16-4}
 
 We now turn to the two queries. Both structures are maps (the `JoinTree`
@@ -638,6 +663,34 @@ same.
 
 --8<-- "generated/IntervalTree-remove.pseudo.md"
 
+The augmentation is a class with the type `Value` of $\mathcal{A}$ and
+three static functions: `identity()`, which returns $\mathbf{0}$;
+`from( key , c )`, which returns $g$ of a key of multiplicity $c$; and
+`combine( u , v )`, which returns $u \oplus v$ (the interface that
+`JoinTree` asks of its augmentation, [§8.12.6](08-tree.md#sec-8-12-6)).
+The public members of the two classes are then
+
+```cpp
+template< std::totally_ordered T > class IntervalTree {
+ public:
+ using Interval = std::pair< T , T >;                // [ a , b ]
+ struct MaxEnd;                                      // the augmentation
+ IntervalTree( void );
+ explicit IntervalTree( std::vector< Interval > I );
+ template< Executor E > IntervalTree( E & ex , std::vector< Interval > I );
+ void insert( const T & a , const T & b );
+ void remove( const T & a , const T & b );
+ std::size_t size( void ) const;
+ bool stabbed( const T & x ) const;
+ template< class F > void stab( const T & x , F && f ) const;
+ std::size_t count( const T & x ) const;
+ };
+```
+
+and, for `RangeTree<T>`, the type `Point` of the pairs $( x , y )$, the
+augmentation `Ordinates`, the same constructors, `insert( x , y )`,
+`remove( x , y )` and `size()`, and the query `count( x1 , x2 , y1 , y2 )`.
+
 After sorting the input and counting the copies, the constructors give the
 distinct keys with their counts to `multiInsert()`
 ([§8.12.4](08-tree.md#sec-8-12-4)), which builds the tree by joins of
@@ -661,7 +714,7 @@ node is thus the largest right end of its subtree
 ([Figure 16.4](16-geometry.md#fig-16-4)). A *stabbing query* looks for
 the intervals that contain a point $x$.
 
-<span id="lem-16-8"></span>**Lemma 16.8.** *An interval of the tree $T$
+<span id="lem-16-9"></span>**Lemma 16.9.** *An interval of the tree $T$
 contains $x$ if and only if*
 
 $$
@@ -676,11 +729,7 @@ The intervals with $a \le x$ form a prefix of the order of the keys, the
 keys up to $( x , +\infty )$. This prefix is the union of the nodes at
 which the search for $( x , +\infty )$ goes right and of their left
 subtrees, and `stabbed()` reads the maximum of (16.9) along that path in
-$O( \log n )$ time ([Algorithm 16.6](16-geometry.md#alg-16-6)):
-
-```cpp
---8<-- "generated/IntervalTree-stabbed.cpp"
-```
+$O( \log n )$ time ([Algorithm 16.6](16-geometry.md#alg-16-6)).
 
 <span id="alg-16-6"></span>**Algorithm 16.6.** The stabbing query of an
 interval tree on an augmented map ([Sun and Blelloch
@@ -702,11 +751,7 @@ that contain $x$ ([Sun and Blelloch 2019](Z-bibliography.md#ref-sun2019)).
 
 --8<-- "generated/IntervalTree-visit.pseudo.md"
 
-```cpp
---8<-- "generated/IntervalTree-stab.cpp"
-```
-
-<span id="lem-16-9"></span>**Lemma 16.9.** *`stab(x,f)` calls $f$ once
+<span id="lem-16-10"></span>**Lemma 16.10.** *`stab(x,f)` calls $f$ once
 per copy of each interval that contains $x$, by increasing $( a , b )$, in
 $O( \min( n , ( k + 1 ) \log n ) )$ time plus the calls, $k$ being the
 number of distinct intervals reported.*
@@ -747,7 +792,7 @@ node is then the sorted sequence of the ordinates of its subtree, as in the
 range tree of [Bentley 1980](Z-bibliography.md#ref-bentley1980dc), while the
 map orders the points by $x$ ([Figure 16.5](16-geometry.md#fig-16-5)).
 
-<span id="lem-16-10"></span>**Lemma 16.10.** *A `RangeTree` of $n$ points
+<span id="lem-16-11"></span>**Lemma 16.11.** *A `RangeTree` of $n$ points
 takes $O( n \log n )$ space, $\Theta( n \log n )$ when the points are
 distinct, and its construction $O( n \log n )$ time.*
 
@@ -771,11 +816,7 @@ ordinates in $[ y_1 , y_2 ]$ by two binary searches on the sorted sequence
 ([Algorithm 16.8](16-geometry.md#alg-16-8)). For the infinities it uses
 `-infinity()` and `infinity()` in the types that have them, so that a
 point with $y = \pm \infty$ at the abscissa $x_1$ or $x_2$ is counted too,
-and `lowest()` and `max()` in the others:
-
-```cpp
---8<-- "generated/RangeTree-count.cpp"
-```
+and `lowest()` and `max()` in the others.
 
 <span id="alg-16-8"></span>**Algorithm 16.8.** The count of the points in
 a rectangle, on the range tree of [Bentley
@@ -785,7 +826,7 @@ a rectangle, on the range tree of [Bentley
 
 ![Figure 16.5. A `RangeTree` of seven points, each node with its point (above) and the sorted ordinates of its subtree (below). Above, the pieces of `count(2,5,2,5)`, i.e., of the keys from $( 2 , -\infty )$ to $( 5 , +\infty )$: the single points $( 2 , 2 )$, $( 4 , 4 )$, $( 5 , 1 )$ and the subtree of $( 3 , 7 )$ (violet); the ordinates in $[ 2 , 5 ]$ of the four pieces are 2 and 4, and the count is 2. Below, the tree after `insert(5,6)`: the new leaf and the sequences of all its ancestors, merged again (orange).](../figures/geometry-range.svg){#fig-16-5}
 
-<span id="lem-16-11"></span>**Lemma 16.11.** *`count()` returns the number
+<span id="lem-16-12"></span>**Lemma 16.12.** *`count()` returns the number
 of points of the rectangle, with their copies, in $O( \log^2 n + c )$ time,
 $c$ being the copies of the single points among its pieces, i.e., in
 $O( \log^2 n )$ time for points without repetitions; an insertion or a
@@ -804,7 +845,7 @@ ancestors of its point, and the root's has $n$ ordinates. $\square$
 The fractional cascading of [Lueker 1978](Z-bibliography.md#ref-lueker1978)
 and [Willard 1985](Z-bibliography.md#ref-willard1985) (in general,
 [Chazelle and Guibas 1986](Z-bibliography.md#ref-chazelle1986)) would
-remove one factor $\log n$ from [Lemma 16.11](16-geometry.md#lem-16-11),
+remove one factor $\log n$ from [Lemma 16.12](16-geometry.md#lem-16-12),
 by pointers from each sequence into those of the two children; yet, every
 merge would have to rebuild them. The dynamic range tree of [Sun and
 Blelloch 2019](Z-bibliography.md#ref-sun2019) keeps the updates in
