@@ -454,6 +454,7 @@ sorting  learned-sort        modello della CDF, ripiego, -0, NaN, code
 
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme
+taocp  fibonacci-search-count confronti contati della ricerca di Fibonacci
 taocp  balanced-trees        AVL, B-tree, skip list, treap, splay
 taocp  splay-tree-values     splay tree di valori senza costruttore
 taocp  tries                 trie e Patricia

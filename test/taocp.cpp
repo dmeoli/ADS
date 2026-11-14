@@ -120,6 +120,28 @@ ADS_TEST( "knuth-searches" )
                contract_violation );
  }
 
+// the comparisons counted by the Fibonacci search: the test of the last
+// item left after the loop is one of them, so that the search of a vector
+// of one item makes 1 comparison and that of any vector not empty at least
+// 1, within about 1.44 log2 n + 2
+ADS_TEST( "fibonacci-search-count" )
+{
+ for( int v : { 4 , 5 , 6 } ) {
+  long c = 0;
+  CHECK( fibonacciSearch( std::vector< int >{ 5 } , v , &c ) ==
+         ( v == 5 ? 0 : -1 ) && c == 1 );
+  }
+ for( int n = 1 ; n <= 60 ; ++n ) {
+  std::vector< int > A( n );
+  for( int i = 0 ; i < n ; ++i ) A[ i ] = 2 * i;
+  for( int v = -1 ; v <= 2 * n ; ++v ) {
+   long c = 0;
+   (void) fibonacciSearch( A , v , &c );
+   CHECK( c >= 1 && double( c ) <= 1.4405 * std::log2( n + 2.0 ) + 2 );
+   }
+  }
+ }
+
 // a dictionary against std::map on random insertions and removals of keys
 // in [ 0 , U ), each lookup checked, and the keys in order at the end
 template< class D >

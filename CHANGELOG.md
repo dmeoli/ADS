@@ -2719,6 +2719,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- fibonacciSearch() did not count in *cmp the test of the last item left
+  after its loop, so that the search of a vector of one item reported 0
+  comparisons; the test is now counted, and the bound of about 1.44 log2 n
+  comparisons of the header and of chapter 6 of the manual still holds; the
+  test taocp fibonacci-search-count
+
 - integerSqrt() of a bool, an unsigned type of 1 bit for which the binary
   search started with hi = 1 and made no step, gave 0 for true and failed
   its postcondition, and isPerfectSquare( true ) was false; a bool is now

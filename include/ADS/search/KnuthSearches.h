@@ -68,7 +68,8 @@
 namespace ADS {
 
 /// the Fibonacci search of \f$ v \f$ in the sorted \f$ A \f$: its place, or
-/// -1; the comparisons go to `*cmp`, if given
+/// -1; the comparisons go to `*cmp`, if given, the test of the line 9
+/// among them
 ///
 /// In pseudocode (Algorithm 6.2.1F of Knuth, beyond the book), the part still
 /// to examine being \f$ A[ o + 1 .. o + F_k - 1 ] \f$, with

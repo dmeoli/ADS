@@ -47,9 +47,11 @@ long fibonacciSearch( const std::vector< T > & A , const T & v , long * cmp )
    break;
    }
   }
- if( ( result < 0 ) && ( f1 == 1 ) && ( offset + 1 < n ) &&
-     !( A[ offset + 1 ] < v ) && !( v < A[ offset + 1 ] ) )
-  result = offset + 1;
+ if( ( result < 0 ) && ( f1 == 1 ) && ( offset + 1 < n ) ) {
+  if( cmp ) ++*cmp;                         // the last item left
+  if( !( A[ offset + 1 ] < v ) && !( v < A[ offset + 1 ] ) )
+   result = offset + 1;
+  }
  ADS_POST( ( result >= 0 ) ==
            std::binary_search( A.begin() , A.end() , v ) );
  return( result );
