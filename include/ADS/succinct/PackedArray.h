@@ -36,7 +36,7 @@
  * of a `TritArray` is below 243. The operations are defined in
  * `PackedArray.tpp`.
  *
- * \see A. E. Felner, R. E. Korf, S. Hanan, Additive pattern database
+ * \see A. Felner, R. E. Korf, S. Hanan, Additive pattern database
  *      heuristics, Journal of Artificial Intelligence Research 22, 279-318,
  *      2004, doi:10.1613/jair.1480
  * \see T. M. Breyer, R. E. Korf, 1.6-bit pattern databases, Proceedings of

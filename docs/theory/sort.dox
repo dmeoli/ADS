@@ -564,7 +564,8 @@
  \see S. Wild, M. E. Nebel, Average case analysis of Java 7's dual pivot
       quicksort, Proceedings of ESA 2012, LNCS 7501, 825-836, 2012,
       doi:10.1007/978-3-642-33090-2_71
- \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123, 2021
+ \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123, 2021,
+      doi:10.48550/arXiv.2106.05123
  \see P. Sanders, S. Winkel, Super scalar sample sort, Proceedings of ESA
       2004, LNCS 3221, 784-796, 2004, doi:10.1007/978-3-540-30140-0_69
  \see N. Auger, V. Jugé, C. Nicaud, C. Pivoteau, On the worst-case

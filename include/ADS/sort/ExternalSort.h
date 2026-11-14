@@ -30,7 +30,7 @@
  *      Addison-Wesley, 1998, sections 5.4.1 and 5.4.2
  * \see R. L. Gilstad, Polyphase merge sorting: an advanced technique,
  *      Proceedings of the Eastern Joint Computer Conference 18, 143-148,
- *      1960
+ *      1960, doi:10.1145/1460512.1460524
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n

@@ -55,11 +55,11 @@
  *      Software: Practice and Experience 27(8), 983-993, 1997,
  *      doi:10.1002/(SICI)1097-024X(199708)27:8\<983::AID-SPE117\>3.0.CO;2-\#
  * \see O. R. L. Peters, Pattern-defeating quicksort, arXiv:2106.05123,
- *      2021
+ *      2021, doi:10.48550/arXiv.2106.05123
  * \see J. W. Tukey, The ninther, a technique for low-effort robust
  *      (resistant) location in large samples, in H. A. David (ed.),
  *      Contributions to Survey Sampling and Applied Statistics, Academic
- *      Press, 251-257, 1978
+ *      Press, 251-257, 1978, doi:10.1016/B978-0-12-204750-3.50024-1
  * \see S. Edelkamp, A. Weiss, BlockQuicksort: avoiding branch
  *      mispredictions in quicksort, Proceedings of ESA 2016, LIPIcs 57,
  *      article 38, 2016, doi:10.4230/LIPIcs.ESA.2016.38

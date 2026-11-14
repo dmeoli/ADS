@@ -60,7 +60,8 @@
  * `FastHash.tpp`.
  *
  * \see M. Thorup, High speed hashing for integers and strings, 2015,
- *      arXiv:1504.06804 (the multiply-shift hashing and its analysis)
+ *      arXiv:1504.06804, doi:10.48550/arXiv.1504.06804 (the multiply-shift
+ *      hashing and its analysis)
  * \see J. M. Lopez Munoz, Inside boost::unordered_flat_map, 2022 (the
  *      folded product as the mixing of a hash)
  * \see Wang Yi, wyhash, 2019, https://github.com/wangyi-fudan/wyhash (the
