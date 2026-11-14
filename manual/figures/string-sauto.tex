@@ -5,17 +5,17 @@
 % shaded. Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  st/.style={circle,draw,minimum size=6mm,font=\small},
-  nw/.style={st,fill=adsTouched},
-  ln/.style={font=\scriptsize,text=black!60},
-  lab/.style={font=\small\ttfamily,fill=white,inner sep=1pt},
-  tr/.style={->,thick},
-  rd/.style={->,thick,draw=black!70}
+  st/.style={vertex,minimum size=6.5mm},
+  nw/.style={vertex-added,minimum size=6.5mm},
+  ln/.style={index},
+  lab/.style={font=\small\ttfamily,text=adsInk,fill=white,inner sep=1pt},
+  tr/.style={ptr},
+  rd/.style={->,edge-touched}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=16mm,y=13mm]
@@ -44,9 +44,9 @@
   \draw[tr] (b3) -- node[lab] {b} (b4);
   \draw[tr] (b4) -- node[lab] {c} (b6);
   \draw[tr] (b0) -- node[lab] {b} (b5);
-  \draw[tr] (b5) -- node[lab,fill=adsTouched] {c} (b7);
+  \draw[rd] (b5) -- node[lab] {c} (b7);
   \draw[tr] (b7) -- node[lab] {b} (b4);
-  \draw[tr] (b0) to[out=60,in=150,looseness=1.2] node[lab,fill=adsTouched] {c} (b7);
+  \draw[rd] (b0) to[out=60,in=150,looseness=1.2] node[lab] {c} (b7);
   \end{scope}
 \end{tikzpicture}
 \end{document}

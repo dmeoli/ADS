@@ -4,16 +4,17 @@
 % figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  pt/.style={circle,fill=black,minimum size=1.6mm},
-  gone/.style={circle,draw=black!50,fill=adsFree,minimum size=1.6mm},
-  todo/.style={circle,draw=black,fill=white,minimum size=1.6mm},
-  chain/.style={very thick},
-  lbl/.style={font=\small}
+  pt/.style={vertex-touched,minimum size=2.8mm},
+  new/.style={vertex-added,minimum size=2.8mm},
+  gone/.style={vertex,minimum size=2.8mm},
+  todo/.style={vertex,minimum size=2.8mm},
+  chain/.style={edge-touched},
+  lbl/.style={font=\small,text=adsInk}
 }
 % \panel{x shift}{style of p2}{style of p3}{style of p4}
 \newcommand{\pts}[4]{%
@@ -38,16 +39,16 @@
   % before: the stack o p1 p2 p3, and p4 to be scanned
   \pts{0mm}{pt}{pt}{todo}
   \draw[chain] (o) -- (p1) -- (p2) -- (p3);
-  \draw[dashed] (p3) -- (p4);
+  \draw[edge,dashed] (p3) -- (p4);
   \node[var] at (24mm,-9mm) {before the scan of $p_4$};
   \cells{a}{10mm,-17mm}{o/cell,p1/cell,p2/cell,p3/cell}
   \node[index,anchor=east] at (5mm,-17mm) {bottom};
   \node[index,anchor=west] at (36mm,-17mm) {top};
   % after: p3 and p2 popped, p4 pushed
-  \pts{62mm}{gone}{gone}{pt}
+  \pts{62mm}{gone}{gone}{new}
   \draw[chain] (o) -- (p1) -- (p4);
   \node[var] at (86mm,-9mm) {after it};
-  \cells{b}{72mm,-17mm}{o/cell,p1/cell,p4/touched,/free}
+  \cells{b}{72mm,-17mm}{o/cell,p1/cell,p4/added,/free}
   \node[index,anchor=east] at (67mm,-17mm) {bottom};
 \end{tikzpicture}
 \end{document}

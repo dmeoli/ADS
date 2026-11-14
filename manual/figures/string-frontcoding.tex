@@ -5,14 +5,14 @@
 % figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
   wc/.style={cell,minimum width=22mm,anchor=west},
   wt/.style={touched,minimum width=22mm,anchor=west},
-  st/.style={font=\small\ttfamily,anchor=west}
+  st/.style={font=\small\ttfamily,text=adsInk,anchor=west}
 }
 \begin{document}
 \begin{tikzpicture}[ads]

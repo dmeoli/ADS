@@ -4,15 +4,15 @@
 % make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  st/.style={circle,draw,minimum size=6.5mm,font=\small\ttfamily},
-  fin/.style={st,double,fill=adsTouched},
-  lab/.style={font=\small\ttfamily,fill=white,inner sep=1pt},
-  fail/.style={->,dashed,black!60}
+  st/.style={vertex},
+  fin/.style={vertex-touched},
+  lab/.style={font=\small\ttfamily,text=adsInk,fill=white,inner sep=1pt},
+  fail/.style={->,edge,dashed}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=17mm,y=13mm]

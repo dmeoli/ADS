@@ -6,44 +6,48 @@
 % shaded. Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  rp/.style={rectangle split,rectangle split parts=2,draw,
-             font=\small\ttfamily,inner xsep=1.5mm,inner ysep=1.0mm,
-             align=center},
-  rpt/.style={rp,rectangle split part fill={adsTouched,adsTouched}},
-  rpk/.style={rp,rectangle split part fill={adsTouched,white}},
-  rph/.style={rp,rectangle split part fill={white,adsTouched}},
-  edge/.style={thick}
+  rp/.style={rectangle split,rectangle split parts=2,draw=white,
+             line width=1.2pt,rounded corners=1.6pt,
+             font=\small\ttfamily,text=adsInk,inner xsep=1.5mm,
+             inner ysep=1.0mm,align=center,
+             rectangle split part fill={adsTint,adsTint}},
+  rpt/.style={rp,rectangle split part fill={adsPrimary,adsPrimary},
+              text=adsOnPrimary},
+  rpk/.style={rp,rectangle split part fill={adsPrimary,adsTint}},
+  rph/.style={rp,rectangle split part fill={adsTint,adsAdded}},
+  rpa/.style={rp,rectangle split part fill={adsAdded,adsAdded},
+              text=adsOnAdded}
 }
 % \rpn{name}{style}{x,y}{point}{ordinates}
 \newcommand{\rpn}[5]{\node[#2] (#1) at (#3) {#4\nodepart{two}#5};}
 \begin{document}
 \begin{tikzpicture}[ads]
   \node[var,anchor=west] at (-70mm,0) {\texttt{count(2,5,2,5)}};
-  \rpn{r}{rpk}{0,0}{(4,4)}{1 2 3 4 5 6 7}
-  \rpn{l}{rpk}{-34mm,-14mm}{(2,2)}{2 6 7}
+  \rpn{r}{rpk}{0,0}{\textcolor{adsOnPrimary}{(4,4)}}{1 2 3 4 5 6 7}
+  \rpn{l}{rpk}{-34mm,-14mm}{\textcolor{adsOnPrimary}{(2,2)}}{2 6 7}
   \rpn{rr}{rp}{34mm,-14mm}{(6,5)}{1 3 5}
   \rpn{ll}{rp}{-51mm,-30mm}{(1,6)}{6}
   \rpn{lr}{rpt}{-17mm,-30mm}{(3,7)}{7}
-  \rpn{rl}{rpk}{17mm,-30mm}{(5,1)}{1}
+  \rpn{rl}{rpk}{17mm,-30mm}{\textcolor{adsOnPrimary}{(5,1)}}{1}
   \rpn{rrr}{rp}{51mm,-30mm}{(7,3)}{3}
   \draw[edge] (r) -- (l); \draw[edge] (r) -- (rr);
   \draw[edge] (l) -- (ll); \draw[edge] (l) -- (lr);
   \draw[edge] (rr) -- (rl); \draw[edge] (rr) -- (rrr);
   \begin{scope}[yshift=-46mm]
   \node[var,anchor=west] at (-70mm,0) {\texttt{insert(5,6)}};
-  \rpn{r}{rph}{0,0}{(4,4)}{1 2 3 4 5 6 6 7}
+  \rpn{r}{rph}{0,0}{(4,4)}{\textcolor{adsOnAdded}{1 2 3 4 5 6 6 7}}
   \rpn{l}{rp}{-34mm,-14mm}{(2,2)}{2 6 7}
-  \rpn{rr}{rph}{34mm,-14mm}{(6,5)}{1 3 5 6}
+  \rpn{rr}{rph}{34mm,-14mm}{(6,5)}{\textcolor{adsOnAdded}{1 3 5 6}}
   \rpn{ll}{rp}{-51mm,-30mm}{(1,6)}{6}
   \rpn{lr}{rp}{-17mm,-30mm}{(3,7)}{7}
-  \rpn{rl}{rph}{17mm,-30mm}{(5,1)}{1 6}
+  \rpn{rl}{rph}{17mm,-30mm}{(5,1)}{\textcolor{adsOnAdded}{1 6}}
   \rpn{rrr}{rp}{51mm,-30mm}{(7,3)}{3}
-  \rpn{n}{rpt}{30mm,-46mm}{(5,6)}{6}
+  \rpn{n}{rpa}{30mm,-46mm}{(5,6)}{6}
   \draw[edge] (r) -- (l); \draw[edge] (r) -- (rr);
   \draw[edge] (l) -- (ll); \draw[edge] (l) -- (lr);
   \draw[edge] (rr) -- (rl); \draw[edge] (rr) -- (rrr);

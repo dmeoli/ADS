@@ -5,18 +5,17 @@
 % figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  lf/.style={rectangle,draw,minimum width=9mm,minimum height=6mm,
-             font=\small\ttfamily},
-  lt/.style={lf,fill=adsTouched},
-  vn/.style={circle,draw,minimum size=7mm,font=\small},
-  vt/.style={vn,fill=adsTouched},
-  bit/.style={font=\scriptsize\ttfamily,fill=white,inner sep=1pt},
-  code/.style={font=\scriptsize\ttfamily,text=black!60}
+  lf/.style={node,minimum width=9mm},
+  lt/.style={node-touched,minimum width=9mm},
+  vn/.style={vertex,minimum size=7.5mm},
+  vt/.style={vertex-added,minimum size=7.5mm},
+  bit/.style={font=\scriptsize\ttfamily,text=adsInk,fill=white,inner sep=1pt},
+  code/.style={index}
 }
 \begin{document}
 \begin{tikzpicture}[ads]
@@ -30,7 +29,7 @@
   \node[vt] (m) at (84mm,0) {14};
   \node[lf] (ma) at (78mm,-11mm) {a:5};
   \node[lf] (mb) at (90mm,-11mm) {b:9};
-  \draw (m) -- (ma); \draw (m) -- (mb);
+  \draw[edge] (m) -- (ma); \draw[edge] (m) -- (mb);
   \foreach \c/\f/\x in {c/12/101,d/13/112,e/16/123,f/45/134}
     \node[lf] at (\x mm,0) {\c:\f};
   % the final tree
@@ -46,16 +45,16 @@
   \node[lf] (e) at (115mm,-36mm) {e:16};
   \node[lf] (a) at (85mm,-48mm) {a:5};
   \node[lf] (b) at (105mm,-48mm) {b:9};
-  \draw (r) -- node[bit] {0} (f);
-  \draw (r) -- node[bit] {1} (n55);
-  \draw (n55) -- node[bit] {0} (n25);
-  \draw (n55) -- node[bit] {1} (n30);
-  \draw (n25) -- node[bit] {0} (c);
-  \draw (n25) -- node[bit] {1} (d);
-  \draw (n30) -- node[bit] {0} (n14);
-  \draw (n30) -- node[bit] {1} (e);
-  \draw (n14) -- node[bit] {0} (a);
-  \draw (n14) -- node[bit] {1} (b);
+  \draw[edge] (r) -- node[bit] {0} (f);
+  \draw[edge] (r) -- node[bit] {1} (n55);
+  \draw[edge] (n55) -- node[bit] {0} (n25);
+  \draw[edge] (n55) -- node[bit] {1} (n30);
+  \draw[edge] (n25) -- node[bit] {0} (c);
+  \draw[edge] (n25) -- node[bit] {1} (d);
+  \draw[edge] (n30) -- node[bit] {0} (n14);
+  \draw[edge] (n30) -- node[bit] {1} (e);
+  \draw[edge] (n14) -- node[bit] {0} (a);
+  \draw[edge] (n14) -- node[bit] {1} (b);
   \foreach \x/\cd in {f/0,c/100,d/101,e/111,a/1100,b/1101}
     \node[code,below=1mm of \x] {\cd};
   \end{scope}

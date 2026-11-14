@@ -4,9 +4,9 @@
 % Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \usetikzlibrary{decorations.pathreplacing}
 \begin{document}
@@ -20,10 +20,10 @@
     \node[index] at (0,-\r*7mm) {\r};
     \node[\st] at (10mm,-\r*7mm) {\sa};
     \node[cell] at (17mm,-\r*7mm) {\lcp};
-    \node[font=\small\ttfamily,anchor=west] at (24mm,-\r*7mm) {\suf};
+    \node[font=\small\ttfamily,text=adsInk,anchor=west] at (24mm,-\r*7mm) {\suf};
   }
   \node[free] at (17mm,-35mm) {};
-  \draw[decorate,decoration={brace,amplitude=4pt}]
+  \draw[edge,decorate,decoration={brace,amplitude=4pt}]
     (44mm,-4mm) -- node[right=2mm,var] {$P = \texttt{an}$} (44mm,-17mm);
 \end{tikzpicture}
 \end{document}

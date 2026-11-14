@@ -6,19 +6,20 @@
 % ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  ext/.style={rectangle,fill=black,minimum size=2mm},
-  kept/.style={circle,fill=black,minimum size=1.5mm},
-  drop/.style={circle,draw=black!45,fill=adsFree,minimum size=1.3mm}
+  ext/.style={node-touched,minimum width=2.4mm,minimum height=2.4mm,
+              rounded corners=0.5pt},
+  kept/.style={vertex-touched,minimum size=1.8mm},
+  drop/.style={vertex,minimum size=2mm}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=2.2mm,y=2.2mm]
-  \draw[thick,fill=adsTouched!40] (27,1) -- (38,2) -- (40,18) -- (37,29) -- (20,30) -- (2,30) -- (2,2) -- cycle;
-  \draw[dashed] (2,2) -- (4,1) -- (27,1) -- (38,2) -- (40,6) -- (40,18) -- (37,29) -- (20,30) -- (2,30) -- cycle;
+  \draw[edge,fill=adsFree] (27,1) -- (38,2) -- (40,18) -- (37,29) -- (20,30) -- (2,30) -- (2,2) -- cycle;
+  \draw[edge-touched,dashed] (2,2) -- (4,1) -- (27,1) -- (38,2) -- (40,6) -- (40,18) -- (37,29) -- (20,30) -- (2,30) -- cycle;
   \node[ext] at (20,30) {};
   \node[drop] at (9,12) {};
   \node[drop] at (3,2) {};

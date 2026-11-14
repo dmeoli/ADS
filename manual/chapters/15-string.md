@@ -132,7 +132,7 @@ it never moves back in the text ([Figure 15.1](15-string.md#fig-15-1),
 by the same scan of $P$ against itself, since a border of
 $P[ 0 .. q ]$ is a border of $P[ 0 .. q - 1 ]$ extended by $P[ q ]$.
 
-![Figure 15.1. A step of `kmp()` with $P = \texttt{ababaca}$: after $q = 5$ symbols matched (shaded), $P[ 5 ] \ne T[ 5 ]$, and $q \gets F[ 5 ] = 3$ moves the pattern by 2 places, with its first 3 symbols already matched; the occurrence at the place 2 is then found without reading $T[ 0 .. 4 ]$ again.](../figures/string-kmp.svg){#fig-15-1}
+![Figure 15.1. A step of `kmp()` with $P = \texttt{ababaca}$: after $q = 5$ symbols matched, $P[ 5 ] \ne T[ 5 ]$ (violet), and $q \gets F[ 5 ] = 3$ moves the pattern by 2 places, with its first 3 symbols already matched (violet); the occurrence at the place 2 is then found without reading $T[ 0 .. 4 ]$ again.](../figures/string-kmp.svg){#fig-15-1}
 
 <span id="alg-15-1"></span>**Algorithm 15.1.** The failure function and
 the search of [Knuth, Morris and Pratt
@@ -400,7 +400,7 @@ $$
 and stored as a table of 256 transitions per state, and a byte of the
 text costs one lookup.
 
-![Figure 15.2. The trie of the patterns `he`, `she`, `his`, `hers`, the states that end a pattern doubled and shaded, and the failure links that do not lead to the root (dashed): after reading `she` the automaton is in the state `she`, whose output link `he` reports the second pattern that ends there.](../figures/string-aho.svg){#fig-15-2}
+![Figure 15.2. The trie of the patterns `he`, `she`, `his`, `hers`, the states that end a pattern in violet, and the failure links that do not lead to the root (dashed): after reading `she` the automaton is in the state `she`, whose output link `he` reports the second pattern that ends there.](../figures/string-aho.svg){#fig-15-2}
 
 <span id="lem-15-5"></span>**Lemma 15.5.** *After the automaton has read
 $T[ 0 .. j ]$, its state is the longest suffix of $T[ 0 .. j ]$ that is a
@@ -949,7 +949,7 @@ whose symbols are its bytes, or a vector of integers in $[ 0 , K )$, e.g.,
 several strings joined by distinct separators
 ([§15.5.5](15-string.md#sec-15-5-5)).
 
-![Figure 15.3. The suffix array and the LCP array of $T = \texttt{banana}$, with the suffixes in rank order; the suffixes prefixed by $P = \texttt{an}$ are the range of the ranks 1 and 2 (shaded), which `range()` finds by two binary searches.](../figures/string-sa.svg){#fig-15-3}
+![Figure 15.3. The suffix array and the LCP array of $T = \texttt{banana}$, with the suffixes in rank order; the suffixes prefixed by $P = \texttt{an}$ are the range of the ranks 1 and 2 (violet), which `range()` finds by two binary searches.](../figures/string-sa.svg){#fig-15-3}
 
 <span id="lem-15-11"></span>**Lemma 15.11.** *The suffixes prefixed by
 $P$ are consecutive in $\mathit{SA}$: they are the suffixes not smaller
@@ -1261,7 +1261,7 @@ their first symbol in a balanced search tree (`std::map`), whence
 branching costs $O( \log \sigma )$ and the children are visited in the
 lexicographic order.
 
-![Figure 15.4. The suffix tree of $\texttt{banana\$}$: the internal nodes with their string depth, the leaves (shaded) with the start of their suffix, and the suffix links of the internal nodes (dashed), from $\texttt{ana}$ to $\texttt{na}$, from $\texttt{na}$ to $\texttt{a}$ and from $\texttt{a}$ to the root; the lowest common ancestor of the leaves 1 and 3 spells $\texttt{ana}$, their longest common prefix.](../figures/string-stree.svg){#fig-15-4}
+![Figure 15.4. The suffix tree of $\texttt{banana\$}$: the internal nodes (discs) with their string depth, the leaves (boxes) with the start of their suffix, and the suffix links of the internal nodes (dashed), from $\texttt{ana}$ to $\texttt{na}$, from $\texttt{na}$ to $\texttt{a}$ and from $\texttt{a}$ to the root; the lowest common ancestor of the leaves 1 and 3 spells $\texttt{ana}$, their longest common prefix.](../figures/string-stree.svg){#fig-15-4}
 
 <span id="lem-15-15"></span>**Lemma 15.15.** *The suffix tree of $T$ has
 $n + 1$ leaves and at most $n$ internal nodes, and it takes $O( n )$
@@ -1421,7 +1421,7 @@ the suffix automaton ([Blumer et al. 1985](Z-bibliography.md#ref-blumer1985);
 
 --8<-- "generated/SuffixAutomaton-extend.pseudo.md"
 
-![Figure 15.5. The suffix automaton of `abcb` (above) and of `abcbc` after `extend(c)` (below), each state with its number and its $\mathit{len}$ under it. The suffix path of the state 4 reaches the state 5, whose transition on `c` leads to the state 3 with $\mathit{len}( 3 ) = 3 \ne \mathit{len}( 5 ) + 1$; hence 3 is cloned into 7 ($\mathit{len} = 2$, the class of `bc` and `c`), and the transitions on `c` of 5 and of the start are redirected to it (shaded). The suffix links after the step are $\mathit{link}( 2 ) = \mathit{link}( 4 ) = 5$, $\mathit{link}( 3 ) = \mathit{link}( 6 ) = 7$, and the start for 1, 5 and 7.](../figures/string-sauto.svg){#fig-15-5}
+![Figure 15.5. The suffix automaton of `abcb` (above) and of `abcbc` after `extend(c)` (below), each state with its number and its $\mathit{len}$ under it. The suffix path of the state 4 reaches the state 5, whose transition on `c` leads to the state 3 with $\mathit{len}( 3 ) = 3 \ne \mathit{len}( 5 ) + 1$; hence 3 is cloned into 7 ($\mathit{len} = 2$, the class of `bc` and `c`), and the transitions on `c` of 5 and of the start are redirected to it (violet); the new state 6 and the clone 7 are orange. The suffix links after the step are $\mathit{link}( 2 ) = \mathit{link}( 4 ) = 5$, $\mathit{link}( 3 ) = \mathit{link}( 6 ) = 7$, and the start for 1, 5 and 7.](../figures/string-sauto.svg){#fig-15-5}
 
 The construction takes $O( n )$ amortized time on a constant alphabet
 ([Blumer et al. 1985](Z-bibliography.md#ref-blumer1985)). In the library
@@ -1673,7 +1673,7 @@ the most significant first:
 
 --8<-- "generated/FrontCoding-decodeLength.pseudo.md"
 
-![Figure 15.6. A sorted dictionary of eight strings, its front coding ($\ell_i$ and the rest $\hat s_i$), the lengths $r_i = | s_{i-1} | - \ell_i$ of the rear coding (with the same rests), and the front coding with buckets of $b = 4$ strings, whose anchors (shaded) are stored whole.](../figures/string-frontcoding.svg){#fig-15-6}
+![Figure 15.6. A sorted dictionary of eight strings, its front coding ($\ell_i$ and the rest $\hat s_i$), the lengths $r_i = | s_{i-1} | - \ell_i$ of the rear coding (with the same rests), and the front coding with buckets of $b = 4$ strings, whose anchors (violet) are stored whole.](../figures/string-frontcoding.svg){#fig-15-6}
 
 A string is decoded from the last string stored whole before it, and with
 no other such string the decoding of $s_i$ may scan all the dictionary
@@ -2088,7 +2088,7 @@ and 1 to the right (a single character gets the code `0`):
 
 --8<-- "generated/Huffman-huffman.pseudo.md"
 
-![Figure 15.7. The code of Huffman of the frequencies `a`:5, `b`:9, `c`:12, `d`:13, `e`:16, `f`:45: the forest before and after the first merge (the two least frequent characters shaded), and the final tree, the left edges labelled 0 and the right ones 1, each leaf with its code.](../figures/string-huffman.svg){#fig-15-7}
+![Figure 15.7. The code of Huffman of the frequencies `a`:5, `b`:9, `c`:12, `d`:13, `e`:16, `f`:45: the forest before and after the first merge (the two least frequent characters in violet, the new node in orange), and the final tree, the left edges labelled 0 and the right ones 1, each leaf with its code.](../figures/string-huffman.svg){#fig-15-7}
 
 <span id="thm-15-5"></span>**Theorem 15.5.** *The code of Huffman has the
 least expected length among the prefix codes of the given frequencies, and

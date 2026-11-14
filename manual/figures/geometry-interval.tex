@@ -6,17 +6,21 @@
 % ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
   iv/.style={rectangle split,rectangle split parts=2,
-             rectangle split horizontal,draw,font=\small\ttfamily,
-             inner xsep=1.5mm,inner ysep=1.2mm},
-  ivt/.style={iv,rectangle split part fill={adsTouched,adsTouched}},
-  ivh/.style={iv,rectangle split part fill={white,adsTouched}},
-  edge/.style={thick}
+             rectangle split horizontal,draw=white,line width=1.2pt,
+             rounded corners=1.6pt,font=\small\ttfamily,text=adsInk,
+             inner xsep=1.5mm,inner ysep=1.2mm,
+             rectangle split part fill={adsTint,adsTint}},
+  ivt/.style={iv,rectangle split part fill={adsPrimary,adsPrimary},
+              text=adsOnPrimary},
+  ivh/.style={iv,rectangle split part fill={adsTint,adsAdded}},
+  iva/.style={iv,rectangle split part fill={adsAdded,adsAdded},
+              text=adsOnAdded}
 }
 % \ivn{name}{style}{x,y}{interval}{aug}
 \newcommand{\ivn}[5]{\node[#2] (#1) at (#3)
@@ -39,13 +43,13 @@
   \begin{scope}[yshift=-40mm]
   \node[var,anchor=west] at (-62mm,0) {\texttt{insert(3,13)}};
   \ivn{r}{iv}{0,0}{5,11}{14}
-  \ivn{l}{ivh}{-32mm,-12mm}{2,8}{13}
+  \ivn{l}{ivh}{-32mm,-12mm}{2,8}{\textcolor{adsOnAdded}{13}}
   \ivn{rr}{iv}{32mm,-12mm}{9,10}{14}
   \ivn{ll}{iv}{-48mm,-24mm}{1,3}{3}
-  \ivn{lr}{ivh}{-16mm,-24mm}{4,5}{13}
+  \ivn{lr}{ivh}{-16mm,-24mm}{4,5}{\textcolor{adsOnAdded}{13}}
   \ivn{rl}{iv}{16mm,-24mm}{6,7}{7}
   \ivn{rrr}{iv}{48mm,-24mm}{12,14}{14}
-  \ivn{n}{ivt}{-26mm,-36mm}{3,13}{13}
+  \ivn{n}{iva}{-26mm,-36mm}{3,13}{13}
   \draw[edge] (r) -- (l); \draw[edge] (r) -- (rr);
   \draw[edge] (l) -- (ll); \draw[edge] (l) -- (lr);
   \draw[edge] (rr) -- (rl); \draw[edge] (rr) -- (rrr);

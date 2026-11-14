@@ -4,16 +4,15 @@
 % of the internal nodes (dashed). Build: make figures (in ../build).
 \documentclass[border=4pt]{standalone}
 \usepackage[T1]{fontenc}
-\usepackage{newpxtext,newpxmath}
-\usepackage[varqu,varl,scaled=0.95]{zi4}
+\usepackage{lmodern}
 \usepackage{tikz}
+\usepackage{lamalunga}
 \input{tikz-ads}
 \tikzset{
-  inn/.style={circle,draw,minimum size=6mm,font=\scriptsize},
-  lf/.style={rectangle,draw,fill=adsTouched,minimum size=5mm,
-             font=\small\ttfamily},
-  lab/.style={font=\small\ttfamily,fill=white,inner sep=1pt},
-  sl/.style={->,dashed,black!60}
+  inn/.style={vertex,minimum size=6.5mm,font=\scriptsize},
+  lf/.style={node,minimum width=5.5mm,minimum height=5.5mm},
+  lab/.style={font=\small\ttfamily,text=adsInk,fill=white,inner sep=1pt},
+  sl/.style={->,edge,dashed}
 }
 \begin{document}
 \begin{tikzpicture}[ads,x=14mm,y=15mm]
@@ -28,16 +27,16 @@
   \node[lf] (l1) at (2.9,-3) {1};
   \node[lf] (l4) at (5,-2) {4};
   \node[lf] (l2) at (5.9,-2) {2};
-  \draw (r) -- node[lab] {\$} (l6);
-  \draw (r) -- node[lab] {a} (a);
-  \draw (r) -- node[lab] {banana\$} (l0);
-  \draw (r) -- node[lab] {na} (na);
-  \draw (a) -- node[lab] {\$} (l5);
-  \draw (a) -- node[lab] {na} (ana);
-  \draw (ana) -- node[lab] {\$} (l3);
-  \draw (ana) -- node[lab] {na\$} (l1);
-  \draw (na) -- node[lab] {\$} (l4);
-  \draw (na) -- node[lab] {na\$} (l2);
+  \draw[edge] (r) -- node[lab] {\$} (l6);
+  \draw[edge] (r) -- node[lab] {a} (a);
+  \draw[edge] (r) -- node[lab] {banana\$} (l0);
+  \draw[edge] (r) -- node[lab] {na} (na);
+  \draw[edge] (a) -- node[lab] {\$} (l5);
+  \draw[edge] (a) -- node[lab] {na} (ana);
+  \draw[edge] (ana) -- node[lab] {\$} (l3);
+  \draw[edge] (ana) -- node[lab] {na\$} (l1);
+  \draw[edge] (na) -- node[lab] {\$} (l4);
+  \draw[edge] (na) -- node[lab] {na\$} (l2);
   \draw[sl] (ana.east) to[out=0,in=-135] (na.south west);
   \draw[sl] (na.west) -- (a.east);
   \draw[sl] (a.north east) to[out=10,in=-110] (r.south west);
