@@ -4,12 +4,12 @@
 /** @file
  * The MFSET of section 10.2 engineered, beyond the book [see `MFSet.h`]: the
  * forest of the parents in one vector of integers, where a root keeps minus
- * the size of its tree instead of a parent, so that the union by size needs
- * no second vector and a `find()` touches one array; `find()` halves the
- * path (each node on the way is made a child of its grandparent), which
+ * the size of its tree instead of a parent, so that the union by size needs no
+ * second vector and a `find()` touches one array; `find()` halves the path
+ * (every other node on the way is made a child of its grandparent), which
  * needs a single pass, no recursion and no stack, and keeps the bound of the
- * compression with the union by size (Tarjan and van Leeuwen): a sequence
- * of \f$ m \geq n \f$ operations on \f$ n \f$ elements takes
+ * compression with the union by size (Tarjan and van Leeuwen): a sequence of
+ * \f$ m \geq n \f$ operations on \f$ n \f$ elements takes
  * \f[
  *   O( n + m \, \alpha( m , n ) ) ,
  * \f]
@@ -78,10 +78,10 @@ enum class Union { SIZE ,   ///< the smaller tree under the root of the larger
                    RANK     ///< the lower rank under the higher
                    };
 
-/// how `find()` shortens the path: halving it (each node on the way made a
-/// child of its grandparent, one pass), or compressing it (all the nodes
-/// on the way made children of the root, two passes)
-enum class Compression { HALVING ,   ///< each node under its grandparent
+/// how `find()` shortens the path: halving it (every other node on the way
+/// made a child of its grandparent, one pass), or compressing it (all the
+/// nodes on the way made children of the root, two passes)
+enum class Compression { HALVING ,   ///< half the path under grandparents
                          FULL        ///< each node under the root
                          };
 

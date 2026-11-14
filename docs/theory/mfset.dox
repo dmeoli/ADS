@@ -137,8 +137,8 @@
  A find that has climbed from \f$ x \f$ to its root \f$ r \f$ may make each
  node of the path a child of \f$ r \f$ (the <em>compression</em> of section
  10.2.4), in a second pass, so that the next finds from those nodes cost one
- step. The <em>halving</em> makes each node of the path a child of its
- grandparent instead, in the same pass that climbs, and the
+ step. The <em>halving</em> makes every other node of the path a child of
+ its grandparent instead, in the same pass that climbs, and the
  <em>splicing</em> of Rem replaces a parent with a larger parent of the
  other element while two climbs go on together; both shorten every path
  they walk by about half.
@@ -149,7 +149,8 @@
  \f[
    O( m \, \alpha( m , n ) ) , \tag{1}
  \f]
- and no algorithm on a forest of pointers does better in the worst case.
+ and the bound is tight for each of these combinations (Tarjan; Tarjan
+ and van Leeuwen).
 
  The argument, which the book sketches and Tarjan and van Leeuwen give in
  full, charges each step of a find either to the operation, at most a
@@ -182,9 +183,9 @@
  \section theory_mfset_rollback Undo of the merges and offline connectivity
 
  Beyond the book, `RollbackUnionFind` undoes its merges in the reverse of
- their order: each `merge()` changes at most two words, the parent of the
- root that it hangs and the rank of the other root, and pushes them on a
- stack, from which `undo()` puts them back in \f$ O( 1 ) \f$;
+ their order: each `merge()` changes at most three words, the parent of
+ the root that it hangs and the size and the rank of the other root, and
+ pushes them on a stack, from which `undo()` puts them back in \f$ O( 1 ) \f$;
  `rollback( t )` undoes the merges back to the checkpoint \f$ t \f$, the
  number of merges done when `checkpoint()` gave it. The forest keeps the
  union by rank and gives up any change of the paths: a compression would
@@ -194,9 +195,10 @@
  each time. With no compression, Lemma 2 bounds every find by
  \f$ O( \log n ) \f$ in the worst case, not only amortized, and an undo
  restores exactly the forest before the merge, heights and ranks included;
- Westbrook and Tarjan show that, with backtracking, this is as good as any
- of the usual compressions, \f$ \Theta( \log n ) \f$ per operation in the
- worst case of a sequence.
+ Westbrook and Tarjan show that some forms of compression, adapted to the
+ undo, give \f$ O( \log n / \log \log n ) \f$ amortized time per
+ operation, optimal for the separable algorithms on pointers; the simpler
+ forest keeps its \f$ O( \log n ) \f$ for each operation.
 
  The undo makes it possible to answer offline the questions of connectivity
  on a graph whose edges come and go (`offlineConnectivity()`), when the
@@ -210,10 +212,10 @@
  it leaves it.
 
  <em>Lemma 4 (the segment tree over the times).</em> An interval of times
- is held by at most \f$ 2 \lceil \log_2 q \rceil \f$ nodes of the segment
- tree, and when the visit reaches the leaf of a question the forest holds
- exactly the edges alive at its time; hence the answers are those of a
- union-find built again at each question, and the time is
+ is held by at most \f$ \max( 1 , 2 \lceil \log_2 q \rceil ) \f$ nodes of
+ the segment tree, and when the visit reaches the leaf of a question the
+ forest holds exactly the edges alive at its time; hence the answers are
+ those of a union-find built again at each question, and the time is
  \f[
    O( k \log q \log n ) = O( k \log k \log n ) . \tag{2}
  \f]

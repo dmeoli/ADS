@@ -10,8 +10,9 @@
  * `RollbackUnionFind` is the forest of the parents with the union by rank
  * and without any compression of the paths, so that `find()` costs
  * \f$ O( \log n ) \f$ in the worst case (Lemma 2 of \ref theory_mfset_union);
- * each `merge()` changes at most two words, which a record on a stack keeps,
- * `undo()` puts them back in \f$ O( 1 ) \f$, and `rollback( t )` undoes the
+ * each `merge()` changes at most three words (a parent, a size and a
+ * rank), which a record on a stack keeps, `undo()` puts them back in
+ * \f$ O( 1 ) \f$, and `rollback( t )` undoes the
  * merges back to the checkpoint \f$ t \f$, the number of merges done when
  * `checkpoint()` gave it (a merge of two elements already together leaves a
  * record too, so that the checkpoints count the calls). The space is

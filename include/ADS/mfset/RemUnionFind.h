@@ -26,12 +26,13 @@
  * joined, often well below the roots, and each step both compresses and
  * moves on, so that the two finds and the link of the union by rank become
  * one interleaved walk. `find( x )` climbs with the halving of the path,
- * each node on the way made a child of its grandparent, in one pass. The
- * link by index is the naive link, which with the splicing or the halving
- * takes \f$ O( m \log_{1 + m / n} n ) \f$ time for \f$ m \f$ operations in
- * the worst case (Tarjan and van Leeuwen), and \f$ O( m \alpha( m , n ) ) \f$
- * expected time, the bound of the union by rank, when the elements are
- * numbered in a random order (Goel, Khanna, Larkin and Tarjan).
+ * every other node on the way made a child of its grandparent, in one
+ * pass. The link by index is the naive link, which with the splicing or
+ * the halving takes \f$ O( m \log_{1 + m / n} n ) \f$ time for \f$ m \f$
+ * operations in the worst case (Tarjan and van Leeuwen), and
+ * \f$ O( m \alpha( m , n ) ) \f$ expected time, the bound of the union by
+ * rank, when the elements are numbered in a random order (Goel, Khanna,
+ * Larkin and Tarjan).
  *
  * The contracts [see `Contract.h`]: the elements are in \f$ [ 0 , n ) \f$,
  * \f$ n < 2^{32} \f$; `find()` gives a root and after `merge()` \f$ x \f$ and

@@ -8,7 +8,7 @@ with a partition of a set of elements into disjoint components that only
 merge, and with the question of whether two elements are in the same
 component. It is the structure that follows the connected components of a
 graph whose edges arrive one at a time (the cycles that the algorithm of
-Kruskal must refuse, cf. chapter 14), and the classes of an equivalence
+Kruskal must refuse, cf. [Chapter 14](14-graph.md#ch-14)), and the classes of an equivalence
 relation given by its pairs. The headers of `ADS/mfset` realize it on lists
 ([§11.2](11-mfset.md#sec-11-2)) and on a forest of parents with the
 heuristics of [Montresor 2025, §10.2](Z-bibliography.md#ref-montresor2025)
@@ -38,7 +38,10 @@ $\mathrm{merge}( x , y )$ replaces the components of $x$ and of $y$ with
 their union, and components are never split. Some specifications require
 $x$ and $y$ to be in distinct components; all the realizations of the
 chapter relax this precondition, since a `merge()` of two elements already
-together returns false and leaves the partition as it was. Throughout the chapter $m$ is
+together returns false and leaves the partition as it was. Each realization
+also has `same(x, y)`, i.e., the test (11.1), `n()`, the number of the
+elements, and (but for `ListMFSet`) `count()`, the number of the
+components. Throughout the chapter $m$ is
 the number of the operations of a sequence of finds and merges, $p[ x ]$
 the parent of $x$ in a forest, $\mathit{rank}[ r ]$ and
 $\mathit{size}[ r ]$ the rank and the number of nodes of the tree of the
@@ -94,7 +97,7 @@ each operation costs $O( 1 )$ time. $\square$
 The bound is tight, as the merges of the pairs, then of the quadruples,
 and so on, show: each round relabels $n / 2$ elements, and there are
 $\log_2 n$ rounds. The counter `relabels()` lets one check
-[Lemma 11.1](11-mfset.md#lem-11-1) on any sequence, and `members(x)` gives
+[Lemma 11.1](11-mfset.md#lem-11-1) on any sequence. Also, `members(x)` gives
 the elements of the component of $x$, which a forest cannot give without
 a visit of all the elements.
 
@@ -112,7 +115,8 @@ expensive, on a forest the converse. With no heuristic, the root of $y$
 goes under that of $x$, and $n - 1$ merges may build a path of $n$ nodes,
 whose deepest node costs $n - 1$ steps to each find. Two heuristics bound
 the height of the trees, and may be switched off to study them (the
-argument `Union` of the constructor).
+argument `Union` of the constructor, `Union::NONE`, `RANK` or `SIZE`, and
+its argument `compress`).
 
 * The *union by rank* ([Montresor 2025,
   §10.2.3](Z-bibliography.md#ref-montresor2025)) keeps for each root $r$ a
@@ -122,7 +126,7 @@ argument `Union` of the constructor).
   whose size grows by that of the smaller tree (on a tie, the root of $y$
   goes under that of $x$).
 
-![Figure 11.2. Two trees of an `MFSet` of 7 elements with the union by rank (the element 1 is a tree of its own), before and after `merge(0, 4)`: the root 2, of rank 1, goes under the root 5, of rank 2, whose rank does not change; below, the vector of the parents after the merge, the violet place being the one written.](../figures/mfset-forest.svg){#fig-11-2}
+![Figure 11.2. Two trees of an `MFSet` of 7 elements with the union by rank and no compression (the element 1 is a tree of its own), before and after `merge(0, 4)`: the root 2, of rank 1, goes under the root 5, of rank 2, whose rank does not change; below, the vector of the parents after the merge, the violet place being the one written.](../figures/mfset-forest.svg){#fig-11-2}
 
 <span id="alg-11-2"></span>**Algorithm 11.2.** The operations of `MFSet`
 ([Montresor 2025, §10.2.2, §10.2.3 and
@@ -142,11 +146,11 @@ height at most $\log_2 \mathit{size}[ r ]$.*
 
 *Proof.* By induction on the merges. A singleton has rank 0 and one node.
 A merge of two roots of different ranks keeps the rank and the height of
-the higher tree, and only adds nodes to it; a merge of two roots of equal
+the higher tree, and only adds nodes to it. A merge of two roots of equal
 rank $r$ gives the rank $r + 1$ and a height at most $r + 1$ to a tree of
 at least $2^r + 2^r = 2^{r+1}$ nodes. With the union by size, a node goes
-one level down only when its tree joins one at least as large, i.e., when
-the tree that holds it at least doubles, as in the proof of
+one level down only when its tree joins one at least as large. The tree
+that holds it then at least doubles, as in the proof of
 [Lemma 11.1](11-mfset.md#lem-11-1); its depth is thus at most
 $\log_2 \mathit{size}[ r ]$. $\square$
 
@@ -161,7 +165,7 @@ and no stack:
 --8<-- "generated/MFSet-find.cpp"
 ```
 
-![Figure 11.3. A path from 0 to its root 5, and the same nodes after `find(0)` with the compression (each node of the path a child of the root) and with the halving of [§11.4](11-mfset.md#sec-11-4) (each node of the way a child of its grandparent); the violet nodes are those whose parent changed.](../figures/mfset-paths.svg){#fig-11-3}
+![Figure 11.3. A path from 0 to its root 5, and the same nodes after `find(0)` with the compression (each node of the path a child of the root) and with the halving of [§11.4](11-mfset.md#sec-11-4) (every other node of the way a child of its grandparent); the violet nodes are those whose parent changed.](../figures/mfset-paths.svg){#fig-11-3}
 
 With the compression a rank is no longer the height of its tree, but only
 an upper bound to it (exercise 10.7 of [Montresor
@@ -177,20 +181,65 @@ $$
 O( m \, \alpha( m , n ) ) \tag{11.2}
 $$
 
-*time, and no algorithm on a forest of pointers does better in the worst
-case ([Tarjan 1975](Z-bibliography.md#ref-tarjan1975); [Tarjan and van
-Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)).*
+*time, and the bound is tight for each of these combinations ([Tarjan
+1975](Z-bibliography.md#ref-tarjan1975); [Tarjan and van Leeuwen
+1984](Z-bibliography.md#ref-tarjan1984)).*
 
-We do not repeat the proof, which [Montresor 2025,
+We do not repeat the proof of (11.2), which [Montresor 2025,
 §10.2.4](Z-bibliography.md#ref-montresor2025) sketches and [Tarjan and van
-Leeuwen 1984](Z-bibliography.md#ref-tarjan1984) give in full; its idea is
-the following. Each step of a find is charged either to the operation (at
-most a constant number of steps per operation) or to the node, whose
-parent then changes to one of much larger rank. Since the ranks increase
-along a path, and a node of rank $r$ is one of at most $n / 2^r$, the
-charges to the nodes sum to $O( m \, \alpha( m , n ) )$ over the levels
-of the inverse of the function of Ackermann. We remark that the bound
-(11.2) is amortized: a single find may still cost $\Theta( \log n )$ time.
+Leeuwen 1984](Z-bibliography.md#ref-tarjan1984) give in full. We prove
+instead the weaker bound of [Hopcroft and Ullman
+1973](Z-bibliography.md#ref-hopcroft1973), whose argument (the charge of
+each step of a find either to the operation or to the node, whose parent
+then becomes one of larger rank) is the one that the proof of (11.2)
+refines over the levels of the function of Ackermann. Let
+$T( 0 ) = 1$ and $T( g + 1 ) = 2^{T( g )}$, so that $T( 1 ) = 2$,
+$T( 2 ) = 4$, $T( 3 ) = 16$ and $T( 4 ) = 65536$, and let $\log^* n$ be
+the least $g$ with $T( g ) \ge n$.
+
+<span id="lem-11-4"></span>**Lemma 11.4.** *With the union by rank and
+the compression of the paths, a sequence of $m$ finds and merges on $n$
+elements costs $O( ( m + n ) \log^* n )$ time.*
+
+*Proof.* A merge costs two finds and $O( 1 )$, and hence it suffices to
+count the steps of the finds, i.e., the nodes of the paths that they
+climb. Three facts hold throughout. (i) The rank of a node no longer
+changes once the node is not a root. (ii) The ranks increase strictly from
+a child to its parent, since a merge hangs a root under one of larger rank
+or raises the rank of the new parent, and a compression gives a node a
+parent among its ancestors. (iii) At most $n / 2^r$ nodes have rank $r$.
+Indeed, the ranks are those of the same sequence with no compression,
+which has the same roots, and in its forest a node of rank $r$ has at least $2^r$ descendants by
+[Lemma 11.2](11-mfset.md#lem-11-2), and two nodes of equal rank have
+disjoint descendants, since a common one would make one of them an
+ancestor of the other, of larger rank by (ii). We put the rank $r$ in the *group* 0 if
+$r \le 1$, and in the group $g \ge 1$ if $T( g - 1 ) < r \le T( g )$; since
+$r \le \log_2 n$, there are at most $\log^* n + 1$ groups. We charge a step of a find
+from a node $x$ to the find if $x$ is the root or a child of the
+root, or if the parent of $x$ has a rank of a higher group than that of
+$x$; by (ii), the last case happens at most $\log^* n + 1$ times along a
+path, and a find takes at most $\log^* n + 3$ such charges. Any other step is charged to $x$,
+whose parent $p$ is not the root, and the compression then gives $x$ the
+root as its parent, of rank larger than that of $p$ by (ii). Hence each
+charge to $x$ raises the rank of its parent by at least 1, while that of
+$x$ stays the same by (i), and once the rank of the parent is in a higher
+group $x$ is never charged again. A node of rank in the group $g \ge 1$ is
+thus charged fewer than $T( g )$ times, and one of the group 0 at most
+once. By (iii) the group $g \ge 1$ has at most
+$\sum_{r > T( g - 1 )} n / 2^r \le n / 2^{T( g - 1 )} = n / T( g )$ nodes,
+which take fewer than $n$ charges in all, and the group 0 takes at most
+$n$. Summing over the at most $\log^* n + 1$ groups, the charges to the
+nodes are $O( n \log^* n )$, and those to the finds $O( m \log^* n )$.
+$\square$
+
+The same proof holds with the union by size, once the rank of a node is
+taken as $\lfloor \log_2 s \rfloor$, $s$ the size of its tree when it was
+hung (the current size for a root): a node is hung only under a root of at
+least twice its size, which gives (ii) and (iii). Since $\log^* n \le 5$
+for $n \le 2^{65536}$, [Lemma 11.4](11-mfset.md#lem-11-4) already makes
+the amortized cost constant for any practical purpose, and (11.2) improves
+it only in theory. We remark that both bounds are amortized: a single find
+may still cost $\Theta( \log n )$ time.
 
 Finally, `components(G)` builds the MFSET of the connected components of
 an unoriented graph by merging the ends of each edge ([Montresor 2025,
@@ -209,24 +258,43 @@ an unoriented graph $G$ by an MFSET ([Montresor 2025,
 The contracts of `MFSet` check that the parents form a forest of
 `count()` trees, that the ranks grow strictly towards the roots with the
 union by rank, and that the sizes count the nodes of their trees with the
-union by size; the counter `steps()` gives the steps of the climbs, on
-which the bounds above can be measured.
+union by size. The accessors `parent(x)`, `rank(x)` and `size(x)` read the
+three vectors (the size being meaningful at a root with the union by size
+only). The counter `steps()` gives the steps of the climbs, on which the
+bounds above can be measured. With the compression and no union by rank or
+by size, a sequence of $m \ge n$ operations costs
+$\Theta( m \log_{1 + m / n} n )$ time in the worst case ([Tarjan and van
+Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)), between the two bounds
+of [Table 11.1](11-mfset.md#tab-11-1).
 
 ## 11.4 Engineered forests {#sec-11-4}
 
-`DisjointSets<L, C>` (and its instance `UnionFind`, with the union by
-size and the halving) keeps the forest in one vector of integers. A root
-holds minus the size of its tree (or minus one less its rank, with
-`Union::RANK`) in place of a parent, so that the union needs no second
-vector and a find touches one array only, of $4 n$ bytes. Its `find()`
-shortens the path by *halving* it: each node on the way is made a child of
-its grandparent, in the same pass that climbs, with no second pass and no
-stack ([Tarjan and van Leeuwen 1984](Z-bibliography.md#ref-tarjan1984);
+`DisjointSets<L, C>` (and its instance `UnionFind`, i.e.,
+`DisjointSets<>`, with the union by size and the halving) keeps the forest
+in one vector of integers. A root $r$ holds $-\mathit{size}[ r ]$ (or
+$-1 - \mathit{rank}[ r ]$, with `L` equal to `Union::RANK`) in place of a
+parent; hence the union needs no second vector, and a find touches one
+array only, of $4 n$ bytes. In either encoding the more negative root is
+the larger tree, which takes the other one under it, and on a tie the root
+of $x$ goes under that of $y$ (the converse of `MFSet`). Its `find()`
+shortens the path by *halving* it: every other node on the way is made a
+child of its grandparent, in the same pass that climbs, with no second pass
+and no stack ([Tarjan and van Leeuwen
+1984](Z-bibliography.md#ref-tarjan1984);
 [Figure 11.3](11-mfset.md#fig-11-3)). The halving keeps the bound (11.2)
 of the compression, and a find still costs $O( \log n )$ in the worst
 case, by [Lemma 11.2](11-mfset.md#lem-11-2), since a tree of height $h$
 has at least $2^h$ nodes ([Algorithm 11.4](11-mfset.md#alg-11-4)). The
-full compression, in two passes, is the alternative `Compression::FULL`.
+full compression, in two passes, is the alternative `C` equal to
+`Compression::FULL` (the two enumerations `Union` and `Compression` of the
+namespace are distinct from the `MFSet::Union` of
+[§11.3](11-mfset.md#sec-11-3)). Besides `find()`, `merge()` and `same()`,
+the class has `reset(n)`, which returns to the $n$ singletons in $O( n )$
+time. It also has `n()`, `count()` and, with the union by size only (a constraint
+`requires` of the member), `size(x)`, the number of the elements of the
+component of $x$; its contracts check, at the highest level, that the
+parents make a forest of `count()` trees whose roots hold their sizes, or
+ranks that bound their heights.
 
 <span id="alg-11-4"></span>**Algorithm 11.4.** The operations of
 `UnionFind` (the halving of [Tarjan and van Leeuwen
@@ -262,7 +330,9 @@ two sets are one. Otherwise, the parent of $a$ is replaced by the larger
 parent of $b$ (the splicing), and the climb goes on from the old parent of
 $a$. When the two climbs reach the same parent, $x$ and $y$ were already
 in the same set ([Algorithm 11.5](11-mfset.md#alg-11-5) and
-[Table 11.2](11-mfset.md#tab-11-2)). Its `find()` halves the path.
+[Table 11.2](11-mfset.md#tab-11-2)). Its `find()` halves the path, and the
+class also has `same()`, `n()`, `count()` and `parent(x)`; the elements
+are of type `std::uint32_t`, and the constructor requires $n < 2^{32}$.
 
 <span id="alg-11-5"></span>**Algorithm 11.5.** The operations of
 `RemUnionFind` (the algorithm of Rem with splicing as [Dijkstra
@@ -285,7 +355,7 @@ splicing, and `merge(2, 0)` then finds them together after one more.
 | `merge(2, 0)` | 2, 0 | 3, 4 | splice: $p[ 2 ] \gets 4$, $a \gets 3$ | $( 4 , 4 , 4 , 4 , 5 , 5 )$ |
 | | 3, 0 | 4, 4 | the same parent: false | $( 4 , 4 , 4 , 4 , 5 , 5 )$ |
 
-<span id="lem-11-4"></span>**Lemma 11.4.** *Each operation of
+<span id="lem-11-5"></span>**Lemma 11.5.** *Each operation of
 `RemUnionFind` keeps (11.3), and `merge(x, y)` joins the sets of $x$ and
 $y$ and returns true if they were distinct, and returns false otherwise,
 after at most $2 n$ steps.*
@@ -303,8 +373,8 @@ two trees; since the splicings only move elements of $X \cup Y$ from one
 tree to the other, the two trees then hold $X \cup Y$. If $X = Y$, no root is ever linked (the root of the set is
 the largest element, and the node of smaller parent is a root only if both
 parents are that root), and the splicings only shorten the paths. Each
-step moves $a$ to a strictly larger index, which happens at most $2 n$
-times in all for the two nodes. $\square$
+step moves $a$ to a strictly larger index; hence there are at most $2 n$
+steps for the two nodes. $\square$
 
 The climb stops as soon as the sets are joined, often well below the
 roots, and each step both compresses and moves on; the two finds and the
@@ -328,16 +398,20 @@ sets of up to 4096 elements.
 
 `RollbackUnionFind` undoes its merges in the reverse of their order
 ([Mannila and Ukkonen 1986](Z-bibliography.md#ref-mannila1986)). Each
-`merge()` changes at most two words, the parent of the root that it hangs
-and the rank of the other root (and the size of the other root), and
-pushes on a stack $R$ a record with the root hung, the other root and
-whether the rank grew. `undo()` pops a record and puts the words back, in
+`merge()` changes at most three words, i.e., the parent of the root that it
+hangs and the size and the rank of the other root. It pushes on a stack
+$R$ a record with the root hung, the other root and whether the rank
+grew. `undo()` pops a record and puts the words back, in
 $O( 1 )$ time, and `rollback(t)` undoes the merges back to the checkpoint
 $t$, the number of merges done when `checkpoint()` gave it
 ([Algorithm 11.6](11-mfset.md#alg-11-6) and
 [Figure 11.4](11-mfset.md#fig-11-4)). A merge of two elements already
 together pushes an empty record, and the checkpoints thus count the calls.
-The space is $12 n$ bytes, and 12 bytes per record.
+The space is $12 n$ bytes (the parents, the ranks and the sizes), and 12
+bytes per record. The class also has `same()`, `size(x)` (the number of
+the elements of the component of $x$), `n()`, `count()` and `reset(n)`,
+which returns to the $n$ singletons and empties the stack; `undo(k)`
+undoes the last $k$ merges, one by default.
 
 ![Figure 11.4. A `RollbackUnionFind` with two roots of rank 0 and the stack $R$ of the records, before `merge(0, 1)`, after it (0 under 1, whose rank grew, and the record pushed) and after `undo()`, which pops the record and restores the forest.](../figures/mfset-rollback.svg){#fig-11-4}
 
@@ -357,10 +431,10 @@ recorded, and its amortized bound (11.2) does not survive the undo: a
 sequence that rolls back the merges and does them again can make the same
 long find pay each time.
 
-<span id="lem-11-5"></span>**Lemma 11.5.** *In `RollbackUnionFind`,
+<span id="lem-11-6"></span>**Lemma 11.6.** *In `RollbackUnionFind`,
 `undo()` restores the forest, the ranks and the sizes as they were before
 the merge that it undoes, and each `find()` costs $O( \log n )$ time in
-the worst case, not only amortized.*
+the worst case.*
 
 *Proof.* With no compression, a merge changes only the parent of the root
 it hangs, the size of the other root and possibly its rank; the record
@@ -372,10 +446,14 @@ forest is thus always one that the union by rank could build with no
 undo, and [Lemma 11.2](11-mfset.md#lem-11-2) bounds the height of its
 trees. $\square$
 
-[Westbrook and Tarjan 1989](Z-bibliography.md#ref-westbrook1989) show
-that, with backtracking, no compression does better than this, i.e.,
-$\Theta( \log n )$ per operation in the worst case of a sequence. The code
-of the undo follows [Algorithm 11.6](11-mfset.md#alg-11-6):
+It is fair to remark that this is not the best amortized bound with
+backtracking: [Westbrook and Tarjan
+1989](Z-bibliography.md#ref-westbrook1989) show that some forms of
+compression, adapted to the undo, give $O( \log n / \log \log n )$
+amortized time per operation, and that no separable algorithm on pointers
+does better. The header keeps the simpler forest, whose bound
+$O( \log n )$ holds for each single operation. The code of the undo follows
+[Algorithm 11.6](11-mfset.md#alg-11-6):
 
 ```cpp
 --8<-- "generated/RollbackUnionFind-undo.cpp"
@@ -383,11 +461,18 @@ of the undo follows [Algorithm 11.6](11-mfset.md#alg-11-6):
 
 The undo makes it possible to answer offline the questions of
 connectivity on a graph whose edges come and go
-(`offlineConnectivity()`), when the sequence of $k$ insertions, deletions
-and questions (whether two nodes are connected, or how many components
-there are) is known in advance. Each edge lives on an interval of times
+(`offlineConnectivity(n, ops)`), when the sequence of $k$ insertions,
+deletions and questions (whether two nodes are connected, or how many
+components there are) is known in advance. Each operation is a
+`ConnectivityOp`, whose `kind` is `INSERT`, `DELETE`, `CONNECTED` or
+`COMPONENTS` and whose `u` and `v` are the two nodes (ignored by
+`COMPONENTS`). The edges are unoriented, so that $[ v , u ]$ deletes the
+edge inserted as $[ u , v ]$, and the result holds the answers in the order
+of the questions, 1 or 0 for `CONNECTED` and the number of the components
+for `COMPONENTS`. Each edge lives on an interval of times
 $[ s , e )$, from its insertion to its deletion (or to the end); the times
-are counted in questions, and the $q$ questions are the leaves of a
+are counted in questions (an edge inserted and deleted with no question in
+between lives on an empty interval and is dropped), and the $q$ questions are the leaves of a
 segment tree. The node of the range $[ a , b )$ holds the list $L$ of the
 edges that live on all of $[ a , b )$ but not on all of the range of its
 parent ([Figure 11.5](11-mfset.md#fig-11-5)). A visit in depth of the
@@ -397,7 +482,7 @@ leaves the node ([Algorithm 11.7](11-mfset.md#alg-11-7)). Of parallel
 edges, the last one inserted dies first, and a loop $[ u , u ]$ is
 allowed and joins no component.
 
-![Figure 11.5. The segment tree over $q = 4$ questions, and the nodes (violet) whose list $L$ holds an edge $e$ alive from the question 1 to the end, i.e., on the times from 1 to 4.](../figures/mfset-segtree.svg){#fig-11-5}
+![Figure 11.5. The segment tree over $q = 4$ questions, and the nodes (violet) whose list $L$ holds an edge $e$ alive from the question 1 to the end, i.e., on the range $[ 1 , 4 )$ of the questions 1, 2 and 3.](../figures/mfset-segtree.svg){#fig-11-5}
 
 <span id="alg-11-7"></span>**Algorithm 11.7.** The offline connectivity
 by the divide and conquer of [Eppstein
@@ -407,31 +492,48 @@ edges of the node $x$ of the segment tree.
 
 --8<-- "generated/RollbackUnionFind-offlineConnectivity.pseudo.md"
 
-<span id="lem-11-6"></span>**Lemma 11.6.** *An interval of times is held
-by at most $2 \lceil \log_2 q \rceil$ nodes of the segment tree, and when
-the visit reaches the leaf of a question, the forest holds exactly the
-edges alive at its time. Hence the answers are those of a union-find built
-again at each question, and the time is*
+<span id="lem-11-7"></span>**Lemma 11.7.** *An interval of times is held
+by at most $\max( 1 , 2 \lceil \log_2 q \rceil )$ nodes of the segment
+tree, and when the visit reaches the leaf of a question, the forest holds
+exactly the edges alive at its time. Hence the answers are those of a
+union-find built again at each question, and the time is*
 
 $$
 O( k \log q \log n ) = O( k \log k \log n ) . \tag{11.4}
 $$
 
-*Proof.* At each level of the segment tree, at most two nodes hold part of
-the interval without holding all of it, as in the decomposition of a
-range by a segment tree; the interval is thus split into at most two
-nodes per level. The edges merged at a leaf are those of its ancestors,
-i.e., those whose interval holds a range around the leaf, which are the
-edges alive at its time; the rollback when the visit leaves a node
-restores the forest of its parent, by [Lemma 11.5](11-mfset.md#lem-11-5).
-Each edge is merged and undone $O( \log q )$ times, at $O( \log n )$ each
-by [Lemma 11.2](11-mfset.md#lem-11-2), which gives (11.4), with
-$O( k \log k )$ space for the lists. $\square$
+*Proof.* Since the middle $c$ of a range $[ a , b )$ halves it rounding
+up, the segment tree has depth at most $\lceil \log_2 q \rceil$, and the
+ranges of the nodes of one depth are disjoint. Let $[ s , e )$ be the
+interval; a node that `add()` reaches and that neither holds its range in
+$[ s , e )$ nor is disjoint from it (a *partial* node) has $s$ or $e$
+strictly inside its range, and hence there are at most two partial nodes
+per depth, one for $s$ and one for $e$. A node that takes the interval is
+a child of a partial node, and a partial node has at most one such child:
+if both its children were inside $[ s , e )$, so would be its range. If the
+root takes the interval, that is the only node; otherwise the nodes taken
+lie at the depths 1 to $\lceil \log_2 q \rceil$, at most two per depth,
+since each is the child of one of the at most two partial nodes of the
+depth above. As for the leaves, the ranges of the
+nodes taken partition $[ s , e )$. Hence exactly one of the ancestors
+of the leaf $a$ (the leaf included) holds the edge if $a \in [ s , e )$,
+and none otherwise; an edge is alive at the question $a$ exactly when
+$s \le a < e$, since $s$ and $e$ are the numbers of the questions before
+its insertion and before its deletion. The visit merges at a node the edges
+of its list and rolls back to its checkpoint when it leaves it, which by
+[Lemma 11.6](11-mfset.md#lem-11-6) restores the forest of the parent;
+hence at the leaf $a$ the forest holds the edges of the lists of its
+ancestors, i.e., those alive at $a$, each merged once. Each edge is thus
+merged and undone at most $\max( 1 , 2 \lceil \log_2 q \rceil )$
+times, in $O( \log n )$ and $O( 1 )$ time respectively (by
+[Lemma 11.2](11-mfset.md#lem-11-2) for the merge). The visit enters
+$2 q - 1$ nodes, and the $q$ answers cost $O( \log n )$ each, which gives
+(11.4) with $q \le k$; the lists take $O( k \log k )$ space. $\square$
 
 With the contraction of the graph at each level of the divide and conquer
 ([Eppstein 1994](Z-bibliography.md#ref-eppstein1994); [Peng et al.
 2019](Z-bibliography.md#ref-peng2019)) the bound falls to $O( k \log n )$,
-at the price of a far longer code, which the rollback avoids.
+at the price of a far longer code; the rollback avoids it.
 
 ## 11.6 The realizations compared {#sec-11-6}
 
@@ -449,7 +551,8 @@ its merges early and takes no sizes. [Patwary et al.
 2010](Z-bibliography.md#ref-patwary2010) found the two close to each
 other, and the ranking may well depend on the order of the merges and on
 the size of the sets; the comparison on the workloads of the library
-belongs to Appendix B, where it will be made on an idle machine.
+belongs to [Appendix B](B-benchmarks.md#app-B), where it will be made on
+an idle machine.
 `RollbackUnionFind` is slower per operation by design, since it gives up
 the compression, and is used only when the merges must be undone.
 
@@ -476,7 +579,7 @@ offline dynamic connectivity is the divide and conquer of [Eppstein
 1994](Z-bibliography.md#ref-eppstein1994). A union-find in which several
 threads merge at once, by compare-and-swap on the parents, is in
 `ADS/concurrent/ConcurrentUnionFind.h` and is treated with the concurrent
-structures (chapter 24).
+structures ([Chapter 24](24-concurrent.md#ch-24)).
 
 ## 11.8 Exercises {#sec-11-8}
 
