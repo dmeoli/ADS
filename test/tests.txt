@@ -1935,6 +1935,7 @@ ods_trees  ods-ex8.8.weight-rebuild            WeightBalancedTree by rebuilds
 ods_trees  ods-ex8.9.countdown                 CountdownTree
 ods_trees  ods-ex8.10.dynamite                 DynamiteTree
 ods_trees  ods-ex8.11.order-maintenance        Sequence, order maintenance
+ods_trees  ods-ex8.11.order-constant           O(1) amortized labels
 ods_trees  ods9.2.left-leaning-red-black       section 9.2, RedBlackTree
 ods_trees  ods-ex9.1.two-four-tree             ex. 9.1 and 9.8, 2-4 view
 ods_trees  ods-ex9.10.red-black-join           ex. 9.10 and 9.11, join

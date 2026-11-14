@@ -1126,6 +1126,47 @@ ADS_TEST( "ods-ex8.11.order-maintenance" )
  CHECK_THROWS( L.remove( nullptr ) , contract_violation );
  }
 
+ADS_TEST( "ods-ex8.11.order-constant" )
+{
+ // the labels written per insertion stay bounded as n grows (O( 1 )
+ // amortized), at the front, always after the newest element, always
+ // after the first one, and at random places, with removals among them
+ auto work = []( int n , int pattern ) {
+  OrderMaintenanceList< int > L;
+  using E = OrderMaintenanceList< int >::Element;
+  std::vector< E > all;
+  std::mt19937 g( unsigned( 89 + pattern ) );
+  E last = nullptr , head = nullptr;
+  for( int s = 0 ; s < n ; ++s ) {
+   E e = nullptr;
+   if( pattern == 1 ) e = last;
+   else if( pattern == 2 ) e = head;
+   else if( pattern == 3 && ! all.empty() ) e = all[ g() % all.size() ];
+   last = L.addAfter( e , s );
+   if( ! head ) head = last;
+   all.push_back( last );
+   if( ( pattern == 3 ) && ( g() % 5 == 0 ) ) {
+    const std::size_t i = g() % all.size();
+    if( all[ i ] != head ) {
+     if( all[ i ] == last ) last = nullptr;
+     L.remove( all[ i ] );
+     all[ i ] = all.back();
+     all.pop_back();
+     }
+    }
+   }
+  for( E x = L.first() , y = x ? L.next( x ) : nullptr ; y ;
+       x = y , y = L.next( y ) )
+   CHECK( L.testBefore( x , y ) && ! L.testBefore( y , x ) );
+  return( double( L.relabelWork().second ) / n );
+  };
+ for( int pattern = 0 ; pattern < 4 ; ++pattern ) {
+  const double small = work( 1 << 12 , pattern ) ,
+               large = work( 1 << 17 , pattern );
+  CHECK( ( large <= 8 ) && ( large <= small + 1 ) );
+  }
+ }
+
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CHAPTER 9 ----------------------------------*/
 /*--------------------------------------------------------------------------*/

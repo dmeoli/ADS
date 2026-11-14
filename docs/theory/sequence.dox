@@ -763,25 +763,68 @@
  whatever the order of the operations (Lemma 7.1 of Morin), and its split
  and join at an index are those of a treap on the keys.
 
- `OrderMaintenanceList` labels each node of a scapegoat tree by its path,
- so that `testBefore()` compares two words: the root has the label
- \f$ 2^{63} \f$ and the children of a node of label \f$ \ell \f$, whose lowest
- bit set is \f$ 2^j \f$, the labels \f$ \ell \pm 2^{j-1} \f$, which keeps the
- labels in symmetric order and holds a tree of height up to 63. The
- scapegoat tree with \f$ b = 3 / 2 \f$ has height at most
- \f$ \log_{3/2} q \f$, below 63 for fewer than \f$ 10^{11} \f$ nodes; a rebuild
- relabels the subtree it rebuilds in \f$ O( s ) \f$, inside the
- \f$ O( s ) \f$ of the rebuild, so that an insertion costs
- \f$ O( \log n ) \f$ amortized (Lemma 10 of \ref theory_tree_morin). A
- removal cannot splice its node, which would lift a subtree and change its
- labels, and marks it dead instead; the whole tree is rebuilt without the
- dead nodes when they are half of them, which costs \f$ O( n ) \f$ every
- \f$ n / 2 \f$ removals. Dietz and Sleator, and Bender et al. with a simpler
- relabeling, reach \f$ O( 1 ) \f$ amortized insertions with labels of
- \f$ O( \log n ) \f$ bits; the scapegoat labels are the solution of the
- exercise, \f$ O( \log n ) \f$.
+ The solution that exercise 8.11 has in mind labels each node of a
+ scapegoat tree by its path, so that the order is a comparison of two
+ words: the root has the label \f$ 2^{63} \f$ and the children of a node of
+ label \f$ \ell \f$, whose lowest bit set is \f$ 2^j \f$, the labels
+ \f$ \ell \pm 2^{j-1} \f$, which keeps the labels in symmetric order for a
+ tree of height up to 63; a rebuild relabels the subtree it rebuilds inside
+ its own \f$ O( s ) \f$, while a rotation would change the labels of a
+ whole subtree, which is why the exercise sits in the chapter of the
+ partial rebuilding, and an insertion costs \f$ O( \log n ) \f$ amortized
+ (Lemma 10 of \ref theory_tree_morin). `OrderMaintenanceList` does better,
+ \f$ O( 1 ) \f$ amortized, by the list labeling of Bender, Cole, Demaine,
+ Farach-Colton and Zito on two levels: buckets of at most \f$ B = 64 \f$
+ consecutive elements with local labels, and labels of the buckets in
+ \f$ [ 0 , 2^{63} ) \f$, kept by the rule of the densities. A new bucket
+ takes the middle of the gap after its predecessor \f$ b \f$ if the gap is
+ not empty; otherwise, for \f$ i = 1 , 2 , \ldots \f$, the range
+ \f$ R_i \f$ of the \f$ 2^i \f$ labels aligned on \f$ 2^i \f$ that holds the
+ label of \f$ b \f$ is <em>overflowing</em> if its buckets, the new one
+ included, are more than \f$ ( 2 / T )^i \f$, i.e., if its density exceeds
+ \f$ T^{-i} \f$, with \f$ T = 1.4 \f$; the first range that does not
+ overflow is labeled again with equal gaps, of at least
+ \f$ 2^i / ( 2 / T )^i = T^i \ge 1 \f$.
 
- <em>Lemma 14 (the shuffle, exercise 7.4 of Morin).</em> The shuffle of Fisher
+ <em>Lemma 14 (the densities).</em> The insertion of a bucket writes
+ at most \f$ 1 + 63 \cdot 2 / ( T - 1 ) + 1 = 317 \f$ labels of buckets
+ amortized, with \f$ T = 1.4 \f$, whatever the removals among the
+ insertions.
+
+ Indeed, a relabeling of \f$ R_i \f$ writes \f$ m \le ( 2 / T )^i \f$
+ labels, and it happens because \f$ R_{i-1} \f$ overflows, with more than
+ \f$ ( 2 / T )^{i-1} \f$ buckets. The last time that a range containing
+ \f$ R_{i-1} \f$ was labeled again, the gaps were equal, and the half
+ \f$ R_{i-1} \f$ of a range of level at least \f$ i \f$ received at most
+ half of its buckets plus one, at most
+ \f$ ( 2 / T )^{i-1} / T + 1 \f$; hence at least
+ \f$ ( 2 / T )^{i-1} ( 1 - 1 / T ) - 1 \f$ insertions have gone into
+ \f$ R_{i-1} \f$ since then (a removal only lowers its count), and each of
+ them pays \f$ ( 2 / T ) / ( 1 - 1 / T ) = 2 / ( T - 1 ) = 5 \f$ labels to
+ the level \f$ i \f$, the extra one being covered by the 1 of the bound.
+ An insertion lies in one range of each of the 63 levels, and pays once per
+ level. The universe of \f$ 2^{63} \f$ labels holds
+ \f$ ( 2 / T )^{63} \approx 5.8 \cdot 10^9 \f$ buckets, the most for which
+ \f$ R_{63} \f$ does not overflow.
+
+ A bucket is labeled again with equal gaps of more than \f$ 2^{56} \f$ when
+ the gap of a new element is empty, which needs 56 halvings of one gap,
+ i.e., 56 insertions into the bucket since its last relabeling (the
+ removals only widen the gaps); it splits into halves of 32 and 33
+ elements when it reaches \f$ B + 1 = 65 \f$, which needs 32 insertions
+ into it since it was made, and writes 65 local labels and the labels of
+ Lemma 14 for the new bucket. Hence an insertion writes, amortized, its
+ own label, at most \f$ 64 / 56 \f$ for the relabelings of its bucket and
+ \f$ ( 65 + 317 ) / 32 \f$ for the splits, fewer than 15 labels, a constant
+ that the bound \f$ \log_2 m < 63 < B \f$ makes independent of
+ \f$ n \f$; `relabelWork()` counts them, and the test of the exercise
+ checks that their mean stays below 8 from \f$ 2^{12} \f$ to \f$ 2^{17} \f$
+ insertions in the worst patterns. A removal unlinks its element, and its
+ bucket if it empties, in \f$ O( 1 ) \f$ in the worst case, and
+ `testBefore()` compares the labels of the two buckets, or the local labels
+ within one bucket.
+
+ <em>Lemma 15 (the shuffle, exercise 7.4 of Morin).</em> The shuffle of Fisher
  and Yates in the form of Durstenfeld, `shuffleFast()` [see
  `RandomGenerators.h`], gives each of the \f$ n! \f$ orders with probability
  \f$ 1 / n! \f$, in \f$ n - 1 \f$ swaps.

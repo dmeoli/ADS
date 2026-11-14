@@ -1600,6 +1600,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- OrderMaintenanceList inserts in O( 1 ) amortized time, removes in O( 1 )
+  in the worst case and keeps testBefore() in O( 1 ): it is now the list
+  labeling of Bender, Cole, Demaine, Farach-Colton and Zito on two levels,
+  buckets of at most 64 consecutive elements with local labels and labels
+  of the buckets kept by the densities ( 2 / T )^i of their first
+  algorithm, in place of the labels of the paths of a scapegoat tree,
+  O( log n ) amortized, which the theory of the sequences keeps as the
+  solution that exercise 8.11 has in mind, with the analysis of the new
+  one (fewer than 15 labels written per insertion, amortized);
+  relabelWork() replaces rebuildWork(), and the test
+  ods-ex8.11.order-constant checks that the labels written per insertion
+  do not grow from 2^12 to 2^17 insertions in four patterns
+
 - ArraySequence shifts its items by std::move() and std::move_backward(),
   one memmove() for the items trivially copyable (the FastArrayStack of
   Morin)

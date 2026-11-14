@@ -768,7 +768,7 @@
  \f$ f( 1 ) = 2 \f$, \f$ f( 2 ) = 20 \cdot 4 = 80 \f$ and
  \f$ f( 3 ) = 3432 \cdot 6400 = 21964800 \f$ (exercise 7.3, checked by the
  test, which counts the 80 orders of 7 keys). `shuffleFast()` [see
- `RandomGenerators.h`] is the uniform shuffle of exercise 7.4 (Lemma 14 of
+ `RandomGenerators.h`] is the uniform shuffle of exercise 7.4 (Lemma 15 of
  \ref theory_sequence_morin). An insertion
  into a treap makes \f$ O( 1 ) \f$ rotations in expectation (exercise 7.5):
  each rotation that lifts the new node adds a node to the right spine of
@@ -923,10 +923,13 @@
  afresh at each operation, give.
 
  The order maintenance of exercise 8.11 is in the area of the sequences
- (`OrderMaintenanceList.h`): its labels, which encode the paths, change
+ (`OrderMaintenanceList.h`): labels that encode the paths of a tree change
  for a whole subtree at each rotation and are rewritten for free by the
  rebuild of a scapegoat tree, the case where Morin remarks that the
- partial rebuilding is the right choice.
+ partial rebuilding is the right choice, in \f$ O( \log n ) \f$ amortized;
+ the library takes instead the list labeling of Bender et al., which needs
+ no tree and costs \f$ O( 1 ) \f$ amortized (see
+ \ref theory_sequence_morin).
 
  \section theory_tree_llrb Left-leaning red-black trees
 
