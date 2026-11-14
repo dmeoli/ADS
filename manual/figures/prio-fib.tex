@@ -31,26 +31,26 @@
 \end{scope}
 \node[var] at (0,7.5mm) {$\mathit{min}$};
 \node[var,anchor=west] at (-14.0mm,14.0mm) {before \texttt{deleteMin()}, the roots in a circular list};
-\node[vertex] (b52) at (85.0mm,0.0mm) {52};
-\node[vertex-touched] (b7) at (111.0mm,0.0mm) {7};
-\node[vertex-added] (b23) at (99.0mm,-11.0mm) {23};
-\node[vertex-added] (b17) at (111.0mm,-11.0mm) {17};
-\node[vertex-added] (b18) at (125.0mm,-11.0mm) {18};
-\node[vertex] (b30) at (111.0mm,-22.0mm) {30};
-\node[vertex] (b39) at (119.0mm,-22.0mm) {39};
-\node[vertex-added] (b38) at (131.0mm,-22.0mm) {38};
-\node[vertex] (b41) at (131.0mm,-33.0mm) {41};
+\node[vertex-touched] (b7) at (85.0mm,0.0mm) {7};
+\node[vertex] (b17) at (111.0mm,0.0mm) {17};
+\node[vertex] (b30) at (97.0mm,-11.0mm) {30};
+\node[vertex-added] (b23) at (111.0mm,-11.0mm) {23};
+\node[vertex-added] (b18) at (127.0mm,-11.0mm) {18};
+\node[vertex-added] (b52) at (111.0mm,-22.0mm) {52};
+\node[vertex] (b39) at (121.0mm,-22.0mm) {39};
+\node[vertex-added] (b38) at (133.0mm,-22.0mm) {38};
+\node[vertex] (b41) at (133.0mm,-33.0mm) {41};
 \begin{scope}[on background layer]
-\draw[edge-touched] (b7) -- (b23);
-\draw[edge-touched] (b7) -- (b17);
-\draw[edge-touched] (b7) -- (b18);
 \draw[edge] (b17) -- (b30);
+\draw[edge-touched] (b17) -- (b23);
+\draw[edge-touched] (b17) -- (b18);
+\draw[edge-touched] (b23) -- (b52);
 \draw[edge] (b18) -- (b39);
 \draw[edge-touched] (b18) -- (b38);
 \draw[edge] (b38) -- (b41);
-\draw[edge] (b52) -- (b7);
+\draw[edge] (b7) -- (b17);
 \end{scope}
-\node[var] at (111.0mm,7.5mm) {$\mathit{min}$};
-\node[var,anchor=west] at (87.0mm,14.0mm) {after the consolidation};
+\node[var] at (85.0mm,7.5mm) {$\mathit{min}$};
+\node[var,anchor=west] at (81.0mm,14.0mm) {after the consolidation};
 \end{tikzpicture}
 \end{document}

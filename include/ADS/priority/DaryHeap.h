@@ -11,9 +11,10 @@
  * node of a search), so that a comparison never follows a pointer; with
  * \f$ D = 4 \f$ the heap is half as deep as a binary one, the four children
  * of a node lie in one line of cache, and a push moves up half as many
- * levels, at the price of \f$ D - 1 \f$ more comparisons per level on the way
- * down. With `BottomUp`, `pop()` moves the hole of the root down to a leaf by
- * the best children, \f$ D - 1 \f$ comparisons per level and none with the
+ * levels, at the price of \f$ D - 2 \f$ more comparisons per level on the way
+ * down (the same in all, \f$ 4 \log_4 n = 2 \log_2 n \f$). With
+ * `BottomUp`, `pop()` moves the hole of the root down to a leaf by the best
+ * children, \f$ D - 1 \f$ comparisons per level and none with the
  * item that fills it, and then moves the last item up from there (the
  * bottom-up heapsort of Floyd and Wegener): it pays when the last item, as
  * in a heap full of stale copies, would go down to the bottom anyway, and
@@ -34,8 +35,9 @@
  * the `DaryHeap` of its exercise 10.5: a push moves up
  * \f$ \log_D n \f$ levels with one comparison each, a pop moves down as
  * many with \f$ D \f$ comparisons each, so that \f$ D = 4 \f$ halves the
- * levels of both and costs twice the comparisons of a pop, which is the
- * better trade on the machines with caches. Beyond the book, `erase( i )`
+ * levels of both and doubles the comparisons per level of a pop, which
+ * leaves those of a pop the same in all and is the better trade on the
+ * machines with caches. Beyond the book, `erase( i )`
  * removes the item in a place (exercise 10.3), `secondTop()` gives the
  * second best item (exercise 10.9) and `smallest( k )` the \f$ k \f$ best
  * (exercise 10.10). Against the code of Morin's book: the hole moves

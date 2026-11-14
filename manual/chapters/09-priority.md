@@ -68,8 +68,8 @@ three types `Item`, `Priority` and `Handle`, and the algorithms that take a
 priority queue (the shortest paths and the minimum spanning trees of
 [chapter 14](14-graph.md#ch-14)) are written once for all its models:
 `ListPriorityQueue`, `TreePriorityQueue`, `HeapPriorityQueue`,
-`LinkedHeapPriorityQueue`, `IndexedDaryHeap`, `FibonacciHeapPriorityQueue`
-and `PairingHeap`. The *priority `Queue`* of [Morin 2013,
+`IndexedDaryHeap`, `FibonacciHeapPriorityQueue` and `PairingHeap`
+but not `LinkedHeapPriorityQueue`, which has no handles. The *priority `Queue`* of [Morin 2013,
 §10](Z-bibliography.md#ref-morin-cpp) is the same type without handles and
 without `decrease()`: `add(x)` and `remove()`, which the heaps of plain
 items in this chapter call `push(x)` and `pop()`, with `top()` for the
@@ -111,11 +111,17 @@ the `Group` of `SequenceHeap`, the `Layer`, `Run`, `Runs`, `Cell` and
 `Index` of `BucketQueue`, the unsigned word `U` of the radix keys, the
 allocator traits of `MeldableHeap`) are private details of the
 representations, which we name only where a representation is described.
+Finally, every queue with a view has `begin()`, `end()`, `cbegin()`,
+`cend()` and the member types of a constant container of the standard
+library (`value_type`, `size_type`, `difference_type`, `reference`,
+`const_reference`, and `iterator` equal to `const_iterator`). The order of
+each view is given with its queue.
 
 <span id="tab-9-1"></span>**Table 9.1.** The realizations of the priority
 queues in `ADS/priority` and the costs of their operations ($^*$
 amortized, $^\dagger$ expected); $n$ is the number of items, $d$ the
-arity of a heap, $W$ the bits of an integer key and $B$ those of a digit.
+arity of a heap, $W$ the bits of an integer key, $B$ those of a digit and
+$N$ the buckets of the window of `DialQueue`.
 
 | Realization | `min()` | `insert()` | `deleteMin()` | `decrease()` |
 |------------------------|----------|---------|--------------|--------------|
@@ -130,7 +136,7 @@ arity of a heap, $W$ the bits of an integer key and $B$ those of a digit.
 | `FibonacciHeapPriorityQueue` | $O( 1 )$ | $O( 1 )$ | $O( \log n )^*$ | $O( 1 )^*$ |
 | `PairingHeap` | $O( 1 )$ | $O( 1 )^*$ | $O( \log n )^*$ | $O( 2^{2 \sqrt{\log \log n}} )^*$ |
 | `RadixHeap` (monotone) | as `pop()` | $O( 1 )$ | $O( W / B + 2^B W / ( 64 B ) )^*$ | none |
-| `DialQueue` (monotone, band $C < W$) | as `pop()` | $O( 1 )$ | $O( 1 + W / 64 )$ | none |
+| `DialQueue` (monotone, band $C < N$) | as `pop()` | $O( 1 )$ | $O( 1 + N / 64 )$ | none |
 | `BucketQueue` (two small keys) | $O( 1 )^*$ | $O( 1 )^*$ | $O( 1 )^*$ | none |
 | `MinMaxHeap`, `IntervalHeap` | $O( 1 )$, and the max | $O( \log n )$ | $O( \log n )^*$, and the max | none |
 | `SequenceHeap` | $O( 1 )$ | $O( \log n )^*$ | $O( \log n )^*$ | none |
@@ -153,12 +159,14 @@ least item is the head, and `min()` and `deleteMin()` cost $O( 1 )$.
 Instead, `insert()` scans from the head for the first cell of larger priority
 and inserts before it, which keeps the items of equal priority in the
 order of their insertions; `decrease()` takes the cell out and inserts it
-again, both in $O( n )$ time. On the unsorted list `insert()` puts the new
+again, both in $O( n )$ time, and since the item then lies in a new cell it
+writes the new position into the handle, which it takes by reference. On the unsorted list `insert()` puts the new
 cell at the head and `decrease()` changes the priority in place, in
 $O( 1 )$, while `min()` and `deleteMin()` scan the whole list for the
 first cell of least priority ([Figure 9.1](09-priority.md#fig-9-1)). In
 both, the handle is the position of the cell, which the list keeps valid
-while the cell is in it.
+while the cell is in it (on the sorted list, until a `decrease()` moves the
+item and updates the handle).
 
 ![Figure 9.1. The two lists of `ListPriorityQueue` with the pairs (priority, item) (2,a), (5,c), (7,b), (9,d), before and after `insert(e,4)`: the sorted list inserts the new cell (orange) before the first cell of larger priority, the unsorted one at its head; the least item is in violet.](../figures/prio-list.svg){#fig-9-1}
 
@@ -238,8 +246,8 @@ A[ \lfloor ( i - 1 ) / 2 \rfloor ] \le A[ i ] , \qquad 0 < i < n .
 \tag{9.2}
 $$
 
-Note that (9.2) is much weaker than the order of a sorted vector: it is silent
-nothing on two items neither of which is an ancestor of the other. It can
+Note that (9.2) is much weaker than the order of a sorted vector: it puts
+no constraint on two items neither of which is an ancestor of the other. It can
 therefore be restored, after a change, along a single path from the root,
 which is short since the tree is complete.
 
@@ -272,7 +280,7 @@ gives both for $d$ children per node as `HeapPriorityQueue` makes them,
 the walk down being the `minHeapRestore()` of [Montresor 2025,
 §10.1.3](Z-bibliography.md#ref-montresor2025).
 
-![Figure 9.3. `push(6)` on the binary heap 4, 9, 8, 17, 26, 50, 16, 19, 69, 32, 93, 55: the new item enters the leaf $A[ 12 ]$ (orange) and moves up past 50 and 8 (violet), stopping below 4; the tree and the vector after each step.](../figures/prio-heap-push.svg){#fig-9-3}
+![Figure 9.3. `push(6)` on the binary heap 4, 9, 8, 17, 26, 50, 16, 19, 69, 32, 93, 55: the new item enters the leaf $A[ 12 ]$ (orange) and moves up past 50 and 8 (violet), stopping below 4; the tree and the vector before and after the walk.](../figures/prio-heap-push.svg){#fig-9-3}
 
 ![Figure 9.4. `pop()` on the heap of [Figure 9.3](09-priority.md#fig-9-3) after `push(6)`: the root 4 is removed and the last leaf 50 takes its place (orange), then moves down past 6 and 8, the smaller child at each level (violet), until its only child 55 is not smaller.](../figures/prio-heap-pop.svg){#fig-9-4}
 
@@ -450,14 +458,15 @@ $$
 O( m \log_d n + n d \log_d n ) , \tag{9.4}
 $$
 
-*which for $d = \max\{ 2 , \lceil m / n \rceil \}$ is
+*which for $m \ge n$ and $d = \max\{ 2 , \lceil m / n \rceil \}$ is
 $O( m \log_{2 + m / n} n )$, i.e., $O( m )$ on the graphs with
 $m = \Omega( n^{1 + \varepsilon} )$ for a constant $\varepsilon > 0$
 ([Johnson 1975](Z-bibliography.md#ref-johnson1975b)).*
 
 *Proof.* (9.4) is [Lemma 9.3](09-priority.md#lem-9-3) summed over the
 operations. With $d$ as stated, $n d \le m + 2 n$, and both terms are
-$O( ( m + n ) \log_d n )$; if $m = \Omega( n^{1 + \varepsilon} )$, then
+$O( ( m + n ) \log_d n ) = O( m \log_d n )$, while
+$\log_d n \le 2 \log_{2 + m / n} n$ since $2 + m / n \le 2 d \le d^2$; if $m = \Omega( n^{1 + \varepsilon} )$, then
 $\log_d n = O( 1 / \varepsilon )$. $\square$
 
 With `BottomUp`, `pop()` takes the walk from the bottom up of [Floyd
@@ -508,7 +517,8 @@ places, and the same removal costs $O( D \log_D n )$ in all.
 ![Figure 9.7. A heap with $D = 3$: the children of the place $i = 1$ are the places $3 i + 1 , 3 i + 2 , 3 i + 3 = 4 , 5 , 6$ (orange). `erase(1)` removes 5 and puts the last item 9 in its place; since 9 is not smaller than the parent 1, it moves down by the best child, 6.](../figures/prio-dary.svg){#fig-9-7}
 
 Exercise 10.9 is about the second least item, which `secondTop()`
-gives as the best of the children of the root in $O( D )$ time: any other
+gives as the best of the children of the root in $O( D )$ time (a null
+pointer if the heap has fewer than two items): any other
 item has one of the children of the root as an ancestor, and is not smaller
 than it. Exercise 10.10 is about the $k$ least items in order, which
 `smallest(k)` gives without changing the heap, by a second heap $Q$ of
@@ -586,7 +596,7 @@ moves it up or down by [Lemma 9.7](09-priority.md#lem-9-7)
 ![Figure 9.9. An `IndexedDaryHeap` drawn with $D = 2$ for brevity: the vector $A$ of the pairs key:id and the vector $\mathit{pos}$ of the places of the ids 0 to 7, $-1$ for the ids not in the heap; `decrease(2,1)` reads the place 5 of the id 2 and moves it up past 3:7 and 2:5 (violet), updating the places of the three ids it moves (orange the new place of the id 2).](../figures/prio-indexed.svg){#fig-9-9}
 
 Its space is that of the $s$ entries and of the $n$ places, i.e.,
-$( 4 + k ) s + 4 n$ bytes for keys of $k$ bytes and ids of 4 bytes; with
+$( 4 + k ) s + 4 n$ bytes for keys of $k$ bytes and ids of 4 bytes. With
 32-bit keys and $D = 4$, the four children of a node take half a line of
 the cache. `pushOrDecrease(id,k)` pushes an id that is not in the heap and
 lowers the key of one that is (the relaxation of an edge in the algorithm
@@ -615,7 +625,9 @@ root of $H_K$, `minBound()` and `minBoundId()` that of $H_B$, and `bound()`
 the bound of an id. Also, `push(id,k,b)` pushes into both heaps,
 `update(id,k,b)` and `erase(id)` change both, and `pop()` (resp.
 `popMinBound()`) pops from one heap and erases the same id from the other
-by [Lemma 9.7](09-priority.md#lem-9-7).
+by [Lemma 9.7](09-priority.md#lem-9-7). The other members, `contains()`,
+`key()`, `size()`, `ids()`, `reset(n)` and `clear()`, are those of
+`IndexedDaryHeap`, read or applied to both heaps.
 
 --8<-- "generated/IndexedHeapPair-pop.pseudo.md"
 
@@ -647,7 +659,7 @@ nodes, as in the vector, and each operation takes $O( \log n )$ time;
 there is no `decrease()`, which would need a handle that follows the
 contents.
 
-![Figure 9.10. The linked heap of 13 nodes numbered by levels from 1: the new leaf of an `insert()` is the node $13 = 1101_2$, reached from the root by the bits after the leading 1, i.e., right, left, right (violet the path, orange the new node).](../figures/prio-linked.svg){#fig-9-10}
+![Figure 9.10. A linked heap of 12 nodes numbered by levels from 1, and the new leaf of an `insert()`, the node $13 = 1101_2$, reached from the root by the bits after the leading 1, i.e., right, left, right (violet the path, orange the new node).](../figures/prio-linked.svg){#fig-9-10}
 
 --8<-- "generated/LinkedHeapPriorityQueue-insert.pseudo.md"
 
@@ -779,7 +791,8 @@ link that will hold it. A heap of $10^6$ items pushed in increasing order
 never overflows the stack of the calls; the destructor and `clear()` are
 iterative as well. Second, the coins are the bits of one word of SplitMix64 (cf.
 [chapter 7](07-dictionary.md#ch-7)), used one at a time, 64 coins per word,
-where the book calls `rand()` for each. Third, the nodes come from the
+where the book calls `rand()` for each; the seed of the generator is an
+argument of the constructor (1 by default), so that a heap is reproducible. Third, the nodes come from the
 allocator `A` (e.g., a `PoolAllocator`, cf. [chapter 5](05-memory.md#ch-5)),
 and two heaps meld only if their allocators are equal: each node must go
 back to the allocator that gave it. Fourth, the items are moved, not
@@ -830,7 +843,7 @@ under the smaller, until all the degrees differ
 
 --8<-- "generated/FibonacciHeapPriorityQueue-decrease.pseudo.md"
 
-![Figure 9.13. `deleteMin()` on a Fibonacci heap: the least root 3 is removed, its children 18, 52 and 38 join the roots 17, 23 and 7, and the consolidation, taking the roots in the order 17, 23, 7, 18, 52, 38, links 23 and then 17 under 7, 38 under 18 and then 18 under 7 (orange the nodes linked, violet the new minimum), leaving two roots of degrees 0 and 3.](../figures/prio-fib.svg){#fig-9-13}
+![Figure 9.13. `deleteMin()` on a Fibonacci heap: the least root 3 is removed, its children 18, 52 and 38 join the roots 17, 23 and 7 right after it, and the consolidation, taking the roots from its first child, in the order 18, 52, 38, 17, 23, 7, links 38 under 18, 52 under 23, then 23 and 18 under 17 (orange the nodes linked, violet the new minimum), leaving two roots of degrees 0 and 3.](../figures/prio-fib.svg){#fig-9-13}
 
 We first bound the degrees of the trees, which keep the consolidation
 short; in fact, it is the cascading cut that keeps them logarithmic. Let $F_k$ be the
@@ -886,7 +899,7 @@ takes back the node of `deleteMin()` for the next `insert()`. Also, the children
 of the minimum join the roots in $O( 1 )$, by splicing their circular list
 into that of the roots. Also, the consolidation walks the roots where they
 lie, with the trees by degree in an array of 64 entries on the stack
-(a degree is at most $\log_\phi n < 64$ for any $n$ that fits in memory).
+(a degree is at most $\log_\phi n$, below 64 for $n < \phi^{64} \approx 2.4 \cdot 10^{13}$ nodes, i.e., more than a memory holds at the size of a node).
 Its handle is the node; `min()` and `minPriority()` read the least root,
 and the view visits the nodes in preorder over the circular lists. In
 practice the constants of the Fibonacci heap are larger than those of a
@@ -1024,19 +1037,34 @@ old one.
 ![Figure 9.15. A radix heap with $W = 8$ and $B = 2$: the buckets $( r , x_r )$, the row $r$ being the digit of the highest bit in which a key differs from $\ell$. With $\ell = 20 = 00\,01\,01\,00_2$ the key 26 differs from it first in the digit 1, whose value is 2, and goes to the bucket $( 1 , 2 )$ with 25; once 20, 21 and 23 are out, the first bucket in use is $( 1 , 2 )$, its least key 25 becomes $\ell$, and its two keys move to the row 0 (orange), while 45 and 100 stay where they are.](../figures/prio-radix.svg){#fig-9-15}
 
 <span id="lem-9-13"></span>**Lemma 9.13.** *Starting from an empty radix
-heap, `push()` costs $O( 1 )$ and `pop()` costs
-$O( W / B + 2^B W / ( 64 B ) )$ amortized; if all the keys lie in a band
-$[ \ell , \ell + C ]$, only the lowest $\lceil \log_2( C + 1 ) / B \rceil$
-rows are used, and with $B = 1$ a `pop()` costs $O( \log C )$ amortized.*
+heap, any sequence of $p$ pushes and $q$ pops costs
+$O( p \, W / B + q \, 2^B W / ( 64 B ) )$ time; hence, when every item
+pushed is also popped, `push()` costs $O( 1 )$ and `pop()`
+$O( W / B + 2^B W / ( 64 B ) )$ amortized. If every key pushed lies in
+$[ \ell , \ell + C ]$ for the $\ell$ of its push, an item moves at most
+$1 + \lceil \log_2 C \rceil / B$ times, and with $B = 1$ a `pop()` costs
+$O( \log C + W / 64 )$ amortized.*
 
 *Proof.* An item only moves to lower rows, hence at most
-$\lceil W / B \rceil - 1$ times. Take the potential
-$\Phi = \sum_x \mathrm{row}( x )$: a push raises $\Phi$ by at most
-$\lceil W / B \rceil - 1$, which pays for all the moves of its item, and a
-move then costs nothing amortized. What is left of a `pop()` is the scan of
-the mask, $2^B \lceil W / B \rceil$ bits in words of 64. Also, a key of the
-band differs from $\ell$ only in its lowest $\lceil \log_2( C + 1 )
-\rceil$ bits. $\square$
+$\lceil W / B \rceil - 1$ times. With the potential
+$\Phi = \sum_x \mathrm{row}( x )$, a push raises $\Phi$ by at most
+$\lceil W / B \rceil - 1$, each move lowers it by at least 1 and thus costs
+nothing amortized, and what is left of a `pop()` is the scan of the mask,
+$2^B \lceil W / B \rceil$ bits in words of 64; when every item pushed is
+popped, the rise of $\Phi$ at its push can be charged to its pop instead.
+In a band, a key may still lie in a high row, since a carry changes high
+bits: with $B = 1$, $\ell = 7$ and $x = 8$ differ in the bit 3. Let $x$ be moved for the first time from the bucket
+$( r , x_r )$, $r > 0$, and let $Q$ be $x$ with its digits below $r$ set to
+zero, a multiple of $2^{B r}$. The old $\ell$ has the digit $r$ smaller than
+that of $x$ and the same digits above it, and hence $\ell < Q$ and
+$x \le \ell + C < Q + C$. The new $\ell$ is a key of that bucket, and so is
+not smaller than $Q$; it and every later $\ell$ while $x$ is in the heap lie
+in $[ Q , x ]$. Let $c = \lceil \log_2 C \rceil$. If $C \le 2^{B r}$,
+$Q$ is also a multiple of $2^c$, and $x$ and every later $\ell$ lie in one
+aligned block of $2^c$ integers. They thus differ only in their lowest $c$
+bits, and the row of $x$ is at most $c / B$. If $C > 2^{B r}$, its new
+row is below $r < c / B$. Each later move lowers the row by at least 1, which
+gives at most $1 + c / B$ moves in all. $\square$
 
 `peekKey()` reads the least key from the first bucket in use without
 moving any bucket, and the keys pushed next need only be not smaller than
@@ -1046,28 +1074,29 @@ digits of $B$ bits are the two-level heap of the paper, which trades fewer
 moves for more buckets; with $B = 1$ it is the radix heap of the paper.
 
 `DialQueue<T,K>` is the queue of [Dial 1969](Z-bibliography.md#ref-dial1969)
-on a circular window of $W$ buckets, $W$ the least power of two above a
-given $c$ and 64 at least. A key $k$ with $k - \ell < W$ goes to the bucket
-$k \bmod W$, a vector used as a stack, and a key beyond the window goes to
+on a circular window of $N$ buckets (the $W$ of the header, renamed here
+since $W$ is the width of a key). $N$ is the least power of two above the
+argument $c$ of the constructor, 1023 by default, and 64 at least. A key $k$ with $k - \ell < N$ goes to the bucket
+$k \bmod N$, a vector used as a stack, and a key beyond the window goes to
 an overflow, which is a `RadixHeap` ([Figure 9.16](09-priority.md#fig-9-16)).
 A bit per bucket records whether it is in use, so that the next key in use is
-found by a scan of $W / 64$ words at most, from the bucket of $\ell$
+found by a scan of $N / 64$ words at most, from the bucket of $\ell$
 around the circle.
 
 --8<-- "generated/DialQueue-push.pseudo.md"
 
 --8<-- "generated/DialQueue-pop.pseudo.md"
 
-![Figure 9.16. The queue of Dial with a window of $W = 8$ buckets (drawn smaller than the 64 at least of the code) and $\ell = 13$: the keys 13, 14, 17 and 20 lie in the buckets of their residues modulo 8, the keys 30 and 41, beyond $\ell + W$, in the overflow; the bits of \textit{used} give the next bucket in use by a scan of words.](../figures/prio-dial.svg){#fig-9-16}
+![Figure 9.16. The queue of Dial with a window of $N = 8$ buckets (drawn smaller than the 64 at least of the code) and $\ell = 13$: two items of key 13 and the keys 14, 17 and 20 lie in the buckets of their residues modulo 8, the keys 30 and 41, beyond $\ell + N$, in the overflow; the bits of \textit{used} give the next bucket in use by a scan of words.](../figures/prio-dial.svg){#fig-9-16}
 
 <span id="lem-9-14"></span>**Lemma 9.14.** *If every key pushed lies in
-$[ \ell , \ell + C ]$ with $C < W$, the overflow is never used, two keys in
+$[ \ell , \ell + C ]$ with $C < N$, the overflow is never used, two keys in
 one bucket are equal, and the least key is in the first bucket in use from
 that of $\ell$ around the circle; `push()` then takes $O( 1 )$ time and
-`pop()` $O( 1 + W / 64 )$.*
+`pop()` $O( 1 + N / 64 )$.*
 
 *Proof.* Since $\ell$ never decreases, the keys in the queue lie in
-$[ \ell , \ell + W )$. The residues modulo $W$ of these $W$ consecutive
+$[ \ell , \ell + N )$. The residues modulo $N$ of these $N$ consecutive
 integers are distinct, and come in the order of the keys from the residue
 of $\ell$ around the circle. $\square$
 
@@ -1077,7 +1106,7 @@ window then move to the buckets, each once, a bucket of the radix heap at a
 time (`RadixHeap::extractBelow()`, whose pseudocode follows). Thus a key
 pushed far beyond the window costs its moves in the radix heap and one
 move into the window. In this way, the scan by words replaces the scan of the buckets one by one
-of the original queue, $O( 1 + C )$, and `window()` gives $W$
+of the original queue, $O( 1 + C )$, and `window()` gives $N$
 ([Cherkassky, Goldberg and Radzik 1996](Z-bibliography.md#ref-cherkassky1996)
 compare these queues for the shortest paths).
 
@@ -1158,7 +1187,8 @@ A double-ended priority queue has both the best and the worst item at hand,
 and removes either in logarithmic time, which a heap cannot do since its
 worst item may be any of its leaves. `MinMaxHeap.h` has two realizations of
 plain items ordered by `better()`, with `push()`, `min()`, `max()`,
-`popMin()` and `popMax()`.
+`popMin()` and `popMax()`, besides `empty()`, `size()`, `reserve(n)` and
+`clear()`.
 
 `MinMaxHeap<T,Better>` is the min-max heap of [Atkinson, Sack, Santoro and
 Strothotte 1986](Z-bibliography.md#ref-atkinson1986): a binary heap in a
@@ -1213,7 +1243,7 @@ level is even, and in the subtree of one of the children of the root, whose
 level is odd. In an interval heap, (9.8) gives by induction
 $\mathit{lo}( \mathrm{root} ) \preceq x \preceq \mathit{hi}( \mathrm{root} )$
 for each item $x$. Each walk visits one node per level, or per two levels
-with the grandchildren, and look at a constant number of items there.
+with the grandchildren, and looks at a constant number of items there.
 $\square$
 
 In both heaps, a run of removals with no push in between sorts the items
@@ -1239,7 +1269,9 @@ both heaps against a multiset, through runs of removals on sorted items and
 the pushes that make them heaps again.
 
 These heaps (and the sequence heap of [§9.12](09-priority.md#sec-9-12))
-take the keys of the numbers from `OrderKey.h`. There `orderKey(x)` maps a
+take the keys of the numbers from `OrderKey.h`, whose functions and
+constants lie in the namespace `ADS::detail`, since they serve the
+realizations and are not meant for the user. There `orderKey(x)` maps a
 number of at most 8 bytes, or a pair of numbers of at most 8 bytes in all
 (`IsNumberPair`, the concept `OrderKeyed`), to an unsigned word whose order
 is that of the items. For a number, it is the key of the radix sort: the
@@ -1309,8 +1341,8 @@ order. $\square$
 
 --8<-- "generated/LoserTree-kWayMerge.pseudo.md"
 
-`players()` gives $k$, `winner()` the index of the winner and `top()` its
-key. In external memory the same merge, fed by one block per sequence, is
+`players()` gives $k$, `empty()` tells whether all the players have run
+out, `winner()` the index of the winner and `top()` its key. In external memory the same merge, fed by one block per sequence, is
 the step of the multiway mergesort (cf.
 [chapter 23](23-external.md#ch-23)), and the tests
 `pearls_io.ch5.loser-tree` and `pearls_io.ch5.merge-sorts` follow the
@@ -1330,7 +1362,9 @@ the loser of a node of masks, with no jump. This matters since the matches
 of a merge of random keys are won by either side with probability $1 / 2$,
 which a branch predicts wrongly half of the time. The sources are given by `start(s,x)`
 before `build()`, and `replaceTop(x)` and `exhaustTop()` replay the path
-of the winner; `sources()`, `winner()` and `top()` read the tree.
+of the winner, $\log_2 K = \lceil \log_2 k \rceil$ matches; `sources()`,
+`empty()`, `winner()` and `top()` read the tree. As in `LoserTree`, equal
+keys are won by the lower source, and a merge through the tree is stable.
 
 --8<-- "generated/MultiwayMerge-FlatLoserTree-build.pseudo.md"
 
@@ -1386,8 +1420,8 @@ the cache, and the best items wait, sorted, in a deletion buffer $D$. When
 $I$ is full, its items are sorted into a sequence that joins the group 1.
 In general, the group $i$ holds up to $k$ sorted sequences of at most $m k^{i - 1}$
 items each, and a buffer of its best items, refilled by merging its
-sequences; when a group is full, its sequences are merged into one that
-joins the group $i + 1$. Finally, the deletion buffer is refilled by merging the
+sequences; when a group is full, its sequences and the buffer of the group
+$i + 1$ are merged into one sequence that joins the group $i + 1$. Finally, the deletion buffer is refilled by merging the
 buffers of the groups.
 
 --8<-- "generated/SequenceHeap-push.pseudo.md"
@@ -1425,13 +1459,19 @@ item through a tree of losers; the refills of the buffers move each item
 once more per group. Our merges read and write their sequences in order,
 $O( 1 / B )$ misses per item and group as long as a block of each of the
 $k$ sequences fits in the cache, which $k = \Theta( M / B )$ ensures, and
-there are $O( \log_{M / B}( n / M ) )$ groups. We refer to the paper for the amortization over the
-merges of the full groups. $\square$
+there are $O( \log_{M / B}( n / M ) )$ groups. The sketch assumes
+without proof the amortization of [Sanders 2000, Theorem
+1](Z-bibliography.md#ref-sanders2000) over the merges of the full groups,
+which charges to each item the merges of the groups that it crosses. The
+theorem is stated for the scheme of the paper, and covers neither the compaction of a full group that is half empty, for
+which we give no bound, nor the bulk of the pushes into an empty
+heap, which the code adds and whose incremental quicksort has the bound of
+Navarro and Paredes given below. $\square$
 
 The bound (9.10) is that of the sorting in external memory divided by the
-items. In the code $m = 4096$, and the insertion heap of pairs of two
+items. In the code $m = 4096$ (the public constant `M`), and the insertion heap of pairs of two
 words fills the first level of the cache and its sequences the second;
-also, $k = 16$. Its merges are made by trees of losers whose matches are
+also, $k = 16$ (the constant `K`). Its merges are made by trees of losers whose matches are
 decided by conditional moves, and the numbers and the pairs of numbers are
 compared in the merges by their keys of `OrderKey.h`, and their sequences
 sorted by the radix sort. Its insertion heap is 4-ary and compares by
