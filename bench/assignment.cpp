@@ -9,11 +9,13 @@
  * bipartite network of the assignment, and the weighted matching of the
  * Boost Graph Library (maximum_weighted_matching, Edmonds' blossoms on a
  * general graph, the weights a large constant minus the costs), when
- * their headers are found:
+ * their headers are found, and the weighted matching of this library
+ * (maxWeightMatching() of Matching.h, the same blossoms, among the
+ * matchings of largest size with the costs negated):
  *
  * - assign, the assignment of n rows to n columns of random costs in
- *   [ 0 , 10^6 ), from scratch, in nanoseconds per row (Boost for n up
- *   to 1000 only);
+ *   [ 0 , 10^6 ), from scratch, in nanoseconds per row (the matchings
+ *   for n up to 1000 only);
  * - reassign, 64 changes of a random row to new random costs, each
  *   followed by the total cost, in nanoseconds per change: Assignment by
  *   setRow() ("ADS warm"), against a new Assignment solved from scratch
@@ -43,12 +45,14 @@
 #include "Bench.h"
 
 #include "ADS/graph/Assignment.h"
+#include "ADS/graph/Matching.h"
 
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -153,6 +157,19 @@ void assign( int n , int r , unsigned seed )
                        lemon::NetworkSimplex< lemon::SmartDigraph ,
                        long long , long long > >() ); } , r , N ) );
 #endif
+ if( ( n <= 1000 ) && ! ADS::bench::skip( "ADS maxWeightMatching" ) ) {
+  std::vector< std::tuple< int , int , long long > > E;
+  E.reserve( N * N );
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j )
+    E.emplace_back( i , n + j , - C[ std::size_t( i ) * N +
+                                     std::size_t( j ) ] );
+  ADS::bench::print( "assign" , "random" , N , "ADS maxWeightMatching" ,
+   ADS::bench::median( [ & ]( void ) { return( 0 ); } , [ & ]( int ) {
+    ADS::bench::sink = std::uint64_t( - ADS::maxWeightMatching( 2 * n , E ,
+                                                       true ).first ); } ,
+    r , N ) );
+  }
 #ifdef ADS_BOOST_MATCHING
  if( ( n <= 1000 ) && ! ADS::bench::skip( "Boost matching" ) )
   ADS::bench::print( "assign" , "random" , N , "Boost matching" ,

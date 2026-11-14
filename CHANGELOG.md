@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- maxWeightMatching() in graph/Matching.h is now the primal-dual algorithm
+  of Edmonds on the blossoms in O( n^3 ) (Gabow and Lawler, in the form of
+  Galil's survey), with integer arithmetic for integer weights and, with
+  maxCardinality, the matching of largest weight among those of largest
+  size (a perfect matching of least cost with the costs negated); at the
+  level of the audits the duals certify the optimum (nonnegative slacks
+  and duals, tight matched edges, full blossoms, free nodes of dual 0); the
+  exponential branch and bound that it was is kept as
+  branchAndBoundMatching(), an independent check; Edmonds' theorem and the
+  cost of the stages in the theory of the graphs, the test
+  engineered_graph weighted-blossom (every graph of up to 5 nodes and
+  random ones of up to 14 against the dynamic programming on the subsets,
+  the branch and bound, the assignment on complete bipartite graphs, the
+  blossoms of maxCardinalityMatching()), the benchmark wmatching of
+  bench/graphs.cpp against maximum_weighted_matching() of Boost and a row
+  of the blossoms in the benchmark assign of bench/assignment.cpp
+
 - maxCardinalityMatching() in graph/Matching.h, a matching of largest
   size of a general graph by the blossoms of Edmonds, the blossoms kept as
   the sets of a union-find that knows their bases and the paths rebuilt

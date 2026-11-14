@@ -29,6 +29,7 @@
 #include "ADSTest.h"
 
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/Assignment.h"
 #include "ADS/graph/EulerianCycle.h"
 #include "ADS/graph/GraphBuilder.h"
 #include "ADS/graph/Grid.h"
@@ -1241,7 +1242,7 @@ int checkedSize( const G & g , const std::vector< int > & M )
 // the maximum matching of a general graph by the blossoms of Edmonds
 // against the dynamic programming on the subsets on every graph of up to 6
 // nodes and on random ones of up to 16, against the branch and bound of
-// maxWeightMatching() with unit weights, against the maximum flow on
+// branchAndBoundMatching() with unit weights, against the maximum flow on
 // bipartite graphs of thousands of nodes; the graphs that make blossoms
 // within blossoms (the complete graphs, the Petersen graph, chains of
 // triangles and of pentagons), a deleted node, a path of 10^6 nodes,
@@ -1291,7 +1292,7 @@ ADS_TEST( "blossom-matching" )
      E.emplace_back( u , v , 1 );
      }
   CHECK( checkedSize( h , maxCardinalityMatching( h ) ) ==
-         maxWeightMatching( n , E ).first );
+         branchAndBoundMatching( n , E ).first );
   }
  for( int it = 0 ; it < 6 ; ++it ) {            // bipartiteMatching()
   const int p = 2000 , q = 1500 + 300 * it;   // (an audit per edge added
@@ -1352,6 +1353,199 @@ ADS_TEST( "blossom-matching" )
  CHECK( maxCardinalityMatching( ListGraph<>( 3 , false ) ) ==
         std::vector< int >( 3 , NIL ) );
  CHECK_THROWS( maxCardinalityMatching( ListGraph<>( 3 , true ) ) ,
+               contract_violation );
+ }
+
+/// the largest ( size , weight ) of a matching of the edges E of n <= 16
+/// nodes, by size first if card and by weight alone (edges of weight > 0)
+/// otherwise, by the dynamic programming on the subsets
+template< class W >
+std::pair< int , W > bestMatching( int n ,
+                       const std::vector< std::tuple< int , int , W > > & E ,
+                       bool card )
+{
+ std::vector< std::vector< std::pair< int , W > > > A( n );
+ for( const auto & [ u , v , w ] : E )
+  if( card || ( W( 0 ) < w ) ) {
+   A[ std::min( u , v ) ].emplace_back( std::max( u , v ) , w );
+   }
+ auto better = [ & ]( const std::pair< int , W > & a ,
+                      const std::pair< int , W > & b ) {
+  return( card ? a > b : a.second > b.second );
+  };
+ std::vector< std::pair< int , W > > f( std::size_t( 1 ) << n ,
+                                        { 0 , W( 0 ) } );
+ for( unsigned S = 1 ; S < ( 1u << n ) ; ++S ) {
+  const int u = std::countr_zero( S );
+  const unsigned R = S & ~( 1u << u );
+  auto best = f[ R ];
+  for( const auto & [ v , w ] : A[ u ] )
+   if( R & ( 1u << v ) ) {
+    const auto & g = f[ R & ~( 1u << v ) ];
+    const std::pair< int , W > c( g.first + 1 , g.second + w );
+    if( better( c , best ) ) best = c;
+    }
+  f[ S ] = best;
+  }
+ return( f[ ( 1u << n ) - 1 ] );
+ }
+
+/// the ( size , weight ) of the matching M of the edges E, checked: no two
+/// edges with an end in common, the places increasing
+template< class W >
+std::pair< int , W > checkedMatching( int n ,
+                       const std::vector< std::tuple< int , int , W > > & E ,
+                       const std::pair< W , std::vector< std::size_t > > & M )
+{
+ std::vector< bool > end( n , false );
+ W sum( 0 );
+ CHECK( std::is_sorted( M.second.begin() , M.second.end() ) );
+ for( std::size_t e : M.second ) {
+  CHECK( e < E.size() );
+  const auto & [ u , v , w ] = E[ e ];
+  CHECK( ! end[ u ] && ! end[ v ] );
+  end[ u ] = end[ v ] = true;
+  sum += w;
+  }
+ CHECK( sum == M.first );
+ return( std::pair( int( M.second.size() ) , sum ) );
+ }
+
+// the matching of largest weight, and of largest weight among those of
+// largest size, of a general graph by the primal-dual blossoms of Edmonds,
+// whose duals the audits check, against the dynamic programming on the
+// subsets on every graph of up to 5 nodes with random weights (negative
+// ones too) and on random graphs of up to 14 nodes with weights from
+// narrow (many ties) to wide ranges, against the branch and bound, against
+// the assignment on complete bipartite graphs, against the blossoms of
+// maxCardinalityMatching() with unit weights on large graphs, on weights
+// of type double, on parallel edges and on the edges of the contracts
+ADS_TEST( "weighted-blossom" )
+{
+ using WE = std::vector< std::tuple< int , int , long long > >;
+ std::mt19937 g( 29 );
+ auto check = [ & ]( int n , const WE & E ) {
+  const auto M = maxWeightMatching( n , E );
+  CHECK( checkedMatching( n , E , M ).second ==
+         bestMatching( n , E , false ).second );
+  const auto C = maxWeightMatching( n , E , true );
+  CHECK( checkedMatching( n , E , C ) == bestMatching( n , E , true ) );
+  };
+ for( int n = 1 ; n <= 5 ; ++n ) {
+  std::vector< std::pair< int , int > > P;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v ) P.emplace_back( u , v );
+  for( unsigned mask = 0 ; mask < ( 1u << P.size() ) ; ++mask )
+   for( int draw = 0 ; draw < 4 ; ++draw ) {
+    WE E;
+    for( std::size_t i = 0 ; i < P.size() ; ++i )
+     if( mask & ( 1u << i ) )
+      E.emplace_back( P[ i ].first , P[ i ].second ,
+                      ( long long )( g() % 13 ) - 3 );
+    check( n , E );
+    }
+  }
+ for( int it = 0 ; it < 3000 ; ++it ) {
+  const int n = 6 + it % 9;
+  const long long range[] = { 2 , 5 , 100 , 1000000 };
+  const long long R = range[ it % 4 ];
+  WE E;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 3 == 0 )
+     E.emplace_back( u , v , 1 + ( long long )( g() % R ) -
+                             ( it % 8 == 0 ? R / 2 : 0 ) );
+  if( it % 5 == 0 && ! E.empty() )                       // parallel
+   E.push_back( E[ g() % E.size() ] );
+  check( n , E );
+  if( n <= 10 )
+   CHECK( maxWeightMatching( n , E ).first ==
+          branchAndBoundMatching( n , E ).first );
+  }
+
+ for( int it = 0 ; it < 300 ; ++it ) {          // the branch and bound
+  const int n = 16 + it % 9;
+  WE E;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 6 == 0 )
+     E.emplace_back( u , v , 1 + ( long long )( g() % ( it % 2 ? 9 : 999 ) ) );
+  CHECK( checkedMatching( n , E , maxWeightMatching( n , E ) ).second ==
+         branchAndBoundMatching( n , E ).first );
+  }
+
+ // weights of type double and of type int, against the same programming
+ for( int it = 0 ; it < 300 ; ++it ) {
+  const int n = 4 + it % 9;
+  std::vector< std::tuple< int , int , double > > D;
+  std::vector< std::tuple< int , int , int > > I;
+  for( int u = 0 ; u < n ; ++u )
+   for( int v = u + 1 ; v < n ; ++v )
+    if( g() % 2 == 0 ) {
+     const int w = int( g() % 64 );
+     D.emplace_back( u , v , w * 0.25 );          // exact in binary
+     I.emplace_back( u , v , w );
+     }
+  CHECK( maxWeightMatching( n , D ).first ==
+         bestMatching( n , D , false ).second );
+  CHECK( maxWeightMatching( n , I , true ).first ==
+         bestMatching( n , I , true ).second );
+  }
+
+ // complete bipartite graphs: the perfect matching of largest weight is
+ // the assignment of least cost with the weights negated
+ for( int k : { 1 , 2 , 7 , 40 , 150 } ) {
+  WE E;
+  std::vector< long long > C( std::size_t( k ) * std::size_t( k ) );
+  for( int i = 0 ; i < k ; ++i )
+   for( int j = 0 ; j < k ; ++j ) {
+    const long long w = 1 + ( long long )( g() % 1000000 );
+    E.emplace_back( i , k + j , w );
+    C[ std::size_t( i ) * std::size_t( k ) + std::size_t( j ) ] = - w;
+    }
+  Assignment< long long > A( k , C );
+  const auto M = maxWeightMatching( 2 * k , E , true );
+  CHECK( int( M.second.size() ) == k && M.first == - A.total() );
+  CHECK( maxWeightMatching( 2 * k , E ).first == M.first );
+  }
+
+ // large sparse graphs of unit weights: the size of the blossoms of
+ // maxCardinalityMatching(), for both kinds of the weighted one
+ for( int it = 0 ; it < 3 ; ++it ) {
+  const int n = 1500 + 500 * it , m = 3 * n;
+  WE E;
+  std::vector< std::pair< int , int > > P;
+  while( int( E.size() ) < m ) {
+   const int a = int( g() % unsigned( n ) ) , b = int( g() % unsigned( n ) );
+   if( a != b ) { E.emplace_back( a , b , 1 ); P.emplace_back( a , b ); }
+   }
+  const StaticGraph<> h( n , P , false );
+  const int c = checkedSize( h , maxCardinalityMatching( h ) );
+  CHECK( maxWeightMatching( n , E ).first == c &&
+         maxWeightMatching( n , E , true ).first == c );
+  }
+
+ // the edges: no node, no edge, light edges only (none taken, unless the
+ // size comes first), a triangle, a path where the heaviest edge must be
+ // left, the contracts
+ CHECK( maxWeightMatching( 0 , WE{} ).first == 0 &&
+        maxWeightMatching( 0 , WE{} , true ).second.empty() );
+ CHECK( maxWeightMatching( 3 , WE{} ).second.empty() );
+ const WE light = { { 0 , 1 , 0 } , { 2 , 3 , -4 } };
+ CHECK( maxWeightMatching( 4 , light ).second.empty() );
+ CHECK( maxWeightMatching( 4 , light , true ) ==
+        std::pair( -4LL , std::vector< std::size_t >( { 0 , 1 } ) ) );
+ const WE path = { { 0 , 1 , 5 } , { 1 , 2 , 8 } , { 2 , 3 , 5 } };
+ CHECK( maxWeightMatching( 4 , path ) ==
+        std::pair( 10LL , std::vector< std::size_t >( { 0 , 2 } ) ) );
+ const WE tri = { { 0 , 1 , 6 } , { 1 , 2 , 7 } , { 0 , 2 , 5 } ,
+                  { 2 , 3 , 1 } };
+ CHECK( maxWeightMatching( 4 , tri ).first == 7 &&
+        maxWeightMatching( 4 , tri , true ).first == 7 );
+ CHECK_THROWS( maxWeightMatching( -1 , WE{} ) , contract_violation );
+ CHECK_THROWS( maxWeightMatching( 2 , WE{ { 0 , 2 , 1 } } ) ,
+               contract_violation );
+ CHECK_THROWS( maxWeightMatching( 2 , WE{ { 1 , 1 , 1 } } ) ,
                contract_violation );
  }
 

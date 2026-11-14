@@ -52,6 +52,9 @@
  *   unoriented graphs (G( n , 4 n ), grids, R-MAT), against
  *   edmonds_maximum_cardinality_matching() of the Boost Graph Library on
  *   its adjacency_list;
+ * - wmatching, maxWeightMatching(), the primal-dual blossoms, on G( n , 4 n )
+ *   unoriented with n / 50 nodes and costs in [ 1 , 10^5 ], against
+ *   maximum_weighted_matching() of the Boost Graph Library;
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -121,6 +124,7 @@
  #include <boost/graph/grid_graph.hpp>
  #include <boost/graph/adjacency_list.hpp>
  #include <boost/graph/max_cardinality_matching.hpp>
+ #include <boost/graph/maximum_weighted_matching.hpp>
  #include <boost/graph/strong_components.hpp>
  #include <boost/heap/d_ary_heap.hpp>
  #include <boost/heap/fibonacci_heap.hpp>
@@ -1098,6 +1102,42 @@ void matching( const std::string & c , int n0 , int r , unsigned seed )
   return( matchingRun( S , k ) ); } );
  }
 
+void wmatching( int n , int r , unsigned seed )
+{
+ if( n < 2 )
+  return;
+ std::mt19937_64 g( seed + unsigned( n ) );
+ const Input I = gnm( n , 4 * std::size_t( n ) , false , g );
+ const auto E = edgesOf( I , arcs( I ) );
+ Cell C( "wmatching" , "gnm4" , std::size_t( n ) , E.size() , r );
+ std::vector< std::tuple< int , int , long long > > L;
+ for( const auto & [ u , v , w ] : E ) L.emplace_back( u , v , w );
+ for( const char * who : { "ADS" , "ADS A/A" } )
+  C( who , [ & ]( Counts & k ) {
+   const auto M = ADS::maxWeightMatching( n , L );
+   k = { { "edges" , (long long) M.second.size() } };
+   return( M.first ); } );
+#ifdef ADS_HAS_BOOST
+ if( measured( { "Boost adjacency_list" } ) ) {
+  using BG = boost::adjacency_list< boost::vecS , boost::vecS ,
+             boost::undirectedS , boost::no_property ,
+             boost::property< boost::edge_weight_t , long long > >;
+  BG G( static_cast< std::size_t >( n ) );
+  for( const auto & [ u , v , w ] : L )
+   boost::add_edge( std::size_t( u ) , std::size_t( v ) , w , G );
+  C( "Boost adjacency_list" , [ & ]( Counts & k ) {
+   std::vector< boost::graph_traits< BG >::vertex_descriptor > mate(
+                                         static_cast< std::size_t >( n ) );
+   boost::maximum_weighted_matching( G , mate.data() );
+   long long s = 0 , e = 0;
+   for( const auto & [ u , v , w ] : L )
+    if( mate[ std::size_t( u ) ] == std::size_t( v ) ) { s += w; ++e; }
+   k = { { "edges" , e } };
+   return( s ); } );
+  }
+#endif
+ }
+
 /// n random merges and n finds on the MFSET M
 template< class M >
 long long setsRun( int n , const std::vector< std::pair< int , int > > & U ,
@@ -1230,6 +1270,8 @@ int main( int argc , char ** argv )
   if( want( "matching" ) )
    for( const char * c : { "gnm4" , "grid" , "rmat" } )
     matching( c , n , r , o.seed );
+  if( want( "wmatching" ) )
+   wmatching( n / 50 , r , o.seed );
   if( want( "union-find" ) )
    unionFind( n , r , o.seed );
   for( const char * b : { "grid-bfs" , "grid-dijkstra" } )
