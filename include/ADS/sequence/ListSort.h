@@ -14,9 +14,10 @@
  *   \f$ i \f$ made of about \f$ 2^i \f$ runs of the input, as a binary
  *   counter (the merge of `std::list::sort`, on the runs of the input
  *   instead of its single cells): \f$ O( n \log r ) \f$ comparisons for
- *   \f$ r \f$ runs, \f$ n - 1 \f$ on a sorted or reversed list, and
- *   \f$ O( 1 ) \f$ extra space. The merges follow the successors only, and
- *   the predecessors are set once at the end;
+ *   \f$ r \f$ runs, \f$ n \f$ on a sorted or reversed list of
+ *   \f$ n \ge 2 \f$ items, and \f$ O( 1 ) \f$ extra space. The merges
+ *   follow the successors only, and the predecessors are set once at the
+ *   end;
  * - on the numbers in their natural order (an arithmetic type and `less`
  *   `std::less`), the cells are sorted instead by an array of pairs
  *   ( key , cell ) and the LSD radix sort [see `RadixSort.h`], stable, and
