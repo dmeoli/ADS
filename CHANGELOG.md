@@ -2555,6 +2555,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- the postcondition of RemUnionFind::merge(), find( x ) == find( y ) at the
+  level 2, halved the paths as a side effect, so that the contracts changed
+  the forest that they checked; it now climbs to the roots without changing
+  any parent, as the header, the theory of the MFSET and the chapter of the
+  manual say; the test ordered rem-union-find-contracts
+
 - the precondition of RadixHeap::push(), a key not smaller than any key
   extracted or read, was checked only against the base of the buckets, which
   extractBelow() does not raise to the keys that it extracts, so that a key

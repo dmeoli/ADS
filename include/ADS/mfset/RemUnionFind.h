@@ -35,11 +35,12 @@
  * Larkin and Tarjan).
  *
  * The contracts [see `Contract.h`]: the elements are in \f$ [ 0 , n ) \f$,
- * \f$ n < 2^{32} \f$; `find()` gives a root and after `merge()` \f$ x \f$ and
- * \f$ y \f$ have the same root; the invariant is that every parent is not
- * smaller than its child and that the roots are `count()`, an
- * \f$ O( n ) \f$ check at the level 3 on the sets of up to 4096 elements.
- * The operations are defined in `RemUnionFind.tpp`.
+ * \f$ n < 2^{32} \f$; `find()` gives a root and after `merge()` \f$ x \f$
+ * and \f$ y \f$ have the same root, checked by a climb that compresses no
+ * path, so that the contracts leave the forest as it is; the invariant is
+ * that every parent is not smaller than its child and that the roots are
+ * `count()`, an \f$ O( n ) \f$ check at the level 3 on the sets of up to
+ * 4096 elements. The operations are defined in `RemUnionFind.tpp`.
  *
  * \see M. M. A. Patwary, J. R. S. Blair, F. Manne, Experiments on
  *      union-find algorithms for the disjoint-set data structure,
@@ -152,6 +153,10 @@ class RemUnionFind {
 
  /// every parent at least its child, and `count()` roots, \f$ O( n ) \f$
  [[nodiscard]] bool forest( void ) const;
+
+ /// the root of \f$ x \f$, by a climb that changes no parent, for the
+ /// contracts, which must not compress the paths
+ [[nodiscard]] std::uint32_t root( std::uint32_t x ) const;
 
  std::vector< std::uint32_t > f_p;   ///< the parents
  std::size_t f_count = 0;            ///< the number of the sets

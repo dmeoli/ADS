@@ -73,7 +73,7 @@ inline bool RemUnionFind::merge( std::uint32_t x , std::uint32_t y )
   a = z;
   }
  f_count -= joined ? 1 : 0;
- ADS_POST( find( x ) == find( y ) );
+ ADS_POST( root( x ) == root( y ) );
  ADS_INVARIANT( ( f_p.size() > 4096 ) || forest() );
  return( joined );
  }
@@ -83,6 +83,13 @@ inline bool RemUnionFind::same( std::uint32_t x , std::uint32_t y )
 {
  ADS_PRE( ( x < f_p.size() ) && ( y < f_p.size() ) );
  return( find( x ) == find( y ) );
+ }
+
+inline std::uint32_t RemUnionFind::root( std::uint32_t x ) const
+{
+ while( f_p[ x ] != x )
+  x = f_p[ x ];
+ return( x );
  }
 
 inline bool RemUnionFind::forest( void ) const

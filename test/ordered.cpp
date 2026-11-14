@@ -562,6 +562,37 @@ ADS_TEST( "vector-intersection" )
  CHECK_THROWS( intersect( U , V ) , contract_violation );
  }
 
+// the contracts of merge() leave the forest as the algorithm of Rem makes
+// it: after each of random merges, also of elements in the same set, the
+// parents are those of the splicing alone, run on a vector beside it, with
+// no halving of a path by the check of the postcondition
+ADS_TEST( "rem-union-find-contracts" )
+{
+ const std::uint32_t n = 300;
+ RemUnionFind U( n );
+ std::vector< std::uint32_t > p( n );
+ std::iota( p.begin() , p.end() , 0u );
+ auto merge = [ & ]( std::uint32_t a , std::uint32_t b ) {   // Rem's
+  while( p[ a ] != p[ b ] ) {
+   if( p[ a ] > p[ b ] ) std::swap( a , b );
+   if( a == p[ a ] ) { p[ a ] = p[ b ]; return; }
+   const std::uint32_t z = p[ a ];
+   p[ a ] = p[ b ];
+   a = z;
+   }
+  };
+ std::mt19937 g( 47 );
+ bool same = true;
+ for( int t = 0 ; t < 2000 ; ++t ) {
+  const std::uint32_t x = g() % n , y = g() % n;
+  U.merge( x , y );
+  merge( x , y );
+  for( std::uint32_t v = 0 ; v < n ; ++v )
+   same = same && ( U.parent( v ) == p[ v ] );
+  }
+ CHECK( same );
+ }
+
 // the union of disjoint sets against MFSet on random merges and queries,
 // on 1, 2 and 3000 elements, merges of an element with itself, of
 // elements already together, chains in increasing and decreasing order,

@@ -390,9 +390,11 @@ time for $m$ operations ([Tarjan and van Leeuwen
 1984](Z-bibliography.md#ref-tarjan1984)). When the elements are numbered
 in a random order, however, the expected time is $O( m \, \alpha( m , n ) )$,
 the bound of the union by rank ([Goel et al.
-2014](Z-bibliography.md#ref-goel2014)). The contracts check (11.3) and the
-number of the roots after each merge, at their highest level and on the
-sets of up to 4096 elements.
+2014](Z-bibliography.md#ref-goel2014)). The contracts check that $x$ and
+$y$ have the same root after a merge, by climbs that change no parent (a
+`find()` would halve the paths, and the contracts would change the forest
+that they check), and (11.3) and the number of the roots after each merge,
+at their highest level and on the sets of up to 4096 elements.
 
 ## 11.5 Undo and offline connectivity {#sec-11-5}
 
