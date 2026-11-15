@@ -172,12 +172,29 @@ std::uint8_t
 ConcurrentFlatTable< K , V , H , Eq , C >::tagged( Table & T , std::size_t i ,
 					       std::uint64_t w ) const
 {
+ if constexpr( ! kTagged ) {
+  ( void )T;
+  ( void )i;
+  ( void )w;
+  return( 0 );
+  }
+ const auto t =
+   std::uint8_t( T.G[ i >> 3 ].load( std::memory_order_relaxed ) >>
+		 ( 8 * unsigned( i & 7 ) ) );
+ return( t != 0 ? t : tagWith( T , i , hashOf( w ) ) );
+ }
+
+template< class K , class V , class H , class Eq , class C >
+std::uint8_t
+ConcurrentFlatTable< K , V , H , Eq , C >::tagWith( Table & T , std::size_t i ,
+						std::uint64_t h ) const
+{
  // the same value whoever writes it, after the word, with release: a
  // tag read with acquire shows the word it tags
  if constexpr( ! kTagged ) {
   ( void )T;
   ( void )i;
-  ( void )w;
+  ( void )h;
   return( 0 );
   }
  const unsigned sh = 8 * unsigned( i & 7 );
@@ -185,7 +202,7 @@ ConcurrentFlatTable< K , V , H , Eq , C >::tagged( Table & T , std::size_t i ,
    std::uint8_t( T.G[ i >> 3 ].load( std::memory_order_relaxed ) >> sh );
  if( t != 0 )
   return( t );
- const std::uint8_t u = tag( hashOf( w ) );
+ const std::uint8_t u = tag( h );
  T.G[ i >> 3 ].fetch_or( std::uint64_t( u ) << sh ,
 			 std::memory_order_release );
  return( u );
@@ -445,19 +462,20 @@ void ConcurrentFlatTable< K , V , H , Eq , C >::copy( Table & T , Table & N )
    const std::uint64_t w = wordAt( T , i );
    if( w == 0 )
     continue;
-   for( std::size_t j = home( hashOf( w ) , N ) ; ; j = ( j + 1 ) & m ) {
+   const std::uint64_t h = hashOf( w );
+   for( std::size_t j = home( h , N ) ; ; j = ( j + 1 ) & m ) {
     std::uint64_t x = 0;
     if constexpr( inlined ) {
      std::uint64_t y = 0;
      if( cas16( N.W + 2 * j , x , y , w ,
 		T.W[ 2 * i + 1 ].load( std::memory_order_acquire ) ) ) {
-      tagged( N , j , w );
+      tagWith( N , j , h );
       break;
       }
      }
     else if( N.W[ j ].compare_exchange_strong( x , w ,
 					       std::memory_order_relaxed ) ) {
-     tagged( N , j , w );
+     tagWith( N , j , h );
      break;
      }
     }
@@ -782,7 +800,7 @@ ConcurrentFlatTable< K , V , H , Eq , C >::placeWord( const K & k ,
 					   std::memory_order_acquire ) ) {
      if constexpr( ! packed )
       consume( idx );
-     tagged( *T , i , w );  // the insertion takes effect
+     tagWith( *T , i , h );  // the insertion takes effect
      ADS_INVARIANT( reached( *T , i ) );
      const std::uint64_t c = s.w.fetch_add( ( std::uint64_t( 1 ) << 16 ) - 1 ,
 					    std::memory_order_release );
@@ -846,7 +864,7 @@ auto ConcurrentFlatTable< K , V , H , Eq , C >::placeInline( const K & k ,
    if( x == 0 ) {
     std::uint64_t y = 0;
     if( cas16( p , x , y , kb , vb ) ) {
-     tagged( *T , i , kb );  // the insertion takes effect
+     tagWith( *T , i , h );  // the insertion takes effect
      ADS_INVARIANT( reached( *T , i ) );
      const std::uint64_t c = s.w.fetch_add( ( std::uint64_t( 1 ) << 16 ) - 1 ,
 					    std::memory_order_release );

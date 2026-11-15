@@ -1989,6 +1989,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- ConcurrentFlatTable: the tag of a place that an insertion or a growth
+  writes comes from the hash that it already has (tagWith()), instead of
+  the hash of the key computed again, which in a set of pointers compared
+  by their objects is the hash of the object reached through the pointer
+
 - In a Mailbox that merges (CoalesceBy), a plain send( me , to , x ) closes
   the run of the key of x, marking it in the map of the outbox by the same
   one probe, so that the next merged send of that key is appended after x
