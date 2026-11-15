@@ -74,14 +74,18 @@ namespace ADS
 /// In pseudocode (section 13.7):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{lcsTable}( P , T ) \cr
+/// 1 & \textbf{function}\ \mathrm{lcsTable}( P , T )\quad \triangleright
+///     \ \mathit{DP}[ i ][ j ] \text{ for the prefixes of } i \text{ and } j
+///     \text{ letters} \cr
 /// 2 & \quad \mathit{DP}[ 0 .. m ][ 0 .. n ] \gets 0 \cr
 /// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
 /// 4 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ P[ i - 1 ] = T[ j - 1 ]\ \textbf{then}
-///     \ \mathit{DP}[ i ][ j ] \gets \mathit{DP}[ i - 1 ][ j - 1 ] + 1 \cr
-/// 6 & \qquad\quad \textbf{else}\ \mathit{DP}[ i ][ j ] \gets \max\{
-///     \mathit{DP}[ i - 1 ][ j ] , \mathit{DP}[ i ][ j - 1 ] \} \cr
+/// 5 & \qquad\quad \textbf{if}\ P[ i - 1 ] \ne T[ j - 1 ]\ \textbf{then}
+///     \ \mathit{DP}[ i ][ j ] \gets \max\{ \mathit{DP}[ i ][ j - 1 ] ,
+///     \mathit{DP}[ i - 1 ][ j ] \} \cr
+/// 6 & \qquad\quad \textbf{else}\ \mathit{DP}[ i ][ j ] \gets 1 +
+///     \mathit{DP}[ i - 1 ][ j - 1 ]\quad \triangleright
+///     \ \text{the common last letter} \cr
 /// 7 & \quad \textbf{return}\ \mathit{DP}
 /// \end{array}}
 /// \f]
@@ -96,15 +100,16 @@ std::vector< std::vector< int > > lcsTable( const S & P , const S & T );
 /// first and the call \f$ \mathrm{rec}( m , n ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{rec}( i , j ) \cr
+/// 1 & \textbf{function}\ \mathrm{rec}( i , j )\quad \triangleright
+///     \ \mathit{DP} \text{ starts at } -1 \text{, not yet computed} \cr
 /// 2 & \quad \textbf{if}\ i = 0\ \textbf{or}\ j = 0\ \textbf{then return}\ 0
 ///     \cr
-/// 3 & \quad \textbf{if}\ \mathit{DP}[ i ][ j ] < 0\ \textbf{then} \cr
-/// 4 & \qquad \textbf{if}\ P[ i - 1 ] = T[ j - 1 ]\ \textbf{then}
-///     \ \mathit{DP}[ i ][ j ] \gets \mathrm{rec}( i - 1 , j - 1 ) + 1 \cr
-/// 5 & \qquad \textbf{else}\ \mathit{DP}[ i ][ j ] \gets \max\{
-///     \mathrm{rec}( i - 1 , j ) , \mathrm{rec}( i , j - 1 ) \} \cr
-/// 6 & \quad \textbf{return}\ \mathit{DP}[ i ][ j ]
+/// 3 & \quad \textbf{if}\ \mathit{DP}[ i ][ j ] \ge 0\ \textbf{then return}
+///     \ \mathit{DP}[ i ][ j ] \cr
+/// 4 & \quad \mathit{DP}[ i ][ j ] \gets 1 + \mathrm{rec}( i - 1 , j - 1 )
+///     \text{ if } P[ i - 1 ] = T[ j - 1 ] \text{, else } \max\{
+///     \mathrm{rec}( i , j - 1 ) , \mathrm{rec}( i - 1 , j ) \} \cr
+/// 5 & \quad \textbf{return}\ \mathit{DP}[ i ][ j ]
 /// \end{array}}
 /// \f]
 template< class S >
@@ -116,16 +121,17 @@ int lcsMemo( const S & P , const S & T , long * solved = nullptr );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{lcs}( P , T ) \cr
-/// 2 & \quad \mathit{DP} \gets \mathrm{lcsTable}( P , T );\ i \gets m;\ j
-///     \gets n;\ X \gets (\,) \cr
-/// 3 & \quad \textbf{while}\ i > 0\ \textbf{and}\ j > 0\ \textbf{do} \cr
+/// 2 & \quad \mathit{DP} \gets \mathrm{lcsTable}( P , T );\ ( i , j ) \gets
+///     ( m , n );\ X \gets () \cr
+/// 3 & \quad \textbf{while}\ i > 0\ \textbf{and}\ j > 0\ \textbf{do}\quad
+///     \triangleright\ X \text{ built from its end} \cr
 /// 4 & \qquad \textbf{if}\ P[ i - 1 ] = T[ j - 1 ]\ \textbf{then}
-///     \ \text{prepend } P[ i - 1 ] \text{ to } X;\ i \gets i - 1;\ j \gets j
-///     - 1 \cr
-/// 5 & \qquad \textbf{else if}\ \mathit{DP}[ i - 1 ][ j ] \ge \mathit{DP}[ i
-///     ][ j - 1 ]\ \textbf{then}\ i \gets i - 1 \cr
-/// 6 & \qquad \textbf{else}\ j \gets j - 1 \cr
-/// 7 & \quad \textbf{return}\ X
+///     \ \text{put } P[ i - 1 ] \text{ at the front of } X;\ ( i , j ) \gets
+///     ( i - 1 , j - 1 ) \cr
+/// 5 & \qquad \textbf{else if}\ \mathit{DP}[ i ][ j - 1 ] > \mathit{DP}[ i -
+///     1 ][ j ]\ \textbf{then}\ j \gets j - 1\ \textbf{else}\ i \gets i - 1
+///     \cr
+/// 6 & \quad \textbf{return}\ X
 /// \end{array}}
 /// \f]
 /// \post a subsequence of \f$ P \f$ and \f$ T \f$ of the length of
@@ -141,22 +147,23 @@ S lcs( const S & P , const S & T );
 /// the items of \f$ T \f$ preferred on a tie:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{diff}( P , T ) \cr
-/// 2 & \quad \mathit{DP} \gets \mathrm{lcsTable}( P , T );\ i \gets m;\ j
-///     \gets n;\ D \gets (\,) \cr
-/// 3 & \quad \textbf{while}\ i > 0\ \textbf{or}\ j > 0\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ i > 0\ \textbf{and}\ j > 0\ \textbf{and}\ P[ i -
-///     1 ] = T[ j - 1 ]\ \textbf{then} \cr
-/// 5 & \qquad\quad \text{prepend } ( \text{' '} , P[ i - 1 ] ) \text{ to }
-///     D;\ i \gets i - 1;\ j \gets j - 1 \cr
-/// 6 & \qquad \textbf{else if}\ j > 0\ \textbf{and}\ ( i = 0\ \textbf{or}
-///     \ \mathit{DP}[ i ][ j - 1 ] \ge \mathit{DP}[ i - 1 ][ j ] )
+/// 1 & \textbf{function}\ \mathrm{diff}( P , T )\quad \triangleright
+///     \ \text{the lines kept, added (+) and removed (-)} \cr
+/// 2 & \quad \mathit{DP} \gets \mathrm{lcsTable}( P , T );\ ( i , j ) \gets
+///     ( m , n );\ D \gets () \cr
+/// 3 & \quad \textbf{while}\ ( i , j ) \ne ( 0 , 0 )\ \textbf{do}\quad
+///     \triangleright\ D \text{ built from its end} \cr
+/// 4 & \qquad \textbf{if}\ i , j > 0 \text{ and } P[ i - 1 ] = T[ j - 1 ]
+///     \ \textbf{then}\ \text{put } ( \text{' '} , P[ i - 1 ] )
+///     \text{ at the front of } D;\ ( i , j ) \gets ( i - 1 , j - 1 ) \cr
+/// 5 & \qquad \textbf{else if}\ i > 0 \text{ and } ( j = 0 \text{ or }
+///     \mathit{DP}[ i - 1 ][ j ] > \mathit{DP}[ i ][ j - 1 ] )
 ///     \ \textbf{then} \cr
-/// 7 & \qquad\quad \text{prepend } ( \text{'+'} , T[ j - 1 ] ) \text{ to }
-///     D;\ j \gets j - 1 \cr
-/// 8 & \qquad \textbf{else}\ \text{prepend } ( \text{'-'} , P[ i - 1 ] )
-///     \text{ to } D;\ i \gets i - 1 \cr
-/// 9 & \quad \textbf{return}\ D
+/// 6 & \qquad\quad \text{put } ( \text{'-'} , P[ i - 1 ] )
+///     \text{ at the front of } D;\ i \gets i - 1 \cr
+/// 7 & \qquad \textbf{else}\ \text{put } ( \text{'+'} , T[ j - 1 ] )
+///     \text{ at the front of } D;\ j \gets j - 1 \cr
+/// 8 & \quad \textbf{return}\ D
 /// \end{array}}
 /// \f]
 template< class S >
@@ -170,16 +177,18 @@ std::vector< std::pair< char , typename S::value_type > > diff( const S & P ,
 /// In pseudocode (exercise 13.2), two rows of the table:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{longestCommonSubstring}( P , T ) \cr
-/// 2 & \quad \mathit{best} \gets 0;\ e_i \gets 0;\ e_j \gets 0 \cr
-/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
-/// 4 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 5 & \qquad\quad \mathit{DP}[ i ][ j ] \gets \mathit{DP}[ i - 1 ][ j - 1 ]
-///     + 1 \text{ if } P[ i - 1 ] = T[ j - 1 ] \text{, and 0 otherwise} \cr
-/// 6 & \qquad\quad \textbf{if}\ \mathit{DP}[ i ][ j ] > \mathit{best}
+/// 1 & \textbf{function}\ \mathrm{longestCommonSubstring}( P , T )\quad
+///     \triangleright\ \mathit{DP}[ i ][ j ]
+///     \text{ the longest common suffix} \cr
+/// 2 & \quad ( \mathit{best} , e_i , e_j ) \gets ( 0 , 0 , 0 ) \cr
+/// 3 & \quad \textbf{foreach}\ i \in [ 1 , m ] , j \in [ 1 , n ]
+///     \text{, by rows}\ \textbf{do} \cr
+/// 4 & \qquad \mathit{DP}[ i ][ j ] \gets 0 \text{ if } P[ i - 1 ] \ne T[ j
+///     - 1 ] \text{, else } 1 + \mathit{DP}[ i - 1 ][ j - 1 ] \cr
+/// 5 & \qquad \textbf{if}\ \mathit{best} < \mathit{DP}[ i ][ j ]
 ///     \ \textbf{then}\ ( \mathit{best} , e_i , e_j ) \gets ( \mathit{DP}[ i
-///     ][ j ] , i , j ) \cr
-/// 7 & \quad \textbf{return}\ ( \mathit{best} , e_i , e_j )
+///     ][ j ] , i , j )\quad \triangleright\ \text{the first longest} \cr
+/// 6 & \quad \textbf{return}\ ( \mathit{best} , e_i , e_j )
 /// \end{array}}
 /// \f]
 /// \post \f$ P \f$ and \f$ T \f$ share the substring of length

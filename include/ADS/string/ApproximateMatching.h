@@ -86,21 +86,18 @@ using Table = std::vector< std::vector< int > >;
 /// In pseudocode (section 13.1):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{matchingTable}( P , T , \mathit{edit} ) \cr
-/// 2 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do}
-///     \ \mathit{DP}[ i ][ 0 ] \gets i \cr
-/// 3 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ n\ \textbf{do}
+/// 1 & \textbf{function}\ \mathrm{matchingTable}( P , T , \mathit{edit}
+///     )\quad \triangleright\ \delta_{ij} = [ p_{i-1} \ne t_{j-1} ] \cr
+/// 2 & \quad \mathit{DP}[ i ][ 0 ] \gets i \text{ for every } i;
 ///     \ \mathit{DP}[ 0 ][ j ] \gets j \text{ if } \mathit{edit}
-///     \text{, else }
-///     0 \cr
-/// 4 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
-/// 5 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 6 & \qquad\quad \delta \gets 0 \text{ if } p_{i-1} = t_{j-1} \text{, else }
-///     1 \cr
-/// 7 & \qquad\quad \mathit{DP}[ i ][ j ] \gets \min\{ \mathit{DP}[ i - 1 ][ j
-///     - 1 ] + \delta , \mathit{DP}[ i - 1 ][ j ] + 1 , \mathit{DP}[ i ][ j
-///     - 1 ] + 1 \} \cr
-/// 8 & \quad \textbf{return}\ \mathit{DP}
+///     \text{, else } 0\quad \triangleright
+///     \ \text{an occurrence may start anywhere} \cr
+/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
+/// 4 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
+/// 5 & \qquad\quad \mathit{DP}[ i ][ j ] \gets \min\{ \mathit{DP}[ i ][ j -
+///     1 ] + 1 , \mathit{DP}[ i - 1 ][ j ] + 1 , \mathit{DP}[ i - 1 ][ j - 1
+///     ] + \delta_{ij} \} \cr
+/// 6 & \quad \textbf{return}\ \mathit{DP}
 /// \end{array}}
 /// \f]
 template< class S >
@@ -116,11 +113,11 @@ Table matchingTable( const S & P , const S & T , bool edit = false );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{stringMatching}( P , T ) \cr
 /// 2 & \quad \mathit{DP} \gets \mathrm{matchingTable}( P , T ,
-///     \textbf{false} );\ \mathit{pos} \gets 1 \cr
-/// 3 & \quad \textbf{for}\ j \gets 2\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ \mathit{DP}[ m ][ j ] < \mathit{DP}[ m ][
-///     \mathit{pos} ]\ \textbf{then}\ \mathit{pos} \gets j \cr
-/// 5 & \quad \textbf{return}\ ( \mathit{pos} - 1 , \mathit{DP}[ m ][
+///     \textbf{false} ) \cr
+/// 3 & \quad \mathit{pos} \gets \text{the first } j \ge 1
+///     \text{ of the least } \mathit{DP}[ m ][ j ]\quad \triangleright
+///     \ \text{the end of a best occurrence} \cr
+/// 4 & \quad \textbf{return}\ ( \mathit{pos} - 1 , \mathit{DP}[ m ][
 ///     \mathit{pos} ] )
 /// \end{array}}
 /// \f]
@@ -136,16 +133,19 @@ std::pair< long , int > stringMatching( const S & P , const S & T );
 /// that gave the value of the cell:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{occurrence}( \mathit{DP} , P , T , j ) \cr
+/// 1 & \textbf{function}\ \mathrm{occurrence}( \mathit{DP} , P , T , j
+///     )\quad \triangleright\ \text{the start of the occurrence ending at }
+///     j \cr
 /// 2 & \quad i \gets m \cr
-/// 3 & \quad \textbf{while}\ i > 0\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ j > 0\ \textbf{and}\ \mathit{DP}[ i ][ j ] =
-///     \mathit{DP}[ i - 1 ][ j - 1 ] + \delta\ \textbf{then}\ i \gets i -
-///     1;\ j \gets j - 1 \cr
+/// 3 & \quad \textbf{while}\ i > 0\ \textbf{do}\quad \triangleright
+///     \ \text{back along a choice that gives } \mathit{DP}[ i ][ j ] \cr
+/// 4 & \qquad \textbf{if}\ j > 0 \text{ and } \mathit{DP}[ i ][ j ] =
+///     \mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij}\ \textbf{then}\ ( i , j )
+///     \gets ( i - 1 , j - 1 ) \cr
 /// 5 & \qquad \textbf{else if}\ \mathit{DP}[ i ][ j ] = \mathit{DP}[ i - 1
-///     ][ j ] + 1\ \textbf{then}\ i \gets i - 1 \cr
-/// 6 & \qquad \textbf{else}\ j \gets j - 1 \cr
-/// 7 & \quad \textbf{return}\ j
+///     ][ j ] + 1\ \textbf{then}\ i \gets i - 1\ \textbf{else}\ j \gets j -
+///     1 \cr
+/// 6 & \quad \textbf{return}\ j
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{DP} \f$ is `matchingTable( P , T )` and
@@ -161,16 +161,16 @@ std::size_t occurrence( const Table & DP , const S & P , const S & T ,
 /// and \f$ D \f$ the row \f$ i \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{stringMatchingSingleRow}( P , T ) \cr
-/// 2 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ n\ \textbf{do}\ D[ j ]
-///     \gets 0 \cr
+/// 1 & \textbf{function}\ \mathrm{stringMatchingSingleRow}( P , T )\quad
+///     \triangleright\ D \text{ the row } i \text{ of the table} \cr
+/// 2 & \quad D \gets n + 1 \text{ zeros} \cr
 /// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
 /// 4 & \qquad \mathit{prev} \gets D;\ D[ 0 ] \gets i \cr
-/// 5 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 6 & \qquad\quad D[ j ] \gets \min\{ \mathit{prev}[ j - 1 ] + \delta ,
-///     \mathit{prev}[ j ] + 1 , D[ j - 1 ] + 1 \} \cr
-/// 7 & \quad \textbf{return}\ \min\{ D[ 1 ] , \ldots , D[ n ] \} \text{ (}
-///     m \text{ if } n = 0 \text{)}
+/// 5 & \qquad D[ j ] \gets \min\{ D[ j - 1 ] + 1 , \mathit{prev}[ j ] + 1 ,
+///     \mathit{prev}[ j - 1 ] + \delta_{ij} \} \text{ for } j = 1 , \ldots ,
+///     n \cr
+/// 6 & \quad \textbf{return}\ \min\{ D[ 1 ] , \ldots , D[ n ] \}
+///     \text{, or } m \text{ if } n = 0
 /// \end{array}}
 /// \f]
 template< class S >
@@ -183,16 +183,16 @@ int stringMatchingSingleRow( const S & P , const S & T );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{editDistance}( P , T ) \cr
-/// 2 & \quad \textbf{if}\ n > m\ \textbf{then return}\ \mathrm{editDistance}(
-///     T , P ) \cr
-/// 3 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ n\ \textbf{do}\ D[ j ]
-///     \gets j \cr
+/// 2 & \quad \textbf{if}\ m < n\ \textbf{then return}
+///     \ \mathrm{editDistance}( T , P )\quad \triangleright
+///     \ \text{the row on the shorter string} \cr
+/// 3 & \quad D \gets ( 0 , 1 , \ldots , n ) \cr
 /// 4 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
 /// 5 & \qquad \mathit{prev} \gets D;\ D[ 0 ] \gets i \cr
-/// 6 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 7 & \qquad\quad D[ j ] \gets \min\{ \mathit{prev}[ j - 1 ] + \delta ,
-///     \mathit{prev}[ j ] + 1 , D[ j - 1 ] + 1 \} \cr
-/// 8 & \quad \textbf{return}\ D[ n ]
+/// 6 & \qquad D[ j ] \gets \min\{ D[ j - 1 ] + 1 , \mathit{prev}[ j ] + 1 ,
+///     \mathit{prev}[ j - 1 ] + \delta_{ij} \} \text{ for } j = 1 , \ldots ,
+///     n \cr
+/// 7 & \quad \textbf{return}\ D[ n ]
 /// \end{array}}
 /// \f]
 /// \post the distance is in \f$ [ | m - n | , \max( m , n ) ] \f$

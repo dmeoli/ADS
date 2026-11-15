@@ -67,16 +67,19 @@ namespace ADS
 /// the intervals), each close matched with the nearest open still pending:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{longestBalancedSubsequence}( s ) \cr
-/// 2 & \quad \mathit{pairs} \gets 0;\ \mathit{pending} \gets 0 \cr
-/// 3 & \quad \textbf{foreach}\ c \in s\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ c = \mathit{open}\ \textbf{then}\ \mathit{pending}
-///     \gets \mathit{pending} + 1 \cr
-/// 5 & \qquad \textbf{else if}\ c = \mathit{close}\ \textbf{and}
-///     \ \mathit{pending} > 0\ \textbf{then} \cr
-/// 6 & \qquad\quad \mathit{pending} \gets \mathit{pending} - 1;
-///     \ \mathit{pairs} \gets \mathit{pairs} + 1 \cr
-/// 7 & \quad \textbf{return}\ 2 \cdot \mathit{pairs}
+/// 1 & \textbf{function}\ \mathrm{longestBalancedSubsequence}( s )\quad
+///     \triangleright\ \text{each close matched to an earlier open} \cr
+/// 2 & \quad \mathit{pairs} \gets 0;\ \mathit{pending} \gets 0\quad
+///     \triangleright\ \text{the opens not yet matched} \cr
+/// 3 & \quad \textbf{foreach}\ c \in s \text{, from the left}\ \textbf{do}
+///     \cr
+/// 4 & \qquad \textbf{if}\ c = \mathit{close}\ \textbf{and}
+///     \ \mathit{pending} > 0\ \textbf{then}\ ( \mathit{pending} ,
+///     \mathit{pairs} ) \gets ( \mathit{pending} - 1 , \mathit{pairs} + 1 )
+///     \cr
+/// 5 & \qquad \textbf{else if}\ c = \mathit{open}\ \textbf{then}
+///     \ \mathit{pending} \gets \mathit{pending} + 1 \cr
+/// 6 & \quad \textbf{return}\ 2\, \mathit{pairs}
 /// \end{array}}
 /// \f]
 /// \pre `open` differs from `close`
@@ -93,19 +96,25 @@ longestBalancedSubsequence( std::string_view s , char open = '(' ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{longestBalancedSubstring}( s ) \cr
-/// 2 & \quad O \gets \text{an empty stack};\ \mathit{base} \gets 0;\ (
-///     \mathit{start} , \ell ) \gets ( 0 , 0 ) \cr
-/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 2 & \quad O \gets \text{an empty stack of the places of the opens};
+///     \ \mathit{base} \gets 0;\ ( \mathit{start} , \ell ) \gets ( 0 , 0 )
+///     \cr
+/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do}\quad
+///     \triangleright\ \mathit{base}
+///     \text{ the first place after an unmatched close} \cr
 /// 4 & \qquad \textbf{if}\ s[ i ] = \mathit{open}\ \textbf{then}
 ///     \ \mathrm{push}( O , i ) \cr
-/// 5 & \qquad \textbf{else if}\ s[ i ] = \mathit{close}\ \textbf{and}\ O \ne
-///     \emptyset\ \textbf{then} \cr
-/// 6 & \qquad\quad \mathrm{pop}( O ) \cr
-/// 7 & \qquad\quad a \gets \mathit{base} \text{ if } O = \emptyset
-///     \text{, else } \mathrm{top}( O ) + 1 \cr
-/// 8 & \qquad\quad \textbf{if}\ i + 1 - a > \ell\ \textbf{then}\ (
+/// 5 & \qquad \textbf{else if}\ s[ i ] = \mathit{close}\ \textbf{and}\ O =
+///     \emptyset\ \textbf{then}\ \mathit{base} \gets i + 1 \cr
+/// 6 & \qquad \textbf{else if}\ s[ i ] = \mathit{close}\ \textbf{then} \cr
+/// 7 & \qquad\quad \mathrm{pop}( O );\ a \gets \mathrm{top}( O ) + 1
+///     \text{ if } O \ne \emptyset \text{, else } \mathit{base}\quad
+///     \triangleright\ s[ a .. i ] \text{ is balanced} \cr
+/// 8 & \qquad\quad \textbf{if}\ \ell < i + 1 - a\ \textbf{then}\ (
 ///     \mathit{start} , \ell ) \gets ( a , i + 1 - a ) \cr
-/// 9 & \qquad \textbf{else}\ O \gets \emptyset;\ \mathit{base} \gets i + 1 \cr
+/// 9 & \qquad \textbf{else}\ O \gets \emptyset;\ \mathit{base} \gets i +
+///     1\quad \triangleright
+///     \ \text{a character of no pair breaks every substring} \cr
 /// 10 & \quad \textbf{return}\ ( \mathit{start} , \ell )
 /// \end{array}}
 /// \f]

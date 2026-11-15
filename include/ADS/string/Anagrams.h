@@ -69,14 +69,16 @@ namespace ADS
 /// table from a signature to the number of its group:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{anagramGroups}( W ) \cr
-/// 2 & \quad H \gets \text{an empty table};\ G \gets \text{an empty }
-///     \text{sequence of groups} \cr
-/// 3 & \quad \textbf{foreach}\ w \in W\ \textbf{do} \cr
-/// 4 & \qquad \kappa \gets \text{the items of } w \text{ sorted} \cr
-/// 5 & \qquad \textbf{if}\ \kappa \notin H\ \textbf{then}\ H[ \kappa ] \gets
-///     |G|;\ \text{append an empty group to } G \cr
-/// 6 & \qquad \text{append } w \text{ to } G[ H[ \kappa ] ] \cr
+/// 1 & \textbf{function}\ \mathrm{anagramGroups}( W )\quad \triangleright
+///     \ \text{two anagrams share the sorted word} \cr
+/// 2 & \quad H \gets \text{an empty table from a key to a group};\ G \gets
+///     () \cr
+/// 3 & \quad \textbf{foreach}\ w \in W \text{, in order}\ \textbf{do} \cr
+/// 4 & \qquad \kappa \gets \text{the letters of } w \text{, sorted} \cr
+/// 5 & \qquad \textbf{if}\ H \text{ has no group for } \kappa
+///     \ \textbf{then}\ \text{open a new last group of } G
+///     \text{ and record it in } H[ \kappa ] \cr
+/// 6 & \qquad \text{append } w \text{ to the group } G[ H[ \kappa ] ] \cr
 /// 7 & \quad \textbf{return}\ G
 /// \end{array}}
 /// \f]

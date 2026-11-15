@@ -114,15 +114,18 @@ stringBreakingCost( const std::vector< std::int64_t > & cuts ,
 /// its two pieces:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{stringBreakingOrder}( c , L ) \cr
-/// 2 & \quad K \gets \text{the splits of } \mathrm{stringBreakingCost}( c ,
-///     L );\ T \gets ( ( 0 , n + 1 ) );\ O \gets \text{an empty sequence} \cr
-/// 3 & \quad \textbf{while}\ T \ne \emptyset\ \textbf{do} \cr
-/// 4 & \qquad ( i , j ) \gets \mathrm{pop}( T ) \cr
-/// 5 & \qquad \textbf{if}\ j > i + 1\ \textbf{then} \cr
-/// 6 & \qquad\quad k \gets K[ i ][ j ];\ \text{append } w_k \text{ to } O \cr
-/// 7 & \qquad\quad \mathrm{push}( T , ( k , j ) );\ \mathrm{push}( T , ( i ,
-///     k ) ) \cr
+/// 1 & \textbf{function}\ \mathrm{stringBreakingOrder}( c , L )\quad
+///     \triangleright\ \text{the cuts in the order of an optimal plan} \cr
+/// 2 & \quad K \gets \text{the best cut of each piece, by }
+///     \mathrm{stringBreakingCost}( c , L );\ O \gets () \cr
+/// 3 & \quad T \gets \text{a stack holding the whole string } ( 0 , n + 1 )
+///     \cr
+/// 4 & \quad \textbf{while}\ T \ne \emptyset\ \textbf{do} \cr
+/// 5 & \qquad ( i , j ) \gets \mathrm{pop}( T );\ \textbf{if}\ j \le i + 1
+///     \ \textbf{then continue}\quad \triangleright\ \text{no cut inside} \cr
+/// 6 & \qquad k \gets K[ i ][ j ];\ \text{append } w_k \text{ to } O \cr
+/// 7 & \qquad \mathrm{push}( T , ( k , j ) );\ \mathrm{push}( T , ( i , k )
+///     )\quad \triangleright\ \text{the left piece first} \cr
 /// 8 & \quad \textbf{return}\ O
 /// \end{array}}
 /// \f]

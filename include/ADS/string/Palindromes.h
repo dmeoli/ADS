@@ -193,24 +193,28 @@ longestPalindromicSubstring( const std::string & s );
 /// read back from both ends:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{longestPalindromicSubsequence}( s ) \cr
-/// 2 & \quad \textbf{foreach}\ i = n - 1 , \ldots , 0\ \textbf{do} \cr
+/// 1 & \textbf{function}\ \mathrm{longestPalindromicSubsequence}( s )\quad
+///     \triangleright\ \mathit{DP}[ i ][ j ] \text{ the longest in } s_i
+///     \cdots s_j \cr
+/// 2 & \quad \textbf{for}\ i \gets n - 1\ \textbf{downto}\ 0\ \textbf{do} \cr
 /// 3 & \qquad \mathit{DP}[ i ][ i ] \gets 1 \cr
-/// 4 & \qquad \textbf{for}\ j \gets i + 1\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ s_i = s_j\ \textbf{then}\ \mathit{DP}[ i ][
-///     j ] \gets \mathit{DP}[ i + 1 ][ j - 1 ] + 2\quad \triangleright\ 0
-///     \text{ if } i + 1 > j - 1 \cr
-/// 6 & \qquad\quad \textbf{else}\ \mathit{DP}[ i ][ j ] \gets \max\{
-///     \mathit{DP}[ i + 1 ][ j ] , \mathit{DP}[ i ][ j - 1 ] \} \cr
-/// 7 & \quad i \gets 0;\ j \gets n - 1;\ L \gets \text{an empty sequence} \cr
-/// 8 & \quad \textbf{while}\ i < j\ \textbf{do} \cr
-/// 9 & \qquad \textbf{if}\ s_i = s_j\ \textbf{then}\ \text{append } s_i
-///     \text{ to } L;\ i \gets i + 1;\ j \gets j - 1 \cr
-/// 10 & \qquad \textbf{else if}\ \mathit{DP}[ i + 1 ][ j ] \ge \mathit{DP}[
-///     i ][ j - 1 ]\ \textbf{then}\ i \gets i + 1\ \textbf{else}\ j \gets j
-///     - 1 \cr
-/// 11 & \quad \textbf{return}\ L \cdot ( s_i \text{ if } i = j ) \cdot
-///     \text{the reverse of } L
+/// 4 & \qquad \textbf{for}\ j \gets i + 1\ \textbf{to}\ n - 1\ \textbf{do}
+///     \cr
+/// 5 & \qquad\quad \mathit{DP}[ i ][ j ] \gets 2 + \mathit{DP}[ i + 1 ][ j -
+///     1 ] \text{ if } s_i = s_j \text{ (an empty range counts } 0 \text{),}
+///     \cr
+///   & \qquad\qquad \text{else } \max\{ \mathit{DP}[ i ][ j - 1 ] ,
+///     \mathit{DP}[ i + 1 ][ j ] \} \cr
+/// 6 & \quad ( i , j ) \gets ( 0 , n - 1 );\ L \gets ()\quad \triangleright
+///     \ \text{the left half, read back from the table} \cr
+/// 7 & \quad \textbf{while}\ i < j\ \textbf{do} \cr
+/// 8 & \qquad \textbf{if}\ s_i = s_j\ \textbf{then}\ \text{append } s_i
+///     \text{ to } L;\ ( i , j ) \gets ( i + 1 , j - 1 ) \cr
+/// 9 & \qquad \textbf{else if}\ \mathit{DP}[ i ][ j - 1 ] > \mathit{DP}[ i +
+///     1 ][ j ]\ \textbf{then}\ j \gets j - 1\ \textbf{else}\ i \gets i + 1
+///     \cr
+/// 10 & \quad \textbf{return}\ L \text{, then } s_i \text{ if } i = j
+///     \text{, then } L \text{ reversed}
 /// \end{array}}
 /// \f]
 /// \post a palindrome, a subsequence of \f$ s \f$ as long as the LCS of
@@ -233,19 +237,24 @@ longestPalindromicSubsequence( const std::string & s );
 /// \f$ D[ a ] \f$ is final when it is used:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{palindromicPartition}( s ) \cr
-/// 2 & \quad D[ 0 ] \gets 0;\ D[ j ] \gets \infty \text{ for } j > 0 \cr
-/// 3 & \quad \textbf{for}\ h \gets 0\ \textbf{to}\ 2 n - 2\ \textbf{do} \cr
-/// 4 & \qquad ( a , b ) \gets \text{the shortest palindrome of centre } h
-///     \text{ (none for an even centre with } s_{a-1} \ne s_a \text{)} \cr
-/// 5 & \qquad \textbf{loop} \cr
-/// 6 & \qquad\quad \textbf{if}\ D[ a ] + 1 < D[ b ]\ \textbf{then}\ D[ b ]
-///     \gets D[ a ] + 1;\ \mathit{from}[ b ] \gets a \cr
-/// 7 & \qquad\quad \textbf{if}\ a = 0\ \textbf{or}\ b = n\ \textbf{or}\ s_{a
-///     - 1} \ne s_b\ \textbf{then}\ \textbf{break} \cr
-/// 8 & \qquad\quad a \gets a - 1;\ b \gets b + 1 \cr
-/// 9 & \quad \textbf{return}\ \text{the pieces read back from } n \text{ on }
-///     \mathit{from}
+/// 1 & \textbf{function}\ \mathrm{palindromicPartition}( s )\quad
+///     \triangleright\ D[ b ] \text{ the fewest pieces of } s_0 \cdots
+///     s_{b-1} \cr
+/// 2 & \quad D[ 0 ] \gets 0;\ D[ b ] \gets \infty \text{ for } b > 0 \cr
+/// 3 & \quad \textbf{foreach}\ \text{centre } h = 0 , \ldots , 2 n - 2
+///     \text{, between letters when } h \text{ is odd}\ \textbf{do} \cr
+/// 4 & \qquad [ a , b ) \gets \text{the shortest palindrome about } h
+///     \text{ (none if } h \text{ is odd and its two letters differ)} \cr
+/// 5 & \qquad \textbf{loop}\quad \triangleright
+///     \ \text{each palindrome about } h
+///     \text{, growing by one letter on each side} \cr
+/// 6 & \qquad\quad \textbf{if}\ D[ a ] + 1 < D[ b ]\ \textbf{then}\ ( D[ b ]
+///     , \mathit{from}[ b ] ) \gets ( D[ a ] + 1 , a ) \cr
+/// 7 & \qquad\quad \textbf{if}\ a > 0 \text{ and } b < n \text{ and } s_{a -
+///     1} = s_b\ \textbf{then}\ ( a , b ) \gets ( a - 1 , b + 1 )
+///     \ \textbf{else}\ \textbf{break} \cr
+/// 8 & \quad \textbf{return}\ \text{the pieces found by following }
+///     \mathit{from} \text{ back from } n
 /// \end{array}}
 /// \f]
 /// \post every piece a palindrome, and the pieces joined give \f$ s \f$

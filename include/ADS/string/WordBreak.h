@@ -59,18 +59,18 @@ namespace ADS
 /// words, and \f$ w \f$ the length of the longest word:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{wordBreak}( s , \mathrm{lookup} , w ) \cr
+/// 1 & \textbf{function}\ \mathrm{wordBreak}( s , \mathrm{lookup} , w )\quad
+///     \triangleright\ w \text{ the longest word} \cr
 /// 2 & \quad \mathit{from}[ 0 ] \gets 0;\ \mathit{from}[ i ] \gets -1
-///     \text{ for } i > 0 \cr
+///     \text{ for } i > 0\quad \triangleright\ -1 \text{: } s[ 0 .. i )
+///     \text{ cannot be split} \cr
 /// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 4 & \qquad \textbf{foreach}\ j = i - 1 , \ldots , \max\{ 0 , i - w \}
-///     \ \textbf{with}\ \mathit{from}[ j ] \ge 0\ \textbf{do} \cr
-/// 5 & \qquad\quad \textbf{if}\ \mathrm{lookup}( s[ j .. i ) )
-///     \ \textbf{then}\ \mathit{from}[ i ] \gets j;\ \textbf{break} \cr
-/// 6 & \quad \textbf{if}\ \mathit{from}[ n ] < 0\ \textbf{then return}
-///     \ \textbf{nil} \cr
-/// 7 & \quad \textbf{return}\ \text{the words read back from } n \text{ on }
-///     \mathit{from}
+/// 4 & \qquad \mathit{from}[ i ] \gets \text{the largest } j \in [ \max\{ 0
+///     , i - w \} , i ) \text{ with } \mathit{from}[ j ] \ge 0 \text{ and }
+///     \mathrm{lookup}( s[ j .. i ) ) \text{, if any} \cr
+/// 5 & \quad \textbf{return}\ \textbf{nil} \text{ if } \mathit{from}[ n ] <
+///     0 \text{, else the words found by following } \mathit{from}
+///     \text{ back from } n
 /// \end{array}}
 /// \f]
 /// \post the words joined give \f$ s \f$

@@ -77,13 +77,13 @@ namespace ADS
 /// In pseudocode (chapter 13), the table filled from the right:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{countSegmentations}( X , W ) \cr
+/// 1 & \textbf{function}\ \mathrm{countSegmentations}( X , W )\quad
+///     \triangleright\ D[ i ] \text{ the segmentations of } X[ i .. n ) \cr
 /// 2 & \quad D[ n ] \gets 1 \cr
-/// 3 & \quad \textbf{foreach}\ i = n - 1 , \ldots , 0\ \textbf{do} \cr
-/// 4 & \qquad D[ i ] \gets 0 \cr
-/// 5 & \qquad \textbf{foreach}\ w \in W\ \textbf{with}\ X[ i .. i + |w| ) =
-///     w\ \textbf{do}\ D[ i ] \gets D[ i ] + D[ i + |w| ] \cr
-/// 6 & \quad \textbf{return}\ D[ 0 ]
+/// 3 & \quad \textbf{for}\ i \gets n - 1\ \textbf{downto}\ 0\ \textbf{do}
+///     \ D[ i ] \gets \textstyle\sum \{ D[ i + |w| ] : w \in W \text{, } w
+///     \text{ a prefix of } X[ i .. n ) \} \cr
+/// 4 & \quad \textbf{return}\ D[ 0 ]
 /// \end{array}}
 /// \f]
 /// \pre no word is empty
@@ -105,16 +105,19 @@ countSegmentations( const std::string & X ,
 /// \f$ \mathit{after} = D[ i + 2 ] \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{countDecodings}( d ) \cr
+/// 1 & \textbf{function}\ \mathrm{countDecodings}( d )\quad \triangleright
+///     \ \mathit{next} , \mathit{after}
+///     \text{ the counts of the suffixes from } i + 1 , i + 2 \cr
 /// 2 & \quad \mathit{next} \gets 1;\ \mathit{after} \gets 0 \cr
-/// 3 & \quad \textbf{foreach}\ i = n - 1 , \ldots , 0\ \textbf{do} \cr
-/// 4 & \qquad h \gets 0 \cr
-/// 5 & \qquad \textbf{if}\ d_i \ne 0\ \textbf{then} \cr
-/// 6 & \qquad\quad h \gets \mathit{next} \cr
-/// 7 & \qquad\quad \textbf{if}\ i + 1 < n\ \textbf{and}\ 10 d_i + d_{i+1}
-///     \le 26\ \textbf{then}\ h \gets h + \mathit{after} \cr
-/// 8 & \qquad \mathit{after} \gets \mathit{next};\ \mathit{next} \gets h \cr
-/// 9 & \quad \textbf{return}\ \mathit{next}
+/// 3 & \quad \textbf{for}\ i \gets n - 1\ \textbf{downto}\ 0\ \textbf{do} \cr
+/// 4 & \qquad h \gets 0\quad \triangleright\ \text{a } 0
+///     \text{ starts no letter} \cr
+/// 5 & \qquad \textbf{if}\ d_i \ne 0\ \textbf{then}\ h \gets \mathit{next} +
+///     ( \mathit{after} \text{ if } i + 1 < n \text{ and } 10 d_i + d_{i+1}
+///     \le 26 \text{, else } 0 ) \cr
+/// 6 & \qquad ( \mathit{after} , \mathit{next} ) \gets ( \mathit{next} , h )
+///     \cr
+/// 7 & \quad \textbf{return}\ \mathit{next}
 /// \end{array}}
 /// \f]
 /// \pre every digit is in \f$ 0 .. 9 \f$

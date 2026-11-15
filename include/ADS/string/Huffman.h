@@ -68,15 +68,18 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{huffman}( \mathit{freq} ) \cr
-/// 2 & \quad Q \gets \text{a min-heap};\ \textbf{foreach}\ c\ \textbf{do}
-///     \ \mathrm{insert}( Q , \text{the leaf } c , \mathit{freq}[ c ] ) \cr
-/// 3 & \quad \textbf{while}\ |Q| > 1\ \textbf{do} \cr
+/// 2 & \quad Q \gets \text{a min-heap of a leaf for each character } c
+///     \text{, of priority } \mathit{freq}[ c ] \cr
+/// 3 & \quad \textbf{while}\ Q \text{ holds two trees or more}
+///     \ \textbf{do}\quad \triangleright
+///     \ \text{the two lightest become siblings} \cr
 /// 4 & \qquad ( z_1 , f_1 ) \gets \mathrm{deleteMin}( Q );\ ( z_2 , f_2 )
 ///     \gets \mathrm{deleteMin}( Q ) \cr
-/// 5 & \qquad \mathrm{insert}( Q , \text{a node with children } z_1 , z_2 ,
-///     f_1 + f_2 ) \cr
-/// 6 & \quad \textbf{foreach}\ \text{leaf } c\ \textbf{do}\ \mathit{code}[ c ]
-///     \gets \text{the path from the root, 0 left and 1 right} \cr
+/// 5 & \qquad \mathrm{insert}( Q , \text{a new node over } z_1 \text{ and }
+///     z_2 , f_1 + f_2 ) \cr
+/// 6 & \quad \mathit{code}[ c ] \gets
+///     \text{the path from the root to the leaf of } c \text{, } 0
+///     \text{ for left and } 1 \text{ for right} \cr
 /// 7 & \quad \textbf{return}\ \mathit{code}
 /// \end{array}}
 /// \f]
@@ -97,13 +100,14 @@ std::string encode( const std::basic_string< C > & text ,
 /// which no other code extends:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{decode}( \mathit{bits} , \mathit{code} )
-///     \cr
+/// 1 & \textbf{function}\ \mathrm{decode}( \mathit{bits} , \mathit{code}
+///     )\quad \triangleright\ \text{no code is a prefix of another} \cr
 /// 2 & \quad s \gets \varepsilon;\ t \gets \varepsilon \cr
 /// 3 & \quad \textbf{foreach}\ b \in \mathit{bits}\ \textbf{do} \cr
-/// 4 & \qquad s \gets s b \cr
-/// 5 & \qquad \textbf{if}\ s = \mathit{code}[ c ] \text{ for some } c
-///     \ \textbf{then}\ t \gets t c;\ s \gets \varepsilon \cr
+/// 4 & \qquad \text{append } b \text{ to } s \cr
+/// 5 & \qquad \textbf{if}\ s \text{ is the code of a character } c
+///     \ \textbf{then}\ \text{append } c \text{ to } t;\ s \gets \varepsilon
+///     \cr
 /// 6 & \quad \textbf{return}\ t
 /// \end{array}}
 /// \f]

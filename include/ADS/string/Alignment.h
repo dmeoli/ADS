@@ -83,27 +83,25 @@ enum class Alignment {
 /// \f$ P[ i - 1 ] = T[ j - 1 ] \f$ and \f$ -1 \f$ otherwise:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{alignmentScore}( P , T , \mathit{kind} )
-///     \cr
-/// 2 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ m\ \textbf{do}
-///     \ \mathit{DP}[ i ][ 0 ] \gets -2 i \text{ if } \mathit{kind} =
-///     \text{GLOBAL, else 0} \cr
-/// 3 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ n\ \textbf{do}
-///     \ \mathit{DP}[ 0 ][ j ] \gets -2 j \text{ if } \mathit{kind} =
-///     \text{GLOBAL, else 0} \cr
-/// 4 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
-/// 5 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
-/// 6 & \qquad\quad \mathit{DP}[ i ][ j ] \gets \max\{ \mathit{DP}[ i ][ j -
-///     1 ] - 2 , \mathit{DP}[ i - 1 ][ j ] - 2 , \mathit{DP}[ i - 1 ][ j - 1
-///     ] + \delta_{ij} \} \cr
-/// 7 & \qquad\quad \textbf{if}\ \mathit{kind} = \text{LOCAL}\ \textbf{then}
-///     \ \mathit{DP}[ i ][ j ] \gets \max\{ \mathit{DP}[ i ][ j ] , 0 \} \cr
-/// 8 & \quad \textbf{if}\ \mathit{kind} = \text{GLOBAL}\ \textbf{then return}
-///     \ \mathit{DP}[ m ][ n ] \cr
-/// 9 & \quad \textbf{if}\ \mathit{kind} = \text{LOCAL}\ \textbf{then return}
-///     \ \text{the largest entry of } \mathit{DP} \cr
-/// 10 & \quad \textbf{return}\ \text{the largest entry of the last row and }
-///     \text{of the last column}
+/// 1 & \textbf{function}\ \mathrm{alignmentScore}( P , T , \mathit{kind}
+///     )\quad \triangleright\ \text{a gap costs } 2 \text{, } \delta_{ij}
+///     \text{ scores } P[ i - 1 ] , T[ j - 1 ] \cr
+/// 2 & \quad \mathit{DP}[ i ][ 0 ] \gets -2 i \text{ and } \mathit{DP}[ 0 ][
+///     j ] \gets -2 j \text{ if } \mathit{kind} = \text{GLOBAL, else all }
+///     0\quad \triangleright\ \text{free ends} \cr
+/// 3 & \quad \textbf{for}\ i \gets 1\ \textbf{to}\ m\ \textbf{do} \cr
+/// 4 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do} \cr
+/// 5 & \qquad\quad x \gets \max\{ \mathit{DP}[ i - 1 ][ j - 1 ] +
+///     \delta_{ij} , \mathit{DP}[ i - 1 ][ j ] - 2 , \mathit{DP}[ i ][ j - 1
+///     ] - 2 \} \cr
+/// 6 & \qquad\quad \mathit{DP}[ i ][ j ] \gets \max\{ x , 0 \} \text{ if }
+///     \mathit{kind} = \text{LOCAL} \text{, else } x\quad \triangleright
+///     \ \text{a local alignment may restart} \cr
+/// 7 & \quad \textbf{return}\ \mathit{DP}[ m ][ n ]
+///     \text{ for GLOBAL, the largest entry of } \mathit{DP}
+///     \text{ for LOCAL,} \cr
+///   & \qquad \text{the largest entry of the last row }
+///     \text{and of the last column otherwise}
 /// \end{array}}
 /// \f]
 template< class S >
@@ -116,21 +114,22 @@ int alignmentScore( const S & P , const S & T , Alignment kind );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{globalAlignment}( P , T ) \cr
-/// 2 & \quad \mathit{DP} \gets \text{the table of the global alignment};\ i
-///     \gets m;\ j \gets n;\ A \gets (\,);\ B \gets (\,) \cr
-/// 3 & \quad \textbf{while}\ i > 0\ \textbf{or}\ j > 0\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ i > 0\ \textbf{and}\ j > 0\ \textbf{and}
-///     \ \mathit{DP}[ i ][ j ] = \mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij}
-///     \ \textbf{then} \cr
-/// 5 & \qquad\quad \text{prepend } P[ i - 1 ] \text{ to } A \text{ and }
-///     T[ j - 1 ] \text{ to } B;\ i \gets i - 1;\ j \gets j - 1 \cr
-/// 6 & \qquad \textbf{else if}\ i > 0\ \textbf{and}\ \mathit{DP}[ i ][ j ] =
-///     \mathit{DP}[ i - 1 ][ j ] - 2\ \textbf{then} \cr
-/// 7 & \qquad\quad \text{prepend } P[ i - 1 ] \text{ to } A \text{ and a }
-///     \text{space to } B;\ i \gets i - 1 \cr
-/// 8 & \qquad \textbf{else}\ \text{prepend a space to } A \text{ and }
-///     T[ j - 1 ] \text{ to } B;\ j \gets j - 1 \cr
-/// 9 & \quad \textbf{return}\ ( A , B )
+/// 2 & \quad \mathit{DP} \gets \text{the table of the global alignment};\ (
+///     i , j ) \gets ( m , n );\ A \gets ();\ B \gets () \cr
+/// 3 & \quad \textbf{while}\ ( i , j ) \ne ( 0 , 0 )\ \textbf{do}\quad
+///     \triangleright\ \text{back along a choice that gives } \mathit{DP}[ i
+///     ][ j ] \cr
+/// 4 & \qquad \textbf{if}\ i , j > 0 \text{ and } \mathit{DP}[ i ][ j ] =
+///     \mathit{DP}[ i - 1 ][ j - 1 ] + \delta_{ij}\ \textbf{then}
+///     \ \text{put } P[ i - 1 ] \text{ over } T[ j - 1 ];\ ( i , j ) \gets (
+///     i - 1 , j - 1 ) \cr
+/// 5 & \qquad \textbf{else if}\ i > 0 \text{ and } \mathit{DP}[ i ][ j ] =
+///     \mathit{DP}[ i - 1 ][ j ] - 2\ \textbf{then}\ \text{put } P[ i - 1 ]
+///     \text{ over a space};\ i \gets i - 1 \cr
+/// 6 & \qquad \textbf{else}\ \text{put a space over } T[ j - 1 ];\ j \gets j
+///     - 1 \cr
+/// 7 & \quad \textbf{return}\ ( A , B )\quad \triangleright
+///     \ \text{the two rows, each pair put at their front}
 /// \end{array}}
 /// \f]
 /// \post the two strings have the same length, at least
