@@ -3165,6 +3165,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- KokkosExecutor compiles on every execution space: it asks whether the
+  thread runs a kernel by the in_parallel() that the space has, that of an
+  instance on OpenMP, the static one on Serial, or none, where it called
+  in_parallel( instance ), which Kokkos::Serial does not take
+
 - The audit of prim() on a graph with parallel edges: the tree is checked
   with the lightest of the parallel edges to each parent, the one that
   Prim's algorithm takes, instead of the first one in the list, which made

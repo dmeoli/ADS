@@ -116,7 +116,7 @@ class KokkosExecutor
  template< class F >
  void bulk( std::size_t n , F && f ) {
   if( ( n <= 1 ) || ( concurrency() == 1 ) || Inside::active() ||
-      Space::in_parallel( f_s ) ) {
+      inKernel( f_s ) ) {
    for( std::size_t i = 0 ; i < n ; ++i )
     f( i );
    return;
@@ -148,6 +148,27 @@ class KokkosExecutor
  private:
  struct Tag;  ///< the tag of the mark of the calls
  using Inside = detail::InsideCall< Tag >;
+
+ /// whether the calling thread runs a kernel of the space \f$ s \f$: its
+ /// `in_parallel()`, which takes the instance on OpenMP, none on Serial,
+ /// and which the releases 4 of Kokkos deprecate; false on a space that
+ /// has none, whose kernels then run the calls of `bulk()` in order only
+ /// if it has one thread
+ static bool inKernel( [[maybe_unused]] const Space & s ) {
+#if defined( __GNUC__ )
+ #pragma GCC diagnostic push
+ #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+  if constexpr( requires { Space::in_parallel( s ); } )
+   return( bool( Space::in_parallel( s ) ) );
+  else if constexpr( requires { Space::in_parallel(); } )
+   return( bool( Space::in_parallel() ) );
+  else
+   return( false );
+#if defined( __GNUC__ )
+ #pragma GCC diagnostic pop
+#endif
+  }
 
  Space f_s;  ///< the instance of the space
  };  // end( class KokkosExecutor )
