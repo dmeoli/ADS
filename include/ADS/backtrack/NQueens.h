@@ -66,15 +66,15 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{queens}( r , C , D_1 , D_2 )\quad
-///     \triangleright\ \text{called as } \mathrm{queens}( 0 , \emptyset ,
-///     \emptyset , \emptyset ) \cr
+///     \triangleright\ \text{the columns of the row } r
+///     \text{ that the queens above attack} \cr
 /// 2 & \quad \textbf{if}\ r = n\ \textbf{then return}\ f( Q ) \cr
-/// 3 & \quad \textbf{foreach}\ c \in \{ 0 , \ldots , n - 1 \} \setminus ( C
-///     \cup D_1 \cup D_2 )\ \textbf{do}\quad \triangleright\ \text{in }
-///     \text{increasing order} \cr
-/// 4 & \qquad Q[ r ] \gets c \cr
-/// 5 & \qquad D'_1 \gets \{ x + 1 : x \in D_1 \cup \{ c \} , x + 1 < n \};
-///     \ D'_2 \gets \{ x - 1 : x \in D_2 \cup \{ c \} , x \ge 1 \} \cr
+/// 3 & \quad \textbf{foreach}\ c \notin C \cup D_1 \cup D_2 \text{, from } 0
+///     \text{ to } n - 1\ \textbf{do} \cr
+/// 4 & \qquad Q[ r ] \gets c\quad \triangleright
+///     \ \text{the diagonals move one column at the next row} \cr
+/// 5 & \qquad D'_1 \gets \{ x + 1 : x \in D_1 \cup \{ c \} \} \cap [ 0 , n
+///     );\ D'_2 \gets \{ x - 1 : x \in D_2 \cup \{ c \} \} \cap [ 0 , n ) \cr
 /// 6 & \qquad \textbf{if}\ \mathrm{queens}( r + 1 , C \cup \{ c \} , D'_1 ,
 ///     D'_2 )\ \textbf{then return true} \cr
 /// 7 & \quad \textbf{return false}
@@ -94,22 +94,22 @@ long nQueens( int n , F && f );
 /// when the columns of the row \f$ k \f$ are over.
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{nQueensIterative}( n ) \cr
-/// 2 & \quad \textbf{for}\ k \gets 0\ \textbf{to}\ n - 1\ \textbf{do}\ V[ k ]
-///     \gets -1 \cr
-/// 3 & \quad k \gets 0 \cr
-/// 4 & \quad \textbf{while}\ k \ge 0\ \textbf{do} \cr
-/// 5 & \qquad \textbf{repeat}\ V[ k ] \gets V[ k ] + 1\ \textbf{until}\ V[ k ]
-///     = n\ \textbf{or}\ \mathrm{free}( k ) \cr
-/// 6 & \qquad \textbf{if}\ V[ k ] = n\ \textbf{then}\ V[ k ] \gets -1;\ k
-///     \gets k - 1\quad \triangleright\ \text{the row is over: back} \cr
-/// 7 & \qquad \textbf{else if}\ k = n - 1\ \textbf{then} \cr
-/// 8 & \qquad\quad \textbf{if}\ f( V )\ \textbf{then return}\quad
-///     \triangleright\ \text{a solution} \cr
-/// 9 & \qquad \textbf{else}\ k \gets k + 1 \cr
-/// 10 & \textbf{function}\ \mathrm{free}( k ) \cr
-/// 11 & \quad \textbf{return}\ V[ h ] \ne V[ k ] \text{ and } | V[ h ] - V[ k
-///      ] | \ne k - h \text{ for each } h < k
+/// 1 & \textbf{function}\ \mathrm{nQueensIterative}( n )\quad
+///     \triangleright\ V[ k ] \text{ the column of row } k \text{, } -1
+///     \text{ none yet} \cr
+/// 2 & \quad V \gets ( -1 , \ldots , -1 );\ k \gets 0 \cr
+/// 3 & \quad \textbf{while}\ k \ge 0\ \textbf{do} \cr
+/// 4 & \qquad V[ k ] \gets \text{the first column after } V[ k ]
+///     \text{ with } \mathrm{free}( k ) \text{, or } n \text{ if none} \cr
+/// 5 & \qquad \textbf{if}\ V[ k ] = n\ \textbf{then}\ V[ k ] \gets -1;\ k
+///     \gets k - 1\quad \triangleright\ \text{back to the row above} \cr
+/// 6 & \qquad \textbf{else if}\ k < n - 1\ \textbf{then}\ k \gets k + 1 \cr
+/// 7 & \qquad \textbf{else if}\ f( V )\ \textbf{then return}\quad
+///     \triangleright\ \text{a solution, and the visitor stops} \cr
+/// 8 & \textbf{function}\ \mathrm{free}( k )\quad \triangleright
+///     \ \text{no queen above shares a column or a diagonal} \cr
+/// 9 & \quad \textbf{return}\ V[ h ] \ne V[ k ] \text{ and } | V[ k ] - V[ h
+///     ] | \ne k - h \text{ for every } h < k
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$
@@ -124,10 +124,8 @@ long nQueensIterative( int n , F && f );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{admissible}( Q ) \cr
-/// 2 & \quad \textbf{foreach}\ i < j\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ Q[ i ] = Q[ j ]\ \textbf{or}\ | Q[ i ] - Q[ j ] | =
-///     j - i\ \textbf{then return false} \cr
-/// 4 & \quad \textbf{return true}
+/// 2 & \quad \textbf{return}\ \text{whether } Q[ i ] \ne Q[ j ] \text{ and }
+///     | Q[ j ] - Q[ i ] | \ne j - i \text{ for every } i < j
 /// \end{array}}
 /// \f]
 inline bool admissible( const std::vector< int > & Q );

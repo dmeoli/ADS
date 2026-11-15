@@ -64,22 +64,23 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{knightTour}( n , x , y ) \cr
-/// 2 & \quad A \gets \text{an } n \times n \text{ board of } 0 \cr
-/// 3 & \quad \textbf{if}\ \mathrm{tour}( 0 , x , y )\ \textbf{then return}\ A
-///     \ \textbf{else return nil} \cr
+/// 2 & \quad A \gets \text{an } n \times n \text{ board of zeros}\quad
+///     \triangleright\ A[ a ][ b ] \text{ the step that reaches the square}
+///     \cr
+/// 3 & \quad \textbf{return}\ A \text{ if } \mathrm{tour}( 0 , x , y )
+///     \text{, else } \textbf{nil} \cr
 /// 4 & \textbf{function}\ \mathrm{tour}( k , a , b ) \cr
-/// 5 & \quad A[ a ][ b ] \gets k + 1 \cr
-/// 6 & \quad \textbf{if}\ k = n^2 - 1\ \textbf{then return true} \cr
-/// 7 & \quad M \gets \text{the 8 moves to a free square of the board, in the}
-///     \text{ order of the book} \cr
-/// 8 & \quad \textbf{if}\ \mathit{warnsdorff}\ \textbf{then}\ \text{sort } M
-///     \text{ stably by the free squares one move away from each} \cr
-/// 9 & \quad \textbf{foreach}\ ( a' , b' ) \in M\ \textbf{do} \cr
-/// 10 & \qquad \textbf{if}\ \mathrm{tour}( k + 1 , a' , b' )\ \textbf{then
-///      return true} \cr
-/// 11 & \quad A[ a ][ b ] \gets 0\quad \triangleright\ \text{a dead end: back}
-///      \cr
-/// 12 & \quad \textbf{return false}
+/// 5 & \quad A[ a ][ b ] \gets k + 1;\ \textbf{if}\ k + 1 = n^2
+///     \ \textbf{then return true} \cr
+/// 6 & \quad M \gets \text{the moves from } ( a , b )
+///     \text{ to a free square, in the order of the book} \cr
+/// 7 & \quad \textbf{if}\ \mathit{warnsdorff}\ \textbf{then}
+///     \ \text{reorder } M
+///     \text{ stably, the target with the fewest free moves first} \cr
+/// 8 & \quad \textbf{foreach}\ ( a' , b' ) \in M\ \textbf{do}\ \textbf{if}
+///     \ \mathrm{tour}( k + 1 , a' , b' )\ \textbf{then return true} \cr
+/// 9 & \quad A[ a ][ b ] \gets 0;\ \textbf{return false}\quad
+///     \triangleright\ \text{no way on: the square is freed}
 /// \end{array}}
 /// \f]
 /// \pre \f$ ( x , y ) \f$ is on the board if \f$ n \ge 1 \f$

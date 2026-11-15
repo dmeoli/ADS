@@ -70,16 +70,14 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{subsets}( S , i , c )\quad \triangleright
-///     \ \text{called as } \mathrm{subsets}( S , 0 , 0 ) \cr
-/// 2 & \quad \textbf{if}\ c = k\ \textbf{then return}\ f( S )\quad
-///     \triangleright\ \text{a solution, } c \text{ items in} \cr
-/// 3 & \quad \textbf{if}\ i = n\ \textbf{or}\ c + ( n - i ) < k
-///     \ \textbf{then return false}\quad \triangleright\ \text{pruned} \cr
-/// 4 & \quad S[ i ] \gets \textbf{true} \cr
-/// 5 & \quad \textbf{if}\ \mathrm{subsets}( S , i + 1 , c + 1 )
-///     \ \textbf{then return true} \cr
-/// 6 & \quad S[ i ] \gets \textbf{false} \cr
-/// 7 & \quad \textbf{return}\ \mathrm{subsets}( S , i + 1 , c )
+///     \ c \text{ of the items before } i \text{ taken; true to stop} \cr
+/// 2 & \quad \textbf{if}\ c = k\ \textbf{then return}\ f( S ) \cr
+/// 3 & \quad \textbf{if}\ k - c > n - i\ \textbf{then return false}\quad
+///     \triangleright\ \text{too few items left, } i = n \text{ included} \cr
+/// 4 & \quad S[ i ] \gets \textbf{true};\ \textbf{if}\ \mathrm{subsets}( S ,
+///     i + 1 , c + 1 )\ \textbf{then return true} \cr
+/// 5 & \quad S[ i ] \gets \textbf{false};\ \textbf{return}
+///     \ \mathrm{subsets}( S , i + 1 , c )
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 0 \f$ and \f$ k \ge 0 \f$
@@ -103,17 +101,19 @@ long permute( const std::vector< T > & A , bool derange , F && f );
 /// start:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{permutations}( A , S ) \cr
+/// 1 & \textbf{function}\ \mathrm{permutations}( A , S )\quad
+///     \triangleright\ S \text{ the prefix built, } \mathit{used}
+///     \text{ its places of } A \cr
 /// 2 & \quad \textbf{if}\ |S| = n\ \textbf{then return}\ f( S ) \cr
-/// 3 & \quad \textbf{for}\ c \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if not}\ \mathit{used}[ c ]\ \textbf{then} \cr
-/// 5 & \qquad\quad \mathit{used}[ c ] \gets \textbf{true};\ \text{append }
-///     A[ c ] \text{ to } S \cr
-/// 6 & \qquad\quad \textbf{if}\ \mathrm{permutations}( A , S )
+/// 3 & \quad \textbf{foreach}\ c \in [ 0 , n )
+///     \text{ not used, in increasing order}\ \textbf{do} \cr
+/// 4 & \qquad \mathit{used}[ c ] \gets \textbf{true};\ \text{push } A[ c ]
+///     \text{ on } S \cr
+/// 5 & \qquad \textbf{if}\ \mathrm{permutations}( A , S )
 ///     \ \textbf{then return true} \cr
-/// 7 & \qquad\quad \text{remove the last item of } S;\ \mathit{used}[ c ]
-///     \gets \textbf{false} \cr
-/// 8 & \quad \textbf{return false}
+/// 6 & \qquad \text{pop } S;\ \mathit{used}[ c ] \gets \textbf{false}\quad
+///     \triangleright\ \text{undo, then the next choice} \cr
+/// 7 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 template< class T , class F >
@@ -127,18 +127,18 @@ long permutations( const std::vector< T > & A , F && f );
 /// item of place \f$ |S| \f$ excluded from the place \f$ |S| \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{derangements}( A , S ) \cr
+/// 1 & \textbf{function}\ \mathrm{derangements}( A , S )\quad
+///     \triangleright\ \text{as } \mathrm{permutations}
+///     \text{, no item in its own place} \cr
 /// 2 & \quad \textbf{if}\ |S| = n\ \textbf{then return}\ f( S ) \cr
-/// 3 & \quad \textbf{for}\ c \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if not}\ \mathit{used}[ c ]\ \textbf{and}\ c \ne |S|
-///     \ \textbf{then} \cr
-/// 5 & \qquad\quad \mathit{used}[ c ] \gets \textbf{true};\ \text{append }
-///     A[ c ] \text{ to } S \cr
-/// 6 & \qquad\quad \textbf{if}\ \mathrm{derangements}( A , S )
+/// 3 & \quad \textbf{foreach}\ c \in [ 0 , n ) \text{ not used and } \ne |S|
+///     \text{, in increasing order}\ \textbf{do} \cr
+/// 4 & \qquad \mathit{used}[ c ] \gets \textbf{true};\ \text{push } A[ c ]
+///     \text{ on } S \cr
+/// 5 & \qquad \textbf{if}\ \mathrm{derangements}( A , S )
 ///     \ \textbf{then return true} \cr
-/// 7 & \qquad\quad \text{remove the last item of } S;\ \mathit{used}[ c ]
-///     \gets \textbf{false} \cr
-/// 8 & \quad \textbf{return false}
+/// 6 & \qquad \text{pop } S;\ \mathit{used}[ c ] \gets \textbf{false} \cr
+/// 7 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 template< class T , class F >
@@ -154,16 +154,16 @@ long derangements( const std::vector< T > & A , F && f );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{subsetSum}( A , S , i , s )\quad
-///     \triangleright\ \text{called as } \mathrm{subsetSum}( A , () , 0 , 0 )
-///     \cr
+///     \triangleright\ s \text{ the sum of the places in } S \cr
 /// 2 & \quad \textbf{if}\ s = k\ \textbf{then return}\ f( S ) \cr
-/// 3 & \quad \textbf{for}\ j \gets i\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ s + A[ j ] \le k\ \textbf{then} \cr
-/// 5 & \qquad\quad \text{append } j \text{ to } S \cr
-/// 6 & \qquad\quad \textbf{if}\ \mathrm{subsetSum}( A , S , j + 1 , s + A[ j ]
-///     )\ \textbf{then return true} \cr
-/// 7 & \qquad\quad \text{remove the last item of } S \cr
-/// 8 & \quad \textbf{return false}
+/// 3 & \quad \textbf{foreach}\ j \in [ i , n ) \text{ with } s + A[ j ] \le
+///     k \text{, in increasing order}\ \textbf{do}\quad \triangleright
+///     \ \text{each subset once} \cr
+/// 4 & \qquad \text{push } j \text{ on } S;\ \textbf{if}
+///     \ \mathrm{subsetSum}( A , S , j + 1 , s + A[ j ] )
+///     \ \textbf{then return true} \cr
+/// 5 & \qquad \text{pop } S \cr
+/// 6 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 /// \pre the items of \f$ A \f$ are positive

@@ -58,18 +58,16 @@ using Grid = std::vector< std::vector< int > >;  ///< the squares, 0 empty
 /// In pseudocode (section 16.3), \f$ N = n^2 \f$ the side of the grid:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{check}( S , x , y , c ) \cr
-/// 2 & \quad \textbf{for}\ j \gets 0\ \textbf{to}\ N - 1\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ S[ x ][ j ] = c\ \textbf{or}\ S[ j ][ y ] = c
-///     \ \textbf{then return false}\quad \triangleright\ \text{the row, the}
-///     \text{ column} \cr
-/// 4 & \quad b_x \gets n \lfloor x / n \rfloor;\ b_y \gets n \lfloor y / n
-///     \rfloor\quad \triangleright\ \text{the corner of the block} \cr
-/// 5 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 6 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 7 & \qquad\quad \textbf{if}\ S[ b_x + i ][ b_y + j ] = c\ \textbf{then
-///     return false} \cr
-/// 8 & \quad \textbf{return true}
+/// 1 & \textbf{function}\ \mathrm{check}( S , x , y , c )\quad
+///     \triangleright\ N = n^2 \text{, the blocks } n \times n \cr
+/// 2 & \quad \textbf{if}\ c \text{ is in the row } x
+///     \text{ or in the column } y\ \textbf{then return false} \cr
+/// 3 & \quad ( b_x , b_y ) \gets ( n \lfloor x / n \rfloor , n \lfloor y / n
+///     \rfloor )\quad \triangleright
+///     \ \text{the upper left square of the block} \cr
+/// 4 & \quad \textbf{return}\ \text{whether } c
+///     \text{ is in none of the squares } S[ b_x + i ][ b_y + j ] \text{, }
+///     0 \le i , j < n
 /// \end{array}}
 /// \f]
 /// \pre \f$ ( x , y ) \f$ is a square and \f$ c \in [ 1 , n^2 ] \f$
@@ -83,21 +81,19 @@ inline bool check( const Grid & S , std::size_t x , std::size_t y , int c );
 /// \f$ i \bmod N \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{sudoku}( S , i ) \cr
-/// 2 & \quad \textbf{if}\ i = N^2\ \textbf{then return true}\quad
-///     \triangleright\ \text{every square filled} \cr
-/// 3 & \quad x \gets \lfloor i / N \rfloor;\ y \gets i \bmod N \cr
+/// 1 & \textbf{function}\ \mathrm{sudoku}( S , i )\quad \triangleright
+///     \ \text{the squares in the order of the rows} \cr
+/// 2 & \quad \textbf{if}\ i = N^2\ \textbf{then return true} \cr
+/// 3 & \quad ( x , y ) \gets ( \lfloor i / N \rfloor , i \bmod N ) \cr
 /// 4 & \quad \textbf{if}\ S[ x ][ y ] \ne 0\ \textbf{then return}
-///     \ \mathrm{sudoku}( S , i + 1 )\quad \triangleright\ \text{a number}
-///     \text{ given} \cr
-/// 5 & \quad \textbf{for}\ c \gets 1\ \textbf{to}\ N\ \textbf{do} \cr
-/// 6 & \qquad \textbf{if}\ \mathrm{check}( S , x , y , c )\ \textbf{then} \cr
-/// 7 & \qquad\quad S[ x ][ y ] \gets c \cr
-/// 8 & \qquad\quad \textbf{if}\ \mathrm{sudoku}( S , i + 1 )\ \textbf{then
-///     return true} \cr
-/// 9 & \quad S[ x ][ y ] \gets 0\quad \triangleright\ \text{no number fits:}
-///     \text{ back} \cr
-/// 10 & \quad \textbf{return false}
+///     \ \mathrm{sudoku}( S , i + 1 )\quad \triangleright
+///     \ \text{a given number stays} \cr
+/// 5 & \quad \textbf{foreach}\ c \in [ 1 , N ] \text{ with } \mathrm{check}(
+///     S , x , y , c )\ \textbf{do} \cr
+/// 6 & \qquad S[ x ][ y ] \gets c;\ \textbf{if}\ \mathrm{sudoku}( S , i + 1
+///     )\ \textbf{then return true} \cr
+/// 7 & \quad S[ x ][ y ] \gets 0;\ \textbf{return false}\quad
+///     \triangleright\ \text{the square is emptied on the way back}
 /// \end{array}}
 /// \f]
 /// \pre a grid of \f$ n^2 \times n^2 \f$ squares, the values given

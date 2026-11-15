@@ -122,11 +122,12 @@ inline long long cross( const Point & a , const Point & b , const Point & c );
 /// In pseudocode (section 16.1):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{sameSide}( p_1 , p_2 , p , q ) \cr
-/// 2 & \quad a \gets \mathrm{cross}( p_1 , p_2 , p );\ b \gets
-///     \mathrm{cross}( p_1 , p_2 , q ) \cr
-/// 3 & \quad \textbf{return}\ ( a \ge 0\ \textbf{and}\ b \ge 0 )
-///     \ \textbf{or}\ ( a \le 0\ \textbf{and}\ b \le 0 )
+/// 1 & \textbf{function}\ \mathrm{sameSide}( p_1 , p_2 , p , q )\quad
+///     \triangleright\ \text{the line through } p_1 , p_2 \text{ included}
+///     \cr
+/// 2 & \quad \textbf{return}\ \mathrm{cross}( p_1 , p_2 , p ) \cdot
+///     \mathrm{cross}( p_1 , p_2 , q ) \ge 0
+///     \text{, by the signs, with no product}
 /// \end{array}}
 /// \f]
 inline bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
@@ -159,19 +160,19 @@ inline double pseudoAngle( long dx , long dy );
 /// hull being no vertex, which the second condition of line 6 ensures:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{convexHullBrute}( P ) \cr
-/// 2 & \quad \text{remove the repeated points of } P \cr
-/// 3 & \quad \textbf{if}\ |P| < 3\ \textbf{then return}\ P \cr
-/// 4 & \quad H \gets \emptyset \cr
-/// 5 & \quad \textbf{foreach}\ p_i , p_j \in P \text{ with } i \ne j
-///     \ \textbf{do} \cr
-/// 6 & \qquad \textbf{if}\ \mathrm{cross}( p_i , p_j , p_k ) \ge 0
-///     \text{ for each } k\ \textbf{and}\ \text{no } p_k \text{ on the }
-///     \text{line of } p_i p_j \text{ lies out of the segment}
-///     \ \textbf{then} \cr
-/// 7 & \qquad\quad H \gets H \cup \{ p_i , p_j \} \cr
-/// 8 & \quad \textbf{return}\ H \text{ sorted by angle around its lowest }
-///     \text{point}
+/// 1 & \textbf{function}\ \mathrm{convexHullBrute}( P )\quad \triangleright
+///     \ O( n^3 ) \cr
+/// 2 & \quad \text{drop the copies of the points of } P;\ \textbf{if}\ |P| <
+///     3\ \textbf{then return}\ P \cr
+/// 3 & \quad H \gets \emptyset \cr
+/// 4 & \quad \textbf{foreach}\ \text{ordered pair } p_i \ne p_j \text{ of }
+///     P\ \textbf{do}\quad \triangleright
+///     \ \text{an edge: all the points on its left or on it} \cr
+/// 5 & \qquad \textbf{if}\ \text{every } p_k \text{ has } \mathrm{cross}(
+///     p_i , p_j , p_k ) \ge 0 \text{, and those with } 0
+///     \text{ lie on the segment } p_i p_j\ \textbf{then} \cr
+/// 6 & \qquad\quad H \gets H \cup \{ p_i , p_j \} \cr
+/// 7 & \quad \textbf{return}\ H \text{ by angle around its lowest point}
 /// \end{array}}
 /// \f]
 /// \pre \f$ |x| \le 10^9 \f$ and \f$ |y| \le 10^9 \f$, so that the cross
@@ -187,23 +188,23 @@ inline std::vector< Point > convexHullBrute( std::vector< Point > P );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{graham}( P ) \cr
-/// 2 & \quad \text{remove the repeated points of } P;\ \textbf{if}\ |P| < 3
-///     \ \textbf{then return}\ P \cr
-/// 3 & \quad o \gets \text{the lowest point of } P \text{, the rightmost of }
-///     \text{the lowest ones} \cr
-/// 4 & \quad \text{sort the other points by increasing angle around } o
-///     \text{, the nearest first on a tie} \cr
-/// 5 & \quad Q \gets ( o ) \cdot \text{those points, of the ones collinear }
-///     \text{with } o \text{ only the farthest} \cr
-/// 6 & \quad S \gets \text{an empty stack} \cr
-/// 7 & \quad \textbf{foreach}\ p \in Q\ \textbf{do} \cr
-/// 8 & \qquad \textbf{while}\ |S| \ge 2\ \textbf{and}\ \mathrm{cross}(
-///     \text{the second of } S , \mathrm{top}( S ) , p ) \le 0\ \textbf{do}
+/// 2 & \quad \text{drop the copies of the points of } P;\ \textbf{if}\ |P| <
+///     3\ \textbf{then return}\ P \cr
+/// 3 & \quad o \gets \text{the lowest point, the rightmost among the lowest}
 ///     \cr
-/// 9 & \qquad\quad \mathrm{pop}( S )\quad \triangleright\ \text{the }
-///     \text{backtrack} \cr
-/// 10 & \qquad \mathrm{push}( S , p ) \cr
-/// 11 & \quad \textbf{return}\ S \text{ from its bottom}
+/// 4 & \quad Q \gets \text{the other points by increasing angle around } o
+///     \text{, the nearest first on a tie} \cr
+/// 5 & \quad \text{keep in } Q
+///     \text{ only the farthest of the points on one ray from } o \cr
+/// 6 & \quad S \gets \text{a stack holding } o \cr
+/// 7 & \quad \textbf{foreach}\ p \in Q \text{, in order}\ \textbf{do}\quad
+///     \triangleright\ S \text{ turns left at each point} \cr
+/// 8 & \qquad \textbf{while}\ |S| \ge 2\ \textbf{and}
+///     \ \text{the point under the top, the top and } p
+///     \text{ make no left turn}\ \textbf{do}\ \mathrm{pop}( S ) \cr
+/// 9 & \qquad \mathrm{push}( S , p ) \cr
+/// 10 & \quad \textbf{return}\ \text{the points of } S
+///     \text{ from the bottom}
 /// \end{array}}
 /// \f]
 /// \pre \f$ |x| \le 10^9 \f$ and \f$ |y| \le 10^9 \f$, so that the cross

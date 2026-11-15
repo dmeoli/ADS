@@ -61,23 +61,22 @@ namespace ADS
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{anagrams}( L , w , T )\quad
-///     \triangleright\ \text{called with the characters of } s \text{, }
-///     \varepsilon \text{, } \varepsilon \cr
-/// 2 & \quad \textbf{if}\ L = \emptyset\ \textbf{then} \cr
-/// 3 & \qquad \textbf{if}\ w = \varepsilon\ \textbf{then}\ \text{add } T
-///     \text{ to the anagrams} \cr
-/// 4 & \qquad \textbf{return} \cr
-/// 5 & \quad \textbf{foreach}\ \text{distinct } c \in L\ \textbf{do}\quad
-///     \triangleright\ \text{in increasing order} \cr
-/// 6 & \qquad L \gets L \setminus \{ c \};\ w \gets w \cdot c \cr
-/// 7 & \qquad \textbf{if}\ \mathrm{prefix}( w )\ \textbf{then} \cr
-/// 8 & \qquad\quad \mathrm{anagrams}( L , w , T )\quad \triangleright
-///     \ \text{the word goes on} \cr
-/// 9 & \qquad\quad \textbf{if}\ \mathrm{word}( w )\ \textbf{then}
-///     \ \mathrm{anagrams}( L , \varepsilon , T \cdot w )\quad \triangleright
-///     \ \text{or it ends here} \cr
-/// 10 & \qquad w \gets w \text{ without its last character};\ L \gets L \cup
-///      \{ c \}
+///     \triangleright\ L \text{ the letters left, } w
+///     \text{ the word open, } T \text{ the words closed} \cr
+/// 2 & \quad \textbf{if}\ L = \emptyset\ \textbf{then}\ \text{record } T
+///     \text{ if } w = \varepsilon;\ \textbf{return}\quad \triangleright
+///     \ \text{a half word is no anagram} \cr
+/// 3 & \quad \textbf{foreach}\ \text{letter } c \text{ of } L
+///     \text{, each value once, in increasing order}\ \textbf{do} \cr
+/// 4 & \qquad \text{move } c \text{ from } L \text{ to the end of } w \cr
+/// 5 & \qquad \textbf{if}\ \mathrm{prefix}( w )\ \textbf{then}\quad
+///     \triangleright\ \text{else no word starts with } w \cr
+/// 6 & \qquad\quad \mathrm{anagrams}( L , w , T )\quad \triangleright\ w
+///     \text{ grows} \cr
+/// 7 & \qquad\quad \textbf{if}\ \mathrm{word}( w )\ \textbf{then}
+///     \ \mathrm{anagrams}( L , \varepsilon , T \cdot w )\quad
+///     \triangleright\ w \text{ is closed} \cr
+/// 8 & \qquad \text{move the last letter of } w \text{ back to } L
 /// \end{array}}
 /// \f]
 /// \post each sentence has the letters of \f$ s \f$ (audit)
