@@ -93,12 +93,14 @@ class ListGraph : public GraphNodes< T >
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{insertEdge}( u , v , w ) \cr
- /// 2 & \quad \textbf{if}\ ( v , \cdot ) \in L_u\ \textbf{then}
- ///     \ \text{its weight} \gets w \text{ (and that of } ( u , \cdot )
- ///     \in L_v \text{ if unoriented)} \cr
- /// 3 & \quad \textbf{else} \cr
- /// 4 & \qquad \text{append } ( v , w ) \text{ to } L_u \text{ (and } ( u
- ///     , w ) \text{ to } L_v \text{ if unoriented)};\ m \gets m + 1
+ /// 2 & \quad c \gets \text{the cell of } v \text{ in } L_u
+ ///     \text{, by a scan} \cr
+ /// 3 & \quad \textbf{if}\ c \ne \textbf{nil}\ \textbf{then}\ \text{give } c
+ ///     \text{ the weight } w\quad \triangleright\ \text{and the cell of } u
+ ///     \text{ in } L_v \text{ if unoriented} \cr
+ /// 4 & \quad \textbf{else}\ \text{append } ( v , w ) \text{ to } L_u
+ ///     \text{, and } ( u , w ) \text{ to } L_v \text{ if unoriented};\ m
+ ///     \gets m + 1
  /// \end{array}}
  /// \f]
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes

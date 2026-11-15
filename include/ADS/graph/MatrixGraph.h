@@ -85,12 +85,12 @@ class MatrixGraph : public GraphNodes< T >
  /// In pseudocode (section 9.3), \f$ M \f$ the matrix:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{insertEdge}( u , v , w ) \cr
- /// 2 & \quad \textbf{if}\ M[ u ][ v ] = \textbf{nil}\ \textbf{then}\ m
- ///     \gets m + 1 \cr
- /// 3 & \quad M[ u ][ v ] \gets w \cr
- /// 4 & \quad \textbf{if}\ G \text{ is unoriented }\ \textbf{then}\ M[ v
- ///     ][ u ] \gets w
+ /// 1 & \textbf{procedure}\ \mathrm{insertEdge}( u , v , w )\quad
+ ///     \triangleright\ \textbf{nil} \text{ marks no edge} \cr
+ /// 2 & \quad m \gets m + [ M[ u ][ v ] = \textbf{nil} ];\ M[ u ][ v ] \gets
+ ///     w \cr
+ /// 3 & \quad \textbf{if}\ G \text{ is unoriented}\ \textbf{then}\ M[ v ][ u
+ ///     ] \gets w\quad \triangleright\ \text{a symmetric matrix}
  /// \end{array}}
  /// \f]
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes

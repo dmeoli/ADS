@@ -470,17 +470,17 @@ class GridGraph
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{gridDistances}( G , S ) \cr
-/// 2 & \quad \textbf{foreach}\ u \in [ 0 , \mathrm{bound}() )\ \textbf{do}
-///     \ D[ u ] \gets \infty \cr
-/// 3 & \quad Q \gets () \cr
-/// 4 & \quad \textbf{foreach}\ s \in S\ \textbf{with}\ D[ s ] = \infty
-///     \ \textbf{do}\ D[ s ] \gets 0;\ \mathrm{enqueue}( Q , s ) \cr
-/// 5 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 6 & \qquad u \gets \mathrm{dequeue}( Q ) \cr
-/// 7 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{with}\ D[ v
-///     ] = \infty\ \textbf{do} \cr
-/// 8 & \qquad\quad D[ v ] \gets D[ u ] + 1;\ \mathrm{enqueue}( Q , v ) \cr
-/// 9 & \quad \textbf{return}\ D
+/// 2 & \quad D[ u ] \gets \infty \text{ for every } u \in [ 0 ,
+///     \mathrm{bound}() );\ Q \gets () \cr
+/// 3 & \quad \textbf{foreach}\ s \in S \text{ with } D[ s ] = \infty
+///     \ \textbf{do}\ D[ s ] \gets 0;\ \mathrm{enqueue}( Q , s )\quad
+///     \triangleright\ \text{a source given twice counts once} \cr
+/// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
+/// 5 & \qquad u \gets \mathrm{dequeue}( Q ) \cr
+/// 6 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u ) \text{ with } D[ v
+///     ] = \infty\ \textbf{do}\ D[ v ] \gets D[ u ] + 1;\ \mathrm{enqueue}(
+///     Q , v ) \cr
+/// 7 & \quad \textbf{return}\ D
 /// \end{array}}
 /// \f]
 /// \pre each node of \f$ S \f$ is a free cell

@@ -147,18 +147,19 @@ inline constexpr int NIL = -1;
 /// In pseudocode (section 9.5):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{genericVisit}( G , r ) \cr
+/// 1 & \textbf{function}\ \mathrm{genericVisit}( G , r )\quad
+///     \triangleright\ R \text{ reached, } Q \text{ open, } B
+///     \text{ the tree} \cr
 /// 2 & \quad R \gets \{ r \};\ Q \gets \{ r \};\ B \gets \emptyset \cr
 /// 3 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 4 & \qquad j \gets \text{a node of } Q\quad \triangleright\ \text{the }
-///     \text{newest for depth, the oldest for breadth} \cr
-/// 5 & \qquad \textbf{if}\  \text{some } k \in G.\mathrm{adj}( j ) \text{ is }
-///     \text{not in } R\ \textbf{then} \cr
-/// 6 & \qquad\quad R \gets R \cup \{ k \};\ Q \gets Q \cup \{ k \};\ B \gets B
-///     \cup \{ ( j , k ) \} \cr
-/// 7 & \qquad \textbf{else} \cr
-/// 8 & \qquad\quad Q \gets Q \setminus \{ j \} \cr
-/// 9 & \quad \textbf{return}\ ( R , B )
+/// 4 & \qquad j \gets \text{a node of } Q\quad \triangleright
+///     \ \text{the last added for depth, the first for breadth} \cr
+/// 5 & \qquad \textbf{if}\ G.\mathrm{adj}( j ) \subseteq R\ \textbf{then}\ Q
+///     \gets Q \setminus \{ j \}\quad \triangleright\ j \text{ is closed} \cr
+/// 6 & \qquad \textbf{else}\ k \gets \text{a node of } G.\mathrm{adj}( j )
+///     \setminus R;\ R \gets R \cup \{ k \};\ Q \gets Q \cup \{ k \};\ B
+///     \gets B \cup \{ ( j , k ) \} \cr
+/// 7 & \quad \textbf{return}\ ( R , B )
 /// \end{array}}
 /// \f]
 /// \pre \f$ r \f$ is a node
@@ -174,15 +175,16 @@ genericVisit( const G & g , int r , Choice c );
 /// In pseudocode (section 9.5):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{bfs}( G , r ) \cr
-/// 2 & \quad Q \gets \text{an empty queue};\ \mathrm{enqueue}( Q , r );
-///     \ \mathit{visited}[ r ] \gets \textbf{true} \cr
+/// 1 & \textbf{procedure}\ \mathrm{bfs}( G , r )\quad \triangleright
+///     \ \text{a node is marked when it enters } Q \cr
+/// 2 & \quad \mathit{visited}[ r ] \gets \textbf{true};\ Q \gets
+///     \text{a queue holding } r \cr
 /// 3 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
 /// 4 & \qquad u \gets \mathrm{dequeue}( Q );\ \mathrm{node}( u ) \cr
 /// 5 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do} \cr
 /// 6 & \qquad\quad \mathrm{edge}( u , v ) \cr
-/// 7 & \qquad\quad \textbf{if not}\ \mathit{visited}[ v ]\ \textbf{then} \cr
-/// 8 & \qquad\qquad \mathit{visited}[ v ] \gets \textbf{true};
+/// 7 & \qquad\quad \textbf{if}\ \textbf{not}\ \mathit{visited}[ v ]
+///     \ \textbf{then}\ \mathit{visited}[ v ] \gets \textbf{true};
 ///     \ \mathrm{enqueue}( Q , v )
 /// \end{array}}
 /// \f]
@@ -197,18 +199,17 @@ void bfs( const G & g , int r , FN && node , FE && edge );
 /// In pseudocode (section 9.5), each node entering the queue once:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{distance}( G , r ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ d[ v ] \gets \infty;\ p[
-///     v ] \gets \textbf{nil} \cr
-/// 3 & \quad d[ r ] \gets 0;\ Q \gets \text{an empty queue};
-///     \ \mathrm{enqueue}( Q , r ) \cr
+/// 1 & \textbf{function}\ \mathrm{distance}( G , r )\quad \triangleright
+///     \ \text{the visit in breadth, } d \text{ in place of the marks} \cr
+/// 2 & \quad d[ v ] \gets \infty;\ p[ v ] \gets \textbf{nil}
+///     \text{ for every node } v \cr
+/// 3 & \quad d[ r ] \gets 0;\ Q \gets \text{a queue holding } r \cr
 /// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
 /// 5 & \qquad u \gets \mathrm{dequeue}( Q ) \cr
-/// 6 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do} \cr
-/// 7 & \qquad\quad \textbf{if}\ d[ v ] = \infty\ \textbf{then} \cr
-/// 8 & \qquad\qquad d[ v ] \gets d[ u ] + 1;\ p[ v ] \gets u;
-///     \ \mathrm{enqueue}( Q , v ) \cr
-/// 9 & \quad \textbf{return}\ ( d , p )
+/// 6 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u ) \text{ with } d[ v
+///     ] = \infty\ \textbf{do}\ ( d[ v ] , p[ v ] ) \gets ( d[ u ] + 1 , u
+///     );\ \mathrm{enqueue}( Q , v ) \cr
+/// 7 & \quad \textbf{return}\ ( d , p )
 /// \end{array}}
 /// \f]
 /// \pre \f$ r \f$ is a node
@@ -246,14 +247,15 @@ distance( const G & g , int r , Q & S , VisitCounts * c = nullptr );
 /// In pseudocode (section 9.5), the path read backwards from s:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{path}( r , s , p ) \cr
-/// 2 & \quad P \gets ( s );\ x \gets s \cr
-/// 3 & \quad \textbf{while}\ x \ne r\ \textbf{do} \cr
-/// 4 & \qquad x \gets p[ x ] \cr
-/// 5 & \qquad \textbf{if}\ x = \textbf{nil}\ \textbf{then return}
-///     \ \text{the empty path} \cr
-/// 6 & \qquad P \gets ( x ) \cdot P \cr
-/// 7 & \quad \textbf{return}\ P
+/// 1 & \textbf{function}\ \mathrm{path}( r , s , p )\quad \triangleright
+///     \ \text{from } s \text{ back to } r \text{ along } p \cr
+/// 2 & \quad P \gets ( s ) \cr
+/// 3 & \quad \textbf{while}\ \text{the head } x \text{ of } P
+///     \text{ is not } r\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ p[ x ] = \textbf{nil}\ \textbf{then return}
+///     \ ()\quad \triangleright\ s \text{ is not reached from } r \cr
+/// 5 & \qquad \text{put } p[ x ] \text{ before the head of } P \cr
+/// 6 & \quad \textbf{return}\ P
 /// \end{array}}
 /// \f]
 /// \pre \f$ r \f$ and \f$ s \f$ are places of \f$ p \f$
@@ -272,12 +274,13 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{dfs}( G , u , \mathit{visited} ) \cr
-/// 2 & \quad \mathit{visited}[ u ] \gets \textbf{true};\ \mathrm{pre}( u ) \cr
-/// 3 & \quad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do} \cr
-/// 4 & \qquad \mathrm{edge}( u , v ) \cr
-/// 5 & \qquad \textbf{if not}\ \mathit{visited}[ v ]\ \textbf{then}
-///     \ \mathrm{dfs}( G , v , \mathit{visited} ) \cr
-/// 6 & \quad \mathrm{post}( u )
+/// 2 & \quad \mathit{visited}[ u ] \gets \textbf{true};\ \mathrm{pre}( u
+///     )\quad \triangleright\ \text{on the way down} \cr
+/// 3 & \quad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do}
+///     \ \mathrm{edge}( u , v );\ \textbf{if}\ \textbf{not}
+///     \ \mathit{visited}[ v ]\ \textbf{then}\ \mathrm{dfs}( G , v ,
+///     \mathit{visited} ) \cr
+/// 4 & \quad \mathrm{post}( u )\quad \triangleright\ \text{on the way up}
 /// \end{array}}
 /// \f]
 /// and on the stack \f$ S \f$ of the code, a frame \f$ ( x , A , i ) \f$
@@ -312,22 +315,22 @@ void dfs( const G & g , int u , std::vector< bool > & visited , Pre && pre ,
 /// In pseudocode (section 9.5), each visit numbering the nodes it reaches:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{cc}( G , S ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ \mathit{id}[ v ] \gets 0
+/// 1 & \textbf{function}\ \mathrm{cc}( G , S )\quad \triangleright\ S
+///     \text{ the order of the roots, } 0 \text{ an unlabeled node} \cr
+/// 2 & \quad \mathit{id}[ v ] \gets 0 \text{ for every node } v;\ c \gets 0
 ///     \cr
-/// 3 & \quad c \gets 0 \cr
-/// 4 & \quad \textbf{while}\ S \ne \emptyset\ \textbf{do} \cr
-/// 5 & \qquad u \gets \mathrm{pop}( S ) \cr
-/// 6 & \qquad \textbf{if}\ \mathit{id}[ u ] = 0\ \textbf{then} \cr
-/// 7 & \qquad\quad c \gets c + 1;\ \mathit{id}[ u ] \gets c;\ T \gets ( u )
+/// 3 & \quad \textbf{while}\ S \ne \emptyset\ \textbf{do} \cr
+/// 4 & \qquad u \gets \mathrm{pop}( S );\ \textbf{if}\ \mathit{id}[ u ] \ne
+///     0\ \textbf{then continue} \cr
+/// 5 & \qquad c \gets c + 1;\ \mathit{id}[ u ] \gets c;\ T \gets
+///     \text{a stack holding } u\quad \triangleright\ \text{a new component}
 ///     \cr
-/// 8 & \qquad\quad \textbf{while}\ T \ne \emptyset\ \textbf{do} \cr
-/// 9 & \qquad\qquad x \gets \mathrm{pop}( T ) \cr
-/// 10 & \qquad\qquad \textbf{foreach}\ v \in G.\mathrm{adj}( x )
-///     \ \textbf{with}\ \mathit{id}[ v ] = 0\ \textbf{do} \cr
-/// 11 & \qquad\qquad\quad \mathit{id}[ v ] \gets c;\ \mathrm{push}( T , v )
-///     \cr
-/// 12 & \quad \textbf{return}\ \mathit{id}
+/// 6 & \qquad \textbf{while}\ T \ne \emptyset\ \textbf{do} \cr
+/// 7 & \qquad\quad x \gets \mathrm{pop}( T ) \cr
+/// 8 & \qquad\quad \textbf{foreach}\ v \in G.\mathrm{adj}( x ) \text{ with }
+///     \mathit{id}[ v ] = 0\ \textbf{do}\ \mathit{id}[ v ] \gets c;
+///     \ \mathrm{push}( T , v ) \cr
+/// 9 & \quad \textbf{return}\ \mathit{id}
 /// \end{array}}
 /// \f]
 /// \pre the items of \f$ S \f$ are nodes (audit)
@@ -378,19 +381,19 @@ class DfsSchema
  /// In pseudocode (the procedure dfs-schema of section 9.5), with the clock t:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{visit}( u ) \cr
+ /// 1 & \textbf{procedure}\ \mathrm{visit}( u )\quad \triangleright
+ ///     \ \mathit{dt} , \mathit{ft}
+ ///     \text{ the discovery and the finish times, } 0 \text{ unset} \cr
  /// 2 & \quad t \gets t + 1;\ \mathit{dt}[ u ] \gets t \cr
  /// 3 & \quad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do} \cr
  /// 4 & \qquad \textbf{if}\ \mathit{dt}[ v ] = 0\ \textbf{then}
  ///     \ \mathrm{edge}( u , v , \text{tree} );\ \mathrm{visit}( v ) \cr
- /// 5 & \qquad \textbf{else if}\ \mathit{dt}[ u ] > \mathit{dt}[ v ]
- ///     \ \textbf{and}\ \mathit{ft}[ v ] = 0\ \textbf{then}\ \mathrm{edge}( u
- ///     ,
- ///     v , \text{back} ) \cr
- /// 6 & \qquad \textbf{else if}\ \mathit{dt}[ u ] < \mathit{dt}[ v ]
- ///     \ \textbf{and}\ \mathit{ft}[ v ] \ne 0\ \textbf{then}\ \mathrm{edge}(
- ///     u
- ///     , v , \text{forward} ) \cr
+ /// 5 & \qquad \textbf{else if}\ \mathit{ft}[ v ] = 0\ \textbf{then}
+ ///     \ \mathrm{edge}( u , v , \text{back} )\quad \triangleright\ v
+ ///     \text{ is an open ancestor} \cr
+ /// 6 & \qquad \textbf{else if}\ \mathit{dt}[ v ] > \mathit{dt}[ u ]
+ ///     \ \textbf{then}\ \mathrm{edge}( u , v , \text{forward} )\quad
+ ///     \triangleright\ \text{a closed descendant} \cr
  /// 7 & \qquad \textbf{else}\ \mathrm{edge}( u , v , \text{cross} ) \cr
  /// 8 & \quad t \gets t + 1;\ \mathit{ft}[ u ] \gets t
  /// \end{array}}
@@ -430,14 +433,13 @@ class DfsSchema
 /// In pseudocode (section 9.5), on the visits of `DfsSchema`:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{hasCycle}( G ) \cr
-/// 2 & \quad \textbf{foreach}\ u \in V\ \textbf{with}\ \mathit{dt}[ u ] = 0
-///     \ \textbf{do} \cr
-/// 3 & \qquad \mathrm{visit}( u )\quad \triangleright\ \text{the visit of }
-///     \text{DfsSchema} \cr
-/// 4 & \qquad \textbf{if}\  \text{it met a back edge }\ \textbf{then return }
-///     \textbf{true} \cr
-/// 5 & \quad \textbf{return false}
+/// 1 & \textbf{function}\ \mathrm{hasCycle}( G )\quad \triangleright
+///     \ \text{a cycle exists iff a visit in depth meets a back edge} \cr
+/// 2 & \quad \textbf{foreach}\ u \text{ with } \mathit{dt}[ u ] = 0
+///     \ \textbf{do}\ \mathrm{visit}( u )
+///     \text{ of DfsSchema, stopping with } \textbf{true}
+///     \text{ on a back edge} \cr
+/// 3 & \quad \textbf{return false}
 /// \end{array}}
 /// \f]
 template< Graph G >
@@ -475,11 +477,12 @@ bool isTopologicalOrder( const G & g , const std::vector< int > & S );
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{topsort}( G ) \cr
 /// 2 & \quad S \gets \text{an empty stack} \cr
-/// 3 & \quad \textbf{foreach}\ u \in V\ \textbf{with not}\ \mathit{visited}[ u
-///     ]\ \textbf{do} \cr
-/// 4 & \qquad \mathrm{dfs}( G , u , \mathit{visited} )\quad \triangleright
-///     \ \text{with the postvisit } \mathrm{push}( S , v ) \cr
-/// 5 & \quad \textbf{return}\  \text{the nodes of } S \text{ from the top}
+/// 3 & \quad \textbf{foreach}\ u \text{ not yet visited}\ \textbf{do}
+///     \ \mathrm{dfs}( G , u , \mathit{visited} ) \text{ with }
+///     \mathrm{post}( v ) = \mathrm{push}( S , v ) \cr
+/// 4 & \quad \textbf{return}\ \text{the nodes of } S
+///     \text{ from the top}\quad \triangleright
+///     \ \text{by decreasing finish time}
 /// \end{array}}
 /// \f]
 /// \post a topological order if the graph is acyclic (audit)
@@ -519,11 +522,9 @@ std::vector< int > topsortKahn( const G & g );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{transpose}( G ) \cr
-/// 2 & \quad G^T \gets \text{a graph with the nodes of } G \text{ and no edge}
-///     \cr
-/// 3 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{do}\  \text{insert } (
-///     v , u ) \text{ in } G^T \cr
-/// 4 & \quad \textbf{return}\ G^T
+/// 2 & \quad \textbf{return}\ \text{the graph on the nodes of } G
+///     \text{ with an edge } ( v , u ) \text{ for each edge } ( u , v )
+///     \text{ of } G
 /// \end{array}}
 /// \f]
 /// \post \f$ ( v , u ) \f$ is an edge of it for each edge \f$ ( u , v ) \f$
@@ -540,10 +541,10 @@ ListGraph<> transpose( const G & g );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{scc}( G ) \cr
-/// 2 & \quad S \gets \mathrm{topsort}( G )\quad \triangleright\ \text{the }
-///     \text{nodes by decreasing finish time} \cr
-/// 3 & \quad \textbf{return}\ \mathrm{cc}( \mathrm{transpose}( G ) , S )\quad
-///     \triangleright\ \text{its first node leaves } S \text{ first}
+/// 2 & \quad S \gets \mathrm{topsort}( G )\quad \triangleright
+///     \ \text{the first node of } S \text{ finished last} \cr
+/// 3 & \quad \textbf{return}\ \mathrm{cc}( \mathrm{transpose}( G ) , S
+///     )\quad \triangleright\ \text{the roots taken from the top of } S
 /// \end{array}}
 /// \f]
 /// \post each node has a component, and an edge from the component

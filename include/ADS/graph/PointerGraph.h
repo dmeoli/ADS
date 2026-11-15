@@ -139,10 +139,12 @@ class PointerGraph
  /// In pseudocode (section 9.5), the flags of the nodes cleared first:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{dfs}( r , f ) \cr
+ /// 1 & \textbf{procedure}\ \mathrm{dfs}( r , f )\quad \triangleright
+ ///     \ \text{the flag of a node marks it reached} \cr
  /// 2 & \quad r.\mathit{flag} \gets \textbf{true};\ f( r ) \cr
- /// 3 & \quad \textbf{foreach}\ v \in \mathrm{adjacent}( r )\ \textbf{with
- ///     not}\ v.\mathit{flag}\ \textbf{do}\ \mathrm{dfs}( v , f )
+ /// 3 & \quad \textbf{foreach}\ v \in \mathrm{adjacent}( r )\ \textbf{do}
+ ///     \ \textbf{if}\ \textbf{not}\ v.\mathit{flag}\ \textbf{then}
+ ///     \ \mathrm{dfs}( v , f )
  /// \end{array}}
  /// \f]
  /// \pre \f$ r \f$ is a node of the graph
@@ -155,11 +157,12 @@ class PointerGraph
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{bfs}( r , f ) \cr
- /// 2 & \quad r.\mathit{flag} \gets \textbf{true};\ Q \gets ( r ) \cr
+ /// 2 & \quad r.\mathit{flag} \gets \textbf{true};\ Q \gets ( r )\quad
+ ///     \triangleright\ \text{marked on entering } Q \cr
  /// 3 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
  /// 4 & \qquad u \gets \mathrm{dequeue}( Q );\ f( u ) \cr
- /// 5 & \qquad \textbf{foreach}\ v \in \mathrm{adjacent}( u )\ \textbf{with
- ///     not}\ v.\mathit{flag}\ \textbf{do}\ v.\mathit{flag} \gets
+ /// 5 & \qquad \textbf{foreach}\ v \in \mathrm{adjacent}( u )
+ ///     \text{ with no flag}\ \textbf{do}\ v.\mathit{flag} \gets
  ///     \textbf{true};\ \mathrm{enqueue}( Q , v )
  /// \end{array}}
  /// \f]

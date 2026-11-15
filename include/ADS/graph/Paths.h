@@ -370,16 +370,17 @@ void simpleCycles( const G & g , int s , F && f );
 /// reach, the last station in reach is the stop.
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{refuelingStops}( D , L , R ) \cr
+/// 1 & \textbf{function}\ \mathrm{refuelingStops}( D , L , R )\quad
+///     \triangleright\ D \text{ the sorted places of the stations} \cr
 /// 2 & \quad S \gets ();\ \mathit{reach} \gets R;\ i \gets 1 \cr
 /// 3 & \quad \textbf{while}\ \mathit{reach} < L\ \textbf{do} \cr
-/// 4 & \qquad b \gets \textbf{nil} \cr
-/// 5 & \qquad \textbf{while}\ i \le |D|\ \textbf{and}\ D[ i ] \le
-///     \mathit{reach}\ \textbf{do}\ b \gets i;\ i \gets i + 1 \cr
-/// 6 & \qquad \textbf{if}\ b = \textbf{nil}\ \textbf{then return nil} \cr
-/// 7 & \qquad \text{append } b \text{ to } S;\ \mathit{reach} \gets D[ b ] + R
-///     \cr
-/// 8 & \quad \textbf{return}\ S
+/// 4 & \qquad b \gets \text{the last station } i' \ge i \text{ with } D[ i'
+///     ] \le \mathit{reach} \text{, or } \textbf{nil}\quad \triangleright
+///     \ \text{the farthest within reach} \cr
+/// 5 & \qquad \textbf{if}\ b = \textbf{nil}\ \textbf{then return nil} \cr
+/// 6 & \qquad \text{append } b \text{ to } S;\ \mathit{reach} \gets D[ b ] +
+///     R;\ i \gets b + 1 \cr
+/// 7 & \quad \textbf{return}\ S
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ sorted in \f$ [ 0 , L ] \f$, \f$ L \ge 0 \f$,

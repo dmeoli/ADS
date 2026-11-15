@@ -206,16 +206,15 @@ class GraphNodes
 /// In pseudocode (section 9.3):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{incidence}( G ) \cr
-/// 2 & \quad B \gets \text{an } n \times m \text{ matrix of zeros};\ k \gets 0
-///     \cr
-/// 3 & \quad \textbf{foreach}\ u \in V , v \in G.\mathrm{adj}( u )
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ G \text{ is oriented }\ \textbf{then}\ B[ u ][ k ]
-///     \gets -1;\ B[ v ][ k ] \gets +1;\ k \gets k + 1 \cr
-/// 5 & \qquad \textbf{else if}\ u < v\ \textbf{then}\ B[ u ][ k ] \gets 1;\ B[
-///     v ][ k ] \gets 1;\ k \gets k + 1 \cr
-/// 6 & \quad \textbf{return}\ B
+/// 1 & \textbf{function}\ \mathrm{incidence}( G )\quad \triangleright
+///     \ \text{a column for each edge} \cr
+/// 2 & \quad B \gets \text{an } n \times m \text{ matrix of zeros};\ k \gets
+///     0 \cr
+/// 3 & \quad \textbf{foreach}\ \text{edge } ( u , v )
+///     \text{, each unoriented one once with } u < v\ \textbf{do} \cr
+/// 4 & \qquad ( B[ u ][ k ] , B[ v ][ k ] ) \gets ( -1 , +1 ) \text{ if } G
+///     \text{ is oriented, else } ( 1 , 1 );\ k \gets k + 1 \cr
+/// 5 & \quad \textbf{return}\ B
 /// \end{array}}
 /// \f]
 template< Graph G >
@@ -228,13 +227,12 @@ std::vector< std::vector< int > > incidence( const G & g );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{adjFromIncidence}( B , u ) \cr
-/// 2 & \quad A \gets () \cr
-/// 3 & \quad \textbf{foreach}\  \text{column } k\ \textbf{with}\ B[ u ][ k ] =
-///     -1 \text{ (or } B[ u ][ k ] = 1 \text{ if unoriented) }\ \textbf{do}
-///     \cr
-/// 4 & \qquad \text{append to } A \text{ the other row } v \text{ with } B[ v
-///     ][ k ] \ne 0 \cr
-/// 5 & \quad \textbf{return}\ A
+/// 2 & \quad A \gets ()\quad \triangleright\ \text{the edges that leave } u
+///     \text{ have } -1 \text{ in its row, } 1 \text{ if unoriented} \cr
+/// 3 & \quad \textbf{foreach}\ \text{column } k \text{ of such an edge}
+///     \ \textbf{do}\ \text{append to } A \text{ the row } v \ne u
+///     \text{ with } B[ v ][ k ] \ne 0 \cr
+/// 4 & \quad \textbf{return}\ A
 /// \end{array}}
 /// \f]
 /// \pre \f$ u \f$ is a row of \f$ B \f$

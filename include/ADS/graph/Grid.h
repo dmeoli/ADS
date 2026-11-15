@@ -156,21 +156,19 @@ inline bool insideGrid( int rows , int cols , GridCell x );
 /// once):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{gridDistances}( R , C , S , \mathit{free} ,
-///     M ) \cr
-/// 2 & \quad \textbf{foreach}\  \text{cell } x\ \textbf{do}\ D[ x ] \gets
-///     \infty \cr
-/// 3 & \quad Q \gets () \cr
-/// 4 & \quad \textbf{foreach}\ s \in S\ \textbf{do}\ D[ s ] \gets 0;
-///     \ \mathrm{enqueue}( Q , s ) \cr
-/// 5 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 6 & \qquad x \gets \mathrm{dequeue}( Q ) \cr
-/// 7 & \qquad \textbf{foreach}\ \delta \in M\ \textbf{do} \cr
-/// 8 & \qquad\quad y \gets x + \delta \cr
-/// 9 & \qquad\quad \textbf{if}\ y \text{ is in the grid }\ \textbf{and}
-///     \ \mathit{free}( y )\ \textbf{and}\ D[ y ] = \infty\ \textbf{then} \cr
-/// 10 & \qquad\qquad D[ y ] \gets D[ x ] + 1;\ \mathrm{enqueue}( Q , y ) \cr
-/// 11 & \quad \textbf{return}\ D
+/// 1 & \textbf{function}\ \mathrm{gridDistances}( R , C , S , \mathit{free}
+///     , M )\quad \triangleright\ M \text{ the moves} \cr
+/// 2 & \quad D[ x ] \gets \infty \text{ for every cell } x;\ Q \gets () \cr
+/// 3 & \quad \textbf{foreach}\ s \in S\ \textbf{do}\ D[ s ] \gets 0;
+///     \ \mathrm{enqueue}( Q , s )\quad \triangleright
+///     \ \text{all the sources at distance } 0 \cr
+/// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
+/// 5 & \qquad x \gets \mathrm{dequeue}( Q ) \cr
+/// 6 & \qquad \textbf{foreach}\ \text{cell } y = x + \delta \text{, } \delta
+///     \in M \text{, inside the grid, free and with } D[ y ] = \infty
+///     \ \textbf{do} \cr
+/// 7 & \qquad\quad D[ y ] \gets D[ x ] + 1;\ \mathrm{enqueue}( Q , y ) \cr
+/// 8 & \quad \textbf{return}\ D
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{rows} , \mathit{cols} \ge 0 \f$, the sources are free

@@ -126,16 +126,17 @@ std::vector< WeightedEdge< typename G::Weight > > edges( const G & g );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{kruskal}( n , A ) \cr
-/// 2 & \quad \text{sort } A \text{ by increasing weight}\quad \triangleright
-///     \ \text{by Counting Sort if } k > 0 \cr
-/// 3 & \quad M \gets \text{an MFSET of } \{ 0 \} , \ldots , \{ n - 1 \};\ T
+/// 2 & \quad \text{sort } A \text{ by increasing weight}\quad
+///     \triangleright\ \text{by Counting Sort if } k > 0 \cr
+/// 3 & \quad M \gets \text{the MFSET of } \{ 0 \} , \ldots , \{ n - 1 \};\ T
 ///     \gets \emptyset \cr
-/// 4 & \quad \textbf{foreach}\ [ u , v ] \in A \text{ in this order, while }
-///     |T| < n - 1\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ \mathrm{find}( M , u ) \ne \mathrm{find}( M , v )
-///     \ \textbf{then} \cr
-/// 6 & \qquad\quad \mathrm{merge}( M , u , v );\ T \gets T \cup \{ [ u , v ]
-///     \} \cr
+/// 4 & \quad \textbf{foreach}\ [ u , v ] \in A
+///     \text{, in that order, until } |T| = n - 1\ \textbf{do} \cr
+/// 5 & \qquad \textbf{if}\ \mathrm{find}( M , u ) = \mathrm{find}( M , v )
+///     \ \textbf{then continue}\quad \triangleright
+///     \ \text{it would close a cycle} \cr
+/// 6 & \qquad \mathrm{merge}( M , u , v );\ T \gets T \cup \{ [ u , v ] \}
+///     \cr
 /// 7 & \quad \textbf{return}\ T
 /// \end{array}}
 /// \f]
@@ -228,24 +229,25 @@ std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
 /// it.
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{prim}( G , r , Q ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ \mathit{key}[ v ] \gets
-///     \infty;\ p[ v ] \gets \textbf{nil};\ \mathit{in}[ v ] \gets
-///     \textbf{false} \cr
-/// 3 & \quad \mathit{key}[ r ] \gets 0 \cr
-/// 4 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ \mathrm{insert}( Q , v ,
-///     \mathit{key}[ v ] ) \cr
-/// 5 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 6 & \qquad u \gets \mathrm{deleteMin}( Q );\ \mathit{in}[ u ] \gets
+/// 1 & \textbf{function}\ \mathrm{prim}( G , r , Q )\quad \triangleright
+///     \ \mathit{key}[ v ] \text{ the lightest edge from the tree to } v \cr
+/// 2 & \quad ( \mathit{key}[ v ] , p[ v ] , \mathit{in}[ v ] ) \gets (
+///     \infty , \textbf{nil} , \textbf{false} ) \text{ for every node } v;
+///     \ \mathit{key}[ r ] \gets 0 \cr
+/// 3 & \quad \text{insert every node } v \text{ in } Q
+///     \text{ with the priority } \mathit{key}[ v ] \cr
+/// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
+/// 5 & \qquad u \gets \mathrm{deleteMin}( Q );\ \mathit{in}[ u ] \gets
 ///     \textbf{true} \cr
-/// 7 & \qquad \textbf{if}\ \mathit{key}[ u ] = \infty\ \textbf{then
-///     continue}\quad \triangleright\ \text{another component} \cr
-/// 8 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{with not}
-///     \ \mathit{in}[ v ]\ \textbf{and}\ w( u , v ) < \mathit{key}[ v ]
+/// 6 & \qquad \textbf{if}\ \mathit{key}[ u ] = \infty
+///     \ \textbf{then continue}\quad \triangleright
+///     \ \text{the root of another tree} \cr
+/// 7 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )
+///     \text{ out of the tree with } w( u , v ) < \mathit{key}[ v ]
 ///     \ \textbf{do} \cr
-/// 9 & \qquad\quad \mathit{key}[ v ] \gets w( u , v );\ p[ v ] \gets u;
+/// 8 & \qquad\quad ( \mathit{key}[ v ] , p[ v ] ) \gets ( w( u , v ) , u );
 ///     \ \mathrm{decrease}( Q , v , \mathit{key}[ v ] ) \cr
-/// 10 & \quad \textbf{return}\ p
+/// 9 & \quad \textbf{return}\ p
 /// \end{array}}
 /// \f]
 /// \pre the graph is unoriented, \f$ r \f$ is a node, \f$ q \f$ is empty

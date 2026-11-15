@@ -70,19 +70,20 @@ class ArrayGraph
  /// In pseudocode (section 9.4), the offsets by counting:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{build}( n , E ) \cr
- /// 2 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{do}\ \mathit{off}[ u
- ///     + 1 ] \gets \mathit{off}[ u + 1 ] + 1\quad \triangleright\ \text{and }
- ///     \mathit{off}[ v + 1 ] \text{ if unoriented} \cr
- /// 3 & \quad \textbf{for}\ u \gets 1\ \textbf{to}\ n\ \textbf{do}
- ///     \ \mathit{off}[ u ] \gets \mathit{off}[ u ] + \mathit{off}[ u - 1 ]
+ /// 1 & \textbf{function}\ \mathrm{build}( n , E )\quad \triangleright
+ ///     \ \text{the adjacent nodes of } u \text{ in } [ \mathit{off}[ u ] ,
+ ///     \mathit{off}[ u + 1 ] ) \cr
+ /// 2 & \quad \mathit{off}[ u + 1 ] \gets \text{the degree of } u
+ ///     \text{ in } E \text{ for each node } u\quad \triangleright
+ ///     \ \text{both ends if unoriented} \cr
+ /// 3 & \quad \text{make } \mathit{off} \text{ its own prefix sums};
+ ///     \ \mathit{off}[ 0 ] = 0 \cr
+ /// 4 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{do}\ \text{write }
+ ///     v \text{ in the first free place of the range of } u \cr
+ ///   & \qquad \text{(and } u \text{ in that of } v \text{ if unoriented)}
  ///     \cr
- /// 4 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{do}\  \text{put } v
- ///     \text{ in the next free place of } [ \mathit{off}[ u ] , \mathit{off}[
- ///     u + 1 ] )\quad \triangleright\ \text{and } u \text{ for } v
- ///     \text{if unoriented} \cr
- /// 5 & \quad \textbf{return}\ ( \mathit{off} , \text{the vector of the }
- ///     \text{adjacent nodes} )
+ /// 5 & \quad \textbf{return}\ ( \mathit{off} ,
+ ///     \text{the vector of the adjacent nodes} )
  /// \end{array}}
  /// \f]
  /// \pre \f$ n \ge 0 \f$, and each edge joins two distinct nodes

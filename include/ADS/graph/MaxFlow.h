@@ -182,30 +182,33 @@ class FlowNetwork
  /// opposite flow:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{maxFlow}( s , t , \mathit{how} ) \cr
+ /// 1 & \textbf{function}\ \mathrm{maxFlow}( s , t , \mathit{how} )\quad
+ ///     \triangleright\ c_f \text{ the residual capacity} \cr
  /// 2 & \quad \mathrm{rebalance}( s , t ) \cr
  /// 3 & \quad \textbf{if}\ \mathit{how} = \mathrm{PUSH\_RELABEL}
- ///     \ \textbf{then}\ \mathrm{pushRelabel}( s , t );\ \textbf{return}
- ///     \ | f | \cr
+ ///     \ \textbf{then}\ \mathrm{pushRelabel}( s , t );\ \textbf{return}\ |
+ ///     f | \cr
  /// 4 & \quad \textbf{loop} \cr
- /// 5 & \qquad \textbf{if}\ \mathit{how} = \mathrm{FORD\_FULKERSON}
- ///     \ \textbf{then}\ P \gets \text{a path from } s \text{ to } t
- ///     \text{ of } c_f > 0 \text{ by a visit in depth} \cr
- /// 6 & \qquad \textbf{else if}\ \mathit{how} = \mathrm{EDMONDS\_KARP}
- ///     \ \textbf{then}\ P \gets \text{a shortest such path, by a visit}
- ///     \text{ in breadth} \cr
- /// 7 & \qquad \textbf{else}\quad \triangleright\ \text{DINIC} \cr
- /// 8 & \qquad\quad \ell \gets \text{the levels of a visit in breadth from }
- ///     s \text{ in the residual network} \cr
- /// 9 & \qquad\quad \textbf{if}\ t \text{ is not reached}\ \textbf{then}
- ///     \ \textbf{return}\ | f | \cr
- /// 10 & \qquad\quad \text{push a blocking flow along the edges } ( u , v )
+ /// 5 & \qquad \textbf{if}\ \mathit{how} = \mathrm{DINIC}\ \textbf{then} \cr
+ /// 6 & \qquad\quad \ell \gets
+ ///     \text{the levels of the nodes in a visit in breadth from } s
+ ///     \text{ along } c_f > 0 \cr
+ /// 7 & \qquad\quad \textbf{if}\ \ell( t ) = \infty\ \textbf{then return}\ |
+ ///     f |\quad \triangleright\ \text{no augmenting path} \cr
+ /// 8 & \qquad\quad \text{push a blocking flow on the edges } ( u , v )
  ///     \text{ with } \ell( v ) = \ell( u ) + 1;\ \textbf{continue} \cr
- /// 11 & \qquad \textbf{if}\ P = \textbf{nil}\ \textbf{then return}\ | f |
+ /// 9 & \qquad P \gets \text{a path from } s \text{ to } t \text{ along }
+ ///     c_f > 0 \text{: by a visit in depth for } \mathrm{FORD\_FULKERSON}
+ ///     \text{,} \cr
+ ///   & \qquad\quad \text{a shortest one by a visit in breadth for }
+ ///     \mathrm{EDMONDS\_KARP} \cr
+ /// 10 & \qquad \textbf{if}\ P = \textbf{nil}\ \textbf{then return}\ | f |
  ///     \cr
- /// 12 & \qquad \delta \gets \min_{( u , v ) \in P} c_f( u , v ) \cr
- /// 13 & \qquad \textbf{foreach}\ ( u , v ) \in P\ \textbf{do}\ f( u , v )
- ///     \gets f( u , v ) + \delta;\ f( v , u ) \gets f( v , u ) - \delta
+ /// 11 & \qquad \delta \gets \text{the least } c_f( u , v )
+ ///     \text{ of an edge of } P \cr
+ /// 12 & \qquad \textbf{foreach}\ ( u , v ) \in P\ \textbf{do}\ f( u , v )
+ ///     \gets f( u , v ) + \delta;\ f( v , u ) \gets f( v , u ) -
+ ///     \delta\quad \triangleright\ \text{skew symmetry}
  /// \end{array}}
  /// \f]
  /// \pre \f$ s \f$ and \f$ t \f$ are distinct nodes
@@ -221,9 +224,11 @@ class FlowNetwork
  /// cut of capacity \f$ | f | \f$.
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{function}\ \mathrm{minCut}( s ) \cr
- /// 2 & \quad \textbf{return}\  \text{the nodes reached from } s \text{ by a }
- ///     \text{visit of the edges with } c_f( u , v ) > 0
+ /// 1 & \textbf{function}\ \mathrm{minCut}( s )\quad \triangleright
+ ///     \ \text{after } \mathrm{maxFlow} \text{: no edge with } c_f > 0
+ ///     \text{ leaves the set} \cr
+ /// 2 & \quad \textbf{return}\ \text{the nodes that a visit from } s
+ ///     \text{ along the edges with } c_f( u , v ) > 0 \text{ reaches}
  /// \end{array}}
  /// \f]
  /// \pre \f$ s \f$ is a node

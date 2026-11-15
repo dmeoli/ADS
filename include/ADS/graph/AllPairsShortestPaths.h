@@ -86,20 +86,21 @@ struct AllPairs
 /// In pseudocode (section 13.5), d and p overwritten for k = 1 , ... , n:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{floydWarshall}( G ) \cr
-/// 2 & \quad \textbf{foreach}\ u , v \in V\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ u = v\ \textbf{then}\ d[ u ][ v ] \gets 0;\ p[ u ][
-///     v ] \gets \textbf{nil} \cr
-/// 4 & \qquad \textbf{else if}\ ( u , v ) \in E\ \textbf{then}\ d[ u ][ v ]
-///     \gets w( u , v );\ p[ u ][ v ] \gets u \cr
-/// 5 & \qquad \textbf{else}\ d[ u ][ v ] \gets \infty;\ p[ u ][ v ] \gets
-///     \textbf{nil} \cr
-/// 6 & \quad \textbf{foreach}\ k \in V\ \textbf{do} \cr
-/// 7 & \qquad \textbf{foreach}\ u , v \in V\ \textbf{with}\ d[ u ][ k ] + d[ k
-///     ][ v ] < d[ u ][ v ]\ \textbf{do} \cr
-/// 8 & \qquad\quad d[ u ][ v ] \gets d[ u ][ k ] + d[ k ][ v ];\ p[ u ][ v ]
-///     \gets p[ k ][ v ] \cr
-/// 9 & \quad \textbf{return}\ ( d , p , \text{whether some } d[ u ][ u ] < 0 )
+/// 1 & \textbf{function}\ \mathrm{floydWarshall}( G )\quad \triangleright
+///     \ p[ u ][ v ] \text{ the node before } v \text{ on the path} \cr
+/// 2 & \quad \textbf{foreach}\ u , v \in V\ \textbf{do}\quad \triangleright
+///     \ \text{the paths with no intermediate node} \cr
+/// 3 & \qquad ( d[ u ][ v ] , p[ u ][ v ] ) \gets ( 0 , \textbf{nil} )
+///     \text{ if } u = v \text{, } ( w( u , v ) , u ) \text{ if } ( u , v )
+///     \in E \text{, else } ( \infty , \textbf{nil} ) \cr
+/// 4 & \quad \textbf{foreach}\ k \in V\ \textbf{do}\quad \triangleright
+///     \ \text{now also through } k \cr
+/// 5 & \qquad \textbf{foreach}\ u , v \in V\ \textbf{do} \cr
+/// 6 & \qquad\quad \textbf{if}\ d[ u ][ k ] + d[ k ][ v ] < d[ u ][ v ]
+///     \ \textbf{then}\ ( d[ u ][ v ] , p[ u ][ v ] ) \gets ( d[ u ][ k ] +
+///     d[ k ][ v ] , p[ k ][ v ] ) \cr
+/// 7 & \quad \textbf{return}\ ( d , p , \text{whether } d[ u ][ u ] < 0
+///     \text{ for some } u )
 /// \end{array}}
 /// \f]
 /// \post the distances are closed under the triangle inequality, bounded by
@@ -113,15 +114,18 @@ AllPairs< typename G::Weight > floydWarshall( const G & g );
 /// In pseudocode (exercise 13.5), a path that improves using the edge once:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{addEdge}( d , p , a , b , w ) \cr
-/// 2 & \quad \textbf{if}\ w \ge d[ a ][ b ]\ \textbf{then return} \cr
-/// 3 & \quad d' \gets d;\ p' \gets p \cr
-/// 4 & \quad \textbf{foreach}\ u , v \in V\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ d'[ u ][ a ] + w + d'[ b ][ v ] < d[ u ][ v ]
-///     \ \textbf{then} \cr
-/// 6 & \qquad\quad d[ u ][ v ] \gets d'[ u ][ a ] + w + d'[ b ][ v ] \cr
-/// 7 & \qquad\quad p[ u ][ v ] \gets a \text{ if } v = b \text{ , else } p'[ b
-///     ][ v ]
+/// 1 & \textbf{procedure}\ \mathrm{addEdge}( d , p , a , b , w )\quad
+///     \triangleright\ \text{the new edge } ( a , b ) \text{ of weight } w
+///     \cr
+/// 2 & \quad \textbf{if}\ d[ a ][ b ] \le w\ \textbf{then return}\quad
+///     \triangleright\ \text{no path gets shorter} \cr
+/// 3 & \quad ( d' , p' ) \gets ( d , p )\quad \triangleright
+///     \ \text{the old tables} \cr
+/// 4 & \quad \textbf{foreach}\ u , v \in V \text{ with } d'[ u ][ a ] + w +
+///     d'[ b ][ v ] < d[ u ][ v ]\ \textbf{do}\quad \triangleright
+///     \ \text{through } ( a , b ) \cr
+/// 5 & \qquad d[ u ][ v ] \gets d'[ u ][ a ] + w + d'[ b ][ v ];\ p[ u ][ v
+///     ] \gets a \text{ if } v = b \text{, else } p'[ b ][ v ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ a \f$ and \f$ b \f$ are distinct places of \f$ R \f$, and

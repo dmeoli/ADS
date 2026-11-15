@@ -430,29 +430,31 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
 /// the shortest paths of `shortestPaths()` above, with the structure \f$ S \f$
 /// given, its work in `*c` if given
 ///
-/// In pseudocode (the prototype of section 11.2, its lines (1) to (4) as in
-/// the book), w( u , v ) the cost of the edge:
+/// In pseudocode (the prototype of section 11.2), w( u , v ) the cost of
+/// the edge:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{shortestPaths}( G , r , S ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ d[ v ] \gets \infty;\ T[
-///     v ] \gets \textbf{nil} \cr
-/// 3 & \quad d[ r ] \gets 0;\ \mathrm{add}( S , r )\quad \triangleright
-///     \ \text{(1)} \cr
+/// 1 & \textbf{function}\ \mathrm{shortestPaths}( G , r , S )\quad
+///     \triangleright\ S \text{ the frontier, } b[ v ] \text{ whether } v
+///     \in S \cr
+/// 2 & \quad d[ v ] \gets \infty;\ T[ v ] \gets \textbf{nil}
+///     \text{ for every node } v \cr
+/// 3 & \quad d[ r ] \gets 0;\ \mathrm{add}( S , r ) \cr
 /// 4 & \quad \textbf{while}\ S \ne \emptyset\ \textbf{do} \cr
-/// 5 & \qquad u \gets \mathrm{extract}( S )\quad \triangleright\ \text{(2)}
-///     \cr
-/// 6 & \qquad \textbf{if}\ S \text{ is first in, first out and } u
-///     \text{left it more than } n \text{ times }\ \textbf{then} \cr
-/// 7 & \qquad\quad \textbf{return}\  \text{a negative cycle} \cr
-/// 8 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{with}\ d[ u
-///     ] + w( u , v ) < d[ v ]\ \textbf{do} \cr
-/// 9 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u \cr
-/// 10 & \qquad\quad \textbf{if}\ v \notin S\ \textbf{then}\ \mathrm{add}( S ,
-///     v )\quad \triangleright\ \text{(3)} \cr
-/// 11 & \qquad\quad \textbf{else}\ \mathrm{update}( S , v )\quad
-///     \triangleright\ \text{(4), the decrease of a priority} \cr
-/// 12 & \quad \textbf{return}\ ( d , T )
+/// 5 & \qquad u \gets \mathrm{extract}( S )\quad \triangleright
+///     \ \text{the frontier decides which node} \cr
+/// 6 & \qquad \textbf{if}\ S \text{ is a queue and } u
+///     \text{ has now left it } n + 1 \text{ times}\ \textbf{then return}
+///     \ \text{a negative cycle} \cr
+/// 7 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do} \cr
+/// 8 & \qquad\quad \textbf{if}\ d[ v ] \le d[ u ] + w( u , v )
+///     \ \textbf{then continue}\quad \triangleright
+///     \ \text{no shorter path to } v \cr
+/// 9 & \qquad\quad ( d[ v ] , T[ v ] ) \gets ( d[ u ] + w( u , v ) , u ) \cr
+/// 10 & \qquad\quad \textbf{if}\ b[ v ]\ \textbf{then}\ \mathrm{update}( S ,
+///     v )\ \textbf{else}\ \mathrm{add}( S , v )\quad \triangleright
+///     \ \mathrm{update} \text{ lowers a priority} \cr
+/// 11 & \quad \textbf{return}\ ( d , T )
 /// \end{array}}
 /// \f]
 /// \pre \f$ r \f$ is a node, \f$ S \f$ is empty; no negative cycle reachable
@@ -538,15 +540,16 @@ auto papeDEsopo( const G & g , int r );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{dagShortestPaths}( G , r ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ d[ v ] \gets \infty;\ T[
-///     v ] \gets \textbf{nil} \cr
-/// 3 & \quad d[ r ] \gets 0 \cr
-/// 4 & \quad \textbf{foreach}\ u \in \mathrm{topsort}( G )\ \textbf{with}\ d[
-///     u ] < \infty\ \textbf{do} \cr
-/// 5 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{with}\ d[ u
-///     ] + w( u , v ) < d[ v ]\ \textbf{do} \cr
-/// 6 & \qquad\quad d[ v ] \gets d[ u ] + w( u , v );\ T[ v ] \gets u \cr
-/// 7 & \quad \textbf{return}\ ( d , T )
+/// 2 & \quad d[ v ] \gets \infty;\ T[ v ] \gets \textbf{nil}
+///     \text{ for every node } v;\ d[ r ] \gets 0 \cr
+/// 3 & \quad \textbf{foreach}\ u \text{ in the order of } \mathrm{topsort}(
+///     G )\ \textbf{do}\quad \triangleright\ d[ u ] \text{ is final when } u
+///     \text{ comes} \cr
+/// 4 & \qquad \textbf{if}\ d[ u ] = \infty\ \textbf{then continue} \cr
+/// 5 & \qquad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do}
+///     \ \textbf{if}\ d[ u ] + w( u , v ) < d[ v ]\ \textbf{then}\ ( d[ v ]
+///     , T[ v ] ) \gets ( d[ u ] + w( u , v ) , u ) \cr
+/// 6 & \quad \textbf{return}\ ( d , T )
 /// \end{array}}
 /// \f]
 /// \pre \f$ r \f$ is a node, and the graph is acyclic (audit)
@@ -563,18 +566,19 @@ ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g , int r );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{isShortestPathTree}( G , r , d , T ) \cr
-/// 2 & \quad \textbf{if}\ d[ r ] \ne 0\ \textbf{or}\ T[ r ] \ne \textbf{nil}
+/// 2 & \quad \textbf{if}\ T[ r ] \ne \textbf{nil}\ \textbf{or}\ d[ r ] \ne
+///     0\ \textbf{then return false} \cr
+/// 3 & \quad \textbf{foreach}\ v \ne r\ \textbf{do}\quad \triangleright\ T
+///     \text{ realizes } d \cr
+/// 4 & \qquad \textbf{if}\ d[ v ] < \infty \text{ and } d[ v ] \ne d[ T[ v ]
+///     ] + w( T[ v ] , v ) \text{, or } d[ v ] = \infty \text{ and } T[ v ]
+///     \ne \textbf{nil}\ \textbf{then return false} \cr
+/// 5 & \quad \textbf{foreach}\ ( u , v ) \in E \text{ with } d[ u ] <
+///     \infty\ \textbf{do}\quad \triangleright\ \text{no edge shortens } d
+///     \cr
+/// 6 & \qquad \textbf{if}\ d[ v ] > d[ u ] + w( u , v )
 ///     \ \textbf{then return false} \cr
-/// 3 & \quad \textbf{foreach}\ v \in V \setminus \{ r \}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ d[ v ] = \infty\ \textbf{and}\ T[ v ] \ne
-///     \textbf{nil}\ \textbf{then return false} \cr
-/// 5 & \qquad \textbf{if}\ d[ v ] < \infty\ \textbf{and}\ d[ v ] \ne d[ T[ v ]
-///     ] + w( T[ v ] , v )\ \textbf{then return false} \cr
-/// 6 & \quad \textbf{foreach}\ ( u , v ) \in E\ \textbf{with}\ d[ u ] <
-///     \infty\ \textbf{do} \cr
-/// 7 & \qquad \textbf{if}\ d[ u ] + w( u , v ) < d[ v ]\ \textbf{then return
-///     false} \cr
-/// 8 & \quad \textbf{return true}
+/// 7 & \quad \textbf{return true}
 /// \end{array}}
 /// \f]
 template< Graph G >
@@ -589,8 +593,8 @@ bool isShortestPathTree( const G & g , int r ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{reachesNegativeCycle}( G , r ) \cr
-/// 2 & \quad \mathrm{shortestPaths}( G , r , \text{an empty queue} ) \cr
-/// 3 & \quad \textbf{return}\  \text{whether it found a negative cycle}
+/// 2 & \quad \textbf{return}\ \text{whether } \mathrm{shortestPaths}( G , r
+///     , \text{an empty queue} ) \text{ stops on a negative cycle}
 /// \end{array}}
 /// \f]
 template< Graph G >
