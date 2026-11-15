@@ -1958,6 +1958,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- ADS is released under the Boost Software License 1.0, the license of Boost
+  and of LEMON, in place of the LGPL v3, so that a program that already uses
+  those libraries can take its structures with no further obligation; the
+  file COPYING, the GPL text that the LGPL needed, is gone, and the metadata
+  of every package say BSL-1.0
+
 - The code follows the style of code-style, as that of SMS++: its
   .clang-format, copied at the root, with what format.py adds (return( x ),
   throw( e ), a space before each comma, the braces of namespaces, classes

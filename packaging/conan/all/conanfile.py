@@ -11,7 +11,7 @@ required_conan_version = ">=2.0"
 class AdsConan(ConanFile):
     name = "ads"
     description = "Header-only C++20 algorithms and data structures"
-    license = "LGPL-3.0-only"
+    license = "BSL-1.0"
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://github.com/dmeoli/ADS"
     topics = ("algorithms", "data-structures", "header-only")
@@ -35,7 +35,7 @@ class AdsConan(ConanFile):
         pass
 
     def package(self):
-        for f in ("LICENSE", "COPYING"):
+        for f in ("LICENSE",):
             copy(self, f, self.source_folder,
                  os.path.join(self.package_folder, "licenses"))
         copy(self, "*", os.path.join(self.source_folder, "include"),

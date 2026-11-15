@@ -2,7 +2,7 @@ package("ads")
     set_kind("library", {headeronly = true})
     set_homepage("https://github.com/dmeoli/ADS")
     set_description("Header-only C++20 algorithms and data structures")
-    set_license("LGPL-3.0")
+    set_license("BSL-1.0")
 
     add_urls("https://github.com/dmeoli/ADS/releases/download/v$(version)/ADS-$(version).tar.gz",
              "https://github.com/dmeoli/ADS.git")

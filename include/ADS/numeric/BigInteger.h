@@ -30,7 +30,8 @@
  * holds where a limb of GMP is a word of 64 bits, all of it number;
  * elsewhere, and with `ADS_BIGINT_GMP` defined to 0, `BigInteger` keeps the
  * code of the book below. GMP is free software under the LGPL v3 (or the
- * GPL v2), as ADS is under the LGPL v3; note that GMP aborts where it cannot
+ * GPL v2), whose terms apply to a program that enables it; note that GMP
+ * aborts where it cannot
  * allocate, while the code of the book throws `std::bad_alloc` [see
  * \ref theory_numeric_backends].
  *

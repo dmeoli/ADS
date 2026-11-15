@@ -32,8 +32,8 @@ reference generated from the headers, not a replacement for it.
 ## License
 
 ADS is distributed under the
-[GNU Lesser General Public License v3.0](https://opensource.org/licenses/lgpl-3.0.html)
-(LGPL-3); this manual is distributed under the same terms.
+[Boost Software License, version 1.0](https://www.boost.org/LICENSE_1_0.txt)
+(BSL-1.0); this manual is distributed under the same terms.
 
 ---
 

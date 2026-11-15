@@ -7,7 +7,7 @@
 [![C++ Standard](https://img.shields.io/badge/C%2B%2B-20-blue)](https://en.cppreference.com/w/cpp/20)
 [![Header-only](https://img.shields.io/badge/header--only-yes-brightgreen)](https://github.com/dmeoli/ADS#use)
 [![Platforms](https://img.shields.io/badge/platforms-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey)](https://github.com/dmeoli/ADS/actions/workflows/ci.yml)
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![License: BSL-1.0](https://img.shields.io/badge/License-BSL_1.0-blue.svg)](https://www.boost.org/LICENSE_1_0.txt)
 
 ADS: Algorithms and Data Structures, and Advanced ones. ADS is a
 header-only C++20 library of the data structures and the parallelism that
@@ -179,8 +179,9 @@ in [`test/tests.txt`](test/tests.txt); the solutions of the exercises are
 in the tests, one function per exercise. Each one is checked on the
 example of the book, on its edge cases and (where an enumeration is
 possible) on random instances against the enumeration. Since the license
-of the book does not allow its text in a repository under the LGPL, the
-code cites it instead of reproducing it.
+of the book (CC BY-NC 4.0) does not allow its text in a repository under a
+license that permits commercial use, the code cites it instead of
+reproducing it.
 
 | Chapter | Section | What | Header | Tests |
 |---|---|---|---|---|
@@ -930,8 +931,8 @@ libraries defines the macros itself. A CBLAS that runs threads of its own
 (e.g., OpenBLAS, unless `OPENBLAS_NUM_THREADS=1`) runs them in `gemm()`,
 and the parallel `gemm()` hands it the whole product in one call, leaving
 the threads to it. GMP is under
-the LGPL v3 (or the GPL v2), compatible with the LGPL v3 of ADS; without
-the macros nothing of either library is included.
+the LGPL v3 (or the GPL v2), whose terms apply to a program that enables
+it; without the macros nothing of either library is included.
 
 ```cpp
 #include "ADS/sequence/List.h"
@@ -1005,6 +1006,7 @@ install clang-format==22.1.5`).
 
 ## License
 
-This software is released under the [GNU Lesser General Public License
-version 3.0](https://opensource.org/licenses/lgpl-3.0.html) (see the file
-[LICENSE](LICENSE)). The book is by Alberto Montresor, under CC BY-NC 4.0.
+This software is released under the [Boost Software License, version
+1.0](https://www.boost.org/LICENSE_1_0.txt) (see the file
+[LICENSE](LICENSE)), the license of Boost and of LEMON. The book is by
+Alberto Montresor, under CC BY-NC 4.0.

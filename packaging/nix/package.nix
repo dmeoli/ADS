@@ -30,7 +30,7 @@ stdenv.mkDerivation (finalAttrs: {
     description = "Header-only C++20 algorithms and data structures";
     homepage = "https://github.com/dmeoli/ADS";
     changelog = "https://github.com/dmeoli/ADS/blob/v${finalAttrs.version}/CHANGELOG.md";
-    license = lib.licenses.lgpl3Only;
+    license = lib.licenses.boost;
     maintainers = [ ];
     platforms = lib.platforms.all;
   };

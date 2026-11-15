@@ -17,7 +17,7 @@ class Ads(CMakePackage):
 
     maintainers("dmeoli")
 
-    license("LGPL-3.0-only", checked_by="dmeoli")
+    license("BSL-1.0", checked_by="dmeoli")
 
     version("main", branch="main")
     version("0.1.0", sha256="0000000000000000000000000000000000000000000000000000000000000000")
