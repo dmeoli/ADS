@@ -176,14 +176,14 @@ graph/ListGraph.h                     base
 graph/Matching.h                      both     TODO split: the b-matching of
                                                the book and Edmonds
 graph/MatrixGraph.h                   base
-graph/MaxFlow.h                       both     TODO split: the flows of the
-                                               book and the engineered push-
-                                               relabel
+graph/MaxFlow.h                       base
 graph/MinimumSpanningTree.h           base
 graph/Observable.h                    advanced
 graph/Paths.h                         base
 graph/PointerGraph.h                  advanced
 graph/Properties.h                    base
+graph/PushRelabel.h                   advanced the PUSH_RELABEL of
+                                               MaxFlow.h, split off it
 graph/Reoptimization.h                advanced
 graph/ShortestPaths.h                 base
 graph/StaticGraph.h                   advanced the CSR of ArrayGraph written
@@ -524,6 +524,8 @@ geometry/ClosestPair.h                uses sort/Sort.h
                                            the sort of the points
 geometry/ConvexHull.h                 uses sort/Sort.h
                                            the sort of the points
+graph/MaxFlow.h                       uses graph/PushRelabel.h
+                                           the way PUSH_RELABEL
 numeric/RandomSampling.h              uses priority/DaryHeap.h
                                            the weighted sample of the keys
 sequence/Treque.h                     uses queue/RingDeque.h

@@ -2103,6 +2103,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The push-relabel of FlowNetwork::maxFlow() (PUSH_RELABEL, with its warm
+  start and its pseudocode) moved from MaxFlow.h to the new advanced header
+  graph/PushRelabel.h, which MaxFlow.h, now base, includes, so that every
+  include of MaxFlow.h gives the same; the test programs split_maxflow and
+  split_pushrelabel include each header alone
+
 - the memoization of the 0-1 knapsack is knapsackMemo(), an English name
   like the rest of the interface, and zaino(), the name of the book, is kept
   as an alias of it

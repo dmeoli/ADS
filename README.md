@@ -206,7 +206,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-417 headers: 240 base, 148 advanced, 11 core, 13 interop and 5 in both sets until they are split.
+418 headers: 241 base, 149 advanced, 11 core, 13 interop and 4 in both sets until they are split.
 
 | Folder | Base | Advanced | Core | Interop | Both |
 |---|---|---|---|---|---|
@@ -221,7 +221,7 @@ file does not allow.
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |  |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |  |
-| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `MatrixGraph`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `Reoptimization`, `StaticGraph` |  |  | `Matching`, `MaxFlow`, `Visit` |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph` |  |  | `Matching`, `Visit` |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |  |
 | `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |  |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |  |
@@ -331,7 +331,7 @@ the abstract data types and of each algorithm.
 | | 14.5 | exercises 14.1–14.10, Shortest Job First | [`test/ch14.cpp`](test/ch14.cpp), [`optimization/ShortestJobFirst.h`](include/ADS/optimization/ShortestJobFirst.h) | `ch14.ex14.*` |
 | [15](https://algoritmicamente.it/materiali/libro/capitoli/cap15.pdf) | 15 | local search of the minimum spanning tree | [`test/ch15.cpp`](test/ch15.cpp) | `ch15.sec15.local-search` |
 | | 15.1 | Shell Sort, four sequences of gaps | [`sort/ShellSort.h`](include/ADS/sort/ShellSort.h) | `ch15.sec15.1.*` |
-| | 15.2 | maximum flow (Ford-Fulkerson, Edmonds-Karp, Dinic, and the push-relabel of Goldberg and Tarjan beyond the book), from the flow there is after any change of the capacities, minimum cut, circulations | [`graph/MaxFlow.h`](include/ADS/graph/MaxFlow.h) | `ch15.sec15.2.max-flow` |
+| | 15.2 | maximum flow (Ford-Fulkerson, Edmonds-Karp, Dinic, and the push-relabel of Goldberg and Tarjan beyond the book), from the flow there is after any change of the capacities, minimum cut, circulations | [`graph/MaxFlow.h`](include/ADS/graph/MaxFlow.h), [`graph/PushRelabel.h`](include/ADS/graph/PushRelabel.h) | `ch15.sec15.2.max-flow` |
 | | 15.4 | exercises 15.1–15.10, Eulerian cycle | [`test/ch15.cpp`](test/ch15.cpp), [`graph/EulerianCycle.h`](include/ADS/graph/EulerianCycle.h) | `ch15.ex15.*` |
 | [16](https://algoritmicamente.it/materiali/libro/capitoli/cap16.pdf) | 16.1 | convex hull, O(n³) and Graham | [`geometry/ConvexHull.h`](include/ADS/geometry/ConvexHull.h) | `ch16.sec16.1.*` |
 | | 16.2 | enumeration: subsets, permutations, derangements, subset sum | [`backtrack/Enumeration.h`](include/ADS/backtrack/Enumeration.h) | `ch16.sec16.2.subsets` |

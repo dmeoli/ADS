@@ -23,18 +23,9 @@
  *   algorithm of the three Indians, Karzanov, Malhotra, Kumar and
  *   Maheshwari, of which this is the forerunner);
  * - `PUSH_RELABEL`, beyond the book, the push-relabel of Goldberg and
- *   Tarjan, which keeps a preflow (more flow may enter a node than leave
- *   it) and labels that bound the distances from \f$ t \f$, with the node
- *   of the highest label discharged first, \f$ O( n^2 \sqrt{m} ) \f$
- *   (Cheriyan and Maheshwari), and the global relabelings and the gaps of
- *   Cherkassky and Goldberg, on which its speed depends in practice (see
- *   \ref theory_graph_flow); from the flow there is it first looks for a
- *   residual path from \f$ s \f$ to \f$ t \f$ in the side of \f$ s \f$,
- *   and stops if there is none, and it takes the excesses that
- *   `setCapacity()` left where they are, so that a change of the
- *   capacities costs less than a computation from scratch; the visits of
- *   `DINIC`, which explore only the nodes reached from \f$ s \f$, remain
- *   the cheaper repair when the network is large and the change small.
+ *   Tarjan, which keeps a preflow and labels that bound the distances from
+ *   \f$ t \f$, with its global relabelings and gaps and its warm start from
+ *   the flow there is [see `PushRelabel.h`, which this header includes].
  *
  * The best bound that the book attributes to Karmarkar (1984),
  * \f$ O( n m \log( n^2 / m ) ) \f$, is the one of the push-relabel of
@@ -81,12 +72,6 @@
  * \see A. V. Goldberg, R. E. Tarjan, A new approach to the maximum-flow
  *      problem, Journal of the ACM 35(4), 921-940, 1988,
  *      doi:10.1145/48014.61051
- * \see J. Cheriyan, S. N. Maheshwari, Analysis of preflow push algorithms
- *      for maximum network flow, SIAM Journal on Computing 18(6),
- *      1057-1086, 1989, doi:10.1137/0218072
- * \see B. V. Cherkassky, A. V. Goldberg, On implementing the push-relabel
- *      method for the maximum flow problem, Algorithmica 19(4), 390-410,
- *      1997, doi:10.1007/PL00009180
  * \see P. Kohli, P. H. S. Torr, Dynamic graph cuts for efficient inference
  *      in Markov random fields, IEEE Transactions on Pattern Analysis and
  *      Machine Intelligence 29(12), 2079-2088, 2007,
@@ -311,63 +296,7 @@ class FlowNetwork
 
  /// the maximum flow from \f$ s \f$ to \f$ t \f$ by the push-relabel of
  /// Goldberg and Tarjan, from the flow there is and the excesses left by
- /// `setCapacity()`
- ///
- /// In pseudocode (beyond the book; the highest label first, with the
- /// global relabelings and the gaps of Cherkassky and Goldberg, the
- /// labelings that stop at the last node with an excess of their HIPR,
- /// and the two phases and the scan of the edges of a node that pushes
- /// and finds its new label at once of the Preflow of LEMON), with
- /// \f$ e( x ) \f$
- /// the excess of \f$ x \f$ and \f$ d( x ) \f$ its label, a lower bound of
- /// its distance from the target in the residual network, \f$ D \f$ the
- /// label of the nodes out of the game:
- /// \f[
- /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{pushRelabel}( s , t ) \cr
- /// 2 & \quad e \gets \text{the excesses left by } \mathrm{setCapacity}()
- ///     \cr
- /// 3 & \quad \textbf{if}\ e = 0 \textbf{ and } | f | > 0 \textbf{ and }
- ///     t \text{ is not reached from } s \text{ in the residual network}
- ///     \ \textbf{then}\ \textbf{return} \cr
- /// 4 & \quad \textbf{foreach}\ ( s , v )\ \textbf{with}\ c_f( s , v )
- ///     > 0\ \textbf{do}\ \text{push } c_f( s , v ) \text{ on it} \cr
- /// 5 & \quad d \gets \mathrm{labels}( t ) \cr
- /// 6 & \quad \mathrm{discharge}( t , n ) \quad \triangleright\ \text{a}
- ///     \text{ maximum preflow} \cr
- /// 7 & \quad \textbf{if}\ \text{some } u \text{ of label } n \text{ has }
- ///     e( u ) > 0\ \textbf{then} \cr
- /// 8 & \qquad d \gets \mathrm{labels}( s ) \text{ among the nodes of}
- ///     \text{ label } n;\ \mathrm{discharge}( s , 2 n ) \cr
- /// 9 & \textbf{procedure}\ \mathrm{discharge}( z , D ) \cr
- /// 10 & \quad \textbf{while}\ \text{some } u \notin \{ s , t \}
- ///     \text{ has } e( u ) > 0 \text{ and } d( u ) < D\ \textbf{do} \cr
- /// 11 & \qquad u \gets \text{such a node of the highest label};
- ///     \ \lambda \gets D \cr
- /// 12 & \qquad \textbf{foreach}\ ( u , v )\ \textbf{with}\ c_f( u , v )
- ///     > 0\ \textbf{while}\ e( u ) > 0\ \textbf{do} \cr
- /// 13 & \qquad\quad \textbf{if}\ d( v ) < d( u )\ \textbf{then}
- ///     \ \text{push } \min( e( u ) , c_f( u , v ) ) \text{ on } ( u , v )
- ///     \ \textbf{else}\ \lambda \gets \min( \lambda , d( v ) ) \cr
- /// 14 & \qquad \textbf{if}\ e( u ) > 0\ \textbf{then} \cr
- /// 15 & \qquad\quad \textbf{if}\ u \text{ is the only node of label }
- ///     d( u )\ \textbf{then}\ d( x ) \gets D \text{ for } u \text{ and}
- ///     \text{ each } x \text{ with } d( x ) > d( u ) \cr
- /// 16 & \qquad\quad \textbf{else}\ d( u ) \gets \min( D , \lambda + 1 )
- ///     \cr
- /// 17 & \qquad \textbf{if}\ z = t \textbf{ and } \text{the relabelings}
- ///     \text{ since the last labels cost} > ( 6 n + m ) / 2 \cr
- ///     & \qquad\quad \textbf{then}\ d \gets \mathrm{labels}( z ) \cr
- /// 18 & \textbf{function}\ \mathrm{labels}( z ) \cr
- /// 19 & \quad \text{visit in breadth backwards from } z \text{, level by}
- ///     \text{ level, } d( u ) \text{ the level of } u \cr
- /// 20 & \quad \text{stop after the level } k \text{ that labels the last}
- ///     \text{ node with an excess} \cr
- /// 21 & \quad \textbf{return}\ d \text{, and } k + 2 \text{ for the}
- ///     \text{ nodes not reached} \quad \triangleright\ \text{a lower}
- ///     \text{ bound}
- /// \end{array}}
- /// \f]
+ /// `setCapacity()` [see `PushRelabel.h`, which defines it]
  void pushRelabel( int s , int t );
 
  /// one augmenting path by a breadth first visit
@@ -491,6 +420,12 @@ inline bool feasibleCirculation( int n , const std::vector< BoundedEdge > & E ,
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/graph/impl/MaxFlow.tpp"
+
+/*--------------------------------------------------------------------------*/
+/*--------------------- THE ENGINEERED PUSH-RELABEL ------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#include "ADS/graph/PushRelabel.h"
 
 /*--------------------------------------------------------------------------*/
 

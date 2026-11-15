@@ -575,8 +575,9 @@
  e.g., those of the bipartite matching; in practice the phases are usually far
  fewer than \f$ n \f$.
 
- The push-relabel of Goldberg and Tarjan (`PUSH_RELABEL`, beyond the book)
- gives up the conservation while it runs: it keeps a <em>preflow</em>, in
+ The push-relabel of Goldberg and Tarjan (`PUSH_RELABEL`, beyond the book,
+ in `PushRelabel.h`) gives up the conservation while it runs: it keeps a
+ <em>preflow</em>, in
  which each node but \f$ s \f$ has an excess
  \f$ e( v ) \ge 0 \f$ of entering flow over leaving flow, and a label
  \f$ d( v ) \f$ with \f$ d( t ) = 0 \f$ and \f$ d( u ) \le d( v ) + 1 \f$

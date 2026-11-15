@@ -4,10 +4,10 @@
 `ArrayGraph.h`, `StaticGraph.h`, `GraphBuilder.h`, `PointerGraph.h`,
 `IncidenceGraph.h`, `Visit.h`, `Grid.h`, `GridGraph.h`, `Paths.h`,
 `Properties.h`, `ShortestPaths.h`, `AllPairsShortestPaths.h`,
-`MinimumSpanningTree.h`, `MaxFlow.h`, `FlowApplications.h`, `Matching.h`,
-`Assignment.h`, `EulerianCycle.h`, `Observable.h`, `Reoptimization.h`,
-and `include/ADS/interop/lemon/Heaps.h`, `Maps.h`, `Digraphs.h`,
-`Observers.h`, `Parallel.h`]
+`MinimumSpanningTree.h`, `MaxFlow.h`, `PushRelabel.h`, `FlowApplications.h`,
+`Matching.h`, `Assignment.h`, `EulerianCycle.h`, `Observable.h`,
+`Reoptimization.h`, and `include/ADS/interop/lemon/Heaps.h`, `Maps.h`,
+`Digraphs.h`, `Observers.h`, `Parallel.h`]
 
 We are concerned in this chapter with the *graph*, i.e., a set of nodes
 together with a set of pairs of nodes (the edges). A graph models any binary
@@ -37,10 +37,11 @@ the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 are all here, with each of his exercises solved on the code of the library
 ([§14.16](14-graph.md#sec-14-16)). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `GraphBuilder.h`,
-`GridGraph.h`, `Observable.h`, `PointerGraph.h`, `Reoptimization.h` and
+`GridGraph.h`, `Observable.h`, `PointerGraph.h`, `PushRelabel.h` (the
+push-relabel of `MaxFlow.h`, which includes it), `Reoptimization.h` and
 `StaticGraph.h` are advanced and the other headers of this chapter are
-base, while `Matching.h`, `MaxFlow.h` and `Visit.h` hold a part of each
-until they are split; the headers of `interop/lemon/`
+base, while `Matching.h` and `Visit.h` hold a part of each until they are
+split; the headers of `interop/lemon/`
 ([§14.14](14-graph.md#sec-14-14)) are of the set interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
@@ -2699,8 +2700,9 @@ once, and `maxFlow()` repeats it from $s$ until it returns 0 (line 8 of
 ### 14.10.2 The push-relabel {#sec-14-10-2}
 
 The push-relabel of [Goldberg and Tarjan
-1988](Z-bibliography.md#ref-goldberg1988) (`PUSH_RELABEL`, beyond the book)
-gives up the conservation while it runs. It keeps a *preflow*, in which each
+1988](Z-bibliography.md#ref-goldberg1988) (`PUSH_RELABEL`, beyond the book,
+defined in `PushRelabel.h`, which `MaxFlow.h` includes) gives up the
+conservation while it runs. It keeps a *preflow*, in which each
 node but $s$ has an excess $e( v ) \ge 0$ of entering flow over leaving
 flow. It also keeps a label $d( v )$ with $d( t ) = 0$ and $d( u ) \le d( v
 ) + 1$ on each edge with $c_f( u , v ) > 0$; hence $d( v )$ is a lower bound
@@ -2747,7 +2749,7 @@ node that pushes finds its new label in the same scan of its edges.
 highest label first, with the global relabelings and the gaps (beyond the
 book).
 
---8<-- "generated/MaxFlow-FlowNetwork-pushRelabel.pseudo.md"
+--8<-- "generated/PushRelabel-pushRelabel.pseudo.md"
 
 The best bound that [Montresor 2025,
 §15.2](Z-bibliography.md#ref-montresor2025) attributes to [Karmarkar

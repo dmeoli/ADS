@@ -269,12 +269,6 @@ using ADS::branchAndBoundMatching;
 using ADS::maxCardinalityMatching;
 using ADS::maxWeightMatching;
 
-// graph/MaxFlow.h
-using ADS::Augment;
-using ADS::BoundedEdge;
-using ADS::FlowNetwork;
-using ADS::feasibleCirculation;
-
 // graph/Observable.h
 using ADS::EdgeDeleted;
 using ADS::EdgeInserted;

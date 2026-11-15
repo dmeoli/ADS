@@ -1956,6 +1956,12 @@ engineered_lemon  lemon-warm-mcf         flussi di costo minimo a caldo
 engineered_lemon  lemon-warm-preflow     Preflow da un flusso con deficit
 engineered_lemon  lemon-warm-observers   osservatori sui riavvii a caldo
 
+# the headers of both sets split into the part of the book and the
+# engineered one: the header of the book alone gives both, and the new
+# header alone gives its part
+split_maxflow      maxflow-old-include      MaxFlow.h dà anche il push-relabel
+split_pushrelabel  pushrelabel-alone        PushRelabel.h da solo
+
 # Open Data Structures (Morin), chapters 1, 2 and 3
 ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti
 ods_lists  ods-ex1.1.lines              i nove problemi sulle righe
