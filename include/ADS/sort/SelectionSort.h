@@ -63,6 +63,12 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void selectionSort( Store && A , C less = C() );
+
+/// `selectionSort()` above on a vector
 template< class T , class C = std::less<> >
 void selectionSort( std::vector< T > & A , C less = C() );
 
@@ -70,9 +76,10 @@ void selectionSort( std::vector< T > & A , C less = C() );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `selectionSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
-/// to a vector, sorted there with the other arguments as for a vector, and
-/// moved back
+/// `selectionSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -81,9 +88,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) selectionSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( selectionSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

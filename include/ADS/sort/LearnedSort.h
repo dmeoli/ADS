@@ -181,6 +181,11 @@ namespace ADS
 /// \f$ 2 \beta + [ t_\beta = x ] \f$, the odd buckets holding the keys equal
 /// to a splitter, which are not sorted.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store , VectorKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void learnedSort( Store && A );
+
+/// `learnedSort()` above on a vector
 template< VectorKey T >
 void learnedSort( std::vector< T > & A );
 
@@ -189,8 +194,9 @@ namespace detail
 
 /// `learnedSort()` of \f$ A \f$ if the sample shows a distribution that the
 /// model fits, and then true; false, with \f$ A \f$ unchanged, otherwise
-template< VectorKey T >
-bool learnedSortIf( std::vector< T > & A );
+template< SortStore Store , VectorKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+bool learnedSortIf( Store && A );
 
 }  // end( namespace detail )
 
@@ -198,9 +204,10 @@ bool learnedSortIf( std::vector< T > & A );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `learnedSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
-/// to a vector, sorted there with the other arguments as for a vector, and
-/// moved back
+/// `learnedSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -209,9 +216,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) learnedSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( learnedSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

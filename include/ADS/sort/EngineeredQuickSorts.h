@@ -159,6 +159,12 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void pdqSort( Store && A , C less = C() );
+
+/// `pdqSort()` above on a vector
 template< class T , class C = std::less<> >
 void pdqSort( std::vector< T > & A , C less = C() );
 
@@ -196,6 +202,12 @@ void pdqSort( std::vector< T > & A , C less = C() );
 /// where the two smaller parts are sorted recursively and the largest by the
 /// loop.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void dualPivotQuickSort( Store && A , C less = C() );
+
+/// `dualPivotQuickSort()` above on a vector
 template< class T , class C = std::less<> >
 void dualPivotQuickSort( std::vector< T > & A , C less = C() );
 
@@ -237,6 +249,12 @@ void dualPivotQuickSort( std::vector< T > & A , C less = C() );
 /// where \f$ A[ c ] = P \f$ means that neither is smaller than the other;
 /// \f$ \Theta( n^2 ) \f$ comparisons in the worst case.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void threeWayQuickSort( Store && A , C less = C() );
+
+/// `threeWayQuickSort()` above on a vector
 template< class T , class C = std::less<> >
 void threeWayQuickSort( std::vector< T > & A , C less = C() );
 
@@ -244,23 +262,26 @@ void threeWayQuickSort( std::vector< T > & A , C less = C() );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `pdqSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
-/// vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `pdqSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector: in place on the span of its items if \f$ A \f$ is
+/// contiguous, through a vector of its items otherwise, since the code of the
+/// sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { pdqSort( v , std::forward< P >( p )... ); }
 decltype( auto ) pdqSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( pdqSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
-/// `dualPivotQuickSort()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `dualPivotQuickSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -269,14 +290,16 @@ template< SortRange R , class... P >
   }
 decltype( auto ) dualPivotQuickSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( dualPivotQuickSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
-/// `threeWayQuickSort()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `threeWayQuickSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -285,9 +308,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) threeWayQuickSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( threeWayQuickSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

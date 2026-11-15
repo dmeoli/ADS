@@ -94,8 +94,10 @@ inline constexpr bool inPlace = []()
  }();
 
 /// the sequential sort of the parts
-template< bool Stable , class T , class C >
-void sequentialSort( std::vector< T > & A , C & less )
+template< bool Stable , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void sequentialSort( Store && A , C & less )
 {
  if constexpr( Stable )
   stableSort( A , less );
@@ -110,7 +112,7 @@ class TreeClassifier
 {
  public:
  /// the splitters from a sample of A, k a power of 2 at least 2
- TreeClassifier( const std::vector< T > & A , std::size_t k , C & less )
+ TreeClassifier( const std::span< T > A , std::size_t k , C & less )
      : f_less( less ) , f_k( k ) , f_levels( std::countr_zero( k ) ) {
   const std::size_t n = A.size() , s = std::min( n , 16 * k );
   std::vector< T > S;
@@ -215,7 +217,7 @@ class RadixClassifier
  using Key = decltype( radixKey( T() ) );
 
  /// the bounds from a sample of 1024 items of A
- explicit RadixClassifier( const std::vector< T > & A ) {
+ explicit RadixClassifier( const std::span< T > A ) {
   const std::size_t n = A.size();
   std::uint64_t r = 0x9E3779B97F4A7C15ull ^ n;
   Key lo = sortKey( A[ 0 ] ) , hi = lo;
@@ -301,7 +303,7 @@ class CdfClassifier
  using Key = decltype( sortKey( T() ) );
 
  /// the model of a sample of A for k buckets, k a power of 2 at least 2
- CdfClassifier( const std::vector< T > & A , std::size_t k )
+ CdfClassifier( const std::span< T > A , std::size_t k )
      : f_k( k ) , f_m( [ & ]() {
 	const std::size_t n = A.size() , s = std::min( n , 16 * k );
 	std::vector< Key > S( s );
@@ -338,15 +340,18 @@ class CdfClassifier
  CdfModel< Key > f_m;
  };
 
-template< bool Stable , class E , class T , class C >
-void parallelSort( E & ex , std::vector< T > & A , C & less , int depth );
+template< bool Stable , class E , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void parallelSort( E & ex , Store && A , C & less , int depth );
 
 /// the distribution of A into the buckets of the classifier and their
 /// sorts; Id the type of the bucket of an item if they are kept (void if
 /// the classifier is cheap enough to run twice)
-template< bool Stable , class Id , class E , class T , class C , class K >
-void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
-		 int depth )
+template< bool Stable , class Id , class E , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C , class K >
+void distribute( E & ex , Store && A , C & less , const K & cls , int depth )
 {
  const std::size_t n = A.size() , p = ex.concurrency() , k = cls.buckets();
  const std::size_t nb = std::min( 4 * p , std::max( p , n / 16384 ) ) ,
@@ -544,8 +549,10 @@ void distribute( E & ex , std::vector< T > & A , C & less , const K & cls ,
 /// 8 of them (on most inputs after a few items); if no block gave up,
 /// the decreasing runs are reversed and all are merged by the parallel
 /// multiwayMerge() through a buffer, stably, and true is returned
-template< bool Stable , class E , class T , class C >
-bool fewRuns( E & ex , std::vector< T > & A , C & less )
+template< bool Stable , class E , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+bool fewRuns( E & ex , Store && A , C & less )
 {
  const std::size_t n = A.size() ,
 		   B = std::max< std::size_t >( 8 , ex.concurrency() );
@@ -613,8 +620,10 @@ bool fewRuns( E & ex , std::vector< T > & A , C & less )
 /// that the compiler puts in vectors, the counts of the blocks
 /// summed, and A filled with the values in order; false, A untouched, if
 /// an item has another value
-template< class E , class T >
-bool fewKeys( E & ex , std::vector< T > & A )
+template<
+  class E , SortStore Store ,
+  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > >
+bool fewKeys( E & ex , Store && A )
 {
  using Key = decltype( radixKey( T() ) );
  const std::size_t n = A.size();
@@ -700,8 +709,10 @@ inline constexpr std::size_t kCdfBuckets = 256;
 /// the parallel learned sort of A: the distribution by CdfClassifier if
 /// its model fits the sample, parallelSort() otherwise and for its
 /// buckets
-template< bool Stable , class E , class T >
-void learnedParallelSort( E & ex , std::vector< T > & A )
+template<
+  bool Stable , class E , SortStore Store ,
+  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > >
+void learnedParallelSort( E & ex , Store && A )
 {
  std::less<> less;
  if( ( ex.concurrency() >= kParallelSortThreads ) &&
@@ -721,8 +732,8 @@ struct Survey
  bool up = true , down = true;
  };
 
-template< bool Stable , class E , class T , class C >
-void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
+template< bool Stable , class E , SortStore Store , class T , class C >
+void parallelSort( E & ex , Store && A , C & less , int depth )
 {
  const std::size_t n = A.size() , p = ex.concurrency();
  if( ( p < kParallelSortThreads ) || ( n < kParallelSort ) || ( depth > 3 ) ) {
@@ -803,22 +814,22 @@ void parallelSort( E & ex , std::vector< T > & A , C & less , int depth )
 
 /*--------------------------------------------------------------------------*/
 
-template< Executor E , class T , class C >
-void sort( E & ex , std::vector< T > & A , C less )
+template< Executor E , SortStore Store , class T , class C >
+void sort( E & ex , Store && A , C less )
 {
  detail::parallelSort< false >( ex , A , less , 0 );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() , less ) );
  }
 
-template< Executor E , class T , class C >
-void stableSort( E & ex , std::vector< T > & A , C less )
+template< Executor E , SortStore Store , class T , class C >
+void stableSort( E & ex , Store && A , C less )
 {
  detail::parallelSort< true >( ex , A , less , 0 );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() , less ) );
  }
 
-template< Executor E , VectorKey T >
-void learnedSort( E & ex , std::vector< T > & A )
+template< Executor E , SortStore Store , VectorKey T >
+void learnedSort( E & ex , Store && A )
 {
  const auto before = detail::auditCopy( A );
  detail::learnedParallelSort< false >( ex , A );
@@ -827,14 +838,40 @@ void learnedSort( E & ex , std::vector< T > & A )
   } ) );
  }
 
-template< Executor E , VectorKey T >
-void learnedStableSort( E & ex , std::vector< T > & A )
+template< Executor E , SortStore Store , VectorKey T >
+void learnedStableSort( E & ex , Store && A )
 {
  const auto before = detail::auditCopy( A );
  detail::learnedParallelSort< true >( ex , A );
  ADS_AUDIT( detail::sortedPermutation( A , before , []( T x , T y ) {
   return( detail::sortKey( x ) < detail::sortKey( y ) );
   } ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< Executor E , class T , class C >
+ADS_SORT_FORWARD void sort( E & ex , std::vector< T > & A , C less )
+{
+ return( sort( ex , std::move( A ) , less ) );
+ }
+
+template< Executor E , class T , class C >
+ADS_SORT_FORWARD void stableSort( E & ex , std::vector< T > & A , C less )
+{
+ return( stableSort( ex , std::move( A ) , less ) );
+ }
+
+template< Executor E , VectorKey T >
+ADS_SORT_FORWARD void learnedSort( E & ex , std::vector< T > & A )
+{
+ return( learnedSort( ex , std::move( A ) ) );
+ }
+
+template< Executor E , VectorKey T >
+ADS_SORT_FORWARD void learnedStableSort( E & ex , std::vector< T > & A )
+{
+ return( learnedStableSort( ex , std::move( A ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

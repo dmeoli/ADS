@@ -74,6 +74,12 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  std::totally_ordered T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void treeSort( Store && A , bool balanced = true );
+
+/// `treeSort()` above on a vector
 template< std::totally_ordered T >
 void treeSort( std::vector< T > & A , bool balanced = true );
 
@@ -81,18 +87,20 @@ void treeSort( std::vector< T > & A , bool balanced = true );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `treeSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
-/// vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `treeSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { treeSort( v , std::forward< P >( p )... ); }
 decltype( auto ) treeSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( treeSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

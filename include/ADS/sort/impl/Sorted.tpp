@@ -46,22 +46,25 @@ bool contract( F && f )
  return( ok );
  }
 
-template< class T >
-std::vector< T > auditCopy( const std::vector< T > & A , std::size_t lo ,
-			    std::size_t hi )
+template< std::ranges::random_access_range S >
+std::vector< std::ranges::range_value_t< S > >
+auditCopy( const S & A , std::size_t lo , std::size_t hi )
 {
+ using U = std::ranges::range_value_t< S >;
  if constexpr( ADS_CONTRACTS >= 3 ) {
   hi = std::min( hi , A.size() );
-  return( std::vector< T >( A.begin() + lo , A.begin() + hi ) );
+  return( std::vector< U >( A.begin() + lo , A.begin() + hi ) );
   }
  else
-  return( std::vector< T >() );
+  return( std::vector< U >() );
  }
 
-template< class T , class C >
-bool samePermutation( const std::vector< T > & A , std::vector< T > before ,
+template< std::ranges::random_access_range S , class C >
+bool samePermutation( const S & A ,
+		      std::vector< std::ranges::range_value_t< S > > before ,
 		      C less , std::size_t lo , std::size_t hi )
 {
+ using U = std::ranges::range_value_t< S >;
  return( contract( [ & ]( void ) {
   hi = std::min( hi , A.size() );
   if( before.size() != hi - lo )
@@ -71,7 +74,7 @@ bool samePermutation( const std::vector< T > & A , std::vector< T > before ,
   // end of the copy for its start and warned of a deletion at an offset
   if( hi == lo )
    return( true );
-  std::vector< T > after( A.begin() + lo , A.begin() + hi );
+  std::vector< U > after( A.begin() + lo , A.begin() + hi );
   std::sort( before.begin() , before.end() , less );
   std::sort( after.begin() , after.end() , less );
   for( std::size_t i = 0 ; i < after.size() ; ++i )
@@ -81,8 +84,9 @@ bool samePermutation( const std::vector< T > & A , std::vector< T > before ,
   } ) );
  }
 
-template< class T , class C >
-bool sortedPermutation( const std::vector< T > & A , std::vector< T > before ,
+template< std::ranges::random_access_range S , class C >
+bool sortedPermutation( const S & A ,
+			std::vector< std::ranges::range_value_t< S > > before ,
 			C less , std::size_t lo , std::size_t hi )
 {
  hi = std::min( hi , A.size() );
@@ -106,22 +110,32 @@ bool sequenceSorted( const S & L , C less )
   } ) );
  }
 
-template< class R , class F >
-auto throughVector( R & r , F && f )
+template< class R , class F , class G >
+auto sortRange( R & r , F && f , G && g )
 {
  using T = std::ranges::range_value_t< R >;
- std::vector< T > v;
- v.reserve( std::size_t( std::ranges::size( r ) ) );
- for( auto it = std::ranges::begin( r ) ; it != std::ranges::end( r ) ; ++it )
-  v.push_back( std::ranges::iter_move( it ) );
- if constexpr( std::is_void_v< decltype( f( v ) ) > ) {
-  f( v );
-  std::ranges::move( v , std::ranges::begin( r ) );
+ if constexpr( std::ranges::contiguous_range< R > ) {
+  std::span< T > s( std::ranges::data( r ) , std::ranges::size( r ) );
+  return( f( s ) );
+  }
+ else if constexpr( ! std::is_same_v< std::remove_cvref_t< G > , void * > ) {
+  auto w = std::views::all( r );
+  return( g( w ) );
   }
  else {
-  auto x = f( v );
-  std::ranges::move( v , std::ranges::begin( r ) );
-  return( x );
+  std::vector< T > v;
+  v.reserve( std::size_t( std::ranges::size( r ) ) );
+  for( auto it = std::ranges::begin( r ) ; it != std::ranges::end( r ) ; ++it )
+   v.push_back( std::ranges::iter_move( it ) );
+  if constexpr( std::is_void_v< decltype( f( v ) ) > ) {
+   f( v );
+   std::ranges::move( v , std::ranges::begin( r ) );
+   }
+  else {
+   auto x = f( v );
+   std::ranges::move( v , std::ranges::begin( r ) );
+   return( x );
+   }
   }
  }
 

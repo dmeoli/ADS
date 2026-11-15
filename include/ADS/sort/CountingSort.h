@@ -71,6 +71,11 @@ namespace ADS
 /// \f]
 /// \pre each key of \f$ A \f$ is in \f$ [ 0 , k ) \f$
 /// \post \f$ A \f$ is sorted, with the same keys (audit)
+template< RankStore Store , class T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void countingSort( Store && A , std::size_t k );
+
+/// `countingSort()` above on a vector
 template< class T >
 void countingSort( std::vector< T > & A , std::size_t k );
 
@@ -78,9 +83,10 @@ void countingSort( std::vector< T > & A , std::size_t k );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `countingSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
-/// to a vector, sorted there with the other arguments as for a vector, and
-/// moved back
+/// `countingSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -89,9 +95,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) countingSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( countingSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

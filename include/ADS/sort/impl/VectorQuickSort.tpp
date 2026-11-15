@@ -1703,8 +1703,8 @@ void vectorQuickSort( T * a , std::size_t n )
  detail::vqs::sortWith< detail::vqs::Best< K > >( a , n );
  }
 
-template< VectorKey T >
-void vectorQuickSort( std::vector< T > & A )
+template< SortStore Store , VectorKey T >
+void vectorQuickSort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  vectorQuickSort( A.data() , A.size() );
@@ -1721,6 +1721,14 @@ void vectorQuickSort( std::vector< T > & A )
   else
    return( x < y );
   } ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< VectorKey T >
+ADS_SORT_FORWARD void vectorQuickSort( std::vector< T > & A )
+{
+ return( vectorQuickSort( std::move( A ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

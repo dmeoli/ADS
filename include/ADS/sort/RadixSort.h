@@ -160,6 +160,11 @@ template< RadixKey T >
 /// bytes, is first scattered by its top byte of \f$ D \f$, and each part is
 /// sorted in the same way.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void radixSort( Store && A );
+
+/// `radixSort()` above on a vector
 template< RadixKey T >
 void radixSort( std::vector< T > & A );
 
@@ -169,6 +174,12 @@ void radixSort( std::vector< T > & A );
 /// \f$ j \f$ of `key( x )`, and without the step 4, since equal keys need not
 /// be equal items.
 /// \post \f$ A \f$ is sorted by the key, with the same items (audit)
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class K >
+void radixSortBy( Store && A , K key );
+
+/// `radixSortBy()` above on a vector
 template< class T , class K >
 void radixSortBy( std::vector< T > & A , K key );
 
@@ -223,6 +234,11 @@ inline constexpr std::size_t kFlagSmall = kVectorSort ? 8192 : 256;
 /// not in place when the round started, and the order of the keys is the one
 /// of `radixKey()`: \f$ -0 \f$ before \f$ +0 \f$, the NaN at the ends.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void americanFlagSort( Store && A );
+
+/// `americanFlagSort()` above on a vector
 template< RadixKey T >
 void americanFlagSort( std::vector< T > & A );
 
@@ -254,29 +270,36 @@ void americanFlagSort( std::vector< T > & A );
 /// `americanFlagSort()` does, and the later ones move them between the vector
 /// and a buffer.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< StringStore Store >
+void msdRadixSort( Store && A );
+
+/// `msdRadixSort()` above on a vector
 inline void msdRadixSort( std::vector< std::string > & A );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `radixSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
-/// a vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `radixSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector: in place on the span of its items if \f$ A \f$ is
+/// contiguous, through a vector of its items otherwise, since the code of the
+/// sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { radixSort( v , std::forward< P >( p )... ); }
 decltype( auto ) radixSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( radixSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
-/// `radixSortBy()` on the range \f$ A \f$ [see `SortRange`]: its items moved
-/// to a vector, sorted there with the other arguments as for a vector, and
-/// moved back
+/// `radixSortBy()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -285,14 +308,16 @@ template< SortRange R , class... P >
   }
 decltype( auto ) radixSortBy( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( radixSortBy( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
-/// `americanFlagSort()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `americanFlagSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -301,14 +326,16 @@ template< SortRange R , class... P >
   }
 decltype( auto ) americanFlagSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( americanFlagSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
-/// `msdRadixSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
-/// to a vector, sorted there with the other arguments as for a vector, and
-/// moved back
+/// `msdRadixSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -317,9 +344,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) msdRadixSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( msdRadixSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

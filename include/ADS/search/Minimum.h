@@ -50,6 +50,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <ranges>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -82,6 +84,15 @@ namespace ADS
 template< class T , class C = std::less<> >
 std::size_t argmin( const std::vector< T > & A , std::size_t start ,
 		    std::size_t end , C less = C() );
+
+/// `argmin()` above on any random-access range \f$ A \f$ other than a vector
+/// (a span, the view of a deque), the ranks of the selection sort on it
+/// \pre \f$ \mathit{start} \le \mathit{end} < n \f$
+template< std::ranges::random_access_range R , class C = std::less<> >
+ requires( ! std::is_same_v< std::remove_cvref_t< R > ,
+			     std::vector< std::ranges::range_value_t< R > > > )
+std::size_t argmin( const R & A , std::size_t start , std::size_t end ,
+		    C less = C() );
 
 /// the minimum of a vector that is not empty, \f$ n - 1 \f$ comparisons
 ///

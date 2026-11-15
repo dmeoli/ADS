@@ -17,8 +17,8 @@
 namespace ADS
 {
 
-template< class T , class C >
-void selectionSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void selectionSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  for( std::size_t i = 0 ; i + 1 < A.size() ; ++i ) {
@@ -26,6 +26,14 @@ void selectionSort( std::vector< T > & A , C less )
   std::swap( A[ i ] , A[ pos ] );  // extends the sorted prefix
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void selectionSort( std::vector< T > & A , C less )
+{
+ return( selectionSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

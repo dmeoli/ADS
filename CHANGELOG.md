@@ -25,7 +25,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   std/Pmr.h, PmrResource; the members by iterator of a sequence container
   in TieredVector, RootishArrayStack, Treque, CubishArrayStack and
   DualArrayDeque; every sort of sort/ and of ParallelSort.h on a SortRange
-  (std::span, std::deque, the sequences of ADS) beside std::vector;
+  (std::span, std::deque, the sequences of ADS) beside std::vector, in
+  place on a contiguous range, the sorts being templates on their storage
+  by reference (SortStore, a vector or a span, and RankStore, which adds
+  the views on which the sorts of the book run in place) and the overloads
+  on a vector inlined calls of them, with the instruction counts of before,
+  and argmin() of Minimum.h on any random-access range for the selection
+  sort;
   queue_decrease() and queue_handle_t in PriorityQueue.h, which
   decrease_key_of(), PriorityFrontier and prim() read, with FrontierQueue,
   so that std::priority_queue and the heaps of Boost.Heap of pairs

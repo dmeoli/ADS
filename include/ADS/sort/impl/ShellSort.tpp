@@ -96,10 +96,8 @@ inline std::vector< std::size_t > ciuraGaps( std::size_t n )
  return( checked( h ) );
  }
 
-template< class T , class C >
-void shellSort( std::vector< T > & A ,
-		const std::vector< std::size_t > & gaps ,
-		C less )
+template< RankStore Store , class T , class C >
+void shellSort( Store && A , const std::vector< std::size_t > & gaps , C less )
 {
  ADS_PRE( detail::validGaps( gaps , false ) );
  const auto before = detail::auditCopy( A );
@@ -121,10 +119,26 @@ void shellSort( std::vector< T > & A ,
 							  less ) );
  }
 
-template< class T , class C >
-void shellSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void shellSort( Store && A , C less )
 {
  shellSort( A , knuthGaps( A.size() ) , less );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void shellSort( std::vector< T > & A ,
+				 const std::vector< std::size_t > & gaps ,
+				 C less )
+{
+ return( shellSort( std::move( A ) , gaps , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void shellSort( std::vector< T > & A , C less )
+{
+ return( shellSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

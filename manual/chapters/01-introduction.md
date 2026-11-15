@@ -1453,7 +1453,8 @@ inserts in $O( \sqrt{n} )$ time instead of the $O( n )$ of a
 `PoolResource` ([chapter 5](05-memory.md#ch-5)) a
 `std::pmr::memory_resource`, at the price of one virtual call per
 allocation, and the sorts of [chapter 12](12-sort.md#ch-12) take any sized
-random-access range beside `std::vector`. With `ADS_WITH_GMP`,
+random-access range beside `std::vector`, in place when the range is
+contiguous (and, for the sorts of the book, also when it is not). With `ADS_WITH_GMP`,
 `BigInteger::fromGmp()`, `toGmp()` and the constructors from `mpz_class`
 and `mpq_class` (and the same members of `Rational`) pass the numbers to
 and from GMP without a string. The tests are `engineered_interop.*`; with

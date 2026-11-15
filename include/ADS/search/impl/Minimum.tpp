@@ -35,6 +35,27 @@ std::size_t argmin( const std::vector< T > & A , std::size_t start ,
  return( pos );
  }
 
+template< std::ranges::random_access_range R , class C >
+ requires( ! std::is_same_v< std::remove_cvref_t< R > ,
+			     std::vector< std::ranges::range_value_t< R > > > )
+std::size_t argmin( const R & A , std::size_t start , std::size_t end ,
+		    C less )
+{
+ ADS_PRE( ( start <= end ) &&
+	  ( end < std::size_t( std::ranges::size( A ) ) ) );
+ std::size_t pos = start;
+ for( std::size_t j = start + 1 ; j <= end ; ++j )
+  if( less( A[ j ] , A[ pos ] ) )
+   pos = j;
+ ADS_AUDIT( detail::contract( [ & ]( void ) {
+  for( std::size_t j = start ; j <= end ; ++j )
+   if( less( A[ j ] , A[ pos ] ) )
+    return( false );
+  return( true );
+  } ) );
+ return( pos );
+ }
+
 template< class T , class C >
 const T & min( const std::vector< T > & A , C less )
 {

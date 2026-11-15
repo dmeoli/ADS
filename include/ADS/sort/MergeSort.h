@@ -105,6 +105,14 @@ namespace ADS
 ///      \f$ A[ \mathit{start} .. \mathit{mid} ] \f$ and
 ///      \f$ A[ \mathit{mid} + 1 .. \mathit{end} ] \f$ sorted (audit)
 /// \post \f$ A[ \mathit{start} .. \mathit{end} ] \f$ sorted (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void mergeParts( Store && A , std::vector< T > & B , std::size_t start ,
+		 std::size_t mid , std::size_t end , C less = C() ,
+		 long long * inv = nullptr );
+
+/// `mergeParts()` above on a vector
 template< class T , class C = std::less<> >
 void mergeParts( std::vector< T > & A , std::vector< T > & B ,
 		 std::size_t start ,
@@ -140,6 +148,14 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
 /// \f]
 /// \pre \f$ \mathit{start} \le \mathit{end} < n \le |B| \f$ and
 ///      \f$ \mathit{cutoff} \ge 1 \f$
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void mergeSortRec( Store && A , std::vector< T > & B , std::size_t start ,
+		   std::size_t end , std::size_t cutoff , C less = C() ,
+		   long long * inv = nullptr );
+
+/// `mergeSortRec()` above on a vector
 template< class T , class C = std::less<> >
 void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
 		   std::size_t start , std::size_t end , std::size_t cutoff ,
@@ -155,6 +171,12 @@ void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void mergeSort( Store && A , std::size_t cutoff = 1 , C less = C() );
+
+/// `mergeSort()` above on a vector
 template< class T , class C = std::less<> >
 void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 , C less = C() );
 
@@ -176,6 +198,12 @@ void mergeSort( std::vector< T > & A , std::size_t cutoff = 1 , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void mergeSortBottomUp( Store && A , C less = C() );
+
+/// `mergeSortBottomUp()` above on a vector
 template< class T , class C = std::less<> >
 void mergeSortBottomUp( std::vector< T > & A , C less = C() );
 
@@ -196,6 +224,12 @@ void mergeSortBottomUp( std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+long long countInversions( Store && A , C less = C() );
+
+/// `countInversions()` above on a vector
 template< class T , class C = std::less<> >
 long long countInversions( std::vector< T > & A , C less = C() );
 
@@ -230,23 +264,26 @@ void mergeSort( List< T > & L , C less = C() );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `mergeSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
-/// a vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `mergeSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { mergeSort( v , std::forward< P >( p )... ); }
 decltype( auto ) mergeSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( mergeSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `mergeSortBottomUp()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `mergeSortBottomUp()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -255,14 +292,16 @@ template< SortRange R , class... P >
   }
 decltype( auto ) mergeSortBottomUp( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( mergeSortBottomUp( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `countInversions()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `countInversions()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -271,9 +310,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) countInversions( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( countInversions( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

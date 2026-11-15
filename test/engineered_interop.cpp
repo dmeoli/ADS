@@ -877,6 +877,21 @@ ADS_TEST( "sort-ranges" )
  const std::vector< int > B( A.begin() , A.begin() + 300 );
  CHECK( sortsAlike( B , []( auto && a ) { insertionSort( a ); } ) );
  CHECK( sortsAlike( B , []( auto && a ) { bubbleSort( a ); } ) );
+ // in place: a part of a vector through its span, the rest untouched,
+ // and a std::array
+ std::vector< int > part( A );
+ ADS::sort( std::span< int >( part ).subspan( 100 , 1000 ) );
+ heapsort( std::span< int >( part ).subspan( 1500 , 500 ) );
+ CHECK(
+   std::equal( part.begin() , part.begin() + 100 , A.begin() ) &&
+   std::is_sorted( part.begin() + 100 , part.begin() + 1100 ) &&
+   std::equal( part.begin() + 1100 , part.begin() + 1500 ,
+	       A.begin() + 1100 ) &&
+   std::is_sorted( part.begin() + 1500 , part.begin() + 2000 ) );
+ std::array< int , 5 > arr{ 5 , 3 , 4 , 1 , 2 };
+ pdqSort( arr );
+ insertionSort( arr );
+ CHECK( std::ranges::is_sorted( arr ) );
  // what the sort gives back
  std::vector< int > c( A );
  std::deque< int > cd( A.begin() , A.end() );

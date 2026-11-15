@@ -105,6 +105,13 @@ namespace ADS
 /// \pre \f$ \mathit{start} \le \mathit{end} < n \f$
 /// \post \f$ A[ \mathit{start} .. j - 1 ] < A[ j ] \f$ and
 ///       \f$ A[ j ] \le A[ j + 1 .. \mathit{end} ] \f$ (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+std::size_t partition( Store && A , std::size_t start , std::size_t end ,
+		       C less = C() );
+
+/// `partition()` above on a vector
 template< class T , class C = std::less<> >
 std::size_t partition( std::vector< T > & A , std::size_t start ,
 		       std::size_t end , C less = C() );
@@ -138,6 +145,14 @@ std::size_t partition( std::vector< T > & A , std::size_t start ,
 /// \post \f$ A[ \mathit{start} .. \mathit{start} + r - 1 ] \le x \f$ and
 ///       \f$ x < A[ \mathit{start} + r .. \mathit{end} ] \f$, the same items
 ///       (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+std::size_t partitionByValue( Store && A , std::size_t start ,
+			      std::size_t end ,
+			      const T & x , C less = C() );
+
+/// `partitionByValue()` above on a vector
 template< class T , class C = std::less<> >
 std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
 			      std::size_t end , const T & x , C less = C() );
@@ -160,6 +175,13 @@ std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
 /// \f]
 /// \pre \f$ \mathit{start} > \mathit{end} \f$ or \f$ \mathit{end} < n \f$
 /// \post \f$ A[ \mathit{start} .. \mathit{end} ] \f$ is sorted
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void quickSort( Store && A , std::size_t start , std::size_t end ,
+		C less = C() );
+
+/// `quickSort()` above on a vector
 template< class T , class C = std::less<> >
 void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
 		C less = C() );
@@ -173,6 +195,12 @@ void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void quickSort( Store && A , C less = C() );
+
+/// `quickSort()` above on a vector
 template< class T , class C = std::less<> >
 void quickSort( std::vector< T > & A , C less = C() );
 
@@ -218,6 +246,13 @@ void quickSort( std::vector< T > & A , C less = C() );
 /// \f]
 /// where a part that is empty is neither pushed nor sorted.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void quickSortTuned( Store && A , std::size_t cutoff = 16 , C less = C() ,
+		     std::size_t * depth = nullptr );
+
+/// `quickSortTuned()` above on a vector
 template< class T , class C = std::less<> >
 void quickSortTuned( std::vector< T > & A , std::size_t cutoff = 16 ,
 		     C less = C() , std::size_t * depth = nullptr );
@@ -252,23 +287,26 @@ void quickSort( List< T > & L , C less = C() );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `quickSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
-/// a vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `quickSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { quickSort( v , std::forward< P >( p )... ); }
 decltype( auto ) quickSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( quickSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `quickSortTuned()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `quickSortTuned()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -277,9 +315,10 @@ template< SortRange R , class... P >
   }
 decltype( auto ) quickSortTuned( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( quickSortTuned( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

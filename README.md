@@ -976,7 +976,8 @@ them asks for `find_package(ADS REQUIRED COMPONENTS Boost)` (`GMP` and
 (`TieredFlatMap`, insertions in $O( \sqrt{n} )$), and
 [`interop/std/Pmr.h`](include/ADS/interop/std/Pmr.h) the pools of ADS as a
 `std::pmr::memory_resource`; the sorts take any random-access range
-(`std::span`, `std::deque`, the sequences of ADS) beside `std::vector`, and
+(`std::span`, `std::deque`, the sequences of ADS) beside `std::vector`, in
+place on a contiguous one (and, those of the book, on any), and
 with `ADS_WITH_GMP` `BigInteger::fromGmp()`, `toGmp()` and the constructors
 from `mpz_class` and `mpq_class` pass the numbers to and from GMP. The
 tests are in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).

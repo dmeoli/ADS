@@ -89,6 +89,12 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void bubbleSort( Store && A , C less = C() );
+
+/// `bubbleSort()` above on a vector
 template< class T , class C = std::less<> >
 void bubbleSort( std::vector< T > & A , C less = C() );
 
@@ -111,6 +117,12 @@ void bubbleSort( std::vector< T > & A , C less = C() );
 /// \f]
 /// where a pass with no swap sets the bound to the other one.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void cocktailShakerSort( Store && A , C less = C() );
+
+/// `cocktailShakerSort()` above on a vector
 template< class T , class C = std::less<> >
 void cocktailShakerSort( std::vector< T > & A , C less = C() );
 
@@ -131,6 +143,12 @@ void cocktailShakerSort( std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void oddEvenSort( Store && A , C less = C() , std::size_t * rounds = nullptr );
+
+/// `oddEvenSort()` above on a vector
 template< class T , class C = std::less<> >
 void oddEvenSort( std::vector< T > & A , C less = C() ,
 		  std::size_t * rounds = nullptr );
@@ -152,6 +170,12 @@ void oddEvenSort( std::vector< T > & A , C less = C() ,
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void combSort( Store && A , C less = C() );
+
+/// `combSort()` above on a vector
 template< class T , class C = std::less<> >
 void combSort( std::vector< T > & A , C less = C() );
 
@@ -169,6 +193,12 @@ void combSort( std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void gnomeSort( Store && A , C less = C() );
+
+/// `gnomeSort()` above on a vector
 template< class T , class C = std::less<> >
 void gnomeSort( std::vector< T > & A , C less = C() );
 
@@ -176,23 +206,26 @@ void gnomeSort( std::vector< T > & A , C less = C() );
 /*------------------------- THE SORTS OF A RANGE ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
-/// `bubbleSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
-/// a vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `bubbleSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { bubbleSort( v , std::forward< P >( p )... ); }
 decltype( auto ) bubbleSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( bubbleSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `cocktailShakerSort()` on the range \f$ A \f$ [see `SortRange`]: its items
-/// moved to a vector, sorted there with the other arguments as for a vector,
-/// and moved back
+/// `cocktailShakerSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -201,14 +234,16 @@ template< SortRange R , class... P >
   }
 decltype( auto ) cocktailShakerSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( cocktailShakerSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `oddEvenSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved
-/// to a vector, sorted there with the other arguments as for a vector, and
-/// moved back
+/// `oddEvenSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
@@ -217,37 +252,42 @@ template< SortRange R , class... P >
   }
 decltype( auto ) oddEvenSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( oddEvenSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `combSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to a
-/// vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `combSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { combSort( v , std::forward< P >( p )... ); }
 decltype( auto ) combSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( combSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
-/// `gnomeSort()` on the range \f$ A \f$ [see `SortRange`]: its items moved to
-/// a vector, sorted there with the other arguments as for a vector, and moved
-/// back
+/// `gnomeSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
 template< SortRange R , class... P >
  requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
 		    P &&... p )
 { gnomeSort( v , std::forward< P >( p )... ); }
 decltype( auto ) gnomeSort( R && A , P &&... p )
 {
- return( detail::throughVector( A , [ & ]( auto & v ) -> decltype( auto ) {
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
   return( gnomeSort( v , std::forward< P >( p )... ) );
-  } ) );
+  };
+ return( detail::sortRange( A , f , f ) );
  }
 
 /*--------------------------------------------------------------------------*/

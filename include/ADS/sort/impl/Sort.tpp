@@ -170,9 +170,10 @@ bool reverseIfDescending( T * a , std::size_t n , C & less )
 /// ascending(), or reversed in place by reverseIfDescending(), and counted
 /// as one non-decreasing run; otherwise the scan of the first run goes on
 /// from where ascending() stopped
-template< class T , class C >
-std::size_t runs( std::vector< T > & A , C & less , std::size_t cap ,
-		  std::size_t * E )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::size_t runs( Store && A , C & less , std::size_t cap , std::size_t * E )
 {
  const std::size_t n = A.size();
  T * const a = A.data();
@@ -206,12 +207,14 @@ std::size_t runs( std::vector< T > & A , C & less , std::size_t cap ,
 /// powerSort() of A on the r runs that runs() found, ending at E[ 0 .. r ):
 /// each strictly decreasing one reversed and the runs merged, with no
 /// second search for them
-template< class T , class C >
-void powerSortRuns( std::vector< T > & A , C & less , const std::size_t * E ,
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void powerSortRuns( Store && A , C & less , const std::size_t * E ,
 		    std::size_t r )
 {
  const auto before = auditCopy( A );
- RunMerger< T , C > M( A , less );
+ RunMerger< T , C , std::remove_reference_t< Store > > M( A , less );
  std::size_t t = 0;
  powerMerges( M , A.size() , [ & ]( std::size_t lo ) {
   const std::size_t e = E[ t++ ];
@@ -226,8 +229,10 @@ void powerSortRuns( std::vector< T > & A , C & less , const std::size_t * E ,
 
 /// A sorted when it is one run: left as it is, or reversed when it is
 /// strictly decreasing, which is stable since its keys are distinct
-template< class T , class C >
-void oneRun( std::vector< T > & A , C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void oneRun( Store && A , C & less )
 {
  if( ( A.size() > 1 ) && less( A[ 1 ] , A[ 0 ] ) )
   std::reverse( A.begin() , A.end() );
@@ -236,9 +241,9 @@ void oneRun( std::vector< T > & A , C & less )
 /// the distinct keys, up to 64, of a sample of 64 equally spaced keys of A,
 /// n >= 64, the bytes in which they differ and the difference of the
 /// largest and the smallest
-template< RadixKey T >
-std::tuple< std::size_t , int , std::uint64_t >
-sampleKeys( const std::vector< T > & A )
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+std::tuple< std::size_t , int , std::uint64_t > sampleKeys( Store && A )
 {
  using U = decltype( radixKey( T() ) );
  std::array< U , 64 > S;
@@ -262,8 +267,9 @@ sampleKeys( const std::vector< T > & A )
 /// 16 distinct ones and they differ in at least 4 bytes: few keys, but
 /// wide, which pdqSort() sorts in \f$ O( n \log k ) \f$ with fewer passes
 /// than radixSort() needs bytes
-template< RadixKey T >
-bool fewWideKeys( const std::vector< T > & A )
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+bool fewWideKeys( Store && A )
 {
  const auto [ k , bytes , range ] = sampleKeys( A );
  static_cast< void >( range );
@@ -277,8 +283,9 @@ template< class T >
 inline constexpr std::size_t kVectorRuns = sizeof( T ) == 4 ? 8 : kRuns;
 
 /// true if A holds a -0
-template< class T >
-bool negativeZero( const std::vector< T > & A )
+template< SortStore Store , class T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+bool negativeZero( Store && A )
 {
  using U =
    std::conditional_t< sizeof( T ) == 4 , std::uint32_t , std::uint64_t >;
@@ -296,7 +303,8 @@ bool negativeZero( const std::vector< T > & A )
 /// most 16 distinct ones: few strings, each repeated, which the passes of
 /// msdRadixSort() split at once, while prefixKeySort() would sort n
 /// distinct keys of their places
-inline bool fewStrings( const std::vector< std::string > & A )
+template< StringStore Store >
+bool fewStrings( Store && A )
 {
  std::array< const std::string * , 64 > S;
  const std::size_t step = A.size() / S.size();
@@ -321,8 +329,10 @@ inline bool fewStrings( const std::vector< std::string > & A )
 /// both stable; then, from the largest key down, the block of each key of
 /// the right half moves to its place, which is never before it, and that
 /// of the left half follows it from the buffer
-template< class T , class C >
-bool fewKeysSort( std::vector< T > & A , C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+bool fewKeysSort( Store && A , C & less )
 {
  std::array< T , 64 > S;
  const std::size_t n = A.size() , step = n / S.size();
@@ -445,8 +455,10 @@ void mergeSortTo( T * s , T * d , std::size_t n , C & less , bool into )
 /// the spinsort of Boost: the left half, the larger, sorted into B, the
 /// right one in place with the left one as its room, and the two merged
 /// forward into A, which never overtakes the right half
-template< class T , class C >
-void pingPongSort( std::vector< T > & A , C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void pingPongSort( Store && A , C & less )
 {
  const auto before = auditCopy( A );
  const std::size_t n = A.size() , r = n / 2 , l = n - r;
@@ -495,8 +507,10 @@ inline constexpr bool kVectorRunsOf = []()
 /// registers [see VectorQuickSort.h], the shorter run of each pair copied
 /// to a buffer of n / 2 keys and merged forward, or backward if it is the
 /// right one, with the other in place
-template< class T , class C >
-void mergeVectorRuns( std::vector< T > & A , C & less , const std::size_t * E ,
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void mergeVectorRuns( Store && A , C & less , const std::size_t * E ,
 		      std::size_t r )
 {
  using V = vqs::Best< vqs::KeyOf< T > >;
@@ -546,8 +560,10 @@ void mergeVectorRuns( std::vector< T > & A , C & less , const std::size_t * E ,
 /// for stableSort() of the floating point numbers with a -0, whose order
 /// to +0 vectorQuickSort() does not keep, powerSort() below kRadix items
 /// and the radix sort with -0 and +0 as one key from there
-template< class T , class C >
-void vectorNumbers( std::vector< T > & A , C & less , bool stable )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void vectorNumbers( Store && A , C & less , bool stable )
 {
  auto zeros = [ & ]() {
   return( stable && std::is_floating_point_v< T > && negativeZero( A ) );
@@ -584,8 +600,8 @@ void vectorNumbers( std::vector< T > & A , C & less , bool stable )
 
 }  // end( namespace detail )
 
-template< class T , class C >
-void sort( std::vector< T > & A , C less )
+template< SortStore Store , class T , class C >
+void sort( Store && A , C less )
 {
  if constexpr( detail::naturalOrder< T , C > && VectorKey< T > && kVectorSort )
   detail::vectorNumbers( A , less , false );
@@ -637,8 +653,8 @@ void sort( std::vector< T > & A , C less )
   sampleSort( A , less );
  }
 
-template< class T , class C >
-void stableSort( std::vector< T > & A , C less )
+template< SortStore Store , class T , class C >
+void stableSort( Store && A , C less )
 {
  if constexpr( detail::naturalOrder< T , C > && VectorKey< T > && kVectorSort )
   detail::vectorNumbers( A , less , true );
@@ -687,6 +703,20 @@ void stableSort( std::vector< T > & A , C less )
   }
  else
   powerSort( A , less );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void sort( std::vector< T > & A , C less )
+{
+ return( sort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void stableSort( std::vector< T > & A , C less )
+{
+ return( stableSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/
