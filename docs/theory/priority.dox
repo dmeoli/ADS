@@ -18,9 +18,11 @@
  operations (see \ref theory_priority_repr), and, for each family of
  structures, the invariant on which its correctness rests and the argument
  behind its bounds (from \ref theory_priority_heaps to
- \ref theory_priority_merge). The pseudocode of each operation is instead on
- the page of its header, in the comment of its function, together with the
- section of the book, or the paper, that it follows.
+ \ref theory_priority_merge), and the events by which the indexed heap tells
+ its changes (see \ref theory_priority_events). The pseudocode of each
+ operation is instead on the page of its header, in the comment of its
+ function, together with the section of the book, or the paper, that it
+ follows.
 
  \tableofcontents
 
@@ -638,6 +640,46 @@
  below it (exercise 10.8). The coins of exercises 10.6 and 10.7 are those
  of a seeded generator in the test `ods10.2.meldable-heap`, since the
  shape of the heap of figure 10.4 after the operations depends on them.
+
+ \section theory_priority_events The events of the indexed heap
+
+ `IndexedDaryHeap` tells its changes through a subject policy of
+ `Modification.h` (see \ref theory_ADS_modifications): \f$ \mathrm{Inserted}
+ \f$, \f$ \mathrm{Erased} \f$ and \f$ \mathrm{KeyChanged} \f$ of the ids,
+ which are stable handles, and, only for an observer that wants them, the
+ moves of the items in the vector as \f$ \mathrm{Relocated}( p , q ) \f$,
+ the exchange of the contents of the places \f$ p \f$ and \f$ q \f$, an
+ empty place included. The event of the item comes first: the new item at
+ the place \f$ s \f$ after the last, the key changed where the item is, the
+ place of an erased item left empty.
+
+ <em>Lemma 11 (the exchanges of a heap).</em> Let an observer keep a copy
+ \f$ M \f$ of the vector of the ids, placing an inserted id at the place
+ \f$ s \f$, emptying the place of an erased one, and exchanging
+ \f$ M[ p ] \f$ and \f$ M[ q ] \f$ at each \f$ \mathrm{Relocated}( p , q ) \f$
+ (dropping the empty places at the end). Then after each operation
+ \f$ M \f$ is the vector of the ids of the heap; the events of an
+ operation are at most \f$ \lceil \log_d ( ( d - 1 ) s + 1 ) \rceil + 1 \f$,
+ and with `NoObservers` the code of the operation is that of the plain
+ heap.
+
+ Indeed, a walk up from the place \f$ i \f$ with the item \f$ x \f$ moves
+ the parent \f$ p \f$ to \f$ i \f$ and goes on from \f$ p \f$, which is the
+ exchange of \f$ x \f$ and its parent if \f$ x \f$ is thought of as being at
+ \f$ i \f$; the walk down is the same with the least child. The insertion
+ puts \f$ x \f$ at the place \f$ s \f$ and walks up from it, a change of key
+ walks from the place of the item, and an erasure (and `pop()`, the erasure
+ of the root) empties the place \f$ i \f$ of the item, moves the last item
+ from \f$ s - 1 \f$ to \f$ i \f$, which is the exchange with the empty place
+ that the first \f$ \mathrm{Relocated} \f$ tells, and walks from \f$ i \f$.
+ Hence the events are, in order, the exchanges whose composition is the
+ change of the vector, and their number is that of the levels walked by
+ Lemma 1, plus one. The walks with the events are a second instance of the
+ template of the walk, called only on the path on which someone wants
+ \f$ \mathrm{Relocated} \f$; the operation tests `listened` of its events at
+ compile time before the test at run time, so that with `NoObservers` both
+ vanish, which the check of zero cost confirms against the heap before the
+ subject policy, by the instructions and by the code.
 
  \section theory_priority_refs References
 

@@ -1,8 +1,10 @@
 # 1. Introduction {#ch-1}
 
 [Source: `include/ADS/ADT.h`, `Contract.h`, `Iterators.h`, `Portable.h`,
-`Modification.h`, `Capabilities.h`,
-`ADS/sequence/IndexedList.h`, `ADS/set/SetInterfaces.h`, `ADS/set/Bag.h`]
+`Modification.h`, `Capabilities.h`, `Algebra.h`,
+`ADS/sequence/IndexedList.h`, `ADS/sequence/ObservableArray.h`,
+`ADS/sequence/Fenwick.h`, `ADS/queue/SlidingAggregate.h`,
+`ADS/set/SetInterfaces.h`, `ADS/set/Bag.h`]
 
 We are concerned in this manual with ADS, a header-only library of C++20 that
 realizes the data structures and the algorithms of the textbooks, each in the
@@ -26,8 +28,10 @@ to build, test and use it ([§1.10](01-introduction.md#sec-1-10)), how this
 manual is organized ([§1.11](01-introduction.md#sec-1-11)), the map of
 all the classes of the library ([§1.12](01-introduction.md#sec-1-12)), the
 typed modifications by which a structure tells its observers what changed
-([§1.13](01-introduction.md#sec-1-13)), and the capabilities that an
-algorithm may ask of a structure ([§1.14](01-introduction.md#sec-1-14)).
+([§1.13](01-introduction.md#sec-1-13)), the capabilities that an
+algorithm may ask of a structure ([§1.14](01-introduction.md#sec-1-14)), and
+the first structures that tell their changes, with the aggregates that their
+events feed ([§1.15](01-introduction.md#sec-1-15)).
 
 ## 1.1 The need for efficiency {#sec-1-1}
 
@@ -1522,6 +1526,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 
 | Header | Classes | Chapter |
 |-----------------|-------------------------------|-----|
+| `Algebra.h` | `SumOf`, `MinOf`, `MaxOf` | [1](01-introduction.md#ch-1) |
 | `Capabilities.h` | `forwarding_query`, `stable_references_t`, `thread_safe_reads_t`, `rank_complexity_t`, `event_set_t` | [1](01-introduction.md#ch-1) |
 | `Contract.h` | `contract_violation` | [1](01-introduction.md#ch-1) |
 | `Modification.h` | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged` | [1](01-introduction.md#ch-1) |
@@ -1533,7 +1538,9 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `sequence/CubishArrayStack.h` | `CubishArrayStack` | [2](02-sequence.md#ch-2) |
 | `sequence/CursorList.h` | `CursorSpace`, `CursorList` | [2](02-sequence.md#ch-2) |
 | `sequence/DualArrayDeque.h` | `DualArrayDeque` | [2](02-sequence.md#ch-2) |
+| `sequence/Fenwick.h` | `Fenwick`, `FenwickObserver` | [1](01-introduction.md#ch-1) |
 | `sequence/List.h` | `List` | [2](02-sequence.md#ch-2) |
+| `sequence/ObservableArray.h` | `ObservableArray` | [1](01-introduction.md#ch-1) |
 | `sequence/OrderMaintenanceList.h` | `OrderMaintenanceList` | [2](02-sequence.md#ch-2) |
 | `sequence/RootishArrayStack.h` | `RootishArrayStack` | [2](02-sequence.md#ch-2) |
 | `sequence/SEList.h` | `SEList` | [2](02-sequence.md#ch-2) |
@@ -1558,6 +1565,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `queue/RealTimeMinDeque.h` | `RealTimeMinDeque` | [4](04-queue.md#ch-4) |
 | `queue/RealTimeMinQueue.h` | `RealTimeMinQueue` | [4](04-queue.md#ch-4) |
 | `queue/RingDeque.h` | `RingDeque` | [4](04-queue.md#ch-4) |
+| `queue/SlidingAggregate.h` | `Amortized`, `WorstCase`, `SlidingAggregate` | [1](01-introduction.md#ch-1) |
 | `queue/UniqueQueue.h` | `UniqueQueue` | [4](04-queue.md#ch-4) |
 | `memory/Allocators.h` | `BoundaryTagAllocator`, `BuddyAllocator` | [5](05-memory.md#ch-5) |
 | `memory/Arena.h` | `Arena` | [5](05-memory.md#ch-5) |
@@ -2133,7 +2141,496 @@ structure, $Q$ a queue, $T$ a table of nodes and $G$ a graph.
 | `undoable<S>`, `snapshotable<S>` | S | `rollback( s.checkpoint() )`, `snapshot()` |
 | `in_arcs<G>`, `stable_edge_ids<G>`, `batch_updatable<G>` | S | `forEachIn(v, f)`, `arcId(u, v)`, `batch()` |
 
-## 1.15 Discussion and references {#sec-1-15}
+## 1.15 Structures that tell their changes {#sec-1-15}
+
+We now describe the first structures of ADS that emit the events of
+[§1.13](01-introduction.md#sec-1-13) from inside their mutators, namely the
+indexed heap of [§9.5](09-priority.md#sec-9-5) and an array. Such events
+feed aggregates, of which we give two, the prefix aggregates of an array and
+the aggregate of a sliding window. Each aggregate is written once for any
+associative operation, and the rule by which it absorbs a change is chosen
+at compile time from the algebra of the operation, which `Algebra.h` names
+by concepts in the manner of `Capabilities.h`
+([§1.14](01-introduction.md#sec-1-14)).
+
+### 1.15.1 The indexed heap and the observable array {#sec-1-15-1}
+
+`IndexedDaryHeap<K, D, Policy>` takes a subject policy as its last
+parameter, `NoObservers` by default, and declares the events
+`Inserted<int, K>`, `Erased<int, K>`, `KeyChanged<int, K>`,
+`Relocated<std::size_t>`, `Cleared` and `Rebuilt`. Its ids are the handles
+of the events, which are stable while an id is in the heap. Hence, an
+observer that needs the keys only (e.g., an index of the open nodes of a
+search, usually by another order) may follow the heap through the first three
+events, which `push()` sends, `erase()` and `pop()` send before the removal,
+and `decrease()`, `increase()` and `update()` send. The places of the vector
+are internal maintenance of the heap, which never travels on the optional
+channel; `Relocated` carries them only to an observer that wants them,
+since otherwise each level of a walk would build an event. We remark that a
+relocation is an exchange, i.e., `Relocated(p, q)` swaps the contents of the
+places $p$ and $q$, an empty place included. Also, the event of the item
+comes before those of its walk: the new item is at the place $s$ after the
+last one, the key changes where the item is, and an erased item leaves its
+place empty.
+
+<span id="lem-1-16"></span>**Lemma 1.16.** *Let an observer keep a copy $M$
+of the vector of the ids of the heap, place an inserted id at the place $s$,
+empty the place of an erased id and exchange $M[p]$ and $M[q]$ at each
+`Relocated(p, q)`, dropping the empty places at the end. Then, after each
+operation, $M$ is the vector of the ids of the heap, and the operation sends
+at most $\lceil \log_D ( ( D - 1 ) s + 1 ) \rceil + 1$ events.*
+
+*Proof.* A walk up from the place $i$ with the item $x$ moves the parent
+$p$ of $i$ down to $i$ and goes on from $p$. If we think of $x$ as being at
+$i$, this is the exchange of $x$ with its parent, and the walk down is the
+same with the least child. `push()` puts $x$ at the place $s$ and walks up
+from it, while a change of key walks from the place of the item. An erasure
+(and `pop()`, the erasure of the root) empties the place $i$ of the item,
+then moves the last item from the place $s - 1$ to $i$ and walks from
+there. This move is the exchange of the last item with the empty place,
+which the first `Relocated` carries. Hence the events of an operation are,
+in order, the exchanges whose composition is the change of the vector, and
+their number is that of the levels walked, i.e., at most the height of the
+heap ([§9.4](09-priority.md#sec-9-4)), plus one. $\square$
+
+The walk that emits is a second instance of the template of the walk, called
+only on the path on which someone wants `Relocated`. As in the other
+mutators, each operation of the heap tests `listened` of its events before it
+tests `live`, and with `NoObservers` both tests vanish at compile time. By
+the check of zero cost of `bench/zerocost.py` we compare the heap of today
+with the heap of the tree before the subject policy. With `NoObservers` the
+instructions that callgrind counts for one update, one `pop()` and one
+`push()` are the same in the two trees (389.07 with GCC 13.3, 340.19 with
+Clang 18.1), and the code of `push()`, `decrease()`, `increase()`, `erase()`
+and `pop()` is the same byte for byte, the padding after the last instruction
+excluded.
+
+The simplest structure that emits is `ObservableArray<T, Policy>`, a
+vector whose writes go through the subject policy, with the index as the
+handle and as the key. `set(i, v)` and `add(i, d)` send `Assigned` with the
+value before and the value after, `push_back()` sends `Inserted`, and
+`pop_back()` sends `Erased` before the removal; `clear()` and `assign()`
+send `Cleared` and `Rebuilt` ([Algorithm 1.9](01-introduction.md#alg-1-9)).
+Its reads are those of the vector, and `apply(e)` makes the change of an
+event, by which an `UndoLog` of the array brings it back to a checkpoint.
+The array inserts and erases at its end only; hence, an index never changes
+meaning between two events of a batch, and the coalescing of (1.15) applies
+as it does to a structure with stable handles (cf.
+[Lemma 1.14](01-introduction.md#lem-1-14)). For instance, two writes of one
+index become one `Assigned`, while an append and a removal cancel.
+
+```cpp
+// declarations of <ADS/sequence/ObservableArray.h>
+template< class T , class Policy = NoObservers > class ObservableArray {
+ public:
+ using Assign = mod::Assigned< std::size_t , T >;
+ using Insert = mod::Inserted< std::size_t , std::size_t , T >;
+ using Erase = mod::Erased< std::size_t , std::size_t , T >;
+ template< class ... O >
+ explicit ObservableArray( std::size_t n = 0 , const T & v = T() ,
+                           O & ... o );
+ std::size_t size( void ) const;
+ const T & operator[]( std::size_t i ) const;
+ const std::vector< T > & values( void ) const;
+ void set( std::size_t i , const T & v );
+ void add( std::size_t i , const T & d );
+ void push_back( const T & v );
+ void pop_back( void );
+ void clear( void );
+ template< std::input_iterator I >
+ void assign( I first , I last );
+ void apply( const Assign & e );
+ Subject & subject( void );
+ template< class O >
+ int attach( O & o ) requires( Subject::dynamic );
+ };
+```
+
+<span id="alg-1-9"></span>**Algorithm 1.9.** A write of the observable
+array, in the pattern of the mutators of [§1.13](01-introduction.md#sec-1-13).
+
+--8<-- "generated/ObservableArray-set.pseudo.md"
+
+With `NoObservers` a write of the array is that of the vector it holds: the
+check of zero cost counts 10 instructions per write with GCC and 6 with
+Clang, as for a plain `std::vector`, the code of `set()` is the same byte
+for byte, and the same holds with a static observer that does not want
+`Assigned`; with `Dynamic<>` and nobody attached, a write costs 14 and 15
+instructions, the load and the test of the union of the masks included.
+
+### 1.15.2 The algebra of the aggregates {#sec-1-15-2}
+
+An aggregate is the combination $a_1 \oplus \cdots \oplus a_n$ of some
+values by an associative operation with an identity $e$, and its update
+after a change depends on the algebra of $\oplus$ rather than on the
+structure that keeps it. `Algebra.h` (beyond the book) names the algebras
+by concepts on the static members of a type `G`; they refine the
+augmentations of `JoinTree` ([§8.12](08-tree.md#sec-8-12)), which are
+monoids as they are. A `Monoid` has `identity()` and `combine()`, and a
+`CommutativeMonoid` declares the flag `commutative`. A `Group` has
+`inverse()`, an `AbelianGroup` is both, and a `Selective` monoid declares
+`selective`, the promise that $a \oplus b$ is always $a$ or $b$ (e.g., the
+least of two values). An `Action<A, G>` is a monoid of maps on the values of
+$G$, with the identity map, the composition and the application of a map to
+the aggregate of $n$ values, i.e., the ingredients of the lazy updates of a
+range. Finally, `exact_v<G>` is false for the floating point values, whose
+groups accumulate the rounding errors of the inverses. These flags are
+opt-ins, since no syntax shows that an operation commutes or selects. Of
+course, the concepts do not prove the laws; the tests check them on
+`SumOf<T>` (an abelian group), on `MinOf<T>` and `MaxOf<T>` (selective
+commutative monoids), and on operations that do not commute.
+
+```cpp
+// declarations of <ADS/Algebra.h>
+template< class G > concept Monoid = requires( const typename G::Value & a )
+ { ... };
+template< class G >
+concept CommutativeMonoid = Monoid< G > && detail::commutativeFlag< G >();
+template< class G >
+concept Group = Monoid< G > && requires( const typename G::Value & a )
+ { ... };
+template< class G >
+concept AbelianGroup = Group< G > && CommutativeMonoid< G >;
+template< class G >
+concept Selective = Monoid< G > && detail::selectiveFlag< G >();
+template< class G >
+inline constexpr bool exact_v =
+ ! std::is_floating_point_v< typename G::Value >;
+template< class T > struct SumOf {
+ using Value = T;
+ static constexpr bool commutative = true;
+ static constexpr Value identity( void );
+ static constexpr Value combine( const Value & a , const Value & b );
+ static constexpr Value inverse( const Value & a );
+ };
+template< class T > struct MinOf {
+ using Value = T;
+ static constexpr bool commutative = true;
+ static constexpr bool selective = true;
+ static constexpr Value identity( void );
+ static constexpr Value combine( const Value & a , const Value & b );
+ };
+template< class T > struct MaxOf {
+ using Value = T;
+ static constexpr bool selective = true;
+ static constexpr Value identity( void );
+ static constexpr Value combine( const Value & a , const Value & b );
+ };
+```
+
+<span id="lem-1-17"></span>**Lemma 1.17.** *Let $c = x \oplus a \oplus y$
+be an aggregate whose operand $a$ becomes $b$, and
+$c' = x \oplus b \oplus y$. Then (i) in an abelian group,
+$c' = c \oplus a^{-1} \oplus b$; (ii) in a commutative monoid, if
+$b = a \oplus d$ then $c' = c \oplus d$; (iii) in a group, if $x = e$ then
+$c' = b \oplus a^{-1} \oplus c$, and if $y = e$ then
+$c' = c \oplus a^{-1} \oplus b$; (iv) in a selective monoid, the aggregate
+of any values is one of them, or $e$ if there is none.*
+
+*Proof.* (i) By commutativity $c = a \oplus x \oplus y$, and therefore
+$c \oplus a^{-1} \oplus b = x \oplus y \oplus b = x \oplus b \oplus y$.
+(ii) Likewise, $c \oplus d = x \oplus y \oplus a \oplus d = x \oplus ( a
+\oplus d ) \oplus y$. (iii) With $x = e$, $b \oplus a^{-1} \oplus c = b
+\oplus a^{-1} \oplus a \oplus y = b \oplus y$, by associativity alone, and
+symmetrically with $y = e$. (iv) By induction on the number of operands,
+since each combination is one of its two operands. $\square$
+
+Lemma 1.17 is the dispatch of the structures that follow. Its first part is
+the update of a prefix sum by its difference, and the second the `add()` of a
+commutative monoid (e.g., a maximum that is raised). The third is the removal
+of the first value of a window and the insertion of the last one
+(subtract-on-evict), which needs no commutativity, and the fourth is the
+monotone deque of a window of minima. A monoid with none of these properties
+can only recombine the parts that a change touches. For a group whose values
+are not exact, the inverse does not undo the rounding of the combination, and
+the aggregate may drift. In this case the structures recompute it from the
+values after `period()` updates, at a cost of $O( 1 )$ amortized per update
+when the period is at least the number of values, while the audits of the
+tests catch a drift beyond their tolerance.
+
+### 1.15.3 Prefix aggregates {#sec-1-15-3}
+
+`Fenwick<G>` keeps the values $a_0 , \ldots , a_{n-1}$ of a monoid $G$ and,
+for $j = 1 , \ldots , n$, the nodes
+
+$$
+t_j = a_{j - \lambda( j )} \oplus \cdots \oplus a_{j - 1} , \tag{1.16}
+$$
+
+where $\lambda( j )$ is the lowest bit of $j$, i.e., the largest power of 2
+that divides it ([Fenwick 1994](Z-bibliography.md#ref-fenwick1994)). For
+any monoid the tree answers `prefix(r)`, the aggregate
+$\pi_r = a_0 \oplus \cdots \oplus a_{r-1}$ ([Algorithm
+1.10](01-introduction.md#alg-1-10)). For a group it also answers
+`range(l, r)` $= \pi_l^{-1} \oplus \pi_r$, which needs no commutativity
+since $\pi_r = \pi_l \oplus ( a_l \oplus \cdots \oplus a_{r-1} )$. A value
+changes by `set()`, by `add()` in a commutative monoid, and at the end by
+`push_back()` and `pop_back()`.
+
+```cpp
+// declarations of <ADS/sequence/Fenwick.h>
+template< Monoid G > class Fenwick {
+ public:
+ using Value = typename G::Value;
+ explicit Fenwick( std::size_t n = 0 );
+ template< std::input_iterator I >
+ Fenwick( I first , I last );
+ std::size_t size( void ) const;
+ const Value & get( std::size_t i ) const;
+ Value prefix( std::size_t r ) const;
+ Value range( std::size_t l , std::size_t r ) const
+  requires Group< G >;
+ void set( std::size_t i , const Value & v );
+ void add( std::size_t i , const Value & d ) requires CommutativeMonoid< G >;
+ void push_back( const Value & v );
+ void pop_back( void );
+ template< std::input_iterator I >
+ void assign( I first , I last );
+ std::size_t period( void ) const;
+ void period( std::size_t p );
+ };
+```
+
+<span id="alg-1-10"></span>**Algorithm 1.10.** The prefix of length $r$, by
+the nodes of the binary digits of $r$.
+
+--8<-- "generated/Fenwick-prefix.pseudo.md"
+
+<span id="lem-1-18"></span>**Lemma 1.18.** *(i) For $0 \le r \le n$, the
+sequence $j_1 = r$, $j_{k+1} = j_k - \lambda( j_k )$ reaches 0 after at most
+$\lfloor \log_2 r \rfloor + 1$ steps, and
+$\pi_r = t_{j_m} \oplus \cdots \oplus t_{j_1}$. (ii) For $j \ge 1$, $t_j$ is
+the combination of the nodes $t_{j - 2^k}$, $2^k < \lambda( j )$, by
+decreasing $k$, and of $a_{j-1}$. (iii) The nodes that contain $a_i$ are
+those of the sequence $j_1 = i + 1$, $j_{k+1} = j_k + \lambda( j_k )$, while
+$j_k \le n$, and they are at most $\lfloor \log_2 n \rfloor + 1$.*
+
+*Proof.* (i) Each step clears the lowest bit set of $j$, hence the steps are
+at most the bits of $r$, and by (1.16) the node $t_{j_k}$ covers the indices
+$[ j_{k+1} , j_k )$; these intervals are consecutive and, from $k = m$ down
+to 1, they go from 0 to $r$, so that their combination in this order is
+$\pi_r$ by associativity alone. (ii) The indices
+$[ j - \lambda( j ) , j - 1 )$ split into the intervals
+$[ j - 2^{k+1} , j - 2^k )$ for $2^k < \lambda( j )$, since the bits of $j$
+below $\lambda( j )$ are zero, and $\lambda( j - 2^k ) = 2^k$, so that each
+interval is that of $t_{j - 2^k}$; by decreasing $k$ they go from left to
+right, and $a_{j-1}$ comes last. (iii) The value $a_i$ is in $t_j$ if and
+only if $j - \lambda( j ) \le i < j$, and therefore the least such $j$ is
+$i + 1$. Let $t_j$ contain $a_i$. For $j' = j + m$ with
+$0 < m < \lambda( j )$ the lowest bit of $j'$ is that of $m$, and
+$j' - \lambda( j' ) \ge j' - m = j > i$, so that $t_{j'}$ does not contain
+$a_i$. For $j' = j + \lambda( j )$ the addition carries, hence
+$\lambda( j' ) \ge 2 \lambda( j )$ and
+$j' - \lambda( j' ) \le j - \lambda( j ) \le i$, so that $t_{j'}$ contains
+it; since $\lambda$ at least doubles at each step, the steps are at most
+$\lfloor \log_2 n \rfloor + 1$. $\square$
+
+Thus `prefix(r)` takes $O( \log n )$ combinations, and the nodes are built
+by (ii) in increasing order in $\sum_{j \le n} \log_2 \lambda( j ) = O( n )$
+combinations. A value appended gets its node in $O( \log n )$, with no
+other node changed, and the removal of the last value drops its node
+only.
+
+<span id="alg-1-11"></span>**Algorithm 1.11.** The update of a value, by
+the difference in an abelian group and by the parts of the nodes in any
+other monoid.
+
+--8<-- "generated/Fenwick-set.pseudo.md"
+
+<span id="lem-1-19"></span>**Lemma 1.19.** *Let $a_i$ become $v$. (i) In an
+abelian group, combining each node of [Lemma 1.18](01-introduction.md#lem-1-18)
+(iii) with $\delta = a_i^{-1} \oplus v$ gives the nodes of the new values,
+in $O( \log n )$ combinations. (ii) In a commutative monoid, if
+$v = a_i \oplus d$, the same holds with $\delta = d$. (iii) In any monoid,
+recomputing those nodes by [Lemma 1.18](01-introduction.md#lem-1-18) (ii) in
+increasing order gives the new nodes, in $O( \log^2 n )$ combinations.*
+
+*Proof.* A node that does not contain $a_i$ does not change, and one that
+does is of the form $x \oplus a_i \oplus y$, which (i) and (ii) update by
+[Lemma 1.17](01-introduction.md#lem-1-17) (i) and (ii). For (iii), the nodes
+that $t_j$ combines have indices less than $j$; hence those among them that
+contain $a_i$ are recomputed before $t_j$ when the nodes are taken in
+increasing order, while the others are unchanged. Each recomputation takes
+$O( \log n )$ combinations, for at most $\lfloor \log_2 n \rfloor + 1$
+nodes. $\square$
+
+`FenwickObserver<G>` is the tree of [Algorithm
+1.11](01-introduction.md#alg-1-11) kept by the events of an `ObservableArray`
+of the values of $G$. It applies `Assigned` by `set()`, `Inserted` and
+`Erased` by `push_back()` and `pop_back()`, and `Cleared` by emptying the
+tree. `Rebuilt` carries no values; on it the observer marks its tree stale
+and ignores the events until its next query, at which it builds the tree
+again from the vector of the array, in $O( n )$. For a static policy one
+builds the observer before its array, and gives it the array by `rebuild(a)`.
+
+<span id="lem-1-20"></span>**Lemma 1.20.** *After each event sent outside a
+batch, and after each batch, the tree of `FenwickObserver` is, at its next
+query, the tree of the values of the array.*
+
+*Proof.* By induction on the events received. Outside a batch each event
+starts from the state of the array that the observer knows, and Lemmas 1.18
+and 1.19 keep the tree equal to that of the array. A batch delivers its net
+effect, which by [Lemma 1.14](01-introduction.md#lem-1-14) leads from the
+state before the batch to the state after it, with `Cleared` or `Rebuilt`
+first if the batch had one. After `Rebuilt` the events are ignored, and at
+the next query the tree is built from the array as it is then. This is the
+state after the events delivered so far, i.e., the state that the ignored
+events would have reached. $\square$
+
+We check Lemma 1.20 by the test `engineered_emitters.fenwick-observer`, i.e.,
+by the audit of [§1.13](01-introduction.md#sec-1-13). A `Shadow` sends each
+event of an array to the observer and to one that recomputes each prefix by a
+scan of its own copy of the values, and compares their answers at each query,
+on random writes, appends, removals, batches, clearings and rebuildings. In
+the example below, we attach the observer of the prefix sums at run time.
+
+```cpp
+ADS::ObservableArray< long long , ADS::Dynamic<> > a( 8 , 1 );
+ADS::FenwickObserver< ADS::SumOf< long long > > p( a );
+a.attach( p );
+a.set( 3 , 10 );                      // Assigned( 3 , 1 , 10 )
+a.push_back( 5 );                     // Inserted( 8 , 8 , 5 )
+const long long s = p.prefix( 9 );    // 1 + 1 + 1 + 10 + 1 + 1 + 1 + 1 + 5
+const long long r = p.range( 3 , 4 ); // 10
+```
+
+### 1.15.4 The aggregate of a sliding window {#sec-1-15-4}
+
+`SlidingAggregate<G, Policy>` (in `queue/`) is a QUEUE of values
+$x_1 , \ldots , x_n$ of a monoid $G$ with `aggregate()`, the combination
+$\alpha = x_1 \oplus \cdots \oplus x_n$ from the front to the back, which the
+queues with the minimum of [§4.8](04-queue.md#sec-4-8) and
+[§4.9](04-queue.md#sec-4-9) compute for $\oplus = \min$. With the policy
+`Amortized`, the default, the algebra chooses the algorithm, i.e.,
+subtract-on-evict for a group, the monotone deque for a selective monoid
+whose values compare by `==` ([Algorithm 1.12](01-introduction.md#alg-1-12)),
+and Two-Stacks Lite ([Tangwongsan et al.
+2021](Z-bibliography.md#ref-tangwongsan2021)) for any other monoid
+([Algorithm 1.13](01-introduction.md#alg-1-13)). With `WorstCase`, any
+monoid takes the real-time queue of Hood and Melville of `RealTimeMinQueue`,
+on stacks whose cells hold aggregates instead of places. Its constant
+`kind` names the algorithm chosen.
+
+```cpp
+// declarations of <ADS/queue/SlidingAggregate.h>
+struct Amortized {};
+struct WorstCase {};
+enum class window_kind { subtract_on_evict , monotone_deque , two_stacks ,
+                         real_time };
+template< Monoid G , class Policy = Amortized > class SlidingAggregate {
+ public:
+ using Value = typename G::Value;
+ static constexpr window_kind kind = detail::windowKindOf< G , Policy >();
+ bool empty( void ) const;
+ std::size_t size( void ) const;
+ void enqueue( const Value & x );
+ Value dequeue( void );
+ const Value & top( void ) const;
+ Value aggregate( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ void clear( void );
+ };
+```
+
+<span id="alg-1-12"></span>**Algorithm 1.12.** The insertion into the
+monotone deque $C$ of the candidates of a selective monoid.
+
+--8<-- "generated/SlidingAggregate-enqueue.pseudo.md"
+
+<span id="alg-1-13"></span>**Algorithm 1.13.** The removal of Two-Stacks
+Lite, whose first part carries the aggregates of its suffixes.
+
+--8<-- "generated/SlidingAggregate-dequeue.pseudo.md"
+
+<span id="lem-1-21"></span>**Lemma 1.21.** *(i) In a group, the aggregate
+kept as $s \gets s \oplus x$ at each insertion and $s \gets x_1^{-1} \oplus
+s$ at each removal of $x_1$ is $\alpha$. (ii) In a selective monoid, let the
+deque $C$ of the candidates lose from its back each $c$ with $c \oplus x =
+x$ before $x$ is appended, and lose its front at the removal of the item it
+is; then the combination of the candidates from the $l$-th item on is
+$x_l \oplus \cdots \oplus x_n$ for each $l$, and the front of $C$ is
+$\alpha$. (iii) In any monoid, if the first $m$ items carry the aggregates
+$S_k = x_k \oplus \cdots \oplus x_m$ and $b$ is the aggregate of the others,
+and a removal with $m = 0$ first makes all the items the first part, then
+$\alpha = S_1 \oplus b$. Each operation of (i) costs $O( 1 )$, and those of
+(ii) and (iii) cost $O( 1 )$ amortized.*
+
+*Proof.* (i) By induction on the operations from $s = e$: an insertion of
+$x$ makes $s = x_1 \oplus \cdots \oplus x_n \oplus x$, and a removal makes
+$x_1^{-1} \oplus x_1 \oplus ( x_2 \oplus \cdots \oplus x_n )$, i.e., [Lemma
+1.17](01-introduction.md#lem-1-17) (iii). (ii) Let $\Gamma_l$ be the
+combination of the candidates from the $l$-th item on. At an insertion of
+$x$ each candidate $c$ removed is the last one, so that
+$\Gamma_l = \Gamma' \oplus c$ with $\Gamma'$ the candidates before it, and
+$x_l \oplus \cdots \oplus x_n \oplus x = \Gamma' \oplus ( c \oplus x ) =
+\Gamma' \oplus x$; once no candidate is removed, appending $x$ gives the new
+suffix. At a removal, the suffixes from the second item on do not change,
+and the first item goes from $C$ if it is there. Two candidates $c , c'$
+became consecutive when $c'$ was appended with $c$ last, and then
+$c \oplus c' \ne c'$, i.e., $c \oplus c' = c$ by selectivity. Hence,
+combining from the back, $\Gamma_1$ is the front of $C$; also, each item
+enters and leaves $C$ once. (iii) $S_1$ covers the first part and $b$ the
+items after it, in the order of the queue; a removal drops $x_1$ and $S_1$,
+and $S_2$ is the aggregate of the first part that remains, while an
+insertion extends $b$ on the right. Each item enters the first part once, at
+the cost of one combination, which the potential $n - m$ pays. $\square$
+
+<span id="lem-1-22"></span>**Lemma 1.22.** *Let the queue be kept as
+`RealTimeMinQueue` keeps it ([§4.9](04-queue.md#sec-4-9)), with the fronts
+$F$ and $N$ and the backs $R$ and $R'$, where each cell of a front holds
+$x \oplus \sigma$ and each cell of a back holds $\sigma \oplus x$, $x$ its
+item and $\sigma$ the aggregate of the cells below it. Let $\hat P$ be the
+aggregate in the top cell of the part $P$, $r_0$ the size of $R'$ when the
+rotation started, and $\hat N_k$ the aggregate of the cell $k - 1$ of $N$,
+$k = \min( r_0 , \lvert N \rvert )$. Then
+$\alpha = \hat F \oplus \hat R' \oplus \hat N_k \oplus \hat R$, the empty
+parts left out, and each operation costs $O( 1 )$ in the worst case.*
+
+*Proof.* Indeed, the cost is that of the rotation of
+[§4.9](04-queue.md#sec-4-9), with one combination more per move. The top cell
+of $F$ holds the aggregate of the cells from 0 to its top, in the order of
+the queue, since the aggregate was computed when the cells were pushed and a
+move does not change it. This includes the bottom cells already moved into
+$N$, whose items are still in the queue right after those that remain, and
+excludes the items removed from the top. In turn, the top of $R'$ covers the
+items of the frozen back not yet moved, which precede in the queue those that
+were moved. The latter are the first $k$ cells of $N$, with the last item of
+the back at the bottom; hence, the aggregate of the cell $k - 1$, with the
+item first, combines them in the order of the queue. Note that the cells of
+$N$ above $r_0$ hold items of $F$, already counted in $\hat F$, and the new
+back $R$ follows. When the rotation ends, $N$ becomes the front, and its top
+cell covers all its items. $\square$
+
+The minimum of `RealTimeMinQueue` is Lemma 1.22 for the minima, where the
+parts may overlap since $\min$ is idempotent; this is why it may read the
+least place of $F$ in $N$. `MinQueue` and `RealTimeMinQueue` stay as they
+are, since they also take an order that is an object, not a type, and give
+the least item by reference, which a monoid whose combination returns a
+value cannot do. We check by the test `engineered_emitters.sliding-minqueue`
+that the windows of the minima agree with them. In the example below the monoid
+of the concatenations does not commute, and the window takes Two-Stacks
+Lite.
+
+```cpp
+struct Concat {
+ using Value = std::string;
+ static Value identity( void ) { return( Value() ); }
+ static Value combine( const Value & a , const Value & b ) { return( a + b ); }
+ };
+ADS::SlidingAggregate< Concat > w;
+w.enqueue( "ab" );
+w.enqueue( "c" );
+w.dequeue();
+w.enqueue( "d" );
+const std::string s = w.aggregate();   // "cd"
+static_assert( ADS::SlidingAggregate< Concat >::kind ==
+               ADS::window_kind::two_stacks );
+static_assert( ADS::SlidingAggregate< ADS::SumOf< int > >::kind ==
+               ADS::window_kind::subtract_on_evict );
+```
+
+## 1.16 Discussion and references {#sec-1-16}
 
 The abstract data types go back to [Liskov and Zilles
 1974](Z-bibliography.md#ref-liskov1974), after the principle
@@ -2192,7 +2689,7 @@ measured. The capabilities follow the customization points of [Niebler
 decrease of a key is compared with the native one in [Chen et al.
 2007](Z-bibliography.md#ref-chen2007).
 
-## 1.16 Exercises {#sec-1-16}
+## 1.17 Exercises {#sec-1-17}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).
@@ -2271,3 +2768,15 @@ Each exercise names the test of the library that solves it (run it with
     `engineered_capabilities.cap-lazy-frontier`,
     `engineered_capabilities.cap-queries` and
     `engineered_capabilities.cap-queue-points`.
+13. Attach to an `IndexedDaryHeap` an observer that keeps a copy of its
+    vector from the exchanges alone, and check it after every operation
+    ([Lemma 1.16](01-introduction.md#lem-1-16)); then keep the prefix sums
+    of an `ObservableArray` by `FenwickObserver` under a `Shadow` that
+    recomputes them from scratch ([Lemma 1.20](01-introduction.md#lem-1-20)),
+    and the aggregate of a sliding window of a monoid that does not commute
+    by each algorithm of `SlidingAggregate` against a scan of the window
+    (Lemmas [1.21](01-introduction.md#lem-1-21) and
+    [1.22](01-introduction.md#lem-1-22)). Tests:
+    `engineered_emitters.emit-heap-relocated`,
+    `engineered_emitters.fenwick-observer` and
+    `engineered_emitters.sliding-aggregate`.

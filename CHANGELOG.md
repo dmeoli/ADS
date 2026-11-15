@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- the first structures that tell their changes, and the aggregates that
+  their events feed: Algebra.h, the algebra of the aggregates as concepts
+  on static members (Monoid, CommutativeMonoid, Group, AbelianGroup,
+  Selective, Action, exact_v), refinements of the augmentations of
+  JoinTree, with SumOf, MinOf and MaxOf; sequence/ObservableArray.h, a
+  vector whose set(), add(), push_back(), pop_back(), clear() and assign()
+  send Assigned, Inserted, Erased, Cleared and Rebuilt through a subject
+  policy, with apply() for UndoLog; sequence/Fenwick.h, Fenwick< G >, the
+  prefix aggregates of any monoid, the update by difference in an abelian
+  group, by combination in add() of a commutative monoid and by the parts
+  of the nodes otherwise, range() in a group, push_back() and pop_back(),
+  and the rebuilding every period() updates of a group of floating point
+  values, and FenwickObserver< G >, the tree kept by the events of an
+  observable array, stale after Rebuilt until its next query, with its
+  audit; queue/SlidingAggregate.h, the aggregate of a sliding window over
+  any monoid by subtract-on-evict, the monotone deque, Two-Stacks Lite or,
+  with WorstCase, the real-time queue of Hood and Melville on stacks of
+  aggregates, chosen by the algebra and the policy (MinQueue and
+  RealTimeMinQueue unchanged); the theory of the algebra, of the prefix
+  aggregates, of the windows and of the events of the indexed heap,
+  section 1.15 of the manual and the test engineered_emitters (8 cases)
+
 - Capabilities.h, the vocabulary by which an algorithm asks a structure
   what it can do: the syntactic capabilities as concepts on members
   (bulk_insertable, bulk_erasable, splittable, joinable, rankable,
@@ -1816,6 +1838,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   both signs, bit by bit against std::sort by radixKey()
 
 ### Changed
+
+- IndexedDaryHeap takes a subject policy as its third template parameter,
+  NoObservers by default, and tells its insertions, erasures (before the
+  removal) and changes of key, its clearings, and, only to an observer
+  that wants them, the moves of its items in the vector as Relocated
+  exchanges, which a copy of the vector applied in order keeps equal to
+  it; with NoObservers the instructions and the code of every operation
+  are those of the heap before, which bench/zerocost.py checks with
+  --before against the headers of a revision, by counts and by code, the
+  padding after the last instruction left out
 
 - The concept PriorityQueue of PriorityQueue.h is the queue without
   handles, read through the customization points queue_insert(),

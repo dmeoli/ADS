@@ -1026,6 +1026,13 @@ class MinDeque {
   };
 ```
 
+The minimum is one instance of an aggregate of the window, and
+`SlidingAggregate<G>` ([§1.15.4](01-introduction.md#sec-1-15-4)) keeps the
+combination of the items of a queue for any monoid $G$, by the algorithm
+that the algebra of $G$ allows; for the monoid of the minima it computes
+what `MinQueue` computes, which stays for the orders that are objects and
+for the least item given by reference.
+
 ## 4.9 The minimum in constant worst-case time {#sec-4-9}
 
 [Lemma 4.11](04-queue.md#lem-4-11) and [Lemma 4.12](04-queue.md#lem-4-12) bound

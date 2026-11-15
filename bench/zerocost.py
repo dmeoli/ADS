@@ -9,11 +9,16 @@
 # change of each variant (those of n and 2 n changes, the difference over n), #
 # twice for the plain variant (the two counts must be equal), disassembles    #
 # the functions of zerocost_asm.cpp by objdump and compares each with its     #
-# reference byte by byte, relocations included, and prints the table in       #
-# Markdown. The counts do not depend on the load of the machine.              #
+# reference byte by byte, relocations included (the padding at the end left   #
+# out), and prints the table in Markdown. The counts do not depend on the     #
+# load of the machine. With --before REV it also builds both files on the     #
+# headers of the revision REV of the repository (git archive), or of the tree #
+# in the directory REV, with ZC_BEFORE, and compares the changes of           #
+# IndexedDaryHeap there and here, by counts and by code (the bytes and the    #
+# kinds of the relocations, whose names carry the template arguments).        #
 #                                                                             #
 #   python3 bench/zerocost.py [ --cxx g++ clang++ ] [ -n 100000 ]             #
-#                             [ --out build-zerocost ]                        #
+#                             [ --out build-zerocost ] [ --before REV ]       #
 ###############################################################################
 
 import argparse
@@ -25,11 +30,17 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
-WORKLOADS = [ "array-weight" , "list-weight" , "list-edge" , "key" ]
+WORKLOADS = [ "array-weight" , "list-weight" , "list-edge" , "key" ,
+              "oarray" , "heap" ]
 LEGACY = [ "plain" , "observable" , "observable-excl" ]
 POLICIES = [ "none" , "static-excl" , "static-count" , "dynamic" ]
 # the variants of the array of keys, which has no Observable
 KEY = [ "plain" , "none" , "static-excl" , "static-count" , "dynamic" ]
+# the variants of the heap, whose plain variant has NoObservers
+HEAP = [ "plain" , "static-excl" , "static-count" , "dynamic" ]
+# the functions of the heap compared with those of the tree before
+HEAP_ASM = [ "zc_heap_push" , "zc_heap_decrease" , "zc_heap_increase" ,
+             "zc_heap_erase" , "zc_heap_pop" ]
 # the functions of zerocost_asm.cpp by workload: ( function , reference )
 ASM = {
     "array-weight": [
@@ -48,7 +59,15 @@ ASM = {
         ( "zc_none_key_ref" , "zc_plain_key_ref" ) ,
         ( "zc_static_excl_key_ref" , "zc_plain_key_ref" ) ,
         ( "zc_static_count_key_ref" , "zc_plain_key_ref" ) ,
-        ( "zc_dynamic_key_ref" , "zc_plain_key_ref" ) ] }
+        ( "zc_dynamic_key_ref" , "zc_plain_key_ref" ) ] ,
+    "oarray": [
+        ( "zc_none_oarray_ref" , "zc_plain_key_ref" ) ,
+        ( "zc_static_excl_oarray_ref" , "zc_plain_key_ref" ) ,
+        ( "zc_static_count_oarray_ref" , "zc_plain_key_ref" ) ,
+        ( "zc_dynamic_oarray_ref" , "zc_plain_key_ref" ) ] ,
+    "heap": [
+        ( "zc_static_excl_heap_decrease" , "zc_heap_decrease" ) ,
+        ( "zc_static_excl_heap_pop" , "zc_heap_pop" ) ] }
 
 
 def run( cmd , **kw ):
@@ -59,12 +78,14 @@ def run( cmd , **kw ):
     return( r )
 
 
-def build( cxx , out , policies ):
-    """The program and the object file compiled by cxx, in out."""
-    tag = os.path.basename( cxx )
+def build( cxx , out , policies , include = None , suffix = "" ,
+           extra = () ):
+    """The program and the object file compiled by cxx, in out, on the
+    headers of include (those of the tree by default)."""
+    tag = os.path.basename( cxx ) + suffix
     flags = [ "-std=c++20" , "-O2" , "-DNDEBUG" , "-DADS_CONTRACTS=0" ,
-              "-I" + os.path.join( ROOT , "include" ) ,
-              "-I" + os.path.join( ROOT , "bench" ) ]
+              "-I" + ( include or os.path.join( ROOT , "include" ) ) ,
+              "-I" + os.path.join( ROOT , "bench" ) ] + list( extra )
     exe = os.path.join( out , "zerocost-" + tag )
     obj = os.path.join( out , "zerocost_asm-" + tag + ".o" )
     run( [ cxx ] + flags + [ os.path.join( ROOT , "bench" , "zerocost.cpp" ) ,
@@ -123,19 +144,51 @@ def functions( obj ):
         m = re.match( r"^\s*[0-9a-f]+:\t((?:[0-9a-f]{2} )+)\s*(.*)$" , line )
         if m:
             code[ name ][ "bytes" ].append( m.group( 1 ).strip() )
+            code[ name ].setdefault( "text" , [] ).append(
+                m.group( 2 ).strip() )
             if m.group( 2 ).strip():
                 code[ name ][ "count" ] += 1
+    # the padding after the last instruction, which depends on the
+    # alignment of the next function and is never executed
+    pad = re.compile( r"^((data16|cs)\s+)*(nop\w*|xchg\s+%ax,%ax|int3)\b" )
+    for f in code.values():
+        t = f.get( "text" , [] )
+        while t and pad.match( t[ -1 ] ):
+            t.pop()
+            f[ "bytes" ].pop()
+            f[ "count" ] -= 1
     return( code )
 
 
-def compare( code , f , ref ):
-    """The cell of the comparison of the function f with ref."""
-    if f not in code or ref not in code:
+def compare( code , f , ref , other = None , kinds = False ):
+    """The cell of the comparison of the function f with ref (of the code
+    other, if given); with kinds, the relocations by their kinds only."""
+    other = code if other is None else other
+    if f not in code or ref not in other:
         return( "-" )
-    a , b = code[ f ] , code[ ref ]
-    if a[ "bytes" ] == b[ "bytes" ] and a[ "relocs" ] == b[ "relocs" ]:
+    a , b = code[ f ] , other[ ref ]
+    ra , rb = a[ "relocs" ] , b[ "relocs" ]
+    if kinds:
+        ra , rb = [ r[ 0 ] for r in ra ] , [ r[ 0 ] for r in rb ]
+    if a[ "bytes" ] == b[ "bytes" ] and ra == rb:
         return( "identical (%d)" % a[ "count" ] )
     return( "%d vs %d" % ( a[ "count" ] , b[ "count" ] ) )
+
+
+def before( rev , out ):
+    """The headers of the revision rev, extracted in out, or those of the
+    tree in the directory rev, if it is one."""
+    if os.path.isdir( os.path.join( rev , "include" ) ):
+        return( os.path.join( os.path.abspath( rev ) , "include" ) )
+    d = os.path.join( out , "before-" + re.sub( r"[^A-Za-z0-9]" , "_" , rev ) )
+    if not os.path.isdir( d ):
+        os.makedirs( d )
+        p = subprocess.Popen( [ "git" , "-C" , ROOT , "archive" , rev ,
+                                "include" ] , stdout = subprocess.PIPE )
+        subprocess.run( [ "tar" , "-x" , "-C" , d ] , stdin = p.stdout ,
+                        check = True )
+        p.wait()
+    return( os.path.join( d , "include" ) )
 
 
 def main():
@@ -146,6 +199,7 @@ def main():
     ap.add_argument( "-n" , type = int , default = 100000 )
     ap.add_argument( "--out" , default = os.path.join( ROOT ,
                                                        "build-zerocost" ) )
+    ap.add_argument( "--before" , default = None )
     a = ap.parse_args()
     os.makedirs( a.out , exist_ok = True )
     policies = os.path.exists( os.path.join( ROOT , "include" , "ADS" ,
@@ -173,10 +227,12 @@ def main():
            " | ".join( "Ir/change " + t for t in tags ) + " |" )
     print( "|---|---|" + "---|" * len( tags ) )
     for work in WORKLOADS:
-        if work == "key":
+        if work in ( "key" , "oarray" ):
             if not policies:
                 continue
             variants = KEY
+        elif work == "heap":
+            variants = HEAP if policies else [ "plain" ]
         else:
             variants = LEGACY + ( POLICIES if policies else [] )
         for var in variants:
@@ -208,6 +264,31 @@ def main():
             cells = [ compare( codes[ c ] , f , ref ) for c in a.cxx ]
             print( "| %s | %s | %s | %s |" % ( work , f , ref ,
                                                " | ".join( cells ) ) )
+
+    # the heap here against the heap of the tree before
+    if a.before:
+        inc = before( a.before , a.out )
+        old = { c: build( c , a.out , policies , inc , "-before" ,
+                          [ "-DZC_BEFORE" ] ) for c in a.cxx }
+        print()
+        print( "| heap, before %s | " % a.before +
+               " | ".join( "before " + t + " | here " + t for t in tags ) +
+               " |" )
+        print( "|---|" + "---|---|" * len( tags ) )
+        cells = []
+        for c in a.cxx:
+            x = per_change( old[ c ][ 0 ] , "heap" , "plain" , a.n )
+            y = per_change( built[ c ][ 0 ] , "heap" , "plain" , a.n )
+            cells += [ "-" if x is None else "%.2f" % x ,
+                       "-" if y is None else "%.2f" % y ]
+        print( "| Ir/change | %s |" % " | ".join( cells ) )
+        prev = { c: functions( old[ c ][ 1 ] ) for c in a.cxx }
+        for f in HEAP_ASM:
+            cells = []
+            for c in a.cxx:
+                cells += [ "-" , compare( codes[ c ] , f , f , prev[ c ] ,
+                                          True ) ]
+            print( "| %s | %s |" % ( f , " | ".join( cells ) ) )
 
 
 if __name__ == "__main__":

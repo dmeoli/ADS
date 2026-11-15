@@ -13,8 +13,10 @@
  collects the definitions and the notation that the headers share (see
  \ref theory_queue_notation), the realizations with the costs of their
  operations (see \ref theory_queue_repr), the arithmetic of the circular
- vectors (see \ref theory_queue_circular), and the queues with no duplicates
- and the algorithms on a queue (see \ref theory_queue_algo). The pseudocode
+ vectors (see \ref theory_queue_circular), the queues with no duplicates
+ and the algorithms on a queue (see \ref theory_queue_algo), and the
+ aggregate of a sliding window over a monoid (see
+ \ref theory_queue_sliding). The pseudocode
  of each operation is on the page of its header, in the comment of its
  function, together with the section of the book that it follows.
 
@@ -293,6 +295,107 @@
  rebuilt at once, in \f$ O( 1 ) \f$. The items are copied, since the old
  stacks stay in use during the rebuild, while the queue moves them.
 
+ \subsection theory_queue_sliding The aggregate of a sliding window
+
+ `SlidingAggregate< G , Policy >` is a queue of values \f$ x_1 , \ldots ,
+ x_n \f$ of a monoid \f$ ( G , \oplus , e ) \f$, from the front to the back,
+ with `aggregate()`, the combination \f$ \alpha = x_1 \oplus \cdots \oplus
+ x_n \f$ in this order (\f$ e \f$ if \f$ n = 0 \f$), which the queues with the
+ minimum above compute for \f$ \oplus = \min \f$. The algebra and the
+ policy choose one of four algorithms (see \ref theory_ADS_algebra), whose
+ correctness follows.
+
+ <em>Lemma 5 (subtract-on-evict).</em> In a group, the aggregate kept as
+ \f$ s \gets s \oplus x \f$ at each insertion of \f$ x \f$ at the back and
+ \f$ s \gets x_1^{-1} \oplus s \f$ at each removal of \f$ x_1 \f$ from the
+ front equals \f$ \alpha \f$, each operation in \f$ O( 1 ) \f$ combinations.
+
+ Indeed, by induction on the operations, from \f$ s = e \f$: an insertion
+ makes \f$ s = x_1 \oplus \cdots \oplus x_n \oplus x \f$, and a removal
+ makes \f$ x_1^{-1} \oplus x_1 \oplus ( x_2 \oplus \cdots \oplus x_n ) \f$,
+ i.e., Lemma 3 (iii) of \ref theory_ADS_algebra; no commutativity is used,
+ and with floating point values the aggregate is recomputed from the items
+ every `period()` removals, at \f$ O( 1 ) \f$ amortized cost when the period
+ is at least \f$ n \f$.
+
+ <em>Lemma 6 (the monotone deque).</em> In a selective monoid, let the
+ deque \f$ C \f$ of the candidates be updated at each insertion of \f$ x \f$
+ by removing from its back each \f$ c \f$ with \f$ c \oplus x = x \f$ and
+ then appending \f$ x \f$, and at each removal of \f$ x_1 \f$ by removing its
+ front if it is \f$ x_1 \f$ (as an item, by its number). Then, for every
+ \f$ l \f$, the combination of the candidates of numbers at least \f$ l \f$,
+ in their order, is \f$ x_l \oplus \cdots \oplus x_n \f$, and the front of
+ \f$ C \f$ is \f$ \alpha \f$; each operation costs \f$ O( 1 ) \f$ amortized.
+
+ Indeed, by induction on the operations. Let \f$ \Gamma_l \f$ be the
+ combination of the candidates of numbers at least \f$ l \f$. At an
+ insertion of \f$ x \f$, a removed candidate \f$ c \f$ is the last one, so
+ that \f$ \Gamma_l = \Gamma' \oplus c \f$ with \f$ \Gamma' \f$ the
+ candidates before it, and \f$ x_l \oplus \cdots \oplus x_n \oplus x =
+ \Gamma' \oplus ( c \oplus x ) = \Gamma' \oplus x \f$; once no candidate is
+ removed, appending \f$ x \f$ gives \f$ \Gamma_l \oplus x \f$, which is the
+ new suffix. At a removal the suffixes from \f$ l \ge 2 \f$ are those of
+ before, and the candidate of number 1, if there is one, goes. Two
+ consecutive candidates \f$ c , c' \f$ became consecutive when \f$ c' \f$
+ was appended with \f$ c \f$ last, and then \f$ c \oplus c' \ne c' \f$,
+ i.e., \f$ c \oplus c' = c \f$ by selectivity; hence, combining from the
+ back, \f$ \Gamma_1 \f$ is the front of \f$ C \f$. Each item enters and
+ leaves \f$ C \f$ once.
+
+ <em>Lemma 7 (Two-Stacks Lite).</em> In any monoid, let the items be in one
+ deque whose first \f$ m \f$ items carry the aggregates
+ \f$ S_k = x_k \oplus \cdots \oplus x_m \f$, \f$ k \le m \f$, and let
+ \f$ b \f$ be the aggregate of the others; an insertion combines its item
+ into \f$ b \f$, and a removal with \f$ m = 0 \f$ first makes all the items
+ the first part, computing \f$ S_n , S_{n-1} , \ldots , S_1 \f$ from the
+ back and setting \f$ b = e \f$. Then \f$ \alpha = S_1 \oplus b \f$, and each
+ operation costs \f$ O( 1 ) \f$ amortized (Tangwongsan, Hirzel and
+ Schneider).
+
+ Indeed, \f$ S_1 \f$ covers the items of the first part and \f$ b \f$ those
+ after it, in the order of the queue; a removal drops \f$ x_1 \f$ and
+ \f$ S_1 \f$, and the next \f$ S_2 \f$ is still the aggregate of the first
+ part, while an insertion extends \f$ b \f$ on the right. Each item enters
+ the first part once, at the cost of one combination, which the potential
+ \f$ n - m \f$ pays.
+
+ <em>Lemma 8 (the real-time window).</em> Let the queue be kept as
+ `RealTimeMinQueue` keeps it (Lemma 3), each cell of a front (\f$ F \f$,
+ \f$ N \f$) holding the aggregate of its item and of the cells below it
+ with the item first, \f$ x \oplus \sigma \f$, and each cell of a back
+ (\f$ R \f$, the frozen \f$ R' \f$) the aggregate with the item last,
+ \f$ \sigma \oplus x \f$. Then, with \f$ \hat P \f$ the aggregate in the top
+ cell of the part \f$ P \f$ and \f$ \hat N_k \f$ that of the cell
+ \f$ k - 1 \f$ of \f$ N \f$, \f$ k = \min( r_0 , |N| ) \f$,
+ \f[
+   \alpha = \hat F \oplus \hat R' \oplus \hat N_k \oplus \hat R ,
+ \f]
+ the parts that are empty left out, and every operation costs
+ \f$ O( 1 ) \f$ in the worst case.
+
+ Indeed, the cost is that of Lemma 3, plus one combination per move. The
+ top cell of \f$ F \f$ holds the aggregate of the cells from 0 to its top,
+ in the order of the queue, including the bottom cells already moved into
+ \f$ N \f$, whose items are still in the queue right after those of the
+ cells that remain (the aggregate was computed when the cells were pushed,
+ and the moves do not change it), and excluding the items removed from the
+ top. The top of \f$ R' \f$ covers the items of the frozen back that are not
+ yet moved, which precede in the queue those moved; the first \f$ k \f$
+ cells of \f$ N \f$ hold these, the last item of the back at the bottom, so
+ that the aggregate of the cell \f$ k - 1 \f$, the item first, combines them
+ in the order of the queue; the cells of \f$ N \f$ above \f$ r_0 \f$ hold
+ items of \f$ F \f$ already counted in \f$ \hat F \f$. The new back follows.
+ When the rotation ends \f$ N \f$ is the front, its top cell covering all
+ its items.
+
+ The minimum of `RealTimeMinQueue` is Lemma 8 for the selective monoid of
+ the minima, where the parts may overlap since \f$ \min \f$ is idempotent,
+ which is why it reads the least place of \f$ F \f$ in \f$ N \f$ instead.
+ `MinQueue` and `RealTimeMinQueue` stay, since they also take an order
+ that is an object and give the least item by reference, which a monoid
+ whose combination returns a value cannot; the test `sliding-minqueue`
+ checks that the windows of the minima agree with them.
+
  \section theory_queue_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, sections 4.3.1 and
@@ -310,6 +413,9 @@
  \see R. Hood, R. Melville, Real-time queue operations in pure LISP,
       Information Processing Letters 13(2), 50-54, 1981,
       doi:10.1016/0020-0190(81)90030-2
+ \see K. Tangwongsan, M. Hirzel, S. Schneider, In-order sliding-window
+      aggregation in worst-case constant time, The VLDB Journal 30(6),
+      933-957, 2021, doi:10.1007/s00778-021-00668-3
  \see H. Gajewska, R. E. Tarjan, Deques with heap order, Information
       Processing Letters 22(4), 197-200, 1986,
       doi:10.1016/0020-0190(86)90028-1

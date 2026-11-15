@@ -34,11 +34,30 @@
  * removes an id from anywhere, the last item taking its place and moving
  * up or down from there, \f$ O( D \log_D s ) \f$; these are what a search
  * needs to take a node out of its frontier or to make it worse, e.g., when
- * a bound prunes it (see \ref theory_priority_heaps).
+ * a bound prunes it (see \ref theory_priority_heaps; its events are in
+ * \ref theory_priority_events).
  *
  * The range of the ids is set by the constructor and by `reset( n )`, which
  * empties the heap, and raised by `grow( n )`, which keeps it, in
  * \f$ O( 1 ) \f$ amortized time per new id.
+ *
+ * The heap tells its changes through the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, with which every operation
+ * compiles to the code of the plain heap: `Inserted` by `push()`, `Erased` by
+ * `erase()` and `pop()` (the id and its key, before the removal),
+ * `KeyChanged` by `decrease()`, `increase()` and `update()` (the old and the
+ * new key), `Cleared` after `clear()` and `reset()`, `Rebuilt` at the end of
+ * a mute, and `Relocated` on demand, only if an observer wants it, for each
+ * step of the item that an operation moves: the item from the place `from` to
+ * the place `to` and the item at `to`, if any, to `from`, an exchange, so
+ * that an observer that applies them in their order to a copy of the vector
+ * of the heap keeps it equal to the vector. The event of the item comes first
+ * (the new item at the place \f$ s \f$, the last one, before its moves; the
+ * key changed in its place; the place of the item erased left empty, the last
+ * item moved into it by the first `Relocated`). The ids are the handles of
+ * the events, stable while an id is in the heap, and the places of the
+ * vector, which are internal maintenance, travel only on `Relocated`. A heap
+ * of keys has no shift of all its keys in \f$ O( 1 ) \f$, hence no `Shifted`.
  *
  * The contracts [see `Contract.h`]: the ids are in \f$ [ 0 , n ) \f$,
  * `push()` needs an id not in the heap, `decrease()` one in the heap and a
@@ -75,6 +94,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -91,8 +112,8 @@ namespace ADS {
 /*--------------------------------------------------------------------------*/
 
 /// a \f$ D \f$-ary heap of the ids \f$ [ 0 , n ) \f$ by their keys, the
-/// least on top, with decrease-key
-template< class K , unsigned D = 4 >
+/// least on top, with decrease-key, its changes told through `Policy`
+template< class K , unsigned D = 4 , class Policy = NoObservers >
 class IndexedDaryHeap {
 
  static_assert( D >= 2 , "a heap needs at least two children per node" );
@@ -111,9 +132,22 @@ class IndexedDaryHeap {
   int id;   ///< the id
   };
 
- /// the empty heap of the ids \f$ [ 0 , n ) \f$
+ /// the events: an id inserted or erased with its key, its key changed,
+ /// an item moved from a place to another, the heap emptied or rebuilt
+ using modifications = mod::list< mod::Inserted< int , K > ,
+                                  mod::Erased< int , K > ,
+                                  mod::KeyChanged< int , K > ,
+                                  mod::Relocated< std::size_t > ,
+                                  mod::Cleared , mod::Rebuilt >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications ,
+                                                 IndexedDaryHeap >;
+
+ /// the empty heap of the ids \f$ [ 0 , n ) \f$, the static observers
+ /// `o...`
  /// \pre \f$ n \ge 0 \f$
- explicit IndexedDaryHeap( int n = 0 );
+ template< class ... O >
+ explicit IndexedDaryHeap( int n = 0 , O & ... o );
 
  /// the empty heap of the ids \f$ [ 0 , n ) \f$, the room kept
  /// \pre \f$ n \ge 0 \f$
@@ -274,12 +308,72 @@ class IndexedDaryHeap {
  /// \pre the heap is not empty
  int deleteMin( void ) { return( pop().id ); }
 
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class O >
+ int attach( O & o ) requires( Subject::dynamic ) {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre it is attached, no batch is open
+ void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
+
 /*--------------------------------------------------------------------------*/
  private:
 
- void up( std::size_t i , Entry x );
+ using Ins = mod::Inserted< int , K >;            ///< an insertion
+ using Era = mod::Erased< int , K >;              ///< an erasure
+ using Chg = mod::KeyChanged< int , K >;          ///< a change of key
+ using Rel = mod::Relocated< std::size_t >;       ///< a move of an item
 
- void down( std::size_t i , Entry x );
+ /// whether someone may want one of the events `E...`, at compile time
+ template< class ... E >
+ static constexpr bool heard = ( Subject::template listened< E > || ... );
+
+ /// whether someone wants one of the events `E...` now
+ template< class ... E >
+ [[nodiscard]] bool alive( void ) const {
+  return( ( f_sub.template live< E >() || ... ) );
+  }
+
+ /// \f$ x \f$ moved up from the place \f$ i \f$; with `T`, `Relocated`
+ /// from the place `from` of \f$ x \f$ to \f$ i \f$, if they differ, and
+ /// for each exchange of \f$ x \f$ with its parent
+ template< bool T = false >
+ void up( std::size_t i , Entry x , std::size_t from = npos );
+
+ /// \f$ x \f$ moved down from the place \f$ i \f$; with `T`, as `up()`
+ template< bool T = false >
+ void down( std::size_t i , Entry x , std::size_t from = npos );
+
+ /// the change of an operation when someone listens
+ void pushTold( int id , const K & k );
+ void decreaseTold( int id , const K & k );   ///< as pushTold()
+ void increaseTold( int id , const K & k );   ///< as pushTold()
+ void eraseTold( int id );                    ///< as pushTold()
+ Entry popTold( void );                       ///< as pushTold()
+
+ /// the changes when someone listens, out of the hot code
+ ADS_COLD_PATH void pushCold( int id , const K & k ) { pushTold( id , k ); }
+ ADS_COLD_PATH void decreaseCold( int id , const K & k ) {
+  decreaseTold( id , k );
+  }
+ ADS_COLD_PATH void increaseCold( int id , const K & k ) {
+  increaseTold( id , k );
+  }
+ ADS_COLD_PATH void eraseCold( int id ) { eraseTold( id ); }
+ ADS_COLD_PATH Entry popCold( void ) { return( popTold() ); }
+
+ /// no place
+ static constexpr std::size_t npos = std::size_t( -1 );
 
  /// no key less than that of the parent, and the places of the ids right;
  /// on more than 1024 items, those of the root and of the last item only
@@ -287,6 +381,7 @@ class IndexedDaryHeap {
 
  std::vector< Entry > f_A;   ///< the heap, the root in f_A[ 0 ]
  std::vector< int > f_pos;   ///< the place of each id, -1 if absent
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;   ///< the observers
 
  };  // end( class IndexedDaryHeap )
 

@@ -36,7 +36,9 @@ each compiler found, counts by callgrind the instructions of one change of
 a structure that publishes its changes, and compares the machine code of each
 change with that of the plain structure byte by byte, so that the claim of
 [§1.13](01-introduction.md#sec-1-13) that a change nobody listens to costs no instruction is checked by counts and by code, which do not depend on the load
-of the machine.
+of the machine. With `--before REV` the script also compiles them on the
+headers of an earlier revision and compares the changes of
+`IndexedDaryHeap` there and here ([§1.15.1](01-introduction.md#sec-1-15-1)).
 
 Two auxiliary headers serve the programs. One is `bench/Bench.h`, with the
 timing, the options and the output that all of them share

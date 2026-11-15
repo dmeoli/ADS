@@ -12,7 +12,9 @@
  * with the workloads array-weight (`setWeight()` of ArrayGraph), list-weight
  * (`insertEdge()` of an edge of ListGraph that is there), list-edge
  * (`insertEdge()` of a new edge of ListGraph and its `deleteEdge()`) and
- * key (the array of keys of zerocost.h), and the variants plain,
+ * key (the array of keys of zerocost.h), oarray (`set()` of
+ * ObservableArray) and heap (`update()`, `pop()` and `push()` of
+ * IndexedDaryHeap, one change being the three), and the variants plain,
  * observable (`Observable< G >`, nobody listening), observable-excl
  * (`Observable< G , O >`, O wanting only the insertions of nodes), and,
  * with Modification.h, none, static-excl, static-count and dynamic [see
@@ -267,6 +269,96 @@ long long keys( const std::string & var , long long n )
 
 #endif
 
+/// the workload heap on the variant var: the n0 ids of a heap pushed, then
+/// n changes each made of an update of a key, a pop and the push of the
+/// id popped
+template< class H >
+long long heapCase( H & h , long long n )
+{
+ const auto P = weightOps();
+ for( int u = 0 ; u < N ; ++u )
+  h.push( u , 1000 + u );
+ loop( [ & ]( const Op & o ) {
+  h.update( o.u , int( o.w ) + 1 );
+  const auto e = h.pop();
+  h.push( e.id , e.key + int( o.w % 7 ) ); } , P , n );
+ long long s = 0;
+ while( ! h.empty() )
+  s += h.pop().key;
+ return( s );
+ }
+
+long long heap( const std::string & var , long long n )
+{
+ if( var == "plain" ) {
+  Heap h( N );
+  return( heapCase( h , n ) );
+  }
+#ifdef ZC_EMITTERS
+ if( var == "static-excl" ) {
+  HeapExcluding x;
+  ADS::IndexedDaryHeap< int , 4 , ADS::Static< HeapExcluding > > h( N , x );
+  return( heapCase( h , n ) + x.n );
+  }
+ if( var == "static-count" ) {
+  HeapCountDecreases x;
+  ADS::IndexedDaryHeap< int , 4 , ADS::Static< HeapCountDecreases > > h( N ,
+                                                                        x );
+  return( heapCase( h , n ) + x.n );
+  }
+ if( var == "dynamic" ) {
+  ADS::IndexedDaryHeap< int , 4 , ADS::Dynamic<> > h( N );
+  return( heapCase( h , n ) );
+  }
+#endif
+ std::fprintf( stderr , "no variant %s\n" , var.c_str() );
+ std::exit( 2 );
+ }
+
+#ifdef ZC_EMITTERS
+
+/// the workload oarray on the variant var
+long long oarray( const std::string & var , long long n )
+{
+ const auto P = weightOps();
+ auto run = [ & ]( auto & a ) {
+  loop( [ & ]( const Op & o ) { a.set( std::size_t( o.u ) , int( o.w ) ); } ,
+        P , n );
+  long long s = 0;
+  for( int u = 0 ; u < N ; ++u )
+   s += a[ std::size_t( u ) ];
+  return( s );
+  };
+ if( var == "plain" ) {
+  struct { std::vector< int > k = std::vector< int >( N );
+           void set( std::size_t h , int x ) { k[ h ] = x; }
+           int operator[]( std::size_t h ) const { return( k[ h ] ); } } a;
+  return( run( a ) );
+  }
+ if( var == "none" ) {
+  OArray< ADS::NoObservers > a( N );
+  return( run( a ) );
+  }
+ if( var == "static-excl" ) {
+  ArrayExcluding x;
+  OArray< ADS::Static< ArrayExcluding > > a( N , 0 , x );
+  return( run( a ) + x.n );
+  }
+ if( var == "static-count" ) {
+  ArrayCountDecreases x;
+  OArray< ADS::Static< ArrayCountDecreases > > a( N , 0 , x );
+  return( run( a ) + x.n );
+  }
+ if( var == "dynamic" ) {
+  OArray< ADS::Dynamic<> > a( N );
+  return( run( a ) );
+  }
+ std::fprintf( stderr , "no variant %s\n" , var.c_str() );
+ std::exit( 2 );
+ }
+
+#endif
+
 }  // end( namespace )
 
 int main( int argc , char ** argv )
@@ -285,6 +377,12 @@ int main( int argc , char ** argv )
 #ifdef ZC_POLICIES
  else if( work == "key" )
   s = keys( var , n );
+#endif
+ else if( work == "heap" )
+  s = heap( var , n );
+#ifdef ZC_EMITTERS
+ else if( work == "oarray" )
+  s = oarray( var , n );
 #endif
  else {
   std::fprintf( stderr , "no workload %s\n" , work.c_str() );

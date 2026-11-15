@@ -693,11 +693,13 @@ The public members of `IndexedDaryHeap` are the following:
 
 ```cpp
 // declarations of <ADS/priority/IndexedDaryHeap.h>
-template< class K , unsigned D = 4 > class IndexedDaryHeap {
+template< class K , unsigned D = 4 , class Policy = NoObservers >
+class IndexedDaryHeap {
  public:
  struct Entry { K key; int id; };
  using Handle = int;
- explicit IndexedDaryHeap( int n = 0 );
+ template< class ... O >
+ explicit IndexedDaryHeap( int n = 0 , O & ... o );
  void reset( int n );
  void grow( int n );
  int ids( void ) const;
@@ -717,6 +719,10 @@ template< class K , unsigned D = 4 > class IndexedDaryHeap {
  Handle insert( int id , const K & k );
  int min( void ) const;
  int deleteMin( void );
+ Subject & subject( void );
+ template< class O >
+ int attach( O & o ) requires( Subject::dynamic );
+ void detach( int id ) requires( Subject::dynamic );
  };
 ```
 
@@ -753,7 +759,11 @@ algorithms of [chapter 14](14-graph.md#ch-14) run on it unchanged (test
 `engineered_graph.indexed-dary-heap`). A search may also need to take a
 node out of its frontier, or to make it worse when a bound prunes it,
 which `erase()` and `increase()` do (test
-`engineered_search.indexed-heap-erase`).
+`engineered_search.indexed-heap-erase`). The last parameter, `Policy`, is
+the subject policy of [§1.13](01-introduction.md#sec-1-13), by which the
+heap tells its insertions, erasures and changes of key, and on demand the
+moves of its items ([§1.15.1](01-introduction.md#sec-1-15-1)); with
+`NoObservers`, the default, its code is that of the plain heap.
 
 Some searches choose a node by one key and must know at each moment the
 least of a second key over the whole frontier. A bounded suboptimal search

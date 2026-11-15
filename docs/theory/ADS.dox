@@ -15,14 +15,15 @@
  is and what its axioms say (see \ref theory_ADS_notation and
  \ref theory_ADS_adt), what a contract is and why each kind of contract is
  checked at its own level (see \ref theory_ADS_contracts), and the categories
- of the iterators with the cost of their steps (see \ref theory_ADS_iterators),
- while the arithmetic of the portable primitives (see
- \ref theory_ADS_portable) and the typed modifications by which a structure
- tells its observers what changed (see \ref theory_ADS_modifications) and
- the capabilities that an algorithm may ask of a structure (see
- \ref theory_ADS_capabilities) close the page. The algorithms of the
- iterators have their pseudocode on the page of `Iterators.h`, in the
- comment of their function.
+ of the iterators with the cost of their steps (see
+ \ref theory_ADS_iterators), while the arithmetic of the portable primitives
+ (see \ref theory_ADS_portable) and the typed modifications by which a
+ structure tells its observers what changed (see
+ \ref theory_ADS_modifications) and the capabilities that an algorithm may ask
+ of a structure (see \ref theory_ADS_capabilities), and the algebra by which
+ an aggregate chooses its update rule (see \ref theory_ADS_algebra) close the
+ page. The algorithms of the iterators have their pseudocode on the page of
+ `Iterators.h`, in the comment of their function.
 
  \tableofcontents
 
@@ -545,11 +546,76 @@
  skipped without counting; the additions and the decreases are the calls
  of the prototype, the same in both. \f$ \square \f$
 
+ \section theory_ADS_algebra The algebra of the aggregates
+
+ A structure that keeps an aggregate, i.e., the combination
+ \f$ a_1 \oplus \cdots \oplus a_n \f$ of some values by an associative
+ operation with an identity \f$ e \f$ (the prefix sums of an array, the
+ aggregate of a window, the augmentation of a tree), must update it when a
+ value enters, leaves or changes, and the cheapest rule depends on the
+ algebra of \f$ \oplus \f$, not on the structure. `Algebra.h` names the
+ algebras by concepts on static members of the type `G` that defines
+ \f$ \oplus \f$: a `Monoid` has `identity()` and `combine()`; a
+ `CommutativeMonoid` declares `commutative`; a `Group` has `inverse()`; a
+ `Selective` monoid declares `selective`, the promise that
+ \f$ a \oplus b \in \{ a , b \} \f$; an `Action` of maps on a monoid has the
+ identity map, the composition and the application of a map to the
+ aggregate of \f$ n \f$ values, the ingredients of the lazy updates of a
+ range. The flags are opt-ins, since no syntax shows that an operation
+ commutes or selects, and the existing augmentations of `JoinTree`, which
+ have `identity()`, `from()` and `combine()`, are monoids as they are. The
+ concepts do not prove the laws, which the tests check on the algebras of
+ ADS (the sums, the minima, the maxima) and on an operation that does not
+ commute for each concept that does not require it.
+
+ <b>Lemma 3.</b> <em>Let \f$ c = x \oplus a \oplus y \f$ be an aggregate in
+ which the value \f$ a \f$ is replaced by \f$ b \f$, and
+ \f$ c' = x \oplus b \oplus y \f$. (i) In an abelian group,
+ \f$ c' = c \oplus a^{-1} \oplus b \f$. (ii) In a commutative monoid, if
+ \f$ b = a \oplus d \f$ then \f$ c' = c \oplus d \f$. (iii) In a group, if
+ \f$ x = e \f$ then \f$ c' = b \oplus a^{-1} \oplus c \f$; if \f$ y = e \f$,
+ \f$ c' = c \oplus a^{-1} \oplus b \f$. (iv) In a selective monoid, the
+ aggregate of any values is one of them, or \f$ e \f$ if there is
+ none.</em>
+
+ <em>Proof.</em> (i) By commutativity \f$ c = a \oplus x \oplus y \f$, so
+ that \f$ c \oplus a^{-1} \oplus b = a \oplus a^{-1} \oplus x \oplus y
+ \oplus b = x \oplus b \oplus y \f$. (ii) \f$ c \oplus d = x \oplus y \oplus
+ a \oplus d = x \oplus ( a \oplus d ) \oplus y \f$. (iii) With
+ \f$ x = e \f$, \f$ b \oplus a^{-1} \oplus c = b \oplus a^{-1} \oplus a
+ \oplus y = b \oplus y \f$, and symmetrically with \f$ y = e \f$, by
+ associativity alone. (iv) By induction on the number of operands, each
+ combination being one of its two operands. \f$ \square \f$
+
+ Lemma 3 is the dispatch of the structures: (i) is the update of a prefix
+ sum by its difference (`Fenwick`, see \ref theory_sequence_fenwick) and
+ the free partial retroactivity of an abelian group, (ii) the `add()` of a
+ commutative monoid (a maximum raised), (iii) the removal of the first
+ value of a window and the insertion of the last (subtract-on-evict, see
+ \ref theory_queue_sliding), which needs no commutativity, and (iv) the
+ monotone deque of a window of minima. A monoid with none of these
+ properties can only recombine the parts that the change touched, which
+ the structures do in \f$ O( \log n ) \f$ combinations (a tree) or in
+ \f$ O( 1 ) \f$ amortized (two stacks). When the values are not exact
+ (`exact_v` false, i.e., floating point) the inverse of (i) and (iii)
+ does not undo the rounding of the combination, and a group aggregate
+ drifts; the structures then recompute it from the values every
+ `period()` updates, at \f$ O( 1 ) \f$ amortized cost when the period is at
+ least the number of values, and their audits catch a drift beyond the
+ tolerance of a test.
+
  \section theory_ADS_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 3 and 4,
       https://algoritmicamente.it/materiali/libro/capitoli/cap03.pdf and
       https://algoritmicamente.it/materiali/libro/capitoli/cap04.pdf
+ \see K. Tangwongsan, M. Hirzel, S. Schneider, In-order sliding-window
+      aggregation in worst-case constant time, The VLDB Journal 30(6),
+      933-957, 2021, doi:10.1007/s00778-021-00668-3
+ \see M. Budiu, T. Chajed, F. McSherry, L. Ryzhyk, V. Tannen, DBSP:
+      automatic incremental view maintenance for rich query languages,
+      Proceedings of the VLDB Endowment 16(7), 1601-1614, 2023,
+      doi:10.14778/3587136.3587137
  \see B. Liskov, S. Zilles, Programming with abstract data types, ACM
       SIGPLAN Notices 9(4), 50-59, 1974, doi:10.1145/942572.807045
  \see D. L. Parnas, On the criteria to be used in decomposing systems into
