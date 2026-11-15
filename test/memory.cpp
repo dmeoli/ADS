@@ -3,8 +3,9 @@
 /*--------------------------------------------------------------------------*/
 /** @file
  * Tests of the engineered memory beyond the arena and the pool: the large
- * blocks kept by a thread for the requests of the same size, and the
- * allocator by size classes, at the level 3 of the contracts.
+ * blocks kept by a thread for the requests of the same size, the allocator
+ * by size classes and the segments of the heap of pages, at the level 3 of
+ * the contracts; the plain operator new is replaced, to count its calls.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -20,10 +21,14 @@
 
 #include "ADS/memory/HugePageAllocator.h"
 #include "ADS/memory/ObjectPool.h"
+#include "ADS/memory/PageHeap.h"
 #include "ADS/memory/SizeClassAllocator.h"
 
+#include <atomic>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <new>
 #include <memory>
 #include <string>
 #include <random>
@@ -37,6 +42,40 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 /*--------------------------------------------------------------------------*/
 
 using namespace ADS;
+
+namespace {
+
+/// whether the calls of the plain operator new are counted, and how many
+std::atomic< bool > countNews{ false };
+std::atomic< long > news{ 0 };
+
+}  // end( namespace )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE OPERATOR NEW -------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+// the plain operator new on malloc(), its calls counted on demand, and the
+// two deletes that go with it; the aligned ones are those of the library
+
+void * operator new( std::size_t n )
+{
+ if( countNews.load( std::memory_order_relaxed ) )
+  news.fetch_add( 1 , std::memory_order_relaxed );
+ if( void * p = std::malloc( n ? n : 1 ) )
+  return( p );
+ throw( std::bad_alloc() );
+ }
+
+void operator delete( void * p ) noexcept
+{
+ std::free( p );
+ }
+
+void operator delete( void * p , std::size_t ) noexcept
+{
+ std::free( p );
+ }
 
 namespace {
 
@@ -173,6 +212,27 @@ ADS_TEST( "pool-raw-slots" )
  P.free( c );
  CHECK( P.size() == 0 );
  CHECK_THROWS( P.deallocate( nullptr ) , contract_violation );
+ }
+
+// the vector of the segments of a PageHeap grows by doubling: 16 segments
+// cut into pages of the largest class, 8 slots each, take fewer than 8
+// allocations of the vector (5 for the room of 1, 3, 7, 15 and 31
+// segments), where a growth by one place took 16
+ADS_TEST( "page-heap-segments" )
+{
+ constexpr std::size_t C = 1023 , S = 16;
+ auto H = std::make_unique< detail::PageHeap< C > >();
+ const std::size_t slots = S * ( detail::PageHeap< C >::SEGMENT /
+                                 detail::PageHeap< C >::PAGE ) * 8;
+ news = 0;
+ countNews = true;
+ for( std::size_t i = 0 ; i < slots ; ++i )
+  if( ! H->local( C - 1 ) )
+   (void) H->more( C - 1 );
+ countNews = false;
+ CHECK( H->bytes() == S * detail::PageHeap< C >::SEGMENT );
+ CHECK( H->live() == slots );
+ CHECK( news.load() < long( S / 2 ) );
  }
 
 }  // end( namespace )

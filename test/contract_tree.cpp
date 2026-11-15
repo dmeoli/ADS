@@ -322,6 +322,37 @@ ADS_TEST( "b-plus-tree" )
  CHECK( E.size() == 0 && ! E.lookup( 1 ) );
  }
 
+// B+-tree: the shape after each insertion and removal, against std::map,
+// with every leaf but the root holding ceil( m / 2 ) to m pairs, read by
+// levels(), as Lemma 8.52 of the manual proves and shaped() checks
+ADS_TEST( "b-plus-tree-occupancy" )
+{
+ std::mt19937 g( 7 );
+ for( int m = 3 ; m <= 8 ; ++m ) {
+  BPlusTree< int , int > T( m );
+  std::map< int , int > M;
+  for( int op = 0 ; op < 2000 ; ++op ) {
+   const int k = int( g() % 300 );
+   if( g() % 3 ) {
+    T.insert( k , op );
+    M[ k ] = op;
+    }
+   else {
+    T.remove( k );
+    M.erase( k );
+    }
+   T.check();
+   CHECK( T.size() == M.size() );
+   const auto L = T.levels();
+   if( L.size() > 1 )                       // the leaves, not the root
+    for( const auto & leaf : L.back() )
+     CHECK( int( leaf.size() ) >= ( m + 1 ) / 2 &&
+            int( leaf.size() ) <= m );
+   }
+  for( const auto & [ k , v ] : M ) CHECK( T.lookup( k ) == v );
+  }
+ }
+
 // the other trees, each bound just inside and just outside: the B-tree of
 // t = 2 and 1, the d-ary places at the largest i and one past it, the
 // lowest common ancestor of nil, of one node and of two trees, a range

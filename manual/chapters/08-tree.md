@@ -4907,7 +4907,8 @@ children, and the tree is the 2-4 tree of [§8.10](08-tree.md#sec-8-10); in
 general, a node has from $t$ to $2 t$ children, which is the B-tree of [Morin
 2013, §14.2](Z-bibliography.md#ref-morin-cpp) with $B = t$. In `BTree` a node
 holds its keys, its values and its children in three vectors, a leaf having no
-child, and the default degree is $t = 3$.
+child, and the default degree is $t = 3$; `levels()` gives the keys of the
+nodes level by level, the shape that the tests compare with the figures.
 
 <span id="lem-8-73"></span>**Lemma 8.73.** *(The height of a
 B-tree, [Cormen et al. 2009, Theorem 18.1](Z-bibliography.md#ref-cormen2009).)
@@ -5255,8 +5256,8 @@ The share of the separators among the keys thus vanishes as $m$ grows. Its
 iterators are a leaf and a place in it, bidirectional along the list. In
 addition, `levels()` gives the keys of the nodes level by level, the shape
 of figure 6.7 that the tests compare, `check()` verifies the shape whatever
-the level of the contracts (the order and the intervals of the keys, from 1
-to $m$ pairs in a leaf, from $q$ to $m$ children in an internal node but
+the level of the contracts (the order and the intervals of the keys, from $q$
+to $m$ pairs in a leaf and from $q$ to $m$ children in an internal node, both but
 the root, the leaves on one level and their list), and `order()` and
 `size()` give $m$ and $n$. Since the nodes are linked by pointers, the class
 cannot be copied.
@@ -5391,9 +5392,10 @@ book).
 
 With the parameter `R`, each internal node keeps also the number of the pairs
 below each of its children, $\mathit{cnt}[ j ]$. An insertion or a removal
-increments or decrements these counts along its way, and a split, a merge or a
-borrowing counts them again on the nodes it touches, adding for each child
-the counts of its own children (or taking the pairs of a leaf).
+increments or decrements these counts along its way. A split, a merge or a
+borrowing moves the counts with the children it moves, and only the two parts
+of a split are counted again, each as the sum of its own $O( I )$ counts;
+thus each node touched costs $O( I )$ time.
 Then `rank( k )`, the number of the keys smaller than $k$, is the sum of the
 counts of the children before the way down plus the place in the leaf.
 Conversely, the pair of rank $i$ from 0, `select( i )`, goes down to the child
@@ -5427,8 +5429,9 @@ $$
 
 *i.e., at most 6 levels for a million pairs of 64 bits with $L = I = 32$.
 A search, an insertion and a removal read $O( \lambda )$ nodes and take $O(
-( L + I ) \lambda )$ time, plus $O( I^2 )$ for each node above the last
-internal level that a restructuring counts again when `R` is on; `rank()`
+( L + I ) \lambda )$ time, also when `R` is on, since a restructuring moves
+the counts with the children and sums again only the two parts of a split,
+$O( I )$ per node; `rank()`
 and `select()` take $O( I \lambda + L )$, `forRange()` $O( ( L + I )
 \lambda + k )$ for $k$ pairs, and `build()` $O( n )$.*
 
@@ -5482,8 +5485,10 @@ a key in $O( L )$ or $O( I )$ (all the places with the padded keys, or a
 binary search). A split, a merge or a move between two siblings costs $O(
 L )$ or $O( I )$, at most one per level. The climb follows the path of
 the descent, with a sibling per level for a removal. With `R`, the counts of
-the way down change in $O( \lambda )$, and the count of a node of internal
-children adds $O( I )$ counts for each of its $O( I )$ children. The sums
+the way down change in $O( \lambda )$; a merge or a move between two
+siblings carries the counts of the children it moves, and a split sums
+again the $O( I )$ counts of each of its two parts, i.e., $O( I )$ per node
+touched. The sums
 of `rank()` and the scans of `select()` read $O( I )$ counts per level and
 the place in one leaf. Last, `forRange()` adds to `lowerBound()` the steps of
 the iterator, $O( 1 )$ each, since the next leaf is a child of the parent or
@@ -6625,13 +6630,16 @@ everts $u$ and clears the parent of $v$, `lca()` climbs by the depths and
 `aggregate( u , v )` everts $u$ and combines the values from $v$ up to it. Each
 costs the depth of the nodes, as in [Table 8.9](08-tree.md#tab-8-9). In
 `connected( u , v )` the walk keeps the path from $u$ to its root. An evert of
-$u$ that follows with no change in between (e.g., in `link()`, whose
-precondition calls `connected()`) then rewrites the parents from that path, and
-no load of a parent waits for the one before.
+$u$ that follows with no change in between (e.g., in `link( u , v )` after the
+caller has asked `connected( u , v )`) then rewrites the parents from that
+path, and no load of a parent waits for the one before.
 
 Our class counts the steps of its walks, and every 16 operations it updates
 their recent mean per operation, $E \gets \frac34 E + \frac14 g$, $g$ the
-mean of the last group of 16. Its bound of 512 steps is about where an
+mean of the last group of 16. The walks of the preconditions (whether two
+nodes are in one tree, for `link()`, `lca()` and `aggregate()`) are counted
+neither as steps nor as operations, and they keep no path; thus the moment of
+the change below does not depend on the level of the contracts. Its bound of 512 steps is about where an
 operation on the splay trees costs as much as the walks (a few nanoseconds
 a step while the vector stays in the caches of the core, a bound measured).
 Once $E$ exceeds it, and at least 64 operations have been counted, the
@@ -7667,6 +7675,8 @@ template< std::totally_ordered K , class V > class BTree {
   [[nodiscard]] std::size_t size( void ) const;
   [[nodiscard]] bool empty( void ) const;
   [[nodiscard]] int height( void ) const;
+  [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels(
+      void ) const;
   template< class F > void forEach( F && f ) const;
   using value_type = std::pair< const K & , const V & >;
   [[nodiscard]] const_iterator begin( void ) const;
@@ -8462,8 +8472,9 @@ a proof by the lemmas cited.
     2013, exercise 14.1](Z-bibliography.md#ref-morin-cpp)). Solved by
     [Figure 8.56](08-tree.md#fig-8-56); the bottom-up tree is
     checked by `ods_ints.ods.ex14.1.figure`, and the one-pass tree by
-    `ods_trees.ods-ex14.1.btree-one-pass` (its keys, height and
-    invariant, since `BTree` shows no node).
+    `ods_trees.ods-ex14.1.btree-one-pass`, which builds the tree of figure
+    14.2 and compares the shape of each tree, by `levels()`, with the
+    figure.
 91. Show what happens when the keys 3 and then 4 are removed from the same
     B-tree by the removal in one pass ([Morin 2013, exercise
     14.2](Z-bibliography.md#ref-morin-cpp)), and then 5, 0 and 6, so that

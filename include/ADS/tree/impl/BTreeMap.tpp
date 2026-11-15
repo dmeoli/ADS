@@ -80,14 +80,17 @@ inline std::size_t ADS_BTM::total( const void * x , int h )
  }
 
 ADS_BTM_T
-inline void ADS_BTM::recount( Inner * u , int h )
+inline void ADS_BTM::recount( Inner * u , int h , std::uint32_t from ,
+                               std::uint32_t to )
 {
  if constexpr( R )
-  for( std::uint32_t j = 0 ; j <= u->n ; ++j )
+  for( std::uint32_t j = from ; ( j < to ) && ( j <= u->n ) ; ++j )
    u->cnt[ j ] = total( u->c[ j ] , h - 1 );
  else {
   ( void ) u;
   ( void ) h;
+  ( void ) from;
+  ( void ) to;
   }
  }
 
@@ -562,12 +565,16 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   if( u->n < I ) [[likely]] {
    std::move_backward( u->k + i , u->k + u->n , u->k + u->n + 1 );
    std::move_backward( u->c + i + 1 , u->c + u->n + 1 , u->c + u->n + 2 );
+   if constexpr( R )                        // the counts with the children
+    std::copy_backward( u->cnt.begin() + i + 1 ,
+                        u->cnt.begin() + u->n + 1 ,
+                        u->cnt.begin() + u->n + 2 );
    u->k[ i ] = std::move( s );
    u->c[ i + 1 ] = r;
    if( before )
     std::swap( u->c[ i ] , u->c[ i + 1 ] );
    ++u->n;
-   recount( u , f_height - d );
+   recount( u , f_height - d , i , i + 2 ); // only the two parts
    return;
    }
   K t[ I + 1 ];                             // I + 1 keys, I + 2 children
@@ -580,6 +587,14 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   std::copy( u->c + i + 1 , u->c + I + 1 , c + i + 2 );
   if( before )
    std::swap( c[ i ] , c[ i + 1 ] );
+  // and their counts, those of the two parts of the child split summed
+  [[maybe_unused]] std::size_t q[ R ? I + 2 : 1 ];
+  if constexpr( R ) {
+   std::copy( u->cnt.begin() , u->cnt.begin() + i , q );
+   std::copy( u->cnt.begin() + i + 1 , u->cnt.begin() + I + 1 , q + i + 2 );
+   q[ i ] = total( c[ i ] , f_height - d - 1 );
+   q[ i + 1 ] = total( c[ i + 1 ] , f_height - d - 1 );
+   }
   // u keeps m keys, t[ m ] goes up, the new node on its right takes the
   // I - m others; on the edges of the tree u stays almost full, or almost
   // empty, so that the keys inserted in order fill the nodes
@@ -598,8 +613,10 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   std::copy( c , c + m + 1 , u->c );
   u->n = m;
   clean( u->k , m , I );
-  recount( u , f_height - d );
-  recount( w , f_height - d );
+  if constexpr( R ) {
+   std::copy( q + m + 1 , q + I + 2 , w->cnt.begin() );
+   std::copy( q , q + m + 1 , u->cnt.begin() );
+   }
   s = std::move( t[ m ] );
   r = w;
   before = false;
@@ -721,17 +738,22 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   l->k[ l->n ] = std::move( u->k[ a ] );
   std::move( r->k , r->k + r->n , l->k + l->n + 1 );
   std::copy( r->c , r->c + r->n + 1 , l->c + l->n + 1 );
+  if constexpr( R ) {                       // the counts with the children
+   std::copy( r->cnt.begin() , r->cnt.begin() + r->n + 1 ,
+              l->cnt.begin() + l->n + 1 );
+   u->cnt[ a ] += u->cnt[ a + 1 ];
+   std::copy( u->cnt.begin() + a + 2 , u->cnt.begin() + u->n + 1 ,
+              u->cnt.begin() + a + 1 );
+   }
   l->n += 1 + r->n;
   l->next = r->next;
   if( r->next )
    r->next->prev = l;
   free( r );
-  recount( l , f_height - d - 1 );
   std::move( u->k + a + 1 , u->k + u->n , u->k + a );
   std::move( u->c + a + 2 , u->c + u->n + 1 , u->c + a + 1 );
   --u->n;
   clean( u->k , u->n , u->n + 1 );
-  recount( u , f_height - d );
   if( d == 0 ) {
    if( u->n == 0 ) {
     f_root = u->c[ 0 ];
@@ -752,6 +774,14 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   u->k[ a ] = std::move( r->k[ t - 1 ] );
   std::move( r->k + t , r->k + r->n , r->k );
   std::copy( r->c + t , r->c + r->n + 1 , r->c );
+  if constexpr( R ) {                       // the counts with the children
+   const auto b = r->cnt.begin();
+   std::copy( b , b + t , l->cnt.begin() + l->n + 1 );
+   const std::size_t moved = std::accumulate( b , b + t , std::size_t( 0 ) );
+   std::copy( b + t , b + r->n + 1 , b );
+   u->cnt[ a ] += moved;
+   u->cnt[ a + 1 ] -= moved;
+   }
   clean( r->k , r->n - t , r->n );
   l->n += t;
   r->n -= t;
@@ -763,14 +793,21 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   r->k[ t - 1 ] = std::move( u->k[ a ] );
   std::move( l->k + h + 1 , l->k + l->n , r->k );
   std::copy( l->c + h + 1 , l->c + l->n + 1 , r->c );
+  if constexpr( R ) {                       // the counts with the children
+   const auto b = l->cnt.begin();
+   std::copy_backward( r->cnt.begin() , r->cnt.begin() + r->n + 1 ,
+                       r->cnt.begin() + r->n + 1 + t );
+   std::copy( b + h + 1 , b + l->n + 1 , r->cnt.begin() );
+   const std::size_t moved = std::accumulate( b + h + 1 , b + l->n + 1 ,
+                                              std::size_t( 0 ) );
+   u->cnt[ a ] -= moved;
+   u->cnt[ a + 1 ] += moved;
+   }
   u->k[ a ] = std::move( l->k[ h ] );
   clean( l->k , h , l->n );
   l->n = h;
   r->n += t;
   }
- recount( l , f_height - d - 1 );
- recount( r , f_height - d - 1 );
- recount( u , f_height - d );
  }
 
 ADS_BTM_T

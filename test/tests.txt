@@ -428,6 +428,7 @@ beyond  postfix             espressioni postfisse e conversione
 beyond  lifo-fifo-traces    tracce di una pila e di una coda
 beyond  stack-bottom-up     visita di una pila dal fondo
 beyond  queue-algorithms    positivi di una coda, coda senza doppi
+beyond  unique-queue-one-scan coda senza doppi, una sola scansione
 beyond  sieve               crivello di Eratostene su un insieme
 beyond  sorted-array-dictionary dizionario su vettore ordinato
 
@@ -454,6 +455,7 @@ sorting  learned-sort        modello della CDF, ripiego, -0, NaN, code
 
 # the structures and the algorithms of Knuth's TAOCP, beyond the book
 taocp  knuth-searches        ricerca di Fibonacci e binaria uniforme
+taocp  fibonacci-search-count confronti contati della ricerca di Fibonacci
 taocp  balanced-trees        AVL, B-tree, skip list, treap, splay
 taocp  splay-tree-values     splay tree di valori senza costruttore
 taocp  tries                 trie e Patricia
@@ -586,12 +588,14 @@ engineered_queues  stealable-pq-bound-threads bound minimo con i ladri
 memory  huge-page-cache       blocchi grandi tenuti per la stessa misura
 memory  size-class-allocator  allocatore per classi di misura
 memory  pool-raw-slots        posti del pool senza costruzione
+memory  page-heap-segments    segmenti dello heap di pagine, per raddoppio
 
 # the engineered paths of the rearrangements, beyond the book
 sequences  dutch-flag-branchless  bandiera olandese senza salti
 sequences  k-sorted-sift          k-ordinato con un setaccio per elemento
 sequences  merge-sort-appender    merge sort naturale accodando in fondo
 sequences  list-sort              lista ordinata ricollegando le celle
+sequences  list-sort-comparisons  confronti del taglio in corse, n - 1
 sequences  tiered-vector          vettore a blocchi circolari
 sequences  small-vector           vettore con posto per N elementi dentro
 
@@ -613,6 +617,7 @@ hashing  flat-try-emplace      try_emplace delle mappe piatte
 
 # the engineered ordered structures, beyond the book
 ordered  btree-map            B+-albero in memoria, nodi di 512 byte
+ordered  btree-map-counts     conteggi dei figli del B+-albero in memoria
 ordered  static-search        S+-albero di Slotin, ricerca senza salti
 ordered  pgm-index            indice PGM di Ferragina e Vinciguerra
 ordered  pgm-compressed       PGM compresso, pendenze condivise ed Elias-Fano
@@ -669,6 +674,7 @@ lib_optimization  catalan              numeri di Catalan
 lib_search  local-optima        picco e minimo locale di vettore e albero
 lib_search  exponential-search  ricerca esponenziale e su sequenza illimitata
 lib_search  integer-sqrt        radice quadrata intera e quadrati perfetti
+lib_search  integer-sqrt-bool   radice quadrata intera di un bool
 lib_search  sorted-searches     minimo ruotato, valore vicino, coppia, k-esimo
 lib_search  rearrangements      bandiera olandese, wiggle, k-ordinato, scambi
 lib_search  sequence-queries    minori a destra, finestra, buco, assegnamento
@@ -1685,6 +1691,7 @@ contract_string       matching             ricerca di stringhe, capitolo 13
 contract_string       other-strings        prefissi, suffissi, parentesi
 
 contract_tree         b-plus-tree          B+-albero, capitolo 6
+contract_tree         b-plus-tree-occupancy  foglie del B+-albero piene a metà
 contract_tree         binary-tree          albero binario, capitolo 5
 contract_tree         parent-tree          vettore dei padri, capitolo 5
 contract_tree         search-tree          ABR e Red-Black, capitolo 6
@@ -1829,6 +1836,7 @@ engineered_dynamic  reopt-lazy             coda pigra, soglia del ricalcolo
 engineered_dynamic  assignment             ungherese, riottimizzazione per righe
 engineered_dynamic  reopt-assignment       assegnamento sul grafo osservabile
 engineered_dynamic  link-cut-tree          link-cut tree contro un vettore di padri
+engineered_dynamic  link-cut-tree-contracts  link-cut tree, contratti non contati
 engineered_dynamic  rollback-union-find    union-find con rollback
 engineered_dynamic  offline-connectivity   connettività dinamica offline
 
@@ -1978,6 +1986,7 @@ ods_trees  ods7.2.treap-exercises              ex. 7.8, 7.10, 7.12, 7.13
 ods_trees  ods-ex7.6.hashed-treap              priorities by hashing
 ods_trees  ods-ex7.9.finger-treap              finger search in a treap
 ods_trees  ods-ex7.11.treap-list               TreapList
+ods_trees  absorb-default-seeds                absorb() with a seed per list
 ods_trees  ods-ex7.14.randomized-bst           Martinez-Roura trees
 ods_trees  ods8.1.scapegoat                    section 8.1, ScapegoatTree
 ods_trees  ods-ex8.1.scapegoat-figure          ex. 8.1, figure 8.1, no rebuild

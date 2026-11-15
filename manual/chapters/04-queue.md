@@ -703,8 +703,7 @@ is an equivalence, then after any sequence of operations no two items of a
 `UniqueQueue` are equal, the items leave in the order of their first
 arrival (`IGNORE_NEW`) or of their last one (`FORGET_OLD`), among those
 still in the queue, and the item of `enqueue(v)` is in the queue afterwards.
-An `enqueue()` makes at most $n$ comparisons with `IGNORE_NEW` and at most
-$2 n - 1$ with `FORGET_OLD`, `contains()` at most $n$, and `dequeue()`,
+An `enqueue()` and a `contains()` make at most $n$ comparisons, and `dequeue()`,
 `top()` and `size()` take $O( 1 )$ time.*
 
 *Proof.* By induction on the operations, the empty queue having no item.
@@ -717,14 +716,13 @@ change, and the item kept is the one of the first arrival, or of the last.
 A `dequeue()` removes the first item of the list. As for the comparisons,
 the scan of line 2 compares $v$ with the items from the front up to the
 copy, or with all of them, i.e., at most $n$ times; with `FORGET_OLD` the
-code, after removing the copy, enqueues $v$ again by the same procedure,
-whose scan compares it with the $n - 1$ items left. On the `List` of the
+code, after removing the copy, appends $v$ with no other scan, since no item
+left is equal to it. On the `List` of the
 items, a removal at a position and an append take $O( 1 )$ time.
 $\square$
 
 The scan stops at the copy, and when a copy is in the queue at a place
-drawn uniformly it makes about $n / 2$ comparisons on average, plus $n - 1$
-with `FORGET_OLD`. Note that the invariant that no item occurs twice (an
+drawn uniformly it makes about $n / 2$ comparisons on average. Note that the invariant that no item occurs twice (an
 $O( n^2 )$ check of the contracts) requires the equality of the items to be
 an equivalence.
 An item unequal to itself, such as a NaN, would be enqueued again at each

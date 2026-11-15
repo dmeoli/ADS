@@ -322,9 +322,10 @@ bool BPlusTree< K , V >::shaped( const Node * u , const K * lo ,
   if( ( lo && ! ( *lo < x ) ) || ( hi && ( *hi < x ) ) )
    return( false );                      // within their interval
  if( u->is_leaf ) {
-  if( ( ( u != f_root ) && u->k.empty() ) ||
+  if( ( int( u->k.size() ) < ( u == f_root ? 0 : ( f_m + 1 ) / 2 ) ) ||
       ( int( u->k.size() ) > f_m ) || ( u->k.size() != u->v.size() ) )
-   return( false );                      // 1 to m keys, one value each
+   return( false );                      // ceil( m / 2 ) to m keys, but
+                                         // in the root, one value each
   if( depth < 0 )
    depth = d;
   else if( depth != d )

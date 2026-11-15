@@ -2724,6 +2724,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   small tables, which fell below it past about 2^12 places, so that the
   hypothesis of their analysis holds at every size
 
+- BTree had no read-only view of its nodes, so that the test of exercises
+  14.1 and 14.2 of Morin checked only the keys and the height, on a tree
+  built from the keys 0 to 23 in order, which is not that of his figure
+  14.2; levels() now gives the keys of the nodes level by level, as that of
+  BlockBTree and BPlusTree, and the test ods_trees
+  ods-ex14.1.btree-one-pass builds the tree of figure 14.2 and compares
+  each tree with figures 8.56 to 8.58 of the manual, as exercises 90 and 91
+  of chapter 8 say
+
+- listSort() compared again, at the start of each run, the first two items
+  that the test of the direction of the run had compared, n comparisons on
+  a sorted or reversed list of n items and n - 1 + r on r runs; each pair
+  of adjacent items is now compared once, n - 1 in all, as Lemma 2.13 of the
+  manual and the header say; the test sequences list-sort-comparisons
+
+- TreapList and SkipListSequence took the seed 1 by default, so that the
+  lists of one item made with it had all the same priority or level, and
+  absorb() of n of them gave a treap of depth n and a skip list of 2
+  levels; the default seed is now one per instance, the count of the
+  instances made mixed by splitmix64 (detail::instanceSeed() of
+  RandomHashing.h), a seed given still making the shape reproducible, as
+  the headers and chapter 2 of the manual say; the test ods_trees
+  absorb-default-seeds
+
+- the preconditions of LinkCutTree::link(), lca() and aggregate() called
+  connected(), whose walks on the vector of parents were counted as steps
+  and as an operation, so that the moment of the change to the splay trees
+  depended on the level of the contracts; they now ask joined(), two walks
+  counted neither way and keeping no path, as the header and chapter 8 of
+  the manual say; the test engineered_dynamic link-cut-tree-contracts
+
+- BTreeMap with the ranks recounted every child of a node after a split, a
+  merge or a borrow, each count the sum of the counts of the child, O( I^2 )
+  time per node above the last internal level; the counts now move with
+  their children, and only the two parts of a split are summed again, O( I
+  ) per node, with the same counts; build() keeps its recount, once per
+  node; the test ordered btree-map-counts checks the ranks and the
+  selections on a tree of at least 4 levels
+
+- the invariant of BPlusTree, shaped(), took from 1 to m pairs in a leaf
+  but the root, weaker than the ceil( m / 2 ) that the insertion and the
+  removal keep and Lemma 8.52 of the manual proves; it now checks the
+  bound proved, as the header and chapter 8 say; the test contract_tree
+  b-plus-tree-occupancy checks the leaves after each operation
+
+- PageHeap reserved one more place in the vector of its segments before
+  each new segment, so that the s-th segment copied the s - 1 addresses
+  before it, a quadratic cost in all; the room now doubles when the vector
+  is full, still reserved before the segment is allocated, fewer than 2 s
+  copies for s segments, as chapter 5 of the manual says; the test memory
+  page-heap-segments counts the allocations of the vector
+
+- UniqueQueue< T , FORGET_OLD >::enqueue() of an item already in the queue
+  removed the old copy and called itself, which scanned the list a second
+  time, up to 2 n - 1 comparisons; the item, now the only copy, goes to the
+  back with no second scan, at most n comparisons, as chapter 4 of the
+  manual says; the test beyond unique-queue-one-scan counts them
+
+- fibonacciSearch() did not count in *cmp the test of the last item left
+  after its loop, so that the search of a vector of one item reported 0
+  comparisons; the test is now counted, and the bound of about 1.44 log2 n
+  comparisons of the header and of chapter 6 of the manual still holds; the
+  test taocp fibonacci-search-count
+
+- integerSqrt() of a bool, an unsigned type of 1 bit for which the binary
+  search started with hi = 1 and made no step, gave 0 for true and failed
+  its postcondition, and isPerfectSquare( true ) was false; a bool is now
+  its own root and both values are squares, as the header says; the test
+  lib_search integer-sqrt-bool
+
 - offlineConnectivity() no longer asks the nodes of a COMPONENTS question,
   which it does not use, to lie in [ 0 , n ), so that it answers 0 with no
   nodes rather than failing its precondition; the test engineered_dynamic

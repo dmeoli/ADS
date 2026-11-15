@@ -666,7 +666,9 @@
  fastest of all, an evert being the reversal of a short path: so
  `LinkCutTree` starts as that vector, keeps the path of its last walk from
  a node for an evert of that node that follows (no load of a parent then
- waits for the one before), and counts the steps of its walks; once their
+ waits for the one before), and counts the steps of its walks (those of
+ its preconditions apart, so that the level of the contracts changes
+ nothing); once their
  recent mean exceeds a bound, about where the constant of the splay trees
  is paid back, it turns into splay trees in \f$ O( n ) \f$, every node a
  splay tree of its own whose path-parent is its parent, and stays so. The

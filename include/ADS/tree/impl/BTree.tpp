@@ -244,6 +244,27 @@ int BTree< K , V >::height( void ) const
  }
 
 template< std::totally_ordered K , class V >
+std::vector< std::vector< std::vector< K > > >
+BTree< K , V >::levels( void ) const
+{
+ std::vector< std::vector< std::vector< K > > > out;
+ std::vector< const Node * > L;
+ if( f_root )
+  L.push_back( f_root.get() );
+ while( ! L.empty() ) {
+  out.emplace_back();
+  std::vector< const Node * > N;
+  for( const Node * u : L ) {
+   out.back().push_back( u->k );
+   for( const auto & c : u->c )
+    N.push_back( c.get() );
+   }
+  L = std::move( N );
+  }
+ return( out );
+ }
+
+template< std::totally_ordered K , class V >
 template< class F >
 void BTree< K , V >::forEach( F && f ) const
 {

@@ -1174,6 +1174,27 @@ ADS_TEST( "link-cut-tree" )
   }
  }
 
+// the change of a LinkCutTree to the splay trees does not depend on the
+// level of the contracts: on a path built by links, lca( n - 1 , 0 ), whose
+// precondition asks whether the two nodes are in one tree, walks the path
+// once as findRoot( 0 ) does, and the two trees take the splay trees after
+// the same number of calls
+ADS_TEST( "link-cut-tree-contracts" )
+{
+ const int n = 1000;
+ LinkCutTree<> A( n ) , B( n );
+ for( int v = 1 ; v < n ; ++v ) {          // v - 1 under v: a path, the
+  A.link( v - 1 , v );                     // root n - 1
+  B.link( v - 1 , v );
+  }
+ CHECK( ! A.splayed() && ! B.splayed() );
+ for( int i = 0 ; i < 400 ; ++i ) {
+  CHECK( A.findRoot( 0 ) == n - 1 && B.lca( n - 1 , 0 ) == n - 1 );
+  CHECK( A.splayed() == B.splayed() );
+  }
+ CHECK( A.splayed() );
+ }
+
 ADS_TEST( "rollback-union-find" )
 {
  RollbackUnionFind U( 0 );

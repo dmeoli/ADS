@@ -268,7 +268,8 @@ template< std::size_t C >
 typename PageHeap< C >::Page * PageHeap< C >::fresh( std::size_t c )
 {
  if( f_page == f_last ) {                   // a new segment
-  f_segments.reserve( f_segments.size() + 1 );
+  if( f_segments.size() == f_segments.capacity() )   // its place first,
+   f_segments.reserve( 2 * f_segments.size() + 1 );  // doubling the room
   char * s = HugePageAllocator< char >().allocate( SEGMENT );
   f_segments.push_back( s );
   f_page = s;

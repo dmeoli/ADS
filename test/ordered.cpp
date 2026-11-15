@@ -146,6 +146,40 @@ void against( std::mt19937 & g , int ops , int u )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
+// the counts of the children of a tree of 4 places per node and at least
+// 4 levels, kept by moving them with the children in the splits, the
+// merges and the borrows: the rank and the selection of every key against
+// std::map after each insertion and removal, the invariant checking the
+// counts as well
+ADS_TEST( "btree-map-counts" )
+{
+ std::mt19937 g( 37 );
+ BTreeMap< int , int , std::less< int > , 16 , true > T;
+ std::map< int , int > M;
+ int tallest = 0;
+ for( int op = 0 ; op < 6000 ; ++op ) {
+  const int k = int( g() % 2000 );
+  if( g() % 4 ) {
+   T.insert( k , op );
+   M[ k ] = op;
+   }
+  else {
+   CHECK( T.remove( k ) == ( M.erase( k ) == 1 ) );
+   }
+  tallest = std::max( tallest , T.height() );
+  if( op % 97 == 0 ) {
+   std::size_t r = 0;
+   for( const auto & [ x , v ] : M ) {
+    CHECK( T.rank( x ) == r );
+    CHECK( ( *T.select( r ) ).first == x );
+    ++r;
+    }
+   CHECK( T.select( r ) == T.end() );
+   }
+  }
+ CHECK( tallest >= 4 && T.size() == M.size() );
+ }
+
 // the B+-tree against std::map on random operations (with the ranks and
 // the selections of the counted tree too), with nodes of 4
 // places (every operation splits or merges) and of the default size, on

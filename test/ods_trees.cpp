@@ -52,6 +52,7 @@
 
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -932,6 +933,58 @@ ADS_TEST( "ods-ex7.11.treap-list" )
  CHECK_THROWS( L.add( ref.size() + 1 , 0 ) , contract_violation );
  }
 
+namespace {
+
+/// the depth of the subtree of the node `x` of a TreapList
+int treapDepth( const auto * x )
+{
+ if( ! x )
+  return( 0 );
+ using S = TreapList< int >::Shape;
+ return( 1 + std::max( treapDepth( S::left( x ) ) ,
+                       treapDepth( S::right( x ) ) ) );
+ }
+
+}  // end( namespace )
+
+// a TreapList and a SkipListSequence that absorb n lists of one item, each
+// made with its default seed: the seeds differ from list to list, so that
+// the treap keeps a logarithmic depth and the skip list about log2 n
+// levels, where one seed for all gave a path of depth n and 2 levels; the
+// same seed given twice gives the same shape
+ADS_TEST( "absorb-default-seeds" )
+{
+ const int n = 2000;
+ TreapList< int > T;
+ SkipListSequence< int > K;
+ for( int i = 0 ; i < n ; ++i ) {
+  TreapList< int > t;
+  t.push_back( i );
+  T.absorb( t );
+  SkipListSequence< int > k;
+  k.push_back( i );
+  K.absorb( k );
+  }
+ std::vector< int > want( n );
+ std::iota( want.begin() , want.end() , 0 );
+ CHECK( std::vector< int >( T.begin() , T.end() ) == want );
+ for( int i = 0 ; i < n ; i += 7 ) CHECK( K.get( i ) == i );
+ CHECK( treapDepth( TreapList< int >::Shape::root( T ) ) <=
+        6 * std::bit_width( unsigned( n ) ) );
+ CHECK( K.levels() >= 6 );
+ TreapList< int > A( 9 ) , B( 9 );
+ SkipListSequence< int > C( 9 ) , D( 9 );
+ for( int i = 0 ; i < 100 ; ++i ) {
+  A.push_back( i );
+  B.push_back( i );
+  C.push_back( i );
+  D.push_back( i );
+  }
+ CHECK( treapDepth( TreapList< int >::Shape::root( A ) ) ==
+        treapDepth( TreapList< int >::Shape::root( B ) ) &&
+        C.levels() == D.levels() );
+ }
+
 ADS_TEST( "ods-ex7.14.randomized-bst" )
 {
  RandomizedSearchTree< int , int > T( 3 );
@@ -1506,37 +1559,83 @@ ADS_TEST( "ods-ex9.3.red-black-remove-figure" )
  }
 
 // ods ex 14.1 and 14.2 on BTree, the insertion and the removal in one
-// pass: the class shows no node, and the test checks the height, the keys
-// and, at the contract level 3, the invariant of the B-tree after each
-// step, on the keys 0, ..., 23 of figure 14.2 (figures 8.56 to 8.58 of the
-// manual)
+// pass, on the B-tree of figure 14.2, built by insertions and the removal
+// of 24, which merges two internal nodes: the shape of each tree by
+// levels(), those of figures 8.56 to 8.58 of the manual, with the keys and,
+// at the contract level 3, the invariant of the B-tree after each step
 ADS_TEST( "ods-ex14.1.btree-one-pass" )
 {
+ using Shape = std::vector< std::vector< std::vector< double > > >;
  auto keys = []( const BTree< double , int > & t ) {
   std::vector< double > k;
   for( const auto & [ x , v ] : t )
    k.push_back( x );
   return( k );
   };
- BTree< double , int > t( 2 );
- for( int k = 0 ; k < 24 ; ++k )
-  t.insert( k , k );
+ auto figure = []( BTree< double , int > & t ) {   // figure 14.2
+  for( double k : { 3 , 10 , 14 , 1 , 5 , 0 , 12 , 16 , 13 , 6 , 7 , 4 , 8 ,
+                    9 , 2 , 17 , 20 , 15 , 21 , 22 , 23 , 11 , 18 , 19 ,
+                    24 } )
+   t.insert( k , int( k ) );
+  const Shape built = { { { 10 , 17 } } , { { 3 , 6 } , { 14 } , { 21 } } ,
+                        { { 0 , 1 , 2 } , { 4 , 5 } , { 7 , 8 , 9 } ,
+                          { 11 , 12 , 13 } , { 15 , 16 } , { 18 , 19 , 20 } ,
+                          { 22 , 23 , 24 } } };
+  CHECK( t.levels() == built );
+  t.remove( 24 );                          // [14], 17 and [21] merged
+  };
+ const Shape fig = { { { 10 } } , { { 3 , 6 } , { 14 , 17 , 21 } } ,
+                     { { 0 , 1 , 2 } , { 4 , 5 } , { 7 , 8 , 9 } ,
+                       { 11 , 12 , 13 } , { 15 , 16 } , { 18 , 19 , 20 } ,
+                       { 22 , 23 } } };
+ const std::vector< Shape > grown = {     // figure 8.56
+  { { { 10 } } , { { 1 , 3 , 6 } , { 14 , 17 , 21 } } ,
+    { { 0 } , { 1.5 , 2 } , { 4 , 5 } , { 7 , 8 , 9 } , { 11 , 12 , 13 } ,
+      { 15 , 16 } , { 18 , 19 , 20 } , { 22 , 23 } } } ,
+  { { { 3 , 10 } } , { { 1 } , { 6 , 8 } , { 14 , 17 , 21 } } ,
+    { { 0 } , { 1.5 , 2 } , { 4 , 5 } , { 7 , 7.5 } , { 9 } ,
+      { 11 , 12 , 13 } , { 15 , 16 } , { 18 , 19 , 20 } , { 22 , 23 } } } };
+ const std::vector< Shape > shrunk = {    // figures 8.57 and 8.58
+  { { { 10 } } , { { 2 , 6 } , { 14 , 17 , 21 } } ,
+    { { 0 , 1 } , { 4 , 5 } , { 7 , 8 , 9 } , { 11 , 12 , 13 } ,
+      { 15 , 16 } , { 18 , 19 , 20 } , { 22 , 23 } } } ,
+  { { { 10 } } , { { 2 , 6 } , { 14 , 17 , 21 } } ,
+    { { 0 , 1 } , { 5 } , { 7 , 8 , 9 } , { 11 , 12 , 13 } , { 15 , 16 } ,
+      { 18 , 19 , 20 } , { 22 , 23 } } } ,
+  { { { 10 } } , { { 1 , 6 } , { 14 , 17 , 21 } } ,
+    { { 0 } , { 2 } , { 7 , 8 , 9 } , { 11 , 12 , 13 } , { 15 , 16 } ,
+      { 18 , 19 , 20 } , { 22 , 23 } } } ,
+  { { { 10 } } , { { 6 } , { 14 , 17 , 21 } } ,
+    { { 1 , 2 } , { 7 , 8 , 9 } , { 11 , 12 , 13 } , { 15 , 16 } ,
+      { 18 , 19 , 20 } , { 22 , 23 } } } ,
+  { { { 14 } } , { { 2 , 10 } , { 17 , 21 } } ,
+    { { 1 } , { 7 , 8 , 9 } , { 11 , 12 , 13 } , { 15 , 16 } ,
+      { 18 , 19 , 20 } , { 22 , 23 } } } };
  std::vector< double > want( 24 );
  std::iota( want.begin() , want.end() , 0.0 );
- CHECK( keys( t ) == want );
- const int h = t.height();
- for( double k : { 1.5 , 7.5 } ) {
+ BTree< double , int > t( 2 );
+ figure( t );
+ CHECK( ( t.levels() == fig ) && ( keys( t ) == want ) &&
+        ( t.height() == 2 ) );
+ std::vector< double > w = want;
+ for( std::size_t s = 0 ; s < 2 ; ++s ) {
+  const double k = s == 0 ? 1.5 : 7.5;
   t.insert( k , 0 );
-  want.insert( std::lower_bound( want.begin() , want.end() , k ) , k );
-  CHECK( ( keys( t ) == want ) && ( t.height() >= h ) &&
-         ( t.height() <= h + 1 ) );
+  w.insert( std::lower_bound( w.begin() , w.end() , k ) , k );
+  CHECK( ( t.levels() == grown[ s ] ) && ( keys( t ) == w ) );
   }
- for( double k : { 3.0 , 4.0 , 5.0 , 0.0 , 6.0 } ) {
-  t.remove( k );
-  want.erase( std::lower_bound( want.begin() , want.end() , k ) );
-  CHECK( ( keys( t ) == want ) && ! t.contains( k ) &&
-         ( t.size() == want.size() ) );
+ BTree< double , int > r( 2 );             // figure 14.2 again
+ figure( r );
+ w = want;
+ const double out[] = { 3 , 4 , 5 , 0 , 6 };
+ for( std::size_t s = 0 ; s < 5 ; ++s ) {
+  r.remove( out[ s ] );
+  w.erase( std::lower_bound( w.begin() , w.end() , out[ s ] ) );
+  CHECK( ( r.levels() == shrunk[ s ] ) && ( keys( r ) == w ) &&
+         ! r.contains( out[ s ] ) && ( r.size() == w.size() ) );
   }
+ const BTree< double , int > e( 2 );
+ CHECK( e.levels().empty() );
  }
 
 /*--------------------------------------------------------------------------*/

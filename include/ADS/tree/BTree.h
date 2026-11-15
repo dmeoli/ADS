@@ -233,6 +233,12 @@ class BTree {
  /// the height, 0 for a single leaf, -1 if empty
  [[nodiscard]] int height( void ) const;
 
+ /// the keys of the nodes, level by level from the root, each level from
+ /// left to right: the shape of the tree, as in the figures of the books,
+ /// by a visit in breadth, no level if empty
+ [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels( void )
+  const;
+
  /// `f( k , v )` on the pairs by increasing keys
  ///
  /// In pseudocode (the symmetric visit of section 6.1 of the book, on the

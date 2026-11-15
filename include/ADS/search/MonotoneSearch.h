@@ -127,7 +127,8 @@ template< class G , class P >
 std::size_t unboundedSearch( G && get , P && pred );
 
 /// the largest \f$ r \f$ with \f$ r^2 \le n \f$, by a binary search with no
-/// overflow; \f$ w / 2 \f$ steps for \f$ w \f$ bits
+/// overflow; \f$ w / 2 \f$ steps for \f$ w \f$ bits, none for a `bool`,
+/// which is its own root
 ///
 /// In pseudocode (Esercizi Divide-et-impera of the book), the invariant
 /// being \f$ \mathit{lo}^2 \le n < \mathit{hi}^2 \f$:

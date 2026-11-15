@@ -25,7 +25,9 @@
  * \f$ O( \log n ) \f$ expected time, while a vector would move
  * \f$ \Theta( n ) \f$ items. A node is one block of memory, its item and the
  * tower of its links, as in `SkipList`; the generator is `SplitMix64` [see
- * `RandomHashing.h`], seeded.
+ * `RandomHashing.h`], seeded by default with a seed of its own per list, so
+ * that the lists absorbed one into another do not repeat their levels; a
+ * seed given makes them reproducible.
  *
  * Where it is meant to be faster than the `SkiplistList` of Morin, for the
  * benchmarks to check: his node is three blocks of memory (the node, the
@@ -97,8 +99,9 @@ class SkipListSequence {
 
  using Item = T;    ///< the type of the items
 
- /// the empty sequence, its levels drawn by a generator from the seed
- explicit SkipListSequence( std::uint64_t seed = 1 );
+ /// the empty sequence, its levels drawn by a generator from the seed, by
+ /// default one of its own [see `detail::instanceSeed()`]
+ explicit SkipListSequence( std::uint64_t seed = detail::instanceSeed() );
 
  /// no copy, since the nodes are linked by pointers
  SkipListSequence( const SkipListSequence & ) = delete;

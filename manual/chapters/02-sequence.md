@@ -2023,7 +2023,12 @@ each link a pointer and its width side by side. A step of a search thus
 reads one line of cache, where Morin's node, made of three blocks (the
 node, the array of the successors and that of the widths), may need three.
 Also, the widths are words, not `int` (a list may then pass $2^{31}$ items), and
-the levels come from a seeded `SplitMix64` instead of `rand()`. The class
+the levels come from a seeded `SplitMix64` instead of `rand()`. By default
+each list takes a seed of its own, $\mathrm{splitmix64}( c )$ for the number
+$c$ of the lists made before it (`detail::instanceSeed()`), since the lists of
+one item made with one seed would all have the same level, and their
+absorption into one list would leave it with two levels, i.e., a search of
+$\Theta( n )$ steps; a seed given makes the levels reproducible. The class
 also has `insert()`, `erase()`, `operator[]`, `push_back()`, `size()` and
 the iterators; its invariant, an $O( n \log n )$ check at the level 3 of
 the contracts, is that the widths of each level sum to $n + 1$ and that
@@ -2038,7 +2043,7 @@ template< class T >
 class SkipListSequence {
  public:
   using Item = T;
-  explicit SkipListSequence( std::uint64_t seed = 1 );
+  explicit SkipListSequence( std::uint64_t seed = detail::instanceSeed() );
   std::size_t size( void ) const;
   bool empty( void ) const;
   int levels( void ) const;
@@ -2116,7 +2121,10 @@ Morin gives no code for it. In ours, a node holds the item, a priority, a
 size and two links in one block of memory, and a search reads one node per
 level of the tree, i.e., $O( \log n )$ expected nodes, each on one line of
 cache, as the search of the skip list does. Its priorities come from a
-seeded `SplitMix64`, and the invariant, an $O( n )$ check at the level 3, is
+seeded `SplitMix64`, by default with a seed of its own per sequence, as for
+`SkipListSequence` (with one seed for all, the joins of the treaps of one
+item would make a path of depth $n$), and the invariant, an $O( n )$ check at
+the level 3, is
 the heap order of the priorities and the sizes. The class has the operations
 of `SkipListSequence` (`get()`, `set()`, `add()`, `remove()`, `read()`,
 `insert()`, `erase()`, `push_back()`, `truncate()`, `absorb()` and
@@ -2131,7 +2139,7 @@ template< class T >
 class TreapList {
  public:
   using Item = T;
-  explicit TreapList( std::uint64_t seed = 1 );
+  explicit TreapList( std::uint64_t seed = detail::instanceSeed() );
   std::size_t size( void ) const;
   bool empty( void ) const;
   const T & get( std::size_t i ) const;

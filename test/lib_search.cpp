@@ -260,6 +260,15 @@ ADS_TEST( "integer-sqrt" )
  CHECK( isPerfectSquare( 0xFFFFFFFE00000001ull ) );
  }
 
+// integerSqrt() and isPerfectSquare() of a bool, an unsigned type of 1 bit
+// for which the search has no step: the root of each value is itself, and
+// both values are squares
+ADS_TEST( "integer-sqrt-bool" )
+{
+ CHECK( integerSqrt( false ) == false && integerSqrt( true ) == true );
+ CHECK( isPerfectSquare( false ) && isPerfectSquare( true ) );
+ }
+
 // rotatedMinimum() on every rotation of random strictly increasing vectors
 // against std::min_element, with at most ceil( log2 n ) comparisons;
 // closestValue() against a scan, first place and smaller item on ties, on

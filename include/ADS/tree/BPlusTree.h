@@ -46,9 +46,10 @@
  * vanishes as \f$ m \f$ grows (the last point of the exercise).
  *
  * The contracts [see `Contract.h`]: the order is \f$ m > 2 \f$, as the book
- * requires, and the invariant is the shape of the tree, checked after each
- * insertion [see `shaped()`]. The operations are defined in
- * `BPlusTree.tpp`.
+ * requires, and the invariant is the shape of the tree, at least
+ * \f$ \lceil m / 2 \rceil \f$ pairs in a leaf but the root, checked after
+ * each insertion and removal [see `shaped()`]. The operations are defined
+ * in `BPlusTree.tpp`.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 6.3,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap06.pdf
@@ -412,8 +413,10 @@ class BPlusTree {
  /// \f$ m + 1 \f$ children
  void up( Node * f , Node * g , const K & s );
 
- /// the shape: the keys in order and in their intervals, the number of
- /// children, the leaves on one level and linked in order, \f$ O( n ) \f$
+ /// the shape: the keys in order and in their intervals, the pairs of a
+ /// leaf and the children of an internal node, at least
+ /// \f$ \lceil m / 2 \rceil \f$ but in the root and at most \f$ m \f$,
+ /// the leaves on one level and linked in order, \f$ O( n ) \f$
  [[nodiscard]] bool shaped( void ) const;
 
  /// the shape of the subtree of \f$ u \f$, its keys in

@@ -64,6 +64,7 @@
 #include "ADS/Contract.h"
 
 #include <array>
+#include <atomic>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
@@ -142,6 +143,22 @@ class SplitMix64 {
  private:
  std::uint64_t f_s;   ///< the state
  };
+
+namespace detail {
+
+/// a seed for each call, \f$ \mathrm{splitmix64}( c ) \f$ of the number
+/// \f$ c \f$ of the calls before it: the default seed of the sequences that
+/// draw their shape [see `TreapList` and `SkipListSequence`], distinct for
+/// the instances made one after another, so that one of them absorbing the
+/// others does not find their priorities or levels repeated, and the same
+/// in every run that makes them in the same order
+inline std::uint64_t instanceSeed( void )
+{
+ static std::atomic< std::uint64_t > c{ 0 };
+ return( splitmix64( c.fetch_add( 1 , std::memory_order_relaxed ) ) );
+ }
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS ZobristTable ----------------------------*/

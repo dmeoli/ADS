@@ -414,6 +414,34 @@ void tiered( unsigned seed , int steps , unsigned ins , Make && make )
         std::equal( A.begin() , A.end() , R.begin() , R.end() ) );
  }
 
+// the comparisons of listSort(): the cut into runs compares each pair of
+// adjacent items once, n - 1 in all, so that a sorted, a reversed and an
+// all-equal list of n items, a single run, cost n - 1, and the audit of
+// the contracts n - 1 more
+ADS_TEST( "list-sort-comparisons" )
+{
+ struct Item {
+  int v;
+  };
+ long c = 0;
+ const auto less = [ & ]( const Item & a , const Item & b ) {
+  ++c;
+  return( a.v < b.v );
+  };
+ const long passes = ADS_CONTRACTS >= 3 ? 2 : 1;   // the cut, the audit
+ for( long n = 0 ; n <= 40 ; ++n )
+  for( int order = 0 ; order < 3 ; ++order ) {
+   List< Item > L;
+   for( long i = 0 ; i < n ; ++i )         // rising, falling, all equal
+    L.push_back( Item{ order == 0 ? int( i ) : order == 1 ? int( n - i ) :
+                       7 } );
+   c = 0;
+   listSort( L , less );
+   const long cut = n > 1 ? n - 1 : 0;
+   CHECK( c == passes * cut );
+   }
+ }
+
 // the tiered vector against std::vector: random insertions, removals and
 // reads that grow it past the sizes where the blocks double (64, 128,
 // 256 items) and shrink it back, on integers and strings; the edge cases:
