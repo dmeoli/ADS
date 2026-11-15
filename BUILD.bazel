@@ -12,7 +12,11 @@ load("@rules_cc//cc:cc_library.bzl", "cc_library")
 
 cc_library(
     name = "ads",
-    hdrs = glob(["include/ADS/**/*.h"]),
+    # the interoperation with LEMON, which needs LEMON, is left out
+    hdrs = glob(
+        ["include/ADS/**/*.h"],
+        exclude = ["include/ADS/interop/lemon/**"],
+    ),
     copts = select({
         "@rules_cc//cc/compiler:msvc-cl": ["/std:c++20"],
         "//conditions:default": ["-std=c++20"],

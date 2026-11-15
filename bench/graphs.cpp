@@ -50,11 +50,13 @@
  *   Graph Library has no Eulerian trail);
  * - matching, maxCardinalityMatching(), the blossoms of Edmonds, on the
  *   unoriented graphs (G( n , 4 n ), grids, R-MAT), against
- *   edmonds_maximum_cardinality_matching() of the Boost Graph Library on
- *   its adjacency_list;
+ *   MaxMatching of LEMON (with LEMON=1 or ADS_WITH_LEMON) on a SmartGraph
+ *   and edmonds_maximum_cardinality_matching() of the Boost Graph Library
+ *   on its adjacency_list;
  * - wmatching, maxWeightMatching(), the primal-dual blossoms, on G( n , 4 n )
  *   unoriented with n / 50 nodes and costs in [ 1 , 10^5 ], against
- *   maximum_weighted_matching() of the Boost Graph Library;
+ *   MaxWeightedMatching of LEMON and maximum_weighted_matching() of the
+ *   Boost Graph Library;
  * - union-find, n random merges and n finds on each MFSET;
  * - grid-bfs and grid-dijkstra, distance() and shortestPaths() on an
  *   IndexedDaryHeap of arity 4 on a square map of about n cells, a fifth
@@ -117,6 +119,13 @@
 #include "ADS/priority/IndexedDaryHeap.h"
 #include "ADS/priority/PairingHeap.h"
 #include "ADS/queue/ArrayQueue.h"
+
+#if __has_include( <lemon/matching.h> ) && \
+    ( defined( ADS_HAS_LEMON ) || defined( ADS_WITH_LEMON ) )
+ #include <lemon/matching.h>
+ #include <lemon/smart_graph.h>
+ #define ADS_LEMON_MATCHING 1
+#endif
 
 #if __has_include( <boost/graph/compressed_sparse_row_graph.hpp> )
  #include <boost/property_map/property_map.hpp>
@@ -1156,6 +1165,22 @@ void matching( const std::string & c , int n0 , int r , unsigned seed )
  const auto A = arcs( I );
  const auto E = edgesOf( I , A );
  Cell C( "matching" , c , std::size_t( n ) , E.size() , r );
+#ifdef ADS_LEMON_MATCHING
+ if( measured( { "LEMON MaxMatching" } ) ) {
+  lemon::SmartGraph G;
+  for( int u = 0 ; u < n ; ++u )
+   G.addNode();
+  for( const auto & [ u , v , w ] : E )
+   G.addEdge( G.nodeFromId( u ) , G.nodeFromId( v ) );
+  C( "LEMON MaxMatching" , [ & ]( Counts & k ) {
+   lemon::MaxMatching< lemon::SmartGraph > M( G );
+   M.run();
+   const long long s = M.matchingSize();
+   k = { { "matched" , 2 * s } };
+   return( s );
+   } );
+  }
+#endif
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost adjacency_list edmonds" } ) ) {
   using BG =
@@ -1201,6 +1226,24 @@ void wmatching( int n , int r , unsigned seed )
    k = { { "edges" , ( long long )M.second.size() } };
    return( M.first );
    } );
+#ifdef ADS_LEMON_MATCHING
+ if( measured( { "LEMON MaxWeightedMatching" } ) ) {
+  lemon::SmartGraph G;
+  lemon::SmartGraph::EdgeMap< long long > W( G );
+  for( int u = 0 ; u < n ; ++u )
+   G.addNode();
+  for( const auto & [ u , v , w ] : L )
+   W.set( G.addEdge( G.nodeFromId( u ) , G.nodeFromId( v ) ) , w );
+  C( "LEMON MaxWeightedMatching" , [ & ]( Counts & k ) {
+   lemon::MaxWeightedMatching< lemon::SmartGraph ,
+			       lemon::SmartGraph::EdgeMap< long long > >
+     M( G , W );
+   M.run();
+   k = { { "edges" , ( long long )M.matchingSize() } };
+   return( ( long long )M.matchingWeight() );
+   } );
+  }
+#endif
 #ifdef ADS_HAS_BOOST
  if( measured( { "Boost adjacency_list" } ) ) {
   using BG = boost::adjacency_list<

@@ -10,7 +10,9 @@
 #    ADS::Boost when it was built on GMP, on a CBLAS and on Boost, which are  #
 #    then the components GMP, BLAS and Boost of find_package(ADS COMPONENTS   #
 #    ...), and it finds again the threads, OpenMP, oneTBB and MPI when ADS    #
-#    was built with their executors.                                          #
+#    was built with their executors; the component LEMON, ADS::LEMON, when    #
+#    ADS was built with it and LEMON is found again (find_package(ADS         #
+#    COMPONENTS LEMON) requires it).                                          #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #
@@ -70,6 +72,38 @@ endif ()
 # ----- Import target ------------------------------------------------------- #
 if (NOT TARGET ADS::ADS)
     include("${ADS_CMAKE_DIR}/ADSTargets.cmake")
+endif ()
+
+# the component LEMON, if ADS was built with it and LEMON is found again
+set(ADS_LEMON_FOUND FALSE)
+if (@ADS_USE_LEMON@)
+    set(ADS_LEMON_HINTS "@ADS_LEMON_HINTS@")
+    include("${ADS_CMAKE_DIR}/ADSLemon.cmake")
+    if (ADS_LEMON_FOUND AND NOT TARGET ADS::LEMON)
+        include("${ADS_CMAKE_DIR}/ADSLemonTargets.cmake")
+        # the warm start, written from the LEMON found here, first on the
+        # include path
+        include("${ADS_CMAKE_DIR}/ADSLemonShim.cmake")
+        set(ADS_LEMON_SHIM_DIR ${CMAKE_BINARY_DIR}/ads-lemon-shim)
+        set(_ads_src "${PACKAGE_PREFIX_DIR}/@CMAKE_INSTALL_INCLUDEDIR@")
+        ads_lemon_shim(${ADS_LEMON_SHIM_DIR} ${LEMON_INCLUDE_DIR}
+                       "${_ads_src}/ADS/interop/lemon/shim"
+                       ADS_LEMON_SHIM_FOUND)
+        unset(_ads_src)
+        if (ADS_LEMON_SHIM_FOUND)
+            get_target_property(_ads_inc ADS::LEMON
+                                INTERFACE_INCLUDE_DIRECTORIES)
+            if (NOT _ads_inc)
+                set(_ads_inc "")
+            endif ()
+            set_target_properties(ADS::LEMON PROPERTIES
+                    INTERFACE_INCLUDE_DIRECTORIES
+                    "${ADS_LEMON_SHIM_DIR};${_ads_inc}")
+            set_property(TARGET ADS::LEMON APPEND PROPERTY
+                         INTERFACE_COMPILE_DEFINITIONS ADS_LEMON_SHIM)
+            unset(_ads_inc)
+        endif ()
+    endif ()
 endif ()
 
 set(ADS_LIBRARIES ADS::ADS)

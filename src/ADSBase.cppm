@@ -535,6 +535,7 @@ using ADS::universalSink;
 using ADS::DequeFrontier;
 using ADS::Frontier;
 using ADS::FrontierCounts;
+using ADS::FrontierQueue;
 using ADS::PriorityFrontier;
 using ADS::PrototypeFrontier;
 using ADS::QueueFrontier;
@@ -832,7 +833,9 @@ using ADS::MeldableHeap;
 // priority/PriorityQueue.h
 using ADS::AddressablePriorityQueue;
 using ADS::PriorityQueue;
+using ADS::queue_decrease;
 using ADS::queue_deleteMin;
+using ADS::queue_handle_t;
 using ADS::queue_insert;
 using ADS::queue_item_t;
 using ADS::queue_min;

@@ -32,5 +32,6 @@ class Ads(CMakePackage):
             self.define("ADS_WITH_GMP", False),
             self.define("ADS_WITH_BLAS", False),
             self.define("ADS_WITH_BOOST", False),
+            self.define("ADS_WITH_LEMON", False),
             self.define("ADS_WITH_MPI", False),
         ]

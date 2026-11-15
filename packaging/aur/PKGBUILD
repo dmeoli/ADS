@@ -15,14 +15,14 @@ build() {
   cmake -S "ADS-$pkgver" -B build -DCMAKE_INSTALL_PREFIX=/usr \
     -DCMAKE_BUILD_TYPE=None -DADS_BUILD_TESTS=OFF \
     -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF -DADS_WITH_BOOST=OFF \
-    -DADS_WITH_MPI=OFF
+    -DADS_WITH_LEMON=OFF -DADS_WITH_MPI=OFF
   cmake --build build
 }
 
 check() {
   cmake -S "ADS-$pkgver" -B build-check -DCMAKE_BUILD_TYPE=None \
     -DADS_BUILD_TESTS=ON -DADS_WITH_GMP=OFF -DADS_WITH_BLAS=OFF \
-    -DADS_WITH_BOOST=OFF -DADS_WITH_MPI=OFF
+    -DADS_WITH_BOOST=OFF -DADS_WITH_LEMON=OFF -DADS_WITH_MPI=OFF
   cmake --build build-check
   ctest --test-dir build-check --output-on-failure
 }

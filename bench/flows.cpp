@@ -60,7 +60,8 @@
 #include <utility>
 #include <vector>
 
-#if __has_include( <lemon/preflow.h> ) && defined( ADS_HAS_LEMON )
+#if __has_include( <lemon/preflow.h> ) && \
+    ( defined( ADS_HAS_LEMON ) || defined( ADS_WITH_LEMON ) )
  #include <lemon/preflow.h>
  #include <lemon/smart_graph.h>
  #define ADS_LEMON_FLOW 1

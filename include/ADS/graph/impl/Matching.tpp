@@ -842,11 +842,86 @@ bipartiteBMatching( const std::vector< std::vector< int > > & A , int nr ,
  return( M );
  }
 
+#if defined( ADS_MATCHING_LEMON ) && ADS_MATCHING_LEMON
+
+namespace detail
+{
+
+/// the mates of maxCardinalityMatching() by the MaxMatching of LEMON, on
+/// a copy of the graph whose nodes are the names
+template< Graph G >
+std::vector< int > lemonCardinalityMatching( const G & g )
+{
+ const int n = g.bound();
+ ::lemon::SmartGraph L;
+ L.reserveNode( n );
+ for( int u = 0 ; u < n ; ++u )
+  L.addNode();
+ for( int u = 0 ; u < n ; ++u )
+  if( g.hasNode( u ) )
+   g.forEachAdj( u , [ & ]( int v ) {
+    if( u < v )
+     L.addEdge( L.nodeFromId( u ) , L.nodeFromId( v ) );
+    } );
+ ::lemon::MaxMatching< ::lemon::SmartGraph > M( L );
+ M.run();
+ std::vector< int > mate( std::size_t( n ) , NIL );
+ for( int u = 0 ; u < n ; ++u ) {
+  const auto v = M.mate( L.nodeFromId( u ) );
+  if( v != ::lemon::INVALID )
+   mate[ std::size_t( u ) ] = L.id( v );
+  }
+ return( mate );
+ }
+
+/// the matching of maxWeightMatching() by the MaxWeightedMatching of LEMON,
+/// on the edges of positive weight: its weight and its places in E
+template< class W >
+std::pair< W , std::vector< std::size_t > >
+lemonWeightMatching( int n ,
+		     const std::vector< std::tuple< int , int , W > > & E )
+{
+ ::lemon::SmartGraph L;
+ L.reserveNode( n );
+ for( int u = 0 ; u < n ; ++u )
+  L.addNode();
+ ::lemon::SmartGraph::EdgeMap< W > w( L );
+ std::vector< std::size_t > id;  // the place of each edge of L
+ for( std::size_t e = 0 ; e < E.size() ; ++e ) {
+  const auto & [ u , v , c ] = E[ e ];
+  ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) );
+  if( W( 0 ) < c ) {  // the others never help
+   w.set( L.addEdge( L.nodeFromId( u ) , L.nodeFromId( v ) ) , c );
+   id.push_back( e );
+   }
+  }
+ ::lemon::MaxWeightedMatching< ::lemon::SmartGraph ,
+			       ::lemon::SmartGraph::EdgeMap< W > >
+   M( L , w );
+ M.run();
+ std::vector< std::size_t > S;
+ W total( 0 );
+ for( ::lemon::SmartGraph::EdgeIt e( L ) ; e != ::lemon::INVALID ; ++e )
+  if( M.matching( e ) ) {
+   S.push_back( id[ std::size_t( L.id( e ) ) ] );
+   total += w[ e ];
+   }
+ std::sort( S.begin() , S.end() );
+ return( std::pair( total , S ) );
+ }
+
+}  // end( namespace detail )
+
+#endif
+
 template< Graph G >
 std::vector< int > maxCardinalityMatching( const G & g )
 {
  ADS_PRE( ! g.directed() );
  const int n = g.bound();
+#if defined( ADS_MATCHING_LEMON ) && ADS_MATCHING_LEMON
+ std::vector< int > mate = detail::lemonCardinalityMatching( g );
+#else
  const detail::Rows< G > A( g );
  detail::CardinalityBlossom< G > S( A , n );
  for( int u = 0 ; u < n ; ++u )  // a greedy matching
@@ -862,12 +937,14 @@ std::vector< int > maxCardinalityMatching( const G & g )
  for( int r = 0 ; r < n ; ++r )
   if( g.hasNode( r ) && ( S.mate[ r ] == NIL ) && ! S.dead[ r ] )
    S.search( r );
+ std::vector< int > mate = std::move( S.mate );
+#endif
  ADS_AUDIT( [ & ]( void ) {
   for( int u = 0 ; u < n ; ++u ) {
-   const int v = S.mate[ u ];
+   const int v = mate[ u ];
    if( v == NIL )
     continue;
-   if( ! g.hasNode( u ) || ( v < 0 ) || ( v >= n ) || ( S.mate[ v ] != u ) )
+   if( ! g.hasNode( u ) || ( v < 0 ) || ( v >= n ) || ( mate[ v ] != u ) )
     return( false );
    bool edge = false;
    g.forEachAdj( u , [ & ]( int x ) { edge = edge || ( x == v ); } );
@@ -876,7 +953,7 @@ std::vector< int > maxCardinalityMatching( const G & g )
    }
   return( true );
   }() );
- return( std::move( S.mate ) );
+ return( mate );
  }
 
 template< class W >
@@ -887,19 +964,26 @@ maxWeightMatching( int n ,
 		   bool maxCardinality )
 {
  ADS_PRE( n >= 0 );
- detail::WeightedBlossom< W > B( n , E , maxCardinality );
- B.solve();
- if constexpr( std::is_integral_v< W > )
-  ADS_AUDIT( B.optimal() );
  std::vector< std::size_t > M;
  W total( 0 );
- for( int v = 0 ; v < n ; ++v )
-  if( ( B.mate[ v ] != -1 ) && ( ( B.mate[ v ] & 1 ) == 1 ) ) {
-   const int k = B.mate[ v ] / 2;  // v is the first end of edge k
-   M.push_back( B.id[ k ] );
-   total += std::get< 2 >( B.E[ k ] );
-   }
- std::sort( M.begin() , M.end() );
+#if defined( ADS_MATCHING_LEMON ) && ADS_MATCHING_LEMON
+ if( ! maxCardinality )
+  std::tie( total , M ) = detail::lemonWeightMatching( n , E );
+ else
+#endif
+ {
+  detail::WeightedBlossom< W > B( n , E , maxCardinality );
+  B.solve();
+  if constexpr( std::is_integral_v< W > )
+   ADS_AUDIT( B.optimal() );
+  for( int v = 0 ; v < n ; ++v )
+   if( ( B.mate[ v ] != -1 ) && ( ( B.mate[ v ] & 1 ) == 1 ) ) {
+    const int k = B.mate[ v ] / 2;  // v is the first end of edge k
+    M.push_back( B.id[ k ] );
+    total += std::get< 2 >( B.E[ k ] );
+    }
+  std::sort( M.begin() , M.end() );
+  }
  ADS_AUDIT( [ & ]( void ) {
   std::vector< bool > end( n , false );
   for( std::size_t e : M ) {

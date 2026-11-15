@@ -14,6 +14,9 @@
 #        concurrent and parallel structures, the executors, the distributed   #
 #        layer, the typed modifications and the observers;                    #
 #      - core, the infrastructure that the two include;                       #
+#      - interop, the interoperation with other libraries (interop/), in      #
+#        no entry point and no module: a program includes each of them        #
+#        next to the headers of the other library;                            #
 #      - both, the headers with a part of each set, until it is split off.    #
 #                                                                             #
 #    A line "<header> <set> [?<macro>] [<reason>]" gives the set of a header  #
@@ -25,7 +28,8 @@
 #    which is otherwise an error of ads_sets.py: the entry point of the set   #
 #    then pulls that header, without exporting its names from the module.     #
 #    A header of advanced includes those of base freely, since it extends     #
-#    them. A new header is added here before anything else is run.            #
+#    them, and one of interop includes any other; no other set includes       #
+#    one of interop. A new header is added here before anything else is run.  #
 # --------------------------------------------------------------------------- #
 
 ADT.h                                 base
@@ -193,13 +197,19 @@ intractable/FifteenPuzzle.h           base
 intractable/Heuristics.h              base
 intractable/Pseudopolynomial.h        base
 
-interop/boost/Dijkstra.h              advanced ?ADS_WITH_BOOST
-interop/boost/FromBGL.h               advanced ?ADS_WITH_BOOST
-interop/boost/Graph.h                 advanced ?ADS_WITH_BOOST
-interop/boost/Heap.h                  advanced ?ADS_WITH_BOOST
-interop/boost/Iterator.h              advanced ?ADS_WITH_BOOST
-interop/std/FlatMap.h                 advanced
-interop/std/Pmr.h                     advanced
+interop/boost/Dijkstra.h              interop  with ADS_WITH_BOOST
+interop/boost/FromBGL.h               interop  with ADS_WITH_BOOST
+interop/boost/Graph.h                 interop  with ADS_WITH_BOOST
+interop/boost/Heap.h                  interop  with ADS_WITH_BOOST
+interop/boost/Iterator.h              interop  with ADS_WITH_BOOST
+interop/lemon/Digraphs.h              interop  with ADS_WITH_LEMON
+interop/lemon/Heaps.h                 interop  with ADS_WITH_LEMON
+interop/lemon/Maps.h                  interop  with ADS_WITH_LEMON
+interop/lemon/Observers.h             interop  with ADS_WITH_LEMON
+interop/lemon/Parallel.h              interop  with ADS_WITH_LEMON
+interop/lemon/Warm.h                  interop  with ADS_LEMON_SHIM
+interop/std/FlatMap.h                 interop
+interop/std/Pmr.h                     interop
 
 memory/Allocators.h                   base
 memory/Arena.h                        advanced

@@ -27,6 +27,10 @@
 #                                  to the headers of Boost [see               #
 #                                  PointerTable.h, FlatHashTable.h,           #
 #                                  SmallVector.h and RandomGenerators.h]      #
+#           $(ADS_WITH_LEMON)    = the same for the interoperation with LEMON #
+#                                  [see include/ADS/interop/lemon], whose     #
+#                                  flags go in $(ADSLEMONINC) alone, so that  #
+#                                  only who asks for them includes LEMON      #
 #           $(ADS_WITH_OPENMP)   = 1 for the executor of OpenMP [see          #
 #                                  OpenMPExecutor.h]                          #
 #           $(ADS_WITH_TBB)      = 1 for the executor of oneTBB [see          #
@@ -37,8 +41,8 @@
 #                                  and the runtime over the processes of MPI  #
 #                                  [see include/ADS/distributed], the         #
 #                                  options of MPI asked to $(MPICXX)          #
-#           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(OpenMP_ROOT),         #
-#           $(TBB_ROOT), $(FastFlow_ROOT),                                    #
+#           $(GMP_ROOT), $(BLAS_ROOT), $(Boost_ROOT), $(LEMON_ROOT),          #
+#           $(OpenMP_ROOT), $(TBB_ROOT), $(FastFlow_ROOT),                    #
 #           $(MPI_ROOT)          = where the libraries are, see               #
 #                                  extlib/makefile-paths (GMP=<prefix>,       #
 #                                  BLAS=<prefix> and BOOST=<prefix> on the    #
@@ -55,6 +59,13 @@
 #           $(ADSGMPON), $(ADSBLASON), $(ADSBOOSTON), $(ADSMPION) = 1 if the  #
 #                                  backend of GMP, of the CBLAS, of Boost, of #
 #                                  MPI is on                                  #
+#           $(ADSLEMONINC)       = -DADS_WITH_LEMON and the flags of LEMON,   #
+#                                  if found, for the programs that use it,    #
+#                                  with those of its warm start               #
+#           $(ADSLEMONH)         = the headers of LEMON rewritten for the     #
+#                                  warm start, unless ADS_LEMON_WARM=0, which #
+#                                  the programs that use LEMON depend on      #
+#           $(ADSLEMONON)        = 1 if LEMON is on                           #
 #                                                                             #
 ###############################################################################
 
@@ -143,6 +154,45 @@ ifeq ($(ADSBOOSTON),1)
     ADSINC += -DADS_WITH_BOOST $(libBoostINC)
 endif
 
+# LEMON, for the interoperation with it: the same, its flags apart
+ADS_WITH_LEMON ?= auto
+ifdef LEMON
+    LEMON_ROOT = $(filter-out 1,$(LEMON))
+endif
+ADSLEMONINC :=
+ifneq ($(ADS_WITH_LEMON),0)
+    include $(ADSSDR)/extlib/makefile-libLEMON
+    ADSLEMONON := $(strip $(if $(filter auto,$(ADS_WITH_LEMON)),\
+	$(libLEMONFOUND),$(filter 1,$(ADS_WITH_LEMON))))
+endif
+ifeq ($(ADSLEMONON),1)
+    ADSLEMONINC := -DADS_WITH_LEMON $(libLEMONINC)
+endif
+
+# the warm start of the algorithms of LEMON [see
+# include/ADS/interop/lemon/Warm.h], unless ADS_LEMON_WARM=0: private copies
+# of some of its headers in $(ADSODR)/lemon-shim, rewritten by
+# include/ADS/interop/lemon/shim/rewrite.awk with the rules of rewrites.txt
+# there, the same as the CMake build, put on the include path before LEMON;
+# a header is not written, and the build stops, if a line of its rules is
+# not there exactly once. $(ADSLEMONH) are the headers written, which the
+# programs that use LEMON depend on.
+ADS_LEMON_WARM ?= 1
+ADSLEMONH :=
+ifeq ($(ADSLEMONON)$(ADS_LEMON_WARM),11)
+    ADSLEMONSHIM := $(ADSODR)/lemon-shim
+    ADSLEMONSRC := $(ADSSDR)/include/ADS/interop/lemon/shim
+    # the directory of the headers of LEMON, where the rules read them
+    ADSLEMONDIR := $(patsubst %/lemon/core.h,%,$(firstword $(wildcard \
+	$(addsuffix /lemon/core.h,$(if $(libLEMONBSCDIR),\
+	$(libLEMONBSCDIR)/include,/usr/local/include /usr/include)))))
+    ADSLEMONH := $(addprefix $(ADSLEMONSHIM)/lemon/,$(sort $(shell \
+	awk -F'|' '!/^$(ADShash)/ && NF > 2 { print $$1 }' \
+	$(ADSLEMONSRC)/rewrites.txt)))
+    ADSLEMONINC := -DADS_WITH_LEMON -DADS_LEMON_SHIM -I$(ADSLEMONSHIM) \
+	$(libLEMONINC)
+endif
+
 # OpenMP, for its executor
 ifeq ($(ADS_WITH_OPENMP),1)
     include $(ADSSDR)/extlib/makefile-libOpenMP
@@ -178,5 +228,14 @@ endif
 
 # include the ADS makefile requiring all external modules in input
 include $(ADSSDR)/lib/makefile
+
+# the headers of LEMON rewritten for the warm start
+ifneq ($(ADSLEMONH),)
+$(ADSLEMONSHIM)/lemon/%.h: $(ADSLEMONDIR)/lemon/%.h \
+	$(wildcard $(ADSLEMONSRC)/*)
+	mkdir -p $(dir $@)
+	awk -v hdr=$*.h -v dir=$(ADSLEMONSRC) -f $(ADSLEMONSRC)/rewrite.awk \
+	  $(ADSLEMONSRC)/rewrites.txt $< > $@ || { rm -f $@; exit 1; }
+endif
 
 ############################## End of makefile-c ##############################

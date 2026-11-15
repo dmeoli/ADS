@@ -1291,6 +1291,134 @@
  recursion (exercise 12.9). Exercises 12.1 and 12.3 are the drawings of the
  representations and of the visits of figure 12.7.
 
+ \section theory_graph_lemon Interoperation with LEMON
+
+ Beyond the book, the headers of `ADS/interop/lemon` connect ADS with LEMON
+ (Dezső, Jüttner and Kovács) in both directions, compiled only by a program
+ that includes them with LEMON, `ADS_WITH_LEMON` defined (the target
+ `ADS::LEMON` of CMake): a program written on LEMON takes a structure of ADS
+ by the named template parameters of its algorithms, with no other change,
+ and a program written on ADS runs the algorithms of LEMON on its graphs.
+ The algorithms of LEMON take their heap by their traits, with the concept
+ `lemon::concepts::Heap`, whose protocol has a part that is not in the
+ signatures: the cross-reference map from the items to `int` belongs to the
+ caller, `Dijkstra::init()` writes `PRE_HEAP` into it for every node without
+ calling the heap, and the heap must therefore derive the state of an item
+ from that value alone.
+
+ <em>Lemma 20 (the slots of `DaryHeap`).</em> Let the cross-reference map
+ hold, for an item in the heap, its slot \f$ s \ge 0 \f$ in an
+ `IndexedDaryHeap` of ADS, and `PRE_HEAP` or `POST_HEAP` otherwise, with the
+ freed slots kept in a list and taken again before a new one. Then `state()`
+ is right after any sequence of the operations of the concept and of writes
+ of `PRE_HEAP` by the caller, and the heap of ADS has at most
+ \f$ f \f$ ids, \f$ f \f$ the largest number of items in the heap at once.
+
+ Indeed, `push()` writes the slot into the map before the heap of ADS takes
+ it, and `pop()`, `erase()` and `state( i , st )` write `POST_HEAP` (or
+ \f$ st \f$) when the slot is freed, so that a nonnegative value is always
+ the slot of an item in the heap; a write of the caller sets a negative
+ value, which `state()` reads as it is. A new slot is taken only when the
+ list is empty, i.e., when every slot is in use, whence the bound. Each
+ operation costs that of the heap of ADS plus one read of the map, one
+ dependent load more than `BinHeap` makes, whose map holds the place itself;
+ removing it needs the place of an item to be kept in the map of LEMON by
+ the heap of ADS, a parameter that `IndexedDaryHeap` does not have.
+
+ <em>Lemma 21 (the lazy heap).</em> Let a monotone queue without
+ decrease-key hold copies ( slot , key ), a decrease or an increase push a
+ new copy, a slot be never reused before `clear()`, and a copy be dropped
+ at the top when its slot left or its key is not the priority of the slot.
+ If every key pushed is not less than the last key popped, `top()` and
+ `prio()` give an item of least priority, and a sequence of \f$ q \f$ pushes
+ of copies costs at most \f$ q \f$ extractions.
+
+ Indeed, the live copy of a slot is the last one pushed, whose key is the
+ priority of the slot; any other copy of the slot either has another key or
+ is a duplicate of the live one, dropped once its slot left. The live copies
+ are therefore the items with their priorities, the queue extracts the least
+ key first, and the dropped copies precede it with keys not greater, which
+ the monotone use allows; each copy is extracted once. Dijkstra's algorithm
+ with nonnegative integer lengths satisfies the hypothesis, and pushes each
+ node once, so that the slots are at most \f$ n \f$.
+
+ The maps of LEMON are observers of the notifier of their graph, attached at
+ their construction under its lock; the `DenseMap` of ADS is an array by the
+ ids that attaches to nothing, so that \f$ k \f$ runs of an algorithm of
+ LEMON on one graph that does not change share no mutable state and run on
+ the threads of an executor of ADS. The `LemonTap` is the converse
+ observer: an `ObserverBase` of the notifier whose `add()`, `erase()`,
+ `build()` and `clear()` become the events of ADS `Inserted`, `Erased`,
+ `Rebuilt` and `Cleared`, the id of the item being the handle, which keeps
+ the parallel arcs of LEMON apart. The notifier tells an insertion after it
+ and an erasure before it, and it calls its observers from the oldest on
+ `add()` and `build()` and from the newest on `erase()` and `clear()`, which
+ we read in the code of the notifier and which its header does not state: a
+ tap constructed after the map it reads finds the map grown at `add()` and
+ the value still there at `erase()`. An insertion is told with the strong
+ guarantee of `emit( e , undo )`, so that an observer of ADS that throws
+ leaves those before it as they were, and abLEMON removes the item again;
+ the erasures cannot fail, since LEMON forbids it. The `LemonMirror` keeps a
+ `ListDigraph` in step with a graph of ADS, in \f$ O( 1 ) \f$ expected time
+ per event, and records the kinds of the events since the last query, so
+ that an algorithm of LEMON with a state of its own knows when it must be
+ built again.
+
+ Two solves from scratch are delegated to LEMON when `ADS_WITH_LEMON` is
+ defined, by its public interface only. `maxCardinalityMatching()` and
+ `maxWeightMatching()` copy the graph into a `SmartGraph` and run
+ `MaxMatching` and `MaxWeightedMatching`; the matching of largest weight
+ among those of largest size stays with ADS, since LEMON has none. The
+ solve from scratch of `Assignment` runs `MinCostAssignment` of abLEMON,
+ whose potentials \f$ \pi \f$ satisfy \f$ c( i , j ) \ge \pi( b_j ) - \pi(
+ r_i ) \f$ on every edge, with equality on the matching.
+
+ <em>Lemma 22 (the potentials of LEMON).</em> With \f$ u_i = - \pi( r_i ) \f$
+ and \f$ v_j = \pi( b_j ) \f$ the reduced costs \f$ c( i , j ) - u_i - v_j \f$
+ of the finite costs are nonnegative and zero on the pairs of the
+ assignment, i.e., \f$ ( u , v ) \f$ satisfies (11) with the pairs of the
+ assignment of LEMON tight, the hypothesis of Lemma 15, from which the
+ repairs of ADS go on.
+
+ Indeed, \f$ c( i , j ) - u_i - v_j = c( i , j ) + \pi( r_i ) - \pi( b_j )
+ \f$, which is the slack of the inequality of LEMON. The same conversion
+ holds for the potentials of `NetworkSimplex` on the network of the
+ assignment, whose reduced cost of an arc is \f$ c + \pi( \mathit{tail} )
+ - \pi( \mathit{head} ) \f$, and `NetworkSimplexAssignment` gives them to
+ `Assignment` in the same way.
+
+ LEMON has no warm start of its minimum cost flows nor of its maximum flow,
+ and ADS writes one into private copies of six of its headers, rewritten at
+ configure time by the rules of `ADS/interop/lemon/shim/rewrites.txt`, each
+ a line `header|anchor|what` whose anchor must occur once in the header,
+ and put on the include path before LEMON. `NetworkSimplex` goes on from the
+ basis of the last run, `CostScaling` and `CycleCanceling` from its flow
+ made feasible again, `CapacityScaling` from its flow and potentials, each
+ with setters of one arc or node in \f$ O( 1 ) \f$, and `Preflow` from a
+ flow repaired as follows.
+
+ <em>Lemma 23 (the repair of the deficits).</em> Let \f$ f \f$ satisfy the
+ capacities, and let the nodes \f$ v \ne s \f$ with more flow out than in
+ be repeatedly taken, the flow of an arc out of \f$ v \f$ that carries
+ \f$ f( a ) > 0 \f$ lowered by \f$ \min\{ f( a ) , -e( v ) \} \f$,
+ \f$ e( v ) \f$ the excess of \f$ v \f$. With integer values the repair
+ ends after at most \f$ \sum_a f( a ) \f$ steps, and it leaves a preflow,
+ i.e., no node but \f$ s \f$ with a negative excess, of value at least
+ that of \f$ f \f$ less the deficits removed.
+
+ Indeed, a node with \f$ e( v ) < 0 \f$ has an arc out with positive
+ flow, since its outflow exceeds its inflow \f$ \ge 0 \f$; each step lowers
+ the total flow by at least 1, and moves the deficit removed at \f$ v \f$
+ to the head of the arc, so that the excesses of the other nodes do not
+ fall below 0 but by the step that marks them again. A preflow is what the
+ two phases of Goldberg and Tarjan start from, and `Preflow::initWarm()`
+ hands it to `init()`. `MaxFlowObserver` takes its solves from an engine,
+ the concept `FlowEngine` of `Reoptimization.h`, the augmentations of ADS by
+ default and `PreflowEngine` on this warm start; the choice between them
+ waits for the measures of the two. A program must see one rewritten
+ copy of each header of LEMON, since two layouts of one class in one binary
+ violate the one definition rule, which compilers do not diagnose.
+
  \section theory_graph_refs References
 
  \see A. Montresor, Algoritmi e Strutture Dati, 2025, chapters 9, 11, 13,
@@ -1432,6 +1560,9 @@
       Experimental Algorithmics 27, 1-45, 2022, doi:10.1145/3555806
  \see P. Morin, Open Data Structures (in C++), Edition 0.1G, 2013,
       https://opendatastructures.org/ods-cpp.pdf, chapter 12
+ \see B. Dezső, A. Jüttner, P. Kovács, LEMON - an open source C++ graph
+      template library, Electronic Notes in Theoretical Computer Science
+      264(5), 23-45, 2011, doi:10.1016/j.entcs.2011.06.003
 */
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File graph.dox ----------------------------*/

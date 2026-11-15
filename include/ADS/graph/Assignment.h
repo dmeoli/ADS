@@ -30,6 +30,15 @@
  * the assignment from scratch (LEMON by its minimum cost flows, SciPy by
  * the algorithm of Crouse), and none keeps the duals for a warm start.
  *
+ * With `ADS_WITH_LEMON` and a LEMON that has `MinCostAssignment` (abLEMON)
+ * [see \ref theory_graph_lemon], the solve from scratch of a signed `W` is
+ * delegated to it, on a copy of the finite costs in a `lemon::SmartBpGraph`,
+ * and its matching and its potentials, \f$ u_i = -\pi( r_i ) \f$ and
+ * \f$ v_j = \pi( b_j ) \f$, become those of the assignment, from which the
+ * warm repair of ADS goes on; when it finds no perfect matching, the code of
+ * ADS solves again. `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the code of
+ * ADS.
+ *
  * The contracts [see `Contract.h`]: \f$ n \ge 0 \f$, the rows and the
  * columns in \f$ [ 0 , n ) \f$, the costs finite or `infinity()`; at the
  * level of the audits each `solve()` checks the duals: every reduced cost
@@ -80,10 +89,24 @@
 #include "ADS/Modification.h"
 #include "ADS/graph/ShortestPaths.h"
 
+#include <concepts>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
+
+// the solve from scratch on the MinCostAssignment of LEMON with
+// ADS_WITH_LEMON, where LEMON has it (abLEMON), unless ADS_ASSIGNMENT_LEMON
+// is 0 (the benchmarks keep the code of ADS)
+#if defined( ADS_WITH_LEMON ) && ! defined( ADS_ASSIGNMENT_LEMON ) &&         \
+  __has_include( <lemon/bipartite_matching.h> )
+ #define ADS_ASSIGNMENT_LEMON 1
+#endif
+#if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
+ #include <lemon/bipartite_matching.h>
+ #include <lemon/smart_graph.h>
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
@@ -96,10 +119,34 @@ namespace ADS
 /*--------------------------- CLASS Assignment -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the engines of the solves of an `Assignment`, objects that it keeps:
+/// `solve( n , C , all , D , col , u , v )` gives an optimal assignment of
+/// the costs \f$ C \f$ by rows, `infinity()` forbidding a pair, in `col`
+/// (the column of each row) and its potentials in \f$ u \f$ and \f$ v \f$,
+/// every reduced cost \f$ c( i , j ) - u_i - v_j \f$ of a finite cost
+/// nonnegative and those of the pairs zero; \f$ D \f$ holds the pairs
+/// whose cost changed since the last solve, or `all` is true when anything
+/// may have. It returns `Reopt::SCRATCH_BY_EVENT` or `Reopt::WARM`, the way
+/// it solved, or \f$ -1 \f$, with nothing changed, if there is no perfect
+/// assignment, which the code of ADS then looks for [see
+/// `NetworkSimplexAssignment` of `ADS/interop/lemon/Warm.h`]
+template< class E , class W >
+concept AssignmentEngine =
+  std::default_initializable< E > &&
+  requires( E & x , int n , const std::vector< W > & C , bool all ,
+	    const std::vector< std::pair< int , int > > & D ,
+	    std::vector< int > & col , std::vector< W > & u ,
+	    std::vector< W > & v )
+{
+   { x.solve( n , C , all , D , col , u , v ) } -> std::convertible_to< int >;
+   };
+
 /// an assignment of least cost of \f$ n \f$ rows to \f$ n \f$ columns, kept
-/// optimal after the changes of the costs
-template< class W = long long , ReoptPolicy P = RatioPolicy >
- requires std::is_arithmetic_v< W >
+/// optimal after the changes of the costs, by the code of ADS or, if `E` is
+/// not `void`, by the engine `E`
+template< class W = long long , ReoptPolicy P = RatioPolicy , class E = void >
+ requires std::is_arithmetic_v< W > &&
+	  ( std::is_void_v< E > || AssignmentEngine< E , W > )
 class Assignment
 {
 
@@ -228,6 +275,16 @@ class Assignment
  /// the row \f$ i \f$ and its column freed
  void freeRow( int i );
 
+ /// the solve by the engine `E`; false, with nothing changed, if it found
+ /// no perfect assignment
+ bool engineSolve( void );
+
+#if defined( ADS_ASSIGNMENT_LEMON ) && ADS_ASSIGNMENT_LEMON
+ /// the assignment and its potentials from scratch by the MinCostAssignment
+ /// of LEMON; false, with nothing changed, if it is not perfect
+ bool lemonScratch( void );
+#endif
+
  /// the shortest augmenting path from the free row \f$ i_0 \f$ in the
  /// reduced costs, and the potentials that keep them nonnegative; false if
  /// no free column is reached
@@ -286,6 +343,9 @@ class Assignment
  long long f_count[ 3 ] = { 0 , 0 , 0 };       ///< the solves by outcome
  long long f_byCause[ Reopt::CAUSES ] = {};  ///< the solves by cause
  P f_policy{};                               ///< the recompute policy
+ /// the engine of the solves, if any
+ ADS_NO_UNIQUE_ADDRESS
+ std::conditional_t< std::is_void_v< E > , std::monostate , E > f_engine{};
  long long f_aug = 0;                        ///< the augmentations
 
  };  // end( class Assignment )

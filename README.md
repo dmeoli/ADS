@@ -188,7 +188,11 @@ an advanced one inside (e.g., `SuffixArray.h` sorts by `RadixSort.h`). The
 infrastructure that both sets include (the contracts, the iterators, the
 portable primitives, the capabilities, the concept of the executors, the
 pool of the nodes, the random hashing) is a third set, core, and the
-headers that still hold a part of each set are in both.
+headers that still hold a part of each set are in both. The headers of
+`ADS/interop/`, which join ADS to Boost, to LEMON and to the newest parts
+of the standard library, are a set of their own, interop, which no entry
+point includes and no module exports, since each is included by the
+program that wants it, next to the headers of the other library.
 `#include "ADS/base.h"` (or `import ads.base;`) gives the base set with
 core, `ADS/advanced.h` (`import ads.advanced;`) the advanced one with core,
 `ADS/core.h` (`import ads.core;`) the core alone, and `ADS/ADS.h` (`import
@@ -202,40 +206,41 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-411 headers: 240 base, 155 advanced, 11 core and 5 in both sets until they are split.
+417 headers: 240 base, 148 advanced, 11 core, 13 interop and 5 in both sets until they are split.
 
-| Folder | Base | Advanced | Core | Both |
-|---|---|---|---|---|
-| `ADS/` | `ADT` | `Algebra`, `Modification` | `Capabilities`, `Contract`, `Iterators`, `Portable` |  |
-| `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |
-| `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |
-| `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |
-| `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |
-| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |
-| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |
-| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |
-| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |
-| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |
-| `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
-| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `MatrixGraph`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `Reoptimization`, `StaticGraph` |  | `Matching`, `MaxFlow`, `Visit` |
-| `interop/boost/` |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |  |  |
-| `interop/std/` |  | `FlatMap`, `Pmr` |  |  |
-| `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
-| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |
-| `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
-| `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |
-| `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |
-| `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelShortestPaths`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |
-| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `RadixHeap`, `SequenceHeap` |  | `PriorityQueue` |
-| `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |
-| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |
-| `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |
-| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CuckooFilter`, `GrafiteFilter`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |
-| `sort/` | `CountingSort`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` | `EngineeredQuickSorts` |
-| `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |
-| `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |
-| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |
-| `tree/` | `AVLTree`, `ArrayBinaryTree`, `BPlusTree`, `BTree`, `BinaryTree`, `BinaryTreeAlgorithms`, `ChildListTree`, `CursorBinaryTree`, `CursorTree`, `ExpressionTree`, `FingerTreap`, `HashedTreap`, `HeapByInsertion`, `LeftLeaningRedBlackTree`, `MeasuredSearchTree`, `ParentTree`, `PartialRebuildingTree`, `PreorderArrayTree`, `RandomizedSearchTree`, `ScapegoatTree`, `SearchTree`, `ThreadedTree`, `Treap`, `Tree` | `BTreeMap`, `JoinAlgorithms`, `JoinTree`, `LinkCutTree`, `MaterializedAggregate`, `SplayTree` |  |  |
+| Folder | Base | Advanced | Core | Interop | Both |
+|---|---|---|---|---|---|
+| `ADS/` | `ADT` | `Algebra`, `Modification` | `Capabilities`, `Contract`, `Iterators`, `Portable` |  |  |
+| `algorithm/` | `AkraBazzi`, `BinaryCounter`, `Hanoi`, `MasterTheorem`, `MaximumSegments`, `MonteCarlo`, `Paradigms`, `SequenceQueries`, `Subsequences` |  |  |  |  |
+| `backtrack/` | `Anagrams`, `DancingLinks`, `Enumeration`, `KnightTour`, `NQueens`, `SatSolvers`, `Sudoku` | `FastExactCover` |  |  |  |
+| `combinatorial/` | `Bitwise`, `Generation` | `FastBitwise`, `FastGeneration` |  |  |  |
+| `complexity/` | `Domino`, `EasyCases`, `Nondeterminism`, `Problems`, `Reductions` |  |  |  |  |
+| `compression/` | `ArithmeticCoding`, `BurrowsWheeler`, `CanonicalHuffman`, `Entropy`, `FMIndex`, `IntegerCodes`, `LempelZiv`, `PPM` | `BinaryPacking`, `DirectAccessCodes`, `HuffmanCoder`, `HuffmanFMIndex`, `LZ77Linear`, `MoveRIndex`, `RIndex`, `Rans`, `StreamVByte`, `Tans` | `PackedBits` |  |  |
+| `concurrent/` |  | `Backoff`, `ConcurrentCuckooTable`, `ConcurrentFlatTable`, `ConcurrentUnionFind`, `EventCount`, `LockFreePriorityQueue`, `MPMCQueue`, `MPSCInbox`, `MPSCQueue`, `MinBoard`, `MultiQueue`, `SPSCQueue`, `SingleWriterFlatTable`, `StealablePriorityQueue`, `WorkStealingDeque` |  |  |  |
+| `dictionary/` | `BinaryTrie`, `BitmapTrie`, `ChainedHashTable`, `CuckooHashing`, `DirectTable`, `HashFunctions`, `IndexedSkipList`, `KnuthHashing`, `OpenHashTable`, `PatriciaTrie`, `PerfectHashing`, `SkipList`, `SortedArrayDictionary`, `TableSize`, `Trie`, `TwoLevelDictionary`, `UniversalHashing`, `XFastTrie`, `YFastTrie` | `AdaptiveRadixTree`, `BucketCuckooTable`, `DenseHashMap`, `FastHash`, `FingerprintPerfectHash`, `FlatHashTable`, `MinimalPerfectHash`, `PointerTable`, `PositionIndex`, `RecSplit`, `RowFingerprint`, `SuccinctPatriciaTrie` | `RandomHashing` |  |  |
+| `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |  |
+| `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |  |
+| `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |  |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `MatrixGraph`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `Reoptimization`, `StaticGraph` |  |  | `Matching`, `MaxFlow`, `Visit` |
+| `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |  |
+| `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |  |
+| `interop/std/` |  |  |  | `FlatMap`, `Pmr` |  |
+| `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |  |
+| `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |  |
+| `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |  |
+| `numeric/` | `BigInteger`, `BinaryInteger`, `Catalan`, `Combinatorics`, `Matrix`, `MatrixChain`, `NumberTheory`, `Polynomial`, `RSA`, `RandomNumbers`, `RandomSampling`, `Rational`, `SparseMatrix` | `CsrMatrix`, `DenseMatrix`, `DynamicCsr`, `RandomGenerators`, `SellMatrix`, `SparseAssembly` |  |  |  |
+| `optimization/` | `CoinChange`, `CoinGame`, `FractionalKnapsack`, `GridPaths`, `HouseProblems`, `IntervalCover`, `Intervals`, `Knapsack`, `KnapsackVariants`, `LinearPartition`, `OptimalSearchTree`, `SequenceProblems`, `ShortestJobFirst`, `StockTrading`, `WeightedIntervals` |  |  |  |  |
+| `parallel/` |  | `Affinity`, `Channels`, `Farm`, `FastFlowExecutor`, `Mailbox`, `OpenMPExecutor`, `ParallelGraph`, `ParallelGreedy`, `ParallelMerge`, `ParallelNumeric`, `ParallelShortestPaths`, `ParallelSort`, `ParallelText`, `Scratch`, `SpeculativeFor`, `TBBExecutor`, `ThreadPool` | `Executor` |  |  |
+| `priority/` | `FibonacciHeapPriorityQueue`, `HeapPriorityQueue`, `ListPriorityQueue`, `LoserTree`, `MeldableHeap`, `TreePriorityQueue` | `BucketQueue`, `DaryHeap`, `DialQueue`, `IndexedDaryHeap`, `IndexedHeapPair`, `LinkedHeapPriorityQueue`, `MinMaxHeap`, `MultiwayMerge`, `OrderKey`, `PairingHeap`, `RadixHeap`, `SequenceHeap` |  |  | `PriorityQueue` |
+| `queue/` | `ArrayQueue`, `Dequeue`, `LinkedQueue`, `MinDeque`, `MinQueue`, `QueueAlgorithms`, `RandomQueue`, `RealTimeMinDeque`, `RealTimeMinQueue`, `UniqueQueue` | `RingDeque`, `SlidingAggregate` |  |  |  |
+| `search/` | `BinarySearch`, `InterpolationSearch`, `KnuthSearches`, `LocalOptima`, `Minimum`, `MonotoneSearch`, `PGMIndex`, `Selection`, `SortedSearches` | `CompressedPGMIndex`, `CountLess`, `DynamicPGMIndex`, `NthElement`, `RangeMinimum`, `StaticSearch`, `WordRangeMinimum` |  |  |  |
+| `sequence/` | `ArraySequence`, `ContiguousDeque`, `CubishArrayStack`, `CursorList`, `DualArrayDeque`, `IndexedList`, `List`, `OrderMaintenanceList`, `Rearrangements`, `RootishArrayStack`, `SEList`, `SequenceAlgorithms`, `SequenceRange`, `SinglyList`, `SkipListSequence`, `TreapList`, `Treque`, `XorList` | `Fenwick`, `ListSort`, `ObservableArray`, `SmallVector`, `TieredVector` |  |  |  |
+| `set/` | `Bag`, `BloomFilter`, `BloomVariants`, `BoolSet`, `DictionarySet`, `HashMultiset`, `LinkedHashSet`, `ListSet`, `SetInterfaces`, `SetOperations`, `SortedIntersection`, `SortedListSet`, `SpaceEfficientSortedSet` | `BinaryFuseFilter`, `BlockedBloomFilter`, `CuckooFilter`, `GrafiteFilter`, `PrefixFilter`, `RibbonFilter`, `RoaringBitmap`, `VectorIntersection` |  |  |  |
+| `sort/` | `CountingSort`, `ExchangeSorts`, `ExternalSort`, `Heapsort`, `InsertionSort`, `KnuthSorts`, `MergeSort`, `MultikeyQuickSort`, `PigeonholeSort`, `QuickSort`, `SelectionSort`, `ShellSort`, `SortingNetworks`, `StrandSort`, `TreeSort` | `LearnedSort`, `QuicksortAdversary`, `RadixSort`, `RunSorts`, `SampleSort`, `Sort`, `StringSort`, `VectorQuickSort` | `Sorted` |  | `EngineeredQuickSorts` |
+| `stack/` | `ArrayStack`, `Expressions`, `MinStack`, `MultiStack`, `SequenceStack`, `StackAlgorithms` |  |  |  |  |
+| `string/` | `Alignment`, `Anagrams`, `ApproximateMatching`, `FrontCoding`, `Huffman`, `LongestCommonSubsequence`, `Lyndon`, `Palindromes`, `Parentheses`, `PrefixSearch`, `RearCoding`, `Segmentations`, `StringBreaking`, `StringMatching`, `SubsequenceProblems`, `SuffixApplications`, `SuffixArray`, `SuffixTree`, `WordBreak` | `AhoCorasick`, `EditDistance`, `LongestCommonExtension`, `MultiSearch`, `StringSearch`, `SuffixAutomaton`, `SuffixSorting` |  |  |  |
+| `succinct/` | `BPTree`, `BVGraph`, `BalancedParentheses`, `BitStream`, `BitVector`, `EliasFano`, `EliasFanoGraph`, `HuffmanWaveletTree`, `JacobsonTree`, `K2Tree`, `LoudsTree`, `RankSelect` | `CompactRankSelect`, `InterleavedRankSelect`, `LAVector`, `MoveStructure`, `PackedArray`, `PartitionedEliasFano`, `RRRBitVector`, `WaveletMatrix` |  |  |  |
+| `tree/` | `AVLTree`, `ArrayBinaryTree`, `BPlusTree`, `BTree`, `BinaryTree`, `BinaryTreeAlgorithms`, `ChildListTree`, `CursorBinaryTree`, `CursorTree`, `ExpressionTree`, `FingerTreap`, `HashedTreap`, `HeapByInsertion`, `LeftLeaningRedBlackTree`, `MeasuredSearchTree`, `ParentTree`, `PartialRebuildingTree`, `PreorderArrayTree`, `RandomizedSearchTree`, `ScapegoatTree`, `SearchTree`, `ThreadedTree`, `Treap`, `Tree` | `BTreeMap`, `JoinAlgorithms`, `JoinTree`, `LinkCutTree`, `MaterializedAggregate`, `SplayTree` |  |  |  |
 
 <!-- end of sets -->
 
@@ -1049,6 +1054,52 @@ place on a contiguous one (and, those of the book, on any), and
 with `ADS_WITH_GMP` `BigInteger::fromGmp()`, `toGmp()` and the constructors
 from `mpz_class` and `mpq_class` pass the numbers to and from GMP. The
 tests are in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).
+
+With [LEMON](https://lemon.cs.elte.hu) (the maintained fork abLEMON, or
+any LEMON whose headers compile in C++20, which LEMON 1.3 does not), the
+headers of `include/ADS/interop/lemon` let a program written on LEMON take
+a structure of ADS where it does better, by the named template parameters
+of the algorithms of LEMON, and the algorithms of ADS run on the graphs of
+LEMON: the heaps of ADS as heaps of LEMON (e.g.,
+`Dijkstra< GR , LM >::SetStandardHeap< ADS::lemon_interop::DaryHeap< int ,
+GR::NodeMap< int > > >`), the arrays of ADS as maps of LEMON, a
+`StaticGraph` as a digraph of LEMON and a digraph of LEMON as a GRAPH of
+ADS, the notifier of LEMON told to the observers of ADS and a
+`ListDigraph` kept in step with a graph of ADS, and the runs of LEMON on
+the threads of ADS (see the chapter of the graphs of the manual). With
+them, `maxCardinalityMatching()` and `maxWeightMatching()` solve on the
+matchings of LEMON, and the solve from scratch of `Assignment` on the
+`MinCostAssignment` of abLEMON, the warm repairs staying those of ADS
+(`ADS_MATCHING_LEMON` or `ADS_ASSIGNMENT_LEMON` defined to 0 keeps the
+code of ADS, as the benchmarks do). `ADS_WITH_LEMON` is `AUTO` with CMake,
+which then builds the target `ADS::LEMON` (the component `LEMON` of
+`find_package(ADS COMPONENTS LEMON)`, and `ads-lemon.pc`), and `auto` with
+the makefile, whose flags go in `$(ADSLEMONINC)` (`LEMON=<prefix>` where
+LEMON is not where the compiler looks); unlike the other backends,
+`ADS::ADS` and `$(ADSINC)` never include LEMON, so that a program that does
+not ask for it compiles none of it, the headers are left out of the module
+`ads`, and the packages are built with it off.
+
+With LEMON, ADS also writes the warm starts that LEMON lacks into private
+copies of six of its headers (`network_simplex.h`, `cost_scaling.h`,
+`cycle_canceling.h`, `capacity_scaling.h`, `bits/mcf_feasible_flow.h` and
+`preflow.h`): `runWarm()` of the four minimum cost flows from the last basis
+or flow, the setters of one arc or node in constant time (`warmCost()`,
+`warmUpper()`, `warmSupply()`), and `Preflow::initWarm()` from a flow with
+deficits, with its `runWarm()`. The copies are rewritten at configure time
+by the rules of `include/ADS/interop/lemon/shim/rewrites.txt` (each a line
+`header|anchor|what`, the anchor a line of LEMON that must be there exactly
+once, or the rewrite stops), in the build directory by CMake and in
+`$(ADSODR)/lemon-shim` by the makefile (`ADS_LEMON_WARM=0` leaves them out),
+and they come before LEMON on the include path of `ADS::LEMON` and of
+`$(ADSLEMONINC)`, which define `ADS_LEMON_SHIM`; an installed ADS writes them
+again from the LEMON that its user finds. `ADS/interop/lemon/Warm.h` builds
+on them an engine of `MaxFlowObserver` on `Preflow`, one of `Assignment` on
+`NetworkSimplex` and an observer of a minimum cost flow. A program must
+compile every translation unit on the same rewritten copies: two different
+copies of a header of LEMON in one binary give two layouts of one class, a
+violation of the one definition rule that compilers do not diagnose, and a
+module of LEMON must be built from them too.
 
 ```cpp
 #include "ADS/sequence/List.h"

@@ -925,18 +925,18 @@ bool SpanningForestObserver< G , P >::inForest( int u , int v )
 /*------------------------- CLASS MaxFlowObserver --------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< Graph G , ReoptPolicy P >
+template< Graph G , ReoptPolicy P , FlowEngine E >
  requires std::is_integral_v< typename G::Weight >
-MaxFlowObserver< G , P >::MaxFlowObserver( const G & g , int s , int t ,
+MaxFlowObserver< G , P , E >::MaxFlowObserver( const G & g , int s , int t ,
 					  Augment how )
     : f_g( g ) , f_s( s ) , f_t( t ) , f_how( how )
 {
  ADS_PRE( g.hasNode( s ) && g.hasNode( t ) && ( s != t ) );
  }
 
-template< Graph G , ReoptPolicy P >
+template< Graph G , ReoptPolicy P , FlowEngine E >
  requires std::is_integral_v< typename G::Weight >
-void MaxFlowObserver< G , P >::scratch( void )
+void MaxFlowObserver< G , P , E >::scratch( void )
 {
  f_net = FlowNetwork( f_g.bound() );
  f_arc.clear();
@@ -949,21 +949,21 @@ void MaxFlowObserver< G , P >::scratch( void )
      f_arc[ key( v , u ) ] = f_net.addEdge( v , u , w );
     }
    } );
- f_value = f_net.maxFlow( f_s , f_t , f_how );
+ f_value = f_engine.scratch( f_net , f_s , f_t , f_how );
  f_S = f_net.minCut( f_s );
  f_ready = true;
  }
 
-template< Graph G , ReoptPolicy P >
+template< Graph G , ReoptPolicy P , FlowEngine E >
  requires std::is_integral_v< typename G::Weight >
-ReoptStats MaxFlowObserver< G , P >::reoptStats( std::size_t k ) const
+ReoptStats MaxFlowObserver< G , P , E >::reoptStats( std::size_t k ) const
 {
  return( B::stats( k + this->f_q.size() , detail::edgesOf( f_g ) ) );
  }
 
-template< Graph G , ReoptPolicy P >
+template< Graph G , ReoptPolicy P , FlowEngine E >
  requires std::is_integral_v< typename G::Weight >
-long long MaxFlowObserver< G , P >::cutCapacity( void ) const
+long long MaxFlowObserver< G , P , E >::cutCapacity( void ) const
 {
  long long c = 0;
  for( int u : f_g.V() )
@@ -975,9 +975,9 @@ long long MaxFlowObserver< G , P >::cutCapacity( void ) const
  return( c );
  }
 
-template< Graph G , ReoptPolicy P >
+template< Graph G , ReoptPolicy P , FlowEngine E >
  requires std::is_integral_v< typename G::Weight >
-void MaxFlowObserver< G , P >::solve( void )
+void MaxFlowObserver< G , P , E >::solve( void )
 {
  ADS_PRE( f_g.hasNode( f_s ) && f_g.hasNode( f_t ) );
  if( this->fresh( f_ready ) ) {  // no flow yet, or Rebuilt
@@ -1035,7 +1035,7 @@ void MaxFlowObserver< G , P >::solve( void )
    f_net.setCapacity( it->second , a.c );
   }
  if( warm ) {  // from the flow there is
-  f_value += f_net.maxFlow( f_s , f_t , f_how );
+  f_value = f_engine.warm( f_net , f_s , f_t , f_how , f_value );
   f_S = f_net.minCut( f_s );
   this->done( Reopt::WARM , double( A.size() ) );
   }

@@ -1565,7 +1565,12 @@ of them as before. The modules follow the same division: `ads.core`,
 (the last two also export `ads.core`), and `ads` exports the three. A
 program that writes `import ads;` gets all the names as before, whereas one
 that writes `import ads.base;` compiles neither the concurrent structures
-nor the executors of OpenMP, oneTBB and MPI. The file `cmake/ads_sets.txt`
+nor the executors of OpenMP, oneTBB and MPI. The headers of `ADS/interop/`
+([§1.8.1](01-introduction.md#sec-1-8-1) and
+[§14.14](14-graph.md#sec-14-14)) are a set of their own, *interop*, which
+no entry point includes and no module exports, since each of them includes
+the headers of another library and is included by the program that wants
+it, next to them. The file `cmake/ads_sets.txt`
 gives the set of each header, and from it the script `cmake/ads_sets.py`
 writes the entry points and the table of the sets in the README. CMake, the
 makefile and the continuous integration run the script, so a new header
@@ -1706,11 +1711,11 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `Contract.h` | core | `contract_violation` | [1](01-introduction.md#ch-1) |
 | `Modification.h` | advanced | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged`, `Reopt`, `ReoptStats`, `RatioPolicy`, `NeumaierSum` | [1](01-introduction.md#ch-1), [14](14-graph.md#ch-14) |
 | `Iterators.h` | core | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PairRef`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
-| `interop/boost/Dijkstra.h` | advanced | `UpdatableQueue` | [1](01-introduction.md#ch-1) |
-| `interop/boost/FromBGL.h` | advanced | `FromBGL` | [1](01-introduction.md#ch-1) |
-| `interop/boost/Graph.h` | advanced | `Arc`, `RowWeightMap`, `ArcIndexMap`, `Edge`, `ListWeightMap` | [1](01-introduction.md#ch-1) |
-| `interop/std/FlatMap.h` | advanced | `StdSequence` | [1](01-introduction.md#ch-1) |
-| `interop/std/Pmr.h` | advanced | `PmrResource` | [1](01-introduction.md#ch-1) |
+| `interop/boost/Dijkstra.h` | interop | `UpdatableQueue` | [1](01-introduction.md#ch-1) |
+| `interop/boost/FromBGL.h` | interop | `FromBGL` | [1](01-introduction.md#ch-1) |
+| `interop/boost/Graph.h` | interop | `Arc`, `RowWeightMap`, `ArcIndexMap`, `Edge`, `ListWeightMap` | [1](01-introduction.md#ch-1) |
+| `interop/std/FlatMap.h` | interop | `StdSequence` | [1](01-introduction.md#ch-1) |
+| `interop/std/Pmr.h` | interop | `PmrResource` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | base | `Bag` | [1](01-introduction.md#ch-1) |
 | `set/SetInterfaces.h` | base | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
 | `sequence/ArraySequence.h` | base | `ArraySequence` | [2](02-sequence.md#ch-2) |
@@ -1875,10 +1880,15 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `graph/MinimumSpanningTree.h` | base | `WeightedEdge`, `MergeCounts` | [14](14-graph.md#ch-14) |
 | `graph/Observable.h` | advanced | `NodeInserted`, `NodeDeleted`, `EdgeInserted`, `EdgeDeleted`, `WeightChanged`, `GraphEvents`, `coalesce_traits`, `ObservedGraph`, `Observable` | [14](14-graph.md#ch-14) |
 | `graph/PointerGraph.h` | advanced | `PointerGraph` | [14](14-graph.md#ch-14) |
-| `graph/Reoptimization.h` | advanced | `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
+| `graph/Reoptimization.h` | advanced | `EventQueue`, `ShortestPathsObserver`, `SpanningForestObserver`, `AugmentEngine`, `MaxFlowObserver`, `AssignmentObserver` | [14](14-graph.md#ch-14) |
 | `graph/ShortestPaths.h` | base | `ShortestPathTree`, `FrontierCounts`, `PriorityFrontier`, `QueueFrontier`, `StackFrontier`, `DequeFrontier` | [14](14-graph.md#ch-14) |
 | `graph/StaticGraph.h` | advanced | `WeightedArc`, `StaticGraph` | [14](14-graph.md#ch-14) |
 | `graph/Visit.h` | both | `VisitCounts`, `DfsSchema` | [14](14-graph.md#ch-14) |
+| `interop/lemon/Digraphs.h` | interop | `StaticDigraphBase`, `StaticDigraphView`, `GraphView` | [14](14-graph.md#ch-14) |
+| `interop/lemon/Heaps.h` | interop | `CmpKey`, `DaryHeap`, `MonotoneHeap` | [14](14-graph.md#ch-14) |
+| `interop/lemon/Maps.h` | interop | `DenseMap`, `IndexMap`, `ObservedMap` | [14](14-graph.md#ch-14) |
+| `interop/lemon/Observers.h` | interop | `Ends`, `LemonTap`, `LemonMirror` | [14](14-graph.md#ch-14) |
+| `interop/lemon/Warm.h` | interop | `PreflowEngine`, `NetworkSimplexAssignment`, `MinCostFlowObserver` | [14](14-graph.md#ch-14) |
 | `string/AhoCorasick.h` | advanced | `AhoCorasick` | [15](15-string.md#ch-15) |
 | `string/FrontCoding.h` | base | `FrontCodedDictionary` | [15](15-string.md#ch-15) |
 | `string/LongestCommonExtension.h` | advanced | `LceIndex` | [15](15-string.md#ch-15) |
@@ -1993,7 +2003,7 @@ only, by chapter.
 | [10](10-set.md#ch-10) | `set/SetOperations.h`, `set/VectorIntersection.h` |
 | [12](12-sort.md#ch-12) | `sort/CountingSort.h`, `sort/EngineeredQuickSorts.h`, `sort/ExchangeSorts.h`, `sort/ExternalSort.h`, `sort/Heapsort.h`, `sort/InsertionSort.h`, `sort/KnuthSorts.h`, `sort/LearnedSort.h`, `sort/MergeSort.h`, `sort/MultikeyQuickSort.h`, `sort/PigeonholeSort.h`, `sort/QuickSort.h`, `sort/RadixSort.h`, `sort/RunSorts.h`, `sort/SampleSort.h`, `sort/SelectionSort.h`, `sort/ShellSort.h`, `sort/Sort.h`, `sort/Sorted.h`, `sort/SortingNetworks.h`, `sort/StrandSort.h`, `sort/StringSort.h`, `sort/TreeSort.h`, `sort/VectorQuickSort.h` |
 | [13](13-algorithm.md#ch-13) | `algorithm/AkraBazzi.h`, `algorithm/BinaryCounter.h`, `algorithm/Hanoi.h`, `algorithm/MonteCarlo.h`, `algorithm/Paradigms.h`, `algorithm/SequenceQueries.h`, `algorithm/Subsequences.h`, `optimization/CoinChange.h`, `optimization/CoinGame.h`, `optimization/FractionalKnapsack.h`, `optimization/HouseProblems.h`, `optimization/IntervalCover.h`, `optimization/Intervals.h`, `optimization/Knapsack.h`, `optimization/KnapsackVariants.h`, `optimization/LinearPartition.h`, `optimization/SequenceProblems.h`, `optimization/ShortestJobFirst.h`, `optimization/StockTrading.h` |
-| [14](14-graph.md#ch-14) | `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h` |
+| [14](14-graph.md#ch-14) | `graph/EulerianCycle.h`, `graph/FlowApplications.h`, `graph/Grid.h`, `graph/Matching.h`, `graph/Paths.h`, `graph/Properties.h`, `interop/lemon/Parallel.h` |
 | [15](15-string.md#ch-15) | `string/Alignment.h`, `string/Anagrams.h`, `string/ApproximateMatching.h`, `string/EditDistance.h`, `string/Huffman.h`, `string/LongestCommonSubsequence.h`, `string/Lyndon.h`, `string/Parentheses.h`, `string/Segmentations.h`, `string/StringBreaking.h`, `string/StringMatching.h`, `string/SubsequenceProblems.h`, `string/SuffixSorting.h`, `string/WordBreak.h` |
 | [16](16-geometry.md#ch-16) | `geometry/ClosestPair.h` |
 | [17](17-numeric.md#ch-17) | `numeric/BinaryInteger.h`, `numeric/Catalan.h`, `numeric/Matrix.h`, `numeric/MatrixChain.h`, `numeric/Polynomial.h`, `numeric/RandomSampling.h` |

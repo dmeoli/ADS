@@ -5,7 +5,9 @@
 `IncidenceGraph.h`, `Visit.h`, `Grid.h`, `GridGraph.h`, `Paths.h`,
 `Properties.h`, `ShortestPaths.h`, `AllPairsShortestPaths.h`,
 `MinimumSpanningTree.h`, `MaxFlow.h`, `FlowApplications.h`, `Matching.h`,
-`Assignment.h`, `EulerianCycle.h`, `Observable.h`, `Reoptimization.h`]
+`Assignment.h`, `EulerianCycle.h`, `Observable.h`, `Reoptimization.h`,
+and `include/ADS/interop/lemon/Heaps.h`, `Maps.h`, `Digraphs.h`,
+`Observers.h`, `Parallel.h`]
 
 We are concerned in this chapter with the *graph*, i.e., a set of nodes
 together with a set of pairs of nodes (the edges). A graph models any binary
@@ -27,16 +29,19 @@ shortest paths ([§14.8](14-graph.md#sec-14-8)), the minimum spanning trees
 we describe a wrapper that turns each change of a graph into an event, and
 the observers that keep a shortest path tree, a minimum
 spanning forest, a maximum flow and an assignment optimal through such
-changes, often by a test of the certificate of the previous solution alone.
+changes, often by a test of the certificate of the previous solution alone,
+and in [§14.14](14-graph.md#sec-14-14) the headers by which the structures,
+the graphs and the changes pass between ADS and LEMON.
 The adjacency matrix, the lists of adjacency, the matrix of incidence and
 the two visits of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 are all here, with each of his exercises solved on the code of the library
-([§14.15](14-graph.md#sec-14-15)). In the sets of
+([§14.16](14-graph.md#sec-14-16)). In the sets of
 [§1.9](01-introduction.md#sec-1-9), `Assignment.h`, `GraphBuilder.h`,
 `GridGraph.h`, `Observable.h`, `PointerGraph.h`, `Reoptimization.h` and
 `StaticGraph.h` are advanced and the other headers of this chapter are
 base, while `Matching.h`, `MaxFlow.h` and `Visit.h` hold a part of each
-until they are split.
+until they are split; the headers of `interop/lemon/`
+([§14.14](14-graph.md#sec-14-14)) are of the set interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
 
@@ -2805,6 +2810,10 @@ class FlowNetwork
  void setCapacity( int e , long long c );
  [[nodiscard]] long long flow( int e ) const;
  [[nodiscard]] long long capacity( int e ) const;
+ [[nodiscard]] int places( void ) const;
+ [[nodiscard]] int tail( int e ) const;
+ [[nodiscard]] int head( int e ) const;
+ void assignFlow( const std::vector< long long > & F );
  long long maxFlow( int s , int t , Augment how = Augment::DINIC ,
                     long long * paths = nullptr );
  [[nodiscard]] std::vector< bool > minCut( int s ) const;
@@ -3380,8 +3389,20 @@ warm start. The class is
 
 ```cpp
 // declarations of <ADS/graph/Assignment.h>
-template< class W = long long , ReoptPolicy P = RatioPolicy >
- requires std::is_arithmetic_v< W >
+template< class E , class W >
+concept AssignmentEngine =
+  std::default_initializable< E > &&
+  requires( E & x , int n , const std::vector< W > & C , bool all ,
+            const std::vector< std::pair< int , int > > & D ,
+            std::vector< int > & col , std::vector< W > & u ,
+            std::vector< W > & v )
+{
+   { x.solve( n , C , all , D , col , u , v ) } -> std::convertible_to< int >;
+   };
+
+template< class W = long long , ReoptPolicy P = RatioPolicy , class E = void >
+ requires std::is_arithmetic_v< W > &&
+          ( std::is_void_v< E > || AssignmentEngine< E , W > )
 class Assignment
 {
  public:
@@ -4116,7 +4137,29 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P >
  [[nodiscard]] ReoptStats reoptStats( std::size_t k ) const;
  };
 
-template< Graph G , ReoptPolicy P = RatioPolicy >
+template< class E >
+concept FlowEngine =
+  std::default_initializable< E > &&
+  requires( E & x , FlowNetwork & net , int s , int t , Augment how ,
+            long long v )
+{
+   { x.scratch( net , s , t , how ) } -> std::convertible_to< long long >;
+   { x.warm( net , s , t , how , v ) } -> std::convertible_to< long long >;
+   };
+
+struct AugmentEngine
+{
+ static long long scratch( FlowNetwork & net , int s , int t , Augment how ) {
+  ...
+  }
+ static long long warm( FlowNetwork & net , int s , int t , Augment how ,
+                        long long v ) {
+  ...
+  }
+ };
+
+template< Graph G , ReoptPolicy P = RatioPolicy ,
+          FlowEngine E = AugmentEngine >
  requires std::is_integral_v< typename G::Weight >
 class MaxFlowObserver : public EventQueue< typename G::Weight , P >
 {
@@ -4548,7 +4591,192 @@ catch( const std::runtime_error & ) {
 long long k = P.byCause( ADS::Reopt::SCRATCH_BY_SIZE );  // k is 1
 ```
 
-## 14.14 Discussion and references {#sec-14-14}
+## 14.14 Interoperation with LEMON {#sec-14-14}
+
+We are concerned here with two users. One has a program written on LEMON
+([Dezső, Jüttner and Kovács 2011](Z-bibliography.md#ref-dezso2011)) and
+wants a structure of ADS where it does better, without changing the rest of
+the program; the other has a program written on ADS and wants the algorithms
+of LEMON on its graphs. Both are served by the headers of
+`ADS/interop/lemon` (beyond the book), and they are optional, since a
+program includes them with LEMON and with `ADS_WITH_LEMON` defined, as the
+target `ADS::LEMON` of CMake does. `ADS::ADS` never includes LEMON, and thus
+a program that does not need it compiles none of it. By LEMON we mean here
+abLEMON, the maintained fork, or any LEMON whose headers compile in C++20;
+LEMON 1.3 does not, since its maps call members of `std::allocator` that
+C++20 removed, and the configuration then leaves the option off.
+
+### 14.14.1 The structures of ADS in LEMON {#sec-14-14-1}
+
+The algorithms of LEMON take their heap by their traits, e.g., `Dijkstra< GR
+, LM >::SetStandardHeap< H >`, and their output maps by named parameters,
+`SetPredMap`, `SetDistMap` and `SetHeap< H , CR >`; the change for the user
+is therefore one template argument. `DaryHeap< PR , IM , CMP , D , Policy >`
+of `Heaps.h` puts the `IndexedDaryHeap` of [chapter 9](09-priority.md#ch-9)
+under the concept of the heaps of LEMON, in which the cross-reference map
+belongs to the caller and the algorithm writes it directly. Here the map
+holds a slot of the heap of ADS for an item in the heap, and the state
+`PRE_HEAP` or `POST_HEAP` otherwise, as in the `FibHeap` of LEMON. Since the
+freed slots are taken again, the heap of ADS has as many ids as the largest
+frontier (Lemma 20 of the theory page of the graphs). Each operation costs
+one read of the map more than in the heap of ADS, i.e., one dependent load
+more than `BinHeap` makes, which may or may not be visible (we have not
+measured it). In exchange, it brings to LEMON the subject of ADS, and with
+`Policy = Dynamic<>` an observer of `subject()` receives every insertion,
+erasure and change of key that the algorithm of LEMON makes on its frontier.
+
+`MonotoneHeap< Q , PR , IM >` puts `DialQueue` and `RadixHeap` under the
+same concept, although they have no decrease-key. A decrease pushes a second
+copy of the item, and the stale copies are skipped when they reach the top;
+this is valid while no key pushed is below the last one popped, which holds
+for Dijkstra's algorithm with nonnegative integer lengths (Lemma 21). In
+this use the window of the queue of [Dial
+1969](Z-bibliography.md#ref-dial1969) then takes $O( C )$ buckets for the
+lengths at most $C$, against the bucket per distance of the `BucketHeap` of
+LEMON.
+
+Three maps are in `Maps.h`. First, `DenseMap< GR , T , Item >` is a
+`ReferenceMap` of LEMON on an array, by the ids of the items, which does not
+attach to the notifier of the graph. A map of LEMON instead attaches at its
+construction, under the lock of the notifier, and $k$ runs started at once
+on one graph would serialize on that lock. With `DenseMap` the runs share no
+mutable state, and `dijkstraFrom( ex , g , l , S )` of `Parallel.h` runs one
+`Dijkstra` of LEMON per source of $S$ on the threads of an executor of
+[chapter 25](25-parallel.md#ch-25). `IndexMap< GR , S , Item >` is a
+`ReadWriteMap` over a structure of ADS indexed by the ids; on an
+`ObservableArray` of [§1.13](01-introduction.md#sec-1-13) each write reaches
+the observers of the array, and on a `Fenwick` of [Fenwick
+1994](Z-bibliography.md#ref-fenwick1994) `prefix()` gives the sum of the
+values of the ids up to an item. Finally, `ObservedMap< GR , Map , A ,
+Policy >` wraps a map of LEMON, whose writes cannot be observed, and its
+`set()` emits `Changed< A , int , V >` with the old and the new value. Thus
+a change of a cost or of a capacity that the observers must see goes through
+it. Besides the maps, `sortedArcs( ex , g , c )` sorts the pairs ( edge ,
+cost ) of a graph of LEMON by the parallel sort of [chapter
+25](25-parallel.md#ch-25). Since `kruskal()` of LEMON takes such a sequence
+as already sorted, the sort, which dominates the algorithm of [Kruskal
+1956](Z-bibliography.md#ref-kruskal1956) on a sparse graph, then runs on the
+threads.
+
+In `Digraphs.h` the graphs cross in both directions. `StaticDigraphView< W
+>` is a digraph of LEMON over a `StaticGraph< W >` of
+[§14.4.1](14-graph.md#sec-14-4-1), with no copy of its rows. The arc $k$ is
+the place $k$ of the rows, `OutArcIt` walks a row in memory, and `weights()`
+reads the weights stored next to the heads; the tails and the lists of the
+arcs into each node, which the rows lack, take $8 a + 4 n$ bytes, built
+once. Then `Dijkstra`, `Bfs`, `Preflow` and `NetworkSimplex` of LEMON then
+run on the graph of ADS, replacing the graph and the length map. Conversely,
+`GraphView< GR , LM >` is a GRAPH of ADS over a digraph of LEMON and a
+length map, with no copy. Its nodes are named by the ids of LEMON, and
+`bound()` is `maxNodeId() + 1`, so that the algorithms of this chapter run
+on it unchanged. `toStatic( g , l )` copies such a digraph into a
+`StaticGraph` once, in $\Theta( n + m )$ time, and the parallel shortest
+paths of [chapter 25](25-parallel.md#ch-25) take their fast path on its
+compressed rows.
+
+### 14.14.2 The changes passed between the libraries {#sec-14-14-2}
+
+`LemonTap< GR , Item , CostMap , Policy >` of `Observers.h` is an observer
+of the notifier of LEMON, for the nodes or for the arcs. It turns `add()`,
+`erase()`, `build()` and `clear()` into the events `Inserted`, `Erased`,
+`Rebuilt` and `Cleared` of [§1.13](01-introduction.md#sec-1-13). The handle
+of an event is the id of the item, which keeps the parallel arcs of LEMON
+apart, and the key of an arc is the pair of its ends. In LEMON an insertion
+is notified after it and an erasure before it, and the notifier calls its
+observers from the oldest on `add()` and from the newest on `erase()`, an
+order that we read in the code of the notifier, since its header does not
+state it. Hence a tap constructed after the map of the costs reads the cost
+of an arc before LEMON removes it. However, the idiom of LEMON sets the cost
+after inserting the arc, and the insertion thus carries the default cost;
+the write that follows reaches the observers only through an `ObservedMap`.
+An insertion is emitted with the strong guarantee of `emit()`, i.e., if an
+observer of ADS throws, those that received the insertion receive the
+erasure, and abLEMON removes the arc again. LEMON forbids an exception
+within an erasure, and the tap catches it and becomes `spoiled()`. We remark
+that the tap does not see what the notifier does not notify, i.e.,
+`changeTarget()`, `changeSource()`, `reverseArc()`, the moves of
+`contract()` and `split()`, the writes that bypass the observed maps, and
+the changes through an adaptor of LEMON.
+
+`LemonMirror< G >` goes the other way. It is an observer of the
+`ObservedGraph` of [§14.13.1](14-graph.md#sec-14-13-1), and keeps a
+`ListDigraph` and its weights in step with the graph of ADS, in $O( 1 )$
+expected time per event. It also records the kinds of the events since the
+last `clearKinds()`, from which an algorithm of LEMON that keeps a state
+learns whether it must be built again.
+
+### 14.14.3 The solves delegated to LEMON {#sec-14-14-3}
+
+With `ADS_WITH_LEMON`, `maxCardinalityMatching()` and `maxWeightMatching()`
+of [§14.11.2](14-graph.md#sec-14-11-2) copy the graph into a `SmartGraph`,
+and solve it by the `MaxMatching` and the `MaxWeightedMatching` of LEMON.
+Contracts and audits are the same, and the matching has the size or the
+weight of that of ADS, though not necessarily the same edges. The largest
+weight among the matchings of largest size stays with ADS, since LEMON lacks
+it, and so do `bipartiteBMatching()` and `branchAndBoundMatching()`, the
+book's part. Similarly, the solve from scratch of the `Assignment` of
+[§14.11.3](14-graph.md#sec-14-11-3) runs the `MinCostAssignment` of abLEMON,
+whose potentials, with the sign of the rows changed, are a dual solution of
+the assignment (Lemma 22 of the theory page); from them the repairs after
+`setCost()`, `setRow()` and `setColumn()` go on as before. These warm
+repairs stay with ADS by default. Defining `ADS_MATCHING_LEMON` or
+`ADS_ASSIGNMENT_LEMON` to 0 keeps the code of ADS, as the benchmarks do.
+
+### 14.14.4 The warm starts of LEMON {#sec-14-14-4}
+
+LEMON has no warm start of its minimum cost flows nor of its maximum flow,
+and ADS writes one into private copies of six of its headers
+(`network_simplex.h`, `cost_scaling.h`, `cycle_canceling.h`,
+`capacity_scaling.h`, `bits/mcf_feasible_flow.h` and `preflow.h`). The
+copies are rewritten at configure time by the rules of
+`ADS/interop/lemon/shim/rewrites.txt`, and put on the include path before
+LEMON, which defines `ADS_LEMON_SHIM`; CMake applies the rules by
+`ads_lemon_shim()` of `ADSLemonShim.cmake`, and the makefiles by
+`rewrite.awk`, so that the two agree by construction. Each rule has the form
+`header|anchor|what`, where the anchor is a whole line of the header of
+LEMON, and `what` either inserts a block of the shim before it, or appends a
+text to it, or replaces it. The anchor must occur exactly once, and
+otherwise the rewrite stops and names the line, rather than go on with a
+header rewritten in part; CMake then leaves the warm start off when
+`ADS_WITH_LEMON` is `AUTO`. The rules give `runWarm()` to the four minimum
+cost flows. `NetworkSimplex` goes on from the basis of the last run, whose
+tree flow is computed again and repaired after a change of the bounds or of
+the supplies, while `CostScaling` and `CycleCanceling` start from the flow
+of the last run, put within the new bounds and made feasible again, and
+`CapacityScaling` from the last flow and potentials. The rules also give the
+setters of one arc or of one node, `warmCost()`, `warmUpper()` and
+`warmSupply()`, in $O( 1 )$ time instead of the $\Theta( m )$ of the setters
+of a map. Finally, `Preflow` gets `initWarm( flow )`, which repairs a flow
+with deficits by moving each deficit forward along the arcs that carry flow
+out of its node, and `runWarm()`, which does so from the last flow.
+
+`Warm.h` builds three solvers on them. `MaxFlowObserver` of
+[§14.13.2](14-graph.md#sec-14-13-2) takes its solves from an engine, the
+concept `FlowEngine`, whose default `AugmentEngine` runs the augmentations
+of ADS from scratch and from the flow that the network keeps.
+`PreflowEngine` is the engine on the `Preflow` of LEMON, on a copy of the
+network of ADS whose flow is given back by `FlowNetwork::assignFlow()`, and
+the default stays that of ADS until the measures decide (we have not taken
+them). `NetworkSimplexAssignment< W >` is an engine of `Assignment`, the
+third template argument, which after changes of finite costs gives one
+`warmCost()` per pair to a `NetworkSimplex` and runs it warm. Finally,
+`MinCostFlowObserver< GR , A , CM , UM , SM >` keeps a minimum cost flow of
+a digraph of LEMON by any of the four algorithms. It observes the
+`ObservedMap`s of the costs, of the upper bounds and of the supplies and a
+`LemonTap`, and it runs `runWarm()` or, after a change of the digraph,
+`run()`.
+
+The one constraint is on the build of a program. A program must see one
+rewritten copy of each of these headers, i.e., it may not compile some
+translation units on the copies of ADS and others on the plain headers of
+LEMON, or on a copy rewritten by other rules. Two layouts of one class in
+one binary violate the one definition rule, which compilers and linkers do
+not diagnose. The same holds for a module of C++20 of LEMON, which must be
+built from the rewritten headers, the shim first on its include path.
+
+
+
+## 14.15 Discussion and references {#sec-14-15}
 
 The representations of [§14.2](14-graph.md#sec-14-2) to
 [§14.4](14-graph.md#sec-14-4) and the visits of
@@ -4621,9 +4849,15 @@ Wagner 2009](Z-bibliography.md#ref-bauer2009), the forest the sensitivity
 analysis of [Tarjan 1982](Z-bibliography.md#ref-tarjan1982) on the dynamic
 trees of [Sleator and Tarjan 1983](Z-bibliography.md#ref-sleator1983), and
 the flow the dynamic cuts of [Kohli and Torr
-2007](Z-bibliography.md#ref-kohli2007).
+2007](Z-bibliography.md#ref-kohli2007). The concepts of the heaps, of the
+maps and of the digraphs of [§14.14](14-graph.md#sec-14-14), and the
+notifier whose observers keep the maps of a graph in step with it, are
+those of LEMON ([Dezső, Jüttner and Kovács
+2011](Z-bibliography.md#ref-dezso2011)), and the queue of the buckets on a
+window of [§14.14.1](14-graph.md#sec-14-14-1) is that of [Dial
+1969](Z-bibliography.md#ref-dial1969).
 
-## 14.15 Exercises {#sec-14-15}
+## 14.16 Exercises {#sec-14-16}
 
 The exercises of [Morin 2013, chapter 12](Z-bibliography.md#ref-morin-cpp)
 use the unoriented graph of [Figure 14.18](14-graph.md#fig-14-18) (the

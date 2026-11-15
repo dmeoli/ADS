@@ -93,6 +93,20 @@ inline long long FlowNetwork::capacity( int e ) const
  return( f_cap[ e ] );
  }
 
+inline void FlowNetwork::assignFlow( const std::vector< long long > & F )
+{
+ ADS_PRE( 2 * F.size() == f_to.size() );
+ for( std::size_t k = 0 ; k < F.size() ; ++k ) {
+  ADS_PRE( ( F[ k ] >= 0 ) && ( F[ k ] <= f_cap[ 2 * k ] ) );
+  f_res[ 2 * k ] = f_cap[ 2 * k ] - F[ k ];
+  f_res[ 2 * k + 1 ] = F[ k ];
+  }
+ std::fill( f_imb.begin() , f_imb.end() , 0 );
+ f_imbNodes.clear();
+ f_unbalanced = false;
+ ADS_INVARIANT( skewSymmetric() );
+ }
+
 inline long long FlowNetwork::maxFlow( int s , int t , Augment how ,
 				       long long * paths )
 {

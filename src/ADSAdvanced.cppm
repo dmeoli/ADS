@@ -246,6 +246,7 @@ using ADS::RangeTree;
 
 // graph/Assignment.h
 using ADS::Assignment;
+using ADS::AssignmentEngine;
 
 // graph/GraphBuilder.h
 using ADS::GraphBuilder;
@@ -296,7 +297,9 @@ using ADS::PointerGraph;
 
 // graph/Reoptimization.h
 using ADS::AssignmentObserver;
+using ADS::AugmentEngine;
 using ADS::EventQueue;
+using ADS::FlowEngine;
 using ADS::MaxFlowObserver;
 using ADS::Reoptimizable;
 using ADS::ShortestPathsObserver;
@@ -518,7 +521,9 @@ using ADS::PairingHeap;
 // priority/PriorityQueue.h
 using ADS::AddressablePriorityQueue;
 using ADS::PriorityQueue;
+using ADS::queue_decrease;
 using ADS::queue_deleteMin;
+using ADS::queue_handle_t;
 using ADS::queue_insert;
 using ADS::queue_item_t;
 using ADS::queue_min;

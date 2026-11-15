@@ -3,8 +3,8 @@
 #                                ads_sets.py                                  #
 #                                                                             #
 # Reads cmake/ads_sets.txt, the set of each public header of include/ADS      #
-# (core, base, advanced or both), checks it against the headers and their     #
-# includes, and writes from it the entry points ADS/core.h, ADS/base.h,       #
+# (core, base, advanced, interop or both), checks it against the headers and  #
+# their includes, and writes from it the entry points ADS/core.h, ADS/base.h, #
 # ADS/advanced.h and ADS/ADS.h and the table of the sets in the README:       #
 #                                                                             #
 #   python3 cmake/ads_sets.py            writes the files that changed        #
@@ -14,10 +14,11 @@
 #                                        checks the headers that it pulls     #
 #                                                                             #
 # A header with no set, a set given to a header that is not there, and an     #
-# include from core to another set, or from base or both to advanced, that    #
-# no line "uses" allows, are errors; so is, for --check, a module of src/     #
-# that exports the names of a header of another set [see                      #
-# ads_module_exports.py, which imports this file]. CMake runs it at configure #
+# include from core to another set, from base or both to advanced, or from    #
+# any other set to interop, that no line "uses" allows, are errors; so is,    #
+# for --check, a module of src/ that exports the names of a header of another #
+# set [see ads_module_exports.py, which imports this file]. The headers of    #
+# interop are in no entry point and no module. CMake runs it at configure     #
 # time and the makefile at each make, and the CI with --check.                #
 ###############################################################################
 
@@ -30,7 +31,7 @@ import sys
 import tempfile
 import textwrap
 
-SETS = ( "core" , "base" , "advanced" , "both" )
+SETS = ( "core" , "base" , "advanced" , "interop" , "both" )
 
 # the entry point of each set, and the modules [see ads_module_exports.py]
 ENTRY = { "core" : "ADS/core.h" , "base" : "ADS/base.h" ,
@@ -154,6 +155,8 @@ def crossing( src , dst ):
     by a line uses."""
     if src == "core":
         return dst != "core"
+    if dst == "interop":
+        return src != "interop"
     return ( src in ( "base" , "both" ) ) and ( dst == "advanced" )
 
 
@@ -256,7 +259,10 @@ ABOUT = {
                  "included only with their macros, as in the module.",
     "all" : "All the headers of ADS, i.e., those of the two sets and of "
             "their core [see `core.h`, `base.h` and `advanced.h`], as the "
-            "module ads exports all their names.",
+            "module ads exports all their names, but for those of the "
+            "interoperation with other libraries (`ADS/interop/`), which a "
+            "program includes one by one next to the headers of the other "
+            "library.",
 }
 
 
@@ -303,15 +309,20 @@ def readme( sets , text ):
         rows[ folder ][ s ].append( os.path.splitext(
             os.path.basename( h ) )[ 0 ] )
     count = collections.Counter( sets.set.values() )
+    # the columns of the sets that have headers, both only until it is empty
+    cols = [ s for s in ( "base" , "advanced" , "core" , "interop" , "both" )
+             if count[ s ] ]
+    told = [ f"{count[ s ]} {s}" for s in cols if s != "both" ]
+    if count[ "both" ]:
+        told.append( f"{count[ 'both' ]} in both sets until they are split" )
     out = [ README_BEGIN , "" ,
-            f"{len( sets.set )} headers: {count[ 'base' ]} base, "
-            f"{count[ 'advanced' ]} advanced, {count[ 'core' ]} core and "
-            f"{count[ 'both' ]} in both sets until they are split." , "" ,
-            "| Folder | Base | Advanced | Core | Both |" ,
-            "|---|---|---|---|---|" ]
+            f"{len( sets.set )} headers: " + ", ".join( told[ :-1 ] ) +
+            f" and {told[ -1 ]}." , "" ,
+            "| Folder | " + " | ".join( s.capitalize() for s in cols ) +
+            " |" , "|---" * ( len( cols ) + 1 ) + "|" ]
     for folder in sorted( rows ):
         cells = [ ", ".join( f"`{x}`" for x in sorted( rows[ folder ][ s ] ) )
-                  for s in ( "base" , "advanced" , "core" , "both" ) ]
+                  for s in cols ]
         name = f"`{folder}/`" if folder else "`ADS/`"
         out.append( f"| {name} | " + " | ".join( cells ) + " |" )
     out += [ "" , README_END ]

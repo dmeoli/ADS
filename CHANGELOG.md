@@ -59,6 +59,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with ADS_WITH_GMP; the test program engineered_interop, section 1.8.1
   of the manual and the README
 
+- ADS_WITH_LEMON and include/ADS/interop/lemon, the interoperation with
+  LEMON (abLEMON, or a LEMON whose headers compile in C++20; AUTO with
+  CMake, which builds the target ADS::LEMON, the component LEMON of the
+  package and ads-lemon.pc, auto with the makefile in $(ADSLEMONINC), off in
+  the packages, never in ADS::ADS nor in the module ads): DaryHeap and
+  MonotoneHeap, the heaps of ADS as heaps of LEMON on its cross-reference
+  map; DenseMap, IndexMap (over ObservableArray, Fenwick) and ObservedMap,
+  the maps; StaticDigraphView, GraphView and toStatic(), the graphs either
+  way; LemonTap and LemonMirror, the changes either way; dijkstraFrom() and
+  sortedArcs(), the runs of LEMON on the threads of ADS; with it,
+  maxCardinalityMatching() and maxWeightMatching() solve on the matchings
+  of LEMON and the solve from scratch of Assignment on MinCostAssignment
+  (ADS_MATCHING_LEMON and ADS_ASSIGNMENT_LEMON at 0 keep the code of ADS);
+  the engine of the solves of MaxFlowObserver (FlowEngine, AugmentEngine by
+  default); LEMON among the competitors of bench/graphs.cpp,
+  bench/flows.cpp and bench/assignment.cpp; the test program
+  engineered_lemon, section 14.14 of the manual and the theory page
+
+- The warm starts of LEMON, written into private copies of
+  network_simplex.h, cost_scaling.h, cycle_canceling.h,
+  capacity_scaling.h, bits/mcf_feasible_flow.h and preflow.h by the rules
+  of include/ADS/interop/lemon/shim (header|anchor|what, each anchor a line
+  found exactly once; ads_lemon_shim() of cmake/ADSLemonShim.cmake, run
+  again by ADSConfig.cmake, and rewrite.awk in $(ADSODR)/lemon-shim, off by
+  ADS_LEMON_WARM=0), first on the include path of ADS::LEMON, which then
+  defines ADS_LEMON_SHIM: runWarm() of NetworkSimplex, CostScaling,
+  CycleCanceling and CapacityScaling, their warmCost(), warmUpper() and
+  warmSupply() in O(1), and Preflow::initWarm() from a flow with deficits
+  and Preflow::runWarm(); Warm.h with PreflowEngine (an engine of
+  MaxFlowObserver, whose FlowEngine now keeps its engine as an object and
+  takes the value of the flow), NetworkSimplexAssignment (an engine of
+  Assignment, its new third template argument, the concept
+  AssignmentEngine) and MinCostFlowObserver; FlowNetwork::places(),
+  tail(), head() and assignFlow(); the tests lemon-warm-mcf,
+  lemon-warm-preflow and lemon-warm-observers
+
 - ADS_WITH_BOOST, the backend of the headers of Boost 1.83 or later (AUTO
   with CMake, auto with the makefile, as for GMP and the CBLAS, off in the
   packages; cmake/ADSBoost.cmake and extlib/makefile-libBoost find it, and

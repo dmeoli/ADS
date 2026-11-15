@@ -139,6 +139,10 @@ using ADS::parallelInvoke;
 using ADS::parallelReduce;
 
 // sort/Sorted.h
+using ADS::RankStore;
+using ADS::SortRange;
+using ADS::SortStore;
+using ADS::StringStore;
 using ADS::checkingContract;
 }
 

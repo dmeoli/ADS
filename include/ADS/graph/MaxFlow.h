@@ -171,6 +171,31 @@ class FlowNetwork
  /// \pre \f$ e \f$ is the number of an edge
  [[nodiscard]] long long capacity( int e ) const;
 
+ /// the number of the places of the edges: the edge \f$ e \f$, an even
+ /// number, and its residual twin \f$ e + 1 \f$
+ [[nodiscard]] int places( void ) const { return( int( f_to.size() ) ); }
+
+ /// the tail of the edge number \f$ e \f$
+ /// \pre \f$ e \f$ is the number of an edge or of a twin
+ [[nodiscard]] int tail( int e ) const {
+  ADS_PRE( ( e >= 0 ) && ( e < places() ) );
+  return( f_to[ std::size_t( e ^ 1 ) ] );
+  }
+
+ /// the head of the edge number \f$ e \f$
+ /// \pre \f$ e \f$ is the number of an edge or of a twin
+ [[nodiscard]] int head( int e ) const {
+  ADS_PRE( ( e >= 0 ) && ( e < places() ) );
+  return( f_to[ std::size_t( e ) ] );
+  }
+
+ /// the flow of each edge \f$ e \f$ set to \f$ F[ e / 2 ] \f$, e.g., one
+ /// that another solver computed, and the excesses and the deficits left by
+ /// `setCapacity()` forgotten, in \f$ O( n + m ) \f$ time
+ /// \pre \f$ |F| \f$ is the number of edges, \f$ 0 \le F[ e / 2 ] \le
+ ///      c( e ) \f$
+ void assignFlow( const std::vector< long long > & F );
+
  /// the maximum flow from \f$ s \f$ to \f$ t \f$, starting from the flow
  /// there is, after the excesses and the deficits left by `setCapacity()`
  /// are routed: the change of its value \f$ | f | \f$, the net flow into

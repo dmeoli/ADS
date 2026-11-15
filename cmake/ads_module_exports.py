@@ -15,12 +15,13 @@
 #           -DADS_WITH_FASTFLOW -I<fastflow> -DADS_WITH_MPI -I<mpi> \         #
 #           -DADS_WITH_BOOST                                                  #
 #                                                                             #
-# The headers of the optional executors and of the interoperation with Boost  #
-# are compiled only with their library [see include/ADS/parallel,             #
-# include/ADS/distributed and include/ADS/interop/boost]: their names are     #
-# exported inside the #if of their macro, given by ads_sets.txt, and they are #
-# read only if the flags define the macro. To be run whenever a header gains  #
-# or loses a name or changes its set.                                         #
+# The headers of the optional executors are compiled only with their          #
+# library [see include/ADS/parallel and include/ADS/distributed]: their       #
+# names are exported inside the #if of their macro, given by ads_sets.txt,    #
+# and they are read only if the flags define the macro; those of the set      #
+# interop, which include the headers of another library [see                  #
+# include/ADS/interop], are in no module and are not read. To be run          #
+# whenever a header gains or loses a name or changes its set.                 #
 ###############################################################################
 
 import argparse
@@ -423,13 +424,15 @@ def main():
 
     root = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
     inc = os.path.join( root , "include" )
-    # the headers, each with its set
+    # the headers, each with its set, but for those of interop, which no
+    # module exports
     public = ads_sets.public_headers()
     errors = ads_sets.check( SETS , ads_sets.direct( ads_sets.includes() ,
                                                      set( public ) ) )
     if errors:
         sys.exit( "ads_sets.py:\n  " + "\n  ".join( errors ) )
-    headers = public
+    exported = { s for m in ads_sets.MEMBERS.values() for s in m }
+    headers = [ h for h in public if SETS.set[ h[ 4: ] ] in exported ]
     # an optional header whose macro the flags do not define is not there
     defined = { f[ 2: ].split( "=" )[ 0 ] for f in args.flags
                 if f.startswith( "-D" ) }

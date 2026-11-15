@@ -722,9 +722,50 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P >
 /*------------------------- CLASS MaxFlowObserver --------------------------*/
 /*--------------------------------------------------------------------------*/
 
+/// the engines of the solves of a `MaxFlowObserver`, objects that the
+/// observer keeps: `scratch( net , s , t , how )` gives the value of a
+/// maximum flow of `net` from the zero flow, and `warm( net , s , t , how ,
+/// v )` that of a maximum flow from the flow that `net` keeps, of value
+/// \f$ v \f$ before the capacities changed (a capacity cut below its flow
+/// leaving the excess and the deficit that `FlowNetwork::maxFlow()` routes
+/// first); each leaves a maximum flow in `net`, whose minimum cut the
+/// observer reads. It is the point where a solve by another library plugs
+/// in, which runs on a copy of `net` and gives its flow back by
+/// `FlowNetwork::assignFlow()` [see `PreflowEngine` of
+/// `ADS/interop/lemon/Warm.h` and \ref theory_graph_lemon]
+template< class E >
+concept FlowEngine = std::default_initializable< E > &&
+		     requires( E & x , FlowNetwork & net , int s , int t ,
+			       Augment how , long long v )
+{
+		      {
+		       x.scratch( net , s , t , how )
+		       } -> std::convertible_to< long long >;
+		      {
+		       x.warm( net , s , t , how , v )
+		       } -> std::convertible_to< long long >;
+		      };
+
+/// the engine of ADS, both solves by the augmentations `how` of
+/// `FlowNetwork::maxFlow()` [see `MaxFlow.h`]
+struct AugmentEngine
+{
+ /// the value of a maximum flow from the zero flow
+ static long long scratch( FlowNetwork & net , int s , int t , Augment how ) {
+  return( net.maxFlow( s , t , how ) );
+  }
+ /// the value of a maximum flow from the flow of `net`, of value \f$ v \f$
+ static long long warm( FlowNetwork & net , int s , int t , Augment how ,
+			long long v ) {
+  return( v + net.maxFlow( s , t , how ) );
+  }
+ };
+
 /// the maximum flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, the weights
-/// the capacities, kept up to date
-template< Graph G , ReoptPolicy P = RatioPolicy >
+/// the capacities, kept up to date, the solves made by the engine `E`, the
+/// augmentations of ADS by default
+template< Graph G , ReoptPolicy P = RatioPolicy ,
+	  FlowEngine E = AugmentEngine >
  requires std::is_integral_v< typename G::Weight >
 class MaxFlowObserver : public EventQueue< typename G::Weight , P >
 {
@@ -802,6 +843,7 @@ class MaxFlowObserver : public EventQueue< typename G::Weight , P >
  Augment f_how;           ///< the augmenting paths
  bool f_ready = false;    ///< whether there is f
  FlowNetwork f_net{ 0 };  ///< the network
+ E f_engine;              ///< the engine of the solves
  /// the number of the arc \f$ ( u , v ) \f$ in the network
  std::unordered_map< std::uint64_t , int > f_arc;
  long long f_value = 0;    ///< \f$ | f | \f$
