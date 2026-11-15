@@ -961,10 +961,10 @@
  end and records that place for its key, the last one of that key; a send
  without a merge appends past every place recorded and marks its key
  \f$ \bot \f$, so that the next send of that key with a merge, finding
- \f$ \bot \f$, merges into nothing and records a place past it; a push that takes
- \f$ j > 0 \f$ messages empties the map, so that no place survives the
- shift, and one that takes none changes neither; `leftovers()` empties the
- outbox and the map together. For (ii), a merge acts only on the outbox of
+ \f$ \bot \f$, merges into nothing and records a place past it; a push
+ that takes \f$ j > 0 \f$ messages empties the map, so that no place
+ survives the shift, and one that takes none changes neither;
+ `leftovers()` empties the outbox and the map together. For (ii), a merge acts only on the outbox of
  its caller, whose messages are not counted in \f$ C \f$, which counts a
  message only from the addition before its push (Lemma 8): the message
  merged is removed before it is ever counted, while \f$ y \f$ stays where
