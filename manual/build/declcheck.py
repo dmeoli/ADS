@@ -34,9 +34,21 @@ the headers named by the declaration blocks of the chapter and by the
 ``g++ -std=c++20 -fsyntax-only``.  An example that needs a header of another
 chapter names it in an ``#include`` line of its own.
 
+An example whose first line is ``// with <library>``, a name of
+``LIBRARIES`` (e.g., ``// with Boost``), needs that library: the examples of
+a chapter with the same library are a translation unit of their own,
+compiled with the flags of the library (and with those of the environment
+variable ``DECLCHECK_<KEY>``, e.g., ``DECLCHECK_LEMON="-I<dir>"``) where its
+header is found, and skipped with a message where it is not.  With
+``--tests chapter.md:test.cpp[,test.cpp]`` the code of each example of the
+chapter, but its ``#include`` lines and its marker, must also be in one of
+the tests, the spaces, the ends of the lines and the statements
+``CHECK( ... );`` of the tests aside, so that the examples that the manual
+prints are those that the tests run.
+
 Usage (from manual/build/):
     python3 declcheck.py ../../include ../chapters [--no-examples] [-j N]
-                         [chapter.md ...]
+                         [--tests chapter.md:test.cpp,...] [chapter.md ...]
 Exit status 1 if any block does not match.
 """
 
@@ -45,6 +57,7 @@ import bisect
 import concurrent.futures
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -54,6 +67,28 @@ MARKER = re.compile(r'^\s*//\s*declarations of\s+((?:<[^>]+>\s*)+)$')
 MARKER_MORE = re.compile(r'^\s*//\s*((?:<[^>]+>\s*)+)$')
 FENCE = re.compile(r'^```cpp[^\n]*\n(.*?)^```', re.S | re.M)
 SNIPPET = re.compile(r'^\s*--8<--\s+"[^"]+"\s*$')
+WITH = re.compile(r'^\s*//\s*with\s+(\S.*?)\s*$')
+
+# the libraries of the examples marked "// with <library>": the flags of
+# the compiler and the header whose presence tells that it is installed
+# (MPI and Boost.MPI take the flags of mpicxx besides)
+LIBRARIES = {
+    'C++23': (['-std=c++23'], 'flat_map'),
+    'Boost': (['-DADS_WITH_BOOST'], 'boost/version.hpp'),
+    'LEMON': (['-DADS_WITH_LEMON', '-DLEMON_ONLY_TEMPLATES'],
+              'lemon/list_graph.h'),
+    'GMP': (['-DADS_WITH_GMP'], 'gmpxx.h'),
+    'BLAS': (['-DADS_WITH_BLAS'], 'cblas.h'),
+    'oneTBB': (['-DADS_WITH_TBB'], 'tbb/task_arena.h'),
+    'OpenMP': (['-fopenmp'], 'omp.h'),
+    'std::execution': (['-DADS_WITH_STDPAR'], 'execution'),
+    'stdexec': (['-DADS_WITH_STDEXEC'], 'stdexec/execution.hpp'),
+    'Taskflow': (['-DADS_WITH_TASKFLOW'], 'taskflow/taskflow.hpp'),
+    'Kokkos': (['-DADS_WITH_KOKKOS'], 'Kokkos_Core.hpp'),
+    'MPI': (['-DADS_WITH_MPI'], 'mpi.h'),
+    'Boost.MPI': (['-DADS_WITH_MPI', '-DADS_WITH_BOOST_MPI'],
+                  'boost/mpi/communicator.hpp'),
+}
 
 # ----------------------------------------------------------------------------
 # tokens
@@ -597,7 +632,64 @@ def kind(code):
                     break
                 names += more.group(1)
             return 'decl', re.findall(r'<([^>]+)>', names)
+    if lines:
+        m = WITH.match(lines[0])
+        if m:
+            return 'example', m.group(1)
     return 'example', None
+
+
+def library_key(name):
+    """The suffix of the variable DECLCHECK_<KEY> of a library."""
+    return re.sub(r'\W', '', name.replace('+', 'X')).upper()
+
+
+def library_flags(name):
+    """The flags of the library name, None if it is not found."""
+    flags, probe = LIBRARIES[name]
+    flags = list(flags) + shlex.split(
+        os.environ.get('DECLCHECK_' + library_key(name), ''))
+    if name in ('MPI', 'Boost.MPI'):
+        mpi = mpi_flags()
+        if mpi is None:
+            return None
+        flags += mpi
+    r = subprocess.run(['g++', '-std=c++20', '-fsyntax-only', '-x', 'c++',
+                        '-'] + flags, input='#include <%s>\n' % probe,
+                       capture_output=True, text=True)
+    return flags if r.returncode == 0 else None
+
+
+def squeeze(text):
+    """The text with each run of spaces and ends of lines as one space."""
+    return ' '.join(text.split())
+
+
+def without_checks(text):
+    """The text of a test without its statements CHECK( ... );, which may
+    stand between the lines of an example."""
+    out, i = [], 0
+    for m in re.finditer(r'\bCHECK\s*\(', text):
+        if m.start() < i:
+            continue
+        depth, j = 1, m.end()
+        while depth and j < len(text):
+            depth += {'(': 1, ')': -1}.get(text[j], 0)
+            j += 1
+        k = re.match(r'\s*;', text[j:])
+        out.append(text[i:m.start()])
+        i = j + (k.end() if k else 0)
+    out.append(text[i:])
+    return ''.join(out)
+
+
+def example_body(code):
+    """The code of an example but its #include lines and its marker."""
+    lines = code.split('\n')
+    if lines and WITH.match(lines[0]):
+        lines = lines[1:]
+    return squeeze('\n'.join(l for l in lines
+                              if not re.match(r'^\s*#\s*include\b', l)))
 
 
 def check_decl(inc, headers, code, where):
@@ -669,8 +761,10 @@ def mpi_flags():
 
 
 def compile_unit(args):
-    inc, tmp, chapter, src, extra = args
+    inc, tmp, chapter, src, extra, lib = args
     base = os.path.splitext(os.path.basename(chapter))[0]
+    if lib is not None:
+        base += '-' + library_key(lib).lower()
     path = os.path.join(tmp, base + '.cpp')
     with open(path, 'w', encoding='utf-8') as f:
         f.write(src)
@@ -679,7 +773,8 @@ def compile_unit(args):
                         '-Wno-unused-variable', '-Wno-unused-but-set-variable',
                         '-I' + inc] + extra + [path],
                        capture_output=True, text=True)
-    return chapter, r.returncode, r.stderr, time.time() - t0
+    what = chapter if lib is None else '%s with %s' % (chapter, lib)
+    return what, r.returncode, r.stderr, time.time() - t0
 
 
 def main():
@@ -693,7 +788,15 @@ def main():
                     help='compile the examples only')
     ap.add_argument('-j', type=int, default=os.cpu_count() or 1)
     ap.add_argument('--keep', help='write the translation units here')
+    ap.add_argument('--tests', action='append', default=[],
+                    metavar='CHAPTER:TEST[,TEST]',
+                    help='the tests that hold the marked examples of a '
+                         'chapter')
     a = ap.parse_args()
+    tests = {}
+    for t in a.tests:
+        chapter, files = t.split(':', 1)
+        tests[os.path.basename(chapter)] = files.split(',')
 
     inc = os.path.abspath(a.include)
     files = a.files or sorted(
@@ -705,7 +808,7 @@ def main():
     t0 = time.time()
     for path in files:
         rel = os.path.relpath(path)
-        headers, examples = [], []
+        headers, examples, marked = [], [], {}
         for line, code in blocks(path):
             k, hs = kind(code)
             count[k] += 1
@@ -715,12 +818,36 @@ def main():
                     for e in check_decl(inc, hs, code, '%s:%d' % (rel, line)):
                         print(e)
                         nerr += 1
+            elif hs is not None:
+                if hs not in LIBRARIES:
+                    print('%s:%d: no library %s' % (rel, line, hs))
+                    nerr += 1
+                else:
+                    marked.setdefault(hs, []).append((line, code))
             elif k == 'example':
                 examples.append((line, code))
+        if os.path.basename(path) in tests:
+            text = ''
+            for t in tests[os.path.basename(path)]:
+                text += squeeze(without_checks(
+                    open(t, encoding='utf-8').read())) + ' '
+            for lib in [None] + list(marked):
+                for line, code in (examples if lib is None
+                                   else marked[lib]):
+                    if example_body(code) not in text:
+                        print('%s:%d: the example is not in %s' %
+                              (rel, line, ', '.join(
+                                  tests[os.path.basename(path)])))
+                        nerr += 1
         if examples and not a.no_examples:
             units.append((inc, None, path,
                           example_unit(os.path.abspath(path), examples,
                                        headers)))
+        if not a.no_examples:
+            for lib in sorted(marked):
+                units.append((inc, lib, path,
+                              example_unit(os.path.abspath(path),
+                                           marked[lib], headers)))
     t1 = time.time()
     print('declcheck: %d declaration blocks, %d examples, %d extracts; '
           'declarations checked in %.1f s' % (count['decl'], count['example'],
@@ -730,8 +857,18 @@ def main():
         os.makedirs(tmp, exist_ok=True)
         jobs = []
         mpi = None
+        found = {}
         for u in units:
             extra = []
+            if u[1] is not None:
+                if u[1] not in found:
+                    found[u[1]] = library_flags(u[1])
+                if found[u[1]] is None:
+                    print('declcheck: examples of %s with %s skipped, %s not '
+                          'found' % (os.path.relpath(u[2]), u[1], u[1]))
+                    continue
+                jobs.append((u[0], tmp, u[2], u[3], found[u[1]], u[1]))
+                continue
             if 'MPI' in u[3]:
                 if mpi is None:
                     mpi = mpi_flags() or []
@@ -740,7 +877,7 @@ def main():
                           % os.path.relpath(u[2]))
                     continue
                 extra = ['-DADS_WITH_MPI'] + mpi
-            jobs.append((u[0], tmp, u[2], u[3], extra))
+            jobs.append((u[0], tmp, u[2], u[3], extra, None))
         with concurrent.futures.ThreadPoolExecutor(a.j) as ex:
             for chapter, rc, err, dt in ex.map(compile_unit, jobs):
                 rel = os.path.relpath(chapter)

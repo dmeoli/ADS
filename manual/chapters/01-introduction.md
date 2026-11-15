@@ -1459,6 +1459,8 @@ contiguous (and, for the sorts of the book, also when it is not). With `ADS_WITH
 and `mpq_class` (and the same members of `Rational`) pass the numbers to
 and from GMP without a string. The tests are `engineered_interop.*`; with
 `ADS_WITH_BOOST` off, they check only the part of the standard library.
+[Appendix C](C-libraries.md#app-C) shows these adapters at work, with those
+of LEMON and of the runtimes of a program, by examples.
 
 ## 1.9 The two levels of the library {#sec-1-9}
 
@@ -1659,10 +1661,11 @@ structures (chapter [22](22-succinct.md#ch-22)), the external memory
 (chapter [23](23-external.md#ch-23)), the concurrency (chapter
 [24](24-concurrent.md#ch-24)), the parallelism (chapter
 [25](25-parallel.md#ch-25)) and the distributed computations (chapter
-[26](26-distributed.md#ch-26)). Then two appendices describe how to write a
-new structure ([appendix A](A-writing-structure.md#app-A)) and the
-benchmarks ([appendix B](B-benchmarks.md#app-B)), and the bibliography
-closes the manual.
+[26](26-distributed.md#ch-26)). Then three appendices describe how to write
+a new structure ([appendix A](A-writing-structure.md#app-A)), the
+benchmarks ([appendix B](B-benchmarks.md#app-B)) and, by examples, the use
+of ADS with other libraries ([appendix C](C-libraries.md#app-C)), and the
+bibliography closes the manual.
 
 Part I is needed by all the others, and Part II by most of Part III. In turn,
 the chapters of Part IV need the structures that they compress, store or

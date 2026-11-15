@@ -451,13 +451,14 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DADS_WITH_MPI=ON \
                 -DMPIEXEC_PREFLAGS="${{ matrix.preflags }}" | tee cmake.log
           grep -q 'ADS: MPI ON' cmake.log
-          targets=engineered_mpi
+          targets="engineered_mpi interop_examples_mpi"
           if [ "${{ matrix.boost }}" = true ]; then
             grep -q 'runtimes of the program found:.*BoostMPI' cmake.log
             targets="$targets engineered_boost_mpi"
           fi
           cmake --build build --parallel 4 --target $targets
-          ctest --test-dir build -R '^engineered_(boost_)?mpi[.]' \
+          ctest --test-dir build \
+                -R '^(engineered_(boost_)?mpi|interop_examples_mpi)[.]' \
                 --output-on-failure
 
   # the executors on the runtimes of a program, required: oneTBB on the
@@ -466,7 +467,9 @@ jobs:
   # Taskflow and Kokkos (built on its backend of OpenMP), under the parallel
   # tests of the library and in their own, by CMake, with the components
   # found again by an installed package; the senders and Taskflow also under
-  # ThreadSanitizer (OpenMP and oneTBB are not instrumented)
+  # ThreadSanitizer (OpenMP and oneTBB are not instrumented); the examples of
+  # appendix C of the manual on all of them, with Boost, GMP, OpenBLAS and
+  # abLEMON besides
   interop:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -479,7 +482,15 @@ jobs:
       - name: oneTBB, stdexec, Taskflow and Kokkos
         run: |
           sudo apt-get update
-          sudo apt-get install -y libtbb-dev ninja-build
+          sudo apt-get install -y libtbb-dev ninja-build libboost-dev \
+              libgmp-dev libopenblas-dev
+          git clone --quiet --depth 1 https://github.com/dmeoli/abLEMON.git \
+              "$RUNNER_TEMP/ablemon"
+          cmake -S "$RUNNER_TEMP/ablemon" -B "$RUNNER_TEMP/ablemon-build" \
+                -G Ninja -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/ablemon-inst"
+          cmake --build "$RUNNER_TEMP/ablemon-build"
+          cmake --install "$RUNNER_TEMP/ablemon-build"
           for r in NVIDIA/stdexec:$STDEXEC_COMMIT \
                    taskflow/taskflow:$TASKFLOW_COMMIT; do
             d="$RUNNER_TEMP/${r%%/*}"
@@ -502,15 +513,18 @@ jobs:
                 -DADS_WITH_TBB=ON -DADS_WITH_OPENMP=ON \
                 -DADS_WITH_STDPAR=ON -DADS_WITH_STDEXEC=ON \
                 -DADS_WITH_TASKFLOW=ON -DADS_WITH_KOKKOS=ON \
+                -DADS_WITH_BOOST=ON -DADS_WITH_GMP=ON -DADS_WITH_BLAS=ON \
+                -DADS_WITH_LEMON=ON -DLEMON_ROOT="$RUNNER_TEMP/ablemon-inst" \
                 -DSTDEXEC_INCLUDE_DIR="$RUNNER_TEMP/NVIDIA/include" \
                 -DTaskflow_INCLUDE_DIR="$RUNNER_TEMP/taskflow" \
                 -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/kokkos-inst" \
                 -DCMAKE_INSTALL_PREFIX="$PWD/inst" | tee cmake.log
           grep -q 'found: StdPar;stdexec;Taskflow;Kokkos' cmake.log
           cmake --build build --target engineered_parallel \
-                engineered_speculative interop_parallel abi_units
+                engineered_speculative interop_parallel interop_examples \
+                abi_units
           tests='^(engineered_parallel|engineered_speculative'
-          tests="$tests|interop_parallel)[.]|^abi-units$"
+          tests="$tests|interop_parallel|interop_examples)[.]|^abi-units$"
           ctest --test-dir build --output-on-failure -R "$tests"
           cmake --install build
           grep -q 'Taskflow;Kokkos' inst/share/cmake/ADS/ADSConfig.cmake
