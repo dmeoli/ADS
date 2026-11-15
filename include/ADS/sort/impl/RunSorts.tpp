@@ -20,13 +20,14 @@ namespace ADS
 namespace detail
 {
 
-/// the runs and their merges of Powersort
-template< class T , class C >
+/// the runs and their merges of Powersort, on the storage S of the items
+/// (a vector or a span)
+template< class T , class C , class S = std::span< T > >
 class RunMerger
 {
 
  public:
- RunMerger( std::vector< T > & A , C & less ) : f_A( A ) , f_less( less ) { }
+ RunMerger( S & A , C & less ) : f_A( A ) , f_less( less ) { }
 
  /// the end of the run from lo, extended to minrun items, made ascending;
  /// extended() tells whether it had to be extended
@@ -327,7 +328,7 @@ class RunMerger
   return( gallopLeftIn( f_A , x , lo , hi ) );
   }
 
- std::vector< T > & f_A;    ///< the vector
+ S & f_A;                   ///< the items
  C & f_less;                ///< the order
  std::vector< T > f_B;      ///< the buffer of the shorter run
  std::size_t f_gallop = 7;  ///< the wins in a row that start galloping
@@ -358,8 +359,8 @@ inline int nodePower( std::size_t s1 , std::size_t s2 , std::size_t e2 ,
 /// the merges of Powersort over the runs of the n items from 0 on, where
 /// next( lo ) makes the run from lo ascending and gives its end and whether
 /// it was extended; the number of runs
-template< class T , class C , class N >
-std::size_t powerMerges( RunMerger< T , C > & M , std::size_t n , N next )
+template< class T , class C , class St , class N >
+std::size_t powerMerges( RunMerger< T , C , St > & M , std::size_t n , N next )
 {
  if( n == 0 )
   return( 0 );
@@ -398,12 +399,12 @@ std::size_t powerMerges( RunMerger< T , C > & M , std::size_t n , N next )
 
 }  // end( namespace detail )
 
-template< class T , class C >
-void powerSort( std::vector< T > & A , C less , std::size_t * runs )
+template< SortStore Store , class T , class C >
+void powerSort( Store && A , C less , std::size_t * runs )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
- detail::RunMerger< T , C > M( A , less );
+ detail::RunMerger< T , C , std::remove_reference_t< Store > > M( A , less );
  const std::size_t count = detail::powerMerges( M , n ,
 						[ & ]( std::size_t lo ) {
   const std::size_t e = M.nextRun( lo , 24 );
@@ -412,6 +413,15 @@ void powerSort( std::vector< T > & A , C less , std::size_t * runs )
  if( runs )
   *runs = count;
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void powerSort( std::vector< T > & A , C less ,
+				 std::size_t * runs )
+{
+ return( powerSort( std::move( A ) , less , runs ) );
  }
 
 /*--------------------------------------------------------------------------*/

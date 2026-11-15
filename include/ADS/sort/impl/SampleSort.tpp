@@ -59,11 +59,12 @@ void insertion( T * a , std::size_t n , C & less )
   }
  }
 
-template< class T , class C >
+/// on the storage S of the items (a vector or a span)
+template< class T , class C , class S = std::span< T > >
 class Sorter
 {
  public:
- Sorter( std::vector< T > & A , C & less ) : A( A ) , less( less ) { }
+ Sorter( S & A , C & less ) : A( A ) , less( less ) { }
 
  /// A[ lo .. hi ) sorted
  void sort( std::size_t lo , std::size_t hi );
@@ -71,7 +72,7 @@ class Sorter
  private:
  static constexpr std::size_t B = kBlock< T >;
 
- std::vector< T > & A;
+ S & A;
  C & less;
  std::unique_ptr< T[] > buf;   // the buffers of the buckets,
  std::size_t bufSize = 0;      // not initialized for bytes,
@@ -106,8 +107,8 @@ class Sorter
  void build( const T * s , std::size_t j , std::size_t a , std::size_t b );
  };
 
-template< class T , class C >
-void Sorter< T , C >::build( const T * s , std::size_t j , std::size_t a ,
+template< class T , class C , class S >
+void Sorter< T , C , S >::build( const T * s , std::size_t j , std::size_t a ,
 			    std::size_t b )
 {
  const std::size_t m = a + ( b - a ) / 2;
@@ -118,8 +119,8 @@ void Sorter< T , C >::build( const T * s , std::size_t j , std::size_t a ,
   }
  }
 
-template< class T , class C >
-bool Sorter< T , C >::splitters( std::size_t lo , std::size_t hi )
+template< class T , class C , class S >
+bool Sorter< T , C , S >::splitters( std::size_t lo , std::size_t hi )
 {
  const std::size_t n = hi - lo;
  const int levels = int( std::bit_width( n / kLeaf ) ) - 1;  // log2
@@ -153,8 +154,8 @@ bool Sorter< T , C >::splitters( std::size_t lo , std::size_t hi )
  return( true );
  }
 
-template< class T , class C >
-void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
+template< class T , class C , class S >
+void Sorter< T , C , S >::sort( std::size_t lo , std::size_t hi )
 {
  const std::size_t n = hi - lo;
  if( n <= kBase ) {
@@ -294,13 +295,21 @@ void Sorter< T , C >::sort( std::size_t lo , std::size_t hi )
 
 }  // end( namespace detail::ss )
 
-template< class T , class C >
-void sampleSort( std::vector< T > & A , C less )
+template< SortStore Store , class T , class C >
+void sampleSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
- detail::ss::Sorter< T , C > S( A , less );
+ detail::ss::Sorter< T , C , std::remove_reference_t< Store > > S( A , less );
  S.sort( 0 , A.size() );
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void sampleSort( std::vector< T > & A , C less )
+{
+ return( sampleSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

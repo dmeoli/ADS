@@ -87,6 +87,22 @@ inline bool Rational::lowest( void ) const
 	  detail::isOne( BigInteger::gcd( f_num , f_den ) ) );
  }
 
+#if defined( ADS_WITH_GMP )
+
+inline Rational Rational::fromGmp( mpq_srcptr q )
+{
+ return( Rational( BigInteger::fromGmp( mpq_numref( q ) ) ,
+		    BigInteger::fromGmp( mpq_denref( q ) ) ) );
+ }
+
+inline void Rational::toGmp( mpq_ptr q ) const
+{
+ f_num.toGmp( mpq_numref( q ) );
+ f_den.toGmp( mpq_denref( q ) );
+ }
+
+#endif
+
 inline std::string Rational::toString( void ) const
 {
  if( detail::isOne( f_den ) )

@@ -129,9 +129,38 @@ inline std::vector< Comparator > bitonicNetwork( std::size_t n );
 /// \end{array}}
 /// \f]
 /// \pre each comparator is within \f$ A \f$
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void applyNetwork( Store && A , const std::vector< Comparator > & N ,
+		   C less = C() );
+
+/// `applyNetwork()` above on a vector
 template< class T , class C = std::less<> >
 void applyNetwork( std::vector< T > & A , const std::vector< Comparator > & N ,
 		   C less = C() );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `applyNetwork()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  applyNetwork( v , std::forward< P >( p )... );
+  }
+decltype( auto ) applyNetwork( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( applyNetwork( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

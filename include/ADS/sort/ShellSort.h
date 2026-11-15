@@ -116,6 +116,13 @@ inline std::vector< std::size_t > ciuraGaps( std::size_t n );
 /// \f]
 /// \pre the gaps are positive and increase
 /// \post \f$ A \f$ holds the same items, sorted if the first gap is 1 (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void shellSort( Store && A , const std::vector< std::size_t > & gaps ,
+		C less = C() );
+
+/// `shellSort()` above on a vector
 template< class T , class C = std::less<> >
 void shellSort( std::vector< T > & A ,
 		const std::vector< std::size_t > & gaps ,
@@ -128,8 +135,34 @@ void shellSort( std::vector< T > & A ,
 /// 2 & \quad \mathrm{shellSort}( A , n , \mathrm{knuthGaps}( n ) )
 /// \end{array}}
 /// \f]
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void shellSort( Store && A , C less = C() );
+
+/// `shellSort()` above on a vector
 template< class T , class C = std::less<> >
 void shellSort( std::vector< T > & A , C less = C() );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `shellSort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ shellSort( v , std::forward< P >( p )... ); }
+decltype( auto ) shellSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( shellSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

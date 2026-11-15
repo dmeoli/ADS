@@ -30,7 +30,12 @@
  * and no `decrease()`, and is therefore a model of the base concept only,
  * as are `DaryHeap`, `BucketQueue`, `DialQueue`, `RadixHeap` and
  * `std::priority_queue`. How an algorithm lowers a priority on a queue of
- * either kind is `decrease_key_of()` of `Capabilities.h`.
+ * either kind is `decrease_key_of()` of `Capabilities.h`. The handles are
+ * read in the same way: `queue_handle_t< Q >` is `Q::Handle`, else the
+ * `handle_type` of the standard spelling, and `queue_decrease( q , h , p )`
+ * calls `q.decrease( h , p )` of a queue with `Handle`, else the free
+ * function found by ADL, so that a mutable queue of another library
+ * lowers its keys natively once such a function is given for it.
  *
  * \see A. Montresor, Algoritmi e Strutture Dati, 2025, section 10.1,
  *      https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf
@@ -116,6 +121,7 @@ namespace detail
 void queue_min( void ) = delete;  // the free ones, only by ADL
 void queue_deleteMin( void ) = delete;
 void queue_insert( void ) = delete;
+void queue_decrease( void ) = delete;
 
 template< class Q >
 concept member_min = requires( Q & q )
@@ -208,8 +214,57 @@ struct QueueInsert
   }
  };
 
+template< class Q >
+struct queue_handle
+{ };
+
+template< class Q >
+ requires(
+   requires { typename Q::handle_type; } &&
+   ! requires { typename Q::Handle; } )
+struct queue_handle< Q >
+{
+ using type = typename Q::handle_type;
+ };
+
+template< class Q >
+ requires requires { typename Q::Handle; }
+struct queue_handle< Q >
+{
+ using type = typename Q::Handle;
+ };
+
+template< class Q , class H , class P >
+concept member_decrease =
+  requires { typename Q::Handle; } && requires( Q & q , H && h , P && p )
+{
+   q.decrease( std::forward< H >( h ) , std::forward< P >( p ) );
+   };
+template< class Q , class H , class P >
+concept free_decrease = requires( Q & q , H && h , P && p )
+{
+ queue_decrease( q , std::forward< H >( h ) , std::forward< P >( p ) );
+ };
+
+struct QueueDecrease
+{
+ template< class Q , class H , class P >
+  requires( member_decrease< Q , H , P > || free_decrease< Q , H , P > )
+ constexpr void operator()( Q & q , H && h , P && p ) const {
+  if constexpr( member_decrease< Q , H , P > )
+   q.decrease( std::forward< H >( h ) , std::forward< P >( p ) );
+  else
+   queue_decrease( q , std::forward< H >( h ) , std::forward< P >( p ) );
+  }
+ };
+
 }  // end( namespace detail )
 /// \endcond
+
+/// the handles of the queue `Q`, which its insertions return: `Q::Handle`,
+/// else `Q::handle_type` (the mutable heaps of Boost.Heap)
+template< class Q >
+using queue_handle_t = typename detail::queue_handle< Q >::type;
 
 /// the item of smallest priority of \f$ q \f$: `q.min()`, else
 /// `queue_min( q )` found by ADL, else `q.top()`
@@ -226,6 +281,17 @@ inline constexpr detail::QueueDeleteMin queue_deleteMin{};
 /// `q.insert( x , a... )`, else `queue_insert( q , x , a... )` found by
 /// ADL, else `q.push( x , a... )`
 inline constexpr detail::QueueInsert queue_insert{};
+
+/// the priority of the item of the handle \f$ h \f$ of \f$ q \f$ lowered
+/// to \f$ p \f$, i.e., the item moved toward the minimum: `q.decrease( h ,
+/// p )` if `Q` declares a `Handle`, the handles of the book, else
+/// `queue_decrease( q , h , p )` found by ADL. There is no step on the
+/// spelling of another library, since the names disagree on the direction:
+/// Boost.Heap calls `increase()` the move toward the top of its heap, and
+/// `ADS/interop/boost/Heap.h` gives the free function that says so
+/// \pre \f$ h \f$ is the handle of an item in \f$ q \f$, whose priority is
+///      not below \f$ p \f$
+inline constexpr detail::QueueDecrease queue_decrease{};
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- CONCEPTS ---------------------------------*/

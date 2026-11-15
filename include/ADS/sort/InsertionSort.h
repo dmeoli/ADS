@@ -72,6 +72,13 @@ namespace ADS
 /// \pre \f$ \mathit{lo} \le \mathit{hi} \le n \f$
 /// \post \f$ A[ \mathit{lo} .. \mathit{hi} - 1 ] \f$ is sorted, with the same
 ///       items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void insertionSort( Store && A , std::size_t lo , std::size_t hi ,
+		    C less = C() );
+
+/// `insertionSort()` above on a vector
 template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 		    C less = C() );
@@ -96,6 +103,12 @@ void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void insertionSortSentinel( Store && A , C less = C() );
+
+/// `insertionSortSentinel()` above on a vector
 template< class T , class C = std::less<> >
 void insertionSortSentinel( std::vector< T > & A , C less = C() );
 
@@ -107,8 +120,54 @@ void insertionSortSentinel( std::vector< T > & A , C less = C() );
 /// 2 & \quad \mathrm{insertionSort}( A , 0 , n )
 /// \end{array}}
 /// \f]
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void insertionSort( Store && A , C less = C() );
+
+/// `insertionSort()` above on a vector
 template< class T , class C = std::less<> >
 void insertionSort( std::vector< T > & A , C less = C() );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `insertionSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  insertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) insertionSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( insertionSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
+
+/// `insertionSortSentinel()` on the range \f$ A \f$ [see `SortRange`], the
+/// other arguments as for a vector, in place: on the span of its items if \f$
+/// A \f$ is contiguous, on its view otherwise, since the sort reads the items
+/// by their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  insertionSortSentinel( v , std::forward< P >( p )... );
+  }
+decltype( auto ) insertionSortSentinel( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( insertionSortSentinel( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

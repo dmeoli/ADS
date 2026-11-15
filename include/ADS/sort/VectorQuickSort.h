@@ -219,6 +219,11 @@ concept VectorKey =
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< SortStore Store , VectorKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void vectorQuickSort( Store && A );
+
+/// `vectorQuickSort()` above on a vector
 template< VectorKey T >
 void vectorQuickSort( std::vector< T > & A );
 
@@ -254,6 +259,28 @@ void vectorQuickSort( std::vector< T > & A );
 /// \f]
 template< VectorKey T >
 void vectorQuickSort( T * a , std::size_t n );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `vectorQuickSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  vectorQuickSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) vectorQuickSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( vectorQuickSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

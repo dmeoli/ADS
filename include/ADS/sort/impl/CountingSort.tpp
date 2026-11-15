@@ -17,8 +17,8 @@
 namespace ADS
 {
 
-template< class T >
-void countingSort( std::vector< T > & A , std::size_t k )
+template< RankStore Store , class T >
+void countingSort( Store && A , std::size_t k )
 {
  const auto before = detail::auditCopy( A );
  std::vector< std::size_t > B( k , 0 );  // the occurrences
@@ -31,6 +31,14 @@ void countingSort( std::vector< T > & A , std::size_t k )
   for( std::size_t c = B[ i ] ; c > 0 ; --c )
    A[ j++ ] = T( i );
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T >
+ADS_SORT_FORWARD void countingSort( std::vector< T > & A , std::size_t k )
+{
+ return( countingSort( std::move( A ) , k ) );
  }
 
 /*--------------------------------------------------------------------------*/

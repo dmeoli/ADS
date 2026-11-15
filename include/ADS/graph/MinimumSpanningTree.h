@@ -217,12 +217,13 @@ std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
 /// the tree of `prim()` above, on the priority queue \f$ q \f$ given [see
 /// `PriorityQueue.h`], whose priority is the weight or the pair
 /// ( weight , node ), which breaks the ties by the names of the nodes; its
-/// work in `*c`, if given. The fall of a key (line 9) is a `decrease()` on
-/// the handle of the node if the queue lowers its keys natively, a new
-/// insertion of the node otherwise (`decrease_key_of()` of
-/// `Capabilities.h`), whose stale copies line 6 skips when they come out
-/// of \f$ Q \f$, since their node is already in the tree; the queue may
-/// then end with stale copies in it
+/// work in `*c`, if given. The queue is that of `PriorityFrontier`: a
+/// queue without a `Priority` holds the pairs ( weight , node ). The fall
+/// of a key (line 9) is `queue_decrease()` on the handle of the node if the
+/// queue lowers its keys natively, a new insertion of the node otherwise
+/// (`decrease_key_of()` of `Capabilities.h`), whose stale copies line 6
+/// skips when they come out of \f$ Q \f$, since their node is already in
+/// the tree; the queue may then end with stale copies in it
 ///
 /// In pseudocode (section 14.3): the key of a node out of the tree is the
 /// weight of its lightest edge to the tree, and the node of least key joins
@@ -252,10 +253,7 @@ std::vector< int > prim( const G & g , int r , Frontier how = Frontier::HEAP );
 /// \f]
 /// \pre the graph is unoriented, \f$ r \f$ is a node, \f$ q \f$ is empty
 /// \post a minimum spanning tree of the component of \f$ r \f$ (audit)
-template< Graph G , PriorityQueue Q >
- requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
-	   requires
-{ typename Q::Priority; } )
+template< Graph G , FrontierQueue Q >
 std::vector< int > prim( const G & g , int r , Q & q ,
 			 FrontierCounts * c = nullptr );
 

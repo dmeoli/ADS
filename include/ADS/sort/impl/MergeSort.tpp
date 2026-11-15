@@ -17,9 +17,8 @@
 namespace ADS
 {
 
-template< class T , class C >
-void mergeParts( std::vector< T > & A , std::vector< T > & B ,
-		 std::size_t start ,
+template< RankStore Store , class T , class C >
+void mergeParts( Store && A , std::vector< T > & B , std::size_t start ,
 		 std::size_t mid , std::size_t end , C less , long long * inv )
 {
  ADS_PRE( ( start <= mid ) && ( mid < end ) && ( end < A.size() ) &&
@@ -47,10 +46,10 @@ void mergeParts( std::vector< T > & A , std::vector< T > & B ,
   } ) );
  }
 
-template< class T , class C >
-void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
-		   std::size_t start , std::size_t end , std::size_t cutoff ,
-		   C less , long long * inv )
+template< RankStore Store , class T , class C >
+void mergeSortRec( Store && A , std::vector< T > & B , std::size_t start ,
+		   std::size_t end , std::size_t cutoff , C less ,
+		   long long * inv )
 {
  ADS_PRE( ( start <= end ) && ( end < A.size() ) && ( B.size() >= A.size() ) &&
 	  ( cutoff >= 1 ) );
@@ -68,8 +67,8 @@ void mergeSortRec( std::vector< T > & A , std::vector< T > & B ,
   }
  }
 
-template< class T , class C >
-void mergeSort( std::vector< T > & A , std::size_t cutoff , C less )
+template< RankStore Store , class T , class C >
+void mergeSort( Store && A , std::size_t cutoff , C less )
 {
  if( A.size() < 2 )
   return;
@@ -81,8 +80,8 @@ void mergeSort( std::vector< T > & A , std::size_t cutoff , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void mergeSortBottomUp( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void mergeSortBottomUp( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -95,8 +94,8 @@ void mergeSortBottomUp( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-long long countInversions( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+long long countInversions( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  long long inv = 0;
@@ -135,6 +134,44 @@ void mergeSort( List< T > & L , C less )
   L.insert( q , R.read( r ) );
   }
  ADS_AUDIT( detail::sequenceSorted( L , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void mergeParts( std::vector< T > & A , std::vector< T > & B ,
+				  std::size_t start , std::size_t mid ,
+				  std::size_t end , C less , long long * inv )
+{
+ return( mergeParts( std::move( A ) , B , start , mid , end , less , inv ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void
+mergeSortRec( std::vector< T > & A , std::vector< T > & B , std::size_t start ,
+	      std::size_t end , std::size_t cutoff , C less , long long * inv )
+{
+ return( mergeSortRec( std::move( A ) , B , start , end , cutoff , less ,
+		       inv ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void mergeSort( std::vector< T > & A , std::size_t cutoff ,
+				 C less )
+{
+ return( mergeSort( std::move( A ) , cutoff , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void mergeSortBottomUp( std::vector< T > & A , C less )
+{
+ return( mergeSortBottomUp( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD long long countInversions( std::vector< T > & A , C less )
+{
+ return( countInversions( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

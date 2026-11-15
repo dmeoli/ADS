@@ -21,20 +21,6 @@ namespace ADS
 namespace detail
 {
 
-/// the handle of a node of Prim's algorithm on the queue Q, nothing if Q
-/// is lazy
-template< class Q , bool Native >
-struct PrimHandle
-{
- using type = char;
- };
-
-template< class Q >
-struct PrimHandle< Q , true >
-{
- using type = typename Q::Handle;
- };
-
 /// p is a minimum spanning tree of the component of r: the nodes with a
 /// parent and r are those reached from r, and the edges to the parents a
 /// minimum spanning forest of the edges inside it
@@ -50,17 +36,19 @@ bool primTree( const G & g , int r , const std::vector< int > & p )
    return( false );
   if( ( v == r ) || ! reached )
    continue;
-  bool found = false;
+  bool found = false;  // the lightest of the parallel edges, as Prim's
+  W least{};           // algorithm takes it
   g.forEachEdge( p[ v ] , [ & ]( int x , const W & w ) {
-   if( ( x == v ) && ! found ) {
-    T.push_back( { p[ v ] , v , w } );
+   if( ( x == v ) && ( ! found || ( w < least ) ) ) {
+    least = w;
     found = true;
     }
    } );
   if( ! found )
    return( false );
+  T.push_back( { p[ v ] , v , least } );
   }
- for( const auto & e : edges( g ) )
+ for( const auto & e : ADS::edges< G >( g ) )  // not those of an adapter
   if( reach[ e.u ] != INF )
    A.push_back( e );
  return( isMinimumSpanningForest( g.bound() , A , T ) );
@@ -137,40 +125,27 @@ kruskal( int n , std::vector< WeightedEdge< W > > A , long k )
 template< Graph G >
 auto kruskal( const G & g , long k )
 {
- return( kruskal( g.bound() , edges( g ) , k ) );
+ return( kruskal( g.bound() , ADS::edges< G >( g ) , k ) );
  }
 
-template< Graph G , PriorityQueue Q >
- requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
-	   requires
-{ typename Q::Priority; } )
+template< Graph G , FrontierQueue Q >
 std::vector< int > prim( const G & g , int r , Q & q , FrontierCounts * c )
 {
  ADS_PRE( ! g.directed() && g.hasNode( r ) && q.empty() );
  using W = typename G::Weight;
- using F = PriorityFrontier< Q >;
- constexpr bool native =
-   ( decrease_key_of< Q >() == decrease_key_kind::native );
  const int n = g.bound();
  std::vector< int > p( n , NIL );
  std::vector< bool > in( n , false );  // in the tree
  std::vector< W > key( n , infinity< W >() );
- std::vector< typename detail::PrimHandle< Q , native >::type > pos(
-   native ? n : 0 );
- FrontierCounts k;
+ PriorityFrontier< Q > S( q , n );  // the queue by its customization points,
+ FrontierCounts k;                 // the stale copies skipped by S
  for( int u : g.V() ) {
-  if constexpr( native )
-   pos[ u ] = q.insert( u , F::key( u , u == r ? W( 0 ) : infinity< W >() ) );
-  else
-   q.insert( u , F::key( u , u == r ? W( 0 ) : infinity< W >() ) );
+  S.add( u , u == r ? W( 0 ) : infinity< W >() , true );
   ++k.adds;
   }
  key[ r ] = W( 0 );
- while( ! q.empty() ) {
-  const int u = q.deleteMin();
-  if constexpr( ! native )
-   if( in[ u ] )  // a stale copy
-    continue;
+ while( ! S.empty() ) {
+  const int u = S.extract();
   ++k.extracts;
   in[ u ] = true;
   if( key[ u ] == infinity< W >() )  // another component
@@ -179,10 +154,7 @@ std::vector< int > prim( const G & g , int r , Q & q , FrontierCounts * c )
    ++k.edges;
    if( ! in[ v ] && ( w < key[ v ] ) ) {
     key[ v ] = w;
-    if constexpr( native )
-     q.decrease( pos[ v ] , F::key( v , w ) );
-    else
-     q.insert( v , F::key( v , w ) );
+    S.update( v , w );
     ++k.decreases;
     p[ v ] = u;
     }

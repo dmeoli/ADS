@@ -1362,6 +1362,104 @@ the pair that declares that common reference, so that the iterators model
 the concepts of C++20, and it is tuple-like as the pair, for the
 structured bindings, `std::views::keys` (of C++20) and `std::format`.
 
+### 1.8.1 Boost and the standard library {#sec-1-8-1}
+
+We now describe the headers of `ADS/interop/`. By them, a program written
+on Boost or on the standard library runs the algorithms of that library on
+the structures of ADS, and those of ADS on the structures of that library,
+usually by changing one type. The headers of `ADS/interop/boost/` are
+compiled only with `ADS_WITH_BOOST` (the component `Boost` of
+`find_package(ADS)`), and no other header of the library includes them.
+There is one header per library of Boost, since some of these may not share
+a translation unit; for instance, `boost/range/algorithm.hpp` declares a
+function `boost::sort`, which clashes with the namespace that
+`boost/sort/sort.hpp` opens under the same name.
+
+`Graph.h` specializes `boost::graph_traits` and `boost::property_map` for
+`StaticGraph` and `ArrayGraph`, which then model the incidence, adjacency,
+vertex-list and edge-list graphs of Boost.Graph with no copy. An edge is
+the pair of its tail and of its place in the compressed rows, which is also
+its `edge_index` (stable, since the graph is static); a scan of the
+out-arcs is the scan of a row, and a weight is read where it lies. Hence
+the visits, the algorithms of Dijkstra and of Bellman and Ford, the strong
+components, the topological order and the three maximum flows of
+Boost.Graph run on these graphs. (The flows of Boykov and Kolmogorov and
+the push-relabel one need a separate reverse for each arc.) The tests
+`engineered_interop.bgl-row-graphs` and
+`.bgl-max-flows` compare their results with those on
+`compressed_sparse_row_graph` and with the algorithms of ADS. Also,
+`ListGraph` and `ObservedGraph` on it are mutable graphs of Boost.Graph,
+whose edge is the pair ( tail , head ) and whose weight is looked up in
+$O( \deg u )$ time. Their `add_edge()`, `remove_edge()`, `add_vertex()`,
+`clear_vertex()` and `remove_vertex()` are the operations of the graph;
+hence, a program of Boost.Graph that edits an `ObservedGraph` sends the
+events of [§1.13](01-introduction.md#sec-1-13) to its observers (e.g., to a
+reoptimizing observer of the shortest paths, as in
+`engineered_interop.bgl-list-graphs`).
+
+Two choices of the adapter come from the graphs of ADS. First, the
+orientation of an ADS graph is a flag at run time, and therefore each graph
+is seen as oriented: an unoriented graph has both arcs of each edge, which
+the oriented algorithms read correctly, while the algorithms that require
+`undirected_tag` do not take it. Second, the names of the nodes are stable,
+and a removed vertex leaves the other vertices with their names (unlike a
+`boost::adjacency_list` on `vecS`); `num_vertices()` is then `bound()`,
+which gives the maps of Boost indexed by `vertex_index` a place for each
+name. The free functions are in the namespace `ADS`, where
+argument-dependent lookup finds them whatever the order of the includes.
+Note that `edges( g )` of the two graphs in compressed rows is then that of
+Boost.Graph, which is more specialized than the function of
+[§14.9](14-graph.md#sec-14-9) (written `ADS::edges< G >( g )` in this
+case).
+
+The other direction is `FromBGL< BG , WeightMap >` of `FromBGL.h`, a view
+of a graph of Boost.Graph with a vertex index as a `Graph` of ADS, the
+weights read from a property map. The test
+`engineered_interop.bgl-from-bgl` runs the shortest paths and the strong
+components of ADS on it. On
+a `boost::adjacency_list` on `vecS` the view is also a dynamic graph, and
+an `ObservedGraph` on it changes the graph of Boost while it sends its
+events; a deleted node keeps its vertex, isolated, since `remove_vertex()`
+on `vecS` would rename the vertices after it. In `Dijkstra.h`,
+`UpdatableQueue` makes any queue of the frontier of the shortest paths
+([§14.8](14-graph.md#sec-14-8)) the buffer of
+`boost::breadth_first_visit()`. Since `boost::dijkstra_shortest_paths()`
+does not let the caller replace its 4-ary heap, `dijkstraShortestPaths()`
+is the algorithm of Dijkstra of Boost.Graph on such a buffer, i.e., the
+visit with a visitor that relaxes the arcs. `Heap.h` makes the mutable
+heaps of Boost.Heap queues that lower their keys natively, by the free
+`queue_decrease()` of [§1.14](01-introduction.md#sec-1-14). This function
+calls `increase()`: a heap of Boost has on top the largest item in the
+order of its comparator, and with `std::greater` the fall of a distance
+moves the item toward the top. Finally, `Iterator.h` gives Boost the
+traversal of the iterators of ADS that build their item (that of their
+concept of C++20, instead of the single pass of their legacy category),
+and Boost.Range then takes the dictionaries and the search trees. It does
+so only for the types of the namespace `ADS`, and it must be included
+before the headers of Boost that read the traversal.
+
+With the standard library, `TieredVector`, `RootishArrayStack`, `Treque`,
+`CubishArrayStack` and `DualArrayDeque` have the members by iterator of a
+sequence container (`insert( p , x )`, `emplace( p , ... )`, `erase( p )`
+and `erase( first , last )`), each one operation by rank at the rank of the
+iterator. Hence `std::flat_set` and `std::flat_map` of C++23 keep their
+keys in them. `StdSequence< S >` of `interop/std/FlatMap.h` adds the same
+members to another sequence that inserts by rank, such as
+`ContiguousDeque`, whose iterators are pointers (with them, a member
+`insert( 0 , x )` would be ambiguous between a rank and a null pointer). On
+`TieredVector`, `TieredFlatMap` keeps the binary search of a flat map and
+inserts in $O( \sqrt{n} )$ time instead of the $O( n )$ of a
+`std::vector`. Furthermore, `PmrResource` of `interop/std/Pmr.h` makes a
+`PoolResource` ([chapter 5](05-memory.md#ch-5)) a
+`std::pmr::memory_resource`, at the price of one virtual call per
+allocation, and the sorts of [chapter 12](12-sort.md#ch-12) take any sized
+random-access range beside `std::vector`, in place when the range is
+contiguous (and, for the sorts of the book, also when it is not). With `ADS_WITH_GMP`,
+`BigInteger::fromGmp()`, `toGmp()` and the constructors from `mpz_class`
+and `mpq_class` (and the same members of `Rational`) pass the numbers to
+and from GMP without a string. The tests are `engineered_interop.*`; with
+`ADS_WITH_BOOST` off, they check only the part of the standard library.
+
 ## 1.9 The two levels of the library {#sec-1-9}
 
 The library has two levels, written to be read and used side by side. At
@@ -1608,6 +1706,11 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `Contract.h` | core | `contract_violation` | [1](01-introduction.md#ch-1) |
 | `Modification.h` | advanced | `Refused`, `no_rebuild_t`, `effect`, `Value`, `Key`, `Cost`, `Upper`, `Lower`, `Supply`, `last`, `min`, `max`, `sum`, `reduction_of`, `list`, `Inserted`, `Erased`, `Changed`, `Relocated`, `Permuted`, `BulkInserted`, `BulkErased`, `Shifted`, `Replaced`, `Cleared`, `Rebuilt`, `Group`, `Counts`, `Direct`, `Via`, `coalesce_traits`, `NoObservers`, `Static`, `Dynamic`, `Both`, `Batch`, `Quiet`, `UndoLog`, `Shadow`, `Assigned`, `KeyChanged`, `Reopt`, `ReoptStats`, `RatioPolicy`, `NeumaierSum` | [1](01-introduction.md#ch-1), [14](14-graph.md#ch-14) |
 | `Iterators.h` | core | `LinkedIterator`, `IndexIterator`, `CircularIterator`, `RankIterator`, `IndirectIterator`, `SlotIterator`, `KeyIterator`, `PairRef`, `PathIterator`, `WalkIterator` | [1](01-introduction.md#ch-1) |
+| `interop/boost/Dijkstra.h` | advanced | `UpdatableQueue` | [1](01-introduction.md#ch-1) |
+| `interop/boost/FromBGL.h` | advanced | `FromBGL` | [1](01-introduction.md#ch-1) |
+| `interop/boost/Graph.h` | advanced | `Arc`, `RowWeightMap`, `ArcIndexMap`, `Edge`, `ListWeightMap` | [1](01-introduction.md#ch-1) |
+| `interop/std/FlatMap.h` | advanced | `StdSequence` | [1](01-introduction.md#ch-1) |
+| `interop/std/Pmr.h` | advanced | `PmrResource` | [1](01-introduction.md#ch-1) |
 | `set/Bag.h` | base | `Bag` | [1](01-introduction.md#ch-1) |
 | `set/SetInterfaces.h` | base | `ArrayUSet`, `ArraySSet` | [1](01-introduction.md#ch-1) |
 | `sequence/ArraySequence.h` | base | `ArraySequence` | [2](02-sequence.md#ch-2) |
@@ -1878,7 +1981,7 @@ only, by chapter.
 
 | Chapter | Headers of functions |
 |-----|-----------------------------------------------|
-| [1](01-introduction.md#ch-1) | `ADT.h`, `Portable.h` |
+| [1](01-introduction.md#ch-1) | `ADT.h`, `Portable.h`, `interop/boost/Heap.h`, `interop/boost/Iterator.h` |
 | [2](02-sequence.md#ch-2) | `sequence/IndexedList.h`, `sequence/ListSort.h`, `sequence/Rearrangements.h`, `sequence/SequenceAlgorithms.h` |
 | [3](03-stack.md#ch-3) | `stack/Expressions.h`, `stack/StackAlgorithms.h` |
 | [4](04-queue.md#ch-4) | `queue/QueueAlgorithms.h` |
@@ -2151,8 +2254,14 @@ first and the spelling of the standard library last; hence `DaryHeap`,
 `AddressablePriorityQueue` adds the handles of the book and `decrease()`, and
 it is the former concept, with the same meaning for the queues with handles.
 How a queue lowers a key is then a capability in its turn, which
-`decrease_key_of< Q >()` returns: `native` with `decrease()` on the handles,
-`lazy` for a `PriorityQueue` without them, and `none` otherwise. On a lazy
+`decrease_key_of< Q >()` returns: `native` when `queue_decrease( q , h , p )`
+takes its handles (the member `decrease()` of a queue that declares a
+`Handle`, else a free function found by argument-dependent lookup, the handle
+type being `queue_handle_t< Q >`), `lazy` for a `PriorityQueue` without
+them, and `none` otherwise. The customization point has no step on the
+spelling of another library, since Boost.Heap calls `increase()` the move
+of an item toward the top of its heap, i.e., what ADS calls a decrease
+([§1.8.1](01-introduction.md#sec-1-8-1)). On a lazy
 queue the item is inserted again with the lower key, and its stale copies are
 skipped when they come out. An opt-in `Q::decrease_key` wins over the
 inference, and `MultiQueue`, a relaxed queue with no exact `min()`, declares

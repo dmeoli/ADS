@@ -21,18 +21,20 @@ namespace detail
 {
 
 /// heapsort of A[ lo .. hi )
-template< class T , class C >
-void heapRange( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-		C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void heapRange( Store && A , std::size_t lo , std::size_t hi , C & less )
 {
  std::make_heap( A.begin() + lo , A.begin() + hi , less );
  std::sort_heap( A.begin() + lo , A.begin() + hi , less );
  }
 
 /// A[ a ] <= A[ b ] <= A[ c ]
-template< class T , class C >
-void sort3( std::vector< T > & A , std::size_t a , std::size_t b ,
-	    std::size_t c ,
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void sort3( Store && A , std::size_t a , std::size_t b , std::size_t c ,
 	    C & less )
 {
  if( less( A[ b ] , A[ a ] ) )
@@ -48,8 +50,10 @@ void sort3( std::vector< T > & A , std::size_t a , std::size_t b ,
 
 /// insertion sort of A[ lo .. hi ) that gives up after 8 moves; true if
 /// it sorted the part
-template< class T , class C >
-bool partialInsertion( std::vector< T > & A , std::size_t lo , std::size_t hi ,
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+bool partialInsertion( Store && A , std::size_t lo , std::size_t hi ,
 		       C & less )
 {
  T *const first = A.data() + lo , *const last = A.data() + hi;
@@ -73,11 +77,11 @@ bool partialInsertion( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 
 /// the partition of A[ lo .. hi ) around the pivot A[ lo ], the equal
 /// keys on the right; its place, and whether nothing had to move
-template< class T , class C >
-std::pair< std::size_t , bool > partitionRight( std::vector< T > & A ,
-					       std::size_t lo ,
-					       std::size_t hi ,
-					       C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::pair< std::size_t , bool > partitionRight( Store && A , std::size_t lo ,
+					       std::size_t hi , C & less )
 {
  T * const a = A.data();          // pointers, not indices: no
  T pivot = std::move( a[ lo ] );  // scaling in the scans
@@ -116,10 +120,11 @@ std::pair< std::size_t , bool > partitionRight( std::vector< T > & A ,
 /// increment and no branch per comparison, and then swapped in pairs, so
 /// that the comparisons cause no mispredicted branch; for the arithmetic
 /// types with their natural order, whose comparison is a single instruction
-template< class T , class C >
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
 std::pair< std::size_t , bool >
-partitionRightBlocks( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-		      C & less )
+partitionRightBlocks( Store && A , std::size_t lo , std::size_t hi , C & less )
 {
  T * const a = A.data();
  constexpr std::ptrdiff_t B = 64;
@@ -250,9 +255,11 @@ partitionRightBlocks( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 
 /// the partition of A[ lo .. hi ) around the pivot A[ lo ], the equal
 /// keys on the left; its place
-template< class T , class C >
-std::size_t partitionLeft( std::vector< T > & A , std::size_t lo ,
-			   std::size_t hi , C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::size_t partitionLeft( Store && A , std::size_t lo , std::size_t hi ,
+			   C & less )
 {
  T * const a = A.data();
  T pivot = std::move( a[ lo ] );
@@ -283,8 +290,10 @@ std::size_t partitionLeft( std::vector< T > & A , std::size_t lo ,
  return( std::size_t( j - a ) );
  }
 
-template< class T , class C >
-void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi , int bad ,
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void pdq( Store && A , std::size_t lo , std::size_t hi , int bad ,
 	  bool leftmost , C & less )
 {
  T * const a = A.data();
@@ -361,8 +370,10 @@ void pdq( std::vector< T > & A , std::size_t lo , std::size_t hi , int bad ,
 
 /// ---------------------------------------------------------------- dual
 
-template< class T , class C >
-void dual( std::vector< T > & A , std::size_t lo , std::size_t hi , C & less )
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void dual( Store && A , std::size_t lo , std::size_t hi , C & less )
 {
  while( hi - lo > 27 ) {                  // A[ lo .. hi )
   const std::size_t e = ( hi - lo ) / 6;  // five spaced items, sorted
@@ -416,10 +427,11 @@ void dual( std::vector< T > & A , std::size_t lo , std::size_t hi , C & less )
 /// A[ lo .. l ) < P, A[ l .. r ) = P and A[ r .. c ) > P; an item equal to
 /// P is swapped with A[ r ], a smaller one with A[ l ] and then with
 /// A[ r ]; the bounds [ l , r ) of the items equal to P
-template< class T , class C >
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
 std::pair< std::size_t , std::size_t >
-partitionThreeWay( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-		   C & less )
+partitionThreeWay( Store && A , std::size_t lo , std::size_t hi , C & less )
 {
  const T P = A[ lo ];
  std::size_t l = lo , r = lo + 1;
@@ -440,9 +452,10 @@ partitionThreeWay( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 /// the quicksort with bounded recursive depth of the book (Algorithm 5.6)
 /// on the partition above, the pivot drawn at random by a splitmix64 of
 /// fixed seed, so that the sort is the same on every run and platform
-template< class T , class C >
-void threeWay( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-	       C & less ,
+template< SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+void threeWay( Store && A , std::size_t lo , std::size_t hi , C & less ,
 	       std::uint64_t & seed )
 {
  while( hi - lo > 16 ) {  // A[ lo .. hi )
@@ -466,8 +479,8 @@ void threeWay( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 
 }  // end( namespace detail )
 
-template< class T , class C >
-void pdqSort( std::vector< T > & A , C less )
+template< SortStore Store , class T , class C >
+void pdqSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  if( A.size() > 1 )
@@ -476,21 +489,41 @@ void pdqSort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void dualPivotQuickSort( std::vector< T > & A , C less )
+template< SortStore Store , class T , class C >
+void dualPivotQuickSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  detail::dual( A , 0 , A.size() , less );
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void threeWayQuickSort( std::vector< T > & A , C less )
+template< SortStore Store , class T , class C >
+void threeWayQuickSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  std::uint64_t seed = 0;
  detail::threeWay( A , 0 , A.size() , less , seed );
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void pdqSort( std::vector< T > & A , C less )
+{
+ return( pdqSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void dualPivotQuickSort( std::vector< T > & A , C less )
+{
+ return( dualPivotQuickSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void threeWayQuickSort( std::vector< T > & A , C less )
+{
+ return( threeWayQuickSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

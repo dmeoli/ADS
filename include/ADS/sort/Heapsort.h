@@ -93,6 +93,13 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \pre \f$ i < \mathit{dim} \le n \f$
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void maxHeapRestore( Store && A , std::size_t i , std::size_t dim ,
+		     C less = C() );
+
+/// `maxHeapRestore()` above on a vector
 template< class T , class C = std::less<> >
 void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
 		     C less = C() );
@@ -109,6 +116,12 @@ void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is a max-heap (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void heapBuild( Store && A , C less = C() );
+
+/// `heapBuild()` above on a vector
 template< class T , class C = std::less<> >
 void heapBuild( std::vector< T > & A , C less = C() );
 
@@ -127,14 +140,46 @@ void heapBuild( std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void heapsort( Store && A , C less = C() );
+
+/// `heapsort()` above on a vector
 template< class T , class C = std::less<> >
 void heapsort( std::vector< T > & A , C less = C() );
 
 /// true if \f$ A[ 0 .. \mathit{dim} - 1 ] \f$ is a max-heap, i.e., if no item
 /// is larger than its parent
 /// \pre \f$ \mathit{dim} \le n \f$
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+bool isMaxHeap( Store && A , std::size_t dim , C less = C() );
+
+/// `isMaxHeap()` above on a vector
 template< class T , class C = std::less<> >
 bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less = C() );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `heapsort()` on the range \f$ A \f$ [see `SortRange`], the other arguments
+/// as for a vector, in place: on the span of its items if \f$ A \f$ is
+/// contiguous, on its view otherwise, since the sort reads the items by their
+/// ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ heapsort( v , std::forward< P >( p )... ); }
+decltype( auto ) heapsort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( heapsort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

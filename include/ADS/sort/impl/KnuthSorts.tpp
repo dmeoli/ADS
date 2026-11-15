@@ -17,8 +17,8 @@
 namespace ADS
 {
 
-template< class T , class C >
-void binaryInsertionSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void binaryInsertionSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  for( std::size_t i = 1 ; i < A.size() ; ++i ) {
@@ -35,8 +35,8 @@ void binaryInsertionSort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void listInsertionSort( std::vector< T > & A , C less , std::size_t * moves )
+template< RankStore Store , class T , class C >
+void listInsertionSort( Store && A , C less , std::size_t * moves )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -58,14 +58,18 @@ void listInsertionSort( std::vector< T > & A , C less , std::size_t * moves )
  B.reserve( n );
  for( std::size_t q = L[ 0 ] ; q != 0 ; q = L[ q ] )
   B.push_back( std::move( A[ q - 1 ] ) );
- A = std::move( B );
+ if constexpr( std::is_same_v< std::remove_cvref_t< Store > ,
+			       std::vector< T > > )
+  A = std::move( B );
+ else
+  std::ranges::move( B , A.begin() );  // into the places of A
  if( moves )
   *moves = n;
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T >
-void addressCalculationSort( std::vector< T > & A , std::size_t M )
+template< RankStore Store , class T >
+void addressCalculationSort( Store && A , std::size_t M )
 {
  static_assert( std::is_arithmetic_v< T > , "numbers only" );
  const auto before = detail::auditCopy( A );
@@ -101,9 +105,9 @@ namespace detail
 {
 
 /// the radix exchange of A[ lo .. hi ) on the bit b and the lower ones
-template< RadixKey T >
-void radixExchange( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-		    int b )
+template< RankStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void radixExchange( Store && A , std::size_t lo , std::size_t hi , int b )
 {
  while( ( hi - lo > 1 ) && ( b >= 0 ) ) {
   auto bit = [ b ]( T x ) { return( ( radixKey( x ) >> b ) & 1 ); };
@@ -125,8 +129,8 @@ void radixExchange( std::vector< T > & A , std::size_t lo , std::size_t hi ,
 
 }  // end( namespace detail )
 
-template< RadixKey T >
-void radixExchangeSort( std::vector< T > & A )
+template< RankStore Store , RadixKey T >
+void radixExchangeSort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  detail::radixExchange( A , 0 , A.size() , int( 8 * sizeof( T ) ) - 1 );
@@ -135,8 +139,8 @@ void radixExchangeSort( std::vector< T > & A )
    []( T a , T b ) { return( radixKey( a ) < radixKey( b ) ); } ) );
  }
 
-template< class T , class C >
-void tournamentSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void tournamentSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -166,7 +170,11 @@ void tournamentSort( std::vector< T > & A , C less )
    for( v /= 2 ; v > 0 ; v /= 2 )
     W[ v ] = play( W[ 2 * v ] , W[ 2 * v + 1 ] );
    }
-  A = std::move( B );
+  if constexpr( std::is_same_v< std::remove_cvref_t< Store > ,
+				std::vector< T > > )
+   A = std::move( B );
+  else
+   std::ranges::move( B , A.begin() );  // into the places of A
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
@@ -323,10 +331,11 @@ class RankTree
 /// so that the place of l_{i+2} and each insertion cost
 /// \f$ O( \log n ) \f$ and a probe of the binary search
 /// \f$ O( \log n ) \f$, instead of a search and a shift of the chain
-template< class T , class C >
-std::vector< std::size_t > fordJohnson( const std::vector< T > & A ,
-					std::vector< std::size_t > v ,
-					C & less )
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C >
+std::vector< std::size_t >
+fordJohnson( Store && A , std::vector< std::size_t > v , C & less )
 {
  const std::size_t n = v.size();
  if( n <= 1 )
@@ -383,8 +392,8 @@ std::vector< std::size_t > fordJohnson( const std::vector< T > & A ,
 
 }  // end( namespace detail )
 
-template< class T , class C >
-void mergeInsertionSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void mergeInsertionSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  std::vector< std::size_t > v( A.size() );
@@ -395,8 +404,52 @@ void mergeInsertionSort( std::vector< T > & A , C less )
  B.reserve( A.size() );
  for( std::size_t i : order )
   B.push_back( std::move( A[ i ] ) );
- A = std::move( B );
+ if constexpr( std::is_same_v< std::remove_cvref_t< Store > ,
+			       std::vector< T > > )
+  A = std::move( B );
+ else
+  std::ranges::move( B , A.begin() );  // into the places of A
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void binaryInsertionSort( std::vector< T > & A , C less )
+{
+ return( binaryInsertionSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void listInsertionSort( std::vector< T > & A , C less ,
+					 std::size_t * moves )
+{
+ return( listInsertionSort( std::move( A ) , less , moves ) );
+ }
+
+template< class T >
+ADS_SORT_FORWARD void addressCalculationSort( std::vector< T > & A ,
+					      std::size_t M )
+{
+ return( addressCalculationSort( std::move( A ) , M ) );
+ }
+
+template< RadixKey T >
+ADS_SORT_FORWARD void radixExchangeSort( std::vector< T > & A )
+{
+ return( radixExchangeSort( std::move( A ) ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void tournamentSort( std::vector< T > & A , C less )
+{
+ return( tournamentSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void mergeInsertionSort( std::vector< T > & A , C less )
+{
+ return( mergeInsertionSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

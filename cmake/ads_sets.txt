@@ -193,6 +193,14 @@ intractable/FifteenPuzzle.h           base
 intractable/Heuristics.h              base
 intractable/Pseudopolynomial.h        base
 
+interop/boost/Dijkstra.h              advanced ?ADS_WITH_BOOST
+interop/boost/FromBGL.h               advanced ?ADS_WITH_BOOST
+interop/boost/Graph.h                 advanced ?ADS_WITH_BOOST
+interop/boost/Heap.h                  advanced ?ADS_WITH_BOOST
+interop/boost/Iterator.h              advanced ?ADS_WITH_BOOST
+interop/std/FlatMap.h                 advanced
+interop/std/Pmr.h                     advanced
+
 memory/Allocators.h                   base
 memory/Arena.h                        advanced
 memory/CellHeap.h                     base

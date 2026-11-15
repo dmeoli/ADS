@@ -97,6 +97,23 @@
 #include "ADS/graph/Reoptimization.h"
 #include "ADS/graph/StaticGraph.h"
 #include "ADS/graph/Visit.h"
+#if defined( ADS_WITH_BOOST )
+ #include "ADS/interop/boost/Dijkstra.h"
+#endif
+#if defined( ADS_WITH_BOOST )
+ #include "ADS/interop/boost/FromBGL.h"
+#endif
+#if defined( ADS_WITH_BOOST )
+ #include "ADS/interop/boost/Graph.h"
+#endif
+#if defined( ADS_WITH_BOOST )
+ #include "ADS/interop/boost/Heap.h"
+#endif
+#if defined( ADS_WITH_BOOST )
+ #include "ADS/interop/boost/Iterator.h"
+#endif
+#include "ADS/interop/std/FlatMap.h"
+#include "ADS/interop/std/Pmr.h"
 #include "ADS/memory/Arena.h"
 #include "ADS/memory/ConcurrentPool.h"
 #include "ADS/memory/PageHeap.h"

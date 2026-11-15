@@ -17,8 +17,8 @@
 namespace ADS
 {
 
-template< class T , class C >
-void bubbleSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void bubbleSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  for( std::size_t end = A.size() ; end > 1 ; ) {
@@ -33,8 +33,8 @@ void bubbleSort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void cocktailShakerSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void cocktailShakerSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  std::size_t lo = 0 , hi = A.size();  // A[ lo .. hi ) to sort
@@ -59,8 +59,8 @@ void cocktailShakerSort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void oddEvenSort( std::vector< T > & A , C less , std::size_t * rounds )
+template< RankStore Store , class T , class C >
+void oddEvenSort( Store && A , C less , std::size_t * rounds )
 {
  const auto before = detail::auditCopy( A );
  std::size_t r = 0;
@@ -78,8 +78,8 @@ void oddEvenSort( std::vector< T > & A , C less , std::size_t * rounds )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void combSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void combSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  std::size_t gap = A.size();
@@ -97,8 +97,8 @@ void combSort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void gnomeSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void gnomeSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  for( std::size_t i = 1 ; i < A.size() ; )
@@ -109,6 +109,39 @@ void gnomeSort( std::vector< T > & A , C less )
    --i;
    }
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void bubbleSort( std::vector< T > & A , C less )
+{
+ return( bubbleSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void cocktailShakerSort( std::vector< T > & A , C less )
+{
+ return( cocktailShakerSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void oddEvenSort( std::vector< T > & A , C less ,
+				   std::size_t * rounds )
+{
+ return( oddEvenSort( std::move( A ) , less , rounds ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void combSort( std::vector< T > & A , C less )
+{
+ return( combSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void gnomeSort( std::vector< T > & A , C less )
+{
+ return( gnomeSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

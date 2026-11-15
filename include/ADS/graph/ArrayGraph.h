@@ -146,6 +146,18 @@ class ArrayGraph
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] std::span< const int > neighbors( int u ) const;
 
+ /// the offsets of the rows, \f$ n + 1 \f$ of them: the adjacent nodes of
+ /// \f$ u \f$ are the places from `offsets()[ u ]` to `offsets()[ u + 1 ]`
+ /// of `heads()`, and their weights the same places of `weightData()`
+ /// (the arrays that the adapters to other libraries read in place)
+ [[nodiscard]] const int * offsets( void ) const { return( f_off.data() ); }
+
+ /// the adjacent nodes, row by row
+ [[nodiscard]] const int * heads( void ) const { return( f_to.data() ); }
+
+ /// the weights, in the places of `heads()`
+ [[nodiscard]] const W * weightData( void ) const { return( f_w.data() ); }
+
 /*--------------------------------------------------------------------------*/
  private:
  template< class G >

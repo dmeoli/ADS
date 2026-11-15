@@ -202,7 +202,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-404 headers: 240 base, 148 advanced, 11 core and 5 in both sets until they are split.
+411 headers: 240 base, 155 advanced, 11 core and 5 in both sets until they are split.
 
 | Folder | Base | Advanced | Core | Both |
 |---|---|---|---|---|
@@ -218,6 +218,8 @@ file does not allow.
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |
 | `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `MatrixGraph`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `Reoptimization`, `StaticGraph` |  | `Matching`, `MaxFlow`, `Visit` |
+| `interop/boost/` |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |  |  |
+| `interop/std/` |  | `FlatMap`, `Pmr` |  |  |
 | `intractable/` | `Approximation`, `BranchAndBound`, `FifteenPuzzle`, `Heuristics`, `Pseudopolynomial` |  |  |  |
 | `memory/` | `Allocators`, `CellHeap` | `Arena`, `ConcurrentPool`, `PageHeap`, `PoolAllocator`, `SizeClassAllocator` | `HugePageAllocator`, `ObjectPool` |  |
 | `mfset/` | `ListMFSet`, `MFSet` | `RemUnionFind`, `RollbackUnionFind`, `UnionFind` |  |  |
@@ -1018,6 +1020,35 @@ off, as with the other backends, and `ADS_POINTERTABLE_BOOST`,
 `ADS_FLATHASH_BOOST`, `ADS_SMALLVECTOR_BOOST` or `ADS_RANDOM_BOOST` defined to
 0 keeps the code of ADS for one structure (the benchmarks do so for all four,
 since they compare it with Boost).
+
+With `ADS_WITH_BOOST` the headers of `include/ADS/interop/boost/` join ADS
+to Boost in both directions, each included by the program that wants it:
+[`Graph.h`](include/ADS/interop/boost/Graph.h) makes `StaticGraph`,
+`ArrayGraph`, `ListGraph` and `ObservedGraph` graphs of Boost.Graph, so that
+its algorithms (the visits, Dijkstra, Bellman-Ford, the strong components,
+the topological order, the maximum flows) run on them with no copy, and its
+`add_edge()` and `remove_edge()` on an `ObservedGraph` reach the observers
+of ADS; [`FromBGL.h`](include/ADS/interop/boost/FromBGL.h) is the other way,
+any graph of Boost.Graph as a graph of ADS;
+[`Dijkstra.h`](include/ADS/interop/boost/Dijkstra.h) puts any priority queue
+of ADS in the visit of Boost.Graph;
+[`Heap.h`](include/ADS/interop/boost/Heap.h) lets the shortest paths and
+Prim's algorithm of ADS lower a key on the handles of Boost.Heap; and
+[`Iterator.h`](include/ADS/interop/boost/Iterator.h) tells Boost the
+traversal of the iterators of ADS that build their item, so that
+Boost.Range takes the dictionaries and the trees. A project that needs
+them asks for `find_package(ADS REQUIRED COMPONENTS Boost)` (`GMP` and
+`BLAS` are components in the same way). With the standard library alone,
+[`interop/std/FlatMap.h`](include/ADS/interop/std/FlatMap.h) gives
+`std::flat_set` and `std::flat_map` of C++23 on `TieredVector`
+(`TieredFlatMap`, insertions in $O( \sqrt{n} )$), and
+[`interop/std/Pmr.h`](include/ADS/interop/std/Pmr.h) the pools of ADS as a
+`std::pmr::memory_resource`; the sorts take any random-access range
+(`std::span`, `std::deque`, the sequences of ADS) beside `std::vector`, in
+place on a contiguous one (and, those of the book, on any), and
+with `ADS_WITH_GMP` `BigInteger::fromGmp()`, `toGmp()` and the constructors
+from `mpz_class` and `mpq_class` pass the numbers to and from GMP. The
+tests are in [`test/engineered_interop.cpp`](test/engineered_interop.cpp).
 
 ```cpp
 #include "ADS/sequence/List.h"

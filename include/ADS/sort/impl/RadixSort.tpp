@@ -161,8 +161,10 @@ T * lsdSort( T * s , T * r , std::size_t n , K & key , const std::size_t * D ,
 /// the keys differ in one byte alone, a counting sort writes the items
 /// back from one of each value, with no buffer and no pass that moves
 /// them; the rest goes to lsdSort()
-template< bool Exact , class T , class K >
-void lsd( std::vector< T > & A , K & key )
+template< bool Exact , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class K >
+void lsd( Store && A , K & key )
 {
  using U = std::decay_t< decltype( key( A[ 0 ] ) ) >;
  constexpr std::size_t W = sizeof( U );
@@ -216,8 +218,9 @@ void lsd( std::vector< T > & A , K & key )
 /// IEEE 754 extended to a total order, the order of radixKey(), if the
 /// registers are there; else pdqSort(), with the natural order on the
 /// integers and by radixKey() on the floating point numbers
-template< RadixKey T >
-void flagGroup( std::vector< T > & A , std::size_t lo , std::size_t n )
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void flagGroup( Store && A , std::size_t lo , std::size_t n )
 {
  if constexpr( kVectorSort && VectorKey< T > )
   vectorQuickSort( A.data() + lo , n );
@@ -239,9 +242,9 @@ void flagGroup( std::vector< T > & A , std::size_t lo , std::size_t n )
 /// round do not wait for each other as along a cycle; then the buckets of
 /// at least kFlagSmall items go on with the next byte, the others to
 /// flagGroup()
-template< RadixKey T >
-void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
-	   const int * D ,
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void flag( Store && A , std::size_t lo , std::size_t n , const int * D ,
 	   int m )
 {
  T * const a = A.data() + lo;
@@ -300,8 +303,9 @@ void flag( std::vector< T > & A , std::size_t lo , std::size_t n ,
 /// some keys differ; one alone, the key tells the number, and the numbers
 /// are counted and written back from one of each value; otherwise A goes to
 /// flagGroup() if smaller than kFlagSmall, and to flag() by those bytes
-template< RadixKey T >
-void flagSort( std::vector< T > & A )
+template< SortStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void flagSort( Store && A )
 {
  using U = decltype( radixKey( T() ) );
  constexpr int W = int( sizeof( U ) );
@@ -472,8 +476,8 @@ inline void msdInPlace( std::string * s , std::uint16_t * k , std::size_t n )
 
 }  // end( namespace detail )
 
-template< RadixKey T >
-void radixSort( std::vector< T > & A )
+template< SortStore Store , RadixKey T >
+void radixSort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  auto key = []( T x ) { return( radixKey( x ) ); };
@@ -483,8 +487,8 @@ void radixSort( std::vector< T > & A )
    []( T a , T b ) { return( radixKey( a ) < radixKey( b ) ); } ) );
  }
 
-template< class T , class K >
-void radixSortBy( std::vector< T > & A , K key )
+template< SortStore Store , class T , class K >
+void radixSortBy( Store && A , K key )
 {
  using U = std::decay_t< decltype( key( A[ 0 ] ) ) >;
  static_assert( std::is_unsigned_v< U > , "the key must be unsigned" );
@@ -497,8 +501,8 @@ void radixSortBy( std::vector< T > & A , K key )
   } ) );
  }
 
-template< RadixKey T >
-void americanFlagSort( std::vector< T > & A )
+template< SortStore Store , RadixKey T >
+void americanFlagSort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -523,7 +527,8 @@ void americanFlagSort( std::vector< T > & A )
    []( T a , T b ) { return( radixKey( a ) < radixKey( b ) ); } ) );
  }
 
-inline void msdRadixSort( std::vector< std::string > & A )
+template< StringStore Store >
+void msdRadixSort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -532,6 +537,31 @@ inline void msdRadixSort( std::vector< std::string > & A )
   detail::msdInPlace( A.data() , K.get() , n );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< RadixKey T >
+ADS_SORT_FORWARD void radixSort( std::vector< T > & A )
+{
+ return( radixSort( std::move( A ) ) );
+ }
+
+template< class T , class K >
+ADS_SORT_FORWARD void radixSortBy( std::vector< T > & A , K key )
+{
+ return( radixSortBy( std::move( A ) , key ) );
+ }
+
+template< RadixKey T >
+ADS_SORT_FORWARD void americanFlagSort( std::vector< T > & A )
+{
+ return( americanFlagSort( std::move( A ) ) );
+ }
+
+ADS_SORT_FORWARD void msdRadixSort( std::vector< std::string > & A )
+{
+ return( msdRadixSort( std::move( A ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

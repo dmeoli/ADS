@@ -109,6 +109,12 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void binaryInsertionSort( Store && A , C less = C() );
+
+/// `binaryInsertionSort()` above on a vector
 template< class T , class C = std::less<> >
 void binaryInsertionSort( std::vector< T > & A , C less = C() );
 
@@ -130,6 +136,13 @@ void binaryInsertionSort( std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void listInsertionSort( Store && A , C less = C() ,
+			std::size_t * moves = nullptr );
+
+/// `listInsertionSort()` above on a vector
 template< class T , class C = std::less<> >
 void listInsertionSort( std::vector< T > & A , C less = C() ,
 			std::size_t * moves = nullptr );
@@ -154,6 +167,11 @@ void listInsertionSort( std::vector< T > & A , C less = C() ,
 /// \f]
 /// where \f$ i = 0 \f$ when \f$ w \f$ is 0 or infinite.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store , class T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void addressCalculationSort( Store && A , std::size_t M = 0 );
+
+/// `addressCalculationSort()` above on a vector
 template< class T >
 void addressCalculationSort( std::vector< T > & A , std::size_t M = 0 );
 
@@ -183,6 +201,11 @@ void addressCalculationSort( std::vector< T > & A , std::size_t M = 0 );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store , RadixKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+void radixExchangeSort( Store && A );
+
+/// `radixExchangeSort()` above on a vector
 template< RadixKey T >
 void radixExchangeSort( std::vector< T > & A );
 
@@ -209,6 +232,12 @@ void radixExchangeSort( std::vector< T > & A );
 /// where \f$ \mathrm{play}( a , b ) \f$ returns the smaller item, \f$ a \f$ on
 /// a tie, and the one that is not \f$ \bot \f$ against \f$ \bot \f$.
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void tournamentSort( Store && A , C less = C() );
+
+/// `tournamentSort()` above on a vector
 template< class T , class C = std::less<> >
 void tournamentSort( std::vector< T > & A , C less = C() );
 
@@ -240,12 +269,130 @@ void tournamentSort( std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (audit)
+template< RankStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void mergeInsertionSort( Store && A , C less = C() );
+
+/// `mergeInsertionSort()` above on a vector
 template< class T , class C = std::less<> >
 void mergeInsertionSort( std::vector< T > & A , C less = C() );
 
 /// the worst case of the comparisons of `mergeInsertionSort()` on \f$ n \f$
 /// items, \f$ \sum_{k=1}^{n} \lceil \log_2 ( 3 k / 4 ) \rceil \f$
 inline long fordJohnsonBound( std::size_t n );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `binaryInsertionSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  binaryInsertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) binaryInsertionSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( binaryInsertionSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
+
+/// `listInsertionSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  listInsertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) listInsertionSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( listInsertionSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
+
+/// `addressCalculationSort()` on the range \f$ A \f$ [see `SortRange`], the
+/// other arguments as for a vector, in place: on the span of its items if \f$
+/// A \f$ is contiguous, on its view otherwise, since the sort reads the items
+/// by their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  addressCalculationSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) addressCalculationSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( addressCalculationSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
+
+/// `radixExchangeSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  radixExchangeSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) radixExchangeSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( radixExchangeSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
+
+/// `tournamentSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  tournamentSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) tournamentSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( tournamentSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
+
+/// `mergeInsertionSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector, in place: on the span of its items if \f$ A \f$
+/// is contiguous, on its view otherwise, since the sort reads the items by
+/// their ranks only
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  mergeInsertionSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) mergeInsertionSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( mergeInsertionSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

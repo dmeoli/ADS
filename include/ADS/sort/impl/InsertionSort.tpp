@@ -17,13 +17,17 @@
 namespace ADS
 {
 
-template< class T , class C >
-void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
-		    C less )
+template< RankStore Store , class T , class C >
+void insertionSort( Store && A , std::size_t lo , std::size_t hi , C less )
 {
  ADS_PRE( ( lo <= hi ) && ( hi <= A.size() ) );
  const auto before = detail::auditCopy( A , lo , hi );
- T * const a = A.data();  // not reloaded at each move
+ const auto a = [ & ]( void ) {  // not reloaded at each move
+  if constexpr( std::ranges::contiguous_range< std::remove_cvref_t< Store > > )
+   return( A.data() );
+  else
+   return( std::ranges::begin( A ) );
+  }();
  for( std::size_t i = lo + 1 ; i < hi ; ++i ) {
   T temp = std::move( a[ i ] );  // the item to insert
   std::size_t j = i;
@@ -36,14 +40,14 @@ void insertionSort( std::vector< T > & A , std::size_t lo , std::size_t hi ,
  ADS_AUDIT( detail::sortedPermutation( A , before , less , lo , hi ) );
  }
 
-template< class T , class C >
-void insertionSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void insertionSort( Store && A , C less )
 {
  insertionSort( A , 0 , A.size() , less );
  }
 
-template< class T , class C >
-void insertionSortSentinel( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void insertionSortSentinel( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -64,6 +68,27 @@ void insertionSortSentinel( std::vector< T > & A , C less )
   A[ j ] = std::move( x );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void insertionSort( std::vector< T > & A , std::size_t lo ,
+				     std::size_t hi , C less )
+{
+ return( insertionSort( std::move( A ) , lo , hi , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void insertionSortSentinel( std::vector< T > & A , C less )
+{
+ return( insertionSortSentinel( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void insertionSort( std::vector< T > & A , C less )
+{
+ return( insertionSort( std::move( A ) , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

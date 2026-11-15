@@ -143,7 +143,8 @@ inline void group( std::string * s , std::uint64_t * k , std::string * t ,
 
 }  // end( namespace detail::pks )
 
-inline void prefixKeySort( std::vector< std::string > & A )
+template< StringStore Store >
+void prefixKeySort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  const std::size_t n = A.size();
@@ -156,6 +157,13 @@ inline void prefixKeySort( std::vector< std::string > & A )
   alloc.deallocate( t , n );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+ADS_SORT_FORWARD void prefixKeySort( std::vector< std::string > & A )
+{
+ return( prefixKeySort( std::move( A ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

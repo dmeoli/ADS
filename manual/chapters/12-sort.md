@@ -62,10 +62,36 @@ template< class T , class C = std::less<> >
 void sort( std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 void stableSort( std::vector< T > & A , C less = C() );
+template< SortStore Store ,
+          class T =
+            std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+          class C = std::less<> >
+void sort( Store && A , C less = C() );
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+                    P &&... p )
+{ sort( v , std::forward< P >( p )... ); }
+decltype( auto ) sort( R && A , P &&... p ) { ... }
 ```
 
 so that `ADS::sort( A )` sorts $A$ in increasing order and
-`ADS::sort( A , std::greater<>() )` in decreasing order.
+`ADS::sort( A , std::greater<>() )` in decreasing order. Every sort that
+takes a whole vector is a template on the storage of the items, taken by
+reference (the concept `SortStore`, i.e., a `std::vector` or a
+`std::span`), and the overload on a vector is one call of it, inlined, so
+that a vector is sorted by the same code as before; it takes as well, as
+in the last declaration, a `SortRange` of `ADS/sort/Sorted.h`, i.e., any
+other sized random-access range of movable items (an array, a
+`std::deque`, a `TieredVector`, the vectors of Boost or Eigen), with the
+other arguments as for the vector. A contiguous range is sorted in place as
+the span of its items. On a range that is not contiguous, the sorts of the
+book, which read the items only by their ranks, also work in place (on the
+view of the range, the concept `RankStore`), while the engineered sorts,
+whose code reads the items by their addresses, move them into a vector,
+sort them there and move them back ($2 n$ moves and $n$ items of memory),
+as the comment of each says; the parallel sorts of
+[§25.7](25-parallel.md#sec-25-7) do the same after their executor.
+
 [Table 12.1](12-sort.md#tab-12-1) fixes the symbols that the rest of the
 chapter uses.
 

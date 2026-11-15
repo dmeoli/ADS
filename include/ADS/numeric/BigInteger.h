@@ -146,6 +146,7 @@
 #include <algorithm>
 #include <bit>
 #include <compare>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
@@ -439,6 +440,37 @@ class BigInteger
 
  /// the number of digits (limbs) in base \f$ 2^{64} \f$
  [[nodiscard]] std::size_t limbs( void ) const;
+
+#if defined( ADS_WITH_GMP )
+ /// the number of GMP \f$ z \f$ (an `mpz_t`), its digits copied by
+ /// `mpz_export()`, so that it holds whatever the size of a limb of GMP
+ static BigInteger fromGmp( mpz_srcptr z );
+
+ /// the number of the integer \f$ z \f$ of the C++ interface of GMP
+ /// (`mpz_class`, or any type whose `get_mpz_t()` gives an `mpz_t`)
+ template< class Z >
+  requires requires( const Z & z ) {
+   { z.get_mpz_t() } -> std::convertible_to< mpz_srcptr >;
+   }
+ explicit BigInteger( const Z & z )
+     : BigInteger( fromGmp( z.get_mpz_t() ) ) { }
+
+ /// \f$ x \f$ written in the number of GMP \f$ z \f$, initialized, by
+ /// `mpz_import()`
+ void toGmp( mpz_ptr z ) const;
+
+ /// \f$ x \f$ as an integer of the C++ interface of GMP, `toGmp< mpz_class
+ /// >()`
+ template< class Z >
+  requires requires( Z & z ) {
+   { z.get_mpz_t() } -> std::convertible_to< mpz_ptr >;
+   }
+ [[nodiscard]] Z toGmp( void ) const {
+  Z z;
+  toGmp( z.get_mpz_t() );
+  return( z );
+  }
+#endif
 
  /// the opposite \f$ -x \f$
  BigInteger operator-( void ) const;

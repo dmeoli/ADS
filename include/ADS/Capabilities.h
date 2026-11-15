@@ -523,7 +523,9 @@ enum class decrease_key_kind { none , lazy , native };
 
 /// how the queue `Q` lowers a priority: `Q::decrease_key` if it declares
 /// it (e.g., a queue whose `decrease()` is an insertion), else `native` if
-/// it has `decrease( h , p )` on its handles, else `lazy` if it is a
+/// `queue_decrease( q , h , p )` of `PriorityQueue.h` takes its handles
+/// (its member `decrease( h , p )`, or a free function for a queue of
+/// another library), else `lazy` if it is a
 /// `PriorityQueue`, else `none` (the shortest paths and Prim's algorithm)
 ///
 /// In pseudocode, each test made at compile time:
@@ -533,8 +535,8 @@ enum class decrease_key_kind { none , lazy , native };
 /// 2 & \quad \textbf{if}\ Q \text{ declares } \mathtt{decrease\_key}
 ///     \ \textbf{then return}\ \text{its value}\quad \triangleright
 ///     \ \text{the opt-in wins} \cr
-/// 3 & \quad \textbf{if}\ Q \text{ has } \mathrm{decrease}( h , p )
-///     \text{ on its handles}\ \textbf{then return}
+/// 3 & \quad \textbf{if}\ \mathrm{queue\_decrease}( q , h , p )
+///     \text{ takes its handles}\ \textbf{then return}
 ///     \ \mathit{native} \cr
 /// 4 & \quad \textbf{if}\ Q \text{ models } \mathtt{PriorityQueue}
 ///     \ \textbf{then return}\ \mathit{lazy} \cr
@@ -546,9 +548,9 @@ constexpr decrease_key_kind decrease_key_of( void )
 {
  if constexpr( requires { Q::decrease_key; } )
   return( Q::decrease_key );  // the opt-in wins
- else if constexpr( requires( Q & q , typename Q::Handle h ,
-			      const typename Q::Priority & p ) {
-		     q.decrease( h , p );
+ else if constexpr( requires( Q & q , queue_handle_t< Q > h ,
+			      const priority_t< Q > & p ) {
+		     ADS::queue_decrease( q , h , p );
 		     } )
   return( decrease_key_kind::native );
  else if constexpr( PriorityQueue< Q > )

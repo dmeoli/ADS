@@ -7,9 +7,10 @@
 #    defines ADS::ADS, ADS::ADS_module and the modules of the sets            #
 #    ADS::ADS_module_core, ADS::ADS_module_base and ADS::ADS_module_advanced  #
 #    when ADS was built with ADS_BUILD_MODULE, and ADS::GMP, ADS::BLAS and    #
-#    ADS::Boost when it was built on GMP, on a CBLAS and on Boost, and it     #
-#    finds again the threads, OpenMP, oneTBB and MPI when ADS was built with  #
-#    their executors.                                                         #
+#    ADS::Boost when it was built on GMP, on a CBLAS and on Boost, which are  #
+#    then the components GMP, BLAS and Boost of find_package(ADS COMPONENTS   #
+#    ...), and it finds again the threads, OpenMP, oneTBB and MPI when ADS    #
+#    was built with their executors.                                          #
 #                                                                             #
 #    ADSTargets.cmake (to be found alongside this file) is the target import  #
 #    file that tells where the headers are.                                   #
@@ -72,6 +73,13 @@ if (NOT TARGET ADS::ADS)
 endif ()
 
 set(ADS_LIBRARIES ADS::ADS)
+
+# the components, found when ADS was built on them: find_package(ADS
+# COMPONENTS Boost) for the delegations to Boost and the headers of
+# ADS/interop/boost/, GMP and BLAS for the other backends
+set(ADS_Boost_FOUND ${ADS_WITH_BOOST})
+set(ADS_GMP_FOUND ${ADS_WITH_GMP})
+set(ADS_BLAS_FOUND ${ADS_WITH_BLAS})
 
 check_required_components(ADS)
 

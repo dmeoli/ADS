@@ -17,9 +17,9 @@
 namespace ADS
 {
 
-template< class T , class C >
-std::size_t partition( std::vector< T > & A , std::size_t start ,
-		       std::size_t end , C less )
+template< RankStore Store , class T , class C >
+std::size_t partition( Store && A , std::size_t start , std::size_t end ,
+		       C less )
 {
  ADS_PRE( ( start <= end ) && ( end < A.size() ) );
  const T x = A[ start ];
@@ -37,9 +37,8 @@ std::size_t partition( std::vector< T > & A , std::size_t start ,
  return( j );
  }
 
-template< class T , class C >
-void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
-		C less )
+template< RankStore Store , class T , class C >
+void quickSort( Store && A , std::size_t start , std::size_t end , C less )
 {
  ADS_PRE( ( start > end ) || ( end < A.size() ) );
  if( start < end ) {
@@ -50,8 +49,8 @@ void quickSort( std::vector< T > & A , std::size_t start , std::size_t end ,
   }
  }
 
-template< class T , class C >
-void quickSort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void quickSort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  if( A.size() > 1 )
@@ -59,8 +58,8 @@ void quickSort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-void quickSortTuned( std::vector< T > & A , std::size_t cutoff , C less ,
+template< RankStore Store , class T , class C >
+void quickSortTuned( Store && A , std::size_t cutoff , C less ,
 		     std::size_t * depth )
 {
  if( A.size() < 2 )
@@ -157,8 +156,8 @@ void quickSort( List< T > & L , C less )
  ADS_AUDIT( detail::sequenceSorted( L , less ) );
  }
 
-template< class T , class C >
-std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
+template< RankStore Store , class T , class C >
+std::size_t partitionByValue( Store && A , std::size_t start ,
 			      std::size_t end , const T & x , C less )
 {
  ADS_PRE( ( start <= end ) && ( end < A.size() ) );
@@ -182,6 +181,45 @@ std::size_t partitionByValue( std::vector< T > & A , std::size_t start ,
 	     } ) &&
 	    detail::samePermutation( A , before , less , start , end + 1 ) );
  return( r );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD std::size_t
+partition( std::vector< T > & A , std::size_t start , std::size_t end ,
+	   C less )
+{
+ return( partition( std::move( A ) , start , end , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD std::size_t
+partitionByValue( std::vector< T > & A , std::size_t start , std::size_t end ,
+		  const T & x , C less )
+{
+ return( partitionByValue( std::move( A ) , start , end , x , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void quickSort( std::vector< T > & A , std::size_t start ,
+				 std::size_t end , C less )
+{
+ return( quickSort( std::move( A ) , start , end , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void quickSort( std::vector< T > & A , C less )
+{
+ return( quickSort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void quickSortTuned( std::vector< T > & A ,
+				      std::size_t cutoff ,
+				      C less , std::size_t * depth )
+{
+ return( quickSortTuned( std::move( A ) , cutoff , less , depth ) );
  }
 
 /*--------------------------------------------------------------------------*/

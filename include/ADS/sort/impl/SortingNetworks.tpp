@@ -73,14 +73,23 @@ inline std::vector< Comparator > bitonicNetwork( std::size_t n )
  return( N );
  }
 
-template< class T , class C >
-void applyNetwork( std::vector< T > & A , const std::vector< Comparator > & N ,
-		   C less )
+template< RankStore Store , class T , class C >
+void applyNetwork( Store && A , const std::vector< Comparator > & N , C less )
 {
  ADS_PRE( detail::within( N , A.size() ) );
  for( const auto & [ i , j ] : N )
   if( less( A[ j ] , A[ i ] ) )
    std::swap( A[ i ] , A[ j ] );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void applyNetwork( std::vector< T > & A ,
+				    const std::vector< Comparator > & N ,
+				    C less )
+{
+ return( applyNetwork( std::move( A ) , N , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

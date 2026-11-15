@@ -188,25 +188,41 @@ concept PrototypeFrontier = requires( S s , int v , const D & d , bool b )
  { s.empty() } -> std::same_as< bool >;
  };
 
+/// a priority queue that `PriorityFrontier` and Prim's algorithm take: one
+/// that lowers its priorities, natively or lazily, whose priority is a
+/// `Priority`, or whose items are pairs ( key , node )
+template< class Q >
+concept FrontierQueue =
+  PriorityQueue< Q > &&
+  ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
+  ( requires
+{ typename Q::Priority; } ||
+    requires { typename queue_item_t< Q >::first_type; } );
+
 /// a priority queue of the nodes [see `PriorityQueue.h`] as \f$ S \f$: the
 /// priority of a node its distance or, if the priority is a pair, the pair
 /// ( distance , node ), which breaks the ties by the names of the nodes, so
-/// that any priority queue extracts the same nodes in the same order. The
-/// fall of a distance is a `decrease()` on the handle of the node if the
-/// queue lowers its keys natively, a new insertion of the node otherwise
+/// that any priority queue extracts the same nodes in the same order. A
+/// queue without a `Priority` (`std::priority_queue`, Boost.Heap) holds the
+/// pairs ( distance , node ) themselves, which must then be its items, in
+/// the order that puts the least pair on top (`std::greater`). The fall of
+/// a distance is `queue_decrease()` on the handle of the node if the queue
+/// lowers its keys natively, a new insertion of the node otherwise
 /// (`decrease_key_of()` of `Capabilities.h`): the copy of least priority of
 /// a node is then the one of its distance, which comes out first, and the
-/// others, which come out after it, are skipped
-template< PriorityQueue Q >
- requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
-	   requires
-{ typename Q::Priority; } )
+/// others, which come out after it, are skipped. The queue is reached only
+/// by the customization points of `PriorityQueue.h`, so that a queue of
+/// another library needs no wrapper
+template< FrontierQueue Q >
 class PriorityFrontier
 {
 
- /// whether the queue lowers its keys by `decrease()`
+ /// whether the queue lowers its keys by `queue_decrease()`
  static constexpr bool native =
    ( decrease_key_of< Q >() == decrease_key_kind::native );
+
+ /// whether the items of the queue are the pairs ( distance , node )
+ static constexpr bool own = ! requires { typename Q::Priority; };
 
  /// the handle of a node, nothing if the queue is lazy
  template< class X , bool N >
@@ -218,7 +234,7 @@ class PriorityFrontier
  template< class X >
  struct HandleOf< X , true >
  {
-  using type = typename X::Handle;
+  using type = queue_handle_t< X >;
   };
 
  /// what a lazy queue keeps: whether each node is in S, and how many are
@@ -247,9 +263,9 @@ class PriorityFrontier
  template< class D >
  void add( int v , const D & d , bool ) {
   if constexpr( native )
-   f_h[ v ] = f_q.insert( v , key( v , d ) );
+   f_h[ v ] = insert( v , d );
   else {
-   f_q.insert( v , key( v , d ) );
+   insert( v , d );
    f_l.in[ v ] = true;
    ++f_l.live;
    }
@@ -258,10 +274,10 @@ class PriorityFrontier
  /// a node out of \f$ S \f$; the stale copies of a lazy queue skipped
  int extract( void ) {
   if constexpr( native )
-   return( f_q.deleteMin() );
+   return( node( ADS::queue_deleteMin( f_q ) ) );
   else
    for( ; ; ) {
-    const int v = f_q.deleteMin();
+    const int v = node( ADS::queue_deleteMin( f_q ) );
     if( f_l.in[ v ] ) {
      f_l.in[ v ] = false;
      --f_l.live;
@@ -274,9 +290,9 @@ class PriorityFrontier
  template< class D >
  void update( int v , const D & d ) {
   if constexpr( native )
-   f_q.decrease( f_h[ v ] , key( v , d ) );
+   ADS::queue_decrease( f_q , f_h[ v ] , key( v , d ) );
   else
-   f_q.insert( v , key( v , d ) );
+   insert( v , d );
   }
 
  /// whether \f$ S \f$ is empty; a lazy queue may still hold stale copies
@@ -289,8 +305,8 @@ class PriorityFrontier
 
  /// the priority of \f$ v \f$ at the distance \f$ d \f$
  template< class D >
- static typename Q::Priority key( int v , const D & d ) {
-  using P = typename Q::Priority;
+ static priority_t< Q > key( int v , const D & d ) {
+  using P = priority_t< Q >;
   if constexpr( requires { typename P::first_type; } )
    return( P( d , v ) );
   else
@@ -298,6 +314,25 @@ class PriorityFrontier
   }
 
  private:
+ /// \f$ v \f$ inserted at the distance \f$ d \f$: with its priority, or as
+ /// the pair ( distance , node ) in a queue of pairs; the handle, if any
+ template< class D >
+ decltype( auto ) insert( int v , const D & d ) {
+  if constexpr( own )
+   return( ADS::queue_insert( f_q , key( v , d ) ) );
+  else
+   return( ADS::queue_insert( f_q , v , key( v , d ) ) );
+  }
+
+ /// the node of an item of the queue
+ template< class X >
+ static int node( const X & x ) {
+  if constexpr( own )
+   return( int( x.second ) );
+  else
+   return( int( x ) );
+  }
+
  Q & f_q;
  /// the handle of each node, if native
  std::vector< typename HandleOf< Q , native >::type > f_h;

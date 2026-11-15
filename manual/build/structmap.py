@@ -38,7 +38,7 @@ CHAPTER = {
     'string': 15, 'geometry': 16, 'numeric': 17, 'combinatorial': 18,
     'backtrack': 19, 'complexity': 20, 'intractable': 20, 'compression': 21,
     'succinct': 22, 'external': 23, 'concurrent': 24, 'parallel': 25,
-    'distributed': 26,
+    'distributed': 26, 'interop/boost': 1, 'interop/std': 1,
 }
 # the file of each chapter
 FILE = {

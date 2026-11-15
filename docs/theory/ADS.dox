@@ -526,7 +526,13 @@
  often the faster of the two (Chen et al.). The shortest paths of
  `ShortestPaths.h` and Prim's algorithm of `MinimumSpanningTree.h` take
  either; in the lazy case the frontier keeps, for each node, whether it is
- in \f$ S \f$, and skips a copy whose node is not.
+ in \f$ S \f$, and skips a copy whose node is not. The native form is read
+ through `queue_decrease( q , h , p )`, the member `decrease()` of a queue
+ with the handles of the book or a free function found by
+ argument-dependent lookup, so that a mutable heap of another library (the
+ heaps of Boost.Heap, by `ADS/interop/boost/Heap.h`, where a decrease in
+ the sense of ADS is the `increase()` of Boost, toward the top) lowers its
+ keys natively with no wrapper.
 
  <b>Lemma 2.</b> <em>Let the priorities of the copies be the pairs
  \f$ ( d , v ) \f$ of a distance and a node, inserted at each fall of the

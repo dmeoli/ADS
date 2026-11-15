@@ -27,8 +27,8 @@ inline int keyAt( const std::string & s , std::size_t d )
  }
 
 /// the sort of A[ lo .. hi ) by the characters from d on
-inline void mkqs( std::vector< std::string > & A , std::size_t lo ,
-		  std::size_t hi , std::size_t d )
+template< StringStore Store >
+void mkqs( Store && A , std::size_t lo , std::size_t hi , std::size_t d )
 {
  while( hi - lo > 1 ) {
   if( hi - lo <= 10 ) {  // small: insertion from d
@@ -62,11 +62,19 @@ inline void mkqs( std::vector< std::string > & A , std::size_t lo ,
 
 }  // end( namespace detail )
 
-inline void multikeyQuickSort( std::vector< std::string > & A )
+template< StringStore Store >
+void multikeyQuickSort( Store && A )
 {
  const auto before = detail::auditCopy( A );
  detail::mkqs( A , 0 , A.size() , 0 );
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+ADS_SORT_FORWARD void multikeyQuickSort( std::vector< std::string > & A )
+{
+ return( multikeyQuickSort( std::move( A ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

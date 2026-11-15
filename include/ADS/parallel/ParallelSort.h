@@ -243,6 +243,12 @@ inline constexpr std::size_t kParallelSortThreads = 3;
 /// \pre `less` is a strict weak order, whose calls from several threads do
 ///      not race
 /// \post \f$ A \f$ is sorted, with the same items (an audit)
+template< Executor E , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void sort( E & ex , Store && A , C less = C() );
+
+/// `sort()` above on a vector
 template< Executor E , class T , class C = std::less<> >
 void sort( E & ex , std::vector< T > & A , C less = C() );
 
@@ -264,6 +270,12 @@ void sort( E & ex , std::vector< T > & A , C less = C() );
 /// \pre `less` is a strict weak order, whose calls from several threads do
 ///      not race
 /// \post \f$ A \f$ is sorted, with the same items (an audit)
+template< Executor E , SortStore Store ,
+	  class T = std::ranges::range_value_t< std::remove_cvref_t< Store > > ,
+	  class C = std::less<> >
+void stableSort( E & ex , Store && A , C less = C() );
+
+/// `stableSort()` above on a vector
 template< Executor E , class T , class C = std::less<> >
 void stableSort( E & ex , std::vector< T > & A , C less = C() );
 
@@ -286,6 +298,12 @@ void stableSort( E & ex , std::vector< T > & A , C less = C() );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (an audit)
+template<
+  Executor E , SortStore Store ,
+  VectorKey T = std::ranges::range_value_t< std::remove_cvref_t< Store > > >
+void learnedSort( E & ex , Store && A );
+
+/// `learnedSort()` above on a vector
 template< Executor E , VectorKey T >
 void learnedSort( E & ex , std::vector< T > & A );
 
@@ -303,8 +321,92 @@ void learnedSort( E & ex , std::vector< T > & A );
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same items (an audit)
+template<
+  Executor E , SortStore Store ,
+  VectorKey T = std::ranges::range_value_t< std::remove_cvref_t< Store > > >
+void learnedStableSort( E & ex , Store && A );
+
+/// `learnedStableSort()` above on a vector
 template< Executor E , VectorKey T >
 void learnedStableSort( E & ex , std::vector< T > & A );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `sort( ex , A )` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{ sort( ex , v , std::forward< P >( p )... ); }
+decltype( auto ) sort( E & ex , R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( sort( ex , v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
+
+/// `stableSort( ex , A )` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  stableSort( ex , v , std::forward< P >( p )... );
+  }
+decltype( auto ) stableSort( E & ex , R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( stableSort( ex , v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
+
+/// `learnedSort( ex , A )` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  learnedSort( ex , v , std::forward< P >( p )... );
+  }
+decltype( auto ) learnedSort( E & ex , R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( learnedSort( ex , v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
+
+/// `learnedStableSort( ex , A )` on the range \f$ A \f$ [see `SortRange`], the
+/// other arguments as for a vector: in place on the span of its items if \f$ A
+/// \f$ is contiguous, through a vector of its items otherwise, since the code
+/// of the sort reads the items by their addresses
+template< Executor E , SortRange R , class... P >
+ requires requires( E & ex ,
+		    std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  learnedStableSort( ex , v , std::forward< P >( p )... );
+  }
+decltype( auto ) learnedStableSort( E & ex , R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( learnedStableSort( ex , v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

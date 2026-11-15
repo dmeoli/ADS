@@ -130,7 +130,33 @@ namespace ADS
 /// past \f$ 2 \log_2 n \f$ such steps, or one that splits nothing, is left to
 /// `std::stable_sort()`.
 /// \post \f$ A \f$ is sorted, with the same strings (audit)
+template< StringStore Store >
+void prefixKeySort( Store && A );
+
+/// `prefixKeySort()` above on a vector
 inline void prefixKeySort( std::vector< std::string > & A );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `prefixKeySort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  prefixKeySort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) prefixKeySort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( prefixKeySort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

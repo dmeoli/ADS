@@ -17,9 +17,8 @@
 namespace ADS
 {
 
-template< class T , class C >
-void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
-		     C less )
+template< RankStore Store , class T , class C >
+void maxHeapRestore( Store && A , std::size_t i , std::size_t dim , C less )
 {
  ADS_PRE( ( i < dim ) && ( dim <= A.size() ) );
  for( ; ; ) {
@@ -36,8 +35,8 @@ void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
   }
  }
 
-template< class T , class C >
-void heapBuild( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void heapBuild( Store && A , C less )
 {
  for( std::size_t i = A.size() / 2 ; i-- > 0 ; )
   maxHeapRestore( A , i , A.size() , less );
@@ -45,8 +44,8 @@ void heapBuild( std::vector< T > & A , C less )
    [ & ]( void ) { return( isMaxHeap( A , A.size() , less ) ); } ) );
  }
 
-template< class T , class C >
-void heapsort( std::vector< T > & A , C less )
+template< RankStore Store , class T , class C >
+void heapsort( Store && A , C less )
 {
  const auto before = detail::auditCopy( A );
  heapBuild( A , less );
@@ -57,14 +56,42 @@ void heapsort( std::vector< T > & A , C less )
  ADS_AUDIT( detail::sortedPermutation( A , before , less ) );
  }
 
-template< class T , class C >
-bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less )
+template< RankStore Store , class T , class C >
+bool isMaxHeap( Store && A , std::size_t dim , C less )
 {
  ADS_PRE( dim <= A.size() );
  for( std::size_t i = 1 ; i < dim ; ++i )
   if( less( A[ ( i - 1 ) / 2 ] , A[ i ] ) )
    return( false );
  return( true );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< class T , class C >
+ADS_SORT_FORWARD void maxHeapRestore( std::vector< T > & A , std::size_t i ,
+				      std::size_t dim , C less )
+{
+ return( maxHeapRestore( std::move( A ) , i , dim , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void heapBuild( std::vector< T > & A , C less )
+{
+ return( heapBuild( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD void heapsort( std::vector< T > & A , C less )
+{
+ return( heapsort( std::move( A ) , less ) );
+ }
+
+template< class T , class C >
+ADS_SORT_FORWARD bool isMaxHeap( const std::vector< T > & A , std::size_t dim ,
+				 C less )
+{
+ return( isMaxHeap( std::move( A ) , dim , less ) );
  }
 
 /*--------------------------------------------------------------------------*/

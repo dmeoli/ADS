@@ -12,13 +12,15 @@
 # detail (the names of a header of both from ads.base and ads.advanced):      #
 #                                                                             #
 #   python3 cmake/ads_module_exports.py -- -fopenmp -DADS_WITH_TBB \          #
-#           -DADS_WITH_FASTFLOW -I<fastflow> -DADS_WITH_MPI -I<mpi>           #
+#           -DADS_WITH_FASTFLOW -I<fastflow> -DADS_WITH_MPI -I<mpi> \         #
+#           -DADS_WITH_BOOST                                                  #
 #                                                                             #
-# The headers of the optional executors are compiled only with their          #
-# library [see include/ADS/parallel and include/ADS/distributed]: their       #
-# names are exported inside the #if of their macro, given by ads_sets.txt,    #
-# and they are read only if the flags define the macro. To be run whenever a  #
-# header gains or loses a name or changes its set.                            #
+# The headers of the optional executors and of the interoperation with Boost  #
+# are compiled only with their library [see include/ADS/parallel,             #
+# include/ADS/distributed and include/ADS/interop/boost]: their names are     #
+# exported inside the #if of their macro, given by ads_sets.txt, and they are #
+# read only if the flags define the macro. To be run whenever a header gains  #
+# or loses a name or changes its set.                                         #
 ###############################################################################
 
 import argparse

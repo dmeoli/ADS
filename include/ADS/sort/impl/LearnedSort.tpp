@@ -138,8 +138,9 @@ class CdfModel
 
 /// the keys of `radixKey()` of a sample of \f$ s \f$ items of \f$ A \f$ at
 /// random places, sorted
-template< VectorKey T >
-auto learnedSample( const std::vector< T > & A , std::size_t s )
+template< SortStore Store , VectorKey T = std::ranges::range_value_t<
+			     std::remove_cvref_t< Store > > >
+auto learnedSample( Store && A , std::size_t s )
 {
  using U = decltype( radixKey( T() ) );
  const std::size_t n = A.size();
@@ -155,8 +156,8 @@ auto learnedSample( const std::vector< T > & A , std::size_t s )
  return( S );
  }
 
-template< VectorKey T >
-bool learnedSortIf( std::vector< T > & A )
+template< SortStore Store , VectorKey T >
+bool learnedSortIf( Store && A )
 {
  using U = decltype( radixKey( T() ) );
  const std::size_t n = A.size();
@@ -220,13 +221,21 @@ bool learnedSortIf( std::vector< T > & A )
 
 /*--------------------------------------------------------------------------*/
 
-template< VectorKey T >
-void learnedSort( std::vector< T > & A )
+template< SortStore Store , VectorKey T >
+void learnedSort( Store && A )
 {
  if( ! detail::learnedSortIf( A ) )
   sampleSort( A , []( T x , T y ) {  // the total order of the
    return( radixKey( x ) < radixKey( y ) );
    } );  // keys, as the model's
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< VectorKey T >
+ADS_SORT_FORWARD void learnedSort( std::vector< T > & A )
+{
+ return( learnedSort( std::move( A ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

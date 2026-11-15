@@ -86,7 +86,33 @@ namespace ADS
 /// \end{array}}
 /// \f]
 /// \post \f$ A \f$ is sorted, with the same strings (audit)
+template< StringStore Store >
+void multikeyQuickSort( Store && A );
+
+/// `multikeyQuickSort()` above on a vector
 inline void multikeyQuickSort( std::vector< std::string > & A );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------- THE SORTS OF A RANGE ---------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// `multikeyQuickSort()` on the range \f$ A \f$ [see `SortRange`], the other
+/// arguments as for a vector: in place on the span of its items if \f$ A \f$
+/// is contiguous, through a vector of its items otherwise, since the code of
+/// the sort reads the items by their addresses
+template< SortRange R , class... P >
+ requires requires( std::vector< std::ranges::range_value_t< R > > & v ,
+		    P &&... p )
+{
+  multikeyQuickSort( v , std::forward< P >( p )... );
+  }
+decltype( auto ) multikeyQuickSort( R && A , P &&... p )
+{
+ const auto f = [ & ]( auto & v ) -> decltype( auto ) {
+  return( multikeyQuickSort( v , std::forward< P >( p )... ) );
+  };
+ return( detail::sortRange( A , f ) );
+ }
 
 /*--------------------------------------------------------------------------*/
 

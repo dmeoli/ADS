@@ -17,8 +17,8 @@
 namespace ADS
 {
 
-template< std::totally_ordered T >
-void treeSort( std::vector< T > & A , bool balanced )
+template< RankStore Store , std::totally_ordered T >
+void treeSort( Store && A , bool balanced )
 {
  const auto before = detail::auditCopy( A );
  auto run = [ & ]( auto & S ) {
@@ -41,6 +41,14 @@ void treeSort( std::vector< T > & A , bool balanced )
   run( S );
   }
  ADS_AUDIT( detail::sortedPermutation( A , before , std::less<>() ) );
+ }
+
+// the vectors of the book, by a call of the sort on their storage
+
+template< std::totally_ordered T >
+ADS_SORT_FORWARD void treeSort( std::vector< T > & A , bool balanced )
+{
+ return( treeSort( std::move( A ) , balanced ) );
  }
 
 /*--------------------------------------------------------------------------*/

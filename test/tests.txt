@@ -1923,6 +1923,21 @@ engineered_boost  boost-flat-hash-table  tabella a gruppi, ADS o Boost
 engineered_boost  boost-small-vector     vettore con spazio interno
 engineered_boost  boost-xoshiro          xoshiro256, ADS o Boost.Random
 
+# the interoperation with Boost (with ADS_WITH_BOOST) and with the
+# standard library, beyond the book
+engineered_interop  bgl-row-graphs            Boost.Graph su StaticGraph, ArrayGraph
+engineered_interop  bgl-max-flows             flussi di Boost.Graph sui grafi di ADS
+engineered_interop  bgl-list-graphs           ListGraph osservato da Boost.Graph
+engineered_interop  bgl-from-bgl              grafi di Boost.Graph come grafi di ADS
+engineered_interop  bgl-ads-queues            code di ADS nella visita di Boost.Graph
+engineered_interop  boost-heap-frontier       heap di Boost.Heap nei cammini di ADS
+engineered_interop  boost-iterator-traversal  attraversamento degli iteratori
+engineered_interop  std-flat-map              flat_set e flat_map sulle sequenze
+engineered_interop  std-pmr                   pool di ADS come risorse pmr
+engineered_interop  sort-ranges               ordinamenti su span, deque, TieredVector
+engineered_interop  queue-cpo                 code della libreria standard
+engineered_interop  gmp-conversions           BigInteger e Rational con GMP
+
 # Open Data Structures (Morin), chapters 1, 2 and 3
 ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti
 ods_lists  ods-ex1.1.lines              i nove problemi sulle righe
