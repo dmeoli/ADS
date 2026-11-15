@@ -1997,6 +1997,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The pseudocode of the comments of the headers, and so of the manual, that
+  followed the book of Montresor (CC BY-NC 4.0, whose text a repository
+  under the Boost Software License may not hold) written anew from the code
+  of ADS, with its names, the order of its steps and new comments, the book
+  cited as the source of each algorithm; the references of the manual to
+  the lines of those displays set to the new ones, and docs/STYLE.md,
+  appendix A and README.md say that every source is cited and none copied
+
 - ConcurrentFlatTable: the tag of a place that an insertion or a growth
   writes comes from the hash that it already has (tagWith()), instead of
   the hash of the key computed again, which in a set of pointers compared

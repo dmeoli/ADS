@@ -276,11 +276,11 @@ inline std::vector< int > path( int r , int s , const std::vector< int > & p );
 /// 1 & \textbf{procedure}\ \mathrm{dfs}( G , u , \mathit{visited} ) \cr
 /// 2 & \quad \mathit{visited}[ u ] \gets \textbf{true};\ \mathrm{pre}( u
 ///     )\quad \triangleright\ \text{on the way down} \cr
-/// 3 & \quad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do}
-///     \ \mathrm{edge}( u , v );\ \textbf{if}\ \textbf{not}
+/// 3 & \quad \textbf{foreach}\ v \in G.\mathrm{adj}( u )\ \textbf{do} \cr
+/// 4 & \qquad \mathrm{edge}( u , v );\ \textbf{if}\ \textbf{not}
 ///     \ \mathit{visited}[ v ]\ \textbf{then}\ \mathrm{dfs}( G , v ,
 ///     \mathit{visited} ) \cr
-/// 4 & \quad \mathrm{post}( u )\quad \triangleright\ \text{on the way up}
+/// 5 & \quad \mathrm{post}( u )\quad \triangleright\ \text{on the way up}
 /// \end{array}}
 /// \f]
 /// and on the stack \f$ S \f$ of the code, a frame \f$ ( x , A , i ) \f$

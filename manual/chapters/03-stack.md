@@ -738,9 +738,9 @@ back on $s$, where the last one pushed, the $x_i \le k$ of least $i$, is
 the top. In `reverseWithQueue()`, line 3 enqueues $x_1 , \ldots , x_n$,
 and line 4 pushes them in the same order; $x_n$, pushed last, is
 the top. For `forEachBottomUp()`, by induction on $n$: the empty stack is
-returned at line 2, and otherwise $x_1$ is popped, the recursive call
-visits $x_n , \ldots , x_2$ and leaves $x_2 , \ldots , x_n$ as they were,
-and line 5 visits $x_1$ and pushes it back on top. Each item is pushed and
+left alone by the test of line 2, and otherwise $x_1$ is popped, the
+recursive call visits $x_n , \ldots , x_2$ and leaves $x_2 , \ldots , x_n$
+as they were, and line 4 visits $x_1$ and pushes it back on top. Each item is pushed and
 popped (or enqueued and dequeued) a constant number of times in each
 function, and the auxiliary structure, or the stack of the calls in
 `forEachBottomUp()`, holds at most $n$ items. $\square$

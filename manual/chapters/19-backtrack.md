@@ -261,7 +261,7 @@ the order of the book or by the rule of Warnsdorff.
 In the order of the book (the 8 moves always in the same order) the tree
 may be explored for a long time before a tour is found. Instead, the rule of
 [Warnsdorff 1823](Z-bibliography.md#ref-warnsdorf1823) tries first the
-moves to the squares with the fewest onward moves (line 8, a stable sort,
+moves to the squares with the fewest onward moves (line 7, a stable sort,
 so that ties keep the order of the book), i.e., it visits first the squares
 that would otherwise become dead ends. It is a heuristic, with no bound on
 the backtracks that it saves; yet, on the boards of practical size it

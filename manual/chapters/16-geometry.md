@@ -166,7 +166,7 @@ pairs of distinct points, with at most $n$ evaluations of (16.1) per pair, and
 sorts by angle the vertices that it finds
 ([Algorithm 16.1](16-geometry.md#alg-16-1)). It costs $O( n^3 )$ time, and
 the tests use it as the reference for the other algorithms. In the code,
-the second condition of line 6 is the sign of the scalar product
+the second condition of line 5 is the sign of the scalar product
 $( r - p ) \cdot ( r - q )$, which is positive exactly when a point $r$ of
 the line lies outside the segment.
 
@@ -218,7 +218,7 @@ $O( n \log n )$ time and $O( n )$ space.*
 
 *Proof.* The invariant (16.4) holds after the scan of $p_1$, when $S$
 holds $o$ and $p_1$. Suppose that it holds after the scan of $p_i$. A
-vertex $t$ popped at line 9 lies in the triangle $o \, s \, p_{i+1}$, or
+vertex $t$ popped at line 8 lies in the triangle $o \, s \, p_{i+1}$, or
 on its side $s \, p_{i+1}$, and it is therefore no vertex of the hull of
 $\{ o , p_1 , \ldots , p_{i+1} \}$. When the loop stops, the turn from the
 second vertex of $S$ through its top to $p_{i+1}$ is to the left; the
@@ -227,7 +227,7 @@ contains all the points scanned (cf. the triangles above), which is (16.4)
 after the scan of $p_{i+1}$. After the last point this is the claim, since
 the points dropped at line 5 lie inside a segment from $o$ to a point kept.
 As for the time, each point is pushed once and popped at most once, and
-hence lines 7 to 10 cost $O( n )$; the sort costs $O( n \log n )$ and
+hence lines 7 to 9 cost $O( n )$; the sort costs $O( n \log n )$ and
 dominates. $\square$
 
 In the code, the stack is a `std::vector`. Note that the test $\le 0$ (instead of $< 0$) also pops a vertex collinear

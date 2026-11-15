@@ -190,7 +190,7 @@ constant number of steps. $\square$
 Our code computes the modulo of (4.2) without a division. Since $h < m$
 and $n \le m$, the sum $h + n$ is below $2 m$, and its remainder is the sum
 itself, or the sum minus $m$ when it reaches $m$; in the same way, the
-advance of $h$ in line 3 of `dequeue()` is an increment followed by a
+advance of $h$ in line 2 of `dequeue()` is an increment followed by a
 comparison with $m$. For instance, with the header
 `ADS/queue/ArrayQueue.h`,
 
@@ -1336,7 +1336,7 @@ besides them.*
 *Proof.* By (4.1), the dequeues of line 3 (or line 4) return $x_1 , \ldots
 , x_n$ in this order, and the enqueues on `out` keep the order of the items
 $x_i > 0$ appended. In `copyPositive()`, the auxiliary queue $A$ receives
-$x_1 , \ldots , x_n$ in the same order, and line 6 dequeues them from $A$
+$x_1 , \ldots , x_n$ in the same order, and line 7 dequeues them from $A$
 in this order and enqueues them on $q$, which is empty after line 3.
 Every item is dequeued and enqueued at most twice, and $A$ holds at most
 $n$ items. $\square$

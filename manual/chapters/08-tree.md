@@ -1674,12 +1674,11 @@ To insert a pair $( x , v )$, `insertNode()` searches for $x$, keeping the
 parent $p$ of the node it is at. If $x$ is there, its value becomes $v$.
 Otherwise, the search ends at the sentinel below $p$, where a new leaf of
 $( x , v )$ is hung on the side of $x$
-([Figure 8.20](08-tree.md#fig-8-20)). The first seven lines of
+([Figure 8.20](08-tree.md#fig-8-20)). The first eight lines of
 [Algorithm 8.28](08-tree.md#alg-8-28) are the insertion of the
-plain tree, but for line 6, which concerns the Red-Black tree and is
-discussed in [§8.5.5](08-tree.md#sec-8-5-5). In the code, the sizes of the subtrees of
-the ancestors of the new leaf are incremented on the way back up, one per
-level.
+plain tree, but for line 7, which concerns the Red-Black tree and is
+discussed in [§8.5.5](08-tree.md#sec-8-5-5). Line 6 increments the sizes
+of the subtrees of the ancestors of the new leaf, one per level.
 
 ![Figure 8.20. The insertion of 8.5 in the tree of Morin's figure 6.5 (his figure 6.7): the search for 8.5 (violet, left) ends at the sentinel to the right of 8, where the new leaf is hung (orange, right).](../figures/tree-bst-add.svg){#fig-8-20}
 
@@ -1709,9 +1708,9 @@ holds.
 
 <span id="alg-8-29"></span>**Algorithm 8.29.** The removal from
 a binary search tree and the balancing of a Red-Black tree, the cases (1) to
-(4) of `balanceDelete()` written for $t$ a left child of $p$, and their
-mirrors (5) to (8) obtained by exchanging left and right ([Montresor 2025,
-§6.1 and §6.2](Z-bibliography.md#ref-montresor2025)).
+(4) of `balanceDelete()` written once for the two sides of $p$, with
+$\mathit{near}$ the side of $t$ and $\mathit{far}$ the other one
+([Montresor 2025, §6.1 and §6.2](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/SearchTree-removeNode.pseudo.md"
 
@@ -1862,7 +1861,7 @@ all their depths change. $\square$
 A rotation rewrites three links, each with its link to the parent, and the
 sizes of the two nodes it turns, the lower one first (since the size of the
 upper one includes it). The left rotation of `SearchTree`
-is the function $\mathrm{rotateLeft}$ of the lines 20 to 23 of [Algorithm
+is the function $\mathrm{rotateLeft}$ of the lines 19 to 22 of [Algorithm
 8.28](08-tree.md#alg-8-28), and the right one, `rotateRight()`, is its
 mirror. Since the depths of a whole subtree may change, the tree of
 [§8.5.6](08-tree.md#sec-8-5-6), which keeps them, has no rotation (cf.
@@ -1932,7 +1931,7 @@ restore the constraints that they break.
 
 *Insertion.* The new leaf $t$ is colored red, which keeps (V4) and may
 break (V1), if $t$ is the root, or (V3), if its parent is red. Then
-`balanceInsert( t )` (lines 8 to 19 of
+`balanceInsert( t )` (lines 9 to 18 of
 [Algorithm 8.28](08-tree.md#alg-8-28)) repairs the fault, with $p$
 the parent of $t$, $n$ its grandparent and $z$ its uncle (the other child of
 $n$). In the case (1), $t$ is the root and is painted black, while in the case (2), with $p$
@@ -1978,7 +1977,7 @@ when the key was already there.
 *Removal.* The plain removal splices a node $u$ with at most one child $t$,
 possibly the sentinel. If $u$ was red, the constraints hold. If it was
 black, the paths through $t$ have lost a black node, and
-`balanceDelete( t , p )` (lines 9 to 18 of
+`balanceDelete( t , p )` (lines 9 to 19 of
 [Algorithm 8.29](08-tree.md#alg-8-29)) repairs (V4) by moving up
 a *black token* that $t$ carries. A red $t$ absorbs the token by turning
 black (the last line); otherwise the sibling $f$ of $t$ and its two

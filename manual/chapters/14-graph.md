@@ -309,9 +309,9 @@ make the same search, while `adj( u )` copies the list.
 --8<-- "generated/ListGraph-inAdj.pseudo.md"
 
 `ListGraph< W , T >` has the same public members as `MatrixGraph< W , T >`,
-with the same meaning, and can replace it in the example above. The search of
-line 2 writes the weight when it finds $v$ in $L_u$, and otherwise the new
-pair goes after the tail of the list (line 4). In this representation, the
+with the same meaning, and can replace it in the example above. When the
+search of line 2 finds $v$ in $L_u$, line 3 writes the weight, and otherwise
+the new pair goes after the tail of the list (line 4). In this representation, the
 edges that enter a node are its defect, since no link leads from them to their
 head. Thus `inAdj( u )` of an oriented graph scans all the lists ([Algorithm
 14.2](14-graph.md#alg-14-2)); in an unoriented one they are the edges that
@@ -962,7 +962,7 @@ before it returns to that on $x_{k-1}$, as line 5 does when it pops the
 top frame. Otherwise both examine the edge $( x_k , A_k[ i_k ] )$ with
 the same $\mathit{visited}$ (lines 6 and 4), and either $v$ is visited,
 and both go on with the next node of $A_k$, or it is not, and the
-recursive call of line 5, which starts with its line 2, matches line 8,
+recursive call of line 4, which starts with its line 2, matches line 8,
 which pushes $( v , G.\mathrm{adj}( v ) , 0 )$. The loop stops when $S$
 is empty, i.e., when the call on $u$ has returned. $\square$
 
@@ -2130,8 +2130,7 @@ $S$ holding the tail of each edge that violates (14.6); the repairs of
 [§14.13](14-graph.md#sec-14-13) start it so.
 
 <span id="alg-14-13"></span>**Algorithm 14.13.** The prototype of the
-shortest paths ([Montresor 2025, §11.2](Z-bibliography.md#ref-montresor2025)),
-its lines (1) to (4) numbered as in the book.
+shortest paths ([Montresor 2025, §11.2](Z-bibliography.md#ref-montresor2025)).
 
 --8<-- "generated/ShortestPaths-shortestPaths-2.pseudo.md"
 
@@ -2141,7 +2140,7 @@ In the library, we make the frontier a type that models the concept
 `PrototypeFrontier`: `add( v , d , first )` puts $v$ into $S$ at the distance
 $d$ (`first` if $v$ was never reached), and `extract()` takes a node out.
 Also, `update( v , d )` records in $S$ that the distance of $v$, already in
-$S$, fell to $d$ (the line (4)), and `empty()` completes the concept.
+$S$, fell to $d$ (line 10), and `empty()` completes the concept.
 `PriorityFrontier` (whose static `key( v , d )` builds the priority of a node)
 adapts any priority queue of [chapter 9](09-priority.md#ch-9). It keeps the
 handle of each node for its decrease when the queue has handles, and otherwise
@@ -2677,7 +2676,7 @@ the forerunner; in practice the phases are often far fewer than $n$.
 The blocking flow of a phase follows the levels iteratively, since they may
 be as deep as $n$, with the edges of the current path on a stack $P$ and a
 cursor $\mathit{next}[ x ]$ per node ($\deg( x )$ its edges in the residual network) that passes each edge into a dead end
-once, and `maxFlow()` repeats it from $s$ until it returns 0 (line 10 of
+once, and `maxFlow()` repeats it from $s$ until it returns 0 (line 8 of
 `maxFlow()`, the cursors set to 0 at the start of the phase):
 
 --8<-- "generated/MaxFlow-FlowNetwork-blocking.pseudo.md"

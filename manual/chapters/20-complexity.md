@@ -736,7 +736,7 @@ bits.*
 
 *Proof.* Before the first element, $M[ j ]$ is true only for $j = 0$, the
 sum of the empty subset. Let the claim hold after the element $i - 1$. In
-the pass of line 5 for $a = A_i$, the entry $j$ is written after the
+the pass of line 4 for $a = A_i$, the entry $j$ is written after the
 entries above it and before those below it; hence, when $M[ j ]$ is
 written, $M[ j - a ]$, with $j - a \le j$, still holds $M[ i - 1 ][ j - a
 ]$ (for $a = 0$ the two are the same entry, and the or leaves it as it
@@ -1223,7 +1223,7 @@ time on the adjacency matrix, $O( n )$ choices of $O( n )$ time each.*
 *Proof.* A node leaves a bucket in $O( 1 )$ by its place, which the node
 moved into it inherits (line 5 of `remove()` in
 [Algorithm 20.22](20-complexity.md#alg-20-22)). Furthermore, the bounds
-$\mathit{min}( k )$ and $\mathit{max}( k )$ move by a scan (lines 7 and 9)
+$\mathit{min}( k )$ and $\mathit{max}( k )$ move by a scan (line 6)
 only when a bucket empties. In
 `minMaxGreedy()` all the nodes are inserted at the start, with the count
 0, and the counts only grow. Hence $\mathit{min}( k )$ never decreases, and
@@ -1340,9 +1340,9 @@ $f( z ) = \delta( z ) + h( z ) \le \delta( y ) + h( y ) < g( y ) + h( y )$
 by (20.12) along the path, and $z$ would have been extracted before $y$.
 Hence each configuration $y$ is expanded once: after it is expanded with
 $g( y ) = \delta( y )$, the map holds $\delta( y )$, and any later entry
-of $y$ has $g > \delta( y )$, since line 9 inserts $y$ only with a level
+of $y$ has $g > \delta( y )$, since line 8 inserts $y$ only with a level
 smaller than the one stored, hence once with the level $\delta( y )$; line
-6 skips such an entry. Applied to the first
+5 skips such an entry. Applied to the first
 goal $x$ extracted, $g( x ) = \delta( x )$, i.e., it is reached in the
 fewest moves. $\square$
 

@@ -128,7 +128,7 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f );
 /// 2 & \quad S \gets \text{an empty stack};\ \mathit{pos} \gets
 ///     \text{START}\quad \triangleright\ \mathit{pos}
 ///     \text{ the point of the recursive body} \cr
-/// 3 & \quad \textbf{loop} \cr
+/// 3 & \quad \textbf{while}\ \mathit{pos} \ne \text{STOP}\ \textbf{do} \cr
 /// 4 & \qquad \textbf{if}\ \mathit{pos} = \text{START}\ \textbf{and}\ n = 1
 ///     \ \textbf{then}\ \mathrm{f}( \mathit{src} , \mathit{dest} );
 ///     \ \mathit{pos} \gets \text{END} \cr
@@ -148,7 +148,7 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f );
 /// 10 & \qquad \textbf{else if}\ S \ne \emptyset\ \textbf{then}\ ( n ,
 ///     \mathit{src} , \mathit{dest} , \mathit{mid} , \mathit{pos} ) \gets
 ///     \mathrm{pop}( S )\quad \triangleright\ \text{the return} \cr
-/// 11 & \qquad \textbf{else return}
+/// 11 & \qquad \textbf{else}\ \mathit{pos} \gets \text{STOP}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 1 \f$, and `source`, `dest` and `middle` distinct

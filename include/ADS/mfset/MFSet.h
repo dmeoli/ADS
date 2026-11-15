@@ -134,8 +134,8 @@ class MFSet
  ///     \text{ until } p[ r ] = r \cr
  /// 3 & \quad \textbf{if}\ \mathit{compress}\ \textbf{then}\quad
  ///     \triangleright\ \text{a second pass, which hangs the path on } r \cr
- /// 4 & \qquad \textbf{while}\ x \ne r\ \textbf{do}\ ( x , p[ x ] ) \gets (
- ///     p[ x ] , r ) \cr
+ /// 4 & \qquad \textbf{while}\ x \ne r\ \textbf{do}\ y \gets p[ x ];\ p[ x ]
+ ///     \gets r;\ x \gets y \cr
  /// 5 & \quad \textbf{return}\ r
  /// \end{array}}
  /// \f]

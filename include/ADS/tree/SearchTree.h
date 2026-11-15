@@ -236,21 +236,26 @@ class SearchTree
  ///     \ \text{only } t \text{ and its parent may be both red} \cr
  /// 10 & \quad t.\mathit{color} \gets \text{red} \cr
  /// 11 & \quad \textbf{while}\ t \text{ is not the root and its parent } p
- ///     \text{ is red}\ \textbf{do} \cr
+ ///     \text{ is red}\ \textbf{do}\quad \triangleright
+ ///     \ \text{none if (2), } p \text{ black} \cr
  /// 12 & \qquad n \gets p.\mathit{parent};\ z \gets \text{the child of } n
  ///     \text{ other than } p\quad \triangleright\ n \text{ is black} \cr
  /// 13 & \qquad \textbf{if}\ z \text{ is red}\ \textbf{then}
  ///     \ p.\mathit{color} \gets z.\mathit{color} \gets \text{black};
- ///     \ n.\mathit{color} \gets \text{red};\ t \gets n \cr
+ ///     \ n.\mathit{color} \gets \text{red};\ t \gets n\quad \triangleright
+ ///     \ \text{(3)} \cr
  /// 14 & \qquad \textbf{else} \cr
  /// 15 & \qquad\quad \textbf{if}\ t \text{ and } p
- ///     \text{ hang on opposite sides}\ \textbf{then} \cr
+ ///     \text{ hang on opposite sides}\ \textbf{then}\quad \triangleright
+ ///     \ \text{(4a), (4b)} \cr
  /// 16 & \qquad\qquad \text{rotate at } p \text{, so that } t
  ///     \text{ takes its place};\ ( t , p ) \gets ( p , t ) \cr
  /// 17 & \qquad\quad \text{rotate at } n \text{, so that } p
  ///     \text{ takes its place};\ p.\mathit{color} \gets \text{black};
- ///     \ n.\mathit{color} \gets \text{red} \cr
- /// 18 & \quad \text{color the root black} \cr
+ ///     \ n.\mathit{color} \gets \text{red}\quad \triangleright
+ ///     \ \text{(5a), (5b)} \cr
+ /// 18 & \quad \text{color the root black}\quad \triangleright
+ ///     \ \text{(1) if } t \text{ is the root} \cr
  /// 19 & \textbf{function}\ \mathrm{rotateLeft}( x )\quad \triangleright
  ///     \ \text{the right child } y \text{ of } x \text{ goes up} \cr
  /// 20 & \quad y \gets x.\mathit{right};\ x.\mathit{right} \gets
@@ -267,9 +272,9 @@ class SearchTree
  /// removes the key \f$ k \f$, if present, in \f$ O( h ) \f$ time
  ///
  /// In pseudocode (sections 6.1 and 6.2), the removal of the binary search
- /// tree and `balanceDelete()` for a Red-Black tree, written once for the
- /// two sides of \f$ p \f$ by naming \f$ \mathit{near} \f$ the side of
- /// \f$ t \f$:
+ /// tree and `balanceDelete()` for a Red-Black tree, its cases (1) to (4)
+ /// written once for the two sides of \f$ p \f$, \f$ \mathit{near} \f$
+ /// the side of \f$ t \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{removeNode}( T , x ) \cr
@@ -299,14 +304,16 @@ class SearchTree
  ///     \ \text{the sibling and the nephews} \cr
  /// 13 & \qquad \textbf{if}\ f \text{ is red}\ \textbf{then}
  ///     \ p.\mathit{color} \gets \text{red};\ f.\mathit{color} \gets
- ///     \text{black};\ \text{rotate } p \text{ down to } \mathit{near} \cr
+ ///     \text{black};\ \text{rotate } p \text{ down to } \mathit{near}\quad
+ ///     \triangleright\ \text{(1)} \cr
  /// 14 & \qquad \textbf{else if}\ a \text{ and } b \text{ are black}
  ///     \ \textbf{then}\ f.\mathit{color} \gets \text{red};\ ( t , p ) \gets
- ///     ( p , p.\mathit{parent} ) \cr
+ ///     ( p , p.\mathit{parent} )\quad \triangleright\ \text{(2)} \cr
  /// 15 & \qquad \textbf{else if}\ b \text{ is black}\ \textbf{then}
  ///     \ a.\mathit{color} \gets \text{black};\ f.\mathit{color} \gets
- ///     \text{red};\ \text{rotate } f \text{ down to } \mathit{far} \cr
- /// 16 & \qquad \textbf{else} \cr
+ ///     \text{red};\ \text{rotate } f \text{ down to } \mathit{far}\quad
+ ///     \triangleright\ \text{(3)} \cr
+ /// 16 & \qquad \textbf{else}\quad \triangleright\ \text{(4)} \cr
  /// 17 & \qquad\quad f.\mathit{color} \gets p.\mathit{color};
  ///     \ p.\mathit{color} \gets b.\mathit{color} \gets \text{black};
  ///     \ \text{rotate } p \text{ down to } \mathit{near} \cr

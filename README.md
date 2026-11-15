@@ -180,8 +180,10 @@ in the tests, one function per exercise. Each one is checked on the
 example of the book, on its edge cases and (where an enumeration is
 possible) on random instances against the enumeration. Since the license
 of the book (CC BY-NC 4.0) does not allow its text in a repository under a
-license that permits commercial use, the code cites it instead of
-reproducing it.
+license that permits commercial use, ADS cites it instead of reproducing
+it: the pseudocode of the comments and of the manual, as their prose, is
+written anew from the code of ADS, and the book is cited as the source of
+the abstract data types and of each algorithm.
 
 | Chapter | Section | What | Header | Tests |
 |---|---|---|---|---|
@@ -1010,5 +1012,6 @@ install clang-format==22.1.5`).
 
 This software is released under the [Boost Software License, version
 1.0](https://www.boost.org/LICENSE_1_0.txt) (see the file
-[LICENSE](LICENSE)), the license of Boost and of LEMON. The book is by
-Alberto Montresor, under CC BY-NC 4.0.
+[LICENSE](LICENSE)), the license of Boost and of LEMON. The book of
+Alberto Montresor, under CC BY-NC 4.0, is cited and not reproduced: the
+pseudocode and the prose of ADS are written anew, not translated from it.

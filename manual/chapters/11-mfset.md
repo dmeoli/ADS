@@ -178,7 +178,7 @@ of the path a child of $r$ (the *compression* of [Montresor 2025,
 §10.2.4](Z-bibliography.md#ref-montresor2025)); the next finds from
 those nodes cost one step ([Figure 11.3](11-mfset.md#fig-11-3)). In
 `MFSet` the compression is a second pass over the path, with no recursion
-and no stack (lines 4 and 5 of [Algorithm 11.2](11-mfset.md#alg-11-2)).
+and no stack (lines 3 and 4 of [Algorithm 11.2](11-mfset.md#alg-11-2)).
 
 ![Figure 11.3. A path from 0 to its root 5, and the same nodes after `find(0)` with the compression (each node of the path a child of the root) and with the halving of [§11.4](11-mfset.md#sec-11-4) (every other node of the way a child of its grandparent); the violet nodes are those whose parent changed.](../figures/mfset-paths.svg){#fig-11-3}
 

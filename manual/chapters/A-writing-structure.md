@@ -182,12 +182,12 @@ Also, the comment lines stay within 79 columns, and none of them may end with a
 backslash. The paragraph before the display names the source ("In
 pseudocode (Morin, exercise 3.14), $A$ the items and $M$ the minima:"),
 and for a paper already cited by a `\see` line it reads "(Kahn's
-algorithm, beyond the book)" or the like. We write the pseudocode of the
-works under copyright (the books of Knuth, the notes of Ferragina, the
-papers) in our own words, from the description of the algorithm and from
-the code of ADS. That of Montresor's book, under CC BY-NC 4.0, may instead
-be adapted with its section cited. For `MinStack` the two displays read
-as in [Algorithm A.1](A-writing-structure.md#alg-A-1).
+algorithm, beyond the book)" or the like. We write all the pseudocode in
+our own words, from the description of the algorithm and from the code of
+ADS, whatever the license of the source (the book of Montresor, under CC
+BY-NC 4.0, the books of Knuth, the notes of Ferragina, the papers), and
+cite the source in place of copying it. For `MinStack` the two displays
+read as in [Algorithm A.1](A-writing-structure.md#alg-A-1).
 
 <span id="alg-A-1"></span>**Algorithm A.1.** The operations of `MinStack`
 that change it ([Morin 2013, exercise 3.14](Z-bibliography.md#ref-morin-cpp));

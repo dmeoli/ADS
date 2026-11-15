@@ -289,9 +289,9 @@ The rules:
   more than the statement it continues (e.g., `& \qquad\quad \ldots` under
   a statement at `\qquad`); a statement that fits on its row is never
   split;
-- the arrays of the C++ code become the arrays of the book, A[ 1 .. n ]
-  or A[ 0 .. n - 1 ] as the header says, and the same names as the code
-  where they exist.
+- the arrays are those of the C++ code, A[ 0 .. n - 1 ] (or A[ 1 .. n ]
+  where the header says so), with the same names as the code where they
+  exist.
 
 The paragraph before the display says where the algorithm comes from: "In
 pseudocode (section 11.2):" for the book, "In pseudocode (Kahn's algorithm,
@@ -302,14 +302,18 @@ delegates gets a one-line pseudocode that calls the other one.
 
 ### Sources and copyright
 
-The pseudocode of A. Montresor, Algoritmi e Strutture Dati
-(algoritmicamente.it), is under CC BY-NC 4.0: it may be adapted, with the
-section cited, and the convention above is such an adaptation (English
-keywords, the names of the C++ code). The Art of Computer Programming,
-Ferragina's Pearls of Algorithm Engineering and the papers are under
-copyright: write the pseudocode of the algorithm in your own words, from its
-description and from the code of ADS, cite the source in the paragraph and
-by a `\see`, and never copy their text or their pseudocode.
+Every source is treated in the same way, whatever its license: A.
+Montresor, Algoritmi e Strutture Dati (algoritmicamente.it, under CC BY-NC
+4.0, which forbids the commercial use that the Boost Software License of
+ADS allows), The Art of Computer Programming, Ferragina's Pearls of
+Algorithm Engineering and the papers. Write the pseudocode of the
+algorithm in your own words, from its description and from the code of ADS
+(the names, the order of the steps and the comments of the code), cite the
+source in the paragraph and by a `\see`, and never copy or translate their
+text or their pseudocode; the same holds for the prose of the comments and
+of the manual. The definitions of the abstract data types, the invariants,
+the lemmas and the bounds are facts, and they are stated with the source
+cited.
 
 P. Ferragina, Pearls of Algorithm Engineering, Cambridge University Press,
 2023, doi:10.1017/9781009128933, is cited by the number and the title of
