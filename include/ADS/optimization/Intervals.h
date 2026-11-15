@@ -40,7 +40,7 @@
 
 #ifndef __ADS_Intervals
  #define __ADS_Intervals
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -59,7 +59,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the places of a largest set of disjoint intervals \f$ [ a , b ) \f$, in
 /// increasing order
@@ -79,8 +80,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ a < b \f$ for each interval
 /// \post the intervals chosen are disjoint (audit)
-inline std::vector< std::size_t > independentSet(
-                           const std::vector< std::pair< long , long > > & I );
+inline std::vector< std::size_t >
+independentSet( const std::vector< std::pair< long , long > > & I );
 
 /// the colors, from 0, of the intervals \f$ [ a , b ) \f$, the fewest
 /// possible
@@ -102,8 +103,8 @@ inline std::vector< std::size_t > independentSet(
 /// \f]
 /// \pre \f$ a < b \f$ for each interval
 /// \post intersecting intervals have different colors (audit)
-inline std::vector< int > intervalColoring(
-                           const std::vector< std::pair< long , long > > & I );
+inline std::vector< int >
+intervalColoring( const std::vector< std::pair< long , long > > & I );
 
 /// the fewest towers such that each house is within \f$ d \f$ of one (the
 /// `torri()` of the book)
@@ -136,7 +137,7 @@ inline std::vector< double > towers( std::vector< double > k , double d );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Intervals.h included */
+#endif /* Intervals.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Intervals.h --------------------------*/

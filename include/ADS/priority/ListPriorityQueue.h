@@ -33,7 +33,7 @@
 
 #ifndef __ADS_ListPriorityQueue
  #define __ADS_ListPriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -51,7 +51,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS ListPriorityQueue -------------------------*/
@@ -60,16 +61,16 @@ namespace ADS {
 /// a priority queue on a list, sorted by priority if `Sorted`, unsorted
 /// otherwise
 template< class T , std::totally_ordered P = int , bool Sorted = true >
-class ListPriorityQueue {
+class ListPriorityQueue
+{
 
  using Pair = std::pair< P , T >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;                                ///< the type of the items
- using Priority = P;                            ///< the type of priorities
- using Handle = typename List< Pair >::Pos;     ///< the cell of an item
+ using Item = T;                             ///< the type of the items
+ using Priority = P;                         ///< the type of priorities
+ using Handle = typename List< Pair >::Pos;  ///< the cell of an item
 
  /// whether the queue has no item
  [[nodiscard]] bool empty( void ) const;
@@ -185,7 +186,6 @@ class ListPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the cell of smallest priority
  [[nodiscard]] Handle first( void ) const;
 
@@ -198,8 +198,8 @@ class ListPriorityQueue {
  /// sorted if it must be, and size() its length, \f$ O( n ) \f$
  [[nodiscard]] bool consistent( void ) const;
 
- List< Pair > f_L;   ///< the items
- int f_size = 0;     ///< their number
+ List< Pair > f_L;  ///< the items
+ int f_size = 0;    ///< their number
 
  };  // end( class ListPriorityQueue )
 
@@ -215,7 +215,7 @@ class ListPriorityQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ListPriorityQueue.h included */
+#endif /* ListPriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File ListPriorityQueue.h ----------------------*/

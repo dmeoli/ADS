@@ -34,7 +34,7 @@
 
 #ifndef __ADS_Hanoi
  #define __ADS_Hanoi
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -50,7 +50,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -145,7 +146,7 @@ void hanoi_iterative( int n , int source , int dest , int middle , F && f );
 /// \pre \f$ n \ge 1 \f$, and `source`, `dest` and `middle` distinct
 template< class F >
 void hanoi_iterative_labels( int n , int source , int dest , int middle ,
-                             F && f );
+			     F && f );
 
 /*--------------------------------------------------------------------------*/
 
@@ -159,7 +160,7 @@ void hanoi_iterative_labels( int n , int source , int dest , int middle ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Hanoi.h included */
+#endif /* Hanoi.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Hanoi.h ----------------------------*/

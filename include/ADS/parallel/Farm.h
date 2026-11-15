@@ -69,7 +69,7 @@
 
 #ifndef __ADS_Farm
  #define __ADS_Farm
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -96,7 +96,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the farm of a master and \f$ w \f$ workers with feedback: `start( emit )`
 /// (or `start( emit , w )`), then `onResult( r , emit )` on each result of
@@ -130,10 +131,9 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre \f$ w + 1 \le \f$ `concurrency()`, or \f$ w = 0 \f$
-template< class T , class R , WorkerExecutor E , class S , class O ,
-          class W >
+template< class T , class R , WorkerExecutor E , class S , class O , class W >
 void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
-                   W && work );
+		   W && work );
 
 #if defined( ADS_WITH_FASTFLOW )
 
@@ -157,7 +157,7 @@ void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
 /// \pre \f$ w \le \f$ `concurrency()`
 template< class T , class R , class S , class O , class W >
 void feedbackFarm( FastFlowExecutor & ex , std::size_t w , S && start ,
-                   O && onResult , W && work );
+		   O && onResult , W && work );
 
 #endif
 
@@ -173,7 +173,7 @@ void feedbackFarm( FastFlowExecutor & ex , std::size_t w , S && start ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Farm.h included */
+#endif /* Farm.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Farm.h -----------------------------*/

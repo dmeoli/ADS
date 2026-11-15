@@ -36,7 +36,7 @@
 
 #ifndef __ADS_WeightedIntervals
  #define __ADS_WeightedIntervals
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -54,14 +54,16 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// an interval \f$ [ a , b ) \f$ of weight \f$ w \f$
 template< class W >
-struct WeightedInterval {
- long long a ,   ///< the left end, included
-           b;   ///< the right end, excluded
- W w;           ///< the weight
+struct WeightedInterval
+{
+ long long a ,  ///< the left end, included
+   b;          ///< the right end, excluded
+ W w;          ///< the weight
  };
 
 /// the places of the intervals of a largest independent set, in increasing
@@ -95,8 +97,8 @@ struct WeightedInterval {
 /// \pre \f$ a < b \f$ and \f$ w \ge 0 \f$ for each interval
 /// \post disjoint intervals of the weight found (audit)
 template< class W >
-std::pair< std::vector< std::size_t > , W > maxinterval(
-                              const std::vector< WeightedInterval< W > > & I );
+std::pair< std::vector< std::size_t > , W >
+maxinterval( const std::vector< WeightedInterval< W > > & I );
 
 /*--------------------------------------------------------------------------*/
 
@@ -110,7 +112,7 @@ std::pair< std::vector< std::size_t > , W > maxinterval(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* WeightedIntervals.h included */
+#endif /* WeightedIntervals.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File WeightedIntervals.h ----------------------*/

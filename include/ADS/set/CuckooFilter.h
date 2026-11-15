@@ -110,7 +110,7 @@
 
 #ifndef __ADS_CuckooFilter
  #define __ADS_CuckooFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -129,7 +129,7 @@
 /// a function inlined even where the compiler would not
 #ifndef ADS_FILTER_INLINE
  #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_INLINE inline __attribute__(( always_inline ))
+  #define ADS_FILTER_INLINE inline __attribute__( ( always_inline ) )
  #elif defined( _MSC_VER )
   #define ADS_FILTER_INLINE __forceinline
  #else
@@ -141,7 +141,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS CuckooFilter ---------------------------*/
@@ -150,15 +151,15 @@ namespace ADS {
 /// a dynamic filter of the keys of type `T` with fingerprints of type `F`
 /// (8 or 16 bits), 2 buckets of 4 places per key
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
-class CuckooFilter {
+class CuckooFilter
+{
 
  static_assert( std::is_same_v< F , std::uint8_t > ||
-                std::is_same_v< F , std::uint16_t > ,
-                "the fingerprints have 8 or 16 bits" );
+		  std::is_same_v< F , std::uint16_t > ,
+		"the fingerprints have 8 or 16 bits" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty filter for \f$ n \f$ keys, at the load 0.94 when they are
  /// in, in at least one bucket: \f$ 2^\ell \f$ buckets, the least power of
  /// 2 with \f$ 4 \cdot 0.94 \cdot 2^\ell \ge n \f$
@@ -263,15 +264,14 @@ class CuckooFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a bucket: 4 fingerprints in one word
- using W = std::conditional_t< sizeof( F ) == 1 , std::uint32_t ,
-                               std::uint64_t >;
+ using W =
+   std::conditional_t< sizeof( F ) == 1 , std::uint32_t , std::uint64_t >;
 
- static constexpr int kLane = 8 * sizeof( F );        ///< bits of a place
- static constexpr W kOnes = W( ~W( 0 ) ) / W( F( ~F( 0 ) ) );   ///< 1 each
- static constexpr W kLow = kOnes * W( F( ~F( 0 ) ) >> 1 ); ///< 0x7F.. each
- static constexpr int kMaxKicks = 500;                ///< evictions at most
+ static constexpr int kLane = 8 * sizeof( F );  ///< bits of a place
+ static constexpr W kOnes = W( ~W( 0 ) ) / W( F( ~F( 0 ) ) );  ///< 1 each
+ static constexpr W kLow = kOnes * W( F( ~F( 0 ) ) >> 1 );     ///< 0x7F.. each
+ static constexpr int kMaxKicks = 500;  ///< evictions at most
 
  /// the places of \f$ w \f$ equal to 0, the top bit of each lane
  [[nodiscard]] static constexpr W zeros( W w ) {
@@ -300,13 +300,13 @@ class CuckooFilter {
  /// a random word, for the evictions
  std::uint64_t random( void );
 
- std::vector< W > f_T;                ///< the buckets
- std::size_t f_mask = 0;              ///< buckets - 1
- std::size_t f_n = 0;                 ///< the keys in
- std::size_t f_vb = 0;                ///< the bucket of the victim
- F f_vt = 0;                          ///< the victim, 0 if none
- std::uint64_t f_rng = 0x9E3779B97F4A7C15ULL;   ///< the state of xorshift
- H f_h;                               ///< the hash of the keys
+ std::vector< W > f_T;                         ///< the buckets
+ std::size_t f_mask = 0;                       ///< buckets - 1
+ std::size_t f_n = 0;                          ///< the keys in
+ std::size_t f_vb = 0;                         ///< the bucket of the victim
+ F f_vt = 0;                                   ///< the victim, 0 if none
+ std::uint64_t f_rng = 0x9E3779B97F4A7C15ULL;  ///< the state of xorshift
+ H f_h;                                        ///< the hash of the keys
 
  };  // end( class CuckooFilter )
 
@@ -322,7 +322,7 @@ class CuckooFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CuckooFilter.h included */
+#endif /* CuckooFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File CuckooFilter.h ------------------------*/

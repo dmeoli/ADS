@@ -52,7 +52,7 @@
 
 #ifndef __ADS_MoveStructure
  #define __ADS_MoveStructure
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -74,7 +74,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS MoveStructure --------------------------*/
@@ -82,11 +83,11 @@ namespace ADS {
 
 /// a permutation of \f$ [ 0 , n ) \f$ that shifts each of its intervals
 /// alike, with the image of a place and its interval in \f$ O( 1 ) \f$ time
-class MoveStructure {
+class MoveStructure
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the permutation of no place
  MoveStructure( void ) = default;
 
@@ -118,8 +119,8 @@ class MoveStructure {
  /// \pre \f$ p \f$, \f$ q \f$ and the tags of the same size, the images a
  ///      partition of \f$ [ 0 , n ) \f$
  MoveStructure( std::span< const std::uint64_t > p ,
-                std::span< const std::uint64_t > q ,
-                std::span< const std::uint32_t > tag , std::uint64_t n );
+		std::span< const std::uint64_t > q ,
+		std::span< const std::uint32_t > tag , std::uint64_t n );
 
  /// the number of the intervals, after the balance
  [[nodiscard]] std::size_t intervals( void ) const { return( f_m ); }
@@ -151,8 +152,8 @@ class MoveStructure {
  /// \end{array}}
  /// \f]
  /// \pre `start( i )` \f$ \le x < \f$ `start( i + 1 )`
- [[nodiscard]] std::pair< std::uint64_t , std::size_t > move(
-                                    std::uint64_t x , std::size_t i ) const;
+ [[nodiscard]] std::pair< std::uint64_t , std::size_t >
+ move( std::uint64_t x , std::size_t i ) const;
 
  /// the interval of \f$ x \f$, by a binary search on the starts (for the
  /// first place of a walk)
@@ -165,14 +166,13 @@ class MoveStructure {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  std::uint64_t f_n = 0;
  std::size_t f_m = 0;
- int f_wp = 1 , f_wd = 1 , f_wt = 1;   ///< a place, an interval, a tag
- BitVector f_P;                         ///< the starts
- BitVector f_Q;                         ///< the images of the starts
- BitVector f_D;                         ///< the intervals of the images
- BitVector f_tag;                       ///< the tags
+ int f_wp = 1 , f_wd = 1 , f_wt = 1;  ///< a place, an interval, a tag
+ BitVector f_P;                     ///< the starts
+ BitVector f_Q;                     ///< the images of the starts
+ BitVector f_D;                     ///< the intervals of the images
+ BitVector f_tag;                   ///< the tags
 
  };  // end( class MoveStructure )
 
@@ -188,7 +188,7 @@ class MoveStructure {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MoveStructure.h included */
+#endif /* MoveStructure.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File MoveStructure.h ------------------------*/

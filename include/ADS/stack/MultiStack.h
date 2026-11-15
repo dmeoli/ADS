@@ -32,7 +32,7 @@
 
 #ifndef __ADS_MultiStack
  #define __ADS_MultiStack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS MultiStack ----------------------------*/
@@ -57,12 +58,12 @@ namespace ADS {
 
 /// \f$ k \f$ stacks sharing a vector of linked cells
 template< class T >
-class MultiStack {
+class MultiStack
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// \f$ k \f$ empty stacks
  /// \pre \f$ k > 0 \f$
@@ -123,41 +124,39 @@ class MultiStack {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a cell: an item and the cell below it
- struct Cell {
-  T value;     ///< the item
-  int below;   ///< the cell below in its stack, or the next free cell
+ struct Cell
+ {
+  T value;    ///< the item
+  int below;  ///< the cell below in its stack, or the next free cell
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of each stack, from the top to the bottom, forward
 
- using value_type = T;   ///< the type of the items
+ using value_type = T;  ///< the type of the items
  /// a constant iterator from a top down along the cells
- using const_iterator =
-  IndexIterator< Cell , T , &Cell::below , &Cell::value >;
+ using const_iterator = IndexIterator< Cell , T , &Cell::below ,
+				       &Cell::value >;
 
  /// the items of the stack \f$ i \f$, the top first
  /// \pre \f$ 0 \le i < k \f$
  [[nodiscard]] std::ranges::subrange< const_iterator > stack( int i ) const {
   ADS_PRE( ( i >= 0 ) && ( i < stacks() ) );
   return( std::ranges::subrange( const_iterator( &f_C , f_top[ i ] ) ,
-                                 const_iterator( &f_C , -1 ) ) );
+				  const_iterator( &f_C , -1 ) ) );
   }
 
  private:
-
  /// each cell in one stack or free, the sizes right, \f$ O( n ) \f$
  [[nodiscard]] bool partitioned( void ) const;
 
- std::vector< Cell > f_C;       ///< the cells of all the stacks
- std::vector< int > f_top;      ///< the top cell of each stack, -1 if none
- std::vector< int > f_size;     ///< the number of items of each stack
- int f_free = -1;               ///< the first free cell
+ std::vector< Cell > f_C;    ///< the cells of all the stacks
+ std::vector< int > f_top;   ///< the top cell of each stack, -1 if none
+ std::vector< int > f_size;  ///< the number of items of each stack
+ int f_free = -1;            ///< the first free cell
 
  };  // end( class MultiStack )
 
@@ -173,7 +172,7 @@ class MultiStack {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MultiStack.h included */
+#endif /* MultiStack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MultiStack.h --------------------------*/

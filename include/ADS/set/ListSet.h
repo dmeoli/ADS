@@ -29,7 +29,7 @@
 
 #ifndef __ADS_ListSet
  #define __ADS_ListSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS ListSet ------------------------------*/
@@ -60,12 +61,12 @@ namespace ADS {
 
 /// a set as an unsorted list
 template< std::equality_comparable T >
-class ListSet {
+class ListSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty set
  ListSet( void ) = default;
@@ -137,7 +138,7 @@ class ListSet {
  using const_reference = const T &;       ///< a constant reference
  /// the iterator of the list, constant
  using const_iterator = typename List< T >::const_iterator;
- using iterator = const_iterator;         ///< the same, constant
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the iterator on the item at the head of the list
  [[nodiscard]] const_iterator begin( void ) const { return( f_L.begin() ); }
@@ -150,14 +151,13 @@ class ListSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  typename List< T >::Pos find( const T & x ) const;
 
  /// no item twice, and the size is the length of the list, \f$ O( n^2 ) \f$
  [[nodiscard]] bool distinct( void ) const;
 
- List< T > f_L;              ///< the items
- std::size_t f_size = 0;     ///< the number of items
+ List< T > f_L;           ///< the items
+ std::size_t f_size = 0;  ///< the number of items
 
  };  // end( class ListSet )
 
@@ -193,7 +193,7 @@ ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B );
 /// \f]
 template< class T >
 ListSet< T > setIntersection( const ListSet< T > & A ,
-                              const ListSet< T > & B );
+			      const ListSet< T > & B );
 
 /// the difference, \f$ O( n m ) \f$ time (the procedure of section 8.2)
 ///
@@ -224,7 +224,7 @@ ListSet< T > setDifference( const ListSet< T > & A , const ListSet< T > & B );
 /// \f]
 template< class T >
 ListSet< T > setSymmetricDifference( const ListSet< T > & A ,
-                                     const ListSet< T > & B );
+				     const ListSet< T > & B );
 
 }  // end( namespace ADS )
 
@@ -236,7 +236,7 @@ ListSet< T > setSymmetricDifference( const ListSet< T > & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ListSet.h included */
+#endif /* ListSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File ListSet.h ---------------------------*/

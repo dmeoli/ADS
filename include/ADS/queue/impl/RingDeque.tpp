@@ -14,30 +14,32 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 RingDeque< T >::RingDeque( std::initializer_list< T > l )
 {
  reserve( l.size() );
- for( const T & v : l ) emplace_back( v );
+ for( const T & v : l )
+  emplace_back( v );
  }
 
 template< class T >
 RingDeque< T >::RingDeque( const RingDeque & o )
 {
  reserve( o.size() );
- for( const T & v : o ) emplace_back( v );
+ for( const T & v : o )
+  emplace_back( v );
  }
 
 template< class T >
 RingDeque< T >::RingDeque( RingDeque && o ) noexcept
- : f_A( std::exchange( o.f_A , nullptr ) ) ,
-   f_mask( std::exchange( o.f_mask , Count( -1 ) ) ) ,
-   f_head( std::exchange( o.f_head , 0 ) ) ,
-   f_tail( std::exchange( o.f_tail , 0 ) )
-{
- }
+    : f_A( std::exchange( o.f_A , nullptr ) ) ,
+      f_mask( std::exchange( o.f_mask , Count( -1 ) ) ) ,
+      f_head( std::exchange( o.f_head , 0 ) ) ,
+      f_tail( std::exchange( o.f_tail , 0 ) )
+{ }
 
 template< class T >
 RingDeque< T > & RingDeque< T >::operator=( RingDeque o ) noexcept
@@ -66,12 +68,13 @@ void RingDeque< T >::swap( RingDeque & o ) noexcept
 template< class T >
 void RingDeque< T >::reserve( std::size_t n )
 {
- while( capacity() < n ) grow();
+ while( capacity() < n )
+  grow();
  }
 
 template< class T >
 T * RingDeque< T >::relocate( T * A , std::size_t m , std::size_t h ,
-                              std::size_t n )
+			      std::size_t n )
 {
  const std::size_t M = m ? 2 * m : 8;
  T * B = std::allocator< T >().allocate( M );
@@ -81,7 +84,7 @@ T * RingDeque< T >::relocate( T * A , std::size_t m , std::size_t h ,
   if constexpr( std::is_trivially_copyable_v< T > ) {
    std::memcpy( static_cast< void * >( B ) , A + h , first * sizeof( T ) );
    std::memcpy( static_cast< void * >( B + first ) , A ,
-                ( n - first ) * sizeof( T ) );
+		( n - first ) * sizeof( T ) );
    }
   else
    for( std::size_t i = 0 ; i < n ; ++i ) {
@@ -119,9 +122,10 @@ template< class T >
 inline T & RingDeque< T >::growFront( T && v )
 {
  grow();
- f_tail += f_mask + 1;                      // the front at the last place,
- f_head = f_mask;                           // the counters apart by size()
- return( *::new( static_cast< void * >( f_A + f_mask ) ) T( std::move( v ) ) );
+ f_tail += f_mask + 1;  // the front at the last place,
+ f_head = f_mask;       // the counters apart by size()
+ return( *::new( static_cast< void * >( f_A + f_mask ) )
+	    T( std::move( v ) ) );
  }
 
 template< class T >
@@ -167,27 +171,27 @@ const T & RingDeque< T >::operator[]( std::size_t i ) const
  }
 
 template< class T >
-template< class ... Args >
-ADS_RING_INLINE T & RingDeque< T >::emplace_back( Args && ... args )
+template< class... Args >
+ADS_RING_INLINE T & RingDeque< T >::emplace_back( Args &&... args )
 {
- if( size() == capacity() ) [[unlikely]]    // the item, which may be one
-  return( growBack( T( std::forward< Args >( args )... ) ) );   // of ours
+ if( size() == capacity() ) [[unlikely]]  // the item, which may be one
+  return( growBack( T( std::forward< Args >( args )... ) ) );  // of ours
  T * p = ::new( static_cast< void * >( f_A + ( f_tail & f_mask ) ) )
-          T( std::forward< Args >( args )... );
+   T( std::forward< Args >( args )... );
  ++f_tail;
  ADS_INVARIANT( fits() );
  return( *p );
  }
 
 template< class T >
-template< class ... Args >
-ADS_RING_INLINE T & RingDeque< T >::emplace_front( Args && ... args )
+template< class... Args >
+ADS_RING_INLINE T & RingDeque< T >::emplace_front( Args &&... args )
 {
  if( size() == capacity() ) [[unlikely]]
   return( growFront( T( std::forward< Args >( args )... ) ) );
  const Count h = f_head - 1;
  T * p = ::new( static_cast< void * >( f_A + ( h & f_mask ) ) )
-          T( std::forward< Args >( args )... );
+   T( std::forward< Args >( args )... );
  f_head = h;
  ADS_INVARIANT( fits() );
  return( *p );
@@ -222,11 +226,13 @@ template< class T >
 void RingDeque< T >::shiftDown( std::size_t lo , std::size_t hi )
 {
  const std::size_t m = f_mask + 1;
- for( std::size_t k = lo ; k < hi ; ) {    // D[ k ] = D[ k + 1 ], by runs
+ for( std::size_t k = lo ; k < hi ; ) {  // D[ k ] = D[ k + 1 ], by runs
   const std::size_t d = ( f_head + k ) & f_mask , s = ( d + 1 ) & f_mask;
-  std::size_t len = hi - k;                 // contiguous in source and
-  if( len > m - s ) len = m - s;            // destination
-  if( len > m - d ) len = m - d;
+  std::size_t len = hi - k;  // contiguous in source and
+  if( len > m - s )
+   len = m - s;  // destination
+  if( len > m - d )
+   len = m - d;
   std::move( f_A + s , f_A + s + len , f_A + d );
   k += len;
   }
@@ -235,11 +241,13 @@ void RingDeque< T >::shiftDown( std::size_t lo , std::size_t hi )
 template< class T >
 void RingDeque< T >::shiftUp( std::size_t lo , std::size_t hi )
 {
- for( std::size_t k = hi ; k > lo ; ) {    // D[ k ] = D[ k - 1 ], by runs
+ for( std::size_t k = hi ; k > lo ; ) {  // D[ k ] = D[ k - 1 ], by runs
   const std::size_t d = ( f_head + k ) & f_mask , s = ( d - 1 ) & f_mask;
   std::size_t len = k - lo;
-  if( len > s + 1 ) len = s + 1;
-  if( len > d + 1 ) len = d + 1;
+  if( len > s + 1 )
+   len = s + 1;
+  if( len > d + 1 )
+   len = d + 1;
   std::move_backward( f_A + s + 1 - len , f_A + s + 1 , f_A + d + 1 );
   k -= len;
   }
@@ -250,7 +258,7 @@ void RingDeque< T >::insert( std::size_t i , const T & v )
 {
  ADS_PRE( i <= size() );
  const std::size_t n = size();
- T x = v;                                   // v may be an item
+ T x = v;  // v may be an item
  if( i == 0 ) {
   emplace_front( std::move( x ) );
   return;
@@ -259,11 +267,11 @@ void RingDeque< T >::insert( std::size_t i , const T & v )
   emplace_back( std::move( x ) );
   return;
   }
- if( i < n / 2 ) {                          // the front i items back by one
+ if( i < n / 2 ) {  // the front i items back by one
   emplace_front( std::move( front() ) );
   shiftDown( 1 , i );
   }
- else {                                     // the back n - i items on by one
+ else {  // the back n - i items on by one
   emplace_back( std::move( back() ) );
   shiftUp( i , n - 1 );
   }
@@ -297,7 +305,7 @@ void RingDeque< T >::rotate( std::size_t r )
  r %= n;
  if( r == 0 )
   return;
- if( n == capacity() ) {                    // full: the ranks alone move
+ if( n == capacity() ) {  // full: the ranks alone move
   f_head -= r;
   f_tail -= r;
   }
@@ -305,7 +313,7 @@ void RingDeque< T >::rotate( std::size_t r )
   for( std::size_t k = 0 ; k < r ; ++k ) {
    T x = std::move( back() );
    pop_back();
-   emplace_front( std::move( x ) );         // never grows: one place free
+   emplace_front( std::move( x ) );  // never grows: one place free
    }
  else
   for( std::size_t k = 0 ; k < n - r ; ++k ) {
@@ -351,7 +359,7 @@ bool RingDeque< T >::operator==( const RingDeque & o ) const
  if( size() != o.size() )
   return( false );
  for( std::size_t i = 0 ; i < size() ; ++i )
-  if( !( ( *this )[ i ] == o[ i ] ) )
+  if( ! ( ( *this )[ i ] == o[ i ] ) )
    return( false );
  return( true );
  }
@@ -359,8 +367,9 @@ bool RingDeque< T >::operator==( const RingDeque & o ) const
 template< class T >
 bool RingDeque< T >::fits( void ) const
 {
- return( ( f_A == nullptr ) ? ( size() == 0 ) :
-         ( std::has_single_bit( capacity() ) && ( size() <= capacity() ) ) );
+ return( ( f_A == nullptr ) ? ( size() == 0 )
+			     : ( std::has_single_bit( capacity() ) &&
+				 ( size() <= capacity() ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

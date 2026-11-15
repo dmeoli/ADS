@@ -14,34 +14,34 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< bool Lazy >
 inline BasicRankSelect< Lazy >::BasicRankSelect( void )
- : BasicRankSelect( BitVector() )
-{
- }
+    : BasicRankSelect( BitVector() )
+{ }
 
 template< bool Lazy >
 inline BasicRankSelect< Lazy >::BasicRankSelect( BitVector b , Selects s )
- : f_b( std::move( b ) )
+    : f_b( std::move( b ) )
 {
  directory( s , nullptr );
  }
 
 template< bool Lazy >
 inline BasicRankSelect< Lazy >::BasicRankSelect( std::span< const Word > w ,
-                                                 std::size_t n , Selects s )
+						 std::size_t n , Selects s )
 {
  ADS_PRE( w.size() >= ( n + 63 ) / 64 );
- if( n < kFuse ) {                         // a copy, then a count in cache
+ if( n < kFuse ) {  // a copy, then a count in cache
   f_b = BitVector( w , n );
   directory( s , nullptr );
   return;
   }
  f_b.f_n = n;
  f_b.f_w.clear();
- f_b.f_w.resize( BitVector::wordsFor( n ) );   // written by directory()
+ f_b.f_w.resize( BitVector::wordsFor( n ) );  // written by directory()
  directory( s , w.data() );
  }
 
@@ -52,12 +52,14 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
  f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
  const std::size_t n = f_b.size();
  const std::size_t nb = n / kBlock + 1;    // and one more
- f_big = ( ( nb * kBlock ) >> kTop ) > 0;   // the last block counts too
+ f_big = ( ( nb * kBlock ) >> kTop ) > 0;  // the last block counts too
  f_dir.resize( nb + 1 );                   // each one written below
- if( f_big ) f_top.assign( ( n >> kTop ) + 2 , 0 );
- else f_top.clear();
+ if( f_big )
+  f_top.assign( ( n >> kTop ) + 2 , 0 );
+ else
+  f_top.clear();
  Word * const P = f_b.f_w.data();
- const std::size_t nw = f_b.f_w.size();     // a multiple of 8
+ const std::size_t nw = f_b.f_w.size();  // a multiple of 8
  std::uint64_t c = 0;
  constexpr std::size_t kTopBlocks = ( std::size_t( 1 ) << kTop ) / kBlock;
  // the entries of the blocks [ from , to ) from the words Q (copied to
@@ -65,17 +67,18 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
  // words of a block in a byte each, their prefix sums by one product, the
  // 1s before the block since its top block above them
  auto run = [ & ]< bool Copy >( std::size_t from , std::size_t to ,
-                                const Word * Q ) {
+				const Word * Q ) {
   Word * const D = f_dir.data();
   for( std::size_t t = from ; t < to ; ) {
-   const std::size_t end = std::min( to , ( t / kTopBlocks + 1 ) *
-                                          kTopBlocks );
-   if( f_big && ( t % kTopBlocks == 0 ) ) f_top[ t / kTopBlocks ] = c;
+   const std::size_t end = std::min( to ,
+				     ( t / kTopBlocks + 1 ) * kTopBlocks );
+   if( f_big && ( t % kTopBlocks == 0 ) )
+    f_top[ t / kTopBlocks ] = c;
    const std::uint64_t top = f_big ? f_top[ t / kTopBlocks ] : 0;
    std::uint64_t cc = c;
    for( ; t < end ; ++t ) {
     const Word x0 = Q[ 4 * t ] , x1 = Q[ 4 * t + 1 ] , x2 = Q[ 4 * t + 2 ] ,
-               x3 = Q[ 4 * t + 3 ];
+	       x3 = Q[ 4 * t + 3 ];
     if constexpr( Copy ) {
      P[ 4 * t ] = x0;
      P[ 4 * t + 1 ] = x1;
@@ -83,10 +86,11 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
      P[ 4 * t + 3 ] = x3;
      }
     const std::uint64_t r =
-     ( ( std::uint64_t( std::popcount( x0 ) ) |
-         ( std::uint64_t( std::popcount( x1 ) ) << 8 ) |
-         ( std::uint64_t( std::popcount( x2 ) ) << 16 ) ) * 0x010101ULL ) &
-     0xFFFFFF;
+      ( ( std::uint64_t( std::popcount( x0 ) ) |
+	  ( std::uint64_t( std::popcount( x1 ) ) << 8 ) |
+	  ( std::uint64_t( std::popcount( x2 ) ) << 16 ) ) *
+	0x010101ULL ) &
+      0xFFFFFF;
     D[ t ] = ( ( cc - top ) << ( 3 * kRel ) ) | r;
     cc += ( r >> 16 ) + std::uint64_t( std::popcount( x3 ) );
     }
@@ -100,22 +104,25 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
   const std::size_t sw = ( n + 63 ) / 64;
   t = ( n / 64 ) / 4;
   run.template operator()< true >( 0 , t , w );
-  for( std::size_t i = 4 * t ; i < nw ; ++i ) P[ i ] = i < sw ? w[ i ] : 0;
-  if( n % 64 ) P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
+  for( std::size_t i = 4 * t ; i < nw ; ++i )
+   P[ i ] = i < sw ? w[ i ] : 0;
+  if( n % 64 )
+   P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
   }
  // the blocks whose words exist, then those past them, with no bit (the
  // words read past the vector are 0)
  const std::size_t full = std::min( nb + 1 , nw / 4 );
  run.template operator()< false >( t , full , P );
  for( t = full ; t <= nb ; ++t ) {
-  if( f_big && ( t % kTopBlocks == 0 ) ) f_top[ t / kTopBlocks ] = c;
-  f_dir[ t ] = ( c - ( f_big ? f_top[ t / kTopBlocks ] : 0 ) ) <<
-               ( 3 * kRel );
+  if( f_big && ( t % kTopBlocks == 0 ) )
+   f_top[ t / kTopBlocks ] = c;
+  f_dir[ t ] = ( c - ( f_big ? f_top[ t / kTopBlocks ] : 0 ) ) << ( 3 * kRel );
   }
  f_ones = std::size_t( c );
- if constexpr( ! Lazy )                   // the inventories at once
+ if constexpr( ! Lazy )  // the inventories at once
   for( const bool v : { false , true } )
-   if( f_has[ v ] ) build( v );
+   if( f_has[ v ] )
+    build( v );
  ADS_INVARIANT( f_b.clean() );
  ADS_AUDIT( consistent() );
  }
@@ -123,7 +130,7 @@ inline void BasicRankSelect< Lazy >::directory( Selects s , const Word * w )
 template< bool Lazy >
 template< Executor E >
 BasicRankSelect< Lazy >::BasicRankSelect( E & ex , BitVector b , Selects s )
- : f_b( std::move( b ) )
+    : f_b( std::move( b ) )
 {
  directory( ex , s , nullptr );
  }
@@ -131,12 +138,12 @@ BasicRankSelect< Lazy >::BasicRankSelect( E & ex , BitVector b , Selects s )
 template< bool Lazy >
 template< Executor E >
 BasicRankSelect< Lazy >::BasicRankSelect( E & ex , std::span< const Word > w ,
-                                          std::size_t n , Selects s )
+					  std::size_t n , Selects s )
 {
  ADS_PRE( w.size() >= ( n + 63 ) / 64 );
  f_b.f_n = n;
  f_b.f_w.clear();
- f_b.f_w.resize( BitVector::wordsFor( n ) );   // written by directory()
+ f_b.f_w.resize( BitVector::wordsFor( n ) );  // written by directory()
  directory( ex , s , w.data() );
  }
 
@@ -145,74 +152,89 @@ template< Executor E >
 void BasicRankSelect< Lazy >::directory( E & ex , Selects s , const Word * w )
 {
  const std::size_t n = f_b.size();
- const std::size_t nb = n / kBlock + 1;    // and one more
+ const std::size_t nb = n / kBlock + 1;  // and one more
  constexpr std::size_t kTopBlocks = ( std::size_t( 1 ) << kTop ) / kBlock;
  // the chunks of blocks: a power of 2 below a top block, else a multiple
  // of it, so that a top block either starts a chunk or lies in one
  std::size_t cs = std::max( kChunk , ( nb + 1 ) / kBlocks + 1 );
  cs = cs < kTopBlocks ? std::bit_ceil( cs )
-                      : ( cs + kTopBlocks - 1 ) / kTopBlocks * kTopBlocks;
- const std::size_t q = ( nb + 1 + cs - 1 ) / cs;   // the chunks
+		      : ( cs + kTopBlocks - 1 ) / kTopBlocks * kTopBlocks;
+ const std::size_t q = ( nb + 1 + cs - 1 ) / cs;  // the chunks
  if( ( ex.concurrency() == 1 ) || ( q == 1 ) ) {
-  directory( s , w );                       // the sequential pass
+  directory( s , w );  // the sequential pass
   return;
   }
  f_has[ 1 ] = ( s == Selects::ONES ) || ( s == Selects::BOTH );
  f_has[ 0 ] = ( s == Selects::ZEROS ) || ( s == Selects::BOTH );
- f_big = ( ( nb * kBlock ) >> kTop ) > 0;   // the last block counts too
+ f_big = ( ( nb * kBlock ) >> kTop ) > 0;  // the last block counts too
  f_dir.resize( nb + 1 );
- if( f_big ) f_top.assign( ( n >> kTop ) + 2 , 0 );
- else f_top.clear();
+ if( f_big )
+  f_top.assign( ( n >> kTop ) + 2 , 0 );
+ else
+  f_top.clear();
  Word * const P = f_b.f_w.data();
- const std::size_t nw = f_b.f_w.size();     // a multiple of 8
+ const std::size_t nw = f_b.f_w.size();  // a multiple of 8
  const std::size_t sw = ( n + 63 ) / 64;
  // the 1s of the words of each chunk, copied from w first if given (the
  // last word cut at n, 0s past it)
  std::vector< std::uint64_t > c( q + 1 , 0 );
- parallelFor( ex , 0 , q , [ & ]( std::size_t k ) {
-  const std::size_t w0 = std::min( nw , 4 * k * cs ) ,
-                    w1 = k + 1 == q ? nw
-                                    : std::min( nw , 4 * ( k + 1 ) * cs );
-  if( w ) {
-   for( std::size_t i = w0 ; i < w1 ; ++i ) P[ i ] = i < sw ? w[ i ] : 0;
-   if( ( n % 64 ) && ( n / 64 >= w0 ) && ( n / 64 < w1 ) )
-    P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
-   }
-  std::uint64_t a = 0;
-  for( std::size_t i = w0 ; i < w1 ; ++i )
-   a += std::uint64_t( std::popcount( P[ i ] ) );
-  c[ k + 1 ] = a; } , 1 );
- for( std::size_t k = 0 ; k < q ; ++k ) c[ k + 1 ] += c[ k ];
- if( f_big )                                // the top blocks that start one
+ parallelFor(
+   ex , 0 , q ,
+   [ & ]( std::size_t k ) {
+    const std::size_t w0 = std::min( nw , 4 * k * cs ) ,
+		      w1 =
+			k + 1 == q ? nw : std::min( nw , 4 * ( k + 1 ) * cs );
+    if( w ) {
+     for( std::size_t i = w0 ; i < w1 ; ++i )
+      P[ i ] = i < sw ? w[ i ] : 0;
+     if( ( n % 64 ) && ( n / 64 >= w0 ) && ( n / 64 < w1 ) )
+      P[ n / 64 ] &= detail::lowMask( int( n % 64 ) );
+     }
+    std::uint64_t a = 0;
+    for( std::size_t i = w0 ; i < w1 ; ++i )
+     a += std::uint64_t( std::popcount( P[ i ] ) );
+    c[ k + 1 ] = a;
+    } ,
+   1 );
+ for( std::size_t k = 0 ; k < q ; ++k )
+  c[ k + 1 ] += c[ k ];
+ if( f_big )  // the top blocks that start one
   for( std::size_t t = 0 ; t <= nb ; t += kTopBlocks )
-   if( t % cs == 0 ) f_top[ t / kTopBlocks ] = c[ t / cs ];
+   if( t % cs == 0 )
+    f_top[ t / kTopBlocks ] = c[ t / cs ];
  // the entries of each chunk from the 1s before it
- parallelFor( ex , 0 , q , [ & ]( std::size_t k ) {
-  Word * const D = f_dir.data();
-  std::uint64_t cc = c[ k ];
-  const std::size_t t1 = std::min( nb + 1 , ( k + 1 ) * cs );
-  for( std::size_t t = k * cs ; t < t1 ; ++t ) {
-   if( f_big && ( t % kTopBlocks == 0 ) && ( t % cs != 0 ) )
-    f_top[ t / kTopBlocks ] = cc;           // a top block inside the chunk
-   const std::uint64_t top = f_big ? f_top[ t / kTopBlocks ] : 0;
-   if( 4 * t + 3 >= nw ) {                  // no word: no bit
-    D[ t ] = ( cc - top ) << ( 3 * kRel );
-    continue;
-    }
-   const Word x0 = P[ 4 * t ] , x1 = P[ 4 * t + 1 ] , x2 = P[ 4 * t + 2 ] ,
-              x3 = P[ 4 * t + 3 ];
-   const std::uint64_t r =
-    ( ( std::uint64_t( std::popcount( x0 ) ) |
-        ( std::uint64_t( std::popcount( x1 ) ) << 8 ) |
-        ( std::uint64_t( std::popcount( x2 ) ) << 16 ) ) * 0x010101ULL ) &
-    0xFFFFFF;
-   D[ t ] = ( ( cc - top ) << ( 3 * kRel ) ) | r;
-   cc += ( r >> 16 ) + std::uint64_t( std::popcount( x3 ) );
-   } } , 1 );
+ parallelFor(
+   ex , 0 , q ,
+   [ & ]( std::size_t k ) {
+    Word * const D = f_dir.data();
+    std::uint64_t cc = c[ k ];
+    const std::size_t t1 = std::min( nb + 1 , ( k + 1 ) * cs );
+    for( std::size_t t = k * cs ; t < t1 ; ++t ) {
+     if( f_big && ( t % kTopBlocks == 0 ) && ( t % cs != 0 ) )
+      f_top[ t / kTopBlocks ] = cc;  // a top block inside the chunk
+     const std::uint64_t top = f_big ? f_top[ t / kTopBlocks ] : 0;
+     if( 4 * t + 3 >= nw ) {  // no word: no bit
+      D[ t ] = ( cc - top ) << ( 3 * kRel );
+      continue;
+      }
+     const Word x0 = P[ 4 * t ] , x1 = P[ 4 * t + 1 ] , x2 = P[ 4 * t + 2 ] ,
+		x3 = P[ 4 * t + 3 ];
+     const std::uint64_t r =
+       ( ( std::uint64_t( std::popcount( x0 ) ) |
+	   ( std::uint64_t( std::popcount( x1 ) ) << 8 ) |
+	   ( std::uint64_t( std::popcount( x2 ) ) << 16 ) ) *
+	 0x010101ULL ) &
+       0xFFFFFF;
+     D[ t ] = ( ( cc - top ) << ( 3 * kRel ) ) | r;
+     cc += ( r >> 16 ) + std::uint64_t( std::popcount( x3 ) );
+     }
+    } ,
+   1 );
  f_ones = std::size_t( c[ q ] );
- if constexpr( ! Lazy )                   // the inventories at once
+ if constexpr( ! Lazy )  // the inventories at once
   for( const bool v : { false , true } )
-   if( f_has[ v ] ) build( ex , v );
+   if( f_has[ v ] )
+    build( ex , v );
  ADS_INVARIANT( f_b.clean() );
  ADS_AUDIT( consistent() );
  }
@@ -220,8 +242,9 @@ void BasicRankSelect< Lazy >::directory( E & ex , Selects s , const Word * w )
 template< bool Lazy >
 template< class F >
 void BasicRankSelect< Lazy >::samples( bool b , std::size_t t0 ,
-                                       std::size_t t1 , int e ,
-                                       std::size_t total , F && f ) const
+				       std::size_t t1 ,
+				       int e , std::size_t total ,
+				       F && f ) const
 {
  const auto & W = f_b.words();
  const std::size_t G = std::size_t( 1 ) << e;
@@ -238,8 +261,8 @@ void BasicRankSelect< Lazy >::samples( bool b , std::size_t t0 ,
    }
   const std::uint64_t en = f_dir[ t ];
   std::size_t c1 = std::size_t( en & kRelMask ) ,
-              c2 = std::size_t( ( en >> kRel ) & kRelMask ) ,
-              c3 = std::size_t( ( en >> ( 2 * kRel ) ) & kRelMask );
+	      c2 = std::size_t( ( en >> kRel ) & kRelMask ) ,
+	      c3 = std::size_t( ( en >> ( 2 * kRel ) ) & kRelMask );
   if( ! b ) {
    c1 = kQuarter - c1;
    c2 = 2 * kQuarter - c2;
@@ -247,12 +270,12 @@ void BasicRankSelect< Lazy >::samples( bool b , std::size_t t0 ,
    }
   for( ; next < hi ; next += G ) {
    const std::size_t r = next - lo;
-   const std::size_t qq = std::size_t( r >= c1 ) + std::size_t( r >= c2 ) +
-                          std::size_t( r >= c3 );
+   const std::size_t qq =
+     std::size_t( r >= c1 ) + std::size_t( r >= c2 ) + std::size_t( r >= c3 );
    const std::size_t in = qq == 0 ? 0 : qq == 1 ? c1 : qq == 2 ? c2 : c3;
    const Word x = W[ 4 * t + qq ];
    f( next , 64 * ( 4 * t + qq ) +
-             std::size_t( selectInWord( b ? x : ~x , int( r - in ) ) ) );
+	      std::size_t( selectInWord( b ? x : ~x , int( r - in ) ) ) );
    }
   lo = hi;
   }
@@ -267,68 +290,93 @@ void BasicRankSelect< Lazy >::build( E & ex , bool b ) const
  const std::size_t nb = f_dir.size() - 1;  // the blocks with their entry
  std::size_t groups;
  shape( b , I , groups );
- if( total == 0 ) return;
+ if( total == 0 )
+  return;
  I.pos.assign( groups + 1 , 0 );
  I.off.assign( groups << I.s , 0 );
  // the place of the first bit b of each group, then the offsets of the
  // bits b of rank multiple of 2^g from the place of their group, each
  // pass on chunks of blocks
- parallelForBlocks( ex , 0 , nb , [ & ]( std::size_t t0 , std::size_t t1 ) {
-  samples( b , t0 , t1 , I.l , total , [ & ]( std::size_t c ,
-                                              std::size_t p ) {
-   I.pos[ c >> I.l ] = p; } ); } , kChunk );
- parallelForBlocks( ex , 0 , nb , [ & ]( std::size_t t0 , std::size_t t1 ) {
-  samples( b , t0 , t1 , I.g , total , [ & ]( std::size_t c ,
-                                              std::size_t p ) {
-   I.off[ c >> I.g ] = std::uint16_t( p - I.pos[ c >> I.l ] ); } ); } ,
-  kChunk );
+ parallelForBlocks(
+   ex , 0 , nb ,
+   [ & ]( std::size_t t0 , std::size_t t1 ) {
+    samples( b , t0 , t1 , I.l , total ,
+	     [ & ]( std::size_t c , std::size_t p ) {
+     I.pos[ c >> I.l ] = p;
+     } );
+    } ,
+   kChunk );
+ parallelForBlocks(
+   ex , 0 , nb ,
+   [ & ]( std::size_t t0 , std::size_t t1 ) {
+    samples( b , t0 , t1 , I.g , total ,
+	     [ & ]( std::size_t c , std::size_t p ) {
+     I.off[ c >> I.g ] = std::uint16_t( p - I.pos[ c >> I.l ] );
+     } );
+    } ,
+   kChunk );
  I.pos[ groups ] = n;
  // the sparse groups, marked once all the places are read
  std::vector< std::uint8_t > sparse( groups , 0 );
- parallelFor( ex , 0 , groups , [ & ]( std::size_t j ) {
-  sparse[ j ] = I.pos[ j + 1 ] - I.pos[ j ] >= kSparse; } , kChunk );
- parallelFor( ex , 0 , groups , [ & ]( std::size_t j ) {
-  if( sparse[ j ] ) I.pos[ j ] |= Word( 1 ) << 63; } , kChunk );
+ parallelFor(
+   ex , 0 , groups ,
+   [ & ]( std::size_t j ) {
+    sparse[ j ] = I.pos[ j + 1 ] - I.pos[ j ] >= kSparse;
+    } ,
+   kChunk );
+ parallelFor(
+   ex , 0 , groups ,
+   [ & ]( std::size_t j ) {
+    if( sparse[ j ] )
+     I.pos[ j ] |= Word( 1 ) << 63;
+    } ,
+   kChunk );
  }
 
 template< bool Lazy >
 inline void BasicRankSelect< Lazy >::adopt( const BasicRankSelect & o ,
-                                            bool move )
+					    bool move )
 {
  for( const bool v : { false , true } )
-  if constexpr( ! Lazy ) {                  // all of them, built at once
-   if( move ) f_inv[ v ] = std::move( o.f_inv[ v ] );
-   else f_inv[ v ] = o.f_inv[ v ];
+  if constexpr( ! Lazy ) {  // all of them, built at once
+   if( move )
+    f_inv[ v ] = std::move( o.f_inv[ v ] );
+   else
+    f_inv[ v ] = o.f_inv[ v ];
    }
   else if( o.f_once.ready[ v ].load( std::memory_order_acquire ) ) {
-   if( move ) f_inv[ v ] = std::move( o.f_inv[ v ] );
-   else f_inv[ v ] = o.f_inv[ v ];
-   std::call_once( f_once.flag[ v ] , [](){} );
+   if( move )
+    f_inv[ v ] = std::move( o.f_inv[ v ] );
+   else
+    f_inv[ v ] = o.f_inv[ v ];
+   std::call_once( f_once.flag[ v ] , []() { } );
    f_once.ready[ v ].store( true , std::memory_order_release );
    }
  }
 
 template< bool Lazy >
 inline BasicRankSelect< Lazy >::BasicRankSelect( const BasicRankSelect & o )
- : f_b( o.f_b ) , f_dir( o.f_dir ) , f_top( o.f_top ) , f_big( o.f_big ) ,
-   f_has{ o.f_has[ 0 ] , o.f_has[ 1 ] } , f_ones( o.f_ones )
+    : f_b( o.f_b ) , f_dir( o.f_dir ) , f_top( o.f_top ) , f_big( o.f_big ) ,
+      f_has
+{ o.f_has[ 0 ] , o.f_has[ 1 ] } , f_ones( o.f_ones )
 {
  adopt( o , false );
  }
 
 template< bool Lazy >
-inline BasicRankSelect< Lazy >::BasicRankSelect( BasicRankSelect && o )
- noexcept
- : f_b( std::move( o.f_b ) ) , f_dir( std::move( o.f_dir ) ) ,
-   f_top( std::move( o.f_top ) ) , f_big( o.f_big ) ,
-   f_has{ o.f_has[ 0 ] , o.f_has[ 1 ] } , f_ones( o.f_ones )
+inline BasicRankSelect< Lazy >::BasicRankSelect(
+  BasicRankSelect && o ) noexcept
+    : f_b( std::move( o.f_b ) ) , f_dir( std::move( o.f_dir ) ) ,
+      f_top( std::move( o.f_top ) ) , f_big( o.f_big ) ,
+      f_has
+{ o.f_has[ 0 ] , o.f_has[ 1 ] } , f_ones( o.f_ones )
 {
  adopt( o , true );
  }
 
 template< bool Lazy >
-inline BasicRankSelect< Lazy > & BasicRankSelect< Lazy >::operator=(
-                                                  const BasicRankSelect & o )
+inline BasicRankSelect< Lazy > &
+BasicRankSelect< Lazy >::operator=( const BasicRankSelect & o )
 {
  if( this != &o ) {
   BasicRankSelect c( o );
@@ -338,8 +386,8 @@ inline BasicRankSelect< Lazy > & BasicRankSelect< Lazy >::operator=(
  }
 
 template< bool Lazy >
-inline BasicRankSelect< Lazy > & BasicRankSelect< Lazy >::operator=(
-                                         BasicRankSelect && o ) noexcept
+inline BasicRankSelect< Lazy > &
+BasicRankSelect< Lazy >::operator=( BasicRankSelect && o ) noexcept
 {
  if( this != &o ) {
   // the flags cannot be reset: the object is rebuilt in place
@@ -381,10 +429,11 @@ inline std::size_t BasicRankSelect< Lazy >::zeros( void ) const
 
 template< bool Lazy >
 inline std::size_t BasicRankSelect< Lazy >::before( std::size_t t ,
-                                                    bool b ) const
+						    bool b ) const
 {
  std::size_t o = std::size_t( f_dir[ t ] >> ( 3 * kRel ) );
- if( f_big ) o += std::size_t( f_top[ ( t * kBlock ) >> kTop ] );
+ if( f_big )
+  o += std::size_t( f_top[ ( t * kBlock ) >> kTop ] );
  return( b ? o : t * kBlock - o );
  }
 
@@ -394,19 +443,18 @@ inline std::size_t BasicRankSelect< Lazy >::rank1( std::size_t i ) const
  ADS_PRE( i <= f_b.size() );
  const std::uint64_t e = f_dir[ i / kBlock ];
  const std::size_t q = ( i / kQuarter ) % 4;
- std::size_t r = std::size_t( ( e >> ( 3 * kRel ) ) +
-                              ( ( ( e << kRel ) >> ( kRel * q ) ) &
-                                kRelMask ) );
- if( f_big ) r += std::size_t( f_top[ i >> kTop ] );
+ std::size_t r = std::size_t(
+   ( e >> ( 3 * kRel ) ) + ( ( ( e << kRel ) >> ( kRel * q ) ) & kRelMask ) );
+ if( f_big )
+  r += std::size_t( f_top[ i >> kTop ] );
  // the 1s of the word up to i (the words exist past the size [see
  // BitVector.h])
 #ifdef __BMI2__
- return( r + std::size_t( std::popcount( _bzhi_u64( f_b.words()[ i / 64 ] ,
-                                                    unsigned( i % 64 ) ) ) ) );
+ return( r + std::size_t( std::popcount(
+		_bzhi_u64( f_b.words()[ i / 64 ] , unsigned( i % 64 ) ) ) ) );
 #else
  return( r + std::size_t( std::popcount(
-                            f_b.words()[ i / 64 ] &
-                            detail::lowMask( int( i % 64 ) ) ) ) );
+		f_b.words()[ i / 64 ] & detail::lowMask( int( i % 64 ) ) ) ) );
 #endif
  }
 
@@ -418,11 +466,12 @@ inline std::size_t BasicRankSelect< Lazy >::rank0( std::size_t i ) const
 
 template< bool Lazy >
 inline void BasicRankSelect< Lazy >::shape( bool b , Inventory & I ,
-                                            std::size_t & groups ) const
+					    std::size_t & groups ) const
 {
  const std::size_t total = b ? f_ones : zeros() , n = f_b.size();
  groups = 0;
- if( total == 0 ) return;
+ if( total == 0 )
+  return;
  // 2^l bits b in kGroup places on average, within a factor 1.5
  const double per = 1.5 * double( total ) * double( kGroup ) / double( n );
  I.l = per < 2 ? 0 : std::bit_width( std::uint64_t( per ) ) - 1;
@@ -433,10 +482,10 @@ inline void BasicRankSelect< Lazy >::shape( bool b , Inventory & I ,
 
 template< bool Lazy >
 #if defined( __GNUC__ )
-__attribute__(( always_inline ))
+__attribute__( ( always_inline ) )
 #endif
 inline const typename BasicRankSelect< Lazy >::Inventory &
- BasicRankSelect< Lazy >::inventory( bool b ) const
+BasicRankSelect< Lazy >::inventory( bool b ) const
 {
  if constexpr( Lazy )
   if( ! f_once.ready[ b ].load( std::memory_order_acquire ) ) [[unlikely]]
@@ -446,7 +495,7 @@ inline const typename BasicRankSelect< Lazy >::Inventory &
 
 template< bool Lazy >
 #if defined( __GNUC__ )
-__attribute__(( noinline , cold ))
+__attribute__( ( noinline , cold ) )
 #elif defined( _MSC_VER )
 __declspec( noinline )
 #endif
@@ -463,14 +512,16 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
  const std::size_t total = b ? f_ones : zeros() , n = f_b.size();
  std::size_t groups;
  shape( b , I , groups );
- if( total == 0 ) return;
+ if( total == 0 )
+  return;
  I.pos.assign( groups + 1 , 0 );
  I.off.assign( groups << I.s , 0 );
  const auto & W = f_b.words();
  const std::size_t M = ( std::size_t( 1 ) << I.s ) - 1;
- std::size_t base = 0;                     // the place of the group
- auto put = [ & ]( std::size_t c , std::size_t p ) {   // the bit b of rank c
-  if( ( ( c >> I.g ) & M ) == 0 ) I.pos[ c >> I.l ] = base = p;
+ std::size_t base = 0;                               // the place of the group
+ auto put = [ & ]( std::size_t c , std::size_t p ) {  // the bit b of rank c
+  if( ( ( c >> I.g ) & M ) == 0 )
+   I.pos[ c >> I.l ] = base = p;
   I.off[ c >> I.g ] = std::uint16_t( p - base );
   };
  if( I.g == 0 ) {
@@ -479,7 +530,8 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
   std::size_t c = 0;
   for( std::size_t w = 0 ; w < nw ; ++w ) {
    Word x = b ? W[ w ] : ~W[ w ];
-   if( w + 1 == nw ) x &= detail::lowMask( int( n - 64 * w ) );
+   if( w + 1 == nw )
+    x &= detail::lowMask( int( n - 64 * w ) );
    for( ; x ; x &= x - 1 , ++c )
     put( c , 64 * w + std::size_t( std::countr_zero( x ) ) );
    }
@@ -499,8 +551,8 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
     }
    const std::uint64_t e = f_dir[ t ];
    std::size_t c1 = std::size_t( e & kRelMask ) ,
-               c2 = std::size_t( ( e >> kRel ) & kRelMask ) ,
-               c3 = std::size_t( ( e >> ( 2 * kRel ) ) & kRelMask );
+	       c2 = std::size_t( ( e >> kRel ) & kRelMask ) ,
+	       c3 = std::size_t( ( e >> ( 2 * kRel ) ) & kRelMask );
    if( ! b ) {
     c1 = kQuarter - c1;
     c2 = 2 * kQuarter - c2;
@@ -508,51 +560,53 @@ inline void BasicRankSelect< Lazy >::build( bool b ) const
     }
    for( ; next < hi ; next += G ) {
     const std::size_t r = next - lo;
-    const std::size_t q = std::size_t( r >= c1 ) + std::size_t( r >= c2 ) +
-                          std::size_t( r >= c3 );
+    const std::size_t q =
+      std::size_t( r >= c1 ) + std::size_t( r >= c2 ) + std::size_t( r >= c3 );
     const std::size_t in = q == 0 ? 0 : q == 1 ? c1 : q == 2 ? c2 : c3;
     const Word x = W[ 4 * t + q ];
     put( next , 64 * ( 4 * t + q ) +
-                std::size_t( selectInWord( b ? x : ~x , int( r - in ) ) ) );
+		 std::size_t( selectInWord( b ? x : ~x , int( r - in ) ) ) );
     }
    lo = hi;
    }
   }
  I.pos[ groups ] = n;
- for( std::size_t j = 0 ; j < groups ; ++j )   // the sparse groups
+ for( std::size_t j = 0 ; j < groups ; ++j )  // the sparse groups
   if( I.pos[ j + 1 ] - ( I.pos[ j ] & ( ~Word( 0 ) >> 1 ) ) >= kSparse )
    I.pos[ j ] |= Word( 1 ) << 63;
  }
 
 template< bool Lazy >
 #if defined( __GNUC__ )
-__attribute__(( always_inline ))
+__attribute__( ( always_inline ) )
 #endif
 inline std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
-                                                    bool b ) const
+						    bool b ) const
 {
  const Inventory & I = inventory( b );
- const std::size_t r = k - 1;               // the bits b before it
+ const std::size_t r = k - 1;  // the bits b before it
  const std::size_t j = r >> I.l;
  const std::uint64_t h = I.pos[ j ];
  if( h >> 63 )
-  return( selectSparse( k , b , std::size_t( h & ( ~Word( 0 ) >> 1 ) ) ,
-                        std::size_t( I.pos[ j + 1 ] &
-                                     ( ~Word( 0 ) >> 1 ) ) ) );
+  return(
+    selectSparse( k , b , std::size_t( h & ( ~Word( 0 ) >> 1 ) ) ,
+		  std::size_t( I.pos[ j + 1 ] & ( ~Word( 0 ) >> 1 ) ) ) );
  // the place of the bit b of rank r rounded down to 2^g, and the bits b
  // to skip from there, word by word
- const std::size_t p = std::size_t( h ) +
-                       I.off[ ( j << I.s ) + ( ( r >> I.g ) &
-                                               ( ( std::size_t( 1 ) << I.s )
-                                                 - 1 ) ) ];
- if( I.g == 0 ) return( p );             // every bit b has its offset
+ const std::size_t p =
+   std::size_t( h ) +
+   I.off[ ( j << I.s ) +
+	  ( ( r >> I.g ) & ( ( std::size_t( 1 ) << I.s ) - 1 ) ) ];
+ if( I.g == 0 )
+  return( p );  // every bit b has its offset
  std::size_t t = r & ( ( std::size_t( 1 ) << I.g ) - 1 );
  const Word * W = f_b.words().data();
  std::size_t w = p / 64;
  Word x = ( b ? W[ w ] : ~W[ w ] ) & ( ~Word( 0 ) << ( p % 64 ) );
  for( ; ; ) {
   const std::size_t c = std::size_t( std::popcount( x ) );
-  if( t < c ) break;
+  if( t < c )
+   break;
   t -= c;
   x = b ? W[ ++w ] : ~W[ ++w ];
   }
@@ -560,27 +614,27 @@ inline std::size_t BasicRankSelect< Lazy >::select( std::size_t k ,
  }
 
 template< bool Lazy >
-inline std::size_t BasicRankSelect< Lazy >::selectSparse( std::size_t k ,
-                                                          bool b ,
-                                                          std::size_t p ,
-                                                          std::size_t q )
- const
+inline std::size_t
+BasicRankSelect< Lazy >::selectSparse( std::size_t k , bool b , std::size_t p ,
+				       std::size_t q ) const
 {
  // the last block with fewer than k bits b before it, between the blocks
  // of p and of q
  std::size_t lo = p / kBlock , hi = std::min( q / kBlock , f_dir.size() - 2 );
  while( lo < hi ) {
   const std::size_t mid = lo + ( hi - lo + 1 ) / 2;
-  if( before( mid , b ) < k ) lo = mid;
-  else hi = mid - 1;
+  if( before( mid , b ) < k )
+   lo = mid;
+  else
+   hi = mid - 1;
   }
- std::size_t r = k - before( lo , b );      // the r-th one of the block
+ std::size_t r = k - before( lo , b );  // the r-th one of the block
  // the word, by the counts before the words 1, 2 and 3
  const std::uint64_t e = f_dir[ lo ];
  std::size_t q4 = 0 , in = 0;
  for( std::size_t h = 1 ; h < 4 ; ++h ) {
-  const std::size_t c1 = std::size_t( ( e >> ( kRel * ( h - 1 ) ) ) &
-                                      kRelMask );
+  const std::size_t c1 =
+    std::size_t( ( e >> ( kRel * ( h - 1 ) ) ) & kRelMask );
   const std::size_t c = b ? c1 : h * kQuarter - c1;
   if( c < r ) {
    q4 = h;
@@ -590,7 +644,7 @@ inline std::size_t BasicRankSelect< Lazy >::selectSparse( std::size_t k ,
  r -= in;
  const Word x = f_b.words()[ ( kBlock / 64 ) * lo + q4 ];
  return( 64 * ( ( kBlock / 64 ) * lo + q4 ) +
-         std::size_t( selectInWord( b ? x : ~x , int( r - 1 ) ) ) );
+	  std::size_t( selectInWord( b ? x : ~x , int( r - 1 ) ) ) );
  }
 
 template< bool Lazy >
@@ -620,7 +674,8 @@ inline std::size_t BasicRankSelect< Lazy >::directoryBits( void ) const
    Inventory I;
    std::size_t groups;
    shape( v , I , groups );
-   if( groups > 0 ) s += 64 * ( groups + 1 ) + ( 16 * groups << I.s );
+   if( groups > 0 )
+    s += 64 * ( groups + 1 ) + ( 16 * groups << I.s );
    }
  return( s );
  }
@@ -630,8 +685,10 @@ inline bool BasicRankSelect< Lazy >::consistent( void ) const
 {
  std::size_t c = 0;
  for( std::size_t i = 0 ; i <= f_b.size() ; ++i ) {
-  if( rank1( i ) != c ) return( false );
-  if( i < f_b.size() && f_b[ i ] ) ++c;
+  if( rank1( i ) != c )
+   return( false );
+  if( i < f_b.size() && f_b[ i ] )
+   ++c;
   }
  return( c == f_ones );
  }

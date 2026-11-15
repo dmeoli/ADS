@@ -31,7 +31,7 @@
 
 #ifndef __ADS_TreeSort
  #define __ADS_TreeSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the tree sort on a Red-Black tree, or on a search tree with no balance if
 /// `balanced` is false
@@ -89,7 +90,7 @@ void treeSort( std::vector< T > & A , bool balanced = true );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TreeSort.h included */
+#endif /* TreeSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File TreeSort.h ---------------------------*/

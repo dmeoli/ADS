@@ -14,13 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline LinearCongruential::LinearCongruential( std::uint64_t a ,
-                                               std::uint64_t c ,
-                                               std::uint64_t m ,
-                                               std::uint64_t seed )
- : f_a( a ) , f_c( c ) , f_m( m ) , f_x( seed )
+					       std::uint64_t c ,
+					       std::uint64_t m ,
+					       std::uint64_t seed )
+    : f_a( a ) , f_c( c ) , f_m( m ) , f_x( seed )
 {
  ADS_PRE( ( m == 0 ) || ( ( a < m ) && ( c < m ) && ( seed < m ) ) );
  }
@@ -32,19 +33,20 @@ inline LinearCongruential LinearCongruential::minstd( std::uint64_t seed )
 
 inline LinearCongruential LinearCongruential::mmix( std::uint64_t seed )
 {
- return( LinearCongruential( 6364136223846793005ULL ,
-                             1442695040888963407ULL , 0 , seed ) );
+ return( LinearCongruential( 6364136223846793005ULL , 1442695040888963407ULL ,
+			      0 , seed ) );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// ( a x + c ) mod m, m = 0 meaning 2^64
 constexpr std::uint64_t congruentialStep( std::uint64_t a , std::uint64_t c ,
-                                          std::uint64_t m , std::uint64_t x )
+					  std::uint64_t m , std::uint64_t x )
 {
- if( m == 0 )                               // modulo 2^64 by overflow
+ if( m == 0 )  // modulo 2^64 by overflow
   return( a * x + c );
- x = mulMod( a , x , m );                   // + c without overflow
+ x = mulMod( a , x , m );  // + c without overflow
  return( x >= m - c ? x - ( m - c ) : x + c );
  }
 
@@ -58,10 +60,10 @@ inline std::uint64_t LinearCongruential::operator()( void )
 
 inline std::uint64_t LinearCongruential::period( std::uint64_t limit ) const
 {
- LinearCongruential g = *this;              // the sequence is eventually
- const std::uint64_t start = g();           // periodic: Brent's cycle
+ LinearCongruential g = *this;     // the sequence is eventually
+ const std::uint64_t start = g();  // periodic: Brent's cycle
  std::uint64_t power = 1 , lambda = 1 , tort = start , hare = g();
- while( tort != hare ) {                    // detection
+ while( tort != hare ) {  // detection
   if( power == lambda ) {
    tort = hare;
    power *= 2;
@@ -69,15 +71,16 @@ inline std::uint64_t LinearCongruential::period( std::uint64_t limit ) const
    }
   hare = g();
   ++lambda;
-  if( lambda > limit ) return( 0 );
+  if( lambda > limit )
+   return( 0 );
   }
  return( lambda );
  }
 
 template< std::uint64_t a , std::uint64_t c , std::uint64_t m >
 constexpr LinearCongruentialT< a , c , m >::LinearCongruentialT(
-                                                       std::uint64_t seed )
- : f_x( seed )
+  std::uint64_t seed )
+    : f_x( seed )
 {
  ADS_PRE( ( m == 0 ) || ( seed < m ) );
  }
@@ -90,11 +93,12 @@ constexpr std::uint64_t LinearCongruentialT< a , c , m >::operator()( void )
  }
 
 inline double chiSquare( const std::vector< long > & Y ,
-                         const std::vector< double > & p )
+			 const std::vector< double > & p )
 {
  ADS_PRE( Y.size() == p.size() );
  double n = 0;
- for( long y : Y ) n += double( y );
+ for( long y : Y )
+  n += double( y );
  double V = 0;
  for( std::size_t s = 0 ; s < Y.size() ; ++s ) {
   const double e = n * p[ s ];
@@ -104,15 +108,15 @@ inline double chiSquare( const std::vector< long > & Y ,
  return( V );
  }
 
-inline std::pair< double , double > kolmogorovSmirnov(
-                                             std::vector< double > U )
+inline std::pair< double , double >
+kolmogorovSmirnov( std::vector< double > U )
 {
  ADS_PRE( ! U.empty() );
  std::sort( U.begin() , U.end() );
  const double n = double( U.size() );
- double plus = 0 , minus = 0;               // max( j / n - F( x_j ) ) and
- for( std::size_t j = 0 ; j < U.size() ; ++j ) {   // max( F( x_j ) -
-  plus = std::max( plus , double( j + 1 ) / n - U[ j ] );   // ( j - 1 ) / n )
+ double plus = 0 , minus = 0;                    // max( j / n - F( x_j ) ) and
+ for( std::size_t j = 0 ; j < U.size() ; ++j ) {  // max( F( x_j ) -
+  plus = std::max( plus , double( j + 1 ) / n - U[ j ] );  // ( j - 1 ) / n )
   minus = std::max( minus , U[ j ] - double( j ) / n );
   }
  return( std::pair( std::sqrt( n ) * plus , std::sqrt( n ) * minus ) );
@@ -127,32 +131,32 @@ inline double serialTest( const std::vector< double > & U , int d )
   ++Y[ std::min( a , std::size_t( d - 1 ) ) * std::size_t( d ) +
        std::min( b , std::size_t( d - 1 ) ) ];
   }
- return( chiSquare( Y , std::vector< double >( Y.size() ,
-                                               1.0 / double( Y.size() ) ) ) );
+ return( chiSquare(
+   Y , std::vector< double >( Y.size() , 1.0 / double( Y.size() ) ) ) );
  }
 
 inline double spectralTest2( std::uint64_t a , std::uint64_t m )
 {
  ADS_PRE( ( m >= 2 ) && ( a > 0 ) && ( a < m ) );
- long double u1 = double( m ) , v1 = 0 ,   // the basis ( m , 0 ) ,
-             u2 = - double( a ) , v2 = 1;   // ( -a , 1 ), reduced as Gauss
+ long double u1 = double( m ) , v1 = 0 ,  // the basis ( m , 0 ) ,
+   u2 = -double( a ) , v2 = 1;           // ( -a , 1 ), reduced as Gauss
  auto norm = []( long double u , long double v ) { return( u * u + v * v ); };
  for( ; ; ) {
   if( norm( u1 , v1 ) < norm( u2 , v2 ) ) {
    std::swap( u1 , u2 );
    std::swap( v1 , v2 );
    }
-  const long double q =
-   std::round( ( u1 * u2 + v1 * v2 ) / norm( u2 , v2 ) );
+  const long double q = std::round( ( u1 * u2 + v1 * v2 ) / norm( u2 , v2 ) );
   u1 -= q * u2;
   v1 -= q * v2;
   if( norm( u1 , v1 ) >= norm( u2 , v2 ) )
-   break;                                   // ( u2 , v2 ) is the shortest
+   break;  // ( u2 , v2 ) is the shortest
   }
  return( double( std::sqrt( norm( u2 , v2 ) ) ) );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// an integer uniform in [ 0 , s ) from the generator g of the numbers in
 /// [ g.min() , g.max() ], whatever its range r + 1 = g.max() - g.min() + 1:
@@ -169,28 +173,30 @@ std::uint64_t uniformIndex( R & g , std::uint64_t s )
 {
  ADS_PRE( s >= 1 );
  const std::uint64_t lo = std::uint64_t( g.min() ) ,
-                     r = std::uint64_t( g.max() ) - lo;
+		     r = std::uint64_t( g.max() ) - lo;
  std::uint64_t x;
  if( r == std::numeric_limits< std::uint64_t >::max() ) {
   std::uint64_t l = detail::mul128( std::uint64_t( g() ) - lo , s , x );
-  if( l < s ) {                             // a rejection is possible
-   const std::uint64_t t = ( 0 - s ) % s;   // 2^64 mod s
+  if( l < s ) {                            // a rejection is possible
+   const std::uint64_t t = ( 0 - s ) % s;  // 2^64 mod s
    while( l < t )
     l = detail::mul128( std::uint64_t( g() ) - lo , s , x );
    }
   }
- else if( r >= s - 1 ) {                    // one draw, by rejection
+ else if( r >= s - 1 ) {  // one draw, by rejection
   const std::uint64_t q = ( r + 1 ) / s , past = q * s;
-  do x = std::uint64_t( g() ) - lo; while( x >= past );
+  do
+   x = std::uint64_t( g() ) - lo;
+  while( x >= past );
   x /= q;
   }
- else {                                     // several draws
+ else {  // several draws
   const std::uint64_t w = r + 1;
   std::uint64_t y;
   do {
    y = w * uniformIndex( g , ( s - 1 ) / w + 1 );
    x = y + ( std::uint64_t( g() ) - lo );
-   } while( ( x >= s ) || ( x < y ) );      // past s, or wrapped
+   } while( ( x >= s ) || ( x < y ) );  // past s, or wrapped
   }
  ADS_POST( x < s );
  return( x );
@@ -201,7 +207,7 @@ std::uint64_t uniformIndex( R & g , std::uint64_t s )
 template< class T , class R >
 void shuffle( std::vector< T > & A , R & g )
 {
- for( std::size_t j = A.size() ; j > 1 ; --j ) {   // P2-P3
+ for( std::size_t j = A.size() ; j > 1 ; --j ) {  // P2-P3
   const std::size_t k = std::size_t( detail::uniformIndex( g , j ) );
   std::swap( A[ j - 1 ] , A[ k ] );
   }
@@ -209,13 +215,13 @@ void shuffle( std::vector< T > & A , R & g )
 
 template< class R >
 std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
-                                              R & g )
+					      R & g )
 {
  ADS_PRE( n <= N );
  std::vector< std::size_t > out;
- for( std::size_t t = 0 ; out.size() < n ; ++t ) {   // t seen, m chosen
-  const double U =                          // in [ 0 , 1 ), whatever the
-   std::generate_canonical< double , 53 >( g );   // width of g
+ for( std::size_t t = 0 ; out.size() < n ; ++t ) {  // t seen, m chosen
+  const double U =                                // in [ 0 , 1 ), whatever the
+    std::generate_canonical< double , 53 >( g );   // width of g
   if( double( N - t ) * U < double( n - out.size() ) )
    out.push_back( t );
   }
@@ -224,15 +230,17 @@ std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
 
 template< class T , class R >
 std::vector< T > reservoirSampling( const std::vector< T > & S ,
-                                    std::size_t n , R & g )
+				    std::size_t n ,
+				    R & g )
 {
  std::vector< T > res;
  for( std::size_t t = 0 ; t < S.size() ; ++t )
   if( t < n )
-   res.push_back( S[ t ] );                 // the first n fill it
+   res.push_back( S[ t ] );  // the first n fill it
   else {
    const std::size_t M = std::size_t( detail::uniformIndex( g , t + 1 ) );
-   if( M < n ) res[ M ] = S[ t ];           // R4: replace with prob. n/t
+   if( M < n )
+    res[ M ] = S[ t ];  // R4: replace with prob. n/t
    }
  return( res );
  }

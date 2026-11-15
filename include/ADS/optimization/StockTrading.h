@@ -49,7 +49,7 @@
 
 #ifndef __ADS_StockTrading
  #define __ADS_StockTrading
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the largest gain of at most \f$ k \f$ transactions on the prices
 ///
@@ -109,7 +110,7 @@ T maxProfit( const std::vector< T > & prices , std::size_t k );
 /// \f]
 template< class T >
 std::optional< T > maxProfitExactly( const std::vector< T > & prices ,
-                                     std::size_t k );
+				     std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
@@ -123,7 +124,7 @@ std::optional< T > maxProfitExactly( const std::vector< T > & prices ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StockTrading.h included */
+#endif /* StockTrading.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File StockTrading.h -------------------------*/

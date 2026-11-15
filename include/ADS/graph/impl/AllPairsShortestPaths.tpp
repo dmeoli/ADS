@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// no d[ u ][ k ] + d[ k ][ v ] is below d[ u ][ v ], on finite entries
 template< class D >
@@ -30,7 +32,7 @@ bool triangleClosed( const AllPairs< D > & R )
    if( R.d[ u ][ k ] != INF )
     for( int v = 0 ; v < n ; ++v )
      if( ( R.d[ k ][ v ] != INF ) &&
-         ( R.d[ u ][ k ] + R.d[ k ][ v ] < R.d[ u ][ v ] ) )
+	 ( R.d[ u ][ k ] + R.d[ k ][ v ] < R.d[ u ][ v ] ) )
       return( false );
  return( true );
  }
@@ -58,8 +60,8 @@ bool allPairsOk( const G & g , const AllPairs< typename G::Weight > & R )
     continue;
    const int p = R.p[ u ][ v ];
    if( ( p < 0 ) || ( p >= n ) || ( W[ p ][ v ] == INF ) ||
-       ( R.d[ u ][ p ] == INF ) || ( R.d[ u ][ p ] + W[ p ][ v ] !=
-                                     R.d[ u ][ v ] ) )
+       ( R.d[ u ][ p ] == INF ) ||
+       ( R.d[ u ][ p ] + W[ p ][ v ] != R.d[ u ][ v ] ) )
     return( false );
    }
   }
@@ -90,7 +92,7 @@ AllPairs< typename G::Weight > floydWarshall( const G & g )
     continue;
    for( int v = 0 ; v < n ; ++v )
     if( ( R.d[ k ][ v ] != INF ) &&
-        ( R.d[ u ][ k ] + R.d[ k ][ v ] < R.d[ u ][ v ] ) ) {
+	( R.d[ u ][ k ] + R.d[ k ][ v ] < R.d[ u ][ v ] ) ) {
      R.d[ u ][ v ] = R.d[ u ][ k ] + R.d[ k ][ v ];
      R.p[ u ][ v ] = R.p[ k ][ v ];
      }
@@ -108,7 +110,7 @@ void addEdge( AllPairs< D > & R , int a , int b , const D & w )
  const D INF = infinity< D >();
  const int n = int( R.d.size() );
  ADS_PRE( ( a >= 0 ) && ( a < n ) && ( b >= 0 ) && ( b < n ) && ( a != b ) );
- ADS_PRE( ( R.d[ b ][ a ] == INF ) || !( w + R.d[ b ][ a ] < D( 0 ) ) );
+ ADS_PRE( ( R.d[ b ][ a ] == INF ) || ! ( w + R.d[ b ][ a ] < D( 0 ) ) );
  if( w >= R.d[ a ][ b ] )
   return;
  const auto d = R.d;
@@ -127,7 +129,7 @@ void addEdge( AllPairs< D > & R , int a , int b , const D & w )
     }
    }
   }
- ADS_POST( !( w < R.d[ a ][ b ] ) );
+ ADS_POST( ! ( w < R.d[ a ][ b ] ) );
  ADS_AUDIT( detail::triangleClosed( R ) );
  }
 

@@ -43,7 +43,7 @@
 
 #ifndef __ADS_RSA
  #define __ADS_RSA
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,12 +60,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a key \f$ ( N , e ) \f$
-struct RsaKey {
- U64 N ,   ///< the modulus, the product of two primes
-     e;    ///< the exponent
+struct RsaKey
+{
+ U64 N ,  ///< the modulus, the product of two primes
+   e;    ///< the exponent
  };
 
 /// a random odd prime of exactly \f$ \mathit{bits} \f$ bits, by the test of
@@ -135,7 +137,7 @@ inline U64 rsa( U64 M , const RsaKey & k );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RSA.h included */
+#endif /* RSA.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- End File RSA.h -----------------------------*/

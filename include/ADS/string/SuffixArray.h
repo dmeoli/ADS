@@ -155,7 +155,7 @@
 
 #ifndef __ADS_SuffixArray
  #define __ADS_SuffixArray
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -179,7 +179,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a text on an integer alphabet
 using Symbols = std::vector< std::size_t >;
@@ -201,8 +202,8 @@ using Symbols = std::vector< std::size_t >;
 /// \end{array}}
 /// \f]
 /// \post a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySorting(
-                                                         const Symbols & T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySorting( const Symbols & T );
 
 /// the array of `suffixArraySorting()` above, on the bytes of \f$ T \f$
 /// \f[
@@ -212,8 +213,8 @@ using Symbols = std::vector< std::size_t >;
 ///     \mathrm{toSymbols}( T ) )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySorting(
-                                                        std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySorting( std::string_view T );
 
 /// the suffix array of \f$ T \f$ by the prefix doubling of Manber and Myers
 ///
@@ -243,8 +244,8 @@ using Symbols = std::vector< std::size_t >;
 /// \f]
 /// \pre \f$ |T| < 2^{32} \f$
 /// \post a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayDoubling(
-                                                         const Symbols & T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayDoubling( const Symbols & T );
 
 /// the array of `suffixArrayDoubling()` above, on the bytes of \f$ T \f$
 /// \f[
@@ -255,8 +256,8 @@ using Symbols = std::vector< std::size_t >;
 /// \end{array}}
 /// \f]
 /// \pre \f$ |T| < 2^{32} \f$
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayDoubling(
-                                                        std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayDoubling( std::string_view T );
 
 /// the suffix array of \f$ T \f$ by the doubling of Larsson and Sadakane
 ///
@@ -285,8 +286,8 @@ using Symbols = std::vector< std::size_t >;
 /// \end{array}}
 /// \f]
 /// \post a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayLarssonSadakane(
-                                                         const Symbols & T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayLarssonSadakane( const Symbols & T );
 
 /// the array of `suffixArrayLarssonSadakane()` above, on the bytes of
 /// \f$ T \f$
@@ -297,8 +298,8 @@ using Symbols = std::vector< std::size_t >;
 ///     \mathrm{toSymbols}( T ) )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayLarssonSadakane(
-                                                        std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayLarssonSadakane( std::string_view T );
 
 /// the suffix array of \f$ T \f$ by the Skew algorithm of Kärkkäinen and
 /// Sanders
@@ -328,8 +329,8 @@ using Symbols = std::vector< std::size_t >;
 /// \f]
 /// \pre every symbol of \f$ T \f$ is less than \f$ K \f$
 /// \post a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySkew(
-                                          const Symbols & T , std::size_t K );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySkew( const Symbols & T , std::size_t K );
 
 /// the array of `suffixArraySkew()` above, on the bytes of \f$ T \f$
 /// \f[
@@ -339,8 +340,8 @@ using Symbols = std::vector< std::size_t >;
 ///     T ) , 256 )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySkew(
-                                                        std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySkew( std::string_view T );
 
 /// the suffix array of \f$ T \f$ by the induced sorting of Nong, Zhang and
 /// Chan
@@ -385,8 +386,8 @@ using Symbols = std::vector< std::size_t >;
 /// \f]
 /// \pre every symbol of \f$ T \f$ is less than \f$ K \f$
 /// \post a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySais(
-                                          const Symbols & T , std::size_t K );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySais( const Symbols & T , std::size_t K );
 
 /// the array of `suffixArraySais()` above, on the bytes of \f$ T \f$
 /// \f[
@@ -396,8 +397,8 @@ using Symbols = std::vector< std::size_t >;
 ///     T ) , 256 )
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::size_t > suffixArraySais(
-                                                        std::string_view T );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArraySais( std::string_view T );
 
 /// the suffix array of \f$ T \f$ by the scan-based algorithm of
 /// Baeza-Yates, Gonnet and Snider, on blocks of \f$ m \f$ symbols
@@ -426,8 +427,8 @@ using Symbols = std::vector< std::size_t >;
 /// \f]
 /// \pre \f$ m > 0 \f$
 /// \post a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayScan(
-                                          const Symbols & T , std::size_t m );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayScan( const Symbols & T , std::size_t m );
 
 /// the array of `suffixArrayScan()` above, on the bytes of \f$ T \f$
 /// \f[
@@ -438,12 +439,12 @@ using Symbols = std::vector< std::size_t >;
 /// \end{array}}
 /// \f]
 /// \pre \f$ m > 0 \f$
-[[nodiscard]] inline std::vector< std::size_t > suffixArrayScan(
-                                       std::string_view T , std::size_t m );
+[[nodiscard]] inline std::vector< std::size_t >
+suffixArrayScan( std::string_view T , std::size_t m );
 
 /// the inverse of a permutation: \f$ R[ \mathit{SA}[ r ] ] = r \f$
-[[nodiscard]] inline std::vector< std::size_t > inversePermutation(
-                                       const std::vector< std::size_t > & SA );
+[[nodiscard]] inline std::vector< std::size_t >
+inversePermutation( const std::vector< std::size_t > & SA );
 
 /// the LCP array of Kasai et al., \f$ n - 1 \f$ entries (none if
 /// \f$ n < 2 \f$)
@@ -470,8 +471,8 @@ using Symbols = std::vector< std::size_t >;
 /// \post \f$ \mathit{LCP}[ r ] \f$ is the lcp of the suffixes
 ///       \f$ \mathit{SA}[ r ] \f$ and \f$ \mathit{SA}[ r + 1 ] \f$ (an
 ///       audit)
-[[nodiscard]] inline std::vector< std::size_t > lcpArray(
-                   const Symbols & T , const std::vector< std::size_t > & SA );
+[[nodiscard]] inline std::vector< std::size_t >
+lcpArray( const Symbols & T , const std::vector< std::size_t > & SA );
 
 /// the array of `lcpArray()` above, on the bytes of \f$ T \f$
 /// \f[
@@ -482,8 +483,8 @@ using Symbols = std::vector< std::size_t >;
 /// \end{array}}
 /// \f]
 /// \pre \f$ \mathit{SA} \f$ is a suffix array of \f$ T \f$ (an audit)
-[[nodiscard]] inline std::vector< std::size_t > lcpArray(
-                  std::string_view T , const std::vector< std::size_t > & SA );
+[[nodiscard]] inline std::vector< std::size_t >
+lcpArray( std::string_view T , const std::vector< std::size_t > & SA );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS SuffixArray ----------------------------*/
@@ -492,11 +493,11 @@ using Symbols = std::vector< std::size_t >;
 /// the suffix array of a text with its \f$ \mathit{LCP} \f$,
 /// \f$ \mathit{Llcp} \f$ and \f$ \mathit{Rlcp} \f$ arrays and the range
 /// minima of \f$ \mathit{LCP} \f$
-class SuffixArray {
+class SuffixArray
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the index of the empty text
  SuffixArray( void ) = default;
 
@@ -549,8 +550,8 @@ class SuffixArray {
  /// 10 & \quad \textbf{return}\ L
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::pair< std::size_t , std::size_t > range(
-                const Symbols & P , long * comparisons = nullptr ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ range( const Symbols & P , long * comparisons = nullptr ) const;
 
  /// the range of `range()` above, of the bytes of \f$ P \f$
  /// \f[
@@ -559,8 +560,8 @@ class SuffixArray {
  /// 2 & \quad \textbf{return}\ \mathrm{range}( \mathrm{toSymbols}( P ) )
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::pair< std::size_t , std::size_t > range(
-             std::string_view P , long * comparisons = nullptr ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ range( std::string_view P , long * comparisons = nullptr ) const;
 
  /// the range of `range()` by the search of Manber and Myers,
  /// \f$ O( p + \log n ) \f$ comparisons of symbols
@@ -592,8 +593,8 @@ class SuffixArray {
  /// \end{array}}
  /// \f]
  /// \post the range of `range( P )` (an audit)
- [[nodiscard]] std::pair< std::size_t , std::size_t > rangeLcp(
-                const Symbols & P , long * comparisons = nullptr ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ rangeLcp( const Symbols & P , long * comparisons = nullptr ) const;
 
  /// the range of `rangeLcp()` above, of the bytes of \f$ P \f$
  /// \f[
@@ -603,8 +604,8 @@ class SuffixArray {
  /// \end{array}}
  /// \f]
  /// \post the range of `range( P )` (an audit)
- [[nodiscard]] std::pair< std::size_t , std::size_t > rangeLcp(
-             std::string_view P , long * comparisons = nullptr ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ rangeLcp( std::string_view P , long * comparisons = nullptr ) const;
 
  /// the number of occurrences of \f$ P \f$, the size of the range of
  /// `rangeLcp()`
@@ -660,14 +661,14 @@ class SuffixArray {
 
  // a constant view of SA, random access
 
- using value_type = std::size_t;                  ///< a place of the text
- using size_type = std::size_t;                   ///< the type of the ranks
- using difference_type = std::ptrdiff_t;          ///< a difference of ranks
- using const_reference = const std::size_t &;     ///< an entry of SA
- using reference = const_reference;               ///< an entry of SA
+ using value_type = std::size_t;               ///< a place of the text
+ using size_type = std::size_t;                ///< the type of the ranks
+ using difference_type = std::ptrdiff_t;       ///< a difference of ranks
+ using const_reference = const std::size_t &;  ///< an entry of SA
+ using reference = const_reference;            ///< an entry of SA
  /// a constant iterator on the entries of SA
  using const_iterator = std::vector< std::size_t >::const_iterator;
- using iterator = const_iterator;                 ///< on the entries of SA
+ using iterator = const_iterator;  ///< on the entries of SA
 
  /// the first entry of \f$ \mathit{SA} \f$
  [[nodiscard]] const_iterator begin( void ) const { return( f_SA.begin() ); }
@@ -680,7 +681,6 @@ class SuffixArray {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the rank, \f$ \mathit{LCP} \f$, \f$ \mathit{Llcp} \f$,
  /// \f$ \mathit{Rlcp} \f$ and the range minima, from \f$ T \f$ and
  /// \f$ \mathit{SA} \f$
@@ -696,8 +696,8 @@ class SuffixArray {
  /// greater, \f$ P \f$ being followed by a symbol larger than all if
  /// `upper`
  std::pair< std::size_t , bool > compare( const Symbols & P , std::size_t M ,
-                                          std::size_t h , bool upper ,
-                                          long * comparisons ) const;
+					 std::size_t h , bool upper ,
+					 long * comparisons ) const;
 
  /// the first rank whose suffix is not smaller than \f$ P \f$ (followed by
  /// the largest symbol if `upper`), by the binary search and by Manber
@@ -705,13 +705,13 @@ class SuffixArray {
  std::size_t bound( const Symbols & P , bool upper , long * c ) const;
  std::size_t boundLcp( const Symbols & P , bool upper , long * c ) const;
 
- Symbols f_T;                           ///< the text
- std::vector< std::size_t > f_SA;       ///< the suffix array
- std::vector< std::size_t > f_rank;     ///< its inverse
- std::vector< std::size_t > f_lcp;      ///< LCP
- std::vector< std::size_t > f_Llcp;     ///< the lcp with the left end
- std::vector< std::size_t > f_Rlcp;     ///< the lcp with the right end
- RangeMinimum< std::size_t > f_rmq;     ///< on LCP
+ Symbols f_T;                        ///< the text
+ std::vector< std::size_t > f_SA;    ///< the suffix array
+ std::vector< std::size_t > f_rank;  ///< its inverse
+ std::vector< std::size_t > f_lcp;   ///< LCP
+ std::vector< std::size_t > f_Llcp;  ///< the lcp with the left end
+ std::vector< std::size_t > f_Rlcp;  ///< the lcp with the right end
+ RangeMinimum< std::size_t > f_rmq;  ///< on LCP
 
  };  // end( class SuffixArray )
 
@@ -727,7 +727,7 @@ class SuffixArray {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SuffixArray.h included */
+#endif /* SuffixArray.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SuffixArray.h -------------------------*/

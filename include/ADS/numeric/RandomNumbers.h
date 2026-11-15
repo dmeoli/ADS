@@ -71,7 +71,7 @@
 
 #ifndef __ADS_RandomNumbers
  #define __ADS_RandomNumbers
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,7 +93,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS LinearCongruential ------------------------*/
@@ -101,16 +102,17 @@ namespace ADS {
 
 /// the generator \f$ X_{n+1} = ( a X_n + c ) \bmod m \f$, \f$ m = 0 \f$
 /// meaning \f$ 2^{64} \f$
-class LinearCongruential {
+class LinearCongruential
+{
  public:
- using result_type = std::uint64_t;   ///< the type of the numbers
+ using result_type = std::uint64_t;  ///< the type of the numbers
 
  /// the generator of multiplier \f$ a \f$, increment \f$ c \f$ and modulus
  /// \f$ m \f$, from \f$ X_0 = \mathit{seed} \f$
  /// \pre \f$ m = 0 \f$, or \f$ a < m \f$, \f$ c < m \f$ and
  ///      \f$ \mathit{seed} < m \f$
  LinearCongruential( std::uint64_t a , std::uint64_t c , std::uint64_t m ,
-                     std::uint64_t seed );
+		     std::uint64_t seed );
 
  /// the generator of Park and Miller, \f$ a = 16807 \f$, \f$ c = 0 \f$,
  /// \f$ m = 2^{31} - 1 \f$
@@ -155,10 +157,10 @@ class LinearCongruential {
  [[nodiscard]] std::uint64_t period( std::uint64_t limit ) const;
 
  private:
- std::uint64_t f_a ,   ///< the multiplier
-               f_c ,   ///< the increment
-               f_m ,   ///< the modulus, 0 for \f$ 2^{64} \f$
-               f_x;    ///< the last number
+ std::uint64_t f_a ,  ///< the multiplier
+   f_c ,              ///< the increment
+   f_m ,              ///< the modulus, 0 for \f$ 2^{64} \f$
+   f_x;              ///< the last number
  };
 
 /*--------------------------------------------------------------------------*/
@@ -170,10 +172,12 @@ class LinearCongruential {
 /// \f$ m = 0 \f$ meaning \f$ 2^{64} \f$: a UniformRandomBitGenerator, as
 /// `min()` and `max()` are constant
 template< std::uint64_t a , std::uint64_t c , std::uint64_t m >
-class LinearCongruentialT {
+class LinearCongruentialT
+{
  static_assert( ( m == 0 ) || ( ( a < m ) && ( c < m ) ) , "a , c < m" );
+
  public:
- using result_type = std::uint64_t;   ///< the type of the numbers
+ using result_type = std::uint64_t;  ///< the type of the numbers
 
  /// the generator from \f$ X_0 = \mathit{seed} \f$
  /// \pre \f$ m = 0 \f$ or \f$ \mathit{seed} < m \f$
@@ -193,7 +197,7 @@ class LinearCongruentialT {
  bool operator==( const LinearCongruentialT & ) const = default;
 
  private:
- std::uint64_t f_x;   ///< the last number, \f$ X_n \f$
+ std::uint64_t f_x;  ///< the last number, \f$ X_n \f$
  };
 
 /// the generator of Park and Miller, \f$ a = 16807 \f$, \f$ c = 0 \f$,
@@ -201,8 +205,8 @@ class LinearCongruentialT {
 using MinStd = LinearCongruentialT< 16807 , 0 , 2147483647 >;
 
 /// the generator of Knuth for MMIX, \f$ m = 2^{64} \f$
-using Mmix = LinearCongruentialT< 6364136223846793005ULL ,
-                                  1442695040888963407ULL , 0 >;
+using Mmix =
+  LinearCongruentialT< 6364136223846793005ULL , 1442695040888963407ULL , 0 >;
 
 /// the chi-square statistic \f$ V \f$ of the counts \f$ Y \f$ against the
 /// probabilities \f$ p \f$ over \f$ n = \sum_s Y_s \f$ samples
@@ -217,7 +221,7 @@ using Mmix = LinearCongruentialT< 6364136223846793005ULL ,
 /// \f]
 /// \pre \f$ Y \f$ and \f$ p \f$ of the same size, each \f$ n p_s > 0 \f$
 inline double chiSquare( const std::vector< long > & Y ,
-                         const std::vector< double > & p );
+			 const std::vector< double > & p );
 
 /// the statistics \f$ ( K^+_n , K^-_n ) \f$ of Kolmogorov and Smirnov of
 /// the numbers \f$ U \f$ in \f$ [ 0 , 1 ) \f$ against the uniform
@@ -235,8 +239,8 @@ inline double chiSquare( const std::vector< long > & Y ,
 /// \end{array}}
 /// \f]
 /// \pre \f$ U \f$ not empty
-inline std::pair< double , double > kolmogorovSmirnov(
-                                             std::vector< double > U );
+inline std::pair< double , double >
+kolmogorovSmirnov( std::vector< double > U );
 
 /// the chi-square statistic of the pairs \f$ ( U_{2j} , U_{2j+1} ) \f$ of
 /// numbers in \f$ [ 0 , 1 ) \f$ in \f$ d \times d \f$ cells, \f$ d^2 - 1 \f$
@@ -315,7 +319,7 @@ void shuffle( std::vector< T > & A , R & g );
 /// \pre \f$ n \le N \f$
 template< class R >
 std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
-                                              R & g );
+					      R & g );
 
 /// \f$ n \f$ items from the sequence \f$ S \f$, as if it were a stream of
 /// unknown length; all of \f$ S \f$, in its order, when \f$ S \f$ has at
@@ -336,7 +340,8 @@ std::vector< std::size_t > selectionSampling( std::size_t n , std::size_t N ,
 /// \f]
 template< class T , class R >
 std::vector< T > reservoirSampling( const std::vector< T > & S ,
-                                    std::size_t n , R & g );
+				    std::size_t n ,
+				    R & g );
 
 /*--------------------------------------------------------------------------*/
 
@@ -350,7 +355,7 @@ std::vector< T > reservoirSampling( const std::vector< T > & S ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RandomNumbers.h included */
+#endif /* RandomNumbers.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RandomNumbers.h ------------------------*/

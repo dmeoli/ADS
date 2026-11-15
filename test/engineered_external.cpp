@@ -39,10 +39,12 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// a record of 40 bytes, with padding inside, as a node of a search
-struct Rec {
+struct Rec
+{
  std::uint64_t key;
  std::uint32_t g;
  std::uint8_t op;
@@ -52,15 +54,16 @@ struct Rec {
 /// the record of the key \f$ k \f$
 Rec rec( std::uint64_t k )
 {
- return( Rec{ k , std::uint32_t( k * 3 ) , std::uint8_t( k % 7 ) ,
-              { k , ~k , k * k } } );
+ return(
+   Rec{ k , std::uint32_t( k * 3 ) , std::uint8_t( k % 7 ) ,
+	{ k , ~k , k * k } } );
  }
 
 /// whether the two records hold the same fields
 bool same( const Rec & a , const Rec & b )
 {
  return( ( a.key == b.key ) && ( a.g == b.g ) && ( a.op == b.op ) &&
-         ( a.tail == b.tail ) );
+	  ( a.tail == b.tail ) );
  }
 
 }  // end( namespace )
@@ -71,19 +74,19 @@ ADS_TEST( "record-file-empty" )
 {
  TempDirectory dir;
  RecordFile< std::uint64_t > f( dir / "none.dat" );
- CHECK( f.size() == 0 );                       // not on the disk
+ CHECK( f.size() == 0 );  // not on the disk
  CHECK( f.empty() );
  CHECK( f.readAll().empty() );
  std::size_t calls = 0;
  f.forEach( [ & ]( std::uint64_t ) { ++calls; } );
  CHECK( calls == 0 );
- f.append( nullptr , 0 );                      // makes it, empty
+ f.append( nullptr , 0 );  // makes it, empty
  CHECK( std::filesystem::exists( f.path() ) );
  CHECK( f.empty() );
  f.remove();
  CHECK( ! std::filesystem::exists( f.path() ) );
- f.remove();                                   // gone already: nothing
- f.clear();                                    // made again, empty
+ f.remove();  // gone already: nothing
+ f.clear();   // made again, empty
  CHECK( std::filesystem::exists( f.path() ) && f.empty() );
  }
 
@@ -96,31 +99,31 @@ ADS_TEST( "record-file-append" )
  std::vector< Rec > all;
  std::mt19937_64 rng( 7 );
  for( std::size_t piece = 0 ; piece < 50 ; ++piece ) {
-  std::vector< Rec > v( rng() % 300 );         // pieces of 0 to 299
+  std::vector< Rec > v( rng() % 300 );  // pieces of 0 to 299
   for( auto & x : v )
    x = rec( rng() );
   f.append( v.data() , v.size() );
   all.insert( all.end() , v.begin() , v.end() );
   CHECK( f.size() == all.size() );
   }
- for( std::size_t buffer : { std::size_t( 1 ) , std::size_t( 7 ) ,
-                             all.size() , all.size() + 1 ,
-                             RecordFile< Rec >::defaultBuffer } ) {
+ for( std::size_t buffer :
+      { std::size_t( 1 ) , std::size_t( 7 ) , all.size() , all.size() + 1 ,
+	RecordFile< Rec >::defaultBuffer } ) {
   std::size_t i = 0;
   bool ok = true;
   f.forEach( [ & ]( const Rec & x ) { ok = ok && same( x , all[ i++ ] ); } ,
-             buffer );
+	     buffer );
   CHECK( ok && ( i == all.size() ) );
   }
  const auto back = f.readAll();
  CHECK( back.size() == all.size() );
  for( std::size_t i = 0 ; i < all.size() ; ++i )
   CHECK( same( back[ i ] , all[ i ] ) );
- RecordFile< Rec > g( f.path() );              // the same file, reopened
+ RecordFile< Rec > g( f.path() );  // the same file, reopened
  CHECK( g.size() == all.size() );
  f.clear();
  CHECK( f.empty() && g.empty() );
- CHECK_THROWS( f.forEach( []( const Rec & ) {} , 0 ) , contract_violation );
+ CHECK_THROWS( f.forEach( []( const Rec & ) { } , 0 ) , contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -130,7 +133,7 @@ ADS_TEST( "record-writer" )
  TempDirectory dir;
  RecordFile< std::uint32_t > f( dir / "w.dat" );
  {
-  RecordWriter< std::uint32_t > w( f , 1 );   // a write per record
+  RecordWriter< std::uint32_t > w( f , 1 );  // a write per record
   for( std::uint32_t i = 0 ; i < 100 ; ++i ) {
    w.push( i );
    CHECK( w.pending() == 0 );
@@ -145,7 +148,7 @@ ADS_TEST( "record-writer" )
   CHECK( f.size() == 100 + 900 - 900 % 64 );
   RecordWriter< std::uint32_t > m( std::move( w ) );  // the buffer moves
   CHECK( m.pending() == 900 % 64 );
-  }                                            // flushed by m only
+  }  // flushed by m only
  const auto v = f.readAll();
  std::vector< std::uint32_t > expect( 1000 );
  std::iota( expect.begin() , expect.end() , 0u );
@@ -215,19 +218,19 @@ ADS_TEST( "temp-directory" )
   p = dir.path();
   CHECK( std::filesystem::is_directory( p ) );
   CHECK( p.filename().string().rfind( "ads-test-" , 0 ) == 0 );
-  TempDirectory other;                         // a name of its own
+  TempDirectory other;  // a name of its own
   CHECK( other.path() != p );
   std::filesystem::create_directories( dir / "sub" );
   RecordFile< int > f( dir.path() / "sub" / "x.dat" );
   const int x[] = { 1 , 2 , 3 };
   f.append( x , 3 );
-  TempDirectory moved( std::move( other ) );   // removed once, by moved
+  TempDirectory moved( std::move( other ) );  // removed once, by moved
   q = moved.path();
   CHECK( std::filesystem::is_directory( q ) );
   }
- CHECK( ! std::filesystem::exists( p ) );       // with what it held
+ CHECK( ! std::filesystem::exists( p ) );  // with what it held
  CHECK( ! std::filesystem::exists( q ) );
- TempDirectory outer;                           // a parent not there yet
+ TempDirectory outer;  // a parent not there yet
  {
   TempDirectory nested( outer.path() / "a" / "b" );
   CHECK( std::filesystem::is_directory( nested.path() ) );
@@ -245,7 +248,7 @@ ADS_TEST( "record-file-errors" )
  CHECK_THROWS( f.append( &x , 1 ) , std::runtime_error );
  CHECK_THROWS( f.clear() , std::runtime_error );
  CHECK_THROWS( f.append( nullptr , 1 ) , contract_violation );
- RecordFile< int > d( dir.path() );            // a directory, not a file
+ RecordFile< int > d( dir.path() );  // a directory, not a file
  CHECK_THROWS( d.append( &x , 1 ) , std::runtime_error );
  }
 

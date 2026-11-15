@@ -179,7 +179,7 @@
 
 #ifndef __ADS_NumberTheory
  #define __ADS_NumberTheory
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -203,9 +203,10 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-using U64 = std::uint64_t;   ///< the unsigned integers of 64 bits
+using U64 = std::uint64_t;  ///< the unsigned integers of 64 bits
 
 /// the greatest common divisor \f$ \gcd( s , m ) \f$ by the algorithm of
 /// Euclid, \f$ O( \log m ) \f$ steps
@@ -258,8 +259,8 @@ inline U64 gcd( U64 s , U64 m );
 /// \f]
 /// \pre \f$ s \ge 0 \f$ and \f$ m \ge 0 \f$
 /// \post \f$ d = p s + q m \f$, checked modulo \f$ 2^{64} \f$
-inline std::tuple< long long , long long , long long > extendedEuclid(
-                                                   long long s , long long m );
+inline std::tuple< long long , long long , long long >
+extendedEuclid( long long s , long long m );
 
 /// the inverse \f$ p \in [ 0 , m ) \f$ of \f$ s \f$, with
 /// \f$ p s \bmod m = 1 \f$; a violation of the precondition if
@@ -337,7 +338,8 @@ inline constexpr U64 kMersenne61 = ( U64( 1 ) << 61 ) - 1;
 /// the arithmetic modulo an odd \f$ n \f$ of 64 bits in the form of
 /// Montgomery, \f$ x R \bmod n \f$ with \f$ R = 2^{64} \f$; the numbers in
 /// the form are below \f$ n \f$
-class Montgomery64 {
+class Montgomery64
+{
  public:
  /// the arithmetic modulo \f$ n \f$, with one division of 128 bits for
  /// \f$ R^2 \bmod n \f$
@@ -425,10 +427,10 @@ class Montgomery64 {
  /// \pre \f$ \mathit{hi} < n \f$
  [[nodiscard]] constexpr U64 reduce( U64 hi , U64 lo ) const;
 
- U64 f_n;       ///< the modulus
- U64 f_inv;     ///< \f$ n^{-1} \bmod 2^{64} \f$
- U64 f_one;     ///< \f$ R \bmod n \f$
- U64 f_r2;      ///< \f$ R^2 \bmod n \f$
+ U64 f_n;    ///< the modulus
+ U64 f_inv;  ///< \f$ n^{-1} \bmod 2^{64} \f$
+ U64 f_one;  ///< \f$ R \bmod n \f$
+ U64 f_r2;   ///< \f$ R^2 \bmod n \f$
  };  // end( class Montgomery64 )
 
 /// the power \f$ x^v \bmod m \f$ by repeated squaring, the products of
@@ -602,7 +604,7 @@ inline std::vector< U64 > factorize( U64 n );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* NumberTheory.h included */
+#endif /* NumberTheory.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File NumberTheory.h -------------------------*/

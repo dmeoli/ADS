@@ -124,7 +124,7 @@
 
 #ifndef __ADS_OpenHashTable
  #define __ADS_OpenHashTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -151,26 +151,27 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Probing ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a sequence of inspection \f$ H( k , i ) \f$ of an `OpenHashTable`
-class Probing {
+class Probing
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the kind of the inspection
  enum class Kind {
-  LINEAR ,       ///< \f$ ( H_0( k ) + \delta i ) \bmod m \f$
-  QUADRATIC ,    ///< \f$ ( H_0( k ) + c_1 i + c_2 i^2 ) \bmod m \f$
-  DOUBLE ,       ///< \f$ ( H_0( k ) + H_\delta( k ) i ) \bmod m \f$
-  TRIANGULAR ,   ///< \f$ ( H_0( k ) + i ( i + 1 ) / 2 ) \bmod m \f$
-  RANDOM         ///< \f$ ( H_0( k ) + p_i ) \bmod m \f$
- };
+  LINEAR ,      ///< \f$ ( H_0( k ) + \delta i ) \bmod m \f$
+  QUADRATIC ,   ///< \f$ ( H_0( k ) + c_1 i + c_2 i^2 ) \bmod m \f$
+  DOUBLE ,      ///< \f$ ( H_0( k ) + H_\delta( k ) i ) \bmod m \f$
+  TRIANGULAR ,  ///< \f$ ( H_0( k ) + i ( i + 1 ) / 2 ) \bmod m \f$
+  RANDOM       ///< \f$ ( H_0( k ) + p_i ) \bmod m \f$
+  };
 
  /// the second function of the double hashing, of the hash \f$ h( k ) \f$
  using Step = std::function< std::size_t( std::size_t ) >;
@@ -179,18 +180,18 @@ class Probing {
  static Probing linear( long delta = 1 );
 
  /// \f$ H( k , i ) = ( H_0( k ) + c_1 i + c_2 i^2 ) \bmod m \f$,
-/// \f$ m \f$ prime
+ /// \f$ m \f$ prime
  static Probing quadratic( long c1 , long c2 );
 
  /// \f$ H( k , i ) = ( H_0( k ) + H_\delta( k ) i ) \bmod m \f$
  static Probing double_hashing( void );
 
  /// \f$ H( k , i ) = ( H_0( k ) + H_\delta( k ) i ) \bmod m \f$, the step
-/// from \f$ g( h( k ) ) \f$
+ /// from \f$ g( h( k ) ) \f$
  static Probing double_hashing( Step g );
 
  /// \f$ H( k , i ) = ( H_0( k ) + i ( i + 1 ) / 2 ) \bmod m \f$, \f$ m \f$ a
-/// power of two
+ /// power of two
  static Probing triangular( void );
 
  /// \f$ H( k , i ) = ( H_0( k ) + p_i ) \bmod m \f$, \f$ p \f$ a random
@@ -206,7 +207,7 @@ class Probing {
  /// \pre \f$ m > 0 \f$
  /// \post the result is below \f$ m \f$
  [[nodiscard]] std::size_t at( std::size_t h , std::size_t i ,
-                               std::size_t m ) const;
+			       std::size_t m ) const;
 
  /// the step \f$ H_\delta( k ) \f$ of the double hashing, coprime with
  /// \f$ m \f$ when \f$ m \f$ is prime or a power of two
@@ -228,7 +229,6 @@ class Probing {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the inspection of the kind \f$ k \f$ with the constants
  /// \f$ c_1 \f$ and \f$ c_2 \f$
  Probing( Kind k , long c1 , long c2 );
@@ -237,16 +237,16 @@ class Probing {
  static std::size_t mod( long c , std::size_t m );
 
  /// the permutation \f$ p \f$ of the pseudo-random inspection for the size
-/// \f$ m \f$
+ /// \f$ m \f$
  const std::vector< std::size_t > & permutation( std::size_t m ) const;
 
- Kind f_kind;                ///< the kind
- long f_c1;                  ///< \f$ \delta \f$ or \f$ c_1 \f$
- long f_c2;                  ///< \f$ c_2 \f$
- Step f_g;   ///< the second function of the double hashing, if any
- unsigned long f_seed = 0;   ///< the seed of the pseudo-random inspection
- mutable std::vector< std::size_t > f_p;   ///< its permutation, for `f_m`
- mutable std::size_t f_m = 0;              ///< the size of `f_p`
+ Kind f_kind;  ///< the kind
+ long f_c1;    ///< \f$ \delta \f$ or \f$ c_1 \f$
+ long f_c2;    ///< \f$ c_2 \f$
+ Step f_g;     ///< the second function of the double hashing, if any
+ unsigned long f_seed = 0;  ///< the seed of the pseudo-random inspection
+ mutable std::vector< std::size_t > f_p;  ///< its permutation, for `f_m`
+ mutable std::size_t f_m = 0;             ///< the size of `f_p`
 
  };  // end( class Probing )
 
@@ -256,26 +256,26 @@ class Probing {
 
 /// a hash table with open addressing
 template< class K , class V , class H = std::hash< K > >
-class OpenHashTable {
+class OpenHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the state of a place
  enum class Slot {
- NIL ,      ///< never used: it stops an inspection
- FULL ,     ///< it holds a pair
- DELETED    ///< emptied by `remove()`: an inspection goes past it
- };
+  NIL ,     ///< never used: it stops an inspection
+  FULL ,    ///< it holds a pair
+  DELETED  ///< emptied by `remove()`: an inspection goes past it
+  };
 
  /// the empty table of size m with the given inspection, which
  /// restructures itself or not
  /// \pre \f$ m > 0 \f$ and `probe.works( m )`
  OpenHashTable( std::size_t m , Probing probe , bool restructure = false ,
-                H h = H() );
+		H h = H() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -385,7 +385,8 @@ class OpenHashTable {
  // rebuild after an insertion or a removal invalidates it
 
  /// the places of the table, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
   /// whether the place \f$ i \f$ is full
@@ -394,8 +395,8 @@ class OpenHashTable {
    }
   /// the pair of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return( std::pair< const K & , const V & >( o.f_T[ i ].key ,
-                                              o.f_T[ i ].value ) );
+   return(
+     std::pair< const K & , const V & >( o.f_T[ i ].key , o.f_T[ i ].value ) );
    }
   };
 
@@ -429,18 +430,18 @@ class OpenHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Cell {
-  Slot slot = Slot::NIL;          ///< the state
-  K key{};                        ///< the key
-  V value{};                      ///< its value
+ struct Cell
+ {
+  Slot slot = Slot::NIL;  ///< the state
+  K key{};                ///< the key
+  V value{};              ///< its value
   };
 
  /// whether the place \f$ i \f$ is full with the key \f$ k \f$
  [[nodiscard]] bool is( std::size_t i , const K & k ) const;
 
  /// `scan( k , insert )` of the book: the place of \f$ k \f$, or the one
-/// where the
+ /// where the
  /// inspection stopped (nil, or the last after m inspections); for an
  /// insertion of a key that is not there, the first deleted place met
  std::size_t scan( const K & k , bool insert ) const;
@@ -455,38 +456,39 @@ class OpenHashTable {
  /// each key found by its inspection in its own place, and the full and
  /// deleted places counted right, \f$ O( m ) \f$ inspections; on more than
  /// 1024 places, only the keys on the inspection of \f$ k \f$, up to its
-/// first nil
+ /// first nil
  [[nodiscard]] bool consistent( const K & k ) const;
 
  /// every pair moved to a table of \f$ m \f$ places, with no deleted ones
-void rebuild( std::size_t m );
+ void rebuild( std::size_t m );
 
- std::vector< Cell > f_T;          ///< the places
- Probing f_probe;                  ///< the inspection
- std::size_t f_m0;                 ///< the initial size
- std::size_t f_linear = 0;         ///< the stride of a linear inspection
- bool f_restructure;               ///< whether it restructures
- H f_h;                            ///< the hash of the keys
- std::size_t f_size = 0;           ///< the full places
- std::size_t f_deleted = 0;        ///< the deleted places
+ std::vector< Cell > f_T;    ///< the places
+ Probing f_probe;            ///< the inspection
+ std::size_t f_m0;           ///< the initial size
+ std::size_t f_linear = 0;   ///< the stride of a linear inspection
+ bool f_restructure;         ///< whether it restructures
+ H f_h;                      ///< the hash of the keys
+ std::size_t f_size = 0;     ///< the full places
+ std::size_t f_deleted = 0;  ///< the deleted places
  /// the places of the last inspection, which the const lookups write too:
  /// atomic, so that lookups from several threads at once do not race
- struct Probes {
-  std::atomic< std::size_t > n{ 0 };   ///< the places
+ struct Probes
+ {
+  std::atomic< std::size_t > n{ 0 };  ///< the places
   /// none
   Probes( void ) = default;
   /// a copy of the count of `o`
-  Probes( const Probes & o ) : n( o.n.load( std::memory_order_relaxed ) ) {}
+  Probes( const Probes & o ) : n( o.n.load( std::memory_order_relaxed ) ) { }
   /// the count of `o`
   Probes & operator=( const Probes & o ) {
    n.store( o.n.load( std::memory_order_relaxed ) ,
-            std::memory_order_relaxed );
+	    std::memory_order_relaxed );
    return( *this );
    }
   };
- mutable Probes f_probes;          ///< see `probes()`
- std::size_t f_rebuilds = 0;       ///< see `restructures()`
- std::size_t f_moved = 0;          ///< see `moved()`
+ mutable Probes f_probes;     ///< see `probes()`
+ std::size_t f_rebuilds = 0;  ///< see `restructures()`
+ std::size_t f_moved = 0;     ///< see `moved()`
 
  };  // end( class OpenHashTable )
 
@@ -502,7 +504,7 @@ void rebuild( std::size_t m );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* OpenHashTable.h included */
+#endif /* OpenHashTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File OpenHashTable.h ------------------------*/

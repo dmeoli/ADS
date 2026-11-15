@@ -49,7 +49,7 @@
 
 #ifndef __ADS_Alignment
  #define __ADS_Alignment
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -67,13 +67,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the kind of alignment
 enum class Alignment {
- GLOBAL ,       ///< the whole strings, as Needleman and Wunsch
- SEMIGLOBAL ,   ///< the spaces at the two ends of either string free
- LOCAL          ///< two substrings, as Smith and Waterman
+ GLOBAL ,      ///< the whole strings, as Needleman and Wunsch
+ SEMIGLOBAL ,  ///< the spaces at the two ends of either string free
+ LOCAL        ///< two substrings, as Smith and Waterman
  };
 
 /// the best score of an alignment of \f$ P \f$ and \f$ T \f$
@@ -136,7 +137,7 @@ int alignmentScore( const S & P , const S & T , Alignment kind );
 ///       \f$ \max\{ m , n \} \f$
 template< class S >
 std::pair< S , S > globalAlignment( const S & P , const S & T ,
-                                    typename S::value_type gap = ' ' );
+				   typename S::value_type gap = ' ' );
 
 /*--------------------------------------------------------------------------*/
 
@@ -150,7 +151,7 @@ std::pair< S , S > globalAlignment( const S & P , const S & T ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Alignment.h included */
+#endif /* Alignment.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Alignment.h --------------------------*/

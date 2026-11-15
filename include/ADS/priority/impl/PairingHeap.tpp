@@ -16,7 +16,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE OPERATIONS ------------------------------*/
@@ -24,12 +25,11 @@ namespace ADS {
 
 template< class T , std::totally_ordered P , bool Aux >
 PairingHeap< T , P , Aux >::PairingHeap( PairingHeap && other ) noexcept
- : f_root( std::exchange( other.f_root , nullptr ) ) ,
-   f_min( std::exchange( other.f_min , nullptr ) ) ,
-   f_n( std::exchange( other.f_n , 0 ) ) ,
-   f_pool( std::move( other.f_pool ) )
-{
- }
+    : f_root( std::exchange( other.f_root , nullptr ) ) ,
+      f_min( std::exchange( other.f_min , nullptr ) ) ,
+      f_n( std::exchange( other.f_n , 0 ) ) ,
+      f_pool( std::move( other.f_pool ) )
+{ }
 
 template< class T , std::totally_ordered P , bool Aux >
 PairingHeap< T , P , Aux >::~PairingHeap()
@@ -38,11 +38,13 @@ PairingHeap< T , P , Aux >::~PairingHeap()
   std::vector< Node * > S;
   if( f_root )
    S.push_back( f_root );
-  while( ! S.empty() ) {                    // each node, then its children
-   Node * x = S.back();                     // and its right sibling
+  while( ! S.empty() ) {  // each node, then its children
+   Node * x = S.back();   // and its right sibling
    S.pop_back();
-   if( x->child ) S.push_back( x->child );
-   if( x->next ) S.push_back( x->next );
+   if( x->child )
+    S.push_back( x->child );
+   if( x->next )
+    S.push_back( x->next );
    f_pool.free( x );
    }
   }
@@ -69,7 +71,7 @@ PairingHeap< T , P , Aux >::insert( const T & x , const P & p )
  Node * z = f_pool.make( p , x );
  attach( z );
  ++f_n;
- ADS_POST( ! empty() && !( p < f_min->priority ) );
+ ADS_POST( ! empty() && ! ( p < f_min->priority ) );
  ADS_INVARIANT( isHeap() );
  return( z );
  }
@@ -84,7 +86,7 @@ inline T PairingHeap< T , P , Aux >::deleteMin( void )
  --f_n;
  T v = std::move( z->value );
  f_pool.free( z );
- ADS_POST( empty() || !( f_min->priority < q ) );
+ ADS_POST( empty() || ! ( f_min->priority < q ) );
  ADS_INVARIANT( isHeap() );
  return( v );
  }
@@ -92,15 +94,16 @@ inline T PairingHeap< T , P , Aux >::deleteMin( void )
 template< class T , std::totally_ordered P , bool Aux >
 inline void PairingHeap< T , P , Aux >::decrease( Handle x , const P & p )
 {
- ADS_PRE( ( x != nullptr ) && !( x->priority < p ) );
+ ADS_PRE( ( x != nullptr ) && ! ( x->priority < p ) );
  x->priority = p;
  if( x != f_root ) {
   Node * y = x->prev;
-  if( ( y->child != x ) || ( p < y->priority ) ) {   // not where it is
+  if( ( y->child != x ) || ( p < y->priority ) ) {  // not where it is
    cut( x );
    if constexpr( Aux ) {
     x->next = f_root->next;
-    if( x->next ) x->next->prev = x;
+    if( x->next )
+     x->next->prev = x;
     x->prev = f_root;
     f_root->next = x;
     }
@@ -133,7 +136,7 @@ T PairingHeap< T , P , Aux >::erase( Handle x )
 template< class T , std::totally_ordered P , bool Aux >
 void PairingHeap< T , P , Aux >::increase( Handle x , const P & p )
 {
- ADS_PRE( ( x != nullptr ) && !( p < x->priority ) );
+ ADS_PRE( ( x != nullptr ) && ! ( p < x->priority ) );
  detach( x );
  x->priority = p;
  attach( x );
@@ -160,9 +163,10 @@ inline void PairingHeap< T , P , Aux >::attach( Node * z )
 {
  if( ! f_root )
   f_root = f_min = z;
- else if constexpr( Aux ) {                 // after the root, in the list
+ else if constexpr( Aux ) {  // after the root, in the list
   z->next = f_root->next;
-  if( z->next ) z->next->prev = z;
+  if( z->next )
+   z->next->prev = z;
   z->prev = f_root;
   f_root->next = z;
   if( z->priority < f_min->priority )
@@ -176,8 +180,8 @@ template< class T , std::totally_ordered P , bool Aux >
 inline void PairingHeap< T , P , Aux >::unlinkMin( void )
 {
  Node * z = f_min;
- if constexpr( Aux ) {                      // the root, the children of z
-  if( z != f_root )                         // and the list joined
+ if constexpr( Aux ) {  // the root, the children of z
+  if( z != f_root )     // and the list joined
    cut( z );
   Node * l = f_root->next;
   if( l ) {
@@ -205,14 +209,15 @@ void PairingHeap< T , P , Aux >::detach( Node * x )
   unlinkMin();
   return;
   }
- Node * t = twoPass( x->child );            // x is not the least: neither
- x->child = nullptr;                        // is t, nor the least changes
+ Node * t = twoPass( x->child );  // x is not the least: neither
+ x->child = nullptr;              // is t, nor the least changes
  if constexpr( Aux ) {
-  if( x == f_root ) {                       // the list goes on from t, or
-   Node * l = x->next;                      // from its first tree, which
-   if( t ) {                                // exists since the least is
-    t->next = l;                            // in it
-    if( l ) l->prev = t;
+  if( x == f_root ) {   // the list goes on from t, or
+   Node * l = x->next;  // from its first tree, which
+   if( t ) {            // exists since the least is
+    t->next = l;        // in it
+    if( l )
+     l->prev = t;
     f_root = t;
     }
    else {
@@ -222,16 +227,17 @@ void PairingHeap< T , P , Aux >::detach( Node * x )
    }
   else {
    cut( x );
-   if( t ) {                                // after the root, in the list
+   if( t ) {  // after the root, in the list
     t->next = f_root->next;
-    if( t->next ) t->next->prev = t;
+    if( t->next )
+     t->next->prev = t;
     t->prev = f_root;
     f_root->next = t;
     }
    }
   }
  else {
-  cut( x );                                 // x is not the root
+  cut( x );  // x is not the root
   if( t )
    f_root = f_min = link( f_root , t );
   }
@@ -248,8 +254,9 @@ PairingHeap< T , P , Aux >::link( Node * a , Node * b )
 {
  if( b->priority < a->priority )
   std::swap( a , b );
- b->next = a->child;                        // b the leftmost child of a
- if( b->next ) b->next->prev = b;
+ b->next = a->child;  // b the leftmost child of a
+ if( b->next )
+  b->next->prev = b;
  b->prev = a;
  a->child = b;
  return( a );
@@ -261,7 +268,7 @@ PairingHeap< T , P , Aux >::twoPass( Node * x )
 {
  if( ! x )
   return( nullptr );
- Node * acc = nullptr;                      // the pairs, the last first
+ Node * acc = nullptr;  // the pairs, the last first
  while( x ) {
   Node * a = x;
   Node * b = a->next;
@@ -275,7 +282,7 @@ PairingHeap< T , P , Aux >::twoPass( Node * x )
   t->next = acc;
   acc = t;
   }
- Node * r = acc;                            // from the right
+ Node * r = acc;  // from the right
  for( acc = acc->next ; acc ; ) {
   Node * n = acc->next;
   r = link( r , acc );
@@ -292,8 +299,8 @@ PairingHeap< T , P , Aux >::multiPass( Node * x )
  Node * tail = x;
  while( tail->next )
   tail = tail->next;
- while( x != tail ) {                       // a queue: two from the front,
-  Node * a = x;                             // their link to the back
+ while( x != tail ) {  // a queue: two from the front,
+  Node * a = x;        // their link to the back
   Node * b = a->next;
   Node * n = b->next;
   Node * t = link( a , b );
@@ -334,7 +341,7 @@ bool PairingHeap< T , P , Aux >::tree( const Node * x , int & n )
   const Node * y = S.back();
   S.pop_back();
   ++n;
-  const Node * l = y;                       // the children, left to right
+  const Node * l = y;  // the children, left to right
   for( const Node * c = y->child ; c ; l = c , c = c->next ) {
    if( ( c->prev != l ) || ( c->priority < y->priority ) )
     return( false );
@@ -355,11 +362,11 @@ bool PairingHeap< T , P , Aux >::isHeap( void ) const
   return( false );
  int n = 0;
  bool least = false;
- for( const Node * r = f_root , * l = nullptr ; r ; l = r , r = r->next ) {
+ for( const Node *r = f_root , *l = nullptr ; r ; l = r , r = r->next ) {
   if( ( l && ( r->prev != l ) ) || ( r->priority < f_min->priority ) )
    return( false );
   least |= ( r == f_min );
-  int k = 0;                                // the tree of the root
+  int k = 0;  // the tree of the root
   if( ! tree( r , k ) )
    return( false );
   n += k;

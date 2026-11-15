@@ -93,7 +93,7 @@
 
 #ifndef __ADS_ShortestPaths
  #define __ADS_ShortestPaths
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -124,7 +124,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TYPES -----------------------------------*/
@@ -132,12 +133,12 @@ namespace ADS {
 
 /// the structure \f$ S \f$ of the prototype
 enum class Frontier {
- LIST ,        ///< a priority queue on an unsorted list: Dijkstra
- HEAP ,        ///< a priority queue on a binary heap: Johnson
- FIBONACCI ,   ///< a priority queue on a Fibonacci heap: Fredman and Tarjan
- QUEUE ,       ///< a queue: Bellman, Ford and Moore
- STACK ,       ///< a stack
- DEQUE         ///< a deque: Pape and D'Esopo
+ LIST ,       ///< a priority queue on an unsorted list: Dijkstra
+ HEAP ,       ///< a priority queue on a binary heap: Johnson
+ FIBONACCI ,  ///< a priority queue on a Fibonacci heap: Fredman and Tarjan
+ QUEUE ,      ///< a queue: Bellman, Ford and Moore
+ STACK ,      ///< a stack
+ DEQUE       ///< a deque: Pape and D'Esopo
  };
 
 /// the infinite distance of the type `D`
@@ -154,22 +155,24 @@ constexpr D infinity( void )
 /// parents, `NIL` for \f$ r \f$ and the unreachable nodes, the nodes in the
 /// order of extraction from \f$ S \f$, and whether a negative cycle was found
 template< class D >
-struct ShortestPathTree {
- std::vector< D > d;            ///< the distances
- std::vector< int > T;          ///< the parent of each node
- std::vector< int > order;      ///< the nodes in the order of extraction
- bool negativeCycle = false;    ///< whether a negative cycle was found
+struct ShortestPathTree
+{
+ std::vector< D > d;          ///< the distances
+ std::vector< int > T;        ///< the parent of each node
+ std::vector< int > order;    ///< the nodes in the order of extraction
+ bool negativeCycle = false;  ///< whether a negative cycle was found
  };
 
 /// what a run of the prototype did: the nodes added to \f$ S \f$ (the lines
 /// (1) and (3)), the extractions (2), the decreases of a priority (4) and the
 /// edges examined; the same on two frontiers that extract the nodes in the
 /// same order
-struct FrontierCounts {
- long long adds = 0 ,        ///< the nodes added to \f$ S \f$
-           extracts = 0 ,    ///< the extractions
-           decreases = 0 ,   ///< the decreases of a priority
-           edges = 0;        ///< the edges examined
+struct FrontierCounts
+{
+ long long adds = 0 ,  ///< the nodes added to \f$ S \f$
+   extracts = 0 ,      ///< the extractions
+   decreases = 0 ,     ///< the decreases of a priority
+   edges = 0;         ///< the edges examined
  };
 
 /// the structure \f$ S \f$ of the prototype as a type: add( v , d , first )
@@ -177,7 +180,8 @@ struct FrontierCounts {
 /// takes a node out of S; update( v , d ) tells S that the distance of v,
 /// already in S, fell to d
 template< class S , class D >
-concept PrototypeFrontier = requires( S s , int v , const D & d , bool b ) {
+concept PrototypeFrontier = requires( S s , int v , const D & d , bool b )
+{
  s.add( v , d , b );
  { s.extract() } -> std::convertible_to< int >;
  s.update( v , d );
@@ -195,35 +199,40 @@ concept PrototypeFrontier = requires( S s , int v , const D & d , bool b ) {
 /// others, which come out after it, are skipped
 template< PriorityQueue Q >
  requires( ( decrease_key_of< Q >() != decrease_key_kind::none ) &&
-           requires { typename Q::Priority; } )
-class PriorityFrontier {
+	   requires
+{ typename Q::Priority; } )
+class PriorityFrontier
+{
 
  /// whether the queue lowers its keys by `decrease()`
  static constexpr bool native =
-  ( decrease_key_of< Q >() == decrease_key_kind::native );
+   ( decrease_key_of< Q >() == decrease_key_kind::native );
 
  /// the handle of a node, nothing if the queue is lazy
  template< class X , bool N >
- struct HandleOf {
+ struct HandleOf
+ {
   using type = char;
   };
 
  template< class X >
- struct HandleOf< X , true > {
+ struct HandleOf< X , true >
+ {
   using type = typename X::Handle;
   };
 
  /// what a lazy queue keeps: whether each node is in S, and how many are
- struct Lazy {
-  std::vector< bool > in;   ///< whether each node is in S
-  int live = 0;             ///< the nodes in S
+ struct Lazy
+ {
+  std::vector< bool > in;  ///< whether each node is in S
+  int live = 0;            ///< the nodes in S
   };
 
  /// nothing, for a native queue
- struct Native {};
+ struct Native
+ { };
 
  public:
-
  /// \f$ S \f$ on the queue \f$ q \f$, empty, for the nodes \f$ [ 0 , n ) \f$
  /// \pre \f$ q \f$ is empty, \f$ n \ge 0 \f$
  PriorityFrontier( Q & q , int n ) : f_q( q ) {
@@ -289,7 +298,6 @@ class PriorityFrontier {
   }
 
  private:
-
  Q & f_q;
  /// the handle of each node, if native
  std::vector< typename HandleOf< Q , native >::type > f_h;
@@ -301,60 +309,62 @@ class PriorityFrontier {
 /// a queue as \f$ S \f$, `enqueue()` and `dequeue()`: first in, first out, so
 /// that a node leaves S at most n times unless a negative cycle is reachable
 template< class Q >
-class QueueFrontier {
+class QueueFrontier
+{
 
  public:
-
- static constexpr bool fifo = true;   ///< the bound of the extractions
+ static constexpr bool fifo = true;  ///< the bound of the extractions
 
  /// \f$ S \f$ on the empty structure \f$ q \f$
- explicit QueueFrontier( Q & q ) : f_q( q ) {}
+ explicit QueueFrontier( Q & q ) : f_q( q ) { }
 
  /// \f$ v \f$ into \f$ S \f$
  template< class D >
- void add( int v , const D & , bool ) { f_q.enqueue( v ); }
+ void add( int v , const D & , bool ) {
+  f_q.enqueue( v );
+  }
 
  /// a node out of \f$ S \f$
  int extract( void ) { return( f_q.dequeue() ); }
 
  /// nothing: the order of \f$ S \f$ does not depend on the distances
  template< class D >
- void update( int , const D & ) {}
+ void update( int , const D & ) { }
 
  /// whether \f$ S \f$ is empty
  [[nodiscard]] bool empty( void ) const { return( f_q.empty() ); }
 
  private:
-
  Q & f_q;
 
  };  // end( class QueueFrontier )
 
 /// a stack as \f$ S \f$, `push()` and `pop()`
 template< class Q >
-class StackFrontier {
+class StackFrontier
+{
 
  public:
-
  /// \f$ S \f$ on the empty structure \f$ q \f$
- explicit StackFrontier( Q & q ) : f_q( q ) {}
+ explicit StackFrontier( Q & q ) : f_q( q ) { }
 
  /// \f$ v \f$ into \f$ S \f$
  template< class D >
- void add( int v , const D & , bool ) { f_q.push( v ); }
+ void add( int v , const D & , bool ) {
+  f_q.push( v );
+  }
 
  /// a node out of \f$ S \f$
  int extract( void ) { return( f_q.pop() ); }
 
  /// nothing: the order of \f$ S \f$ does not depend on the distances
  template< class D >
- void update( int , const D & ) {}
+ void update( int , const D & ) { }
 
  /// whether \f$ S \f$ is empty
  [[nodiscard]] bool empty( void ) const { return( f_q.empty() ); }
 
  private:
-
  Q & f_q;
 
  };  // end( class StackFrontier )
@@ -362,17 +372,20 @@ class StackFrontier {
 /// a deque as \f$ S \f$, the rule of Pape and D'Esopo: a node at the tail the
 /// first time, at the head afterwards, extracted from the head
 template< class Q >
-class DequeFrontier {
+class DequeFrontier
+{
 
  public:
-
  /// \f$ S \f$ on the empty structure \f$ q \f$
- explicit DequeFrontier( Q & q ) : f_q( q ) {}
+ explicit DequeFrontier( Q & q ) : f_q( q ) { }
 
  /// \f$ v \f$ at the tail of \f$ S \f$ if first, at its head if not
  template< class D >
  void add( int v , const D & , bool first ) {
-  if( first ) f_q.insertTail( v ); else f_q.insertHead( v );
+  if( first )
+   f_q.insertTail( v );
+  else
+   f_q.insertHead( v );
   }
 
  /// a node out of \f$ S \f$
@@ -380,13 +393,12 @@ class DequeFrontier {
 
  /// nothing: the order of \f$ S \f$ does not depend on the distances
  template< class D >
- void update( int , const D & ) {}
+ void update( int , const D & ) { }
 
  /// whether \f$ S \f$ is empty
  [[nodiscard]] bool empty( void ) const { return( f_q.empty() ); }
 
  private:
-
  Q & f_q;
 
  };  // end( class DequeFrontier )
@@ -413,7 +425,7 @@ class DequeFrontier {
 ///       (audit)
 template< Graph G >
 ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
-                                                      Frontier how );
+						      Frontier how );
 
 /// the shortest paths of `shortestPaths()` above, with the structure \f$ S \f$
 /// given, its work in `*c` if given
@@ -448,10 +460,10 @@ ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
 /// \post the conditions of Bellman, unless a negative cycle was found
 ///       (audit)
 template< Graph G , class S >
-requires PrototypeFrontier< S , typename G::Weight >
-ShortestPathTree< typename G::Weight > shortestPaths( const G & g , int r ,
-                                     S & frontier ,
-                                     FrontierCounts * c = nullptr );
+ requires PrototypeFrontier< S , typename G::Weight >
+ShortestPathTree< typename G::Weight >
+shortestPaths( const G & g , int r , S & frontier ,
+	       FrontierCounts * c = nullptr );
 
 /// Dijkstra: a priority queue on an unsorted list, \f$ O( n^2 ) \f$
 ///
@@ -540,8 +552,7 @@ auto papeDEsopo( const G & g , int r );
 /// \pre \f$ r \f$ is a node, and the graph is acyclic (audit)
 /// \post the conditions of Bellman (audit)
 template< Graph G >
-ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g ,
-                                                         int r );
+ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g , int r );
 
 /// whether \f$ R \f$ is a tree of shortest paths from \f$ r \f$: d[ r ] = 0,
 /// the unreachable nodes at `infinity()` with no parent, d[ v ] = d[ T[ v ] ]
@@ -568,7 +579,7 @@ ShortestPathTree< typename G::Weight > dagShortestPaths( const G & g ,
 /// \f]
 template< Graph G >
 bool isShortestPathTree( const G & g , int r ,
-                         const ShortestPathTree< typename G::Weight > & R );
+			 const ShortestPathTree< typename G::Weight > & R );
 
 /// whether a negative cycle is reachable from \f$ r \f$, by Bellman-Ford,
 /// \f$ O( n m ) \f$
@@ -597,7 +608,7 @@ bool reachesNegativeCycle( const G & g , int r );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ShortestPaths.h included */
+#endif /* ShortestPaths.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ShortestPaths.h ------------------------*/

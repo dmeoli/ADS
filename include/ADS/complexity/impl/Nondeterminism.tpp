@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline int Chooser::choice( int k )
 {
@@ -32,12 +33,13 @@ bool Chooser::run( A && alg , long * runs )
  f_path.clear();
  for( ; ; ) {
   f_depth = 0;
-  if( runs ) ++*runs;
+  if( runs )
+   ++*runs;
   if( alg( *this ) )
-   return( true );                            // success
-  f_path.resize( f_depth );                   // failure: the next sequence
-  while( ! f_path.empty() && ( f_path.back().first + 1 ==
-                               f_path.back().second ) )
+   return( true );          // success
+  f_path.resize( f_depth );  // failure: the next sequence
+  while( ! f_path.empty() &&
+	 ( f_path.back().first + 1 == f_path.back().second ) )
    f_path.pop_back();
   if( f_path.empty() )
    return( false );
@@ -48,7 +50,8 @@ bool Chooser::run( A && alg , long * runs )
 inline std::vector< int > Chooser::choices( void ) const
 {
  std::vector< int > c;
- for( auto & [ x , k ] : f_path ) c.push_back( x );
+ for( auto & [ x , k ] : f_path )
+  c.push_back( x );
  return( c );
  }
 

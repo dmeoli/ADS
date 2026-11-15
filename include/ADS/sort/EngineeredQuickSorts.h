@@ -91,7 +91,7 @@
 
 #ifndef __ADS_EngineeredQuickSorts
  #define __ADS_EngineeredQuickSorts
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -114,7 +114,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the pattern-defeating quicksort
 ///
@@ -245,7 +246,7 @@ void threeWayQuickSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EngineeredQuickSorts.h included */
+#endif /* EngineeredQuickSorts.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File EngineeredQuickSorts.h ---------------------*/

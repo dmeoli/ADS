@@ -89,7 +89,7 @@
 
 #ifndef __ADS_BinaryPacking
  #define __ADS_BinaryPacking
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -107,8 +107,7 @@
 #include <utility>
 #include <vector>
 
-#if ( defined( __SSE2__ ) || defined( _M_X64 ) ) && \
-    ! defined( ADS_BP_SCALAR )
+#if ( defined( __SSE2__ ) || defined( _M_X64 ) ) && ! defined( ADS_BP_SCALAR )
  #include <emmintrin.h>
  #define ADS_BP_SSE 1
 #endif
@@ -117,7 +116,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the binary packing of \f$ x \f$ in blocks of 128 integers, of their
 /// differences at a distance of 4 if `sorted`
@@ -139,9 +139,8 @@ namespace ADS {
 /// \f]
 /// \pre if `sorted`, \f$ x \f$ is non-decreasing (audit)
 /// \post `binaryUnpack( result , x.size() , sorted )` is \f$ x \f$ (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > binaryPack(
-                         std::span< const std::uint32_t > x ,
-                         bool sorted = false );
+[[nodiscard]] inline std::vector< std::uint8_t >
+binaryPack( std::span< const std::uint32_t > x , bool sorted = false );
 
 /// the \f$ n \f$ integers of the code `in`, packed with the same `sorted`
 ///
@@ -162,9 +161,9 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre `in` is the code of \f$ n \f$ integers
-[[nodiscard]] inline std::vector< std::uint32_t > binaryUnpack(
-                         std::span< const std::uint8_t > in , std::size_t n ,
-                         bool sorted = false );
+[[nodiscard]] inline std::vector< std::uint32_t >
+binaryUnpack( std::span< const std::uint8_t > in , std::size_t n ,
+	      bool sorted = false );
 
 /// the patched binary packing (PFor) of \f$ x \f$ in blocks of 128
 /// integers, of their differences at a distance of 4 if `sorted`
@@ -189,9 +188,8 @@ namespace ADS {
 /// \f]
 /// \pre if `sorted`, \f$ x \f$ is non-decreasing (audit)
 /// \post `patchedUnpack( result , x.size() , sorted )` is \f$ x \f$ (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > patchedPack(
-                         std::span< const std::uint32_t > x ,
-                         bool sorted = false );
+[[nodiscard]] inline std::vector< std::uint8_t >
+patchedPack( std::span< const std::uint32_t > x , bool sorted = false );
 
 /// the \f$ n \f$ integers of the patched code `in`, packed with the same
 /// `sorted`
@@ -213,9 +211,9 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre `in` is the patched code of \f$ n \f$ integers
-[[nodiscard]] inline std::vector< std::uint32_t > patchedUnpack(
-                         std::span< const std::uint8_t > in , std::size_t n ,
-                         bool sorted = false );
+[[nodiscard]] inline std::vector< std::uint32_t >
+patchedUnpack( std::span< const std::uint8_t > in , std::size_t n ,
+	       bool sorted = false );
 
 /*--------------------------------------------------------------------------*/
 
@@ -229,7 +227,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinaryPacking.h included */
+#endif /* BinaryPacking.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File BinaryPacking.h ------------------------*/

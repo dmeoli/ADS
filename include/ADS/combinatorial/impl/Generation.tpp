@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// visit( x ), true if it asks to stop; never if it returns void
 template< class F , class X >
@@ -35,26 +37,29 @@ inline bool visitStops( F & visit , X && x )
 template< class F >
 long mixedRadix( const std::vector< int > & m , F && visit )
 {
- ADS_PRE( std::all_of( m.begin() , m.end() , []( int x ) {
-  return( x >= 1 ); } ) );
+ ADS_PRE(
+   std::all_of( m.begin() , m.end() , []( int x ) { return( x >= 1 ); } ) );
  const int n = int( m.size() );
  Tuple a( n , 0 );
- std::vector< int > below( n );             // the place of radix > 1 before
- int last = -1;                             // j, -1 if none
+ std::vector< int > below( n );  // the place of radix > 1 before
+ int last = -1;                  // j, -1 if none
  for( int j = 0 ; j < n ; ++j ) {
   below[ j ] = last;
-  if( m[ j ] > 1 ) last = j;
+  if( m[ j ] > 1 )
+   last = j;
   }
  long count = 0;
  for( ; ; ) {
   ++count;
-  if( detail::visitStops( visit , a ) ) return( count );
-  int j = last;                             // M3-M4: add 1 with carries,
-  while( ( j >= 0 ) && ( a[ j ] == m[ j ] - 1 ) ) {   // over the places of
-   a[ j ] = 0;                              // radix > 1 only
+  if( detail::visitStops( visit , a ) )
+   return( count );
+  int j = last;  // M3-M4: add 1 with carries,
+  while( ( j >= 0 ) && ( a[ j ] == m[ j ] - 1 ) ) {  // over the places of
+   a[ j ] = 0;                                       // radix > 1 only
    j = below[ j ];
    }
-  if( j < 0 ) return( count );
+  if( j < 0 )
+   return( count );
   ++a[ j ];
   }
  }
@@ -62,27 +67,30 @@ long mixedRadix( const std::vector< int > & m , F && visit )
 template< class F >
 long grayTuples( const std::vector< int > & m , F && visit )
 {
- ADS_PRE( std::all_of( m.begin() , m.end() , []( int x ) {
-  return( x >= 2 ); } ) );
+ ADS_PRE(
+   std::all_of( m.begin() , m.end() , []( int x ) { return( x >= 2 ); } ) );
  const int n = int( m.size() );
- if( n == 0 ) {                             // the empty tuple alone
-  (void) detail::visitStops( visit , Tuple() );
+ if( n == 0 ) {  // the empty tuple alone
+  ( void )detail::visitStops( visit , Tuple() );
   return( 1 );
   }
- Tuple a( n , 0 ) , o( n , 1 );             // the digits and directions,
- std::vector< int > f( n + 1 );             // the focus pointers
- for( int j = 0 ; j <= n ; ++j ) f[ j ] = j;
+ Tuple a( n , 0 ) , o( n , 1 );     // the digits and directions,
+ std::vector< int > f( n + 1 );  // the focus pointers
+ for( int j = 0 ; j <= n ; ++j )
+  f[ j ] = j;
  long count = 0;
- for( ; ; ) {                               // places from the right: the
-  ++count;                                  // place j is a[ n - 1 - j ]
-  if( detail::visitStops( visit , a ) ) return( count );
-  const int j = f[ 0 ];                     // H3
+ for( ; ; ) {  // places from the right: the
+  ++count;    // place j is a[ n - 1 - j ]
+  if( detail::visitStops( visit , a ) )
+   return( count );
+  const int j = f[ 0 ];  // H3
   f[ 0 ] = 0;
-  if( j == n ) return( count );
+  if( j == n )
+   return( count );
   int & d = a[ n - 1 - j ];
-  d += o[ j ];                              // H4: change the place j
+  d += o[ j ];  // H4: change the place j
   if( ( d == 0 ) || ( d == m[ n - 1 - j ] - 1 ) ) {
-   o[ j ] = -o[ j ];                        // H5: the end of its range
+   o[ j ] = -o[ j ];  // H5: the end of its range
    f[ j ] = f[ j + 1 ];
    f[ j + 1 ] = j + 1;
    }
@@ -97,14 +105,18 @@ long permutationsLex( Tuple a , F && visit )
  const int n = int( a.size() );
  for( ; ; ) {
   ++count;
-  if( detail::visitStops( visit , a ) ) return( count );
-  int j = n - 2;                            // L2: the last ascent
-  while( ( j >= 0 ) && ( a[ j ] >= a[ j + 1 ] ) ) --j;
-  if( j < 0 ) return( count );
-  int l = n - 1;                            // L3: the last larger item
-  while( a[ j ] >= a[ l ] ) --l;
+  if( detail::visitStops( visit , a ) )
+   return( count );
+  int j = n - 2;  // L2: the last ascent
+  while( ( j >= 0 ) && ( a[ j ] >= a[ j + 1 ] ) )
+   --j;
+  if( j < 0 )
+   return( count );
+  int l = n - 1;  // L3: the last larger item
+  while( a[ j ] >= a[ l ] )
+   --l;
   std::swap( a[ j ] , a[ l ] );
-  std::reverse( a.begin() + j + 1 , a.end() );   // L4
+  std::reverse( a.begin() + j + 1 , a.end() );  // L4
   }
  }
 
@@ -112,30 +124,33 @@ template< class F >
 long plainChanges( int n , F && visit )
 {
  ADS_PRE( n >= 0 );
- Tuple a( n ) , c( n + 1 , 0 ) , o( n + 1 , 1 );   // c and o 1-based, as
- for( int i = 0 ; i < n ; ++i ) a[ i ] = i;         // P, a from 0
+ Tuple a( n ) , c( n + 1 , 0 ) , o( n + 1 , 1 );  // c and o 1-based, as
+ for( int i = 0 ; i < n ; ++i )
+  a[ i ] = i;  // P, a from 0
  long count = 0;
  for( ; ; ) {
-  ++count;                                  // P2: the same a, in place
+  ++count;  // P2: the same a, in place
   if( detail::visitStops( visit , a ) )
    return( count );
-  int j = n , s = 0;                        // P3
+  int j = n , s = 0;  // P3
   for( ; ; ) {
-   if( j < 1 ) return( count );
-   const int q = c[ j ] + o[ j ];           // P4
-   if( q < 0 ) {                            // P7
+   if( j < 1 )
+    return( count );
+   const int q = c[ j ] + o[ j ];  // P4
+   if( q < 0 ) {                   // P7
     o[ j ] = -o[ j ];
     --j;
     continue;
     }
-   if( q == j ) {                           // P6
-    if( j == 1 ) return( count );
+   if( q == j ) {  // P6
+    if( j == 1 )
+     return( count );
     ++s;
     o[ j ] = -o[ j ];
     --j;
     continue;
     }
-   std::swap( a[ j - c[ j ] + s - 1 ] , a[ j - q + s - 1 ] );   // P5
+   std::swap( a[ j - c[ j ] + s - 1 ] , a[ j - q + s - 1 ] );  // P5
    c[ j ] = q;
    break;
    }
@@ -147,14 +162,17 @@ long heapPermutations( int n , F && visit )
 {
  ADS_PRE( n >= 0 );
  Tuple a( n ) , c( n , 0 );
- for( int i = 0 ; i < n ; ++i ) a[ i ] = i;
+ for( int i = 0 ; i < n ; ++i )
+  a[ i ] = i;
  long count = 1;
- if( detail::visitStops( visit , a ) ) return( count );
- for( int i = 1 ; i < n ; ) {               // the iterative form of Heap
+ if( detail::visitStops( visit , a ) )
+  return( count );
+ for( int i = 1 ; i < n ; ) {  // the iterative form of Heap
   if( c[ i ] < i ) {
    std::swap( a[ i % 2 ? c[ i ] : 0 ] , a[ i ] );
    ++count;
-   if( detail::visitStops( visit , a ) ) return( count );
+   if( detail::visitStops( visit , a ) )
+    return( count );
    ++c[ i ];
    i = 1;
    }
@@ -169,46 +187,55 @@ long combinationsLex( int n , int t , F && visit )
 {
  ADS_PRE( ( t >= 0 ) && ( t <= n ) );
  Tuple c( t );
- for( int j = 0 ; j < t ; ++j ) c[ j ] = j;
+ for( int j = 0 ; j < t ; ++j )
+  c[ j ] = j;
  long count = 0;
  for( ; ; ) {
   ++count;
-  if( detail::visitStops( visit , c ) ) return( count );
-  int j = t - 1;                            // the last that can grow
-  while( ( j >= 0 ) && ( c[ j ] == n - t + j ) ) --j;
-  if( j < 0 ) return( count );
+  if( detail::visitStops( visit , c ) )
+   return( count );
+  int j = t - 1;  // the last that can grow
+  while( ( j >= 0 ) && ( c[ j ] == n - t + j ) )
+   --j;
+  if( j < 0 )
+   return( count );
   ++c[ j ];
-  for( int k = j + 1 ; k < t ; ++k ) c[ k ] = c[ k - 1 ] + 1;
+  for( int k = j + 1 ; k < t ; ++k )
+   c[ k ] = c[ k - 1 ] + 1;
   }
  }
 
-namespace detail {
+namespace detail
+{
 
 /// the revolving door of the t-combinations of 0 , ... , n - 1, by the
 /// recursion C( n , t ) = C( n - 1 , t ) , ( C( n - 1 , t - 1 ) reversed
 /// ) + { n - 1 }; false if stopped
 template< class F >
 bool door( int n , int t , bool reversed , Tuple & c , long & count ,
-           F & visit )
+	   F & visit )
 {
  if( t == 0 ) {
   ++count;
   return( ! visitStops( visit , c ) );
   }
  if( n == t ) {
-  for( int j = 0 ; j < t ; ++j ) c[ j ] = j;
+  for( int j = 0 ; j < t ; ++j )
+   c[ j ] = j;
   ++count;
   return( ! visitStops( visit , c ) );
   }
- auto withLast = [ & ]( bool rev ) {        // the combinations with n - 1
+ auto withLast = [ & ]( bool rev ) {  // the combinations with n - 1
   c[ t - 1 ] = n - 1;
   return( door( n - 1 , t - 1 , rev , c , count , visit ) );
   };
  if( ! reversed ) {
-  if( ! door( n - 1 , t , false , c , count , visit ) ) return( false );
+  if( ! door( n - 1 , t , false , c , count , visit ) )
+   return( false );
   return( withLast( true ) );
   }
- if( ! withLast( false ) ) return( false );
+ if( ! withLast( false ) )
+  return( false );
  return( door( n - 1 , t , true , c , count , visit ) );
  }
 
@@ -231,29 +258,32 @@ long integerPartitions( int n , F && visit )
  long count = 0;
  if( n == 0 ) {
   ++count;
-  (void) detail::visitStops( visit , Tuple() );
+  ( void )detail::visitStops( visit , Tuple() );
   return( count );
   }
- Tuple a;                                   // a_1 .. a_m, nonincreasing
+ Tuple a;  // a_1 .. a_m, nonincreasing
  a.reserve( std::size_t( n ) );
- std::size_t q = 0;                         // a_q the last part > 1, from 1
- int r = n;                                 // the sum of the parts to come
+ std::size_t q = 0;  // a_q the last part > 1, from 1
+ int r = n;          // the sum of the parts to come
  for( ; ; ) {
-  a.push_back( r );                         // P2: the last part
+  a.push_back( r );  // P2: the last part
   q = a.size() - ( r == 1 ? 1 : 0 );
   for( ; ; ) {
-   ++count;                                 // P3
-   if( detail::visitStops( visit , a ) ) return( count );
-   if( ( q == 0 ) || ( a[ q - 1 ] != 2 ) ) break;
-   a[ q - 1 ] = 1;                          // P4: 2 becomes 1 + 1
+   ++count;  // P3
+   if( detail::visitStops( visit , a ) )
+    return( count );
+   if( ( q == 0 ) || ( a[ q - 1 ] != 2 ) )
+    break;
+   a[ q - 1 ] = 1;  // P4: 2 becomes 1 + 1
    --q;
    a.push_back( 1 );
    }
-  if( q == 0 ) return( count );             // P5: a_q drops by 1, the 1s
-  const int x = --a[ q - 1 ];               // after it with the unit go
-  r = int( a.size() - q ) + 1;              // into parts of x
+  if( q == 0 )
+   return( count );            // P5: a_q drops by 1, the 1s
+  const int x = --a[ q - 1 ];   // after it with the unit go
+  r = int( a.size() - q ) + 1;  // into parts of x
   a.resize( q );
-  while( r > x ) {                          // P6
+  while( r > x ) {  // P6
    a.push_back( x );
    r -= x;
    }
@@ -267,16 +297,19 @@ long setPartitions( int n , F && visit )
  long count = 0;
  if( n == 0 ) {
   ++count;
-  (void) detail::visitStops( visit , Tuple() );
+  ( void )detail::visitStops( visit , Tuple() );
   return( count );
   }
- Tuple a( n , 0 ) , b( n , 1 );             // b[ j ] = 1 + max( a[ 0 .. j ) )
+ Tuple a( n , 0 ) , b( n , 1 );  // b[ j ] = 1 + max( a[ 0 .. j ) )
  for( ; ; ) {
   ++count;
-  if( detail::visitStops( visit , a ) ) return( count );
-  int j = n - 1;                            // the last that can grow
-  while( ( j > 0 ) && ( a[ j ] == b[ j ] ) ) --j;
-  if( j == 0 ) return( count );
+  if( detail::visitStops( visit , a ) )
+   return( count );
+  int j = n - 1;  // the last that can grow
+  while( ( j > 0 ) && ( a[ j ] == b[ j ] ) )
+   --j;
+  if( j == 0 )
+   return( count );
   ++a[ j ];
   for( int k = j + 1 ; k < n ; ++k ) {
    a[ k ] = 0;
@@ -296,13 +329,15 @@ long nestedParentheses( int n , F && visit )
    ++count;
    return( ! detail::visitStops( visit , s ) );
    }
-  if( open < n ) {                          // '(' before ')' : lexicographic
+  if( open < n ) {  // '(' before ')' : lexicographic
    s[ i ] = '(';
-   if( ! self( self , i + 1 , open + 1 , close ) ) return( false );
+   if( ! self( self , i + 1 , open + 1 , close ) )
+    return( false );
    }
   if( close < open ) {
    s[ i ] = ')';
-   if( ! self( self , i + 1 , open , close + 1 ) ) return( false );
+   if( ! self( self , i + 1 , open , close + 1 ) )
+    return( false );
    }
   return( true );
   };

@@ -55,7 +55,7 @@
 
 #ifndef __ADS_StreamVByte
  #define __ADS_StreamVByte
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,7 +79,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the Stream VByte code of \f$ x \f$: the control bytes, then the data
 ///
@@ -101,8 +102,8 @@ namespace ADS {
 /// 7 & \quad \textbf{return}\ K \cdot D
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::uint8_t > streamVByteEncode(
-                                         std::span< const std::uint32_t > x );
+[[nodiscard]] inline std::vector< std::uint8_t >
+streamVByteEncode( std::span< const std::uint32_t > x );
 
 /// the \f$ n \f$ integers of the Stream VByte code
 ///
@@ -125,8 +126,8 @@ namespace ADS {
 /// Near the end of the data, where 16 bytes are not left, the integers are
 /// gathered one at a time from their lengths.
 /// \pre `code` is the code of \f$ n \f$ integers
-[[nodiscard]] inline std::vector< std::uint32_t > streamVByteDecode(
-                        std::span< const std::uint8_t > code , std::size_t n );
+[[nodiscard]] inline std::vector< std::uint32_t >
+streamVByteDecode( std::span< const std::uint8_t > code , std::size_t n );
 
 /*--------------------------------------------------------------------------*/
 
@@ -140,7 +141,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StreamVByte.h included */
+#endif /* StreamVByte.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File StreamVByte.h -------------------------*/

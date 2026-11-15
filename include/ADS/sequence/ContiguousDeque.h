@@ -49,7 +49,7 @@
 
 #ifndef __ADS_ContiguousDeque
  #define __ADS_ContiguousDeque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,7 +71,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS ContiguousDeque --------------------------*/
@@ -80,18 +81,18 @@ namespace ADS {
 /// a double ended queue whose items are contiguous, rebuilt in the middle
 /// of its vector when they reach an end
 template< class T >
-class ContiguousDeque {
+class ContiguousDeque
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
- using iterator = T *;                     ///< the iterator on the items
- using const_iterator = const T *;         ///< on the constant items
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
+ using iterator = T *;                    ///< the iterator on the items
+ using const_iterator = const T *;        ///< on the constant items
  /// the iterator on the items, backwards
  using reverse_iterator = std::reverse_iterator< iterator >;
  /// the iterator on the constant items, backwards
@@ -143,7 +144,10 @@ class ContiguousDeque {
 
  /// the first item
  /// \pre the deque is not empty
- [[nodiscard]] T & front( void ) { ADS_PRE( f_n > 0 ); return( f_A[ f_h ] ); }
+ [[nodiscard]] T & front( void ) {
+  ADS_PRE( f_n > 0 );
+  return( f_A[ f_h ] );
+  }
 
  /// the last item
  /// \pre the deque is not empty
@@ -229,9 +233,7 @@ class ContiguousDeque {
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const { return( f_A + f_h ); }
  /// the constant iterator past the last item
- [[nodiscard]] const_iterator end( void ) const {
-  return( f_A + f_h + f_n );
-  }
+ [[nodiscard]] const_iterator end( void ) const { return( f_A + f_h + f_n ); }
  /// the iterator on the last item, backwards
  [[nodiscard]] reverse_iterator rbegin( void ) {
   return( reverse_iterator( end() ) );
@@ -243,7 +245,6 @@ class ContiguousDeque {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the items in the middle of a vector of \f$ 3 n + 8 \f$ places, the
  /// same one if it is large enough and the items are trivially copyable
  ///
@@ -261,10 +262,10 @@ class ContiguousDeque {
  /// \f$ h + n \le c \f$
  [[nodiscard]] bool fits( void ) const { return( f_h + f_n <= f_c ); }
 
- T * f_A = nullptr;     ///< the places
- std::size_t f_c = 0;   ///< the number of places
- std::size_t f_h = 0;   ///< the place of the first item
- std::size_t f_n = 0;   ///< the number of items
+ T * f_A = nullptr;    ///< the places
+ std::size_t f_c = 0;  ///< the number of places
+ std::size_t f_h = 0;  ///< the place of the first item
+ std::size_t f_n = 0;  ///< the number of items
 
  };  // end( class ContiguousDeque )
 
@@ -280,7 +281,7 @@ class ContiguousDeque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ContiguousDeque.h included */
+#endif /* ContiguousDeque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ContiguousDeque.h -----------------------*/

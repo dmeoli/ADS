@@ -78,10 +78,12 @@
 using namespace ADS::bench;
 using Key = std::uint64_t;
 
-namespace {
+namespace
+{
 
 /// a missing operation of a structure
-struct None {};
+struct None
+{ };
 
 /// whether to run the structure who: all, or those whose name has in it
 /// one of the texts separated by | in the variable ONLY
@@ -93,8 +95,7 @@ bool wanted( const std::string & who )
  const std::string s = o;
  for( std::size_t a = 0 , b ; a <= s.size() ; a = b + 1 ) {
   b = std::min( s.find( '|' , a ) , s.size() );
-  if( ( b > a ) && ( who.find( s.substr( a , b - a ) ) !=
-                     std::string::npos ) )
+  if( ( b > a ) && ( who.find( s.substr( a , b - a ) ) != std::string::npos ) )
    return( true );
   }
  return( false );
@@ -102,7 +103,8 @@ bool wanted( const std::string & who )
 
 /// the keys of a run: K in the order of insertion, H the same in another
 /// order, Q absent ones, S sorted
-struct Data {
+struct Data
+{
  std::vector< Key > K , H , Q , S;
  };
 
@@ -113,10 +115,12 @@ struct Data {
 /// pairs from the lower bound of k); a None skips its cases, and sorted()
 /// builds a structure that has no insertion from the sorted keys
 template< class M , class I , class F , class Lo , class D , class S ,
-          class Sc , class So = None >
+	  class Sc ,
+	  class So = None >
 void run( const std::string & who , const Data & X , int r , M && make ,
-          I && ins , F && find , Lo && low , D && del , S && sum ,
-          Sc && scan , So && sorted = None() )
+	  I && ins ,
+	  F && find , Lo && low , D && del , S && sum , Sc && scan ,
+	  So && sorted = None() )
 {
  if( ! wanted( who ) || skip( who ) )
   return;
@@ -125,49 +129,84 @@ void run( const std::string & who , const Data & X , int r , M && make ,
  auto built = [ & ]( void ) {
   if constexpr( std::is_same_v< std::decay_t< So > , None > ) {
    auto d = make();
-   for( Key k : X.K ) ins( d , k );
+   for( Key k : X.K )
+    ins( d , k );
    return( d );
    }
   else
    return( sorted() );
   };
  if constexpr( ! std::is_same_v< std::decay_t< I > , None > ) {
-  print( b , "insert random" , n , who , median( make , [ & ]( auto & e ) {
-          for( Key k : X.K ) ins( e , k ); } , r , n ) );
-  print( b , "insert sorted" , n , who , median( make , [ & ]( auto & e ) {
-          for( Key k : X.S ) ins( e , k ); } , r , n ) );
+  print( b , "insert random" , n , who ,
+	 median(
+	   make ,
+	   [ & ]( auto & e ) {
+	    for( Key k : X.K )
+	     ins( e , k );
+	    } ,
+	   r , n ) );
+  print( b , "insert sorted" , n , who ,
+	 median(
+	   make ,
+	   [ & ]( auto & e ) {
+	    for( Key k : X.S )
+	     ins( e , k );
+	    } ,
+	   r , n ) );
   }
  {
   auto d = built();
-  print( b , "lookup hit" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           Key s = 0;
-           for( Key k : X.H ) s += find( d , k );
-           sink = sink + s; } , r , n ) );
-  print( b , "lookup miss" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           Key s = 0;
-           for( Key k : X.Q ) s += find( d , k );
-           sink = sink + s; } , r , n ) );
+  print( b , "lookup hit" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  Key s = 0;
+		  for( Key k : X.H )
+		   s += find( d , k );
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
+  print( b , "lookup miss" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  Key s = 0;
+		  for( Key k : X.Q )
+		   s += find( d , k );
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
   if constexpr( ! std::is_same_v< std::decay_t< Lo > , None > )
-   print( b , "lower bound" , n , who , median( [](){ return( 0 ); } ,
-           [ & ]( int ) {
-            Key s = 0;
-            for( Key k : X.Q ) s += low( d , k );
-            sink = sink + s; } , r , n ) );
-  print( b , "visit" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) { sink = sink + sum( d ); } , r , n ) );
+   print( b , "lower bound" , n , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   Key s = 0;
+		   for( Key k : X.Q )
+		    s += low( d , k );
+		   sink = sink + s;
+		   } ,
+		  r , n ) );
+  print( b , "visit" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) { sink = sink + sum( d ); } , r , n ) );
   if constexpr( ! std::is_same_v< std::decay_t< Sc > , None > )
-   print( b , "scan 100" , n , who , median( [](){ return( 0 ); } ,
-           [ & ]( int ) {
-            Key s = 0;
-            for( std::size_t i = 0 ; i < n / 100 ; ++i )
-             s += scan( d , X.Q[ i ] , 100 );
-            sink = sink + s; } , r , n / 100 * 100 ) );
+   print( b , "scan 100" , n , who ,
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   Key s = 0;
+		   for( std::size_t i = 0 ; i < n / 100 ; ++i )
+		    s += scan( d , X.Q[ i ] , 100 );
+		   sink = sink + s;
+		   } ,
+		  r , n / 100 * 100 ) );
   }
  if constexpr( ! std::is_same_v< std::decay_t< D > , None > )
-  print( b , "erase" , n , who , median( built , [ & ]( auto & e ) {
-          for( Key k : X.H ) del( e , k ); } , r , n ) );
+  print( b , "erase" , n , who ,
+	 median(
+	   built ,
+	   [ & ]( auto & e ) {
+	    for( Key k : X.H )
+	     del( e , k );
+	    } ,
+	   r , n ) );
  }
 
 /// the sum of the values of a range of pairs
@@ -175,7 +214,8 @@ template< class D >
 Key total( const D & d )
 {
  Key s = 0;
- for( const auto & [ k , v ] : d ) s += v;
+ for( const auto & [ k , v ] : d )
+  s += v;
  return( s );
  }
 
@@ -195,7 +235,8 @@ namespace bi = boost::intrusive;
 
 /// a node of an intrusive tree with the hook H
 template< class H >
-struct Node : H {
+struct Node : H
+{
  Key k = 0;
  Key v = 0;
  /// the priority of the treap, a hash of the key
@@ -205,19 +246,21 @@ struct Node : H {
  };
 
 template< class N >
-struct KeyOf {
+struct KeyOf
+{
  using type = Key;
  const Key & operator()( const N & x ) const { return( x.k ); }
  };
 
 /// the nodes and the intrusive tree T that links them
 template< class N , class T >
-struct Linked {
+struct Linked
+{
  std::vector< N > nodes;
  T tree;
  explicit Linked( const std::vector< Key > & K ) : nodes( K.size() ) {
-  for( std::size_t i = 0 ; i < K.size() ; ++i ) nodes[ i ].k =
-                                                  nodes[ i ].v = K[ i ];
+  for( std::size_t i = 0 ; i < K.size() ; ++i )
+   nodes[ i ].k = nodes[ i ].v = K[ i ];
   }
  ~Linked() { tree.clear(); }
  };
@@ -233,57 +276,80 @@ void intrusive( const std::string & who , const Data & X , int r )
  const std::size_t n = X.K.size();
  const char * b = "ordered";
  auto ins = [ & ]( const std::vector< Key > & K ) {
-  return( median( [ & ](){ return( P( new Linked< N , T >( K ) ) ); } ,
-                  [ & ]( P & p ) {
-                   for( auto & x : p->nodes ) p->tree.insert( x ); } ,
-                  r , n ) );
+  return( median( [ & ]() { return( P( new Linked< N , T >( K ) ) ); } ,
+		   [ & ]( P & p ) {
+		    for( auto & x : p->nodes )
+		     p->tree.insert( x );
+		    } ,
+		   r , n ) );
   };
  print( b , "insert random" , n , who , ins( X.K ) );
  print( b , "insert sorted" , n , who , ins( X.S ) );
- auto built = [ & ](){
+ auto built = [ & ]() {
   P p( new Linked< N , T >( X.K ) );
-  for( auto & x : p->nodes ) p->tree.insert( x );
+  for( auto & x : p->nodes )
+   p->tree.insert( x );
   return( p );
   };
  {
   P p = built();
   T & t = p->tree;
   auto find = [ & ]( const std::vector< Key > & Q ) {
-   return( median( [](){ return( 0 ); } , [ & ]( int ) {
-    Key s = 0;
-    for( Key k : Q ) {
-     const auto it = t.find( k );
-     s += it == t.end() ? 0 : it->v;
-     }
-    sink = sink + s; } , r , n ) );
+   return( median( []() { return( 0 ); } ,
+		    [ & ]( int ) {
+		     Key s = 0;
+		     for( Key k : Q ) {
+		      const auto it = t.find( k );
+		      s += it == t.end() ? 0 : it->v;
+		      }
+		     sink = sink + s;
+		     } ,
+		    r , n ) );
    };
   print( b , "lookup hit" , n , who , find( X.H ) );
   print( b , "lookup miss" , n , who , find( X.Q ) );
-  print( b , "lower bound" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           Key s = 0;
-           for( Key k : X.Q ) {
-            const auto it = t.lower_bound( k );
-            s += it == t.end() ? 0 : it->k;
-            }
-           sink = sink + s; } , r , n ) );
-  print( b , "visit" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           Key s = 0;
-           for( const auto & x : t ) s += x.v;
-           sink = sink + s; } , r , n ) );
-  print( b , "scan 100" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           Key s = 0;
-           for( std::size_t i = 0 ; i < n / 100 ; ++i ) {
-            auto it = t.lower_bound( X.Q[ i ] );
-            for( int c = 0 ; ( c < 100 ) && ( it != t.end() ) ; ++c , ++it )
-             s += it->v;
-            }
-           sink = sink + s; } , r , n / 100 * 100 ) );
+  print( b , "lower bound" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  Key s = 0;
+		  for( Key k : X.Q ) {
+		   const auto it = t.lower_bound( k );
+		   s += it == t.end() ? 0 : it->k;
+		   }
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
+  print( b , "visit" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  Key s = 0;
+		  for( const auto & x : t )
+		   s += x.v;
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
+  print( b , "scan 100" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  Key s = 0;
+		  for( std::size_t i = 0 ; i < n / 100 ; ++i ) {
+		   auto it = t.lower_bound( X.Q[ i ] );
+		   for( int c = 0 ; ( c < 100 ) && ( it != t.end() ) ;
+			++c , ++it )
+		    s += it->v;
+		   }
+		  sink = sink + s;
+		  } ,
+		 r , n / 100 * 100 ) );
   }
- print( b , "erase" , n , who , median( built , [ & ]( P & p ) {
-         for( Key k : X.H ) p->tree.erase( k ); } , r , n ) );
+ print( b , "erase" , n , who ,
+	median(
+	  built ,
+	  [ & ]( P & p ) {
+	   for( Key k : X.H )
+	    p->tree.erase( k );
+	   } ,
+	  r , n ) );
  }
 
 template< class H >
@@ -310,95 +376,123 @@ int main( int argc , char ** argv )
   auto stdIns = []( auto & d , Key k ) { d.emplace( k , k ); };
   auto stdFind = []( const auto & d , Key k ) {
    const auto it = d.find( k );
-   return( it == d.end() ? Key( 0 ) : it->second ); };
+   return( it == d.end() ? Key( 0 ) : it->second );
+   };
   auto stdLow = []( const auto & d , Key k ) {
    const auto it = d.lower_bound( k );
-   return( it == d.end() ? Key( 0 ) : it->first ); };
+   return( it == d.end() ? Key( 0 ) : it->first );
+   };
   auto stdDel = []( auto & d , Key k ) { d.erase( k ); };
   auto stdScan = []( const auto & d , Key k , std::size_t c ) {
-   return( walk( d , d.lower_bound( k ) , c ) ); };
+   return( walk( d , d.lower_bound( k ) , c ) );
+   };
   auto adsIns = []( auto & d , Key k ) { d.insert( k , k ); };
   auto adsFind = []( const auto & d , Key k ) {
    const auto v = d.lookup( k );
-   return( v ? *v : Key( 0 ) ); };
+   return( v ? *v : Key( 0 ) );
+   };
   auto adsDel = []( auto & d , Key k ) { d.remove( k ); };
   auto adsSum = []( const auto & d ) { return( total( d ) ); };
 
   for( const char * who : { "std::map" , "std::map A/A" } )
-   run( who , X , r , [](){ return( std::map< Key , Key >() ); } , stdIns ,
-        stdFind , stdLow , stdDel , adsSum , stdScan );
+   run(
+     who , X , r , []() { return( std::map< Key , Key >() ); } , stdIns ,
+     stdFind ,
+     stdLow , stdDel , adsSum , stdScan );
 #ifdef ADS_HAS_ABSL
-  run( "absl::btree_map" , X , r ,
-       [](){ return( absl::btree_map< Key , Key >() ); } , stdIns , stdFind ,
-       stdLow , stdDel , adsSum , stdScan );
+  run(
+    "absl::btree_map" , X , r ,
+    []() { return( absl::btree_map< Key , Key >() ); } , stdIns , stdFind ,
+    stdLow , stdDel , adsSum , stdScan );
 #endif
 #ifdef ADS_HAS_TLX
-  run( "tlx::btree_map" , X , r ,
-       [](){ return( tlx::btree_map< Key , Key >() ); } ,
-       []( auto & d , Key k ) { d.insert( std::make_pair( k , k ) ); } ,
-       stdFind , stdLow , stdDel , adsSum , stdScan );
+  run(
+    "tlx::btree_map" , X , r ,
+    []() { return( tlx::btree_map< Key , Key >() ); } ,
+    []( auto & d , Key k ) { d.insert( std::make_pair( k , k ) ); } , stdFind ,
+    stdLow , stdDel , adsSum , stdScan );
 #endif
 #ifdef ADS_HAS_BOOST
-  run( "boost::container::flat_map" , X , r ,
-       [](){ return( boost::container::flat_map< Key , Key >() ); } , None() ,
-       stdFind , stdLow , None() , adsSum , stdScan , [ & ](){
-        boost::container::flat_map< Key , Key > d;
-        for( Key k : X.S ) d.emplace_hint( d.end() , k , k );
-        return( d ); } );
+  run(
+    "boost::container::flat_map" , X , r ,
+    []() { return( boost::container::flat_map< Key , Key >() ); } , None() ,
+    stdFind , stdLow , None() , adsSum , stdScan ,
+    [ & ]() {
+     boost::container::flat_map< Key , Key > d;
+     for( Key k : X.S )
+      d.emplace_hint( d.end() , k , k );
+     return( d );
+     } );
   {
    using H = bi::set_base_hook< bi::link_mode< bi::normal_link > >;
    intrusive< Node< H > , bi::set< Node< H > , Opts< H > > >(
-    "boost::intrusive::set" , X , r );
+     "boost::intrusive::set" , X , r );
    }
   {
    using H = bi::avl_set_base_hook< bi::link_mode< bi::normal_link > >;
    intrusive< Node< H > , bi::avl_set< Node< H > , Opts< H > > >(
-    "boost::intrusive::avl_set" , X , r );
+     "boost::intrusive::avl_set" , X , r );
    }
   {
    using H = bi::bs_set_base_hook< bi::link_mode< bi::normal_link > >;
    intrusive< Node< H > , bi::sg_set< Node< H > , Opts< H > > >(
-    "boost::intrusive::sg_set" , X , r );
+     "boost::intrusive::sg_set" , X , r );
    intrusive< Node< H > , bi::splay_set< Node< H > , Opts< H > > >(
-    "boost::intrusive::splay_set" , X , r );
+     "boost::intrusive::splay_set" , X , r );
    intrusive< Node< H > , bi::treap_set< Node< H > , Opts< H > > >(
-    "boost::intrusive::treap_set" , X , r );
+     "boost::intrusive::treap_set" , X , r );
    }
 #endif
-  run( "ADS::BTreeMap" , X , r ,
-       [](){ return( ADS::BTreeMap< Key , Key >() ); } , adsIns , adsFind ,
-       []( const auto & d , Key k ) {
-        const auto it = d.lowerBound( k );
-        return( it == d.end() ? Key( 0 ) : ( *it ).first ); } ,
-       adsDel , adsSum , []( const auto & d , Key k , std::size_t c ) {
-        return( walk( d , d.lowerBound( k ) , c ) ); } );
-  run( "ADS::RedBlackTree" , X , r ,
-       [](){ return( ADS::RedBlackTree< Key , Key >() ); } , adsIns ,
-       adsFind , None() , adsDel , adsSum , None() );
-  run( "ADS::AVLTree" , X , r ,
-       [](){ return( ADS::AVLTree< Key , Key >() ); } , adsIns , adsFind ,
-       None() , adsDel , adsSum , None() );
-  run( "ADS::Treap" , X , r ,
-       [](){ return( ADS::Treap< Key , Key >() ); } , adsIns , adsFind ,
-       None() , adsDel , adsSum , None() );
-  run( "ADS::SplayTree" , X , r ,
-       [](){ return( ADS::SplayTree< Key , Key >() ); } , adsIns ,
-       []( auto & d , Key k ) {
-        const auto v = d.lookup( k );
-        return( v ? *v : Key( 0 ) ); } , None() , adsDel , adsSum ,
-       None() );
-  run( "ADS::SkipList" , X , r ,
-       [](){ return( ADS::SkipList< Key , Key >() ); } , adsIns , adsFind ,
-       None() , adsDel , adsSum , None() );
-  run( "ADS::BTree t=16" , X , r ,
-       [](){ return( ADS::BTree< Key , Key >( 16 ) ); } , adsIns , adsFind ,
-       None() , adsDel , adsSum , None() );
-  run( "ADS::SortedArrayDictionary" , X , r ,
-       [](){ return( ADS::SortedArrayDictionary< Key , Key >() ); } , None() ,
-       adsFind , None() , None() , adsSum , None() , [ & ](){
-        ADS::SortedArrayDictionary< Key , Key > d;
-        for( Key k : X.S ) d.insert( k , k );
-        return( d ); } );
+  run(
+    "ADS::BTreeMap" , X , r ,
+    []() { return( ADS::BTreeMap< Key , Key >() ); } ,
+    adsIns , adsFind ,
+    []( const auto & d , Key k ) {
+     const auto it = d.lowerBound( k );
+     return( it == d.end() ? Key( 0 ) : ( *it ).first );
+     } ,
+    adsDel , adsSum ,
+    []( const auto & d , Key k , std::size_t c ) {
+     return( walk( d , d.lowerBound( k ) , c ) );
+     } );
+  run(
+    "ADS::RedBlackTree" , X , r ,
+    []() { return( ADS::RedBlackTree< Key , Key >() ); } , adsIns , adsFind ,
+    None() , adsDel , adsSum , None() );
+  run(
+    "ADS::AVLTree" , X , r , []() { return( ADS::AVLTree< Key , Key >() ); } ,
+    adsIns , adsFind , None() , adsDel , adsSum , None() );
+  run(
+    "ADS::Treap" , X , r , []() { return( ADS::Treap< Key , Key >() ); } ,
+    adsIns ,
+    adsFind , None() , adsDel , adsSum , None() );
+  run(
+    "ADS::SplayTree" , X , r ,
+    []() { return( ADS::SplayTree< Key , Key >() ); } ,
+    adsIns ,
+    []( auto & d , Key k ) {
+     const auto v = d.lookup( k );
+     return( v ? *v : Key( 0 ) );
+     } ,
+    None() , adsDel , adsSum , None() );
+  run(
+    "ADS::SkipList" , X , r ,
+    []() { return( ADS::SkipList< Key , Key >() ); } ,
+    adsIns , adsFind , None() , adsDel , adsSum , None() );
+  run(
+    "ADS::BTree t=16" , X , r ,
+    []() { return( ADS::BTree< Key , Key >( 16 ) ); } ,
+    adsIns , adsFind , None() , adsDel , adsSum , None() );
+  run(
+    "ADS::SortedArrayDictionary" , X , r ,
+    []() { return( ADS::SortedArrayDictionary< Key , Key >() ); } , None() ,
+    adsFind , None() , None() , adsSum , None() ,
+    [ & ]() {
+     ADS::SortedArrayDictionary< Key , Key > d;
+     for( Key k : X.S )
+      d.insert( k , k );
+     return( d );
+     } );
   }
  return( 0 );
  }

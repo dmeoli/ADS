@@ -76,7 +76,7 @@
 
 #ifndef __ADS_VectorIntersection
  #define __ADS_VectorIntersection
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the items common to \f$ a[ 0 .. n ) \f$ and \f$ b[ 0 .. m ) \f$,
 /// written to `out`, and their number
@@ -118,7 +119,8 @@ namespace ADS {
 ///      \f$ \min( n , m ) + 8 \f$ items
 template< class T >
 std::size_t intersect( const T * a , std::size_t n , const T * b ,
-                       std::size_t m , T * out );
+		       std::size_t m ,
+		       T * out );
 
 /// the items common to \f$ A \f$ and \f$ B \f$, by `intersect()` above on
 /// their data
@@ -134,7 +136,7 @@ std::size_t intersect( const T * a , std::size_t n , const T * b ,
 /// \pre \f$ A \f$ and \f$ B \f$ strictly increasing
 template< class T >
 std::vector< T > intersect( const std::vector< T > & A ,
-                            const std::vector< T > & B );
+			    const std::vector< T > & B );
 
 /*--------------------------------------------------------------------------*/
 
@@ -148,7 +150,7 @@ std::vector< T > intersect( const std::vector< T > & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* VectorIntersection.h included */
+#endif /* VectorIntersection.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File VectorIntersection.h ---------------------*/

@@ -14,22 +14,26 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// whether s[ a .. b ) is a palindrome
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 bool isPalindromeRange( const S & s , std::size_t a , std::size_t b )
 {
  for( ; a + 1 < b ; ++a , --b )
-  if( !( s[ a ] == s[ b - 1 ] ) )
+  if( ! ( s[ a ] == s[ b - 1 ] ) )
    return( false );
  return( true );
  }
 
 /// whether the pieces are palindromes and joined give s
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 bool joinsPalindromes( const std::vector< S > & pieces , const S & s )
 {
  std::vector< typename S::value_type > all;
@@ -45,7 +49,8 @@ bool joinsPalindromes( const std::vector< S > & pieces , const S & s )
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 std::pair< std::size_t , std::size_t > longestPalindrome( const S & s )
 {
  const std::size_t n = s.size();
@@ -85,14 +90,16 @@ std::pair< std::size_t , std::size_t > longestPalindrome( const S & s )
   if( k > 0 )
    keep( i - k , 2 * k );
   }
- ADS_POST( detail::isPalindromeRange( s , bestStart , bestStart + bestLength )
-           && ( ( bestLength > 0 ) == ( n > 0 ) ) );
+ ADS_POST( detail::isPalindromeRange( s , bestStart ,
+				      bestStart + bestLength ) &&
+	   ( ( bestLength > 0 ) == ( n > 0 ) ) );
  return( std::pair( bestStart , bestLength ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 S longestPalindromicSubstring( const S & s )
 {
  const auto [ start , length ] = longestPalindrome( s );
@@ -108,7 +115,8 @@ inline std::string longestPalindromicSubstring( const std::string & s )
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 S longestPalindromicSubsequence( const S & s )
 {
  const std::size_t n = s.size();
@@ -116,13 +124,13 @@ S longestPalindromicSubsequence( const S & s )
   return( S() );
  // DP[ i ][ j ], the length for s[ i .. j ], for i <= j
  std::vector< std::vector< std::size_t > > DP(
-                                n , std::vector< std::size_t >( n , 0 ) );
+   n , std::vector< std::size_t >( n , 0 ) );
  for( std::size_t i = n ; i-- > 0 ; ) {
   DP[ i ][ i ] = 1;
   for( std::size_t j = i + 1 ; j < n ; ++j )
    DP[ i ][ j ] = s[ i ] == s[ j ]
-                  ? ( i + 1 <= j - 1 ? DP[ i + 1 ][ j - 1 ] : 0 ) + 2
-                  : std::max( DP[ i + 1 ][ j ] , DP[ i ][ j - 1 ] );
+		    ? ( i + 1 <= j - 1 ? DP[ i + 1 ][ j - 1 ] : 0 ) + 2
+		    : std::max( DP[ i + 1 ][ j ] , DP[ i ][ j - 1 ] );
   }
  std::vector< typename S::value_type > left;
  bool middle = false;
@@ -151,9 +159,9 @@ S longestPalindromicSubsequence( const S & s )
  all.insert( all.end() , left.rbegin() , left.rend() );
  S r( all.begin() , all.end() );
  ADS_POST( ( r.size() == DP[ 0 ][ n - 1 ] ) &&
-           detail::isPalindromeRange( r , 0 , r.size() ) );
+	   detail::isPalindromeRange( r , 0 , r.size() ) );
  ADS_AUDIT( detail::isSubsequence( r , s ) &&
-            ( r.size() == lcs( s , S( s.rbegin() , s.rend() ) ).size() ) );
+	    ( r.size() == lcs( s , S( s.rbegin() , s.rend() ) ).size() ) );
  return( r );
  }
 
@@ -166,7 +174,8 @@ inline std::string longestPalindromicSubsequence( const std::string & s )
 
 /*--------------------------------------------------------------------------*/
 
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 std::vector< S > palindromicPartition( const S & s )
 {
  const std::size_t n = s.size();
@@ -175,9 +184,9 @@ std::vector< S > palindromicPartition( const S & s )
  // the centres by increasing h = a + b - 1 for the palindrome s[ a .. b ):
  // every palindrome ending before a has a smaller h, so D[ a ] is final
  for( std::size_t h = 0 ; h + 1 < 2 * n ; ++h ) {
-  std::size_t a = ( h + 1 ) / 2 , b = h / 2 + 1;        // s[ a .. b )
-  if( a == b ) {                                     // an even centre
-   if( !( s[ a - 1 ] == s[ a ] ) )
+  std::size_t a = ( h + 1 ) / 2 , b = h / 2 + 1;  // s[ a .. b )
+  if( a == b ) {                                 // an even centre
+   if( ! ( s[ a - 1 ] == s[ a ] ) )
     continue;
    --a;
    ++b;
@@ -187,7 +196,7 @@ std::vector< S > palindromicPartition( const S & s )
     D[ b ] = D[ a ] + 1;
     from[ b ] = a;
     }
-   if( ( a == 0 ) || ( b == n ) || !( s[ a - 1 ] == s[ b ] ) )
+   if( ( a == 0 ) || ( b == n ) || ! ( s[ a - 1 ] == s[ b ] ) )
     break;
    --a;
    ++b;
@@ -204,7 +213,8 @@ std::vector< S > palindromicPartition( const S & s )
 
 /*--------------------------------------------------------------------------*/
 
-inline std::vector< std::string > palindromicPartition( const std::string & s )
+inline std::vector< std::string >
+palindromicPartition( const std::string & s )
 {
  return( palindromicPartition< std::string >( s ) );
  }
@@ -214,22 +224,25 @@ inline std::vector< std::string > palindromicPartition( const std::string & s )
 /*--------------------------------------------------------------------------*/
 
 inline Eertree::Eertree( void )
- : f_len{ -1 , 0 } , f_link{ 0 , 0 } , f_diff{ 0 , 0 } , f_series{ 0 , 0 } ,
-   f_next( 2 ) {}
+    : f_len
+{ -1 , 0 } , f_link{ 0 , 0 } , f_diff{ 0 , 0 } , f_series{ 0 , 0 } ,
+      f_next( 2 )
+{ }
 
 inline Eertree::Eertree( std::string_view s ) : Eertree()
 {
- for( unsigned char c : s ) (void) add( c );
+ for( unsigned char c : s )
+  ( void )add( c );
  }
 
 inline std::uint32_t Eertree::extensible( std::uint32_t v ,
-                                          unsigned char c ) const
+					  unsigned char c ) const
 {
- const long i = long( f_s.size() ) - 1;    // the place of c
+ const long i = long( f_s.size() ) - 1;  // the place of c
  for( ; ; v = f_link[ v ] ) {
-  const long j = i - 1 - f_len[ v ];       // the byte before v
-  if( ( j >= 0 ) && ( static_cast< unsigned char >( f_s[ std::size_t( j ) ] )
-                      == c ) )
+  const long j = i - 1 - f_len[ v ];  // the byte before v
+  if( ( j >= 0 ) &&
+      ( static_cast< unsigned char >( f_s[ std::size_t( j ) ] ) == c ) )
    return( v );
   }
  }
@@ -245,10 +258,11 @@ inline bool Eertree::add( unsigned char c )
    }
  const std::uint32_t u = std::uint32_t( f_len.size() );
  f_len.push_back( f_len[ v ] + 2 );
- std::uint32_t l = 1;                     // the empty palindrome
+ std::uint32_t l = 1;  // the empty palindrome
  if( f_len[ u ] > 1 )
   for( const auto & [ b , w ] : f_next[ extensible( f_link[ v ] , c ) ] )
-   if( b == c ) l = w;
+   if( b == c )
+    l = w;
  f_link.push_back( l );
  f_diff.push_back( f_len[ u ] - f_len[ l ] );
  f_series.push_back( f_diff[ u ] == f_diff[ l ] ? f_series[ l ] : l );
@@ -258,8 +272,8 @@ inline bool Eertree::add( unsigned char c )
  return( true );
  }
 
-inline std::vector< std::string > palindromicFactorization(
-                                                        std::string_view s )
+inline std::vector< std::string >
+palindromicFactorization( std::string_view s )
 {
  const std::size_t n = s.size();
  constexpr std::size_t inf = ~std::size_t( 0 ) / 2;
@@ -271,20 +285,19 @@ inline std::vector< std::string > palindromicFactorization(
  std::vector< std::pair< std::size_t , std::size_t > > best;
  ans[ 0 ] = 0;
  for( std::size_t i = 1 ; i <= n ; ++i ) {
-  (void) E.add( static_cast< unsigned char >( s[ i - 1 ] ) );
+  ( void )E.add( static_cast< unsigned char >( s[ i - 1 ] ) );
   best.resize( E.f_len.size() );
-  for( std::uint32_t v = E.f_last ; E.f_len[ v ] > 0 ;
-       v = E.f_series[ v ] ) {
+  for( std::uint32_t v = E.f_last ; E.f_len[ v ] > 0 ; v = E.f_series[ v ] ) {
    // the shortest palindrome of the series of v, and the rest of it as
    // found diff( v ) bytes before, the lengths diff( v ) longer now
-   const std::size_t L = std::size_t( E.f_len[ E.f_series[ v ] ] +
-                                      E.f_diff[ v ] );
+   const std::size_t L =
+     std::size_t( E.f_len[ E.f_series[ v ] ] + E.f_diff[ v ] );
    best[ v ] = std::pair( ans[ i - L ] , L );
    if( E.f_diff[ v ] == E.f_diff[ E.f_link[ v ] ] ) {
     const auto & b = best[ E.f_link[ v ] ];
     if( b.first < best[ v ].first )
      best[ v ] = std::pair( b.first ,
-                            b.second + std::size_t( E.f_diff[ v ] ) );
+			    b.second + std::size_t( E.f_diff[ v ] ) );
     }
    if( best[ v ].first + 1 < ans[ i ] ) {
     ans[ i ] = best[ v ].first + 1;
@@ -299,11 +312,12 @@ inline std::vector< std::string > palindromicFactorization(
  ADS_AUDIT( [ & ]( void ) {
   std::string joined;
   for( const auto & p : R ) {
-   if( ! std::equal( p.begin() , p.end() , p.rbegin() ) ) return( false );
+   if( ! std::equal( p.begin() , p.end() , p.rbegin() ) )
+    return( false );
    joined += p;
    }
-  return( ( joined == s ) && ( R.size() == palindromicPartition(
-                                            std::string( s ) ).size() ) );
+  return( ( joined == s ) &&
+	   ( R.size() == palindromicPartition( std::string( s ) ).size() ) );
   }() );
  return( R );
  }

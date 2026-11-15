@@ -61,7 +61,7 @@
 
 #ifndef __ADS_SkipListSequence
  #define __ADS_SkipListSequence
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -83,7 +83,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS SkipListSequence -------------------------*/
@@ -92,12 +93,12 @@ namespace ADS {
 /// a sequence of items of type `T` on a skip list with the widths of the
 /// links, the `SkiplistList` of Morin
 template< class T >
-class SkipListSequence {
+class SkipListSequence
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;    ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty sequence, its levels drawn by a generator from the seed, by
  /// default one of its own [see `detail::instanceSeed()`]
@@ -192,7 +193,7 @@ class SkipListSequence {
  /// the item of index \f$ i \f$ removed, `remove( i )` (the name of
  /// `IndexedList`)
  /// \pre \f$ i < n \f$
- void erase( std::size_t i ) { ( void ) remove( i ); }
+ void erase( std::size_t i ) { ( void )remove( i ); }
 
  /// \f$ v \f$ appended, `add( size() , v )`
  void push_back( const T & v ) { add( f_size , v ); }
@@ -270,41 +271,42 @@ class SkipListSequence {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr int kMax = 32;   ///< the largest number of levels
+ static constexpr int kMax = 32;  ///< the largest number of levels
 
  struct Node;
 
  /// a link of a level: the successor and the width
- struct Link {
-  Node * next;                     ///< the successor, nil at the end
-  std::size_t w;                   ///< the indices it advances by
+ struct Link
+ {
+  Node * next;    ///< the successor, nil at the end
+  std::size_t w;  ///< the indices it advances by
   };
 
  /// a node, followed in its block by the tower of its links
- struct Node {
-  T item;                          ///< the item
-  int height;                      ///< the number of levels
+ struct Node
+ {
+  T item;      ///< the item
+  int height;  ///< the number of levels
   };
 
  /// the offset of the tower from the start of a node
  static constexpr std::size_t kTower =
-  ( sizeof( Node ) + alignof( Link ) - 1 ) / alignof( Link ) *
-  alignof( Link );
+   ( sizeof( Node ) + alignof( Link ) - 1 ) / alignof( Link ) *
+   alignof( Link );
 
  /// the tower of the links of \f$ x \f$
  static Link * tower( Node * x ) {
   return( std::launder( reinterpret_cast< Link * >(
-           reinterpret_cast< std::byte * >( x ) + kTower ) ) );
+    reinterpret_cast< std::byte * >( x ) + kTower ) ) );
   }
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the forward iterator on the items, along the bottom level
  template< bool Const >
- class basic_iterator {
+ class basic_iterator
+ {
   public:
   /// the type of the items
   using value_type = T;
@@ -319,7 +321,7 @@ class SkipListSequence {
   basic_iterator( void ) = default;
 
   /// on the node \f$ x \f$
-  explicit basic_iterator( Node * x ) : f_x( x ) {}
+  explicit basic_iterator( Node * x ) : f_x( x ) { }
 
   /// the constant form of a mutable iterator
   operator basic_iterator< true >( void ) const {
@@ -334,7 +336,11 @@ class SkipListSequence {
    return( *this );
    }
   /// to the next node, returning the iterator before the step
-  basic_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  basic_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same node
   bool operator==( const basic_iterator & o ) const = default;
@@ -343,13 +349,13 @@ class SkipListSequence {
   Node * f_x = nullptr;
   };
 
- using value_type = T;                          ///< the items
- using size_type = std::size_t;                 ///< the type of the sizes
- using difference_type = std::ptrdiff_t;        ///< the distances
- using reference = T &;                         ///< a reference to an item
- using const_reference = const T &;             ///< a constant reference
- using iterator = basic_iterator< false >;      ///< the iterator
- using const_iterator = basic_iterator< true >; ///< the constant iterator
+ using value_type = T;                           ///< the items
+ using size_type = std::size_t;                  ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;         ///< the distances
+ using reference = T &;                          ///< a reference to an item
+ using const_reference = const T &;              ///< a constant reference
+ using iterator = basic_iterator< false >;       ///< the iterator
+ using const_iterator = basic_iterator< true >;  ///< the constant iterator
 
  /// the iterator on the first item
  [[nodiscard]] iterator begin( void ) {
@@ -362,14 +368,15 @@ class SkipListSequence {
   return( const_iterator( f_head[ 0 ].next ) );
   }
  /// the constant iterator past the last item
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// as `end()`
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the tower of \f$ x \f$, that of the head if \f$ x \f$ is nil
  Link * towerOf( Node * x ) const {
   return( x ? tower( x ) : const_cast< Link * >( f_head ) );
@@ -390,10 +397,10 @@ class SkipListSequence {
  /// the widths and the levels consistent, \f$ O( n \log n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
- Link f_head[ kMax ];              ///< the tower of the head
- int f_levels = 0;                 ///< the levels in use
- std::size_t f_size = 0;           ///< the number of items
- SplitMix64 f_g;                   ///< the generator of the levels
+ Link f_head[ kMax ];     ///< the tower of the head
+ int f_levels = 0;        ///< the levels in use
+ std::size_t f_size = 0;  ///< the number of items
+ SplitMix64 f_g;          ///< the generator of the levels
 
  };  // end( class SkipListSequence )
 
@@ -409,7 +416,7 @@ class SkipListSequence {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SkipListSequence.h included */
+#endif /* SkipListSequence.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File SkipListSequence.h ----------------------*/

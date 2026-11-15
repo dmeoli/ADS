@@ -14,13 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 
 inline CarterWegmanHash::CarterWegmanHash( std::uint64_t m ,
-                                           std::uint64_t seed )
- : f_p( kMersenne61 ) , f_m( m )
+					   std::uint64_t seed )
+    : f_p( kMersenne61 ) , f_m( m )
 {
  ADS_PRE( m >= 1 );
  SplitMix64 g( seed );
@@ -28,21 +29,20 @@ inline CarterWegmanHash::CarterWegmanHash( std::uint64_t m ,
  f_b = detail::uniformIndex( g , f_p );
  }
 
-inline CarterWegmanHash::CarterWegmanHash( std::uint64_t p ,
-                                           std::uint64_t a ,
-                                           std::uint64_t b ,
-                                           std::uint64_t m )
- : f_p( p ) , f_a( a ) , f_b( b ) , f_m( m )
+inline CarterWegmanHash::CarterWegmanHash( std::uint64_t p , std::uint64_t a ,
+					   std::uint64_t b , std::uint64_t m )
+    : f_p( p ) , f_a( a ) , f_b( b ) , f_m( m )
 {
- ADS_PRE( ( p >= 2 ) && ( p < ( std::uint64_t( 1 ) << 63 ) ) &&
-          ( a >= 1 ) && ( a < p ) && ( b < p ) && ( m >= 1 ) );
+ ADS_PRE( ( p >= 2 ) && ( p < ( std::uint64_t( 1 ) << 63 ) ) && ( a >= 1 ) &&
+	  ( a < p ) && ( b < p ) && ( m >= 1 ) );
  }
 
 inline std::uint64_t CarterWegmanHash::operator()( std::uint64_t k ) const
 {
  ADS_PRE( k < f_p );
- std::uint64_t x = mulMod( f_a , k , f_p ) + f_b;   // below 2^64
- if( x >= f_p ) x -= f_p;
+ std::uint64_t x = mulMod( f_a , k , f_p ) + f_b;  // below 2^64
+ if( x >= f_p )
+  x -= f_p;
  const std::uint64_t r = x % f_m;
  ADS_POST( r < f_m );
  return( r );
@@ -51,8 +51,8 @@ inline std::uint64_t CarterWegmanHash::operator()( std::uint64_t k ) const
 /*--------------------------------------------------------------------------*/
 
 inline DotProductHash::DotProductHash( std::uint64_t m , int r ,
-                                       std::uint64_t seed )
- : f_m( m )
+				       std::uint64_t seed )
+    : f_m( m )
 {
  ADS_PRE( ( m >= 2 ) && ( m <= ( std::uint64_t( 1 ) << 32 ) ) && ( r >= 1 ) );
  SplitMix64 g( seed );
@@ -62,20 +62,21 @@ inline DotProductHash::DotProductHash( std::uint64_t m , int r ,
  }
 
 inline DotProductHash::DotProductHash( std::uint64_t m ,
-                                       std::vector< std::uint64_t > a )
- : f_m( m ) , f_a( std::move( a ) )
+				       std::vector< std::uint64_t > a )
+    : f_m( m ) , f_a( std::move( a ) )
 {
  ADS_PRE( ( m >= 2 ) && ( m <= ( std::uint64_t( 1 ) << 32 ) ) &&
-          ! f_a.empty() &&
-          std::all_of( f_a.begin() , f_a.end() ,
-                       [ m ]( std::uint64_t d ) { return( d < m ); } ) );
+	  ! f_a.empty() &&
+	  std::all_of( f_a.begin() , f_a.end() ,
+		       [ m ]( std::uint64_t d ) { return( d < m ); } ) );
  }
 
 inline std::uint64_t DotProductHash::universe( void ) const
 {
  std::uint64_t u = 1;
  for( std::size_t i = 0 ; i < f_a.size() ; ++i ) {
-  if( u > ~std::uint64_t( 0 ) / f_m ) return( 0 );   // past 2^64 - 1
+  if( u > ~std::uint64_t( 0 ) / f_m )
+   return( 0 );  // past 2^64 - 1
   u *= f_m;
   }
  return( u );
@@ -85,7 +86,7 @@ inline std::uint64_t DotProductHash::operator()( std::uint64_t k ) const
 {
  ADS_PRE( ( universe() == 0 ) || ( k < universe() ) );
  std::uint64_t s = 0;
- for( const auto a : f_a ) {                // the digits, the least first
+ for( const auto a : f_a ) {  // the digits, the least first
   s = ( s + mulMod( a , k % f_m , f_m ) ) % f_m;
   k /= f_m;
   }
@@ -96,8 +97,8 @@ inline std::uint64_t DotProductHash::operator()( std::uint64_t k ) const
 /*--------------------------------------------------------------------------*/
 
 inline MultiplyShiftHash::MultiplyShiftHash( int h , int l ,
-                                             std::uint64_t seed )
- : f_h( h ) , f_l( l )
+					     std::uint64_t seed )
+    : f_h( h ) , f_l( l )
 {
  ADS_PRE( ( l >= 1 ) && ( l < h ) && ( h <= 64 ) );
  f_mask = h == 64 ? ~std::uint64_t( 0 ) : ( std::uint64_t( 1 ) << h ) - 1;
@@ -106,7 +107,7 @@ inline MultiplyShiftHash::MultiplyShiftHash( int h , int l ,
  }
 
 inline MultiplyShiftHash MultiplyShiftHash::ofMultiplier( int h , int l ,
-                                                         std::uint64_t a )
+							  std::uint64_t a )
 {
  MultiplyShiftHash f( h , l , std::uint64_t( 1 ) );
  ADS_PRE( ( a & 1 ) && ( a <= f.f_mask ) );
@@ -126,16 +127,16 @@ inline std::uint64_t MultiplyShiftHash::operator()( std::uint64_t k ) const
 
 template< class K , class Code >
 MultiplicativeHash< K , Code >::MultiplicativeHash( std::uint64_t seed ,
-                                                    Code code )
- : f_code( std::move( code ) )
+						   Code code )
+    : f_code( std::move( code ) )
 {
  SplitMix64 g( seed );
  f_z = g() | 1;
  }
 
 template< class K , class Code >
-MultiplicativeHash< K , Code > MultiplicativeHash< K , Code >::ofMultiplier(
-                                                 std::uint64_t z , Code code )
+MultiplicativeHash< K , Code >
+MultiplicativeHash< K , Code >::ofMultiplier( std::uint64_t z , Code code )
 {
  ADS_PRE( z & 1 );
  MultiplicativeHash f( 1 , std::move( code ) );
@@ -144,20 +145,20 @@ MultiplicativeHash< K , Code > MultiplicativeHash< K , Code >::ofMultiplier(
  }
 
 template< class K , class Code >
-inline std::uint64_t MultiplicativeHash< K , Code >::operator()(
-                                                         const K & k ) const
+inline std::uint64_t
+MultiplicativeHash< K , Code >::operator()( const K & k ) const
 {
  return( f_z * std::uint64_t( f_code( k ) ) );
  }
 
 template< class K , class Code >
-inline std::size_t MultiplicativeHash< K , Code >::place( const K & k ,
-                                                          std::size_t m ) const
+inline std::size_t
+MultiplicativeHash< K , Code >::place( const K & k , std::size_t m ) const
 {
  ADS_PRE( ( m > 0 ) && ( ( m & ( m - 1 ) ) == 0 ) );
  const int d = std::countr_zero( std::uint64_t( m ) );
- const std::size_t r = d == 0 ? 0 :
-                       std::size_t( ( *this )( k ) >> ( 64 - d ) );
+ const std::size_t r =
+   d == 0 ? 0 : std::size_t( ( *this )( k ) >> ( 64 - d ) );
  ADS_POST( r < m );
  return( r );
  }
@@ -165,7 +166,7 @@ inline std::size_t MultiplicativeHash< K , Code >::place( const K & k ,
 /*--------------------------------------------------------------------------*/
 
 inline CompoundHash::CompoundHash( std::size_t r , std::uint64_t seed )
- : f_Z( r )
+    : f_Z( r )
 {
  ADS_PRE( r >= 1 );
  SplitMix64 g( seed );
@@ -175,11 +176,11 @@ inline CompoundHash::CompoundHash( std::size_t r , std::uint64_t seed )
  f_hi = g();
  }
 
-inline std::uint64_t CompoundHash::operator()(
-                                  std::span< const std::uint64_t > x ) const
+inline std::uint64_t
+CompoundHash::operator()( std::span< const std::uint64_t > x ) const
 {
  ADS_PRE( x.size() == f_Z.size() );
- std::uint64_t lo = 0 , hi = 0;   // the sum, mod 2^128
+ std::uint64_t lo = 0 , hi = 0;  // the sum, mod 2^128
  for( std::size_t i = 0 ; i < x.size() ; ++i ) {
   const Product128 q = product128( f_Z[ i ] , x[ i ] );
   lo += q.lo;
@@ -201,13 +202,13 @@ inline SequenceHash::SequenceHash( std::uint64_t seed )
  f_a = g() | 1;
  }
 
-inline std::uint64_t SequenceHash::operator()(
-                                  std::span< const std::uint64_t > x ) const
+inline std::uint64_t
+SequenceHash::operator()( std::span< const std::uint64_t > x ) const
 {
  const std::uint64_t p = ( std::uint64_t( 1 ) << 61 ) - 1;
- std::uint64_t h = p - 1;   // the end marker
+ std::uint64_t h = p - 1;  // the end marker
  for( std::size_t i = x.size() ; i-- > 0 ; ) {
-  h = mulMod61( h , f_z ) + ( ( f_a * x[ i ] ) >> 4 );   // below 2^62
+  h = mulMod61( h , f_z ) + ( ( f_a * x[ i ] ) >> 4 );  // below 2^62
   h = ( h & p ) + ( h >> 61 );
   if( h >= p )
    h -= p;
@@ -238,9 +239,10 @@ inline StringHash::StringHash( std::uint64_t seed )
 inline std::uint64_t StringHash::operator()( std::string_view s ) const
 {
  std::uint64_t h = 0;
- for( auto i = s.size() ; i-- > 0 ; ) {     // Horner, from the last one
+ for( auto i = s.size() ; i-- > 0 ; ) {  // Horner, from the last one
   h = mulMod61( h , f_x ) + std::uint64_t( ( unsigned char )( s[ i ] ) ) + 1;
-  if( h >= kMersenne61 ) h -= kMersenne61;  // the character 0 counts as 1
+  if( h >= kMersenne61 )
+   h -= kMersenne61;  // the character 0 counts as 1
   }
  ADS_POST( h < kMersenne61 );
  return( h );
@@ -250,8 +252,8 @@ inline std::uint64_t StringHash::operator()( std::string_view s ) const
 
 template< class K , class V , class H >
 DLeftHashTable< K , V , H >::DLeftHashTable( std::size_t m , int d ,
-                                             std::uint64_t seed , H h )
- : f_h( h )
+					   std::uint64_t seed , H h )
+    : f_h( h )
 {
  ADS_PRE( ( m >= 1 ) && ( d >= 1 ) );
  f_w = std::max< std::size_t >( 1 , m / std::size_t( d ) );
@@ -263,14 +265,14 @@ DLeftHashTable< K , V , H >::DLeftHashTable( std::size_t m , int d ,
 template< class K , class V , class H >
 std::size_t DLeftHashTable< K , V , H >::list( const K & k , int i ) const
 {
- return( std::size_t( i ) * f_w +
-         std::size_t( f_g[ std::size_t( i ) ](
-                       std::uint64_t( f_h( k ) ) ) % f_w ) );
+ return(
+   std::size_t( i ) * f_w +
+   std::size_t( f_g[ std::size_t( i ) ]( std::uint64_t( f_h( k ) ) ) % f_w ) );
  }
 
 template< class K , class V , class H >
 auto DLeftHashTable< K , V , H >::find( const K & k ) const
- -> std::optional< std::pair< std::size_t , std::size_t > >
+  -> std::optional< std::pair< std::size_t , std::size_t > >
 {
  for( int i = 0 ; i < tables() ; ++i ) {
   const std::size_t b = list( k , i );
@@ -286,7 +288,7 @@ std::optional< V > DLeftHashTable< K , V , H >::lookup( const K & k ) const
 {
  const auto f = find( k );
  return( f ? std::optional< V >( f_T[ f->first ][ f->second ].second )
-           : std::nullopt );
+	    : std::nullopt );
  }
 
 template< class K , class V , class H >
@@ -295,10 +297,11 @@ void DLeftHashTable< K , V , H >::insert( const K & k , const V & v )
  if( const auto f = find( k ) )
   f_T[ f->first ][ f->second ].second = v;
  else {
-  std::size_t best = list( k , 0 );         // the shortest, the leftmost
+  std::size_t best = list( k , 0 );  // the shortest, the leftmost
   for( int i = 1 ; i < tables() ; ++i ) {
    const std::size_t b = list( k , i );
-   if( f_T[ b ].size() < f_T[ best ].size() ) best = b;
+   if( f_T[ b ].size() < f_T[ best ].size() )
+    best = b;
    }
   f_T[ best ].emplace_back( k , v );
   ++f_n;
@@ -350,13 +353,13 @@ int DLeftHashTable< K , V , H >::tables( void ) const
 template< class K , class V , class H >
 bool DLeftHashTable< K , V , H >::placed( const K & k ) const
 {
- std::size_t c = 0;                         // k at most once in its lists
+ std::size_t c = 0;  // k at most once in its lists
  for( int i = 0 ; i < tables() ; ++i )
   for( const auto & e : f_T[ list( k , i ) ] )
    c += e.first == k;
  if( c > 1 )
   return( false );
- if( f_n > 1024 )                           // a long sequence stays linear
+ if( f_n > 1024 )  // a long sequence stays linear
   return( true );
  std::size_t n = 0;
  for( std::size_t b = 0 ; b < f_T.size() ; ++b )

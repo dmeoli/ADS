@@ -89,7 +89,7 @@
 
 #ifndef __ADS_DaryHeap
  #define __ADS_DaryHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -109,7 +109,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS DaryHeap ------------------------------*/
@@ -119,15 +120,15 @@ namespace ADS {
 /// `pop()` by the walk down from the top, or from the bottom up if
 /// `BottomUp`
 template< class T , class Better = std::less< T > , unsigned D = 4 ,
-          bool BottomUp = false >
-class DaryHeap {
+	  bool BottomUp = false >
+class DaryHeap
+{
 
  static_assert( D >= 2 , "a heap needs at least two children per node" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty heap of the order `better`
  explicit DaryHeap( Better better = Better() );
@@ -241,7 +242,7 @@ class DaryHeap {
  /// the child \f$ j \in \{ 0 , \ldots , D - 1 \} \f$ of the place
  /// \f$ i \f$, \f$ D i + j + 1 \f$ (exercise 10.4 of Morin's book)
  [[nodiscard]] static constexpr std::size_t child( std::size_t i ,
-                                                   std::size_t j ) {
+						   std::size_t j ) {
   return( D * i + j + 1 );
   }
 
@@ -312,7 +313,6 @@ class DaryHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  // the hole at i moves up (down) until x fits in it; x comes as a value,
  // never stored and read back, which would stall the forwarding of the
  // store to the load
@@ -331,7 +331,7 @@ class DaryHeap {
 
  /// the heap, the root in f_A[ 0 ]
  std::vector< T , HugePageAllocator< T > > f_A;
- Better f_better;        ///< the order
+ Better f_better;  ///< the order
 
  };  // end( class DaryHeap )
 
@@ -347,7 +347,7 @@ class DaryHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DaryHeap.h included */
+#endif /* DaryHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File DaryHeap.h ---------------------------*/

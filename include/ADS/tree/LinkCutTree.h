@@ -70,7 +70,7 @@
 
 #ifndef __ADS_LinkCutTree
  #define __ADS_LinkCutTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -88,7 +88,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS LinkCutTree -----------------------------*/
@@ -97,12 +98,12 @@ namespace ADS {
 /// a forest of dynamic trees whose nodes have values of the type `T`,
 /// aggregated on the paths by the commutative monoid `Op`
 template< class T = long long , class Op = std::plus< T > >
-class LinkCutTree {
+class LinkCutTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Value = T;   ///< the type of the values
+ using Value = T;  ///< the type of the values
 
  /// the forest of \f$ n \f$ nodes with no edge, each of value
  /// \f$ \mathit{id} \f$, the identity of `op`
@@ -262,8 +263,7 @@ class LinkCutTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr int NONE = -1;     ///< no node
+ static constexpr int NONE = -1;  ///< no node
 
  /// whether \f$ x \f$ is the root of its splay tree
  [[nodiscard]] bool isRoot( int x ) const;
@@ -350,36 +350,37 @@ class LinkCutTree {
  /// its parent there (or the path-parent of the root of a splay tree),
  /// the flag of a reversal still to push, its value and the aggregate of
  /// its subtree, together, so that a rotation reads one place per node
- struct Node {
-  int ch[ 2 ];                       ///< the left and the right child
-  int par;                           ///< the parent, or the path-parent
-  char rev;                          ///< whether the subtree is reversed
-  T val;                             ///< the value
-  T agg;                             ///< the aggregate of the subtree
+ struct Node
+ {
+  int ch[ 2 ];  ///< the left and the right child
+  int par;      ///< the parent, or the path-parent
+  char rev;     ///< whether the subtree is reversed
+  T val;        ///< the value
+  T agg;        ///< the aggregate of the subtree
   };
 
- std::vector< Node > f_t;            ///< the nodes
- std::vector< int > f_p;             ///< the parents, before the splay
-                                     ///< trees
- std::vector< T > f_pv;              ///< and the values, apart from the
-                                     ///< nodes
- std::vector< int > f_path;          ///< the path of a walk kept
- int f_pathOf = NONE;                ///< where it starts
- long long f_pathAt = -1;            ///< the version it was taken at
- long long f_version = 0;            ///< the changes of the parents
- bool f_splay = false;               ///< whether the splay trees are in use
- long long f_ops = 0;                ///< the operations on the parents
- long long f_steps = 0;              ///< the steps of the walks of the
-                                     ///< group of 16 operations of now
- double f_mean = 0;                  ///< their recent mean, by operation
+ std::vector< Node > f_t;    ///< the nodes
+ std::vector< int > f_p;     ///< the parents, before the splay
+			     ///< trees
+ std::vector< T > f_pv;      ///< and the values, apart from the
+			     ///< nodes
+ std::vector< int > f_path;  ///< the path of a walk kept
+ int f_pathOf = NONE;        ///< where it starts
+ long long f_pathAt = -1;    ///< the version it was taken at
+ long long f_version = 0;    ///< the changes of the parents
+ bool f_splay = false;       ///< whether the splay trees are in use
+ long long f_ops = 0;        ///< the operations on the parents
+ long long f_steps = 0;      ///< the steps of the walks of the
+			     ///< group of 16 operations of now
+ double f_mean = 0;          ///< their recent mean, by operation
  /// the mean steps beyond which the splay trees are taken: about where an
  /// operation on them, \f$ O( \log n ) \f$ amortized with its constant,
  /// costs as much as the walks on the vector (a few nanoseconds a step,
  /// while the vector stays in the caches of the core), as measured
  static constexpr double f_limit = 512;
- std::vector< int > f_stack;         ///< the path of a splay
- T f_id;                             ///< the identity of `Op`
- Op f_op;                            ///< the operation
+ std::vector< int > f_stack;  ///< the path of a splay
+ T f_id;                      ///< the identity of `Op`
+ Op f_op;                     ///< the operation
 
  };  // end( class LinkCutTree )
 
@@ -395,7 +396,7 @@ class LinkCutTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LinkCutTree.h included */
+#endif /* LinkCutTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File LinkCutTree.h --------------------------*/

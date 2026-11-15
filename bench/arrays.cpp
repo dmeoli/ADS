@@ -82,7 +82,8 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// whether to run the structure who: all, or those whose name has in it
 /// one of the texts separated by | in the variable ONLY, and of these
@@ -95,8 +96,7 @@ bool wanted( const std::string & who )
  const std::string s = o;
  for( std::size_t a = 0 , b ; a <= s.size() ; a = b + 1 ) {
   b = std::min( s.find( '|' , a ) , s.size() );
-  if( ( b > a ) && ( who.find( s.substr( a , b - a ) ) !=
-                     std::string::npos ) )
+  if( ( b > a ) && ( who.find( s.substr( a , b - a ) ) != std::string::npos ) )
    return( ! skip( who ) );
   }
  return( false );
@@ -110,11 +110,13 @@ bool wanted( const std::string & who )
 /// order of a heap, searched with no branch and with the prefetch of the
 /// 16 descendants 4 levels down
 template< class T >
-class Eytzinger {
+class Eytzinger
+{
  public:
- explicit Eytzinger( const std::vector< T > & A ) : f_n( A.size() ) ,
-  f_b( static_cast< T * >( ::operator new( ( A.size() + 1 ) * sizeof( T ) ,
-                                           std::align_val_t( 64 ) ) ) ) {
+ explicit Eytzinger( const std::vector< T > & A )
+     : f_n( A.size() ) ,
+       f_b( static_cast< T * >( ::operator new( ( A.size() + 1 ) * sizeof( T ) ,
+						std::align_val_t( 64 ) ) ) ) {
   std::size_t j = 0;
   fill( A , j , 1 );
   }
@@ -135,7 +137,8 @@ class Eytzinger {
 
  private:
  void fill( const std::vector< T > & A , std::size_t & j , std::size_t i ) {
-  if( i > f_n ) return;
+  if( i > f_n )
+   return;
   fill( A , j , 2 * i );
   f_b[ i ] = A[ j++ ];
   fill( A , j , 2 * i + 1 );
@@ -149,52 +152,63 @@ void search( const char * type , std::size_t n , int r , unsigned seed )
 {
  std::mt19937_64 g( seed );
  std::vector< T > A( n ) , Q( n );
- for( auto & a : A ) a = T( g() );
- for( auto & q : Q ) q = T( g() );
+ for( auto & a : A )
+  a = T( g() );
+ for( auto & q : Q )
+  q = T( g() );
  std::sort( A.begin() , A.end() );
  auto at = [ & ]( std::size_t i ) { return( i < n ? A[ i ] : T( 0 ) ); };
  auto cell = [ & ]( const std::string & who , auto && f ) {
   if( ! wanted( who ) )
    return;
-  print( "array search" , type , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           T s = 0;
-           for( T q : Q ) s += f( q );
-           sink = sink + std::uint64_t( s ); } , r , n ) );
+  print( "array search" , type , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  T s = 0;
+		  for( T q : Q )
+		   s += f( q );
+		  sink = sink + std::uint64_t( s );
+		  } ,
+		 r , n ) );
   };
  for( const char * who : { "std::lower_bound" , "std::lower_bound A/A" } )
   cell( who , [ & ]( T q ) {
-   return( at( std::size_t( std::lower_bound( A.begin() , A.end() , q ) -
-                            A.begin() ) ) ); } );
+   return( at(
+     std::size_t( std::lower_bound( A.begin() , A.end() ,
+				    q ) - A.begin() ) ) );
+   } );
  if( wanted( "Eytzinger" ) ) {
   const Eytzinger< T > E( A );
   cell( "Eytzinger" , [ & ]( T q ) { return( E.lower( q ) ); } );
   }
- cell( "ADS::lowerBound" , [ & ]( T q ) {
-  return( at( ADS::lowerBound( A , q ) ) ); } );
- cell( "ADS::branchlessLowerBound" , [ & ]( T q ) {
-  return( at( ADS::branchlessLowerBound( A , q ) ) ); } );
+ cell( "ADS::lowerBound" ,
+       [ & ]( T q ) { return( at( ADS::lowerBound( A , q ) ) ); } );
+ cell( "ADS::branchlessLowerBound" ,
+       [ & ]( T q ) { return( at( ADS::branchlessLowerBound( A , q ) ) ); } );
  if( wanted( "ADS::SPlusTree" ) ) {
   const ADS::SPlusTree< T > S( A );
-  cell( "ADS::SPlusTree" , [ & ]( T q ) {   // the item of its own copy
+  cell( "ADS::SPlusTree" , [ & ]( T q ) {  // the item of its own copy
    const std::size_t r = S.lowerBound( q );
-   return( r < n ? S[ r ] : T( 0 ) ); } );
+   return( r < n ? S[ r ] : T( 0 ) );
+   } );
   }
 #ifdef ADS_HAS_PGM
- if( wanted( "pgm::PGMIndex" ) ) {          // the search of its README
+ if( wanted( "pgm::PGMIndex" ) ) {  // the search of its README
   const pgm::PGMIndex< T , 64 , 4 > P( A.begin() , A.end() );
   cell( "pgm::PGMIndex" , [ & ]( T q ) {
    const auto w = P.search( q );
    return( at( std::size_t( std::lower_bound( A.begin() + long( w.lo ) ,
-                                              A.begin() + long( w.hi ) ,
-                                              q ) - A.begin() ) ) ); } );
+					       A.begin() + long( w.hi ) , q ) -
+			     A.begin() ) ) );
+   } );
   }
 #endif
  if( wanted( "ADS::PGMIndex" ) ) {
   const ADS::PGMIndex< T , 64 , 4 > P( A );
-  cell( "ADS::PGMIndex" , [ & ]( T q ) {    // the item of its own copy
+  cell( "ADS::PGMIndex" , [ & ]( T q ) {  // the item of its own copy
    const std::size_t r = P.lowerBound( q );
-   return( r < n ? P[ r ] : T( 0 ) ); } );
+   return( r < n ? P[ r ] : T( 0 ) );
+   } );
   }
  }
 
@@ -203,7 +217,7 @@ void search( const char * type , std::size_t n , int r , unsigned seed )
 /*--------------------------------------------------------------------------*/
 
 const char * patterns[] = { "random" , "sorted" , "reversed" , "few" ,
-                            "organ" };
+			    "organ" };
 
 template< class T >
 void select( const char * type , std::size_t n , int r , unsigned seed )
@@ -213,8 +227,11 @@ void select( const char * type , std::size_t n , int r , unsigned seed )
    std::mt19937_64 g( seed );
    std::vector< T > A( n );
    for( std::size_t i = 0 ; i < n ; ++i ) {
-    const std::uint64_t k = p == 0 ? g() : p == 1 ? i : p == 2 ? n - i :
-                            p == 3 ? g() % 16 : std::min( i , n - 1 - i );
+    const std::uint64_t k = p == 0   ? g()
+			    : p == 1 ? i
+			    : p == 2 ? n - i
+			    : p == 3 ? g() % 16
+				     : std::min( i , n - 1 - i );
     if constexpr( std::is_floating_point_v< T > )
      A[ i ] = T( std::int64_t( k ) ) / 1e3;
     else
@@ -222,38 +239,46 @@ void select( const char * type , std::size_t n , int r , unsigned seed )
     }
    const std::size_t k = q == 0 ? n / 2 : n / 10;
    const std::string what = std::string( type ) + " " + patterns[ p ] +
-                            ( q == 0 ? " median" : " n/10" );
+			    ( q == 0 ? " median" : " n/10" );
    auto cell = [ & ]( const std::string & who , auto && f ) {
     if( ! wanted( who ) )
      return;
-    print( "select" , what , n , who , median( [ & ](){ return( A ); } ,
-            [ & ]( std::vector< T > & B ) {
-             f( B );
-             sink = sink + std::uint64_t( B[ k ] ); } , r , n ) );
+    print( "select" , what , n , who ,
+	   median( [ & ]() { return( A ); } ,
+		   [ & ]( std::vector< T > & B ) {
+		    f( B );
+		    sink = sink + std::uint64_t( B[ k ] );
+		    } ,
+		   r , n ) );
     };
    using V = std::vector< T >;
    const auto at = std::ptrdiff_t( k );
    for( const char * who : { "std::nth_element" , "std::nth_element A/A" } )
     cell( who , [ & ]( V & B ) {
-     std::nth_element( B.begin() , B.begin() + at , B.end() ); } );
+     std::nth_element( B.begin() , B.begin() + at , B.end() );
+     } );
 #ifdef ADS_HAS_MINISELECT
    cell( "miniselect::floyd_rivest_select" , [ & ]( V & B ) {
-    miniselect::floyd_rivest_select( B.begin() , B.begin() + at ,
-                                     B.end() ); } );
+    miniselect::floyd_rivest_select( B.begin() , B.begin() + at , B.end() );
+    } );
    cell( "miniselect::pdqselect" , [ & ]( V & B ) {
-    miniselect::pdqselect( B.begin() , B.begin() + at , B.end() ); } );
+    miniselect::pdqselect( B.begin() , B.begin() + at , B.end() );
+    } );
    cell( "miniselect::median_of_ninthers" , [ & ]( V & B ) {
     miniselect::median_of_ninthers_select( B.begin() , B.begin() + at ,
-                                           B.end() ); } );
+					   B.end() );
+    } );
 #endif
    cell( "ADS::nthElement" , [ & ]( V & B ) {
-    ADS::nthElement( B.begin() , B.begin() + at , B.end() ); } );
-   if( p != 3 ) {                           // quadratic on equal items
+    ADS::nthElement( B.begin() , B.begin() + at , B.end() );
+    } );
+   if( p != 3 ) {  // quadratic on equal items
     cell( "ADS::selection" , [ & ]( V & B ) {
      std::mt19937 rng( 7 );
-     ADS::selection( B , k + 1 , &rng ); } );
-    cell( "ADS::medianOfMedians" , [ & ]( V & B ) {
-     ADS::medianOfMedians( B , k + 1 ); } );
+     ADS::selection( B , k + 1 , &rng );
+     } );
+    cell( "ADS::medianOfMedians" ,
+	  [ & ]( V & B ) { ADS::medianOfMedians( B , k + 1 ); } );
     }
    }
  }
@@ -266,64 +291,90 @@ void rmq( std::size_t n , int r , unsigned seed )
 {
  std::mt19937_64 g( seed );
  std::vector< std::int32_t > A( n );
- for( auto & a : A ) a = std::int32_t( g() );
+ for( auto & a : A )
+  a = std::int32_t( g() );
  std::vector< std::pair< std::size_t , std::size_t > > L( n ) , S( n );
  for( std::size_t q = 0 ; q < n ; ++q ) {
   std::size_t i = g() % n , j = g() % n;
-  if( i > j ) std::swap( i , j );
+  if( i > j )
+   std::swap( i , j );
   L[ q ] = { i , j };
   i = g() % n;
   S[ q ] = { i , std::min( n - 1 , i + g() % 64 ) };
   }
  auto cells = [ & ]( const std::string & who , auto && build , auto && ask ) {
-  if( ( n > 4000000 ) && ( ( who.find( "parse" ) != std::string::npos ) ||
-                           ( who.find( "sparse_table" ) !=
-                             std::string::npos ) ) )
-   return;                                  // the tables of n log n words
-  if( ! wanted( who ) )                     // are left out past 4 10^6
+  if( ( n > 4000000 ) &&
+      ( ( who.find( "parse" ) != std::string::npos ) ||
+	( who.find( "sparse_table" ) != std::string::npos ) ) )
+   return;               // the tables of n log n words
+  if( ! wanted( who ) )  // are left out past 4 10^6
    return;
-  print( "rmq" , "build" , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) { auto s = build(); sink = sink + ask( *s , 0 ,
-                                                              n - 1 ); } ,
-          r , n ) );
+  print( "rmq" , "build" , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  auto s = build();
+		  sink = sink + ask( *s , 0 , n - 1 );
+		  } ,
+		 r , n ) );
   const auto s = build();
   for( int c = 0 ; c < 2 ; ++c )
    print( "rmq" , c == 0 ? "random ranges" : "short ranges" , n , who ,
-          median( [](){ return( 0 ); } , [ & ]( int ) {
-           std::uint64_t t = 0;
-           for( const auto & [ i , j ] : c == 0 ? L : S )
-            t += std::uint64_t( A[ ask( *s , i , j ) ] );
-           sink = sink + t; } , r , n ) );
+	  median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   std::uint64_t t = 0;
+		   for( const auto & [ i , j ] : c == 0 ? L : S )
+		    t += std::uint64_t( A[ ask( *s , i , j ) ] );
+		   sink = sink + t;
+		   } ,
+		  r , n ) );
   };
  using V = std::vector< std::int32_t >;
  auto ads = []( const auto & s , std::size_t i , std::size_t j ) {
-  return( s.query( i , j ) ); };
+  return( s.query( i , j ) );
+  };
 #ifdef ADS_HAS_SDSL
- for( const char * who : { "sdsl::rmq_succinct_sct" ,
-                           "sdsl::rmq_succinct_sct A/A" } )
-  cells( who , [ & ](){
-          return( std::make_unique< sdsl::rmq_succinct_sct<> >( &A ) ); } ,
-         []( const auto & s , std::size_t i , std::size_t j ) {
-          return( std::size_t( s( i , j ) ) ); } );
- cells( "sdsl::rmq_succinct_sada" , [ & ](){
-         return( std::make_unique< sdsl::rmq_succinct_sada<> >( &A ) ); } ,
-        []( const auto & s , std::size_t i , std::size_t j ) {
-         return( std::size_t( s( i , j ) ) ); } );
- cells( "sdsl::rmq_support_sparse_table" , [ & ](){
-         return( std::make_unique<
-                  sdsl::rmq_support_sparse_table< V , true > >( &A ) ); } ,
-        []( const auto & s , std::size_t i , std::size_t j ) {
-         return( std::size_t( s( i , j ) ) ); } );
+ for( const char * who :
+      { "sdsl::rmq_succinct_sct" , "sdsl::rmq_succinct_sct A/A" } )
+  cells(
+    who ,
+    [ & ]() { return( std::make_unique< sdsl::rmq_succinct_sct<> >( &A ) ); } ,
+    []( const auto & s , std::size_t i , std::size_t j ) {
+     return( std::size_t( s( i , j ) ) );
+     } );
+ cells(
+   "sdsl::rmq_succinct_sada" ,
+   [ & ]() { return( std::make_unique< sdsl::rmq_succinct_sada<> >( &A ) ); } ,
+   []( const auto & s , std::size_t i , std::size_t j ) {
+    return( std::size_t( s( i , j ) ) );
+    } );
+ cells(
+   "sdsl::rmq_support_sparse_table" ,
+   [ & ]() {
+    return(
+      std::make_unique< sdsl::rmq_support_sparse_table< V , true > >( &A ) );
+    } ,
+   []( const auto & s , std::size_t i , std::size_t j ) {
+    return( std::size_t( s( i , j ) ) );
+    } );
 #endif
- cells( "ADS::WordRangeMinimum" , [ & ](){
-         return( std::make_unique< ADS::WordRangeMinimum< std::int32_t > >(
-                  A ) ); } , ads );
- cells( "ADS::SparseTable" , [ & ](){
-         return( std::make_unique< ADS::SparseTable< std::int32_t > >(
-                  A ) ); } , ads );
- cells( "ADS::RangeMinimum" , [ & ](){
-         return( std::make_unique< ADS::RangeMinimum< std::int32_t > >(
-                  A ) ); } , ads );
+ cells(
+   "ADS::WordRangeMinimum" ,
+   [ & ]() {
+    return( std::make_unique< ADS::WordRangeMinimum< std::int32_t > >( A ) );
+    } ,
+   ads );
+ cells(
+   "ADS::SparseTable" ,
+   [ & ]() {
+    return( std::make_unique< ADS::SparseTable< std::int32_t > >( A ) );
+    } ,
+   ads );
+ cells(
+   "ADS::RangeMinimum" ,
+   [ & ]() {
+    return( std::make_unique< ADS::RangeMinimum< std::int32_t > >( A ) );
+    } ,
+   ads );
  }
 
 }  // end( namespace )
@@ -331,9 +382,10 @@ void rmq( std::size_t n , int r , unsigned seed )
 int main( int argc , char ** argv )
 {
  const Options o( argc , argv , { 100000 , 1000000 , 10000000 } );
- const char * part = std::getenv( "PART" );   // array search, select, rmq
+ const char * part = std::getenv( "PART" );  // array search, select, rmq
  auto doing = [ & ]( const char * p ) {
-  return( ! part || ! *part || ( std::string( part ) == p ) ); };
+  return( ! part || ! *part || ( std::string( part ) == p ) );
+  };
  for( std::size_t n : o.sizes ) {
   if( doing( "array search" ) ) {
    search< std::uint32_t >( "uint32" , n , o.runs , o.seed );

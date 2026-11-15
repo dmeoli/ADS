@@ -14,15 +14,18 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// each item of X is 0 or 1
 inline bool bits( const Bits & X )
 {
  return( std::all_of( X.begin() , X.end() , []( int b ) {
-  return( ( b == 0 ) || ( b == 1 ) ); } ) );
+  return( ( b == 0 ) || ( b == 1 ) );
+  } ) );
  }
 
 }  // end( namespace detail )
@@ -34,7 +37,7 @@ inline Bits toBits( std::uint64_t x , std::size_t n )
  for( ; x || ( b.size() < n ) ; x >>= 1 )
   b.push_back( int( x & 1 ) );
  ADS_POST( ( b.size() >= n ) &&
-           ( ( b.size() > 64 ) || ( fromBits( b ) == x0 ) ) );
+	   ( ( b.size() > 64 ) || ( fromBits( b ) == x0 ) ) );
  return( b );
  }
 
@@ -55,7 +58,8 @@ inline Bits carry( const std::vector< long > & c )
  for( std::size_t i = 0 ; ( i < c.size() ) || r ; ++i ) {
   long v = r + ( i < c.size() ? c[ i ] : 0 );
   long bit = v % 2;
-  if( bit < 0 ) bit += 2;
+  if( bit < 0 )
+   bit += 2;
   b.push_back( int( bit ) );
   r = ( v - bit ) / 2;
   }
@@ -70,8 +74,8 @@ inline Bits binaryAdd( const Bits & X , const Bits & Y )
  Bits Z;
  int r = 0;
  for( std::size_t i = 0 ; ( i < X.size() ) || ( i < Y.size() ) ; ++i ) {
-  const int s = ( i < X.size() ? X[ i ] : 0 ) +
-                ( i < Y.size() ? Y[ i ] : 0 ) + r;
+  const int s =
+    ( i < X.size() ? X[ i ] : 0 ) + ( i < Y.size() ? Y[ i ] : 0 ) + r;
   Z.push_back( s & 1 );
   r = s >> 1;
   }
@@ -86,28 +90,27 @@ inline std::vector< long > widen( const Bits & X )
  }
 
 inline Bits multiplyBinarySchool( const Bits & X , const Bits & Y ,
-                            long * mults )
+				  long * mults )
 {
  ADS_AUDIT( detail::bits( X ) && detail::bits( Y ) );
  return( carry( multiplyNaive( widen( X ) , widen( Y ) , mults ) ) );
  }
 
 inline Bits multiplyBinaryFour( const Bits & X , const Bits & Y ,
-                          long * mults )
+				long * mults )
 {
  ADS_AUDIT( detail::bits( X ) && detail::bits( Y ) );
  return( carry( multiplyFour( widen( X ) , widen( Y ) , mults ) ) );
  }
 
 inline Bits multiplyBinaryKaratsuba( const Bits & X , const Bits & Y ,
-                               long * mults )
+				     long * mults )
 {
  ADS_AUDIT( detail::bits( X ) && detail::bits( Y ) );
  return( carry( multiplyKaratsuba( widen( X ) , widen( Y ) , mults ) ) );
  }
 
-inline std::uint64_t ahmes( std::uint64_t a , std::uint64_t b ,
-                            long * steps )
+inline std::uint64_t ahmes( std::uint64_t a , std::uint64_t b , long * steps )
 {
  const std::uint64_t a0 = a , b0 = b;
  std::uint64_t p = 0;

@@ -87,7 +87,7 @@
 
 #ifndef __ADS_RangeMinimum
  #define __ADS_RangeMinimum
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -108,7 +108,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the parent of each item of \f$ A \f$ in its Cartesian tree, the root (the
 /// leftmost minimum) having \f$ n \f$; equal items go to the right
@@ -134,8 +135,8 @@ namespace ADS {
 /// \f]
 /// \post a heap: no item is smaller than its parent (audit)
 template< class T , class Compare = std::less< T > >
-[[nodiscard]] std::vector< std::size_t > cartesianTree(
-                         const std::vector< T > & A , Compare less = {} );
+[[nodiscard]] std::vector< std::size_t >
+cartesianTree( const std::vector< T > & A , Compare less = {} );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS SparseTable ----------------------------*/
@@ -143,11 +144,11 @@ template< class T , class Compare = std::less< T > >
 
 /// the range minima of an array by the sparse table
 template< class T , class Compare = std::less< T > >
-class SparseTable {
+class SparseTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an empty table
  SparseTable( void ) = default;
 
@@ -199,14 +200,14 @@ class SparseTable {
 
  // a constant view of the array, random access
 
- using value_type = T;                   ///< the type of the items
- using size_type = std::size_t;          ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using const_reference = const T &;      ///< a reference to an item
- using reference = const_reference;      ///< the same, constant
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using const_reference = const T &;       ///< a reference to an item
+ using reference = const_reference;       ///< the same, constant
  using const_iterator = typename std::vector< T >::const_iterator;
-                                         ///< an iterator on the items
- using iterator = const_iterator;        ///< the same, constant
+ ///< an iterator on the items
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the first item
  [[nodiscard]] const_iterator begin( void ) const { return( f_A.begin() ); }
@@ -219,7 +220,6 @@ class SparseTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the one of \f$ a < b \f$ with the smaller item, \f$ a \f$ on a tie
  [[nodiscard]] std::size_t better( std::size_t a , std::size_t b ) const;
 
@@ -234,11 +234,11 @@ class SparseTable {
 /*--------------------------------------------------------------------------*/
 
 /// the range minima of an array whose adjacent items differ by 1
-class PlusMinusOneRangeMinimum {
+class PlusMinusOneRangeMinimum
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an empty structure
  PlusMinusOneRangeMinimum( void ) = default;
 
@@ -299,18 +299,17 @@ class PlusMinusOneRangeMinimum {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place in \f$ D \f$ of the leftmost minimum of the offsets
  /// \f$ a .. b \f$ of the block \f$ k \f$
  [[nodiscard]] std::size_t inBlock( std::size_t k , std::size_t a ,
-                                    std::size_t b ) const;
+				    std::size_t b ) const;
 
- std::vector< long > f_D;                   ///< the items
- std::size_t f_d = 1;                       ///< the size of a block
- std::vector< std::uint32_t > f_sig;        ///< the signature of a block
- std::vector< std::uint8_t > f_table;       ///< \f$ [ \sigma ][ a ][ b ] \f$
- std::vector< std::size_t > f_blockMin;     ///< the minimum of a block
- SparseTable< long > f_blocks;              ///< on the minima of blocks
+ std::vector< long > f_D;                ///< the items
+ std::size_t f_d = 1;                    ///< the size of a block
+ std::vector< std::uint32_t > f_sig;     ///< the signature of a block
+ std::vector< std::uint8_t > f_table;    ///< \f$ [ \sigma ][ a ][ b ] \f$
+ std::vector< std::size_t > f_blockMin;  ///< the minimum of a block
+ SparseTable< long > f_blocks;           ///< on the minima of blocks
 
  };  // end( class PlusMinusOneRangeMinimum )
 
@@ -321,11 +320,11 @@ class PlusMinusOneRangeMinimum {
 /// the range minima of an array by Bender and Farach-Colton: the Cartesian
 /// tree, its Euler tour, and the minima of the depths along the tour
 template< class T , class Compare = std::less< T > >
-class RangeMinimum {
+class RangeMinimum
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an empty structure
  RangeMinimum( void ) = default;
 
@@ -380,14 +379,14 @@ class RangeMinimum {
 
  // a constant view of the array, random access
 
- using value_type = T;                   ///< the type of the items
- using size_type = std::size_t;          ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using const_reference = const T &;      ///< a reference to an item
- using reference = const_reference;      ///< the same, constant
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using const_reference = const T &;       ///< a reference to an item
+ using reference = const_reference;       ///< the same, constant
  using const_iterator = typename std::vector< T >::const_iterator;
-                                         ///< an iterator on the items
- using iterator = const_iterator;        ///< the same, constant
+ ///< an iterator on the items
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the first item
  [[nodiscard]] const_iterator begin( void ) const { return( f_A.begin() ); }
@@ -400,12 +399,11 @@ class RangeMinimum {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< T > f_A;                 ///< the items
- std::vector< std::size_t > f_E;       ///< the Euler tour
- std::vector< std::size_t > f_first;   ///< the first visit of each item
- PlusMinusOneRangeMinimum f_tour;      ///< on the depths along the tour
- Compare f_less;                       ///< the order
+ std::vector< T > f_A;                ///< the items
+ std::vector< std::size_t > f_E;      ///< the Euler tour
+ std::vector< std::size_t > f_first;  ///< the first visit of each item
+ PlusMinusOneRangeMinimum f_tour;     ///< on the depths along the tour
+ Compare f_less;                      ///< the order
 
  };  // end( class RangeMinimum )
 
@@ -421,7 +419,7 @@ class RangeMinimum {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RangeMinimum.h included */
+#endif /* RangeMinimum.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RangeMinimum.h -------------------------*/

@@ -18,7 +18,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE EVENTS -------------------------------*/
@@ -27,14 +28,18 @@ namespace ADS {
 template< class W >
 std::pair< int , int > endsOf( const GraphEvent< W > & e )
 {
- return( std::visit( []( const auto & x ) -> std::pair< int , int > {
-  if constexpr( requires { x.v; } )
-   return( std::pair< int , int >( x.u , x.v ) );
-  else
-   return( std::pair< int , int >( -1 , -1 ) ); } , e ) );
+ return( std::visit(
+   []( const auto & x ) -> std::pair< int , int > {
+    if constexpr( requires { x.v; } )
+     return( std::pair< int , int >( x.u , x.v ) );
+    else
+     return( std::pair< int , int >( -1 , -1 ) );
+    } ,
+   e ) );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// whether two weights are equal, never if W has no ==
 template< class W >
@@ -49,18 +54,18 @@ bool sameWeight( const W & a , const W & b )
 /// the key of the hash of an edge
 inline std::uint64_t edgeKey( int u , int v )
 {
- return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) |
-         std::uint32_t( v ) );
+ return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) | std::uint32_t( v ) );
  }
 
 }  // end( namespace detail )
 
 template< class W >
-std::vector< GraphEvent< W > > coalesce(
-                               std::span< const GraphEvent< W > > E )
+std::vector< GraphEvent< W > >
+coalesce( std::span< const GraphEvent< W > > E )
 {
  // the state of an edge before its first event and after its last one
- struct Net {
+ struct Net
+ {
   int u , v;
   std::optional< W > before , after;
   };
@@ -70,31 +75,31 @@ std::vector< GraphEvent< W > > coalesce(
  std::unordered_set< int > born;
  std::unordered_set< int > gone;
  for( const auto & e : E ) {
-  if( const auto * x = std::get_if< NodeInserted >( & e ) ) {
+  if( const auto * x = std::get_if< NodeInserted >( &e ) ) {
    ins.push_back( x->u );
    born.insert( x->u );
    continue;
    }
-  if( const auto * x = std::get_if< NodeDeleted >( & e ) ) {
+  if( const auto * x = std::get_if< NodeDeleted >( &e ) ) {
    if( born.count( x->u ) )
-    gone.insert( x->u );                 // inserted and deleted: no trace
+    gone.insert( x->u );  // inserted and deleted: no trace
    else
     del.push_back( x->u );
    continue;
    }
   const auto [ u , v ] = endsOf( e );
   std::optional< W > before , after;
-  if( const auto * x = std::get_if< EdgeInserted< W > >( & e ) )
+  if( const auto * x = std::get_if< EdgeInserted< W > >( &e ) )
    after = x->w;
-  else if( const auto * x = std::get_if< EdgeDeleted< W > >( & e ) )
+  else if( const auto * x = std::get_if< EdgeDeleted< W > >( &e ) )
    before = x->w;
   else {
    const auto & c = std::get< WeightChanged< W > >( e );
    before = c.from;
    after = c.to;
    }
-  const auto [ it , fresh ] = at.try_emplace( detail::edgeKey( u , v ) ,
-                                              nets.size() );
+  const auto [ it , fresh ] =
+    at.try_emplace( detail::edgeKey( u , v ) , nets.size() );
   if( fresh )
    nets.push_back( { u , v , before , after } );
   else
@@ -113,10 +118,9 @@ std::vector< GraphEvent< W > > coalesce(
    out.emplace_back( EdgeInserted< W >{ x.u , x.v , *x.after } );
   else if( x.before && ! x.after )
    out.emplace_back( EdgeDeleted< W >{ x.u , x.v , *x.before } );
-  else if( x.before && x.after &&
-           ! detail::sameWeight( *x.before , *x.after ) )
-   out.emplace_back( WeightChanged< W >{ x.u , x.v , *x.before ,
-                                         *x.after } );
+  else if( x.before && x.after && ! detail::sameWeight( *x.before ,
+							*x.after ) )
+   out.emplace_back( WeightChanged< W >{ x.u , x.v , *x.before , *x.after } );
   }
  for( int u : del )
   out.emplace_back( NodeDeleted{ u } );
@@ -129,7 +133,7 @@ std::vector< GraphEvent< W > > coalesce(
 
 template< Graph G , class Policy >
 void ObservedGraph< G , Policy >::insertEdgeTold( int u , int v ,
-                                                  const Weight & w )
+						 const Weight & w )
 {
  const std::optional< Weight > old = f_g.weight( u , v );
  f_g.insertEdge( u , v , w );
@@ -165,8 +169,8 @@ void ObservedGraph< G , Policy >::deleteNode( int u )
    // the edges of u, out of it and, if oriented, into it:
    // \f$ O( n + m ) \f$, as the deletion of the node in g
    std::vector< std::pair< int , Weight > > out , in;
-   f_g.forEachEdge( u , [ & ]( int v , const Weight & w ) {
-    out.emplace_back( v , w ); } );
+   f_g.forEachEdge(
+     u , [ & ]( int v , const Weight & w ) { out.emplace_back( v , w ); } );
    if( f_g.directed() )
     for( int x : f_g.V() )
      if( x != u )
@@ -192,7 +196,7 @@ void ObservedGraph< G , Policy >::deleteNode( int u )
 
 template< Graph G , class Policy >
 bool ObservedGraph< G , Policy >::setWeightTold( int u , int v ,
-                                                 const Weight & w )
+						const Weight & w )
 {
  std::optional< Weight > old = f_g.weight( u , v );
  if constexpr( requires { f_g.setWeight( u , v , w ); } ) {
@@ -202,7 +206,7 @@ bool ObservedGraph< G , Policy >::setWeightTold( int u , int v ,
  else {
   if( ! old )
    return( false );
-  f_g.insertEdge( u , v , w );          // only the weight changes
+  f_g.insertEdge( u , v , w );  // only the weight changes
   }
  const auto [ a , b ] = key( u , v );
  tell( WeightChanged< Weight >{ a , b , *old , w } );
@@ -218,7 +222,7 @@ bool ObservedGraph< G , Policy >::revertible( std::size_t t ) const
   return( false );
  for( std::size_t i = t ; i < B.size() ; ++i )
   if( ( kindOf( B[ i ] ) & GraphEvents::EDGES ) == 0 )
-   return( false );                     // a node: no inverse
+   return( false );  // a node: no inverse
  return( true );
  }
 
@@ -230,9 +234,12 @@ void ObservedGraph< G , Policy >::rollback( std::size_t t )
  const auto B = f_sub.collected();
  const std::vector< Event > R( B.begin() + std::ptrdiff_t( t ) , B.end() );
  for( auto it = R.rbegin() ; it != R.rend() ; ++it )
-  std::visit( [ & ]( const auto & x ) {
-   if constexpr( mod::invertible< std::decay_t< decltype( x ) > > )
-    apply( inverse( x ) ); } , *it );
+  std::visit(
+    [ & ]( const auto & x ) {
+     if constexpr( mod::invertible< std::decay_t< decltype( x ) > > )
+      apply( inverse( x ) );
+     } ,
+    *it );
  }
 
 }  // end( namespace ADS )

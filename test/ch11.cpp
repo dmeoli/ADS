@@ -49,7 +49,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using WEdges = std::vector< std::tuple< int , int , int > >;
@@ -67,7 +68,7 @@ constexpr int INFI = infinity< int >();
 /// the oriented graph of n nodes and of the edges ( u , v , w )
 template< class W = int >
 ListGraph< W > make( int n ,
-                     const std::vector< std::tuple< int , int , W > > & E )
+		     const std::vector< std::tuple< int , int , W > > & E )
 {
  ListGraph< W > g( n , true );
  for( auto [ u , v , w ] : E )
@@ -77,19 +78,24 @@ ListGraph< W > make( int n ,
 
 /// Figure 11.1 (b) and 11.3 (a), r = 0; figure 11.1 (a) has the cost 2 on
 /// ( 3 , 2 ), and so the negative cycle 1 , 3 , 2 , 1
-const WEdges G2 = { { 0 , 1 , 3 } , { 0 , 2 , 1 } , { 1 , 3 , -2 } ,
-                    { 2 , 1 , -1 } , { 3 , 2 , 4 } };
-const WEdges G1 = { { 0 , 1 , 3 } , { 0 , 2 , 1 } , { 1 , 3 , -2 } ,
-                    { 2 , 1 , -1 } , { 3 , 2 , 2 } };
+const WEdges G2 = {
+ { 0 , 1 , 3 } , { 0 , 2 , 1 } , { 1 , 3 , -2 } , { 2 , 1 , -1 } ,
+ { 3 , 2 , 4 }
+ };
+const WEdges G1 = {
+ { 0 , 1 , 3 } , { 0 , 2 , 1 } , { 1 , 3 , -2 } , { 2 , 1 , -1 } ,
+ { 3 , 2 , 2 }
+ };
 
 /// a random graph, each edge with probability p and a cost in
 /// [ lo , hi ]; acyclic, by a random order, if dag
 WG random_graph( int n , double p , int lo , int hi , bool dag ,
-                 unsigned seed )
+		 unsigned seed )
 {
  std::mt19937 g( seed );
  Ints pi( n );
- for( int i = 0 ; i < n ; ++i ) pi[ i ] = i;
+ for( int i = 0 ; i < n ; ++i )
+  pi[ i ] = i;
  std::shuffle( pi.begin() , pi.end() , g );
  std::bernoulli_distribution b( p );
  std::uniform_int_distribution< int > w( lo , hi );
@@ -111,7 +117,8 @@ std::vector< std::vector< long > > floyd( const WG & g )
  for( int u = 0 ; u < n ; ++u ) {
   D[ u ][ u ] = 0;
   g.forEachEdge( u , [ & ]( int v , int w ) {
-   D[ u ][ v ] = std::min( D[ u ][ v ] , long( w ) ); } );
+   D[ u ][ v ] = std::min( D[ u ][ v ] , long( w ) );
+   } );
   }
  for( int k = 0 ; k < n ; ++k )
   for( int i = 0 ; i < n ; ++i )
@@ -120,7 +127,8 @@ std::vector< std::vector< long > > floyd( const WG & g )
      D[ i ][ j ] = std::min( D[ i ][ j ] , D[ i ][ k ] + D[ k ][ j ] );
  for( auto & r : D )
   for( auto & x : r )
-   if( x >= I / 2 ) x = INFI;
+   if( x >= I / 2 )
+    x = INFI;
  return( D );
  }
 
@@ -141,9 +149,9 @@ bool bellman( const G & g , int r , const ShortestPathTree< D > & R )
  return( ok );
  }
 
-const Frontier all[] = { Frontier::LIST , Frontier::HEAP ,
-                         Frontier::FIBONACCI , Frontier::QUEUE ,
-                         Frontier::STACK , Frontier::DEQUE };
+const Frontier all[] = { Frontier::LIST ,  Frontier::HEAP ,
+			 Frontier::FIBONACCI ,
+			 Frontier::QUEUE , Frontier::STACK , Frontier::DEQUE };
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -157,8 +165,8 @@ ADS_TEST( "sec11.5.fibonacci" )
 {
  std::mt19937 g( 1 );
  FibonacciHeapPriorityQueue< int > q;
- std::map< int , std::pair< FibonacciHeapPriorityQueue< int >::Handle ,
-                            int > > in;
+ std::map< int , std::pair< FibonacciHeapPriorityQueue< int >::Handle , int > >
+   in;
  int next = 0;
  for( int o = 0 ; o < 50000 ; ++o ) {
   const int what = g() % 10;
@@ -186,19 +194,19 @@ ADS_TEST( "sec11.5.fibonacci" )
   CHECK( q.size() == int( in.size() ) );
   }
  CHECK_THROWS( ( FibonacciHeapPriorityQueue< int >().deleteMin() ) ,
-               std::logic_error );
+	       std::logic_error );
  CHECK_THROWS( ( FibonacciHeapPriorityQueue< int >().min() ) ,
-               std::logic_error );
+	       std::logic_error );
  CHECK_THROWS( ( FibonacciHeapPriorityQueue< int >().minPriority() ) ,
-               std::logic_error );
+	       std::logic_error );
 
  // one item, in and out, and the heap empty again and reusable
  FibonacciHeapPriorityQueue< int > one;
  CHECK( one.empty() && one.size() == 0 );
  auto h1 = one.insert( 7 , 3 );
  CHECK( one.min() == 7 && one.minPriority() == 3 && one.size() == 1 );
- one.decrease( h1 , 3 );                         // to the same priority
- one.decrease( h1 , -4 );                         // the min itself
+ one.decrease( h1 , 3 );   // to the same priority
+ one.decrease( h1 , -4 );  // the min itself
  CHECK( one.minPriority() == -4 && one.deleteMin() == 7 && one.empty() );
  one.insert( 8 , 1 );
  CHECK( one.deleteMin() == 8 && one.empty() );
@@ -221,7 +229,7 @@ ADS_TEST( "sec11.5.fibonacci" )
  eq.insert( 101 , MINI );
  CHECK( eq.deleteMin() == 101 );
  std::set< int > out;
- for( int i = 0 ; i < 50 ; ++i ) {               // a consolidated forest
+ for( int i = 0 ; i < 50 ; ++i ) {  // a consolidated forest
   CHECK( eq.minPriority() == 5 );
   out.insert( eq.deleteMin() );
   }
@@ -237,10 +245,12 @@ ADS_TEST( "sec11.5.fibonacci" )
  CHECK( eq.minPriority() == MAXI && eq.deleteMin() == 100 && eq.empty() );
  }
 
-namespace {
+namespace
+{
 
 /// an item that counts the live ones and whose copy throws on demand
-struct Counted {
+struct Counted
+{
  static inline int live = 0;
  static inline bool fail = false;
  int v;
@@ -278,7 +288,7 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
   CHECK( p == 7 && x > 0 );
   ++nodes;
   }
- const auto r = bh[ b.min() ];                 // one root, of degree 10
+ const auto r = bh[ b.min() ];  // one root, of degree 10
  CHECK( nodes == 1024 && r->right == r && r->degree == 10 );
  std::set< int > seen;
  while( ! b.empty() ) {
@@ -290,11 +300,11 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
  for( unsigned s = 1 ; s <= 3 ; ++s ) {
   std::mt19937 g( s );
   FibonacciHeapPriorityQueue< int > q;
-  std::multiset< std::pair< int , int > > M;           // ( priority , item )
+  std::multiset< std::pair< int , int > > M;  // ( priority , item )
   std::vector< FibonacciHeapPriorityQueue< int >::Handle > h;
   std::vector< int > prio;
   for( int o = 0 ; o < 60000 ; ++o ) {
-   if( o == 30000 ) {                       // a move: the handles stay valid
+   if( o == 30000 ) {  // a move: the handles stay valid
     FibonacciHeapPriorityQueue< int > t( std::move( q ) );
     CHECK( q.empty() && q.size() == 0 && t.size() == int( M.size() ) );
     q.insert( -1 , 0 );
@@ -315,22 +325,23 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
     CHECK( prio[ x ] == M.begin()->first );
     M.erase( M.find( std::pair( prio[ x ] , x ) ) );
     }
-   else {                                   // an item still in the heap
+   else {  // an item still in the heap
     auto it = M.begin();
     std::advance( it , g() % std::min< std::size_t >( M.size() , 64 ) );
     if( what & 1 )
      it = std::prev( M.end() );
     const int x = it->second;
     M.erase( it );
-    if( what == 11 ) {                      // deleted
+    if( what == 11 ) {  // deleted
      q.decrease( h[ x ] , MINI );
      CHECK( q.minPriority() == MINI && q.deleteMin() == x );
      continue;
      }
-    const int p = what == 12 ? prio[ x ] :            // equal, the minimum
-                  what == 14 ? M.empty() ? prio[ x ] :
-                               std::min( prio[ x ] , M.begin()->first ) :
-                  prio[ x ] - int( g() % 100 );
+    const int p =
+      what == 12 ? prio[ x ] :  // equal, the minimum
+	what == 14
+	? M.empty() ? prio[ x ] : std::min( prio[ x ] , M.begin()->first )
+	: prio[ x ] - int( g() % 100 );
     q.decrease( h[ x ] , p );
     prio[ x ] = p;
     M.emplace( p , x );
@@ -352,7 +363,7 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
    h.push_back( c.insert( Counted( i ) , ( i * 7919 ) % 3001 ) );
   CHECK( Counted::live == 3000 );
   int last = -1;
-  for( int i = 0 ; i < 1000 ; ++i ) {       // the priorities are distinct
+  for( int i = 0 ; i < 1000 ; ++i ) {  // the priorities are distinct
    const int p = c.minPriority();
    CHECK( p > last && ( c.deleteMin().v * 7919 ) % 3001 == p );
    last = p;
@@ -362,7 +373,7 @@ ADS_TEST( "sec11.5.fibonacci-pool" )
   CHECK_THROWS( c.insert( Counted( -1 ) , -5 ) , std::runtime_error );
   Counted::fail = false;
   CHECK( Counted::live == c.size() && c.minPriority() >= 0 );
-  c.decrease( h[ 2999 ] , -1 );               // priority 2168, still in
+  c.decrease( h[ 2999 ] , -1 );  // priority 2168, still in
   CHECK( c.min().v == 2999 && c.deleteMin().v == 2999 );
   CHECK( Counted::live == c.size() );
   }
@@ -382,26 +393,32 @@ ADS_TEST( "sec11.1.bellman" )
  ShortestPathTree< int > T1;
  T1.T = { NIL , 0 , 0 , 1 };
  T1.d = { 0 , 3 , 1 , 1 };
- CHECK( ! bellman( g , 0 , T1 ) );            // ( 2 , 1 ) violates it
+ CHECK( ! bellman( g , 0 , T1 ) );  // ( 2 , 1 ) violates it
  CHECK( bellmanFordMoore( make( 4 , G1 ) , 0 ).negativeCycle );
  // isShortestPathTree(): R and T1, then the trees broken one way each
  CHECK( isShortestPathTree( g , 0 , R ) && ! isShortestPathTree( g , 0 ,
-                                                                 T1 ) );
+								 T1 ) );
  auto B = R;
- B.d.pop_back();                                       // the wrong size
+ B.d.pop_back();  // the wrong size
  CHECK( ! isShortestPathTree( g , 0 , B ) );
- B = R; B.T[ 0 ] = 2;                                   // r with a parent
+ B = R;
+ B.T[ 0 ] = 2;  // r with a parent
  CHECK( ! isShortestPathTree( g , 0 , B ) );
- B = R; B.d[ 0 ] = 1;                                   // d[ r ] != 0
+ B = R;
+ B.d[ 0 ] = 1;  // d[ r ] != 0
  CHECK( ! isShortestPathTree( g , 0 , B ) );
- B = R; B.T[ 3 ] = 0;                                   // no edge ( 0 , 3 )
+ B = R;
+ B.T[ 3 ] = 0;  // no edge ( 0 , 3 )
  CHECK( ! isShortestPathTree( g , 0 , B ) );
- B = R; B.d[ 3 ] = INFI; B.T[ 3 ] = NIL;        // reachable, left at infinity
+ B = R;
+ B.d[ 3 ] = INFI;
+ B.T[ 3 ] = NIL;  // reachable, left at infinity
  CHECK( ! isShortestPathTree( g , 0 , B ) );
  // an unreachable node has infinity and no parent, and only that
  const auto u = make( 2 , WEdges() );
  CHECK( isShortestPathTree( u , 0 , dijkstra( u , 0 ) ) );
- B = dijkstra( u , 0 ); B.T[ 1 ] = 0;
+ B = dijkstra( u , 0 );
+ B.T[ 1 ] = 0;
  CHECK( ! isShortestPathTree( u , 0 , B ) );
  }
 
@@ -431,30 +448,35 @@ ADS_TEST( "sec11.2.prototype" )
 
  // the degenerate graphs, with each structure
  const auto one = make( 1 , WEdges() ) , two = make( 2 , WEdges() );
- const auto zero = make( 3 , WEdges( { { 0 , 1 , 0 } , { 1 , 0 , 0 } ,
-                                       { 1 , 2 , 0 } , { 2 , 1 , 0 } } ) );
- auto holed = make( 4 , WEdges( { { 0 , 1 , 5 } , { 1 , 3 , 1 } ,
-                                  { 0 , 2 , 1 } , { 2 , 3 , 1 } } ) );
- holed.deleteNode( 2 );                       // a name left unused
- WG und( 4 , false );                         // unoriented, costs >= 0
- und.insertEdge( 0 , 1 , 4 ); und.insertEdge( 1 , 2 , 1 );
+ const auto zero =
+   make( 3 ,
+	 WEdges( { { 0 , 1 , 0 } , { 1 , 0 , 0 } , { 1 , 2 , 0 } ,
+		   { 2 , 1 , 0 } } ) );
+ auto holed =
+   make( 4 ,
+	 WEdges( { { 0 , 1 , 5 } , { 1 , 3 , 1 } , { 0 , 2 , 1 } ,
+		   { 2 , 3 , 1 } } ) );
+ holed.deleteNode( 2 );  // a name left unused
+ WG und( 4 , false );     // unoriented, costs >= 0
+ und.insertEdge( 0 , 1 , 4 );
+ und.insertEdge( 1 , 2 , 1 );
  und.insertEdge( 0 , 2 , 7 );
- ListGraph< double > dbl( 3 , true );         // infinity() is a true inf
+ ListGraph< double > dbl( 3 , true );  // infinity() is a true inf
  dbl.insertEdge( 0 , 1 , 0.5 );
  for( Frontier f : all ) {
-  auto R = shortestPaths( one , 0 , f );       // one node, no edge
+  auto R = shortestPaths( one , 0 , f );  // one node, no edge
   CHECK( R.d == Ints( { 0 } ) && R.T == Ints( { NIL } ) &&
-         R.order == Ints( { 0 } ) && ! R.negativeCycle );
-  R = shortestPaths( two , 1 , f );            // r the last, 0 unreachable
+	 R.order == Ints( { 0 } ) && ! R.negativeCycle );
+  R = shortestPaths( two , 1 , f );  // r the last, 0 unreachable
   CHECK( R.d == Ints( { INFI , 0 } ) && R.T == Ints( { NIL , NIL } ) &&
-         R.order == Ints( { 1 } ) );
-  R = shortestPaths( zero , 2 , f );           // cycles of cost 0 end
+	 R.order == Ints( { 1 } ) );
+  R = shortestPaths( zero , 2 , f );  // cycles of cost 0 end
   CHECK( R.d == Ints( { 0 , 0 , 0 } ) && R.T[ 2 ] == NIL &&
-         isShortestPathTree( zero , 2 , R ) );
-  R = shortestPaths( holed , 0 , f );          // the hole at infinity
+	 isShortestPathTree( zero , 2 , R ) );
+  R = shortestPaths( holed , 0 , f );  // the hole at infinity
   CHECK( R.d == Ints( { 0 , 5 , INFI , 6 } ) && R.T[ 2 ] == NIL &&
-         R.T[ 3 ] == 1 );
-  R = shortestPaths( und , 0 , f );            // both directions
+	 R.T[ 3 ] == 1 );
+  R = shortestPaths( und , 0 , f );  // both directions
   CHECK( R.d == Ints( { 0 , 4 , 5 , INFI } ) && R.T[ 2 ] == 1 );
   CHECK( shortestPaths( und , 2 , f ).d == Ints( { 5 , 1 , 0 , INFI } ) );
   const auto Q = shortestPaths( dbl , 0 , f );
@@ -489,10 +511,10 @@ ADS_TEST( "sec11.3.dijkstra" )
  for( unsigned s = 0 ; s < 20 ; ++s ) {
   const auto g = random_graph( 60 , 0.08 , 0 , 50 , false , s );
   for( Frontier f : { Frontier::LIST , Frontier::HEAP ,
-                      Frontier::FIBONACCI } ) {
+		      Frontier::FIBONACCI } ) {
    const auto R = shortestPaths( g , 0 , f );
-   const int reach = int( std::count_if( R.d.begin() , R.d.end() ,
-                          []( int x ) { return( x < INFI ); } ) );
+   const int reach = int( std::count_if(
+     R.d.begin() , R.d.end() , []( int x ) { return( x < INFI ); } ) );
    CHECK( int( R.order.size() ) == reach );
    for( std::size_t i = 1 ; i < R.order.size() ; ++i )
     CHECK( R.d[ R.order[ i - 1 ] ] <= R.d[ R.order[ i ] ] );
@@ -503,7 +525,7 @@ ADS_TEST( "sec11.3.dijkstra" )
  const auto z = random_graph( 30 , 0.2 , 0 , 0 , false , 7 );
  const auto c = random_graph( 30 , 1.0 , 1 , 1 , false , 7 );
  for( Frontier f : { Frontier::LIST , Frontier::HEAP ,
-                     Frontier::FIBONACCI } ) {
+		     Frontier::FIBONACCI } ) {
   const auto R = shortestPaths( z , 0 , f );
   std::set< int > seen( R.order.begin() , R.order.end() );
   CHECK( seen.size() == R.order.size() );
@@ -538,24 +560,26 @@ ADS_TEST( "sec11.6.bellman-ford-moore" )
 // extracts each node once
 ADS_TEST( "sec11.7.stack" )
 {
- for( int n : { 2 , 3 , 5 , 8 , 12 } ) {       // n = 2: a single edge
+ for( int n : { 2 , 3 , 5 , 8 , 12 } ) {  // n = 2: a single edge
   WEdges E;
   for( int u = 0 ; u < n ; ++u )
    for( int v = u + 1 ; v < n ; ++v )
-    E.emplace_back( u , v , ( 1 << ( n - u - 2 ) ) - ( 1 << ( n - v - 1 ) ) +
-                            v - u );
+    E.emplace_back( u , v ,
+		    ( 1 << ( n - u - 2 ) ) - ( 1 << ( n - v - 1 ) ) + v - u );
   const auto g = make( n , E );
   const auto S = shortestPaths( g , 0 , Frontier::STACK );
   CHECK( int( S.order.size() ) == ( 1 << ( n - 1 ) ) );
   CHECK( std::count( S.order.begin() , S.order.end() , n - 1 ) ==
-         ( 1 << ( n - 2 ) ) );
+	 ( 1 << ( n - 2 ) ) );
   CHECK( int( bellmanFordMoore( g , 0 ).order.size() ) == n );
   Ints d( n );
-  for( int v = 0 ; v < n ; ++v ) d[ v ] = v;
+  for( int v = 0 ; v < n ; ++v )
+   d[ v ] = v;
   CHECK( S.d == d );
-  if( n == 5 )                                  // the column of the figure
-   CHECK( S.order == Ints( { 0 , 4 , 3 , 4 , 2 , 4 , 3 , 4 , 1 , 4 , 3 ,
-                             4 , 2 , 4 , 3 , 4 } ) );
+  if( n == 5 )  // the column of the figure
+   CHECK( S.order ==
+	  Ints( { 0 , 4 , 3 , 4 , 2 , 4 , 3 , 4 , 1 , 4 , 3 , 4 , 2 , 4 , 3 ,
+		  4 } ) );
   }
  }
 
@@ -563,19 +587,22 @@ ADS_TEST( "sec11.7.stack" )
 // a node improved after its extraction goes back at the head of S
 ADS_TEST( "sec11.8.pape" )
 {
- CHECK( papeDEsopo( make( 4 , G2 ) , 0 ).order ==
-        Ints( { 0 , 1 , 2 , 1 , 3 } ) );
+ CHECK( papeDEsopo( make( 4 , G2 ) ,
+		    0 ).order == Ints( { 0 , 1 , 2 , 1 , 3 } ) );
  // a node improved while in S stays where it is, one improved after its
  // extraction goes back at the head, before a node still waiting: 0 queues
  // 3 , 2 , 1 , 4 at the tail, 3 improves 1 in place, 1 improves 2 already
  // extracted, which comes out again before 4
- const auto g = make( 5 , WEdges( { { 0 , 3 , 1 } , { 0 , 2 , 5 } ,
-                                    { 0 , 1 , 9 } , { 0 , 4 , 9 } ,
-                                    { 3 , 1 , 1 } , { 1 , 2 , 1 } } ) );
+ const auto g = make( 5 , WEdges( { { 0 , 3 , 1 } ,
+				   { 0 , 2 , 5 } ,
+				   { 0 , 1 , 9 } ,
+				   { 0 , 4 , 9 } ,
+				   { 3 , 1 , 1 } ,
+				   { 1 , 2 , 1 } } ) );
  const auto R = papeDEsopo( g , 0 );
  CHECK( R.order == Ints( { 0 , 3 , 2 , 1 , 2 , 4 } ) );
- CHECK( R.d == Ints( { 0 , 2 , 3 , 1 , 9 } ) &&
-        isShortestPathTree( g , 0 , R ) );
+ CHECK( R.d == Ints( { 0 , 2 , 3 , 1 , 9 } ) && isShortestPathTree( g , 0 ,
+								    R ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -587,8 +614,8 @@ ADS_TEST( "sec11.8.pape" )
 // the node back in S and stays correct
 ADS_TEST( "ex11.1" )
 {
- const auto g = make( 3 , WEdges( { { 0 , 1 , 1 } , { 0 , 2 , 2 } ,
-                                    { 2 , 1 , -2 } } ) );
+ const auto g =
+   make( 3 , WEdges( { { 0 , 1 , 1 } , { 0 , 2 , 2 } , { 2 , 1 , -2 } } ) );
  Ints d( 3 , INFI );
  std::vector< bool > closed( 3 , false );
  d[ 0 ] = 0;
@@ -599,9 +626,11 @@ ADS_TEST( "ex11.1" )
     u = v;
   closed[ u ] = true;
   g.forEachEdge( u , [ & ]( int v , int w ) {
-   if( ! closed[ v ] && d[ u ] + w < d[ v ] ) d[ v ] = d[ u ] + w; } );
+   if( ! closed[ v ] && d[ u ] + w < d[ v ] )
+    d[ v ] = d[ u ] + w;
+   } );
   }
- CHECK( d[ 1 ] == 1 );                                    // wrong
+ CHECK( d[ 1 ] == 1 );  // wrong
  const auto R = dijkstra( g , 0 );
  CHECK( R.d[ 1 ] == 0 && R.order == Ints( { 0 , 1 , 2 , 1 } ) );
  }
@@ -615,20 +644,20 @@ ADS_TEST( "ex11.2" )
  CHECK( ! bellmanFordMoore( make( 4 , G2 ) , 0 ).negativeCycle );
  CHECK( reachesNegativeCycle( make( 4 , G1 ) , 0 ) );
  CHECK( ! reachesNegativeCycle( make( 4 , G2 ) , 0 ) );
- const auto two = make( 3 , WEdges( { { 0 , 1 , 1 } , { 1 , 2 , -3 } ,
-                                      { 2 , 1 , 2 } } ) );
+ const auto two =
+   make( 3 , WEdges( { { 0 , 1 , 1 } , { 1 , 2 , -3 } , { 2 , 1 , 2 } } ) );
  CHECK( bellmanFordMoore( two , 0 ).negativeCycle );
  CHECK( reachesNegativeCycle( two , 0 ) );
- CHECK( bellmanFordMoore( two , 1 ).negativeCycle );    // r on the cycle
- const auto away = make( 3 , WEdges( { { 1 , 2 , -3 } , { 2 , 1 , 2 } ,
-                                       { 1 , 0 , 1 } } ) );
- const auto A = bellmanFordMoore( away , 0 );         // not from r = 0
+ CHECK( bellmanFordMoore( two , 1 ).negativeCycle );  // r on the cycle
+ const auto away =
+   make( 3 , WEdges( { { 1 , 2 , -3 } , { 2 , 1 , 2 } , { 1 , 0 , 1 } } ) );
+ const auto A = bellmanFordMoore( away , 0 );  // not from r = 0
  CHECK( ! A.negativeCycle && A.d == Ints( { 0 , INFI , INFI } ) );
  CHECK( ! reachesNegativeCycle( away , 0 ) && reachesNegativeCycle( away ,
-                                                                    2 ) );
- const auto zero = make( 3 , WEdges( { { 0 , 1 , 1 } , { 1 , 2 , -2 } ,
-                                       { 2 , 1 , 2 } } ) );
- const auto Z = bellmanFordMoore( zero , 0 );          // cost exactly 0
+								    2 ) );
+ const auto zero =
+   make( 3 , WEdges( { { 0 , 1 , 1 } , { 1 , 2 , -2 } , { 2 , 1 , 2 } } ) );
+ const auto Z = bellmanFordMoore( zero , 0 );  // cost exactly 0
  CHECK( ! Z.negativeCycle && Z.d == Ints( { 0 , 1 , -1 } ) );
  CHECK( ! reachesNegativeCycle( zero , 0 ) );
  CHECK( ! reachesNegativeCycle( make( 1 , WEdges() ) , 0 ) );
@@ -656,23 +685,28 @@ ADS_TEST( "ex11.3" )
   for( int u = 0 ; u < n ; ++u )
    for( int v = 0 ; v < n ; ++v )
     if( u != v && t != 1 && g() % 3 == 0 ) {      // t = 1: no edge
-     const double x = ( t == 0 ) ? 1.0 : r( g );    // t = 0: all sure
+     const double x = ( t == 0 ) ? 1.0 : r( g );  // t = 0: all sure
      G.insertEdge( u , v , x );
      L.insertEdge( u , v , -std::log( x ) );
      }
   double best = 0;
   std::vector< bool > on( n , false );
   std::function< void( int , double ) > dfs = [ & ]( int u , double p ) {
-   if( u == n - 1 ) { best = std::max( best , p ); return; }
+   if( u == n - 1 ) {
+    best = std::max( best , p );
+    return;
+    }
    on[ u ] = true;
    G.forEachEdge( u , [ & ]( int v , double x ) {
-    if( ! on[ v ] ) dfs( v , p * x ); } );
+    if( ! on[ v ] )
+     dfs( v , p * x );
+    } );
    on[ u ] = false;
    };
   dfs( 0 , 1 );
   const auto R = johnson( L , 0 );
-  const double got = R.d[ n - 1 ] == infinity< double >() ? 0 :
-                     std::exp( -R.d[ n - 1 ] );
+  const double got =
+    R.d[ n - 1 ] == infinity< double >() ? 0 : std::exp( -R.d[ n - 1 ] );
   CHECK( std::abs( got - best ) <= 1e-9 );
   }
  }
@@ -683,12 +717,13 @@ using Iv = std::vector< std::pair< int , int > >;
 Iv random_intervals( int n , std::mt19937 & g )
 {
  Ints ends( 2 * n );
- for( int i = 0 ; i < 2 * n ; ++i ) ends[ i ] = i;
+ for( int i = 0 ; i < 2 * n ; ++i )
+  ends[ i ] = i;
  std::shuffle( ends.begin() , ends.end() , g );
  Iv I( n );
  for( int i = 0 ; i < n ; ++i )
   I[ i ] = { std::min( ends[ 2 * i ] , ends[ 2 * i + 1 ] ) ,
-             std::max( ends[ 2 * i ] , ends[ 2 * i + 1 ] ) };
+	     std::max( ends[ 2 * i ] , ends[ 2 * i + 1 ] ) };
  std::sort( I.begin() , I.end() );
  return( I );
  }
@@ -702,14 +737,14 @@ bool meet( std::pair< int , int > x , std::pair< int , int > y )
 /// of crossings, all through one point; then k random ones of at most m
 std::vector< Iv > interval_cases( int k , int m , std::mt19937 & g )
 {
- std::vector< Iv > C = { {} , { { 0 , 1 } } ,
-                         { { 0 , 1 } , { 2 , 3 } , { 4 , 5 } , { 6 , 7 } } ,
-                         { { 0 , 9 } , { 1 , 8 } , { 2 , 7 } , { 3 , 6 } ,
-                           { 4 , 5 } } ,
-                         { { 0 , 2 } , { 1 , 4 } , { 3 , 6 } , { 5 , 8 } ,
-                           { 7 , 9 } } ,
-                         { { 0 , 5 } , { 1 , 6 } , { 2 , 7 } , { 3 , 8 } ,
-                           { 4 , 9 } } };
+ std::vector< Iv > C = {
+  {} ,
+  { { 0 , 1 } } ,
+  { { 0 , 1 } , { 2 , 3 } , { 4 , 5 } , { 6 , 7 } } ,
+  { { 0 , 9 } , { 1 , 8 } , { 2 , 7 } , { 3 , 6 } , { 4 , 5 } } ,
+  { { 0 , 2 } , { 1 , 4 } , { 3 , 6 } , { 5 , 8 } , { 7 , 9 } } ,
+  { { 0 , 5 } , { 1 , 6 } , { 2 , 7 } , { 3 , 8 } , { 4 , 9 } }
+  };
  for( int t = 0 ; t < k ; ++t )
   C.push_back( random_intervals( 1 + int( g() % m ) , g ) );
  return( C );
@@ -748,7 +783,8 @@ ADS_TEST( "ex11.4" )
     for( int j = i + 1 ; j < n && ok ; ++j )
      if( ( m >> i & 1 ) && ( m >> j & 1 ) && meet( I[ i ] , I[ j ] ) )
       ok = false;
-   if( ok ) best = std::max( best , std::popcount( unsigned( m ) ) );
+   if( ok )
+    best = std::max( best , std::popcount( unsigned( m ) ) );
    }
   CHECK( got == best );
   }
@@ -760,7 +796,7 @@ ADS_TEST( "ex11.4" )
 bool inP( const Iv & J , int u , int k )
 {
  return( J[ u ].first < J[ k ].first && J[ k ].first < J[ u ].second &&
-         J[ u ].second < J[ k ].second );
+	  J[ u ].second < J[ k ].second );
  }
 
 bool inQ( const Iv & J , int u , int k )
@@ -799,13 +835,15 @@ ADS_TEST( "ex11.5" )
   for( int m = 1 ; m < ( 1 << n ) ; ++m ) {
    bool ok = true;
    for( int i = 0 ; i < n && ok ; ++i ) {
-    if( m >> i & 1 ) continue;
+    if( m >> i & 1 )
+     continue;
     bool dom = false;
     for( int j = 0 ; j < n ; ++j )
      dom = dom || ( ( m >> j & 1 ) && meet( I[ i ] , I[ j ] ) );
     ok = dom;
     }
-   if( ok ) best = std::min( best , std::popcount( unsigned( m ) ) );
+   if( ok )
+    best = std::min( best , std::popcount( unsigned( m ) ) );
    }
   CHECK( got == best );
   }
@@ -823,37 +861,44 @@ ADS_TEST( "ex11.6" )
   const int n = int( I.size() );
   const Iv J = with_sentinels( I );
   Ints w( n + 2 , 0 );
-  for( int u = 1 ; u <= n ; ++u ) w[ u ] = g() % 10;
+  for( int u = 1 ; u <= n ; ++u )
+   w[ u ] = g() % 10;
   // s = 0 and t = 2 n + 2 stand for both their IN and OUT nodes
   const int N = 2 * ( n + 2 ) , s = 0 , tt = N - 1;
   auto IN = [ & ]( int u ) {
-   return( u == 0 ? s : u == n + 1 ? tt : 2 * u ); };
+   return( u == 0 ? s : u == n + 1 ? tt : 2 * u );
+   };
   auto OUT = [ & ]( int u ) {
-   return( u == 0 ? s : u == n + 1 ? tt : 2 * u + 1 ); };
+   return( u == 0 ? s : u == n + 1 ? tt : 2 * u + 1 );
+   };
   WG G( N , true );
   auto edge = [ & ]( int x , int y , int c ) {
-   if( x == y ) return;
+   if( x == y )
+    return;
    const auto old = G.weight( x , y );
-   if( ! old || c < *old ) G.insertEdge( x , y , c );
+   if( ! old || c < *old )
+    G.insertEdge( x , y , c );
    };
   for( int u = 0 ; u <= n + 1 ; ++u )
    for( int v = 0 ; v <= n + 1 ; ++v ) {
-    if( u == v ) continue;
+    if( u == v )
+     continue;
     if( inP( J , u , v ) ) {
-     edge( IN( u ) , IN( v ) , w[ u ] );                     // (1)
-     edge( OUT( u ) , IN( v ) , w[ u ] );                    // (3)
+     edge( IN( u ) , IN( v ) , w[ u ] );   // (1)
+     edge( OUT( u ) , IN( v ) , w[ u ] );  // (3)
      }
     if( inQ( J , u , v ) ) {
-     edge( IN( u ) , OUT( v ) , w[ u ] );                    // (2)
+     edge( IN( u ) , OUT( v ) , w[ u ] );  // (2)
      int k = -1;
      for( int h = 1 ; h <= n ; ++h )
-      if( inC( J , u , h ) && ( k < 0 || w[ h ] < w[ k ] ) ) k = h;
+      if( inC( J , u , h ) && ( k < 0 || w[ h ] < w[ k ] ) )
+       k = h;
      if( k >= 0 )
-      edge( OUT( u ) , OUT( v ) , w[ u ] + w[ k ] );         // (4)
+      edge( OUT( u ) , OUT( v ) , w[ u ] + w[ k ] );  // (4)
      }
     }
   const int got = dagShortestPaths( G , s ).d[ tt ];
-  int best = INFI;                     // the empty set when there is none
+  int best = INFI;  // the empty set when there is none
   for( int m = 0 ; m < ( 1 << n ) ; ++m ) {
    bool ok = true;
    for( int i = 0 ; i < n && ok ; ++i ) {
@@ -864,7 +909,9 @@ ADS_TEST( "ex11.6" )
     }
    if( ok ) {
     int c = 0;
-    for( int i = 0 ; i < n ; ++i ) if( m >> i & 1 ) c += w[ i + 1 ];
+    for( int i = 0 ; i < n ; ++i )
+     if( m >> i & 1 )
+      c += w[ i + 1 ];
     best = std::min( best , c );
     }
    }
@@ -884,9 +931,9 @@ ADS_TEST( "ex11.7" )
  std::vector< WG > G;
  for( unsigned t = 0 ; t < 30 ; ++t )
   G.push_back( random_graph( 20 , 0.25 , 1 , 3 , false , t ) );
- G.push_back( make( 1 , WEdges() ) );                       // s alone
- G.push_back( make( 3 , WEdges( { { 1 , 2 , 1 } } ) ) );    // unreachable
- WEdges E;                                  // 40 diamonds: 2^40 paths
+ G.push_back( make( 1 , WEdges() ) );                   // s alone
+ G.push_back( make( 3 , WEdges( { { 1 , 2 , 1 } } ) ) );  // unreachable
+ WEdges E;  // 40 diamonds: 2^40 paths
  for( int i = 0 ; i < 40 ; ++i )
   for( int k : { 1 , 2 } ) {
    E.emplace_back( 3 * i , 3 * i + k , 1 );
@@ -900,7 +947,9 @@ ADS_TEST( "ex11.7" )
   HeapPriorityQueue< int > S( n );
   std::vector< HeapPriorityQueue< int >::Handle > h( n , nullptr );
   std::vector< bool > done( n , false );
-  d[ 0 ] = 0; cnt[ 0 ] = 1; h[ 0 ] = S.insert( 0 , 0 );
+  d[ 0 ] = 0;
+  cnt[ 0 ] = 1;
+  h[ 0 ] = S.insert( 0 , 0 );
   while( ! S.empty() ) {
    const int u = S.deleteMin();
    done[ u ] = true;
@@ -920,21 +969,24 @@ ADS_TEST( "ex11.7" )
    }
   const auto D = floyd( g );
   Ints by( n );
-  for( int i = 0 ; i < n ; ++i ) by[ i ] = i;
-  std::sort( by.begin() , by.end() , [ & ]( int a , int b ) {
-   return( D[ 0 ][ a ] < D[ 0 ][ b ] ); } );
+  for( int i = 0 ; i < n ; ++i )
+   by[ i ] = i;
+  std::sort( by.begin() , by.end() ,
+	     [ & ]( int a , int b ) { return( D[ 0 ][ a ] < D[ 0 ][ b ] ); } );
   std::vector< long long > ref( n , 0 );
   ref[ 0 ] = 1;
   for( int u : by )
    if( D[ 0 ][ u ] < INFI )
     g.forEachEdge( u , [ & ]( int v , int w ) {
-     if( D[ 0 ][ u ] + w == D[ 0 ][ v ] ) ref[ v ] += ref[ u ]; } );
+     if( D[ 0 ][ u ] + w == D[ 0 ][ v ] )
+      ref[ v ] += ref[ u ];
+     } );
   CHECK( cnt == ref );
   if( n == 1 )
    CHECK( cnt == std::vector< long long >( { 1 } ) );
   if( n == 3 )
    CHECK( cnt == std::vector< long long >( { 1 , 0 , 0 } ) );
-  if( n == 121 )                     // past 2^31, in a long long
+  if( n == 121 )  // past 2^31, in a long long
    CHECK( cnt[ 120 ] == ( 1LL << 40 ) && d[ 120 ] == 80 );
   }
  }
@@ -949,23 +1001,29 @@ ADS_TEST( "ex11.8" )
  std::vector< WG > G;
  for( unsigned t = 0 ; t < 30 ; ++t )
   G.push_back( random_graph( 15 , 0.15 , 1 , 100 , false , t ) );
- G.push_back( make( 1 , WEdges() ) );                       // r alone
- G.push_back( make( 4 , WEdges() ) );                       // no edge
- G.push_back( make( 3 , WEdges( { { 0 , 1 , 5 } , { 1 , 2 , 3 } ,
-                                  { 2 , 0 , 7 } } ) ) );   // back to r
+ G.push_back( make( 1 , WEdges() ) );  // r alone
+ G.push_back( make( 4 , WEdges() ) );  // no edge
+ G.push_back( make(
+   3 ,
+   WEdges( { { 0 , 1 , 5 } , { 1 , 2 , 3 } ,
+	     { 2 , 0 , 7 } } ) ) );  // back to r
  for( const auto & g : G ) {
   const int n = g.bound();
   Ints d( n , INFI );
   ArrayQueue< int > Q( n );
   std::vector< bool > in( n , false );
-  Q.enqueue( 0 ); in[ 0 ] = true;
+  Q.enqueue( 0 );
+  in[ 0 ] = true;
   while( ! Q.empty() ) {
    const int u = Q.dequeue();
    in[ u ] = false;
    g.forEachEdge( u , [ & ]( int v , int w ) {
     if( std::min( w , d[ u ] ) < d[ v ] ) {
      d[ v ] = std::min( w , d[ u ] );
-     if( ! in[ v ] ) { Q.enqueue( v ); in[ v ] = true; }
+     if( ! in[ v ] ) {
+      Q.enqueue( v );
+      in[ v ] = true;
+      }
      }
     } );
    }
@@ -974,11 +1032,12 @@ ADS_TEST( "ex11.8" )
    int ref = INFI;
    for( int a = 0 ; a < n ; ++a )
     g.forEachEdge( a , [ & ]( int b , int w ) {
-     if( D[ 0 ][ a ] < INFI && D[ b ][ v ] < INFI ) ref = std::min( ref , w );
+     if( D[ 0 ][ a ] < INFI && D[ b ][ v ] < INFI )
+      ref = std::min( ref , w );
      } );
    CHECK( d[ v ] == ref );
    }
-  if( n <= 4 )                          // r unlabelled but on a cycle
+  if( n <= 4 )  // r unlabelled but on a cycle
    CHECK( d == ( n == 3 ? Ints( { 3 , 3 , 3 } ) : Ints( n , INFI ) ) );
   }
  }
@@ -992,20 +1051,22 @@ ADS_TEST( "ex11.9" )
  for( int t = 0 ; t < 20 ; ++t ) {
   const int n = 12;
   Ints c( n );
-  for( auto & x : c ) x = ( t == 1 ) ? 0 : int( g() % 20 );   // all 0
+  for( auto & x : c )
+   x = ( t == 1 ) ? 0 : int( g() % 20 );  // all 0
   const auto base = random_graph( n , t == 0 ? 0.0 : 0.2 , 0 , 0 , false ,
-                                  t );                     // t = 0: no edge
+				  t );  // t = 0: no edge
   WG h( n , true );
   for( int u = 0 ; u < n ; ++u )
    base.forEachAdj( u , [ & ]( int v ) { h.insertEdge( u , v , c[ v ] ); } );
   const auto R = johnson( h , 0 );
-  Ints nd( n , INFI );                     // the costs of the nodes on paths
+  Ints nd( n , INFI );  // the costs of the nodes on paths
   nd[ 0 ] = c[ 0 ];
   for( int k = 0 ; k < n ; ++k )
    for( int u = 0 ; u < n ; ++u )
     if( nd[ u ] < INFI )
      base.forEachAdj( u , [ & ]( int v ) {
-      nd[ v ] = std::min( nd[ v ] , nd[ u ] + c[ v ] ); } );
+      nd[ v ] = std::min( nd[ v ] , nd[ u ] + c[ v ] );
+      } );
   for( int v = 0 ; v < n ; ++v )
    CHECK( R.d[ v ] == INFI ? nd[ v ] == INFI : R.d[ v ] + c[ 0 ] == nd[ v ] );
   }
@@ -1015,10 +1076,14 @@ ADS_TEST( "ex11.9" )
 // cost 2 against s , a , b , t of costs 1, which squared cost 4 and 3
 ADS_TEST( "ex11.10" )
 {
- const auto g = make( 4 , WEdges( { { 0 , 3 , 2 } , { 0 , 1 , 1 } ,
-                                    { 1 , 2 , 1 } , { 2 , 3 , 1 } } ) );
- const auto q = make( 4 , WEdges( { { 0 , 3 , 4 } , { 0 , 1 , 1 } ,
-                                    { 1 , 2 , 1 } , { 2 , 3 , 1 } } ) );
+ const auto g =
+   make( 4 ,
+	 WEdges( { { 0 , 3 , 2 } , { 0 , 1 , 1 } , { 1 , 2 , 1 } ,
+		   { 2 , 3 , 1 } } ) );
+ const auto q =
+   make( 4 ,
+	 WEdges( { { 0 , 3 , 4 } , { 0 , 1 , 1 } , { 1 , 2 , 1 } ,
+		   { 2 , 3 , 1 } } ) );
  const auto R = johnson( g , 0 ) , S = johnson( q , 0 );
  CHECK( R.d[ 3 ] == 2 && R.T[ 3 ] == 0 );
  CHECK( S.d[ 3 ] == 3 && S.T[ 3 ] == 2 );

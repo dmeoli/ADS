@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 std::size_t RandomQueue< T >::uniform( std::size_t n )
@@ -23,7 +24,7 @@ std::size_t RandomQueue< T >::uniform( std::size_t n )
  const std::uint64_t s = n;
  std::uint64_t h;
  std::uint64_t l = detail::wideProduct( f_g() , s , h );
- if( l < s ) {                              // rarely: reject the biased words
+ if( l < s ) {  // rarely: reject the biased words
   const std::uint64_t t = ( 0 - s ) % s;
   while( l < t )
    l = detail::wideProduct( f_g() , s , h );

@@ -46,7 +46,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using BST = BinarySearchTree< int , int >;
@@ -88,12 +89,13 @@ Ints keys( const Tr & t )
  }
 
 /// the measures of a search tree that its constraints and theorems speak of
-struct Shape {
- bool ok = true;           ///< parents, order, and (V1)-(V4) if RB
- int n = 0;                ///< the internal nodes
- int min_leaf = 1 << 30;   ///< the least level of a leaf
- int max_leaf = 0;         ///< the largest level of a leaf, the height
- bool thm61 = true;        ///< each subtree has >= 2^b( u ) - 1 nodes
+struct Shape
+{
+ bool ok = true;          ///< parents, order, and (V1)-(V4) if RB
+ int n = 0;               ///< the internal nodes
+ int min_leaf = 1 << 30;  ///< the least level of a leaf
+ int max_leaf = 0;        ///< the largest level of a leaf, the height
+ bool thm61 = true;       ///< each subtree has >= 2^b( u ) - 1 nodes
  };
 
 /// checks a search tree; with RB also its colors. r( u ) is the number of
@@ -103,7 +105,11 @@ Shape shape( const Tr & t )
 {
  Shape s;
  using L = typename Tr::Link;
- struct R { int r; int size; };
+ struct R
+ {
+  int r;
+  int size;
+  };
  std::function< R( L * , int ) > rec = [ & ]( L * u , int lev ) -> R {
   if( t.isNil( u ) ) {
    s.min_leaf = std::min( s.min_leaf , lev );
@@ -116,34 +122,36 @@ Shape shape( const Tr & t )
     s.ok = false;
   if( RB && ( u->color == Color::RED ) &&
       ( ( u->left->color == Color::RED ) ||
-        ( u->right->color == Color::RED ) ) )
-   s.ok = false;                                         // (V3)
+	( u->right->color == Color::RED ) ) )
+   s.ok = false;  // (V3)
   const R a = rec( u->left , lev + 1 ) , b = rec( u->right , lev + 1 );
   if( RB && ( a.r != b.r ) )
-   s.ok = false;                                         // (V4)
+   s.ok = false;  // (V4)
   const int size = a.size + b.size + 1;
   if( RB && ( size < ( 1 << a.r ) - 1 ) )
-   s.thm61 = false;                                      // Theorem 6.1
+   s.thm61 = false;  // Theorem 6.1
   return( R{ a.r + ( u->color == Color::BLACK ) , size } );
   };
  rec( t.root() , 0 );
  if( ! t.isNil( t.root() ) && ! t.isNil( t.root()->parent ) )
   s.ok = false;
  if( RB && ( t.root()->color != Color::BLACK ) )
-  s.ok = false;                                          // (V1), (V2)
+  s.ok = false;  // (V1), (V2)
  const Ints k = keys( t );
  if( ( int( k.size() ) != s.n ) || ( s.n != int( t.size() ) ) ||
-     ( std::adjacent_find( k.begin() , k.end() ,
-                           std::greater_equal<>() ) != k.end() ) )
-  s.ok = false;                                          // the order
+     ( std::adjacent_find( k.begin() , k.end() , std::greater_equal<>() ) !=
+       k.end() ) )
+  s.ok = false;  // the order
  return( s );
  }
 
 template< class Tr >
 Shape shape( const Tr & t )
 {
- return( shape< Tr , std::is_same_v< Tr , RedBlackTree< typename Tr::Key ,
-                                     typename Tr::Value > > >( t ) );
+ return(
+   shape< Tr , std::is_same_v<
+		Tr , RedBlackTree< typename Tr::Key , typename Tr::Value > > >(
+     t ) );
  }
 
 /// the binary tree with the shape and the keys of a search tree
@@ -153,19 +161,22 @@ BinaryTree< int > * to_binary_tree( const Tr & t , typename Tr::Link * u )
  if( t.isNil( u ) )
   return( nullptr );
  auto b = new BinaryTree< int >( Tr::key( u ) );
- if( auto l = to_binary_tree( t , u->left ) ) b->insertLeft( l );
- if( auto r = to_binary_tree( t , u->right ) ) b->insertRight( r );
+ if( auto l = to_binary_tree( t , u->left ) )
+  b->insertLeft( l );
+ if( auto r = to_binary_tree( t , u->right ) )
+  b->insertRight( r );
  return( b );
  }
 
 /// a binary tree to build: a value and the two subtrees, possibly empty
-struct BSpec {
+struct BSpec
+{
  int v;
  std::shared_ptr< BSpec > l , r;
  };
 
 std::shared_ptr< BSpec > B( int v , std::shared_ptr< BSpec > l = {} ,
-                            std::shared_ptr< BSpec > r = {} )
+			    std::shared_ptr< BSpec > r = {} )
 {
  return( std::make_shared< BSpec >( BSpec{ v , l , r } ) );
  }
@@ -175,8 +186,10 @@ BinaryTree< int > * make( const std::shared_ptr< BSpec > & s )
  if( ! s )
   return( nullptr );
  auto t = new BinaryTree< int >( s->v );
- if( s->l ) t->insertLeft( make( s->l ) );
- if( s->r ) t->insertRight( make( s->r ) );
+ if( s->l )
+  t->insertLeft( make( s->l ) );
+ if( s->r )
+  t->insertRight( make( s->r ) );
  return( t );
  }
 
@@ -215,8 +228,8 @@ ADS_TEST( "sec6.1.search-tree" )
  BST t = build< BST >( fig61 );
  CHECK( preorder( t ) == fig61 );
  CHECK( shape( t ).ok && ( t.size() == 12 ) );
- CHECK( keys( t ) == Ints( { 1 , 5 , 7 , 8 , 13 , 17 , 21 , 27 , 33 , 37 ,
-                             40 , 42 } ) );
+ CHECK( keys( t ) == Ints( { 1 , 5 , 7 , 8 , 13 , 17 , 21 , 27 , 33 , 37 , 40 ,
+			     42 } ) );
  CHECK( ( BST::key( t.min() ) == 1 ) && ( BST::key( t.max() ) == 42 ) );
  CHECK( t.lookup( 27 ) == 270 && ! t.lookup( 26 ) && ! t.lookup( 99 ) );
  CHECK( BST::key( t.successorNode( t.lookupNode( 13 ) ) ) == 17 );
@@ -225,7 +238,7 @@ ADS_TEST( "sec6.1.search-tree" )
  CHECK( BST::key( t.predecessorNode( t.lookupNode( 37 ) ) ) == 33 );
  CHECK( t.isNil( t.successorNode( t.max() ) ) );
  CHECK( t.isNil( t.predecessorNode( t.min() ) ) );
- t.insert( 21 , -1 );                      // the key is there
+ t.insert( 21 , -1 );  // the key is there
  CHECK( ( t.lookup( 21 ) == -1 ) && ( t.size() == 12 ) );
  BST e;
  CHECK( e.empty() && e.isNil( e.min() ) && ! e.lookup( 1 ) );
@@ -233,32 +246,32 @@ ADS_TEST( "sec6.1.search-tree" )
  CHECK( e.isNil( e.lookupNode( 1 ) ) && ! e.contains( 1 ) );
  CHECK( e.begin() == e.end() );
  CHECK( e.isNil( e.successorNode( e.root() ) ) &&
-        e.isNil( e.predecessorNode( e.root() ) ) );   // nil to nil
+	e.isNil( e.predecessorNode( e.root() ) ) );  // nil to nil
  int visits = 0;
  e.forEach( [ & ]( int , int ) { ++visits; } );
  CHECK( visits == 0 );
 
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  BST one;
  one.insert( hi , 1 );
  CHECK( ( one.min() == one.root() ) && ( one.max() == one.root() ) );
  CHECK( one.isNil( one.successorNode( one.root() ) ) &&
-        one.isNil( one.predecessorNode( one.root() ) ) );
+	one.isNil( one.predecessorNode( one.root() ) ) );
  CHECK( ( *one.begin() ).first == hi && ( *--one.end() ).first == hi );
  one.insert( lo , 2 );
  one.insert( 0 , 3 );
  CHECK( keys( one ) == Ints( { lo , 0 , hi } ) && shape( one ).ok );
  CHECK( ( one.lookup( lo ) == 2 ) && ! one.lookup( lo + 1 ) &&
-        ! one.lookup( hi - 1 ) );
+	! one.lookup( hi - 1 ) );
  Ints back;
  for( auto it = one.end() ; it != one.begin() ; )
   back.push_back( ( *--it ).first );
  CHECK( back == Ints( { hi , 0 , lo } ) );
- CHECK_THROWS( (void) t.successorNode( nullptr ) , contract_violation );
- CHECK_THROWS( (void) t.predecessorNode( nullptr ) , contract_violation );
- CHECK_THROWS( (void) BST::key( nullptr ) , contract_violation );
- CHECK_THROWS( (void) BST::value( nullptr ) , contract_violation );
+ CHECK_THROWS( ( void )t.successorNode( nullptr ) , contract_violation );
+ CHECK_THROWS( ( void )t.predecessorNode( nullptr ) , contract_violation );
+ CHECK_THROWS( ( void )BST::key( nullptr ) , contract_violation );
+ CHECK_THROWS( ( void )BST::value( nullptr ) , contract_violation );
  }
 
 // section 6.1, figure 6.2: the removal of 33, with two children, moves its
@@ -272,44 +285,44 @@ ADS_TEST( "sec6.1.remove" )
  const BST t = build< BST >( fig61 );
  BST a = t , b = t , c = t;
  a.remove( 33 );
- CHECK( preorder( a ) == Ints( { 17 , 7 , 1 , 5 , 8 , 13 , 37 , 21 , 27 ,
-                                 40 , 42 } ) );
+ CHECK( preorder( a ) == Ints( { 17 , 7 , 1 , 5 , 8 , 13 , 37 , 21 , 27 , 40 ,
+				 42 } ) );
  b.remove( 8 );
- CHECK( preorder( b ) == Ints( { 17 , 7 , 1 , 5 , 13 , 33 , 21 , 27 , 40 ,
-                                 37 , 42 } ) );
+ CHECK( preorder( b ) == Ints( { 17 , 7 , 1 , 5 , 13 , 33 , 21 , 27 , 40 , 37 ,
+				 42 } ) );
  a.remove( 8 );
  CHECK( preorder( a ) == Ints( { 17 , 7 , 1 , 5 , 13 , 37 , 21 , 27 , 40 ,
-                                 42 } ) );
+				 42 } ) );
  CHECK( shape( a ).ok && shape( b ).ok );
- c.remove( 99 );                           // absent: nothing changes
+ c.remove( 99 );  // absent: nothing changes
  CHECK( preorder( c ) == fig61 );
- for( std::size_t i = 0 ; i < fig61.size() ; ++i ) {   // the root
+ for( std::size_t i = 0 ; i < fig61.size() ; ++i ) {  // the root
   c.remove( BST::key( c.root() ) );
   CHECK( shape( c ).ok );
   }
  CHECK( c.empty() && c.isNil( c.root() ) );
- CHECK( preorder( t ) == fig61 );          // the copies were deep
+ CHECK( preorder( t ) == fig61 );  // the copies were deep
 
- c.remove( 1 );                            // empty: nothing
+ c.remove( 1 );  // empty: nothing
  CHECK( c.empty() && shape( c ).ok );
  c.insert( 5 , 5 );
- c.remove( 5 );                            // the only key
- c.remove( 5 );                            // twice
+ c.remove( 5 );  // the only key
+ c.remove( 5 );  // twice
  CHECK( c.empty() && c.isNil( c.root() ) && c.isNil( c.min() ) );
  for( const Ints & k : { Ints{ 5 , 3 } , Ints{ 5 , 7 } } ) {
-  BST r = build< BST >( k );               // a root with one child
+  BST r = build< BST >( k );  // a root with one child
   r.remove( 5 );
   CHECK( ( preorder( r ) == Ints( { k[ 1 ] } ) ) && shape( r ).ok );
   CHECK( r.isNil( r.root()->parent ) );
   }
  BST s = build< BST >( { 5 , 3 , 8 , 9 } );  // the successor of 5 is 8,
- s.remove( 5 );                              // its right child
+ s.remove( 5 );                           // its right child
  CHECK( ( preorder( s ) == Ints( { 8 , 3 , 9 } ) ) && shape( s ).ok );
  BST m = t;
- m.remove( 1 );                            // the minimum, with a child
- m.remove( 42 );                           // the maximum, a leaf
+ m.remove( 1 );   // the minimum, with a child
+ m.remove( 42 );  // the maximum, a leaf
  CHECK( ( keys( m ).front() == 5 ) && ( keys( m ).back() == 40 ) &&
-        shape( m ).ok && ( m.size() == 10 ) );
+	shape( m ).ok && ( m.size() == 10 ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -325,44 +338,47 @@ ADS_TEST( "sec6.1.remove" )
 ADS_TEST( "spec.RedBlackTree" )
 {
  for( const Ints & k : { Ints{ 1 , 2 , 3 } , Ints{ 3 , 1 , 2 } ,
-                         Ints{ 3 , 2 , 1 } , Ints{ 1 , 3 , 2 } } ) {
+			 Ints{ 3 , 2 , 1 } ,
+			 Ints{ 1 , 3 , 2 } } ) {
   RBT t = build< RBT >( k );
   CHECK( preorder( t ) == Ints( { 2 , 1 , 3 } ) );
   CHECK( t.root()->color == Color::BLACK );
   CHECK( ( t.root()->left->color == Color::RED ) &&
-         ( t.root()->right->color == Color::RED ) );
-  t.insert( 4 , 40 );                      // case (3), then (1)
+	 ( t.root()->right->color == Color::RED ) );
+  t.insert( 4 , 40 );  // case (3), then (1)
   CHECK( shape( t ).ok );
   CHECK( ( t.root()->left->color == Color::BLACK ) &&
-         ( t.root()->right->color == Color::BLACK ) );
+	 ( t.root()->right->color == Color::BLACK ) );
   }
  RBT t;
- for( int i = 1 ; i <= 1023 ; ++i )        // increasing: a path as a BST
+ for( int i = 1 ; i <= 1023 ; ++i )  // increasing: a path as a BST
   t.insert( i , i );
  const Shape s = shape( t );
  CHECK( s.ok && ( s.max_leaf <= 2 * std::log2( 1024.0 ) ) );
  for( int i = 1 ; i <= 1023 ; i += 2 )
   t.remove( i );
  CHECK( shape( t ).ok && ( t.size() == 511 ) );
- for( int i = 2 ; i <= 1022 ; i += 2 ) {   // increasing, to the empty tree
+ for( int i = 2 ; i <= 1022 ; i += 2 ) {  // increasing, to the empty tree
   t.remove( i );
-  if( i % 64 == 0 ) CHECK( shape( t ).ok );
+  if( i % 64 == 0 )
+   CHECK( shape( t ).ok );
   }
  CHECK( t.empty() && shape( t ).ok && t.isNil( t.root() ) );
 
  RBT d;
- for( int i = 1023 ; i >= 1 ; --i )        // decreasing
+ for( int i = 1023 ; i >= 1 ; --i )  // decreasing
   d.insert( i , i );
  const Shape sd = shape( d );
  CHECK( sd.ok && sd.thm61 && ( sd.max_leaf <= 2 * std::log2( 1024.0 ) ) );
- for( int i = 1023 ; i >= 1 ; --i ) {      // decreasing, to the empty tree
+ for( int i = 1023 ; i >= 1 ; --i ) {  // decreasing, to the empty tree
   d.remove( i );
-  if( i % 64 == 0 ) CHECK( shape( d ).ok );
+  if( i % 64 == 0 )
+   CHECK( shape( d ).ok );
   }
  CHECK( d.empty() && shape( d ).ok );
  d.insert( 7 , 7 );
  CHECK( ( d.root()->color == Color::BLACK ) && shape( d ).ok );
- d.insert( 7 , 8 );                        // the key is there
+ d.insert( 7 , 8 );  // the key is there
  CHECK( ( d.size() == 1 ) && ( d.lookup( 7 ) == 8 ) );
  d.remove( 7 );
  CHECK( d.empty() && shape( d ).ok );
@@ -377,11 +393,15 @@ ADS_TEST( "sec6.2.figure" )
  const Shape s = shape( t );
  CHECK( s.ok && ( s.n == 10 ) );
  CHECK( keys( t ) == Ints( { 1 , 7 , 8 , 11 , 17 , 18 , 20 , 22 , 23 ,
-                             27 } ) );
+			     27 } ) );
  int leaves = 0;
  std::function< void( RBT::Link * ) > rec = [ & ]( RBT::Link * u ) {
-  if( t.isNil( u ) ) ++leaves;
-  else { rec( u->left ); rec( u->right ); }
+  if( t.isNil( u ) )
+   ++leaves;
+  else {
+   rec( u->left );
+   rec( u->right );
+   }
   };
  rec( t.root() );
  CHECK( leaves == 11 );
@@ -436,12 +456,12 @@ void against_map( unsigned seed , int lo = 0 , int hi = 499 )
    CHECK( preorder( c ) == preorder( t ) && shape( c ).ok );
    Tr d = std::move( c );
    CHECK( c.empty() && ( d.size() == t.size() ) );
-   c.insert( 1 , 1 );                      // a moved-from tree works
+   c.insert( 1 , 1 );  // a moved-from tree works
    CHECK( c.size() == 1 && shape( c ).ok );
    Tr & self = d;
-   d = self;                               // self-assignment
+   d = self;  // self-assignment
    CHECK( ( preorder( d ) == preorder( t ) ) && shape( d ).ok );
-   d = Tr();                               // an empty one
+   d = Tr();  // an empty one
    CHECK( d.empty() && shape( d ).ok );
    }
   }
@@ -487,48 +507,52 @@ ADS_TEST( "sec6.3.bplus-figure" )
  t.check();
  for( int x : { 10 , 12 , 13 } )
   t.insert( x , x );
- CHECK( t.levels() == Lv( { { { 10 , 12 , 13 } } } ) );                // (a)
+ CHECK( t.levels() == Lv( { { { 10 , 12 , 13 } } } ) );  // (a)
  t.insert( 15 , 15 );
- CHECK( t.levels() == Lv( { { { 12 } } ,
-                            { { 10 , 12 } , { 13 , 15 } } } ) );        // (b)
+ CHECK( t.levels() ==
+	Lv( { { { 12 } } , { { 10 , 12 } , { 13 , 15 } } } ) );  // (b)
  t.insert( 8 , 8 );
- CHECK( t.levels() == Lv( { { { 12 } } ,
-                            { { 8 , 10 , 12 } , { 13 , 15 } } } ) );    // (c)
+ CHECK( t.levels() ==
+	Lv( { { { 12 } } , { { 8 , 10 , 12 } , { 13 , 15 } } } ) );  // (c)
  t.insert( 11 , 11 );
- CHECK( t.levels() == Lv( { { { 10 , 12 } } , { { 8 , 10 } , { 11 , 12 } ,
-                                                 { 13 , 15 } } } ) );   // (d)
+ CHECK(
+   t.levels() ==
+   Lv( { { { 10 , 12 } } ,
+	 { { 8 , 10 } , { 11 , 12 } , { 13 , 15 } } } ) );  // (d)
  t.insert( 9 , 9 );
- CHECK( t.levels() == Lv( { { { 10 , 12 } } , { { 8 , 9 , 10 } ,
-                                                 { 11 , 12 } ,
-                                                 { 13 , 15 } } } ) );   // (e)
+ CHECK( t.levels() ==
+	Lv( { { { 10 , 12 } } ,
+	      { { 8 , 9 , 10 } , { 11 , 12 } , { 13 , 15 } } } ) );  // (e)
  t.insert( 6 , 6 );
- CHECK( t.levels() == Lv( { { { 10 } } , { { 8 } , { 12 } } ,
-                            { { 6 , 8 } , { 9 , 10 } , { 11 , 12 } ,
-                              { 13 , 15 } } } ) );                      // 6.7
+ CHECK( t.levels() ==
+	Lv( { { { 10 } } ,
+	      { { 8 } , { 12 } } ,
+	      { { 6 , 8 } , { 9 , 10 } , { 11 , 12 } ,
+		{ 13 , 15 } } } ) );  // 6.7
  t.check();
  CHECK( ( t.size() == 8 ) && ( t.lookup( 12 ) == 12 ) && ! t.lookup( 7 ) );
  using P = std::vector< std::pair< int , int > >;
- CHECK( t.range( 7 , 11 ) == P( { { 8 , 8 } , { 9 , 9 } , { 10 , 10 } ,
-                                  { 11 , 11 } } ) );
+ CHECK( t.range( 7 , 11 ) ==
+	P( { { 8 , 8 } , { 9 , 9 } , { 10 , 10 } , { 11 , 11 } } ) );
  CHECK( t.range( 16 , 20 ).empty() && ( t.range( 0 , 100 ).size() == 8 ) );
  CHECK( t.range( 11 , 7 ).empty() && t.range( 0 , 5 ).empty() );
  CHECK( ( t.range( 12 , 12 ) == P( { { 12 , 12 } } ) ) &&
-        t.range( 7 , 7 ).empty() );
+	t.range( 7 , 7 ).empty() );
  CHECK( ( t.range( 6 , 6 ) == P( { { 6 , 6 } } ) ) &&
-        ( t.range( 15 , 15 ) == P( { { 15 , 15 } } ) ) );
+	( t.range( 15 , 15 ) == P( { { 15 , 15 } } ) ) );
  const auto before = t.levels();
- for( int x : { 6 , 9 , 10 , 15 } )        // the first and the last too
+ for( int x : { 6 , 9 , 10 , 15 } )  // the first and the last too
   t.insert( x , -x );
  CHECK( ( t.levels() == before ) && ( t.size() == 8 ) );
  CHECK( ( t.lookup( 9 ) == -9 ) && ( t.lookup( 15 ) == -15 ) );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  t.insert( hi , 1 );
  t.insert( lo , 2 );
  t.check();
  CHECK( ( t.range( lo , hi ).size() == 10 ) && ( t.lookup( lo ) == 2 ) );
  CHECK( ( t.range( lo , lo ) == P( { { lo , 2 } } ) ) &&
-        ( t.range( hi , hi ) == P( { { hi , 1 } } ) ) );
+	( t.range( hi , hi ) == P( { { hi , 1 } } ) ) );
  int n = 0 , last = lo;
  bool sorted = true;
  for( auto [ k , v ] : t ) {
@@ -554,7 +578,7 @@ ADS_TEST( "sec6.3.bplus-random" )
    BPlusTree< int , int > t( m );
    std::map< int , int > ref;
    std::uniform_int_distribution< int > key( 0 , 9999 );
-   for( int i = 0 ; i < 5000 ; ++i ) {      // random, increasing, decreasing
+   for( int i = 0 ; i < 5000 ; ++i ) {  // random, increasing, decreasing
     const int k = s == 0 ? key( rng ) : s == 1 ? 2 * i : 9999 - 2 * i;
     t.insert( k , i );
     ref[ k ] = i;
@@ -566,23 +590,23 @@ ADS_TEST( "sec6.3.bplus-random" )
     }
    const auto r = t.range( 2500 , 7499 );
    CHECK( std::equal( r.begin() , r.end() , ref.lower_bound( 2500 ) ,
-                      ref.upper_bound( 7499 ) ,
-                      []( auto & a , auto & b ) {
-                       return( ( a.first == b.first ) &&
-                               ( a.second == b.second ) ); } ) );
+		      ref.upper_bound( 7499 ) , []( auto & a , auto & b ) {
+		       return( ( a.first == b.first ) &&
+				( a.second == b.second ) );
+		       } ) );
    const auto lv = t.levels();
    const double q = ( m + 1 ) / 2;
    CHECK( lv.size() <=
-          2 + std::log( lv.back().size() / 2.0 ) / std::log( q ) );
+	  2 + std::log( lv.back().size() / 2.0 ) / std::log( q ) );
    }
- for( int m : { 3 , 1000 } ) {             // the root stays a leaf
+ for( int m : { 3 , 1000 } ) {  // the root stays a leaf
   BPlusTree< int , int > t( m );
   for( int k = 0 ; k < std::min( m , 500 ) ; ++k )
    t.insert( k , k );
   t.check();
   CHECK( ( t.levels().size() == 1 ) &&
-         ( int( t.size() ) == std::min( m , 500 ) ) );
-  t.insert( 2 , 0 );                       // in a full leaf, again
+	 ( int( t.size() ) == std::min( m , 500 ) ) );
+  t.insert( 2 , 0 );  // in a full leaf, again
   CHECK( t.levels().size() == 1 );
   }
  }
@@ -614,7 +638,8 @@ ADS_TEST( "ex6.1" )
  CHECK( keys( build< RBT >( r ) ) == Ints( u.begin() , u.end() ) );
  }
 
-namespace {
+namespace
+{
 
 // Exercise 6.2: insertNode() recursive, on a binary tree of keys: a new
 // node where the search ends, nothing if the key is there
@@ -623,12 +648,16 @@ BinaryTree< int > * insertRec( BinaryTree< int > * T , int x )
  if( ! T )
   return( new BinaryTree< int >( x ) );
  if( x < T->read() ) {
-  if( T->left() ) insertRec( T->left() , x );
-  else T->insertLeft( new BinaryTree< int >( x ) );
+  if( T->left() )
+   insertRec( T->left() , x );
+  else
+   T->insertLeft( new BinaryTree< int >( x ) );
   }
  else if( x > T->read() ) {
-  if( T->right() ) insertRec( T->right() , x );
-  else T->insertRight( new BinaryTree< int >( x ) );
+  if( T->right() )
+   insertRec( T->right() , x );
+  else
+   T->insertRight( new BinaryTree< int >( x ) );
   }
  return( T );
  }
@@ -636,8 +665,8 @@ BinaryTree< int > * insertRec( BinaryTree< int > * T , int x )
 Ints previsit( BinaryTree< int > * t )
 {
  Ints out;
- pre_visit( t , [ & ]( BinaryTree< int > * u ) {
-  out.push_back( u->read() ); } );
+ pre_visit( t ,
+	    [ & ]( BinaryTree< int > * u ) { out.push_back( u->read() ); } );
  return( out );
  }
 
@@ -652,7 +681,7 @@ ADS_TEST( "ex6.2" )
  std::uniform_int_distribution< int > key( 0 , 300 );
  Ints k( 400 );
  for( int & x : k )
-  x = key( rng );                          // with repetitions
+  x = key( rng );  // with repetitions
  std::unique_ptr< BinaryTree< int > > t;
  for( int x : k )
   t.reset( insertRec( t.release() , x ) );
@@ -665,16 +694,17 @@ ADS_TEST( "ex6.2" )
   for( int x : q )
    t.reset( insertRec( t.release() , x ) );
   CHECK( previsit( t.get() ) == preorder( build< BST >( q ) ) );
-  CHECK( previsit( t.get() ) == q );       // a chain: the order given
+  CHECK( previsit( t.get() ) == q );  // a chain: the order given
   }
  }
 
-namespace {
+namespace
+{
 
 // Exercise 6.3: a binary tree is a search tree if each key is in the
 // interval that its ancestors leave to it, ( lo , hi ), checked going down
 bool isABR( BinaryTree< int > * t , const int * lo = nullptr ,
-            const int * hi = nullptr )
+	    const int * hi = nullptr )
 {
  if( ! t )
   return( true );
@@ -697,43 +727,47 @@ ADS_TEST( "ex6.3" )
  for( int x : fig61 )
   t.reset( insertRec( t.release() , x ) );
  CHECK( isABR( t.get() ) );
- std::unique_ptr< BinaryTree< int > > w( make( B( 10 , B( 5 , {} , B( 12 ) ) ,
-                                                  B( 15 ) ) ) );
+ std::unique_ptr< BinaryTree< int > > w(
+   make( B( 10 , B( 5 , {} , B( 12 ) ) , B( 15 ) ) ) );
  CHECK( ! isABR( w.get() ) );
  w->left()->right()->write( 7 );
  CHECK( isABR( w.get() ) );
  CHECK( isABR( nullptr ) );
  BinaryTree< int > one( 0 );
  CHECK( isABR( &one ) );
- w->left()->right()->write( 10 );          // equal to the root
+ w->left()->right()->write( 10 );  // equal to the root
  CHECK( ! isABR( w.get() ) );
  for( auto s : { B( 5 , B( 5 ) ) , B( 5 , {} , B( 5 ) ) } ) {
   std::unique_ptr< BinaryTree< int > > e( make( s ) );
   CHECK( ! isABR( e.get() ) );
   }
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  std::unique_ptr< BinaryTree< int > > x( make( B( 0 , B( lo ) , B( hi ) ) ) );
  CHECK( isABR( x.get() ) );
- std::unique_ptr< BinaryTree< int > > y( make( B( lo , {} , B( hi ,
-                                                  B( lo + 1 ) ) ) ) );
+ std::unique_ptr< BinaryTree< int > > y(
+   make( B( lo , {} , B( hi , B( lo + 1 ) ) ) ) );
  CHECK( isABR( y.get() ) );
  y->right()->left()->write( lo );
  CHECK( ! isABR( y.get() ) );
  }
 
-namespace {
+namespace
+{
 
 // Solution of exercise 6.4: printNodes(), the invisit that skips the
 // subtrees out of [ A , B ], in O( h + k ) time
 void printNodes( BinaryTree< int > * t , int A , int B , Ints & out ,
-                 int & seen )
+		 int & seen )
 {
  ++seen;
  const int v = t->read();
- if( t->left() && ( A < v ) ) printNodes( t->left() , A , B , out , seen );
- if( ( A <= v ) && ( v <= B ) ) out.push_back( v );
- if( t->right() && ( B > v ) ) printNodes( t->right() , A , B , out , seen );
+ if( t->left() && ( A < v ) )
+  printNodes( t->left() , A , B , out , seen );
+ if( ( A <= v ) && ( v <= B ) )
+  out.push_back( v );
+ if( t->right() && ( B > v ) )
+  printNodes( t->right() , A , B , out , seen );
  }
 
 }  // end( namespace )
@@ -753,7 +787,7 @@ ADS_TEST( "ex6.4" )
  out.clear();
  seen = 0;
  printNodes( t.get() , 41 , 50 , out , seen );
- CHECK( ( out == Ints( { 42 } ) ) && ( seen == 4 ) );   // 17, 33, 40, 42
+ CHECK( ( out == Ints( { 42 } ) ) && ( seen == 4 ) );  // 17, 33, 40, 42
  // random: the keys of the interval, against a filter
  std::mt19937 rng( 604 );
  Ints k( 3000 );
@@ -768,7 +802,7 @@ ADS_TEST( "ex6.4" )
  Ints ref( 100 );
  std::iota( ref.begin() , ref.end() , 1000 );
  CHECK( out == ref );
- CHECK( seen < 3 * 100 );   // O( h + k ), h about 2.99 log n on average
+ CHECK( seen < 3 * 100 );  // O( h + k ), h about 2.99 log n on average
  auto range = [ & ]( int A , int B ) {
   out.clear();
   seen = 0;
@@ -778,7 +812,7 @@ ADS_TEST( "ex6.4" )
  CHECK( range( 1099 , 1000 ).empty() && range( -5 , 0 ).empty() );
  CHECK( range( 3001 , 4000 ).empty() );
  CHECK( ( range( 7 , 7 ) == Ints( { 7 } ) ) &&
-        ( range( 1 , 1 ) == Ints( { 1 } ) ) );
+	( range( 1 , 1 ) == Ints( { 1 } ) ) );
  CHECK( range( 3000 , 3000 ) == Ints( { 3000 } ) );
  Ints all( 3000 );
  std::iota( all.begin() , all.end() , 1 );
@@ -802,8 +836,10 @@ ADS_TEST( "ex6.5" )
  for( int c = 0 ; c < 5 ; ++c ) {
   Ints k( c == 1 ? 0 : c == 2 ? 1 : 1000 );
   std::iota( k.begin() , k.end() , 0 );
-  if( c == 0 ) std::shuffle( k.begin() , k.end() , rng );
-  if( c == 4 ) std::reverse( k.begin() , k.end() );
+  if( c == 0 )
+   std::shuffle( k.begin() , k.end() , rng );
+  if( c == 4 )
+   std::reverse( k.begin() , k.end() );
   const BST t = build< BST >( k );
   Ints in , back;
   for( auto u = t.min() ; ! t.isNil( u ) ; u = t.successorNode( u ) )
@@ -818,12 +854,14 @@ ADS_TEST( "ex6.5" )
   }
  }
 
-namespace {
+namespace
+{
 
 // Exercise 6.6: the concatenation of T1 and T2, the keys of T1 smaller, in
 // O( h ) time: the largest key of T1 is taken out (it has no right child)
 // and becomes the root, T1 on its left and T2 on its right
-struct N {
+struct N
+{
  int k;
  std::unique_ptr< N > l , r;
  };
@@ -834,8 +872,10 @@ P insertN( P t , int k )
 {
  if( ! t )
   return( P( new N{ k , {} , {} } ) );
- if( k < t->k ) t->l = insertN( std::move( t->l ) , k );
- else t->r = insertN( std::move( t->r ) , k );
+ if( k < t->k )
+  t->l = insertN( std::move( t->l ) , k );
+ else
+  t->r = insertN( std::move( t->r ) , k );
  return( t );
  }
 
@@ -843,11 +883,11 @@ P concatenate( P T1 , P T2 )
 {
  if( ! T1 )
   return( T2 );
- P * m = &T1;                              // to the largest key of T1
+ P * m = &T1;  // to the largest key of T1
  while( ( *m )->r )
   m = &( *m )->r;
  P root = std::move( *m );
- *m = std::move( root->l );                // its left subtree takes its place
+ *m = std::move( root->l );  // its left subtree takes its place
  root->l = std::move( T1 );
  root->r = std::move( T2 );
  return( root );
@@ -864,8 +904,7 @@ void inorder( const N * t , Ints & out )
 
 int height( const N * t )
 {
- return( t ? 1 + std::max( height( t->l.get() ) , height( t->r.get() ) )
-           : 0 );
+ return( t ? 1 + std::max( height( t->l.get() ) , height( t->r.get() ) ) : 0 );
  }
 
 }  // end( namespace )
@@ -882,8 +921,10 @@ ADS_TEST( "ex6.6" )
    std::shuffle( a.begin() , a.end() , rng );
    std::shuffle( b.begin() , b.end() , rng );
    P T1 , T2;
-   for( int x : a ) T1 = insertN( std::move( T1 ) , x );
-   for( int x : b ) T2 = insertN( std::move( T2 ) , x );
+   for( int x : a )
+    T1 = insertN( std::move( T1 ) , x );
+   for( int x : b )
+    T2 = insertN( std::move( T2 ) , x );
    const int h = std::max( height( T1.get() ) , height( T2.get() ) );
    P T = concatenate( std::move( T1 ) , std::move( T2 ) );
    Ints out , all( n1 + n2 );
@@ -894,7 +935,8 @@ ADS_TEST( "ex6.6" )
    }
  }
 
-namespace {
+namespace
+{
 
 // Solution of exercise 6.7: union() and difference() start from a copy of A,
 // in O( n_A ) time, and add or remove the keys of B; intersection() starts
@@ -935,42 +977,51 @@ template< class Tr >
 void sets( unsigned seed )
 {
  std::mt19937 rng( seed );
- for( auto [ na , nb ] : { std::pair{ 0 , 0 } , std::pair{ 0 , 50 } ,
-                           std::pair{ 50 , 0 } , std::pair{ 1 , 1 } ,
-                           std::pair{ 300 , 20 } , std::pair{ 500 , 500 } } ) {
+ for( auto [ na , nb ] :
+      { std::pair{ 0 , 0 } , std::pair{ 0 , 50 } , std::pair{ 50 , 0 } ,
+	std::pair{ 1 , 1 } , std::pair{ 300 , 20 } ,
+	std::pair{ 500 , 500 } } ) {
   std::uniform_int_distribution< int > key( 0 , 999 );
   std::set< int > a , b;
   Tr A , B;
-  while( int( a.size() ) < na ) { int x = key( rng ); a.insert( x );
-                                  A.insert( x , 0 ); }
-  while( int( b.size() ) < nb ) { int x = key( rng ); b.insert( x );
-                                  B.insert( x , 0 ); }
+  while( int( a.size() ) < na ) {
+   int x = key( rng );
+   a.insert( x );
+   A.insert( x , 0 );
+   }
+  while( int( b.size() ) < nb ) {
+   int x = key( rng );
+   b.insert( x );
+   B.insert( x , 0 );
+   }
   Ints u , d , i;
   std::set_union( a.begin() , a.end() , b.begin() , b.end() ,
-                  std::back_inserter( u ) );
+		  std::back_inserter( u ) );
   std::set_difference( a.begin() , a.end() , b.begin() , b.end() ,
-                       std::back_inserter( d ) );
+		       std::back_inserter( d ) );
   std::set_intersection( a.begin() , a.end() , b.begin() , b.end() ,
-                         std::back_inserter( i ) );
+			 std::back_inserter( i ) );
   const Tr U = set_union( A , B ) , D = set_difference( A , B ) ,
-           I = set_intersection( A , B );
+	   I = set_intersection( A , B );
   CHECK( keys( U ) == u && keys( D ) == d && keys( I ) == i );
   CHECK( shape( U ).ok && shape( D ).ok && shape( I ).ok );
-  CHECK( keys( A ) == Ints( a.begin() , a.end() ) );   // A unchanged
+  CHECK( keys( A ) == Ints( a.begin() , a.end() ) );  // A unchanged
   // A with itself, with a subset of its own, with a disjoint set
   const Ints ka = keys( A );
   CHECK( ( keys( set_union( A , A ) ) == ka ) &&
-         set_difference( A , A ).empty() &&
-         ( keys( set_intersection( A , A ) ) == ka ) );
+	 set_difference( A , A ).empty() &&
+	 ( keys( set_intersection( A , A ) ) == ka ) );
   Tr H , F;
-  for( std::size_t j = 0 ; j < ka.size() ; j += 2 ) H.insert( ka[ j ] , 0 );
-  for( int x : ka ) F.insert( x + 1000 , 0 );
+  for( std::size_t j = 0 ; j < ka.size() ; j += 2 )
+   H.insert( ka[ j ] , 0 );
+  for( int x : ka )
+   F.insert( x + 1000 , 0 );
   CHECK( ( keys( set_union( A , H ) ) == ka ) &&
-         ( keys( set_intersection( A , H ) ) == keys( H ) ) &&
-         ( set_difference( A , H ).size() == ka.size() / 2 ) );
+	 ( keys( set_intersection( A , H ) ) == keys( H ) ) &&
+	 ( set_difference( A , H ).size() == ka.size() / 2 ) );
   CHECK( set_intersection( A , F ).empty() &&
-         ( keys( set_difference( A , F ) ) == ka ) &&
-         ( set_union( A , F ).size() == 2 * ka.size() ) );
+	 ( keys( set_difference( A , F ) ) == ka ) &&
+	 ( set_union( A , F ).size() == 2 * ka.size() ) );
   }
  }
 
@@ -991,14 +1042,18 @@ ADS_TEST( "ex6.8" )
  sets< RBT >( 608 );
  }
 
-namespace {
+namespace
+{
 
 // Exercise 6.9: a binary tree can be colored if the root can be black. For
 // each node, the sets of the numbers d of black nodes from it to a leaf
 // (both included) that it can have if black and if red: a nil leaf has d = 1
 // and is black; a black node needs its children, of any color, with the same
 // d, and has d + 1; a red one needs black children with the same d, and has d
-struct Colorings { std::set< int > black , red; };
+struct Colorings
+{
+ std::set< int > black , red;
+ };
 
 Colorings colorings( BinaryTree< int > * t )
 {
@@ -1010,9 +1065,11 @@ Colorings colorings( BinaryTree< int > * t )
  ra.insert( r.red.begin() , r.red.end() );
  Colorings c;
  for( int d : la )
-  if( ra.count( d ) ) c.black.insert( d + 1 );
+  if( ra.count( d ) )
+   c.black.insert( d + 1 );
  for( int d : l.black )
-  if( r.black.count( d ) ) c.red.insert( d );
+  if( r.black.count( d ) )
+   c.red.insert( d );
  return( c );
  }
 
@@ -1030,33 +1087,36 @@ bool colorable( BinaryTree< int > * t )
 // empty tree, a node alone and a path of 2 can
 ADS_TEST( "ex6.9" )
 {
- std::unique_ptr< BinaryTree< int > > a( make(
-  B( 1 , B( 2 ) , B( 3 , B( 4 ) , B( 5 ) ) ) ) );
+ std::unique_ptr< BinaryTree< int > > a(
+   make( B( 1 , B( 2 ) , B( 3 , B( 4 ) , B( 5 ) ) ) ) );
  std::unique_ptr< BinaryTree< int > > b( make(
-  B( 1 , B( 2 , B( 4 , B( 6 ) , B( 7 , {} , B( 10 ) ) ) ,
-                B( 5 , B( 8 ) , B( 9 ) ) ) ,
-         B( 3 ) ) ) );
+   B( 1 ,
+      B( 2 , B( 4 , B( 6 ) , B( 7 , {} , B( 10 ) ) ) ,
+	 B( 5 , B( 8 ) , B( 9 ) ) ) ,
+      B( 3 ) ) ) );
  std::unique_ptr< BinaryTree< int > > c( make(
-  B( 1 , B( 2 , B( 4 , B( 9 ) , B( 10 , B( 13 ) ) ) ,
-                B( 5 , B( 11 ) , B( 12 ) ) ) ,
-         B( 3 , B( 7 ) , B( 8 ) ) ) ) );
- std::unique_ptr< BinaryTree< int > > d( make(
-  B( 1 , B( 2 , B( 4 , B( 9 ) , B( 10 , B( 13 ) , B( 14 ) ) ) ,
-                B( 5 , B( 11 ) , B( 12 ) ) ) ,
-         B( 3 , B( 7 ) , B( 8 ) ) ) ) );
+   B( 1 ,
+      B( 2 , B( 4 , B( 9 ) , B( 10 , B( 13 ) ) ) ,
+	 B( 5 , B( 11 ) , B( 12 ) ) ) ,
+      B( 3 , B( 7 ) , B( 8 ) ) ) ) );
+ std::unique_ptr< BinaryTree< int > > d( make( B(
+   1 ,
+   B( 2 , B( 4 , B( 9 ) , B( 10 , B( 13 ) , B( 14 ) ) ) ,
+      B( 5 , B( 11 ) , B( 12 ) ) ) ,
+   B( 3 , B( 7 ) , B( 8 ) ) ) ) );
  CHECK( colorable( a.get() ) );
  CHECK( ! colorable( b.get() ) );
  CHECK( colorable( c.get() ) );
  CHECK( colorable( d.get() ) );
 
- std::unique_ptr< BinaryTree< int > > path( make(
-  B( 1 , {} , B( 2 , {} , B( 3 ) ) ) ) );
+ std::unique_ptr< BinaryTree< int > > path(
+   make( B( 1 , {} , B( 2 , {} , B( 3 ) ) ) ) );
  CHECK( ! colorable( path.get() ) );
  CHECK( colorable( nullptr ) );
  BinaryTree< int > one( 1 );
  CHECK( colorable( &one ) );
  path->right()->deleteRight();
- CHECK( colorable( path.get() ) );         // black over red
+ CHECK( colorable( path.get() ) );  // black over red
  CHECK( colorings( path.get() ).black == std::set< int >( { 2 } ) );
  std::mt19937 rng( 609 );
  std::uniform_int_distribution< int > key( 0 , 999 );
@@ -1069,20 +1129,23 @@ ADS_TEST( "ex6.9" )
   }
  }
 
-namespace {
+namespace
+{
 
 // a perfect binary tree of the given height, the levels from the root
 // colored by color( level ); it returns the internal nodes
 using CT = BinaryTree< Color >;
 
 CT * perfect( int h , const std::function< Color( int ) > & color ,
-              int level = 0 )
+	      int level = 0 )
 {
  if( h == 0 )
   return( nullptr );
  auto t = new CT( color( level ) );
- if( auto l = perfect( h - 1 , color , level + 1 ) ) t->insertLeft( l );
- if( auto r = perfect( h - 1 , color , level + 1 ) ) t->insertRight( r );
+ if( auto l = perfect( h - 1 , color , level + 1 ) )
+  t->insertLeft( l );
+ if( auto r = perfect( h - 1 , color , level + 1 ) )
+  t->insertRight( r );
  return( t );
  }
 
@@ -1112,8 +1175,10 @@ BinaryTree< int > * perfect_shape( int h )
  if( h == 0 )
   return( nullptr );
  auto t = new BinaryTree< int >( h );
- if( auto l = perfect_shape( h - 1 ) ) t->insertLeft( l );
- if( auto r = perfect_shape( h - 1 ) ) t->insertRight( r );
+ if( auto l = perfect_shape( h - 1 ) )
+  t->insertLeft( l );
+ if( auto r = perfect_shape( h - 1 ) )
+  t->insertRight( r );
  return( t );
  }
 
@@ -1128,16 +1193,16 @@ BinaryTree< int > * perfect_shape( int h )
 ADS_TEST( "ex6.10" )
 {
  for( int b = 0 ; b <= 6 ; ++b ) {
-  std::unique_ptr< CT > lo( perfect( b , []( int ) { return( Color::BLACK );
-                                                     } ) );
-  std::unique_ptr< CT > hi( perfect( 2 * b , []( int l ) {
-   return( l % 2 ? Color::RED : Color::BLACK ); } ) );
-  CHECK( black_height( lo.get() ) == b + 1 );   // + 1 for the leaves
+  std::unique_ptr< CT > lo(
+    perfect( b , []( int ) { return( Color::BLACK ); } ) );
+  std::unique_ptr< CT > hi( perfect(
+    2 * b , []( int l ) { return( l % 2 ? Color::RED : Color::BLACK ); } ) );
+  CHECK( black_height( lo.get() ) == b + 1 );  // + 1 for the leaves
   CHECK( black_height( hi.get() ) == b + 1 );
   CHECK( count( lo.get() ) == ( 1 << b ) - 1 );
   CHECK( count( hi.get() ) == ( 1 << ( 2 * b ) ) - 1 );
   std::unique_ptr< BinaryTree< int > > s( perfect_shape( 2 * b ) ) ,
-                                       m( perfect_shape( 2 * b + 1 ) );
+    m( perfect_shape( 2 * b + 1 ) );
   CHECK( colorings( s.get() ).black.count( b + 1 ) );
   CHECK( ! colorings( m.get() ).black.count( b + 1 ) );
   }

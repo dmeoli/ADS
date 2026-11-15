@@ -44,7 +44,7 @@
 
 #ifndef __ADS_ExternalSort
  #define __ADS_ExternalSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -65,7 +65,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the runs of the input made by replacement selection with \f$ M \f$ items in
 /// memory
@@ -93,9 +94,9 @@ namespace ADS {
 /// \pre \f$ M \ge 1 \f$
 /// \post each run sorted, all together the items of the input (audit)
 template< class T , class C = std::less<> >
-std::vector< std::vector< T > > replacementSelection(
-                       const std::vector< T > & input , std::size_t M ,
-                       C less = C() );
+std::vector< std::vector< T > >
+replacementSelection( const std::vector< T > & input , std::size_t M ,
+		      C less = C() );
 
 /// the polyphase merge of the runs on \f$ T \f$ tapes; the phases go to
 /// `*phases`, if given
@@ -124,8 +125,8 @@ std::vector< std::vector< T > > replacementSelection(
 /// \post the items of the runs, sorted (audit)
 template< class T , class C = std::less<> >
 std::vector< T > polyphaseMerge( std::vector< std::vector< T > > runs ,
-                                 std::size_t tapes , C less = C() ,
-                                 std::size_t * phases = nullptr );
+				 std::size_t tapes , C less = C() ,
+				 std::size_t * phases = nullptr );
 
 /// the sort of `input` by `replacementSelection()` and then `polyphaseMerge()`
 /// \f[
@@ -138,9 +139,8 @@ std::vector< T > polyphaseMerge( std::vector< std::vector< T > > runs ,
 /// \pre \f$ M \ge 1 \f$ and \f$ T \ge 3 \f$
 /// \post the items of the input, sorted (audit)
 template< class T , class C = std::less<> >
-std::vector< T > externalSort( const std::vector< T > & input ,
-                               std::size_t M , std::size_t tapes ,
-                               C less = C() );
+std::vector< T > externalSort( const std::vector< T > & input , std::size_t M ,
+			       std::size_t tapes , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -154,7 +154,7 @@ std::vector< T > externalSort( const std::vector< T > & input ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ExternalSort.h included */
+#endif /* ExternalSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ExternalSort.h -------------------------*/

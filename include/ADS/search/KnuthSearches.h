@@ -49,7 +49,7 @@
 
 #ifndef __ADS_KnuthSearches
  #define __ADS_KnuthSearches
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -65,7 +65,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the Fibonacci search of \f$ v \f$ in the sorted \f$ A \f$: its place, or
 /// -1; the comparisons go to `*cmp`, if given, the test of the line 9
@@ -96,7 +97,7 @@ namespace ADS {
 /// \post the result is -1 if and only if \f$ v \f$ is not in \f$ A \f$
 template< class T >
 long fibonacciSearch( const std::vector< T > & A , const T & v ,
-                      long * cmp = nullptr );
+		      long * cmp = nullptr );
 
 /// the uniform binary search of \f$ v \f$ in the sorted \f$ A \f$: its place,
 /// or -1; the comparisons go to `*cmp`, if given
@@ -125,7 +126,7 @@ long fibonacciSearch( const std::vector< T > & A , const T & v ,
 /// \post the result is -1 if and only if \f$ v \f$ is not in \f$ A \f$
 template< class T >
 long uniformBinarySearch( const std::vector< T > & A , const T & v ,
-                          long * cmp = nullptr );
+			  long * cmp = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -139,7 +140,7 @@ long uniformBinarySearch( const std::vector< T > & A , const T & v ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* KnuthSearches.h included */
+#endif /* KnuthSearches.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File KnuthSearches.h ------------------------*/

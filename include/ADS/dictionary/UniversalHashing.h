@@ -122,7 +122,7 @@
 
 #ifndef __ADS_UniversalHashing
  #define __ADS_UniversalHashing
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -151,7 +151,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS CarterWegmanHash --------------------------*/
@@ -159,7 +160,8 @@ namespace ADS {
 
 /// \f$ h( k ) = ( ( a k + b ) \bmod p ) \bmod m \f$, of the class
 /// \f$ H_{p,m} \f$ of Carter and Wegman
-class CarterWegmanHash {
+class CarterWegmanHash
+{
  public:
  /// a function drawn from \f$ H_{p,m} \f$ with \f$ p = 2^{61} - 1 \f$, from
  /// the seed
@@ -170,7 +172,7 @@ class CarterWegmanHash {
  /// \pre \f$ 2 \le p < 2^{63} \f$, \f$ 1 \le a < p \f$, \f$ b < p \f$ and
  ///      \f$ m \ge 1 \f$
  CarterWegmanHash( std::uint64_t p , std::uint64_t a , std::uint64_t b ,
-                   std::uint64_t m );
+		   std::uint64_t m );
 
  /// \f$ h( k ) \f$, the product \f$ a k \bmod p \f$ computed with no
  /// overflow [see `mulMod()`]
@@ -201,7 +203,8 @@ class CarterWegmanHash {
 
 /// \f$ h( k ) = \sum_i a_i k_i \bmod m \f$, the \f$ k_i \f$ being the
 /// digits of \f$ k \f$ in base \f$ m \f$
-class DotProductHash {
+class DotProductHash
+{
  public:
  /// a function with \f$ r \f$ random digits \f$ a_i \f$, from the seed
  /// \pre \f$ 2 \le m \le 2^{32} \f$ and \f$ r \ge 1 \f$
@@ -230,12 +233,12 @@ class DotProductHash {
  [[nodiscard]] std::uint64_t operator()( std::uint64_t k ) const;
 
  /// the size \f$ m^r \f$ of the universe, or 0 if it exceeds
-/// \f$ 2^{64} - 1 \f$
+ /// \f$ 2^{64} - 1 \f$
  [[nodiscard]] std::uint64_t universe( void ) const;
 
  private:
- std::uint64_t f_m;                  ///< the base \f$ m \f$
- std::vector< std::uint64_t > f_a;   ///< the digits, the least first
+ std::uint64_t f_m;                 ///< the base \f$ m \f$
+ std::vector< std::uint64_t > f_a;  ///< the digits, the least first
  };
 
 /*--------------------------------------------------------------------------*/
@@ -244,7 +247,8 @@ class DotProductHash {
 
 /// \f$ h( k ) = ( a k \bmod 2^h ) \operatorname{div} 2^{h - l} \f$, with
 /// \f$ a \f$ odd
-class MultiplyShiftHash {
+class MultiplyShiftHash
+{
  public:
  /// a function with a random odd \f$ a \f$, from the seed
  /// \pre \f$ 1 \le l < h \le 64 \f$
@@ -253,7 +257,7 @@ class MultiplyShiftHash {
  /// the function of the multiplier \f$ a \f$
  /// \pre \f$ 1 \le l < h \le 64 \f$, \f$ a \f$ odd and below \f$ 2^h \f$
  [[nodiscard]] static MultiplyShiftHash ofMultiplier( int h , int l ,
-                                                      std::uint64_t a );
+						      std::uint64_t a );
 
  /// \f$ h( k ) \f$, a product and a shift
  /// \pre \f$ k < 2^h \f$
@@ -262,8 +266,8 @@ class MultiplyShiftHash {
 
  private:
  int f_h , f_l;          ///< \f$ h \f$ and \f$ l \f$
- std::uint64_t f_a;      ///< the multiplier \f$ a \f$
- std::uint64_t f_mask;   ///< \f$ 2^h - 1 \f$
+ std::uint64_t f_a;     ///< the multiplier \f$ a \f$
+ std::uint64_t f_mask;  ///< \f$ 2^h - 1 \f$
  };
 
 /*--------------------------------------------------------------------------*/
@@ -272,7 +276,8 @@ class MultiplyShiftHash {
 
 /// \f$ h( s ) = \sum_i ( s_i + 1 ) x^i \bmod ( 2^{61} - 1 ) \f$, at a
 /// random point \f$ x \f$
-class StringHash {
+class StringHash
+{
  public:
  /// a function with a random point \f$ x \f$, from the seed
  explicit StringHash( std::uint64_t seed = 1 );
@@ -295,7 +300,7 @@ class StringHash {
  [[nodiscard]] std::uint64_t operator()( std::string_view s ) const;
 
  private:
- std::uint64_t f_x;   ///< the point, in \f$ [ 1 , p ) \f$
+ std::uint64_t f_x;  ///< the point, in \f$ [ 1 , p ) \f$
  };
 
 /*--------------------------------------------------------------------------*/
@@ -307,7 +312,8 @@ class StringHash {
 /// on a table of \f$ 2^d \f$ places, \f$ z \f$ a random odd word and
 /// \f$ x \f$ the hash code `Code( k )` of the key
 template< class K = std::uint64_t , class Code = std::hash< K > >
-class MultiplicativeHash {
+class MultiplicativeHash
+{
  public:
  /// a function with a random odd \f$ z \f$ of 64 bits, from the seed
  explicit MultiplicativeHash( std::uint64_t seed = 1 , Code code = Code() );
@@ -315,7 +321,7 @@ class MultiplicativeHash {
  /// the function of the multiplier \f$ z \f$
  /// \pre \f$ z \f$ odd
  [[nodiscard]] static MultiplicativeHash ofMultiplier( std::uint64_t z ,
-                                                       Code code = Code() );
+						       Code code = Code() );
 
  /// the product \f$ z x \bmod 2^{64} \f$, whose high bits are the hash
  [[nodiscard]] std::uint64_t operator()( const K & k ) const;
@@ -341,8 +347,8 @@ class MultiplicativeHash {
  [[nodiscard]] std::uint64_t multiplier( void ) const { return( f_z ); }
 
  private:
- std::uint64_t f_z;                ///< the odd multiplier
- ADS_NO_UNIQUE_ADDRESS Code f_code;   ///< the hash code of the keys
+ std::uint64_t f_z;                  ///< the odd multiplier
+ ADS_NO_UNIQUE_ADDRESS Code f_code;  ///< the hash code of the keys
  };
 
 /*--------------------------------------------------------------------------*/
@@ -356,7 +362,8 @@ class MultiplicativeHash {
 /// \f$ 2 w \f$ bits: two distinct tuples collide with probability at most
 /// \f$ 3 / 2^w \f$ (Theorem 5.3 of Morin's book), where the XOR or the sum
 /// of the parts make large sets of tuples collide (exercises 5.7 to 5.9)
-class CompoundHash {
+class CompoundHash
+{
  public:
  /// a function of tuples of \f$ r \f$ words, its multipliers from the seed
  /// \pre \f$ r \ge 1 \f$
@@ -376,14 +383,14 @@ class CompoundHash {
  /// \end{array}}
  /// \f]
  /// \pre \f$ x \f$ has \f$ r \f$ words
- [[nodiscard]] std::uint64_t operator()( std::span< const std::uint64_t > x )
-  const;
+ [[nodiscard]] std::uint64_t
+ operator()( std::span< const std::uint64_t > x ) const;
 
  /// the number \f$ r \f$ of parts
  [[nodiscard]] std::size_t parts( void ) const { return( f_Z.size() ); }
 
  private:
- std::vector< std::uint64_t > f_Z;   ///< the multipliers \f$ z_i \f$
+ std::vector< std::uint64_t > f_Z;  ///< the multipliers \f$ z_i \f$
  std::uint64_t f_lo , f_hi;          ///< the halves of \f$ z \f$, odd
  };
 
@@ -396,7 +403,8 @@ class CompoundHash {
 /// \f$ p = 2^{61} - 1 \f$ with an end marker,
 /// \f$ h( x_0 , \ldots , x_{r-1} ) = ( \sum_i x_i z^i + ( p - 1 ) z^r )
 /// \bmod p \f$
-class SequenceHash {
+class SequenceHash
+{
  public:
  /// a function with a random point \f$ z \f$ and a random odd multiplier
  /// for the reduction of the words, from the seed
@@ -421,8 +429,8 @@ class SequenceHash {
  /// 4 & \quad \textbf{return}\ h
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::uint64_t operator()( std::span< const std::uint64_t > x )
-  const;
+ [[nodiscard]] std::uint64_t
+ operator()( std::span< const std::uint64_t > x ) const;
 
  /// \f$ h \f$ of a string, its bytes \f$ x_i < p - 1 \f$ taken as they
  /// are: two distinct strings, the longer of \f$ r \f$ bytes, collide with
@@ -431,8 +439,8 @@ class SequenceHash {
  [[nodiscard]] std::uint64_t operator()( std::string_view s ) const;
 
  private:
- std::uint64_t f_z;   ///< the point, in \f$ [ 1 , p ) \f$
- std::uint64_t f_a;   ///< the odd multiplier of the reduction
+ std::uint64_t f_z;  ///< the point, in \f$ [ 1 , p ) \f$
+ std::uint64_t f_a;  ///< the odd multiplier of the reduction
  };
 
 /*--------------------------------------------------------------------------*/
@@ -442,19 +450,18 @@ class SequenceHash {
 /// a DICTIONARY on \f$ d \f$ tables of lists, a key in the shortest of its
 /// \f$ d \f$ lists
 template< class K , class V , class H = std::hash< K > >
-class DLeftHashTable {
+class DLeftHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// \f$ d \f$ tables of \f$ w \f$ lists each,
  /// \f$ w = \max\{ 1 , \lfloor m / d \rfloor \} \f$
  /// \pre \f$ m \ge 1 \f$ and \f$ d \ge 1 \f$
- DLeftHashTable( std::size_t m , int d , std::uint64_t seed = 1 ,
-                 H h = H() );
+ DLeftHashTable( std::size_t m , int d , std::uint64_t seed = 1 , H h = H() );
 
  /// the value of the key \f$ k \f$, or nothing, from its \f$ d \f$ lists
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
@@ -496,18 +503,17 @@ class DLeftHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Bucket = std::vector< std::pair< K , V > >;
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ), table after table and
  // list after list, forward; an insertion or a removal invalidates it
 
  /// the iterator on the pairs, table after table and list after list
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a reference to an item
   using reference = std::pair< const K & , const V & >;
@@ -525,7 +531,9 @@ class DLeftHashTable {
 
   /// on the first pair from the list \f$ b \f$ of the lists \f$ T \f$
   const_iterator( const std::vector< Bucket > * T , std::size_t b )
-   : f_T( T ) , f_b( b ) { forward(); }
+      : f_T( T ) , f_b( b ) {
+   forward();
+   }
 
   /// the pair
   reference operator*( void ) const {
@@ -539,7 +547,11 @@ class DLeftHashTable {
    return( *this );
    }
   /// to the next pair, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same place of the same list
   bool operator==( const const_iterator & o ) const {
@@ -556,8 +568,8 @@ class DLeftHashTable {
    }
 
   const std::vector< Bucket > * f_T = nullptr;
-  std::size_t f_b = 0;   ///< the list
-  std::size_t f_i = 0;   ///< the place in the list
+  std::size_t f_b = 0;  ///< the list
+  std::size_t f_i = 0;  ///< the place in the list
   };
 
  /// the type of the items, for the standard library
@@ -587,24 +599,23 @@ class DLeftHashTable {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the list of \f$ k \f$ in the table \f$ i \f$
  [[nodiscard]] std::size_t list( const K & k , int i ) const;
 
  /// the list of the table that holds \f$ k \f$ and its place there, or none
  [[nodiscard]] std::optional< std::pair< std::size_t , std::size_t > >
-  find( const K & k ) const;
+ find( const K & k ) const;
 
  /// \f$ k \f$ at most once in its lists and, up to 1024 keys, each key in one
  /// of its lists and counted once, \f$ O( n d ) \f$
  [[nodiscard]] bool placed( const K & k ) const;
 
  /// the table \f$ i \f$ at \f$ [ i w , ( i + 1 ) w ) \f$
-std::vector< Bucket > f_T;
- std::size_t f_w;                      ///< the lists of a table
- std::vector< TabulationHash > f_g;    ///< the function of each table
- std::size_t f_n = 0;                  ///< the number of keys
- H f_h;                                ///< the hash of the keys
+ std::vector< Bucket > f_T;
+ std::size_t f_w;                    ///< the lists of a table
+ std::vector< TabulationHash > f_g;  ///< the function of each table
+ std::size_t f_n = 0;                ///< the number of keys
+ H f_h;                              ///< the hash of the keys
  };  // end( class DLeftHashTable )
 
 /*--------------------------------------------------------------------------*/
@@ -619,7 +630,7 @@ std::vector< Bucket > f_T;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* UniversalHashing.h included */
+#endif /* UniversalHashing.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File UniversalHashing.h -----------------------*/

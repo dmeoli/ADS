@@ -34,8 +34,9 @@
  * \f$ n \f$ (see \ref theory_sequence_fenwick).
  *
  * `FenwickObserver< G >` is an observer of an array of values of `G`
- * that tells its changes, as `ObservableArray< G::Value >`: it applies `Assigned` by `set()`, `Inserted` by
- * `push_back()`, `Erased` by `pop_back()` and `Cleared` by `clear()`, and on
+ * that tells its changes, as `ObservableArray< G::Value >`: it applies
+ * `Assigned` by `set()`, `Inserted` by `push_back()`, `Erased` by
+ * `pop_back()` and `Cleared` by `clear()`, and on
  * `Rebuilt` it forgets its tree and builds it again from the array at its
  * next query (the events after `Rebuilt` are then ignored, since the
  * array it reads has them); `audit( a )` compares it with the array.
@@ -63,7 +64,7 @@
 
 #ifndef __ADS_Fenwick
  #define __ADS_Fenwick
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -83,7 +84,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS Fenwick -----------------------------*/
@@ -91,22 +93,24 @@ namespace ADS {
 
 /// the prefix aggregates of \f$ n \f$ values of the monoid `G`
 template< Monoid G >
-class Fenwick {
+class Fenwick
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Value = typename G::Value;   ///< the values
- using Algebra = G;                 ///< their algebra
+ using Value = typename G::Value;  ///< the values
+ using Algebra = G;                ///< their algebra
 
  /// \f$ n \f$ values, all the identity
  explicit Fenwick( std::size_t n = 0 )
-  : f_a( n , G::identity() ) , f_t( n , G::identity() ) {}
+     : f_a( n , G::identity() ) , f_t( n , G::identity() ) { }
 
  /// the values of \f$ [ \mathit{first} , \mathit{last} ) \f$, in
  /// \f$ O( n ) \f$ time
  template< std::input_iterator I >
- Fenwick( I first , I last ) { assign( first , last ); }
+ Fenwick( I first , I last ) {
+  assign( first , last );
+  }
 
  /// the number \f$ n \f$ of values
  [[nodiscard]] std::size_t size( void ) const { return( f_a.size() ); }
@@ -170,7 +174,8 @@ class Fenwick {
 
  /// \f$ a_i \gets a_i \oplus d \f$, in \f$ O( \log n ) \f$ time
  /// \pre \f$ i < n \f$
- void add( std::size_t i , const Value & d ) requires CommutativeMonoid< G >;
+ void add( std::size_t i , const Value & d )
+  requires CommutativeMonoid< G >;
 
  /// \f$ v \f$ appended as \f$ a_n \f$, its node built in \f$ O( \log n ) \f$
  /// time
@@ -210,7 +215,6 @@ class Fenwick {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the node \f$ t_j \f$ from its parts
  [[nodiscard]] Value node( std::size_t j ) const;
 
@@ -223,10 +227,10 @@ class Fenwick {
  /// the lowest bit of \f$ j \f$
  static std::size_t low( std::size_t j ) { return( j & ( ~j + 1 ) ); }
 
- std::vector< Value > f_a;          ///< the values
- std::vector< Value > f_t;          ///< the nodes, \f$ t_j \f$ at j - 1
- std::size_t f_since = 0;           ///< the updates since the rebuilding
- std::size_t f_period = 4096;       ///< the period of the rebuilding
+ std::vector< Value > f_a;     ///< the values
+ std::vector< Value > f_t;     ///< the nodes, \f$ t_j \f$ at j - 1
+ std::size_t f_since = 0;      ///< the updates since the rebuilding
+ std::size_t f_period = 4096;  ///< the period of the rebuilding
 
  };  // end( class Fenwick )
 
@@ -238,13 +242,13 @@ class Fenwick {
 /// tells its changes [see `ObservableArray`], a `Fenwick< G >` kept by its
 /// events
 template< Monoid G >
-class FenwickObserver {
+class FenwickObserver
+{
 
  using Value = typename G::Value;
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a value written
  using Assign = mod::Assigned< std::size_t , Value >;
  /// a value appended
@@ -258,16 +262,20 @@ class FenwickObserver {
  /// the observer of the array \f$ a \f$, its tree built from it
  template< class A >
   requires requires( const A & a ) {
-   { a.values() } -> std::same_as< const std::vector< Value > & >; }
- explicit FenwickObserver( const A & a ) { rebuild( a ); }
+   { a.values() } -> std::same_as< const std::vector< Value > & >;
+   }
+ explicit FenwickObserver( const A & a ) {
+  rebuild( a );
+  }
 
  /// the tree built again from the array \f$ a \f$, whose vector of values
  /// `a.values()` it reads from now on when `Rebuilt` comes
  template< class A >
   requires requires( const A & a ) {
-   { a.values() } -> std::same_as< const std::vector< Value > & >; }
+   { a.values() } -> std::same_as< const std::vector< Value > & >;
+   }
  void rebuild( const A & a ) {
-  f_src = & a.values();
+  f_src = &a.values();
   f_f.assign( f_src->begin() , f_src->end() );
   f_stale = false;
   }
@@ -326,7 +334,8 @@ class FenwickObserver {
  /// the range \f$ a_l \oplus \cdots \oplus a_{r-1} \f$
  /// \pre \f$ l \le r \le n \f$
  [[nodiscard]] Value range( std::size_t l , std::size_t r ) const
-  requires Group< G > {
+  requires Group< G >
+ {
   flush();
   return( f_f.range( l , r ) );
   }
@@ -344,10 +353,9 @@ class FenwickObserver {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- mutable Fenwick< G > f_f;                    ///< the tree
- const std::vector< Value > * f_src = nullptr;   ///< the values observed
- mutable bool f_stale = false;                ///< whether `Rebuilt` came
+ mutable Fenwick< G > f_f;                      ///< the tree
+ const std::vector< Value > * f_src = nullptr;  ///< the values observed
+ mutable bool f_stale = false;                  ///< whether `Rebuilt` came
 
  };  // end( class FenwickObserver )
 
@@ -363,7 +371,7 @@ class FenwickObserver {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Fenwick.h included */
+#endif /* Fenwick.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Fenwick.h ---------------------------*/

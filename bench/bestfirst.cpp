@@ -86,7 +86,8 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- CLOSED ----------------------------------*/
@@ -94,7 +95,8 @@ namespace {
 
 /// a node of a search with a state of W words and the hash of the state
 template< int W >
-struct Node {
+struct Node
+{
  std::array< std::uint64_t , W > state;
  std::uint64_t hash;
  int g;
@@ -102,7 +104,8 @@ struct Node {
 
 /// the stream of requests: the states and their hashes
 template< int W >
-struct Stream {
+struct Stream
+{
  std::vector< std::array< std::uint64_t , W > > S;
  std::vector< std::uint64_t > H;
  };
@@ -114,7 +117,8 @@ Stream< W > stream( std::size_t n , unsigned seed , bool owner )
  const auto K = keys( n , seed );
  std::vector< std::uint32_t > R;
  for( int t = 0 ; t < 4 ; ++t )
-  for( std::size_t i = 0 ; i < n ; ++i ) R.push_back( std::uint32_t( i ) );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   R.push_back( std::uint32_t( i ) );
  std::shuffle( R.begin() , R.end() , std::mt19937_64( seed + 7 ) );
  Stream< W > s;
  for( std::uint32_t i : R ) {
@@ -123,7 +127,8 @@ Stream< W > stream( std::size_t n , unsigned seed , bool owner )
    a[ w ] = ADS::splitmix64( K[ i ] + std::uint64_t( w ) );
   a[ 0 ] = K[ i ];
   std::uint64_t h = ADS::splitmix64( K[ i ] );
-  if( owner ) h = ( h << 3 ) | 3;
+  if( owner )
+   h = ( h << 3 ) | 3;
   s.S.push_back( a );
   s.H.push_back( h );
   }
@@ -132,10 +137,12 @@ Stream< W > stream( std::size_t n , unsigned seed , bool owner )
 
 /// the hash of a node, or of a probe, given
 template< int W >
-struct NodeHash {
+struct NodeHash
+{
  using is_transparent = void;
  using is_avalanching = void;
- struct Probe {
+ struct Probe
+ {
   const std::array< std::uint64_t , W > * s;
   std::uint64_t h;
   };
@@ -145,7 +152,8 @@ struct NodeHash {
 
 /// the equality of the states of a node and of a probe
 template< int W >
-struct NodeEq {
+struct NodeEq
+{
  using is_transparent = void;
  using Probe = typename NodeHash< W >::Probe;
  bool operator()( const Node< W > * a , const Node< W > * b ) const {
@@ -161,74 +169,94 @@ struct NodeEq {
 
 /// the equality of PointerTable
 template< int W >
-struct StateEq {
+struct StateEq
+{
  bool operator()( const Node< W > * p ,
-                  const std::array< std::uint64_t , W > & s ) const {
+		  const std::array< std::uint64_t , W > & s ) const {
   return( p->state == s );
   }
  };
 
 /// a set and the arena of its nodes
 template< class T , int W >
-struct Closed {
+struct Closed
+{
  T t;
  std::unique_ptr< ADS::Arena< Node< W > > > a =
-  std::make_unique< ADS::Arena< Node< W > > >( 1 << 16 );
+   std::make_unique< ADS::Arena< Node< W > > >( 1 << 16 );
  };
 
 /// the requests of s on the closed set that make() gives, by
 /// get( c , i ), which finds or inserts the request i
 template< int W , class M , class G >
 void closed( const char * what , std::size_t n , const std::string & who ,
-             const Stream< W > & s , int r , M && make , G && get )
+	     const Stream< W > & s , int r , M && make , G && get )
 {
  if( skip( who ) )
   return;
- print( "bestfirst" , what , n , who , median( make , [ & ]( auto & c ) {
-  std::uint64_t fresh = 0;
-  for( std::size_t i = 0 ; i < s.S.size() ; ++i ) fresh += get( c , i );
-  sink = sink + fresh; } , r , s.S.size() ) );
+ print( "bestfirst" , what , n , who ,
+	median(
+	  make ,
+	  [ & ]( auto & c ) {
+	   std::uint64_t fresh = 0;
+	   for( std::size_t i = 0 ; i < s.S.size() ; ++i )
+	    fresh += get( c , i );
+	   sink = sink + fresh;
+	   } ,
+	  r , s.S.size() ) );
  }
 
 template< int W >
 void closedCases( std::size_t n , const Options & o , bool owner )
 {
  const Stream< W > s = stream< W >( n , o.seed , owner );
- const std::string what = std::string( "closed " ) + std::to_string( 8 * W )
-                          + ( owner ? "B owner" : "B" );
+ const std::string what = std::string( "closed " ) + std::to_string( 8 * W ) +
+			  ( owner ? "B owner" : "B" );
  const char * w = what.c_str();
  const int r = o.runs;
  using PT = ADS::PointerTable< Node< W > , StateEq< W > >;
  using PH = ADS::PointerTable< Node< W > , StateEq< W > ,
-                               ADS::HugePageAllocator< std::byte > >;
+			       ADS::HugePageAllocator< std::byte > >;
  auto pt = [ & ]( auto & c , std::size_t i ) {
-  return( c.t.find_or_insert( s.S[ i ] , s.H[ i ] , [ & ]( void ) {
-   return( c.a->make( Node< W >{ s.S[ i ] , s.H[ i ] , 0 } ) ); } ).second );
+  return( c.t
+	     .find_or_insert( s.S[ i ] , s.H[ i ] ,
+			      [ & ]( void ) {
+			       return( c.a->make(
+				 Node< W >{ s.S[ i ] , s.H[ i ] , 0 } ) );
+			       } )
+	     .second );
   };
  for( const char * who : { "ADS::PointerTable" , "ADS::PointerTable A/A" } )
-  closed< W >( w , n , who , s , r , [](){ return( Closed< PT , W >() ); } ,
-               pt );
- closed< W >( w , n , "ADS::PointerTable presized huge" , s , r , [ n ](){
-  return( Closed< PH , W >{ PH( PH::slotsFor( n ) ) } ); } , pt );
+  closed< W >( w , n , who , s , r , []() { return( Closed< PT , W >() ); } ,
+	       pt );
+ closed< W >(
+   w , n , "ADS::PointerTable presized huge" , s , r ,
+   [ n ]() { return( Closed< PH , W >{ PH( PH::slotsFor( n ) ) } ); } , pt );
 #ifdef ADS_HAS_BOOST
- using BS = boost::unordered_flat_set< Node< W > * , NodeHash< W > ,
-                                       NodeEq< W > >;
- closed< W >( w , n , "boost::unordered_flat_set" , s , r ,
-              [](){ return( Closed< BS , W >() ); } ,
-              [ & ]( auto & c , std::size_t i ) {
-  const typename NodeHash< W >::Probe q{ &s.S[ i ] , s.H[ i ] };
-  if( c.t.find( q ) != c.t.end() ) return( false );
-  c.t.insert( c.a->make( Node< W >{ s.S[ i ] , s.H[ i ] , 0 } ) );
-  return( true ); } );
+ using BS =
+   boost::unordered_flat_set< Node< W > * , NodeHash< W > , NodeEq< W > >;
+ closed< W >(
+   w , n , "boost::unordered_flat_set" , s , r ,
+   []() { return( Closed< BS , W >() ); } ,
+   [ & ]( auto & c , std::size_t i ) {
+    const typename NodeHash< W >::Probe q{ &s.S[ i ] , s.H[ i ] };
+    if( c.t.find( q ) != c.t.end() )
+     return( false );
+    c.t.insert( c.a->make( Node< W >{ s.S[ i ] , s.H[ i ] , 0 } ) );
+    return( true );
+    } );
 #endif
  using US = std::unordered_set< Node< W > * , NodeHash< W > , NodeEq< W > >;
- closed< W >( w , n , "std::unordered_set" , s , r ,
-              [](){ return( Closed< US , W >() ); } ,
-              [ & ]( auto & c , std::size_t i ) {
-  const typename NodeHash< W >::Probe q{ &s.S[ i ] , s.H[ i ] };
-  if( c.t.find( q ) != c.t.end() ) return( false );
-  c.t.insert( c.a->make( Node< W >{ s.S[ i ] , s.H[ i ] , 0 } ) );
-  return( true ); } );
+ closed< W >(
+   w , n , "std::unordered_set" , s , r ,
+   []() { return( Closed< US , W >() ); } ,
+   [ & ]( auto & c , std::size_t i ) {
+    const typename NodeHash< W >::Probe q{ &s.S[ i ] , s.H[ i ] };
+    if( c.t.find( q ) != c.t.end() )
+     return( false );
+    c.t.insert( c.a->make( Node< W >{ s.S[ i ] , s.H[ i ] , 0 } ) );
+    return( true );
+    } );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -237,7 +265,8 @@ void closedCases( std::size_t n , const Options & o , bool owner )
 
 /// an operation on a frontier: PUSH, POP, UPDATE or ERASE of an id, with
 /// its key and its bound
-struct Op {
+struct Op
+{
  enum Kind : std::uint8_t { PUSH , POP , UPDATE , ERASE } kind;
  int id;
  std::int64_t key , bound;
@@ -250,7 +279,8 @@ std::vector< Op > frontierOps( std::size_t n , unsigned seed )
  std::mt19937_64 g( seed + 3 );
  const std::int64_t N = std::int64_t( n );
  auto key = [ & ]( int id ) {
-  return( std::int64_t( g() % ( 64 * n ) ) * N + id ); };
+  return( std::int64_t( g() % ( 64 * n ) ) * N + id );
+  };
  std::vector< Op > O;
  std::set< std::pair< std::int64_t , int > > R;
  std::vector< int > in , at( n , -1 ) , out;
@@ -311,14 +341,20 @@ std::vector< Op > frontierOps( std::size_t n , unsigned seed )
 /// which returns a number to sum
 template< class M , class D >
 void frontier( const char * what , std::size_t n , const std::string & who ,
-               const std::vector< Op > & O , int r , M && make , D && apply )
+	       const std::vector< Op > & O , int r , M && make , D && apply )
 {
  if( skip( who ) )
   return;
- print( "bestfirst" , what , n , who , median( make , [ & ]( auto & q ) {
-  std::int64_t s = 0;
-  for( const Op & op : O ) s += apply( q , op );
-  sink = sink + std::uint64_t( s ); } , r , O.size() ) );
+ print( "bestfirst" , what , n , who ,
+	median(
+	  make ,
+	  [ & ]( auto & q ) {
+	   std::int64_t s = 0;
+	   for( const Op & op : O )
+	    s += apply( q , op );
+	   sink = sink + std::uint64_t( s );
+	   } ,
+	  r , O.size() ) );
  }
 
 void frontierCases( std::size_t n , const Options & o )
@@ -329,161 +365,216 @@ void frontierCases( std::size_t n , const Options & o )
  // the indexed heap
  auto idx = []( auto & q , const Op & op ) -> std::int64_t {
   switch( op.kind ) {
-   case Op::PUSH: q.push( op.id , op.key ); return( 0 );
-   case Op::POP: return( q.pop().id );
-   case Op::UPDATE: q.update( op.id , op.key ); return( 0 );
-   default: q.erase( op.id ); return( 0 );
+   case Op::PUSH:
+    q.push( op.id , op.key );
+    return( 0 );
+   case Op::POP:
+    return( q.pop().id );
+   case Op::UPDATE:
+    q.update( op.id , op.key );
+    return( 0 );
+   default:
+    q.erase( op.id );
+    return( 0 );
    }
   };
- for( const char * who : { "ADS::IndexedDaryHeap" ,
-                           "ADS::IndexedDaryHeap A/A" } )
-  frontier( "frontier" , n , who , O , r , [ n ](){
-   return( ADS::IndexedDaryHeap< std::int64_t >( int( n ) ) ); } , idx );
+ for( const char * who :
+      { "ADS::IndexedDaryHeap" , "ADS::IndexedDaryHeap A/A" } )
+  frontier(
+    "frontier" , n , who , O , r ,
+    [ n ]() { return( ADS::IndexedDaryHeap< std::int64_t >( int( n ) ) ); } ,
+    idx );
  // the heaps with handles, kept by id
  auto handles = []( auto & c , const Op & op ) -> std::int64_t {
   auto & q = c.first;
   auto & h = c.second;
   switch( op.kind ) {
-   case Op::PUSH: h[ op.id ] = q.push( KI( op.key , op.id ) ); return( 0 );
+   case Op::PUSH:
+    h[ op.id ] = q.push( KI( op.key , op.id ) );
+    return( 0 );
    case Op::POP: {
     const int id = q.top().second;
     q.pop();
-    return( id ); }
-   case Op::UPDATE: q.update( h[ op.id ] , KI( op.key , op.id ) );
+    return( id );
+    }
+   case Op::UPDATE:
+    q.update( h[ op.id ] , KI( op.key , op.id ) );
     return( 0 );
-   default: q.erase( h[ op.id ] ); return( 0 );
+   default:
+    q.erase( h[ op.id ] );
+    return( 0 );
    }
   };
- frontier( "frontier" , n , "ADS::PairingHeap" , O , r , [ n ](){
-  using Q = ADS::PairingHeap< int , std::int64_t >;
-  return( std::pair< Q , std::vector< Q::Handle > >(
-           std::piecewise_construct , std::tuple<>() , std::tuple(
-            n , nullptr ) ) ); } ,
-  []( auto & c , const Op & op ) -> std::int64_t {
-   auto & q = c.first;
-   auto & h = c.second;
-   switch( op.kind ) {
-    case Op::PUSH: h[ op.id ] = q.insert( op.id , op.key ); return( 0 );
-    case Op::POP: return( q.deleteMin() );
-    case Op::UPDATE: q.update( h[ op.id ] , op.key ); return( 0 );
-    default: q.erase( h[ op.id ] ); return( 0 );
-    }
-   } );
+ frontier(
+   "frontier" , n , "ADS::PairingHeap" , O , r ,
+   [ n ]() {
+    using Q = ADS::PairingHeap< int , std::int64_t >;
+    return( std::pair< Q , std::vector< Q::Handle > >(
+      std::piecewise_construct , std::tuple<>() ,
+      std::tuple( n , nullptr ) ) );
+    } ,
+   []( auto & c , const Op & op ) -> std::int64_t {
+    auto & q = c.first;
+    auto & h = c.second;
+    switch( op.kind ) {
+     case Op::PUSH:
+      h[ op.id ] = q.insert( op.id , op.key );
+      return( 0 );
+     case Op::POP:
+      return( q.deleteMin() );
+     case Op::UPDATE:
+      q.update( h[ op.id ] , op.key );
+      return( 0 );
+     default:
+      q.erase( h[ op.id ] );
+      return( 0 );
+     }
+    } );
 #ifdef ADS_HAS_BOOST
  using Greater = boost::heap::compare< std::greater< KI > >;
  using BD = boost::heap::d_ary_heap< KI , boost::heap::arity< 4 > ,
-                                     boost::heap::mutable_< true > ,
-                                     Greater >;
+				     boost::heap::mutable_< true > , Greater >;
  using BP = boost::heap::pairing_heap< KI , Greater >;
- frontier( "frontier" , n , "boost::heap::d_ary_heap d=4" , O , r , [ n ](){
-  return( std::pair< BD , std::vector< BD::handle_type > >(
-           std::piecewise_construct , std::tuple<>() , std::tuple( n ) ) );
-  } , handles );
- frontier( "frontier" , n , "boost::heap::pairing_heap" , O , r , [ n ](){
-  return( std::pair< BP , std::vector< BP::handle_type > >(
-           std::piecewise_construct , std::tuple<>() , std::tuple( n ) ) );
-  } , handles );
+ frontier(
+   "frontier" , n , "boost::heap::d_ary_heap d=4" , O , r ,
+   [ n ]() {
+    return( std::pair< BD , std::vector< BD::handle_type > >(
+      std::piecewise_construct , std::tuple<>() , std::tuple( n ) ) );
+    } ,
+   handles );
+ frontier(
+   "frontier" , n , "boost::heap::pairing_heap" , O , r ,
+   [ n ]() {
+    return( std::pair< BP , std::vector< BP::handle_type > >(
+      std::piecewise_construct , std::tuple<>() , std::tuple( n ) ) );
+    } ,
+   handles );
 #endif
- frontier( "frontier" , n , "std::set" , O , r , [ n ](){
-  return( std::pair< std::set< KI > , std::vector< std::int64_t > >(
-           std::piecewise_construct , std::tuple<>() , std::tuple( n ) ) );
-  } , []( auto & c , const Op & op ) -> std::int64_t {
-   auto & q = c.first;
-   auto & k = c.second;
-   switch( op.kind ) {
-    case Op::PUSH: q.emplace( k[ op.id ] = op.key , op.id ); return( 0 );
-    case Op::POP: {
-     const int id = q.begin()->second;
-     q.erase( q.begin() );
-     return( id ); }
-    case Op::UPDATE:
-     q.erase( KI( k[ op.id ] , op.id ) );
-     q.emplace( k[ op.id ] = op.key , op.id );
-     return( 0 );
-    default: q.erase( KI( k[ op.id ] , op.id ) ); return( 0 );
-    }
-   } );
+ frontier(
+   "frontier" , n , "std::set" , O , r ,
+   [ n ]() {
+    return( std::pair< std::set< KI > , std::vector< std::int64_t > >(
+      std::piecewise_construct , std::tuple<>() , std::tuple( n ) ) );
+    } ,
+   []( auto & c , const Op & op ) -> std::int64_t {
+    auto & q = c.first;
+    auto & k = c.second;
+    switch( op.kind ) {
+     case Op::PUSH:
+      q.emplace( k[ op.id ] = op.key , op.id );
+      return( 0 );
+     case Op::POP: {
+      const int id = q.begin()->second;
+      q.erase( q.begin() );
+      return( id );
+      }
+     case Op::UPDATE:
+      q.erase( KI( k[ op.id ] , op.id ) );
+      q.emplace( k[ op.id ] = op.key , op.id );
+      return( 0 );
+     default:
+      q.erase( KI( k[ op.id ] , op.id ) );
+      return( 0 );
+     }
+    } );
 
  // the pair of heaps: the least bound read after each operation
- for( const char * who : { "ADS::IndexedHeapPair" ,
-                           "ADS::IndexedHeapPair A/A" } )
-  frontier( "frontier pair" , n , who , O , r , [ n ](){
-   return( ADS::IndexedHeapPair< std::int64_t >( int( n ) ) ); } ,
-   []( auto & q , const Op & op ) -> std::int64_t {
-    std::int64_t x = 0;
-    switch( op.kind ) {
-     case Op::PUSH: q.push( op.id , op.key , op.bound ); break;
-     case Op::POP: x = q.pop(); break;
-     case Op::UPDATE: q.update( op.id , op.key , op.bound ); break;
-     default: q.erase( op.id );
-     }
-    return( x + ( q.empty() ? 0 : q.minBound() ) );
-    } );
+ for( const char * who :
+      { "ADS::IndexedHeapPair" , "ADS::IndexedHeapPair A/A" } )
+  frontier(
+    "frontier pair" , n , who , O , r ,
+    [ n ]() { return( ADS::IndexedHeapPair< std::int64_t >( int( n ) ) ); } ,
+    []( auto & q , const Op & op ) -> std::int64_t {
+     std::int64_t x = 0;
+     switch( op.kind ) {
+      case Op::PUSH:
+       q.push( op.id , op.key , op.bound );
+       break;
+      case Op::POP:
+       x = q.pop();
+       break;
+      case Op::UPDATE:
+       q.update( op.id , op.key , op.bound );
+       break;
+      default:
+       q.erase( op.id );
+      }
+     return( x + ( q.empty() ? 0 : q.minBound() ) );
+     } );
 #ifdef ADS_HAS_BOOST
- struct BPair {
+ struct BPair
+ {
   BD k , b;
   std::vector< BD::handle_type > hk , hb;
   };
- frontier( "frontier pair" , n , "boost::heap::d_ary_heap d=4 x2" , O , r ,
-           [ n ](){
-  BPair c;
-  c.hk.resize( n );
-  c.hb.resize( n );
-  return( c ); } , []( BPair & c , const Op & op ) -> std::int64_t {
-   std::int64_t x = 0;
-   switch( op.kind ) {
-    case Op::PUSH:
-     c.hk[ op.id ] = c.k.push( KI( op.key , op.id ) );
-     c.hb[ op.id ] = c.b.push( KI( op.bound , op.id ) );
-     break;
-    case Op::POP:
-     x = c.k.top().second;
-     c.k.pop();
-     c.b.erase( c.hb[ x ] );
-     break;
-    case Op::UPDATE:
-     c.k.update( c.hk[ op.id ] , KI( op.key , op.id ) );
-     c.b.update( c.hb[ op.id ] , KI( op.bound , op.id ) );
-     break;
-    default:
-     c.k.erase( c.hk[ op.id ] );
-     c.b.erase( c.hb[ op.id ] );
-    }
-   return( x + ( c.b.empty() ? 0 : c.b.top().first ) );
-   } );
+ frontier(
+   "frontier pair" , n , "boost::heap::d_ary_heap d=4 x2" , O , r ,
+   [ n ]() {
+    BPair c;
+    c.hk.resize( n );
+    c.hb.resize( n );
+    return( c );
+    } ,
+   []( BPair & c , const Op & op ) -> std::int64_t {
+    std::int64_t x = 0;
+    switch( op.kind ) {
+     case Op::PUSH:
+      c.hk[ op.id ] = c.k.push( KI( op.key , op.id ) );
+      c.hb[ op.id ] = c.b.push( KI( op.bound , op.id ) );
+      break;
+     case Op::POP:
+      x = c.k.top().second;
+      c.k.pop();
+      c.b.erase( c.hb[ x ] );
+      break;
+     case Op::UPDATE:
+      c.k.update( c.hk[ op.id ] , KI( op.key , op.id ) );
+      c.b.update( c.hb[ op.id ] , KI( op.bound , op.id ) );
+      break;
+     default:
+      c.k.erase( c.hk[ op.id ] );
+      c.b.erase( c.hb[ op.id ] );
+     }
+    return( x + ( c.b.empty() ? 0 : c.b.top().first ) );
+    } );
 #endif
- struct SPair {
+ struct SPair
+ {
   std::set< KI > k , b;
   std::vector< std::int64_t > kk , kb;
   };
- frontier( "frontier pair" , n , "std::set x2" , O , r , [ n ](){
-  SPair c;
-  c.kk.resize( n );
-  c.kb.resize( n );
-  return( c ); } , []( SPair & c , const Op & op ) -> std::int64_t {
-   std::int64_t x = 0;
-   switch( op.kind ) {
-    case Op::PUSH:
-     c.k.emplace( c.kk[ op.id ] = op.key , op.id );
-     c.b.emplace( c.kb[ op.id ] = op.bound , op.id );
-     break;
-    case Op::POP:
-     x = c.k.begin()->second;
-     c.k.erase( c.k.begin() );
-     c.b.erase( KI( c.kb[ x ] , int( x ) ) );
-     break;
-    case Op::UPDATE:
-     c.k.erase( KI( c.kk[ op.id ] , op.id ) );
-     c.b.erase( KI( c.kb[ op.id ] , op.id ) );
-     c.k.emplace( c.kk[ op.id ] = op.key , op.id );
-     c.b.emplace( c.kb[ op.id ] = op.bound , op.id );
-     break;
-    default:
-     c.k.erase( KI( c.kk[ op.id ] , op.id ) );
-     c.b.erase( KI( c.kb[ op.id ] , op.id ) );
-    }
-   return( x + ( c.b.empty() ? 0 : c.b.begin()->first ) );
-   } );
+ frontier(
+   "frontier pair" , n , "std::set x2" , O , r ,
+   [ n ]() {
+    SPair c;
+    c.kk.resize( n );
+    c.kb.resize( n );
+    return( c );
+    } ,
+   []( SPair & c , const Op & op ) -> std::int64_t {
+    std::int64_t x = 0;
+    switch( op.kind ) {
+     case Op::PUSH:
+      c.k.emplace( c.kk[ op.id ] = op.key , op.id );
+      c.b.emplace( c.kb[ op.id ] = op.bound , op.id );
+      break;
+     case Op::POP:
+      x = c.k.begin()->second;
+      c.k.erase( c.k.begin() );
+      c.b.erase( KI( c.kb[ x ] , int( x ) ) );
+      break;
+     case Op::UPDATE:
+      c.k.erase( KI( c.kk[ op.id ] , op.id ) );
+      c.b.erase( KI( c.kb[ op.id ] , op.id ) );
+      c.k.emplace( c.kk[ op.id ] = op.key , op.id );
+      c.b.emplace( c.kb[ op.id ] = op.bound , op.id );
+      break;
+     default:
+      c.k.erase( KI( c.kk[ op.id ] , op.id ) );
+      c.b.erase( KI( c.kb[ op.id ] , op.id ) );
+     }
+    return( x + ( c.b.empty() ? 0 : c.b.begin()->first ) );
+    } );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -497,40 +588,49 @@ using OKey = std::tuple< std::int64_t , std::int64_t , int >;
 /// by its iterator, a new key inserted
 template< class M , class I >
 void ordered( std::size_t n , const std::string & who ,
-              const std::vector< OKey > & A , const std::vector< OKey > & B ,
-              int r , M && make , I && ins )
+	      const std::vector< OKey > & A , const std::vector< OKey > & B ,
+	      int r , M && make , I && ins )
 {
  if( skip( who ) )
   return;
- print( "bestfirst" , "ordered" , n , who , median( [ & ](){
-  auto t = make();
-  for( const OKey & k : A ) ins( t , k );
-  return( t ); } , [ & ]( auto & t ) {
-  std::int64_t s = 0;
-  for( const OKey & k : B ) {
-   auto it = t.begin() , pick = it;
-   for( int i = 0 ; ( i < 64 ) && ( it != t.end() ) ; ++i , ++it ) {
-    const OKey & x = ( *it ).first;
-    s += std::get< 0 >( x );
-    if( std::get< 2 >( x ) % 4 == 0 ) {
-     pick = it;
-     break;
-     }
-    }
-   t.erase( pick );
-   ins( t , k );
-   }
-  sink = sink + std::uint64_t( s ); } , r , B.size() ) );
+ print( "bestfirst" , "ordered" , n , who ,
+	median(
+	  [ & ]() {
+	   auto t = make();
+	   for( const OKey & k : A )
+	    ins( t , k );
+	   return( t );
+	   } ,
+	  [ & ]( auto & t ) {
+	   std::int64_t s = 0;
+	   for( const OKey & k : B ) {
+	    auto it = t.begin() , pick = it;
+	    for( int i = 0 ; ( i < 64 ) && ( it != t.end() ) ; ++i , ++it ) {
+	     const OKey & x = ( *it ).first;
+	     s += std::get< 0 >( x );
+	     if( std::get< 2 >( x ) % 4 == 0 ) {
+	      pick = it;
+	      break;
+	      }
+	     }
+	    t.erase( pick );
+	    ins( t , k );
+	    }
+	   sink = sink + std::uint64_t( s );
+	   } ,
+	  r , B.size() ) );
  }
 
 /// a set seen as a map, its items as pairs with first
 template< class K >
-struct SetView : std::set< K > {
- struct It : std::set< K >::iterator {
-  It( typename std::set< K >::iterator i ) : std::set< K >::iterator( i ) {}
+struct SetView : std::set< K >
+{
+ struct It : std::set< K >::iterator
+ {
+  It( typename std::set< K >::iterator i ) : std::set< K >::iterator( i ) { }
   std::pair< const K & , char > operator*( void ) const {
-   const auto & i = static_cast< const typename std::set< K >::iterator & >(
-                     *this );
+   const auto & i =
+     static_cast< const typename std::set< K >::iterator & >( *this );
    return( std::pair< const K & , char >( *i , 0 ) );
    }
   };
@@ -546,16 +646,18 @@ void orderedCases( std::size_t n , const Options & o )
  int id = 0;
  for( std::size_t i = 0 ; i < 2 * n ; ++i ) {
   const OKey k( std::int64_t( g() % ( n / 8 + 1 ) ) ,
-                - std::int64_t( g() % 64 ) , id++ );
+		-std::int64_t( g() % 64 ) ,
+		id++ );
   ( i < n ? A : B ).push_back( k );
   }
  for( const char * who : { "ADS::BTreeMap" , "ADS::BTreeMap A/A" } )
-  ordered( n , who , A , B , o.runs , [](){
-   return( ADS::BTreeMap< OKey , char >() ); } ,
-   []( auto & t , const OKey & k ) { t.insert( k , 0 ); } );
- ordered( n , "std::set" , A , B , o.runs , [](){
-  return( SetView< OKey >() ); } ,
-  []( auto & t , const OKey & k ) { t.insert( k ); } );
+  ordered(
+    n , who , A , B , o.runs ,
+    []() { return( ADS::BTreeMap< OKey , char >() ); } ,
+    []( auto & t , const OKey & k ) { t.insert( k , 0 ); } );
+ ordered(
+   n , "std::set" , A , B , o.runs , []() { return( SetView< OKey >() ); } ,
+   []( auto & t , const OKey & k ) { t.insert( k ); } );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -568,83 +670,106 @@ void orderedCases( std::size_t n , const Options & o )
 /// build( m , f )
 template< unsigned V , class G , class S , class B >
 void packed( const std::string & what , std::size_t m ,
-             const std::string & who ,
-             const std::vector< std::uint32_t > & P ,
-             const std::vector< std::uint8_t > & X , int r ,
-             G && get , S && set , B && build )
+	     const std::string & who ,
+	     const std::vector< std::uint32_t > & P ,
+	     const std::vector< std::uint8_t > & X , int r , G && get ,
+	     S && set ,
+	     B && build )
 {
  if( skip( who ) )
   return;
  // V a constant, so that the modulus is the same cheap code wherever
  // f is inlined
  auto f = []( std::size_t i ) {
-  return( unsigned( ADS::splitmix64( i ) % V ) ); };
- print( "bestfirst" , ( what + " build" ).c_str() , m , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto a = build( m , f );
-          sink = sink + get( a , m / 2 ); } , r , m ) );
+  return( unsigned( ADS::splitmix64( i ) % V ) );
+  };
+ print( "bestfirst" , ( what + " build" ).c_str() , m , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto a = build( m , f );
+		 sink = sink + get( a , m / 2 );
+		 } ,
+		r , m ) );
  auto a = build( m , f );
- print( "bestfirst" , ( what + " get" ).c_str() , m , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          std::uint64_t s = 0;
-          for( std::uint32_t i : P ) s += get( a , i );
-          sink = sink + s; } , r , P.size() ) );
- print( "bestfirst" , ( what + " set" ).c_str() , m , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          for( std::size_t j = 0 ; j < P.size() ; ++j )
-           set( a , P[ j ] , X[ j ] );
-          sink = sink + get( a , P[ 0 ] ); } , r , P.size() ) );
+ print( "bestfirst" , ( what + " get" ).c_str() , m , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 std::uint64_t s = 0;
+		 for( std::uint32_t i : P )
+		  s += get( a , i );
+		 sink = sink + s;
+		 } ,
+		r , P.size() ) );
+ print( "bestfirst" , ( what + " set" ).c_str() , m , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 for( std::size_t j = 0 ; j < P.size() ; ++j )
+		  set( a , P[ j ] , X[ j ] );
+		 sink = sink + get( a , P[ 0 ] );
+		 } ,
+		r , P.size() ) );
  }
 
 template< unsigned Bits >
 void packedBits( std::size_t m , const std::vector< std::uint32_t > & P ,
-                 const std::vector< std::uint8_t > & X0 , int r )
+		 const std::vector< std::uint8_t > & X0 , int r )
 {
  const std::string what = "packed " + std::to_string( Bits ) + "b";
  constexpr unsigned v = 1u << Bits;
  std::vector< std::uint8_t > X( X0 );
- for( auto & x : X ) x = std::uint8_t( x % v );
+ for( auto & x : X )
+  x = std::uint8_t( x % v );
  auto ag = []( const auto & a , std::size_t i ) {
-  return( std::uint64_t( a.get( i ) ) ); };
- auto as = []( auto & a , std::size_t i , std::uint8_t x ) {
-  a.set( i , x ); };
+  return( std::uint64_t( a.get( i ) ) );
+  };
+ auto as = []( auto & a , std::size_t i , std::uint8_t x ) { a.set( i , x ); };
  ADS::Sequential seq;
  for( const char * who : { "ADS::PackedArray" , "ADS::PackedArray A/A" } )
   packed< v >( what , m , who , P , X , r , ag , as ,
-          [ & ]( std::size_t k , auto f ) {
-           return( ADS::PackedArray< Bits >( seq , k , f ) ); } );
+	       [ & ]( std::size_t k , auto f ) {
+   return( ADS::PackedArray< Bits >( seq , k , f ) );
+   } );
  packed< v >( what , m , "ADS::PackedArray saturated" , P , X , r , ag , as ,
-         [ & ]( std::size_t k , auto f ) {
-          return( ADS::PackedArray< Bits , true >( seq , k , f ) ); } );
- packed< v >( what , m , "std::vector<uint8_t>" , P , X , r ,
-         []( const auto & a , std::size_t i ) {
-          return( std::uint64_t( a[ i ] ) ); } ,
-         []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x; } ,
-         []( std::size_t k , auto f ) {
-          std::vector< std::uint8_t > a( k );
-          for( std::size_t i = 0 ; i < k ; ++i )
-           a[ i ] = std::uint8_t( f( i ) );
-          return( a ); } );
+	      [ & ]( std::size_t k , auto f ) {
+	       return( ADS::PackedArray< Bits , true >( seq , k , f ) );
+	       } );
+ packed< v >(
+   what , m , "std::vector<uint8_t>" , P , X , r ,
+   []( const auto & a ,
+       std::size_t i ) { return( std::uint64_t( a[ i ] ) ); } ,
+   []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x; } ,
+   []( std::size_t k , auto f ) {
+    std::vector< std::uint8_t > a( k );
+    for( std::size_t i = 0 ; i < k ; ++i )
+     a[ i ] = std::uint8_t( f( i ) );
+    return( a );
+    } );
  if constexpr( Bits == 1 ) {
-  packed< v >( what , m , "std::vector<bool>" , P , X , r ,
-          []( const auto & a , std::size_t i ) {
-           return( std::uint64_t( a[ i ] ) ); } ,
-          []( auto & a , std::size_t i , std::uint8_t x ) {
-           a[ i ] = x != 0; } ,
-          []( std::size_t k , auto f ) {
-           std::vector< bool > a( k );
-           for( std::size_t i = 0 ; i < k ; ++i ) a[ i ] = f( i ) != 0;
-           return( a ); } );
+  packed< v >(
+    what , m , "std::vector<bool>" , P , X , r ,
+    []( const auto & a , std::size_t i ) {
+     return( std::uint64_t( a[ i ] ) );
+     } ,
+    []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x != 0; } ,
+    []( std::size_t k , auto f ) {
+     std::vector< bool > a( k );
+     for( std::size_t i = 0 ; i < k ; ++i )
+      a[ i ] = f( i ) != 0;
+     return( a );
+     } );
 #ifdef ADS_HAS_BOOST
-  packed< v >( what , m , "boost::dynamic_bitset" , P , X , r ,
-          []( const auto & a , std::size_t i ) {
-           return( std::uint64_t( a[ i ] ) ); } ,
-          []( auto & a , std::size_t i , std::uint8_t x ) {
-           a[ i ] = x != 0; } ,
-          []( std::size_t k , auto f ) {
-           boost::dynamic_bitset< std::uint64_t > a( k );
-           for( std::size_t i = 0 ; i < k ; ++i ) a[ i ] = f( i ) != 0;
-           return( a ); } );
+  packed< v >(
+    what , m , "boost::dynamic_bitset" , P , X , r ,
+    []( const auto & a , std::size_t i ) {
+     return( std::uint64_t( a[ i ] ) );
+     } ,
+    []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x != 0; } ,
+    []( std::size_t k , auto f ) {
+     boost::dynamic_bitset< std::uint64_t > a( k );
+     for( std::size_t i = 0 ; i < k ; ++i )
+      a[ i ] = f( i ) != 0;
+     return( a );
+     } );
 #endif
   }
  }
@@ -663,28 +788,33 @@ void packedCases( std::size_t n , const Options & o )
  packedBits< 2 >( m , P , X , o.runs );
  packedBits< 4 >( m , P , X , o.runs );
  std::vector< std::uint8_t > T( X );
- for( auto & x : T ) x = std::uint8_t( x % 3 );
+ for( auto & x : T )
+  x = std::uint8_t( x % 3 );
  ADS::Sequential seq;
  auto ag = []( const auto & a , std::size_t i ) {
-  return( std::uint64_t( a.get( i ) ) ); };
- auto as = []( auto & a , std::size_t i , std::uint8_t x ) {
-  a.set( i , x ); };
+  return( std::uint64_t( a.get( i ) ) );
+  };
+ auto as = []( auto & a , std::size_t i , std::uint8_t x ) { a.set( i , x ); };
  for( const char * who : { "ADS::TritArray" , "ADS::TritArray A/A" } )
   packed< 3 >( "trits" , m , who , P , T , o.runs , ag , as ,
-          [ & ]( std::size_t k , auto f ) {
-           return( ADS::TritArray( seq , k , f ) ); } );
+	       [ & ]( std::size_t k , auto f ) {
+		return( ADS::TritArray( seq , k , f ) );
+	        } );
  packed< 3 >( "trits" , m , "ADS::PackedArray 2b" , P , T , o.runs , ag , as ,
-         [ & ]( std::size_t k , auto f ) {
-          return( ADS::PackedArray< 2 >( seq , k , f ) ); } );
- packed< 3 >( "trits" , m , "std::vector<uint8_t>" , P , T , o.runs ,
-         []( const auto & a , std::size_t i ) {
-          return( std::uint64_t( a[ i ] ) ); } ,
-         []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x; } ,
-         []( std::size_t k , auto f ) {
-          std::vector< std::uint8_t > a( k );
-          for( std::size_t i = 0 ; i < k ; ++i )
-           a[ i ] = std::uint8_t( f( i ) );
-          return( a ); } );
+	      [ & ]( std::size_t k , auto f ) {
+	       return( ADS::PackedArray< 2 >( seq , k , f ) );
+	       } );
+ packed< 3 >(
+   "trits" , m , "std::vector<uint8_t>" , P , T , o.runs ,
+   []( const auto & a ,
+       std::size_t i ) { return( std::uint64_t( a[ i ] ) ); } ,
+   []( auto & a , std::size_t i , std::uint8_t x ) { a[ i ] = x; } ,
+   []( std::size_t k , auto f ) {
+    std::vector< std::uint8_t > a( k );
+    for( std::size_t i = 0 ; i < k ; ++i )
+     a[ i ] = std::uint8_t( f( i ) );
+    return( a );
+    } );
  }
 
 }  // end( namespace )
@@ -694,16 +824,20 @@ int main( int argc , char ** argv )
  const Options o( argc , argv , { 100000 , 1000000 , 10000000 } );
  const char * only = std::getenv( "ADS_BESTFIRST_CASE" );
  auto on = [ only ]( const char * c ) {
-  return( ! only || ! *only || ! std::strcmp( only , c ) ); };
+  return( ! only || ! *only || ! std::strcmp( only , c ) );
+  };
  for( std::size_t n : o.sizes ) {
   if( on( "closed" ) )
    for( bool owner : { false , true } ) {
     closedCases< 1 >( n , o , owner );
     closedCases< 4 >( n , o , owner );
     }
-  if( on( "frontier" ) ) frontierCases( n , o );
-  if( on( "ordered" ) ) orderedCases( n , o );
-  if( on( "packed" ) ) packedCases( n , o );
+  if( on( "frontier" ) )
+   frontierCases( n , o );
+  if( on( "ordered" ) )
+   orderedCases( n , o );
+  if( on( "packed" ) )
+   packedCases( n , o );
   }
  }
 

@@ -56,7 +56,7 @@
 
 #ifndef __ADS_EulerianCycle
  #define __ADS_EulerianCycle
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -75,7 +75,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the nodes of an Eulerian cycle of the graph, the first node repeated at
 /// the end, or nothing if there is none; empty with no edge
@@ -207,7 +208,7 @@ bool isEulerianTrail( const G & g , const std::vector< int > & c );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EulerianCycle.h included */
+#endif /* EulerianCycle.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File EulerianCycle.h ------------------------*/

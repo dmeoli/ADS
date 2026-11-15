@@ -25,37 +25,43 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ins = mod::Inserted< int , int >;
 using Era = mod::Erased< int , int >;
 using Events = mod::list< Ins , Era >;
 
 /// an observer of nothing that the structure emits
-struct Nothing {
- void on( const mod::Cleared & ) noexcept {}
+struct Nothing
+{
+ void on( const mod::Cleared & ) noexcept { }
  };
 
 /// an observer whose on() of an erasure may throw
-struct Throwing {
- void on( const Era & ) {}
+struct Throwing
+{
+ void on( const Era & ) { }
  };
 
 /// an observer that requires an event that the structure never emits
-struct Requiring {
+struct Requiring
+{
  using requires_modifications = mod::list< Ins , mod::Rebuilt >;
- void on( const Ins & ) {}
+ void on( const Ins & ) { }
  };
 
 /// an observer of the insertions
-struct First {
- void on( const Ins & ) {}
+struct First
+{
+ void on( const Ins & ) { }
  };
 
 /// one that depends on First
-struct Second {
+struct Second
+{
  using depends_on = mod::list< First >;
- void on( const Ins & ) {}
+ void on( const Ins & ) { }
  };
 
 }  // end( namespace )

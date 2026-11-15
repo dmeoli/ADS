@@ -78,7 +78,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// f( ex , name ) on each executor: Sequential, pools of 1, 2, 3 and 8
 /// threads, and the executors of the libraries compiled in
@@ -92,7 +93,7 @@ void onEach( F && f )
   f( pool );
   }
  {
-  ThreadPool lazy( 4 , 0 );                 // workers that sleep at once
+  ThreadPool lazy( 4 , 0 );  // workers that sleep at once
   f( lazy );
   }
 #if defined( _OPENMP )
@@ -118,19 +119,21 @@ std::uint64_t fib( E & ex , int n )
  if( n < 12 )
   return( fib( ex , n - 1 ) + fib( ex , n - 2 ) );
  std::uint64_t a = 0 , b = 0;
- parallelInvoke( ex , [ & ] { a = fib( ex , n - 1 ); } ,
-                 [ & ] { b = fib( ex , n - 2 ); } );
+ parallelInvoke(
+   ex , [ & ] { a = fib( ex , n - 1 ); } , [ & ] { b = fib( ex , n - 2 ); } );
  return( a + b );
  }
 
 /// a record with a key and the position it came from, to check stability
-struct Rec {
+struct Rec
+{
  std::uint32_t key;
  std::uint32_t pos;
  bool operator==( const Rec & ) const = default;
  };
 
-struct ByKey {
+struct ByKey
+{
  bool operator()( const Rec & a , const Rec & b ) const {
   return( a.key < b.key );
   }
@@ -157,24 +160,31 @@ ADS_TEST( "parallel-executors" )
   for( std::size_t n : { 2 , 3 , 7 , 100 , 5000 } ) {
    std::vector< std::atomic< int > > hit( n );
    ex.bulk( n , [ & ]( std::size_t i ) {
-    hit[ i ].fetch_add( 1 , std::memory_order_relaxed ); } );
-   CHECK( std::all_of( hit.begin() , hit.end() , []( auto & h ) {
-    return( h.load() == 1 ); } ) );
+    hit[ i ].fetch_add( 1 , std::memory_order_relaxed );
+    } );
+   CHECK( std::all_of( hit.begin() , hit.end() ,
+		       []( auto & h ) { return( h.load() == 1 ); } ) );
    }
   // nested: 20 x 30 calls
   std::vector< std::atomic< int > > grid( 600 );
   ex.bulk( 20 , [ & ]( std::size_t i ) {
    ex.bulk( 30 , [ & ]( std::size_t j ) {
-    grid[ 30 * i + j ].fetch_add( 1 , std::memory_order_relaxed ); } );
+    grid[ 30 * i + j ].fetch_add( 1 , std::memory_order_relaxed );
+    } );
    } );
-  CHECK( std::all_of( grid.begin() , grid.end() , []( auto & h ) {
-   return( h.load() == 1 ); } ) );
+  CHECK( std::all_of( grid.begin() , grid.end() ,
+		      []( auto & h ) { return( h.load() == 1 ); } ) );
   CHECK( fib( ex , 25 ) == 75025 );
   // an exception: thrown again, then the executor still runs jobs
   bool thrown = false;
   try {
-   parallelFor( ex , 0 , 10000 , [ & ]( std::size_t i ) {
-    if( i == 7777 ) throw std::runtime_error( "x" ); } , 10 );
+   parallelFor(
+     ex , 0 , 10000 ,
+     [ & ]( std::size_t i ) {
+      if( i == 7777 )
+       throw( std::runtime_error( "x" ) );
+      } ,
+     10 );
    }
   catch( const std::runtime_error & ) {
    thrown = true;
@@ -182,7 +192,7 @@ ADS_TEST( "parallel-executors" )
   CHECK( thrown );
   thrown = false;
   try {
-   parallelInvoke( ex , [] {} , [] { throw std::logic_error( "y" ); } );
+   parallelInvoke( ex , [] { } , [] { throw( std::logic_error( "y" ) ); } );
    }
   catch( const std::logic_error & ) {
    thrown = true;
@@ -199,7 +209,8 @@ ADS_TEST( "parallel-executors" )
  auto user = [ & ] {
   for( int k = 0 ; k < 50 ; ++k )
    pool.bulk( 64 , [ & ]( std::size_t i ) {
-    sum.fetch_add( long( i ) , std::memory_order_relaxed ); } );
+    sum.fetch_add( long( i ) , std::memory_order_relaxed );
+    } );
   };
  std::thread a( user ) , b( user );
  a.join();
@@ -219,65 +230,73 @@ ADS_TEST( "parallel-patterns" )
  for( auto & x : D )
   x = std::ldexp( double( g() >> 11 ) , int( g() % 40 ) - 20 );
  Sequential seq;
- const double ref = parallelReduce( seq , 0 , D.size() , 0.0 ,
-                                    [ & ]( std::size_t lo , std::size_t hi ) {
-                                     double s = 0;
-                                     for( std::size_t i = lo ; i < hi ; ++i )
-                                      s += D[ i ];
-                                     return( s ); } , std::plus<>() );
+ const double ref = parallelReduce(
+   seq , 0 , D.size() , 0.0 ,
+   [ & ]( std::size_t lo , std::size_t hi ) {
+    double s = 0;
+    for( std::size_t i = lo ; i < hi ; ++i )
+     s += D[ i ];
+    return( s );
+    } ,
+   std::plus<>() );
  using Affine = std::pair< std::uint64_t , std::uint64_t >;
  constexpr std::uint64_t P = 1000000007;
  auto compose = []( const Affine & f , const Affine & h ) {
   // h after f: x -> h.a ( f.a x + f.b ) + h.b
-  return( Affine( h.first * f.first % P ,
-                  ( h.first * f.second + h.second ) % P ) );
+  return(
+    Affine( h.first * f.first % P , ( h.first * f.second + h.second ) % P ) );
   };
  onEach( [ & ]( auto & ex ) {
   for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                         std::size_t( 3 ) , std::size_t( 1000 ) ,
-                         std::size_t( 4095 ) , std::size_t( 4096 ) ,
-                         std::size_t( 4097 ) , std::size_t( 100000 ) ,
-                         std::size_t( 262145 ) } ) {
+			 std::size_t( 3 ) ,
+			 std::size_t( 1000 ) , std::size_t( 4095 ) ,
+			 std::size_t( 4096 ) , std::size_t( 4097 ) ,
+			 std::size_t( 100000 ) , std::size_t( 262145 ) } ) {
    std::vector< std::uint64_t > A( n );
    for( auto & x : A )
     x = g() % 1000;
    // the loop and the blocks
    std::vector< std::uint64_t > B( n , 0 );
    parallelFor( ex , 0 , n , [ & ]( std::size_t i ) { B[ i ] = 2 * A[ i ]; } ,
-                7 );
+		7 );
    bool ok = true;
    for( std::size_t i = 0 ; i < n ; ++i )
     ok = ok && ( B[ i ] == 2 * A[ i ] );
    CHECK( ok );
    std::vector< std::atomic< int > > seen( n );
-   parallelForBlocks( ex , 0 , n , [ & ]( std::size_t lo , std::size_t hi ) {
-    for( std::size_t i = lo ; i < hi ; ++i ) seen[ i ].fetch_add( 1 ); } ,
-                      1 );
-   CHECK( std::all_of( seen.begin() , seen.end() , []( auto & h ) {
-    return( h.load() == 1 ); } ) );
+   parallelForBlocks(
+     ex , 0 , n ,
+     [ & ]( std::size_t lo , std::size_t hi ) {
+      for( std::size_t i = lo ; i < hi ; ++i )
+       seen[ i ].fetch_add( 1 );
+      } ,
+     1 );
+   CHECK( std::all_of( seen.begin() , seen.end() ,
+		       []( auto & h ) { return( h.load() == 1 ); } ) );
    // the reduction
-   const std::uint64_t s = parallelReduce( ex , 0 , n , std::uint64_t( 5 ) ,
-    [ & ]( std::size_t lo , std::size_t hi ) {
-     return( std::accumulate( A.begin() + std::ptrdiff_t( lo ) ,
-                              A.begin() + std::ptrdiff_t( hi ) ,
-                              std::uint64_t( 0 ) ) ); } , std::plus<>() ,
-    3 );
-   CHECK( s == std::accumulate( A.begin() , A.end() ,
-                                std::uint64_t( 5 ) ) );
+   const std::uint64_t s = parallelReduce(
+     ex , 0 , n , std::uint64_t( 5 ) ,
+     [ & ]( std::size_t lo , std::size_t hi ) {
+      return( std::accumulate( A.begin() + std::ptrdiff_t( lo ) ,
+				A.begin() + std::ptrdiff_t( hi ) ,
+				std::uint64_t( 0 ) ) );
+      } ,
+     std::plus<>() , 3 );
+   CHECK( s == std::accumulate( A.begin() , A.end() , std::uint64_t( 5 ) ) );
    // the scans of integers, in place and not
    std::vector< std::uint64_t > In( n ) , Ex( n ) , C = A;
    std::inclusive_scan( A.begin() , A.end() , In.begin() , std::plus<>() ,
-                        std::uint64_t( 9 ) );
+			std::uint64_t( 9 ) );
    std::exclusive_scan( A.begin() , A.end() , Ex.begin() ,
-                        std::uint64_t( 9 ) );
-   const std::uint64_t t = parallelInclusiveScan( ex , C.begin() , n ,
-                                                  C.begin() ,
-                                                  std::uint64_t( 9 ) );
+			std::uint64_t( 9 ) );
+   const std::uint64_t t =
+     parallelInclusiveScan( ex , C.begin() , n , C.begin() ,
+			    std::uint64_t( 9 ) );
    CHECK( ( C == In ) && ( t == ( n ? In.back() : 9 ) ) );
    std::vector< std::uint64_t > E( n );
-   const std::uint64_t u = parallelExclusiveScan( ex , A.begin() , n ,
-                                                  E.begin() ,
-                                                  std::uint64_t( 9 ) );
+   const std::uint64_t u =
+     parallelExclusiveScan( ex , A.begin() , n , E.begin() ,
+			    std::uint64_t( 9 ) );
    CHECK( ( E == Ex ) && ( u == ( n ? In.back() : 9 ) ) );
    // the scan of the affine maps, which do not commute
    std::vector< Affine > M( n ) , R( n ) , S( n );
@@ -291,12 +310,15 @@ ADS_TEST( "parallel-patterns" )
    CHECK( S == R );
    }
   // the same sum of doubles on every executor
-  const double s = parallelReduce( ex , 0 , D.size() , 0.0 ,
-                                   [ & ]( std::size_t lo , std::size_t hi ) {
-                                    double r = 0;
-                                    for( std::size_t i = lo ; i < hi ; ++i )
-                                     r += D[ i ];
-                                    return( r ); } , std::plus<>() );
+  const double s = parallelReduce(
+    ex , 0 , D.size() , 0.0 ,
+    [ & ]( std::size_t lo , std::size_t hi ) {
+     double r = 0;
+     for( std::size_t i = lo ; i < hi ; ++i )
+      r += D[ i ];
+     return( r );
+     } ,
+    std::plus<>() );
   CHECK( s == ref );
   } );
  }
@@ -313,29 +335,51 @@ ADS_TEST( "parallel-sort" )
 {
  std::mt19937_64 g( 11 );
  const std::size_t K = kParallelSort;
- const std::vector< std::size_t > sizes = { 0 , 1 , 2 , 100 , K - 1 , K ,
-                                            K + 1 , 3 * K + 17 , 200000 };
+ const std::vector< std::size_t > sizes = { 0 , 1 ,     2 ,          100 ,
+					    K - 1 ,
+					    K , K + 1 , 3 * K + 17 , 200000 };
  auto keys = [ & ]( int pattern , std::size_t n ) {
   std::vector< std::uint64_t > k( n );
   for( std::size_t i = 0 ; i < n ; ++i )
    switch( pattern ) {
-    case( 0 ): k[ i ] = g(); break;
-    case( 1 ): k[ i ] = 42; break;
-    case( 2 ): k[ i ] = g() & 1 ? std::numeric_limits< std::uint64_t >::max()
-                                : 0; break;
-    case( 3 ): k[ i ] = g() % 16; break;
-    case( 4 ): k[ i ] = i; break;
-    case( 5 ): k[ i ] = n - i; break;
-    case( 6 ): k[ i ] = ( n - i ) / 3; break;
-    case( 7 ): k[ i ] = std::min( i , n - 1 - i ); break;
-    case( 8 ): k[ i ] = std::uint64_t( std::pow( double( g() % 1000000 + 1 ) ,
-                                                 -2.0 ) * 1e18 ); break;
-    case( 9 ): k[ i ] = g() % 3 ? std::uint64_t( 1 ) << 63 : g(); break;
-    case( 10 ):                             // 5 non-decreasing runs, ties
-     k[ i ] = ( ( i % ( n / 5 + 1 ) ) / 7 ) << 40; break;
-    case( 11 ):                             // few keys, and a rare one
-     k[ i ] = ( i % 50000 == 49999 ) ? 1000 : g() % 16; break;  // far off
-    default: {                              // 6 runs, up and down in turn
+    case( 0 ):
+     k[ i ] = g();
+     break;
+    case( 1 ):
+     k[ i ] = 42;
+     break;
+    case( 2 ):
+     k[ i ] = g() & 1 ? std::numeric_limits< std::uint64_t >::max() : 0;
+     break;
+    case( 3 ):
+     k[ i ] = g() % 16;
+     break;
+    case( 4 ):
+     k[ i ] = i;
+     break;
+    case( 5 ):
+     k[ i ] = n - i;
+     break;
+    case( 6 ):
+     k[ i ] = ( n - i ) / 3;
+     break;
+    case( 7 ):
+     k[ i ] = std::min( i , n - 1 - i );
+     break;
+    case( 8 ):
+     k[ i ] =
+       std::uint64_t( std::pow( double( g() % 1000000 + 1 ) , -2.0 ) * 1e18 );
+     break;
+    case( 9 ):
+     k[ i ] = g() % 3 ? std::uint64_t( 1 ) << 63 : g();
+     break;
+    case( 10 ):  // 5 non-decreasing runs, ties
+     k[ i ] = ( ( i % ( n / 5 + 1 ) ) / 7 ) << 40;
+     break;
+    case( 11 ):  // few keys, and a rare one
+     k[ i ] = ( i % 50000 == 49999 ) ? 1000 : g() % 16;
+     break;     // far off
+    default: {  // 6 runs, up and down in turn
      const std::size_t r = i / ( n / 6 + 1 ) , o = i % ( n / 6 + 1 );
      k[ i ] = ( ( r % 2 ? n - o : o ) + r * 3 ) << 40;
      }
@@ -368,19 +412,20 @@ ADS_TEST( "parallel-sort" )
      std::vector< double > A( n );
      for( std::size_t i = 0 ; i < n ; ++i )
       A[ i ] = ( k[ i ] % 5 == 0 ) ? ( i % 2 ? -0.0 : 0.0 )
-                                   : double( std::int64_t( k[ i ] ) ) / 7;
+				   : double( std::int64_t( k[ i ] ) ) / 7;
      std::vector< double > C = A , D = A , A0 = A;
      std::vector< std::size_t > ix( n );
      std::iota( ix.begin() , ix.end() , std::size_t( 0 ) );
-     std::sort( ix.begin() , ix.end() , [ & ]( std::size_t a ,
-                                               std::size_t b ) {
+     std::sort( ix.begin() , ix.end() ,
+		[ & ]( std::size_t a , std::size_t b ) {
       return( ( A0[ a ] < A0[ b ] ) ||
-              ( ! ( A0[ b ] < A0[ a ] ) && ( a < b ) ) ); } );
+	       ( ! ( A0[ b ] < A0[ a ] ) && ( a < b ) ) );
+      } );
      ADS::stableSort( ex , A );
      bool same = true;
      for( std::size_t i = 0 ; i < n ; ++i )
       same = same && ( std::bit_cast< std::uint64_t >( A[ i ] ) ==
-                       std::bit_cast< std::uint64_t >( A0[ ix[ i ] ] ) );
+		       std::bit_cast< std::uint64_t >( A0[ ix[ i ] ] ) );
      CHECK( same );
      ADS::sort( ex , C , std::greater<>() );
      std::sort( D.begin() , D.end() , std::greater<>() );
@@ -390,8 +435,10 @@ ADS_TEST( "parallel-sort" )
      ADS::sort( ex , N );
      CHECK( std::is_sorted( N.begin() , N.end() ) );
      std::vector< std::uint64_t > bn , ba;
-     for( double x : N ) bn.push_back( std::bit_cast< std::uint64_t >( x ) );
-     for( double x : A0 ) ba.push_back( std::bit_cast< std::uint64_t >( x ) );
+     for( double x : N )
+      bn.push_back( std::bit_cast< std::uint64_t >( x ) );
+     for( double x : A0 )
+      ba.push_back( std::bit_cast< std::uint64_t >( x ) );
      std::sort( bn.begin() , bn.end() );
      std::sort( ba.begin() , ba.end() );
      CHECK( bn == ba );
@@ -409,11 +456,12 @@ ADS_TEST( "parallel-sort" )
      ADS::sort( ex , C , ByKey() );
      CHECK( std::is_sorted( C.begin() , C.end() , ByKey() ) );
      std::sort( C.begin() , C.end() , []( const Rec & a , const Rec & b ) {
-      return( a.pos < b.pos ); } );
+      return( a.pos < b.pos );
+      } );
      bool same = true;
      for( std::size_t i = 0 ; i < n ; ++i )
       same = same && ( C[ i ].pos == i ) &&
-             ( C[ i ].key == std::uint32_t( k[ i ] >> 40 ) );
+	     ( C[ i ].key == std::uint32_t( k[ i ] >> 40 ) );
      CHECK( same );
      }
     // strings, on the smaller sizes
@@ -442,24 +490,32 @@ ADS_TEST( "learned-parallel-sort" )
  auto key = [ & ]( int p , std::size_t i , std::size_t n ) {
   const double u = double( g() >> 11 ) * 0x1p-53;
   switch( p ) {
-   case( 0 ): return( g() );
-   case( 1 ): return( std::uint64_t( -std::log( 1 - u ) * 1e12 ) );
-   case( 2 ): return( g() % 16 );
-   case( 3 ): return( std::uint64_t( 1e6 / std::pow( 1 - u , 1 / 1.2 ) ) );
-   case( 4 ): return( ( ( g() % 8 ) << 52 ) + g() % 1000 );
-   case( 5 ): return( g() % 2 ? std::uint64_t( 7 ) << 40 : g() >> 1 );
-   case( 6 ): return( std::uint64_t( std::min( i , n - 1 - i ) ) << 20 );
+   case( 0 ):
+    return( g() );
+   case( 1 ):
+    return( std::uint64_t( -std::log( 1 - u ) * 1e12 ) );
+   case( 2 ):
+    return( g() % 16 );
+   case( 3 ):
+    return( std::uint64_t( 1e6 / std::pow( 1 - u , 1 / 1.2 ) ) );
+   case( 4 ):
+    return( ( ( g() % 8 ) << 52 ) + g() % 1000 );
+   case( 5 ):
+    return( g() % 2 ? std::uint64_t( 7 ) << 40 : g() >> 1 );
+   case( 6 ):
+    return( std::uint64_t( std::min( i , n - 1 - i ) ) << 20 );
    default: {
     const std::uint64_t r = g() % 4;
-    return( r == 0 ? std::uint64_t( 1 ) << 63 :
-            r == 1 ? ( std::uint64_t( 1 ) << 63 ) - 1 : g() );
+    return( r == 0   ? std::uint64_t( 1 ) << 63
+	     : r == 1 ? ( std::uint64_t( 1 ) << 63 ) - 1
+		      : g() );
     }
    }
   };
  onEach( [ & ]( auto & ex ) {
   for( std::size_t n : { std::size_t( 0 ) , std::size_t( 1 ) ,
-                         std::size_t( 2 ) , K - 1 , K , K + 1 ,
-                         std::size_t( 200000 ) } )
+			 std::size_t( 2 ) ,
+			 K - 1 , K , K + 1 , std::size_t( 200000 ) } )
    for( int p = 0 ; p < 8 ; ++p ) {
     std::vector< std::uint64_t > k( n );
     for( std::size_t i = 0 ; i < n ; ++i )
@@ -489,29 +545,32 @@ ADS_TEST( "learned-parallel-sort" )
      constexpr double inf = std::numeric_limits< double >::infinity();
      std::vector< double > A( n );
      for( std::size_t i = 0 ; i < n ; ++i )
-      A[ i ] = ( k[ i ] % 5 == 0 ) ? ( i % 2 ? -0.0 : 0.0 ) :
-               ( k[ i ] % 97 == 1 ) ? ( i % 2 ? -inf : inf ) :
-               p == 0 ? double( std::int64_t( k[ i ] ) ) / 7 :
-               double( k[ i ] );
+      A[ i ] = ( k[ i ] % 5 == 0 )    ? ( i % 2 ? -0.0 : 0.0 )
+	       : ( k[ i ] % 97 == 1 ) ? ( i % 2 ? -inf : inf )
+	       : p == 0               ? double( std::int64_t( k[ i ] ) ) / 7
+				      : double( k[ i ] );
      const std::vector< double > A0 = A;
      std::vector< std::size_t > ix( n );
      std::iota( ix.begin() , ix.end() , std::size_t( 0 ) );
-     std::sort( ix.begin() , ix.end() , [ & ]( std::size_t a ,
-                                               std::size_t b ) {
+     std::sort( ix.begin() , ix.end() ,
+		[ & ]( std::size_t a , std::size_t b ) {
       return( ( A0[ a ] < A0[ b ] ) ||
-              ( ! ( A0[ b ] < A0[ a ] ) && ( a < b ) ) ); } );
+	       ( ! ( A0[ b ] < A0[ a ] ) && ( a < b ) ) );
+      } );
      learnedStableSort( ex , A );
      bool same = true;
      for( std::size_t i = 0 ; i < n ; ++i )
       same = same && ( std::bit_cast< std::uint64_t >( A[ i ] ) ==
-                       std::bit_cast< std::uint64_t >( A0[ ix[ i ] ] ) );
+		       std::bit_cast< std::uint64_t >( A0[ ix[ i ] ] ) );
      CHECK( same );
-     std::vector< double > N = A0;           // sorted, the same bits
+     std::vector< double > N = A0;  // sorted, the same bits
      learnedSort( ex , N );
      CHECK( std::is_sorted( N.begin() , N.end() ) );
      std::vector< std::uint64_t > bn , ba;
-     for( double x : N ) bn.push_back( std::bit_cast< std::uint64_t >( x ) );
-     for( double x : A0 ) ba.push_back( std::bit_cast< std::uint64_t >( x ) );
+     for( double x : N )
+      bn.push_back( std::bit_cast< std::uint64_t >( x ) );
+     for( double x : A0 )
+      ba.push_back( std::bit_cast< std::uint64_t >( x ) );
      std::sort( bn.begin() , bn.end() );
      std::sort( ba.begin() , ba.end() );
      CHECK( bn == ba );
@@ -528,10 +587,16 @@ ADS_TEST( "parallel-merge" )
 {
  std::mt19937_64 g( 3 );
  onEach( [ & ]( auto & ex ) {
-  for( const auto & shape : std::vector< std::pair< std::size_t ,
-                                                    std::size_t > >{
-        { 0 , 0 } , { 1 , 0 } , { 1 , 100000 } , { 5 , 0 } , { 2 , 40000 } ,
-        { 7 , 30000 } , { 64 , 3000 } , { 3 , 70000 } } ) {
+  for( const auto & shape :
+       std::vector< std::pair< std::size_t , std::size_t > >{ { 0 , 0 } ,
+							     { 1 , 0 } ,
+							     { 1 , 100000 } ,
+							     { 5 , 0 } ,
+							     { 2 , 40000 } ,
+							     { 7 , 30000 } ,
+							     { 64 , 3000 } ,
+							     { 3 ,
+							       70000 } } ) {
    const std::size_t k = shape.first , len = shape.second;
    for( std::uint32_t mod : { 4u , 1000000u } ) {
     std::vector< std::vector< Rec > > S( k );
@@ -539,8 +604,8 @@ ADS_TEST( "parallel-merge" )
     for( std::size_t i = 0 ; i < k ; ++i ) {
      const std::size_t m = len ? g() % ( 2 * len ) : 0;
      for( std::size_t j = 0 ; j < m ; ++j )
-      S[ i ].push_back( Rec{ std::uint32_t( g() % mod ) ,
-                             std::uint32_t( i ) } );
+      S[ i ].push_back(
+	Rec{ std::uint32_t( g() % mod ) , std::uint32_t( i ) } );
      std::sort( S[ i ].begin() , S[ i ].end() , ByKey() );
      N += m;
      }
@@ -553,8 +618,7 @@ ADS_TEST( "parallel-merge" )
     CHECK( A == B );
     for( std::size_t r : { std::size_t( 0 ) , N / 3 , N } ) {
      const auto s = multisequenceSplit( R , r , ByKey() );
-     CHECK( std::accumulate( s.begin() , s.end() , std::size_t( 0 ) ) ==
-            r );
+     CHECK( std::accumulate( s.begin() , s.end() , std::size_t( 0 ) ) == r );
      }
     }
    }
@@ -572,39 +636,47 @@ ADS_TEST( "parallel-merge" )
 ADS_TEST( "parallel-numeric" )
 {
  std::mt19937_64 g( 5 );
- auto value = [ & ] { return( double( std::int64_t( g() % 2001 ) - 1000 ) /
-                              7.0 ); };
+ auto value = [ & ] {
+  return( double( std::int64_t( g() % 2001 ) - 1000 ) / 7.0 );
+  };
  std::vector< CsrMatrix > M;
  M.emplace_back( 0 , 5 );
  for( const auto & dims : std::vector< std::pair< std::size_t ,
-                                                  std::size_t > >{
-       { 1 , 50000 } , { 60000 , 300 } , { 20000 , 20000 } } ) {
+						  std::size_t > >{
+	{ 1 , 50000 } , { 60000 , 300 } , { 20000 , 20000 } } ) {
   const std::size_t m = dims.first , n = dims.second;
   std::vector< CsrMatrix::Triplet > T;
   for( std::size_t e = 0 ; e < 4 * std::max( m , n ) ; ++e )
    T.emplace_back( g() % m , g() % n , value() );
-  if( m > 1000 )                           // a row with half of them
+  if( m > 1000 )  // a row with half of them
    for( std::size_t e = 0 ; e < 4 * std::max( m , n ) ; ++e )
     T.emplace_back( m / 2 , g() % n , value() );
   M.emplace_back( m , n , T );
   }
  std::vector< DenseMatrix< double > > DA , DB;
- for( const auto & d : std::vector< std::array< std::size_t , 3 > >{
-       { 5 , 7 , 3 } , { 100 , 120 , 90 } , { 600 , 500 , 400 } ,
-       { 70 , 900 , 300 } , { 1000 , 64 , 300 } , { 900 , 700 , 5 } ,
-       { 3 , 800 , 600 } } ) {
+ for( const auto & d :
+      std::vector< std::array< std::size_t , 3 > >{ { 5 , 7 , 3 } ,
+						   { 100 , 120 , 90 } ,
+						   { 600 , 500 , 400 } ,
+						   { 70 , 900 , 300 } ,
+						   { 1000 , 64 , 300 } ,
+						   { 900 , 700 , 5 } ,
+						   { 3 , 800 , 600 } } ) {
   DenseMatrix< double > A( d[ 0 ] , d[ 2 ] ) , B( d[ 2 ] , d[ 1 ] );
   for( std::size_t i = 0 ; i < d[ 0 ] ; ++i )
-   for( std::size_t j = 0 ; j < d[ 2 ] ; ++j ) A( i , j ) = value();
+   for( std::size_t j = 0 ; j < d[ 2 ] ; ++j )
+    A( i , j ) = value();
   for( std::size_t i = 0 ; i < d[ 2 ] ; ++i )
-   for( std::size_t j = 0 ; j < d[ 1 ] ; ++j ) B( i , j ) = value();
+   for( std::size_t j = 0 ; j < d[ 1 ] ; ++j )
+    B( i , j ) = value();
   DA.push_back( A );
   DB.push_back( B );
   }
  onEach( [ & ]( auto & ex ) {
   for( const auto & A : M ) {
    std::vector< double > x( A.cols() );
-   for( auto & v : x ) v = value();
+   for( auto & v : x )
+    v = value();
    CHECK( multiply( ex , A , x ) == A.multiply( x ) );
    if( A.rows() > 0 ) {
     const SellMatrix<> S( A );
@@ -613,12 +685,13 @@ ADS_TEST( "parallel-numeric" )
    }
   for( std::size_t t = 0 ; t < DA.size() ; ++t ) {
    const auto C = multiply( ex , DA[ t ] , DB[ t ] ) ,
-              D = multiply( DA[ t ] , DB[ t ] );
+	      D = multiply( DA[ t ] , DB[ t ] );
    // equal, or within the rounding of the sums of k terms on the CBLAS
    auto near = [ & ]( double x , double y ) {
-    return( ADS_GEMM_BLAS ? std::abs( x - y ) <= 1e-9 * double(
-                             DA[ t ].cols() ) * ( 1 + std::abs( y ) )
-                          : x == y );
+    return( ADS_GEMM_BLAS
+	       ? std::abs( x - y ) <=
+		   1e-9 * double( DA[ t ].cols() ) * ( 1 + std::abs( y ) )
+	       : x == y );
     };
    bool same = true;
    for( std::size_t i = 0 ; i < C.rows() ; ++i )
@@ -628,11 +701,13 @@ ADS_TEST( "parallel-numeric" )
    // alpha and beta on a C already there
    auto X = D , Y = D;
    const std::size_t m = DA[ t ].rows() , n = DB[ t ].cols() ,
-                     k = DA[ t ].cols();
+		     k = DA[ t ].cols();
    gemm( ex , m , n , k , 0.5 , DA[ t ].data() , k , DB[ t ].data() , n ,
-         -2.0 , X.data() , n );
+	 -2.0 ,
+	 X.data() , n );
    gemm( m , n , k , 0.5 , DA[ t ].data() , k , DB[ t ].data() , n , -2.0 ,
-         Y.data() , n );
+	 Y.data() ,
+	 n );
    CHECK( std::equal( X.data() , X.data() + m * n , Y.data() , near ) );
    }
   } );
@@ -651,12 +726,14 @@ ADS_TEST( "parallel-graph" )
  I.push_back( { 1000 , {} } );
  {
   std::vector< std::pair< int , int > > E;
-  for( int i = 0 ; i + 1 < 50000 ; ++i ) E.emplace_back( i , i + 1 );
+  for( int i = 0 ; i + 1 < 50000 ; ++i )
+   E.emplace_back( i , i + 1 );
   I.push_back( { 50000 , E } );
   }
  {
   std::vector< std::pair< int , int > > E;
-  for( int i = 1 ; i < 60000 ; ++i ) E.emplace_back( 0 , i );
+  for( int i = 1 ; i < 60000 ; ++i )
+   E.emplace_back( 0 , i );
   I.push_back( { 60000 , E } );
   }
  {
@@ -666,7 +743,8 @@ ADS_TEST( "parallel-graph" )
    // three blocks of nodes with no arc between them, and isolated nodes
    const int b = int( g() % 3 ) , lo = b * 30000;
    const int u = lo + int( g() % 30000 ) , v = lo + int( g() % 30000 );
-   if( u != v ) E.emplace_back( u , v );
+   if( u != v )
+    E.emplace_back( u , v );
    }
   I.push_back( { n , E } );
   }
@@ -704,7 +782,8 @@ ADS_TEST( "parallel-graph" )
      if( label[ std::size_t( v ) ] < 0 ) {
       const auto d = reference( U , v );
       for( int w = 0 ; w < n ; ++w )
-       if( d[ std::size_t( w ) ] >= 0 ) label[ std::size_t( w ) ] = v;
+       if( d[ std::size_t( w ) ] >= 0 )
+	label[ std::size_t( w ) ] = v;
       }
     CHECK( connectedComponents( ex , G ) == label );
     }
@@ -721,12 +800,14 @@ ADS_TEST( "parallel-lcp" )
  std::vector< std::string > texts = { "" , "a" , "banana" };
  for( int sigma : { 2 , 26 } ) {
   std::string t( 100000 , 'a' );
-  for( auto & c : t ) c = char( 'a' + g() % unsigned( sigma ) );
+  for( auto & c : t )
+   c = char( 'a' + g() % unsigned( sigma ) );
   texts.push_back( t );
   }
  {
   std::string t;
-  while( t.size() < 70000 ) t += "abracadabra";
+  while( t.size() < 70000 )
+   t += "abracadabra";
   texts.push_back( t );
   texts.push_back( std::string( 40000 , 'z' ) );
   }
@@ -754,17 +835,21 @@ ADS_TEST( "concurrent-union-find" )
   std::mt19937_64 g( 23 );
   std::vector< std::pair< int , int > > P( m );
   for( int i = 0 ; i < m ; ++i )
-   P[ std::size_t( i ) ] = shape ? std::make_pair( i , i + 1 ) :
-    std::make_pair( int( g() % n ) , int( g() % n ) );
+   P[ std::size_t( i ) ] =
+     shape ? std::make_pair( i , i + 1 )
+	   : std::make_pair( int( g() % n ) , int( g() % n ) );
   // the reference: the least element of each set, by a sequential forest
   std::vector< int > up( static_cast< std::size_t >( n ) );
   std::iota( up.begin() , up.end() , 0 );
   auto root = [ & ]( int x ) {
-   while( up[ std::size_t( x ) ] != x ) x = up[ std::size_t( x ) ];
-   return( x ); };
+   while( up[ std::size_t( x ) ] != x )
+    x = up[ std::size_t( x ) ];
+   return( x );
+   };
   for( const auto & [ a , b ] : P ) {
    const int x = root( a ) , y = root( b );
-   if( x != y ) up[ std::size_t( std::max( x , y ) ) ] = std::min( x , y );
+   if( x != y )
+    up[ std::size_t( std::max( x , y ) ) ] = std::min( x , y );
    }
   ConcurrentUnionFind uf{ std::size_t( n ) };
   CHECK( uf.size() == std::size_t( n ) );
@@ -773,10 +858,11 @@ ADS_TEST( "concurrent-union-find" )
   for( int t = 0 ; t < 8 ; ++t )
    T.emplace_back( [ & , t ] {
     for( int i = t ; i < m ; i += 8 )
-     merged += uf.unite( P[ std::size_t( i ) ].first ,
-                         P[ std::size_t( i ) ].second );
+     merged +=
+       uf.unite( P[ std::size_t( i ) ].first , P[ std::size_t( i ) ].second );
     } );
-  for( auto & t : T ) t.join();
+  for( auto & t : T )
+   t.join();
   int sets = 0;
   bool same = true;
   for( int x = 0 ; x < n ; ++x ) {
@@ -789,7 +875,8 @@ ADS_TEST( "concurrent-union-find" )
    CHECK( uf.sameSet( a , b ) == ( root( a ) == root( b ) ) );
    }
   CHECK( ! uf.unite( P[ 0 ].first , P[ 0 ].second ) );
-  for( int x = 0 ; x < n ; ++x ) uf.compress( x );
+  for( int x = 0 ; x < n ; ++x )
+   uf.compress( x );
   bool flat = true;
   for( int x = 0 ; x < n ; ++x )
    flat = flat && ( uf.parent( x ) == root( x ) );
@@ -808,7 +895,8 @@ ADS_TEST( "parallel-rank-select" )
  std::mt19937_64 g( 23 );
  std::vector< std::vector< bool > > V;
  for( std::size_t n : { 0 , 1 , 63 , 64 , 65 , 255 , 256 , 257 , 511 , 512 ,
-                        4095 , 4096 , 4097 , 20000 , 100003 } )
+			4095 , 4096 ,
+			4097 , 20000 , 100003 } )
   for( double p : { 0.0 , 1.0 , 0.5 , 0.02 , 0.98 } ) {
    std::vector< bool > R( n );
    for( std::size_t i = 0 ; i < n ; ++i )
@@ -816,8 +904,9 @@ ADS_TEST( "parallel-rank-select" )
    V.push_back( R );
    }
  {
-  std::vector< bool > R( 400000 , false );   // sparse groups of both bits
-  for( std::size_t i = 0 ; i < R.size() ; i += 70001 ) R[ i ] = true;
+  std::vector< bool > R( 400000 , false );  // sparse groups of both bits
+  for( std::size_t i = 0 ; i < R.size() ; i += 70001 )
+   R[ i ] = true;
   V.push_back( R );
   R.flip();
   V.push_back( R );
@@ -825,12 +914,13 @@ ADS_TEST( "parallel-rank-select" )
  auto bitsOf = []( const std::vector< bool > & R ) {
   BitVector b( R.size() );
   for( std::size_t i = 0 ; i < R.size() ; ++i )
-   if( R[ i ] ) b.set( i );
+   if( R[ i ] )
+    b.set( i );
   return( b );
   };
  auto same = []( const auto & a , const auto & b ) {
   bool ok = ( a.size() == b.size() ) && ( a.ones() == b.ones() ) &&
-            ( a.directoryBits() == b.directoryBits() );
+	    ( a.directoryBits() == b.directoryBits() );
   for( std::size_t i = 0 ; ok && ( i <= a.size() ) ; ++i )
    ok = a.rank1( i ) == b.rank1( i );
   for( std::size_t k = 1 ; ok && ( k <= a.ones() ) ; ++k )
@@ -843,14 +933,14 @@ ADS_TEST( "parallel-rank-select" )
   for( const auto & R : V ) {
    const BitVector b = bitsOf( R );
    const std::span< const Word > w( b.words().data() ,
-                                    ( R.size() + 63 ) / 64 );
+				    ( R.size() + 63 ) / 64 );
    const RankSelect ref( b );
    CHECK( same( RankSelect( ex , b ) , ref ) );
    CHECK( same( RankSelect( ex , w , R.size() ) , ref ) );
    CHECK( same( LazyRankSelect( ex , b ) , ref ) );
    const RankSelect one( ex , b , RankSelect::Selects::ONES );
    CHECK( one.directoryBits() ==
-          RankSelect( b , RankSelect::Selects::ONES ).directoryBits() );
+	  RankSelect( b , RankSelect::Selects::ONES ).directoryBits() );
    const CompactRankSelect cref( b );
    CHECK( same( CompactRankSelect( ex , b ) , cref ) );
    CHECK( same( CompactRankSelect( ex , w , R.size() ) , cref ) );
@@ -876,12 +966,13 @@ ADS_TEST( "parallel-wavelet-matrix" )
  for( int w : { 1 , 7 , 8 , 9 , 16 , 17 , 31 , 32 , 33 , 64 } )
   for( std::size_t n : { 100 , 5000 } ) {
    std::vector< std::uint64_t > x( n );
-   for( auto & v : x ) v = w == 64 ? g() : g() & ( ( 1ULL << w ) - 1 );
+   for( auto & v : x )
+    v = w == 64 ? g() : g() & ( ( 1ULL << w ) - 1 );
    X.push_back( { x , w } );
    X.push_back( { x , 0 } );
    }
  {
-  std::vector< std::uint64_t > x( 20000 );   // a geometric law
+  std::vector< std::uint64_t > x( 20000 );  // a geometric law
   for( auto & v : x )
    v = std::uint64_t( std::countr_zero( g() | 1ULL << 40 ) );
   X.push_back( { x , 0 } );
@@ -890,17 +981,19 @@ ADS_TEST( "parallel-wavelet-matrix" )
   for( const auto & [ x , w ] : X ) {
    const WaveletMatrix ref( x , w ) , par( ex , x , w );
    CHECK( ( par.width() == ref.width() ) && ( par.size() == ref.size() ) &&
-          ( par.sizeInBits() == ref.sizeInBits() ) );
+	  ( par.sizeInBits() == ref.sizeInBits() ) );
    // the same from the items of 8, 16 and 32 bits, where they fit
    auto narrow = [ & ]< class U >( U * ) {
     if( std::any_of( x.begin() , x.end() , []( std::uint64_t v ) {
-         return( v >> ( 8 * sizeof( U ) ) ); } ) ) return;
+	 return( v >> ( 8 * sizeof( U ) ) );
+	 } ) )
+     return;
     const std::vector< U > y( x.begin() , x.end() );
     const WaveletMatrix a( std::span< const U >( y ) , w ) ,
-                        b( ex , std::span< const U >( y ) , w );
+      b( ex , std::span< const U >( y ) , w );
     CHECK( ( a.width() == ref.width() ) && ( b.width() == ref.width() ) &&
-           ( a.sizeInBits() == ref.sizeInBits() ) &&
-           ( b.sizeInBits() == ref.sizeInBits() ) );
+	   ( a.sizeInBits() == ref.sizeInBits() ) &&
+	   ( b.sizeInBits() == ref.sizeInBits() ) );
     CHECK( std::equal( x.begin() , x.end() , a.begin() , a.end() ) );
     CHECK( std::equal( x.begin() , x.end() , b.begin() , b.end() ) );
     };
@@ -911,25 +1004,29 @@ ADS_TEST( "parallel-wavelet-matrix" )
    std::vector< std::uint64_t > vals( x.begin() , x.end() );
    std::sort( vals.begin() , vals.end() );
    vals.erase( std::unique( vals.begin() , vals.end() ) , vals.end() );
-   if( vals.size() > 20 ) vals.resize( 20 );
+   if( vals.size() > 20 )
+    vals.resize( 20 );
    const int W = ref.width();
-   if( W < 64 ) vals.push_back( std::uint64_t( 1 ) << W );   // out of it
+   if( W < 64 )
+    vals.push_back( std::uint64_t( 1 ) << W );  // out of it
    const std::size_t n = x.size();
    // the queries against a scan of x
    for( const auto c : vals ) {
-    std::vector< std::size_t > at;          // the places of c
+    std::vector< std::size_t > at;  // the places of c
     for( std::size_t i = 0 ; i < n ; ++i )
-     if( x[ i ] == c ) at.push_back( i );
+     if( x[ i ] == c )
+      at.push_back( i );
     for( std::size_t i : { std::size_t( 0 ) , n / 3 , n } )
-     CHECK( par.rank( c , i ) == std::size_t(
-             std::lower_bound( at.begin() , at.end() , i ) - at.begin() ) );
-    for( std::size_t k : { std::size_t( 1 ) , at.size() / 2 + 1 ,
-                           at.size() } )
+     CHECK( par.rank( c , i ) ==
+	    std::size_t( std::lower_bound( at.begin() , at.end() , i ) -
+			 at.begin() ) );
+    for( std::size_t k : { std::size_t( 1 ) , at.size() / 2 + 1 , at.size() } )
      if( ( k >= 1 ) && ( k <= at.size() ) )
       CHECK( par.select( c , k ) == at[ k - 1 ] );
-    CHECK( par.countLess( n / 4 , n , c ) == std::size_t( std::count_if(
-            x.begin() + std::ptrdiff_t( n / 4 ) , x.end() ,
-            [ c ]( std::uint64_t v ) { return( v < c ); } ) ) );
+    CHECK( par.countLess( n / 4 , n , c ) ==
+	   std::size_t( std::count_if(
+	     x.begin() + std::ptrdiff_t( n / 4 ) , x.end() ,
+	     [ c ]( std::uint64_t v ) { return( v < c ); } ) ) );
     }
    std::vector< std::uint64_t > sorted( x.begin() , x.end() );
    std::sort( sorted.begin() , sorted.end() );
@@ -955,17 +1052,21 @@ void checkParallelHuffman( void )
  X.push_back( std::vector< std::uint32_t >( 500 , 3 ) );
  for( std::uint32_t sigma : { 2u , 3u , 256u } ) {
   std::vector< std::uint32_t > x( 7000 );
-  for( auto & c : x ) c = std::uint32_t( g() % sigma );
+  for( auto & c : x )
+   c = std::uint32_t( g() % sigma );
   X.push_back( x );
   }
  {
   std::vector< std::uint32_t > x( 30000 );
   for( auto & c : x )
-   c = std::uint32_t( std::pow( 5000.0 ,
-                      std::uniform_real_distribution<>( 0 , 1 )( g ) ) ) - 1;
+   c = std::uint32_t(
+	 std::pow( 5000.0 ,
+		   std::uniform_real_distribution<>( 0 , 1 )( g ) ) ) -
+       1;
   X.push_back( x );
   std::vector< std::uint32_t > y( 3000 );
-  for( auto & c : y ) c = std::uint32_t( ( g() % 4 ) * 1000 );
+  for( auto & c : y )
+   c = std::uint32_t( ( g() % 4 ) * 1000 );
   X.push_back( y );
   }
  onEach( [ & ]( auto & ex ) {
@@ -973,7 +1074,7 @@ void checkParallelHuffman( void )
    for( bool sel : { true , false } ) {
     const HuffmanWaveletTree< RS > ref( x , sel ) , par( ex , x , sel );
     CHECK( ( par.size() == ref.size() ) && ( par.sigma() == ref.sigma() ) &&
-           ( par.sizeInBits() == ref.sizeInBits() ) );
+	   ( par.sizeInBits() == ref.sizeInBits() ) );
     bool ok = true;
     for( std::size_t i = 0 ; ok && ( i < x.size() ) ; ++i )
      ok = par[ i ] == x[ i ];
@@ -998,7 +1099,8 @@ ADS_TEST( "parallel-huffman-wavelet-tree" )
  checkParallelHuffman< CompactRankSelect >();
  }
 
-namespace {
+namespace
+{
 
 /// the distances from s by the algorithm of Dijkstra on a heap of the
 /// standard library, the reference of the stepping algorithms
@@ -1013,7 +1115,8 @@ std::vector< D > dijkstraReference( const StaticGraph< D > & g , int s )
  while( ! H.empty() ) {
   const auto [ du , u ] = H.top();
   H.pop();
-  if( du > d[ std::size_t( u ) ] ) continue;
+  if( du > d[ std::size_t( u ) ] )
+   continue;
   for( const auto & a : g.out( u ) )
    if( D( du + a.w ) < d[ std::size_t( a.to ) ] ) {
     d[ std::size_t( a.to ) ] = D( du + a.w );
@@ -1028,30 +1131,34 @@ std::vector< D > dijkstraReference( const StaticGraph< D > & g , int s )
 /// between them, and a graph of Kronecker with a few nodes of large degree
 template< class D , class C >
 std::vector< std::pair< int , std::vector< std::tuple< int , int , D > > > >
- steppingGraphs( std::mt19937_64 & g , C && cost )
+steppingGraphs( std::mt19937_64 & g , C && cost )
 {
- std::vector< std::pair< int , std::vector< std::tuple< int , int , D > > > >
-  I;
+ std::vector< std::pair< int ,
+			 std::vector< std::tuple< int , int , D > > > > I;
  I.push_back( { 1 , {} } );
  {
   std::vector< std::tuple< int , int , D > > E;
   const int n = test::scaled( 2000 , 300 );
-  for( int i = 0 ; i + 1 < n ; ++i ) E.emplace_back( i , i + 1 , cost( g ) );
+  for( int i = 0 ; i + 1 < n ; ++i )
+   E.emplace_back( i , i + 1 , cost( g ) );
   I.push_back( { n , E } );
   }
  {
   std::vector< std::tuple< int , int , D > > E;
   const int n = test::scaled( 5000 , 500 );
-  for( int i = 1 ; i < n ; ++i ) E.emplace_back( 0 , i , cost( g ) );
+  for( int i = 1 ; i < n ; ++i )
+   E.emplace_back( 0 , i , cost( g ) );
   I.push_back( { n , E } );
   }
  {
-  const int r = test::scaled( 50 , 15 );    // a grid of r x r nodes
+  const int r = test::scaled( 50 , 15 );  // a grid of r x r nodes
   std::vector< std::tuple< int , int , D > > E;
   for( int i = 0 ; i < r ; ++i )
    for( int j = 0 ; j < r ; ++j ) {
-    if( j + 1 < r ) E.emplace_back( i * r + j , i * r + j + 1 , cost( g ) );
-    if( i + 1 < r ) E.emplace_back( i * r + j , i * r + j + r , cost( g ) );
+    if( j + 1 < r )
+     E.emplace_back( i * r + j , i * r + j + 1 , cost( g ) );
+    if( i + 1 < r )
+     E.emplace_back( i * r + j , i * r + j + r , cost( g ) );
     }
   I.push_back( { r * r , E } );
   }
@@ -1061,8 +1168,9 @@ std::vector< std::pair< int , std::vector< std::tuple< int , int , D > > > >
   for( int e = 0 ; e < 6 * n ; ++e ) {
    const int b = int( g() % 2 ) , lo = b * h;
    const int u = lo + int( g() % unsigned( h ) ) ,
-             v = lo + int( g() % unsigned( h ) );
-   if( u != v ) E.emplace_back( u , v , cost( g ) );
+	     v = lo + int( g() % unsigned( h ) );
+   if( u != v )
+    E.emplace_back( u , v , cost( g ) );
    }
   I.push_back( { n , E } );
   }
@@ -1076,7 +1184,8 @@ std::vector< std::pair< int , std::vector< std::tuple< int , int , D > > > >
     a = 2 * a + int( x >= 0.76 );
     b = 2 * b + int( ( ( x >= 0.57 ) && ( x < 0.76 ) ) || ( x >= 0.95 ) );
     }
-   if( a != b ) E.emplace_back( a , b , cost( g ) );
+   if( a != b )
+    E.emplace_back( a , b , cost( g ) );
    }
   I.push_back( { n , E } );
   }
@@ -1094,7 +1203,8 @@ void checkStepping( C && cost , std::vector< D > deltas )
  const auto I = steppingGraphs< D >( g , cost );
  // the graphs, oriented and not, with the distances of the reference
  // from three sources, and those of johnson() on ArrayGraph from one
- struct Case {
+ struct Case
+ {
   StaticGraph< D > G;
   ArrayGraph< D > H;
   std::vector< std::vector< D > > ref;
@@ -1104,10 +1214,12 @@ void checkStepping( C && cost , std::vector< D > deltas )
  for( const auto & [ n , E ] : I )
   for( bool directed : { true , false } ) {
    Case c{ StaticGraph< D >( n , E , directed ) ,
-           ArrayGraph< D >( n , E , directed ) , {} , {} };
+	   ArrayGraph< D >( n , E , directed ) ,
+	   {} ,
+	   {} };
    for( int s : { 0 , n / 2 , n - 1 } )
     c.ref.push_back( dijkstraReference( c.G , s ) );
-   if( n <= 2500 )                          // the audits of johnson(): n m
+   if( n <= 2500 )  // the audits of johnson(): n m
     c.john = johnson( c.H , n / 2 ).d;
    K.push_back( std::move( c ) );
    }
@@ -1119,8 +1231,8 @@ void checkStepping( C && cost , std::vector< D > deltas )
     for( const D delta : deltas )
      CHECK( deltaStepping( ex , c.G , S[ j ] , delta ) == c.ref[ j ] );
     // a node a step only from one source, the slowest
-    for( std::size_t rho : { std::size_t( 1 ) , std::size_t( 50 ) ,
-                             std::size_t( 1 ) << 20 } )
+    for( std::size_t rho :
+	 { std::size_t( 1 ) , std::size_t( 50 ) , std::size_t( 1 ) << 20 } )
      if( ( rho > 1 ) || ( j == 1 ) )
       CHECK( rhoStepping( ex , c.G , S[ j ] , rho ) == c.ref[ j ] );
     }
@@ -1143,14 +1255,19 @@ ADS_TEST( "parallel-stepping" )
   detail::keepFrom = from;
   // integer costs from 0 (ties and zero arcs), long costs up to 10^12,
   // and real costs
-  checkStepping< int >( []( std::mt19937_64 & g ) {
-   return( int( g() % 101 ) ); } , { 1 , 16 , 1 << 30 } );
-  checkStepping< long long >( []( std::mt19937_64 & g ) {
-   return( ( long long )( g() % 1000000000000ULL ) ); } ,
-   { 1 , 1000000000LL , 1LL << 60 } );
-  checkStepping< double >( []( std::mt19937_64 & g ) {
-   return( std::uniform_real_distribution<>( 0 , 1 )( g ) ); } ,
-   { 1e-9 , 0.1 , 1e300 } );
+  checkStepping< int >(
+    []( std::mt19937_64 & g ) { return( int( g() % 101 ) ); } ,
+    { 1 , 16 , 1 << 30 } );
+  checkStepping< long long >(
+    []( std::mt19937_64 & g ) {
+     return( ( long long )( g() % 1000000000000ULL ) );
+     } ,
+    { 1 , 1000000000LL , 1LL << 60 } );
+  checkStepping< double >(
+    []( std::mt19937_64 & g ) {
+     return( std::uniform_real_distribution<>( 0 , 1 )( g ) );
+     } ,
+    { 1e-9 , 0.1 , 1e300 } );
   }
  detail::keepFrom = 4096;
  }

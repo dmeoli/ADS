@@ -108,7 +108,7 @@
 
 #ifndef __ADS_Properties
  #define __ADS_Properties
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -130,7 +130,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------- TREES ----------------------------------*/
@@ -309,7 +310,8 @@ int universalSink( const std::vector< std::vector< T > > & A );
 /// in-degrees would take \f$ \Theta( n^2 ) \f$
 /// \pre the graph is oriented
 template< Graph G >
- requires requires( const G g , int u , int v ) {
+ requires requires( const G g , int u , int v )
+{
   { g.hasEdge( u , v ) } -> std::convertible_to< bool >;
   }
 int universalSink( const G & g );
@@ -353,7 +355,7 @@ std::optional< std::vector< int > > uniqueTopologicalOrder( const G & g );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Properties.h included */
+#endif /* Properties.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Properties.h --------------------------*/

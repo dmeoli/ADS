@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CONSTRUCTING AND COPYING -----------------------*/
@@ -42,12 +43,11 @@ SinglyList< T >::SinglyList( const SinglyList & other )
 
 template< class T >
 SinglyList< T >::SinglyList( SinglyList && other ) noexcept
- : f_first( std::exchange( other.f_first , nullptr ) ) ,
-   f_last( std::exchange( other.f_last , nullptr ) ) ,
-   f_size( std::exchange( other.f_size , 0 ) ) ,
-   f_pool( std::move( other.f_pool ) )
-{
- }
+    : f_first( std::exchange( other.f_first , nullptr ) ) ,
+      f_last( std::exchange( other.f_last , nullptr ) ) ,
+      f_size( std::exchange( other.f_size , 0 ) ) ,
+      f_pool( std::move( other.f_pool ) )
+{ }
 
 template< class T >
 SinglyList< T > & SinglyList< T >::operator=( SinglyList other ) noexcept
@@ -102,7 +102,7 @@ typename SinglyList< T >::Pos SinglyList< T >::tail( void ) const
 {
  if( ! f_first )
   return( &f_before );
- Pos p = nullptr;                    // the cell before the last one
+ Pos p = nullptr;  // the cell before the last one
  while( ! finished( next( p ) ) )
   p = next( p );
  return( p );
@@ -124,7 +124,7 @@ typename SinglyList< T >::Pos SinglyList< T >::prev( Pos p ) const
   return( &f_before );
  if( p == f_first )
   return( nullptr );
- Pos q = f_first;                    // a scan for the cell before p
+ Pos q = f_first;  // a scan for the cell before p
  while( q->next != p )
   q = q->next;
  return( q );
@@ -153,7 +153,7 @@ typename SinglyList< T >::Pos SinglyList< T >::remove( Pos p )
  Cell * t = cell( p );
  ( p ? p->next : f_first ) = t->next;
  if( t == f_last )
-  f_last = p;                               // nil if the list is empty
+  f_last = p;  // nil if the list is empty
  f_pool.free( t );
  --f_size;
  return( p );
@@ -182,7 +182,7 @@ template< class T >
 template< std::input_iterator I , std::sentinel_for< I > S >
 SinglyList< T >::SinglyList( I first , S last )
 {
- Pos p = head();                            // the place after the last
+ Pos p = head();  // the place after the last
  for( ; first != last ; ++first )
   p = next( insert( p , *first ) );
  }
@@ -196,7 +196,7 @@ void SinglyList< T >::push_front( const T & v )
 template< class T >
 void SinglyList< T >::push_back( const T & v )
 {
- insert( f_last , v );                      // pos_n, nil when empty
+ insert( f_last , v );  // pos_n, nil when empty
  }
 
 template< class T >
@@ -283,7 +283,7 @@ template< class T >
 void SinglyList< T >::reverse( void )
 {
  const auto old = detail::snapshot( *this );
- Cell * p = nullptr , * u = f_first;
+ Cell *p = nullptr , *u = f_first;
  f_last = u;
  while( u ) {
   Cell * w = u->next;
@@ -294,8 +294,10 @@ void SinglyList< T >::reverse( void )
  f_first = p;
  ADS_AUDIT( ( [ & ] {
   SinglyList r;
-  for( const T & x : *old ) r.push_front( x );
-  return( r == *this ); }() ) );
+  for( const T & x : *old )
+   r.push_front( x );
+  return( r == *this );
+  }() ) );
  }
 
 template< class T >
@@ -306,16 +308,16 @@ void SinglyList< T >::checkSize( void ) const
   ++c;
  if( c != f_size )
   throw( std::logic_error( "SinglyList::checkSize: " + std::to_string( c ) +
-                           " cells, " + std::to_string( f_size ) +
-                           " counted" ) );
+			   " cells, " + std::to_string( f_size ) +
+			   " counted" ) );
  }
 
 template< class T >
 bool SinglyList< T >::operator==( const SinglyList & o ) const
 {
- const Cell * a = f_first , * b = o.f_first;
+ const Cell *a = f_first , *b = o.f_first;
  for( ; a && b ; a = a->next , b = b->next )
-  if( !( a->value == b->value ) )
+  if( ! ( a->value == b->value ) )
    return( false );
  return( ! a && ! b );
  }

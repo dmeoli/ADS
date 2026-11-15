@@ -14,12 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline std::size_t add( std::vector< int > & A )
 {
  ADS_AUDIT( std::all_of( A.begin() , A.end() , []( int b ) {
-  return( ( b == 0 ) || ( b == 1 ) ); } ) );
+  return( ( b == 0 ) || ( b == 1 ) );
+  } ) );
  const std::size_t k = A.size();
  std::size_t i = 0;
  while( ( i < k ) && ( A[ i ] == 1 ) ) {

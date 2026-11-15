@@ -16,20 +16,20 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::size_t N >
 SmallVector< T , N >::SmallVector( std::size_t n , const T & x )
- : SmallVector()
+    : SmallVector()
 {
  resize( n , x );
  }
 
 template< class T , std::size_t N >
 SmallVector< T , N >::SmallVector( std::initializer_list< T > items )
- : SmallVector( items.begin() , items.end() )
-{
- }
+    : SmallVector( items.begin() , items.end() )
+{ }
 
 template< class T , std::size_t N >
 template< std::input_iterator I , std::sentinel_for< I > S >
@@ -44,20 +44,19 @@ SmallVector< T , N >::SmallVector( I first , S last ) : SmallVector()
 
 template< class T , std::size_t N >
 SmallVector< T , N >::SmallVector( const SmallVector & other )
- : SmallVector( other.begin() , other.end() )
-{
- }
+    : SmallVector( other.begin() , other.end() )
+{ }
 
 template< class T , std::size_t N >
 void SmallVector< T , N >::take( SmallVector & o )
 {
- if( ! o.small() ) {                        // its memory
+ if( ! o.small() ) {  // its memory
   f_A = std::exchange( o.f_A , o.inner() );
   f_cap = std::exchange( o.f_cap , N );
   f_n = std::exchange( o.f_n , 0 );
   }
- else {                                     // its items, one by one,
-  const std::size_t k = o.f_n < N ? o.f_n : N;   // at most N of them
+ else {                                         // its items, one by one,
+  const std::size_t k = o.f_n < N ? o.f_n : N;  // at most N of them
   std::uninitialized_move( o.f_A , o.f_A + k , f_A );
   f_n = k;
   o.clear();
@@ -65,8 +64,9 @@ void SmallVector< T , N >::take( SmallVector & o )
  }
 
 template< class T , std::size_t N >
-SmallVector< T , N >::SmallVector( SmallVector && other )
- noexcept( std::is_nothrow_move_constructible_v< T > ) : SmallVector()
+SmallVector< T , N >::SmallVector( SmallVector && other ) noexcept(
+  std::is_nothrow_move_constructible_v< T > )
+    : SmallVector()
 {
  take( other );
  }
@@ -83,8 +83,9 @@ SmallVector< T , N >::operator=( const SmallVector & other )
  }
 
 template< class T , std::size_t N >
-SmallVector< T , N > & SmallVector< T , N >::operator=( SmallVector && other )
- noexcept( std::is_nothrow_move_constructible_v< T > )
+SmallVector< T , N > &
+SmallVector< T , N >::operator=( SmallVector && other ) noexcept(
+  std::is_nothrow_move_constructible_v< T > )
 {
  if( this != &other ) {
   this->~SmallVector();
@@ -117,7 +118,7 @@ void SmallVector< T , N >::grow( std::size_t c )
  T * B = std::allocator< T >().allocate( c );
  try {
   if constexpr( std::is_nothrow_move_constructible_v< T > ||
-                ! std::is_copy_constructible_v< T > )
+		! std::is_copy_constructible_v< T > )
    std::uninitialized_move( f_A , f_A + f_n , B );
   else
    std::uninitialized_copy( f_A , f_A + f_n , B );
@@ -137,14 +138,14 @@ template< class T , std::size_t N >
 template< class... Args >
 inline T & SmallVector< T , N >::emplace_back( Args &&... args )
 {
- if( f_n == f_cap ) {                       // the item first, since the
-  T x( std::forward< Args >( args )... );   // arguments may live here
+ if( f_n == f_cap ) {                      // the item first, since the
+  T x( std::forward< Args >( args )... );  // arguments may live here
   grow( 2 * f_cap );
   ::new( static_cast< void * >( f_A + f_n ) ) T( std::move( x ) );
   }
  else
   ::new( static_cast< void * >( f_A + f_n ) )
-   T( std::forward< Args >( args )... );
+    T( std::forward< Args >( args )... );
  ++f_n;
  ADS_INVARIANT( ( f_n <= f_cap ) && ( f_cap >= N ) );
  return( f_A[ f_n - 1 ] );
@@ -173,7 +174,7 @@ void SmallVector< T , N >::resize( std::size_t n , const T & x )
   return;
   }
  if( n > f_cap ) {
-  const T y = x;                            // x may be an item
+  const T y = x;  // x may be an item
   grow( std::max( n , 2 * f_cap ) );
   std::uninitialized_fill( f_A + f_n , f_A + n , y );
   }

@@ -35,7 +35,7 @@
 
 #ifndef __ADS_ListGraph
  #define __ADS_ListGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -58,7 +58,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ListGraph -----------------------------*/
@@ -66,15 +67,15 @@ namespace ADS {
 
 /// a graph with lists of adjacency
 template< class W = std::monostate , class T = std::monostate >
-class ListGraph : public GraphNodes< T > {
+class ListGraph : public GraphNodes< T >
+{
 
  using B = GraphNodes< T >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the weights
- using Label = T;    ///< the type of the labels
+ using Weight = W;  ///< the type of the weights
+ using Label = T;   ///< the type of the labels
 
  /// the graph of the nodes \f$ 0 , \ldots , n - 1 \f$, with no edge
  /// \pre \f$ n \ge 0 \f$
@@ -170,15 +171,14 @@ class ListGraph : public GraphNodes< T > {
  /// the nodes adjacent to \f$ u \f$, in the order of its list, bidirectional
  /// \pre \f$ u \f$ is a node
  [[nodiscard]] auto neighbors( int u ) const {
-  using It = KeyIterator< typename List< std::pair< int , W > >::
-                          const_iterator >;
+  using It =
+    KeyIterator< typename List< std::pair< int , W > >::const_iterator >;
   const auto & L = f_adj[ this->check( u ) ];
   return( std::ranges::subrange( It( L.begin() ) , It( L.end() ) ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  bool find( int u , int v ) const;
 
  bool set( int u , int v , const W & w );
@@ -194,7 +194,7 @@ class ListGraph : public GraphNodes< T > {
  /// weight or in none, \f$ O( d \log d ) \f$
  [[nodiscard]] bool consistentAt( int u , int v ) const;
 
- std::vector< List< std::pair< int , W > > > f_adj;   ///< the lists
+ std::vector< List< std::pair< int , W > > > f_adj;  ///< the lists
 
  };  // end( class ListGraph )
 
@@ -210,7 +210,7 @@ class ListGraph : public GraphNodes< T > {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ListGraph.h included */
+#endif /* ListGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File ListGraph.h --------------------------*/

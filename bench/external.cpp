@@ -83,28 +83,44 @@
 /*------------------------------- INPUTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 using namespace ADS::bench;
 
 /// a record of 32 bytes sorted by its key
-struct Record {
+struct Record
+{
  std::uint64_t key;
  std::uint64_t pad[ 3 ];
  };
 
-struct ByKey {
+struct ByKey
+{
  bool operator()( const Record & a , const Record & b ) const {
   return( a.key < b.key );
   }
  };
 
-std::uint64_t keyOf( std::uint64_t x ) { return( x ); }
-std::uint64_t keyOf( const Record & x ) { return( x.key ); }
+std::uint64_t keyOf( std::uint64_t x )
+{
+ return( x );
+ }
+std::uint64_t keyOf( const Record & x )
+{
+ return( x.key );
+ }
 
-template< class T > T make( std::uint64_t k );
-template<> std::uint64_t make( std::uint64_t k ) { return( k ); }
-template<> Record make( std::uint64_t k ) {
+template< class T >
+T make( std::uint64_t k );
+template<>
+std::uint64_t make( std::uint64_t k )
+{
+ return( k );
+ }
+template<>
+Record make( std::uint64_t k )
+{
  return( Record{ k , { k , k , k } } );
  }
 
@@ -115,58 +131,83 @@ template<> Record make( std::uint64_t k ) {
 /// the merges of k runs of n / k items in all of type T
 template< class T , class C >
 void merges( const char * type , std::size_t n , std::size_t k , int r ,
-             unsigned seed , C less )
+	     unsigned seed , C less )
 {
  std::mt19937_64 g( seed + k );
  std::vector< std::vector< T > > R( k );
  for( std::size_t i = 0 ; i < n ; ++i )
   R[ i % k ].push_back( make< T >( g() ) );
- for( auto & v : R ) std::sort( v.begin() , v.end() , less );
+ for( auto & v : R )
+  std::sort( v.begin() , v.end() , less );
  using It = typename std::vector< T >::iterator;
  std::vector< std::pair< It , It > > ranges;
- for( auto & v : R ) ranges.emplace_back( v.begin() , v.end() );
+ for( auto & v : R )
+  ranges.emplace_back( v.begin() , v.end() );
  std::vector< T > out( n );
- const std::string what = std::string( type ) + " k=" +
-                          std::to_string( k );
+ const std::string what = std::string( type ) + " k=" + std::to_string( k );
  auto check = [ & ]( void ) {
-  sink = sink + keyOf( out[ n / 2 ] ) + keyOf( out[ n - 1 ] ); };
+  sink = sink + keyOf( out[ n / 2 ] ) + keyOf( out[ n - 1 ] );
+  };
  auto none = [ & ]( void ) { return( 0 ); };
  for( const char * who : { "std::priority_queue" ,
-                           "std::priority_queue A/A" } )
+			   "std::priority_queue A/A" } )
   if( ! skip( who ) )
-   print( "multiway merge" , what , n , who , median( none , [ & ]( int ) {
-    using P = std::pair< T , std::size_t >;
-    auto greater = [ & ]( const P & a , const P & b ) {
-     return( less( b.first , a.first ) ); };
-    std::priority_queue< P , std::vector< P > , decltype( greater ) >
-     Q( greater );
-    std::vector< std::size_t > next( k , 1 );
-    for( std::size_t s = 0 ; s < k ; ++s )
-     if( ! R[ s ].empty() ) Q.emplace( R[ s ][ 0 ] , s );
-    T * o = out.data();
-    while( ! Q.empty() ) {
-     const std::size_t s = Q.top().second;
-     *o++ = Q.top().first;
-     Q.pop();
-     if( next[ s ] < R[ s ].size() ) Q.emplace( R[ s ][ next[ s ]++ ] , s );
-     }
-    check(); } , r , n ) );
+   print( "multiway merge" , what , n , who ,
+	  median(
+	    none ,
+	    [ & ]( int ) {
+	     using P = std::pair< T , std::size_t >;
+	     auto greater = [ & ]( const P & a , const P & b ) {
+	      return( less( b.first , a.first ) );
+	      };
+	     std::priority_queue< P , std::vector< P > ,
+				  decltype( greater ) > Q(
+	       greater );
+	     std::vector< std::size_t > next( k , 1 );
+	     for( std::size_t s = 0 ; s < k ; ++s )
+	      if( ! R[ s ].empty() )
+	       Q.emplace( R[ s ][ 0 ] , s );
+	     T * o = out.data();
+	     while( ! Q.empty() ) {
+	      const std::size_t s = Q.top().second;
+	      *o++ = Q.top().first;
+	      Q.pop();
+	      if( next[ s ] < R[ s ].size() )
+	       Q.emplace( R[ s ][ next[ s ]++ ] , s );
+	      }
+	     check();
+	     } ,
+	    r , n ) );
  if( ! skip( "ADS::kWayMerge" ) )
-  print( "multiway merge" , what , n , "ADS::kWayMerge" , median( none ,
-   [ & ]( int ) { out = ADS::kWayMerge( R , less ); check(); } , r , n ) );
+  print( "multiway merge" , what , n , "ADS::kWayMerge" ,
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    out = ADS::kWayMerge( R , less );
+	    check();
+	    } ,
+	   r , n ) );
  if( ! skip( "ADS::multiwayMerge" ) )
-  print( "multiway merge" , what , n , "ADS::multiwayMerge" , median( none ,
-   [ & ]( int ) {
-    ADS::multiwayMerge( ranges , out.begin() , less ); check(); } , r ,
-   n ) );
+  print( "multiway merge" , what , n , "ADS::multiwayMerge" ,
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    ADS::multiwayMerge( ranges , out.begin() , less );
+	    check();
+	    } ,
+	   r , n ) );
  if( ! skip( "libstdc++ multiway_merge" ) )
   print( "multiway merge" , what , n , "libstdc++ multiway_merge" ,
-  median( none , [ & ]( int ) {
-   auto S = ranges;
-   __gnu_parallel::multiway_merge( S.begin() , S.end() , out.begin() ,
-                                   std::ptrdiff_t( n ) , less ,
-                                   __gnu_parallel::sequential_tag() );
-   check(); } , r , n ) );
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    auto S = ranges;
+	    __gnu_parallel::multiway_merge( S.begin() , S.end() , out.begin() ,
+					    std::ptrdiff_t( n ) , less ,
+					    __gnu_parallel::sequential_tag() );
+	    check();
+	    } ,
+	   r , n ) );
  // the tree of losers alone, the algorithm of tlx and libstdc++
  auto tree = [ & ]( auto cmp ) {
   ADS::FlatLoserTree< T , decltype( cmp ) > L( k , cmp );
@@ -174,72 +215,94 @@ void merges( const char * type , std::size_t n , std::size_t k , int r ,
   for( std::size_t s = 0 ; s < k ; ++s ) {
    p[ s ] = R[ s ].data();
    e[ s ] = p[ s ] + R[ s ].size();
-   if( p[ s ] != e[ s ] ) L.start( s , *p[ s ] );
+   if( p[ s ] != e[ s ] )
+    L.start( s , *p[ s ] );
    }
   L.build();
   T * o = out.data();
   for( std::size_t i = 0 ; i < n ; ++i ) {
    const std::size_t s = L.winner();
    *o++ = L.top();
-   if( ++p[ s ] != e[ s ] ) L.replaceTop( *p[ s ] );
-   else L.exhaustTop();
+   if( ++p[ s ] != e[ s ] )
+    L.replaceTop( *p[ s ] );
+   else
+    L.exhaustTop();
    }
   };
  if( ! skip( "ADS::FlatLoserTree" ) )
-  print( "multiway merge" , what , n , "ADS::FlatLoserTree" , median( none ,
-   [ & ]( int ) { tree( less ); check(); } , r , n ) );
- {                                          // the comparisons per item
+  print( "multiway merge" , what , n , "ADS::FlatLoserTree" ,
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    tree( less );
+	    check();
+	    } ,
+	   r , n ) );
+ {  // the comparisons per item
   std::uint64_t count = 0;
   auto counted = [ & ]( const T & a , const T & b ) {
    ++count;
-   return( less( a , b ) ); };
+   return( less( a , b ) );
+   };
   if( ! skip( "ADS::FlatLoserTree comparisons" ) ) {
    count = 0;
    tree( counted );
    print( "multiway merge counts" , what , n ,
-          "ADS::FlatLoserTree comparisons" , double( count ) / double( n ) );
+	  "ADS::FlatLoserTree comparisons" ,
+	  double( count ) / double( n ) );
    }
   if( ! skip( "ADS::multiwayMerge comparisons" ) ) {
    count = 0;
    ADS::multiwayMerge( ranges , out.begin() , counted );
    print( "multiway merge counts" , what , n ,
-          "ADS::multiwayMerge comparisons" , double( count ) / double( n ) );
+	  "ADS::multiwayMerge comparisons" ,
+	  double( count ) / double( n ) );
    }
 #if defined( ADS_HAS_TLX )
   if( ! skip( "tlx::multiway_merge comparisons" ) ) {
    count = 0;
    auto S = ranges;
    tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
-                        std::ptrdiff_t( n ) , counted );
+			std::ptrdiff_t( n ) ,
+			counted );
    print( "multiway merge counts" , what , n ,
-          "tlx::multiway_merge comparisons" , double( count ) / double( n ) );
+	  "tlx::multiway_merge comparisons" ,
+	  double( count ) / double( n ) );
    }
   if( ! skip( "tlx::stable_multiway_merge comparisons" ) ) {
    count = 0;
    auto S = ranges;
    tlx::stable_multiway_merge( S.begin() , S.end() , out.begin() ,
-                               std::ptrdiff_t( n ) , counted );
+			       std::ptrdiff_t( n ) , counted );
    print( "multiway merge counts" , what , n ,
-          "tlx::stable_multiway_merge comparisons" ,
-          double( count ) / double( n ) );
+	  "tlx::stable_multiway_merge comparisons" ,
+	  double( count ) / double( n ) );
    }
 #endif
- }
+  }
 #if defined( ADS_HAS_TLX )
  if( ! skip( "tlx::multiway_merge" ) )
-  print( "multiway merge" , what , n , "tlx::multiway_merge" , median( none ,
-   [ & ]( int ) {
-    auto S = ranges;
-    tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
-                         std::ptrdiff_t( n ) , less );
-    check(); } , r , n ) );
+  print( "multiway merge" , what , n , "tlx::multiway_merge" ,
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    auto S = ranges;
+	    tlx::multiway_merge( S.begin() , S.end() , out.begin() ,
+				 std::ptrdiff_t( n ) , less );
+	    check();
+	    } ,
+	   r , n ) );
  if( ! skip( "tlx::stable_multiway_merge" ) )
   print( "multiway merge" , what , n , "tlx::stable_multiway_merge" ,
-  median( none , [ & ]( int ) {
-   auto S = ranges;
-   tlx::stable_multiway_merge( S.begin() , S.end() , out.begin() ,
-                               std::ptrdiff_t( n ) , less );
-   check(); } , r , n ) );
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    auto S = ranges;
+	    tlx::stable_multiway_merge( S.begin() , S.end() , out.begin() ,
+					std::ptrdiff_t( n ) , less );
+	    check();
+	    } ,
+	   r , n ) );
 #endif
  }
 
@@ -256,24 +319,42 @@ void samplings( std::size_t n , int r , unsigned seed )
  const std::string what = "positions of 1e8";
  for( const char * who : { "std::sample" , "std::sample A/A" } )
   if( ! skip( who ) )
-   print( "sampling" , what , n , who , median( none , [ & ]( int ) {
-    std::vector< int > out( n );          // on 32 bits: the difference
-    std::ranges::sample( std::views::iota( 0 , int( N ) ) , // of 64 is
-                         out.begin() , std::ptrdiff_t( n ) , g ); // wider
-    sink = sink + std::size_t( out[ n / 2 ] ); } , r , n ) );
+   print( "sampling" , what , n , who ,
+	  median(
+	    none ,
+	    [ & ]( int ) {
+	     std::vector< int > out( n );  // on 32 bits: the difference
+	     std::ranges::sample( std::views::iota( 0 , int( N ) ) ,
+				  // of 64 is
+				  out.begin() , std::ptrdiff_t( n ) ,
+				  g );  // wider
+	     sink = sink + std::size_t( out[ n / 2 ] );
+	     } ,
+	    r , n ) );
  if( ! skip( "ADS::sampleBySkips" ) )
-  print( "sampling" , what , n , "ADS::sampleBySkips" , median( none ,
-   [ & ]( int ) {
-    sink = sink + ADS::sampleBySkips( n , N , g )[ n / 2 ]; } , r , n ) );
+  print(
+    "sampling" , what , n , "ADS::sampleBySkips" ,
+    median(
+      none ,
+      [ & ]( int ) { sink = sink + ADS::sampleBySkips( n , N ,
+						       g )[ n / 2 ]; } ,
+      r , n ) );
  if( ! skip( "ADS::sampleBySorting" ) )
-  print( "sampling" , what , n , "ADS::sampleBySorting" , median( none ,
-   [ & ]( int ) {
-    sink = sink + ADS::sampleBySorting( n , N , g )[ n / 2 ]; } , r , n ) );
+  print(
+    "sampling" , what , n , "ADS::sampleBySorting" ,
+    median(
+      none ,
+      [ & ]( int ) { sink = sink + ADS::sampleBySorting( n , N ,
+							 g )[ n / 2 ]; } ,
+      r , n ) );
  if( ! skip( "ADS::sampleByDictionary" ) )
-  print( "sampling" , what , n , "ADS::sampleByDictionary" , median( none ,
-   [ & ]( int ) {
-    sink = sink + ADS::sampleByDictionary( n , N , g )[ n / 2 ]; } , r ,
-   n ) );
+  print( "sampling" , what , n , "ADS::sampleByDictionary" ,
+	 median(
+	   none ,
+	   [ & ]( int ) {
+	    sink = sink + ADS::sampleByDictionary( n , N , g )[ n / 2 ];
+	    } ,
+	   r , n ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -283,10 +364,11 @@ void samplings( std::size_t n , int r , unsigned seed )
 /// FlatLoserTree with the interface of LoserTree: the keys it holds kept
 /// here, so that one held by address stays valid
 template< class T , class C >
-class FlatSelector {
+class FlatSelector
+{
  public:
  FlatSelector( std::vector< std::optional< T > > keys , C less )
-  : f_L( keys.size() , less ) , f_cur( keys.size() ) {
+     : f_L( keys.size() , less ) , f_cur( keys.size() ) {
   for( std::size_t s = 0 ; s < keys.size() ; ++s )
    if( keys[ s ] ) {
     f_cur[ s ] = *keys[ s ];
@@ -306,6 +388,7 @@ class FlatSelector {
   f_cur[ s ] = *x;
   f_L.replaceTop( f_cur[ s ] );
   }
+
  private:
  ADS::FlatLoserTree< T , C > f_L;
  std::vector< T > f_cur;
@@ -314,12 +397,14 @@ class FlatSelector {
 /// the heads in a heap H of pairs ( key , source ), the lower source first
 /// on equal keys, with the interface of LoserTree
 template< class T , class C , class H >
-class HeapSelector {
+class HeapSelector
+{
  public:
  HeapSelector( std::vector< std::optional< T > > keys , C less )
-  : f_H( Worse{ less } ) {
+     : f_H( Worse{ less } ) {
   for( std::size_t s = 0 ; s < keys.size() ; ++s )
-   if( keys[ s ] ) f_H.push( P{ *keys[ s ] , s } );
+   if( keys[ s ] )
+    f_H.push( P{ *keys[ s ] , s } );
   }
  bool empty( void ) const { return( f_H.empty() ); }
  std::size_t winner( void ) const { return( f_H.top().second ); }
@@ -327,36 +412,46 @@ class HeapSelector {
  void replace( std::optional< T > x ) {
   const std::size_t s = f_H.top().second;
   f_H.pop();
-  if( x ) f_H.push( P{ *x , s } );
+  if( x )
+   f_H.push( P{ *x , s } );
   }
  using P = std::pair< T , std::size_t >;
- struct Worse {                             // a max-heap of the worse
+ struct Worse
+ {  // a max-heap of the worse
   C less;
   bool operator()( const P & a , const P & b ) const {
-   if( less( b.first , a.first ) ) return( true );
-   if( less( a.first , b.first ) ) return( false );
+   if( less( b.first , a.first ) )
+    return( true );
+   if( less( a.first , b.first ) )
+    return( false );
    return( a.second > b.second );
    }
   };
+
  private:
  typename H::template rebind< P , Worse >::type f_H;
  };
 
 /// std::priority_queue as H of HeapSelector
-struct StdHeap {
+struct StdHeap
+{
  template< class P , class W >
- struct rebind { using type = std::priority_queue< P , std::vector< P > ,
-                                                   W >; };
+ struct rebind
+ {
+  using type = std::priority_queue< P , std::vector< P > , W >;
+  };
  };
 
 #if defined( ADS_HAS_BOOST_HEAP )
 /// boost::heap::d_ary_heap of arity D as H of HeapSelector
 template< unsigned D >
-struct BoostHeap {
+struct BoostHeap
+{
  template< class P , class W >
- struct rebind {
+ struct rebind
+ {
   using type = boost::heap::d_ary_heap< P , boost::heap::arity< D > ,
-                                        boost::heap::compare< W > >;
+					boost::heap::compare< W > >;
   };
  };
 #endif
@@ -368,7 +463,8 @@ void books( std::size_t n , int r , unsigned seed )
  const std::size_t B = 512;
  std::mt19937_64 g( seed );
  std::vector< T > A( n );
- for( auto & x : A ) x = g();
+ for( auto & x : A )
+  x = g();
  for( const std::size_t k : { 16 , 64 , 256 } ) {
   ADS::TwoLevelMemory mem( B , ( k + 1 ) * B );
   const ADS::DiskFile< T > in( mem , A );
@@ -383,24 +479,30 @@ void books( std::size_t n , int r , unsigned seed )
    if( ( timed || skip( std::string( who ) + " comparisons" ) ) && ios )
     return;
    if( timed )
-    print( "book mergesort" , what , n , who , median( none , [ & ]( int ) {
-     ADS::DiskFile< T > out( mem );
-     ADS::multiwayMergeSort< T , std::less<> , S >( in , out );
-     sink = sink + out.size(); } , r , n ) );
-   else {                                   // the I/Os and comparisons
+    print( "book mergesort" , what , n , who ,
+	   median(
+	     none ,
+	     [ & ]( int ) {
+	      ADS::DiskFile< T > out( mem );
+	      ADS::multiwayMergeSort< T , std::less<> , S >( in , out );
+	      sink = sink + out.size();
+	      } ,
+	     r , n ) );
+   else {  // the I/Os and comparisons
     mem.resetCounters();
     count = 0;
     ADS::DiskFile< T > out( mem );
     ADS::multiwayMergeSort< T , CC , typename decltype( sel )::ctype >(
-     in , out , CC{ &count } );
+      in , out , CC{ &count } );
+    print( "book mergesort counts" , what , n , std::string( who ) + " I/Os" ,
+	   double( mem.ios() ) );
     print( "book mergesort counts" , what , n ,
-           std::string( who ) + " I/Os" , double( mem.ios() ) );
-    print( "book mergesort counts" , what , n ,
-           std::string( who ) + " comparisons" ,
-           double( count ) / double( n ) );
+	   std::string( who ) + " comparisons" ,
+	   double( count ) / double( n ) );
     }
    };
-  struct Counting {                         // a less that counts
+  struct Counting
+  {  // a less that counts
    std::uint64_t * c;
    bool operator()( const T & a , const T & b ) const {
     ++*c;
@@ -408,25 +510,43 @@ void books( std::size_t n , int r , unsigned seed )
     }
    };
   using L = std::less<>;
-  struct Book { using type = ADS::LoserTree< T , L >; using cmp = Counting;
-                using ctype = ADS::LoserTree< T , Counting >; };
-  struct Flat { using type = FlatSelector< T , L >; using cmp = Counting;
-                using ctype = FlatSelector< T , Counting >; };
-  struct Std { using type = HeapSelector< T , L , StdHeap >;
-               using cmp = Counting;
-               using ctype = HeapSelector< T , Counting , StdHeap >; };
+  struct Book
+  {
+   using type = ADS::LoserTree< T , L >;
+   using cmp = Counting;
+   using ctype = ADS::LoserTree< T , Counting >;
+   };
+  struct Flat
+  {
+   using type = FlatSelector< T , L >;
+   using cmp = Counting;
+   using ctype = FlatSelector< T , Counting >;
+   };
+  struct Std
+  {
+   using type = HeapSelector< T , L , StdHeap >;
+   using cmp = Counting;
+   using ctype = HeapSelector< T , Counting , StdHeap >;
+   };
   for( const bool timed : { true , false } ) {
    run( "std::priority_queue" , Std() , timed );
-   if( timed ) run( "std::priority_queue A/A" , Std() , timed );
+   if( timed )
+    run( "std::priority_queue A/A" , Std() , timed );
    run( "ADS::LoserTree" , Book() , timed );
    run( "ADS::FlatLoserTree" , Flat() , timed );
 #if defined( ADS_HAS_BOOST_HEAP )
-   struct B2 { using type = HeapSelector< T , L , BoostHeap< 2 > >;
-               using cmp = Counting;
-               using ctype = HeapSelector< T , Counting , BoostHeap< 2 > >; };
-   struct B4 { using type = HeapSelector< T , L , BoostHeap< 4 > >;
-               using cmp = Counting;
-               using ctype = HeapSelector< T , Counting , BoostHeap< 4 > >; };
+   struct B2
+   {
+    using type = HeapSelector< T , L , BoostHeap< 2 > >;
+    using cmp = Counting;
+    using ctype = HeapSelector< T , Counting , BoostHeap< 2 > >;
+    };
+   struct B4
+   {
+    using type = HeapSelector< T , L , BoostHeap< 4 > >;
+    using cmp = Counting;
+    using ctype = HeapSelector< T , Counting , BoostHeap< 4 > >;
+    };
    run( "boost::heap::d_ary_heap d=2" , B2() , timed );
    run( "boost::heap::d_ary_heap d=4" , B4() , timed );
 #endif
@@ -442,28 +562,31 @@ void books( std::size_t n , int r , unsigned seed )
 
 int main( int argc , char ** argv )
 {
- std::string mode = "merge";                // the word may be anywhere
+ std::string mode = "merge";  // the word may be anywhere
  std::vector< char * > rest;
  for( int i = 0 ; i < argc ; ++i ) {
   const std::string a = argv[ i ];
-  if( ( i > 0 ) && ( ( a == "merge" ) || ( a == "sampling" ) ||
-                     ( a == "book" ) ) ) mode = a;
-  else rest.push_back( argv[ i ] );
+  if( ( i > 0 ) &&
+      ( ( a == "merge" ) || ( a == "sampling" ) || ( a == "book" ) ) )
+   mode = a;
+  else
+   rest.push_back( argv[ i ] );
   }
  Options o( int( rest.size() ) , rest.data() ,
-            std::vector< std::size_t >{ 1000000 , 10000000 } );
+	    std::vector< std::size_t >{ 1000000 , 10000000 } );
  if( mode == "book" ) {
-  for( const std::size_t n : o.sizes ) books( n , o.runs , o.seed );
+  for( const std::size_t n : o.sizes )
+   books( n , o.runs , o.seed );
   return( 0 );
   }
  if( mode == "sampling" ) {
-  for( const std::size_t n : o.sizes ) samplings( n , o.runs , o.seed );
+  for( const std::size_t n : o.sizes )
+   samplings( n , o.runs , o.seed );
   return( 0 );
   }
  for( const std::size_t n : o.sizes )
   for( const std::size_t k : { 4 , 16 , 64 , 256 , 1024 } ) {
-   merges< std::uint64_t >( "u64" , n , k , o.runs , o.seed ,
-                            std::less<>() );
+   merges< std::uint64_t >( "u64" , n , k , o.runs , o.seed , std::less<>() );
    merges< Record >( "record" , n , k , o.runs , o.seed , ByKey() );
    }
  return( 0 );

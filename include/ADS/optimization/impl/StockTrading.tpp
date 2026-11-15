@@ -15,16 +15,18 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// \f$ \mathit{free}[ l ] \f$ after all the days: the best balance of
 /// exactly \f$ l \f$ closed transactions, nothing if not reachable, for
 /// \f$ l = 0 , \ldots , k \f$
 template< class T >
-std::vector< std::optional< T > > closedTransactions(
-                            const std::vector< T > & prices , std::size_t k )
+std::vector< std::optional< T > >
+closedTransactions( const std::vector< T > & prices , std::size_t k )
 {
  std::vector< std::optional< T > > free( k + 1 ) , hold( k + 1 );
  free[ 0 ] = T( 0 );
@@ -48,7 +50,7 @@ T maxProfit( const std::vector< T > & prices , std::size_t k )
 {
  const std::size_t n = prices.size();
  T best = T( 0 );
- if( k >= n / 2 ) {                             // as many as wanted
+ if( k >= n / 2 ) {  // as many as wanted
   for( std::size_t i = 1 ; i < n ; ++i )
    if( prices[ i - 1 ] < prices[ i ] )
     best += prices[ i ] - prices[ i - 1 ];
@@ -65,7 +67,7 @@ T maxProfit( const std::vector< T > & prices , std::size_t k )
 
 template< class T >
 std::optional< T > maxProfitExactly( const std::vector< T > & prices ,
-                                     std::size_t k )
+				     std::size_t k )
 {
  if( prices.size() / 2 < k )
   return( std::nullopt );

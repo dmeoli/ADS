@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE OPERATIONS ------------------------------*/
@@ -34,7 +35,9 @@ template< class T , class W >
 typename PointerGraph< T , W >::Node *
 PointerGraph< T , W >::find( const T & t )
 {
- for( auto & u : f_V ) if( u.label == t ) return( &u );
+ for( auto & u : f_V )
+  if( u.label == t )
+   return( &u );
  return( nullptr );
  }
 
@@ -43,7 +46,9 @@ bool PointerGraph< T , W >::hasEdge( const Node * u , const Node * v ) const
 {
  ADS_PRE( ( u != nullptr ) && ( v != nullptr ) );
  ADS_AUDIT( owns( u ) && owns( v ) );
- for( const auto & e : u->out ) if( e.to == v ) return( true );
+ for( const auto & e : u->out )
+  if( e.to == v )
+   return( true );
  return( false );
  }
 
@@ -82,7 +87,8 @@ bool PointerGraph< T , W >::deleteNode( Node * u )
 {
  ADS_PRE( u != nullptr );
  ADS_AUDIT( owns( u ) );
- if( u->degree > 0 ) return( false );
+ if( u->degree > 0 )
+  return( false );
  f_V.remove_if( [ & ]( const Node & x ) { return( &x == u ); } );
  ADS_INVARIANT( consistent() );
  return( true );
@@ -93,8 +99,10 @@ void PointerGraph< T , W >::forceDeleteNode( Node * u )
 {
  ADS_PRE( u != nullptr );
  ADS_AUDIT( owns( u ) );
- for( auto & x : f_V ) deleteEdge( &x , u );
- while( ! u->out.empty() ) deleteEdge( u , u->out.front().to );
+ for( auto & x : f_V )
+  deleteEdge( &x , u );
+ while( ! u->out.empty() )
+  deleteEdge( u , u->out.front().to );
  deleteNode( u );
  }
 
@@ -105,7 +113,8 @@ PointerGraph< T , W >::adjacent( const Node * u ) const
  ADS_PRE( u != nullptr );
  ADS_AUDIT( owns( u ) );
  std::vector< Node * > A;
- for( const auto & e : u->out ) A.push_back( e.to );
+ for( const auto & e : u->out )
+  A.push_back( e.to );
  return( A );
  }
 
@@ -119,7 +128,9 @@ void PointerGraph< T , W >::dfs( Node * r , F && f )
  auto rec = [ & ]( auto & self , Node * u ) -> void {
   u->seen = true;
   f( u );
-  for( auto & e : u->out ) if( ! e.to->seen ) self( self , e.to );
+  for( auto & e : u->out )
+   if( ! e.to->seen )
+    self( self , e.to );
   };
  rec( rec , r );
  }
@@ -153,13 +164,16 @@ void PointerGraph< T , W >::bfs( Node * r , F && f )
 template< class T , class W >
 void PointerGraph< T , W >::clear( void )
 {
- for( auto & u : f_V ) u.seen = false;
+ for( auto & u : f_V )
+  u.seen = false;
  }
 
 template< class T , class W >
 bool PointerGraph< T , W >::owns( const Node * u ) const
 {
- for( const auto & x : f_V ) if( &x == u ) return( true );
+ for( const auto & x : f_V )
+  if( &x == u )
+   return( true );
  return( false );
  }
 
@@ -167,20 +181,21 @@ template< class T , class W >
 bool PointerGraph< T , W >::consistent( void ) const
 {
  std::vector< const Node * > nodes;
- for( const auto & x : f_V ) nodes.push_back( &x );
+ for( const auto & x : f_V )
+  nodes.push_back( &x );
  std::sort( nodes.begin() , nodes.end() );
  std::vector< std::pair< const Node * , int > > in;
  for( const auto & x : f_V )
   for( const auto & e : x.out ) {
    if( ! std::binary_search( nodes.begin() , nodes.end() ,
-                             static_cast< const Node * >( e.to ) ) )
+			     static_cast< const Node * >( e.to ) ) )
     return( false );
    in.emplace_back( e.to , 1 );
    }
  std::sort( in.begin() , in.end() );
  for( const auto & x : f_V ) {
   const auto r = std::equal_range( in.begin() , in.end() ,
-                                   std::pair< const Node * , int >( &x , 1 ) );
+				   std::pair< const Node * , int >( &x , 1 ) );
   if( x.degree != int( x.out.size() ) + int( r.second - r.first ) )
    return( false );
   }

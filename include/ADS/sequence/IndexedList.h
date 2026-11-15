@@ -47,7 +47,7 @@
 
 #ifndef __ADS_IndexedList
  #define __ADS_IndexedList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- CONCEPTS --------------------------------*/
@@ -76,7 +77,8 @@ namespace ADS {
 /// rank
 template< class L >
 concept IndexedList = requires( L l , const L cl , std::size_t i ,
-                                const typename L::value_type & x ) {
+				const typename L::value_type & x )
+{
  typename L::value_type;
  { cl.size() } -> std::convertible_to< std::size_t >;
  { l[ i ] } -> std::convertible_to< const typename L::value_type & >;
@@ -86,7 +88,8 @@ concept IndexedList = requires( L l , const L cl , std::size_t i ,
 
 /// the DEQUE of Morin: a sequence changed and read at both ends
 template< class D >
-concept IndexedDeque = requires( D d , const typename D::value_type & x ) {
+concept IndexedDeque = requires( D d , const typename D::value_type & x )
+{
  typename D::value_type;
  { d.size() } -> std::convertible_to< std::size_t >;
  d.push_front( x );
@@ -155,7 +158,7 @@ void rotate( L & l , std::size_t r );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IndexedList.h included */
+#endif /* IndexedList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File IndexedList.h -------------------------*/

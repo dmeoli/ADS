@@ -71,9 +71,11 @@ using namespace ADS;
 /// 64 bits everywhere: long has 32 bits on Windows
 using I64 = std::int64_t;
 
-namespace {
+namespace
+{
 
-namespace esercitazioni {
+namespace esercitazioni
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- HELPERS ----------------------------------*/
@@ -89,13 +91,13 @@ int rnd( std::mt19937 & g , int a , int b )
 std::vector< int > rndVector( std::mt19937 & g , int n , int a , int b )
 {
  std::vector< int > V( n );
- for( auto & v : V ) v = rnd( g , a , b );
+ for( auto & v : V )
+  v = rnd( g , a , b );
  return( V );
  }
 
 /// a random graph of n nodes, each edge present with probability p
-ListGraph<> randomGraph( std::mt19937 & g , int n , double p ,
-                         bool directed )
+ListGraph<> randomGraph( std::mt19937 & g , int n , double p , bool directed )
 {
  ListGraph<> G( n , directed );
  std::bernoulli_distribution e( p );
@@ -107,7 +109,8 @@ ListGraph<> randomGraph( std::mt19937 & g , int n , double p ,
  }
 
 /// a point of the plane
-struct Point {
+struct Point
+{
  std::int64_t x , y;
  };
 
@@ -129,25 +132,28 @@ std::int64_t dist2( const Point & p , const Point & q )
 /// studentCap min( n , m ); the dances of each couple go to *dances
 /// \pre the couples join [ 0 , n ) to [ 0 , m ), capacities >= 0
 I64 maxDances( int n , int m ,
-                const std::vector< std::pair< int , int > > & C ,
-                I64 pairCap = 3 , I64 studentCap = 10 ,
-                std::vector< I64 > * dances = nullptr )
+	       const std::vector< std::pair< int , int > > & C ,
+	       I64 pairCap = 3 , I64 studentCap = 10 ,
+	       std::vector< I64 > * dances = nullptr )
 {
  ADS_PRE( ( n >= 0 ) && ( m >= 0 ) && ( pairCap >= 0 ) &&
-          ( studentCap >= 0 ) );
+	  ( studentCap >= 0 ) );
  for( const auto & [ b , f ] : C )
   ADS_PRE( ( 0 <= b ) && ( b < n ) && ( 0 <= f ) && ( f < m ) );
  const int s = n + m , t = s + 1;
  FlowNetwork N( n + m + 2 );
- for( int b = 0 ; b < n ; ++b ) N.addEdge( s , b , studentCap );
- for( int f = 0 ; f < m ; ++f ) N.addEdge( n + f , t , studentCap );
+ for( int b = 0 ; b < n ; ++b )
+  N.addEdge( s , b , studentCap );
+ for( int f = 0 ; f < m ; ++f )
+  N.addEdge( n + f , t , studentCap );
  std::vector< int > e;
  for( const auto & [ b , f ] : C )
   e.push_back( N.addEdge( b , n + f , pairCap ) );
  const I64 v = N.maxFlow( s , t );
  if( dances ) {
   dances->clear();
-  for( int x : e ) dances->push_back( N.flow( x ) );
+  for( int x : e )
+   dances->push_back( N.flow( x ) );
   }
  return( v );
  }
@@ -161,7 +167,8 @@ ADS_TEST( "esercitazioni-34" )
  std::mt19937 g( 34 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = rnd( g , 1 , 3 ) , m = rnd( g , 1 , 3 ) ,
-            pc = rnd( g , 1 , 3 ) , sc = rnd( g , 1 , 5 );
+  pc = rnd( g , 1 , 3 ) ,
+	    sc = rnd( g , 1 , 5 );
   std::set< std::pair< int , int > > S;
   for( int i = rnd( g , 0 , 5 ) ; i > 0 ; --i )
    S.insert( std::pair( rnd( g , 0 , n - 1 ) , rnd( g , 0 , m - 1 ) ) );
@@ -193,15 +200,15 @@ ADS_TEST( "esercitazioni-34" )
    }
   CHECK( std::accumulate( D.begin() , D.end() , I64( 0 ) ) == best );
   CHECK( *std::ranges::max_element( B ) <= sc &&
-         *std::ranges::max_element( F ) <= sc );
+	 *std::ranges::max_element( F ) <= sc );
   }
  CHECK( maxDances( 2 , 2 , {} ) == 0 );
- CHECK( maxDances( 1 , 4 , { { 0 , 0 } , { 0 , 1 } , { 0 , 2 } , { 0 , 3 } } )
-        == 10 );
+ CHECK( maxDances( 1 , 4 ,
+		   { { 0 , 0 } , { 0 , 1 } , { 0 , 2 } , { 0 , 3 } } ) == 10 );
  CHECK( maxDances( 0 , 0 , {} ) == 0 && maxDances( 0 , 3 , {} ) == 0 );
  CHECK( maxDances( 2 , 2 , { { 0 , 0 } , { 1 , 1 } } , 0 ) == 0 );
  CHECK( maxDances( 2 , 2 , { { 0 , 0 } , { 1 , 1 } } , 3 , 0 ) == 0 );
- const long big = 2000000000;           // FlowNetwork takes long capacities
+ const long big = 2000000000;  // FlowNetwork takes long capacities
  CHECK( maxDances( 1 , 1 , { { 0 , 0 } } , big , big ) == big );
  CHECK_THROWS( maxDances( -1 , 1 , {} ) , contract_violation );
  CHECK_THROWS( maxDances( 1 , 1 , {} , -1 ) , contract_violation );
@@ -225,11 +232,11 @@ ADS_TEST( "esercitazioni-34" )
 // t, the preconditions (s = t, a node absent)
 ADS_TEST( "esercitazioni-35" )
 {
- ListGraph<> T( 6 );                          // s , b , c , d , e , t
- for( auto [ u , v ] : { std::pair( 0 , 1 ) , std::pair( 0 , 2 ) ,
-                         std::pair( 1 , 2 ) , std::pair( 1 , 3 ) ,
-                         std::pair( 2 , 4 ) , std::pair( 3 , 4 ) ,
-                         std::pair( 3 , 5 ) , std::pair( 4 , 5 ) } )
+ ListGraph<> T( 6 );  // s , b , c , d , e , t
+ for( auto [ u , v ] :
+      { std::pair( 0 , 1 ) , std::pair( 0 , 2 ) , std::pair( 1 , 2 ) ,
+	std::pair( 1 , 3 ) , std::pair( 2 , 4 ) , std::pair( 3 , 4 ) ,
+	std::pair( 3 , 5 ) , std::pair( 4 , 5 ) } )
   T.insertEdge( u , v );
  CHECK( edgeDisjointPaths( T , 0 , 5 ).size() == 2 );
  std::mt19937 g( 35 );
@@ -241,17 +248,20 @@ ADS_TEST( "esercitazioni-35" )
     if( ( u != v ) && ( rnd( g , 0 , 2 ) == 0 ) && ( E.size() < 12 ) )
      E.emplace_back( u , v );
   ListGraph<> G( n );
-  for( auto [ u , v ] : E ) G.insertEdge( u , v );
+  for( auto [ u , v ] : E )
+   G.insertEdge( u , v );
   const int m = int( E.size() );
   int cut = m;
   for( int mask = 0 ; mask < ( 1 << m ) ; ++mask ) {
-   if( std::popcount( unsigned( mask ) ) >= cut ) continue;
+   if( std::popcount( unsigned( mask ) ) >= cut )
+    continue;
    ListGraph<> H( n );
    for( int i = 0 ; i < m ; ++i )
-    if( ! ( ( mask >> i ) & 1 ) ) H.insertEdge( E[ i ].first , E[ i ].second );
+    if( ! ( ( mask >> i ) & 1 ) )
+     H.insertEdge( E[ i ].first , E[ i ].second );
    if( distance( H , 0 ).first[ n - 1 ] == INF )
     cut = std::popcount( unsigned( mask ) );
-  }
+   }
   CHECK( int( edgeDisjointPaths( G , 0 , n - 1 ).size() ) == cut );
   }
  CHECK_THROWS( edgeDisjointPaths( T , 2 , 2 ) , contract_violation );
@@ -277,11 +287,12 @@ ADS_TEST( "esercitazioni-35" )
 /// letter (1), to t (1); O( t ( n + t + n t ) )
 /// \pre each cube has 6 faces, t <= n
 bool canCompose( const std::vector< std::string > & cubes ,
-                 const std::string & word )
+		 const std::string & word )
 {
  const int n = int( cubes.size() ) , t = int( word.size() );
  ADS_PRE( t <= n );
- for( const auto & c : cubes ) ADS_PRE( c.size() == 6 );
+ for( const auto & c : cubes )
+  ADS_PRE( c.size() == 6 );
  const int s = t + n , z = s + 1;
  FlowNetwork N( t + n + 2 );
  for( int i = 0 ; i < t ; ++i ) {
@@ -290,7 +301,8 @@ bool canCompose( const std::vector< std::string > & cubes ,
    if( cubes[ j ].find( word[ i ] ) != std::string::npos )
     N.addEdge( i , t + j , 1 );
   }
- for( int j = 0 ; j < n ; ++j ) N.addEdge( t + j , z , 1 );
+ for( int j = 0 ; j < n ; ++j )
+  N.addEdge( t + j , z , 1 );
  return( N.maxFlow( s , z ) == t );
  }
 
@@ -303,18 +315,20 @@ bool canCompose( const std::vector< std::string > & cubes ,
 ADS_TEST( "esercitazioni-36" )
 {
  CHECK( ! canCompose( { "ABCDEF" , "GHIJKL" , "AABBCC" , "ISTUVW" } ,
-                      "IDEA" ) );
+		      "IDEA" ) );
  CHECK( canCompose( { "ABCDEF" , "GHIJKL" , "AABBCC" , "ISTUVW" } , "IDA" ) );
  CHECK( ! canCompose( { "ABCDEF" , "GHIJKL" , "AABBCC" , "ISTUVW" } ,
-                      "AAAA" ) );
+		      "AAAA" ) );
  std::mt19937 g( 36 );
  for( int r = 0 ; r < 400 ; ++r ) {
   const int n = rnd( g , 1 , 6 ) , t = rnd( g , 0 , n );
   std::vector< std::string > cubes( n , std::string( 6 , 'A' ) );
   for( auto & c : cubes )
-   for( auto & f : c ) f = char( 'A' + rnd( g , 0 , 7 ) );
+   for( auto & f : c )
+    f = char( 'A' + rnd( g , 0 , 7 ) );
   std::string word( t , 'A' );
-  for( auto & c : word ) c = char( 'A' + rnd( g , 0 , 5 ) );
+  for( auto & c : word )
+   c = char( 'A' + rnd( g , 0 , 5 ) );
   std::vector< int > P( n );
   std::iota( P.begin() , P.end() , 0 );
   bool brute = false;
@@ -338,7 +352,7 @@ ADS_TEST( "esercitazioni-36" )
  CHECK( ! canCompose( { "AAAAAA" , "BCDEFG" } , "AA" ) );
  CHECK( canCompose( { "AAAAAA" , "BCDEFG" } , "GA" ) );
  CHECK( canCompose( std::vector< std::string >( 26 , "ZZZZZZ" ) ,
-                    std::string( 26 , 'Z' ) ) );
+		    std::string( 26 , 'Z' ) ) );
  CHECK_THROWS( canCompose( {} , "A" ) , contract_violation );
  CHECK_THROWS( canCompose( { "ABCDE" } , "A" ) , contract_violation );
  CHECK_THROWS( canCompose( { "ABCDEFG" } , "" ) , contract_violation );
@@ -370,8 +384,10 @@ std::vector< int > augmentingPath( const Matrix & r , int s , int t )
     }
   }
  std::vector< int > path;
- if( p[ t ] == -2 ) return( path );
- for( int v = t ; v != -1 ; v = p[ v ] ) path.push_back( v );
+ if( p[ t ] == -2 )
+  return( path );
+ for( int v = t ; v != -1 ; v = p[ v ] )
+  path.push_back( v );
  std::ranges::reverse( path );
  return( path );
  }
@@ -381,7 +397,8 @@ Matrix residualNetwork( const Matrix & c , const Matrix & f )
 {
  Matrix r = c;
  for( std::size_t u = 0 ; u < c.size() ; ++u )
-  for( std::size_t v = 0 ; v < c.size() ; ++v ) r[ u ][ v ] -= f[ u ][ v ];
+  for( std::size_t v = 0 ; v < c.size() ; ++v )
+   r[ u ][ v ] -= f[ u ][ v ];
  return( r );
  }
 
@@ -424,11 +441,12 @@ void updateFlow( Matrix & c , int s , int t , Matrix & f , int u , int v )
 {
  const int n = int( c.size() );
  ADS_PRE( ( 0 <= std::min( { s , t , u , v } ) ) &&
-          ( std::max( { s , t , u , v } ) < n ) && ( s != t ) );
+	  ( std::max( { s , t , u , v } ) < n ) && ( s != t ) );
  ADS_AUDIT( augmentingPath( residualNetwork( c , f ) , s , t ).empty() );
  ++c[ u ][ v ];
  const auto path = augmentingPath( residualNetwork( c , f ) , s , t );
- if( ! path.empty() ) augmentFlow( f , path , 1 );
+ if( ! path.empty() )
+  augmentFlow( f , path , 1 );
  }
 
 // on 300 random networks: the flow updated after one capacity grows is a
@@ -444,19 +462,22 @@ ADS_TEST( "esercitazioni-37" )
   Matrix c( n , std::vector< I64 >( n , 0 ) );
   for( int a = 0 ; a < n ; ++a )
    for( int b = 0 ; b < n ; ++b )
-    if( ( a != b ) && rnd( g , 0 , 1 ) ) c[ a ][ b ] = rnd( g , 0 , 4 );
+    if( ( a != b ) && rnd( g , 0 , 1 ) )
+     c[ a ][ b ] = rnd( g , 0 , 4 );
   Matrix f = maxFlowMatrix( c , s , t );
   const I64 before = flowValue( f , s );
   int u = rnd( g , 0 , n - 1 ) , v = rnd( g , 0 , n - 2 );
-  if( v >= u ) ++v;
+  if( v >= u )
+   ++v;
   updateFlow( c , s , t , f , u , v );
   FlowNetwork N( n );
   for( int a = 0 ; a < n ; ++a )
    for( int b = 0 ; b < n ; ++b )
-    if( c[ a ][ b ] ) N.addEdge( a , b , c[ a ][ b ] );
+    if( c[ a ][ b ] )
+     N.addEdge( a , b , c[ a ][ b ] );
   const I64 after = N.maxFlow( s , t );
   CHECK( flowValue( f , s ) == after && after - before <= 1 &&
-         after >= before );
+	 after >= before );
   for( int a = 0 ; a < n ; ++a ) {
    I64 net = 0;
    for( int b = 0 ; b < n ; ++b ) {
@@ -491,7 +512,8 @@ ADS_TEST( "esercitazioni-37" )
 /// a staffing problem: days x shifts shifts, the staff p[ i ] each needs,
 /// the shifts in which each employee cannot work, the most shifts of an
 /// employee in a week and in a day
-struct Staffing {
+struct Staffing
+{
  int days = 7 , shifts = 3;
  std::vector< int > p;
  std::vector< std::set< int > > off;
@@ -503,15 +525,15 @@ struct Staffing {
 /// the shifts of the day in which they can work (1), to t (p[ i ]); a
 /// schedule exists iff it saturates sum p; O( |D|^2 ) for 21 shifts
 /// \pre p has days x shifts places, all >= 0
-std::optional< std::vector< std::vector< int > > > schedule(
-                                                       const Staffing & P )
+std::optional< std::vector< std::vector< int > > >
+schedule( const Staffing & P )
 {
  const int T = P.days * P.shifts , D = int( P.off.size() );
  ADS_PRE( ( int( P.p.size() ) == T ) &&
-          std::ranges::all_of( P.p , []( int x ) { return( x >= 0 ); } ) );
+	  std::ranges::all_of( P.p , []( int x ) { return( x >= 0 ); } ) );
  const int s = D + D * P.days + T , t = s + 1;
  FlowNetwork N( t + 1 );
- std::vector< std::array< int , 3 > > E;                // edge , j , shift
+ std::vector< std::array< int , 3 > > E;  // edge , j , shift
  for( int j = 0 ; j < D ; ++j ) {
   N.addEdge( s , j , P.week );
   for( int d = 0 ; d < P.days ; ++d ) {
@@ -524,19 +546,21 @@ std::optional< std::vector< std::vector< int > > > schedule(
     }
    }
   }
- for( int i = 0 ; i < T ; ++i ) N.addEdge( D + D * P.days + i , t , P.p[ i ] );
+ for( int i = 0 ; i < T ; ++i )
+  N.addEdge( D + D * P.days + i , t , P.p[ i ] );
  if( N.maxFlow( s , t ) < std::accumulate( P.p.begin() , P.p.end() ,
-                                           I64( 0 ) ) )
+					   I64( 0 ) ) )
   return( std::nullopt );
  std::vector< std::vector< int > > out( T );
  for( const auto & [ e , j , i ] : E )
-  if( N.flow( e ) ) out[ i ].push_back( j );
+  if( N.flow( e ) )
+   out[ i ].push_back( j );
  return( out );
  }
 
 /// whether the schedule meets every rule of P
 bool validSchedule( const Staffing & P ,
-                    const std::vector< std::vector< int > > & S )
+		    const std::vector< std::vector< int > > & S )
 {
  const int D = int( P.off.size() );
  std::vector< int > week( D , 0 );
@@ -544,18 +568,21 @@ bool validSchedule( const Staffing & P ,
  for( int i = 0 ; i < int( S.size() ) ; ++i ) {
   if( int( S[ i ].size() ) != P.p[ i ] ||
       ( std::set< int >( S[ i ].begin() , S[ i ].end() ).size() !=
-        S[ i ].size() ) )
+	S[ i ].size() ) )
    return( false );
   for( int j : S[ i ] ) {
-   if( P.off[ j ].contains( i ) ) return( false );
+   if( P.off[ j ].contains( i ) )
+    return( false );
    ++week[ j ];
    ++day[ j ][ i / P.shifts ];
    }
   }
  for( int j = 0 ; j < D ; ++j ) {
-  if( week[ j ] > P.week ) return( false );
+  if( week[ j ] > P.week )
+   return( false );
   for( int d = 0 ; d < P.days ; ++d )
-   if( day[ j ][ d ] > P.day ) return( false );
+   if( day[ j ][ d ] > P.day )
+    return( false );
   }
  return( true );
  }
@@ -578,7 +605,9 @@ ADS_TEST( "esercitazioni-38" )
   P.p = rndVector( g , T , 0 , 2 );
   P.off.resize( D );
   for( auto & o : P.off )
-   for( int i = 0 ; i < T ; ++i ) if( rnd( g , 0 , 3 ) == 0 ) o.insert( i );
+   for( int i = 0 ; i < T ; ++i )
+    if( rnd( g , 0 , 3 ) == 0 )
+     o.insert( i );
   bool brute = false;
   for( I64 code = 0 ; ! brute && ( code < ( I64( 1 ) << ( T * D ) ) ) ;
        ++code ) {
@@ -595,17 +624,19 @@ ADS_TEST( "esercitazioni-38" )
       --need[ i ];
       }
     }
-   brute = ok && std::ranges::all_of( need , []( int x ) {
-                                       return( x <= 0 ); } );
+   brute =
+     ok && std::ranges::all_of( need , []( int x ) { return( x <= 0 ); } );
    }
   const auto S = schedule( P );
   CHECK( S.has_value() == brute );
-  if( S ) CHECK( validSchedule( P , *S ) );
+  if( S )
+   CHECK( validSchedule( P , *S ) );
   }
  Staffing W;
  W.off.resize( 4 );
  W.p.assign( 21 , 0 );
- for( int i = 0 ; i < 20 ; ++i ) W.p[ i ] = 1;
+ for( int i = 0 ; i < 20 ; ++i )
+  W.p[ i ] = 1;
  const auto S = schedule( W );
  CHECK( S && validSchedule( W , *S ) );
  W.p[ 20 ] = 1;
@@ -618,7 +649,8 @@ ADS_TEST( "esercitazioni-38" )
  CHECK( ! schedule( Z ) );
  Z.off.resize( 1 );
  CHECK( schedule( Z ) && validSchedule( Z , *schedule( Z ) ) );
- for( int i = 0 ; i < 21 ; ++i ) Z.off[ 0 ].insert( i );
+ for( int i = 0 ; i < 21 ; ++i )
+  Z.off[ 0 ].insert( i );
  CHECK( ! schedule( Z ) );
  Z.off[ 0 ].clear();
  Z.day = 0;
@@ -638,7 +670,8 @@ ADS_TEST( "esercitazioni-38" )
 /// the swimming courses: days x hours slots, the largest course, the most
 /// courses of a child in a day, and for each child the most courses in a
 /// week and the slots it prefers, for each teacher the slots it can teach
-struct Pool {
+struct Pool
+{
  int days = 7 , hours = 10 , course = 6 , perDay = 2;
  std::vector< int > most;
  std::vector< std::set< int > > prefs , teachers;
@@ -646,7 +679,8 @@ struct Pool {
 
 /// an assignment of largest revenue: the slots of each child and the
 /// teacher of each slot (-1 if the course is empty)
-struct PoolPlan {
+struct PoolPlan
+{
  I64 revenue = 0;
  std::vector< std::vector< int > > slots;
  std::vector< int > teacher;
@@ -666,11 +700,12 @@ PoolPlan swimming( const Pool & P )
  for( int k = 0 ; k < int( P.teachers.size() ) ; ++k )
   for( int x : P.teachers[ k ] ) {
    ADS_PRE( ( 0 <= x ) && ( x < S ) );
-   if( teach[ x ] < 0 ) teach[ x ] = k;
+   if( teach[ x ] < 0 )
+    teach[ x ] = k;
    }
  const int s = b + b * P.days + S , t = s + 1;
  FlowNetwork N( t + 1 );
- std::vector< std::array< int , 3 > > E;                // edge , i , slot
+ std::vector< std::array< int , 3 > > E;  // edge , i , slot
  for( int i = 0 ; i < b ; ++i ) {
   N.addEdge( s , i , P.most[ i ] );
   for( int d = 0 ; d < P.days ; ++d )
@@ -678,12 +713,15 @@ PoolPlan swimming( const Pool & P )
   for( int x : P.prefs[ i ] ) {
    ADS_PRE( ( 0 <= x ) && ( x < S ) );
    if( teach[ x ] >= 0 )
-    E.push_back( { N.addEdge( b + i * P.days + x / P.hours ,
-                              b + b * P.days + x , 1 ) , i , x } );
+    E.push_back(
+      { N.addEdge( b + i * P.days + x / P.hours , b + b * P.days + x , 1 ) ,
+	i ,
+	x } );
    }
   }
  for( int x = 0 ; x < S ; ++x )
-  if( teach[ x ] >= 0 ) N.addEdge( b + b * P.days + x , t , P.course );
+  if( teach[ x ] >= 0 )
+   N.addEdge( b + b * P.days + x , t , P.course );
  PoolPlan plan;
  plan.revenue = 10 * N.maxFlow( s , t );
  plan.slots.resize( b );
@@ -714,12 +752,18 @@ ADS_TEST( "esercitazioni-39" )
   P.most = rndVector( g , b , 0 , 3 );
   P.prefs.resize( b );
   P.teachers.resize( rnd( g , 0 , 2 ) );
-  for( auto & q : P.prefs ) for( int x = 0 ; x < S ; ++x )
-   if( rnd( g , 0 , 2 ) ) q.insert( x );
-  for( auto & q : P.teachers ) for( int x = 0 ; x < S ; ++x )
-   if( rnd( g , 0 , 1 ) ) q.insert( x );
+  for( auto & q : P.prefs )
+   for( int x = 0 ; x < S ; ++x )
+    if( rnd( g , 0 , 2 ) )
+     q.insert( x );
+  for( auto & q : P.teachers )
+   for( int x = 0 ; x < S ; ++x )
+    if( rnd( g , 0 , 1 ) )
+     q.insert( x );
   std::vector< bool > taught( S , false );
-  for( const auto & q : P.teachers ) for( int x : q ) taught[ x ] = true;
+  for( const auto & q : P.teachers )
+   for( int x : q )
+    taught[ x ] = true;
   I64 best = 0;
   for( int code = 0 ; code < ( 1 << ( S * b ) ) ; ++code ) {
    std::vector< int > size( S , 0 );
@@ -728,16 +772,17 @@ ADS_TEST( "esercitazioni-39" )
    for( int i = 0 ; ok && ( i < b ) ; ++i ) {
     const int mask = ( code >> ( S * i ) ) & 15;
     ok = std::popcount( unsigned( mask ) ) <= P.most[ i ] &&
-         std::popcount( unsigned( mask & 3 ) ) <= P.perDay &&
-         std::popcount( unsigned( mask >> 2 ) ) <= P.perDay;
+	 std::popcount( unsigned( mask & 3 ) ) <= P.perDay &&
+	 std::popcount( unsigned( mask >> 2 ) ) <= P.perDay;
     for( int x = 0 ; ok && ( x < S ) ; ++x )
      if( ( mask >> x ) & 1 ) {
       ok = P.prefs[ i ].contains( x ) && taught[ x ] &&
-           ( ++size[ x ] <= P.course );
+	   ( ++size[ x ] <= P.course );
       ++tot;
       }
     }
-   if( ok ) best = std::max( best , 10 * tot );
+   if( ok )
+    best = std::max( best , 10 * tot );
    }
   const auto plan = swimming( P );
   CHECK( plan.revenue == best );
@@ -748,14 +793,15 @@ ADS_TEST( "esercitazioni-39" )
    std::vector< int > perDay( P.days , 0 );
    for( int x : plan.slots[ i ] ) {
     CHECK( P.prefs[ i ].contains( x ) && plan.teacher[ x ] >= 0 &&
-           P.teachers[ plan.teacher[ x ] ].contains( x ) );
+	   P.teachers[ plan.teacher[ x ] ].contains( x ) );
     CHECK( ++perDay[ x / P.hours ] <= P.perDay );
     ++size[ x ];
     ++tot;
     }
    }
   CHECK( 10 * tot == plan.revenue );
-  for( int x = 0 ; x < S ; ++x ) CHECK( size[ x ] <= P.course );
+  for( int x = 0 ; x < S ; ++x )
+   CHECK( size[ x ] <= P.course );
   }
  Pool none;
  none.most = { 5 };
@@ -766,7 +812,7 @@ ADS_TEST( "esercitazioni-39" )
  CHECK( swimming( empty ).revenue == 0 );
  Pool one = none;
  one.teachers = { { 0 , 1 , 2 } };
- CHECK( swimming( one ).revenue == 20 );          // perDay 2 on day 0
+ CHECK( swimming( one ).revenue == 20 );  // perDay 2 on day 0
  one.course = 0;
  CHECK( swimming( one ).revenue == 0 );
  one.course = 6;
@@ -792,23 +838,27 @@ ADS_TEST( "esercitazioni-39" )
 /// assignment exists iff the flow is n; O( n^2 m )
 /// \pre L >= 0, d >= 0
 std::optional< std::vector< int > > towers( const std::vector< Point > & A ,
-                                            const std::vector< Point > & Q ,
-                                            I64 L , std::int64_t d )
+					    const std::vector< Point > & Q ,
+					    I64 L , std::int64_t d )
 {
  ADS_PRE( ( L >= 0 ) && ( d >= 0 ) );
  const int n = int( A.size() ) , m = int( Q.size() ) , s = n + m , t = s + 1;
  FlowNetwork N( n + m + 2 );
- std::vector< std::array< int , 3 > > E;                // edge , plane , tower
+ std::vector< std::array< int , 3 > > E;  // edge , plane , tower
  for( int i = 0 ; i < n ; ++i ) {
   N.addEdge( s , i , 1 );
   for( int j = 0 ; j < m ; ++j )
    if( dist2( A[ i ] , Q[ j ] ) <= d * d )
     E.push_back( { N.addEdge( i , n + j , 1 ) , i , j } );
   }
- for( int j = 0 ; j < m ; ++j ) N.addEdge( n + j , t , L );
- if( N.maxFlow( s , t ) < n ) return( std::nullopt );
+ for( int j = 0 ; j < m ; ++j )
+  N.addEdge( n + j , t , L );
+ if( N.maxFlow( s , t ) < n )
+  return( std::nullopt );
  std::vector< int > tower( n , -1 );
- for( const auto & [ e , i , j ] : E ) if( N.flow( e ) ) tower[ i ] = j;
+ for( const auto & [ e , i , j ] : E )
+  if( N.flow( e ) )
+   tower[ i ] = j;
  return( tower );
  }
 
@@ -820,11 +870,13 @@ ADS_TEST( "esercitazioni-40" )
  std::mt19937 g( 40 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = rnd( g , 1 , 6 ) , m = rnd( g , 1 , 3 ) ,
-            L = rnd( g , 1 , 3 ) ,
-            d = rnd( g , 1 , 6 );
+  L = rnd( g , 1 , 3 ) ,
+	    d = rnd( g , 1 , 6 );
   std::vector< Point > A( n ) , Q( m );
-  for( auto & p : A ) p = Point{ rnd( g , 0 , 8 ) , rnd( g , 0 , 8 ) };
-  for( auto & q : Q ) q = Point{ rnd( g , 0 , 8 ) , rnd( g , 0 , 8 ) };
+  for( auto & p : A )
+   p = Point{ rnd( g , 0 , 8 ) , rnd( g , 0 , 8 ) };
+  for( auto & q : Q )
+   q = Point{ rnd( g , 0 , 8 ) , rnd( g , 0 , 8 ) };
   bool brute = false;
   for( I64 code = 0 ; ! brute && ( code < std::llround( std::pow( m , n ) ) ) ;
        ++code ) {
@@ -834,7 +886,7 @@ ADS_TEST( "esercitazioni-40" )
    for( int i = 0 ; ok && ( i < n ) ; ++i , c /= m ) {
     const int j = int( c % m );
     ok = ( dist2( A[ i ] , Q[ j ] ) <= std::int64_t( d ) * d ) &&
-         ( ++load[ j ] <= L );
+	 ( ++load[ j ] <= L );
     }
    brute = ok;
    }
@@ -845,18 +897,18 @@ ADS_TEST( "esercitazioni-40" )
    for( int i = 0 ; i < n ; ++i ) {
     const int j = ( *T )[ i ];
     CHECK( ( j >= 0 ) &&
-           ( dist2( A[ i ] , Q[ j ] ) <= std::int64_t( d ) * d ) &&
-           ( ++load[ j ] <= L ) );
+	   ( dist2( A[ i ] , Q[ j ] ) <= std::int64_t( d ) * d ) &&
+	   ( ++load[ j ] <= L ) );
     }
    }
   }
  CHECK( towers( {} , { Point{ 0 , 0 } } , 1 , 1 ) );
  CHECK( towers( {} , {} , 0 , 0 ) && ! towers( { Point{ 0 , 0 } } , {} , 1 ,
-                                                5 ) );
+					       5 ) );
  CHECK( towers( { Point{ 2 , 3 } } , { Point{ 2 , 3 } } , 1 , 0 ) );
  CHECK( ! towers( { Point{ 2 , 3 } } , { Point{ 2 , 4 } } , 1 , 0 ) );
  CHECK( towers( { Point{ 0 , 0 } } , { Point{ 3 , 4 } } , 1 , 5 ) &&
-        ! towers( { Point{ 0 , 0 } } , { Point{ 3 , 4 } } , 1 , 4 ) );
+	! towers( { Point{ 0 , 0 } } , { Point{ 3 , 4 } } , 1 , 4 ) );
  CHECK( ! towers( { Point{ 0 , 0 } } , { Point{ 0 , 0 } } , 0 , 1 ) );
  CHECK_THROWS( towers( {} , {} , -1 , 0 ) , contract_violation );
  CHECK_THROWS( towers( {} , {} , 0 , -1 ) , contract_violation );
@@ -882,7 +934,7 @@ bool canPartition( int n , const std::vector< std::pair< int , int > > & R )
  ListGraph<> G( n , false );
  for( const auto & [ a , b ] : R ) {
   ADS_PRE( ( 0 <= std::min( a , b ) ) && ( std::max( a , b ) < n ) &&
-           ( a != b ) );
+	   ( a != b ) );
   G.insertEdge( a , b );
   }
  return( twoColoring( G ).has_value() );
@@ -904,7 +956,8 @@ ADS_TEST( "esercitazioni-41-2" )
   for( int u = 0 ; u < n ; ++u )
    for( int v : G.adj( u ) ) {
     M[ u ][ v ] = true;
-    if( u < v ) R.emplace_back( u , v );
+    if( u < v )
+     R.emplace_back( u , v );
     }
   bool brute = false;
   for( int mask = 1 ; mask + 1 < ( 1 << n ) ; ++mask ) {
@@ -916,16 +969,19 @@ ADS_TEST( "esercitazioni-41-2" )
   const auto C = twoColoring( G );
   CHECK( C.has_value() == brute && twoColoring( M ).has_value() == brute );
   if( C )
-   for( const auto & [ a , b ] : R ) CHECK( ( *C )[ a ] != ( *C )[ b ] );
+   for( const auto & [ a , b ] : R )
+    CHECK( ( *C )[ a ] != ( *C )[ b ] );
   CHECK( canPartition( n , R ) == brute );
   }
  CHECK( ! canPartition( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ) );
- CHECK( canPartition( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                           { 3 , 0 } } ) );
+ CHECK( canPartition( 4 ,
+		      { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 0 } } ) );
  CHECK( canPartition( 2 , {} ) && canPartition( 2 , { { 0 , 1 } } ) );
  std::vector< std::pair< int , int > > odd , even;
- for( int i = 0 ; i < 1001 ; ++i ) odd.emplace_back( i , ( i + 1 ) % 1001 );
- for( int i = 0 ; i < 1000 ; ++i ) even.emplace_back( i , ( i + 1 ) % 1000 );
+ for( int i = 0 ; i < 1001 ; ++i )
+  odd.emplace_back( i , ( i + 1 ) % 1001 );
+ for( int i = 0 ; i < 1000 ; ++i )
+  even.emplace_back( i , ( i + 1 ) % 1000 );
  CHECK( ! canPartition( 1001 , odd ) && canPartition( 1000 , even ) );
  CHECK_THROWS( canPartition( 1 , {} ) , contract_violation );
  CHECK_THROWS( canPartition( 3 , { { 1 , 1 } } ) , contract_violation );
@@ -991,11 +1047,11 @@ ADS_TEST( "esercitazioni-42-1" )
  D.insertEdge( 1 , 2 );
  D.deleteNode( 1 );
  CHECK( numberToConnect( D ) == components( D ) - 1 &&
-        numberToConnect( D ) == 2 );
+	numberToConnect( D ) == 2 );
  CHECK_THROWS( numberToConnect( ListGraph<>( 0 , false ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( numberToConnect( ListGraph<>( 3 , true ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /// connectGraph(): makes the unoriented graph connected with the fewest
@@ -1009,7 +1065,9 @@ int connectGraph( G & g )
  ADS_PRE( ! g.directed() && ( g.n() > 0 ) );
  const auto C = cc( g );
  std::vector< int > rep( *std::ranges::max_element( C ) + 1 , -1 );
- for( int u : g.V() ) if( rep[ C[ u ] ] < 0 ) rep[ C[ u ] ] = u;
+ for( int u : g.V() )
+  if( rep[ C[ u ] ] < 0 )
+   rep[ C[ u ] ] = u;
  for( std::size_t k = 2 ; k < rep.size() ; ++k )
   g.insertEdge( rep[ k - 1 ] , rep[ k ] );
  ADS_POST( components( g ) == 1 );
@@ -1026,11 +1084,13 @@ ADS_TEST( "esercitazioni-42-2" )
   auto G = randomGraph( g , rnd( g , 1 , 30 ) , 0.07 , false );
   const int c = components( G );
   int m = 0;
-  for( int u : G.V() ) m += int( G.adj( u ).size() );
+  for( int u : G.V() )
+   m += int( G.adj( u ).size() );
   m /= 2;
   CHECK( connectGraph( G ) == c - 1 && components( G ) == 1 );
   int m2 = 0;
-  for( int u : G.V() ) m2 += int( G.adj( u ).size() );
+  for( int u : G.V() )
+   m2 += int( G.adj( u ).size() );
   CHECK( m2 / 2 == m + c - 1 );
   }
  ListGraph<> K = randomGraph( g , 5 , 1.0 , false );
@@ -1040,8 +1100,7 @@ ADS_TEST( "esercitazioni-42-2" )
  CHECK( connectGraph( bare ) == 5 && components( bare ) == 1 );
  D.insertEdge( 0 , 1 );
  D.deleteNode( 2 );
- CHECK( connectGraph( D ) == 1 && components( D ) == 1 &&
-        ! D.hasNode( 2 ) );
+ CHECK( connectGraph( D ) == 1 && components( D ) == 1 && ! D.hasNode( 2 ) );
  ListGraph<> none( 0 , false ) , arcs( 2 , true );
  CHECK_THROWS( connectGraph( none ) , contract_violation );
  CHECK_THROWS( connectGraph( arcs ) , contract_violation );
@@ -1071,14 +1130,16 @@ ADS_TEST( "esercitazioni-43" )
    const int k = rnd( g , 0 , 5 );
    V1[ u ] = k == 0;
    V2[ u ] = ( k == 1 ) || ( ( k == 2 ) && ( r % 3 == 0 ) );
-   if( ( k == 2 ) && ( r % 3 == 0 ) ) V1[ u ] = true;
+   if( ( k == 2 ) && ( r % 3 == 0 ) )
+    V1[ u ] = true;
    }
   int best = INF;
   for( int u = 0 ; u < n ; ++u )
    if( V1[ u ] ) {
     const auto d = distance( G , u ).first;
     for( int v = 0 ; v < n ; ++v )
-     if( V2[ v ] ) best = std::min( best , d[ v ] );
+     if( V2[ v ] )
+      best = std::min( best , d[ v ] );
     }
   CHECK( setDistance( G , V1 , V2 ) == best );
   }
@@ -1086,20 +1147,25 @@ ADS_TEST( "esercitazioni-43" )
  P.insertEdge( 0 , 1 );
  P.insertEdge( 1 , 2 );
  CHECK( setDistance( P , { true , false , false } ,
-                     { false , false , true } ) == 2 );
+		     { false , false , true } ) ==
+	2 );
  CHECK( setDistance( P , { false , false , true } ,
-                     { true , false , false } ) == INF );
+		     { true , false , false } ) ==
+	INF );
  CHECK( setDistance( P , { false , false , false } ,
-                     { true , true , true } ) == INF );
+		     { true , true , true } ) ==
+	INF );
  CHECK( setDistance( P , { true , true , true } ,
-                     { false , false , false } ) == INF );
+		     { false , false , false } ) ==
+	INF );
  CHECK( setDistance( ListGraph<>( 1 ) , { true } , { true } ) == 0 );
  CHECK( setDistance( P , { false , true , false } ,
-                     { false , true , false } ) == 0 );
+		     { false , true , false } ) ==
+	0 );
  CHECK_THROWS( setDistance( P , { true } , { false , false , true } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( setDistance( P , { true , false , false } , { true } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -1139,7 +1205,8 @@ int grid( const std::vector< std::vector< int > > & M )
        ( d[ a ][ b ] >= 0 ) )
     continue;
    d[ a ][ b ] = d[ i ][ j ] + 1;
-   if( M[ a ][ b ] == 3 ) return( d[ a ][ b ] );
+   if( M[ a ][ b ] == 3 )
+    return( d[ a ][ b ] );
    Q.emplace( a , b );
    }
   }
@@ -1151,14 +1218,18 @@ int grid( const std::vector< std::vector< int > > & M )
 // no 1, not square, a color out of { 1 , 2 , 3 })
 ADS_TEST( "esercitazioni-45" )
 {
- CHECK( grid( { { 1 , 2 , 2 , 3 } , { 2 , 1 , 2 , 3 } , { 2 , 2 , 2 , 3 } ,
-                { 3 , 2 , 1 , 2 } } ) == 2 );
+ CHECK(
+   grid(
+     { { 1 , 2 , 2 , 3 } , { 2 , 1 , 2 , 3 } , { 2 , 2 , 2 , 3 } ,
+       { 3 , 2 , 1 , 2 } } ) ==
+   2 );
  std::mt19937 g( 45 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = rnd( g , 2 , 12 );
   std::vector< std::vector< int > > M( n , std::vector< int >( n , 2 ) );
   for( auto & row : M )
-   for( auto & x : row ) x = rnd( g , 0 , 9 ) ? 2 : rnd( g , 1 , 3 );
+   for( auto & x : row )
+    x = rnd( g , 0 , 9 ) ? 2 : rnd( g , 1 , 3 );
   M[ rnd( g , 0 , n - 1 ) ][ rnd( g , 0 , n - 1 ) ] = 1;
   int a , b;
   do {
@@ -1167,10 +1238,12 @@ ADS_TEST( "esercitazioni-45" )
    } while( M[ a ][ b ] == 1 );
   M[ a ][ b ] = 3;
   int best = INF;
-  for( int i = 0 ; i < n ; ++i ) for( int j = 0 ; j < n ; ++j )
-   for( int k = 0 ; k < n ; ++k ) for( int l = 0 ; l < n ; ++l )
-    if( ( M[ i ][ j ] == 1 ) && ( M[ k ][ l ] == 3 ) )
-     best = std::min( best , std::abs( i - k ) + std::abs( j - l ) );
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j )
+    for( int k = 0 ; k < n ; ++k )
+     for( int l = 0 ; l < n ; ++l )
+      if( ( M[ i ][ j ] == 1 ) && ( M[ k ][ l ] == 3 ) )
+       best = std::min( best , std::abs( i - k ) + std::abs( j - l ) );
   CHECK( grid( M ) == best );
   }
  CHECK( grid( { { 1 , 3 } , { 2 , 2 } } ) == 1 );
@@ -1196,13 +1269,13 @@ ADS_TEST( "esercitazioni-45" )
 /// library; O( n + m )
 /// \pre the sticks in [ 0 , n ), distinct in each pair
 bool shangai( int n , const std::vector< int > & X ,
-              const std::vector< int > & Y )
+	      const std::vector< int > & Y )
 {
  ADS_PRE( ( n >= 0 ) && ( X.size() == Y.size() ) );
  ListGraph<> G( n );
  for( std::size_t i = 0 ; i < X.size() ; ++i ) {
   ADS_PRE( ( 0 <= std::min( X[ i ] , Y[ i ] ) ) &&
-           ( std::max( X[ i ] , Y[ i ] ) < n ) && ( X[ i ] != Y[ i ] ) );
+	   ( std::max( X[ i ] , Y[ i ] ) < n ) && ( X[ i ] != Y[ i ] ) );
   G.insertEdge( X[ i ] , Y[ i ] );
   }
  return( ! hasCycle( G ) );
@@ -1220,8 +1293,10 @@ ADS_TEST( "esercitazioni-46" )
   std::vector< int > X , Y;
   for( int i = rnd( g , 0 , 2 * n ) ; i > 0 ; --i ) {
    int a = rnd( g , 0 , n - 1 ) , b = rnd( g , 0 , n - 1 );
-   if( a == b ) continue;
-   if( ( r % 2 ) && ( a > b ) ) std::swap( a , b );     // half acyclic
+   if( a == b )
+    continue;
+   if( ( r % 2 ) && ( a > b ) )
+    std::swap( a , b );  // half acyclic
    X.push_back( a );
    Y.push_back( b );
    }
@@ -1229,15 +1304,17 @@ ADS_TEST( "esercitazioni-46" )
   for( bool more = true ; more ; ) {
    more = false;
    for( int u = 0 ; u < n ; ++u ) {
-    if( gone[ u ] ) continue;
+    if( gone[ u ] )
+     continue;
     bool covered = false;
     for( std::size_t i = 0 ; i < X.size() ; ++i )
      covered = covered || ( ( Y[ i ] == u ) && ! gone[ X[ i ] ] );
-    if( ! covered ) gone[ u ] = more = true;
+    if( ! covered )
+     gone[ u ] = more = true;
     }
    }
-  CHECK( shangai( n , X , Y ) == std::ranges::all_of( gone , []( bool b ) {
-                                                      return( b ); } ) );
+  CHECK( shangai( n , X , Y ) ==
+	 std::ranges::all_of( gone , []( bool b ) { return( b ); } ) );
   }
  CHECK( ! shangai( 2 , { 0 , 1 } , { 1 , 0 } ) && shangai( 0 , {} , {} ) );
  CHECK( shangai( 5 , {} , {} ) && shangai( 2 , { 0 , 0 } , { 1 , 1 } ) );
@@ -1275,25 +1352,34 @@ ADS_TEST( "esercitazioni-48" )
   const int n = rnd( g , 1 , 10 );
   std::vector< std::vector< int > > A( n , std::vector< int >( n , 0 ) );
   for( int i = 0 ; i < n ; ++i )
-   for( int j = 0 ; j < n ; ++j ) if( i != j ) A[ i ][ j ] = rnd( g , 0 , 1 );
+   for( int j = 0 ; j < n ; ++j )
+    if( i != j )
+     A[ i ][ j ] = rnd( g , 0 , 1 );
   if( r % 2 ) {
    const int s = rnd( g , 0 , n - 1 );
    for( int k = 0 ; k < n ; ++k )
-    if( k != s ) { A[ s ][ k ] = 0; A[ k ][ s ] = rnd( g , 0 , 5 ) ? 1 : 0; }
+    if( k != s ) {
+     A[ s ][ k ] = 0;
+     A[ k ][ s ] = rnd( g , 0 , 5 ) ? 1 : 0;
+     }
    }
   int brute = -1;
   for( int u = 0 ; u < n ; ++u ) {
    int out = 0 , in = 0;
-   for( int k = 0 ; k < n ; ++k ) { out += A[ u ][ k ]; in += A[ k ][ u ]; }
-   if( ( out == 0 ) && ( in == n - 1 ) ) brute = u;
+   for( int k = 0 ; k < n ; ++k ) {
+    out += A[ u ][ k ];
+    in += A[ k ][ u ];
+    }
+   if( ( out == 0 ) && ( in == n - 1 ) )
+    brute = u;
    }
   CHECK( universalSink( A ) == brute );
   }
  using Adj = std::vector< std::vector< int > >;
  CHECK( universalSink( Adj( { { 0 } } ) ) == 0 &&
-        universalSink( Adj() ) == -1 );
+	universalSink( Adj() ) == -1 );
  CHECK( universalSink( Adj( { { 0 , 1 } , { 0 , 0 } } ) ) == 1 &&
-        universalSink( Adj( { { 0 , 0 } , { 1 , 0 } } ) ) == 0 );
+	universalSink( Adj( { { 0 , 0 } , { 1 , 0 } } ) ) == 0 );
  CHECK( universalSink( Adj( { { 0 , 1 } , { 1 , 0 } } ) ) == -1 );
  CHECK( universalSink( Adj( 3 , std::vector< int >( 3 , 0 ) ) ) == -1 );
  CHECK_THROWS( universalSink( Adj( { { 0 , 1 } } ) ) , contract_violation );
@@ -1313,8 +1399,10 @@ bool isRoma( const G & g , int v )
  ADS_PRE( g.hasNode( v ) );
  const auto T = transpose( g );
  std::vector< bool > visited( T.bound() , false );
- dfs( T , v , visited , []( int ) {} , []( int , int ) {} , []( int ) {} );
- for( int u : T.V() ) if( ! visited[ u ] ) return( false );
+ dfs( T , v , visited , []( int ) { } , []( int , int ) { } , []( int ) { } );
+ for( int u : T.V() )
+  if( ! visited[ u ] )
+   return( false );
  return( true );
  }
 
@@ -1334,11 +1422,13 @@ ADS_TEST( "esercitazioni-49-1" )
   CHECK( isRoma( G , v ) == all );
   }
  ListGraph<> P( 4 );
- for( int i = 0 ; i < 3 ; ++i ) P.insertEdge( i , i + 1 );
+ for( int i = 0 ; i < 3 ; ++i )
+  P.insertEdge( i , i + 1 );
  CHECK( isRoma( P , 3 ) && ! isRoma( P , 2 ) );
  CHECK( isRoma( ListGraph<>( 1 ) , 0 ) );
  P.insertEdge( 3 , 0 );
- for( int v = 0 ; v < 4 ; ++v ) CHECK( isRoma( P , v ) );
+ for( int v = 0 ; v < 4 ; ++v )
+  CHECK( isRoma( P , v ) );
  CHECK( ! isRoma( ListGraph<>( 2 ) , 0 ) );
  CHECK_THROWS( isRoma( P , 4 ) , contract_violation );
  CHECK_THROWS( isRoma( P , -1 ) , contract_violation );
@@ -1357,7 +1447,8 @@ bool hasRoma( const G & g )
  int candidate = NIL;
  for( int u : T.V() )
   if( ! visited[ u ] ) {
-   dfs( T , u , visited , []( int ) {} , []( int , int ) {} , []( int ) {} );
+   dfs( T , u , visited , []( int ) { } , []( int , int ) { } ,
+	[]( int ) { } );
    candidate = u;
    }
  return( isRoma( g , candidate ) );
@@ -1373,20 +1464,25 @@ ADS_TEST( "esercitazioni-49-2" )
   const int n = rnd( g , 1 , 12 );
   const auto G = randomGraph( g , n , r % 2 ? 0.1 : 0.25 , true );
   bool brute = false;
-  for( int v = 0 ; v < n ; ++v ) brute = brute || isRoma( G , v );
+  for( int v = 0 ; v < n ; ++v )
+   brute = brute || isRoma( G , v );
   const auto C = scc( G );
   const int k = *std::ranges::max_element( C );
   std::vector< bool > leaves( k + 1 , false );
   for( int u = 0 ; u < n ; ++u )
-   for( int v : G.adj( u ) ) if( C[ u ] != C[ v ] ) leaves[ C[ u ] ] = true;
+   for( int v : G.adj( u ) )
+    if( C[ u ] != C[ v ] )
+     leaves[ C[ u ] ] = true;
   CHECK( hasRoma( G ) == brute );
-  CHECK( brute == ( std::count( leaves.begin() + 1 , leaves.end() , false )
-                    == 1 ) );
+  CHECK( brute ==
+	 ( std::count( leaves.begin() + 1 , leaves.end() , false ) == 1 ) );
   }
  CHECK( hasRoma( ListGraph<>( 1 ) ) && ! hasRoma( ListGraph<>( 2 ) ) );
  ListGraph<> cyc( 5 ) , star( 6 ) , two( 4 );
- for( int i = 0 ; i < 5 ; ++i ) cyc.insertEdge( i , ( i + 1 ) % 5 );
- for( int i = 1 ; i < 6 ; ++i ) star.insertEdge( i , 0 );
+ for( int i = 0 ; i < 5 ; ++i )
+  cyc.insertEdge( i , ( i + 1 ) % 5 );
+ for( int i = 1 ; i < 6 ; ++i )
+  star.insertEdge( i , 0 );
  two.insertEdge( 0 , 1 );
  two.insertEdge( 0 , 2 );
  two.insertEdge( 3 , 2 );
@@ -1409,7 +1505,8 @@ int sameDistance( const G & g , int s1 , int s2 )
  const auto d1 = distance( g , s1 ).first , d2 = distance( g , s2 ).first;
  int counter = 0;
  for( int u : g.V() )
-  if( ( d1[ u ] < INF ) && ( d1[ u ] == d2[ u ] ) ) ++counter;
+  if( ( d1[ u ] < INF ) && ( d1[ u ] == d2[ u ] ) )
+   ++counter;
  return( counter );
  }
 
@@ -1425,12 +1522,14 @@ ADS_TEST( "esercitazioni-50" )
   std::vector< std::vector< int > > D( n , std::vector< int >( n , INF ) );
   for( int u = 0 ; u < n ; ++u ) {
    D[ u ][ u ] = 0;
-   for( int v : G.adj( u ) ) D[ u ][ v ] = 1;
+   for( int v : G.adj( u ) )
+    D[ u ][ v ] = 1;
    }
-  for( int k = 0 ; k < n ; ++k ) for( int i = 0 ; i < n ; ++i )
-   for( int j = 0 ; j < n ; ++j )
-    if( ( D[ i ][ k ] < INF ) && ( D[ k ][ j ] < INF ) )
-     D[ i ][ j ] = std::min( D[ i ][ j ] , D[ i ][ k ] + D[ k ][ j ] );
+  for( int k = 0 ; k < n ; ++k )
+   for( int i = 0 ; i < n ; ++i )
+    for( int j = 0 ; j < n ; ++j )
+     if( ( D[ i ][ k ] < INF ) && ( D[ k ][ j ] < INF ) )
+      D[ i ][ j ] = std::min( D[ i ][ j ] , D[ i ][ k ] + D[ k ][ j ] );
   const int s1 = rnd( g , 0 , n - 1 ) , s2 = rnd( g , 0 , n - 1 );
   int c = 0 , reached = 0;
   for( int u = 0 ; u < n ; ++u ) {
@@ -1485,11 +1584,13 @@ ADS_TEST( "esercitazioni-51" )
    x += rnd( g , 1 , R );
    }
   const int L = x , n = int( dist.size() );
-  if( n && ( dist.back() >= L ) ) continue;
-  std::vector< int > best( n + 1 , INF );       // stops to reach i ( n = L )
+  if( n && ( dist.back() >= L ) )
+   continue;
+  std::vector< int > best( n + 1 , INF );  // stops to reach i ( n = L )
   for( int i = 0 ; i <= n ; ++i ) {
    const int at = i < n ? dist[ i ] : L;
-   if( at <= R ) best[ i ] = 0;
+   if( at <= R )
+    best[ i ] = 0;
    for( int j = 0 ; j < i ; ++j )
     if( ( best[ j ] < INF ) && ( at - dist[ j ] <= R ) )
      best[ i ] = std::min( best[ i ] , best[ j ] + 1 );
@@ -1526,11 +1627,11 @@ ADS_TEST( "esercitazioni-51" )
 /// minimumIntervalCover() of the library
 /// \pre D and R of the same size, R >= 0, L >= 0
 int minSprinklers( const std::vector< int > & D ,
-                   const std::vector< int > & R ,
-                   int L )
+		   const std::vector< int > & R ,
+		   int L )
 {
  ADS_PRE( ( D.size() == R.size() ) && ( L >= 0 ) &&
-          std::ranges::all_of( R , []( int x ) { return( x >= 0 ); } ) );
+	  std::ranges::all_of( R , []( int x ) { return( x >= 0 ); } ) );
  if( L == 0 )
   return( 0 );
  const int n = int( D.size() );
@@ -1551,11 +1652,12 @@ ADS_TEST( "esercitazioni-52" )
  for( int r = 0 ; r < 600 ; ++r ) {
   const int n = rnd( g , 0 , 12 ) , L = rnd( g , 1 , 30 );
   const auto D = rndVector( g , n , -3 , L + 3 ) ,
-             R = rndVector( g , n , 0 , 6 );
+    R = rndVector( g , n , 0 , 6 );
   int best = -1;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    const int k = std::popcount( unsigned( mask ) );
-   if( ( best >= 0 ) && ( k >= best ) ) continue;
+   if( ( best >= 0 ) && ( k >= best ) )
+    continue;
    std::vector< std::pair< int , int > > I;
    for( int i = 0 ; i < n ; ++i )
     if( ( mask >> i ) & 1 )
@@ -1563,8 +1665,10 @@ ADS_TEST( "esercitazioni-52" )
    std::ranges::sort( I );
    int covered = 0;
    for( const auto & [ a , b ] : I )
-    if( a <= covered ) covered = std::max( covered , b );
-   if( covered >= L ) best = k;
+    if( a <= covered )
+     covered = std::max( covered , b );
+   if( covered >= L )
+    best = k;
    }
   CHECK( minSprinklers( D , R , L ) == best );
   }
@@ -1575,7 +1679,7 @@ ADS_TEST( "esercitazioni-52" )
  CHECK( minSprinklers( { 0 , 1 } , { 0 , 0 } , 1 ) == -1 );
  CHECK( minSprinklers( { 0 } , { 0 } , 0 ) == 0 );
  CHECK( minSprinklers( { 5 } , { 5 } , 10 ) == 1 &&
-        minSprinklers( { 5 } , { 5 } , 11 ) == -1 );
+	minSprinklers( { 5 } , { 5 } , 11 ) == -1 );
  const int M = std::numeric_limits< int >::max();
  CHECK( minSprinklers( { M } , { M } , M ) == 1 );
  CHECK( minSprinklers( { -M , M } , { M , M } , M ) == 1 );
@@ -1593,12 +1697,12 @@ ADS_TEST( "esercitazioni-52" )
 /// G, by decreasing gain, each run at the next time t if t <= D[ i ]; its
 /// gain (not optimal)
 I64 maxGainGreedy( const std::vector< int > & D ,
-                    const std::vector< int > & G )
+		   const std::vector< int > & G )
 {
  std::vector< int > order( D.size() );
  std::iota( order.begin() , order.end() , 0 );
- std::ranges::stable_sort( order , [ & ]( int a , int b ) {
-  return( G[ a ] > G[ b ] ); } );
+ std::ranges::stable_sort(
+   order , [ & ]( int a , int b ) { return( G[ a ] > G[ b ] ); } );
  I64 gain = 0;
  int t = 1;
  for( int i : order )
@@ -1613,13 +1717,13 @@ I64 maxGainGreedy( const std::vector< int > & D ,
 /// not after its deadline, if any; O( n^2 )
 /// \pre D >= 1 and G >= 1
 I64 maxGainLatest( const std::vector< int > & D ,
-                    const std::vector< int > & G )
+		   const std::vector< int > & G )
 {
  ADS_PRE( D.size() == G.size() );
  std::vector< int > order( D.size() );
  std::iota( order.begin() , order.end() , 0 );
- std::ranges::stable_sort( order , [ & ]( int a , int b ) {
-  return( G[ a ] > G[ b ] ); } );
+ std::ranges::stable_sort(
+   order , [ & ]( int a , int b ) { return( G[ a ] > G[ b ] ); } );
  std::vector< bool > busy( D.size() + 1 , false );
  I64 gain = 0;
  for( int i : order ) {
@@ -1653,11 +1757,16 @@ ADS_TEST( "esercitazioni-53" )
    std::vector< int > d;
    I64 s = 0;
    for( int i = 0 ; i < n ; ++i )
-    if( ( mask >> i ) & 1 ) { d.push_back( D[ i ] ); s += G[ i ]; }
+    if( ( mask >> i ) & 1 ) {
+     d.push_back( D[ i ] );
+     s += G[ i ];
+     }
    std::ranges::sort( d );
    bool ok = true;
-   for( int i = 0 ; i < int( d.size() ) ; ++i ) ok = ok && ( d[ i ] >= i + 1 );
-   if( ok ) best = std::max( best , s );
+   for( int i = 0 ; i < int( d.size() ) ; ++i )
+    ok = ok && ( d[ i ] >= i + 1 );
+   if( ok )
+    best = std::max( best , s );
    }
   CHECK( maxGainLatest( D , G ) == best && maxGainGreedy( D , G ) <= best );
   worse += maxGainGreedy( D , G ) < best;
@@ -1667,7 +1776,7 @@ ADS_TEST( "esercitazioni-53" )
  const int M = std::numeric_limits< int >::max();
  CHECK( maxGainLatest( { M , M , M } , { M , M , M } ) == I64( 3 ) * M );
  CHECK( maxGainLatest( { 1 , 1 , 1 } , { 4 , 9 , 2 } ) == 9 &&
-        maxGainGreedy( { 1 , 1 , 1 } , { 4 , 9 , 2 } ) == 9 );
+	maxGainGreedy( { 1 , 1 , 1 } , { 4 , 9 , 2 } ) == 9 );
  CHECK_THROWS( maxGainLatest( { 1 } , {} ) , contract_violation );
  CHECK_THROWS( maxGainLatest( { 0 } , { 1 } ) , contract_violation );
  CHECK_THROWS( maxGainLatest( { 1 } , { 0 } ) , contract_violation );
@@ -1690,8 +1799,8 @@ I64 skiGreedy( const std::vector< int > & H , const std::vector< int > & L )
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j )
     if( ! h[ i ] && ! l[ j ] &&
-        ( ( bi < 0 ) || ( std::abs( H[ i ] - L[ j ] ) <
-                          std::abs( H[ bi ] - L[ bj ] ) ) ) ) {
+	( ( bi < 0 ) ||
+	  ( std::abs( H[ i ] - L[ j ] ) < std::abs( H[ bi ] - L[ bj ] ) ) ) ) {
      bi = i;
      bj = j;
      }
@@ -1722,22 +1831,23 @@ ADS_TEST( "esercitazioni-54" )
  for( int r = 0 ; r < 400 ; ++r ) {
   const int n = rnd( g , 1 , 7 );
   const auto H = rndVector( g , n , 150 , 200 ) ,
-             L = rndVector( g , n , 150 , 200 );
+    L = rndVector( g , n , 150 , 200 );
   std::vector< int > P( n );
   std::iota( P.begin() , P.end() , 0 );
   I64 best = std::numeric_limits< I64 >::max();
   do {
    I64 c = 0;
-   for( int i = 0 ; i < n ; ++i ) c += std::abs( H[ i ] - L[ P[ i ] ] );
+   for( int i = 0 ; i < n ; ++i )
+    c += std::abs( H[ i ] - L[ P[ i ] ] );
    best = std::min( best , c );
    } while( std::ranges::next_permutation( P ).found );
   CHECK( skiMatching( H , L ) == best && skiGreedy( H , L ) >= best );
   }
  CHECK( skiMatching( {} , {} ) == 0 );
  CHECK( skiMatching( { 170 } , { 160 } ) == 10 &&
-        skiGreedy( { 170 } , { 160 } ) == 10 );
+	skiGreedy( { 170 } , { 160 } ) == 10 );
  CHECK( skiMatching( std::vector< int >( 9 , 180 ) ,
-                     std::vector< int >( 9 , 180 ) ) == 0 );
+		     std::vector< int >( 9 , 180 ) ) == 0 );
  const int M = std::numeric_limits< int >::max();
  CHECK( skiMatching( { -M - 1 , M } , { M , -M - 1 } ) == 0 );
  CHECK( skiMatching( { -M - 1 } , { M } ) == I64( 2 ) * M + 1 );
@@ -1755,10 +1865,11 @@ ADS_TEST( "esercitazioni-54" )
 int maxSegments( std::vector< int > V , int L )
 {
  ADS_PRE( ( L >= 0 ) &&
-          std::ranges::all_of( V , []( int x ) { return( x > 0 ); } ) );
+	  std::ranges::all_of( V , []( int x ) { return( x > 0 ); } ) );
  std::ranges::sort( V );
  int i = 0;
- for( ; ( i < int( V.size() ) ) && ( L >= V[ i ] ) ; ++i ) L -= V[ i ];
+ for( ; ( i < int( V.size() ) ) && ( L >= V[ i ] ) ; ++i )
+  L -= V[ i ];
  return( i );
  }
 
@@ -1774,8 +1885,11 @@ ADS_TEST( "esercitazioni-55" )
   int best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    int s = 0;
-   for( int i = 0 ; i < n ; ++i ) if( ( mask >> i ) & 1 ) s += V[ i ];
-   if( s <= L ) best = std::max( best , std::popcount( unsigned( mask ) ) );
+   for( int i = 0 ; i < n ; ++i )
+    if( ( mask >> i ) & 1 )
+     s += V[ i ];
+   if( s <= L )
+    best = std::max( best , std::popcount( unsigned( mask ) ) );
    }
   CHECK( maxSegments( V , L ) == best );
   }
@@ -1785,7 +1899,7 @@ ADS_TEST( "esercitazioni-55" )
  CHECK( maxSegments( { 4 , 4 , 4 , 4 } , 16 ) == 4 );
  const int M = std::numeric_limits< int >::max();
  CHECK( maxSegments( { M , M , 1 } , M ) == 1 &&
-        maxSegments( { M - 1 , 1 } , M ) == 2 );
+	maxSegments( { M - 1 , 1 } , M ) == 2 );
  CHECK_THROWS( maxSegments( { 0 , 1 } , 3 ) , contract_violation );
  CHECK_THROWS( maxSegments( { -2 } , 3 ) , contract_violation );
  CHECK_THROWS( maxSegments( { 1 } , -1 ) , contract_violation );
@@ -1810,7 +1924,8 @@ bool pairSumBrute( const std::vector< int > & A , I64 v )
 {
  for( std::size_t i = 0 ; i < A.size() ; ++i )
   for( std::size_t j = i + 1 ; j < A.size() ; ++j )
-   if( I64( A[ i ] ) + A[ j ] == v ) return( true );
+   if( I64( A[ i ] ) + A[ j ] == v )
+    return( true );
  return( false );
  }
 
@@ -1828,17 +1943,20 @@ ADS_TEST( "esercitazioni-57-1" )
  CHECK( ! pairSum( {} , 0 ) && ! pairSum( { 4 } , 8 ) );
  CHECK( pairSum( { 4 , 4 } , 8 ) );
  const int M = std::numeric_limits< int >::max();
- CHECK( pairSum( { M , M } , I64( 2 ) * M ) &&
-        pairSum( { -M - 1 , M } , -1 ) );
+ CHECK( pairSum( { M , M } , I64( 2 ) * M ) && pairSum( { -M - 1 , M } ,
+							-1 ) );
  CHECK( pairSum( { -M - 1 , -M - 1 } , -I64( 2 ) * M - 2 ) &&
-        ! pairSum( { M } , I64( 2 ) * M ) );
+	! pairSum( { M } , I64( 2 ) * M ) );
  CHECK( pairSum( std::vector< int >( 50 , 3 ) , 6 ) &&
-        ! pairSum( std::vector< int >( 50 , 3 ) , 3 ) );
+	! pairSum( std::vector< int >( 50 , 3 ) , 3 ) );
  CHECK( ! pairSum( { 1 , 2 , 3 } , 6 ) && ! pairSum( { M , M } , 0 ) );
  }
 
 /// whether two items in distinct places of A sum to 17, by pairSum()
-bool pairSum17( const std::vector< int > & A ) { return( pairSum( A , 17 ) ); }
+bool pairSum17( const std::vector< int > & A )
+{
+ return( pairSum( A , 17 ) );
+ }
 
 // against all the pairs on 2000 random vectors; the empty vector, 17 with
 // 0, a negative item, 17 alone
@@ -1851,7 +1969,7 @@ ADS_TEST( "esercitazioni-57-2" )
   }
  CHECK( pairSum17( { 8 , 9 } ) && ! pairSum17( { 17 } ) );
  CHECK( ! pairSum17( {} ) && pairSum17( { 17 , 0 } ) &&
-        pairSum17( { -3 , 20 } ) && ! pairSum17( { 8 , 8 , 10 } ) );
+	pairSum17( { -3 , 20 } ) && ! pairSum17( { 8 , 8 , 10 } ) );
  }
 
 /// whether two items in distinct places of the positive A sum to 17: flags
@@ -1862,9 +1980,12 @@ bool pairSum17Positive( const std::vector< int > & A )
 {
  ADS_PRE( std::ranges::all_of( A , []( int x ) { return( x > 0 ); } ) );
  std::array< bool , 17 > present{};
- for( int x : A ) if( x < 17 ) present[ x ] = true;
+ for( int x : A )
+  if( x < 17 )
+   present[ x ] = true;
  for( int i = 1 ; i <= 8 ; ++i )
-  if( present[ i ] && present[ 17 - i ] ) return( true );
+  if( present[ i ] && present[ 17 - i ] )
+   return( true );
  return( false );
  }
 
@@ -1882,7 +2003,7 @@ ADS_TEST( "esercitazioni-57-3" )
  CHECK_THROWS( pairSum17Positive( { 0 , 17 } ) , contract_violation );
  CHECK( pairSum17Positive( { 16 , 1 } ) && pairSum17Positive( { 9 , 8 } ) );
  CHECK( ! pairSum17Positive( { 8 , 8 , 8 } ) &&
-        ! pairSum17Positive( { std::numeric_limits< int >::max() , 1 } ) );
+	! pairSum17Positive( { std::numeric_limits< int >::max() , 1 } ) );
  CHECK_THROWS( pairSum17Positive( { 18 , -1 } ) , contract_violation );
  }
 
@@ -1900,7 +2021,8 @@ I64 vito( std::vector< int > s )
  ADS_PRE( ! s.empty() );
  const int x = selection( s , ( s.size() + 1 ) / 2 );
  I64 sum = 0;
- for( int v : s ) sum += std::abs( v - x );
+ for( int v : s )
+  sum += std::abs( v - x );
  return( sum );
  }
 
@@ -1917,14 +2039,16 @@ ADS_TEST( "esercitazioni-59" )
   for( int x = *std::ranges::min_element( s ) ;
        x <= *std::ranges::max_element( s ) ; ++x ) {
    I64 t = 0;
-   for( int v : s ) t += std::abs( v - x );
+   for( int v : s )
+    t += std::abs( v - x );
    best = std::min( best , t );
    }
   CHECK( vito( s ) == best );
   }
  CHECK( vito( { 7 } ) == 0 && vito( { 2 , 4 } ) == 2 );
  std::vector< int > big( 499 );
- for( int i = 0 ; i < 499 ; ++i ) big[ i ] = i % 2 ? 29999 : 1;
+ for( int i = 0 ; i < 499 ; ++i )
+  big[ i ] = i % 2 ? 29999 : 1;
  CHECK( vito( big ) == I64( 249 ) * 29998 );
  CHECK( vito( std::vector< int >( 499 , 29999 ) ) == 0 );
  CHECK( vito( { 1 , 3 , 10 , 20 } ) == 26 );
@@ -1942,12 +2066,13 @@ ADS_TEST( "esercitazioni-59" )
 /// dist[ j ] <= R; O( n^2 )
 /// \pre dist strictly increasing and positive, cost >= 0, cost[ n ] = 0
 I64 minCostStops( const std::vector< int > & dist ,
-                   const std::vector< int > & cost , int R )
+		  const std::vector< int > & cost , int R )
 {
  const int n = int( dist.size() ) - 1;
  ADS_PRE( ( n >= 0 ) && ( cost.size() == dist.size() ) && ( cost[ n ] == 0 ) &&
-          std::ranges::adjacent_find( dist , std::greater_equal<>() ) ==
-          dist.end() && ( dist[ 0 ] > 0 ) );
+	  std::ranges::adjacent_find( dist , std::greater_equal<>() ) ==
+	    dist.end() &&
+	  ( dist[ 0 ] > 0 ) );
  const I64 inf = std::numeric_limits< I64 >::max();
  std::vector< I64 > DP( n + 1 , inf );
  for( int i = 0 ; i <= n ; ++i )
@@ -1955,7 +2080,8 @@ I64 minCostStops( const std::vector< int > & dist ,
    DP[ i ] = cost[ i ];
   else
    for( int j = i - 1 ; ( j >= 0 ) && ( dist[ i ] - dist[ j ] <= R ) ; --j )
-    if( DP[ j ] < inf ) DP[ i ] = std::min( DP[ i ] , DP[ j ] + cost[ i ] );
+    if( DP[ j ] < inf )
+     DP[ i ] = std::min( DP[ i ] , DP[ j ] + cost[ i ] );
  return( DP[ n ] );
  }
 
@@ -1986,7 +2112,8 @@ ADS_TEST( "esercitazioni-60" )
      at = dist[ i ];
      c += cost[ i ];
      }
-   if( ok ) best = std::min( best , c );
+   if( ok )
+    best = std::min( best , c );
    }
   CHECK( minCostStops( dist , cost , R ) == best );
   }
@@ -1998,14 +2125,14 @@ ADS_TEST( "esercitazioni-60" )
  CHECK( minCostStops( { 2 , 4 , 6 } , { 9 , 1 , 0 } , 4 ) == 1 );
  const int M = std::numeric_limits< int >::max();
  CHECK( minCostStops( { M } , { 0 } , M ) == 0 &&
-        minCostStops( { 1 , M } , { M , 0 } , M - 1 ) == M );
+	minCostStops( { 1 , M } , { M , 0 } , M - 1 ) == M );
  CHECK_THROWS( minCostStops( {} , {} , 5 ) , contract_violation );
  CHECK_THROWS( minCostStops( { 3 } , {} , 5 ) , contract_violation );
  CHECK_THROWS( minCostStops( { 3 } , { 1 } , 5 ) , contract_violation );
  CHECK_THROWS( minCostStops( { 3 , 3 } , { 1 , 0 } , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( minCostStops( { 0 , 3 } , { 1 , 0 } , 5 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2021,13 +2148,14 @@ ADS_TEST( "esercitazioni-60" )
 std::uint64_t diceOrdered( const std::vector< int > & F , int X )
 {
  ADS_PRE( ( X >= 0 ) &&
-          std::ranges::all_of( F , []( int f ) { return( f >= 1 ); } ) );
+	  std::ranges::all_of( F , []( int f ) { return( f >= 1 ); } ) );
  std::vector< std::uint64_t > DP( X + 1 , 0 );
  DP[ 0 ] = 1;
  for( int f : F ) {
   std::vector< std::uint64_t > N( X + 1 , 0 );
   for( int x = 1 ; x <= X ; ++x )
-   for( int j = 1 ; ( j <= f ) && ( j <= x ) ; ++j ) N[ x ] += DP[ x - j ];
+   for( int j = 1 ; ( j <= f ) && ( j <= x ) ; ++j )
+    N[ x ] += DP[ x - j ];
   DP = std::move( N );
   }
  return( DP[ X ] );
@@ -2042,19 +2170,21 @@ std::uint64_t diceOrdered( const std::vector< int > & F , int X )
 std::uint64_t diceUnordered( std::vector< int > F , int X )
 {
  ADS_PRE( ! F.empty() && ( X >= 0 ) &&
-          std::ranges::all_of( F , []( int f ) { return( f >= 1 ); } ) );
+	  std::ranges::all_of( F , []( int f ) { return( f >= 1 ); } ) );
  std::ranges::sort( F , std::greater<>() );
  const int n = int( F.size() ) , M = F[ 0 ];
  // DP[ i ][ x ][ m ], m in 1 ... M + 1
- std::vector< std::vector< std::vector< std::uint64_t > > > DP( n + 1 ,
-  std::vector< std::vector< std::uint64_t > >( X + 1 ,
-   std::vector< std::uint64_t >( M + 2 , 0 ) ) );
- for( int m = 1 ; m <= M + 1 ; ++m ) DP[ 0 ][ 0 ][ m ] = 1;
+ std::vector< std::vector< std::vector< std::uint64_t > > > DP(
+   n + 1 , std::vector< std::vector< std::uint64_t > >(
+	    X + 1 , std::vector< std::uint64_t >( M + 2 , 0 ) ) );
+ for( int m = 1 ; m <= M + 1 ; ++m )
+  DP[ 0 ][ 0 ][ m ] = 1;
  for( int i = 1 ; i <= n ; ++i )
   for( int x = 1 ; x <= X ; ++x )
    for( int m = F[ i - 1 ] ; m >= 1 ; --m ) {
     DP[ i ][ x ][ m ] = x >= m ? DP[ i - 1 ][ x - m ][ m ] : 0;
-    if( m < F[ i - 1 ] ) DP[ i ][ x ][ m ] += DP[ i ][ x ][ m + 1 ];
+    if( m < F[ i - 1 ] )
+     DP[ i ][ x ][ m ] += DP[ i ][ x ][ m + 1 ];
     }
  return( DP[ n ][ X ][ 1 ] );
  }
@@ -2085,8 +2215,10 @@ ADS_TEST( "esercitazioni-61" )
     unordered.insert( s );
     }
    int i = 0;
-   while( ( i < n ) && ( v[ i ] == F[ i ] ) ) v[ i++ ] = 1;
-   if( i == n ) break;
+   while( ( i < n ) && ( v[ i ] == F[ i ] ) )
+    v[ i++ ] = 1;
+   if( i == n )
+    break;
    ++v[ i ];
    }
   CHECK( diceOrdered( F , X ) == ordered );
@@ -2095,16 +2227,16 @@ ADS_TEST( "esercitazioni-61" )
  CHECK( diceUnordered( { 6 } , 0 ) == 0 && diceOrdered( {} , 0 ) == 1 );
  CHECK( diceUnordered( { 6 , 6 } , 13 ) == 0 );
  CHECK( diceOrdered( { 6 , 6 } , 13 ) == 0 && diceOrdered( { 6 } , 0 ) == 0 &&
-        diceOrdered( {} , 3 ) == 0 );
+	diceOrdered( {} , 3 ) == 0 );
  CHECK( diceOrdered( { 4 , 6 , 8 } , 3 ) == 1 &&
-        diceUnordered( { 4 , 6 , 8 } , 3 ) == 1 );
+	diceUnordered( { 4 , 6 , 8 } , 3 ) == 1 );
  CHECK( diceOrdered( { 4 , 6 , 8 } , 18 ) == 1 &&
-        diceUnordered( { 4 , 6 , 8 } , 18 ) == 1 );
+	diceUnordered( { 4 , 6 , 8 } , 18 ) == 1 );
  CHECK( diceOrdered( std::vector< int >( 30 , 1 ) , 30 ) == 1 &&
-        diceUnordered( std::vector< int >( 30 , 1 ) , 30 ) == 1 &&
-        diceUnordered( std::vector< int >( 30 , 1 ) , 29 ) == 0 );
- CHECK( diceUnordered( { 1 , 6 } , 7 ) == 1 &&
-        diceOrdered( { 1 , 6 } , 7 ) == 1 );
+	diceUnordered( std::vector< int >( 30 , 1 ) , 30 ) == 1 &&
+	diceUnordered( std::vector< int >( 30 , 1 ) , 29 ) == 0 );
+ CHECK( diceUnordered( { 1 , 6 } , 7 ) == 1 && diceOrdered( { 1 , 6 } ,
+							    7 ) == 1 );
  CHECK_THROWS( diceUnordered( {} , 0 ) , contract_violation );
  CHECK_THROWS( diceUnordered( { 6 , 0 } , 3 ) , contract_violation );
  CHECK_THROWS( diceUnordered( { 6 } , -1 ) , contract_violation );
@@ -2124,12 +2256,12 @@ ADS_TEST( "esercitazioni-61" )
 /// while compatible; Theta( n^2 )
 /// \pre miles strictly increasing, people >= 0
 I64 serveDJT( const std::vector< int > & miles ,
-               const std::vector< int > & people , int D )
+	      const std::vector< int > & people , int D )
 {
  const int n = int( miles.size() );
  ADS_PRE( ( int( people.size() ) == n ) &&
-          std::ranges::adjacent_find( miles , std::greater_equal<>() ) ==
-          miles.end() );
+	  std::ranges::adjacent_find( miles , std::greater_equal<>() ) ==
+	    miles.end() );
  std::vector< I64 > DP( n + 1 , 0 );
  for( int i = 1 ; i <= n ; ++i ) {
   I64 best = people[ i - 1 ];
@@ -2153,7 +2285,8 @@ ADS_TEST( "esercitazioni-62" )
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = rnd( g , 0 , 14 ) , D = rnd( g , 1 , 12 );
   std::vector< int > miles( n ) , people = rndVector( g , n , 0 , 50 );
-  for( int i = 0 , x = 0 ; i < n ; ++i ) miles[ i ] = x += rnd( g , 1 , 6 );
+  for( int i = 0 , x = 0 ; i < n ; ++i )
+   miles[ i ] = x += rnd( g , 1 , 6 );
   I64 best = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
    I64 s = 0;
@@ -2165,12 +2298,13 @@ ADS_TEST( "esercitazioni-62" )
      last = i;
      s += people[ i ];
      }
-   if( ok ) best = std::max( best , s );
+   if( ok )
+    best = std::max( best , s );
    }
   std::vector< WeightedInterval< I64 > > I;
   for( int i = 0 ; i < n ; ++i )
-   I.push_back( WeightedInterval< I64 >{ miles[ i ] - D , miles[ i ] ,
-                                          people[ i ] } );
+   I.push_back(
+     WeightedInterval< I64 >{ miles[ i ] - D , miles[ i ] , people[ i ] } );
   CHECK( serveDJT( miles , people , D ) == best );
   CHECK( maxinterval( I ).second == best );
   }
@@ -2210,14 +2344,14 @@ I64 partition2( const std::vector< int > & V )
 /// the cost of the k-partition of V with the cuts c (the starts of the
 /// parts after the first), by recomputing the sums
 I64 partitionCost( const std::vector< int > & V ,
-                    const std::vector< int > & c )
+		   const std::vector< int > & c )
 {
  I64 worst = std::numeric_limits< I64 >::min();
  for( std::size_t t = 0 ; t <= c.size() ; ++t ) {
   const int a = t ? c[ t - 1 ] : 0 ,
-            b = t < c.size() ? c[ t ] : int( V.size() );
-  worst = std::max( worst , std::accumulate( V.begin() + a ,
-                                             V.begin() + b , I64( 0 ) ) );
+	    b = t < c.size() ? c[ t ] : int( V.size() );
+  worst = std::max(
+    worst , std::accumulate( V.begin() + a , V.begin() + b , I64( 0 ) ) );
   }
  return( worst );
  }
@@ -2231,7 +2365,9 @@ I64 partitionBrute( const std::vector< int > & V , int k )
  I64 best = std::numeric_limits< I64 >::max();
  do {
   std::vector< int > c;
-  for( int i = 0 ; i < n - 1 ; ++i ) if( pick[ i ] ) c.push_back( i + 1 );
+  for( int i = 0 ; i < n - 1 ; ++i )
+   if( pick[ i ] )
+    c.push_back( i + 1 );
   best = std::min( best , partitionCost( V , c ) );
   } while( std::next_permutation( pick.begin() , pick.end() ) );
  return( best );
@@ -2265,14 +2401,14 @@ I64 partition3( const std::vector< int > & V )
 {
  const int n = int( V.size() );
  ADS_PRE( n >= 3 );
- std::vector< I64 > tot( n );            // partial_sum would add in int
+ std::vector< I64 > tot( n );  // partial_sum would add in int
  for( int i = 0 ; i < n ; ++i )
   tot[ i ] = ( i ? tot[ i - 1 ] : I64( 0 ) ) + V[ i ];
  I64 best = std::numeric_limits< I64 >::max();
  for( int i = 0 ; i < n - 2 ; ++i )
   for( int j = i + 1 ; j <= n - 2 ; ++j )
    best = std::min( best , std::max( { tot[ i ] , tot[ j ] - tot[ i ] ,
-                                       tot[ n - 1 ] - tot[ j ] } ) );
+				      tot[ n - 1 ] - tot[ j ] } ) );
  return( best );
  }
 
@@ -2304,7 +2440,8 @@ I64 partition( const std::vector< int > & V , int k )
 {
  ADS_PRE( ( 1 <= k ) && ( k <= int( V.size() ) ) );
  return( linearPartition( std::vector< I64 >( V.begin() , V.end() ) ,
-                          std::size_t( k ) ).first );
+			   std::size_t( k ) )
+	    .first );
  }
 
 // the vector of the text (10 for k = 3); against every set of k - 1 cuts on
@@ -2320,7 +2457,7 @@ ADS_TEST( "esercitazioni-63-3" )
   const int k = rnd( g , 1 , int( W.size() ) );
   CHECK( partition( W , k ) == partitionBrute( W , k ) );
   CHECK( partition( W , 1 ) ==
-         std::accumulate( W.begin() , W.end() , I64( 0 ) ) );
+	 std::accumulate( W.begin() , W.end() , I64( 0 ) ) );
   CHECK( partition( W , int( W.size() ) ) == *std::ranges::max_element( W ) );
   }
  CHECK_THROWS( partition( V , 7 ) , contract_violation );
@@ -2328,7 +2465,7 @@ ADS_TEST( "esercitazioni-63-3" )
  CHECK( partition( { -4 } , 1 ) == -4 );
  CHECK( partition( std::vector< int >( 8 , M ) , 2 ) == I64( 4 ) * M );
  CHECK( partition( std::vector< int >( 8 , -M - 1 ) , 3 ) ==
-        I64( 2 ) * ( -M - 1 ) );
+	I64( 2 ) * ( -M - 1 ) );
  CHECK_THROWS( partition( V , 0 ) , contract_violation );
  CHECK_THROWS( partition( {} , 1 ) , contract_violation );
  }
@@ -2356,33 +2493,40 @@ ADS_TEST( "esercitazioni-64" )
  std::mt19937 g( 64 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::string T( rnd( g , 0 , 12 ) , 'a' ) , P( rnd( g , 0 , 4 ) , 'a' );
-  for( auto & c : T ) c = char( 'a' + rnd( g , 0 , 2 ) );
-  for( auto & c : P ) c = char( 'a' + rnd( g , 0 , 2 ) );
+  for( auto & c : T )
+   c = char( 'a' + rnd( g , 0 , 2 ) );
+  for( auto & c : P )
+   c = char( 'a' + rnd( g , 0 , 2 ) );
   const int n = int( T.size() ) , m = int( P.size() );
   std::uint64_t brute = 0;
   for( int mask = 0 ; mask < ( 1 << n ) ; ++mask ) {
-   if( std::popcount( unsigned( mask ) ) != m ) continue;
+   if( std::popcount( unsigned( mask ) ) != m )
+    continue;
    std::string s;
-   for( int i = 0 ; i < n ; ++i ) if( ( mask >> i ) & 1 ) s += T[ i ];
+   for( int i = 0 ; i < n ; ++i )
+    if( ( mask >> i ) & 1 )
+     s += T[ i ];
    brute += s == P;
    }
   CHECK( subsequenceOccurrences( P , T ) == brute );
   }
  CHECK( subsequenceOccurrences( "" , "abc" ) == 1 );
  CHECK( subsequenceOccurrences( "abc" , "ab" ) == 0 );
- CHECK( subsequenceOccurrences( std::string( 25 , 'a' ) ,
-                                std::string( 60 , 'a' ) ) ==
-        tartaglia( 60 )[ 60 ][ 25 ] );
+ CHECK(
+   subsequenceOccurrences( std::string( 25 , 'a' ) ,
+			   std::string( 60 , 'a' ) ) ==
+   tartaglia( 60 )[ 60 ][ 25 ] );
  CHECK( subsequenceOccurrences( "" , "" ) == 1 &&
-        subsequenceOccurrences( "a" , "" ) == 0 );
+	subsequenceOccurrences( "a" , "" ) == 0 );
  CHECK( subsequenceOccurrences( "abcab" , "abcab" ) == 1 &&
-        subsequenceOccurrences( "abz" , "aabbcc" ) == 0 );
- std::vector< std::uint64_t > C( 51 , 0 );        // C( n , m ) mod 2^64
+	subsequenceOccurrences( "abz" , "aabbcc" ) == 0 );
+ std::vector< std::uint64_t > C( 51 , 0 );  // C( n , m ) mod 2^64
  C[ 0 ] = 1;
  for( int n = 1 ; n <= 120 ; ++n )
-  for( int m = std::min( n , 50 ) ; m >= 1 ; --m ) C[ m ] += C[ m - 1 ];
+  for( int m = std::min( n , 50 ) ; m >= 1 ; --m )
+   C[ m ] += C[ m - 1 ];
  CHECK( subsequenceOccurrences( std::string( 50 , 'a' ) ,
-                                std::string( 120 , 'a' ) ) == C[ 50 ] );
+				std::string( 120 , 'a' ) ) == C[ 50 ] );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2395,9 +2539,8 @@ ADS_TEST( "esercitazioni-64" )
 /// f[ i ] - s[ i ], by maxinterval() of the library; Theta( n log n ); the
 /// places of the segments and the length
 /// \pre s[ i ] < f[ i ]
-std::pair< std::vector< std::size_t > , I64 > maxCover(
-                                             const std::vector< I64 > & s ,
-                                             const std::vector< I64 > & f )
+std::pair< std::vector< std::size_t > , I64 >
+maxCover( const std::vector< I64 > & s , const std::vector< I64 > & f )
 {
  ADS_PRE( s.size() == f.size() );
  std::vector< WeightedInterval< I64 > > I;
@@ -2425,13 +2568,15 @@ ADS_TEST( "esercitazioni-65" )
    bool ok = true;
    I64 len = 0;
    for( int i = 0 ; i < n ; ++i ) {
-    if( ! ( ( mask >> i ) & 1 ) ) continue;
+    if( ! ( ( mask >> i ) & 1 ) )
+     continue;
     len += f[ i ] - s[ i ];
     for( int j = i + 1 ; j < n ; ++j )
      if( ( ( mask >> j ) & 1 ) && ( s[ i ] < f[ j ] ) && ( s[ j ] < f[ i ] ) )
       ok = false;
     }
-   if( ok ) best = std::max( best , len );
+   if( ok )
+    best = std::max( best , len );
    }
   const auto [ P , len ] = maxCover( s , f );
   CHECK( len == best );
@@ -2446,7 +2591,7 @@ ADS_TEST( "esercitazioni-65" )
  CHECK( maxCover( {} , {} ).second == 0 );
  CHECK( maxCover( { 0 , 5 } , { 5 , 10 } ).second == 10 );
  CHECK( maxCover( { 2 , 2 } , { 9 , 9 } ).second == 7 &&
-        maxCover( { 2 , 2 } , { 9 , 9 } ).first.size() == 1 );
+	maxCover( { 2 , 2 } , { 9 , 9 } ).first.size() == 1 );
  CHECK( maxCover( { 0 , 3 } , { 10 , 4 } ).second == 10 );
  CHECK_THROWS( maxCover( { 0 } , {} ) , contract_violation );
  }
@@ -2468,12 +2613,13 @@ I64 kSubsequence( const std::vector< int > & V , int k )
  ADS_PRE( k >= 1 );
  const int n = int( V.size() );
  std::vector< I64 > pre( n + 1 , 0 ) , best( n + 1 , 0 );
- for( int i = 0 ; i < n ; ++i ) pre[ i + 1 ] = pre[ i ] + V[ i ];
+ for( int i = 0 ; i < n ; ++i )
+  pre[ i + 1 ] = pre[ i ] + V[ i ];
  for( int i = 1 ; i <= n ; ++i ) {
   best[ i ] = best[ i - 1 ];
   for( int r = 1 ; ( r <= k ) && ( r <= i ) ; ++r )
    best[ i ] = std::max( best[ i ] , pre[ i ] - pre[ i - r ] +
-                                     ( i - r >= 1 ? best[ i - r - 1 ] : 0 ) );
+				      ( i - r >= 1 ? best[ i - r - 1 ] : 0 ) );
   }
  return( best[ n ] );
  }
@@ -2498,9 +2644,12 @@ ADS_TEST( "esercitazioni-66" )
    bool ok = true;
    for( int i = 0 ; i + k < n ; ++i )
     ok = ok && ( ( unsigned( mask ) >> i & run ) != run );
-   if( ! ok ) continue;
+   if( ! ok )
+    continue;
    I64 s = 0;
-   for( int i = 0 ; i < n ; ++i ) if( ( mask >> i ) & 1 ) s += V[ i ];
+   for( int i = 0 ; i < n ; ++i )
+    if( ( mask >> i ) & 1 )
+     s += V[ i ];
    best = std::max( best , s );
    }
   CHECK( kSubsequence( V , k ) == best );
@@ -2521,14 +2670,15 @@ ADS_TEST( "esercitazioni-66" )
 
 /// the fewest insertions that make s[ i ... j ] a palindrome, memoized
 int minpalRec( const std::string & s , int i , int j ,
-               std::vector< std::vector< int > > & DP )
+	       std::vector< std::vector< int > > & DP )
 {
- if( i >= j ) return( 0 );
+ if( i >= j )
+  return( 0 );
  if( DP[ i ][ j ] < 0 )
   DP[ i ][ j ] = s[ i ] == s[ j ]
-                 ? minpalRec( s , i + 1 , j - 1 , DP )
-                 : 1 + std::min( minpalRec( s , i + 1 , j , DP ) ,
-                                 minpalRec( s , i , j - 1 , DP ) );
+		   ? minpalRec( s , i + 1 , j - 1 , DP )
+		   : 1 + std::min( minpalRec( s , i + 1 , j , DP ) ,
+				   minpalRec( s , i , j - 1 , DP ) );
  return( DP[ i ][ j ] );
  }
 
@@ -2552,17 +2702,19 @@ ADS_TEST( "esercitazioni-67" )
  std::mt19937 g( 67 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::string s( rnd( g , 0 , 30 ) , 'a' );
-  for( auto & c : s ) c = char( 'a' + rnd( g , 0 , r % 2 ? 1 : 5 ) );
+  for( auto & c : s )
+   c = char( 'a' + rnd( g , 0 , r % 2 ? 1 : 5 ) );
   const std::string rs( s.rbegin() , s.rend() );
   CHECK( minpal( s ) == int( s.size() ) - int( lcs( s , rs ).size() ) );
   }
  CHECK( minpal( "" ) == 0 && minpal( "osso" ) == 0 && minpal( "abcde" ) == 4 );
  CHECK( minpal( "x" ) == 0 && minpal( "xy" ) == 1 &&
-        minpal( std::string( 300 , 'z' ) ) == 0 );
+	minpal( std::string( 300 , 'z' ) ) == 0 );
  std::string az;
- for( char c = 'a' ; c <= 'z' ; ++c ) az += c;
- CHECK( minpal( az ) == 25 && minpal( az + std::string( az.rbegin() ,
-                                                         az.rend() ) ) == 0 );
+ for( char c = 'a' ; c <= 'z' ; ++c )
+  az += c;
+ CHECK( minpal( az ) == 25 &&
+	minpal( az + std::string( az.rbegin() , az.rend() ) ) == 0 );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -2578,7 +2730,8 @@ ADS_TEST( "esercitazioni-67" )
 int maxSquare( const std::vector< std::vector< int > > & A )
 {
  const int n = int( A.size() );
- for( const auto & row : A ) ADS_PRE( int( row.size() ) == n );
+ for( const auto & row : A )
+  ADS_PRE( int( row.size() ) == n );
  return( int( largestSquare( A ).side ) );
  }
 
@@ -2588,37 +2741,41 @@ int maxSquare( const std::vector< std::vector< int > > & A )
 ADS_TEST( "esercitazioni-68" )
 {
  CHECK( maxSquare( { { 1 , 0 , 1 , 0 , 1 , 0 , 0 } ,
-                    { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 0 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 1 , 0 , 1 , 0 , 1 , 0 , 1 } } ) == 4 );
+		     { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 0 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 1 , 0 , 1 , 0 , 1 , 0 , 1 } } ) == 4 );
  std::mt19937 g( 68 );
  for( int r = 0 ; r < 400 ; ++r ) {
   const int n = rnd( g , 1 , 10 );
   std::vector< std::vector< int > > A( n , std::vector< int >( n ) );
-  for( auto & row : A ) for( auto & x : row ) x = rnd( g , 0 , 5 ) ? 1 : 0;
+  for( auto & row : A )
+   for( auto & x : row )
+    x = rnd( g , 0 , 5 ) ? 1 : 0;
   int best = 0;
-  for( int i = 0 ; i < n ; ++i ) for( int j = 0 ; j < n ; ++j )
-   for( int s = 1 ; ( i + s <= n ) && ( j + s <= n ) ; ++s ) {
-    bool ok = true;
-    for( int a = i ; a < i + s ; ++a ) for( int b = j ; b < j + s ; ++b )
-     ok = ok && A[ a ][ b ];
-    if( ok ) best = std::max( best , s );
-    }
+  for( int i = 0 ; i < n ; ++i )
+   for( int j = 0 ; j < n ; ++j )
+    for( int s = 1 ; ( i + s <= n ) && ( j + s <= n ) ; ++s ) {
+     bool ok = true;
+     for( int a = i ; a < i + s ; ++a )
+      for( int b = j ; b < j + s ; ++b )
+       ok = ok && A[ a ][ b ];
+     if( ok )
+      best = std::max( best , s );
+     }
   CHECK( maxSquare( A ) == best );
   }
  using M = std::vector< std::vector< int > >;
- CHECK( maxSquare( M( 5 , std::vector< int >( 5 , 0 ) ) )
-        == 0 );
- CHECK( maxSquare( M( 5 , std::vector< int >( 5 , 1 ) ) )
-        == 5 );
+ CHECK( maxSquare( M( 5 , std::vector< int >( 5 , 0 ) ) ) == 0 );
+ CHECK( maxSquare( M( 5 , std::vector< int >( 5 , 1 ) ) ) == 5 );
  CHECK( maxSquare( { { 1 } } ) == 1 && maxSquare( {} ) == 0 );
  CHECK( maxSquare( { { 0 } } ) == 0 );
  M C( 6 , std::vector< int >( 6 ) );
- for( int i = 0 ; i < 6 ; ++i ) for( int j = 0 ; j < 6 ; ++j )
-  C[ i ][ j ] = ( i + j ) % 2;
+ for( int i = 0 ; i < 6 ; ++i )
+  for( int j = 0 ; j < 6 ; ++j )
+   C[ i ][ j ] = ( i + j ) % 2;
  CHECK( maxSquare( C ) == 1 );
  CHECK( maxSquare( M( 300 , std::vector< int >( 300 , 1 ) ) ) == 300 );
  CHECK_THROWS( maxSquare( { { 1 , 1 } } ) , contract_violation );
@@ -2638,14 +2795,17 @@ I64 searchPath( const std::vector< std::vector< int > > & P )
 {
  const int n = int( P.size() );
  ADS_PRE( n >= 1 );
- for( const auto & row : P ) ADS_PRE( int( row.size() ) == n );
+ for( const auto & row : P )
+  ADS_PRE( int( row.size() ) == n );
  std::vector< I64 > best( P[ n - 1 ].begin() , P[ n - 1 ].end() );
  for( int i = n - 2 ; i >= 0 ; --i ) {
   std::vector< I64 > next( n );
   for( int j = 0 ; j < n ; ++j ) {
    I64 b = best[ j ];
-   if( j > 0 ) b = std::max( b , best[ j - 1 ] );
-   if( j < n - 1 ) b = std::max( b , best[ j + 1 ] );
+   if( j > 0 )
+    b = std::max( b , best[ j - 1 ] );
+   if( j < n - 1 )
+    b = std::max( b , best[ j + 1 ] );
    next[ j ] = P[ i ][ j ] + b;
    }
   best = std::move( next );
@@ -2659,10 +2819,11 @@ I64 searchBrute( const std::vector< std::vector< int > > & P , int i , int j )
  const int n = int( P.size() );
  if( ( j < 0 ) || ( j >= n ) )
   return( std::numeric_limits< I64 >::min() / 2 );
- if( i == 0 ) return( P[ 0 ][ j ] );
+ if( i == 0 )
+  return( P[ 0 ][ j ] );
  return( P[ i ][ j ] + std::max( { searchBrute( P , i - 1 , j - 1 ) ,
-                                   searchBrute( P , i - 1 , j ) ,
-                                   searchBrute( P , i - 1 , j + 1 ) } ) );
+				    searchBrute( P , i - 1 , j ) ,
+				    searchBrute( P , i - 1 , j + 1 ) } ) );
  }
 
 // the board of the text (33); against every path on 300 random boards with
@@ -2670,14 +2831,17 @@ I64 searchBrute( const std::vector< std::vector< int > > & P , int i , int j )
 // zig-zag forced by the profits; the empty or not square board rejected
 ADS_TEST( "esercitazioni-69" )
 {
- CHECK( searchPath( { { 6 , 7 , 4 , 7 , 8 } , { 7 , 6 , 1 , 1 , 4 } ,
-                      { 3 , 5 , 7 , 8 , 2 } , { 2 , 6 , 7 , 0 , 2 } ,
-                      { 7 , 3 , 5 , 6 , 1 } } ) == 33 );
+ CHECK( searchPath( { { 6 , 7 , 4 , 7 , 8 } ,
+		      { 7 , 6 , 1 , 1 , 4 } ,
+		      { 3 , 5 , 7 , 8 , 2 } ,
+		      { 2 , 6 , 7 , 0 , 2 } ,
+		      { 7 , 3 , 5 , 6 , 1 } } ) == 33 );
  std::mt19937 g( 69 );
  for( int r = 0 ; r < 300 ; ++r ) {
   const int n = rnd( g , 1 , 7 );
   std::vector< std::vector< int > > P( n );
-  for( auto & row : P ) row = rndVector( g , n , -9 , 9 );
+  for( auto & row : P )
+   row = rndVector( g , n , -9 , 9 );
   I64 best = std::numeric_limits< I64 >::min();
   for( int j = 0 ; j < n ; ++j )
    best = std::max( best , searchBrute( P , n - 1 , j ) );
@@ -2688,11 +2852,11 @@ ADS_TEST( "esercitazioni-69" )
  using B = std::vector< std::vector< int > >;
  CHECK( searchPath( B( 3 , std::vector< int >( 3 , M ) ) ) == I64( 3 ) * M );
  CHECK( searchPath( B( 3 , std::vector< int >( 3 , -M - 1 ) ) ) ==
-        I64( 3 ) * ( -M - 1 ) );
- CHECK( searchPath( { { 9 , 0 , 0 } , { 0 , 9 , 0 } , { 0 , 0 , 9 } } ) ==
-        27 );
- CHECK( searchPath( { { 9 , 0 , 0 } , { 0 , 0 , 0 } , { 0 , 0 , 9 } } ) ==
-        18 );
+	I64( 3 ) * ( -M - 1 ) );
+ CHECK( searchPath( { { 9 , 0 , 0 } , { 0 , 9 , 0 } ,
+		      { 0 , 0 , 9 } } ) == 27 );
+ CHECK( searchPath( { { 9 , 0 , 0 } , { 0 , 0 , 0 } ,
+		      { 0 , 0 , 9 } } ) == 18 );
  CHECK_THROWS( searchPath( {} ) , contract_violation );
  CHECK_THROWS( searchPath( { { 1 , 2 } } ) , contract_violation );
  }
@@ -2710,8 +2874,10 @@ ADS_TEST( "esercitazioni-69" )
 /// the readings of T[ i ... ], every split tried
 std::uint64_t decodeBrute( const std::vector< int > & T , std::size_t i )
 {
- if( i == T.size() ) return( 1 );
- if( T[ i ] == 0 ) return( 0 );
+ if( i == T.size() )
+  return( 1 );
+ if( T[ i ] == 0 )
+  return( 0 );
  std::uint64_t c = decodeBrute( T , i + 1 );
  if( ( i + 1 < T.size() ) && ( 10 * T[ i ] + T[ i + 1 ] <= 26 ) )
   c += decodeBrute( T , i + 2 );
@@ -2738,7 +2904,7 @@ ADS_TEST( "esercitazioni-70" )
  CHECK( countDecodings( {} ) == 1 );
  CHECK( countDecodings( { 2 , 6 } ) == 2 && countDecodings( { 0 , 0 } ) == 0 );
  CHECK( countDecodings( { 1 , 0 , 0 } ) == 0 &&
-        countDecodings( { 1 , 0 , 1 } ) == 1 );
+	countDecodings( { 1 , 0 , 1 } ) == 1 );
  CHECK_THROWS( countDecodings( { 1 , 10 } ) , contract_violation );
  CHECK_THROWS( countDecodings( { -1 } ) , contract_violation );
  }
@@ -2754,16 +2920,16 @@ ADS_TEST( "esercitazioni-70" )
 /// O( n W ) time, O( W ) space
 /// \pre V > 0, W >= 0
 std::pair< I64 , std::vector< int > > bestSum( const std::vector< int > & V ,
-                                                int W )
+					      int W )
 {
  ADS_PRE( ( W >= 0 ) &&
-          std::ranges::all_of( V , []( int v ) { return( v > 0 ); } ) );
+	  std::ranges::all_of( V , []( int v ) { return( v > 0 ); } ) );
  const int n = int( V.size() );
  std::vector< I64 > DP( W + 1 , 0 );
- std::vector< int > last( W + 1 , -1 );            // the item of the choice
+ std::vector< int > last( W + 1 , -1 );  // the item of the choice
  for( int w = 1 ; w <= W ; ++w ) {
   DP[ w ] = DP[ w - 1 ];
-  last[ w ] = -2;                                   // the capacity w - 1
+  last[ w ] = -2;  // the capacity w - 1
   for( int i = 0 ; i < n ; ++i )
    if( ( V[ i ] <= w ) && ( DP[ w - V[ i ] ] + V[ i ] > DP[ w ] ) ) {
     DP[ w ] = DP[ w - V[ i ] ] + V[ i ];
@@ -2772,7 +2938,8 @@ std::pair< I64 , std::vector< int > > bestSum( const std::vector< int > & V ,
   }
  std::vector< int > x( n , 0 );
  for( int w = W ; w > 0 ; )
-  if( last[ w ] == -2 ) --w;
+  if( last[ w ] == -2 )
+   --w;
   else {
    ++x[ last[ w ] ];
    w -= V[ last[ w ] ];
@@ -2791,24 +2958,28 @@ ADS_TEST( "esercitazioni-71" )
  const std::vector< int > V{ 18 , 3 , 21 , 9 , 12 , 24 };
  const auto [ X , x ] = bestSum( V , 17 );
  CHECK( X == 15 );
- CHECK( std::inner_product( V.begin() , V.end() , x.begin() , I64( 0 ) ) ==
-        15 );
+ CHECK( std::inner_product( V.begin() , V.end() , x.begin() ,
+			    I64( 0 ) ) == 15 );
  std::mt19937 g( 71 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::set< int > S;
-  for( int k = rnd( g , 1 , 6 ) ; k > 0 ; --k ) S.insert( rnd( g , 1 , 40 ) );
+  for( int k = rnd( g , 1 , 6 ) ; k > 0 ; --k )
+   S.insert( rnd( g , 1 , 40 ) );
   const std::vector< int > U( S.begin() , S.end() );
   const int W = rnd( g , 0 , 200 );
   std::vector< bool > reach( W + 1 , false );
   reach[ 0 ] = true;
   for( int w = 1 ; w <= W ; ++w )
-   for( int v : U ) if( ( v <= w ) && reach[ w - v ] ) reach[ w ] = true;
+   for( int v : U )
+    if( ( v <= w ) && reach[ w - v ] )
+     reach[ w ] = true;
   int best = W;
-  while( ! reach[ best ] ) --best;
+  while( ! reach[ best ] )
+   --best;
   const auto [ Y , y ] = bestSum( U , W );
   CHECK( Y == best );
-  CHECK( std::inner_product( U.begin() , U.end() , y.begin() , I64( 0 ) ) ==
-         Y );
+  CHECK( std::inner_product( U.begin() , U.end() , y.begin() ,
+			     I64( 0 ) ) == Y );
   CHECK( std::ranges::all_of( y , []( int c ) { return( c >= 0 ); } ) );
   }
  CHECK( bestSum( V , 0 ).first == 0 && bestSum( V , 2 ).first == 0 );
@@ -2816,7 +2987,7 @@ ADS_TEST( "esercitazioni-71" )
  const auto [ X1 , x1 ] = bestSum( { 7 , 1 } , 100 );
  CHECK( X1 == 100 && I64( 7 ) * x1[ 0 ] + x1[ 1 ] == 100 );
  CHECK( bestSum( { 13 } , 13 ).first == 13 &&
-        bestSum( { 13 } , 13 ).second == std::vector< int >( 1 , 1 ) );
+	bestSum( { 13 } , 13 ).second == std::vector< int >( 1 , 1 ) );
  CHECK_THROWS( bestSum( { 0 } , 5 ) , contract_violation );
  CHECK_THROWS( bestSum( { 3 , -2 } , 5 ) , contract_violation );
  CHECK_THROWS( bestSum( { 3 } , -1 ) , contract_violation );
@@ -2835,9 +3006,11 @@ std::uint64_t sortedPerm( int n , int k )
 {
  ADS_PRE( ( n >= 1 ) && ( k >= 0 ) );
  std::vector< std::uint64_t > DP( k + 1 );
- for( int t = 0 ; t <= k ; ++t ) DP[ t ] = std::uint64_t( t );
+ for( int t = 0 ; t <= k ; ++t )
+  DP[ t ] = std::uint64_t( t );
  for( int i = 2 ; i <= n ; ++i )
-  for( int t = 1 ; t <= k ; ++t ) DP[ t ] += DP[ t - 1 ];
+  for( int t = 1 ; t <= k ; ++t )
+   DP[ t ] += DP[ t - 1 ];
  return( DP[ k ] );
  }
 
@@ -2858,8 +3031,10 @@ ADS_TEST( "esercitazioni-72" )
    while( true ) {
     brute += std::ranges::is_sorted( v );
     int i = 0;
-    while( ( i < n ) && ( v[ i ] == k ) ) v[ i++ ] = 1;
-    if( i == n ) break;
+    while( ( i < n ) && ( v[ i ] == k ) )
+     v[ i++ ] = 1;
+    if( i == n )
+     break;
     ++v[ i ];
     }
    CHECK( sortedPerm( n , k ) == brute );
@@ -2885,7 +3060,9 @@ ADS_TEST( "esercitazioni-72" )
 bool isSubsequence( const std::string & s , const std::string & S )
 {
  std::size_t i = 0;
- for( char c : S ) if( ( i < s.size() ) && ( s[ i ] == c ) ) ++i;
+ for( char c : S )
+  if( ( i < s.size() ) && ( s[ i ] == c ) )
+   ++i;
  return( i == s.size() );
  }
 
@@ -2899,16 +3076,21 @@ ADS_TEST( "esercitazioni-74" )
  std::mt19937 g( 74 );
  for( int r = 0 ; r < 300 ; ++r ) {
   std::string P( rnd( g , 0 , 4 ) , 'a' ) , T( rnd( g , 0 , 4 ) , 'a' );
-  for( auto & c : P ) c = char( 'a' + rnd( g , 0 , 1 ) );
-  for( auto & c : T ) c = char( 'a' + rnd( g , 0 , 1 ) );
+  for( auto & c : P )
+   c = char( 'a' + rnd( g , 0 , 1 ) );
+  for( auto & c : T )
+   c = char( 'a' + rnd( g , 0 , 1 ) );
   const int n = int( P.size() ) , m = int( T.size() );
   CHECK( int( scsLength( P , T ) ) == n + m - lcsTable( P , T )[ n ][ m ] );
   int brute = -1;
   for( int len = 0 ; brute < 0 ; ++len )
    for( int mask = 0 ; ( brute < 0 ) && ( mask < ( 1 << len ) ) ; ++mask ) {
     std::string S( len , 'a' );
-    for( int i = 0 ; i < len ; ++i ) if( ( mask >> i ) & 1 ) S[ i ] = 'b';
-    if( isSubsequence( P , S ) && isSubsequence( T , S ) ) brute = len;
+    for( int i = 0 ; i < len ; ++i )
+     if( ( mask >> i ) & 1 )
+      S[ i ] = 'b';
+    if( isSubsequence( P , S ) && isSubsequence( T , S ) )
+     brute = len;
     }
   CHECK( int( scsLength( P , T ) ) == brute );
   }
@@ -2929,12 +3111,13 @@ ADS_TEST( "esercitazioni-74" )
 /// \pre S of 0 and 1
 int longestBalancedBlock( const std::vector< int > & S )
 {
- ADS_PRE( std::ranges::all_of( S , []( int x ) {
-                                return( ( x == 0 ) || ( x == 1 ) ); } ) );
+ ADS_PRE( std::ranges::all_of(
+   S , []( int x ) { return( ( x == 0 ) || ( x == 1 ) ); } ) );
  int zeros = 0 , ones = 0 , best = 0;
  for( int x : S )
   if( x == 0 ) {
-   if( ones > 0 ) zeros = ones = 0;
+   if( ones > 0 )
+    zeros = ones = 0;
    ++zeros;
    }
   else {
@@ -2950,9 +3133,9 @@ int longestBalancedBlock( const std::vector< int > & S )
 // alternation; a value other than 0 and 1 rejected
 ADS_TEST( "esercitazioni-76" )
 {
- CHECK( longestBalancedBlock( { 0 , 0 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0 , 0 ,
-                               0 , 1 ,
-                                1 , 1 , 1 , 0 , 0 , 0 , 0 } ) == 6 );
+ CHECK( longestBalancedBlock( { 0 , 0 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 0 ,
+				0 , 0 , 1 , 1 , 1 , 1 , 0 , 0 , 0 ,
+				0 } ) == 6 );
  std::mt19937 g( 76 );
  for( int r = 0 ; r < 1000 ; ++r ) {
   const auto S = rndVector( g , rnd( g , 0 , 25 ) , 0 , 1 );
@@ -2963,7 +3146,8 @@ ADS_TEST( "esercitazioni-76" )
     bool ok = true;
     for( int t = 0 ; t < k ; ++t )
      ok = ok && ( S[ i + t ] == 0 ) && ( S[ i + k + t ] == 1 );
-    if( ok ) best = std::max( best , 2 * k );
+    if( ok )
+     best = std::max( best , 2 * k );
     }
   CHECK( longestBalancedBlock( S ) == best );
   }
@@ -2973,12 +3157,13 @@ ADS_TEST( "esercitazioni-76" )
  CHECK( longestBalancedBlock( {} ) == 0 );
  CHECK( longestBalancedBlock( { 1 , 1 , 0 , 0 } ) == 0 );
  CHECK( longestBalancedBlock( { 0 , 0 , 0 , 1 } ) == 2 &&
-        longestBalancedBlock( { 0 , 1 , 1 , 1 } ) == 2 );
+	longestBalancedBlock( { 0 , 1 , 1 , 1 } ) == 2 );
  std::vector< int > block( 100000 , 1 ) , alt( 100000 );
  std::fill( block.begin() , block.begin() + 50000 , 0 );
- for( int i = 0 ; i < 100000 ; ++i ) alt[ i ] = i % 2;
+ for( int i = 0 ; i < 100000 ; ++i )
+  alt[ i ] = i % 2;
  CHECK( longestBalancedBlock( block ) == 100000 &&
-        longestBalancedBlock( alt ) == 2 );
+	longestBalancedBlock( alt ) == 2 );
  CHECK_THROWS( longestBalancedBlock( { 0 , 2 } ) , contract_violation );
  CHECK_THROWS( longestBalancedBlock( { -1 } ) , contract_violation );
  }

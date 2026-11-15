@@ -43,7 +43,7 @@
 
 #ifndef __ADS_DancingLinks
  #define __ADS_DancingLinks
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,7 +60,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS ExactCover -----------------------------*/
@@ -68,11 +69,11 @@ namespace ADS {
 
 /// the exact cover of the primary items, with the secondary ones at most once,
 /// on dancing links
-class ExactCover {
+class ExactCover
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the items \f$ 0 , \ldots , \mathit{primary} - 1 \f$ primary, the next
  /// \f$ \mathit{secondary} \f$ ones secondary, and no option
  /// \pre \f$ \mathit{primary} \ge 0 \f$ and \f$ \mathit{secondary} \ge 0 \f$
@@ -142,7 +143,6 @@ class ExactCover {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  void cover( int i );
  void uncover( int i );
  void hide( int p );
@@ -151,10 +151,10 @@ class ExactCover {
  [[nodiscard]] bool exact( const std::vector< int > & options ) const;
 
  int f_primary , f_items;
- std::vector< int > f_L , f_R;              ///< the list of the items
- std::vector< int > f_U , f_D , f_top;      ///< the nodes, by item
- std::vector< int > f_len;                  ///< the options of an item
- std::vector< int > f_option;               ///< the option of a node
+ std::vector< int > f_L , f_R;         ///< the list of the items
+ std::vector< int > f_U , f_D , f_top;  ///< the nodes, by item
+ std::vector< int > f_len;            ///< the options of an item
+ std::vector< int > f_option;         ///< the option of a node
  std::vector< std::vector< int > > f_options;
  long f_updates = 0;
 
@@ -172,7 +172,7 @@ class ExactCover {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DancingLinks.h included */
+#endif /* DancingLinks.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File DancingLinks.h -------------------------*/

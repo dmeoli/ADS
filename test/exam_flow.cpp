@@ -57,7 +57,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using Longs = std::vector< long >;
@@ -70,7 +71,7 @@ using Matrix = std::vector< Longs >;
 const long INF = std::numeric_limits< int >::max();
 
 const Augment ways[] = { Augment::FORD_FULKERSON , Augment::EDMONDS_KARP ,
-                         Augment::DINIC , Augment::PUSH_RELABEL };
+			 Augment::DINIC , Augment::PUSH_RELABEL };
 
 /// a uniform integer in [ a , b ]
 int rnd( std::mt19937 & g , int a , int b )
@@ -83,7 +84,8 @@ Ints subset( std::mt19937 & g , int n , int q = 2 )
 {
  Ints S;
  for( int i = 0 ; i < n ; ++i )
-  if( rnd( g , 1 , q ) == 1 ) S.push_back( i );
+  if( rnd( g , 1 , q ) == 1 )
+   S.push_back( i );
  return( S );
  }
 
@@ -112,7 +114,7 @@ void everyChoice( const Ints & r , F f )
 
 /// the maximum flow of the arcs from s to t
 long maxflow( int n , const std::vector< Arc > & A , int s , int t ,
-              Augment how = Augment::DINIC )
+	      Augment how = Augment::DINIC )
 {
  FlowNetwork N( n );
  for( auto [ u , v , c ] : A )
@@ -141,10 +143,14 @@ long minCut( int n , const std::vector< Arc > & A , int s , int t )
 /*------------------- flow-1, 2011-07-18, Swimming pool --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// a child at the course of a slot ( day , hour ), with its instructor
-struct Lesson { int child , slot , teacher; };
+struct Lesson
+{
+ int child , slot , teacher;
+ };
 
 /// Swimming pool: a course of one hour at each slot of days x hours; child
 /// i attends at most weekly courses, one a day, at the slots pref[ i ]; a
@@ -158,17 +164,19 @@ struct Lesson { int child , slot , teacher; };
 /// C'_o limits the course to seats, and it gets one of its instructors.
 /// \pre pref[ i ] and avail[ j ] of days hours slots, seats , weekly >= 0
 std::vector< Lesson > swimmingPool( const Bools & pref , const Bools & avail ,
-                                    int days , int hours , long seats = 6 ,
-                                    long weekly = 5 )
+				    int days , int hours , long seats = 6 ,
+				    long weekly = 5 )
 {
  const int n = int( pref.size() ) , k = int( avail.size() );
  const int H = days * hours;
  ADS_PRE( ( days >= 0 ) && ( hours >= 0 ) && ( seats >= 0 ) &&
-          ( weekly >= 0 ) );
+	  ( weekly >= 0 ) );
  ADS_PRE( std::all_of( pref.begin() , pref.end() , [ & ]( const auto & p ) {
-  return( int( p.size() ) == H ); } ) );
+  return( int( p.size() ) == H );
+  } ) );
  ADS_PRE( std::all_of( avail.begin() , avail.end() , [ & ]( const auto & a ) {
-  return( int( a.size() ) == H ); } ) );
+  return( int( a.size() ) == H );
+  } ) );
  const int s = 0 , t = 1 , B = 2 , G = B + n , C = G + n * days;
  const int C2 = C + H , I = C2 + H;
  FlowNetwork N( I + k );
@@ -206,8 +214,9 @@ std::vector< Lesson > swimmingPool( const Bools & pref , const Bools & avail ,
 
 /// whether the lessons respect the rules of Swimming pool
 bool lessonsOk( const Bools & pref , const Bools & avail , int days ,
-                int hours , long seats , long weekly ,
-                const std::vector< flow::Lesson > & L )
+		int hours ,
+		long seats , long weekly ,
+		const std::vector< flow::Lesson > & L )
 {
  const int n = int( pref.size() ) , H = days * hours;
  Longs week( n , 0 ) , seat( H , 0 );
@@ -228,7 +237,7 @@ bool lessonsOk( const Bools & pref , const Bools & avail , int days ,
 /// the most lessons of Swimming pool, each child choosing an hour or none
 /// on each day
 long lessonsBrute( const Bools & pref , const Bools & avail , int days ,
-                   int hours , long seats , long weekly )
+		   int hours , long seats , long weekly )
 {
  const int n = int( pref.size() ) , H = days * hours;
  Longs cap( H , 0 );
@@ -247,7 +256,7 @@ long lessonsBrute( const Bools & pref , const Bools & avail , int days ,
      continue;
     const int o = d * hours + h;
     if( ! pref[ i ][ o ] || ( ++week[ i ] > weekly ) ||
-        ( ++seat[ o ] > cap[ o ] ) )
+	( ++seat[ o ] > cap[ o ] ) )
      return;
     ++c;
     }
@@ -294,17 +303,17 @@ ADS_TEST( "flow-1" )
   CHECK( lessonsOk( pref , pref , D , O , 6 , 9 , L ) );
   // the contracts: the sizes >= 0, the rows of days hours slots
   CHECK_THROWS( flow::swimmingPool( pref , pref , -1 , O ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::swimmingPool( pref , pref , D , -1 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::swimmingPool( pref , pref , D , O , -1 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::swimmingPool( pref , pref , D , O , 6 , -1 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::swimmingPool( pref , pref , D , O - 1 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::swimmingPool( Bools() , pref , D , O - 1 ) ,
-                contract_violation );
+		contract_violation );
   }
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
@@ -320,10 +329,10 @@ ADS_TEST( "flow-1" )
    for( int o = 0 ; o < days * hours ; ++o )
     a[ o ] = rnd( g , 0 , 1 ) > 0;
   const auto L = flow::swimmingPool( pref , avail , days , hours , seats ,
-                                     weekly );
+				     weekly );
   CHECK( lessonsOk( pref , avail , days , hours , seats , weekly , L ) );
   CHECK( long( L.size() ) ==
-         lessonsBrute( pref , avail , days , hours , seats , weekly ) );
+	 lessonsBrute( pref , avail , days , hours , seats , weekly ) );
   }
  }
 
@@ -331,7 +340,8 @@ ADS_TEST( "flow-1" )
 /*--------------------- flow-2, 2012-05-31, Matricola ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Matricola: the network of the figure, the nodes A , ... , F as 0 , ... ,
 /// 5, the capacities from the digits x[ 0 ] , ... , x[ 5 ] of a student
@@ -343,18 +353,24 @@ namespace flow {
 std::vector< Arc > matricolaNet( const std::array< int , 6 > & x )
 {
  ADS_PRE( std::all_of( x.begin() , x.end() , []( int d ) {
-  return( ( d >= 0 ) && ( d <= 9 ) ); } ) );
- return( std::vector< Arc >{ { 0 , 1 , 35 } , { 0 , 2 , 25 } ,
-                             { 1 , 3 , 5 + x[ 2 ] } , { 1 , 4 , 11 + x[ 0 ] } ,
-                             { 1 , 2 , 8 + x[ 1 ] } , { 2 , 3 , 7 + x[ 3 ] } ,
-                             { 2 , 4 , 6 + x[ 4 ] } , { 3 , 4 , 5 + x[ 5 ] } ,
-                             { 3 , 5 , 25 } , { 4 , 5 , 35 } } );
+  return( ( d >= 0 ) && ( d <= 9 ) );
+  } ) );
+ return( std::vector< Arc >{ { 0 , 1 , 35 } ,
+			      { 0 , 2 , 25 } ,
+			      { 1 , 3 , 5 + x[ 2 ] } ,
+			      { 1 , 4 , 11 + x[ 0 ] } ,
+			      { 1 , 2 , 8 + x[ 1 ] } ,
+			      { 2 , 3 , 7 + x[ 3 ] } ,
+			      { 2 , 4 , 6 + x[ 4 ] } ,
+			      { 3 , 4 , 5 + x[ 5 ] } ,
+			      { 3 , 5 , 25 } ,
+			      { 4 , 5 , 35 } } );
  }
 
 /// the maximum flow from A to F of the network of the digits x
 /// \pre the digits in [ 0 , 9 ]
 long matricola( const std::array< int , 6 > & x ,
-                Augment how = Augment::DINIC )
+		Augment how = Augment::DINIC )
 {
  return( maxflow( 6 , matricolaNet( x ) , 0 , 5 , how ) );
  }
@@ -370,9 +386,9 @@ ADS_TEST( "flow-2" )
  CHECK( flow::matricola( { 9 , 9 , 9 , 9 , 9 , 9 } ) == 60 );
  // the contracts: a digit out of [ 0 , 9 ]
  CHECK_THROWS( flow::matricola( { 0 , 0 , 0 , 0 , 0 , 10 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::matricola( { -1 , 0 , 0 , 0 , 0 , 0 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 2000 ; ++it ) {
   std::array< int , 6 > x;
@@ -389,7 +405,8 @@ ADS_TEST( "flow-2" )
 /*----------------- flow-3, 2013-06-17, Cammini disgiunti ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Cammini disgiunti: whether k paths from u to v with no common edge
 /// exist in the digraph of n nodes and edges E. By Menger, the maximum
@@ -402,21 +419,23 @@ bool disjointPaths( int n , const Pairs & E , int u , int v , long k )
 {
  ADS_PRE( std::all_of( E.begin() , E.end() , [ & ]( const auto & e ) {
   return( ( e.first >= 0 ) && ( e.first < n ) && ( e.second >= 0 ) &&
-          ( e.second < n ) ); } ) );
+	   ( e.second < n ) );
+  } ) );
  std::vector< std::tuple< int , int , std::monostate > > T;
- for( auto [ a , b ] : E )                     // a loop is on no path
+ for( auto [ a , b ] : E )  // a loop is on no path
   if( a != b )
    T.emplace_back( a , b , std::monostate() );
  return( long( edgeDisjointPaths( ArrayGraph<>( n , T ) , u , v ,
-                                  k ).size() ) >= k );
+				  k ).size() ) >=
+	  k );
  }
 
 }  // end( namespace flow )
 
 /// the simple paths from x to v, as masks of the edges, extending mask
-void simplePaths( const Pairs & E , int x , int v ,
-                  std::uint64_t mask , std::vector< bool > & seen ,
-                  std::vector< std::uint64_t > & P )
+void simplePaths( const Pairs & E , int x , int v , std::uint64_t mask ,
+		  std::vector< bool > & seen ,
+		  std::vector< std::uint64_t > & P )
 {
  if( x == v ) {
   P.push_back( mask );
@@ -425,14 +444,14 @@ void simplePaths( const Pairs & E , int x , int v ,
  seen[ x ] = true;
  for( std::size_t e = 0 ; e < E.size() ; ++e )
   if( ( E[ e ].first == x ) && ! seen[ E[ e ].second ] )
-   simplePaths( E , E[ e ].second , v , mask | std::uint64_t( 1 ) << e ,
-                seen , P );
+   simplePaths( E , E[ e ].second , v , mask | std::uint64_t( 1 ) << e , seen ,
+		P );
  seen[ x ] = false;
  }
 
 /// the most pairwise disjoint masks among P[ i ] , ... , none in used
 int packing( const std::vector< std::uint64_t > & P , std::size_t i ,
-             std::uint64_t used )
+	     std::uint64_t used )
 {
  if( i == P.size() )
   return( 0 );
@@ -478,28 +497,29 @@ ADS_TEST( "flow-3" )
  // Fratelli Eris: a square of streets, home 0 and school 2, has two routes;
  // a street with a dead end in the middle has one
  const Pairs square = { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } , { 2 , 1 } ,
-                        { 2 , 3 } , { 3 , 2 } , { 3 , 0 } , { 0 , 3 } };
+			{ 2 , 3 } , { 3 , 2 } , { 3 , 0 } , { 0 , 3 } };
  CHECK( flow::disjointPaths( 4 , square , 0 , 2 , 2 ) );
- const Pairs road = { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } , { 2 , 1 } ,
-                      { 1 , 3 } , { 3 , 1 } };
+ const Pairs road = { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } ,
+		      { 2 , 1 } , { 1 , 3 } , { 3 , 1 } };
  CHECK( ! flow::disjointPaths( 4 , road , 0 , 2 , 2 ) );
  // parallel edges are distinct paths, a loop and a reversed edge none
  CHECK( flow::disjointPaths( 2 , { { 0 , 1 } , { 0 , 1 } } , 0 , 1 , 2 ) );
  CHECK( ! flow::disjointPaths( 2 , { { 0 , 1 } , { 0 , 1 } } , 0 , 1 , 3 ) );
- CHECK( ! flow::disjointPaths( 2 , { { 0 , 0 } , { 1 , 1 } , { 1 , 0 } } , 0 ,
-                               1 , 1 ) );
+ CHECK(
+   ! flow::disjointPaths( 2 , { { 0 , 0 } , { 1 , 1 } , { 1 , 0 } } , 0 , 1 ,
+			  1 ) );
  CHECK( flow::disjointPaths( 2 , { { 1 , 0 } } , 1 , 0 , 1 ) );
  // the contracts: an edge out of the nodes, u = v, k < 0
  CHECK_THROWS( flow::disjointPaths( 2 , { { 0 , 2 } } , 0 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::disjointPaths( 2 , { { -1 , 1 } } , 0 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::disjointPaths( 2 , { { 0 , 1 } } , 0 , 0 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::disjointPaths( 2 , { { 0 , 1 } } , 0 , 2 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::disjointPaths( 2 , { { 0 , 1 } } , 0 , 1 , -1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 2 , 5 );
@@ -526,7 +546,8 @@ ADS_TEST( "flow-3" )
 /*----------------- flow-4, 2013-07-22, Ballo di fine anno -----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Ballo di fine anno: n boys, m girls, the registered pairs P ( boy , girl
 /// ); a pair dances at most pair times, a student at most dancer times.
@@ -535,12 +556,13 @@ namespace flow {
 /// dancer min( n , m ).
 /// \pre the pairs join [ 0 , n ) to [ 0 , m ), pair , dancer >= 0
 Longs prom( int n , int m , const Pairs & P , long pair = 3 ,
-            long dancer = 10 )
+	    long dancer = 10 )
 {
  ADS_PRE( ( n >= 0 ) && ( m >= 0 ) && ( pair >= 0 ) && ( dancer >= 0 ) );
  ADS_PRE( std::all_of( P.begin() , P.end() , [ & ]( const auto & e ) {
   return( ( e.first >= 0 ) && ( e.first < n ) && ( e.second >= 0 ) &&
-          ( e.second < m ) ); } ) );
+	   ( e.second < m ) );
+  } ) );
  FlowNetwork N( n + m + 2 );
  const int s = n + m , t = s + 1;
  for( int i = 0 ; i < n ; ++i )
@@ -561,7 +583,7 @@ Longs prom( int n , int m , const Pairs & P , long pair = 3 ,
 
 /// whether the dances x of the pairs P respect the limits
 bool danceOk( int n , int m , const Pairs & P , long pair , long dancer ,
-              const Longs & x )
+	      const Longs & x )
 {
  Longs b( n , 0 ) , w( m , 0 );
  for( std::size_t k = 0 ; k < P.size() ; ++k ) {
@@ -570,10 +592,10 @@ bool danceOk( int n , int m , const Pairs & P , long pair , long dancer ,
   b[ P[ k ].first ] += x[ k ];
   w[ P[ k ].second ] += x[ k ];
   }
- return( std::all_of( b.begin() , b.end() , [ & ]( long y ) {
-          return( y <= dancer ); } ) &&
-         std::all_of( w.begin() , w.end() , [ & ]( long y ) {
-          return( y <= dancer ); } ) );
+ return( std::all_of( b.begin() , b.end() ,
+		       [ & ]( long y ) { return( y <= dancer ); } ) &&
+	  std::all_of( w.begin() , w.end() ,
+		       [ & ]( long y ) { return( y <= dancer ); } ) );
  }
 
 ADS_TEST( "flow-4" )
@@ -626,7 +648,8 @@ ADS_TEST( "flow-4" )
 /*------------------ flow-5, 2014-07-21, Backup wireless -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Backup wireless: n sensors at ( x[ i ] , y[ i ] ), two of them in
 /// contact if closer than d; whether each sensor can keep its data on k
@@ -637,8 +660,7 @@ namespace flow {
 bool backup( const Longs & x , const Longs & y , long d , long k , long b )
 {
  const int n = int( x.size() );
- ADS_PRE( ( y.size() == x.size() ) && ( d >= 0 ) && ( k >= 0 ) &&
-          ( b >= 0 ) );
+ ADS_PRE( ( y.size() == x.size() ) && ( d >= 0 ) && ( k >= 0 ) && ( b >= 0 ) );
  FlowNetwork N( 2 * n + 2 );
  const int s = 2 * n , t = s + 1;
  for( int i = 0 ; i < n ; ++i ) {
@@ -691,7 +713,7 @@ ADS_TEST( "flow-5" )
    y[ i ] = rnd( g , 0 , 3 );
    }
   const long d = rnd( g , 1 , 4 ) , k = rnd( g , 0 , 2 );
-const long b = rnd( g , 0 , 2 );
+  const long b = rnd( g , 0 , 2 );
   // each ordered pair ( i , j ) is a copy or not
   bool any = false;
   everyChoice( Ints( n * n , 2 ) , [ & ]( const Ints & a ) {
@@ -720,7 +742,8 @@ const long b = rnd( g , 0 , 2 );
 /*-------- flow-6, 2014-12-19, Non contenti del (Regolamento 15/16) --------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Non contenti del: n courses, the requirements ( m_i , S_i ), m_i courses
 /// out of S_i, each course counting for one requirement at most, t courses
@@ -728,14 +751,16 @@ namespace flow {
 /// the rules hold if it is t, which needs t = sum m_i, O( t n k ).
 /// \pre the courses of the S_i in [ 0 , n ), m_i >= 0
 bool requirements( int n , const std::vector< std::pair< long , Ints > > & R ,
-                   long t )
+		   long t )
 {
  const int k = int( R.size() );
  ADS_PRE( n >= 0 );
  ADS_PRE( std::all_of( R.begin() , R.end() , [ & ]( const auto & r ) {
-  return( ( r.first >= 0 ) && std::all_of( r.second.begin() ,
-          r.second.end() , [ & ]( int c ) {
-           return( ( c >= 0 ) && ( c < n ) ); } ) ); } ) );
+  return( ( r.first >= 0 ) &&
+	   std::all_of( r.second.begin() , r.second.end() , [ & ]( int c ) {
+	    return( ( c >= 0 ) && ( c < n ) );
+	    } ) );
+  } ) );
  FlowNetwork N( n + k + 2 );
  const int s = n + k , p = s + 1;
  long M = 0;
@@ -757,11 +782,12 @@ ADS_TEST( "flow-6" )
  // the example of the text, the courses A , ... , G as 0 , ... , 6
  const std::vector< std::pair< long , Ints > > R = {
   { 2 , { 0 , 1 , 2 } } , { 2 , { 1 , 2 , 3 , 4 } } ,
-  { 1 , { 0 , 1 , 2 , 3 , 4 , 5 , 6 } } };
+  { 1 , { 0 , 1 , 2 , 3 , 4 , 5 , 6 } }
+  };
  CHECK( flow::requirements( 7 , R , 5 ) );
  CHECK( ! flow::requirements( 7 , R , 4 ) );
  CHECK( ! flow::requirements( 2 , { { 2 , { 0 , 1 } } , { 1 , { 0 , 1 } } } ,
-                              3 ) );
+			      3 ) );
  CHECK( flow::requirements( 0 , {} , 0 ) );
  CHECK( ! flow::requirements( 0 , {} , 1 ) );
  // a requirement of 0 courses out of none; one of more courses than its
@@ -772,11 +798,11 @@ ADS_TEST( "flow-6" )
  // the contracts: n >= 0, m_i >= 0, the courses in [ 0 , n )
  CHECK_THROWS( flow::requirements( -1 , {} , 0 ) , contract_violation );
  CHECK_THROWS( flow::requirements( 2 , { { -1 , { 0 } } } , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::requirements( 2 , { { 1 , { 2 } } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::requirements( 2 , { { 1 , { -1 } } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 0 , 6 ) , k = rnd( g , 0 , 3 );
@@ -811,7 +837,8 @@ ADS_TEST( "flow-6" )
 /*------------------ flow-7, 2015-02-02, Cubi alfabetici -------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Cubi alfabetici: whether the word w can be written with distinct cubes
 /// of C, a letter on a face of each. The matching of the letters of w to
@@ -821,14 +848,15 @@ bool cubes( const std::vector< std::string > & C , const std::string & w )
 {
  ADS_PRE( w.size() <= C.size() );
  ADS_PRE( std::all_of( C.begin() , C.end() , []( const std::string & c ) {
-  return( c.size() == 6 ); } ) );
+  return( c.size() == 6 );
+  } ) );
  Pairs E;
  for( std::size_t i = 0 ; i < w.size() ; ++i )
   for( std::size_t j = 0 ; j < C.size() ; ++j )
    if( C[ j ].find( w[ i ] ) != std::string::npos )
     E.emplace_back( int( i ) , int( j ) );
  return( bipartiteMatching( int( w.size() ) , int( C.size() ) , E ).size() ==
-         w.size() );
+	  w.size() );
  }
 
 }  // end( namespace flow )
@@ -837,7 +865,7 @@ ADS_TEST( "flow-7" )
 {
  // the cubes of the text: D and E are only on the first cube
  const std::vector< std::string > C = { "ABCDEF" , "GHIJKL" , "AABBCC" ,
-                                        "ISTUVW" };
+					"ISTUVW" };
  CHECK( ! flow::cubes( C , "IDEA" ) );
  CHECK( flow::cubes( C , "IDGA" ) );
  CHECK( flow::cubes( C , "" ) );
@@ -883,7 +911,8 @@ ADS_TEST( "flow-7" )
 /*----------------------- flow-8, 2015-09-01, SIESTA -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// SIESTA: company i sends at most d[ i ] people, workshop j holds at most
 /// c[ j ], company i asks for the workshops w[ i ], one person of a company
@@ -892,13 +921,13 @@ namespace flow {
 /// ) ( m + n + W ) ).
 /// \pre d , c >= 0, w of the size of d with workshops in [ 0 , |c| )
 long siesta( const Longs & d , const Longs & c ,
-             const std::vector< Ints > & w )
+	     const std::vector< Ints > & w )
 {
  const int n = int( d.size() ) , m = int( c.size() );
  ADS_PRE( w.size() == d.size() );
- ADS_PRE( std::all_of( d.begin() , d.end() , []( long x ) {
-  return( x >= 0 ); } ) && std::all_of( c.begin() , c.end() , []( long x ) {
-  return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( d.begin() , d.end() , []( long x ) { return( x >= 0 ); } ) &&
+   std::all_of( c.begin() , c.end() , []( long x ) { return( x >= 0 ); } ) );
  FlowNetwork N( n + m + 2 );
  const int s = n + m , t = s + 1;
  for( int i = 0 ; i < n ; ++i ) {
@@ -919,23 +948,23 @@ ADS_TEST( "flow-8" )
 {
  CHECK( flow::siesta( {} , { 3 } , {} ) == 0 );
  CHECK( flow::siesta( { 0 , 0 } , { 3 } , { { 0 } , { 0 } } ) == 0 );
- CHECK( flow::siesta( { 2 , 2 } , { 1 , 2 } , { { 0 , 1 } , { 0 , 1 } } ) ==
-        3 );
+ CHECK( flow::siesta( { 2 , 2 } , { 1 , 2 } ,
+		      { { 0 , 1 } , { 0 , 1 } } ) == 3 );
  // no workshop; workshops of no seat; a company asking for no workshop
  CHECK( flow::siesta( { 2 } , {} , { {} } ) == 0 );
- CHECK( flow::siesta( { 2 , 2 } , { 0 , 0 } , { { 0 , 1 } , { 0 , 1 } } ) ==
-        0 );
+ CHECK( flow::siesta( { 2 , 2 } , { 0 , 0 } ,
+		      { { 0 , 1 } , { 0 , 1 } } ) == 0 );
  CHECK( flow::siesta( { 5 , 5 } , { 9 , 9 } , { { 0 , 1 } , {} } ) == 2 );
  // the contracts: w of the size of d, d , c >= 0, the workshops in range
  CHECK_THROWS( flow::siesta( { 1 } , { 1 } , {} ) , contract_violation );
  CHECK_THROWS( flow::siesta( { -1 } , { 1 } , { { 0 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::siesta( { 1 } , { -1 } , { { 0 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::siesta( { 1 } , { 1 } , { { 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::siesta( { 1 } , { 1 } , { { -1 } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 0 , 3 ) , m = rnd( g , 0 , 3 );
@@ -958,7 +987,7 @@ ADS_TEST( "flow-8" )
    for( std::size_t r = 0 ; r < R.size() ; ++r )
     if( a[ r ] ) {
      if( ( ++di[ R[ r ].first ] > d[ R[ r ].first ] ) ||
-         ( ++cj[ R[ r ].second ] > c[ R[ r ].second ] ) )
+	 ( ++cj[ R[ r ].second ] > c[ R[ r ].second ] ) )
       return;
      ++k;
      }
@@ -972,7 +1001,8 @@ ADS_TEST( "flow-8" )
 /*------------------ flow-9, 2015-12-17, Capacita ridotta ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// whether f is a flow from s to p within c, kept as f[ x ][ y ] = - f[ y ][
 /// x ], f[ x ][ y ] <= c[ x ][ y ] and conserved out of s and p
@@ -982,7 +1012,7 @@ bool flowOk( const Matrix & c , const Matrix & f , int s , int p )
  for( int x = 0 ; x < n ; ++x ) {
   long net = 0;
   for( int y = 0 ; y < n ; ++y ) {
-   if( ( f[ x ][ y ] != - f[ y ][ x ] ) || ( f[ x ][ y ] > c[ x ][ y ] ) )
+   if( ( f[ x ][ y ] != -f[ y ][ x ] ) || ( f[ x ][ y ] > c[ x ][ y ] ) )
     return( false );
    net += f[ x ][ y ];
    }
@@ -994,8 +1024,7 @@ bool flowOk( const Matrix & c , const Matrix & f , int s , int p )
 
 /// a path from s to p in the residual network c - f, by a breadth first
 /// visit; its edges are added to f with its least residual capacity if add
-bool residualPath( const Matrix & c , Matrix & f , int s , int p ,
-                   bool add )
+bool residualPath( const Matrix & c , Matrix & f , int s , int p , bool add )
 {
  const int n = int( c.size() );
  Ints parent( n , -1 );
@@ -1077,8 +1106,8 @@ ADS_TEST( "flow-9" )
  // 1: the edge ( 1 , 3 ) is reduced, the cycle cancelled, the flow stays 1
  {
   Matrix c( 5 , Longs( 5 , 0 ) ) , f( 5 , Longs( 5 , 0 ) );
-  for( auto [ x , y ] : Pairs{ { 0 , 1 } , { 1 , 2 } , { 1 , 3 } , { 3 , 4 } ,
-                               { 4 , 1 } } ) {
+  for( auto [ x , y ] :
+       Pairs{ { 0 , 1 } , { 1 , 2 } , { 1 , 3 } , { 3 , 4 } , { 4 , 1 } } ) {
    c[ x ][ y ] = f[ x ][ y ] = 1;
    f[ y ][ x ] = -1;
    }
@@ -1090,15 +1119,17 @@ ADS_TEST( "flow-9" )
   }
  {
   // two paths of capacity 1 and a spare one: the flow keeps 2
-  Matrix c = { { 0 , 1 , 2 , 0 } , { 0 , 0 , 0 , 1 } , { 0 , 0 , 0 , 2 } ,
-               { 0 , 0 , 0 , 0 } };
+  Matrix c = {
+   { 0 , 1 , 2 , 0 } , { 0 , 0 , 0 , 1 } , { 0 , 0 , 0 , 2 } ,
+   { 0 , 0 , 0 , 0 }
+   };
   Matrix f = flowMatrix( c , 0 , 3 );
   CHECK( value( f , 0 ) == 3 );
   CHECK( flow::reduceFlow( c , 0 , 3 , f , 0 , 1 ) == 2 );
   CHECK( value( f , 0 ) == 2 );
   // the edge ( 0 , 1 ) is now at 0: the contract wants c[ u ][ v ] > 0
   CHECK_THROWS( flow::reduceFlow( c , 0 , 3 , f , 0 , 1 ) ,
-                contract_violation );
+		contract_violation );
   // ( 0 , 2 ) of 2 carries 2: down to 1 and to 0, the flow follows
   CHECK( flow::reduceFlow( c , 0 , 3 , f , 0 , 2 ) == 2 );
   CHECK( flow::reduceFlow( c , 0 , 3 , f , 0 , 2 ) == 2 );
@@ -1108,15 +1139,15 @@ ADS_TEST( "flow-9" )
   CHECK( ( c[ 2 ][ 3 ] == 1 ) && ( value( f , 0 ) == 0 ) );
   // the contracts: s = p, u = v, the nodes in range, matrices not square
   CHECK_THROWS( flow::reduceFlow( c , 0 , 0 , f , 2 , 3 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::reduceFlow( c , 0 , 3 , f , 2 , 2 ) ,
-                contract_violation );
+		contract_violation );
   CHECK_THROWS( flow::reduceFlow( c , 0 , 4 , f , 2 , 3 ) ,
-                contract_violation );
+		contract_violation );
   Matrix f2 = f;
   f2.pop_back();
   CHECK_THROWS( flow::reduceFlow( c , 0 , 3 , f2 , 2 , 3 ) ,
-                contract_violation );
+		contract_violation );
   }
  std::mt19937 g( 1 );
  int cases[ 3 ] = { 0 , 0 , 0 };
@@ -1167,7 +1198,8 @@ ADS_TEST( "flow-9" )
 /*----------------- flow-11, 2016-08-29, Consiglio dei CdL -----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Consiglio dei CdL: n courses, k teachers of the categories cat[ j ] in {
 /// 0 , 1 , 2 } (PO, PA, RU), teaching the courses teaches[ j ]; the
@@ -1178,7 +1210,7 @@ namespace flow {
 /// \pre n >= 0 divisible by 3, the categories in [ 0 , 2 ], the courses in
 ///      [ 0 , n )
 std::optional< Ints > council( int n , const Ints & cat ,
-                               const std::vector< Ints > & teaches )
+			       const std::vector< Ints > & teaches )
 {
  const int k = int( cat.size() );
  ADS_PRE( ( n >= 0 ) && ( n % 3 == 0 ) && ( teaches.size() == cat.size() ) );
@@ -1211,7 +1243,8 @@ std::optional< Ints > council( int n , const Ints & cat ,
 /// whether r gives each course a distinct teacher of it, n / 3 of each
 /// category
 bool councilOk( int n , const Ints & cat ,
-                const std::vector< Ints > & teaches , const Ints & r )
+		const std::vector< Ints > & teaches ,
+		const Ints & r )
 {
  if( int( r.size() ) != n )
   return( false );
@@ -1221,8 +1254,8 @@ bool councilOk( int n , const Ints & cat ,
    return( false );
   ++per[ cat[ r[ c ] ] ];
   }
- return( std::all_of( per.begin() , per.end() , [ & ]( int x ) {
-  return( x == n / 3 ); } ) );
+ return( std::all_of( per.begin() , per.end() ,
+		       [ & ]( int x ) { return( x == n / 3 ); } ) );
  }
 
 ADS_TEST( "flow-11" )
@@ -1231,16 +1264,16 @@ ADS_TEST( "flow-11" )
  CHECK( e && e->empty() );
  // three courses, the PO and the PA teach all of them, no RU
  CHECK( ! flow::council( 3 , { 0 , 1 } , { { 0 , 1 , 2 } , { 0 , 1 , 2 } } ) );
- const auto r = flow::council( 3 , { 0 , 1 , 2 } ,
-                               { { 2 } , { 0 , 2 } , { 0 , 1 , 2 } } );
+ const auto r =
+   flow::council( 3 , { 0 , 1 , 2 } , { { 2 } , { 0 , 2 } , { 0 , 1 , 2 } } );
  CHECK( r && ( *r == Ints{ 1 , 2 , 0 } ) );
  // teachers but no course; fewer teachers than courses; a teacher of all
  // the courses is one representative only
  const auto t = flow::council( 0 , { 0 , 1 } , { {} , {} } );
  CHECK( t && t->empty() );
  CHECK( ! flow::council( 3 , { 0 , 1 } , { { 0 } , { 1 } } ) );
- CHECK( ! flow::council( 3 , { 0 , 1 , 1 } , { { 0 , 1 , 2 } , { 0 } ,
-                                              { 0 } } ) );
+ CHECK( ! flow::council( 3 , { 0 , 1 , 1 } ,
+			 { { 0 , 1 , 2 } , { 0 } , { 0 } } ) );
  // the contracts: n >= 0 and divisible by 3, the sizes, the categories in
  // [ 0 , 2 ], the courses in [ 0 , n )
  CHECK_THROWS( flow::council( 2 , {} , {} ) , contract_violation );
@@ -1274,7 +1307,8 @@ ADS_TEST( "flow-11" )
 /*--------------------- flow-13, 2017-01-24, Segherie ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Segherie: w[ i ][ j ] trees grow ripe in year i in forest j and can be
 /// cut then or later, at most u[ i ] in year i and v[ i ][ j ] of them in
@@ -1291,7 +1325,7 @@ Matrix sawmill( const Matrix & w , const Longs & u , const Matrix & v )
  std::vector< std::vector< int > > e( m , Ints( n ) );
  for( int i = 0 ; i < m ; ++i ) {
   ADS_PRE( ( int( w[ i ].size() ) == n ) && ( int( v[ i ].size() ) == n ) &&
-           ( u[ i ] >= 0 ) );
+	   ( u[ i ] >= 0 ) );
   N.addEdge( n * m + i , p , u[ i ] );
   for( int j = 0 ; j < n ; ++j ) {
    N.addEdge( s , i * n + j , w[ i ][ j ] );
@@ -1312,7 +1346,7 @@ Matrix sawmill( const Matrix & w , const Longs & u , const Matrix & v )
 
 /// whether the cuts x respect the ripe trees and the limits of Segherie
 bool sawOk( const Matrix & w , const Longs & u , const Matrix & v ,
-            const Matrix & x )
+	    const Matrix & x )
 {
  const int m = int( u.size() ) , n = m ? int( w[ 0 ].size() ) : 0;
  Longs left( n , 0 );
@@ -1322,7 +1356,7 @@ bool sawOk( const Matrix & w , const Longs & u , const Matrix & v ,
    left[ j ] += w[ i ][ j ] - x[ i ][ j ];
    year += x[ i ][ j ];
    if( ( x[ i ][ j ] < 0 ) || ( x[ i ][ j ] > v[ i ][ j ] ) ||
-    ( left[ j ] < 0 ) )
+       ( left[ j ] < 0 ) )
     return( false );
    }
   if( year > u[ i ] )
@@ -1354,20 +1388,20 @@ ADS_TEST( "flow-13" )
  CHECK( total( flow::sawmill( w , { 0 , 0 } , v ) ) == 0 );
  CHECK( total( flow::sawmill( w , u , { { 0 , 0 } , { 0 , 0 } } ) ) == 0 );
  CHECK( total( flow::sawmill( { { 0 } , { 7 } } , { 9 , 3 } ,
-                              { { 9 } , { 9 } } ) ) == 3 );
+			      { { 9 } , { 9 } } ) ) == 3 );
  // years but no forest
- CHECK( flow::sawmill( { {} , {} } , { 1 , 1 } , { {} , {} } ) ==
-        Matrix( 2 ) );
+ CHECK( flow::sawmill( { {} , {} } , { 1 , 1 } ,
+		       { {} , {} } ) == Matrix( 2 ) );
  // the contracts: the sizes, u >= 0, and w , v >= 0 (by the network)
  CHECK_THROWS( flow::sawmill( w , { 1 } , v ) , contract_violation );
  CHECK_THROWS( flow::sawmill( w , u , { { 9 , 9 } } ) , contract_violation );
  CHECK_THROWS( flow::sawmill( w , u , { { 9 , 9 } , { 9 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::sawmill( w , { 1 , -1 } , v ) , contract_violation );
  CHECK_THROWS( flow::sawmill( { { -1 , 0 } , { 0 , 1 } } , u , v ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::sawmill( w , u , { { 9 , -1 } , { 9 , 9 } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 300 ; ++it ) {
   const int m = rnd( g , 1 , 3 ) , n = rnd( g , 1 , 2 );
@@ -1398,7 +1432,8 @@ ADS_TEST( "flow-13" )
 /*----------------- flow-14, 2017-06-29, Esperimento CERN ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Esperimento CERN: n properties, instrument i measures the properties
 /// measures[ i ] and comes from the maker maker[ i ] out of t; whether each
@@ -1408,11 +1443,11 @@ namespace flow {
 /// O( m^2 ( n + t ) r ).
 /// \pre the properties in [ 0 , n ), the makers in [ 0 , t ), r >= 0
 bool cern( int n , const std::vector< Ints > & measures , const Ints & maker ,
-           int t , long r )
+	   int t , long r )
 {
  const int m = int( maker.size() );
  ADS_PRE( ( n >= 0 ) && ( t >= 0 ) && ( r >= 0 ) &&
-          ( measures.size() == maker.size() ) );
+	  ( measures.size() == maker.size() ) );
  FlowNetwork N( m + n * t + n + 2 );
  const int D = m , P = D + n * t , s = P + n , p = s + 1;
  for( int i = 0 ; i < m ; ++i ) {
@@ -1443,7 +1478,7 @@ ADS_TEST( "flow-14" )
  // r larger than the makers; no maker and r = 0; a property no instrument
  // measures
  CHECK( ! flow::cern( 1 , { { 0 } , { 0 } , { 0 } } , { 0 , 1 , 1 } , 2 ,
-                      3 ) );
+		      3 ) );
  CHECK( flow::cern( 2 , {} , {} , 0 , 0 ) );
  CHECK( ! flow::cern( 2 , { { 0 } } , { 0 } , 1 , 1 ) );
  // the contracts: n , t , r >= 0, the sizes, the makers in [ 0 , t ), the
@@ -1451,12 +1486,11 @@ ADS_TEST( "flow-14" )
  CHECK_THROWS( flow::cern( -1 , {} , {} , 1 , 0 ) , contract_violation );
  CHECK_THROWS( flow::cern( 1 , {} , {} , -1 , 0 ) , contract_violation );
  CHECK_THROWS( flow::cern( 1 , {} , {} , 1 , -1 ) , contract_violation );
- CHECK_THROWS( flow::cern( 1 , { { 0 } } , {} , 1 , 1 ) ,
-               contract_violation );
+ CHECK_THROWS( flow::cern( 1 , { { 0 } } , {} , 1 , 1 ) , contract_violation );
  CHECK_THROWS( flow::cern( 1 , { { 0 } } , { 1 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::cern( 1 , { { 1 } } , { 0 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 0 , 3 ) , m = rnd( g , 0 , 4 ) , t = rnd( g , 1 , 3 );
@@ -1488,7 +1522,8 @@ ADS_TEST( "flow-14" )
 /*------------------ flow-15, 2018-08-21, Hateville Clubs ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Hateville Clubs: nc clubs, person i in the clubs clubs[ i ] and in the
 /// party party[ i ] out of nz; a council of one representative per club, a
@@ -1498,7 +1533,7 @@ namespace flow {
 /// the council exists if it is nc, O( |P| nc^2 ).
 /// \pre the clubs in [ 0 , nc ), the parties in [ 0 , nz )
 std::optional< Ints > hateville( int nc , const std::vector< Ints > & clubs ,
-                                 const Ints & party , int nz )
+				 const Ints & party , int nz )
 {
  const int np = int( party.size() );
  ADS_PRE( ( nc >= 0 ) && ( nz >= 0 ) && ( clubs.size() == party.size() ) );
@@ -1529,8 +1564,8 @@ std::optional< Ints > hateville( int nc , const std::vector< Ints > & clubs ,
 }  // end( namespace flow )
 
 /// whether x gives each club a distinct member, no party over nc / 2
-bool clubsOk( int nc , const std::vector< Ints > & clubs ,
-                const Ints & party , int nz , const Ints & x )
+bool clubsOk( int nc , const std::vector< Ints > & clubs , const Ints & party ,
+	      int nz , const Ints & x )
 {
  if( int( x.size() ) != nc )
   return( false );
@@ -1552,9 +1587,9 @@ ADS_TEST( "flow-15" )
  // two clubs, the members of the second all of the same party as the only
  // member of the first
  CHECK( ! flow::hateville( 2 , { { 0 } , { 1 } , { 1 } } , { 0 , 0 , 0 } ,
-                           2 ) );
+			   2 ) );
  const auto x = flow::hateville( 2 , { { 0 } , { 1 } , { 1 } } ,
-                                 { 0 , 0 , 1 } , 2 );
+				 { 0 , 0 , 1 } , 2 );
  CHECK( x && ( *x == Ints{ 0 , 2 } ) );
  // no party and no club; a club with no member; three clubs give each
  // party one seat only, floor( 3 / 2 )
@@ -1562,22 +1597,22 @@ ADS_TEST( "flow-15" )
  CHECK( z && z->empty() );
  CHECK( ! flow::hateville( 2 , { { 0 } , { 0 } } , { 0 , 1 } , 2 ) );
  CHECK( ! flow::hateville( 3 , { { 0 } , { 1 } , { 2 } } , { 0 , 0 , 1 } ,
-                           2 ) );
+			   2 ) );
  CHECK( flow::hateville( 3 , { { 0 } , { 1 } , { 2 } } , { 0 , 1 , 2 } , 3 ) );
  // the contracts: nc , nz >= 0, the sizes, the parties and the clubs in
  // range
  CHECK_THROWS( flow::hateville( -1 , {} , {} , 1 ) , contract_violation );
  CHECK_THROWS( flow::hateville( 1 , {} , {} , -1 ) , contract_violation );
  CHECK_THROWS( flow::hateville( 1 , { { 0 } } , {} , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hateville( 1 , { { 0 } } , { 1 } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hateville( 1 , { { 1 } } , { 0 } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int nc = rnd( g , 0 , 4 ) , np = rnd( g , 0 , 5 );
-const int nz = rnd( g , 1 , 3 );
+  const int nz = rnd( g , 1 , 3 );
   std::vector< Ints > clubs( np );
   Ints party( np );
   for( int i = 0 ; i < np ; ++i ) {
@@ -1598,7 +1633,8 @@ const int nz = rnd( g , 1 , 3 );
 /*--------------------- flow-16, 2019-06-17, Cantieri ----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Cantieri: site i works in the months start[ i ] , ... , end[ i ] out of
 /// 1 , ... , m and needs len[ i ] person-months; pm people a month, at most
@@ -1607,17 +1643,17 @@ namespace flow {
 /// is L = sum len_i, O( c m L ) by Ford and Fulkerson.
 /// \pre 1 <= start[ i ] <= end[ i ] <= m, len , pm , pc >= 0
 bool sites( const Ints & start , const Ints & end , const Longs & len , int m ,
-            long pm , long pc )
+	    long pm , long pc )
 {
  const int c = int( len.size() );
  ADS_PRE( ( start.size() == len.size() ) && ( end.size() == len.size() ) &&
-          ( m >= 0 ) && ( pm >= 0 ) && ( pc >= 0 ) );
+	  ( m >= 0 ) && ( pm >= 0 ) && ( pc >= 0 ) );
  FlowNetwork N( c + m + 2 );
  const int s = c + m , p = s + 1;
  long L = 0;
  for( int i = 0 ; i < c ; ++i ) {
   ADS_PRE( ( 1 <= start[ i ] ) && ( start[ i ] <= end[ i ] ) &&
-           ( end[ i ] <= m ) && ( len[ i ] >= 0 ) );
+	   ( end[ i ] <= m ) && ( len[ i ] >= 0 ) );
   L += len[ i ];
   N.addEdge( s , i , len[ i ] );
   for( int j = start[ i ] ; j <= end[ i ] ; ++j )
@@ -1646,18 +1682,18 @@ ADS_TEST( "flow-16" )
  // the contracts: the sizes, m , pm , pc >= 0, 1 <= start <= end <= m,
  // len >= 0
  CHECK_THROWS( flow::sites( { 1 } , {} , { 1 } , 1 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::sites( {} , {} , {} , -1 , 1 , 1 ) , contract_violation );
  CHECK_THROWS( flow::sites( {} , {} , {} , 1 , -1 , 1 ) , contract_violation );
  CHECK_THROWS( flow::sites( {} , {} , {} , 1 , 1 , -1 ) , contract_violation );
  CHECK_THROWS( flow::sites( { 0 } , { 1 } , { 1 } , 1 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::sites( { 2 } , { 1 } , { 1 } , 2 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::sites( { 1 } , { 2 } , { 1 } , 1 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::sites( { 1 } , { 1 } , { -1 } , 1 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int c = rnd( g , 0 , 3 ) , m = rnd( g , 1 , 3 );
@@ -1698,7 +1734,8 @@ ADS_TEST( "flow-16" )
 /*-------------- flow-17, 2019-07-18, Rete elettrica trentina --------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// the roles of the nodes of Rete elettrica trentina
 enum Role { PLANT , TRANSFORMER , DISTRIBUTION };
@@ -1707,8 +1744,8 @@ enum Role { PLANT , TRANSFORMER , DISTRIBUTION };
 /// source n joined to each plant v ( power[ v ] ), a sink n + 1 joined from
 /// each transformer v ( consume[ v ] ) and distribution node ( r )
 std::vector< Arc > theftNet( int n , const Pairs & E , const Ints & role ,
-                             const Longs & power , const Longs & consume ,
-                             long k , long r )
+			     const Longs & power , const Longs & consume ,
+			     long k , long r )
 {
  std::vector< Arc > A;
  for( auto [ u , v ] : E )
@@ -1733,23 +1770,26 @@ std::vector< Arc > theftNet( int n , const Pairs & E , const Ints & role ,
 /// \pre the edges join nodes, the roles in { PLANT , TRANSFORMER ,
 ///      DISTRIBUTION }, the capacities >= 0
 bool theft( int n , const Pairs & E , const Ints & role , const Longs & power ,
-            const Longs & consume , long k , long r ,
-            Augment how = Augment::EDMONDS_KARP )
+	    const Longs & consume , long k , long r ,
+	    Augment how = Augment::EDMONDS_KARP )
 {
  ADS_PRE( ( n >= 0 ) && ( int( role.size() ) == n ) && ( k >= 0 ) &&
-          ( r >= 0 ) && ( int( power.size() ) == n ) &&
-          ( int( consume.size() ) == n ) );
+	  ( r >= 0 ) && ( int( power.size() ) == n ) &&
+	  ( int( consume.size() ) == n ) );
  ADS_PRE( std::all_of( E.begin() , E.end() , [ & ]( const auto & e ) {
   return( ( e.first >= 0 ) && ( e.first < n ) && ( e.second >= 0 ) &&
-          ( e.second < n ) ); } ) );
+	   ( e.second < n ) );
+  } ) );
  ADS_PRE( std::all_of( role.begin() , role.end() , []( int x ) {
-  return( ( x >= PLANT ) && ( x <= DISTRIBUTION ) ); } ) );
+  return( ( x >= PLANT ) && ( x <= DISTRIBUTION ) );
+  } ) );
  long need = 0;
  for( int v = 0 ; v < n ; ++v )
   if( role[ v ] != PLANT )
    need += role[ v ] == TRANSFORMER ? consume[ v ] : r;
  return( maxflow( n + 2 , theftNet( n , E , role , power , consume , k , r ) ,
-                  n , n + 1 , how ) == need );
+		  n ,
+		   n + 1 , how ) == need );
  }
 
 }  // end( namespace flow )
@@ -1763,44 +1803,45 @@ ADS_TEST( "flow-17" )
  const Ints role = { PLANT , TRANSFORMER , DISTRIBUTION };
  CHECK( flow::theft( 3 , E , role , { 10 , 0 , 0 } , { 0 , 4 , 0 } , 5 , 5 ) );
  CHECK( ! flow::theft( 3 , E , role , { 10 , 0 , 0 } , { 0 , 4 , 0 } , 5 ,
-                       6 ) );
+		       6 ) );
  CHECK( ! flow::theft( 3 , E , role , { 8 , 0 , 0 } , { 0 , 4 , 0 } , 5 ,
-                      5 ) );
+		       5 ) );
  CHECK( flow::theft( 0 , {} , {} , {} , {} , 1 , 1 ) );
  // nothing to steal and transformers of 0; edges of 0 with a demand; no
  // plant; a loop and parallel edges
  CHECK( flow::theft( 3 , E , role , { 0 , 0 , 0 } , { 0 , 0 , 0 } , 5 , 0 ) );
  CHECK( ! flow::theft( 3 , E , role , { 10 , 0 , 0 } , { 0 , 4 , 0 } , 0 ,
-                       0 ) );
+		       0 ) );
  CHECK( ! flow::theft( 2 , { { 0 , 1 } } , { TRANSFORMER , DISTRIBUTION } ,
-                       { 0 , 0 } , { 1 , 0 } , 5 , 0 ) );
+		       { 0 , 0 } , { 1 , 0 } , 5 , 0 ) );
  CHECK( flow::theft( 2 , { { 0 , 0 } , { 0 , 1 } , { 0 , 1 } } ,
-                     { PLANT , DISTRIBUTION } , { 9 , 0 } , { 0 , 0 } , 3 ,
-                     6 ) );
+		     { PLANT , DISTRIBUTION } , { 9 , 0 } , { 0 , 0 } , 3 ,
+		     6 ) );
  CHECK( ! flow::theft( 2 , { { 0 , 0 } , { 0 , 1 } , { 0 , 1 } } ,
-                       { PLANT , DISTRIBUTION } , { 9 , 0 } , { 0 , 0 } , 3 ,
-                       7 ) );
+		       { PLANT , DISTRIBUTION } , { 9 , 0 } , { 0 , 0 } , 3 ,
+		       7 ) );
  // the contracts: the sizes, k , r >= 0, the edges join nodes, the roles
  // in range, the capacities >= 0 (by the network)
  const Longs p = { 10 , 0 , 0 } , c = { 0 , 4 , 0 };
  CHECK_THROWS( flow::theft( -1 , {} , {} , {} , {} , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , { PLANT } , p , c , 5 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , role , { 10 } , c , 5 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , role , p , { 4 } , 5 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , role , p , c , -1 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , role , p , c , 5 , -1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , { { 0 , 3 } } , role , p , c , 5 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , { PLANT , TRANSFORMER , 3 } , p , c , 5 ,
-                            5 ) , contract_violation );
+			    5 ) ,
+	       contract_violation );
  CHECK_THROWS( flow::theft( 3 , E , role , { -1 , 0 , 0 } , c , 5 , 5 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 1 , 6 );
@@ -1821,8 +1862,9 @@ ADS_TEST( "flow-17" )
   const bool ok = flow::theft( n , F , ro , pw , cs , k , r );
   for( auto how : ways )
    CHECK( flow::theft( n , F , ro , pw , cs , k , r , how ) == ok );
-  CHECK( ok == ( minCut( n + 2 , flow::theftNet( n , F , ro , pw , cs , k ,
-                                                 r ) , n , n + 1 ) == need ) );
+  CHECK( ok == ( minCut( n + 2 ,
+			 flow::theftNet( n , F , ro , pw , cs , k , r ) , n ,
+			 n + 1 ) == need ) );
   }
  }
 
@@ -1830,7 +1872,8 @@ ADS_TEST( "flow-17" )
 /*----------------------- flow-18, 2019-08-22, Torri -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Torri: the most rooks on the white squares of the board M, no two in a
 /// row or a column: the largest matching of the rows to the columns of
@@ -1840,7 +1883,8 @@ int rooks( const Bools & M )
 {
  const int n = int( M.size() );
  ADS_PRE( std::all_of( M.begin() , M.end() , [ & ]( const auto & r ) {
-  return( int( r.size() ) == n ); } ) );
+  return( int( r.size() ) == n );
+  } ) );
  Pairs E;
  for( int i = 0 ; i < n ; ++i )
   for( int j = 0 ; j < n ; ++j )
@@ -1857,14 +1901,16 @@ ADS_TEST( "flow-18" )
  CHECK( flow::rooks( Bools( 4 , std::vector< bool >( 4 , false ) ) ) == 0 );
  CHECK( flow::rooks( Bools( 4 , std::vector< bool >( 4 , true ) ) ) == 4 );
  // the white squares of the first column and of the last row: 2 rooks
- CHECK( flow::rooks( { { true , false , false } , { true , false , false } ,
-                       { true , true , true } } ) == 2 );
+ CHECK( flow::rooks( { { true , false , false } ,
+		       { true , false , false } ,
+		       { true , true , true } } ) == 2 );
  // one square, white or black; the white squares of one row; a
  // permutation, the anti-diagonal
  CHECK( flow::rooks( { { true } } ) == 1 );
  CHECK( flow::rooks( { { false } } ) == 0 );
- CHECK( flow::rooks( { { true , true , true } , { false , false , false } ,
-                       { false , false , false } } ) == 1 );
+ CHECK( flow::rooks( { { true , true , true } ,
+		       { false , false , false } ,
+		       { false , false , false } } ) == 1 );
  Bools A( 6 , std::vector< bool >( 6 , false ) );
  for( int i = 0 ; i < 6 ; ++i )
   A[ i ][ 5 - i ] = true;
@@ -1872,7 +1918,7 @@ ADS_TEST( "flow-18" )
  // the contracts: M square
  CHECK_THROWS( flow::rooks( { { true , true } } ) , contract_violation );
  CHECK_THROWS( flow::rooks( { { true } , { true , false } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 1 , 5 );
@@ -1901,7 +1947,8 @@ ADS_TEST( "flow-18" )
 /*---------------- flow-19, 2020-07-24, Didattica pandemica ----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Didattica pandemica: na rooms of ns slots; course i may use the rooms
 /// A[ i ] at the slots S[ i ], gets 0, 1 or 2 pairs ( room , slot ), each
@@ -1913,12 +1960,12 @@ namespace flow {
 /// \pre the rooms in [ 0 , na ), the slots in [ 0 , ns ), the programmes in
 ///      [ 0 , nt ), k >= 0
 long lectures( int na , int ns , const std::vector< Ints > & A ,
-               const std::vector< Ints > & S , const Ints & prog , int nt ,
-               long k )
+	       const std::vector< Ints > & S , const Ints & prog , int nt ,
+	       long k )
 {
  const int m = int( prog.size() );
  ADS_PRE( ( na >= 0 ) && ( ns >= 0 ) && ( nt >= 0 ) && ( k >= 0 ) &&
-          ( A.size() == prog.size() ) && ( S.size() == prog.size() ) );
+	  ( A.size() == prog.size() ) && ( S.size() == prog.size() ) );
  FlowNetwork N( nt + m + na * ns + 2 );
  const int C = nt , R = C + m , s = R + na * ns , p = s + 1;
  for( int h = 0 ; h < nt ; ++h )
@@ -1944,41 +1991,43 @@ ADS_TEST( "flow-19" )
  CHECK( flow::lectures( 2 , 25 , {} , {} , {} , 1 , 5 ) == 0 );
  // a course gets two pairs at most, its programme limits it to one
  CHECK( flow::lectures( 2 , 2 , { { 0 , 1 } } , { { 0 , 1 } } , { 0 } , 1 ,
-                        9 ) == 2 );
+			9 ) == 2 );
  CHECK( flow::lectures( 2 , 2 , { { 0 , 1 } } , { { 0 , 1 } } , { 0 } , 1 ,
-                        1 ) == 1 );
+			1 ) == 1 );
  // k = 0; a course with no room or no slot; no room at all
  CHECK( flow::lectures( 2 , 2 , { { 0 , 1 } } , { { 0 , 1 } } , { 0 } , 1 ,
-                        0 ) == 0 );
+			0 ) == 0 );
  CHECK( flow::lectures( 2 , 2 , { {} , { 1 } } , { { 0 } , {} } , { 0 , 0 } ,
-                        1 , 9 ) == 0 );
+			1 , 9 ) ==
+	0 );
  CHECK( flow::lectures( 0 , 0 , { {} } , { {} } , { 0 } , 1 , 9 ) == 0 );
  // two courses of one programme for a single pair
  CHECK( flow::lectures( 1 , 1 , { { 0 } , { 0 } } , { { 0 } , { 0 } } ,
-                        { 0 , 0 } , 1 , 9 ) == 1 );
+			{ 0 , 0 } , 1 ,
+			9 ) == 1 );
  // the contracts: the sizes >= 0 and equal, the programmes, the rooms and
  // the slots in range
  const std::vector< Ints > one = { { 0 } };
  CHECK_THROWS( flow::lectures( -1 , 1 , {} , {} , {} , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , -1 , {} , {} , {} , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , 1 , {} , {} , {} , -1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , 1 , {} , {} , {} , 1 , -1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , 1 , one , {} , { 0 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , 1 , one , one , { 1 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , 1 , { { 1 } } , one , { 0 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::lectures( 1 , 1 , one , { { 1 } } , { 0 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int na = rnd( g , 1 , 2 ) , ns = rnd( g , 1 , 2 );
-const int m = rnd( g , 0 , 3 );
+  const int m = rnd( g , 0 , 3 );
   const int nt = rnd( g , 1 , 2 );
   const long k = rnd( g , 0 , 3 );
   std::vector< Ints > A( m ) , S( m );
@@ -2015,7 +2064,8 @@ const int m = rnd( g , 0 , 3 );
 /*----------------- flow-20, 2022-06-21, Piano strategico ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Piano strategico: group j has the budget b[ j ], action i needs exactly
 /// x[ i ] from its groups grp[ i ] and goes to its delegates del[ i ] out of
@@ -2026,12 +2076,12 @@ namespace flow {
 /// \pre b , x , K >= 0, the groups in [ 0 , |b| ), the delegates in [ 0 ,
 ///      d )
 bool plan( const Longs & b , const Longs & x ,
-           const std::vector< Ints > & grp ,
-           const std::vector< Ints > & del , int d , long K )
+	   const std::vector< Ints > & grp ,
+	   const std::vector< Ints > & del , int d , long K )
 {
  const int k = int( b.size() ) , n = int( x.size() );
  ADS_PRE( ( grp.size() == x.size() ) && ( del.size() == x.size() ) &&
-          ( d >= 0 ) && ( K >= 0 ) );
+	  ( d >= 0 ) && ( K >= 0 ) );
  FlowNetwork N( k + 2 * n + d + 2 );
  const int A = k , A2 = A + n , D = A2 + n , s = D + d , t = s + 1;
  for( int j = 0 ; j < k ; ++j ) {
@@ -2062,7 +2112,8 @@ bool plan( const Longs & b , const Longs & x ,
 /// whether each action i can split x[ i ] among the sets L[ i ] of
 /// [ 0 , |cap| ), each one getting at most cap or exactly cap if exact
 bool splits( const Longs & x , const std::vector< Ints > & L ,
-             const Longs & cap , bool exact )
+	     const Longs & cap ,
+	     bool exact )
 {
  Ints r , owner , to;
  for( std::size_t i = 0 ; i < x.size() ; ++i )
@@ -2093,35 +2144,35 @@ ADS_TEST( "flow-20" )
  CHECK( flow::plan( {} , {} , {} , {} , 0 , 5 ) );
  // one action of 4 from two groups of 2, to two delegates of 2
  CHECK( flow::plan( { 2 , 2 } , { 4 } , { { 0 , 1 } } , { { 0 , 1 } } , 2 ,
-                    2 ) );
+		    2 ) );
  CHECK( ! flow::plan( { 2 , 1 } , { 4 } , { { 0 , 1 } } , { { 0 , 1 } } , 2 ,
-                      2 ) );
+		      2 ) );
  // the delegate 1 is linked to no action
  CHECK( ! flow::plan( { 4 } , { 4 } , { { 0 } } , { { 0 } } , 2 , 2 ) );
  // K = 0 with actions of 0; delegates of K with no action; an action with
  // no group; budgets of 0
  CHECK( flow::plan( { 0 } , { 0 , 0 } , { {} , { 0 } } , { { 0 } , {} } , 3 ,
-                    0 ) );
+		    0 ) );
  CHECK( ! flow::plan( {} , {} , {} , {} , 1 , 1 ) );
  CHECK( ! flow::plan( { 4 } , { 4 } , { {} } , { { 0 } } , 1 , 4 ) );
  CHECK( ! flow::plan( { 0 , 0 } , { 1 } , { { 0 , 1 } } , { { 0 } } , 1 ,
-                      1 ) );
+		      1 ) );
  // the contracts: the sizes, d , K >= 0, b , x >= 0, the groups and the
  // delegates in range
  CHECK_THROWS( flow::plan( {} , { 0 } , {} , { {} } , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::plan( {} , { 0 } , { {} } , {} , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::plan( {} , {} , {} , {} , -1 , 0 ) , contract_violation );
  CHECK_THROWS( flow::plan( {} , {} , {} , {} , 0 , -1 ) , contract_violation );
  CHECK_THROWS( flow::plan( { -1 } , {} , {} , {} , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::plan( {} , { -1 } , { {} } , { {} } , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::plan( { 1 } , { 1 } , { { 1 } } , { { 0 } } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::plan( { 1 } , { 1 } , { { 0 } } , { { 1 } } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int k = rnd( g , 1 , 2 ) , n = rnd( g , 0 , 3 ) , d = rnd( g , 1 , 2 );
@@ -2137,8 +2188,8 @@ ADS_TEST( "flow-20" )
    }
   // the action carries x_i from its groups to its delegates: the two sides
   // split apart
-  const bool any = splits( x , grp , b , false ) &&
-                   splits( x , del , Longs( d , K ) , true );
+  const bool any =
+    splits( x , grp , b , false ) && splits( x , del , Longs( d , K ) , true );
   CHECK( flow::plan( b , x , grp , del , d , K ) == any );
   }
  }
@@ -2147,10 +2198,14 @@ ADS_TEST( "flow-20" )
 /*----------------------- flow-21, 2022-08-24, Esami -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// the room, the slot and the supervisor of an exam
-struct Exam { int room , slot , supervisor; };
+struct Exam
+{
+ int room , slot , supervisor;
+ };
 
 /// Esami: course i of cs[ i ] students, room j of as[ j ] seats, no slots,
 /// supervisor l available at the slots T[ l ], one exam at a time and d in
@@ -2163,9 +2218,10 @@ struct Exam { int room , slot , supervisor; };
 /// supervisors; the edge of capacity 1 keeps one.
 /// \pre the slots in [ 0 , no ), d >= 0
 std::optional< std::vector< Exam > > exams( const Longs & cs ,
-                                            const Longs & as , int no ,
-                                            const std::vector< Ints > & T ,
-                                            long d )
+					    const Longs & as ,
+					    int no ,
+					    const std::vector< Ints > & T ,
+					    long d )
 {
  const int nc = int( cs.size() ) , na = int( as.size() );
  const int nl = int( T.size() ) , AO = na * no , LO = nl * no;
@@ -2179,8 +2235,7 @@ std::optional< std::vector< Exam > > exams( const Longs & cs ,
   for( int j = 0 ; j < na ; ++j )
    if( cs[ i ] <= as[ j ] )
     for( int o = 0 ; o < no ; ++o )
-     room.emplace_back( N.addEdge( i , R + j * no + o , 1 ) , i ,
-                        j * no + o );
+     room.emplace_back( N.addEdge( i , R + j * no + o , 1 ) , i , j * no + o );
   }
  for( int r = 0 ; r < AO ; ++r )
   N.addEdge( R + r , R2 + r , 1 );
@@ -2189,7 +2244,7 @@ std::optional< std::vector< Exam > > exams( const Longs & cs ,
    ADS_PRE( ( o >= 0 ) && ( o < no ) );
    for( int j = 0 ; j < na ; ++j )
     sup.emplace_back( N.addEdge( R2 + j * no + o , Q + l * no + o , 1 ) ,
-                      j * no + o , l );
+		      j * no + o , l );
    N.addEdge( Q + l * no + o , L + l , 1 );
    }
   N.addEdge( L + l , t , d );
@@ -2211,8 +2266,8 @@ std::optional< std::vector< Exam > > exams( const Longs & cs ,
 
 /// whether the exams X respect the rules of Esami
 bool examsOk( const Longs & cs , const Longs & as , int no ,
-              const std::vector< Ints > & T , long d ,
-              const std::vector< flow::Exam > & X )
+	      const std::vector< Ints > & T , long d ,
+	      const std::vector< flow::Exam > & X )
 {
  const int na = int( as.size() ) , nl = int( T.size() );
  if( X.size() != cs.size() )
@@ -2253,13 +2308,13 @@ ADS_TEST( "flow-21" )
  CHECK_THROWS( flow::exams( {} , {} , -1 , {} , 0 ) , contract_violation );
  CHECK_THROWS( flow::exams( {} , {} , 1 , {} , -1 ) , contract_violation );
  CHECK_THROWS( flow::exams( { 1 } , { 1 } , 1 , { { 1 } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::exams( { 1 } , { 1 } , 1 , { { -1 } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int nc = rnd( g , 0 , 3 ) , na = rnd( g , 1 , 2 );
-const int no = rnd( g , 1 , 2 );
+  const int no = rnd( g , 1 , 2 );
   const int nl = rnd( g , 1 , 2 );
   const long d = rnd( g , 0 , 2 );
   Longs cs( nc ) , as( na );
@@ -2287,7 +2342,8 @@ const int no = rnd( g , 1 , 2 );
 /*-------------------- flow-22, 2023-02-09, Facoltiadi ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Facoltiadi: k departments, a team of exactly 3 q students each (q = 7 in
 /// the text), at least q male and q female; student i of the gender gen[ i
@@ -2298,17 +2354,17 @@ namespace flow {
 /// k, O( 3 q k n ).
 /// \pre k , q >= 0, the genders in [ 0 , 2 ], the departments in [ 0 , k )
 std::optional< Ints > facoltiadi( int k , long q , const Ints & gen ,
-                                  const Ints & d1 , const Ints & d2 )
+				  const Ints & d1 , const Ints & d2 )
 {
  const int n = int( gen.size() );
  ADS_PRE( ( k >= 0 ) && ( q >= 0 ) && ( d1.size() == gen.size() ) &&
-          ( d2.size() == gen.size() ) );
+	  ( d2.size() == gen.size() ) );
  FlowNetwork N( n + 3 * k + 2 );
  const int D = n , s = D + 3 * k , t = s + 1;
  std::vector< std::tuple< int , int , int > > E;
  for( int i = 0 ; i < n ; ++i ) {
   ADS_PRE( ( gen[ i ] >= 0 ) && ( gen[ i ] <= 2 ) && ( d1[ i ] >= 0 ) &&
-           ( d1[ i ] < k ) && ( d2[ i ] >= 0 ) && ( d2[ i ] < k ) );
+	   ( d1[ i ] < k ) && ( d2[ i ] >= 0 ) && ( d2[ i ] < k ) );
   N.addEdge( s , i , 1 );
   for( int j : { d1[ i ] , d2[ i ] } ) {
    if( gen[ i ] < 2 )
@@ -2331,7 +2387,7 @@ std::optional< Ints > facoltiadi( int k , long q , const Ints & gen ,
 
 /// whether x gives each department 3 q students, q male and q female
 bool teamsOk( int k , long q , const Ints & gen , const Ints & d1 ,
-              const Ints & d2 , const Ints & x )
+	      const Ints & d2 , const Ints & x )
 {
  if( x.size() != gen.size() )
   return( false );
@@ -2376,27 +2432,27 @@ ADS_TEST( "flow-22" )
  const auto z = flow::facoltiadi( 0 , 7 , {} , {} , {} );
  CHECK( z && z->empty() );
  CHECK( ! flow::facoltiadi( 1 , 1 , {} , {} , {} ) );
- const auto t = flow::facoltiadi( 1 , 1 , { 0 , 1 , 1 } , { 0 , 0 , 0 } ,
-                                  { 0 , 0 , 0 } );
+ const auto t =
+   flow::facoltiadi( 1 , 1 , { 0 , 1 , 1 } , { 0 , 0 , 0 } , { 0 , 0 , 0 } );
  CHECK( t && ( *t == Ints{ 0 , 0 , 0 } ) );
  CHECK( ! flow::facoltiadi( 1 , 1 , { 2 , 2 , 2 } , { 0 , 0 , 0 } ,
-                            { 0 , 0 , 0 } ) );
+			    { 0 , 0 , 0 } ) );
  // the contracts: k , q >= 0, the sizes, the genders and the departments
  // in range
  CHECK_THROWS( flow::facoltiadi( -1 , 0 , {} , {} , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::facoltiadi( 1 , -1 , {} , {} , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::facoltiadi( 1 , 0 , { 0 } , {} , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::facoltiadi( 1 , 0 , { 0 } , { 0 } , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::facoltiadi( 1 , 0 , { 3 } , { 0 } , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::facoltiadi( 1 , 0 , { 0 } , { 1 } , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::facoltiadi( 1 , 0 , { 0 } , { 0 } , { -1 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int k = rnd( g , 1 , 2 ) , n = rnd( g , 0 , 7 );
@@ -2424,7 +2480,8 @@ ADS_TEST( "flow-22" )
 /*-------------------- flow-23, 2023-06-20, Conferenza ---------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Conferenza: paper j of the area area[ j ], reviewer r expert in the
 /// areas expert[ r ]; 3 distinct reviewers per paper, 2 of them experts at
@@ -2435,10 +2492,8 @@ namespace flow {
 /// pair keeps a reviewer from reviewing a paper twice; it exists if the
 /// flow is 3 n_p, O( n_p^2 n_r ).
 /// \pre the areas of the papers in expert[ r ] or not, k >= 0
-std::optional< std::vector< Ints > > conference(
-                                    const Ints & area ,
-                                    const std::vector< Ints > & expert ,
-                                    long k )
+std::optional< std::vector< Ints > >
+conference( const Ints & area , const std::vector< Ints > & expert , long k )
 {
  const int np = int( area.size() ) , nr = int( expert.size() );
  ADS_PRE( k >= 0 );
@@ -2448,8 +2503,9 @@ std::optional< std::vector< Ints > > conference(
  for( int r = 0 ; r < nr ; ++r ) {
   N.addEdge( s , r , k );
   for( int j = 0 ; j < np ; ++j )
-   E.emplace_back( N.addEdge( r , ( in( expert[ r ] , area[ j ] ) ? EX : NE ) +
-                              j , 1 ) , r , j );
+   E.emplace_back(
+     N.addEdge( r , ( in( expert[ r ] , area[ j ] ) ? EX : NE ) + j , 1 ) , r ,
+     j );
   }
  for( int j = 0 ; j < np ; ++j ) {
   N.addEdge( NE + j , TOT + j , 1 );
@@ -2470,7 +2526,8 @@ std::optional< std::vector< Ints > > conference(
 /// whether R gives each paper 3 distinct reviewers, 2 experts, k at most
 /// each
 bool reviewsOk( const Ints & area , const std::vector< Ints > & expert ,
-                long k , const std::vector< Ints > & R )
+		long k ,
+		const std::vector< Ints > & R )
 {
  Longs load( expert.size() , 0 );
  for( std::size_t j = 0 ; j < area.size() ; ++j ) {
@@ -2519,7 +2576,7 @@ ADS_TEST( "flow-23" )
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int np = rnd( g , 0 , 3 ) , nr = rnd( g , 3 , 4 );
-const int na = rnd( g , 1 , 2 );
+  const int na = rnd( g , 1 , 2 );
   const long k = rnd( g , 1 , 3 );
   Ints area( np );
   for( auto & a : area )
@@ -2546,7 +2603,8 @@ const int na = rnd( g , 1 , 2 );
 /*----------------------- flow-24, 2023-07-11, SWERC -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// SWERC: university i brings n[ i ] students and is of the country
 /// country[ i ] out of nc (6 in the text); nt tables of k seats; at most
@@ -2556,20 +2614,19 @@ namespace flow {
 /// -> t ( k ): they exist if it is N = sum n_i, O( N n_t n_u ).
 /// \pre n >= 0, the countries in [ 0 , nc ), nt , k , per >= 0
 std::optional< std::vector< Ints > > swerc( const Longs & n ,
-                                            const Ints & country , int nt ,
-                                            long k , int nc = 6 ,
-                                            long per = 3 )
+					    const Ints & country , int nt ,
+					    long k , int nc = 6 ,
+					    long per = 3 )
 {
  const int nu = int( n.size() );
  ADS_PRE( ( country.size() == n.size() ) && ( nt >= 0 ) && ( k >= 0 ) &&
-          ( nc >= 0 ) && ( per >= 0 ) );
+	  ( nc >= 0 ) && ( per >= 0 ) );
  FlowNetwork N( nu + nt * nc + nt + 2 );
  const int TP = nu , T = TP + nt * nc , s = T + nt , t = s + 1;
  std::vector< std::tuple< int , int , int > > E;
  long all = 0;
  for( int i = 0 ; i < nu ; ++i ) {
-  ADS_PRE( ( n[ i ] >= 0 ) && ( country[ i ] >= 0 ) &&
-           ( country[ i ] < nc ) );
+  ADS_PRE( ( n[ i ] >= 0 ) && ( country[ i ] >= 0 ) && ( country[ i ] < nc ) );
   all += n[ i ];
   N.addEdge( s , i , n[ i ] );
   for( int j = 0 ; j < nt ; ++j )
@@ -2594,7 +2651,8 @@ std::optional< std::vector< Ints > > swerc( const Longs & n ,
 /// whether X seats the students of each university at distinct tables,
 /// within the seats and per of a country at a table
 bool tablesOk( const Longs & n , const Ints & country , int nt , long k ,
-               int nc , long per , const std::vector< Ints > & X )
+	       int nc ,
+	       long per , const std::vector< Ints > & X )
 {
  Longs seat( nt , 0 ) , pc( nt * nc , 0 );
  for( std::size_t i = 0 ; i < n.size() ; ++i ) {
@@ -2630,9 +2688,9 @@ ADS_TEST( "flow-24" )
  CHECK( ! flow::swerc( { 1 } , { 0 } , 3 , 6 , 6 , 0 ) );
  // a full table: k students of k distinct countries
  const auto f = flow::swerc( Longs( 6 , 1 ) , { 0 , 1 , 2 , 3 , 4 , 5 } , 1 ,
-                             6 , 6 , 1 );
+			     6 , 6 , 1 );
  CHECK( f && tablesOk( Longs( 6 , 1 ) , { 0 , 1 , 2 , 3 , 4 , 5 } , 1 , 6 , 6 ,
-                       1 , *f ) );
+		       1 , *f ) );
  // the contracts: the sizes, nt , k , nc , per >= 0, n >= 0, the countries
  // in [ 0 , nc )
  CHECK_THROWS( flow::swerc( { 1 } , {} , 1 , 1 ) , contract_violation );
@@ -2646,7 +2704,7 @@ ADS_TEST( "flow-24" )
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int nu = rnd( g , 0 , 3 ) , nt = rnd( g , 1 , 3 );
-const int nc = rnd( g , 1 , 2 );
+  const int nc = rnd( g , 1 , 2 );
   const long k = rnd( g , 0 , 3 ) , per = rnd( g , 0 , 2 );
   Longs n( nu );
   Ints country( nu );
@@ -2673,14 +2731,15 @@ const int nc = rnd( g , 1 , 2 );
 /*-------------------- flow-25, 2023-08-23, Rete idrica --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// the network of Rete idrica: the pipes but the closed one, a source n
 /// joined to each node v with prod[ v ] > 0, a sink n + 1 joined from each v
 /// with use[ v ] > 0
 std::vector< Arc > waterNet( int n , const std::vector< Arc > & pipes ,
-                             const Longs & prod , const Longs & use ,
-                             int closed )
+			     const Longs & prod , const Longs & use ,
+			     int closed )
 {
  std::vector< Arc > A;
  for( int e = 0 ; e < int( pipes.size() ) ; ++e )
@@ -2705,24 +2764,25 @@ std::vector< Arc > waterNet( int n , const std::vector< Arc > & pipes ,
 /// \pre the pipes join nodes with c >= 0, prod and use >= 0 and not both
 ///      positive at a node, per numbers of pipes
 bool water( int n , const std::vector< Arc > & pipes , const Longs & prod ,
-            const Longs & use , const Ints & per )
+	    const Longs & use , const Ints & per )
 {
  ADS_PRE( ( n >= 0 ) && ( int( prod.size() ) == n ) &&
-          ( int( use.size() ) == n ) );
+	  ( int( use.size() ) == n ) );
  ADS_PRE( std::all_of( pipes.begin() , pipes.end() , [ & ]( const Arc & a ) {
   return( ( std::get< 0 >( a ) >= 0 ) && ( std::get< 0 >( a ) < n ) &&
-          ( std::get< 1 >( a ) >= 0 ) && ( std::get< 1 >( a ) < n ) &&
-          ( std::get< 2 >( a ) >= 0 ) ); } ) );
+	   ( std::get< 1 >( a ) >= 0 ) && ( std::get< 1 >( a ) < n ) &&
+	   ( std::get< 2 >( a ) >= 0 ) );
+  } ) );
  long tot = 0;
  for( int v = 0 ; v < n ; ++v ) {
   ADS_PRE( ( prod[ v ] >= 0 ) && ( use[ v ] >= 0 ) &&
-           ( ( prod[ v ] == 0 ) || ( use[ v ] == 0 ) ) );
+	   ( ( prod[ v ] == 0 ) || ( use[ v ] == 0 ) ) );
   tot += use[ v ];
   }
  for( int e : per ) {
   ADS_PRE( ( e >= 0 ) && ( e < int( pipes.size() ) ) );
   if( maxflow( n + 2 , waterNet( n , pipes , prod , use , e ) , n , n + 1 ,
-               Augment::FORD_FULKERSON ) < tot )
+	       Augment::FORD_FULKERSON ) < tot )
    return( true );
   }
  return( false );
@@ -2739,7 +2799,7 @@ ADS_TEST( "flow-25" )
  CHECK( ! flow::water( 2 , { { 0 , 1 , 3 } } , { 5 , 0 } , { 0 , 3 } , {} ) );
  // a distributor 1 between, two pipes in and one out
  const std::vector< Arc > mid = { { 0 , 1 , 2 } , { 0 , 1 , 2 } ,
-                                  { 1 , 2 , 4 } };
+				  { 1 , 2 , 4 } };
  CHECK( flow::water( 3 , mid , { 9 , 0 , 0 } , { 0 , 0 , 3 } , { 0 } ) );
  CHECK( ! flow::water( 3 , mid , { 9 , 0 , 0 } , { 0 , 0 , 2 } , { 0 , 1 } ) );
  // no consumer: nobody is ever short; a consumer with no source is short
@@ -2748,30 +2808,28 @@ ADS_TEST( "flow-25" )
  CHECK( flow::water( 2 , two , { 0 , 0 } , { 0 , 3 } , { 1 } ) );
  CHECK( ! flow::water( 2 , two , { 0 , 0 } , { 0 , 3 } , {} ) );
  CHECK( ! flow::water( 2 , { { 0 , 1 , 3 } , { 0 , 1 , 0 } } , { 5 , 0 } ,
-                       { 0 , 3 } , { 1 } ) );
+		       { 0 , 3 } ,
+		       { 1 } ) );
  // the same pipe twice in per
  CHECK( flow::water( 2 , { { 0 , 1 , 3 } } , { 5 , 0 } , { 0 , 3 } ,
-                     { 0 , 0 } ) );
+		     { 0 , 0 } ) );
  // the contracts: n >= 0, the sizes, the pipes join nodes with c >= 0,
  // prod and use >= 0 and not both positive, per numbers of pipes
  const Longs pr = { 5 , 0 } , us = { 0 , 3 };
  CHECK_THROWS( flow::water( -1 , {} , {} , {} , {} ) , contract_violation );
- CHECK_THROWS( flow::water( 2 , two , { 5 } , us , {} ) ,
-               contract_violation );
- CHECK_THROWS( flow::water( 2 , two , pr , { 3 } , {} ) ,
-               contract_violation );
+ CHECK_THROWS( flow::water( 2 , two , { 5 } , us , {} ) , contract_violation );
+ CHECK_THROWS( flow::water( 2 , two , pr , { 3 } , {} ) , contract_violation );
  CHECK_THROWS( flow::water( 2 , { { 0 , 2 , 3 } } , pr , us , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::water( 2 , { { 0 , 1 , -1 } } , pr , us , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::water( 2 , two , { -1 , 0 } , us , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::water( 2 , two , { 5 , 1 } , us , {} ) ,
-               contract_violation );
- CHECK_THROWS( flow::water( 2 , two , pr , us , { 2 } ) ,
-               contract_violation );
+	       contract_violation );
+ CHECK_THROWS( flow::water( 2 , two , pr , us , { 2 } ) , contract_violation );
  CHECK_THROWS( flow::water( 2 , two , pr , us , { -1 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 1 , 6 );
@@ -2791,8 +2849,8 @@ ADS_TEST( "flow-25" )
   bool any = false;
   for( int e : per )
    any = any || ( minCut( n + 2 ,
-                          flow::waterNet( n , pipes , prod , use , e ) ,
-                          n , n + 1 ) < tot );
+			  flow::waterNet( n , pipes , prod , use , e ) , n ,
+			  n + 1 ) < tot );
   CHECK( flow::water( n , pipes , prod , use , per ) == any );
   }
  }
@@ -2801,7 +2859,8 @@ ADS_TEST( "flow-25" )
 /*--------------- flow-26, 2024-01-09, Commissioni di laurea ---------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Commissioni di laurea: k areas and a committee per area, professor i
 /// expert in the area area[ i ]; each committee of exactly z professors (5
@@ -2812,7 +2871,7 @@ namespace flow {
 /// it is z k, O( n k^2 ).
 /// \pre the areas in [ 0 , k ), 0 <= e <= z
 std::optional< Ints > committees( int k , const Ints & area , long z = 5 ,
-                                  long e = 2 )
+				  long e = 2 )
 {
  const int n = int( area.size() );
  ADS_PRE( ( k >= 0 ) && ( e >= 0 ) && ( e <= z ) );
@@ -2843,7 +2902,7 @@ std::optional< Ints > committees( int k , const Ints & area , long z = 5 ,
 
 /// whether x makes each committee of z professors, e experts at least
 bool committeesOk( int k , const Ints & area , long z , long e ,
-                   const Ints & x )
+		   const Ints & x )
 {
  Longs all( k , 0 ) , ex( k , 0 );
  for( std::size_t i = 0 ; i < area.size() ; ++i )
@@ -2865,7 +2924,7 @@ ADS_TEST( "flow-26" )
  CHECK( x && committeesOk( 2 , area , 5 , 2 , *x ) );
  CHECK( ! flow::committees( 2 , { 0 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ) );
  CHECK( ! flow::committees( 1 , { 0 , 0 , 0 , 0 } ) );
- const auto e = flow::committees( 0 , { } );
+ const auto e = flow::committees( 0 , {} );
  CHECK( e && e->empty() );
  // committees of 0 professors leave all out; e = z wants experts only;
  // e = 0 takes anybody
@@ -2905,7 +2964,8 @@ ADS_TEST( "flow-26" )
 /*-------------------- flow-27, 2024-07-02, Vie di fuga --------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Vie di fuga: N students at distinct cells S of an R x C classroom, each
 /// border cell an exit, moves to the four neighbours; whether N escape
@@ -2919,7 +2979,8 @@ bool escape( int R , int C , const Pairs & S )
  ADS_PRE( ( R >= 0 ) && ( C >= 0 ) );
  ADS_PRE( std::all_of( S.begin() , S.end() , [ & ]( const auto & c ) {
   return( ( c.first >= 0 ) && ( c.first < R ) && ( c.second >= 0 ) &&
-          ( c.second < C ) ); } ) );
+	   ( c.second < C ) );
+  } ) );
  const int RC = R * C , s = 2 * RC , t = s + 1;
  FlowNetwork N( 2 * RC + 2 );
  for( int r = 0 ; r < R ; ++r )
@@ -2943,12 +3004,12 @@ bool escape( int R , int C , const Pairs & S )
 }  // end( namespace flow )
 
 bool routes( int R , int C , const Pairs & S , std::size_t i ,
-             std::vector< bool > & used );
+	     std::vector< bool > & used );
 
 /// a route from the cell x of student i on, to the border, then the
 /// routes of the next students; a route ends at the first border cell
 bool route( int R , int C , const Pairs & S , std::size_t i ,
-            std::vector< bool > & used , int x )
+	    std::vector< bool > & used , int x )
 {
  const int r = x / C , c = x % C;
  if( ( r == 0 ) || ( c == 0 ) || ( r == R - 1 ) || ( c == C - 1 ) )
@@ -2969,7 +3030,7 @@ bool route( int R , int C , const Pairs & S , std::size_t i ,
 
 /// the routes of the students i , ... , by backtracking on the cells
 bool routes( int R , int C , const Pairs & S , std::size_t i ,
-             std::vector< bool > & used )
+	     std::vector< bool > & used )
 {
  if( i == S.size() )
   return( true );
@@ -3039,7 +3100,8 @@ ADS_TEST( "flow-27" )
 /*------------ flow-28, 2025-06-13, Braccia rubate alla ricerca ------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Braccia rubate alla ricerca: no offices, person l cleans at most m of
 /// them, only among A[ l ]; whether each office gets one person. A maximum
@@ -3052,8 +3114,10 @@ bool cleaning( int no , const std::vector< Ints > & A , long m )
 {
  ADS_PRE( no >= 0 );
  using LL = std::vector< long long >;
- return( int( bipartiteBMatching( A , no , LL( A.size() , m ) ,
-                                  LL( no , 1 ) ).size() ) == no );
+ return(
+   int( bipartiteBMatching( A , no , LL( A.size() , m ) ,
+			    LL( no , 1 ) ).size() ) ==
+   no );
  }
 
 }  // end( namespace flow )
@@ -3098,7 +3162,8 @@ ADS_TEST( "flow-28" )
 /*----------------------- flow-29, 2025-08-25, Mensa -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Mensa: dish p of the type type[ p ] in { 0 , 1 , 2 } (primo, secondo,
 /// dessert) with portions[ p ] portions, student s accepting the dishes
@@ -3109,7 +3174,7 @@ namespace flow {
 /// \pre the types in [ 0 , 2 ], portions >= 0, the dishes of accept in
 ///      [ 0 , |type| )
 long canteen( const Ints & type , const Longs & portions ,
-              const std::vector< Ints > & accept )
+	      const std::vector< Ints > & accept )
 {
  const int np = int( type.size() ) , ns = int( accept.size() );
  ADS_PRE( portions.size() == type.size() );
@@ -3127,7 +3192,7 @@ long canteen( const Ints & type , const Longs & portions ,
    }
   for( int p = 0 ; p < np ; ++p ) {
    ADS_PRE( ( type[ p ] >= 0 ) && ( type[ p ] <= 2 ) &&
-         ( portions[ p ] >= 0 ) );
+	    ( portions[ p ] >= 0 ) );
    if( type[ p ] == c )
     N.addEdge( ns + p , t , portions[ p ] );
    }
@@ -3142,8 +3207,8 @@ ADS_TEST( "flow-29" )
 {
  CHECK( flow::canteen( {} , {} , { {} , {} } ) == 0 );
  // a primo of 1 portion and a dessert of 2 for two students who want all
- CHECK( flow::canteen( { 0 , 2 } , { 1 , 2 } , { { 0 , 1 } , { 0 , 1 } } ) ==
-        3 );
+ CHECK( flow::canteen( { 0 , 2 } , { 1 , 2 } ,
+		       { { 0 , 1 } , { 0 , 1 } } ) == 3 );
  // two primi: one per student
  CHECK( flow::canteen( { 0 , 0 } , { 5 , 5 } , { { 0 , 1 } } ) == 1 );
  // dishes of no portion; no student; a student of no dish; a student who
@@ -3151,13 +3216,13 @@ ADS_TEST( "flow-29" )
  CHECK( flow::canteen( { 0 , 1 } , { 0 , 0 } , { { 0 , 1 } } ) == 0 );
  CHECK( flow::canteen( { 0 } , { 3 } , {} ) == 0 );
  CHECK( flow::canteen( { 0 } , { 3 } , { {} } ) == 0 );
- CHECK( flow::canteen( { 0 , 1 , 2 } , { 1 , 1 , 1 } , { { 0 , 1 , 2 } } ) ==
-        3 );
+ CHECK( flow::canteen( { 0 , 1 , 2 } , { 1 , 1 , 1 } ,
+		       { { 0 , 1 , 2 } } ) == 3 );
  // the contracts: the sizes, the dishes in range, the types in [ 0 , 2 ],
  // portions >= 0
  CHECK_THROWS( flow::canteen( { 0 } , {} , {} ) , contract_violation );
  CHECK_THROWS( flow::canteen( { 0 } , { 1 } , { { 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::canteen( { 3 } , { 1 } , {} ) , contract_violation );
  CHECK_THROWS( flow::canteen( { -1 } , { 1 } , {} ) , contract_violation );
  CHECK_THROWS( flow::canteen( { 0 } , { -1 } , {} ) , contract_violation );
@@ -3203,7 +3268,8 @@ ADS_TEST( "flow-29" )
 /*----------------- flow-30, 2026-01-12, Junior vs senior ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Junior vs senior: volunteer i, a senior if senior[ i ], accepts the
 /// services avail[ i ] and serves one at most; service j takes exactly
@@ -3213,8 +3279,8 @@ namespace flow {
 /// can if the flow is sum vt_j, O( n^2 m ).
 /// \pre 0 <= vs[ j ] <= vt[ j ], the services in [ 0 , m )
 bool volunteers( const std::vector< bool > & senior ,
-                 const std::vector< Ints > & avail , const Longs & vt ,
-                 const Longs & vs )
+		 const std::vector< Ints > & avail , const Longs & vt ,
+		 const Longs & vs )
 {
  const int n = int( senior.size() ) , m = int( vt.size() );
  ADS_PRE( ( avail.size() == senior.size() ) && ( vs.size() == vt.size() ) );
@@ -3245,32 +3311,34 @@ ADS_TEST( "flow-30" )
  CHECK( flow::volunteers( {} , {} , {} , {} ) );
  CHECK( flow::volunteers( { false } , { { 0 } } , { 0 } , { 0 } ) );
  // a service of two with a senior: two juniors are not enough
- CHECK( ! flow::volunteers( { false , false } , { { 0 } , { 0 } } , { 2 } ,
-                            { 1 } ) );
+ CHECK(
+   ! flow::volunteers( { false , false } , { { 0 } , { 0 } } , { 2 } ,
+		       { 1 } ) );
  CHECK( flow::volunteers( { false , true } , { { 0 } , { 0 } } , { 2 } ,
-                          { 1 } ) );
+			  { 1 } ) );
  CHECK( flow::volunteers( { true , true } , { { 0 } , { 0 } } , { 2 } ,
-                          { 1 } ) );
+			  { 1 } ) );
  // seniors only, vs = vt; a service of 0 with nobody; volunteers left
  // over stay free
- CHECK( ! flow::volunteers( { true , false } , { { 0 } , { 0 } } , { 2 } ,
-                            { 2 } ) );
+ CHECK(
+   ! flow::volunteers( { true , false } , { { 0 } , { 0 } } , { 2 } ,
+		       { 2 } ) );
  CHECK( flow::volunteers( { true , true } , { { 0 } , { 0 } } , { 2 } ,
-                          { 2 } ) );
+			  { 2 } ) );
  CHECK( flow::volunteers( {} , {} , { 0 , 0 } , { 0 , 0 } ) );
  CHECK( flow::volunteers( { true , false , false } , { { 0 } , { 0 } , {} } ,
-                          { 1 } , { 1 } ) );
+			  { 1 } ,
+			  { 1 } ) );
  // the contracts: the sizes, 0 <= vs <= vt, the services in range
  CHECK_THROWS( flow::volunteers( { true } , {} , {} , {} ) ,
-               contract_violation );
- CHECK_THROWS( flow::volunteers( {} , {} , { 1 } , {} ) ,
-               contract_violation );
+	       contract_violation );
+ CHECK_THROWS( flow::volunteers( {} , {} , { 1 } , {} ) , contract_violation );
  CHECK_THROWS( flow::volunteers( {} , {} , { 1 } , { -1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::volunteers( {} , {} , { 1 } , { 2 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::volunteers( { true } , { { 1 } } , { 1 } , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 0 , 5 ) , m = rnd( g , 0 , 3 );
@@ -3308,7 +3376,8 @@ ADS_TEST( "flow-30" )
 /*--------------- flow-31, 2026-02-02, Personale ospedaliero ---------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Personale ospedaliero: operator i, a nurse if nurse[ i ] and an OSS if
 /// not, goes to exactly one of the wards capable[ i ]; ward j gets exactly
@@ -3319,18 +3388,18 @@ namespace flow {
 /// flow is n, O( n^2 m ).
 /// \pre mi[ j ] + mo[ j ] <= mw[ j ], all >= 0, the wards in [ 0 , m )
 bool hospital( const std::vector< bool > & nurse ,
-               const std::vector< Ints > & capable , const Longs & mw ,
-               const Longs & mi , const Longs & mo )
+	       const std::vector< Ints > & capable , const Longs & mw ,
+	       const Longs & mi , const Longs & mo )
 {
  const int n = int( nurse.size() ) , m = int( mw.size() );
  ADS_PRE( ( capable.size() == nurse.size() ) && ( mi.size() == mw.size() ) &&
-          ( mo.size() == mw.size() ) );
+	  ( mo.size() == mw.size() ) );
  FlowNetwork N( n + 3 * m + 2 );
  const int I = n , O = I + m , W = O + m , s = W + m , t = s + 1;
  long all = 0;
  for( int j = 0 ; j < m ; ++j ) {
   ADS_PRE( ( mi[ j ] >= 0 ) && ( mo[ j ] >= 0 ) &&
-           ( mi[ j ] + mo[ j ] <= mw[ j ] ) );
+	   ( mi[ j ] + mo[ j ] <= mw[ j ] ) );
   all += mw[ j ];
   N.addEdge( I + j , W + j , mw[ j ] - mo[ j ] );
   N.addEdge( O + j , W + j , mw[ j ] - mi[ j ] );
@@ -3355,34 +3424,38 @@ ADS_TEST( "flow-31" )
  CHECK( flow::hospital( {} , {} , {} , {} , {} ) );
  // every operator must be placed
  CHECK( ! flow::hospital( { true } , { { 0 } } , { 0 } , { 0 } , { 0 } ) );
- CHECK( flow::hospital( { true , false } , { { 0 } , { 0 } } , { 2 } , { 1 } ,
-                        { 1 } ) );
- CHECK( ! flow::hospital( { true , true } , { { 0 } , { 0 } } , { 2 } , { 1 } ,
-                          { 1 } ) );
+ CHECK(
+   flow::hospital( { true , false } , { { 0 } , { 0 } } , { 2 } , { 1 } ,
+		   { 1 } ) );
+ CHECK(
+   ! flow::hospital( { true , true } , { { 0 } , { 0 } } , { 2 } , { 1 } ,
+		     { 1 } ) );
  // operators and no ward; wards of 0; mi + mo = mw; an operator capable
  // of no ward
- CHECK( ! flow::hospital( { true } , { { } } , {} , {} , {} ) );
+ CHECK( ! flow::hospital( { true } , { {} } , {} , {} , {} ) );
  CHECK( flow::hospital( {} , {} , { 0 , 0 } , { 0 , 0 } , { 0 , 0 } ) );
- CHECK( flow::hospital( { false , true } , { { 0 } , { 0 } } , { 2 } , { 1 } ,
-                        { 1 } ) );
- CHECK( ! flow::hospital( { true , false } , { { 0 } , {} } , { 2 } , { 0 } ,
-                          { 0 } ) );
+ CHECK(
+   flow::hospital( { false , true } , { { 0 } , { 0 } } , { 2 } , { 1 } ,
+		   { 1 } ) );
+ CHECK(
+   ! flow::hospital( { true , false } , { { 0 } , {} } , { 2 } , { 0 } ,
+		     { 0 } ) );
  // the contracts: the sizes, mi , mo >= 0, mi + mo <= mw, the wards in
  // range
  CHECK_THROWS( flow::hospital( { true } , {} , {} , {} , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hospital( {} , {} , { 1 } , {} , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hospital( {} , {} , { 1 } , { 0 } , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hospital( {} , {} , { 1 } , { -1 } , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hospital( {} , {} , { 1 } , { 0 } , { -1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( flow::hospital( {} , {} , { 1 } , { 1 } , { 1 } ) ,
-               contract_violation );
- CHECK_THROWS( flow::hospital( { true } , { { 1 } } , { 1 } , { 0 } ,
-                               { 0 } ) , contract_violation );
+	       contract_violation );
+ CHECK_THROWS( flow::hospital( { true } , { { 1 } } , { 1 } , { 0 } , { 0 } ) ,
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = rnd( g , 0 , 5 ) , m = rnd( g , 1 , 3 );
@@ -3410,7 +3483,7 @@ ADS_TEST( "flow-31" )
     }
    for( int j = 0 ; j < m ; ++j )
     if( ( all[ j ] != mw[ j ] ) || ( ni[ j ] < mi[ j ] ) ||
-        ( all[ j ] - ni[ j ] < mo[ j ] ) )
+	( all[ j ] - ni[ j ] < mo[ j ] ) )
      return;
    any = true;
    } );
@@ -3422,7 +3495,8 @@ ADS_TEST( "flow-31" )
 /*------------------ flow-32, 2026-06-22, Corsi di laurea ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Corsi di laurea: course i of the programme prog[ i ] out of k,
 /// professor j competent in the courses choices[ j ] and teaching at most
@@ -3438,7 +3512,7 @@ namespace flow {
 /// \pre the programmes in [ 0 , k ), the courses in [ 0 , |prog| ),
 ///      0 <= t[ h ] <= m_h, load >= 0
 bool degrees( const Ints & prog , int k , const std::vector< Ints > & choices ,
-              const Longs & t , long load = 3 )
+	      const Longs & t , long load = 3 )
 {
  const int m = int( prog.size() ) , n = int( choices.size() );
  ADS_PRE( ( k >= 0 ) && ( int( t.size() ) == k ) && ( load >= 0 ) );
@@ -3473,7 +3547,7 @@ ADS_TEST( "flow-32" )
  CHECK( flow::degrees( {} , 1 , { {} } , { 0 } ) );
  // four courses and one professor: three at most
  CHECK( ! flow::degrees( { 0 , 0 , 0 , 0 } , 1 , { { 0 , 1 , 2 , 3 } } ,
-                         { 0 } ) );
+			 { 0 } ) );
  // two courses, both to be taught competently, two professors competent
  // in the first only
  CHECK( ! flow::degrees( { 0 , 0 } , 1 , { { 0 } , { 0 } } , { 2 } ) );
@@ -3493,8 +3567,7 @@ ADS_TEST( "flow-32" )
  CHECK_THROWS( flow::degrees( {} , 0 , {} , {} , -1 ) , contract_violation );
  CHECK_THROWS( flow::degrees( { 1 } , 1 , {} , { 0 } ) , contract_violation );
  CHECK_THROWS( flow::degrees( { 0 } , 1 , {} , { 2 } ) , contract_violation );
- CHECK_THROWS( flow::degrees( { 0 } , 1 , {} , { -1 } ) ,
-               contract_violation );
+ CHECK_THROWS( flow::degrees( { 0 } , 1 , {} , { -1 } ) , contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int m = rnd( g , 0 , 4 ) , k = rnd( g , 1 , 2 ) , n = rnd( g , 1 , 3 );
@@ -3531,7 +3604,8 @@ ADS_TEST( "flow-32" )
 /*----------------- flow-33, 2026-07-20, Banco alimentare ------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// Banco alimentare: warehouse i has s[ i ] parcels, shelter j takes d[ j ]
 /// at most, warehouse i supplies the shelters A[ i ]: the parcels from each
@@ -3540,7 +3614,7 @@ namespace flow {
 /// the capacities, O( |F*| ( |V| + |E| ) ).
 /// \pre s , d >= 0, the shelters in [ 0 , |d| )
 Matrix foodBank( const Longs & s , const Longs & d ,
-                 const std::vector< Ints > & A )
+		 const std::vector< Ints > & A )
 {
  const int nm = int( s.size() ) , nc = int( d.size() );
  ADS_PRE( A.size() == s.size() );
@@ -3553,7 +3627,7 @@ Matrix foodBank( const Longs & s , const Longs & d ,
   for( int j : A[ i ] ) {
    ADS_PRE( ( j >= 0 ) && ( j < nc ) );
    E.emplace_back( N.addEdge( i , nm + j , std::min( s[ i ] , d[ j ] ) ) , i ,
-                   j );
+		   j );
    }
   }
  for( int j = 0 ; j < nc ; ++j ) {
@@ -3571,7 +3645,7 @@ Matrix foodBank( const Longs & s , const Longs & d ,
 
 /// whether x respects the stocks s, the limits d and the links A
 bool parcelsOk( const Longs & s , const Longs & d ,
-                const std::vector< Ints > & A , const Matrix & x )
+		const std::vector< Ints > & A , const Matrix & x )
 {
  Longs got( d.size() , 0 );
  for( std::size_t i = 0 ; i < s.size() ; ++i ) {
@@ -3596,13 +3670,13 @@ ADS_TEST( "flow-33" )
  CHECK( flow::foodBank( {} , { 3 } , {} ).empty() );
  // a warehouse of 5 and two shelters of 2 and 4
  const Matrix x = flow::foodBank( { 5 } , { 2 , 4 } , { { 0 , 1 } } );
- CHECK( parcelsOk( { 5 } , { 2 , 4 } , { { 0 , 1 } } , x ) &&
-        ( total( x ) == 5 ) );
+ CHECK( parcelsOk( { 5 } , { 2 , 4 } , { { 0 , 1 } } ,
+		   x ) && ( total( x ) == 5 ) );
  CHECK( total( flow::foodBank( { 5 , 5 } , { 3 } , { { 0 } , {} } ) ) == 3 );
  // no shelter; stocks or limits of 0; a shelter listed twice
  CHECK( flow::foodBank( { 4 } , {} , { {} } ) == Matrix( 1 ) );
- CHECK( total( flow::foodBank( { 0 , 0 } , { 3 } , { { 0 } , { 0 } } ) ) ==
-        0 );
+ CHECK( total( flow::foodBank( { 0 , 0 } , { 3 } ,
+			       { { 0 } , { 0 } } ) ) == 0 );
  CHECK( total( flow::foodBank( { 5 } , { 0 , 0 } , { { 0 , 1 } } ) ) == 0 );
  const Matrix y = flow::foodBank( { 5 } , { 4 } , { { 0 , 0 } } );
  CHECK( ( y == Matrix{ { 4 } } ) );
@@ -3611,7 +3685,7 @@ ADS_TEST( "flow-33" )
  CHECK_THROWS( flow::foodBank( { -1 } , {} , { {} } ) , contract_violation );
  CHECK_THROWS( flow::foodBank( {} , { -1 } , {} ) , contract_violation );
  CHECK_THROWS( flow::foodBank( { 1 } , { 1 } , { { 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int nm = rnd( g , 0 , 2 ) , nc = rnd( g , 0 , 3 );
@@ -3641,7 +3715,8 @@ ADS_TEST( "flow-33" )
 /*---------------- flow-34, 2026-08-28, Numeri inquadrabili ----------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace flow {
+namespace flow
+{
 
 /// whether z is a perfect square; the root of the double is corrected by
 /// comparisons with z / r, which do not overflow up to the largest long
@@ -3669,8 +3744,8 @@ int squarePairs( const Longs & X , const Longs & Y )
   for( std::size_t j = 0 ; j < Y.size() ; ++j )
    if( square( X[ i ] + Y[ j ] ) )
     E.emplace_back( int( i ) , int( j ) );
- return( int( bipartiteMatching( int( X.size() ) , int( Y.size() ) ,
-                                 E ).size() ) );
+ return(
+   int( bipartiteMatching( int( X.size() ) , int( Y.size() ) , E ).size() ) );
  }
 
 }  // end( namespace flow )
@@ -3690,9 +3765,9 @@ ADS_TEST( "flow-34" )
  // the largest int, valid whatever the size of long
  CHECK( ! flow::square( -1 ) && ! flow::square( LONG_MIN ) );
  CHECK( ! flow::square( LONG_MAX ) && ! flow::square( LONG_MAX - 1 ) );
- const long R = 46340;                       // floor( sqrt( 2^31 - 1 ) )
+ const long R = 46340;  // floor( sqrt( 2^31 - 1 ) )
  CHECK( flow::square( R * R ) && ! flow::square( R * R - 1 ) &&
-        ! flow::square( R * R + 1 ) && ! flow::square( INT_MAX ) );
+	! flow::square( R * R + 1 ) && ! flow::square( INT_MAX ) );
  CHECK( flow::square( ( R - 1 ) * ( R - 1 ) ) );
  // one side empty; a sum 0; the sums of one number with the others
  CHECK( flow::squarePairs( { 1 , 2 } , {} ) == 0 );

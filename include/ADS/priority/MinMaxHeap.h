@@ -62,7 +62,7 @@
 
 #ifndef __ADS_MinMaxHeap
  #define __ADS_MinMaxHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS MinMaxHeap -----------------------------*/
@@ -90,16 +91,16 @@ namespace ADS {
 
 /// a min-max heap of plain items: the best and the worst by `better()`
 template< class T , class Better = std::less< T > >
-class MinMaxHeap {
+class MinMaxHeap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue of the order `better`
  explicit MinMaxHeap( Better better = Better() )
-  : f_better( std::move( better ) ) {}
+     : f_better( std::move( better ) ) { }
 
  /// pushes \f$ x \f$, in \f$ O( \log n ) \f$ time
  ///
@@ -216,7 +217,6 @@ class MinMaxHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place of the worst item
  [[nodiscard]] std::size_t maxAt( void ) const;
 
@@ -262,16 +262,16 @@ class MinMaxHeap {
 
 /// an interval heap of plain items: the best and the worst by `better()`
 template< class T , class Better = std::less< T > >
-class IntervalHeap {
+class IntervalHeap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue of the order `better`
  explicit IntervalHeap( Better better = Better() )
-  : f_better( std::move( better ) ) {}
+     : f_better( std::move( better ) ) { }
 
  /// pushes \f$ x \f$, in \f$ O( \log n ) \f$ time
  ///
@@ -405,7 +405,6 @@ class IntervalHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place of the hi of the node j, its lo if it has one item
  [[nodiscard]] std::size_t hi( std::size_t j ) const {
   return( 2 * j + 1 < f_A.size() ? 2 * j + 1 : 2 * j );
@@ -442,7 +441,7 @@ class IntervalHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MinMaxHeap.h included */
+#endif /* MinMaxHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MinMaxHeap.h -------------------------*/

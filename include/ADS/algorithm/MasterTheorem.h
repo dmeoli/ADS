@@ -56,7 +56,7 @@
 
 #ifndef __ADS_MasterTheorem
  #define __ADS_MasterTheorem
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,29 +72,32 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the order \f$ c^n n^p \log^q n ( \log \log n )^r \f$, and whether it
 /// is only an upper bound
-struct Growth {
- double c = 1;          ///< the base of the exponential
- double p = 0;          ///< the power of \f$ n \f$
- double q = 0;          ///< the power of \f$ \log n \f$
- double r = 0;          ///< the power of \f$ \log \log n \f$
- bool upper = false;    ///< \f$ O \f$ rather than \f$ \Theta \f$
+struct Growth
+{
+ double c = 1;        ///< the base of the exponential
+ double p = 0;        ///< the power of \f$ n \f$
+ double q = 0;        ///< the power of \f$ \log n \f$
+ double r = 0;        ///< the power of \f$ \log \log n \f$
+ bool upper = false;  ///< \f$ O \f$ rather than \f$ \Theta \f$
 
  /// the value of the order at \f$ n \f$, for \f$ n > e \f$
  [[nodiscard]] double at( double n ) const {
-  return( std::pow( c , n ) * std::pow( n , p ) * std::pow( std::log( n ) , q )
-          * std::pow( std::log( std::log( n ) ) , r ) );
+  return( std::pow( c , n ) * std::pow( n , p ) * std::pow( std::log( n ) ,
+							    q ) *
+	   std::pow( std::log( std::log( n ) ) , r ) );
   }
 
  /// the order of the two functions for \f$ n \f$ large: lexicographic on
  /// \f$ c \f$, \f$ p \f$, \f$ q \f$ and \f$ r \f$ (`upper` is not compared)
  friend std::partial_ordering operator<=>( const Growth & a ,
-                                           const Growth & b ) {
+					   const Growth & b ) {
   for( auto [ x , y ] : { std::pair( a.c , b.c ) , std::pair( a.p , b.p ) ,
-                          std::pair( a.q , b.q ) , std::pair( a.r , b.r ) } )
+			 std::pair( a.q , b.q ) , std::pair( a.r , b.r ) } )
    if( x != y )
     return( x <=> y );
   return( std::partial_ordering::equivalent );
@@ -159,7 +162,7 @@ inline Growth linear( double a , double beta );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MasterTheorem.h included */
+#endif /* MasterTheorem.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File MasterTheorem.h ------------------------*/

@@ -51,25 +51,27 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE ALGEBRAS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the monoid of the concatenations, which does not commute
-struct Concat {
+struct Concat
+{
  using Value = std::string;
  static Value identity( void ) { return( Value() ); }
- static Value combine( const Value & a , const Value & b ) {
-  return( a + b );
-  }
+ static Value combine( const Value & a , const Value & b ) { return( a + b ); }
  };
 
 /// the maps x -> s x + b with s = 1 or -1, a group that does not commute:
 /// combine( f , g ) is f first, then g
-struct Affine {
- struct Value {
+struct Affine
+{
+ struct Value
+ {
   long long s = 1 , b = 0;
   bool operator==( const Value & ) const = default;
   };
@@ -78,13 +80,15 @@ struct Affine {
   return( Value{ g.s * f.s , g.s * f.b + g.b } );
   }
  static Value inverse( const Value & f ) {
-  return( Value{ f.s , - f.s * f.b } );
+  return( Value{ f.s , -f.s * f.b } );
   }
  };
 
 /// the first value, a selective monoid that does not commute
-struct First {
- struct Value {
+struct First
+{
+ struct Value
+ {
   int v = -1;
   bool operator==( const Value & ) const = default;
   };
@@ -96,29 +100,29 @@ struct First {
  };
 
 /// the action of adding to a sum, n values at a time
-struct AddTo {
+struct AddTo
+{
  using Map = long long;
  static Map id( void ) { return( 0 ); }
  static Map compose( Map f , Map g ) { return( f + g ); }
  static long long apply( Map f , long long a , std::size_t n ) {
-  return( a + f * (long long)( n ) );
+  return( a + f * ( long long )( n ) );
   }
  };
 
 static_assert( AbelianGroup< SumOf< long long > > );
-static_assert( CommutativeMonoid< MinOf< int > > && Selective< MinOf< int > >
-               && ! Group< MinOf< int > > );
+static_assert( CommutativeMonoid< MinOf< int > > &&
+	       Selective< MinOf< int > > && ! Group< MinOf< int > > );
 static_assert( Selective< MaxOf< double > > && ! exact_v< MaxOf< double > > );
 static_assert( Monoid< Concat > && ! CommutativeMonoid< Concat > &&
-               ! Group< Concat > );
+	       ! Group< Concat > );
 static_assert( Group< Affine > && ! AbelianGroup< Affine > );
 static_assert( Selective< First > && ! CommutativeMonoid< First > );
 static_assert( Action< AddTo , SumOf< long long > > );
-static_assert( exact_v< SumOf< long long > > &&
-               ! exact_v< SumOf< double > > );
+static_assert( exact_v< SumOf< long long > > && ! exact_v< SumOf< double > > );
 static_assert( MinOf< int >::identity() == std::numeric_limits< int >::max() );
 static_assert( MaxOf< double >::identity() ==
-               - std::numeric_limits< double >::infinity() );
+	       -std::numeric_limits< double >::infinity() );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- THE HEAP OBSERVERS ---------------------------*/
@@ -131,12 +135,13 @@ using HRel = mod::Relocated< std::size_t >;
 
 /// an observer that keeps the keys of the ids and a copy of the vector of
 /// the heap, its places of the ids, from the events alone
-struct HeapMirror {
- std::vector< int > key , at;   ///< the key of each id, the id of a place
- std::vector< int > pos;        ///< the place of each id, -1 if absent
- int rel = 0;                   ///< the exchanges received
- explicit HeapMirror( int n ) : key( std::size_t( n ) , 0 ) ,
-                                pos( std::size_t( n ) , -1 ) {}
+struct HeapMirror
+{
+ std::vector< int > key , at;  ///< the key of each id, the id of a place
+ std::vector< int > pos;      ///< the place of each id, -1 if absent
+ int rel = 0;                 ///< the exchanges received
+ explicit HeapMirror( int n )
+     : key( std::size_t( n ) , 0 ) , pos( std::size_t( n ) , -1 ) { }
  void on( const HIns & e ) {
   key[ std::size_t( e.h ) ] = e.key;
   pos[ std::size_t( e.h ) ] = int( at.size() );
@@ -144,7 +149,7 @@ struct HeapMirror {
   }
  void on( const HEra & e ) noexcept {
   const auto p = std::size_t( pos[ std::size_t( e.h ) ] );
-  at[ p ] = -1;                          // a hole, filled by Relocated
+  at[ p ] = -1;  // a hole, filled by Relocated
   pos[ std::size_t( e.h ) ] = -1;
   if( p + 1 == at.size() )
    at.pop_back();
@@ -176,9 +181,8 @@ struct HeapMirror {
        ( key[ std::size_t( id ) ] != h.key( id ) ) ||
        ( pos[ std::size_t( id ) ] != int( p ) ) )
     return( false );
-   if( ( p > 0 ) &&
-       ( key[ std::size_t( id ) ] <
-         key[ std::size_t( at[ ( p - 1 ) / 4 ] ) ] ) )
+   if( ( p > 0 ) && ( key[ std::size_t( id ) ] <
+		      key[ std::size_t( at[ ( p - 1 ) / 4 ] ) ] ) )
     return( false );
    }
   return( at.empty() || ( at[ 0 ] == h.top().id ) );
@@ -186,11 +190,12 @@ struct HeapMirror {
  };
 
 /// an observer of the ids and keys only, which never wants `Relocated`
-struct HeapKeys {
+struct HeapKeys
+{
  std::vector< int > key;
  std::vector< bool > in;
- explicit HeapKeys( int n ) : key( std::size_t( n ) , 0 ) ,
-                              in( std::size_t( n ) , false ) {}
+ explicit HeapKeys( int n )
+     : key( std::size_t( n ) , 0 ) , in( std::size_t( n ) , false ) { }
  void on( const HIns & e ) {
   key[ std::size_t( e.h ) ] = e.key;
   in[ std::size_t( e.h ) ] = true;
@@ -245,33 +250,56 @@ void heapRun( H & h , int n , unsigned seed , int ops , C && check )
 using Arr = ObservableArray< long long , Dynamic<> >;
 
 /// an observer that keeps the events of an array of long long
-struct ArrayLog {
+struct ArrayLog
+{
  std::vector< mod::variant_t< Arr::modifications > > ev;
  int groups = 0;
  void on( const Arr::Assign & e ) { ev.emplace_back( e ); }
  void on( const Arr::Insert & e ) { ev.emplace_back( e ); }
  void on( const Arr::Erase & e ) noexcept {
-  try { ev.emplace_back( e ); } catch( ... ) {}
+  try {
+   ev.emplace_back( e );
+   }
+  catch( ... ) {
+   }
   }
  void on( const mod::Cleared & e ) noexcept {
-  try { ev.emplace_back( e ); } catch( ... ) {}
+  try {
+   ev.emplace_back( e );
+   }
+  catch( ... ) {
+   }
   }
  void on( const mod::Rebuilt & e ) noexcept {
-  try { ev.emplace_back( e ); } catch( ... ) {}
+  try {
+   ev.emplace_back( e );
+   }
+  catch( ... ) {
+   }
   }
  void group_begin( void ) { ++groups; }
- void group_end( void ) {}
+ void group_end( void ) { }
  };
 
 /// the prefix sums of an array recomputed from scratch: its values kept
 /// from the events, each prefix by a scan
-struct ScratchPrefix {
+struct ScratchPrefix
+{
  std::vector< long long > a;
  const std::vector< long long > * src = nullptr;
  bool stale = false;
- void on( const Arr::Assign & e ) { if( ! stale ) a[ e.h ] = e.to; }
- void on( const Arr::Insert & e ) { if( ! stale ) a.push_back( e.value ); }
- void on( const Arr::Erase & ) noexcept { if( ! stale ) a.pop_back(); }
+ void on( const Arr::Assign & e ) {
+  if( ! stale )
+   a[ e.h ] = e.to;
+  }
+ void on( const Arr::Insert & e ) {
+  if( ! stale )
+   a.push_back( e.value );
+  }
+ void on( const Arr::Erase & ) noexcept {
+  if( ! stale )
+   a.pop_back();
+  }
  void on( const mod::Cleared & ) noexcept {
   a.clear();
   stale = false;
@@ -345,12 +373,13 @@ ADS_TEST( "emit-heap" )
 {
  // nobody listens: the plain heap, no storage for the subject
  static_assert( sizeof( IndexedDaryHeap< int > ) ==
-                sizeof( std::vector< IndexedDaryHeap< int >::Entry > ) +
-                sizeof( std::vector< int > ) );
- static_assert( ! IndexedDaryHeap< int >::Subject::template listened<
-                                                                 HRel > );
- static_assert( ! IndexedDaryHeap< int , 4 , Static< HeapKeys > >::Subject::
-                  template listened< HRel > );
+		sizeof( std::vector< IndexedDaryHeap< int >::Entry > ) +
+		  sizeof( std::vector< int > ) );
+ static_assert( ! IndexedDaryHeap< int >::Subject::template listened< HRel > );
+ static_assert(
+   ! IndexedDaryHeap< int , 4 ,
+		      Static< HeapKeys > >::Subject::template listened<
+     HRel > );
  // a static observer of the ids and keys, the heap checked by its audit
  const int n = 64;
  HeapKeys k( n );
@@ -362,8 +391,8 @@ ADS_TEST( "emit-heap" )
  IndexedDaryHeap< int > p( n );
  HeapKeys k2( n );
  IndexedDaryHeap< int , 4 , Static< HeapKeys > > h2( n , k2 );
- heapRun( p , n , 11 , 2000 , [] {} );
- heapRun( h2 , n , 11 , 2000 , [] {} );
+ heapRun( p , n , 11 , 2000 , [] { } );
+ heapRun( h2 , n , 11 , 2000 , [] { } );
  CHECK( p.size() == h2.size() );
  while( ! p.empty() ) {
   const auto a = p.pop();
@@ -389,8 +418,8 @@ ADS_TEST( "emit-heap-relocated" )
  while( ! d.empty() )
   d.pop();
  const int id = d.attach( m2 );
- heapRun( d , n , 9 , 3000 , [ & ] {
-  CHECK( m2.audit( d ) && k2.audit( d ) ); } );
+ heapRun( d , n , 9 , 3000 ,
+	  [ & ] { CHECK( m2.audit( d ) && k2.audit( d ) ); } );
  d.detach( id );
  d.reset( n );
  CHECK( k2.audit( d ) );
@@ -399,7 +428,8 @@ ADS_TEST( "emit-heap-relocated" )
 ADS_TEST( "emit-heap-batch" )
 {
  // the erasure told before the removal, then a batch coalesced
- struct Before {
+ struct Before
+ {
   const IndexedDaryHeap< int , 4 , Dynamic<> > * h = nullptr;
   int seen = 0 , present = 0 , changes = 0 , inserts = 0 , groups = 0;
   void on( const HEra & e ) noexcept {
@@ -409,11 +439,11 @@ ADS_TEST( "emit-heap-batch" )
   void on( const HChg & ) { ++changes; }
   void on( const HIns & ) { ++inserts; }
   void group_begin( void ) { ++groups; }
-  void group_end( void ) {}
+  void group_end( void ) { }
   };
  IndexedDaryHeap< int , 4 , Dynamic<> > h( 8 );
  Before b;
- b.h = & h;
+ b.h = &h;
  h.attach( b );
  h.push( 1 , 10 );
  h.push( 2 , 20 );
@@ -422,20 +452,21 @@ ADS_TEST( "emit-heap-batch" )
  CHECK( ( b.seen == 1 ) && ( b.present == 1 ) && ( b.inserts == 3 ) );
  {
   auto t = batch( h );
-  h.decrease( 3 , 5 );                 // a change then an erasure: the
-  h.pop();                             // erasure of the first key
-  h.push( 4 , 7 );                     // an insertion then two changes:
-  h.decrease( 4 , 6 );                 // the insertion of the last key
+  h.decrease( 3 , 5 );  // a change then an erasure: the
+  h.pop();             // erasure of the first key
+  h.push( 4 , 7 );      // an insertion then two changes:
+  h.decrease( 4 , 6 );  // the insertion of the last key
   h.decrease( 4 , 2 );
-  h.decrease( 1 , 9 );                 // two changes: one
+  h.decrease( 1 , 9 );  // two changes: one
   h.increase( 1 , 12 );
   CHECK( b.seen == 1 );
   }
  CHECK( ( b.groups == 1 ) && ( b.seen == 2 ) && ( b.inserts == 4 ) &&
-        ( b.changes == 1 ) );
+	( b.changes == 1 ) );
  CHECK( ( h.top().id == 4 ) && ( h.key( 1 ) == 12 ) );
  // a mute: Rebuilt to whoever wants it, nothing else
- struct Rb {
+ struct Rb
+ {
   int r = 0;
   void on( const mod::Rebuilt & ) noexcept { ++r; }
   };
@@ -456,7 +487,7 @@ ADS_TEST( "emit-heap-batch" )
 ADS_TEST( "emit-array" )
 {
  static_assert( sizeof( ObservableArray< int > ) ==
-                sizeof( std::vector< int > ) );
+		sizeof( std::vector< int > ) );
  Arr a( 4 , 1 );
  ArrayLog L;
  a.attach( L );
@@ -468,38 +499,34 @@ ADS_TEST( "emit-array" )
  const std::vector< long long > v{ 1 , 2 , 3 };
  a.assign( v.begin() , v.end() );
  CHECK( L.ev.size() == 6 );
- CHECK( ( std::get< Arr::Assign >( L.ev[ 0 ] ) ==
-          Arr::Assign{ 2 , 1 , 5 } ) &&
-        ( std::get< Arr::Assign >( L.ev[ 1 ] ) ==
-          Arr::Assign{ 2 , 5 , 8 } ) &&
-        ( std::get< Arr::Insert >( L.ev[ 2 ] ) ==
-          Arr::Insert{ 4 , 4 , 9 } ) &&
-        ( std::get< Arr::Erase >( L.ev[ 3 ] ) ==
-          Arr::Erase{ 4 , 4 , 9 } ) &&
-        std::holds_alternative< mod::Cleared >( L.ev[ 4 ] ) &&
-        std::holds_alternative< mod::Rebuilt >( L.ev[ 5 ] ) );
+ CHECK( ( std::get< Arr::Assign >( L.ev[ 0 ] ) == Arr::Assign{ 2 , 1 , 5 } ) &&
+	( std::get< Arr::Assign >( L.ev[ 1 ] ) == Arr::Assign{ 2 , 5 , 8 } ) &&
+	( std::get< Arr::Insert >( L.ev[ 2 ] ) == Arr::Insert{ 4 , 4 , 9 } ) &&
+	( std::get< Arr::Erase >( L.ev[ 3 ] ) == Arr::Erase{ 4 , 4 , 9 } ) &&
+	std::holds_alternative< mod::Cleared >( L.ev[ 4 ] ) &&
+	std::holds_alternative< mod::Rebuilt >( L.ev[ 5 ] ) );
  CHECK( ( a.size() == 3 ) && ( a[ 2 ] == 3 ) );
  // a batch: the net effect per index
  L.ev.clear();
  {
   auto b = batch( a );
   a.set( 0 , 7 );
-  a.set( 0 , 8 );                      // one change, 1 -> 8
+  a.set( 0 , 8 );  // one change, 1 -> 8
   a.set( 1 , 4 );
-  a.set( 1 , 2 );                      // back to 2: nothing
+  a.set( 1 , 2 );  // back to 2: nothing
   a.push_back( 5 );
-  a.set( 3 , 6 );                      // an insertion of 6
+  a.set( 3 , 6 );  // an insertion of 6
   a.set( 2 , 0 );
-  a.pop_back();                        // the insertion and erasure cancel
-  a.pop_back();                        // the erasure of 3, not of 0
+  a.pop_back();  // the insertion and erasure cancel
+  a.pop_back();  // the erasure of 3, not of 0
   }
  CHECK( L.groups == 1 );
  CHECK( L.ev.size() == 2 );
  bool c0 = false , e2 = false;
  for( const auto & e : L.ev ) {
-  if( const auto * x = std::get_if< Arr::Assign >( & e ) )
+  if( const auto * x = std::get_if< Arr::Assign >( &e ) )
    c0 = ( *x == Arr::Assign{ 0 , 1 , 8 } );
-  if( const auto * x = std::get_if< Arr::Erase >( & e ) )
+  if( const auto * x = std::get_if< Arr::Erase >( &e ) )
    e2 = ( *x == Arr::Erase{ 2 , 2 , 3 } );
   }
  CHECK( c0 && e2 );
@@ -528,13 +555,13 @@ ADS_TEST( "fenwick" )
  {
   std::vector< long long > a( 37 );
   for( auto & x : a )
-   x = (long long)( rng() % 100 ) - 50;
+   x = ( long long )( rng() % 100 ) - 50;
   Fenwick< SumOf< long long > > f( a.begin() , a.end() );
   for( int t = 0 ; t < 3000 ; ++t ) {
    const std::size_t i = rng() % a.size();
    const int r = int( rng() % 5 );
    if( r == 0 ) {
-    a[ i ] = (long long)( rng() % 100 ) - 50;
+    a[ i ] = ( long long )( rng() % 100 ) - 50;
     f.set( i , a[ i ] );
     }
    else if( r == 1 ) {
@@ -542,7 +569,7 @@ ADS_TEST( "fenwick" )
     f.add( i , 3 );
     }
    else if( r == 2 ) {
-    a.push_back( (long long)( rng() % 100 ) );
+    a.push_back( ( long long )( rng() % 100 ) );
     f.push_back( a.back() );
     }
    else if( ( r == 3 ) && ( a.size() > 1 ) ) {
@@ -559,7 +586,7 @@ ADS_TEST( "fenwick" )
    CHECK( ( f.range( l , h ) == s ) && ( f.prefix( h ) == p ) );
    CHECK( f.get( i < a.size() ? i : 0 ) == a[ i < a.size() ? i : 0 ] );
    }
- }
+  }
  // a commutative monoid: add() by combination, set() by the parts
  {
   std::vector< int > a( 50 , 0 );
@@ -572,7 +599,7 @@ ADS_TEST( "fenwick" )
     f.add( i , v );
     }
    else {
-    a[ i ] = v;                         // may lower it
+    a[ i ] = v;  // may lower it
     f.set( i , v );
     }
    const std::size_t r = rng() % ( a.size() + 1 );
@@ -581,7 +608,7 @@ ADS_TEST( "fenwick" )
     m = std::max( m , a[ k ] );
    CHECK( f.prefix( r ) == m );
    }
- }
+  }
  // a monoid that does not commute: the order of the combinations
  {
   Fenwick< Concat > f;
@@ -599,18 +626,18 @@ ADS_TEST( "fenwick" )
   std::vector< std::string > w{ "x" , "y" , "z" };
   f.assign( w.begin() , w.end() );
   CHECK( ( f.prefix( 3 ) == "xyz" ) && ( f.size() == 3 ) );
- }
+  }
  // a group that does not commute: set() by the parts, ranges by inverses
  {
   std::vector< Affine::Value > a;
   for( int k = 0 ; k < 40 ; ++k )
-   a.push_back( Affine::Value{ ( rng() % 2 ) ? 1 : -1 ,
-                               (long long)( rng() % 20 ) } );
+   a.push_back(
+     Affine::Value{ ( rng() % 2 ) ? 1 : -1 , ( long long )( rng() % 20 ) } );
   Fenwick< Affine > f( a.begin() , a.end() );
   for( int t = 0 ; t < 500 ; ++t ) {
    const std::size_t i = rng() % a.size();
-   a[ i ] = Affine::Value{ ( rng() % 2 ) ? 1 : -1 ,
-                           (long long)( rng() % 20 ) };
+   a[ i ] =
+     Affine::Value{ ( rng() % 2 ) ? 1 : -1 , ( long long )( rng() % 20 ) };
    f.set( i , a[ i ] );
    const std::size_t l = rng() % ( a.size() + 1 );
    const std::size_t h = l + rng() % ( a.size() - l + 1 );
@@ -619,7 +646,7 @@ ADS_TEST( "fenwick" )
     x = Affine::combine( x , a[ k ] );
    CHECK( f.range( l , h ) == x );
    }
- }
+  }
  // floating point: the drift dropped at each period
  {
   Fenwick< SumOf< double > > f( 8 );
@@ -630,7 +657,7 @@ ADS_TEST( "fenwick" )
    f.set( i , 0.1 );
   CHECK( f.period() == 16 );
   CHECK( std::fabs( f.prefix( 8 ) - 0.8 ) < 1e-6 );
- }
+  }
  }
 
 ADS_TEST( "fenwick-observer" )
@@ -649,7 +676,7 @@ ADS_TEST( "fenwick-observer" )
  FO inc( a );
  ScratchPrefix scr;
  scr.a = a.values();
- scr.src = & a.values();
+ scr.src = &a.values();
  Shadow< FO , ScratchPrefix > sh( inc , scr );
  a.attach( sh );
  std::mt19937 rng( 23 );
@@ -657,11 +684,11 @@ ADS_TEST( "fenwick-observer" )
   const int r = int( rng() % 20 );
   const std::size_t i = a.empty() ? 0 : rng() % a.size();
   if( ( r < 8 ) && ! a.empty() )
-   a.set( i , (long long)( rng() % 100 ) );
+   a.set( i , ( long long )( rng() % 100 ) );
   else if( ( r < 11 ) && ! a.empty() )
-   a.add( i , (long long)( rng() % 10 ) );
+   a.add( i , ( long long )( rng() % 10 ) );
   else if( r < 14 )
-   a.push_back( (long long)( rng() % 100 ) );
+   a.push_back( ( long long )( rng() % 100 ) );
   else if( ( r < 16 ) && ! a.empty() )
    a.pop_back();
   else if( r < 18 ) {
@@ -678,7 +705,7 @@ ADS_TEST( "fenwick-observer" )
    std::vector< long long > v( rng() % 30 , 4 );
    auto g = batch( a );
    a.push_back( 1 );
-   a.assign( v.begin() , v.end() );    // Rebuilt, then more changes
+   a.assign( v.begin() , v.end() );  // Rebuilt, then more changes
    a.push_back( 6 );
    }
   else if( rng() % 4 == 0 )
@@ -697,19 +724,19 @@ ADS_TEST( "fenwick-observer" )
 ADS_TEST( "sliding-aggregate" )
 {
  static_assert( SlidingAggregate< SumOf< int > >::kind ==
-                window_kind::subtract_on_evict );
+		window_kind::subtract_on_evict );
  static_assert( SlidingAggregate< MinOf< int > >::kind ==
-                window_kind::monotone_deque );
+		window_kind::monotone_deque );
  static_assert( SlidingAggregate< Concat >::kind == window_kind::two_stacks );
  static_assert( SlidingAggregate< Concat , WorstCase >::kind ==
-                window_kind::real_time );
+		window_kind::real_time );
  static_assert( Queue< SlidingAggregate< Concat > > );
  auto small = []( std::mt19937 & r ) { return( int( r() % 50 ) - 25 ); };
  auto letter = []( std::mt19937 & r ) {
   return( std::string( 1 , char( 'a' + r() % 26 ) ) );
   };
  auto affine = []( std::mt19937 & r ) {
-  return( Affine::Value{ ( r() % 2 ) ? 1 : -1 , (long long)( r() % 9 ) } );
+  return( Affine::Value{ ( r() % 2 ) ? 1 : -1 , ( long long )( r() % 9 ) } );
   };
  auto first = []( std::mt19937 & r ) {
   return( First::Value{ int( r() % 9 ) } );
@@ -753,7 +780,7 @@ ADS_TEST( "sliding-aggregate" )
  while( f.size() > 1 )
   f.dequeue();
  CHECK( ( f.period() == 8 ) &&
-        ( std::fabs( f.aggregate() - f.top() ) < 1e-4 ) );
+	( std::fabs( f.aggregate() - f.top() ) < 1e-4 ) );
  }
 
 ADS_TEST( "sliding-minqueue" )
@@ -775,11 +802,11 @@ ADS_TEST( "sliding-minqueue" )
   else {
    const int x = q.dequeue();
    CHECK( ( a.dequeue() == x ) && ( b.dequeue() == x ) &&
-          ( r.dequeue() == x ) );
+	  ( r.dequeue() == x ) );
    }
   if( ! q.empty() )
    CHECK( ( a.aggregate() == q.min() ) && ( b.aggregate() == q.min() ) &&
-          ( r.min() == q.min() ) );
+	  ( r.min() == q.min() ) );
   }
  }
 

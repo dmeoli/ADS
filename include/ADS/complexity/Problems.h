@@ -57,7 +57,7 @@
 
 #ifndef __ADS_Problems
  #define __ADS_Problems
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,12 +77,13 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-using Adjacency = std::vector< std::vector< bool > >;   ///< an adjacency
-using Clause = std::vector< int >;                      ///< some literals
-using Cnf = std::vector< Clause >;                      ///< a formula
-using Nodes = std::vector< int >;                       ///< a set, a path
+using Adjacency = std::vector< std::vector< bool > >;  ///< an adjacency
+using Clause = std::vector< int >;                     ///< some literals
+using Cnf = std::vector< Clause >;                     ///< a formula
+using Nodes = std::vector< int >;                      ///< a set, a path
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ GRAPHS ------------------------------------*/
@@ -105,7 +106,8 @@ using Nodes = std::vector< int >;                       ///< a set, a path
 /// \pre \f$ G \f$ is square
 inline bool cliqueCertificate( const Adjacency & G , const Nodes & S , int k );
 
-namespace detail {
+namespace detail
+{
 
 /// the sets of k nodes of [ 0 , n ), extended only while ok( S , v )
 template< class Ok , class Done >
@@ -202,7 +204,7 @@ inline std::optional< Nodes > vertexCover( const Adjacency & G , int k );
 ///      \f$ k \ge 0 \f$
 /// \post a coloring returned is proper, with colors in \f$ [ 0 , k ) \f$
 inline std::optional< std::vector< int > > coloring( const Adjacency & G ,
-                                                     int k );
+						     int k );
 
 /// a partition of the nodes in two halves cut by at most \f$ k \f$ edges, or
 /// nothing; the half of node 0
@@ -241,7 +243,7 @@ inline std::optional< Nodes > bisection( const Adjacency & G , int k );
 /// \pre \f$ D \f$ is square
 template< class T >
 bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
-                     const Nodes & P );
+		     const Nodes & P );
 
 /// a tour of length at most \f$ k \f$ from city 0, the partial tours longer
 /// than \f$ k \f$ pruned, or nothing (the enTsp() of the book)
@@ -270,13 +272,14 @@ bool tspCertificate( const std::vector< std::vector< T > > & D , T k ,
 template< class T >
 std::optional< Nodes > tsp( const std::vector< std::vector< T > > & D , T k );
 
-namespace detail {
+namespace detail
+{
 
 /// a path through all the nodes, from the first one in starts, with
 /// adjacent consecutive nodes, closed if cycle, ending in end if >= 0
 inline std::optional< Nodes > hamilton( const Adjacency & G ,
-                                        const Nodes & starts , bool cycle ,
-                                        int end = -1 );
+					const Nodes & starts , bool cycle ,
+					int end = -1 );
 
 inline Nodes all( int n );
 
@@ -343,7 +346,8 @@ inline std::optional< Nodes > hamiltonianCycle( const Adjacency & G );
 /// \post a path returned visits each node once along the edges, from
 ///       \f$ r \f$ and to \f$ t \f$ if given
 inline std::optional< Nodes > hamiltonianPath( const Adjacency & G ,
-                                               int r = -1 , int t = -1 );
+					       int r = -1 ,
+					       int t = -1 );
 
 /// an unoriented chain through every node once
 ///
@@ -381,7 +385,8 @@ inline std::optional< Nodes > hamiltonianChain( const Adjacency & G );
 /// \post a path returned is simple, from \f$ r \f$ to \f$ t \f$, of at least
 ///       \f$ k \f$ edges
 inline std::optional< Nodes > longestPath( const Adjacency & G , int r ,
-                                           int t , int k );
+					   int t ,
+					   int k );
 
 /// the most edges of a path from \f$ r \f$ to \f$ t \f$ in an acyclic
 /// oriented graph, \f$ -1 \f$ if \f$ t \f$ is not reachable;
@@ -477,7 +482,7 @@ inline bool satCertificate( const Cnf & F , const std::vector< bool > & x );
 ///      \f$ [ 0 , n ) \f$
 /// \post an assignment returned passes `satCertificate()`
 inline std::optional< std::vector< bool > > satisfiable( const Cnf & F ,
-                                                         int n );
+							 int n );
 
 /// a 0-1 vector \f$ x \f$ with \f$ A x \le b \f$, by enumeration, or nothing
 ///
@@ -495,9 +500,9 @@ inline std::optional< std::vector< bool > > satisfiable( const Cnf & F ,
 /// \pre \f$ n \ge 0 \f$, \f$ A \f$ has \f$ n \f$ columns and as many rows as
 ///      \f$ b \f$
 /// \post a vector returned is 0-1 and satisfies \f$ A x \le b \f$
-inline std::optional< std::vector< int > > lp01(
-                              const std::vector< std::vector< long > > & A ,
-                              const std::vector< long > & b , int n );
+inline std::optional< std::vector< int > >
+lp01( const std::vector< std::vector< long > > & A ,
+      const std::vector< long > & b , int n );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- NUMBERS ----------------------------------*/
@@ -523,7 +528,7 @@ inline std::optional< std::vector< int > > lp01(
 /// \pre \f$ A \f$ is not negative
 /// \post the places returned are distinct, of sum \f$ k \f$
 inline std::optional< Nodes > subsetSumExists( const std::vector< long > & A ,
-                                               long k );
+					       long k );
 
 /// the places of a half of \f$ A \f$ of half the sum, or nothing
 ///
@@ -564,8 +569,8 @@ inline std::optional< Nodes > partition( const std::vector< long > & A );
 /// \post the objects returned have volume at most \f$ C \f$ and profit at
 ///       least \f$ k \f$
 inline std::optional< Nodes > knapsackDecision( const std::vector< long > & p ,
-                                                const std::vector< long > & v ,
-                                                long C , long k );
+						const std::vector< long > & v ,
+						long C , long k );
 
 /// the processor of each program, so that \f$ m \f$ processors run them all
 /// within time \f$ d \f$, or nothing (also if \f$ d < 0 \f$, even with no
@@ -593,8 +598,8 @@ inline std::optional< Nodes > knapsackDecision( const std::vector< long > & p ,
 /// \f]
 /// \pre \f$ m \ge 1 \f$ and \f$ t \f$ is not negative
 /// \post each processor returned is loaded at most \f$ d \f$
-inline std::optional< std::vector< int > > multiprocessorScheduling(
-                        const std::vector< long > & t , int m , long d );
+inline std::optional< std::vector< int > >
+multiprocessorScheduling( const std::vector< long > & t , int m , long d );
 
 /// sets of three of \f$ \{ 0 , \ldots , m - 1 \} \f$ that partition it, by
 /// places, the ones that meet those chosen pruned, or nothing (the
@@ -618,8 +623,8 @@ inline std::optional< std::vector< int > > multiprocessorScheduling(
 /// \f]
 /// \pre each set has three distinct elements of \f$ [ 0 , m ) \f$
 /// \post the sets returned partition \f$ [ 0 , m ) \f$
-inline std::optional< Nodes > exactCover3(
-                      const std::vector< std::array< int , 3 > > & Y , int m );
+inline std::optional< Nodes >
+exactCover3( const std::vector< std::array< int , 3 > > & Y , int m );
 
 /// a matching of \f$ q \f$ triples \f$ ( w , x , v ) \f$ of \f$ M \f$ with
 /// distinct \f$ w \f$, \f$ x \f$ and \f$ v \f$, the three sets being
@@ -636,8 +641,9 @@ inline std::optional< Nodes > exactCover3(
 /// \f]
 /// \pre the coordinates are in \f$ [ 0 , q ) \f$
 /// \post a matching returned has \f$ q \f$ triples
-inline std::optional< Nodes > threeDimensionalMatching(
-                     const std::vector< std::array< int , 3 > > & M , int q );
+inline std::optional< Nodes >
+threeDimensionalMatching( const std::vector< std::array< int , 3 > > & M ,
+			  int q );
 
 /// the \f$ n \f$ bribes \f$ M \f$ to the \f$ n \f$ politicians,
 /// \f$ \mathit{ps}[ i ] \f$ if the \f$ i \f$-th is of the party PS, so that
@@ -659,8 +665,8 @@ inline std::optional< Nodes > threeDimensionalMatching(
 /// \f]
 /// \pre \f$ M \f$ and \f$ \mathit{ps} \f$ have the same size
 /// \post the bribes returned are a permutation of \f$ M \f$
-inline std::optional< std::vector< long > > bribes(
-                      std::vector< long > M , const std::vector< bool > & ps );
+inline std::optional< std::vector< long > >
+bribes( std::vector< long > M , const std::vector< bool > & ps );
 
 /*--------------------------------------------------------------------------*/
 
@@ -674,7 +680,7 @@ inline std::optional< std::vector< long > > bribes(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Problems.h included */
+#endif /* Problems.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Problems.h ---------------------------*/

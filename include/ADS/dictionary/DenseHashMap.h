@@ -95,7 +95,7 @@
 
 #ifndef __ADS_DenseHashMap
  #define __ADS_DenseHashMap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -122,7 +122,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS DenseHashMap ---------------------------*/
@@ -130,14 +131,14 @@ namespace ADS {
 
 /// a hash map with its pairs in a dense vector and an index of positions
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
-class DenseHashMap {
+	  class Eq = std::equal_to< K > >
+class DenseHashMap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty map, with room for \f$ n \f$ pairs before it grows
  explicit DenseHashMap( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
@@ -152,7 +153,7 @@ class DenseHashMap {
  DenseHashMap & operator=( DenseHashMap o ) noexcept;
 
  /// frees the pairs and the groups
-~DenseHashMap() = default;
+ ~DenseHashMap() = default;
 
 /*--------------------------------------------------------------------------*/
 
@@ -183,7 +184,7 @@ class DenseHashMap {
  [[nodiscard]] const V * find( const K & k ) const;
 
  /// the value of the key \f$ k \f$, to change in place, nil if it is not
-/// there
+ /// there
  [[nodiscard]] V * find( const K & k );
 
  /// associates the value \f$ v \f$ to the key \f$ k \f$; true if \f$ k \f$
@@ -218,12 +219,12 @@ class DenseHashMap {
  /// value read and then changed costs one inspection; the pointer is
  /// valid until the next insertion of a new key or removal
  /// \post \f$ k \f$ is in the map
- template< class ... A >
- std::pair< V * , bool > try_emplace( const K & k , A && ... a );
+ template< class... A >
+ std::pair< V * , bool > try_emplace( const K & k , A &&... a );
 
  /// as `try_emplace( k , a )`, moving the key
- template< class ... A >
- std::pair< V * , bool > try_emplace( K && k , A && ... a );
+ template< class... A >
+ std::pair< V * , bool > try_emplace( K && k , A &&... a );
 
  /// removes the key \f$ k \f$, if it is there, moving the last pair into its
  /// position; true if it was
@@ -301,14 +302,12 @@ class DenseHashMap {
  using const_reference = const std::pair< K , V > &;
  /// the iterator on the items, constant
  using const_iterator =
-  typename std::vector< std::pair< K , V > >::const_iterator;
+   typename std::vector< std::pair< K , V > >::const_iterator;
  /// the iterator on the items
  using iterator = const_iterator;
 
  /// the iterator on the first item
- [[nodiscard]] const_iterator begin( void ) const {
-  return( f_kv.cbegin() );
-  }
+ [[nodiscard]] const_iterator begin( void ) const { return( f_kv.cbegin() ); }
  /// the iterator past the last item
  [[nodiscard]] const_iterator end( void ) const { return( f_kv.cend() ); }
  /// the constant iterator on the first item
@@ -318,7 +317,6 @@ class DenseHashMap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::uint8_t EMPTY = 0;        ///< a place never used
  static constexpr std::size_t SLOTS = 12;        ///< the places of a group
  static constexpr std::size_t OVER = 15;         ///< the byte of overflow
@@ -326,9 +324,10 @@ class DenseHashMap {
 
  /// a group, one line of cache: the control bytes of the 12 places, 3
  /// bytes never matched, the byte of overflow and the positions
- struct alignas( 64 ) Group {
-  std::uint8_t c[ 16 ];          ///< the control bytes
-  std::uint32_t at[ SLOTS ];     ///< the positions of the pairs
+ struct alignas( 64 ) Group
+ {
+  std::uint8_t c[ 16 ];       ///< the control bytes
+  std::uint32_t at[ SLOTS ];  ///< the positions of the pairs
   };
 
  /// the places of a group whose control bytes satisfy a test, the bit j
@@ -336,8 +335,8 @@ class DenseHashMap {
  using Mask = std::uint32_t;
 
  /// the hash taken as it is, if it declares `is_avalanching` on 64 bits
- static constexpr bool AVALANCHING = ( sizeof( std::size_t ) >= 8 ) &&
-  requires { typename H::is_avalanching; };
+ static constexpr bool AVALANCHING =
+   ( sizeof( std::size_t ) >= 8 ) && requires { typename H::is_avalanching; };
 
  /// the groups of an index with no places, all empty, their overflow 0;
  /// never written
@@ -360,31 +359,31 @@ class DenseHashMap {
  [[nodiscard]] static Mask empties( const Group & c );
 
  /// the group \f$ c \f$ with the control byte of its place \f$ j \f$
-/// `EMPTY`, written whole
+ /// `EMPTY`, written whole
  static void vacate( Group & c , std::size_t j );
 
  /// the position of \f$ k \f$, whose mixed hash is \f$ x \f$, in the
-/// vector, or -1
+ /// vector, or -1
  [[nodiscard]] std::size_t locate( std::uint64_t x , const K & k ) const;
 
  /// a key passed out of line: by value if it is a small trivial type
  using KeyArg = std::conditional_t< std::is_trivially_copyable_v< K > &&
-                                    ( sizeof( K ) <= 2 * sizeof( void * ) ) ,
-                                    K , const K & >;
+				      ( sizeof( K ) <= 2 * sizeof( void * ) ) ,
+				    K , const K & >;
 
  /// the group and the place of \f$ k \f$ past the first group \f$ g \f$ of
  /// \f$ x \f$, whose overflow has the bit of \f$ x \f$; the group -1 if
  /// \f$ k \f$ is not there
- ADS_FLAT_NOINLINE std::pair< std::size_t , std::size_t > further(
-                    std::uint64_t x , std::size_t g , KeyArg k ) const;
+ ADS_FLAT_NOINLINE std::pair< std::size_t , std::size_t >
+ further( std::uint64_t x , std::size_t g , KeyArg k ) const;
 
  /// the first empty place of the inspection of \f$ x \f$, the bit of
-/// \f$ x \f$ set in the
+ /// \f$ x \f$ set in the
  /// overflow of the full groups before it, as group * 16 + place
  std::size_t claim( std::uint64_t x );
 
  /// the place of the position \f$ p \f$, whose key has the mixed hash
-/// \f$ x \f$
+ /// \f$ x \f$
  std::uint32_t & holder( std::uint64_t x , std::size_t p );
 
  /// the insertion of a pair, the key and the value forwarded
@@ -395,20 +394,20 @@ class DenseHashMap {
  /// the pair of \f$ k \f$ and the value built from `a`; if it is there,
  /// its value assigned from `a` (a single value) when `Assign`; the value
  /// and true if \f$ k \f$ was not there
- template< bool Assign , class KK , class ... A >
- std::pair< V * , bool > place( KK && k , A && ... a );
+ template< bool Assign , class KK , class... A >
+ std::pair< V * , bool > place( KK && k , A &&... a );
 
  /// the place \f$ j \f$ of the position \f$ p \f$ emptied in the group
  /// \f$ g \f$, the last pair moved into \f$ p \f$
  void unlink( Group & g , std::size_t j , std::size_t p );
 
  /// the index rebuilt with \f$ G \f$ groups, a power of 2 at least 2, from
-/// the
+ /// the
  /// vector
  void rebuild( std::size_t G );
 
  /// `f_deleted` set to `deleted()`; true if the index has room for
-/// \f$ m / 16 \f$ more
+ /// \f$ m / 16 \f$ more
  /// pairs or places counted before the next recount
  ADS_FLAT_NOINLINE bool recount( void );
 
@@ -419,30 +418,31 @@ class DenseHashMap {
  [[nodiscard]] static std::size_t groups( std::size_t n );
 
  /// at most \f$ 7 / 8 \f$ of \f$ m \f$ places, the most that can be full or
-/// counted
+ /// counted
  [[nodiscard]] static constexpr std::size_t bound( std::size_t m );
 
  /// each position held by one full place reached by the inspection of its
  /// key, the bound respected; past 1024 places only the inspection of
-/// \f$ x \f$
+ /// \f$ x \f$
  [[nodiscard]] bool consistent( std::uint64_t x ) const;
 
  /// frees the groups
- struct Free {
+ struct Free
+ {
   /// frees the groups \f$ g \f$
   void operator()( Group * g ) const noexcept;
   };
 
- std::vector< std::pair< K , V > > f_kv;   ///< the pairs, dense
- std::unique_ptr< Group[] , Free > f_g;    ///< the groups, nil if none
- Group * f_ctrl = s_none;          ///< the groups, or `s_none`
- std::size_t f_mask = 0;           ///< the groups - 1, 0 with none
- std::size_t f_cap = 0;            ///< the places
- int f_shift = 63;                 ///< 64 - log2 of the groups
- std::size_t f_max = 0;            ///< `bound( f_cap )`
- std::size_t f_deleted = 0;        ///< a bound of `deleted()`
- H f_h;                            ///< the hash of the keys
- Eq f_eq;                          ///< the equality of the keys
+ std::vector< std::pair< K , V > > f_kv;  ///< the pairs, dense
+ std::unique_ptr< Group[] , Free > f_g;   ///< the groups, nil if none
+ Group * f_ctrl = s_none;                ///< the groups, or `s_none`
+ std::size_t f_mask = 0;                 ///< the groups - 1, 0 with none
+ std::size_t f_cap = 0;                  ///< the places
+ int f_shift = 63;                       ///< 64 - log2 of the groups
+ std::size_t f_max = 0;                  ///< `bound( f_cap )`
+ std::size_t f_deleted = 0;              ///< a bound of `deleted()`
+ H f_h;                                  ///< the hash of the keys
+ Eq f_eq;                                ///< the equality of the keys
 
  };  // end( class DenseHashMap )
 
@@ -458,7 +458,7 @@ class DenseHashMap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DenseHashMap.h included */
+#endif /* DenseHashMap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File DenseHashMap.h -------------------------*/

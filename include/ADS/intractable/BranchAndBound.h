@@ -66,7 +66,7 @@
 
 #ifndef __ADS_BranchAndBound
  #define __ADS_BranchAndBound
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ BOUNDS ------------------------------------*/
@@ -99,8 +100,8 @@ namespace ADS {
 
 /// the lower bound of a circuit that starts with \f$ S \f$
 enum class TspBound {
- BOOK ,       ///< the bound of the text, by the least edges of each city
- ONE_TREE     ///< the bound of the 1-tree (exercise 19.10)
+ BOOK ,     ///< the bound of the text, by the least edges of each city
+ ONE_TREE  ///< the bound of the 1-tree (exercise 19.10)
  };
 
 /// the weight of a minimum spanning tree of the nodes in \f$ V \f$, by the
@@ -118,7 +119,7 @@ enum class TspBound {
 /// \pre \f$ D \f$ is square and symmetric, and \f$ V \f$ has distinct cities
 template< class T >
 T spanningTreeWeight( const std::vector< std::vector< T > > & D ,
-                      const Nodes & V );
+		      const Nodes & V );
 
 /// the weight of a minimum 1-tree of \f$ r \f$: a minimum spanning tree of
 /// the other nodes and the two least edges of \f$ r \f$; each circuit is a
@@ -167,7 +168,7 @@ T oneTree( const std::vector< std::vector< T > > & D , int r );
 ///      \f$ D \f$ symmetric for the 1-tree
 template< class T >
 T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
-                 TspBound how = TspBound::BOOK );
+		 TspBound how = TspBound::BOOK );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- BBTSP ------------------------------------*/
@@ -204,10 +205,9 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
 ///      symmetric for the 1-tree
 /// \post a permutation and its cost, if \f$ n \ge 2 \f$
 template< class T >
-std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
-                              const Nodes & start = {} ,
-                              TspBound how = TspBound::BOOK ,
-                              long * generated = nullptr );
+std::pair< T , Nodes >
+bbTsp( const std::vector< std::vector< T > > & D , const Nodes & start = {} ,
+       TspBound how = TspBound::BOOK , long * generated = nullptr );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ LITTLE ------------------------------------*/
@@ -253,7 +253,7 @@ std::pair< T , Nodes > bbTsp( const std::vector< std::vector< T > > & D ,
 /// \post a permutation and its cost, if \f$ n \ge 2 \f$
 template< class T >
 std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
-                                  long * generated = nullptr );
+				 long * generated = nullptr );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLIQUE AND KNAPSACK ------------------------------*/
@@ -284,10 +284,9 @@ std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric, \f$ w \f$ of
 ///      size \f$ n \f$ and not negative
 /// \post a clique and its weight
-inline std::pair< long , Nodes > maxWeightClique(
-                                            const Adjacency & G ,
-                                            const std::vector< long > & w ,
-                                            long * generated = nullptr );
+inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
+						 const std::vector< long > & w ,
+						 long * generated = nullptr );
 
 /// the best profit and the objects of KNAPSACK by branch-&-bound, by places;
 /// the objects by decreasing profit per volume, each in and then out, pruned
@@ -315,9 +314,9 @@ inline std::pair< long , Nodes > maxWeightClique(
 ///      \f$ v \f$ positive, \f$ C \ge 0 \f$
 /// \post objects within \f$ C \f$ and their profit
 inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
-                                             const std::vector< long > & v ,
-                                             long C ,
-                                             long * generated = nullptr );
+					    const std::vector< long > & v ,
+					    long C ,
+					    long * generated = nullptr );
 
 /// KNAPSACK by backtracking with the simple bound: the objects in their
 /// order, each in and then out, an object that does not fit skipped, and a
@@ -343,10 +342,10 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
 /// \pre \f$ p \f$ and \f$ v \f$ of the same size, \f$ p \f$ not negative,
 ///      \f$ v \f$ positive, \f$ C \ge 0 \f$
 /// \post objects within \f$ C \f$ and their profit
-inline std::pair< long , Nodes > knapsackBacktrack(
-                                  const std::vector< long > & p ,
-                                  const std::vector< long > & v , long C ,
-                                  long * generated = nullptr );
+inline std::pair< long , Nodes >
+knapsackBacktrack( const std::vector< long > & p ,
+		   const std::vector< long > & v , long C ,
+		   long * generated = nullptr );
 
 /// the greedy heuristic of KNAPSACK: the objects by decreasing profit per
 /// volume, each taken if it still fits; not optimal in general
@@ -366,9 +365,10 @@ inline std::pair< long , Nodes > knapsackBacktrack(
 /// \pre \f$ p \f$ and \f$ v \f$ of the same size, \f$ p \f$ not negative,
 ///      \f$ v \f$ positive, \f$ C \ge 0 \f$
 /// \post objects within \f$ C \f$ and their profit
-inline std::pair< long , Nodes > knapsackGreedy(
-                                  const std::vector< long > & p ,
-                                  const std::vector< long > & v , long C );
+inline std::pair< long ,
+		  Nodes > knapsackGreedy( const std::vector< long > & p ,
+						const std::vector< long > & v ,
+						long C );
 
 /*--------------------------------------------------------------------------*/
 
@@ -382,7 +382,7 @@ inline std::pair< long , Nodes > knapsackGreedy(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BranchAndBound.h included */
+#endif /* BranchAndBound.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File BranchAndBound.h ------------------------*/

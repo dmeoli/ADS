@@ -105,7 +105,7 @@
 
 #ifndef __ADS_PerfectHashing
  #define __ADS_PerfectHashing
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -130,19 +130,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS PerfectHashTable --------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a static SET of integers on the two-level perfect hashing
-class PerfectHashTable {
+class PerfectHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = std::uint64_t;   ///< the type of the keys
+ using Key = std::uint64_t;  ///< the type of the keys
 
  /// the table of the keys of \f$ S \f$
  ///
@@ -173,7 +174,7 @@ class PerfectHashTable {
  /// \post each key of \f$ S \f$ is there (an audit), and
  ///       \f$ \sum_j n_j^2 < 4 n \f$
  explicit PerfectHashTable( const std::vector< std::uint64_t > & S ,
-                            std::uint64_t seed = 1 );
+			    std::uint64_t seed = 1 );
 
  /// whether \f$ k \f$ is in \f$ S \f$, any \f$ k \f$, in \f$ O( 1 ) \f$ time
  /// in the worst case: the key in the place \f$ h_j( k ) \f$ of the table
@@ -201,24 +202,24 @@ class PerfectHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::uint64_t kEmpty = ~std::uint64_t( 0 );
  static constexpr std::size_t kMaxTrials = 1000;
 
- struct Bucket {
-  std::size_t offset = 0;          ///< of its table in `f_T`
-  std::size_t size = 0;            ///< \f$ n_j^2 \f$, 0 for no key
-  CarterWegmanHash h = CarterWegmanHash( 1 );   ///< its function \f$ h_j \f$
+ struct Bucket
+ {
+  std::size_t offset = 0;                      ///< of its table in `f_T`
+  std::size_t size = 0;                        ///< \f$ n_j^2 \f$, 0 for no key
+  CarterWegmanHash h = CarterWegmanHash( 1 );  ///< its function \f$ h_j \f$
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the keys, in the order of the places, bidirectional
 
  /// the places of the second level, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
   /// whether the place \f$ i \f$ holds a key
@@ -260,12 +261,11 @@ class PerfectHashTable {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
- CarterWegmanHash f_h;             ///< the first level, n lists
- std::vector< Bucket > f_B;        ///< the tables of the second level
- std::vector< std::uint64_t > f_T; ///< their places, `kEmpty` if empty
- std::size_t f_n = 0;              ///< the number of keys
- std::size_t f_trials = 0;         ///< the functions drawn
+ CarterWegmanHash f_h;              ///< the first level, n lists
+ std::vector< Bucket > f_B;         ///< the tables of the second level
+ std::vector< std::uint64_t > f_T;  ///< their places, `kEmpty` if empty
+ std::size_t f_n = 0;               ///< the number of keys
+ std::size_t f_trials = 0;          ///< the functions drawn
 
  };  // end( class PerfectHashTable )
 
@@ -277,13 +277,13 @@ class PerfectHashTable {
 /// \f$ \mathit{keys}[ i ] \f$ to \f$ i \f$
 template< class K >
  requires( std::integral< K > ||
-           std::convertible_to< const K & , std::string_view > )
-class OrderedMinimalPerfectHash {
+	   std::convertible_to< const K & , std::string_view > )
+class OrderedMinimalPerfectHash
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;   ///< the type of the keys
+ using Key = K;  ///< the type of the keys
 
  /// the function of the distinct keys, on \f$ r = 2 \f$ or 3 functions and
  /// \f$ c n \f$ vertices; \f$ c = 0 \f$ stands for 3 if \f$ r = 2 \f$ and for
@@ -308,8 +308,8 @@ class OrderedMinimalPerfectHash {
  ///      \f$ c > 1.23 \f$ (or \f$ c = 0 \f$)
  /// \post `( *this )( keys[ i ] ) == i` for each \f$ i \f$ (an audit)
  explicit OrderedMinimalPerfectHash( const std::vector< K > & keys ,
-                                     int r = 2 , double c = 0 ,
-                                     std::uint64_t seed = 1 );
+				     int r = 2 ,
+				     double c = 0 , std::uint64_t seed = 1 );
 
  /// the value of \f$ k \f$,
  /// \f$ ( g( h_1( k ) ) + \cdots + g( h_r( k ) ) ) \bmod n \f$, in
@@ -357,8 +357,8 @@ class OrderedMinimalPerfectHash {
  ///      \f$ m \f$
  /// \post every edge is satisfied, if a labeling is returned
  [[nodiscard]] static std::optional< std::vector< std::uint32_t > >
-  labelAcyclicGraph( std::size_t m , const std::vector< std::size_t > & E ,
-                     const std::vector< std::size_t > & h , std::size_t n );
+ labelAcyclicGraph( std::size_t m , const std::vector< std::size_t > & E ,
+		    const std::vector< std::size_t > & h , std::size_t n );
 
  /// \f$ g \f$ on the \f$ m \f$ vertices such that the \f$ g \f$ of the
  /// \f$ r \f$ vertices of each hyperedge \f$ e \f$ add up to
@@ -395,30 +395,28 @@ class OrderedMinimalPerfectHash {
  ///      vertices below \f$ m \f$, those of an edge distinct
  /// \post every edge is satisfied, if a labeling is returned
  [[nodiscard]] static std::optional< std::vector< std::uint32_t > >
-  labelByPeeling( std::size_t m , const std::vector< std::size_t > & E ,
-                  int r , const std::vector< std::size_t > & h ,
-                  std::size_t n );
+ labelByPeeling( std::size_t m , const std::vector< std::size_t > & E , int r ,
+		 const std::vector< std::size_t > & h , std::size_t n );
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::size_t kMaxTrials = 1000;
 
  /// the integer of \f$ k \f$ for the function \f$ i \f$, below
-/// \f$ 2^{61} - 1 \f$
+ /// \f$ 2^{61} - 1 \f$
  [[nodiscard]] std::uint64_t fingerprint( const K & k , int i ) const;
 
  /// the vertex of \f$ k \f$ for the function \f$ i \f$
  [[nodiscard]] std::size_t vertex( const K & k , int i ) const;
 
- int f_r;                          ///< the number \f$ r \f$ of functions
- std::size_t f_n = 0;              ///< the number of keys
- std::size_t f_m = 0;              ///< the vertices
- std::size_t f_block = 0;          ///< the vertices of a function
- std::size_t f_trials = 0;         ///< the graphs drawn
- std::vector< std::uint64_t > f_seed;          ///< of each fingerprint
- std::vector< CarterWegmanHash > f_h;          ///< the r functions
- std::vector< std::uint32_t > f_g;             ///< the labels \f$ g \f$
+ int f_r;                              ///< the number \f$ r \f$ of functions
+ std::size_t f_n = 0;                  ///< the number of keys
+ std::size_t f_m = 0;                  ///< the vertices
+ std::size_t f_block = 0;              ///< the vertices of a function
+ std::size_t f_trials = 0;             ///< the graphs drawn
+ std::vector< std::uint64_t > f_seed;  ///< of each fingerprint
+ std::vector< CarterWegmanHash > f_h;  ///< the r functions
+ std::vector< std::uint32_t > f_g;     ///< the labels \f$ g \f$
  };  // end( class OrderedMinimalPerfectHash )
 
 /*--------------------------------------------------------------------------*/
@@ -433,7 +431,7 @@ class OrderedMinimalPerfectHash {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PerfectHashing.h included */
+#endif /* PerfectHashing.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File PerfectHashing.h ------------------------*/

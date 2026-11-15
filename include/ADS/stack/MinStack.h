@@ -37,7 +37,7 @@
 
 #ifndef __ADS_MinStack
  #define __ADS_MinStack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,7 +56,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS MinStack -----------------------------*/
@@ -64,15 +65,15 @@ namespace ADS {
 
 /// a STACK with its least item in \f$ O( 1 ) \f$ time
 template< class T , class C = std::less<> >
-class MinStack {
+class MinStack
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty stack, ordered by `less`
- explicit MinStack( C less = C() ) : f_less( std::move( less ) ) {}
+ explicit MinStack( C less = C() ) : f_less( std::move( less ) ) { }
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const { return( f_A.empty() ); }
@@ -128,7 +129,10 @@ class MinStack {
  T pop( void );
 
  /// removes all the items
- void clear( void ) { f_A.clear(); f_M.clear(); }
+ void clear( void ) {
+  f_A.clear();
+  f_M.clear();
+  }
 
  /// the items from the bottom to the top
  [[nodiscard]] const std::vector< T > & items( void ) const { return( f_A ); }
@@ -138,13 +142,12 @@ class MinStack {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the minima do not increase and their top is the least item
  [[nodiscard]] bool ordered( void ) const;
 
- std::vector< T > f_A;   ///< the items, the top at the back
- std::vector< T > f_M;   ///< the minima, not increasing from the bottom
- ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
+ std::vector< T > f_A;  ///< the items, the top at the back
+ std::vector< T > f_M;  ///< the minima, not increasing from the bottom
+ ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
 
  };  // end( class MinStack )
 
@@ -160,7 +163,7 @@ class MinStack {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MinStack.h included */
+#endif /* MinStack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MinStack.h ---------------------------*/

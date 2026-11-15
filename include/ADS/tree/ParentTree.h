@@ -30,7 +30,7 @@
 
 #ifndef __ADS_ParentTree
  #define __ADS_ParentTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -44,7 +44,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS ParentTree ------------------------------*/
@@ -52,11 +53,11 @@ namespace ADS {
 
 /// a tree (a forest) of the nodes \f$ 0 , \ldots , n - 1 \f$ as a vector of
 /// parents
-class ParentTree {
+class ParentTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a forest of \f$ n \f$ isolated nodes (the `Tree( n )` of the book)
  /// \pre \f$ n \ge 0 \f$
  explicit ParentTree( int n );
@@ -77,12 +78,11 @@ class ParentTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// true if the node \f$ j \f$ is in the subtree of \f$ i \f$,
  /// \f$ O( \text{the depth of } j ) \f$
  [[nodiscard]] bool below( int j , int i ) const;
 
- std::vector< int > f_p;   ///< the vector of parents
+ std::vector< int > f_p;  ///< the vector of parents
 
  };  // end( class ParentTree )
 
@@ -98,7 +98,7 @@ class ParentTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParentTree.h included */
+#endif /* ParentTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ParentTree.h --------------------------*/

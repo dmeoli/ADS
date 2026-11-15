@@ -33,7 +33,7 @@
 
 #ifndef __ADS_MPSCInbox
  #define __ADS_MPSCInbox
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -50,7 +50,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS MPSCInbox -----------------------------*/
@@ -58,12 +59,12 @@ namespace ADS {
 
 /// an inbox filled by many threads and emptied by one, lock-free
 template< class T >
-class MPSCInbox {
+class MPSCInbox
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the messages
+ using Item = T;  ///< the type of the messages
 
  /// the empty inbox
  MPSCInbox( void ) = default;
@@ -112,7 +113,10 @@ class MPSCInbox {
  /// `EventCount.h`]; only the consumer calls it
  [[nodiscard]] std::vector< T > waitTake( void ) {
   std::vector< T > v;
-  f_wait.await( [ & ] { v = take(); return( ! v.empty() ); } );
+  f_wait.await( [ & ] {
+   v = take();
+   return( ! v.empty() );
+   } );
   return( v );
   }
 
@@ -121,17 +125,17 @@ class MPSCInbox {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a cell of the stack
- struct Cell {
+ struct Cell
+ {
   /// the message
   T value;
   /// the cell below on the stack
   Cell * next;
   };
 
- std::atomic< Cell * > f_top{ nullptr };   ///< the top of the stack
- EventCount f_wait;                        ///< the sleep of the consumer
+ std::atomic< Cell * > f_top{ nullptr };  ///< the top of the stack
+ EventCount f_wait;                       ///< the sleep of the consumer
 
  };  // end( class MPSCInbox )
 
@@ -147,7 +151,7 @@ class MPSCInbox {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MPSCInbox.h included */
+#endif /* MPSCInbox.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MPSCInbox.h --------------------------*/

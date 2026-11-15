@@ -112,7 +112,7 @@
 
 #ifndef __ADS_BlockBTree
  #define __ADS_BlockBTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -135,7 +135,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS BlockBTree -----------------------------*/
@@ -143,27 +144,27 @@ namespace ADS {
 
 /// how a `BlockBTree` keeps its nodes within their bounds
 enum class BTreePolicy {
- STANDARD ,   ///< \f$ B - 1 \f$ to \f$ 2 B - 1 \f$ keys, the book's rules
- WIDE ,       ///< \f$ B - 1 \f$ to \f$ 3 B - 1 \f$ keys (exercise 14.6)
- THREE        ///< the book's bounds but in a tree of two leaves, by three
-              ///< nodes (exercise 14.7)
+ STANDARD ,  ///< \f$ B - 1 \f$ to \f$ 2 B - 1 \f$ keys, the book's rules
+ WIDE ,      ///< \f$ B - 1 \f$ to \f$ 3 B - 1 \f$ keys (exercise 14.6)
+ THREE      ///< the book's bounds but in a tree of two leaves, by three
+	    ///< nodes (exercise 14.7)
  };
 
 /// a B-tree of keys whose nodes are the blocks of a `BlockStore`
 template< std::totally_ordered K >
-class BlockBTree {
+class BlockBTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;    ///< the type of the keys
- using Item = K;   ///< the items of the sorted set, the keys
+ using Key = K;   ///< the type of the keys
+ using Item = K;  ///< the items of the sorted set, the keys
 
  /// the empty tree of the parameter \f$ B \f$ and of the policy `p`, whose
  /// I/Os are also counted by `mem`, if given
  /// \pre \f$ B \ge 2 \f$
  explicit BlockBTree( int B , BTreePolicy p = BTreePolicy::STANDARD ,
-                      TwoLevelMemory * mem = nullptr );
+		      TwoLevelMemory * mem = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -267,9 +268,7 @@ class BlockBTree {
  [[nodiscard]] std::uint64_t reads( void ) const { return( f_bs.reads() ); }
 
  /// the writes of blocks so far
- [[nodiscard]] std::uint64_t writes( void ) const {
-  return( f_bs.writes() );
-  }
+ [[nodiscard]] std::uint64_t writes( void ) const { return( f_bs.writes() ); }
 
  /// the counters of the I/Os back to 0
  void resetCounters( void ) { f_bs.resetCounters(); }
@@ -299,8 +298,8 @@ class BlockBTree {
 
  /// the keys of the nodes level by level, from the root, each level from
  /// left to right, with no I/O
- [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels( void )
-  const;
+ [[nodiscard]] std::vector< std::vector< std::vector< K > > >
+ levels( void ) const;
 
  /// the tree of the levels \f$ L \f$, as `levels()` gives them, in place of
  /// this one (the trees of the figures of the book)
@@ -313,20 +312,21 @@ class BlockBTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, as a block: its keys, then its children (none for a leaf)
- struct Node {
-  std::vector< K > keys;               ///< the keys
-  std::vector< std::size_t > kids;     ///< the blocks of the children
+ struct Node
+ {
+  std::vector< K > keys;            ///< the keys
+  std::vector< std::size_t > kids;  ///< the blocks of the children
   bool operator==( const Node & ) const = default;
   };
 
- using Store = BlockStore< Node >;   ///< the disk of the nodes
+ using Store = BlockStore< Node >;  ///< the disk of the nodes
 
  /// a node counted while it is in memory
- struct Held {
-  Node node;              ///< the node
-  const BlockBTree * t;   ///< the tree that counts it
+ struct Held
+ {
+  Node node;             ///< the node
+  const BlockBTree * t;  ///< the tree that counts it
   /// counts one node more
   explicit Held( const BlockBTree * tree , Node n = Node() );
   /// counts one node less
@@ -371,7 +371,7 @@ class BlockBTree {
  /// \f]
  template< class D >
  void deal( Node & p , std::size_t f , std::size_t k , std::size_t c ,
-            const Node & known , D && decide );
+	    const Node & known , D && decide );
 
  /// the overflow of the child \f$ i \f$ of \f$ p \f$, `u`, fixed by the
  /// policy
@@ -421,7 +421,8 @@ class BlockBTree {
  /// the keys of the block \f$ u \f$ and below, at depth \f$ d \f$, within
  /// \f$ ( \mathit{lo} , \mathit{hi} ) \f$; the depth of the leaves in `h`
  [[nodiscard]] bool valid( std::size_t u , const K * lo , const K * hi ,
-                           int d , int & h , std::size_t & n ) const;
+			   int d ,
+			   int & h , std::size_t & n ) const;
 
  /// the order of the keys, their number per node, the depth of the
  /// leaves and the count, with no I/O, for \f$ n \le 1024 \f$
@@ -430,17 +431,17 @@ class BlockBTree {
  /// records the length of a path
  void path( std::size_t len ) const;
 
- Store f_bs;                            ///< the blocks
- std::size_t f_root;                    ///< the block of the root
- int f_B;                               ///< the parameter \f$ B \f$
- BTreePolicy f_policy;                  ///< the rules of the bounds
- std::size_t f_n = 0;                   ///< the number of keys
- std::size_t f_splits = 0;              ///< see `splits()`
- std::size_t f_merges = 0;              ///< see `merges()`
- std::size_t f_borrows = 0;             ///< see `borrows()`
- mutable std::size_t f_held = 0;        ///< the nodes in memory
- mutable std::size_t f_peak = 0;        ///< see `peakNodes()`
- mutable std::size_t f_peakPath = 0;    ///< see `peakPath()`
+ Store f_bs;                          ///< the blocks
+ std::size_t f_root;                  ///< the block of the root
+ int f_B;                             ///< the parameter \f$ B \f$
+ BTreePolicy f_policy;                ///< the rules of the bounds
+ std::size_t f_n = 0;                 ///< the number of keys
+ std::size_t f_splits = 0;            ///< see `splits()`
+ std::size_t f_merges = 0;            ///< see `merges()`
+ std::size_t f_borrows = 0;           ///< see `borrows()`
+ mutable std::size_t f_held = 0;      ///< the nodes in memory
+ mutable std::size_t f_peak = 0;      ///< see `peakNodes()`
+ mutable std::size_t f_peakPath = 0;  ///< see `peakPath()`
 
  };  // end( class BlockBTree )
 
@@ -456,7 +457,7 @@ class BlockBTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BlockBTree.h included */
+#endif /* BlockBTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BlockBTree.h --------------------------*/

@@ -75,7 +75,7 @@
 
 #ifndef __ADS_PPM
  #define __ADS_PPM
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -97,7 +97,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS PPMModel -----------------------------*/
@@ -105,18 +106,19 @@ namespace ADS {
 
 /// the model of contexts of PPM, version C with exclusion, of order
 /// \f$ K \f$ on the symbols \f$ [ 0 , \sigma ) \f$
-class PPMModel {
+class PPMModel
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a step of the code: the cumulative counts
  /// \f$ [ \mathit{low} , \mathit{high} ) \f$ of the symbol or of the escape,
  /// out of `total`
- struct Step {
-  std::uint64_t low ,     ///< the cumulative count before the item
-                high ,    ///< the cumulative count after the item
-                total;    ///< the total of the counts, with the escape
+ struct Step
+ {
+  std::uint64_t low ,  ///< the cumulative count before the item
+    high ,             ///< the cumulative count after the item
+    total;            ///< the total of the counts, with the escape
   /// whether two steps are the same
   friend bool operator==( const Step & a , const Step & b ) = default;
   };
@@ -134,8 +136,8 @@ class PPMModel {
 
  /// the counts of the symbols seen after the context `ctx` (the oldest
  /// symbol first), empty if `ctx` was never seen
- [[nodiscard]] std::map< std::uint32_t , std::uint64_t > counts(
-                              const std::vector< std::uint32_t > & ctx ) const;
+ [[nodiscard]] std::map< std::uint32_t , std::uint64_t >
+ counts( const std::vector< std::uint32_t > & ctx ) const;
 
  /// the steps that code \f$ c \f$ after the symbols seen: the escapes, then
  /// \f$ c \f$
@@ -196,7 +198,6 @@ class PPMModel {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Counts = std::map< std::uint32_t , std::uint64_t >;
 
  /// the walk from the longest context: at each context that codes, with
@@ -208,10 +209,10 @@ class PPMModel {
 
  static constexpr std::uint64_t kLimit = std::uint64_t( 1 ) << 16;
 
- int f_order;                                        ///< K
- std::uint32_t f_sigma;                              ///< the alphabet
+ int f_order;                                             ///< K
+ std::uint32_t f_sigma;                                   ///< the alphabet
  std::map< std::vector< std::uint32_t > , Counts > f_ctx;  ///< the counts
- std::vector< std::uint32_t > f_hist;                ///< the last K seen
+ std::vector< std::uint32_t > f_hist;                     ///< the last K seen
 
  };  // end( class PPMModel )
 
@@ -232,8 +233,8 @@ class PPMModel {
 /// \f]
 /// \pre \f$ K \ge 0 \f$
 /// \post `ppmDecode( result , s.size() , K )` is \f$ s \f$ (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > ppmEncode(
-                                                 std::string_view s , int K );
+[[nodiscard]] inline std::vector< std::uint8_t > ppmEncode( std::string_view s ,
+							    int K );
 
 /// the \f$ n \f$ bytes of the code by PPM of order \f$ K \f$
 ///
@@ -250,8 +251,8 @@ class PPMModel {
 /// \end{array}}
 /// \f]
 /// \pre \f$ K \ge 0 \f$
-[[nodiscard]] inline std::string ppmDecode(
-             std::span< const std::uint8_t > code , std::size_t n , int K );
+[[nodiscard]] inline std::string
+ppmDecode( std::span< const std::uint8_t > code , std::size_t n , int K );
 
 /*--------------------------------------------------------------------------*/
 
@@ -265,7 +266,7 @@ class PPMModel {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PPM.h included */
+#endif /* PPM.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- End File PPM.h -----------------------------*/

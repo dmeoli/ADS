@@ -69,7 +69,7 @@
 
 #ifndef __ADS_HuffmanFMIndex
  #define __ADS_HuffmanFMIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -94,7 +94,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS HuffmanFMIndex --------------------------*/
@@ -103,11 +104,11 @@ namespace ADS {
 /// the FM-index of a text on the wavelet tree of Huffman of its transform,
 /// with the places of the suffixes at the multiples of \f$ \mu \f$
 template< class RS = RankSelect >
-class HuffmanFMIndex {
+class HuffmanFMIndex
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the index of \f$ s \f$
  ///
  /// In pseudocode (the succinct suffix array of Mäkinen and Navarro, beyond
@@ -155,8 +156,8 @@ class HuffmanFMIndex {
  /// \end{array}}
  /// \f]
  /// \pre \f$ P \f$ is not empty
- [[nodiscard]] std::pair< std::size_t , std::size_t > range(
-                                                  std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ range( std::string_view P ) const;
 
  /// the number of the occurrences of \f$ P \f$
  ///
@@ -223,17 +224,16 @@ class HuffmanFMIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place in \f$ s \f$ of the suffix of the row \f$ r \f$
  [[nodiscard]] std::size_t place( std::size_t r ) const;
 
  std::size_t f_n = 0 , f_mu = 1;
- int f_w = 1;                            ///< the bits of a place or a row
- HuffmanWaveletTree< RS > f_L;           ///< \f$ L \f$, the bytes plus 1
+ int f_w = 1;                           ///< the bits of a place or a row
+ HuffmanWaveletTree< RS > f_L;          ///< \f$ L \f$, the bytes plus 1
  std::array< std::size_t , 258 > f_C{};  ///< the symbols of L below each
- CompactRankSelect f_mark;               ///< the rows of the samples
- BitVector f_place;                      ///< their places, by row
- BitVector f_row;                        ///< the row of suffix \f$ k \mu \f$
+ CompactRankSelect f_mark;              ///< the rows of the samples
+ BitVector f_place;                     ///< their places, by row
+ BitVector f_row;                       ///< the row of suffix \f$ k \mu \f$
 
  };  // end( class HuffmanFMIndex )
 
@@ -249,7 +249,7 @@ class HuffmanFMIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HuffmanFMIndex.h included */
+#endif /* HuffmanFMIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File HuffmanFMIndex.h -----------------------*/

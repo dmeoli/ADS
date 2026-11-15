@@ -65,7 +65,7 @@
 
 #ifndef __ADS_BitVector
  #define __ADS_BitVector
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -96,29 +96,32 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the allocator of the words of a BitVector and of the directories built
 /// on them: a block of 2 MB or more on huge pages [see
 /// HugePageAllocator.h], a smaller one aligned to a line of the cache
 template< class T >
-class LineAllocator {
+class LineAllocator
+{
  public:
  /// the type of an item
  using value_type = T;
- static constexpr std::size_t LINE = 64;   ///< the bytes of a line
+ static constexpr std::size_t LINE = 64;  ///< the bytes of a line
 
  LineAllocator( void ) = default;
  template< class U >
- LineAllocator( const LineAllocator< U > & ) noexcept {}
+ LineAllocator( const LineAllocator< U > & ) noexcept { }
 
  [[nodiscard]] T * allocate( std::size_t n ) {
   if( n * sizeof( T ) >= HugePageAllocator< T >::PAGE )
    return( HugePageAllocator< T >().allocate( n ) );
-  return( static_cast< T * >( ::operator new( n * sizeof( T ) ,
-                                              std::align_val_t( LINE ) ) ) );
+  return( static_cast< T * >(
+    ::operator new( n * sizeof( T ) , std::align_val_t( LINE ) ) ) );
   }
 
  /// a value constructed with no argument is left uninitialized (the
@@ -135,7 +138,8 @@ class LineAllocator {
  void deallocate( T * p , std::size_t n ) noexcept {
   if( n * sizeof( T ) >= HugePageAllocator< T >::PAGE )
    HugePageAllocator< T >().deallocate( p , n );
-  else ::operator delete( p , std::align_val_t( LINE ) );
+  else
+   ::operator delete( p , std::align_val_t( LINE ) );
   }
 
  template< class U >
@@ -150,11 +154,11 @@ class LineAllocator {
 /// them: the bits of a run are gathered into a word, written when it is
 /// full or at the end of the run, by a plain store if the run holds the
 /// whole word and by an atomic or if it may share it with another run
-class BitRuns {
+class BitRuns
+{
  public:
-
  /// \f$ R \f$ runs of the words \f$ W \f$, opened by `open()`
- BitRuns( Word * W , std::size_t R ) : f_W( W ) , f_run( R ) {}
+ BitRuns( Word * W , std::size_t R ) : f_W( W ) , f_run( R ) { }
 
  /// the run \f$ r \f$ of the places \f$ [ s , e ) \f$
  void open( std::size_t r , std::size_t s , std::size_t e ) {
@@ -165,53 +169,60 @@ class BitRuns {
  void push( std::size_t r , bool b ) {
   Run & R = f_run[ r ];
   R.acc |= Word( b ) << ( R.p & 63 );
-  if( ( ++R.p & 63 ) == 0 ) flush( R , ( R.p >> 6 ) - 1 );
+  if( ( ++R.p & 63 ) == 0 )
+   flush( R , ( R.p >> 6 ) - 1 );
   }
 
  /// the last word of each run written, if not full
  void close( void ) {
   for( Run & R : f_run )
-   if( R.p & 63 ) flush( R , R.p >> 6 );
+   if( R.p & 63 )
+    flush( R , R.p >> 6 );
   }
 
  private:
-
  /// a run: its next place, the bits of its word, and its places
- struct Run {
-  std::size_t p;    ///< the place of the next bit
-  Word acc;         ///< the bits of the word of the place p
-  std::size_t s ,   ///< the first place of the run
-              e;    ///< the place past its last one
+ struct Run
+ {
+  std::size_t p;  ///< the place of the next bit
+  Word acc;       ///< the bits of the word of the place p
+  std::size_t s ,  ///< the first place of the run
+    e;            ///< the place past its last one
   };
 
  /// the word \f$ w \f$ of the run \f$ R \f$ written, if it has a 1, and
  /// its bits cleared
  void flush( Run & R , std::size_t w ) {
   if( const Word a = R.acc ) {
-   if( ( 64 * w >= R.s ) && ( 64 * w + 64 <= R.e ) ) f_W[ w ] = a;
-   else std::atomic_ref< Word >( f_W[ w ] ).fetch_or(
-                                              a , std::memory_order_relaxed );
+   if( ( 64 * w >= R.s ) && ( 64 * w + 64 <= R.e ) )
+    f_W[ w ] = a;
+   else
+    std::atomic_ref< Word >( f_W[ w ] )
+      .fetch_or( a , std::memory_order_relaxed );
    }
   R.acc = 0;
   }
 
- Word * f_W;                  ///< the words
- std::vector< Run > f_run;    ///< the runs
+ Word * f_W;                ///< the words
+ std::vector< Run > f_run;  ///< the runs
  };
 
 /// the \f$ \ell \f$ bits of the words \f$ S \f$ from the place \f$ s \f$
 /// ored into the words \f$ D \f$ from the place \f$ d \f$, the word after
 /// the last bit read of \f$ S \f$ readable
 inline void copyBits( Word * D , std::size_t d , const Word * S ,
-                      std::size_t s , std::size_t len )
+		      std::size_t s ,
+		      std::size_t len )
 {
  while( len > 0 ) {
-  const std::size_t o = d & 63 , take = std::min< std::size_t >( len ,
-                                                                64 - o );
+  const std::size_t o = d & 63 ,
+  take = std::min< std::size_t >( len , 64 - o );
   const std::size_t q = s >> 6 , r = s & 63;
   Word x = S[ q ] >> r;
-  if( r + take > 64 ) x |= S[ q + 1 ] << ( 64 - r );
-  if( take < 64 ) x &= ( Word( 1 ) << take ) - 1;
+  if( r + take > 64 )
+   x |= S[ q + 1 ] << ( 64 - r );
+  if( take < 64 )
+   x &= ( Word( 1 ) << take ) - 1;
   D[ d >> 6 ] |= x << o;
   d += take;
   s += take;
@@ -256,7 +267,8 @@ using Words = std::vector< Word , detail::LineAllocator< Word > >;
 /// the random-access constant iterator on the items `T` of the owner `O`,
 /// read by `( *o )[ i ]`
 template< class O , class T >
-class SubscriptIterator {
+class SubscriptIterator
+{
  public:
  /// the type of an item
  using value_type = T;
@@ -274,7 +286,7 @@ class SubscriptIterator {
  SubscriptIterator( void ) = default;
  /// the iterator on the item \f$ i \f$ of `*o`
  SubscriptIterator( const O * o , std::size_t i )
-  : f_o( o ) , f_i( difference_type( i ) ) {}
+     : f_o( o ) , f_i( difference_type( i ) ) { }
 
  /// the item
  reference operator*( void ) const { return( ( *this )[ 0 ] ); }
@@ -284,13 +296,27 @@ class SubscriptIterator {
   }
 
  /// the next item
- SubscriptIterator & operator++( void ) { ++f_i; return( *this ); }
+ SubscriptIterator & operator++( void ) {
+  ++f_i;
+  return( *this );
+  }
  /// the previous item
- SubscriptIterator & operator--( void ) { --f_i; return( *this ); }
+ SubscriptIterator & operator--( void ) {
+  --f_i;
+  return( *this );
+  }
  /// the next item, returning the iterator before it
- SubscriptIterator operator++( int ) { auto t = *this; ++f_i; return( t ); }
+ SubscriptIterator operator++( int ) {
+  auto t = *this;
+  ++f_i;
+  return( t );
+  }
  /// the previous item, returning the iterator before it
- SubscriptIterator operator--( int ) { auto t = *this; --f_i; return( t ); }
+ SubscriptIterator operator--( int ) {
+  auto t = *this;
+  --f_i;
+  return( t );
+  }
  /// \f$ k \f$ places ahead
  SubscriptIterator & operator+=( difference_type k ) {
   f_i += k;
@@ -304,22 +330,22 @@ class SubscriptIterator {
 
  /// the iterator \f$ k \f$ places after \f$ a \f$
  friend SubscriptIterator operator+( SubscriptIterator a ,
-                                     difference_type k ) {
+				     difference_type k ) {
   return( a += k );
   }
  /// the iterator \f$ k \f$ places after \f$ a \f$
  friend SubscriptIterator operator+( difference_type k ,
-                                     SubscriptIterator a ) {
+				     SubscriptIterator a ) {
   return( a += k );
   }
  /// the iterator \f$ k \f$ places before \f$ a \f$
  friend SubscriptIterator operator-( SubscriptIterator a ,
-                                     difference_type k ) {
+				     difference_type k ) {
   return( a -= k );
   }
  /// the places from \f$ b \f$ to \f$ a \f$
  friend difference_type operator-( const SubscriptIterator & a ,
-                                   const SubscriptIterator & b ) {
+				   const SubscriptIterator & b ) {
   return( a.f_i - b.f_i );
   }
 
@@ -348,11 +374,11 @@ class SubscriptIterator {
 /*--------------------------------------------------------------------------*/
 
 /// a vector of bits packed in words of 64 bits
-class BitVector {
+class BitVector
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty vector
  BitVector( void ) = default;
 
@@ -450,8 +476,7 @@ class BitVector {
  void clear( void );
 
  /// whether the two vectors have the same bits
- friend bool operator==( const BitVector & a , const BitVector & b ) =
-                                                                     default;
+ friend bool operator==( const BitVector & a , const BitVector & b ) = default;
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
@@ -485,11 +510,12 @@ class BitVector {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- template< bool > friend class BasicRankSelect;   // which copy the words
- friend class CompactRankSelect;                  // as they count them
- friend class WaveletMatrix;                      // which write the words
- template< class > friend class HuffmanWaveletTree;   // by their threads
+ template< bool >
+ friend class BasicRankSelect;    // which copy the words
+ friend class CompactRankSelect;  // as they count them
+ friend class WaveletMatrix;      // which write the words
+ template< class >
+ friend class HuffmanWaveletTree;  // by their threads
 
  /// the words for n bits: n / 64 + 2, rounded up to a line of 8
  [[nodiscard]] static std::size_t wordsFor( std::size_t n ) {
@@ -499,8 +525,8 @@ class BitVector {
  /// the bits past the size are 0
  [[nodiscard]] bool clean( void ) const;
 
- Words f_w = Words( 8 , 0 );   ///< the words, the bit 0 in the first one
- std::size_t f_n = 0;       ///< the number of bits
+ Words f_w = Words( 8 , 0 );  ///< the words, the bit 0 in the first one
+ std::size_t f_n = 0;        ///< the number of bits
 
  };  // end( class BitVector )
 
@@ -516,7 +542,7 @@ class BitVector {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BitVector.h included */
+#endif /* BitVector.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File BitVector.h --------------------------*/

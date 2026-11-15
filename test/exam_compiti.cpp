@@ -84,7 +84,8 @@ using namespace ADS;
 /*----------------------------- THE SOLUTIONS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace exams {
+namespace exams
+{
 
 /// true if the items of A are distinct
 inline bool distinct( std::vector< long > A )
@@ -106,12 +107,13 @@ inline std::size_t isqrt( std::size_t n )
 
 /// a node of the TREE of the texts: the key, the color, the links;
 /// nullptr is nil, a black leaf
-struct TreeNode {
- long key = 0;                   ///< the key
- Color color = Color::BLACK;     ///< the color
- TreeNode * left = nullptr;      ///< the left child
- TreeNode * right = nullptr;     ///< the right child
- TreeNode * parent = nullptr;    ///< the parent
+struct TreeNode
+{
+ long key = 0;                 ///< the key
+ Color color = Color::BLACK;   ///< the color
+ TreeNode * left = nullptr;    ///< the left child
+ TreeNode * right = nullptr;   ///< the right child
+ TreeNode * parent = nullptr;  ///< the parent
  };
 
 /// the nodes of the trees, at fixed addresses
@@ -119,8 +121,7 @@ using Pool = std::deque< TreeNode >;
 
 /// a new node of P with the children l and r, whose parent it becomes
 inline TreeNode * makeNode( Pool & P , long key , TreeNode * l = nullptr ,
-                            TreeNode * r = nullptr ,
-                            Color c = Color::BLACK )
+			    TreeNode * r = nullptr , Color c = Color::BLACK )
 {
  TreeNode & t = P.emplace_back();
  t.key = key;
@@ -135,7 +136,7 @@ inline TreeNode * makeNode( Pool & P , long key , TreeNode * l = nullptr ,
  }
 
 /// the insertion of key in the binary search tree of root T
-inline void bstInsert( Pool & P , TreeNode * & T , long key )
+inline void bstInsert( Pool & P , TreeNode *& T , long key )
 {
  TreeNode * p = nullptr;
  TreeNode ** u = &T;
@@ -170,19 +171,19 @@ inline bool isRed( const TreeNode * t )
 /// difference of any two long in order (LONG_MAX - LONG_MIN overflows a
 /// long)
 /// \pre n >= 2
-inline std::pair< std::size_t , std::size_t > minGap(
-                                                const std::vector< long > & A )
+inline std::pair< std::size_t , std::size_t >
+minGap( const std::vector< long > & A )
 {
  ADS_PRE( A.size() >= 2 );
  std::vector< std::pair< long , std::size_t > > B( A.size() );
  for( std::size_t i = 0 ; i < A.size() ; ++i )
   B[ i ] = std::pair( A[ i ] , i );
- heapsort( B , []( const auto & x , const auto & y ) {
-  return( x.first < y.first );
-  } );
+ heapsort(
+   B ,
+   []( const auto & x , const auto & y ) { return( x.first < y.first ); } );
  auto gap = [ & ]( std::size_t i ) {
   return( static_cast< unsigned long >( B[ i ].first ) -
-          static_cast< unsigned long >( B[ i - 1 ].first ) );
+	   static_cast< unsigned long >( B[ i - 1 ].first ) );
   };
  std::size_t best = 1;
  for( std::size_t i = 2 ; i < B.size() ; ++i )
@@ -196,8 +197,8 @@ inline std::pair< std::size_t , std::size_t > minGap(
 /// a minimum and a maximum found in one scan; the two places start
 /// distinct, which is an answer when all the items are equal; O( n ) time
 /// \pre n >= 2
-inline std::pair< std::size_t , std::size_t > maxGap(
-                                                const std::vector< long > & A )
+inline std::pair< std::size_t , std::size_t >
+maxGap( const std::vector< long > & A )
 {
  ADS_PRE( A.size() >= 2 );
  std::size_t lo = 0 , hi = 1;
@@ -219,12 +220,14 @@ inline std::pair< std::size_t , std::size_t > maxGap(
 /// stack
 /// \pre n > 0 and A strictly increasing
 /// \post the height is the least one for n nodes
-inline TreeNode * buildMinHeightBST( Pool & P , const std::vector< long > & A )
+inline TreeNode * buildMinHeightBST( Pool & P ,
+				     const std::vector< long > & A )
 {
  ADS_PRE( ! A.empty() );
- TreeNode * T = minimumHeightSearchTree( A , [ & ]( long k , TreeNode * l ,
-                                                    TreeNode * r ) {
-  return( makeNode( P , k , l , r ) ); } );
+ TreeNode * T =
+   minimumHeightSearchTree( A , [ & ]( long k , TreeNode * l , TreeNode * r ) {
+    return( makeNode( P , k , l , r ) );
+    } );
  ADS_POST( ( std::size_t( 1 ) << ( height( T ) + 1 ) ) - 1 >= A.size() );
  ADS_POST( ( std::size_t( 1 ) << height( T ) ) - 1 < A.size() );
  return( T );
@@ -242,7 +245,7 @@ inline TreeNode * buildMinHeightBST( Pool & P , const std::vector< long > & A )
 /// \pre 1 <= k < n, the items of V distinct
 /// \post k items
 inline std::vector< long > nearest( const std::vector< long > & V ,
-                                    std::size_t k , std::mt19937 & g )
+				    std::size_t k , std::mt19937 & g )
 {
  const std::size_t n = V.size();
  ADS_PRE( ( k >= 1 ) && ( k < n ) );
@@ -272,7 +275,7 @@ inline std::vector< long > nearest( const std::vector< long > & V ,
 /// \pre 1 <= k <= n, the items of A distinct
 /// \post k or k + 1 items
 inline std::vector< long > kMedian( const std::vector< long > & A ,
-                                    std::size_t k , std::mt19937 & g )
+				    std::size_t k , std::mt19937 & g )
 {
  const std::size_t n = A.size();
  ADS_PRE( ( k >= 1 ) && ( k <= n ) );
@@ -300,7 +303,8 @@ inline std::vector< long > kMedian( const std::vector< long > & A ,
 /// the comparisons are added to cmp
 /// \pre lo <= hi <= n and len >= 1
 inline void mergeRuns( std::vector< long > & A , std::size_t lo ,
-                       std::size_t hi , std::size_t len , long & cmp )
+		       std::size_t hi ,
+		       std::size_t len , long & cmp )
 {
  ADS_PRE( ( lo <= hi ) && ( hi <= A.size() ) && ( len >= 1 ) );
  std::vector< std::size_t > head , end;
@@ -330,7 +334,7 @@ inline void mergeRuns( std::vector< long > & A , std::size_t lo ,
 /// MergeSortK of A[ lo .. hi ): at most k parts of ceil( n / k ) items
 /// sorted recursively and merged by mergeRuns()
 inline void mergeSortKRec( std::vector< long > & A , std::size_t lo ,
-                           std::size_t hi , std::size_t k , long & cmp )
+			   std::size_t hi , std::size_t k , long & cmp )
 {
  const std::size_t n = hi - lo;
  if( n <= 1 )
@@ -360,7 +364,7 @@ inline long mergeSortK( std::vector< long > & A , std::size_t k )
 /// sorted recursively and merged by mergeRuns(); T( n ) = sqrt( n )
 /// T( sqrt( n ) ) + O( n sqrt( n ) ) = O( n sqrt( n ) )
 inline void sqrtMergeSortRec( std::vector< long > & A , std::size_t i ,
-                              std::size_t j , long & cmp )
+			      std::size_t j , long & cmp )
 {
  const std::size_t n = j - i + 1;
  if( n < 4 ) {
@@ -401,8 +405,9 @@ bool isRoma( const G & GT , int v )
  ADS_PRE( GT.hasNode( v ) );
  std::vector< bool > visited( GT.bound() , false );
  int count = 0;
- dfs( GT , v , visited , [ & ]( int ) { ++count; } , []( int , int ) {} ,
-      []( int ) {} );
+ dfs(
+   GT , v , visited , [ & ]( int ) { ++count; } , []( int , int ) { } ,
+   []( int ) { } );
  return( count == GT.n() );
  }
 
@@ -419,8 +424,9 @@ bool hasRoma( const G & g )
  int last = NIL;
  for( int u : GT.V() )
   if( ! visited[ u ] )
-   dfs( GT , u , visited , []( int ) {} , []( int , int ) {} ,
-        [ & ]( int x ) { last = x; } );
+   dfs(
+     GT , u , visited , []( int ) { } , []( int , int ) { } ,
+     [ & ]( int x ) { last = x; } );
  return( isRoma( GT , last ) );
  }
 
@@ -430,7 +436,7 @@ bool hasRoma( const G & g )
 /// with s = ceil( n / 3 ), the first two thirds, the last two and the
 /// first two again; T( n ) = 3 T( 2 n / 3 ) + 1 = Theta( n^{log_{3/2} 3} )
 inline void sortinoSortRec( std::vector< long > & A , std::size_t i ,
-                            std::size_t j , long & calls )
+			    std::size_t j , long & calls )
 {
  ++calls;
  const std::size_t n = j - i + 1;
@@ -494,8 +500,8 @@ inline bool twoSum( const std::vector< long > & S , long x )
 /// and 3 n by selection() bound the rows; O( n ) expected time
 /// \pre | V | multiple of 4, the items distinct
 /// \post four rows of n items
-inline std::array< std::vector< long > , 4 > fourRows(
-                           const std::vector< long > & V , std::mt19937 & g )
+inline std::array< std::vector< long > , 4 >
+fourRows( const std::vector< long > & V , std::mt19937 & g )
 {
  ADS_PRE( V.size() % 4 == 0 );
  ADS_AUDIT( distinct( V ) );
@@ -515,7 +521,7 @@ inline std::array< std::vector< long > , 4 > fourRows(
   B[ r ].push_back( x );
   }
  ADS_POST( ( B[ 0 ].size() == n ) && ( B[ 1 ].size() == n ) &&
-           ( B[ 2 ].size() == n ) && ( B[ 3 ].size() == n ) );
+	   ( B[ 2 ].size() == n ) && ( B[ 3 ].size() == n ) );
  return( B );
  }
 
@@ -616,8 +622,9 @@ std::vector< int > connectedOrder( const G & g )
  std::vector< int > order;
  for( int u : g.V() )
   if( ! visited[ u ] )
-   dfs( g , u , visited , []( int ) {} , []( int , int ) {} ,
-        [ & ]( int x ) { order.push_back( x ); } );
+   dfs(
+     g , u , visited , []( int ) { } , []( int , int ) { } ,
+     [ & ]( int x ) { order.push_back( x ); } );
  return( order );
  }
 
@@ -636,8 +643,8 @@ using WeightedEdge = std::tuple< int , int , long >;
 /// \pre the ends of each edge are distinct nodes in [ 0 , n ), weights
 ///      positive
 /// \post no two edges with a common end
-inline std::pair< long , std::vector< std::size_t > > maxMatching(
-                                int n , const std::vector< WeightedEdge > & E )
+inline std::pair< long , std::vector< std::size_t > >
+maxMatching( int n , const std::vector< WeightedEdge > & E )
 {
  for( const auto & e : E )
   ADS_PRE( std::get< 2 >( e ) > 0 );
@@ -651,11 +658,11 @@ inline std::pair< long , long > computeDiffRec( const TreeNode * t )
 {
  if( ! t )
   return( std::pair( std::numeric_limits< long >::max() ,
-                     std::numeric_limits< long >::min() ) );
+		      std::numeric_limits< long >::min() ) );
  const auto [ ml , Ml ] = computeDiffRec( t->left );
  const auto [ mr , Mr ] = computeDiffRec( t->right );
  return( std::pair( std::min( { t->key , ml , mr } ) ,
-                    std::max( { t->key , Ml , Mr } ) ) );
+		     std::max( { t->key , Ml , Mr } ) ) );
  }
 
 /// computeDiff(): the largest key minus the smallest one in the subtree
@@ -672,7 +679,7 @@ inline long computeDiff( const TreeNode * t )
 /// binarySearchAB(): the place of the last a in A[ i .. j ], where
 /// A[ i ] = a and A[ j ] = b; O( log n )
 inline std::size_t binarySearchAB( const std::vector< long > & A ,
-                                   std::size_t i , std::size_t j )
+				   std::size_t i , std::size_t j )
 {
  if( j == i + 1 )
   return( i );
@@ -690,9 +697,9 @@ inline std::size_t mostFrequentAB( const std::vector< long > & A )
 {
  ADS_PRE( ( A.size() >= 2 ) && ( A.front() < A.back() ) );
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) &&
-            std::all_of( A.begin() , A.end() , [ & ]( long x ) {
-             return( ( x == A.front() ) || ( x == A.back() ) );
-             } ) );
+	    std::all_of( A.begin() , A.end() , [ & ]( long x ) {
+	     return( ( x == A.front() ) || ( x == A.back() ) );
+	     } ) );
  const std::size_t k = binarySearchAB( A , 0 , A.size() - 1 ) + 1;
  return( std::max( k , A.size() - k ) );
  }
@@ -736,8 +743,8 @@ inline void sortMatrix( std::vector< std::vector< long > > & M )
 /// f stored in the order pi: sum_i f_{pi(i)} sum_{j <= i} l_{pi(j)}
 /// \pre pi a permutation of the places of l and f
 inline double tapeCost( const std::vector< double > & l ,
-                        const std::vector< double > & f ,
-                        const std::vector< std::size_t > & pi )
+			const std::vector< double > & f ,
+			const std::vector< std::size_t > & pi )
 {
  ADS_PRE( ( l.size() == f.size() ) && ( pi.size() == l.size() ) );
  double c = 0 , s = 0;
@@ -764,8 +771,8 @@ std::vector< std::size_t > orderBy( std::size_t n , C less )
 /// exchange of two adjacent files a , b changes the cost by f_a l_b -
 /// f_b l_a; O( n log n ), smithOrder() of the library
 /// \pre lengths positive, probabilities not negative
-inline std::vector< std::size_t > tapeOrder( const std::vector< double > & l ,
-                                             const std::vector< double > & f )
+inline std::vector< std::size_t >
+tapeOrder( const std::vector< double > & l , const std::vector< double > & f )
 {
  ADS_PRE( l.size() == f.size() );
  for( std::size_t i = 0 ; i < l.size() ; ++i )
@@ -802,12 +809,11 @@ inline int topologicalOrders( const ListGraph<> & g )
 /// range; the nodes visited are added to *visits, if given
 /// \pre lo <= hi
 inline long occurrences( const TreeNode * T , long lo , long hi ,
-                         long * visits = nullptr )
+			 long * visits = nullptr )
 {
  long k = 0;
- const std::size_t seen = searchTreeRange( T , lo , hi ,
-                                           [ & ]( const TreeNode * ) {
-  ++k; } );
+ const std::size_t seen =
+   searchTreeRange( T , lo , hi , [ & ]( const TreeNode * ) { ++k; } );
  if( visits )
   *visits += long( seen );
  return( k );
@@ -821,7 +827,7 @@ inline long occurrences( const TreeNode * T , long lo , long hi ,
 inline std::size_t first( const std::vector< long > & A , long v )
 {
  ADS_AUDIT( std::is_sorted( A.begin() , A.end() ) &&
-            ( std::find( A.begin() , A.end() , v ) != A.end() ) );
+	    ( std::find( A.begin() , A.end() , v ) != A.end() ) );
  return( lowerBound( A , v ) + 1 );
  }
 
@@ -831,7 +837,7 @@ inline std::size_t first( const std::vector< long > & A , long v )
 /// comparisons are added to cmp. The text stops the inner loop at j > 1,
 /// which on A[ start .. end ] is j > start
 inline void insertionMerge( std::vector< long > & A , std::size_t start ,
-                            std::size_t end , long & cmp )
+			    std::size_t end , long & cmp )
 {
  for( std::size_t i = start + 1 ; i <= end ; ++i ) {
   const long temp = A[ i ];
@@ -850,7 +856,7 @@ inline void insertionMerge( std::vector< long > & A , std::size_t start ,
 /// MergeSort with insertionMerge(): T( n ) = 2 T( n / 2 ) + n on sorted
 /// input, 2 T( n / 2 ) + n^2 on reversed input
 inline void insertionMergeSort( std::vector< long > & A , std::size_t start ,
-                                std::size_t end , long & cmp )
+				std::size_t end , long & cmp )
 {
  if( start >= end )
   return;
@@ -866,17 +872,18 @@ inline void insertionMergeSort( std::vector< long > & A , std::size_t start ,
 /// heap by heapBuild(), then the two halves; the items copied are added to
 /// copied, T( n ) = 2 T( n / 2 ) + n = Theta( n log n )
 inline long funr( const std::vector< long > & A , std::size_t i ,
-                  std::size_t j , long & copied )
+		  std::size_t j ,
+		  long & copied )
 {
  if( i + 1 >= j )
   return( 0 );
  std::vector< long > B( A.begin() + std::ptrdiff_t( i ) ,
-                        A.begin() + std::ptrdiff_t( j ) + 1 );
+			A.begin() + std::ptrdiff_t( j ) + 1 );
  copied += long( B.size() );
  heapBuild( B );
  const std::size_t m = ( i + j ) / 2;
- return( funr( A , i , m , copied ) + funr( A , m + 1 , j , copied ) +
-         B[ 1 ] );
+ return( funr( A , i , m , copied ) + funr( A , m + 1 , j ,
+					    copied ) + B[ 1 ] );
  }
 
 /*----------------- 2021-02-08 A3, doubling and decrement ------------------*/
@@ -926,9 +933,8 @@ inline bool kSorted( const std::vector< long > & A , std::size_t k )
 {
  std::vector< std::size_t > pi( A.size() );
  std::iota( pi.begin() , pi.end() , std::size_t( 0 ) );
- std::stable_sort( pi.begin() , pi.end() , [ & ]( auto a , auto b ) {
-  return( A[ a ] < A[ b ] );
-  } );
+ std::stable_sort( pi.begin() , pi.end() ,
+		   [ & ]( auto a , auto b ) { return( A[ a ] < A[ b ] ); } );
  for( std::size_t r = 0 ; r < pi.size() ; ++r )
   if( ( pi[ r ] > r + k ) || ( r > pi[ r ] + k ) )
    return( false );
@@ -974,7 +980,7 @@ bool meetingPoint( const G & g , int s , int t )
 {
  ADS_PRE( g.hasNode( s ) && g.hasNode( t ) );
  ADS_AUDIT( ( ! reachesNegativeCycle( g , s ) ) &&
-            ( ! reachesNegativeCycle( g , t ) ) );
+	    ( ! reachesNegativeCycle( g , t ) ) );
  using D = typename G::Weight;
  bool positive = true;
  for( int u : g.V() )
@@ -992,7 +998,7 @@ bool meetingPoint( const G & g , int s , int t )
 
 /// printBitsRec(): the strings completing S[ 0 .. i ), a 1 only after a 0
 inline void printBitsRec( std::string & S , std::size_t i ,
-                          std::vector< std::string > & out )
+			  std::vector< std::string > & out )
 {
  if( i == S.size() ) {
   out.push_back( S );
@@ -1018,10 +1024,10 @@ inline std::vector< std::string > printBits( std::size_t n )
 
 /// maxSumKRec(): DP[ i ][ j ], the best value from the first i items when
 /// j more consecutive items can still be deleted, memoized
-inline long maxSumKRec( const std::vector< long > & V , std::size_t k ,
-                        std::size_t i , std::size_t j ,
-                        std::vector< std::vector< std::optional< long > > > &
-                        DP )
+inline long
+maxSumKRec( const std::vector< long > & V , std::size_t k , std::size_t i ,
+	    std::size_t j ,
+	    std::vector< std::vector< std::optional< long > > > & DP )
 {
  if( i == 0 )
   return( 0 );
@@ -1042,7 +1048,7 @@ inline long maxSumKRec( const std::vector< long > & V , std::size_t k ,
 inline long maxSumK( const std::vector< long > & V , std::size_t k )
 {
  std::vector< std::vector< std::optional< long > > > DP(
-           V.size() + 1 , std::vector< std::optional< long > >( k + 1 ) );
+   V.size() + 1 , std::vector< std::optional< long > >( k + 1 ) );
  return( maxSumKRec( V , k , V.size() , k , DP ) );
  }
 
@@ -1063,14 +1069,14 @@ inline long maxSumKLinear( const std::vector< long > & V , std::size_t k )
   DP[ i ] = b + V[ i - 1 ];
   }
  return( *std::max_element( DP.begin() + std::ptrdiff_t( n > k ? n - k : 0 ) ,
-                            DP.end() ) );
+			     DP.end() ) );
  }
 
 /*--------------------- 2022-08-24 A3, sum of two keys ---------------------*/
 
 /// containsSum() of the subtree of t: a key x with k - x already met
 inline bool containsSumRec( const TreeNode * t , long k ,
-                            LinkedHashSet< long > & S )
+			    LinkedHashSet< long > & S )
 {
  if( ! t )
   return( false );
@@ -1078,7 +1084,7 @@ inline bool containsSumRec( const TreeNode * t , long k ,
   return( true );
  S.insert( t->key );
  return( containsSumRec( t->left , k , S ) ||
-         containsSumRec( t->right , k , S ) );
+	  containsSumRec( t->right , k , S ) );
  }
 
 /// containsSum(): two nodes of T whose keys sum to k, by a visit that
@@ -1115,7 +1121,8 @@ inline long hatevilleFast( const std::vector< std::vector< long > > & cost )
 
 }  // end( namespace exams )
 
-namespace {
+namespace
+{
 
 using namespace exams;
 
@@ -1135,7 +1142,7 @@ std::vector< long > randomDistinct( std::size_t n , std::mt19937 & g )
 
 /// n values in [ lo , hi ]
 std::vector< long > randomVector( std::size_t n , long lo , long hi ,
-                                  std::mt19937 & g )
+				  std::mt19937 & g )
 {
  std::uniform_int_distribution< long > U( lo , hi );
  std::vector< long > A( n );
@@ -1146,15 +1153,15 @@ std::vector< long > randomVector( std::size_t n , long lo , long hi ,
 
 /// a random binary tree of n nodes, keys in [ lo , hi ]
 TreeNode * randomTree( Pool & P , std::size_t n , long lo , long hi ,
-                       std::mt19937 & g )
+		       std::mt19937 & g )
 {
  if( n == 0 )
   return( nullptr );
  const std::size_t l = g() % n;
  TreeNode * L = randomTree( P , l , lo , hi , g );
  TreeNode * R = randomTree( P , n - 1 - l , lo , hi , g );
- return( makeNode( P , lo + long( g() % std::uint64_t( hi - lo + 1 ) ) , L ,
-                   R ) );
+ return(
+   makeNode( P , lo + long( g() % std::uint64_t( hi - lo + 1 ) ) , L , R ) );
  }
 
 /// the shapes of the binary trees of n nodes, each as the sizes of the
@@ -1178,7 +1185,7 @@ std::vector< std::vector< std::size_t > > shapes( std::size_t n )
 /// the tree of n nodes of the shape s from the place i, keys 0 , 1 , ...
 /// in preorder
 TreeNode * buildShape( Pool & P , const std::vector< std::size_t > & s ,
-                       std::size_t & i , std::size_t n , long & key )
+		       std::size_t & i , std::size_t n , long & key )
 {
  if( n == 0 )
   return( nullptr );
@@ -1222,7 +1229,7 @@ TreeNode * copyTree( Pool & P , const S & T , const typename S::Link * u )
  if( T.isNil( u ) )
   return( nullptr );
  return( makeNode( P , T.key( u ) , copyTree( P , T , u->left ) ,
-                   copyTree( P , T , u->right ) , u->color ) );
+		    copyTree( P , T , u->right ) , u->color ) );
  }
 
 /// the red-black rules checked path by path: every root-to-leaf path with
@@ -1235,24 +1242,24 @@ bool redBlackByPaths( const TreeNode * T )
  std::set< int > blacks;
  bool ok = true;
  std::function< void( const TreeNode * , int ) > walk =
-  [ & ]( const TreeNode * t , int b ) {
-   if( ! t ) {
-    blacks.insert( b );
-    return;
-    }
-   if( isRed( t ) && ( isRed( t->left ) || isRed( t->right ) ) )
-    ok = false;
-   walk( t->left , b + ( isRed( t ) ? 0 : 1 ) );
-   walk( t->right , b + ( isRed( t ) ? 0 : 1 ) );
-   };
+   [ & ]( const TreeNode * t , int b ) {
+    if( ! t ) {
+     blacks.insert( b );
+     return;
+     }
+    if( isRed( t ) && ( isRed( t->left ) || isRed( t->right ) ) )
+     ok = false;
+    walk( t->left , b + ( isRed( t ) ? 0 : 1 ) );
+    walk( t->right , b + ( isRed( t ) ? 0 : 1 ) );
+    };
  walk( T , 0 );
  return( ok && ( blacks.size() == 1 ) );
  }
 
 /// the directed or undirected graph of n nodes and of the edges E
 ListGraph<> makeGraph( int n ,
-                       const std::vector< std::pair< int , int > > & E ,
-                       bool directed )
+		       const std::vector< std::pair< int , int > > & E ,
+		       bool directed )
 {
  ListGraph<> g( n , directed );
  for( auto [ u , v ] : E )
@@ -1261,9 +1268,8 @@ ListGraph<> makeGraph( int n ,
  }
 
 /// the random edges ( u , v ), u != v, each with probability p / 100
-std::vector< std::pair< int , int > > randomEdges( int n , int p ,
-                                                   std::mt19937 & g ,
-                                                   bool directed )
+std::vector< std::pair< int , int > >
+randomEdges( int n , int p , std::mt19937 & g , bool directed )
 {
  std::vector< std::pair< int , int > > E;
  for( int u = 0 ; u < n ; ++u )
@@ -1275,9 +1281,10 @@ std::vector< std::pair< int , int > > randomEdges( int n , int p ,
 
 /// the nodes reached from r through the edges E of n nodes, not entering
 /// the deleted ones
-std::vector< bool > reach( int n , const std::vector< std::pair< int , int > >
-                           & E , int r , const std::vector< bool > & deleted ,
-                           bool directed )
+std::vector< bool > reach( int n ,
+			   const std::vector< std::pair< int , int > > & E ,
+			   int r , const std::vector< bool > & deleted ,
+			   bool directed )
 {
  std::vector< std::vector< int > > A( n );
  for( auto [ u , v ] : E ) {
@@ -1330,8 +1337,9 @@ ADS_TEST( "compiti-2011-04-11-A1-minGap" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const std::size_t n = 2 + g() % 30;
-  const long top = ( t % 3 == 0 ) ? 5 : ( t % 3 == 1 ) ? 1000 :
-                   std::numeric_limits< long >::max() / 2;
+  const long top = ( t % 3 == 0 )   ? 5
+		   : ( t % 3 == 1 ) ? 1000
+				    : std::numeric_limits< long >::max() / 2;
   const auto A = randomVector( n , 1 , top , g );
   long best = std::numeric_limits< long >::max();
   for( std::size_t i = 0 ; i < n ; ++i )
@@ -1340,26 +1348,26 @@ ADS_TEST( "compiti-2011-04-11-A1-minGap" )
   const auto [ i , j ] = minGap( A );
   CHECK( ( i < j ) && ( j < n ) && ( std::abs( A[ i ] - A[ j ] ) == best ) );
   }
- CHECK( minGap( { 7 , 3 } ) == std::pair( std::size_t( 0 ) ,
-                                         std::size_t( 1 ) ) );
+ CHECK( minGap( { 7 , 3 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  const std::vector< long > E( 10 , 4 );
  const auto [ i , j ] = minGap( E );
  CHECK( ( i < j ) && ( E[ i ] == E[ j ] ) );
  const long M = std::numeric_limits< long >::max();
- CHECK( minGap( { M , 1 , M - 1 } ) == std::pair( std::size_t( 0 ) ,
-                                                 std::size_t( 2 ) ) );
+ CHECK( minGap( { M , 1 , M - 1 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) );
  // the gaps of the whole range of long, which overflow a long: the two
  // extremes alone, and with -1 in between (the gap -1 - LONG_MIN is the
  // smaller one by 1)
  const long m = std::numeric_limits< long >::min();
- CHECK( minGap( { M , m } ) == std::pair( std::size_t( 0 ) ,
-                                         std::size_t( 1 ) ) );
- CHECK( minGap( { M , m , -1 } ) == std::pair( std::size_t( 1 ) ,
-                                              std::size_t( 2 ) ) );
- CHECK( minGap( { m , 0 , m + 1 , M } ) == std::pair( std::size_t( 0 ) ,
-                                                     std::size_t( 2 ) ) );
- CHECK( minGap( { 3 , -3 } ) == std::pair( std::size_t( 0 ) ,
-                                          std::size_t( 1 ) ) );
+ CHECK( minGap( { M , m } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
+ CHECK( minGap( { M , m , -1 } ) ==
+	std::pair( std::size_t( 1 ) , std::size_t( 2 ) ) );
+ CHECK( minGap( { m , 0 , m + 1 , M } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) );
+ CHECK( minGap( { 3 , -3 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  CHECK_THROWS( minGap( { 1 } ) , contract_violation );
  CHECK_THROWS( minGap( {} ) , contract_violation );
  }
@@ -1377,24 +1385,24 @@ ADS_TEST( "compiti-2011-04-11-A1-maxGap" )
   const auto [ i , j ] = maxGap( A );
   CHECK( ( i < j ) && ( j < n ) && ( std::abs( A[ i ] - A[ j ] ) == best ) );
   CHECK( best == *std::max_element( A.begin() , A.end() ) -
-                 *std::min_element( A.begin() , A.end() ) );
+		   *std::min_element( A.begin() , A.end() ) );
   }
  for( std::size_t n = 2 ; n < 8 ; ++n ) {
   const auto [ i , j ] = maxGap( std::vector< long >( n , 9 ) );
   CHECK( i < j );
   }
- CHECK( maxGap( { 5 , 3 } ) == std::pair( std::size_t( 0 ) ,
-                                         std::size_t( 1 ) ) );
+ CHECK( maxGap( { 5 , 3 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  const long M = std::numeric_limits< long >::max();
- CHECK( maxGap( { 2 , M , 1 , M } ) == std::pair( std::size_t( 1 ) ,
-                                                 std::size_t( 2 ) ) );
+ CHECK( maxGap( { 2 , M , 1 , M } ) ==
+	std::pair( std::size_t( 1 ) , std::size_t( 2 ) ) );
  const long m = std::numeric_limits< long >::min();
- CHECK( maxGap( { 0 , M , -5 , m , 7 } ) == std::pair( std::size_t( 1 ) ,
-                                                      std::size_t( 3 ) ) );
- CHECK( maxGap( { 4 , 4 , 9 } ) == std::pair( std::size_t( 0 ) ,
-                                             std::size_t( 2 ) ) );
- CHECK( maxGap( { 9 , 4 , 4 } ) == std::pair( std::size_t( 0 ) ,
-                                             std::size_t( 1 ) ) );
+ CHECK( maxGap( { 0 , M , -5 , m , 7 } ) ==
+	std::pair( std::size_t( 1 ) , std::size_t( 3 ) ) );
+ CHECK( maxGap( { 4 , 4 , 9 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 2 ) ) );
+ CHECK( maxGap( { 9 , 4 , 4 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  CHECK_THROWS( maxGap( { 1 } ) , contract_violation );
  CHECK_THROWS( maxGap( {} ) , contract_violation );
  }
@@ -1449,11 +1457,11 @@ ADS_TEST( "compiti-2011-06-06-B2" )
 {
  std::mt19937 g( 4 );
  const std::vector< long > V = { 1 , 6 , 4 , 3 , 9 , 12 , 15 , 2 , 8 , 10 ,
-                                 11 };
+				 11 };
  auto R = nearest( V , 2 , g );
  std::sort( R.begin() , R.end() );
  CHECK( ( R == std::vector< long >( { 6 , 9 } ) ) ||
-        ( R == std::vector< long >( { 9 , 10 } ) ) );
+	( R == std::vector< long >( { 9 , 10 } ) ) );
  for( int t = 0 ; t < 600 ; ++t ) {
   const std::size_t n = 1 + g() % 40;
   auto A = randomDistinct( n , g );
@@ -1462,7 +1470,7 @@ ADS_TEST( "compiti-2011-06-06-B2" )
   auto S = A;
   std::sort( S.begin() , S.end() );
   const std::size_t k = 1 + g() % n;
-  if( k < n ) {                                         // nearest()
+  if( k < n ) {  // nearest()
    const long m = S[ ( n + 1 ) / 2 - 1 ];
    std::vector< long > D;
    for( long a : A )
@@ -1500,9 +1508,9 @@ ADS_TEST( "compiti-2011-06-06-B2" )
  CHECK( nearest( { 3 , 2 , 1 } , 1 , g ) == std::vector< long >( { 3 } ) );
  CHECK( nearest( { 1 , 2 , 3 } , 1 , g ) == std::vector< long >( { 1 } ) );
  CHECK( nearest( { 9 , -4 , 0 , 7 } , 3 , g ) ==
-        std::vector< long >( { -4 , 7 , 9 } ) );   // closer ones, then at d
+	std::vector< long >( { -4 , 7 , 9 } ) );  // closer ones, then at d
  CHECK( kMedian( { 9 , -4 , 0 , 7 } , 4 , g ) ==
-        std::vector< long >( { 9 , -4 , 0 , 7 } ) );
+	std::vector< long >( { 9 , -4 , 0 , 7 } ) );
  CHECK( kMedian( { 2 , 1 } , 1 , g ) == std::vector< long >( { 1 } ) );
  CHECK_THROWS( nearest( { 1 , 2 } , 0 , g ) , contract_violation );
  CHECK_THROWS( kMedian( { 1 , 2 } , 0 , g ) , contract_violation );
@@ -1539,9 +1547,9 @@ ADS_TEST( "compiti-2011-09-07-A4" )
  CHECK( countInversions( R ) == 0 );
  const long M = std::numeric_limits< long >::max();
  std::vector< long > T2 = { 2 , 1 } , S2 = { 1 , 2 } ,
-                     X = { M , 0 , -M - 1 , M , -M - 1 } , Ti = { 2 , 2 , 1 };
+		     X = { M , 0 , -M - 1 , M , -M - 1 } , Ti = { 2 , 2 , 1 };
  CHECK( countInversions( T2 ) == 1 && countInversions( S2 ) == 0 );
- CHECK( countInversions( X ) == 3 + 2 + 0 + 1 );   // equal: no
+ CHECK( countInversions( X ) == 3 + 2 + 0 + 1 );  // equal: no
  CHECK( countInversions( Ti ) == 2 );
  CHECK( X == std::vector< long >( { -M - 1 , -M - 1 , 0 , M , M } ) );
  }
@@ -1591,7 +1599,7 @@ ADS_TEST( "compiti-2012-02-01-A1" )
   CHECK( R == std::vector< long >( { 1 , 2 , 3 , 4 , 5 , 6 } ) );
   }
  const long M = std::numeric_limits< long >::max() ,
-            m = std::numeric_limits< long >::min();
+	    m = std::numeric_limits< long >::min();
  std::vector< long > X = { M , m , 0 , M , m };
  mergeSortK( X , 2 );
  CHECK( X == std::vector< long >( { m , m , 0 , M , M } ) );
@@ -1618,8 +1626,8 @@ ADS_TEST( "compiti-2012-05-03-A2-i" )
    }
   }
  CHECK( isRoma( transpose( makeGraph( 1 , {} , true ) ) , 0 ) );
- const auto C = makeGraph( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                                 { 3 , 0 } } , true );
+ const auto C =
+   makeGraph( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 0 } } , true );
  for( int v = 0 ; v < 4 ; ++v )
   CHECK( isRoma( transpose( C ) , v ) );
  const auto S = makeGraph( 4 , { { 1 , 0 } , { 2 , 0 } , { 3 , 0 } } , true );
@@ -1662,11 +1670,13 @@ ADS_TEST( "compiti-2012-05-03-A2-ii" )
   chain.emplace_back( v , v + 1 );
  const auto Ch = makeGraph( 2000 , chain , true );
  CHECK( hasRoma( Ch ) && isRoma( transpose( Ch ) , 1999 ) &&
-        ! isRoma( transpose( Ch ) , 1998 ) );
- CHECK( hasRoma( makeGraph( 4 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } ,
-                                  { 3 , 2 } , { 0 , 2 } } , true ) ) );
- CHECK( ! hasRoma( makeGraph( 4 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } ,
-                                    { 3 , 2 } } , true ) ) );
+	! isRoma( transpose( Ch ) , 1998 ) );
+ CHECK( hasRoma( makeGraph(
+   4 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } , { 3 , 2 } , { 0 , 2 } } ,
+   true ) ) );
+ CHECK( ! hasRoma(
+   makeGraph( 4 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } , { 3 , 2 } } ,
+	      true ) ) );
  }
 
 /*--------------- 2012-06-18 A2, merge sort by square roots ----------------*/
@@ -1687,8 +1697,7 @@ ADS_TEST( "compiti-2012-06-18-A2" )
   }
  std::mt19937 g( 9 );
  for( int t = 0 ; t < 300 ; ++t ) {
-  auto A = randomVector( g() % 300 , -30 , ( t % 2 ) ? 3 : 1000 , g ) ,
-       B = A;
+  auto A = randomVector( g() % 300 , -30 , ( t % 2 ) ? 3 : 1000 , g ) , B = A;
   sqrtMergeSort( A );
   std::sort( B.begin() , B.end() );
   CHECK( A == B );
@@ -1715,8 +1724,7 @@ ADS_TEST( "compiti-2012-06-18-A2" )
    auto A = P;
    sqrtMergeSort( A );
    CHECK( A == S );
-   }
-  while( std::next_permutation( P.begin() , P.end() ) );
+   } while( std::next_permutation( P.begin() , P.end() ) );
   }
  std::vector< long > R2 = { 2 , 1 } , R3 = { 3 , 2 , 1 } , S3 = { 1 , 2 , 3 };
  CHECK( ( sqrtMergeSort( R2 ) == 1 ) && ( sqrtMergeSort( R3 ) == 3 ) );
@@ -1734,8 +1742,8 @@ ADS_TEST( "compiti-2012-09-10-A1-i" )
  const double alpha = std::log( 3.0 ) / std::log( 1.5 );
  const Growth G = master( 3 , 1.5 , 0 );
  CHECK( std::abs( G.p - alpha ) < 1e-12 && ( G.q == 0 ) );
- CHECK( ( alpha > 2 ) && ( alpha < 3 ) && ( std::abs( alpha - 2.7095 ) <
-                                            1e-4 ) );
+ CHECK( ( alpha > 2 ) && ( alpha < 3 ) &&
+	( std::abs( alpha - 2.7095 ) < 1e-4 ) );
  const std::size_t N = 1000000;
  std::vector< double > T( N + 1 , 1 );
  for( std::size_t n = 7 ; n <= N ; ++n ) {
@@ -1757,8 +1765,7 @@ ADS_TEST( "compiti-2012-09-10-A1-ii" )
 {
  std::mt19937 g( 10 );
  for( int t = 0 ; t < 150 ; ++t ) {
-  auto A = randomVector( g() % 200 , -10 , ( t % 3 ) ? 1000 : 4 , g ) ,
-       B = A;
+  auto A = randomVector( g() % 200 , -10 , ( t % 3 ) ? 1000 : 4 , g ) , B = A;
   sortinoSort( A );
   std::sort( B.begin() , B.end() );
   CHECK( A == B );
@@ -1776,10 +1783,9 @@ ADS_TEST( "compiti-2012-09-10-A1-ii" )
   const auto S = P;
   do {
    auto A = P;
-   CHECK( sortinoSort( A ) == ( n <= 6 ? 1 : 4 ) );   // thirds of <= 6
+   CHECK( sortinoSort( A ) == ( n <= 6 ? 1 : 4 ) );  // thirds of <= 6
    CHECK( A == S );
-   }
-  while( std::next_permutation( P.begin() , P.end() ) );
+   } while( std::next_permutation( P.begin() , P.end() ) );
   }
  }
 
@@ -1792,7 +1798,7 @@ ADS_TEST( "compiti-2013-01-07-A1" )
  std::mt19937 g( 11 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const auto A = randomDistinct( g() % 20 , g ) ,
-             B = randomDistinct( g() % 40 , g );
+	     B = randomDistinct( g() % 40 , g );
   const std::set< long > S( A.begin() , A.end() );
   bool common = false;
   for( long b : B )
@@ -1864,9 +1870,9 @@ ADS_TEST( "compiti-2013-06-17-A2" )
  for( auto & r : X )
   std::sort( r.begin() , r.end() );
  CHECK( ( X[ 0 ] == std::vector< long >( { -M , -M + 1 } ) ) &&
-        ( X[ 1 ] == std::vector< long >( { -1 , 0 } ) ) &&
-        ( X[ 2 ] == std::vector< long >( { 1 , 2 } ) ) &&
-        ( X[ 3 ] == std::vector< long >( { M - 1 , M } ) ) );
+	( X[ 1 ] == std::vector< long >( { -1 , 0 } ) ) &&
+	( X[ 2 ] == std::vector< long >( { 1 , 2 } ) ) &&
+	( X[ 3 ] == std::vector< long >( { M - 1 , M } ) ) );
  CHECK_THROWS( fourRows( { 1 , 2 , 3 } , g ) , contract_violation );
  CHECK_THROWS( fourRows( { 1 , 2 , 3 , 3 } , g ) , contract_violation );
  }
@@ -1970,21 +1976,21 @@ ADS_TEST( "compiti-2014-10-31-A2" )
  almostSort( E );
  almostSort( O );
  CHECK( E.empty() && ( O == std::vector< long >( 1 , 2 ) ) );
- almostSort( R );                                       // 6 - 4 = 2 sorted
+ almostSort( R );  // 6 - 4 = 2 sorted
  CHECK( std::is_sorted( R.begin() , R.end() ) );
  // n = 2 and 3: one item sorted and the rest not (floor( 2^0.8 ) = 1,
  // floor( 3^0.8 ) = 2); the tail all smaller than the sorted head
  CHECK( ( unsortedTail( 2 ) == 1 ) && ( unsortedTail( 3 ) == 2 ) );
  std::vector< long > T2 = { 2 , 1 } , T3 = { 5 , 9 , -1 } ,
-                     H = { 10 , 11 , 12 , 13 , 3 , 2 , 1 , 0 , -1 , -2 };
+		     H = { 10 , 11 , 12 , 13 , 3 , 2 , 1 , 0 , -1 , -2 };
  almostSort( T2 );
  almostSort( T3 );
  CHECK( ( T2 == std::vector< long >( { 1 , 2 } ) ) &&
-        ( T3 == std::vector< long >( { -1 , 5 , 9 } ) ) );
+	( T3 == std::vector< long >( { -1 , 5 , 9 } ) ) );
  CHECK( unsortedTail( 10 ) == 6 );
  almostSort( H );
  CHECK( H == std::vector< long >( { -2 , -1 , 0 , 1 , 2 , 3 , 10 , 11 , 12 ,
-                                    13 } ) );
+				    13 } ) );
  std::vector< long > B = { 9 , 1 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 };
  CHECK_THROWS( almostSort( B ) , contract_violation );
  }
@@ -2040,7 +2046,7 @@ ADS_TEST( "compiti-2015-06-08-A2" )
  for( int t = 0 ; t < 400 ; ++t ) {
   const int n = 1 + int( g() % 12 );
   auto E = randomEdges( n , int( g() % 40 ) , g , false );
-  for( int v = 1 ; v < n ; ++v )                        // a spanning tree
+  for( int v = 1 ; v < n ; ++v )  // a spanning tree
    E.emplace_back( int( g() % unsigned( v ) ) , v );
   std::set< std::pair< int , int > > U;
   for( auto [ u , v ] : E )
@@ -2061,23 +2067,25 @@ ADS_TEST( "compiti-2015-06-08-A2" )
    }
   }
  CHECK( connectedOrder( makeGraph( 1 , {} , false ) ) ==
-        std::vector< int >( 1 , 0 ) );
- const auto Pa = connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 1 , 2 } ,
-                                                  { 2 , 3 } } , false ) );
+	std::vector< int >( 1 , 0 ) );
+ const auto Pa =
+   connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } } ,
+			      false ) );
  CHECK( Pa == std::vector< int >( { 3 , 2 , 1 , 0 } ) );
- const auto St = connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 0 , 2 } ,
-                                                  { 0 , 3 } } , false ) );
+ const auto St =
+   connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } } ,
+			      false ) );
  CHECK( St.back() == 0 );
  CHECK( connectedOrder( makeGraph( 0 , {} , false ) ).empty() );
  CHECK( connectedOrder( makeGraph( 2 , { { 0 , 1 } } , false ) ) ==
-        std::vector< int >( { 1 , 0 } ) );
- const auto Cl = connectedOrder( makeGraph( 4 , { { 0 , 1 } , { 0 , 2 } ,
-                                                  { 0 , 3 } , { 1 , 2 } ,
-                                                  { 1 , 3 } , { 2 , 3 } } ,
-                                            false ) );
- CHECK( Cl.size() == 4 );                   // complete: any order works
+	std::vector< int >( { 1 , 0 } ) );
+ const auto Cl = connectedOrder( makeGraph(
+   4 ,
+   { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 1 , 2 } , { 1 , 3 } , { 2 , 3 } } ,
+   false ) );
+ CHECK( Cl.size() == 4 );  // complete: any order works
  CHECK_THROWS( connectedOrder( makeGraph( 2 , { { 0 , 1 } } , true ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*----------------- 2015-07-14 B3.2, univocal set of edges -----------------*/
@@ -2124,17 +2132,25 @@ ADS_TEST( "compiti-2015-07-14-B3.2" )
   }
  CHECK( maxMatching( 3 , {} ).first == 0 );
  CHECK( maxMatching( 2 , { { 0 , 1 , 5 } } ).first == 5 );
- CHECK( maxMatching( 3 , { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
-                           { 0 , 2 , 4 } } ).first == 4 );
- CHECK( maxMatching( 4 , { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
-                           { 2 , 3 , 2 } } ).first == 4 );
+ CHECK( maxMatching( 3 ,
+		     { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
+		       { 0 , 2 , 4 } } ).first ==
+	4 );
+ CHECK( maxMatching( 4 ,
+		     { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
+		       { 2 , 3 , 2 } } ).first ==
+	4 );
  CHECK( maxMatching( 0 , {} ).first == 0 );
  CHECK( maxMatching( 1 , {} ).second.empty() );
  // a heavy middle edge beats the two ends, and the other way round
- CHECK( maxMatching( 4 , { { 0 , 1 , 2 } , { 1 , 2 , 5 } ,
-                           { 2 , 3 , 2 } } ).first == 5 );
- CHECK( maxMatching( 4 , { { 0 , 1 , 3 } , { 1 , 2 , 5 } ,
-                           { 2 , 3 , 3 } } ).first == 6 );
+ CHECK( maxMatching( 4 ,
+		     { { 0 , 1 , 2 } , { 1 , 2 , 5 } ,
+		       { 2 , 3 , 2 } } ).first ==
+	5 );
+ CHECK( maxMatching( 4 ,
+		     { { 0 , 1 , 3 } , { 1 , 2 , 5 } ,
+		       { 2 , 3 , 3 } } ).first ==
+	6 );
  CHECK_THROWS( maxMatching( 2 , { { 0 , 0 , 1 } } ) , contract_violation );
  CHECK_THROWS( maxMatching( 2 , { { 0 , 1 , 0 } } ) , contract_violation );
  CHECK_THROWS( maxMatching( 2 , { { 0 , 1 , -4 } } ) , contract_violation );
@@ -2149,9 +2165,10 @@ ADS_TEST( "compiti-2015-07-14-B3.2" )
 ADS_TEST( "compiti-2015-11-05-A2b" )
 {
  Pool P;
- TreeNode * F = makeNode( P , 2 , makeNode( P , 6 , makeNode( P , 10 ) ,
-                                            makeNode( P , 12 ) ) ,
-                          makeNode( P , 8 , makeNode( P , 4 ) ) );
+ TreeNode * F =
+   makeNode( P , 2 ,
+	     makeNode( P , 6 , makeNode( P , 10 ) , makeNode( P , 12 ) ) ,
+	     makeNode( P , 8 , makeNode( P , 4 ) ) );
  CHECK( computeDiff( F ) == 10 );
  CHECK( computeDiff( F->left ) == 6 && computeDiff( F->right ) == 4 );
  std::mt19937 g( 20 );
@@ -2173,15 +2190,16 @@ ADS_TEST( "compiti-2015-11-05-A2b" )
  // equal keys, a chain of 10^4 nodes (the visit of the text is recursive,
  // its depth the height), the extremes in a leaf on each side
  CHECK( computeDiff( makeNode( P , 3 , makeNode( P , 3 ) ,
-                               makeNode( P , 3 ) ) ) == 0 );
+			       makeNode( P , 3 ) ) ) ==
+	0 );
  TreeNode * chain = nullptr;
  for( long k = 0 ; k < 10000 ; ++k )
   chain = makeNode( P , k % 2 ? k : -k , chain );
  CHECK( computeDiff( chain ) == 9999 + 9998 );
- CHECK( computeDiff( makeNode( P , 0 , makeNode( P , 5 , makeNode( P , -M ) ) ,
-                               makeNode( P , 1 , nullptr ,
-                                         makeNode( P , M - 1 ) ) ) ) ==
-        2 * M - 1 );
+ CHECK( computeDiff( makeNode(
+	  P , 0 , makeNode( P , 5 , makeNode( P , -M ) ) ,
+	  makeNode( P , 1 , nullptr ,
+		    makeNode( P , M - 1 ) ) ) ) == 2 * M - 1 );
  CHECK_THROWS( computeDiff( nullptr ) , contract_violation );
  }
 
@@ -2211,25 +2229,25 @@ ADS_TEST( "compiti-2015-11-05-A4b" )
 ADS_TEST( "compiti-2016-01-26-B3" )
 {
  for( const char * z : { "ABCD" , "ACBD" , "ACDB" , "CABD" , "CADB" ,
-                         "CDAB" } )
+			 "CDAB" } )
   CHECK( isInterleaving( "AB" , "CD" , z ) );
  CHECK( ! isInterleaving( "AB" , "CD" , "BACD" ) );
  CHECK( isInterleaving( "123" , "345" , "123435" ) );
  CHECK( ! isInterleaving( "123" , "345" , "143235" ) );
  CHECK( ! isInterleaving( "123" , "345" , "123455" ) );
  std::function< bool( const std::string & , const std::string & ,
-                      const std::string & ) > rec =
-  [ & ]( const std::string & x , const std::string & y ,
-         const std::string & z ) {
-   if( z.size() != x.size() + y.size() )
-    return( false );
-   if( z.empty() )
-    return( true );
-   return( ( ! x.empty() && ( x[ 0 ] == z[ 0 ] ) &&
-             rec( x.substr( 1 ) , y , z.substr( 1 ) ) ) ||
-           ( ! y.empty() && ( y[ 0 ] == z[ 0 ] ) &&
-             rec( x , y.substr( 1 ) , z.substr( 1 ) ) ) );
-   };
+		      const std::string & ) >
+   rec = [ & ]( const std::string & x , const std::string & y ,
+		const std::string & z ) {
+    if( z.size() != x.size() + y.size() )
+     return( false );
+    if( z.empty() )
+     return( true );
+    return( ( ! x.empty() && ( x[ 0 ] == z[ 0 ] ) &&
+	       rec( x.substr( 1 ) , y , z.substr( 1 ) ) ) ||
+	     ( ! y.empty() && ( y[ 0 ] == z[ 0 ] ) &&
+	       rec( x , y.substr( 1 ) , z.substr( 1 ) ) ) );
+    };
  std::mt19937 g( 21 );
  auto word = [ & ]( std::size_t n ) {
   std::string s;
@@ -2240,7 +2258,7 @@ ADS_TEST( "compiti-2016-01-26-B3" )
  for( int t = 0 ; t < 1000 ; ++t ) {
   const auto x = word( g() % 7 ) , y = word( g() % 7 );
   std::string z;
-  if( t % 2 ) {                                         // a true shuffle
+  if( t % 2 ) {  // a true shuffle
    std::size_t i = 0 , j = 0;
    while( ( i < x.size() ) || ( j < y.size() ) )
     if( ( j == y.size() ) || ( ( i < x.size() ) && ( g() % 2 ) ) )
@@ -2256,14 +2274,14 @@ ADS_TEST( "compiti-2016-01-26-B3" )
   }
  CHECK( isInterleaving( "" , "" , "" ) && isInterleaving( "ab" , "" , "ab" ) );
  CHECK( ! isInterleaving( "" , "" , "a" ) &&
-        ! isInterleaving( "ab" , "" , "ba" ) );
+	! isInterleaving( "ab" , "" , "ba" ) );
  // equal strings (both choices at each step), z too short, all one letter
  CHECK( isInterleaving( "ab" , "ab" , "aabb" ) &&
-        isInterleaving( "ab" , "ab" , "abab" ) );
+	isInterleaving( "ab" , "ab" , "abab" ) );
  CHECK( ! isInterleaving( "ab" , "ab" , "abb" ) &&
-        ! isInterleaving( "ab" , "ab" , "bbaa" ) );
+	! isInterleaving( "ab" , "ab" , "bbaa" ) );
  CHECK( isInterleaving( "aaa" , "aa" , "aaaaa" ) &&
-        ! isInterleaving( "aaa" , "aa" , "aaaa" ) );
+	! isInterleaving( "aaa" , "aa" , "aaaa" ) );
  }
 
 /*----------------- 2016-07-06 A2, sorted rows and columns -----------------*/
@@ -2274,15 +2292,15 @@ ADS_TEST( "compiti-2016-01-26-B3" )
 // different lengths
 ADS_TEST( "compiti-2016-07-06-A2" )
 {
- std::vector< std::vector< long > > M = { { 5 , 10 , 4 , 14 } ,
-                                          { 2 , 16 , 12 , 24 } ,
-                                          { 7 , 9 , 8 , 8 } ,
-                                          { 1 , 3 , 21 , 18 } };
+ std::vector< std::vector< long > > M = {
+  { 5 , 10 , 4 , 14 } , { 2 , 16 , 12 , 24 } , { 7 , 9 , 8 , 8 } ,
+  { 1 , 3 , 21 , 18 }
+  };
  sortMatrix( M );
- const std::vector< std::vector< long > > R = { { 1 , 2 , 3 , 4 } ,
-                                                { 5 , 7 , 8 , 8 } ,
-                                                { 9 , 10 , 12 , 14 } ,
-                                                { 16 , 18 , 21 , 24 } };
+ const std::vector< std::vector< long > > R = {
+  { 1 , 2 , 3 , 4 } , { 5 , 7 , 8 , 8 } , { 9 , 10 , 12 , 14 } ,
+  { 16 , 18 , 21 , 24 }
+  };
  CHECK( M == R );
  std::mt19937 g( 22 );
  for( int t = 0 ; t < 300 ; ++t ) {
@@ -2311,15 +2329,16 @@ ADS_TEST( "compiti-2016-07-06-A2" )
  const std::vector< std::vector< long > > C3 = { { 1 } , { 2 } , { 3 } };
  CHECK( E.empty() && ( C == C3 ) );
  std::vector< std::vector< long > > Z = { {} , {} } , W = { { 2 , 1 } } ,
-                                    X = { { 0 , -1 } , { std::numeric_limits<
-                                          long >::min() , 5 } };
+				    X = { { 0 , -1 } ,
+					  { std::numeric_limits< long >::min() ,
+					    5 } };
  sortMatrix( Z );
  sortMatrix( W );
  sortMatrix( X );
- CHECK( Z == std::vector< std::vector< long > >( 2 ) );   // empty rows
+ CHECK( Z == std::vector< std::vector< long > >( 2 ) );  // empty rows
  CHECK( W == std::vector< std::vector< long > >( { { 1 , 2 } } ) );
- CHECK( X == std::vector< std::vector< long > >( {
-  { std::numeric_limits< long >::min() , -1 } , { 0 , 5 } } ) );
+ CHECK( X == std::vector< std::vector< long > >(
+	       { { std::numeric_limits< long >::min() , -1 } , { 0 , 5 } } ) );
  std::vector< std::vector< long > > J = { { 1 , 2 } , { 3 } };
  CHECK_THROWS( sortMatrix( J ) , contract_violation );
  }
@@ -2354,15 +2373,15 @@ ADS_TEST( "compiti-2016-08-29-B4" )
  CHECK( subsequenceOccurrences( "" , "" ) == 1 );
  CHECK( subsequenceOccurrences( "" , "x" ) == 1 );
  CHECK( subsequenceOccurrences( "ab" , "a" ) == 0 );
- CHECK( subsequenceOccurrences( "abc" , "abc" ) == 1 );    // P = T
+ CHECK( subsequenceOccurrences( "abc" , "abc" ) == 1 );  // P = T
  CHECK( subsequenceOccurrences( "x" , "" ) == 0 );
- CHECK( subsequenceOccurrences( "ba" , "aabb" ) == 0 );    // order matters
+ CHECK( subsequenceOccurrences( "ba" , "aabb" ) == 0 );  // order matters
  CHECK( subsequenceOccurrences( "z" , "azbzcz" ) == 3 );
  const auto C = tartaglia( 60 );
  for( int n = 0 ; n <= 60 ; n += 6 )
   for( int m = 0 ; m <= n ; m += 3 )
    CHECK( subsequenceOccurrences( std::string( m , 'a' ) ,
-                                  std::string( n , 'a' ) ) == C[ n ][ m ] );
+				  std::string( n , 'a' ) ) == C[ n ][ m ] );
  }
 
 /*--------------------- 2017-01-10 B4, files on a tape ---------------------*/
@@ -2375,7 +2394,8 @@ ADS_TEST( "compiti-2016-08-29-B4" )
 ADS_TEST( "compiti-2017-01-10-B4.1" )
 {
  const std::vector< double > l1 = { 1 , 2 } , f1 = { 0.1 , 0.9 } ,
-                             l2 = { 10 , 1 } , f2 = { 0.6 , 0.4 };
+ l2 = { 10 , 1 } ,
+			     f2 = { 0.6 , 0.4 };
  CHECK( std::abs( tapeCost( l1 , f1 , { 0 , 1 } ) - 2.8 ) < 1e-12 );
  CHECK( std::abs( tapeCost( l1 , f1 , { 1 , 0 } ) - 2.1 ) < 1e-12 );
  CHECK( std::abs( tapeCost( l2 , f2 , { 0 , 1 } ) - 10.4 ) < 1e-12 );
@@ -2383,13 +2403,13 @@ ADS_TEST( "compiti-2017-01-10-B4.1" )
  const auto byLength = orderBy( 2 , [ & ]( std::size_t a , std::size_t b ) {
   return( l1[ a ] < l1[ b ] );
   } );
- const auto byProbability = orderBy( 2 , [ & ]( std::size_t a ,
-                                                std::size_t b ) {
+ const auto byProbability = orderBy( 2 ,
+				     [ & ]( std::size_t a , std::size_t b ) {
   return( f2[ a ] > f2[ b ] );
   } );
  CHECK( tapeCost( l1 , f1 , byLength ) > tapeCost( l1 , f1 , { 1 , 0 } ) );
- CHECK( tapeCost( l2 , f2 , byProbability ) >
-        tapeCost( l2 , f2 , { 1 , 0 } ) );
+ CHECK( tapeCost( l2 , f2 , byProbability ) > tapeCost( l2 , f2 ,
+							{ 1 , 0 } ) );
  CHECK( tapeOrder( l1 , f1 ) == std::vector< std::size_t >( { 1 , 0 } ) );
  CHECK( tapeOrder( l2 , f2 ) == std::vector< std::size_t >( { 1 , 0 } ) );
  std::mt19937 g( 24 );
@@ -2413,7 +2433,7 @@ ADS_TEST( "compiti-2017-01-10-B4.1" )
   CHECK( std::abs( tapeCost( l , f , tapeOrder( l , f ) ) - best ) < 1e-9 );
   const std::vector< double > e( n , 1 );
   CHECK( std::abs( tapeCost( l , e , tapeOrder( l , e ) ) -
-                   totalCompletion( l , shortestJobFirst( l ) ) ) < 1e-9 );
+		   totalCompletion( l , shortestJobFirst( l ) ) ) < 1e-9 );
   }
  // no file, one file, all probabilities 0 (every order costs 0), ties of
  // l / f (every order of the tied ones costs the same)
@@ -2424,14 +2444,14 @@ ADS_TEST( "compiti-2017-01-10-B4.1" )
  CHECK( tapeCost( lz , fz , tapeOrder( lz , fz ) ) == 0 );
  const std::vector< double > lt = { 2 , 1 , 4 } , ft = { 0.4 , 0.2 , 0.4 };
  CHECK( std::abs( tapeCost( lt , ft , { 0 , 1 , 2 } ) -
-                  tapeCost( lt , ft , { 1 , 0 , 2 } ) ) < 1e-12 );
+		  tapeCost( lt , ft , { 1 , 0 , 2 } ) ) < 1e-12 );
  CHECK( std::abs( tapeCost( lt , ft , tapeOrder( lt , ft ) ) -
-                  tapeCost( lt , ft , { 0 , 1 , 2 } ) ) < 1e-12 );
+		  tapeCost( lt , ft , { 0 , 1 , 2 } ) ) < 1e-12 );
  CHECK_THROWS( tapeOrder( { 0 } , { 1 } ) , contract_violation );
  CHECK_THROWS( tapeOrder( { 1 } , { -1 } ) , contract_violation );
  CHECK_THROWS( tapeOrder( { 1 , 2 } , { 1 } ) , contract_violation );
  CHECK_THROWS( tapeCost( { 1 , 2 } , { 1 , 0 } , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------- 2017-06-08 A2 and B4, topological orders and decodings ---------*/
@@ -2446,7 +2466,7 @@ ADS_TEST( "compiti-2017-06-08-A2" )
  for( int t = 0 ; t < 600 ; ++t ) {
   const int n = int( g() % 8 );
   auto E = randomEdges( n , int( g() % 60 ) , g , true );
-  if( t % 2 ) {                                         // acyclic
+  if( t % 2 ) {  // acyclic
    std::vector< std::pair< int , int > > F;
    for( auto [ u , v ] : E )
     if( u < v )
@@ -2464,27 +2484,29 @@ ADS_TEST( "compiti-2017-06-08-A2" )
    for( auto [ u , v ] : E )
     ok = ok && ( pos[ u ] < pos[ v ] );
    count += ok;
-   }
-  while( std::next_permutation( pi.begin() , pi.end() ) );
+   } while( std::next_permutation( pi.begin() , pi.end() ) );
   CHECK( topologicalOrders( makeGraph( n , E , true ) ) ==
-         std::min( count , 2 ) );
+	 std::min( count , 2 ) );
   }
  CHECK( topologicalOrders( makeGraph( 0 , {} , true ) ) == 1 );
  CHECK( topologicalOrders( makeGraph( 1 , {} , true ) ) == 1 );
  CHECK( topologicalOrders( makeGraph( 3 , { { 2 , 0 } , { 0 , 1 } } ,
-                                      true ) ) == 1 );
+				      true ) ) ==
+	1 );
  CHECK( topologicalOrders( makeGraph( 2 , {} , true ) ) == 2 );
  CHECK( topologicalOrders( makeGraph( 2 , { { 0 , 1 } , { 1 , 0 } } ,
-                                      true ) ) == 0 );
+				      true ) ) ==
+	0 );
  // a cycle away from a unique chain, a path with a shortcut (still
  // unique), and an undirected graph refused
- CHECK( topologicalOrders( makeGraph( 5 , { { 0 , 1 } , { 2 , 3 } ,
-                                            { 3 , 4 } , { 4 , 2 } } ,
-                                      true ) ) == 0 );
- CHECK( topologicalOrders( makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } ,
-                                            { 0 , 2 } } , true ) ) == 1 );
+ CHECK( topologicalOrders( makeGraph(
+	  5 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 2 } } ,
+	  true ) ) == 0 );
+ CHECK( topologicalOrders(
+	  makeGraph( 3 , { { 0 , 1 } , { 1 , 2 } , { 0 , 2 } } ,
+		     true ) ) == 1 );
  CHECK_THROWS( topologicalOrders( makeGraph( 2 , { { 0 , 1 } } , false ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the examples, 011 and 301 not decodable and 13135 in 4 ways;
@@ -2494,20 +2516,20 @@ ADS_TEST( "compiti-2017-06-08-A2" )
 ADS_TEST( "compiti-2017-06-08-B4" )
 {
  CHECK( countDecodings( { 0 , 1 , 1 } ) == 0 &&
-        countDecodings( { 3 , 0 , 1 } ) == 0 );
+	countDecodings( { 3 , 0 , 1 } ) == 0 );
  CHECK( countDecodings( { 1 , 3 , 1 , 3 , 5 } ) == 4 );
  std::function< std::uint64_t( const std::vector< int > & , std::size_t ) >
-  rec = [ & ]( const std::vector< int > & T , std::size_t i ) {
-   if( i == T.size() )
-    return( std::uint64_t( 1 ) );
-   std::uint64_t c = 0;
-   if( T[ i ] != 0 ) {
-    c += rec( T , i + 1 );
-    if( ( i + 1 < T.size() ) && ( 10 * T[ i ] + T[ i + 1 ] <= 26 ) )
-     c += rec( T , i + 2 );
-    }
-   return( c );
-   };
+   rec = [ & ]( const std::vector< int > & T , std::size_t i ) {
+    if( i == T.size() )
+     return( std::uint64_t( 1 ) );
+    std::uint64_t c = 0;
+    if( T[ i ] != 0 ) {
+     c += rec( T , i + 1 );
+     if( ( i + 1 < T.size() ) && ( 10 * T[ i ] + T[ i + 1 ] <= 26 ) )
+      c += rec( T , i + 2 );
+     }
+    return( c );
+    };
  std::mt19937 g( 26 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   std::vector< int > T( g() % 15 );
@@ -2595,7 +2617,7 @@ ADS_TEST( "compiti-2019-02-07-A2" )
   }
  CHECK( first( std::vector< long >( 1000 , 8 ) , 8 ) == 1 );
  CHECK( first( { 4 } , 4 ) == 1 );
- CHECK( first( A , 1 ) == 1 && first( A , 6 ) == 9 );   // first, last run
+ CHECK( first( A , 1 ) == 1 && first( A , 6 ) == 9 );  // first, last run
  const long M = std::numeric_limits< long >::max();
  CHECK( first( { -M - 1 , -M - 1 , M } , M ) == 3 );
  CHECK( first( { -M - 1 , -M - 1 , M } , -M - 1 ) == 1 );
@@ -2724,7 +2746,7 @@ ADS_TEST( "compiti-2021-02-08-A3" )
  CHECK( minOps( 10 , 20 ) == 1 && minOps( 1 , 2 ) == 1 );
  CHECK( minOps( 1 , ( 1L << 20 ) - 1 ) == 21 );
  CHECK( minOps( 1 , ( 1L << 20 ) - 1 ) ==
-        long( minOpsBfs( 1 , ( 1L << 20 ) - 1 ) ) );
+	long( minOpsBfs( 1 , ( 1L << 20 ) - 1 ) ) );
  CHECK_THROWS( minOps( 0 , 3 ) , contract_violation );
  CHECK_THROWS( minOps( 3 , 0 ) , contract_violation );
  CHECK_THROWS( minOpsBfs( 0 , 3 ) , contract_violation );
@@ -2761,7 +2783,7 @@ ADS_TEST( "compiti-2021-07-27-A2" )
  auto B = A;
  sortK( B , 2 );
  CHECK( B == std::vector< long >( { 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 9 ,
-                                    10 } ) );
+				    10 } ) );
  std::mt19937 g( 31 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const std::size_t n = g() % 200 , k = g() % 8;
@@ -2770,12 +2792,12 @@ ADS_TEST( "compiti-2021-07-27-A2" )
   if( t % 2 )
    for( std::size_t s = 0 ; s < n ; s += k + 1 )
     std::shuffle( V.begin() + std::ptrdiff_t( s ) ,
-                  V.begin() + std::ptrdiff_t( std::min( s + k + 1 , n ) ) ,
-                  g );
+		  V.begin() + std::ptrdiff_t( std::min( s + k + 1 , n ) ) ,
+		  g );
   else
    for( std::size_t e = 0 ; ( e < n ) && ( k > 0 ) ; ++e ) {
     const std::size_t i = g() % n ,
-                      j = std::min( n - 1 , i + g() % ( k + 1 ) );
+    j = std::min( n - 1 , i + g() % ( k + 1 ) );
     std::swap( V[ i ] , V[ j ] );
     if( ! kSorted( V , k ) )
      std::swap( V[ i ] , V[ j ] );
@@ -2798,7 +2820,8 @@ ADS_TEST( "compiti-2021-07-27-A2" )
  // the extremes of long
  const long M = std::numeric_limits< long >::max();
  std::vector< long > D = { 2 , 1 , 2 , 1 , 3 , 3 } , Q( 9 , 5 ) ,
-                     X = { M , -M - 1 , 0 } , K = { 4 , 3 , 2 , 1 };
+   X = { M , -M - 1 , 0 } ,
+		     K = { 4 , 3 , 2 , 1 };
  CHECK( kSorted( D , 2 ) && ! kSorted( D , 1 ) );
  sortK( D , 2 );
  sortK( Q , 0 );
@@ -2899,11 +2922,10 @@ ADS_TEST( "compiti-2021-07-27-B2" )
 {
  auto S = printBits( 5 );
  std::sort( S.begin() , S.end() );
- const std::vector< std::string > E = { "00000" , "00001" , "00010" ,
-                                        "00100" , "00101" , "01000" ,
-                                        "01001" , "01010" , "10000" ,
-                                        "10001" , "10010" , "10100" ,
-                                        "10101" };
+ const std::vector< std::string > E = { "00000" , "00001" , "00010" , "00100" ,
+					"00101" , "01000" , "01001" , "01010" ,
+					"10000" , "10001" , "10010" , "10100" ,
+					"10101" };
  CHECK( S == E );
  for( std::size_t n = 0 ; n <= 20 ; ++n ) {
   auto R = printBits( n );
@@ -2929,8 +2951,8 @@ ADS_TEST( "compiti-2021-07-27-B2" )
 ADS_TEST( "compiti-2021-07-27-B3" )
 {
  auto contiguous = []( std::size_t n , const std::vector< std::size_t > & I ,
-                       std::size_t k ) {
-  std::size_t prev = 0;                       // the first place not checked
+		       std::size_t k ) {
+  std::size_t prev = 0;  // the first place not checked
   for( auto i : I ) {
    if( i - prev > k )
     return( false );
@@ -2967,8 +2989,8 @@ ADS_TEST( "compiti-2021-07-27-B3" )
  CHECK( maxSumKLinear( { -1 , -2 } , 2 ) == 0 );
  CHECK( maxSumK( { -1 , -2 , -3 } , 1 ) == -2 );
  CHECK( maxSumKLinear( { -1 , -2 , -3 } , 1 ) == -2 );
- CHECK( maxSumK( { 4 , -1 , 2 } , 0 ) == 5 && maxSumKLinear( { 4 , -1 , 2 } ,
-                                                             0 ) == 5 );
+ CHECK( maxSumK( { 4 , -1 , 2 } , 0 ) == 5 &&
+	maxSumKLinear( { 4 , -1 , 2 } , 0 ) == 5 );
  }
 
 /*---- 2022-08-24 A1 and A3, bounds of a recurrence and sum of two keys ----*/
@@ -2980,8 +3002,8 @@ ADS_TEST( "compiti-2021-07-27-B3" )
 ADS_TEST( "compiti-2022-08-24-A1" )
 {
  CHECK( master( 2 , 2 , 1 ) == theta( 1 , 1 ) );
- CHECK( std::abs( master( 4 , 3 , 1 ).p - std::log( 4.0 ) / std::log( 3.0 ) )
-        < 1e-12 );
+ CHECK( std::abs( master( 4 , 3 , 1 ).p - std::log( 4.0 ) / std::log( 3.0 ) ) <
+	1e-12 );
  CHECK( master( 4 , 2 , 1 ) == theta( 2 ) );
  double lo = 1 , hi = 2;
  for( int i = 0 ; i < 100 ; ++i ) {
@@ -3092,11 +3114,11 @@ ADS_TEST( "compiti-2026-06-22-B3" )
  CHECK( hateville( { { 4 , 2 , 9 } } ) == 2 );
  CHECK( hatevilleFast( { { 4 , 2 , 9 } } ) == 2 );
  const std::vector< std::vector< long > > E( 10 ,
-                                             std::vector< long >( 2 , 3 ) );
+					     std::vector< long >( 2 , 3 ) );
  CHECK( hateville( E ) == 30 && hatevilleFast( E ) == 30 );
  const long M = std::numeric_limits< long >::max() / 64;
  const std::vector< std::vector< long > > L = { { 1 , M } , { 1 , M } ,
-                                                { 1 , M } };
+						{ 1 , M } };
  CHECK( hateville( L ) == M + 2 && hatevilleFast( L ) == M + 2 );
  CHECK_THROWS( hateville( { { 1 } } ) , contract_violation );
  CHECK_THROWS( hatevilleFast( { { 1 , 2 } , { 3 } } ) , contract_violation );

@@ -72,7 +72,7 @@
 
 #ifndef __ADS_SparseAssembly
  #define __ADS_SparseAssembly
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,7 +93,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS AssemblyWorkspace ------------------------*/
@@ -102,13 +103,14 @@ namespace ADS {
 /// the scratch of `compressTriplets()`, which keeps its memory from one
 /// call to the next
 template< class I , class V >
-struct AssemblyWorkspace {
- template< class U >                  // not zeroed when they grow
+struct AssemblyWorkspace
+{
+ template< class U >  // not zeroed when they grow
  using Vector = std::vector< U , detail::DefaultInitAllocator< U > >;
 
- Vector< I > cursor;                  ///< the cursor of each major index
- Vector< I > mark;                    ///< the last place of each minor one
- std::vector< std::pair< I , V > > pairs;   ///< a long one, to sort
+ Vector< I > cursor;                      ///< the cursor of each major index
+ Vector< I > mark;                        ///< the last place of each minor one
+ std::vector< std::pair< I , V > > pairs;  ///< a long one, to sort
  };
 
 /*--------------------------------------------------------------------------*/
@@ -157,17 +159,17 @@ struct AssemblyWorkspace {
 ///      places, `ind` and `val` at least \f$ z \f$, and \f$ z \f$ fits `I`
 template< class I , class V , class J >
 std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
-                              std::size_t z , const J * major ,
-                              const J * minor , const V * value , I * beg ,
-                              I * ind , V * val ,
-                              AssemblyWorkspace< I , V > & work );
+			      std::size_t z , const J * major ,
+			      const J * minor ,
+			      const V * value , I * beg , I * ind , V * val ,
+			      AssemblyWorkspace< I , V > & work );
 
 /// the form of `compressTriplets()` above, with a workspace of its own
 template< class I , class V , class J >
 std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
-                              std::size_t z , const J * major ,
-                              const J * minor , const V * value , I * beg ,
-                              I * ind , V * val );
+			      std::size_t z , const J * major ,
+			      const J * minor ,
+			      const V * value , I * beg , I * ind , V * val );
 
 /// the compressed sparse columns of the \f$ m \times n \f$ matrix of the
 /// \f$ z \f$ triplets
@@ -185,9 +187,9 @@ std::size_t compressTriplets( std::size_t nmajor , std::size_t nminor ,
 /// \f]
 template< class I , class V , class J >
 std::size_t assembleCsc( std::size_t m , std::size_t n , std::size_t z ,
-                         const J * row , const J * col , const V * value ,
-                         I * beg , I * ind , V * val ,
-                         AssemblyWorkspace< I , V > & work );
+			 const J * row , const J * col , const V * value ,
+			 I * beg , I * ind , V * val ,
+			 AssemblyWorkspace< I , V > & work );
 
 /// the compressed sparse rows of the same: `beg` has \f$ m + 1 \f$ places,
 /// `ind` holds the columns; the number of the entries
@@ -202,9 +204,9 @@ std::size_t assembleCsc( std::size_t m , std::size_t n , std::size_t z ,
 /// \f]
 template< class I , class V , class J >
 std::size_t assembleCsr( std::size_t m , std::size_t n , std::size_t z ,
-                         const J * row , const J * col , const V * value ,
-                         I * beg , I * ind , V * val ,
-                         AssemblyWorkspace< I , V > & work );
+			 const J * row , const J * col , const V * value ,
+			 I * beg , I * ind , V * val ,
+			 AssemblyWorkspace< I , V > & work );
 
 /*--------------------------------------------------------------------------*/
 
@@ -218,7 +220,7 @@ std::size_t assembleCsr( std::size_t m , std::size_t n , std::size_t z ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SparseAssembly.h included */
+#endif /* SparseAssembly.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SparseAssembly.h -----------------------*/

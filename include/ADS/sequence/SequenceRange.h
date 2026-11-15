@@ -35,7 +35,7 @@
 
 #ifndef __ADS_SequenceRange
  #define __ADS_SequenceRange
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS SequenceRange ----------------------------*/
@@ -60,28 +61,28 @@ namespace ADS {
 
 /// the items of a SEQUENCE as a range of C++
 template< Sequence S >
-class SequenceRange
- : public std::ranges::view_interface< SequenceRange< S > > {
+class SequenceRange : public std::ranges::view_interface< SequenceRange< S > >
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a position of the sequence, read by `*`; the end is an iterator marked
  /// as such, equal to every iterator on a finished position
- class iterator {
+ class iterator
+ {
   public:
   /// the category of the iterator, forward
   using iterator_category = std::forward_iterator_tag;
-  using value_type = typename S::Item;      ///< the type of the items
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
-  using reference = const value_type &;     ///< a constant reference
-  using pointer = const value_type *;       ///< a constant pointer
+  using value_type = typename S::Item;     ///< the type of the items
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
+  using reference = const value_type &;    ///< a constant reference
+  using pointer = const value_type *;      ///< a constant pointer
 
   /// an iterator on no sequence, at the end
   iterator( void ) = default;
 
   /// on the position \f$ p \f$ of the sequence \f$ s \f$
-  iterator( const S * s , typename S::Pos p ) : f_s( s ) , f_p( p ) {}
+  iterator( const S * s , typename S::Pos p ) : f_s( s ) , f_p( p ) { }
 
   /// the end of the range of \f$ s \f$
   static iterator end( const S * s ) {
@@ -140,7 +141,7 @@ class SequenceRange
  SequenceRange( void ) = default;
 
  /// the range of the items of \f$ s \f$
- explicit SequenceRange( const S & s ) : f_s( &s ) {}
+ explicit SequenceRange( const S & s ) : f_s( &s ) { }
 
  /// the iterator on the first item, `head()`
  [[nodiscard]] iterator begin( void ) const {
@@ -154,8 +155,7 @@ class SequenceRange
 
 /*--------------------------------------------------------------------------*/
  private:
-
- const S * f_s = nullptr;   ///< the sequence
+ const S * f_s = nullptr;  ///< the sequence
 
  };  // end( class SequenceRange )
 
@@ -172,7 +172,7 @@ SequenceRange< S > range( const S & s );
 /// \cond
 template< ADS::Sequence S >
 inline constexpr bool
-std::ranges::enable_borrowed_range< ADS::SequenceRange< S > > = true;
+  std::ranges::enable_borrowed_range< ADS::SequenceRange< S > > = true;
 /// \endcond
 
 /*--------------------------------------------------------------------------*/
@@ -183,7 +183,7 @@ std::ranges::enable_borrowed_range< ADS::SequenceRange< S > > = true;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SequenceRange.h included */
+#endif /* SequenceRange.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SequenceRange.h ------------------------*/

@@ -90,7 +90,7 @@
 
 #ifndef __ADS_EliasFano
  #define __ADS_EliasFano
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -110,7 +110,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS BasicEliasFano --------------------------*/
@@ -121,11 +122,11 @@ namespace ADS {
 /// `Lazy` and at the first select of each value if `Lazy` [see
 /// `RankSelect.h`]
 template< bool Lazy >
-class BasicEliasFano {
+class BasicEliasFano
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty sequence
  BasicEliasFano( void ) = default;
 
@@ -262,15 +263,14 @@ class BasicEliasFano {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the bucket of x, x >> ell
  [[nodiscard]] std::uint64_t bucket( std::uint64_t x ) const;
 
  std::size_t f_n = 0;
  std::uint64_t f_u = 0;
- int f_l = 0;                ///< the low bits of an item
- BitVector f_low;            ///< L
- BasicRankSelect< Lazy > f_high;   ///< H
+ int f_l = 0;                     ///< the low bits of an item
+ BitVector f_low;                 ///< L
+ BasicRankSelect< Lazy > f_high;  ///< H
 
  };  // end( class BasicEliasFano )
 
@@ -294,7 +294,7 @@ using LazyEliasFano = BasicEliasFano< true >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EliasFano.h included */
+#endif /* EliasFano.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File EliasFano.h --------------------------*/

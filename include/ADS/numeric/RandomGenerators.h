@@ -141,7 +141,7 @@
 
 #ifndef __ADS_RandomGenerators
  #define __ADS_RandomGenerators
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -169,25 +169,26 @@
 /// a function inlined where it is used, so that the state of the
 /// generator stays in the registers of the caller's loop
 #if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_RNG_INLINE inline __attribute__(( always_inline ))
+ #define ADS_RNG_INLINE inline __attribute__( ( always_inline ) )
 #elif defined( _MSC_VER )
  #define ADS_RNG_INLINE __forceinline
 #else
  #define ADS_RNG_INLINE inline
 #endif
 
-namespace ADS {
+namespace ADS
+{
 
 /// a `std::uniform_random_bit_generator` of 64 full bits, from 0 to
 /// \f$ 2^{64} - 1 \f$
 template< class G >
 concept FullWordGenerator =
- std::uniform_random_bit_generator< std::remove_reference_t< G > > &&
- std::same_as< typename std::remove_reference_t< G >::result_type ,
-               std::uint64_t > &&
- ( std::remove_reference_t< G >::min() == 0 ) &&
- ( std::remove_reference_t< G >::max() ==
-   std::numeric_limits< std::uint64_t >::max() );
+  std::uniform_random_bit_generator< std::remove_reference_t< G > > &&
+  std::same_as< typename std::remove_reference_t< G >::result_type ,
+		std::uint64_t > &&
+  ( std::remove_reference_t< G >::min() == 0 ) &&
+  ( std::remove_reference_t< G >::max() ==
+    std::numeric_limits< std::uint64_t >::max() );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS Xoshiro256 -----------------------------*/
@@ -196,9 +197,10 @@ concept FullWordGenerator =
 /// xoshiro256++ (or xoshiro256** if `StarStar`), a
 /// `std::uniform_random_bit_generator` of 64 bits
 template< bool StarStar >
-class Xoshiro256T {
+class Xoshiro256T
+{
  public:
- using result_type = std::uint64_t;   ///< the type of the numbers
+ using result_type = std::uint64_t;  ///< the type of the numbers
 
  /// the state from the seed by SplitMix64, never all zero
  explicit constexpr Xoshiro256T( std::uint64_t seed = 1 );
@@ -250,23 +252,24 @@ class Xoshiro256T {
  bool operator==( const Xoshiro256T & ) const = default;
 
  private:
- std::uint64_t f_s[ 4 ];   ///< the state \f$ s_0 , \ldots , s_3 \f$
+ std::uint64_t f_s[ 4 ];  ///< the state \f$ s_0 , \ldots , s_3 \f$
  };  // end( class Xoshiro256T )
 
-using Xoshiro256 = Xoshiro256T< false >;          ///< xoshiro256++
-using Xoshiro256StarStar = Xoshiro256T< true >;   ///< xoshiro256**
+using Xoshiro256 = Xoshiro256T< false >;         ///< xoshiro256++
+using Xoshiro256StarStar = Xoshiro256T< true >;  ///< xoshiro256**
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS WyRand -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// wyrand, a `std::uniform_random_bit_generator` of 64 bits
-class WyRand {
+class WyRand
+{
  public:
- using result_type = std::uint64_t;   ///< the type of the numbers
+ using result_type = std::uint64_t;  ///< the type of the numbers
 
  /// the generator whose Weyl sequence starts at the seed
- explicit constexpr WyRand( std::uint64_t seed = 1 ) : f_s( seed ) {}
+ explicit constexpr WyRand( std::uint64_t seed = 1 ) : f_s( seed ) { }
 
  /// the next number
  ///
@@ -294,7 +297,7 @@ class WyRand {
  bool operator==( const WyRand & ) const = default;
 
  private:
- std::uint64_t f_s;   ///< the state, the Weyl sequence
+ std::uint64_t f_s;  ///< the state, the Weyl sequence
  };  // end( class WyRand )
 
 /*--------------------------------------------------------------------------*/
@@ -305,14 +308,16 @@ class WyRand {
 /// words of \f$ W \f$ bits (32 or 64) of Salmon, Moraes, Dror and Shaw, with
 /// the sequence of `std::philox4x32` and `std::philox4x64` of C++26
 template< class W >
-class PhiloxT {
+class PhiloxT
+{
  static_assert( std::same_as< W , std::uint32_t > ||
-                std::same_as< W , std::uint64_t > ,
-                "words of 32 or 64 bits" );
+		  std::same_as< W , std::uint64_t > ,
+		"words of 32 or 64 bits" );
+
  public:
- using result_type = W;               ///< the type of the numbers
- using Block = std::array< W , 4 >;   ///< a counter, or its 4 outputs
- using Key = std::array< W , 2 >;     ///< a key
+ using result_type = W;             ///< the type of the numbers
+ using Block = std::array< W , 4 >;  ///< a counter, or its 4 outputs
+ using Key = std::array< W , 2 >;    ///< a key
 
  /// the seed of the default constructor, as in C++26
  static constexpr W default_seed = 20111115u;
@@ -381,14 +386,14 @@ class PhiloxT {
  /// the next `lanes` blocks into the buffer, their rounds interleaved
  constexpr void refill( void );
 
- Key f_key;                                ///< the key
- Block f_ctr{};                            ///< the counter after the buffer
- W f_buf[ 4 * lanes ] = {};                ///< the outputs not yet given
- unsigned f_at = 4 * lanes;                ///< the next one
+ Key f_key;                  ///< the key
+ Block f_ctr{};              ///< the counter after the buffer
+ W f_buf[ 4 * lanes ] = {};  ///< the outputs not yet given
+ unsigned f_at = 4 * lanes;  ///< the next one
  };  // end( class PhiloxT )
 
-using Philox4x32 = PhiloxT< std::uint32_t >;   ///< Philox4x32-10
-using Philox4x64 = PhiloxT< std::uint64_t >;   ///< Philox4x64-10
+using Philox4x32 = PhiloxT< std::uint32_t >;  ///< Philox4x32-10
+using Philox4x64 = PhiloxT< std::uint64_t >;  ///< Philox4x64-10
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS AliasTable -----------------------------*/
@@ -396,7 +401,8 @@ using Philox4x64 = PhiloxT< std::uint64_t >;   ///< Philox4x64-10
 
 /// the alias method of Walker and Vose: draws \f$ i \f$ with probability
 /// \f$ w_i / \sum_j w_j \f$, in \f$ O( 1 ) \f$ time from one random word
-class AliasTable {
+class AliasTable
+{
  public:
  /// the table of the weights \f$ w \f$, not all zero
  ///
@@ -448,11 +454,12 @@ class AliasTable {
 
  private:
  /// a cell of the table
- struct Entry {
-  std::uint64_t keep;      ///< the threshold of the low word to keep it
-  std::uint32_t alias;     ///< the index otherwise
+ struct Entry
+ {
+  std::uint64_t keep;   ///< the threshold of the low word to keep it
+  std::uint32_t alias;  ///< the index otherwise
   };
- std::vector< Entry > f_T;   ///< the cells
+ std::vector< Entry > f_T;  ///< the cells
  };  // end( class AliasTable )
 
 /*--------------------------------------------------------------------------*/
@@ -569,7 +576,7 @@ void shuffleFast( I first , I last , G && g );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RandomGenerators.h included */
+#endif /* RandomGenerators.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File RandomGenerators.h ----------------------*/

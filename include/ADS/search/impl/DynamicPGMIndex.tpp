@@ -17,18 +17,20 @@
 
 #include <algorithm>
 
-namespace ADS {
+namespace ADS
+{
 
-#define ADS_DPGM_T template< class K , class V , std::size_t E , \
-                             std::size_t B , std::size_t I > \
-                   requires std::is_arithmetic_v< K >
-#define ADS_DPGM DynamicPGMIndex< K , V , E , B , I >
+#define ADS_DPGM_T                                                            \
+ template< class K, class V, std::size_t E, std::size_t B, std::size_t I >    \
+  requires std::is_arithmetic_v< K >
+#define ADS_DPGM DynamicPGMIndex< K, V, E, B, I >
 
 ADS_DPGM_T
 inline std::size_t ADS_DPGM::capacity( std::size_t i )
 {
  std::size_t c = kBuffer;
- for( std::size_t j = 0 ; j <= i ; ++j ) c *= B;
+ for( std::size_t j = 0 ; j <= i ; ++j )
+  c *= B;
  return( c );
  }
 
@@ -36,13 +38,14 @@ ADS_DPGM_T
 ADS_DPGM::DynamicPGMIndex( const std::vector< std::pair< K , V > > & P )
 {
  ADS_AUDIT( std::adjacent_find( P.begin() , P.end() ,
-                                []( const auto & a , const auto & b ) {
-                                 return( !( a.first < b.first ) ); } ) ==
-            P.end() );
+				[]( const auto & a , const auto & b ) {
+				 return( ! ( a.first < b.first ) );
+				 } ) == P.end() );
  if( P.empty() )
   return;
  std::size_t t = 0;
- while( capacity( t ) < P.size() ) ++t;
+ while( capacity( t ) < P.size() )
+  ++t;
  f_lev.resize( t + 1 );
  std::vector< K > k;
  k.reserve( P.size() );
@@ -55,7 +58,8 @@ ADS_DPGM::DynamicPGMIndex( const std::vector< std::pair< K , V > > & P )
  if( capacity( t ) >= kFiltered ) {
   L.room = std::min( capacity( t ) , 2 * P.size() + kBuffer );
   BlockedBloomFilter< std::uint64_t > F( L.room );
-  for( const K & x : k ) F.insertHash( hashOf( x ) );
+  for( const K & x : k )
+   F.insertHash( hashOf( x ) );
   L.filter = std::move( F );
   L.filtered = true;
   }
@@ -79,7 +83,7 @@ std::size_t ADS_DPGM::Level::lowerBound( const K & k ) const
  while( n > 1 ) {
   const std::size_t h = n / 2;
 #if defined( __GNUC__ ) || defined( __clang__ )
-  __builtin_prefetch( base + ( n - h ) / 2 );   // the two next middles
+  __builtin_prefetch( base + ( n - h ) / 2 );  // the two next middles
   __builtin_prefetch( base + h + ( n - h ) / 2 );
 #endif
   base = base[ h ] < k ? base + h : base;
@@ -92,7 +96,7 @@ ADS_DPGM_T
 inline std::uint64_t ADS_DPGM::hashOf( const K & k )
 {
  if constexpr( std::is_floating_point_v< K > )
-  if( k == K( 0 ) )                         // -0 and +0 alike
+  if( k == K( 0 ) )  // -0 and +0 alike
    return( hashWord( detail::pgmOrd( K( 0 ) ) ) );
  return( hashWord( detail::pgmOrd( k ) ) );
  }
@@ -104,7 +108,7 @@ inline std::size_t ADS_DPGM::bufferBound( const K & k ) const
  if( n == 0 )
   return( 0 );
  const K * base = f_buf.key.data();
- while( n > 1 ) {                           // a conditional move a step
+ while( n > 1 ) {  // a conditional move a step
   const std::size_t h = n / 2;
   base = base[ h ] < k ? base + h : base;
   n -= h;
@@ -121,8 +125,8 @@ void ADS_DPGM::merge( const Run & M , const Level & L , Run & T )
  T.dead.clear();
  // the arrays by their pointers, so that the compiler keeps them in
  // registers through the stores
- const K * mk = M.key.data() , * lk = L.keys();
- const V * mv = M.val.data() , * lv = L.val.data();
+ const K *mk = M.key.data() , *lk = L.keys();
+ const V *mv = M.val.data() , *lv = L.val.data();
  K * tk = T.key.data();
  V * tv = T.val.data();
  std::size_t i = 0 , j = 0 , o = 0;
@@ -135,7 +139,8 @@ void ADS_DPGM::merge( const Run & M , const Level & L , Run & T )
    tv[ o++ ] = lv[ j++ ];
    }
   else {
-   if( !( mk[ i ] < lk[ j ] ) ) ++j;
+   if( ! ( mk[ i ] < lk[ j ] ) )
+    ++j;
    tk[ o ] = mk[ i ];
    tv[ o++ ] = mv[ i++ ];
    }
@@ -143,7 +148,7 @@ void ADS_DPGM::merge( const Run & M , const Level & L , Run & T )
  // those of L whose key M does not have (a key of M is newer)
  if( ! ( M.dead.empty() && L.dead.empty() ) ) {
   const std::size_t c = M.dead.size() , d = L.dead.size();
-  const K * e = mk;                         // where the keys of M are left
+  const K * e = mk;  // where the keys of M are left
   std::size_t p = 0 , q = 0;
   while( ( p < c ) || ( q < d ) )
    if( ( q == d ) || ( ( p < c ) && ( M.dead[ p ] < L.dead[ q ] ) ) )
@@ -155,7 +160,7 @@ void ADS_DPGM::merge( const Run & M , const Level & L , Run & T )
      T.dead.push_back( y );
     }
   }
- std::copy( mk + i , mk + a , tk + o );   // the tails, as blocks
+ std::copy( mk + i , mk + a , tk + o );  // the tails, as blocks
  std::copy( mv + i , mv + a , tv + o );
  o += a - i;
  std::copy( lk + j , lk + b , tk + o );
@@ -173,18 +178,22 @@ void ADS_DPGM::put( const K & k , const V & v , bool dead )
  // the tombstones of the buffer, sorted, few: k joins them or leaves them
  auto mark = [ & ]( void ) {
   const auto d = std::lower_bound( U.dead.begin() , U.dead.end() , k );
-  const bool there = ( d != U.dead.end() ) && !( k < *d );
-  if( dead && ! there ) U.dead.insert( d , k );
-  else if( ! dead && there ) U.dead.erase( d );
+  const bool there = ( d != U.dead.end() ) && ! ( k < *d );
+  if( dead && ! there )
+   U.dead.insert( d , k );
+  else if( ! dead && there )
+   U.dead.erase( d );
   };
- if( ( r < U.key.size() ) && !( k < U.key[ r ] ) ) {
-  U.val[ r ] = v;                           // already in the buffer
-  if( dead || ! U.dead.empty() ) mark();
+ if( ( r < U.key.size() ) && ! ( k < U.key[ r ] ) ) {
+  U.val[ r ] = v;  // already in the buffer
+  if( dead || ! U.dead.empty() )
+   mark();
   return;
   }
  U.key.insert( U.key.begin() + std::ptrdiff_t( r ) , k );
  U.val.insert( U.val.begin() + std::ptrdiff_t( r ) , v );
- if( dead || ! U.dead.empty() ) mark();
+ if( dead || ! U.dead.empty() )
+  mark();
  if( U.key.size() <= kBuffer )
   return;
 
@@ -197,7 +206,7 @@ void ADS_DPGM::put( const K & k , const V & v , bool dead )
  if( t == f_lev.size() )
   f_lev.emplace_back();
  // the buffer is the first run, and an empty run the next buffer
- Run * M = &f_run[ 0 ] , * T = &f_run[ 1 ];
+ Run *M = &f_run[ 0 ] , *T = &f_run[ 1 ];
  std::swap( *M , f_buf );
  f_buf.key.clear();
  f_buf.val.clear();
@@ -216,21 +225,24 @@ void ADS_DPGM::put( const K & k , const V & v , bool dead )
  bool kept = false;
  if( L.filtered && ( L.size() > 0 ) &&
      ( L.filter.size() + M->key.size() <= L.room ) ) {
-  for( const K & k : M->key ) L.filter.insertHash( hashOf( k ) );
+  for( const K & k : M->key )
+   L.filter.insertHash( hashOf( k ) );
   kept = true;
   }
  if( L.size() > 0 ) {
   merge( *M , L , *T );
   std::swap( M , T );
   }
- bool last = true;                          // no older pair to hide
+ bool last = true;  // no older pair to hide
  for( std::size_t i = t + 1 ; i < f_lev.size() ; ++i )
-  if( f_lev[ i ].size() > 0 ) last = false;
- if( last && ! M->dead.empty() ) {          // the tombstones dropped
+  if( f_lev[ i ].size() > 0 )
+   last = false;
+ if( last && ! M->dead.empty() ) {  // the tombstones dropped
   std::size_t w = 0 , p = 0;
   for( std::size_t i = 0 ; i < M->key.size() ; ++i ) {
-   while( ( p < M->dead.size() ) && ( M->dead[ p ] < M->key[ i ] ) ) ++p;
-   if( ( p < M->dead.size() ) && !( M->key[ i ] < M->dead[ p ] ) )
+   while( ( p < M->dead.size() ) && ( M->dead[ p ] < M->key[ i ] ) )
+    ++p;
+   if( ( p < M->dead.size() ) && ! ( M->key[ i ] < M->dead[ p ] ) )
     continue;
    M->key[ w ] = M->key[ i ];
    M->val[ w ] = std::move( M->val[ i ] );
@@ -244,7 +256,8 @@ void ADS_DPGM::put( const K & k , const V & v , bool dead )
  if( ! kept && ( capacity( t ) >= kFiltered ) ) {
   L.room = std::min( capacity( t ) , 2 * M->key.size() + kBuffer );
   BlockedBloomFilter< std::uint64_t > F( L.room );
-  for( const K & k : M->key ) F.insertHash( hashOf( k ) );
+  for( const K & k : M->key )
+   F.insertHash( hashOf( k ) );
   L.filter = std::move( F );
   L.filtered = true;
   }
@@ -279,16 +292,17 @@ ADS_DPGM_T
 const V * ADS_DPGM::find( const K & k ) const
 {
  const std::size_t r = bufferBound( k );
- if( ( r < f_buf.key.size() ) && !( k < f_buf.key[ r ] ) )
+ if( ( r < f_buf.key.size() ) && ! ( k < f_buf.key[ r ] ) )
   return( ( ! f_buf.dead.empty() &&
-            std::binary_search( f_buf.dead.begin() , f_buf.dead.end() ,
-                                k ) ) ? nullptr : &f_buf.val[ r ] );
+	     std::binary_search( f_buf.dead.begin() , f_buf.dead.end() , k ) )
+	     ? nullptr
+	     : &f_buf.val[ r ] );
  const std::uint64_t h = hashOf( k );
  for( const Level & L : f_lev ) {
   if( ( L.size() == 0 ) || ( L.filtered && ! L.filter.maybeHash( h ) ) )
    continue;
   const std::size_t r = L.lowerBound( k );
-  if( ( r < L.size() ) && !( k < L.at( r ) ) )
+  if( ( r < L.size() ) && ! ( k < L.at( r ) ) )
    return( L.isDead( k ) ? nullptr : &L.val[ r ] );
   }
  return( nullptr );
@@ -317,7 +331,7 @@ void ADS_DPGM::scan( const K & lo , F && f ) const
   return( i == 0 ? f_buf.key[ pos[ 0 ] ] : f_lev[ i - 1 ].at( pos[ i ] ) );
   };
  for( ; ; ) {
-  std::size_t j = R;                        // the newest run of the least key
+  std::size_t j = R;  // the newest run of the least key
   for( std::size_t i = 0 ; i < R ; ++i )
    if( ( pos[ i ] < end[ i ] ) &&
        ( ( j == R ) || ( keyAt( i ) < keyAt( j ) ) ) )
@@ -325,24 +339,26 @@ void ADS_DPGM::scan( const K & lo , F && f ) const
   if( j == R )
    return;
   const K k = keyAt( j );
-  const bool dead = j == 0 ? ( ! f_buf.dead.empty() &&
-                               std::binary_search( f_buf.dead.begin() ,
-                                                   f_buf.dead.end() , k ) )
-                           : f_lev[ j - 1 ].isDead( k );
+  const bool dead =
+    j == 0 ? ( ! f_buf.dead.empty() &&
+	       std::binary_search( f_buf.dead.begin() , f_buf.dead.end() ,
+				   k ) )
+	   : f_lev[ j - 1 ].isDead( k );
   if( ! dead ) {
-   const V & v = j == 0 ? f_buf.val[ pos[ 0 ] ]
-                        : f_lev[ j - 1 ].val[ pos[ j ] ];
+   const V & v =
+     j == 0 ? f_buf.val[ pos[ 0 ] ] : f_lev[ j - 1 ].val[ pos[ j ] ];
    if( ! f( k , v ) )
     return;
    }
-  for( std::size_t i = j ; i < R ; ++i )    // past k in every run
-   if( ( pos[ i ] < end[ i ] ) && !( k < keyAt( i ) ) ) ++pos[ i ];
+  for( std::size_t i = j ; i < R ; ++i )  // past k in every run
+   if( ( pos[ i ] < end[ i ] ) && ! ( k < keyAt( i ) ) )
+    ++pos[ i ];
   }
  }
 
 ADS_DPGM_T
 auto ADS_DPGM::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+  -> std::optional< std::pair< K , V > >
 {
  // the least key >= k of each run, the newest run winning a tie, with no
  // allocation; only if its pair is a tombstone the runs are scanned on
@@ -354,7 +370,7 @@ auto ADS_DPGM::lowerBound( const K & k ) const
   best = &f_buf.key[ r ];
   val = &f_buf.val[ r ];
   dead = ! f_buf.dead.empty() &&
-         std::binary_search( f_buf.dead.begin() , f_buf.dead.end() , *best );
+	 std::binary_search( f_buf.dead.begin() , f_buf.dead.end() , *best );
   }
  for( const Level & L : f_lev ) {
   const std::size_t p = L.size() > 0 ? L.lowerBound( k ) : 0;
@@ -373,7 +389,8 @@ auto ADS_DPGM::lowerBound( const K & k ) const
   }
  scan( k , [ & ]( const K & a , const V & v ) {
   o.emplace( a , v );
-  return( false ); } );
+  return( false );
+  } );
  return( o );
  }
 
@@ -382,17 +399,19 @@ template< class F >
 void ADS_DPGM::forEach( const K & lo , const K & hi , F && f ) const
 {
  scan( lo , [ & ]( const K & a , const V & v ) {
-  if( !( a < hi ) )
+  if( ! ( a < hi ) )
    return( false );
   f( a , v );
-  return( true ); } );
+  return( true );
+  } );
  }
 
 ADS_DPGM_T
 std::size_t ADS_DPGM::entries( void ) const
 {
  std::size_t c = f_buf.key.size();
- for( const Level & L : f_lev ) c += L.size();
+ for( const Level & L : f_lev )
+  c += L.size();
  return( c );
  }
 

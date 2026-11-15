@@ -42,7 +42,7 @@
 
 #ifndef __ADS_InterpolationSearch
  #define __ADS_InterpolationSearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,7 +57,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the place of \f$ v \f$ in the sorted \f$ A \f$, or -1; `trace( i , j , m )`
 /// on each probe (the ricercaInterpolata() of the book)
@@ -83,7 +84,7 @@ namespace ADS {
 /// \post the result is -1 if and only if \f$ v \f$ is not in \f$ A \f$
 template< class T , class F >
 long interpolationSearch( const std::vector< T > & A , const T & v ,
-                          F && trace );
+			  F && trace );
 
 /// the search of `interpolationSearch()` above, with no trace
 template< class T >
@@ -101,7 +102,7 @@ long interpolationSearch( const std::vector< T > & A , const T & v );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* InterpolationSearch.h included */
+#endif /* InterpolationSearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File InterpolationSearch.h ---------------------*/

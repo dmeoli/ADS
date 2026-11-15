@@ -52,7 +52,7 @@
 
 #ifndef __ADS_Graph
  #define __ADS_Graph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,7 +77,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- CONCEPTS --------------------------------*/
@@ -86,19 +87,21 @@ namespace ADS {
 /// GRAPH (section 9.2), as far as the visits need it: the nodes, the adjacent
 /// nodes of a node, the range \f$ [ 0 , \mathrm{bound}() ) \f$ of the names
 template< class G >
-concept Graph = requires( const G g , int u ) {
+concept Graph = requires( const G g , int u )
+{
  { g.n() } -> std::convertible_to< int >;
  { g.bound() } -> std::convertible_to< int >;
  { g.directed() } -> std::same_as< bool >;
  { g.hasNode( u ) } -> std::same_as< bool >;
  { g.V() } -> std::same_as< std::vector< int > >;
  { g.adj( u ) } -> std::same_as< std::vector< int > >;
- g.forEachAdj( u , []( int ) {} );
+ g.forEachAdj( u , []( int ) { } );
  };
 
 /// a GRAPH with the insertions and the deletions of its specification
 template< class G >
-concept DynamicGraph = Graph< G > && requires( G g , int u , int v ) {
+concept DynamicGraph = Graph< G > && requires( G g , int u , int v )
+{
  { g.insertNode() } -> std::same_as< int >;
  g.insertEdge( u , v );
  g.deleteNode( u );
@@ -111,11 +114,11 @@ concept DynamicGraph = Graph< G > && requires( G g , int u , int v ) {
 
 /// the nodes, their labels and the counts shared by the realizations
 template< class T >
-class GraphNodes {
+class GraphNodes
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// whether the graph is oriented
  [[nodiscard]] bool directed( void ) const { return( f_directed ); }
 
@@ -149,7 +152,8 @@ class GraphNodes {
  // adj() build
 
  /// the names in use, for `SlotIterator`
- struct Alive {
+ struct Alive
+ {
   /// the number of the names
   static std::size_t size( const auto & o ) { return( o.f_alive.size() ); }
   /// whether the name \f$ i \f$ is in use
@@ -163,13 +167,12 @@ class GraphNodes {
  /// the nodes in increasing order, bidirectional
  [[nodiscard]] auto nodes( void ) const {
   using It = SlotIterator< GraphNodes , Alive >;
-  return( std::ranges::subrange( It( this , 0 ) ,
-                                 It( this , f_alive.size() ) ) );
+  return(
+    std::ranges::subrange( It( this , 0 ) , It( this , f_alive.size() ) ) );
   }
 
 /*--------------------------------------------------------------------------*/
  protected:
-
  /// \pre \f$ n \ge 0 \f$
  GraphNodes( int n , bool directed );
 
@@ -235,28 +238,31 @@ std::vector< std::vector< int > > incidence( const G & g );
 /// \end{array}}
 /// \f]
 /// \pre \f$ u \f$ is a row of \f$ B \f$
-inline std::vector< int > adjFromIncidence(
-                          const std::vector< std::vector< int > > & B ,
-                          int u , bool directed );
+inline std::vector< int >
+adjFromIncidence( const std::vector< std::vector< int > > & B , int u ,
+		  bool directed );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS Rows --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
+namespace detail
+{
 
 /// the type of the arcs of the rows of a graph read where they are
 template< class G , bool Direct >
-struct RowsArc {
- using type = int;   ///< none: the copy has the heads only
+struct RowsArc
+{
+ using type = int;  ///< none: the copy has the heads only
  };
 
 /// the type of the arcs of `arcData()`
 template< class G >
-struct RowsArc< G , true > {
+struct RowsArc< G , true >
+{
  /// an arc of the graph, its head or a pair of head and weight
- using type = std::remove_cvref_t< decltype(
-                                   *std::declval< const G & >().arcData() ) >;
+ using type =
+   std::remove_cvref_t< decltype( *std::declval< const G & >().arcData() ) >;
  };
 
 /// the arcs of a graph in compressed rows, for the algorithms that walk the
@@ -265,10 +271,10 @@ struct RowsArc< G , true > {
 /// any other model copied once, in the order of `forEachAdj()`, with none
 /// for a name that is not a node
 template< Graph G >
-class Rows {
+class Rows
+{
 
  public:
-
  /// whether the rows of the graph are read where they are
  static constexpr bool direct = requires( const G & h ) {
   { h.offsets() } -> std::convertible_to< const int * >;
@@ -295,8 +301,10 @@ class Rows {
 
  /// the place of the first arc leaving \f$ u \f$
  [[nodiscard]] std::size_t first( int u ) const {
-  if constexpr( direct ) return( std::size_t( f_o[ u ] ) );
-  else return( f_off[ u ] );
+  if constexpr( direct )
+   return( std::size_t( f_o[ u ] ) );
+  else
+   return( f_off[ u ] );
   }
 
  /// the place after the last arc leaving \f$ u \f$
@@ -304,20 +312,21 @@ class Rows {
 
  /// the head of the arc in the place \f$ i \f$
  [[nodiscard]] int head( std::size_t i ) const {
-  if constexpr( ! direct ) return( f_head[ i ] );
+  if constexpr( ! direct )
+   return( f_head[ i ] );
   else if constexpr( std::is_convertible_v< decltype( f_a[ i ] ) , int > )
    return( int( f_a[ i ] ) );
-  else return( f_a[ i ].to );
+  else
+   return( f_a[ i ].to );
   }
 
  private:
+ using Arc = typename RowsArc< G , direct >::type;  ///< an arc of g
 
- using Arc = typename RowsArc< G , direct >::type;   ///< an arc of g
-
- const int * f_o = nullptr;            ///< the offsets of the graph
- const Arc * f_a = nullptr;            ///< its arcs
- std::vector< std::size_t > f_off;     ///< the offsets of the copy
- std::vector< int > f_head;            ///< the heads of the copy
+ const int * f_o = nullptr;         ///< the offsets of the graph
+ const Arc * f_a = nullptr;         ///< its arcs
+ std::vector< std::size_t > f_off;  ///< the offsets of the copy
+ std::vector< int > f_head;         ///< the heads of the copy
 
  };  // end( class Rows )
 
@@ -335,7 +344,7 @@ class Rows {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Graph.h included */
+#endif /* Graph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Graph.h ----------------------------*/

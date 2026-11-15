@@ -41,7 +41,7 @@
 
 #ifndef __ADS_CellHeap
  #define __ADS_CellHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,18 +57,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS CellHeap ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a heap of cells of two fields, with a mark-and-sweep collector
-class CellHeap {
+class CellHeap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a field: `nil`, an atom (`atom( k )`, \f$ -2 - k \f$, for
  /// \f$ k \ge 0 \f$) or a cell (its address, \f$ \ge 0 \f$)
  using Value = long;
@@ -176,13 +177,13 @@ class CellHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Cell {
+ struct Cell
+ {
   /// the two fields
   Value car = nil , cdr = nil;
   /// reached by the marking
   bool mark = false;
-  bool cdrSide = false;    ///< the reversed pointer is in cdr
+  bool cdrSide = false;  ///< the reversed pointer is in cdr
   /// on the free list
   bool free = true;
   };
@@ -194,7 +195,7 @@ class CellHeap {
  [[nodiscard]] std::vector< bool > reachable( void ) const;
 
  std::vector< Cell > f_C;
- Value f_free = nil;        ///< the free list, through car
+ Value f_free = nil;  ///< the free list, through car
  std::size_t f_nfree = 0;
  std::multiset< Value > f_roots;
 
@@ -212,7 +213,7 @@ class CellHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CellHeap.h included */
+#endif /* CellHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File CellHeap.h ---------------------------*/

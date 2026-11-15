@@ -16,7 +16,7 @@
 
 #ifndef __ADS_Spin
  #define __ADS_Spin
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #if defined( _MSC_VER ) && ( defined( _M_X64 ) || defined( _M_IX86 ) )
  #include <intrin.h>
@@ -26,9 +26,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the hint to the processor that the thread spins on a lock
 inline void spinPause( void )
@@ -48,7 +50,7 @@ inline void prefetch( const void * p )
 #if defined( __GNUC__ ) || defined( __clang__ )
  __builtin_prefetch( p );
 #else
- (void) p;
+ ( void )p;
 #endif
  }
 
@@ -56,7 +58,7 @@ inline void prefetch( const void * p )
 
 }  // end( namespace ADS )
 
-#endif  /* Spin.tpp included */
+#endif /* Spin.tpp included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Spin.tpp ----------------------------*/

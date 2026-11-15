@@ -57,7 +57,7 @@
 
 #ifndef __ADS_StaticGraph
  #define __ADS_StaticGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS StaticGraph ---------------------------*/
@@ -89,20 +90,21 @@ namespace ADS {
 
 /// an arc of a weighted `StaticGraph`, its head next to its weight
 template< class W >
-struct WeightedArc {
- int to;   ///< the head
- W w;      ///< the weight
+struct WeightedArc
+{
+ int to;  ///< the head
+ W w;     ///< the weight
  };
 
 /// a static graph in compressed sparse rows, the arcs of each node sorted
 /// by head, each next to its weight
 template< class W = std::monostate >
-class StaticGraph {
+class StaticGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the weights
+ using Weight = W;  ///< the type of the weights
 
  /// whether the arcs have a weight
  static constexpr bool weighted = ! std::is_same_v< W , std::monostate >;
@@ -111,7 +113,7 @@ class StaticGraph {
  using Arc = std::conditional_t< weighted , WeightedArc< W > , int >;
 
  /// the graph with no node
- StaticGraph( void ) : f_off( 1 , 0 ) {}
+ StaticGraph( void ) : f_off( 1 , 0 ) { }
 
  /// the graph of the nodes \f$ 0 , \ldots , n - 1 \f$ and of the given edges;
  /// an unoriented edge \f$ [ u , v ] \f$ is given once
@@ -140,14 +142,15 @@ class StaticGraph {
  /// \pre \f$ n \ge 0 \f$, each edge joins two distinct nodes, fewer than
  ///      \f$ 2^{31} \f$ arcs
  StaticGraph( int n , const std::vector< std::tuple< int , int , W > > & E ,
-              bool directed = true );
+	      bool directed = true );
 
  /// the unweighted graph of the nodes \f$ 0 , \ldots , n - 1 \f$ and of the
  /// edges \f$ E \f$
  /// \pre \f$ n \ge 0 \f$, each edge joins two distinct nodes, fewer than
  ///      \f$ 2^{31} \f$ arcs
  StaticGraph( int n , const std::vector< std::pair< int , int > > & E ,
-              bool directed = true ) requires( ! weighted );
+	      bool directed = true )
+  requires( ! weighted );
 
  /// the copy of any graph, the names that are not nodes of \f$ g \f$ becoming
  /// isolated nodes
@@ -187,7 +190,8 @@ class StaticGraph {
  /// \f$ f( v , w ) \f$ on each arc \f$ ( u , v ) \f$ of weight \f$ w \f$
  /// \pre \f$ u \f$ is a node
  template< class F >
- void forEachEdge( int u , F && f ) const requires( weighted );
+ void forEachEdge( int u , F && f ) const
+  requires( weighted );
 
  /// the weight of the first arc \f$ ( u , v ) \f$, nothing if there is
  /// none, by a binary search of the row of \f$ u \f$, in
@@ -200,7 +204,8 @@ class StaticGraph {
  /// in \f$ O( \log |\mathrm{adj}( u )| + \log |\mathrm{adj}( v )| ) \f$;
  /// false if there is no such arc
  /// \pre \f$ u \f$ and \f$ v \f$ are nodes
- bool setWeight( int u , int v , const W & w ) requires( weighted );
+ bool setWeight( int u , int v , const W & w )
+  requires( weighted );
 
  /// the arcs out of \f$ u \f$, contiguous
  /// \pre \f$ u \f$ is a node
@@ -215,7 +220,10 @@ class StaticGraph {
 
  /// the head of an arc
  static int head( const Arc & a ) {
-  if constexpr( weighted ) return( a.to ); else return( a );
+  if constexpr( weighted )
+   return( a.to );
+  else
+   return( a );
   }
 
  /// the graph with each arc reversed (the same graph if unoriented)
@@ -252,7 +260,6 @@ class StaticGraph {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the rows of the arcs \f$ ( u , \mathit{head} , \mathit{weight} ) \f$ of
  /// \f$ E \f$, both ways if unoriented, by counting sort on the head and then
  /// on the tail
@@ -267,10 +274,10 @@ class StaticGraph {
  /// are nodes, increasing in each row
  [[nodiscard]] bool consistent( void ) const;
 
- bool f_directed = true;      ///< oriented or not
- std::vector< int > f_off;    ///< the arcs of u from f_off[ u ]
- std::vector< Arc > f_arc;    ///< the arcs, row by row
- int f_m = 0;                 ///< the number of edges
+ bool f_directed = true;    ///< oriented or not
+ std::vector< int > f_off;  ///< the arcs of u from f_off[ u ]
+ std::vector< Arc > f_arc;  ///< the arcs, row by row
+ int f_m = 0;               ///< the number of edges
 
  };  // end( class StaticGraph )
 
@@ -315,7 +322,7 @@ std::vector< int > bfsOrder( const StaticGraph< W > & g , int r = 0 );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StaticGraph.h included */
+#endif /* StaticGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File StaticGraph.h -------------------------*/

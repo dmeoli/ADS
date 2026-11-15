@@ -47,7 +47,7 @@
 
 #ifndef __ADS_Entropy
  #define __ADS_Entropy
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -65,7 +65,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the entropy of order 0, in bits per symbol, of the distribution
 /// proportional to the frequencies \f$ f \f$ of `freq`
@@ -133,7 +134,7 @@ template< class C , class F >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Entropy.h included */
+#endif /* Entropy.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Entropy.h ---------------------------*/

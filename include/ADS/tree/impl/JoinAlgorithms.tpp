@@ -15,19 +15,21 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- ROTATIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
+namespace detail
+{
 
 /// the right child of t goes up, by expose() and connect()
 template< class A >
 typename A::Node * joinRotateLeft( typename A::Node * t )
 {
- typename A::Node * a , * b , * c , * d;
+ typename A::Node *a , *b , *c , *d;
  A::expose( t , a , b );
  A::expose( b , c , d );
  A::connect( t , a , c );
@@ -38,7 +40,7 @@ typename A::Node * joinRotateLeft( typename A::Node * t )
 template< class A >
 typename A::Node * joinRotateRight( typename A::Node * t )
 {
- typename A::Node * a , * b , * c , * d;
+ typename A::Node *a , *b , *c , *d;
  A::expose( t , a , b );
  A::expose( a , c , d );
  A::connect( t , d , b );
@@ -54,14 +56,14 @@ typename A::Node * joinRotateRight( typename A::Node * t )
 template< class A >
 auto AVLJoin< A >::joinRight( Node * l , Node * m , Node * r ) -> Node *
 {
- Node * ll , * c;
+ Node *ll , *c;
  A::expose( l , ll , c );
  if( A::height( c ) <= A::height( r ) + 1 ) {
   Node * t = A::connect( m , c , r );
   if( A::height( t ) <= A::height( ll ) + 1 )
    return( A::connect( l , ll , t ) );
   return( detail::joinRotateLeft< A >(
-           A::connect( l , ll , detail::joinRotateRight< A >( t ) ) ) );
+    A::connect( l , ll , detail::joinRotateRight< A >( t ) ) ) );
   }
  Node * t = joinRight( c , m , r );
  Node * u = A::connect( l , ll , t );
@@ -73,14 +75,14 @@ auto AVLJoin< A >::joinRight( Node * l , Node * m , Node * r ) -> Node *
 template< class A >
 auto AVLJoin< A >::joinLeft( Node * l , Node * m , Node * r ) -> Node *
 {
- Node * c , * rr;
+ Node *c , *rr;
  A::expose( r , c , rr );
  if( A::height( c ) <= A::height( l ) + 1 ) {
   Node * t = A::connect( m , l , c );
   if( A::height( t ) <= A::height( rr ) + 1 )
    return( A::connect( r , t , rr ) );
   return( detail::joinRotateRight< A >(
-           A::connect( r , detail::joinRotateLeft< A >( t ) , rr ) ) );
+    A::connect( r , detail::joinRotateLeft< A >( t ) , rr ) ) );
   }
  Node * t = joinLeft( l , m , c );
  Node * u = A::connect( r , t , rr );
@@ -105,14 +107,14 @@ auto AVLJoin< A >::join( Node * l , Node * m , Node * r ) -> Node *
 
 template< class A >
 auto RedBlackJoin< A >::joinRight( Node * l , int bl , Node * m , Node * r ,
-                                   int br ) -> Node *
+				   int br ) -> Node *
 {
  if( ( ! A::red( l ) ) && ( bl == br ) ) {
   A::paint( m , true );
   return( A::connect( m , l , r ) );
   }
  const bool black = ! A::red( l );
- Node * ll , * c;
+ Node *ll , *c;
  A::expose( l , ll , c );
  Node * t = joinRight( c , bl - ( black ? 1 : 0 ) , m , r , br );
  Node * u = A::connect( l , ll , t );
@@ -125,14 +127,14 @@ auto RedBlackJoin< A >::joinRight( Node * l , int bl , Node * m , Node * r ,
 
 template< class A >
 auto RedBlackJoin< A >::joinLeft( Node * l , int bl , Node * m , Node * r ,
-                                  int br ) -> Node *
+				  int br ) -> Node *
 {
  if( ( ! A::red( r ) ) && ( bl == br ) ) {
   A::paint( m , true );
   return( A::connect( m , l , r ) );
   }
  const bool black = ! A::red( r );
- Node * c , * rr;
+ Node *c , *rr;
  A::expose( r , c , rr );
  Node * t = joinLeft( l , bl , m , c , br - ( black ? 1 : 0 ) );
  Node * u = A::connect( r , t , rr );
@@ -145,7 +147,8 @@ auto RedBlackJoin< A >::joinLeft( Node * l , int bl , Node * m , Node * r ,
 
 template< class A >
 auto RedBlackJoin< A >::join( Node * l , int bl , Node * m , Node * r ,
-                              int br ) -> std::pair< Node * , int >
+			      int br )
+  -> std::pair< Node * , int >
 {
  using Result = std::pair< Node * , int >;
  if( bl > br ) {
@@ -181,7 +184,7 @@ bool WeightBalancedJoin< A >::like( std::size_t a , std::size_t b )
 {
  const std::size_t s = a + b;
  return( ( kAlphaDen * a >= kAlphaNum * s ) &&
-         ( kAlphaDen * b >= kAlphaNum * s ) );
+	  ( kAlphaDen * b >= kAlphaNum * s ) );
  }
 
 template< class A >
@@ -191,12 +194,12 @@ std::size_t WeightBalancedJoin< A >::weight( const Node * t )
  }
 
 template< class A >
-auto WeightBalancedJoin< A >::joinRight( Node * l , Node * m ,
-                                         Node * r ) -> Node *
+auto WeightBalancedJoin< A >::joinRight( Node * l , Node * m , Node * r )
+  -> Node *
 {
  if( like( weight( l ) , weight( r ) ) )
   return( A::connect( m , l , r ) );
- Node * ll , * c;
+ Node *ll , *c;
  A::expose( l , ll , c );
  Node * t = joinRight( c , m , r );
  if( like( weight( ll ) , weight( t ) ) )
@@ -205,16 +208,16 @@ auto WeightBalancedJoin< A >::joinRight( Node * l , Node * m ,
  if( like( weight( ll ) , w1 ) && like( weight( ll ) + w1 , w2 ) )
   return( detail::joinRotateLeft< A >( A::connect( l , ll , t ) ) );
  return( detail::joinRotateLeft< A >(
-          A::connect( l , ll , detail::joinRotateRight< A >( t ) ) ) );
+   A::connect( l , ll , detail::joinRotateRight< A >( t ) ) ) );
  }
 
 template< class A >
-auto WeightBalancedJoin< A >::joinLeft( Node * l , Node * m ,
-                                        Node * r ) -> Node *
+auto WeightBalancedJoin< A >::joinLeft( Node * l , Node * m , Node * r )
+  -> Node *
 {
  if( like( weight( l ) , weight( r ) ) )
   return( A::connect( m , l , r ) );
- Node * c , * rr;
+ Node *c , *rr;
  A::expose( r , c , rr );
  Node * t = joinLeft( l , m , c );
  if( like( weight( t ) , weight( rr ) ) )
@@ -223,7 +226,7 @@ auto WeightBalancedJoin< A >::joinLeft( Node * l , Node * m ,
  if( like( weight( rr ) , w2 ) && like( weight( rr ) + w2 , w1 ) )
   return( detail::joinRotateRight< A >( A::connect( r , t , rr ) ) );
  return( detail::joinRotateRight< A >(
-          A::connect( r , detail::joinRotateLeft< A >( t ) , rr ) ) );
+   A::connect( r , detail::joinRotateLeft< A >( t ) , rr ) ) );
  }
 
 template< class A >
@@ -245,15 +248,15 @@ auto TreapJoin< A >::join( Node * l , Node * m , Node * r ) -> Node *
  const Node * nil = A::nil();
  const auto p = A::priority( m );
  const bool tl = ( l != nil ) && ( A::priority( l ) > p ) &&
-                 ( ( r == nil ) || ( A::priority( l ) >= A::priority( r ) ) );
+		 ( ( r == nil ) || ( A::priority( l ) >= A::priority( r ) ) );
  const bool tr = ( ! tl ) && ( r != nil ) && ( A::priority( r ) > p );
  if( tl ) {
-  Node * ll , * lr;
+  Node *ll , *lr;
   A::expose( l , ll , lr );
   return( A::connect( l , ll , join( lr , m , r ) ) );
   }
  if( tr ) {
-  Node * rl , * rr;
+  Node *rl , *rr;
   A::expose( r , rl , rr );
   return( A::connect( r , join( l , m , rl ) , rr ) );
   }
@@ -279,9 +282,9 @@ auto JoinAlgorithms< A >::whole( Node * t ) -> Tree
 template< JoinAdaptor A >
 auto JoinAlgorithms< A >::expose( Tree x ) -> Exposed
 {
- Node * l = A::left( x.t ) , * r = A::right( x.t );
+ Node *l = A::left( x.t ) , *r = A::right( x.t );
  const Rank rl = A::childRank( x.t , x.r , l ) ,
-            rr = A::childRank( x.t , x.r , r );
+   rr = A::childRank( x.t , x.r , r );
  A::expose( x.t , l , r );
  return( Exposed{ Tree{ l , rl } , x.t , Tree{ r , rr } } );
  }
@@ -294,8 +297,8 @@ auto JoinAlgorithms< A >::join( Tree l , Node * m , Tree r ) -> Tree
  }
 
 template< JoinAdaptor A >
-auto JoinAlgorithms< A >::split( Tree x , const Key & k , Tree & l ,
-                                 Tree & r ) -> Node *
+auto JoinAlgorithms< A >::split( Tree x , const Key & k , Tree & l , Tree & r )
+  -> Node *
 {
  if( x.t == A::nil() ) {
   l = r = empty();
@@ -365,7 +368,7 @@ auto JoinAlgorithms< A >::insert( Tree x , Node * n , bool & fresh ) -> Tree
 
 template< JoinAdaptor A >
 auto JoinAlgorithms< A >::remove( Tree x , const Key & k , bool & gone )
- -> Tree
+  -> Tree
 {
  if( x.t == A::nil() ) {
   gone = false;
@@ -409,28 +412,32 @@ bool JoinAlgorithms< A >::small( E & ex , std::size_t n )
 template< JoinAdaptor A >
 template< Executor E , class F >
 auto JoinAlgorithms< A >::unite( E & ex , Tree a , Tree b , const F & f )
- -> Tree
+  -> Tree
 {
- if( a.t == A::nil() ) return( b );
- if( b.t == A::nil() ) return( a );
+ if( a.t == A::nil() )
+  return( b );
+ if( b.t == A::nil() )
+  return( a );
  const std::size_t na = A::size( a.t ) , nb = A::size( b.t );
  if( small( ex , na + nb ) ) {
   Sequential seq;
   return( unite( seq , a , b , f ) );
   }
- const bool ea = na < nb;              // the smaller one is exposed
+ const bool ea = na < nb;  // the smaller one is exposed
  const Exposed e = expose( ea ? a : b );
  Tree sl , sr;
  Node * d = split( ea ? b : a , A::key( e.m ) , sl , sr );
  Tree tl , tr;
- fork( ex , [ & ]() { tl = ea ? unite( ex , e.l , sl , f )
-                              : unite( ex , sl , e.l , f ); } ,
-            [ & ]() { tr = ea ? unite( ex , e.r , sr , f )
-                              : unite( ex , sr , e.r , f ); } );
+ fork(
+   ex ,
+   [ & ]() { tl = ea ? unite( ex , e.l , sl , f ) : unite( ex , sl , e.l ,
+							   f ); } ,
+   [ & ]() { tr = ea ? unite( ex , e.r , sr , f ) : unite( ex , sr , e.r ,
+							   f ); } );
  if( d != A::nil() ) {
   Value & v = A::value( e.m );
   v = ea ? f( std::as_const( v ) , std::as_const( A::value( d ) ) )
-         : f( std::as_const( A::value( d ) ) , std::as_const( v ) );
+	 : f( std::as_const( A::value( d ) ) , std::as_const( v ) );
   A::dispose( d );
   }
  return( join( tl , e.m , tr ) );
@@ -439,7 +446,7 @@ auto JoinAlgorithms< A >::unite( E & ex , Tree a , Tree b , const F & f )
 template< JoinAdaptor A >
 template< Executor E , class F >
 auto JoinAlgorithms< A >::intersect( E & ex , Tree a , Tree b , const F & f )
- -> Tree
+  -> Tree
 {
  if( ( a.t == A::nil() ) || ( b.t == A::nil() ) ) {
   A::dispose( a.t );
@@ -456,17 +463,21 @@ auto JoinAlgorithms< A >::intersect( E & ex , Tree a , Tree b , const F & f )
  Tree sl , sr;
  Node * d = split( ea ? b : a , A::key( e.m ) , sl , sr );
  Tree tl , tr;
- fork( ex , [ & ]() { tl = ea ? intersect( ex , e.l , sl , f )
-                              : intersect( ex , sl , e.l , f ); } ,
-            [ & ]() { tr = ea ? intersect( ex , e.r , sr , f )
-                              : intersect( ex , sr , e.r , f ); } );
+ fork(
+   ex ,
+   [ & ]() {
+    tl = ea ? intersect( ex , e.l , sl , f ) : intersect( ex , sl , e.l , f );
+    } ,
+   [ & ]() {
+    tr = ea ? intersect( ex , e.r , sr , f ) : intersect( ex , sr , e.r , f );
+    } );
  if( d == A::nil() ) {
   A::dispose( e.m );
   return( join2( tl , tr ) );
   }
  Value & v = A::value( e.m );
  v = ea ? f( std::as_const( v ) , std::as_const( A::value( d ) ) )
-        : f( std::as_const( A::value( d ) ) , std::as_const( v ) );
+	: f( std::as_const( A::value( d ) ) , std::as_const( v ) );
  A::dispose( d );
  return( join( tl , e.m , tr ) );
  }
@@ -487,23 +498,25 @@ auto JoinAlgorithms< A >::subtract( E & ex , Tree a , Tree b ) -> Tree
   return( subtract( seq , a , b ) );
   }
  Tree tl , tr;
- if( na < nb ) {                       // the keys of a split b
+ if( na < nb ) {  // the keys of a split b
   const Exposed e = expose( a );
   Tree sl , sr;
   Node * d = split( b , A::key( e.m ) , sl , sr );
-  fork( ex , [ & ]() { tl = subtract( ex , e.l , sl ); } ,
-             [ & ]() { tr = subtract( ex , e.r , sr ); } );
+  fork(
+    ex , [ & ]() { tl = subtract( ex , e.l , sl ); } ,
+    [ & ]() { tr = subtract( ex , e.r , sr ); } );
   if( d == A::nil() )
    return( join( tl , e.m , tr ) );
   A::dispose( d );
   A::dispose( e.m );
   return( join2( tl , tr ) );
   }
- const Exposed e = expose( b );        // the keys of b split a
+ const Exposed e = expose( b );  // the keys of b split a
  Tree sl , sr;
  Node * d = split( a , A::key( e.m ) , sl , sr );
- fork( ex , [ & ]() { tl = subtract( ex , sl , e.l ); } ,
-            [ & ]() { tr = subtract( ex , sr , e.r ); } );
+ fork(
+   ex , [ & ]() { tl = subtract( ex , sl , e.l ); } ,
+   [ & ]() { tr = subtract( ex , sr , e.r ); } );
  A::dispose( d );
  A::dispose( e.m );
  return( join2( tl , tr ) );
@@ -512,7 +525,7 @@ auto JoinAlgorithms< A >::subtract( E & ex , Tree a , Tree b ) -> Tree
 template< JoinAdaptor A >
 template< Executor E >
 auto JoinAlgorithms< A >::build( E & ex , Node * const * N , std::size_t n )
- -> Tree
+  -> Tree
 {
  if( n == 0 )
   return( empty() );
@@ -522,15 +535,16 @@ auto JoinAlgorithms< A >::build( E & ex , Node * const * N , std::size_t n )
   }
  const std::size_t mid = n / 2;
  Tree l , r;
- fork( ex , [ & ]() { l = build( ex , N , mid ); } ,
-            [ & ]() { r = build( ex , N + mid + 1 , n - mid - 1 ); } );
+ fork(
+   ex , [ & ]() { l = build( ex , N , mid ); } ,
+   [ & ]() { r = build( ex , N + mid + 1 , n - mid - 1 ); } );
  return( join( l , N[ mid ] , r ) );
  }
 
 template< JoinAdaptor A >
 template< Executor E , class F >
 auto JoinAlgorithms< A >::multiInsert( E & ex , Tree x , Node * const * N ,
-                                       std::size_t n , const F & f ) -> Tree
+				       std::size_t n , const F & f ) -> Tree
 {
  if( n == 0 )
   return( x );
@@ -542,14 +556,15 @@ auto JoinAlgorithms< A >::multiInsert( E & ex , Tree x , Node * const * N ,
   }
  const Exposed e = expose( x );
  const Key & k = A::key( e.m );
- const std::size_t j = std::size_t( std::partition_point( N , N + n ,
-                        [ & ]( const Node * u ) { return( A::key( u ) < k ); }
-                        ) - N );
- const bool dup = ( j < n ) && !( k < A::key( N[ j ] ) );
+ const std::size_t j = std::size_t(
+   std::partition_point(
+     N , N + n , [ & ]( const Node * u ) { return( A::key( u ) < k ); } ) -
+   N );
+ const bool dup = ( j < n ) && ! ( k < A::key( N[ j ] ) );
  Tree l , r;
- fork( ex , [ & ]() { l = multiInsert( ex , e.l , N , j , f ); } ,
-            [ & ]() { r = multiInsert( ex , e.r , N + j + dup ,
-                                       n - j - dup , f ); } );
+ fork(
+   ex , [ & ]() { l = multiInsert( ex , e.l , N , j , f ); } ,
+   [ & ]() { r = multiInsert( ex , e.r , N + j + dup , n - j - dup , f ); } );
  if( dup ) {
   Value & v = A::value( e.m );
   v = f( std::as_const( v ) , std::as_const( A::value( N[ j ] ) ) );
@@ -561,8 +576,8 @@ auto JoinAlgorithms< A >::multiInsert( E & ex , Tree x , Node * const * N ,
 template< JoinAdaptor A >
 template< Executor E >
 auto JoinAlgorithms< A >::multiRemove( E & ex , Tree x , const Key * K ,
-                                       std::size_t n , std::size_t & gone )
- -> Tree
+				       std::size_t n , std::size_t & gone )
+  -> Tree
 {
  if( ( n == 0 ) || ( x.t == A::nil() ) ) {
   gone = 0;
@@ -575,12 +590,12 @@ auto JoinAlgorithms< A >::multiRemove( E & ex , Tree x , const Key * K ,
  const Exposed e = expose( x );
  const Key & k = A::key( e.m );
  const std::size_t j = std::size_t( std::lower_bound( K , K + n , k ) - K );
- const bool hit = ( j < n ) && !( k < K[ j ] );
+ const bool hit = ( j < n ) && ! ( k < K[ j ] );
  Tree l , r;
  std::size_t gl = 0 , gr = 0;
- fork( ex , [ & ]() { l = multiRemove( ex , e.l , K , j , gl ); } ,
-            [ & ]() { r = multiRemove( ex , e.r , K + j + hit ,
-                                       n - j - hit , gr ); } );
+ fork(
+   ex , [ & ]() { l = multiRemove( ex , e.l , K , j , gl ); } ,
+   [ & ]() { r = multiRemove( ex , e.r , K + j + hit , n - j - hit , gr ); } );
  gone = gl + gr + hit;
  if( hit ) {
   A::dispose( e.m );
@@ -601,8 +616,9 @@ auto JoinAlgorithms< A >::filter( E & ex , Tree x , const P & p ) -> Tree
   }
  const Exposed e = expose( x );
  Tree l , r;
- fork( ex , [ & ]() { l = filter( ex , e.l , p ); } ,
-            [ & ]() { r = filter( ex , e.r , p ); } );
+ fork(
+   ex , [ & ]() { l = filter( ex , e.l , p ); } ,
+   [ & ]() { r = filter( ex , e.r , p ); } );
  if( p( A::key( e.m ) , std::as_const( A::value( e.m ) ) ) )
   return( join( l , e.m , r ) );
  A::dispose( e.m );
@@ -612,7 +628,7 @@ auto JoinAlgorithms< A >::filter( E & ex , Tree x , const P & p ) -> Tree
 template< JoinAdaptor A >
 template< Executor E , class M , class R , class U >
 U JoinAlgorithms< A >::mapReduce( E & ex , Node * t , const M & map ,
-                                  const R & reduce , const U & id )
+				  const R & reduce , const U & id )
 {
  if( t == A::nil() )
   return( id );
@@ -621,19 +637,18 @@ U JoinAlgorithms< A >::mapReduce( E & ex , Node * t , const M & map ,
   return( mapReduce( seq , t , map , reduce , id ) );
   }
  U l = id , r = id;
- fork( ex , [ & ]() { l = mapReduce( ex , A::left( t ) , map , reduce ,
-                                     id ); } ,
-            [ & ]() { r = mapReduce( ex , A::right( t ) , map , reduce ,
-                                     id ); } );
+ fork(
+   ex , [ & ]() { l = mapReduce( ex , A::left( t ) , map , reduce , id ); } ,
+   [ & ]() { r = mapReduce( ex , A::right( t ) , map , reduce , id ); } );
  return( reduce( reduce( std::move( l ) ,
-                         map( A::key( t ) ,
-                              std::as_const( A::value( t ) ) ) ) ,
-                 std::move( r ) ) );
+			  map( A::key( t ) ,
+			       std::as_const( A::value( t ) ) ) ) ,
+		  std::move( r ) ) );
  }
 
 template< JoinAdaptor A >
-auto JoinAlgorithms< A >::extract( Tree & x , const Key & lo ,
-                                   const Key & hi ) -> Tree
+auto JoinAlgorithms< A >::extract( Tree & x , const Key & lo , const Key & hi )
+  -> Tree
 {
  if( hi < lo )
   return( empty() );
@@ -653,8 +668,8 @@ auto JoinAlgorithms< A >::extract( Tree & x , const Key & lo ,
 /*--------------------------------------------------------------------------*/
 
 template< class T , class A , class Key , class Value >
-auto Joinable< T , A , Key , Value >::split( const Key & k ) &&
- -> std::tuple< T , std::optional< Value > , T >
+auto Joinable< T , A , Key , Value >::split(
+  const Key & k ) && -> std::tuple< T , std::optional< Value > , T >
 {
  using J = JoinAlgorithms< A >;
  using Node = typename A::Node;
@@ -670,23 +685,23 @@ auto Joinable< T , A , Key , Value >::split( const Key & k ) &&
  A::put( self , l.t );
  A::put( right , r.t );
  ADS_INVARIANT( A::valid( self ) && A::valid( right ) );
- return( std::tuple< T , std::optional< Value > , T >( std::move( self ) ,
-          std::move( v ) , std::move( right ) ) );
+ return( std::tuple< T , std::optional< Value > , T >(
+   std::move( self ) , std::move( v ) , std::move( right ) ) );
  }
 
 template< class T , class A , class Key , class Value >
 T Joinable< T , A , Key , Value >::join( T && l , const Key & k ,
-                                         const Value & v , T && r )
+					 const Value & v ,
+				      T && r )
 {
  using J = JoinAlgorithms< A >;
  using Node = typename A::Node;
- ADS_PRE( ( A::peek( l ) == A::nil() ) ||
-          ( J::lastKey( A::peek( l ) ) < k ) );
+ ADS_PRE( ( A::peek( l ) == A::nil() ) || ( J::lastKey( A::peek( l ) ) < k ) );
  ADS_PRE( ( A::peek( r ) == A::nil() ) ||
-          ( k < J::firstKey( A::peek( r ) ) ) );
+	  ( k < J::firstKey( A::peek( r ) ) ) );
  Node * m = A::make( k , v , A::salt( l ) , 0 );
  const typename J::Tree tl = J::whole( A::take( l ) ) ,
-                        tr = J::whole( A::take( r ) );
+			tr = J::whole( A::take( r ) );
  A::put( l , J::join( tl , m , tr ).t );
  ADS_INVARIANT( A::valid( l ) );
  return( std::move( l ) );
@@ -697,9 +712,9 @@ T Joinable< T , A , Key , Value >::join2( T && l , T && r )
 {
  using J = JoinAlgorithms< A >;
  ADS_PRE( ( A::peek( l ) == A::nil() ) || ( A::peek( r ) == A::nil() ) ||
-          ( J::lastKey( A::peek( l ) ) < J::firstKey( A::peek( r ) ) ) );
+	  ( J::lastKey( A::peek( l ) ) < J::firstKey( A::peek( r ) ) ) );
  const typename J::Tree tl = J::whole( A::take( l ) ) ,
-                        tr = J::whole( A::take( r ) );
+			tr = J::whole( A::take( r ) );
  A::put( l , J::join2( tl , tr ).t );
  ADS_INVARIANT( A::valid( l ) );
  return( std::move( l ) );
@@ -707,7 +722,7 @@ T Joinable< T , A , Key , Value >::join2( T && l , T && r )
 
 template< class T , class A , class Key , class Value >
 T Joinable< T , A , Key , Value >::extractRange( const Key & lo ,
-                                                 const Key & hi )
+					      const Key & hi )
 {
  using J = JoinAlgorithms< A >;
  T & self = static_cast< T & >( *this );
@@ -727,7 +742,7 @@ void Joinable< T , A , Key , Value >::unionWith( E & ex , T && o , F f )
  using J = JoinAlgorithms< A >;
  T & self = static_cast< T & >( *this );
  const typename J::Tree a = J::whole( A::take( self ) ) ,
-                        b = J::whole( A::take( o ) );
+			b = J::whole( A::take( o ) );
  A::put( self , J::unite( ex , a , b , f ).t );
  ADS_INVARIANT( A::valid( self ) );
  }
@@ -739,7 +754,7 @@ void Joinable< T , A , Key , Value >::intersectWith( E & ex , T && o , F f )
  using J = JoinAlgorithms< A >;
  T & self = static_cast< T & >( *this );
  const typename J::Tree a = J::whole( A::take( self ) ) ,
-                        b = J::whole( A::take( o ) );
+			b = J::whole( A::take( o ) );
  A::put( self , J::intersect( ex , a , b , f ).t );
  ADS_INVARIANT( A::valid( self ) );
  }
@@ -751,22 +766,22 @@ void Joinable< T , A , Key , Value >::differenceWith( E & ex , T && o )
  using J = JoinAlgorithms< A >;
  T & self = static_cast< T & >( *this );
  const typename J::Tree a = J::whole( A::take( self ) ) ,
-                        b = J::whole( A::take( o ) );
+			b = J::whole( A::take( o ) );
  A::put( self , J::subtract( ex , a , b ).t );
  ADS_INVARIANT( A::valid( self ) );
  }
 
 template< class T , class A , class Key , class Value >
 template< Executor E , class F >
-void Joinable< T , A , Key , Value >::multiInsert( E & ex ,
-                         std::span< const std::pair< Key , Value > > B ,
-                         F f )
+void Joinable< T , A , Key , Value >::multiInsert(
+  E & ex , std::span< const std::pair< Key , Value > > B , F f )
 {
  using J = JoinAlgorithms< A >;
  using Node = typename A::Node;
  ADS_AUDIT( std::adjacent_find( B.begin() , B.end() ,
-             []( const auto & x , const auto & y ) {
-              return( !( x.first < y.first ) ); } ) == B.end() );
+				[]( const auto & x , const auto & y ) {
+				 return( ! ( x.first < y.first ) );
+				 } ) == B.end() );
  T & self = static_cast< T & >( *this );
  std::vector< Node * > N( B.size() );
  const std::uint64_t salt = A::salt( self );
@@ -781,12 +796,14 @@ void Joinable< T , A , Key , Value >::multiInsert( E & ex ,
 template< class T , class A , class Key , class Value >
 template< Executor E >
 void Joinable< T , A , Key , Value >::multiRemove( E & ex ,
-                                                  std::span< const Key > B )
+						std::span< const Key > B )
 {
  using J = JoinAlgorithms< A >;
- ADS_AUDIT( std::adjacent_find( B.begin() , B.end() ,
-             []( const Key & x , const Key & y ) {
-              return( !( x < y ) ); } ) == B.end() );
+ ADS_AUDIT(
+   std::adjacent_find( B.begin() , B.end() ,
+		       []( const Key & x , const Key & y ) {
+    return( ! ( x < y ) );
+    } ) == B.end() );
  T & self = static_cast< T & >( *this );
  std::size_t gone = 0;
  const typename J::Tree x = J::whole( A::take( self ) );
@@ -808,7 +825,7 @@ void Joinable< T , A , Key , Value >::filter( E & ex , P p )
 template< class T , class A , class Key , class Value >
 template< Executor E , class M , class R , class U >
 U Joinable< T , A , Key , Value >::mapReduce( E & ex , M map , R reduce ,
-                                              U id ) const
+					   U id ) const
 {
  using J = JoinAlgorithms< A >;
  const T & self = static_cast< const T & >( *this );

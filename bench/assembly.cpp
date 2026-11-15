@@ -57,10 +57,12 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// the triplets of a case
-struct Triplets {
+struct Triplets
+{
  std::size_t m = 0;
  std::vector< int > row , col;
  std::vector< double > val;
@@ -95,14 +97,14 @@ Triplets triplets( std::size_t n , bool twice , unsigned seed )
  }
 
 /// the arrays of a solver
-struct Arrays {
+struct Arrays
+{
  std::vector< int > beg , ind;
  std::vector< double > val;
  };
 
 /// the case triplets
-void assembly( const char * what , const Triplets & T , std::size_t n ,
-               int r )
+void assembly( const char * what , const Triplets & T , std::size_t n , int r )
 {
  const std::size_t z = T.row.size() , m = T.m;
  Arrays A;
@@ -111,13 +113,15 @@ void assembly( const char * what , const Triplets & T , std::size_t n ,
  A.val.resize( z );
  ADS::AssemblyWorkspace< int , double > W;
  auto ads = [ & ]( int ) {
-  sink = sink + ADS::assembleCsc( m , m , z , T.row.data() , T.col.data() ,
-                                  T.val.data() , A.beg.data() ,
-                                  A.ind.data() , A.val.data() , W ); };
+  sink =
+    sink + ADS::assembleCsc( m , m , z , T.row.data() , T.col.data() ,
+			     T.val.data() ,
+			     A.beg.data() , A.ind.data() , A.val.data() , W );
+  };
  for( const char * who : { "ADS::assembleCsc" , "ADS::assembleCsc A/A" } )
   if( ! skip( who ) )
-   print( "assembly" , what , n , who , median( [](){ return( 0 ); } , ads ,
-                                                r , z ) );
+   print( "assembly" , what , n , who ,
+	  median( []() { return( 0 ); } , ads , r , z ) );
 #ifdef ADS_HAS_EIGEN
  if( ! skip( "Eigen::setFromTriplets" ) ) {
   using E = Eigen::Triplet< double , int >;
@@ -125,39 +129,47 @@ void assembly( const char * what , const Triplets & T , std::size_t n ,
   for( std::size_t k = 0 ; k < z ; ++k )
    ET.emplace_back( T.row[ k ] , T.col[ k ] , T.val[ k ] );
   print( "assembly" , what , n , "Eigen::setFromTriplets" ,
-         median( [](){ return( 0 ); } , [ & ]( int ) {
-          Eigen::SparseMatrix< double , Eigen::ColMajor , int > S{
-           int( m ) , int( m ) };
-          S.setFromTriplets( ET.begin() , ET.end() );
-          sink = sink + std::uint64_t( S.nonZeros() ); } , r , z ) );
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  Eigen::SparseMatrix< double , Eigen::ColMajor , int > S{
+		   int( m ) , int( m )
+		   };
+		  S.setFromTriplets( ET.begin() , ET.end() );
+		  sink = sink + std::uint64_t( S.nonZeros() );
+		  } ,
+		 r , z ) );
   }
 #endif
  if( skip( "std::map" ) )
   return;
- print( "assembly" , what , n , "std::map" , median( [](){ return( 0 ); } ,
-        [ & ]( int ) {
-         std::map< std::pair< int , int > , double > M;
-         for( std::size_t k = 0 ; k < z ; ++k )
-          M[ { T.col[ k ] , T.row[ k ] } ] += T.val[ k ];
-         std::fill( A.beg.begin() , A.beg.end() , 0 );
-         std::size_t q = 0;
-         for( const auto & [ p , v ] : M ) {
-          ++A.beg[ std::size_t( p.first ) + 1 ];
-          A.ind[ q ] = p.second;
-          A.val[ q++ ] = v;
-          }
-         for( std::size_t j = 0 ; j < m ; ++j )
-          A.beg[ j + 1 ] += A.beg[ j ];
-         sink = sink + q; } , r , z ) );
+ print( "assembly" , what , n , "std::map" ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 std::map< std::pair< int , int > , double > M;
+		 for( std::size_t k = 0 ; k < z ; ++k )
+		  M[ { T.col[ k ] , T.row[ k ] } ] += T.val[ k ];
+		 std::fill( A.beg.begin() , A.beg.end() , 0 );
+		 std::size_t q = 0;
+		 for( const auto & [ p , v ] : M ) {
+		  ++A.beg[ std::size_t( p.first ) + 1 ];
+		  A.ind[ q ] = p.second;
+		  A.val[ q++ ] = v;
+		  }
+		 for( std::size_t j = 0 ; j < m ; ++j )
+		  A.beg[ j + 1 ] += A.beg[ j ];
+		 sink = sink + q;
+		 } ,
+		r , z ) );
  }
 
 /// the rows of the case bundle
-struct Bundle {
- std::vector< std::vector< int > > ind;            ///< the first rows
+struct Bundle
+{
+ std::vector< std::vector< int > > ind;  ///< the first rows
  std::vector< std::vector< double > > val;
- std::vector< std::vector< std::vector< int > > > nind;   ///< by round
+ std::vector< std::vector< std::vector< int > > > nind;  ///< by round
  std::vector< std::vector< std::vector< double > > > nval;
- std::vector< std::vector< std::uint32_t > > gone;         ///< by round
+ std::vector< std::vector< std::uint32_t > > gone;  ///< by round
  };
 
 constexpr int ROUNDS = 20 , WIDTH = 20;
@@ -167,7 +179,7 @@ Bundle bundle( std::size_t n , unsigned seed )
  std::mt19937_64 g( seed );
  Bundle B;
  const std::size_t R = std::max< std::size_t >( 1 , n / WIDTH ) ,
-                   k = std::max< std::size_t >( 1 , n / 200 );
+		   k = std::max< std::size_t >( 1 , n / 200 );
  auto row = [ & ]( std::vector< int > & x , std::vector< double > & y ) {
   std::set< int > s;
   while( s.size() < WIDTH )
@@ -189,7 +201,7 @@ Bundle bundle( std::size_t n , unsigned seed )
   B.nval[ t ].resize( k );
   for( std::size_t i = 0 ; i < k ; ++i )
    row( B.nind[ t ][ i ] , B.nval[ t ][ i ] );
-  std::set< std::uint32_t > s;               // of the R + k rows then
+  std::set< std::uint32_t > s;  // of the R + k rows then
   while( s.size() < k )
    s.insert( std::uint32_t( g() % ( R + k ) ) );
   B.gone[ t ].assign( s.begin() , s.end() );
@@ -213,50 +225,56 @@ void bundles( std::size_t n , int r , unsigned seed )
    D.remove( B.gone[ k ] );
    t += std::uint64_t( D.beg()[ D.rows() ] ) + std::uint64_t( D.ind()[ 0 ] );
    }
-  sink = sink + t; };
+  sink = sink + t;
+  };
  for( const char * who : { "ADS::DynamicCsr" , "ADS::DynamicCsr A/A" } )
   if( ! skip( who ) )
    print( "assembly" , "bundle" , n , who ,
-          median( [](){ return( 0 ); } , ads , r , ops ) );
+	  median( []() { return( 0 ); } , ads , r , ops ) );
  if( skip( "std::vector rows" ) )
   return;
- print( "assembly" , "bundle" , n , "std::vector rows" ,
-        median( [](){ return( 0 ); } , [ & ]( int ) {
-         using Entries = std::vector< std::pair< int , double > >;
-         std::vector< Entries > V;
-         auto add = [ & ]( const std::vector< int > & x ,
-                           const std::vector< double > & y ) {
-          Entries e( x.size() );
-          for( std::size_t j = 0 ; j < x.size() ; ++j )
-           e[ j ] = { x[ j ] , y[ j ] };
-          V.push_back( std::move( e ) ); };
-         for( std::size_t i = 0 ; i < B.ind.size() ; ++i )
-          add( B.ind[ i ] , B.val[ i ] );
-         Arrays A;
-         std::uint64_t t = 0;
-         for( int k = 0 ; k < ROUNDS ; ++k ) {
-          for( std::size_t i = 0 ; i < B.nind[ k ].size() ; ++i )
-           add( B.nind[ k ][ i ] , B.nval[ k ][ i ] );
-          std::size_t o = 0 , q = 0;         // the rows removed, compacted
-          for( std::size_t i = 0 ; i < V.size() ; ++i )
-           if( ( q < B.gone[ k ].size() ) && ( B.gone[ k ][ q ] == i ) )
-            ++q;
-           else
-            V[ o++ ] = std::move( V[ i ] );
-          V.resize( o );
-          A.beg.assign( 1 , 0 );             // handed to the solver
-          A.ind.clear();
-          A.val.clear();
-          for( const auto & e : V ) {
-           for( const auto & [ j , v ] : e ) {
-            A.ind.push_back( j );
-            A.val.push_back( v );
-            }
-           A.beg.push_back( int( A.ind.size() ) );
-           }
-          t += std::uint64_t( A.beg.back() ) + std::uint64_t( A.ind[ 0 ] );
-          }
-         sink = sink + t; } , r , ops ) );
+ print(
+   "assembly" , "bundle" , n , "std::vector rows" ,
+   median( []() { return( 0 ); } ,
+	   [ & ]( int ) {
+	    using Entries = std::vector< std::pair< int , double > >;
+	    std::vector< Entries > V;
+	    auto add = [ & ]( const std::vector< int > & x ,
+			      const std::vector< double > & y ) {
+	     Entries e( x.size() );
+	     for( std::size_t j = 0 ; j < x.size() ; ++j )
+	      e[ j ] = { x[ j ] , y[ j ] };
+	     V.push_back( std::move( e ) );
+	     };
+	    for( std::size_t i = 0 ; i < B.ind.size() ; ++i )
+	     add( B.ind[ i ] , B.val[ i ] );
+	    Arrays A;
+	    std::uint64_t t = 0;
+	    for( int k = 0 ; k < ROUNDS ; ++k ) {
+	     for( std::size_t i = 0 ; i < B.nind[ k ].size() ; ++i )
+	      add( B.nind[ k ][ i ] , B.nval[ k ][ i ] );
+	     std::size_t o = 0 , q = 0;  // the rows removed, compacted
+	     for( std::size_t i = 0 ; i < V.size() ; ++i )
+	      if( ( q < B.gone[ k ].size() ) && ( B.gone[ k ][ q ] == i ) )
+	       ++q;
+	      else
+	       V[ o++ ] = std::move( V[ i ] );
+	     V.resize( o );
+	     A.beg.assign( 1 , 0 );  // handed to the solver
+	     A.ind.clear();
+	     A.val.clear();
+	     for( const auto & e : V ) {
+	      for( const auto & [ j , v ] : e ) {
+	       A.ind.push_back( j );
+	       A.val.push_back( v );
+	       }
+	      A.beg.push_back( int( A.ind.size() ) );
+	      }
+	     t += std::uint64_t( A.beg.back() ) + std::uint64_t( A.ind[ 0 ] );
+	     }
+	    sink = sink + t;
+	    } ,
+	   r , ops ) );
  }
 
 }  // end( namespace )

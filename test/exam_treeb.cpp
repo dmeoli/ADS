@@ -76,7 +76,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 using namespace ADS;
 using namespace ADS::examtree;
 
-namespace {
+namespace
+{
 
 /// a degenerate tree of n >= 1 nodes, each one the left (or the right)
 /// child of the one before, the node at depth d with the value value( d )
@@ -120,7 +121,8 @@ int zero( int )
 
 /*--------------- tree-29, compito 2020-02-04, Sum angular -----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// sumAngular(): the sum of the values of the nodes first or last in their
 /// level, each once; a visit by levels: when a level ends, the node just
@@ -138,9 +140,11 @@ long long sumAngular( BT * T )
  while( ! Q.empty() ) {
   BT * t = Q.front();
   Q.pop();
-  if( t->left() ) Q.push( t->left() );
-  if( t->right() ) Q.push( t->right() );
-  if( --count == 0 ) {                      // a new level
+  if( t->left() )
+   Q.push( t->left() );
+  if( t->right() )
+   Q.push( t->right() );
+  if( --count == 0 ) {  // a new level
    count = Q.size();
    sumSoFar += t->read();
    if( count >= 2 )
@@ -157,10 +161,12 @@ long long sumAngular( BT * T )
 // depth that keeps the first and the last node of each level
 ADS_TEST( "tree-29" )
 {
- CHECK( tree::sumAngular( cat( "16( 10( 9( 2, 2 ), 3 ), 14( 8, 7( 4, 1 ) ) )"
-                             ).get() ) == 59 );
- CHECK( tree::sumAngular( cat( "16( 10( 9, 3( -, 2 ) ), 14( 8( 4, - ), 7 ) )"
-                             ).get() ) == 62 );
+ CHECK( tree::sumAngular(
+	  cat( "16( 10( 9( 2, 2 ), 3 ), 14( 8, 7( 4, 1 ) ) )" ).get() ) ==
+	59 );
+ CHECK( tree::sumAngular(
+	  cat( "16( 10( 9, 3( -, 2 ) ), 14( 8( 4, - ), 7 ) )" ).get() ) ==
+	62 );
  CHECK( tree::sumAngular( nullptr ) == 0 );
  CHECK( tree::sumAngular( cat( "5( -, 3( 2, - ) )" ).get() ) == 10 );
  std::mt19937 g( 1 );
@@ -178,18 +184,21 @@ ADS_TEST( "tree-29" )
   }
  CHECK( tree::sumAngular( cat( "-4" ).get() ) == -4 );
  CHECK( tree::sumAngular( cat( "1( 2, 3 )" ).get() ) == 6 );
- CHECK( tree::sumAngular( chainTree( DEEP , false , []( int ) {
-  return( 1 ); } ).get() ) == DEEP );       // a node per level, once
+ CHECK( tree::sumAngular(
+	  chainTree( DEEP , false , []( int ) { return( 1 ); } ).get() ) ==
+	DEEP );  // a node per level, once
  PT q( completeTree( std::vector< int >( 31 , 1 ) ) );  // 1 + 2 + 2 + 2 + 2
  CHECK( tree::sumAngular( q.get() ) == 9 );
  const int hi = std::numeric_limits< int >::max();
- CHECK( tree::sumAngular( chainTree( 3 , true , [ & ]( int ) {
-  return( hi ); } ).get() ) == 3LL * hi );
+ CHECK( tree::sumAngular(
+	  chainTree( 3 , true , [ & ]( int ) { return( hi ); } ).get() ) ==
+	3LL * hi );
  }
 
 /*----------------- tree-30, compito 2020-06-12, Mh rec --------------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// true if every value of t is larger than its parent, lb that of the
 /// parent of t
@@ -198,7 +207,7 @@ bool mhRec( const BT * t , int lb )
  if( ! t )
   return( true );
  return( ( t->read() > lb ) && mhRec( t->left() , t->read() ) &&
-         mhRec( t->right() , t->read() ) );
+	  mhRec( t->right() , t->read() ) );
  }
 
 /// isMinHeap(): true if the complete tree t has the property of a
@@ -233,34 +242,36 @@ ADS_TEST( "tree-30" )
   if( r % 2 )
    std::make_heap( A.begin() , A.end() , std::greater<>() );
   CHECK( tree::isMinHeap( PT( completeTree( A ) ).get() ) ==
-         std::is_heap( A.begin() , A.end() , std::greater<>() ) );
+	 std::is_heap( A.begin() , A.end() , std::greater<>() ) );
   }
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  CHECK( tree::isMinHeap( PT( completeTree( V( { lo , hi , 0 } ) ) ).get() ) );
  CHECK( ! tree::isMinHeap( PT( completeTree( V( { hi , lo } ) ) ).get() ) );
  CHECK( ! tree::isMinHeap( PT( completeTree( V( 7 , 2 ) ) ).get() ) );
  CHECK( tree::isMinHeap( cat( "1( 2, - )" ).get() ) );
  CHECK( ! tree::isMinHeap( cat( "2( 1, - )" ).get() ) );
- V S( 4095 );                               // sorted, a heap of height 11
+ V S( 4095 );  // sorted, a heap of height 11
  std::iota( S.begin() , S.end() , 0 );
  CHECK( tree::isMinHeap( PT( completeTree( S ) ).get() ) );
- std::swap( S.back() , S[ S.size() / 2 - 1 ] ); // the last leaf with its
- CHECK( ! tree::isMinHeap( PT( completeTree( S ) ).get() ) );    // parent
+ std::swap( S.back() , S[ S.size() / 2 - 1 ] );  // the last leaf with its
+ CHECK( ! tree::isMinHeap( PT( completeTree( S ) ).get() ) );  // parent
  }
 
 /*-------------- tree-31, compito 2020-07-03, Binary insert ----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// a node with the size of its subtree and a value
-struct Slot {
+struct Slot
+{
  int size = 0 , value = 0;
  };
 
 /// fills the values of t with A[ i .. ] in symmetric order
 void biRec( BinaryTree< Slot > * t , const std::vector< int > & A ,
-            std::size_t i )
+	    std::size_t i )
 {
  const int leftSize = t->left() ? t->left()->read().size : 0;
  if( t->left() )
@@ -279,19 +290,21 @@ void biRec( BinaryTree< Slot > * t , const std::vector< int > & A ,
 void binaryInsert( BinaryTree< Slot > * T , const std::vector< int > & A )
 {
  ADS_PRE( T && ( T->read().size == int( A.size() ) ) );
- ADS_PRE( std::adjacent_find( A.begin() , A.end() ,
-                              std::greater_equal<>() ) == A.end() );
+ ADS_PRE( std::adjacent_find( A.begin() , A.end() , std::greater_equal<>() ) ==
+	  A.end() );
  biRec( T , A , 0 );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< int > V;
-  in_visit( T , [ & ]( BinaryTree< Slot > * u ) {
-   V.push_back( u->read().value ); } );
-  return( V == A ); }() );
+  in_visit(
+    T , [ & ]( BinaryTree< Slot > * u ) { V.push_back( u->read().value ); } );
+  return( V == A );
+  }() );
  }
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// the tree of the shape of t, each node with the size of its subtree
 BinaryTree< tree::Slot > * slotTree( BT * t )
@@ -314,18 +327,20 @@ ADS_TEST( "tree-31" )
  using ST = std::unique_ptr< BinaryTree< tree::Slot > >;
  PT e = cat( "25( 19( 13( 11, 15 ), 22( 21, - ) ), 28( 27, 31 ) )" );
  ST s( slotTree( e.get() ) );
- tree::binaryInsert( s.get() , { 11 , 13 , 15 , 19 , 21 , 22 , 25 , 27 , 28 ,
-                                 31 } );
+ tree::binaryInsert( s.get() ,
+		     { 11 , 13 , 15 , 19 , 21 , 22 , 25 , 27 , 28 , 31 } );
  std::vector< int > a , b;
  pre_visit( e.get() , [ & ]( BT * u ) { a.push_back( u->read() ); } );
  pre_visit( s.get() , [ & ]( BinaryTree< tree::Slot > * u ) {
-  b.push_back( u->read().value ); } );
+  b.push_back( u->read().value );
+  } );
  CHECK( a == b );
  CHECK_THROWS( tree::binaryInsert( s.get() , { 1 , 2 } ) ,
-               contract_violation );
- CHECK_THROWS( tree::binaryInsert( s.get() , { 1 , 2 , 3 , 4 , 5 , 6 , 7 ,
-                                               8 , 8 , 9 } ) ,
-               contract_violation );
+	       contract_violation );
+ CHECK_THROWS( tree::binaryInsert( s.get() ,
+				   { 1 , 2 , 3 , 4 , 5 , 6 , 7 , 8 , 8 ,
+				     9 } ) ,
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const int n = 1 + r % 15;
@@ -340,10 +355,12 @@ ADS_TEST( "tree-31" )
    const int v = u->read().value;
    if( u->left() )
     in_visit( u->left() , [ & ]( BinaryTree< tree::Slot > * x ) {
-     search = search && ( x->read().value < v ); } );
+     search = search && ( x->read().value < v );
+     } );
    if( u->right() )
     in_visit( u->right() , [ & ]( BinaryTree< tree::Slot > * x ) {
-     search = search && ( x->read().value > v ); } );
+     search = search && ( x->read().value > v );
+     } );
    } );
   CHECK( search );
   }
@@ -353,13 +370,15 @@ ADS_TEST( "tree-31" )
  CHECK( one->read().value == lo );
  CHECK_THROWS( tree::binaryInsert( one.get() , {} ) , contract_violation );
  CHECK_THROWS( tree::binaryInsert( nullptr , {} ) , contract_violation );
- for( bool right : { false , true } ) {     // the deep chains
+ for( bool right : { false , true } ) {  // the deep chains
   ST c( new BinaryTree< tree::Slot >( tree::Slot{ DEEP , 0 } ) );
   auto * u = c.get();
   for( int d = 1 ; d < DEEP ; ++d ) {
    auto * v = new BinaryTree< tree::Slot >( tree::Slot{ DEEP - d , 0 } );
-   if( right ) u->insertRight( v );
-   else u->insertLeft( v );
+   if( right )
+    u->insertRight( v );
+   else
+    u->insertLeft( v );
    u = v;
    }
   std::vector< int > A( DEEP );
@@ -372,7 +391,8 @@ ADS_TEST( "tree-31" )
 
 /*---------------- tree-32, compito 2020-07-24, Specchio -------------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// true if the shape of b is the mirror image of that of a
 bool isMirror( const BT * a , const BT * b )
@@ -381,7 +401,7 @@ bool isMirror( const BT * a , const BT * b )
   return( true );
  if( a && b )
   return( isMirror( a->right() , b->left() ) &&
-          isMirror( a->left() , b->right() ) );
+	   isMirror( a->left() , b->right() ) );
  return( false );
  }
 
@@ -412,14 +432,16 @@ ADS_TEST( "tree-32" )
   PT L = randomInts( g , r % 8 , 0 , 9 );
   if( L ) {
    PT R( r % 2 ? randomInts( g , sizeOf( L.get() ) , 0 , 9 ).release()
-               : nullptr );
-   if( ! R ) {                              // the mirror image of L
-    std::function< BT * ( BT * ) > mirror = [ & ]( BT * u ) -> BT * {
+	       : nullptr );
+   if( ! R ) {  // the mirror image of L
+    std::function< BT *( BT * ) > mirror = [ & ]( BT * u ) -> BT * {
      if( ! u )
       return( nullptr );
      auto * m = new BT( u->read() );
-     if( auto * a = mirror( u->right() ) ) m->insertLeft( a );
-     if( auto * b = mirror( u->left() ) ) m->insertRight( b );
+     if( auto * a = mirror( u->right() ) )
+      m->insertLeft( a );
+     if( auto * b = mirror( u->left() ) )
+      m->insertRight( b );
      return( m );
      };
     R.reset( mirror( L.get() ) );
@@ -428,14 +450,14 @@ ADS_TEST( "tree-32" )
    t->insertRight( R.release() );
    }
   CHECK( tree::isSymmetric( t.get() ) ==
-         ( shapeOf( t->left() ) == mirrorShapeOf( t->right() ) ) );
+	 ( shapeOf( t->left() ) == mirrorShapeOf( t->right() ) ) );
   }
- CHECK( tree::isSymmetric( cat( "1( 2, 3 )" ).get() ) );   // values ignored
+ CHECK( tree::isSymmetric( cat( "1( 2, 3 )" ).get() ) );  // values ignored
  CHECK( ! tree::isSymmetric( cat( "1( -, 2 )" ).get() ) );
  CHECK( ! tree::isSymmetric( cat( "1( 2( 3, - ), 4( 5, 6 ) )" ).get() ) );
  PT q( completeTree( std::vector< int >( 63 , 0 ) ) );
  CHECK( tree::isSymmetric( q.get() ) );
- PT c( new BT( 0 ) );                       // two deep mirrored chains
+ PT c( new BT( 0 ) );  // two deep mirrored chains
  c->insertLeft( chainTree( DEEP , false , zero ).release() );
  c->insertRight( chainTree( DEEP , true , zero ).release() );
  CHECK( tree::isSymmetric( c.get() ) );
@@ -445,7 +467,8 @@ ADS_TEST( "tree-32" )
 
 /*------------ tree-33, compito 2021-01-18, Profondita minima --------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// minDepth(): the least depth of a leaf, +inf for nil; a postvisit,
 /// Theta( n ) time
@@ -481,12 +504,13 @@ ADS_TEST( "tree-33" )
  PT q( completeTree( std::vector< int >( 63 , 0 ) ) );
  CHECK( tree::minDepth( q.get() ) == 5 );
  PT r( completeTree( std::vector< int >( 64 , 0 ) ) );  // the leaves of
- CHECK( tree::minDepth( r.get() ) == 5 );               // level 5 are left
+ CHECK( tree::minDepth( r.get() ) == 5 );              // level 5 are left
  }
 
 /*----------- tree-34, compito 2021-02-19, Da foglia a foglia --------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the heaviest path from t down to a leaf, and the heaviest path between
 /// two distinct leaves of t, -inf for none
@@ -499,8 +523,9 @@ std::pair< long long , long long > leafToLeafRec( const BT * t )
   return( std::pair( v , -INFTY ) );
  const auto [ hL , bL ] = leafToLeafRec( t->left() );
  const auto [ hR , bR ] = leafToLeafRec( t->right() );
- return( std::pair( std::max( hL , hR ) + v ,
-                    std::max( { bL , bR , hL + hR + v } ) ) );
+ return(
+   std::pair( std::max( hL , hR ) + v ,
+	      std::max( { bL , bR , hL + hR + v } ) ) );
  }
 
 /// leafToLeaf(): the heaviest simple path between two distinct leaves,
@@ -511,7 +536,7 @@ long long leafToLeaf( const BT * t )
 {
  ADS_PRE( t != nullptr );
  const long long b = leafToLeafRec( t ).second;
- ADS_PRE( b > -INFTY / 2 );                 // two leaves
+ ADS_PRE( b > -INFTY / 2 );  // two leaves
  return( b );
  }
 
@@ -521,12 +546,13 @@ long long leafToLeaf( const BT * t )
 // leaf heavier than every path the code of the text would return it
 ADS_TEST( "tree-34" )
 {
- CHECK( tree::leafToLeaf( cat( "-5( 3( 5( 2, 4 ), 1( 7, - ) ), 9( -4, -9 ) )"
-                             ).get() ) == 20 );
+ CHECK( tree::leafToLeaf(
+	  cat( "-5( 3( 5( 2, 4 ), 1( 7, - ) ), 9( -4, -9 ) )" ).get() ) ==
+	20 );
  CHECK( tree::leafToLeaf( cat( "0( 100, -200 )" ).get() ) == -100 );
  CHECK( tree::leafToLeaf( cat( "1( 2, 3 )" ).get() ) == 6 );
  CHECK_THROWS( tree::leafToLeaf( cat( "1( 2, - )" ).get() ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( tree::leafToLeaf( nullptr ) , contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
@@ -538,22 +564,23 @@ ADS_TEST( "tree-34" )
  CHECK( tree::leafToLeaf( cat( "-1( -2, -3 )" ).get() ) == -6 );
  CHECK_THROWS( tree::leafToLeaf( cat( "1" ).get() ) , contract_violation );
  CHECK_THROWS( tree::leafToLeaf( chainTree( DEEP , false , zero ).get() ) ,
-               contract_violation );
- PT c( new BT( 0 ) );                       // two deep chains of 1s
- c->insertLeft( chainTree( DEEP , false , []( int ) {
-  return( 1 ); } ).release() );
- c->insertRight( chainTree( DEEP , true , []( int ) {
-  return( 1 ); } ).release() );
+	       contract_violation );
+ PT c( new BT( 0 ) );  // two deep chains of 1s
+ c->insertLeft(
+   chainTree( DEEP , false , []( int ) { return( 1 ); } ).release() );
+ c->insertRight(
+   chainTree( DEEP , true , []( int ) { return( 1 ); } ).release() );
  CHECK( tree::leafToLeaf( c.get() ) == 2 * DEEP );
  const int hi = std::numeric_limits< int >::max();
- PT h = cat( "0( " + std::to_string( hi ) + ", " + std::to_string( hi ) +
-             " )" );
+ PT h =
+   cat( "0( " + std::to_string( hi ) + ", " + std::to_string( hi ) + " )" );
  CHECK( tree::leafToLeaf( h.get() ) == 2LL * hi );
  }
 
 /*------------- tree-35, compito 2021-06-16, Albero completo ---------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// true if every node of t, at place i of a heap, is within n
 bool isInside( const BT * t , long long i , long long n )
@@ -563,7 +590,7 @@ bool isInside( const BT * t , long long i , long long n )
  if( i > n )
   return( false );
  return( isInside( t->left() , 2 * i , n ) &&
-         isInside( t->right() , 2 * i + 1 , n ) );
+	  isInside( t->right() , 2 * i + 1 , n ) );
  }
 
 /// isComplete(): true if t has the shape of a heap; with n nodes, every
@@ -588,7 +615,7 @@ ADS_TEST( "tree-35" )
  for( int r = 0 ; r < 600 ; ++r ) {
   const int n = 1 + r % 16;
   PT t( r % 2 ? completeTree( std::vector< int >( n , 0 ) )
-              : randomInts( g , n , 0 , 0 ).release() );
+	      : randomInts( g , n , 0 , 0 ).release() );
   bool hole = false , ok = true;
   std::queue< BT * > Q;
   Q.push( t.get() );
@@ -612,15 +639,16 @@ ADS_TEST( "tree-35" )
  CHECK( ! tree::isComplete( chainTree( 3 , false , zero ).get() ) );
  CHECK( ! tree::isComplete( chainTree( DEEP , false , zero ).get() ) );
  CHECK( ! tree::isComplete( chainTree( DEEP , true , zero ).get() ) );
- PT q( completeTree( std::vector< int >( 4095 , 0 ) ) );    // perfect
+ PT q( completeTree( std::vector< int >( 4095 , 0 ) ) );  // perfect
  CHECK( tree::isComplete( q.get() ) );
- bottomOf( q.get() )->insertRight( new BT( 0 ) );       // a right child
- CHECK( ! tree::isComplete( q.get() ) );                // with no left one
+ bottomOf( q.get() )->insertRight( new BT( 0 ) );  // a right child
+ CHECK( ! tree::isComplete( q.get() ) );           // with no left one
  }
 
 /*---------- tree-36, compito 2021-07-26, Alberi ben bilanciati ------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the size of t and whether t is well balanced
 std::pair< int , bool > wbRec( const BT * t )
@@ -641,7 +669,8 @@ bool wellBalanced( const BT * t )
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// a random well balanced tree of n nodes
 BT * randomBalanced( std::mt19937 & g , int n )
@@ -651,8 +680,10 @@ BT * randomBalanced( std::mt19937 & g , int n )
  const int a = ( n - 1 ) / 2 , b = n - 1 - a;
  const bool swap = g() % 2;
  auto * t = new BT( 0 );
- if( auto * L = randomBalanced( g , swap ? b : a ) ) t->insertLeft( L );
- if( auto * R = randomBalanced( g , swap ? a : b ) ) t->insertRight( R );
+ if( auto * L = randomBalanced( g , swap ? b : a ) )
+  t->insertLeft( L );
+ if( auto * R = randomBalanced( g , swap ? a : b ) )
+  t->insertRight( R );
  return( t );
  }
 
@@ -670,7 +701,7 @@ ADS_TEST( "tree-36" )
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   PT t( r % 2 ? randomBalanced( g , r % 20 )
-              : randomInts( g , r % 12 , 0 , 0 ).release() );
+	      : randomInts( g , r % 12 , 0 , 0 ).release() );
   bool ok = true;
   for( auto * u : nodesOf( t.get() ) )
    ok = ok && ( std::abs( sizeOf( u->left() ) - sizeOf( u->right() ) ) <= 1 );
@@ -688,7 +719,8 @@ ADS_TEST( "tree-36" )
 
 /*------------- tree-37, compito 2022-01-17, Alberi made up ----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// true if the subtree of t, at level l, is made up
 bool makeupRec( const BT * t , int l )
@@ -712,7 +744,8 @@ bool madeUp( const BT * T )
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// a random made up tree below level l, with no node of even level beyond
 /// D with children
@@ -720,14 +753,15 @@ BT * randomMadeUp( std::mt19937 & g , int l , int D )
 {
  auto * t = new BT( l );
  if( l % 2 ) {
-  if( g() % 2 ) t->insertLeft( randomMadeUp( g , l + 1 , D ) );
-  else t->insertRight( randomMadeUp( g , l + 1 , D ) );
-  }
- else
-  if( ( l < D ) && ( g() % 3 ) ) {
+  if( g() % 2 )
    t->insertLeft( randomMadeUp( g , l + 1 , D ) );
+  else
    t->insertRight( randomMadeUp( g , l + 1 , D ) );
-   }
+  }
+ else if( ( l < D ) && ( g() % 3 ) ) {
+  t->insertLeft( randomMadeUp( g , l + 1 , D ) );
+  t->insertRight( randomMadeUp( g , l + 1 , D ) );
+  }
  return( t );
  }
 
@@ -745,25 +779,26 @@ ADS_TEST( "tree-37" )
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   PT t( r % 2 ? randomMadeUp( g , 0 , 6 )
-              : randomInts( g , 1 + r % 10 , 0 , 0 ).release() );
-  if( r % 6 == 1 ) {                        // a new leaf somewhere
+	      : randomInts( g , 1 + r % 10 , 0 , 0 ).release() );
+  if( r % 6 == 1 ) {  // a new leaf somewhere
    const auto N = nodesOf( t.get() );
    BT * u = N[ g() % N.size() ];
-   if( ! u->left() ) u->insertLeft( new BT( 0 ) );
-   else if( ! u->right() ) u->insertRight( new BT( 0 ) );
+   if( ! u->left() )
+    u->insertLeft( new BT( 0 ) );
+   else if( ! u->right() )
+    u->insertRight( new BT( 0 ) );
    }
   bool ok = true;
   for( auto * u : nodesOf( t.get() ) )
-   ok = ok && ( depthOf( u ) % 2 ? degreeOf( u ) == 1
-                                 : degreeOf( u ) != 1 );
+   ok = ok && ( depthOf( u ) % 2 ? degreeOf( u ) == 1 : degreeOf( u ) != 1 );
   CHECK( tree::madeUp( t.get() ) == ok );
   }
- CHECK( ! tree::madeUp( cat( "1( 2, 3 )" ).get() ) );   // a leaf at level 1
+ CHECK( ! tree::madeUp( cat( "1( 2, 3 )" ).get() ) );  // a leaf at level 1
  CHECK( tree::madeUp( cat( "1( 2( -, 3 ), 4( 5, - ) )" ).get() ) );
  CHECK( ! tree::madeUp( chainTree( 2 , true , zero ).get() ) );
- PT c( new BT( 0 ) );                       // a deep made up tree: two
- BT * u = c.get();                          // children with one child each
- for( int l = 0 ; l < DEEP ; l += 2 ) {     // below the spine
+ PT c( new BT( 0 ) );                  // a deep made up tree: two
+ BT * u = c.get();                     // children with one child each
+ for( int l = 0 ; l < DEEP ; l += 2 ) {  // below the spine
   u->insertLeft( new BT( 0 ) );
   u->insertRight( new BT( 0 ) );
   u->left()->insertLeft( new BT( 0 ) );
@@ -771,13 +806,14 @@ ADS_TEST( "tree-37" )
   u = u->right()->right();
   }
  CHECK( tree::madeUp( c.get() ) );
- u->insertLeft( new BT( 0 ) );              // one child at an even level
+ u->insertLeft( new BT( 0 ) );  // one child at an even level
  CHECK( ! tree::madeUp( c.get() ) );
  }
 
 /*------------- tree-38, compito 2022-02-07, Alberi pasciuti ---------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// isPlump(): true if every level l of the tree, up to its height, has
 /// 2^( l - 1 ) nodes at least; a visit by levels that checks the size of
@@ -793,13 +829,15 @@ bool isPlump( BT * T )
  while( ! Q.empty() ) {
   BT * t = Q.front();
   Q.pop();
-  if( t->left() ) Q.push( t->left() );
-  if( t->right() ) Q.push( t->right() );
-  if( --count == 0 ) {                      // the size of level l + 1
+  if( t->left() )
+   Q.push( t->left() );
+  if( t->right() )
+   Q.push( t->right() );
+  if( --count == 0 ) {  // the size of level l + 1
    count = Q.size();
    ++l;
-   if( ( count > 0 ) && ( ( l > 63 ) ||
-                          ( count < ( std::uint64_t( 1 ) << ( l - 1 ) ) ) ) )
+   if( ( count > 0 ) &&
+       ( ( l > 63 ) || ( count < ( std::uint64_t( 1 ) << ( l - 1 ) ) ) ) )
     return( false );
    }
   }
@@ -816,21 +854,23 @@ ADS_TEST( "tree-38" )
  CHECK( tree::isPlump( cat( "1( 2, - )" ).get() ) );
  CHECK( ! tree::isPlump( cat( "1( 2( 3, - ), - )" ).get() ) );
  CHECK( tree::isPlump( cat( "1( 2( 3, - ), 4( -, 5 ) )" ).get() ) );
- CHECK( tree::isPlump( cat( "1( 2( 3( 6, 7 ), 8( 9, 10 ) ), 4( -, 5 ) )"
-                          ).get() ) );
- CHECK( ! tree::isPlump( cat( "1( 2( 3( 6, 7 ), 8( 9, - ) ), 4( -, 5 ) )"
-                            ).get() ) );
+ CHECK( tree::isPlump(
+   cat( "1( 2( 3( 6, 7 ), 8( 9, 10 ) ), 4( -, 5 ) )" ).get() ) );
+ CHECK( ! tree::isPlump(
+   cat( "1( 2( 3( 6, 7 ), 8( 9, - ) ), 4( -, 5 ) )" ).get() ) );
  CHECK_THROWS( tree::isPlump( nullptr ) , contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   PT t( r % 2 ? completeTree( std::vector< int >( 1 + r % 31 , 0 ) )
-              : randomInts( g , 1 + r % 12 , 0 , 0 ).release() );
+	      : randomInts( g , 1 + r % 12 , 0 , 0 ).release() );
   for( int k = r % 2 ? int( g() % 6 ) : 0 ; k > 0 ; --k ) {
    const auto L = leavesOf( t.get() );
    BT * u = L[ g() % L.size() ];
    if( u->parent() ) {
-    if( u == u->parent()->left() ) u->parent()->deleteLeft();
-    else u->parent()->deleteRight();
+    if( u == u->parent()->left() )
+     u->parent()->deleteLeft();
+    else
+     u->parent()->deleteRight();
     }
    }
   std::map< int , std::uint64_t > level;
@@ -844,14 +884,14 @@ ADS_TEST( "tree-38" )
  CHECK( tree::isPlump( cat( "1( -, 2 )" ).get() ) );
  CHECK( ! tree::isPlump( chainTree( 3 , true , zero ).get() ) );
  CHECK( ! tree::isPlump( chainTree( DEEP , false , zero ).get() ) );
- PT q( completeTree( std::vector< int >( 4095 , 0 ) ) );    // perfect
+ PT q( completeTree( std::vector< int >( 4095 , 0 ) ) );  // perfect
  CHECK( tree::isPlump( q.get() ) );
- PT p( new BT( 0 ) );                       // exactly 2^( l - 1 ) nodes
+ PT p( new BT( 0 ) );                      // exactly 2^( l - 1 ) nodes
  std::vector< BT * > level( 1 , p.get() );  // at each level l >= 1, down
- for( int l = 1 ; l <= 12 ; ++l ) {         // to the level 12
+ for( int l = 1 ; l <= 12 ; ++l ) {          // to the level 12
   std::vector< BT * > next;
-  for( BT * u : level ) {                   // one child of the root, then
-   u->insertLeft( new BT( 0 ) );            // two of each node
+  for( BT * u : level ) {         // one child of the root, then
+   u->insertLeft( new BT( 0 ) );  // two of each node
    next.push_back( u->left() );
    if( l > 1 ) {
     u->insertRight( new BT( 0 ) );
@@ -862,13 +902,14 @@ ADS_TEST( "tree-38" )
   }
  CHECK( level.size() == 2048 );
  CHECK( tree::isPlump( p.get() ) );
- level[ 0 ]->parent()->deleteRight();       // one node less at level 12
+ level[ 0 ]->parent()->deleteRight();  // one node less at level 12
  CHECK( ! tree::isPlump( p.get() ) );
  }
 
 /*--------------- tree-39, compito 2022-06-21, Lato destro -----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// rightSide(): the last node of every level, by increasing level; a
 /// visit by levels that counts the nodes left in the current level,
@@ -886,9 +927,11 @@ std::vector< BinaryTree< T > * > rightSide( BinaryTree< T > * T0 )
  while( ! Q.empty() ) {
   auto * t = Q.front();
   Q.pop();
-  if( t->left() ) Q.push( t->left() );
-  if( t->right() ) Q.push( t->right() );
-  if( --count == 0 ) {                      // the last of its level
+  if( t->left() )
+   Q.push( t->left() );
+  if( t->right() )
+   Q.push( t->right() );
+  if( --count == 0 ) {  // the last of its level
    S.push_back( t );
    count = Q.size();
    }
@@ -922,17 +965,18 @@ ADS_TEST( "tree-39" )
   CHECK( tree::rightSide( t.get() ) == V );
   }
  PT c = chainTree( DEEP , false , []( int d ) { return( d ); } );
- const auto S2 = tree::rightSide( c.get() );           // a left chain: all
- CHECK( ( S2.size() == std::size_t( DEEP ) ) &&        // its nodes
-        ( S2.back()->read() == DEEP - 1 ) );
+ const auto S2 = tree::rightSide( c.get() );     // a left chain: all
+ CHECK( ( S2.size() == std::size_t( DEEP ) ) &&  // its nodes
+	( S2.back()->read() == DEEP - 1 ) );
  PT q( completeTree( std::vector< int >( 6 , 0 ) ) );  // the last level
- const auto S3 = tree::rightSide( q.get() );           // ends at a left
- CHECK( ( S3.size() == 3 ) && ( S3[ 2 ] == q->right()->left() ) ); // child
+ const auto S3 = tree::rightSide( q.get() );          // ends at a left
+ CHECK( ( S3.size() == 3 ) && ( S3[ 2 ] == q->right()->left() ) );  // child
  }
 
 /*-------- tree-40, compito 2023-01-17, Albero binario massimale -----------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the maximal tree of A[ i .. j ]
 BT * mtRec( const std::vector< int > & A , int i , int j )
@@ -944,8 +988,10 @@ BT * mtRec( const std::vector< int > & A , int i , int j )
   if( A[ k ] > A[ m ] )
    m = k;
  auto * t = new BT( A[ m ] );
- if( auto * L = mtRec( A , i , m - 1 ) ) t->insertLeft( L );
- if( auto * R = mtRec( A , m + 1 , j ) ) t->insertRight( R );
+ if( auto * L = mtRec( A , i , m - 1 ) )
+  t->insertLeft( L );
+ if( auto * R = mtRec( A , m + 1 , j ) )
+  t->insertRight( R );
  return( t );
  }
 
@@ -981,9 +1027,9 @@ ADS_TEST( "tree-40" )
  using V = std::vector< int >;
  for( auto * f : { tree::maxTree , tree::maxTreeLinear } ) {
   CHECK( to_list( PT( f( V( { 2 , 3 , -1 , 8 , 4 , 5 } ) ) ).get() ) ==
-         to_list( cat( "8( 3( 2, -1 ), 5( 4, - ) )" ).get() ) );
+	 to_list( cat( "8( 3( 2, -1 ), 5( 4, - ) )" ).get() ) );
   CHECK( to_list( PT( f( V( { 2 , 1 , 5 , 3 , 0 , 4 } ) ) ).get() ) ==
-         to_list( cat( "5( 2( -, 1 ), 4( 3( -, 0 ), - ) )" ).get() ) );
+	 to_list( cat( "5( 2( -, 1 ), 4( 3( -, 0 ), - ) )" ).get() ) );
   CHECK( f( V() ) == nullptr );
   CHECK( heightOf( PT( f( V( { 1 , 2 , 3 , 4 , 5 , 6 } ) ) ).get() ) == 5 );
   CHECK_THROWS( f( V( { 1 , 2 , 1 } ) ) , contract_violation );
@@ -1004,26 +1050,28 @@ ADS_TEST( "tree-40" )
   CHECK( ( I == A ) && heap );
   }
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  for( auto * f : { tree::maxTree , tree::maxTreeLinear } ) {
   CHECK( to_list( PT( f( V( { 4 } ) ) ).get() ) ==
-         to_list( cat( "4" ).get() ) );
+	 to_list( cat( "4" ).get() ) );
   CHECK( to_list( PT( f( V( { lo , hi } ) ) ).get() ) ==
-         to_list( cat( std::to_string( hi ) + "( " + std::to_string( lo ) +
-                       ", - )" ).get() ) );
-  PT d( f( V( { 6 , 5 , 4 , 3 , 2 , 1 } ) ) );          // decreasing
+	 to_list(
+	   cat( std::to_string( hi ) + "( " + std::to_string( lo ) + ", - )" )
+	     .get() ) );
+  PT d( f( V( { 6 , 5 , 4 , 3 , 2 , 1 } ) ) );  // decreasing
   CHECK( ( heightOf( d.get() ) == 5 ) && ! d->left() );
   }
- V D( 3000 );                               // a deep chain, Theta( n^2 )
- std::iota( D.begin() , D.end() , 0 );      // for maxTree
+ V D( 3000 );                         // a deep chain, Theta( n^2 )
+ std::iota( D.begin() , D.end() , 0 );  // for maxTree
  PT a( tree::maxTree( D ) ) , b( tree::maxTreeLinear( D ) );
  CHECK( ( heightOf( a.get() ) == 2999 ) &&
-        ( to_list( a.get() ) == to_list( b.get() ) ) );
+	( to_list( a.get() ) == to_list( b.get() ) ) );
  }
 
 /*---------------- tree-42, compito 2023-06-20, Tree fire ------------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the time to burn the nodes reached from t not through prev
 int fireRec( const BT * t , const BT * prev )
@@ -1068,20 +1116,21 @@ ADS_TEST( "tree-42" )
    }
   }
  PT c = chainTree( DEEP , true , zero );
- CHECK( tree::fire( c.get() ) == DEEP - 1 );            // from an end
- CHECK( tree::fire( bottomOf( c.get() ) ) == DEEP - 1 ); // from the other
+ CHECK( tree::fire( c.get() ) == DEEP - 1 );              // from an end
+ CHECK( tree::fire( bottomOf( c.get() ) ) == DEEP - 1 );  // from the other
  BT * mid = c.get();
  for( int d = 0 ; d < DEEP / 2 ; ++d )
   mid = mid->right();
- CHECK( tree::fire( mid ) == DEEP / 2 );                 // from the middle
+ CHECK( tree::fire( mid ) == DEEP / 2 );  // from the middle
  PT q( completeTree( std::vector< int >( 63 , 0 ) ) );
  CHECK( tree::fire( q.get() ) == 5 );
- CHECK( tree::fire( bottomOf( q.get() ) ) == 10 );       // leaf to leaf
+ CHECK( tree::fire( bottomOf( q.get() ) ) == 10 );  // leaf to leaf
  }
 
 /*------------- tree-43, compito 2023-06-20, Somma su albero ---------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the sum of the values of t, +inf if t is not a sum tree
 long long isRec( const BT * t )
@@ -1120,7 +1169,7 @@ ADS_TEST( "tree-43" )
   PT t = randomInts( g , 1 + r % 14 , -3 , 3 );
   if( r % 2 ) {
    auto N = nodesOf( t.get() );
-   std::reverse( N.begin() , N.end() );     // the children first
+   std::reverse( N.begin() , N.end() );  // the children first
    for( auto * u : N )
     if( ! isLeafNode( u ) )
      u->write( int( sumOf( u->left() ) + sumOf( u->right() ) ) );
@@ -1130,24 +1179,26 @@ ADS_TEST( "tree-43" )
   bool ok = true;
   for( auto * u : nodesOf( t.get() ) )
    ok = ok && ( isLeafNode( u ) ||
-                ( u->read() == sumOf( u->left() ) + sumOf( u->right() ) ) );
+		( u->read() == sumOf( u->left() ) + sumOf( u->right() ) ) );
   CHECK( tree::isSumTree( t.get() ) == ok );
   }
- CHECK( tree::isSumTree( cat( "4( 4, - )" ).get() ) );   // one child
+ CHECK( tree::isSumTree( cat( "4( 4, - )" ).get() ) );  // one child
  CHECK( ! tree::isSumTree( cat( "4( -, 3 )" ).get() ) );
  CHECK( tree::isSumTree( cat( "0( 0, 0 )" ).get() ) );
- CHECK( ! tree::isSumTree( cat( "5( 5( 5, - ), - )" ).get() ) );   // 10
+ CHECK( ! tree::isSumTree( cat( "5( 5( 5, - ), - )" ).get() ) );  // 10
  CHECK( tree::isSumTree( chainTree( DEEP , false , zero ).get() ) );
- CHECK( ! tree::isSumTree( chainTree( DEEP , false , []( int d ) {
-  return( d + 1 == DEEP ? 1 : 0 ); } ).get() ) );
+ CHECK( ! tree::isSumTree(
+   chainTree( DEEP , false , []( int d ) { return( d + 1 == DEEP ? 1 : 0 ); } )
+     .get() ) );
  const int hi = std::numeric_limits< int >::max();
  PT h = cat( std::to_string( hi ) + "( " + std::to_string( hi ) + ", 0 )" );
- CHECK( tree::isSumTree( h.get() ) );       // sums beyond an int
+ CHECK( tree::isSumTree( h.get() ) );  // sums beyond an int
  }
 
 /*------------- tree-44, compito 2023-07-11, Perfect inside ----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the height of the largest perfect tree in t, and that of the largest
 /// one rooted in t, -1 for nil
@@ -1173,7 +1224,8 @@ int largestPerfect( const BT * T )
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// true if the nodes of t down to depth h - 1 have two children
 bool perfectTop( const BT * t , int h )
@@ -1181,7 +1233,7 @@ bool perfectTop( const BT * t , int h )
  if( h == 0 )
   return( true );
  return( t->left() && t->right() && perfectTop( t->left() , h - 1 ) &&
-         perfectTop( t->right() , h - 1 ) );
+	  perfectTop( t->right() , h - 1 ) );
  }
 
 }  // end( namespace )
@@ -1191,15 +1243,16 @@ bool perfectTop( const BT * t , int h )
 ADS_TEST( "tree-44" )
 {
  CHECK( tree::largestPerfect( cat( "1( 2( 3( 4( 5, 6 ), 7 ), 8( 9, 10 ) ), "
-                                   "11( -, 12( -, 13 ) ) )" ).get() ) == 2 );
+				   "11( -, 12( -, 13 ) ) )" )
+				.get() ) == 2 );
  CHECK( tree::largestPerfect( nullptr ) == 0 );
  CHECK( tree::largestPerfect( cat( "1" ).get() ) == 0 );
- CHECK( tree::largestPerfect( cat( "1( 2( 3, - ), 4( 5, 6 ) )" ).get() )
-        == 1 );
+ CHECK( tree::largestPerfect( cat( "1( 2( 3, - ), 4( 5, 6 ) )" ).get() ) ==
+	1 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   PT t( r % 3 ? randomInts( g , 1 + r % 16 , 0 , 0 ).release()
-              : completeTree( std::vector< int >( 1 + r % 40 , 0 ) ) );
+	      : completeTree( std::vector< int >( 1 + r % 40 , 0 ) ) );
   int best = 0;
   for( auto * u : nodesOf( t.get() ) )
    for( int h = 1 ; perfectTop( u , h ) ; ++h )
@@ -1211,19 +1264,20 @@ ADS_TEST( "tree-44" )
  CHECK( tree::largestPerfect( chainTree( DEEP , true , zero ).get() ) == 0 );
  PT q( completeTree( std::vector< int >( 4095 , 0 ) ) );
  CHECK( tree::largestPerfect( q.get() ) == 11 );
- PT r( completeTree( std::vector< int >( 4094 , 0 ) ) );   // one leaf less:
- CHECK( tree::largestPerfect( r.get() ) == 10 );           // the subtrees
+ PT r( completeTree( std::vector< int >( 4094 , 0 ) ) );  // one leaf less:
+ CHECK( tree::largestPerfect( r.get() ) == 10 );         // the subtrees
  }
 
 /*--------------- tree-45, compito 2023-08-23, Prossimita ------------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the level and the place in a heap (the root 0) of x below t, which is
 /// at level l and place pos; ( -1 , -1 ) if x is not there or deeper than
 /// the level 61, below which the places overflow 63 bits
 std::pair< int , long long > locate( const BT * t , const BT * x , int l ,
-                                     long long pos )
+				    long long pos )
 {
  if( ! t || ( l > 61 ) )
   return( std::pair( -1 , -1LL ) );
@@ -1257,7 +1311,8 @@ long long proximity( const BT * T , const BT * t1 , const BT * t2 )
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// the path from the root to t as a binary number, left 0 and right 1, and
 /// its length; the first step from the root is the most significant bit
@@ -1279,8 +1334,8 @@ std::pair< long long , int > pathBits( const BT * t )
 ADS_TEST( "tree-45" )
 {
  PT e = cat( "0( 1( 2( 3, - ), 4 ), 5( 6( 7( 8, - ), - ), 9 ) )" );
- BT * t1 = findValue( e.get() , 3 ) , * t2 = findValue( e.get() , 7 ) ,
-    * t3 = findValue( e.get() , 9 );
+ BT *t1 = findValue( e.get() , 3 ) , *t2 = findValue( e.get() , 7 ) ,
+    *t3 = findValue( e.get() , 9 );
  CHECK( tree::proximity( e.get() , t1 , t2 ) == 3 );
  CHECK( tree::proximity( e.get() , t2 , t1 ) == 3 );
  CHECK( tree::proximity( e.get() , t1 , t3 ) == INFTY );
@@ -1288,7 +1343,7 @@ ADS_TEST( "tree-45" )
  CHECK_THROWS( tree::proximity( e.get() , t1 , t1 ) , contract_violation );
  PT o = cat( "1" );
  CHECK_THROWS( tree::proximity( e.get() , t1 , o.get() ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 300 ; ++r ) {
   PT t = randomInts( g , 2 + r % 15 , 0 , 0 );
@@ -1299,7 +1354,7 @@ ADS_TEST( "tree-45" )
      const auto [ x , lx ] = pathBits( a );
      const auto [ y , ly ] = pathBits( b );
      CHECK( tree::proximity( t.get() , a , b ) ==
-            ( lx == ly ? std::abs( x - y ) - 1 : INFTY ) );
+	    ( lx == ly ? std::abs( x - y ) - 1 : INFTY ) );
      }
   }
  // a deep left chain under the root: its nodes beyond the level 61 are
@@ -1309,25 +1364,26 @@ ADS_TEST( "tree-45" )
  d->insertLeft( chainTree( 200 , false , zero ).release() );
  d->insertRight( new BT( 0 ) );
  CHECK( tree::proximity( d.get() , d->left() , d->right() ) == 0 );
- BT * at61 = d.get() , * at62 = nullptr;
+ BT *at61 = d.get() , *at62 = nullptr;
  for( int l = 0 ; l < 61 ; ++l )
   at61 = at61->left();
  at62 = at61->left();
- BT * r61 = d.get();                        // the right child on a chain
- for( int l = 0 ; l < 60 ; ++l )            // of left children reaches
-  r61 = r61->left();                        // the level 61 too
+ BT * r61 = d.get();            // the right child on a chain
+ for( int l = 0 ; l < 60 ; ++l )  // of left children reaches
+  r61 = r61->left();            // the level 61 too
  r61->insertRight( new BT( 0 ) );
  CHECK( tree::proximity( d.get() , at61 , r61->right() ) == 0 );
  CHECK( tree::proximity( d.get() , at61 , d->right() ) == INFTY );
  CHECK_THROWS( tree::proximity( d.get() , at62 , d->right() ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( tree::proximity( d.get() , d->right() , at62 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------- tree-46, compito 2024-07-02, Piu o meno ------------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the edges of the longest plus-or-minus-k path from t down to a leaf
 /// (-inf if none), and the longest one in t; the differences are taken on
@@ -1397,12 +1453,15 @@ ADS_TEST( "tree-46" )
  CHECK( tree::longestPlusMinus( cat( "4( 4, 9 )" ).get() , 0 ) == 1 );
  CHECK( tree::longestPlusMinus( cat( "4( 9, - )" ).get() , 4 ) == 0 );
  CHECK( tree::longestPlusMinus( cat( "4( 9, - )" ).get() , 5 ) == 1 );
- CHECK( tree::longestPlusMinus( chainTree( DEEP , true , []( int d ) {
-  return( d ); } ).get() , 1 ) == DEEP - 1 );
- CHECK( tree::longestPlusMinus( chainTree( DEEP , true , []( int d ) {
-  return( 3 * d ); } ).get() , 2 ) == 0 );
+ CHECK( tree::longestPlusMinus(
+	  chainTree( DEEP , true , []( int d ) { return( d ); } ).get() ,
+	  1 ) ==
+	DEEP - 1 );
+ CHECK( tree::longestPlusMinus(
+	  chainTree( DEEP , true , []( int d ) { return( 3 * d ); } ).get() ,
+	  2 ) == 0 );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  PT x = chainTree( 2 , false , [ & ]( int d ) { return( d ? lo : hi ); } );
  CHECK( tree::longestPlusMinus( x.get() , hi ) == 0 );  // no overflow
  PT y = chainTree( 2 , false , [ & ]( int d ) { return( d ? -1 : hi ); } );
@@ -1410,12 +1469,13 @@ ADS_TEST( "tree-46" )
  PT z = chainTree( 2 , false , [ & ]( int d ) { return( d ? 0 : hi ); } );
  CHECK( tree::longestPlusMinus( z.get() , hi ) == 1 );
  CHECK_THROWS( tree::longestPlusMinus( cat( "4" ).get() , -1 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*------------- tree-47, compito 2024-08-26, Alberi isobati ----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// -1 for nil, -inf if the leaves of t are not all at the same depth,
 /// their depth below t otherwise
@@ -1443,16 +1503,19 @@ bool isIsobath( const BT * T )
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// a random tree whose leaves are all at depth d below the root
 BT * randomIsobath( std::mt19937 & g , int d )
 {
  auto * t = new BT( 0 );
  if( d > 0 ) {
-  const unsigned c = 1 + g() % 3;           // left, right or both
-  if( c & 1u ) t->insertLeft( randomIsobath( g , d - 1 ) );
-  if( c & 2u ) t->insertRight( randomIsobath( g , d - 1 ) );
+  const unsigned c = 1 + g() % 3;  // left, right or both
+  if( c & 1u )
+   t->insertLeft( randomIsobath( g , d - 1 ) );
+  if( c & 2u )
+   t->insertRight( randomIsobath( g , d - 1 ) );
   }
  return( t );
  }
@@ -1470,7 +1533,7 @@ ADS_TEST( "tree-47" )
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   PT t( r % 2 ? randomIsobath( g , r % 6 )
-              : randomInts( g , 1 + r % 12 , 0 , 0 ).release() );
+	      : randomInts( g , 1 + r % 12 , 0 , 0 ).release() );
   std::set< int > D;
   for( auto * l : leavesOf( t.get() ) )
    D.insert( depthOf( l ) );
@@ -1482,12 +1545,13 @@ ADS_TEST( "tree-47" )
  PT q( completeTree( std::vector< int >( 63 , 0 ) ) );
  CHECK( tree::isIsobath( q.get() ) );
  PT r( completeTree( std::vector< int >( 60 , 0 ) ) );  // a leaf at level
- CHECK( ! tree::isIsobath( r.get() ) );                 // 4 now
+ CHECK( ! tree::isIsobath( r.get() ) );                // 4 now
  }
 
 /*------------ tree-48, compito 2025-02-03, Somma ramificata ---------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the sum of the values at distance at most k from curr, not through prev
 long long bsRec( const BT * curr , int k , const BT * prev )
@@ -1519,7 +1583,7 @@ long long branchSum( const BT * t , int k )
 ADS_TEST( "tree-48" )
 {
  PT e = cat( "7( 7( 5( 8, 3 ), 7( 3( -2, -1 ), - ) ), "
-             "8( 6( 1, 2 ), 6( -, 3 ) ) )" );
+	     "8( 6( 1, 2 ), 6( -, 3 ) ) )" );
  BT * t = e->left()->right();
  CHECK( tree::branchSum( t , 2 ) == 26 );
  CHECK( tree::branchSum( t , 0 ) == 7 );
@@ -1550,18 +1614,19 @@ ADS_TEST( "tree-48" )
   mid = mid->right();
  CHECK( tree::branchSum( mid , 0 ) == 1 );
  CHECK( tree::branchSum( mid , 7 ) == 15 );
- CHECK( tree::branchSum( c.get() , DEEP ) == DEEP );    // k beyond the tree
+ CHECK( tree::branchSum( c.get() , DEEP ) == DEEP );  // k beyond the tree
  CHECK( tree::branchSum( bottomOf( c.get() ) ,
-                         std::numeric_limits< int >::max() ) == DEEP );
+			 std::numeric_limits< int >::max() ) == DEEP );
  const int hi = std::numeric_limits< int >::max();
  PT h = cat( std::to_string( hi ) + "( " + std::to_string( hi ) + ", " +
-             std::to_string( hi ) + " )" );
+	     std::to_string( hi ) + " )" );
  CHECK( tree::branchSum( h.get() , 1 ) == 3LL * hi );
  }
 
 /*-------------- tree-49, compito 2025-07-14, Albero bello -----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the size of the largest full subtree in t, and that of t if t is full,
 /// -1 otherwise
@@ -1590,14 +1655,15 @@ int largestAB( const BT * T )
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// true if every node of t has 0 or 2 children
 bool fullBrute( BT * t )
 {
  const auto N = nodesOf( t );
- return( std::all_of( N.begin() , N.end() , []( BT * u ) {
-  return( degreeOf( u ) != 1 ); } ) );
+ return( std::all_of( N.begin() , N.end() ,
+		       []( BT * u ) { return( degreeOf( u ) != 1 ); } ) );
  }
 
 }  // end( namespace )
@@ -1607,7 +1673,8 @@ bool fullBrute( BT * t )
 ADS_TEST( "tree-49" )
 {
  CHECK( tree::largestAB( cat( "1( 2( 3( 4( 5, 6 ), 7 ), 8( 9, 10 ) ), "
-                              "11( -, 12( -, 13 ) ) )" ).get() ) == 9 );
+			      "11( -, 12( -, 13 ) ) )" )
+			   .get() ) == 9 );
  CHECK( tree::largestAB( nullptr ) == 0 );
  CHECK( tree::largestAB( cat( "1" ).get() ) == 1 );
  CHECK( tree::largestAB( cat( "1( 2( 3, 4 ), - )" ).get() ) == 3 );
@@ -1630,7 +1697,8 @@ ADS_TEST( "tree-49" )
 
 /*---------- tree-50, compito 2025-08-25, Scendere nell'albero -------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// localMinimum(): a node of the perfect tree T smaller than its parent
 /// and its children: localMinimum() of the library, from the root down to
@@ -1643,13 +1711,15 @@ BT * localMinimum( BT * T )
 {
  ADS_PRE( T != nullptr );
  ADS_AUDIT( std::ranges::all_of( nodesOf( T ) , []( const BT * u ) {
-  return( ! u->left() == ! u->right() ); } ) );
+  return( ! u->left() == ! u->right() );
+  } ) );
  return( ADS::localMinimum( T ) );
  }
 
 }  // end( namespace tree )
 
-namespace {
+namespace
+{
 
 /// true if t is smaller than its parent and its children
 bool isLocalMinimum( const BT * t )
@@ -1667,8 +1737,9 @@ bool isLocalMinimum( const BT * t )
 ADS_TEST( "tree-50" )
 {
  using V = std::vector< int >;
- PT e( completeTree( V( { 13 , 7 , 5 , 15 , 11 , 12 , 4 , 2 , 8 , 14 , 6 , 1 ,
-                          9 , 10 , 3 } ) ) );
+ PT e( completeTree(
+   V( { 13 , 7 , 5 , 15 , 11 , 12 , 4 , 2 , 8 , 14 , 6 , 1 , 9 , 10 ,
+	3 } ) ) );
  BT * m = tree::localMinimum( e.get() );
  CHECK( ( m->read() == 7 ) && isLocalMinimum( m ) );
  std::set< int > M;
@@ -1678,7 +1749,7 @@ ADS_TEST( "tree-50" )
  CHECK( M == std::set< int >( { 7 , 2 , 8 , 6 , 1 , 9 , 3 } ) );
  CHECK( tree::localMinimum( cat( "5" ).get() )->read() == 5 );
  CHECK_THROWS( tree::localMinimum( cat( "5( 4, - )" ).get() ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   V A( ( 1 << ( 1 + r % 6 ) ) - 1 );
@@ -1688,8 +1759,8 @@ ADS_TEST( "tree-50" )
   BT * u = tree::localMinimum( t.get() );
   CHECK( isLocalMinimum( u ) && ( depthOf( u ) <= 5 ) );
   }
- V A( 32767 );                              // increasing by levels: the
- std::iota( A.begin() , A.end() , 0 );      // root; decreasing: a leaf
+ V A( 32767 );                        // increasing by levels: the
+ std::iota( A.begin() , A.end() , 0 );  // root; decreasing: a leaf
  PT up( completeTree( A ) );
  CHECK( tree::localMinimum( up.get() ) == up.get() );
  std::reverse( A.begin() , A.end() );
@@ -1697,19 +1768,20 @@ ADS_TEST( "tree-50" )
  BT * m2 = tree::localMinimum( down.get() );
  CHECK( isLeafNode( m2 ) && ( depthOf( m2 ) == 14 ) && isLocalMinimum( m2 ) );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
- PT x( completeTree( V( { hi , 0 , lo } ) ) );     // the first smaller
+	   hi = std::numeric_limits< int >::max();
+ PT x( completeTree( V( { hi , 0 , lo } ) ) );           // the first smaller
  CHECK( tree::localMinimum( x.get() )->read() == 0 );  // child, not the least
  PT y( completeTree( V( { 0 , hi , lo } ) ) );
  CHECK( tree::localMinimum( y.get() )->read() == lo );
  CHECK_THROWS( tree::localMinimum( nullptr ) , contract_violation );
  CHECK_THROWS( tree::localMinimum( cat( "5( 4( 3, 2 ), 6( 1, - ) )" ).get() ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------- tree-51, compito 2026-01-12, Alberobello -----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the full subtrees in t, and whether t is full (false for nil)
 std::pair< int , bool > abCountRec( const BT * t )
@@ -1741,8 +1813,8 @@ int countAB( const BT * T )
 ADS_TEST( "tree-51" )
 {
  CHECK( tree::countAB( cat( "1( 2( 3( 4( 5, 6 ), 7 ), 8( 9, 10 ) ), "
-                            "11( 12( 13, 14 ), 15( 16, - ) ) )" ).get() )
-        == 13 );
+			    "11( 12( 13, 14 ), 15( 16, - ) ) )" )
+			 .get() ) == 13 );
  CHECK( tree::countAB( nullptr ) == 0 );
  CHECK( tree::countAB( cat( "1" ).get() ) == 1 );
  CHECK( tree::countAB( cat( "1( 2( 3, 4 ), - )" ).get() ) == 3 );
@@ -1764,7 +1836,8 @@ ADS_TEST( "tree-51" )
 
 /*------------- tree-52, compito 2026-02-02, Albero sommato ----------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// summedTree(): a new tree of the shape of t whose nodes hold the sums of
 /// the values of the subtrees of t; a postvisit that builds the children
@@ -1776,10 +1849,12 @@ BT * summedTree( const BT * t )
  if( ! t )
   return( nullptr );
  auto * s = new BT( 0 );
- if( auto * L = summedTree( t->left() ) ) s->insertLeft( L );
- if( auto * R = summedTree( t->right() ) ) s->insertRight( R );
+ if( auto * L = summedTree( t->left() ) )
+  s->insertLeft( L );
+ if( auto * R = summedTree( t->right() ) )
+  s->insertRight( R );
  s->write( t->read() + ( s->left() ? s->left()->read() : 0 ) +
-           ( s->right() ? s->right()->read() : 0 ) );
+	   ( s->right() ? s->right()->read() : 0 ) );
  return( s );
  }
 
@@ -1791,9 +1866,10 @@ ADS_TEST( "tree-52" )
 {
  PT e = cat( "6( 4( 2( 1, 3 ), 1 ), 2( 1( 3, 2 ), 1( -, 1 ) ) )" );
  const std::string before = to_list( e.get() );
- CHECK( to_list( PT( tree::summedTree( e.get() ) ).get() ) ==
-        to_list( cat( "27( 11( 6( 1, 3 ), 1 ), 10( 6( 3, 2 ), 2( -, 1 ) ) )"
-                    ).get() ) );
+ CHECK(
+   to_list( PT( tree::summedTree( e.get() ) ).get() ) ==
+   to_list(
+     cat( "27( 11( 6( 1, 3 ), 1 ), 10( 6( 3, 2 ), 2( -, 1 ) ) )" ).get() ) );
  CHECK( to_list( e.get() ) == before );
  CHECK( tree::summedTree( nullptr ) == nullptr );
  std::mt19937 g( 1 );
@@ -1810,14 +1886,15 @@ ADS_TEST( "tree-52" )
  PT c = chainTree( DEEP , false , []( int ) { return( 1 ); } );
  PT s( tree::summedTree( c.get() ) );
  CHECK( ( s->read() == DEEP ) && ( bottomOf( s.get() )->read() == 1 ) &&
-        ( heightOf( s.get() ) == DEEP - 1 ) );
+	( heightOf( s.get() ) == DEEP - 1 ) );
  PT z( tree::summedTree( cat( "0( 5, -5 )" ).get() ) );
  CHECK( to_list( z.get() ) == to_list( cat( "0( 5, -5 )" ).get() ) );
  }
 
 /*--------- tree-53, compito 2026-06-22, Nodi valore-bilanciati ------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the sum of the values of t and its value-balanced nodes
 std::pair< long long , int > valueBalancedRec( const BT * t )
@@ -1845,8 +1922,8 @@ int valueBalanced( const BT * T )
 ADS_TEST( "tree-53" )
 {
  CHECK( tree::valueBalanced( cat( "5( 6( 5( -1, 1 ), 5( 0, - ) ), "
-                                  "7( 5( 3, -3 ), 3( 1, 1 ) ) )" ).get() )
-        == 11 );
+				  "7( 5( 3, -3 ), 3( 1, 1 ) ) )" )
+			       .get() ) == 11 );
  CHECK( tree::valueBalanced( nullptr ) == 0 );
  CHECK( tree::valueBalanced( cat( "4" ).get() ) == 1 );
  CHECK( tree::valueBalanced( cat( "4( 0, - )" ).get() ) == 2 );
@@ -1859,21 +1936,23 @@ ADS_TEST( "tree-53" )
   CHECK( tree::valueBalanced( t.get() ) == count );
   }
  CHECK( tree::valueBalanced( cat( "4( 1, - )" ).get() ) == 1 );
- CHECK( tree::valueBalanced( cat( "4( -3, 3 )" ).get() ) == 2 ); // not root
+ CHECK( tree::valueBalanced( cat( "4( -3, 3 )" ).get() ) == 2 );  // not root
  CHECK( tree::valueBalanced( cat( "4( 3, 3 )" ).get() ) == 3 );
  CHECK( tree::valueBalanced( chainTree( DEEP , false , zero ).get() ) ==
-        DEEP );                             // 0 against the empty side
- CHECK( tree::valueBalanced( chainTree( DEEP , false , []( int ) {
-  return( 1 ); } ).get() ) == 1 );          // only the leaf
+	DEEP );  // 0 against the empty side
+ CHECK( tree::valueBalanced(
+	  chainTree( DEEP , false , []( int ) { return( 1 ); } ).get() ) ==
+	1 );  // only the leaf
  const int hi = std::numeric_limits< int >::max();
  const std::string H = std::to_string( hi );
  PT h = cat( "0( " + H + "( " + H + ", - ), " + H + "( -, " + H + " ) )" );
- CHECK( tree::valueBalanced( h.get() ) == 3 );   // the root, by 64 bits
+ CHECK( tree::valueBalanced( h.get() ) == 3 );  // the root, by 64 bits
  }
 
 /*------------ tree-54, compito 2026-07-20, Parenti serpenti ---------------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the nodes at distance at most d from t, t included, not through p
 int crRec( const Tree< int > * t , const Tree< int > * p , int d )
@@ -1908,22 +1987,25 @@ int countRelatives( const Tree< int > * t , int d )
 ADS_TEST( "tree-54" )
 {
  using GT = Tree< int >;
- std::unique_ptr< GT > e( tree_from_list< int >(
-  "( 1 ( 2 ( 5 ) ( 6 ( 11 ) ) ) ( 3 ( 7 ) ) "
-  "( 4 ( 8 ( 12 ) ( 13 ) ) ( 9 ) ( 10 ) ) )" ) );
+ std::unique_ptr< GT > e(
+   tree_from_list< int >( "( 1 ( 2 ( 5 ) ( 6 ( 11 ) ) ) ( 3 ( 7 ) ) "
+			  "( 4 ( 8 ( 12 ) ( 13 ) ) ( 9 ) ( 10 ) ) )" ) );
  GT * t = nullptr;
- pre_visit( e.get() , [ & ]( GT * u ) { if( u->read() == 4 ) t = u; } );
+ pre_visit( e.get() , [ & ]( GT * u ) {
+  if( u->read() == 4 )
+   t = u;
+  } );
  CHECK( tree::countRelatives( t , 2 ) == 8 );
  CHECK( tree::countRelatives( t , 0 ) == 0 );
  CHECK( tree::countRelatives( t , 9 ) == 12 );
  CHECK_THROWS( tree::countRelatives( t , -1 ) , contract_violation );
  CHECK_THROWS( tree::countRelatives( nullptr , 1 ) , contract_violation );
- CHECK( tree::countRelatives( e.get() , 1 ) == 3 );     // the root
- CHECK( tree::countRelatives( e.get() ,
-                              std::numeric_limits< int >::max() ) == 12 );
+ CHECK( tree::countRelatives( e.get() , 1 ) == 3 );  // the root
+ CHECK( tree::countRelatives( e.get() , std::numeric_limits< int >::max() ) ==
+	12 );
  std::unique_ptr< GT > one( new GT( 0 ) );
  CHECK( tree::countRelatives( one.get() , 5 ) == 0 );
- std::unique_ptr< GT > c( new GT( 0 ) );    // a deep chain
+ std::unique_ptr< GT > c( new GT( 0 ) );  // a deep chain
  GT * u = c.get();
  for( int d = 1 ; d < DEEP ; ++d ) {
   u->insertChild( new GT( d ) );
@@ -1931,7 +2013,7 @@ ADS_TEST( "tree-54" )
   }
  CHECK( tree::countRelatives( u , DEEP ) == DEEP - 1 );
  CHECK( tree::countRelatives( u , 10 ) == 10 );
- std::unique_ptr< GT > s( new GT( 0 ) );    // a star: the leaves are at 2
+ std::unique_ptr< GT > s( new GT( 0 ) );  // a star: the leaves are at 2
  for( int i = 1 ; i <= 100 ; ++i )          // from each other
   s->insertChild( new GT( i ) );
  CHECK( tree::countRelatives( s->leftmostChild() , 1 ) == 1 );
@@ -1952,19 +2034,22 @@ ADS_TEST( "tree-54" )
    const auto dist = distance( G , i ).first;
    for( int d = 0 ; d <= 4 ; ++d )
     CHECK( tree::countRelatives( N[ i ] , d ) ==
-           std::count_if( dist.begin() , dist.end() , [ & ]( int x ) {
-            return( ( x > 0 ) && ( x <= d ) ); } ) );
+	   std::count_if( dist.begin() , dist.end() , [ & ]( int x ) {
+	    return( ( x > 0 ) && ( x <= d ) );
+	    } ) );
    }
   }
  }
 
 /*--------- tree-55, compito 2026-08-28, Sottoalbero ABR massimo -----------*/
 
-namespace tree {
+namespace tree
+{
 
 /// the least and the largest key of t, its size and whether t is a search
 /// tree; if it is not, the size of the largest search tree in t
-struct BSTInfo {
+struct BSTInfo
+{
  long long min , max;
  int size;
  bool isBST;
@@ -1976,11 +2061,11 @@ BSTInfo largestBSTRec( const BT * t )
  if( ! t )
   return( BSTInfo{ INFTY , -INFTY , 0 , true } );
  const BSTInfo L = largestBSTRec( t->left() ) ,
-               R = largestBSTRec( t->right() );
+   R = largestBSTRec( t->right() );
  const long long k = t->read();
  if( L.isBST && R.isBST && ( L.max < k ) && ( k < R.min ) )
   return( BSTInfo{ std::min( L.min , k ) , std::max( k , R.max ) ,
-                   L.size + R.size + 1 , true } );
+		    L.size + R.size + 1 , true } );
  return( BSTInfo{ 0 , 0 , std::max( L.size , R.size ) , false } );
  }
 
@@ -2018,19 +2103,22 @@ ADS_TEST( "tree-55" )
    }
   CHECK( tree::largestBST( t.get() ) == best );
   }
- CHECK( tree::largestBST( cat( "3( -, 3 )" ).get() ) == 1 );    // duplicates
+ CHECK( tree::largestBST( cat( "3( -, 3 )" ).get() ) == 1 );  // duplicates
  CHECK( tree::largestBST( cat( "2( 1, 3 )" ).get() ) == 3 );
  CHECK( tree::largestBST( cat( "2( 3, 1 )" ).get() ) == 1 );
- CHECK( tree::largestBST( chainTree( DEEP , true , []( int d ) {
-  return( d ); } ).get() ) == DEEP );       // increasing to the right
- CHECK( tree::largestBST( chainTree( DEEP , true , []( int d ) {
-  return( -d ); } ).get() ) == 1 );         // the wrong side
- CHECK( tree::largestBST( chainTree( DEEP , false , []( int d ) {
-  return( -d ); } ).get() ) == DEEP );
+ CHECK( tree::largestBST(
+	  chainTree( DEEP , true , []( int d ) { return( d ); } ).get() ) ==
+	DEEP );  // increasing to the right
+ CHECK( tree::largestBST(
+	  chainTree( DEEP , true , []( int d ) { return( -d ); } ).get() ) ==
+	1 );  // the wrong side
+ CHECK( tree::largestBST(
+	  chainTree( DEEP , false , []( int d ) { return( -d ); } ).get() ) ==
+	DEEP );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
- PT x = cat( "0( " + std::to_string( lo ) + ", " + std::to_string( hi ) +
-             " )" );
+	   hi = std::numeric_limits< int >::max();
+ PT x =
+   cat( "0( " + std::to_string( lo ) + ", " + std::to_string( hi ) + " )" );
  CHECK( tree::largestBST( x.get() ) == 3 );
  }
 

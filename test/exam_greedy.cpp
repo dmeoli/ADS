@@ -71,7 +71,8 @@ using namespace ADS;
 /// the integers of the exercises, 64 bits also where long has 32
 using LL = long long;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ HELPERS -----------------------------------*/
@@ -85,14 +86,15 @@ Vec randomVec( std::mt19937 & g , std::size_t n , long long lo , long long hi )
 {
  std::uniform_int_distribution< long long > U( lo , hi );
  Vec A( n );
- for( auto & x : A ) x = U( g );
+ for( auto & x : A )
+  x = U( g );
  return( A );
  }
 
 /// n distinct random integers in [ lo , hi ]
 /// \pre hi - lo + 1 >= n
 Vec distinctVec( std::mt19937 & g , std::size_t n , long long lo ,
-                 long long hi )
+		 long long hi )
 {
  Vec all( std::size_t( hi - lo + 1 ) );
  std::iota( all.begin() , all.end() , lo );
@@ -107,7 +109,8 @@ bool subsequenceOf( const std::string & P , const std::string & T )
  std::size_t pos = 0;
  for( char c : P ) {
   pos = T.find( c , pos );
-  if( pos == std::string::npos ) return( false );
+  if( pos == std::string::npos )
+   return( false );
   ++pos;
   }
  return( true );
@@ -115,11 +118,12 @@ bool subsequenceOf( const std::string & P , const std::string & T )
 
 /// an r x c random 0/1 matrix with a 1 of probability num / den
 Matrix randomBits( std::mt19937 & g , int r , int c , unsigned num ,
-                   unsigned den )
+		   unsigned den )
 {
  Matrix A( std::size_t( r ) , std::vector< int >( std::size_t( c ) , 0 ) );
  for( auto & row : A )
-  for( auto & x : row ) x = ( g() % den ) < num ? 1 : 0;
+  for( auto & x : row )
+   x = ( g() % den ) < num ? 1 : 0;
  return( A );
  }
 
@@ -129,7 +133,8 @@ Matrix randomBits( std::mt19937 & g , int r , int c , unsigned num ,
 /*------------------------------- GREEDY -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace greedy {
+namespace greedy
+{
 
 /*------------------- greedy 2, 2012-02-01, Check pairs --------------------*/
 
@@ -154,7 +159,7 @@ bool checkPairs( Vec A )
 bool isZigzag( const Vec & X )
 {
  for( std::size_t i = 0 ; i + 1 < X.size() ; ++i )
-  if( i % 2 == 0 ? !( X[ i ] < X[ i + 1 ] ) : !( X[ i ] > X[ i + 1 ] ) )
+  if( i % 2 == 0 ? ! ( X[ i ] < X[ i + 1 ] ) : ! ( X[ i ] > X[ i + 1 ] ) )
    return( false );
  return( true );
  }
@@ -166,7 +171,8 @@ bool isZigzag( const Vec & X )
 /// increasing run, which counts the last item twice (5 for 3, 8, 1, 5)
 std::size_t zigzag( const Vec & Y )
 {
- if( Y.empty() ) return( 0 );
+ if( Y.empty() )
+  return( 0 );
  bool up = true;
  std::size_t tot = 1;
  for( std::size_t i = 0 ; i + 1 < Y.size() ; ++i )
@@ -186,7 +192,7 @@ std::size_t zigzag( const Vec & Y )
 std::size_t maxSegments( Vec V , long long L )
 {
  ADS_PRE( std::all_of( V.begin() , V.end() ,
-                       []( long long x ) { return( x >= 0 ); } ) );
+		       []( long long x ) { return( x >= 0 ); } ) );
  std::sort( V.begin() , V.end() );
  std::size_t i = 0;
  while( ( i < V.size() ) && ( L >= V[ i ] ) )
@@ -199,13 +205,15 @@ std::size_t maxSegments( Vec V , long long L )
 /// whether B^k, each character of B repeated k times, is a subsequence of
 /// A: two indices, the j-th character of B^k being B[ j / k ], O( n )
 bool isSubsequence( const std::string & A , const std::string & B ,
-                    std::size_t k )
+		    std::size_t k )
 {
  const std::size_t n = A.size() , mk = B.size() * k;
- if( mk > n ) return( false );
+ if( mk > n )
+  return( false );
  std::size_t j = 0;
  for( std::size_t i = 0 ; ( i < n ) && ( j < mk ) ; ++i )
-  if( A[ i ] == B[ j / k ] ) ++j;
+  if( A[ i ] == B[ j / k ] )
+   ++j;
  return( j == mk );
  }
 
@@ -216,14 +224,16 @@ std::size_t maxSubsequence( const std::string & A , const std::string & B )
 {
  ADS_PRE( ! B.empty() );
  std::size_t k = 1;
- while( isSubsequence( A , B , k ) ) ++k;
+ while( isSubsequence( A , B , k ) )
+  ++k;
  return( k - 1 );
  }
 
 /*--------------------- greedy 7, 2015-07-14, Univoco ----------------------*/
 
 /// an edge [ u , v ] of weight w
-struct Edge {
+struct Edge
+{
  int u , v;
  long long w;
  };
@@ -276,25 +286,28 @@ std::vector< Interval > coverage( std::vector< Interval > X )
 std::vector< std::size_t > cover( const std::vector< Interval > & X )
 {
  ADS_PRE( std::all_of( X.begin() , X.end() , []( const Interval & I ) {
-  return( I.first <= I.second ); } ) );
+  return( I.first <= I.second );
+  } ) );
  const std::size_t n = X.size();
  std::vector< std::size_t > by( n );
  std::iota( by.begin() , by.end() , 0 );
  std::sort( by.begin() , by.end() , [ & ]( std::size_t x , std::size_t y ) {
   return( X[ x ].first != X[ y ].first ? X[ x ].first < X[ y ].first
-                                       : X[ x ].second > X[ y ].second ); } );
+					: X[ x ].second > X[ y ].second );
+  } );
  std::vector< std::size_t > S;
  for( std::size_t i : by ) {
   if( ! S.empty() && ( X[ i ].second <= X[ S.back() ].second ) )
-   continue;                                 // inside the last one taken
+   continue;  // inside the last one taken
   while( ( S.size() > 1 ) &&
-         ( X[ i ].first <= X[ S[ S.size() - 2 ] ].second ) )
+	 ( X[ i ].first <= X[ S[ S.size() - 2 ] ].second ) )
    S.pop_back();
   S.push_back( i );
   }
  ADS_AUDIT( ( [ & ] {
   std::vector< Interval > Y;
-  for( std::size_t i : S ) Y.push_back( X[ i ] );
+  for( std::size_t i : S )
+   Y.push_back( X[ i ] );
   return( coverage( Y ) == coverage( X ) );
   } )() );
  return( S );
@@ -307,7 +320,7 @@ std::vector< std::size_t > cover( const std::vector< Interval > & X )
 /// to the file
 template< class T >
 T tapeCost( const std::vector< T > & l , const std::vector< T > & p ,
-            const std::vector< std::size_t > & A )
+	    const std::vector< std::size_t > & A )
 {
  T now = T( 0 ) , C = T( 0 );
  for( std::size_t i : A ) {
@@ -324,18 +337,19 @@ T tapeCost( const std::vector< T > & l , const std::vector< T > & p ,
 /// \pre l > 0 and p >= 0
 template< class T >
 std::vector< std::size_t > tapeOrder( const std::vector< T > & l ,
-                                      const std::vector< T > & p )
+				      const std::vector< T > & p )
 {
  ADS_PRE( ( l.size() == p.size() ) &&
-          std::all_of( l.begin() , l.end() ,
-                       []( const T & x ) { return( x > T( 0 ) ); } ) &&
-          std::all_of( p.begin() , p.end() ,
-                       []( const T & x ) { return( x >= T( 0 ) ); } ) );
+	  std::all_of( l.begin() , l.end() ,
+		       []( const T & x ) { return( x > T( 0 ) ); } ) &&
+	  std::all_of( p.begin() , p.end() ,
+		       []( const T & x ) { return( x >= T( 0 ) ); } ) );
  std::vector< std::size_t > A( l.size() );
  std::iota( A.begin() , A.end() , 0 );
- std::stable_sort( A.begin() , A.end() , [ & ]( std::size_t a ,
-                                                std::size_t b ) {
-  return( l[ a ] * p[ b ] < l[ b ] * p[ a ] ); } );
+ std::stable_sort( A.begin() , A.end() ,
+		   [ & ]( std::size_t a , std::size_t b ) {
+  return( l[ a ] * p[ b ] < l[ b ] * p[ a ] );
+  } );
  return( A );
  }
 
@@ -365,17 +379,20 @@ long long negate( Vec X , std::size_t k )
 bool isDoable( std::vector< long long > T , const std::vector< int > & P )
 {
  ADS_PRE( ( T.size() == 6 ) &&
-          std::all_of( T.begin() , T.end() ,
-                       []( long long x ) { return( x >= 0 ); } ) &&
-          std::all_of( P.begin() , P.end() ,
-                       []( int s ) { return( ( s >= 1 ) && ( s <= 5 ) ); } ) );
+	  std::all_of( T.begin() , T.end() ,
+		       []( long long x ) { return( x >= 0 ); } ) &&
+	  std::all_of( P.begin() , P.end() , []( int s ) {
+	   return( ( s >= 1 ) && ( s <= 5 ) );
+	   } ) );
  std::vector< long long > req( 6 , 0 );
- for( int s : P ) ++req[ std::size_t( s - 1 ) ];
+ for( int s : P )
+  ++req[ std::size_t( s - 1 ) ];
  for( std::size_t i = 0 ; i < 5 ; ++i ) {
   T[ i ] -= req[ i ];
   if( T[ i ] < 0 ) {
    T[ i + 1 ] += T[ i ];
-   if( T[ i + 1 ] < 0 ) return( false );
+   if( T[ i + 1 ] < 0 )
+    return( false );
    }
   }
  return( true );
@@ -395,7 +412,8 @@ int minStepsQuadratic( const std::vector< int > & A )
  for( int i = 0 ; i + 1 < n ; ++i ) {
   G.insertEdge( i , i + 1 );
   for( int j = i + 2 ; j < n ; ++j )
-   if( A[ i ] == A[ j ] ) G.insertEdge( i , j );
+   if( A[ i ] == A[ j ] )
+    G.insertEdge( i , j );
   }
  return( distance( G , 0 ).first[ n - 1 ] );
  }
@@ -408,11 +426,11 @@ int minStepsQuadratic( const std::vector< int > & A )
 /// \pre A is not empty and its values are in [ 1 , 9 ]
 int minStepsLinear( const std::vector< int > & A )
 {
- ADS_PRE( ! A.empty() &&
-          std::all_of( A.begin() , A.end() ,
-                       []( int x ) { return( ( x >= 1 ) && ( x <= 9 ) ); } ) );
+ ADS_PRE( ! A.empty() && std::all_of( A.begin() , A.end() , []( int x ) {
+  return( ( x >= 1 ) && ( x <= 9 ) );
+  } ) );
  const int n = int( A.size() );
- ListGraph<> G( 2 * n + 8 , false );   // a_i = 2 i, a'_i = 2 i + 1
+ ListGraph<> G( 2 * n + 8 , false );  // a_i = 2 i, a'_i = 2 i + 1
  for( int i = 0 ; i < n ; ++i )
   G.insertEdge( 2 * i , 2 * n - 2 + A[ i ] );
  for( int i = 0 ; i + 1 < n ; ++i ) {
@@ -437,7 +455,7 @@ void lpp( std::vector< int > & A )
   ++count[ std::size_t( x ) ];
   }
  ADS_PRE( std::count_if( count.begin() , count.end() ,
-                         []( std::size_t c ) { return( c % 2 ); } ) <= 1 );
+			 []( std::size_t c ) { return( c % 2 ); } ) <= 1 );
  std::size_t start = 0 , end = A.size();
  for( int d = 9 ; d >= 0 ; --d )
   while( count[ std::size_t( d ) ] > 1 ) {
@@ -446,7 +464,8 @@ void lpp( std::vector< int > & A )
    }
  if( start < end )
   for( int d = 0 ; d <= 9 ; ++d )
-   if( count[ std::size_t( d ) ] == 1 ) A[ start ] = d;
+   if( count[ std::size_t( d ) ] == 1 )
+    A[ start ] = d;
  }
 
 /*----------------- greedy 14, 2021-02-08, Trova l'ordine ------------------*/
@@ -459,10 +478,11 @@ void lpp( std::vector< int > & A )
 Vec findOrder( Vec A , const std::string & D )
 {
  ADS_PRE( ( D.size() + 1 == A.size() ) || ( A.empty() && D.empty() ) );
- ADS_PRE( std::all_of( D.begin() , D.end() ,
-                       []( char c ) { return( ( c == '<' ) ||
-                                              ( c == '>' ) ); } ) );
- if( A.empty() ) return( A );
+ ADS_PRE( std::all_of( D.begin() , D.end() , []( char c ) {
+  return( ( c == '<' ) || ( c == '>' ) );
+  } ) );
+ if( A.empty() )
+  return( A );
  std::sort( A.begin() , A.end() );
  Vec S( A.size() );
  std::size_t i = 0 , j = A.size() - 1;
@@ -491,7 +511,8 @@ std::int64_t minProduct( const std::vector< std::int64_t > & A )
    }
   else {
    minNonNeg = std::min( minNonNeg , x );
-   if( x > 0 ) tot *= x;
+   if( x > 0 )
+    tot *= x;
    }
  if( maxNeg == std::numeric_limits< std::int64_t >::min() )
   return( minNonNeg );
@@ -521,12 +542,12 @@ std::int64_t minProductDP( const std::vector< std::int64_t > & A )
 /// is optimal
 /// \pre k >= 1 and the lengths are not negative
 long long listScheduling( const Vec & len , int k ,
-                          const std::vector< std::size_t > & A )
+			  const std::vector< std::size_t > & A )
 {
  ADS_PRE( k >= 1 );
  using LL = long long;
- std::priority_queue< LL , std::vector< LL > , std::greater< LL > >
-  H( std::greater< LL >() , std::vector< LL >( std::size_t( k ) , 0 ) );
+ std::priority_queue< LL , std::vector< LL > , std::greater< LL > > H(
+   std::greater< LL >() , std::vector< LL >( std::size_t( k ) , 0 ) );
  long long ms = 0;
  for( std::size_t i : A ) {
   ADS_PRE( len[ i ] >= 0 );
@@ -543,9 +564,10 @@ std::vector< std::size_t > byLength( const Vec & len , bool increasing )
 {
  std::vector< std::size_t > A( len.size() );
  std::iota( A.begin() , A.end() , 0 );
- std::stable_sort( A.begin() , A.end() , [ & ]( std::size_t x ,
-                                                std::size_t y ) {
-  return( increasing ? len[ x ] < len[ y ] : len[ x ] > len[ y ] ); } );
+ std::stable_sort( A.begin() , A.end() ,
+		   [ & ]( std::size_t x , std::size_t y ) {
+  return( increasing ? len[ x ] < len[ y ] : len[ x ] > len[ y ] );
+  } );
  return( A );
  }
 
@@ -573,7 +595,8 @@ std::size_t garden( Vec P , Vec V )
 /*-------------------------------- VARIE -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace varie {
+namespace varie
+{
 
 /*------------------- varie 1, 2011-07-18, Close to zero -------------------*/
 
@@ -583,8 +606,8 @@ namespace varie {
 /// single items M[ i ][ i ]
 /// \pre V is not empty
 template< class T >
-std::pair< std::size_t , std::size_t > closeToZero(
-                                                  const std::vector< T > & V )
+std::pair< std::size_t , std::size_t >
+closeToZero( const std::vector< T > & V )
 {
  ADS_PRE( ! V.empty() );
  std::pair< std::size_t , std::size_t > best( 0 , 0 );
@@ -618,12 +641,14 @@ std::pair< std::size_t , std::size_t > findMin( std::size_t n , Try && tryBN )
  ADS_PRE( n >= 1 );
  std::size_t mb = 0 , md = 0 , b = 1 , d = 1;
  while( ( d < n ) || ( b < n ) ) {
-  if( tryBN( mb , md ) <= 0 ) {          // the bolt is not larger
-   if( ( d < n ) && ( tryBN( mb , d ) >= 0 ) ) md = d;
+  if( tryBN( mb , md ) <= 0 ) {  // the bolt is not larger
+   if( ( d < n ) && ( tryBN( mb , d ) >= 0 ) )
+    md = d;
    ++d;
    }
-  if( tryBN( mb , md ) >= 0 ) {          // the nut is not larger
-   if( ( b < n ) && ( tryBN( b , md ) <= 0 ) ) mb = b;
+  if( tryBN( mb , md ) >= 0 ) {  // the nut is not larger
+   if( ( b < n ) && ( tryBN( b , md ) <= 0 ) )
+    mb = b;
    ++b;
    }
   }
@@ -638,23 +663,25 @@ std::pair< std::size_t , std::size_t > findMin( std::size_t n , Try && tryBN )
 /// item is n - 1 and must be the last one, n - 2, and d = 0 (all equal)
 /// makes the text divide by zero
 /// \pre n >= 2
-std::pair< std::size_t , std::size_t > closePoints(
-                                              const std::vector< double > & A )
+std::pair< std::size_t , std::size_t >
+closePoints( const std::vector< double > & A )
 {
  ADS_PRE( A.size() >= 2 );
  const std::size_t n = A.size();
  const auto [ lo , hi ] = std::minmax_element( A.begin() , A.end() );
  const double min = *lo , d = ( *hi - min ) / double( n - 1 );
- if( d == 0 ) return( std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
+ if( d == 0 )
+  return( std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  constexpr std::size_t NONE = std::numeric_limits< std::size_t >::max();
  std::vector< std::size_t > B( n - 1 , NONE );
  for( std::size_t i = 0 ; i < n ; ++i ) {
   const std::size_t j = std::min( std::size_t( ( A[ i ] - min ) / d ) ,
-                                  n - 2 );
-  if( B[ j ] != NONE ) return( std::pair( B[ j ] , i ) );
+				  n - 2 );
+  if( B[ j ] != NONE )
+   return( std::pair( B[ j ] , i ) );
   B[ j ] = i;
   }
- ADS_POST( false );                      // n items in n - 1 buckets
+ ADS_POST( false );  // n items in n - 1 buckets
  return( std::pair( NONE , NONE ) );
  }
 
@@ -671,9 +698,11 @@ Matrix maxSquareTable( const Matrix & A )
   DP[ i ].assign( A[ i ].size() , 0 );
   for( std::size_t j = 0 ; j < A[ i ].size() ; ++j )
    if( A[ i ][ j ] )
-    DP[ i ][ j ] = ( i == 0 ) || ( j == 0 ) ? 1 :
-                   1 + std::min( { DP[ i - 1 ][ j ] , DP[ i - 1 ][ j - 1 ] ,
-                                   DP[ i ][ j - 1 ] } );
+    DP[ i ][ j ] = ( i == 0 ) || ( j == 0 )
+		     ? 1
+		     : 1 + std::min( { DP[ i - 1 ][ j ] ,
+				       DP[ i - 1 ][ j - 1 ] ,
+				       DP[ i ][ j - 1 ] } );
   }
  return( DP );
  }
@@ -694,7 +723,8 @@ std::uint64_t mistery( std::uint64_t n )
  std::uint64_t s = 0;
  for( std::uint64_t i = 1 ; i <= n ; ++i )
   for( std::uint64_t j = 1 ; j < n ; j *= 2 )
-   for( std::uint64_t k = 1 ; k <= n ; k *= 3 ) ++s;
+   for( std::uint64_t k = 1 ; k <= n ; k *= 3 )
+    ++s;
  return( s );
  }
 
@@ -705,7 +735,7 @@ std::uint64_t mistery( std::uint64_t n )
 /// Theta( n log n )
 /// \pre a_i < b_i, both fitting in a long (the ends of WeightedInterval)
 std::pair< std::vector< std::size_t > , LL > segmentCover( const Vec & a ,
-                                                          const Vec & b )
+							  const Vec & b )
 {
  ADS_PRE( a.size() == b.size() );
  std::vector< WeightedInterval< long long > > I;
@@ -722,9 +752,9 @@ std::pair< std::vector< std::size_t > , LL > segmentCover( const Vec & a ,
 /// \pre V is not empty and positive
 int minMoves( const Vec & V )
 {
- ADS_PRE( ! V.empty() &&
-          std::all_of( V.begin() , V.end() ,
-                       []( long long x ) { return( x > 0 ); } ) );
+ ADS_PRE( ! V.empty() && std::all_of( V.begin() , V.end() , []( long long x ) {
+  return( x > 0 );
+  } ) );
  const std::size_t n = V.size();
  std::vector< int > S( n , 0 );
  for( std::size_t i = n - 1 ; i-- > 0 ; ) {
@@ -747,7 +777,8 @@ std::size_t count01( const std::vector< int > & V )
  for( int x : V ) {
   ADS_PRE( ( x == 0 ) || ( x == 1 ) );
   if( x == 0 ) {
-   if( c1 > 0 ) c0 = c1 = 0;
+   if( c1 > 0 )
+    c0 = c1 = 0;
    ++c0;
    }
   else {
@@ -762,7 +793,8 @@ std::size_t count01( const std::vector< int > & V )
 std::vector< int > bitsOf( const std::string & s )
 {
  std::vector< int > V;
- for( char c : s ) V.push_back( c == '1' ? 1 : 0 );
+ for( char c : s )
+  V.push_back( c == '1' ? 1 : 0 );
  return( V );
  }
 
@@ -788,7 +820,7 @@ long long partition( const Vec & H , std::size_t k )
 std::uint64_t bits( int n )
 {
  ADS_PRE( ( n >= 0 ) && ( n <= 91 ) );
- std::uint64_t a = 1 , b = 2;                 // DP[ i ], DP[ i + 1 ]
+ std::uint64_t a = 1 , b = 2;  // DP[ i ], DP[ i + 1 ]
  for( int i = 0 ; i < n ; ++i ) {
   const std::uint64_t c = a + b;
   a = b;
@@ -812,9 +844,12 @@ bool fourCubic( std::vector< std::int64_t > A , std::int64_t k )
    std::size_t i3 = 0 , i4 = n - 1;
    while( i3 <= i4 ) {
     const std::int64_t s = A[ i1 ] + A[ i2 ] + A[ i3 ] + A[ i4 ];
-    if( s == k ) return( true );
-    if( s < k ) ++i3;
-    else if( i4-- == 0 ) break;
+    if( s == k )
+     return( true );
+    if( s < k )
+     ++i3;
+    else if( i4-- == 0 )
+     break;
     }
    }
  return( false );
@@ -824,8 +859,7 @@ bool fourCubic( std::vector< std::int64_t > A , std::int64_t k )
 /// search of k - B[ i ] for each one, O( n^2 log n ) time and O( n^2 )
 /// space; the last version of the text never returns false
 /// \pre | A[ i ] | < 2^60 and | k | < 2^62
-bool fourPairs( const std::vector< std::int64_t > & A ,
-                std::int64_t k )
+bool fourPairs( const std::vector< std::int64_t > & A , std::int64_t k )
 {
  std::vector< std::int64_t > B;
  for( std::size_t i1 = 0 ; i1 < A.size() ; ++i1 )
@@ -833,7 +867,8 @@ bool fourPairs( const std::vector< std::int64_t > & A ,
    B.push_back( A[ i1 ] + A[ i2 ] );
  std::sort( B.begin() , B.end() );
  for( auto x : B )
-  if( std::binary_search( B.begin() , B.end() , k - x ) ) return( true );
+  if( std::binary_search( B.begin() , B.end() , k - x ) )
+   return( true );
  return( false );
  }
 
@@ -849,7 +884,8 @@ int largestSquare( const Matrix & A )
 {
  const std::size_t n = A.size();
  ADS_PRE( std::all_of( A.begin() , A.end() , [ n ]( const auto & row ) {
-  return( row.size() == n ); } ) );
+  return( row.size() == n );
+  } ) );
  Matrix R( n , std::vector< int >( n , 0 ) ) , C( R );
  for( std::size_t i = 0 ; i < n ; ++i )
   for( std::size_t j = 0 ; j < n ; ++j )
@@ -863,7 +899,7 @@ int largestSquare( const Matrix & A )
    const int m = std::min( R[ i ][ j ] , C[ i ][ j ] );
    for( int k = best + 1 ; k <= m ; ++k )
     if( ( R[ i - std::size_t( k ) + 1 ][ j ] >= k ) &&
-        ( C[ i ][ j - std::size_t( k ) + 1 ] >= k ) )
+	( C[ i ][ j - std::size_t( k ) + 1 ] >= k ) )
      best = k;
    }
  return( best );
@@ -940,13 +976,16 @@ long long maxGain( const std::vector< Vec > & A )
 bool findPair( const Vec & A1 , const Vec & A2 , long long k )
 {
  ADS_PRE( std::is_sorted( A1.begin() , A1.end() ) &&
-          std::is_sorted( A2.begin() , A2.end() ) );
+	  std::is_sorted( A2.begin() , A2.end() ) );
  std::size_t i1 = 0 , i2 = A2.size();
  while( ( i1 < A1.size() ) && ( i2 > 0 ) ) {
   const long long sum = A1[ i1 ] + A2[ i2 - 1 ];
-  if( sum == k ) return( true );
-  if( sum > k ) --i2;
-  else ++i1;
+  if( sum == k )
+   return( true );
+  if( sum > k )
+   --i2;
+  else
+   ++i1;
   }
  return( false );
  }
@@ -964,7 +1003,8 @@ bool meetingPoint( const G & g , int s , int t )
  ADS_PRE( ! ds.negativeCycle && ! dt.negativeCycle );
  const auto INF = infinity< typename G::Weight >();
  for( int u : g.V() )
-  if( ( ds.d[ u ] == dt.d[ u ] ) && ( ds.d[ u ] != INF ) ) return( true );
+  if( ( ds.d[ u ] == dt.d[ u ] ) && ( ds.d[ u ] != INF ) )
+   return( true );
  return( false );
  }
 
@@ -1023,7 +1063,8 @@ std::size_t maxDistance( const Vec & A )
  std::size_t best = 0;
  for( std::size_t i = 0 ; i < A.size() ; ++i ) {
   const auto [ it , fresh ] = first.try_emplace( A[ i ] , i );
-  if( ! fresh ) best = std::max( best , i - it->second );
+  if( ! fresh )
+   best = std::max( best , i - it->second );
   }
  return( best );
  }
@@ -1034,7 +1075,8 @@ std::size_t maxDistance( const Vec & A )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 /*--------------------- tests of the greedy exercises ----------------------*/
 
@@ -1045,20 +1087,24 @@ ADS_TEST( "greedy-2" )
  CHECK( greedy::checkPairs( { 7 , 4 , 5 , 2 , 3 , 6 } ) );
  // every pairing of the items of B in pairs of sum s
  std::function< bool( const Vec & , long long ) > pairs =
-  [ & ]( const Vec & B , long long s ) -> bool {
-  if( B.empty() ) return( true );
+   [ & ]( const Vec & B , long long s ) -> bool {
+  if( B.empty() )
+   return( true );
   for( std::size_t q = 1 ; q < B.size() ; ++q )
    if( B[ 0 ] + B[ q ] == s ) {
     Vec C;
     for( std::size_t i = 1 ; i < B.size() ; ++i )
-     if( i != q ) C.push_back( B[ i ] );
-    if( pairs( C , s ) ) return( true );
+     if( i != q )
+      C.push_back( B[ i ] );
+    if( pairs( C , s ) )
+     return( true );
     }
   return( false );
   };
  auto brute = [ & ]( const Vec & A ) {
   for( std::size_t j = 1 ; j < A.size() ; ++j )
-   if( pairs( A , A[ 0 ] + A[ j ] ) ) return( true );
+   if( pairs( A , A[ 0 ] + A[ j ] ) )
+    return( true );
   return( A.empty() );
   };
  std::mt19937 g( 1 );
@@ -1066,10 +1112,13 @@ ADS_TEST( "greedy-2" )
  for( int t = 0 ; t < 600 ; ++t ) {
   const std::size_t n = 2 * ( 1 + g() % 5 );
   Vec A;
-  if( t % 2 ) {                          // pairable: x and s - x
+  if( t % 2 ) {  // pairable: x and s - x
    const long long s = LL( g() % 21 );
    Vec half = distinctVec( g , n / 2 , -10 , -1 );
-   for( long long x : half ) { A.push_back( x ); A.push_back( s - x ); }
+   for( long long x : half ) {
+    A.push_back( x );
+    A.push_back( s - x );
+    }
    std::shuffle( A.begin() , A.end() , g );
    }
   else
@@ -1084,8 +1133,8 @@ ADS_TEST( "greedy-2" )
  const long long M = std::numeric_limits< long long >::max() / 2;
  CHECK( greedy::checkPairs( { M , -M , M - 1 , 1 - M } ) );
  CHECK( ! greedy::checkPairs( { 1 , 2 , 3 , 5 } ) );
- CHECK( greedy::checkPairs( Vec( 8 , -3 ) ) );           // all equal
- CHECK( greedy::checkPairs( { 2 , 2 , 0 , 4 } ) );       // duplicates
+ CHECK( greedy::checkPairs( Vec( 8 , -3 ) ) );    // all equal
+ CHECK( greedy::checkPairs( { 2 , 2 , 0 , 4 } ) );  // duplicates
  CHECK( ! greedy::checkPairs( { 2 , 2 , 2 , 3 } ) );
  CHECK( greedy::checkPairs( { 0 , 0 } ) );
  CHECK_THROWS( greedy::checkPairs( { 1 , 2 , 3 } ) , contract_violation );
@@ -1134,10 +1183,11 @@ ADS_TEST( "greedy-3" )
  CHECK( greedy::isZigzag( Vec() ) && greedy::isZigzag( { 7 } ) );
  CHECK( greedy::isZigzag( { 1 , 2 } ) && ! greedy::isZigzag( { 2 , 1 } ) );
  CHECK( ! greedy::isZigzag( { 4 , 4 } ) );
- CHECK( greedy::zigzag( { 2 , 1 } ) == 1 );         // the first step goes up
+ CHECK( greedy::zigzag( { 2 , 1 } ) == 1 );  // the first step goes up
  CHECK( greedy::zigzag( { 1 , 1 , 2 , 2 , 1 , 1 } ) == 3 );
- Vec Z( 10000 );                                     // 0 , 1 , 0 , 1 , ...
- for( std::size_t i = 0 ; i < Z.size() ; ++i ) Z[ i ] = LL( i % 2 );
+ Vec Z( 10000 );  // 0 , 1 , 0 , 1 , ...
+ for( std::size_t i = 0 ; i < Z.size() ; ++i )
+  Z[ i ] = LL( i % 2 );
  CHECK( greedy::zigzag( Z ) == Z.size() );
  CHECK( greedy::zigzag( Vec( Z.begin() + 1 , Z.end() ) ) == Z.size() - 2 );
  }
@@ -1155,7 +1205,8 @@ ADS_TEST( "greedy-4" )
   for( std::uint32_t s = 0 ; s < ( 1u << n ) ; ++s ) {
    long long sum = 0;
    for( std::size_t i = 0 ; i < n ; ++i )
-    if( s >> i & 1 ) sum += V[ i ];
+    if( s >> i & 1 )
+     sum += V[ i ];
    if( sum <= L )
     best = std::max( best , std::size_t( std::popcount( s ) ) );
    }
@@ -1168,12 +1219,12 @@ ADS_TEST( "greedy-4" )
  CHECK( greedy::maxSegments( { 10 } , 10 ) == 1 );
  const long long M = std::numeric_limits< long long >::max();
  CHECK( greedy::maxSegments( { M , 1 } , M ) == 1 );
- CHECK( greedy::maxSegments( { 0 , 0 , 5 } , 0 ) == 2 );    // a budget of 0
+ CHECK( greedy::maxSegments( { 0 , 0 , 5 } , 0 ) == 2 );  // a budget of 0
  CHECK( greedy::maxSegments( { 4 } , 0 ) == 0 );
  CHECK( greedy::maxSegments( Vec( 1000 , 1 ) , 999 ) == 999 );
  CHECK_THROWS( greedy::maxSegments( { -1 } , 1 ) , contract_violation );
  CHECK_THROWS( greedy::maxSegments( { 3 , 1 , -2 } , 9 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the example of the text (B^4 would need 8 a's, there are 6), B^k built
@@ -1188,7 +1239,8 @@ ADS_TEST( "greedy-6" )
  CHECK( greedy::maxSubsequence( A , "aab" ) == 3 );
  auto power = []( const std::string & B , std::size_t k ) {
   std::string P;
-  for( char c : B ) P += std::string( k , c );
+  for( char c : B )
+   P += std::string( k , c );
   return( P );
   };
  std::mt19937 g( 1 );
@@ -1203,7 +1255,8 @@ ADS_TEST( "greedy-6" )
   for( std::size_t k = 1 ; k * B.size() <= S.size() ; ++k ) {
    const bool in = subsequenceOf( power( B , k ) , S );
    CHECK( greedy::isSubsequence( S , B , k ) == in );
-   if( in ) best = k;
+   if( in )
+    best = k;
    }
   CHECK( greedy::maxSubsequence( S , B ) == best );
   }
@@ -1213,14 +1266,14 @@ ADS_TEST( "greedy-6" )
  CHECK( greedy::maxSubsequence( std::string( 50 , 'z' ) , "z" ) == 50 );
  CHECK( greedy::maxSubsequence( std::string( 50 , 'z' ) , "zz" ) == 25 );
  CHECK( greedy::isSubsequence( "abc" , "" , 7 ) );
- CHECK( greedy::isSubsequence( "abc" , "xyz" , 0 ) );    // B^0 is empty
+ CHECK( greedy::isSubsequence( "abc" , "xyz" , 0 ) );  // B^0 is empty
  CHECK( greedy::isSubsequence( "" , "" , 1 ) );
- CHECK( ! greedy::isSubsequence( "ab" , "abc" , 1 ) );   // B longer than A
- CHECK( greedy::isSubsequence( "abc" , "abc" , 1 ) );    // B equal to A
+ CHECK( ! greedy::isSubsequence( "ab" , "abc" , 1 ) );  // B longer than A
+ CHECK( greedy::isSubsequence( "abc" , "abc" , 1 ) );   // B equal to A
  CHECK( greedy::maxSubsequence( "abc" , "abc" ) == 1 );
  CHECK( greedy::maxSubsequence( "ba" , "ab" ) == 0 );
  CHECK( greedy::maxSubsequence( "abcdefghijklmnopqrstuvwxyz" ,
-                                "acegikmoqsuwy" ) == 1 );
+				"acegikmoqsuwy" ) == 1 );
  CHECK_THROWS( greedy::maxSubsequence( "a" , "" ) , contract_violation );
  }
 
@@ -1230,11 +1283,12 @@ ADS_TEST( "greedy-6" )
 ADS_TEST( "greedy-7-b" )
 {
  using greedy::Edge;
- CHECK( greedy::univoco( 4 , { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
-                               { 2 , 3 , 2 } } ) == 4 );
+ CHECK( greedy::univoco( 4 ,
+			 { { 0 , 1 , 2 } , { 1 , 2 , 3 } ,
+			   { 2 , 3 , 2 } } ) == 4 );
  auto dp = []( int n , const std::vector< Edge > & E ) {
-  std::vector< std::vector< long long > > W( std::size_t( n ) ,
-   std::vector< long long >( std::size_t( n ) , 0 ) );
+  std::vector< std::vector< long long > > W(
+    std::size_t( n ) , std::vector< long long >( std::size_t( n ) , 0 ) );
   for( const auto & e : E ) {
    W[ e.u ][ e.v ] = std::max( W[ e.u ][ e.v ] , e.w );
    W[ e.v ][ e.u ] = W[ e.u ][ e.v ];
@@ -1248,8 +1302,8 @@ ADS_TEST( "greedy-7-b" )
    F[ S ] = F[ R ];
    for( int v = u + 1 ; v < n ; ++v )
     if( ( R >> v & 1 ) && W[ u ][ v ] )
-     F[ S ] = std::max( F[ S ] , W[ u ][ v ] + F[ R & ~( std::size_t( 1 )
-                                                          << v ) ] );
+     F[ S ] =
+       std::max( F[ S ] , W[ u ][ v ] + F[ R & ~( std::size_t( 1 ) << v ) ] );
    }
   return( F.back() );
   };
@@ -1259,24 +1313,25 @@ ADS_TEST( "greedy-7-b" )
   std::vector< Edge > E;
   for( int u = 0 ; u < n ; ++u )
    for( int v = u + 1 ; v < n ; ++v )
-    if( g() % 2 ) E.push_back( { u , v , 1 + LL( g() % 9 ) } );
+    if( g() % 2 )
+     E.push_back( { u , v , 1 + LL( g() % 9 ) } );
   CHECK( greedy::univoco( n , E ) == dp( n , E ) );
   }
  CHECK( greedy::univoco( 0 , {} ) == 0 );
  CHECK( greedy::univoco( 2 , { { 0 , 1 , 5 } } ) == 5 );
- CHECK( greedy::univoco( 3 , { { 0 , 1 , 5 } , { 1 , 2 , 5 } ,
-                               { 0 , 2 , 5 } } ) == 5 );
+ CHECK( greedy::univoco( 3 ,
+			 { { 0 , 1 , 5 } , { 1 , 2 , 5 } ,
+			   { 0 , 2 , 5 } } ) == 5 );
  CHECK( greedy::univoco( 1 , {} ) == 0 );
- CHECK( greedy::univoco( 5 , {} ) == 0 );                // no edges
+ CHECK( greedy::univoco( 5 , {} ) == 0 );  // no edges
  CHECK( greedy::univoco( 4 , { { 0 , 1 , 3 } , { 2 , 3 , 4 } } ) == 7 );
- CHECK( greedy::univoco( 4 , { { 0 , 1 , 1 } , { 0 , 2 , 1 } ,
-                               { 0 , 3 , 9 } } ) == 9 ); // a star
- CHECK_THROWS( greedy::univoco( 2 , { { 0 , 0 , 1 } } ) ,
-               contract_violation );
- CHECK_THROWS( greedy::univoco( 2 , { { 0 , 1 , 0 } } ) ,
-               contract_violation );
+ CHECK( greedy::univoco( 4 ,
+			 { { 0 , 1 , 1 } , { 0 , 2 , 1 } , { 0 , 3 , 9 } } ) ==
+	9 );  // a star
+ CHECK_THROWS( greedy::univoco( 2 , { { 0 , 0 , 1 } } ) , contract_violation );
+ CHECK_THROWS( greedy::univoco( 2 , { { 0 , 1 , 0 } } ) , contract_violation );
  CHECK_THROWS( greedy::univoco( 2 , { { 0 , 1 , -4 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the examples of the text, the smallest subset with the same coverage by
@@ -1285,19 +1340,21 @@ ADS_TEST( "greedy-8" )
 {
  using greedy::Interval;
  auto take = []( const std::vector< Interval > & X ,
-                 const std::vector< std::size_t > & S ) {
+		 const std::vector< std::size_t > & S ) {
   std::vector< Interval > Y;
-  for( std::size_t i : S ) Y.push_back( X[ i ] );
+  for( std::size_t i : S )
+   Y.push_back( X[ i ] );
   std::sort( Y.begin() , Y.end() );
   return( Y );
   };
- const std::vector< Interval > X1 = { { 2 , 4 } , { 4 , 7 } , { 8 , 10 } ,
-                                      { 3 , 6 } };
+ const std::vector< Interval > X1 = {
+  { 2 , 4 } , { 4 , 7 } , { 8 , 10 } , { 3 , 6 }
+  };
  CHECK( take( X1 , greedy::cover( X1 ) ) ==
-        std::vector< Interval >( { { 2 , 4 } , { 4 , 7 } , { 8 , 10 } } ) );
+	std::vector< Interval >( { { 2 , 4 } , { 4 , 7 } , { 8 , 10 } } ) );
  const std::vector< Interval > X2 = { { 2 , 4 } , { 3 , 6 } , { 4 , 7 } };
  CHECK( take( X2 , greedy::cover( X2 ) ) ==
-        std::vector< Interval >( { { 2 , 4 } , { 4 , 7 } } ) );
+	std::vector< Interval >( { { 2 , 4 } , { 4 , 7 } } ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const std::size_t n = 1 + g() % 10;
@@ -1311,32 +1368,34 @@ ADS_TEST( "greedy-8" )
   CHECK( greedy::coverage( take( X , S ) ) == C );
   std::size_t best = n;
   for( std::uint32_t s = 1 ; s < ( 1u << n ) ; ++s ) {
-   if( std::size_t( std::popcount( s ) ) >= best ) continue;
+   if( std::size_t( std::popcount( s ) ) >= best )
+    continue;
    std::vector< Interval > Y;
    for( std::size_t i = 0 ; i < n ; ++i )
-    if( s >> i & 1 ) Y.push_back( X[ i ] );
-   if( greedy::coverage( Y ) == C ) best = std::size_t( std::popcount( s ) );
+    if( s >> i & 1 )
+     Y.push_back( X[ i ] );
+   if( greedy::coverage( Y ) == C )
+    best = std::size_t( std::popcount( s ) );
    }
   CHECK( S.size() == best );
   }
  CHECK( greedy::cover( {} ).empty() );
  CHECK( greedy::cover( { { 1 , 1 } } ).size() == 1 );
- CHECK( greedy::cover( std::vector< Interval >( 5 , { 0 , 3 } ) ).size() ==
-        1 );
+ CHECK( greedy::cover( std::vector< Interval >( 5 ,
+						{ 0 , 3 } ) ).size() == 1 );
  const long long M = std::numeric_limits< long long >::max();
- CHECK( greedy::cover( { { -M , 0 } , { 0 , M } , { -1 , 1 } } ).size() ==
-        2 );
+ CHECK( greedy::cover( { { -M , 0 } , { 0 , M } , { -1 , 1 } } ).size() == 2 );
  CHECK( greedy::cover( { { 0 , 1 } , { 5 , 6 } , { 9 , 9 } } ).size() ==
-        3 );                                             // disjoint
+	3 );  // disjoint
  CHECK( take( { { 0 , 9 } , { 2 , 3 } , { 4 , 9 } } ,
-              greedy::cover( { { 0 , 9 } , { 2 , 3 } , { 4 , 9 } } ) ) ==
-        std::vector< Interval >( { { 0 , 9 } } ) );      // nested
+	      greedy::cover( { { 0 , 9 } , { 2 , 3 } , { 4 , 9 } } ) ) ==
+	std::vector< Interval >( { { 0 , 9 } } ) );  // nested
  CHECK( greedy::cover( { { 0 , 2 } , { 2 , 4 } , { 4 , 6 } } ).size() ==
-        3 );                                             // touching chain
+	3 );  // touching chain
  CHECK( greedy::cover( { { 3 , 3 } , { 3 , 3 } , { 3 , 3 } } ).size() == 1 );
  CHECK_THROWS( greedy::cover( { { 2 , 1 } } ) , contract_violation );
  CHECK_THROWS( greedy::cover( { { 0 , 5 } , { 7 , 6 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the counterexamples of both exercises with their costs, the order by
@@ -1352,22 +1411,23 @@ ADS_TEST( "greedy-9" )
  CHECK( near( greedy::tapeCost( D{ 1 , 2 } , D{ 0.1 , 0.9 } , I01 ) , 2.8 ) );
  CHECK( near( greedy::tapeCost( D{ 1 , 2 } , D{ 0.1 , 0.9 } , I10 ) , 2.1 ) );
  CHECK( near( greedy::tapeCost( D{ 10 , 1 } , D{ 0.6 , 0.4 } , I01 ) ,
-              10.4 ) );
+	      10.4 ) );
  CHECK( near( greedy::tapeCost( D{ 10 , 1 } , D{ 0.6 , 0.4 } , I10 ) , 7.0 ) );
  CHECK( greedy::tapeOrder( D{ 1 , 2 } , D{ 0.1 , 0.9 } ) == I10 );
  CHECK( greedy::tapeOrder( D{ 10 , 1 } , D{ 0.6 , 0.4 } ) == I10 );
  // exercise 16: the figure, then decreasing probability and increasing
  // length
  CHECK( near( greedy::tapeCost( D( 4 , 100 ) , D( 4 , 0.25 ) ,
-                                { 0 , 1 , 2 , 3 } ) , 250 ) );
+				{ 0 , 1 , 2 , 3 } ) ,
+	      250 ) );
  CHECK( near( greedy::tapeCost( D{ 200 , 100 } , D{ 0.6 , 0.4 } , I01 ) ,
-              240 ) );
+	      240 ) );
  CHECK( near( greedy::tapeCost( D{ 200 , 100 } , D{ 0.6 , 0.4 } , I10 ) ,
-              220 ) );
+	      220 ) );
  CHECK( near( greedy::tapeCost( D{ 100 , 200 } , D{ 0.1 , 0.9 } , I01 ) ,
-              280 ) );
+	      280 ) );
  CHECK( near( greedy::tapeCost( D{ 100 , 200 } , D{ 0.1 , 0.9 } , I10 ) ,
-              210 ) );
+	      210 ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const std::size_t n = g() % 8;
@@ -1375,29 +1435,29 @@ ADS_TEST( "greedy-9" )
   std::vector< std::size_t > A( n );
   std::iota( A.begin() , A.end() , 0 );
   long long best = std::numeric_limits< long long >::max();
-  do best = std::min( best , greedy::tapeCost( l , p , A ) );
+  do
+   best = std::min( best , greedy::tapeCost( l , p , A ) );
   while( std::next_permutation( A.begin() , A.end() ) );
   CHECK( greedy::tapeCost( l , p , greedy::tapeOrder( l , p ) ) == best );
   const Vec q( n , 3 );
   CHECK( greedy::tapeCost( l , q , greedy::tapeOrder( l , q ) ) ==
-         3 * totalCompletion( l , shortestJobFirst( l ) ) );
+	 3 * totalCompletion( l , shortestJobFirst( l ) ) );
   }
  CHECK( greedy::tapeOrder( Vec() , Vec() ).empty() );
  CHECK( greedy::tapeOrder( Vec{ 5 } , Vec{ 0 } ).size() == 1 );
- CHECK( greedy::tapeCost( Vec{ 3 , 1 , 2 } , Vec{ 0 , 0 , 0 } ,
-                          greedy::tapeOrder( Vec{ 3 , 1 , 2 } ,
-                                             Vec{ 0 , 0 , 0 } ) ) == 0 );
+ CHECK( greedy::tapeCost(
+	  Vec{ 3 , 1 , 2 } , Vec{ 0 , 0 , 0 } ,
+	  greedy::tapeOrder( Vec{ 3 , 1 , 2 } , Vec{ 0 , 0 , 0 } ) ) == 0 );
  CHECK( greedy::tapeOrder( Vec{ 2 , 2 , 2 } , Vec{ 5 , 5 , 5 } ) ==
-        std::vector< std::size_t >( { 0 , 1 , 2 } ) );  // ties stay
+	std::vector< std::size_t >( { 0 , 1 , 2 } ) );  // ties stay
  CHECK( greedy::tapeOrder( Vec{ 1 , 1 } , Vec{ 0 , 7 } ) == I10 );
- CHECK_THROWS( greedy::tapeOrder( Vec{ 0 } , Vec{ 1 } ) ,
-               contract_violation );
+ CHECK_THROWS( greedy::tapeOrder( Vec{ 0 } , Vec{ 1 } ) , contract_violation );
  CHECK_THROWS( greedy::tapeOrder( Vec{ -1 } , Vec{ 1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::tapeOrder( Vec{ 1 } , Vec{ -1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::tapeOrder( Vec{ 1 , 2 } , Vec{ 1 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the example of the text, every set of k indices on 500 random vectors of
@@ -1412,9 +1472,11 @@ ADS_TEST( "greedy-10" )
   const Vec Y = distinctVec( g , n , -20 , 20 );
   long long best = std::numeric_limits< long long >::min();
   for( std::uint32_t s = 0 ; s < ( 1u << n ) ; ++s ) {
-   if( std::size_t( std::popcount( s ) ) != k ) continue;
+   if( std::size_t( std::popcount( s ) ) != k )
+    continue;
    long long sum = 0;
-   for( std::size_t i = 0 ; i < n ; ++i ) sum += s >> i & 1 ? -Y[ i ] : Y[ i ];
+   for( std::size_t i = 0 ; i < n ; ++i )
+    sum += s >> i & 1 ? -Y[ i ] : Y[ i ];
    best = std::max( best , sum );
    }
   CHECK( greedy::negate( Y , k ) == best );
@@ -1426,7 +1488,7 @@ ADS_TEST( "greedy-10" )
  CHECK( greedy::negate( { -1 , -2 , -3 } , 3 ) == 6 );
  CHECK( greedy::negate( { -1 , -2 , -3 } , 0 ) == -6 );
  CHECK( greedy::negate( { 0 , 0 , 5 } , 2 ) == 5 );
- CHECK( greedy::negate( { -4 , -4 , 4 } , 1 ) == 4 );   // duplicates
+ CHECK( greedy::negate( { -4 , -4 , 4 } , 1 ) == 4 );  // duplicates
  CHECK( greedy::negate( Vec() , 0 ) == 0 );
  CHECK_THROWS( greedy::negate( { 1 } , 2 ) , contract_violation );
  CHECK_THROWS( greedy::negate( Vec() , 1 ) , contract_violation );
@@ -1440,10 +1502,12 @@ ADS_TEST( "greedy-11" )
  int yes = 0;
  for( int t = 0 ; t < 600 ; ++t ) {
   std::vector< long long > T( 6 );
-  for( auto & x : T ) x = LL( g() % 3 );
+  for( auto & x : T )
+   x = LL( g() % 3 );
   std::vector< int > P( g() % 9 );
-  for( auto & s : P ) s = 1 + int( g() % 5 );
-  std::vector< int > size;                     // the size of each shirt
+  for( auto & s : P )
+   s = 1 + int( g() % 5 );
+  std::vector< int > size;  // the size of each shirt
   for( int i = 0 ; i < 6 ; ++i )
    for( long long c = 0 ; c < T[ std::size_t( i ) ] ; ++c )
     size.push_back( i + 1 );
@@ -1452,8 +1516,9 @@ ADS_TEST( "greedy-11" )
    for( std::size_t q = 0 ; q < size.size() ; ++q )
     if( ( size[ q ] == P[ j ] ) || ( size[ q ] == P[ j ] + 1 ) )
      E.emplace_back( int( j ) , int( q ) );
-  const bool all = bipartiteMatching( int( P.size() ) , int( size.size() ) ,
-                                      E ).size() == P.size();
+  const bool all =
+    bipartiteMatching( int( P.size() ) , int( size.size() ) , E ).size() ==
+    P.size();
   CHECK( greedy::isDoable( T , P ) == all );
   yes += all;
   }
@@ -1463,21 +1528,21 @@ ADS_TEST( "greedy-11" )
  CHECK( ! greedy::isDoable( { 0 , 0 , 0 , 0 , 3 , 0 } , { 4 , 4 , 4 , 5 } ) );
  CHECK( ! greedy::isDoable( { 0 , 0 , 5 , 0 , 0 , 0 } , { 1 } ) );
  CHECK( greedy::isDoable( { 0 , 1 , 1 , 1 , 1 , 1 } ,
-                          { 1 , 2 , 3 , 4 , 5 } ) );
+			  { 1 , 2 , 3 , 4 , 5 } ) );
  CHECK( greedy::isDoable( { 9 , 9 , 9 , 9 , 9 , 9 } , {} ) );
  CHECK( ! greedy::isDoable( { 0 , 0 , 0 , 0 , 0 , 0 } , { 3 } ) );
  CHECK( greedy::isDoable( { 0 , 1 , 0 , 0 , 0 , 0 } , { 1 } ) );
  CHECK( ! greedy::isDoable( { 1 , 0 , 0 , 0 , 0 , 0 } , { 2 } ) );
  CHECK( greedy::isDoable( { 2 , 0 , 0 , 0 , 0 , 0 } ,
-                          std::vector< int >( 2 , 1 ) ) );
+			  std::vector< int >( 2 , 1 ) ) );
  CHECK_THROWS( greedy::isDoable( { 1 , 1 , 1 , 1 , 1 , 1 } , { 6 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::isDoable( { 1 , 1 , 1 , 1 , 1 , 1 } , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::isDoable( { 1 , 1 , 1 , 1 , 1 } , { 1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::isDoable( { 1 , 1 , -1 , 1 , 1 , 1 } , { 1 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the examples of the text, both graphs against a breadth-first search on
@@ -1487,7 +1552,7 @@ ADS_TEST( "greedy-12" )
  CHECK( greedy::minStepsQuadratic( { 1 , 9 , 3 , 9 } ) == 2 );
  CHECK( greedy::minStepsLinear( { 1 , 9 , 3 , 9 } ) == 2 );
  const std::vector< int > A = { 1 , 3 , 4 , 2 , 1 , 5 , 1 , 6 , 7 , 8 , 9 ,
-                                2 };
+				2 };
  CHECK( greedy::minStepsQuadratic( A ) == 3 );
  CHECK( greedy::minStepsLinear( A ) == 3 );
  auto bfs = []( const std::vector< int > & V ) {
@@ -1502,7 +1567,7 @@ ADS_TEST( "greedy-12" )
    for( int v = 0 ; v < n ; ++v ) {
     const std::size_t x = std::size_t( u ) , y = std::size_t( v );
     if( ( d[ y ] < 0 ) && ( ( std::abs( u - v ) == 1 ) ||
-                            ( ( v != u ) && ( V[ y ] == V[ x ] ) ) ) ) {
+			    ( ( v != u ) && ( V[ y ] == V[ x ] ) ) ) ) {
      d[ y ] = d[ x ] + 1;
      Q.push( v );
      }
@@ -1514,7 +1579,8 @@ ADS_TEST( "greedy-12" )
  for( int t = 0 ; t < 500 ; ++t ) {
   std::vector< int > V( 1 + g() % 30 );
   const int top = 1 + int( g() % 9 );
-  for( auto & x : V ) x = 1 + int( g() % unsigned( top ) );
+  for( auto & x : V )
+   x = 1 + int( g() % unsigned( top ) );
   const int r = bfs( V );
   CHECK( greedy::minStepsQuadratic( V ) == r );
   CHECK( greedy::minStepsLinear( V ) == r );
@@ -1526,7 +1592,7 @@ ADS_TEST( "greedy-12" )
  CHECK( greedy::minStepsLinear( U ) == 8 );
  CHECK( greedy::minStepsQuadratic( { 5 } ) == 0 );
  CHECK( ( greedy::minStepsQuadratic( { 3 , 4 } ) == 1 ) &&
-        ( greedy::minStepsLinear( { 3 , 4 } ) == 1 ) );
+	( greedy::minStepsLinear( { 3 , 4 } ) == 1 ) );
  CHECK( greedy::minStepsLinear( { 2 , 7 , 7 , 7 , 2 } ) == 1 );
  CHECK( greedy::minStepsQuadratic( std::vector< int >( 300 , 1 ) ) == 1 );
  CHECK_THROWS( greedy::minStepsLinear( { 0 } ) , contract_violation );
@@ -1553,12 +1619,14 @@ ADS_TEST( "greedy-13" )
    B.push_back( d );
    B.push_back( d );
    }
-  if( g() % 2 ) B.push_back( int( g() % 10 ) );
+  if( g() % 2 )
+   B.push_back( int( g() % 10 ) );
   std::shuffle( B.begin() , B.end() , g );
   std::vector< int > P( B ) , best;
   std::sort( P.begin() , P.end() );
   do
-   if( std::equal( P.begin() , P.end() , P.rbegin() ) ) best = P;
+   if( std::equal( P.begin() , P.end() , P.rbegin() ) )
+    best = P;
   while( std::next_permutation( P.begin() , P.end() ) );
   greedy::lpp( B );
   CHECK( B == best );
@@ -1598,7 +1666,7 @@ ADS_TEST( "greedy-14" )
 {
  auto valid = []( Vec A , const std::string & D , const Vec & S ) {
   for( std::size_t k = 0 ; k < D.size() ; ++k )
-   if( D[ k ] == '<' ? !( S[ k ] < S[ k + 1 ] ) : !( S[ k ] > S[ k + 1 ] ) )
+   if( D[ k ] == '<' ? ! ( S[ k ] < S[ k + 1 ] ) : ! ( S[ k ] > S[ k + 1 ] ) )
     return( false );
   Vec T( S );
   std::sort( A.begin() , A.end() );
@@ -1613,7 +1681,8 @@ ADS_TEST( "greedy-14" )
   const std::size_t n = 1 + g() % 12;
   const Vec B = distinctVec( g , n , -50 , 50 );
   std::string D;
-  for( std::size_t i = 1 ; i < n ; ++i ) D += g() % 2 ? '<' : '>';
+  for( std::size_t i = 1 ; i < n ; ++i )
+   D += g() % 2 ? '<' : '>';
   CHECK( valid( B , D , greedy::findOrder( B , D ) ) );
   }
  CHECK( greedy::findOrder( Vec() , "" ).empty() );
@@ -1624,7 +1693,7 @@ ADS_TEST( "greedy-14" )
  CHECK( greedy::findOrder( { 9 , -9 } , ">" ) == Vec( { 9 , -9 } ) );
  const long long M = std::numeric_limits< long long >::max();
  CHECK( valid( { M , -M , 0 } , "><" ,
-               greedy::findOrder( { M , -M , 0 } , "><" ) ) );
+	       greedy::findOrder( { M , -M , 0 } , "><" ) ) );
  CHECK_THROWS( greedy::findOrder( { 1 , 2 } , "=" ) , contract_violation );
  CHECK_THROWS( greedy::findOrder( { 1 , 2 } , "<<" ) , contract_violation );
  CHECK_THROWS( greedy::findOrder( { 1 , 2 } , "" ) , contract_violation );
@@ -1655,12 +1724,14 @@ ADS_TEST( "greedy-15" )
  for( int t = 0 ; t < 600 ; ++t ) {
   const std::size_t n = 1 + g() % 12;
   V64 A( n );
-  for( auto & x : A ) x = std::int64_t( g() % 13 ) - 6;
+  for( auto & x : A )
+   x = std::int64_t( g() % 13 ) - 6;
   std::int64_t best = std::numeric_limits< std::int64_t >::max();
   for( std::uint32_t s = 1 ; s < ( 1u << n ) ; ++s ) {
    std::int64_t p = 1;
    for( std::size_t i = 0 ; i < n ; ++i )
-    if( s >> i & 1 ) p *= A[ i ];
+    if( s >> i & 1 )
+     p *= A[ i ];
    best = std::min( best , p );
    }
   CHECK( greedy::minProduct( A ) == best );
@@ -1676,7 +1747,7 @@ ADS_TEST( "greedy-15" )
   CHECK( f( { 7 } ) == 7 );
   CHECK( f( { -7 } ) == -7 );
   CHECK( f( { 0 } ) == 0 );
-  CHECK( f( { -3 , -5 } ) == -5 );                   // one negative only
+  CHECK( f( { -3 , -5 } ) == -5 );  // one negative only
   CHECK( f( { -3 , 0 , -5 } ) == -5 );
   CHECK( f( { 0 , 0 , 0 } ) == 0 );
   }
@@ -1692,10 +1763,10 @@ ADS_TEST( "greedy-15" )
 ADS_TEST( "greedy-17" )
 {
  const Vec L1 = { 1 , 1 , 2 } , L2 = { 3 , 3 , 2 , 2 , 2 };
- CHECK( greedy::listScheduling( L1 , 2 , greedy::byLength( L1 , true ) ) ==
-        3 );
- CHECK( greedy::listScheduling( L2 , 2 , greedy::byLength( L2 , false ) ) ==
-        7 );
+ CHECK( greedy::listScheduling( L1 , 2 ,
+				greedy::byLength( L1 , true ) ) == 3 );
+ CHECK( greedy::listScheduling( L2 , 2 ,
+				greedy::byLength( L2 , false ) ) == 7 );
  CHECK( greedy::listScheduling( L1 , 2 , { 0 , 1 , 2 } ) == 3 );
  CHECK( greedy::listScheduling( L2 , 2 , { 0 , 1 , 2 , 3 , 4 } ) == 7 );
  auto opt = []( const Vec & len , int k ) {
@@ -1708,8 +1779,10 @@ ADS_TEST( "greedy-17" )
     load[ std::size_t( a[ i ] ) ] += len[ i ];
    best = std::min( best , *std::max_element( load.begin() , load.end() ) );
    std::size_t i = 0;
-   while( ( i < n ) && ( ++a[ i ] == k ) ) a[ i++ ] = 0;
-   if( i == n ) return( best );
+   while( ( i < n ) && ( ++a[ i ] == k ) )
+    a[ i++ ] = 0;
+   if( i == n )
+    return( best );
    }
   };
  CHECK( opt( L1 , 2 ) == 2 );
@@ -1720,9 +1793,10 @@ ADS_TEST( "greedy-17" )
   const int k = 1 + int( g() % 3 );
   const Vec len = randomVec( g , n , 0 , 9 );
   const long long o = opt( len , k );
-  const std::vector< long > len32( len.begin() , len.end() ); // as taken
+  const std::vector< long > len32( len.begin() , len.end() );  // as taken
   long d = 0;
-  while( ! schedulingDP( len32 , k , d ) ) ++d;
+  while( ! schedulingDP( len32 , k , d ) )
+   ++d;
   CHECK( d == o );
   std::vector< std::size_t > A( n );
   std::iota( A.begin() , A.end() , 0 );
@@ -1731,21 +1805,21 @@ ADS_TEST( "greedy-17" )
    CHECK( ( m >= o ) && ( k * m <= ( 2 * k - 1 ) * o ) );
    }
   const long long m =
-   greedy::listScheduling( len , k , greedy::byLength( len , false ) );
+    greedy::listScheduling( len , k , greedy::byLength( len , false ) );
   CHECK( ( m >= o ) && ( 3 * k * m <= ( 4 * k - 1 ) * o ) );
   }
  CHECK( greedy::listScheduling( Vec() , 3 , {} ) == 0 );
  CHECK( greedy::listScheduling( { 4 , 4 , 4 } , 3 , { 0 , 1 , 2 } ) == 4 );
  CHECK( greedy::listScheduling( { 4 , 4 , 4 } , 1 , { 0 , 1 , 2 } ) == 12 );
- CHECK( greedy::listScheduling( { 5 , 2 } , 10 , { 0 , 1 } ) == 5 ); // k > n
+ CHECK( greedy::listScheduling( { 5 , 2 } , 10 , { 0 , 1 } ) == 5 );  // k > n
  CHECK( greedy::listScheduling( { 0 , 0 , 0 } , 2 , { 0 , 1 , 2 } ) == 0 );
- CHECK( greedy::listScheduling( { 3 } , 1 , {} ) == 0 );   // no task given
+ CHECK( greedy::listScheduling( { 3 } , 1 , {} ) == 0 );  // no task given
  CHECK_THROWS( greedy::listScheduling( { 1 } , 0 , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::listScheduling( { 1 } , -1 , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( greedy::listScheduling( { -1 } , 2 , { 0 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the example of the text, a largest bipartite matching of the plants with
@@ -1756,13 +1830,14 @@ ADS_TEST( "greedy-18" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
   const Vec P = randomVec( g , g() % 9 , 1 , 10 ) ,
-            V = randomVec( g , g() % 9 , 1 , 10 );
+	    V = randomVec( g , g() % 9 , 1 , 10 );
   std::vector< std::pair< int , int > > E;
   for( std::size_t i = 0 ; i < P.size() ; ++i )
    for( std::size_t j = 0 ; j < V.size() ; ++j )
-    if( P[ i ] <= V[ j ] ) E.emplace_back( int( i ) , int( j ) );
+    if( P[ i ] <= V[ j ] )
+     E.emplace_back( int( i ) , int( j ) );
   CHECK( greedy::garden( P , V ) ==
-         bipartiteMatching( int( P.size() ) , int( V.size() ) , E ).size() );
+	 bipartiteMatching( int( P.size() ) , int( V.size() ) , E ).size() );
   }
  CHECK( greedy::garden( {} , { 1 } ) == 0 );
  CHECK( greedy::garden( { 1 } , {} ) == 0 );
@@ -1783,11 +1858,12 @@ ADS_TEST( "greedy-18" )
 ADS_TEST( "varie-1" )
 {
  const Vec V = { 3 , 2 , -3 , 4 };
- CHECK( varie::closeToZero( V ) == std::pair( std::size_t( 1 ) ,
-                                              std::size_t( 2 ) ) );
+ CHECK( varie::closeToZero( V ) ==
+	std::pair( std::size_t( 1 ) , std::size_t( 2 ) ) );
  auto sum = []( const Vec & A , std::size_t i , std::size_t j ) {
   long long s = 0;
-  for( std::size_t q = i ; q <= j ; ++q ) s += A[ q ];
+  for( std::size_t q = i ; q <= j ; ++q )
+   s += A[ q ];
   return( s );
   };
  std::mt19937 g( 1 );
@@ -1801,22 +1877,22 @@ ADS_TEST( "varie-1" )
   CHECK( ( i <= j ) && ( j < A.size() ) );
   CHECK( std::abs( sum( A , i , j ) ) == best );
   }
- CHECK( varie::closeToZero( Vec{ 5 } ) == std::pair( std::size_t( 0 ) ,
-                                                     std::size_t( 0 ) ) );
+ CHECK( varie::closeToZero( Vec{ 5 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
  CHECK( varie::closeToZero( Vec{ 9 , 1 , 9 } ) ==
-        std::pair( std::size_t( 1 ) , std::size_t( 1 ) ) );
+	std::pair( std::size_t( 1 ) , std::size_t( 1 ) ) );
  CHECK( varie::closeToZero( std::vector< double >{ 0.5 , -0.125 } ) ==
-        std::pair( std::size_t( 1 ) , std::size_t( 1 ) ) );
- CHECK( varie::closeToZero( Vec{ 0 } ) == std::pair( std::size_t( 0 ) ,
-                                                     std::size_t( 0 ) ) );
- CHECK( varie::closeToZero( Vec{ 4 , 4 , 4 } ) ==              // the first tie
-        std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
+	std::pair( std::size_t( 1 ) , std::size_t( 1 ) ) );
+ CHECK( varie::closeToZero( Vec{ 0 } ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
+ CHECK( varie::closeToZero( Vec{ 4 , 4 , 4 } ) ==  // the first tie
+	std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
  CHECK( varie::closeToZero( Vec{ 1 , 2 , 0 , 3 } ) ==
-        std::pair( std::size_t( 2 ) , std::size_t( 2 ) ) );
+	std::pair( std::size_t( 2 ) , std::size_t( 2 ) ) );
  CHECK( varie::closeToZero( Vec{ 5 , -5 } ) ==
-        std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  CHECK( varie::closeToZero( Vec{ -3 , -1 , -2 } ) ==
-        std::pair( std::size_t( 1 ) , std::size_t( 1 ) ) );
+	std::pair( std::size_t( 1 ) , std::size_t( 1 ) ) );
  CHECK_THROWS( varie::closeToZero( Vec() ) , contract_violation );
  }
 
@@ -1827,19 +1903,21 @@ ADS_TEST( "varie-2" )
 {
  auto run = []( const std::vector< int > & B , const std::vector< int > & D ) {
   long long calls = 0;
-  const auto [ b , d ] = varie::findMin( B.size() , [ & ]( std::size_t x ,
-                                                           std::size_t y ) {
-   ++calls;
-   return( B[ x ] < D[ y ] ? -1 : B[ x ] > D[ y ] ? 1 : 0 ); } );
+  const auto [ b , d ] =
+    varie::findMin( B.size() , [ & ]( std::size_t x , std::size_t y ) {
+     ++calls;
+     return( B[ x ] < D[ y ] ? -1 : B[ x ] > D[ y ] ? 1 : 0 );
+     } );
   return( ( B[ b ] == 0 ) && ( D[ d ] == 0 ) &&
-          ( calls <= 8 * LL( B.size() ) ) );
+	   ( calls <= 8 * LL( B.size() ) ) );
   };
  for( int n = 1 ; n <= 6 ; ++n ) {
   std::vector< int > B( static_cast< std::size_t >( n ) ) , D;
   std::iota( B.begin() , B.end() , 0 );
   do {
    D = B;
-   do CHECK( run( B , D ) );
+   do
+    CHECK( run( B , D ) );
    while( std::next_permutation( D.begin() , D.end() ) );
    } while( std::next_permutation( B.begin() , B.end() ) );
   }
@@ -1852,8 +1930,9 @@ ADS_TEST( "varie-2" )
   std::shuffle( D.begin() , D.end() , g );
   CHECK( run( B , D ) );
   }
- CHECK_THROWS( varie::findMin( 0 , []( std::size_t , std::size_t ) {
-  return( 0 ); } ) , contract_violation );
+ CHECK_THROWS(
+   varie::findMin( 0 , []( std::size_t , std::size_t ) { return( 0 ); } ) ,
+   contract_violation );
  }
 
 // a pair within d on 800 random vectors with repetitions, against the
@@ -1871,13 +1950,14 @@ ADS_TEST( "varie-3" )
   for( std::size_t q = 2 ; q < S.size() ; ++q )
    gap = std::min( gap , S[ q ] - S[ q - 1 ] );
   return( ( i != j ) && ( i < A.size() ) && ( j < A.size() ) &&
-          ( gap <= d ) && ( std::abs( A[ i ] - A[ j ] ) <= d * 1.000001 ) );
+	   ( gap <= d ) && ( std::abs( A[ i ] - A[ j ] ) <= d * 1.000001 ) );
   };
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 800 ; ++t ) {
   std::vector< double > A( 2 + g() % 20 );
   const unsigned range = 1 + g() % 1000;
-  for( auto & x : A ) x = double( g() % range ) / 7.0 - 50;
+  for( auto & x : A )
+   x = double( g() % range ) / 7.0 - 50;
   CHECK( check( A ) );
   }
  CHECK( check( std::vector< double >( 5 , 3.5 ) ) );
@@ -1885,12 +1965,12 @@ ADS_TEST( "varie-3" )
  CHECK( check( { 0 , 1 , 2 , 3 , 4 , 100 } ) );
  CHECK( check( { 0 , 25 , 50 , 75 , 100 } ) );
  CHECK( check( { -1e300 , 1e300 , 0 } ) );
- CHECK( check( { 7 , 7 } ) );                     // two equal items, d = 0
- CHECK( check( { 1 , 1 , 9 } ) );                 // a pair at the minimum
- CHECK( check( { 1 , 9 , 9 } ) );                 // a pair at the maximum
- CHECK( check( { 4 , 3 , 2 , 1 , 0 } ) );         // all gaps d, reversed
+ CHECK( check( { 7 , 7 } ) );           // two equal items, d = 0
+ CHECK( check( { 1 , 1 , 9 } ) );        // a pair at the minimum
+ CHECK( check( { 1 , 9 , 9 } ) );        // a pair at the maximum
+ CHECK( check( { 4 , 3 , 2 , 1 , 0 } ) );  // all gaps d, reversed
  CHECK( varie::closePoints( { 2 , 5 } ) ==
-        std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
+	std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) );
  CHECK_THROWS( varie::closePoints( { 1 } ) , contract_violation );
  CHECK_THROWS( varie::closePoints( {} ) , contract_violation );
  }
@@ -1900,17 +1980,17 @@ ADS_TEST( "varie-3" )
 ADS_TEST( "varie-4" )
 {
  const Matrix A = { { 1 , 0 , 1 , 0 , 1 , 0 , 0 } ,
-                    { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 0 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 1 , 1 , 1 , 1 , 1 , 1 , 0 } };
+		    { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		    { 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		    { 0 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		    { 1 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		    { 1 , 1 , 1 , 1 , 1 , 1 , 0 } };
  const Matrix DP = { { 1 , 0 , 1 , 0 , 1 , 0 , 0 } ,
-                     { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 1 , 1 , 2 , 2 , 2 , 0 } ,
-                     { 0 , 0 , 1 , 2 , 3 , 3 , 0 } ,
-                     { 1 , 1 , 1 , 2 , 3 , 4 , 0 } ,
-                     { 1 , 2 , 2 , 2 , 3 , 4 , 0 } };
+		     { 1 , 0 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 0 , 1 , 1 , 2 , 2 , 2 , 0 } ,
+		     { 0 , 0 , 1 , 2 , 3 , 3 , 0 } ,
+		     { 1 , 1 , 1 , 2 , 3 , 4 , 0 } ,
+		     { 1 , 2 , 2 , 2 , 3 , 4 , 0 } };
  CHECK( varie::maxSquareTable( A ) == DP );
  CHECK( varie::maxSquare( A ) == 4 );
  std::mt19937 g( 1 );
@@ -1925,7 +2005,8 @@ ADS_TEST( "varie-4" )
      for( int x = i ; x < i + k ; ++x )
       for( int y = j ; y < j + k ; ++y )
        ok = ok && B[ std::size_t( x ) ][ std::size_t( y ) ];
-     if( ok ) best = std::max( best , k );
+     if( ok )
+      best = std::max( best , k );
      }
   CHECK( varie::maxSquare( B ) == best );
   }
@@ -1933,7 +2014,7 @@ ADS_TEST( "varie-4" )
  CHECK( varie::maxSquare( { { 0 } } ) == 0 );
  CHECK( varie::maxSquare( { { 1 } } ) == 1 );
  const Matrix ones( 30 , std::vector< int >( 30 , 1 ) ) ,
-              zeros( 30 , std::vector< int >( 30 , 0 ) );
+   zeros( 30 , std::vector< int >( 30 , 0 ) );
  CHECK( varie::maxSquare( ones ) == 30 );
  CHECK( varie::maxSquare( zeros ) == 0 );
  // rectangular matrices: a row, a column, a wide and a tall one
@@ -1942,11 +2023,11 @@ ADS_TEST( "varie-4" )
  CHECK( varie::maxSquare( Matrix( 3 , std::vector< int >( 7 , 1 ) ) ) == 3 );
  CHECK( varie::maxSquare( Matrix( 7 , std::vector< int >( 2 , 1 ) ) ) == 2 );
  CHECK( varie::maxSquareTable( { { 1 , 1 , 1 } , { 1 , 1 , 1 } } ) ==
-        Matrix( { { 1 , 1 , 1 } , { 1 , 2 , 2 } } ) );
+	Matrix( { { 1 , 1 , 1 } , { 1 , 2 , 2 } } ) );
  CHECK( varie::maxSquareTable( {} ).empty() );
- CHECK( varie::maxSquare( Matrix( 3 ) ) == 0 );          // rows of no cells
+ CHECK( varie::maxSquare( Matrix( 3 ) ) == 0 );  // rows of no cells
  CHECK_THROWS( varie::maxSquare( { { 1 , 1 } , { 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the count of mistery() against n ceil( log2 n ) ( floor( log3 n ) + 1 )
@@ -1955,10 +2036,11 @@ ADS_TEST( "varie-4" )
 ADS_TEST( "varie-5" )
 {
  auto formula = []( std::uint64_t n ) {
-  const std::uint64_t c2 = n > 1 ? std::uint64_t( std::bit_width( n - 1 ) )
-                                 : 0;
+  const std::uint64_t c2 =
+    n > 1 ? std::uint64_t( std::bit_width( n - 1 ) ) : 0;
   std::uint64_t f3 = 0;
-  for( std::uint64_t p = 3 ; p <= n ; p *= 3 ) ++f3;
+  for( std::uint64_t p = 3 ; p <= n ; p *= 3 )
+   ++f3;
   return( n * c2 * ( f3 + 1 ) );
   };
  for( std::uint64_t n = 0 ; n <= 300 ; ++n )
@@ -1968,7 +2050,7 @@ ADS_TEST( "varie-5" )
   const std::uint64_t s = varie::mistery( n );
   CHECK( s == formula( n ) );
   const double r = double( s ) / ( double( n ) * std::log2( double( n ) ) *
-                                   std::log( double( n ) ) / std::log( 3.0 ) );
+				   std::log( double( n ) ) / std::log( 3.0 ) );
   CHECK( ( r >= 1 ) && ( r < last ) );
   last = r;
   }
@@ -1998,11 +2080,13 @@ ADS_TEST( "varie-6" )
       if( ( s >> j & 1 ) && ( a[ i ] < b[ j ] ) && ( a[ j ] < b[ i ] ) )
        ok = false;
      }
-   if( ok ) best = std::max( best , len );
+   if( ok )
+    best = std::max( best , len );
    }
   const auto [ S , w ] = varie::segmentCover( a , b );
   long long len = 0;
-  for( std::size_t i : S ) len += b[ i ] - a[ i ];
+  for( std::size_t i : S )
+   len += b[ i ] - a[ i ];
   CHECK( ( w == best ) && ( len == best ) );
   }
  CHECK( varie::segmentCover( {} , {} ).second == 0 );
@@ -2030,7 +2114,7 @@ ADS_TEST( "varie-7" )
    const std::size_t u = Q.front();
    Q.pop();
    for( std::size_t k = 1 ; ( k <= std::size_t( V[ u ] ) ) && ( u + k < n ) ;
-        ++k )
+	++k )
     if( d[ u + k ] < 0 ) {
      d[ u + k ] = d[ u ] + 1;
      Q.push( u + k );
@@ -2047,7 +2131,7 @@ ADS_TEST( "varie-7" )
  CHECK( varie::minMoves( Vec( 20 , 1 ) ) == 19 );
  CHECK( varie::minMoves( Vec( 20 , 100 ) ) == 1 );
  CHECK( varie::minMoves( { 1 , 9 } ) == 1 );
- CHECK( varie::minMoves( { 2 , 1 , 1 } ) == 1 );         // exactly to the end
+ CHECK( varie::minMoves( { 2 , 1 , 1 } ) == 1 );  // exactly to the end
  CHECK( varie::minMoves( { 1 , 3 , 1 , 1 , 1 } ) == 2 );
  const long long M = std::numeric_limits< long long >::max();
  CHECK( varie::minMoves( { M , 1 , 1 } ) == 1 );
@@ -2064,14 +2148,16 @@ ADS_TEST( "varie-8" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
   std::vector< int > V( g() % 25 );
-  for( auto & x : V ) x = int( g() % 2 );
+  for( auto & x : V )
+   x = int( g() % 2 );
   std::size_t best = 0;
   for( std::size_t i = 0 ; i < V.size() ; ++i )
    for( std::size_t k = 1 ; i + 2 * k <= V.size() ; ++k ) {
     bool ok = true;
     for( std::size_t q = 0 ; q < 2 * k ; ++q )
      ok = ok && ( V[ i + q ] == ( q < k ? 0 : 1 ) );
-    if( ok ) best = std::max( best , 2 * k );
+    if( ok )
+     best = std::max( best , 2 * k );
     }
   CHECK( varie::count01( V ) == best );
   }
@@ -2119,10 +2205,12 @@ ADS_TEST( "varie-9" )
   // the cuts as a subset of the n - 1 inner places, at most k - 1 of them
   const std::uint32_t top = n ? 1u << ( n - 1 ) : 1;
   for( std::uint32_t s = 0 ; s < top ; ++s ) {
-   if( std::size_t( std::popcount( s ) ) + 1 > k ) continue;
+   if( std::size_t( std::popcount( s ) ) + 1 > k )
+    continue;
    std::vector< std::size_t > cuts;
    for( std::size_t i = 1 ; i < n ; ++i )
-    if( s >> ( i - 1 ) & 1 ) cuts.push_back( i );
+    if( s >> ( i - 1 ) & 1 )
+     cuts.push_back( i );
    best = std::min( best , split( A , cuts ) );
    }
   CHECK( varie::partition( A , k ) == best );
@@ -2133,7 +2221,7 @@ ADS_TEST( "varie-9" )
  CHECK( varie::partition( Vec( 6 , 4 ) , 10 ) == 4 );
  CHECK( varie::partition( { 1 , 2 , 3 } , 1 ) == 6 );
  CHECK( varie::partition( { 0 , 0 , 0 } , 2 ) == 0 );
- CHECK( varie::partition( { 1 , 9 , 1 } , 3 ) == 9 );    // k = n
+ CHECK( varie::partition( { 1 , 9 , 1 } , 3 ) == 9 );  // k = n
  CHECK( varie::partition( { 9 , 1 , 1 , 1 } , 2 ) == 9 );
  CHECK( varie::partition( Vec() , 1 ) == 0 );
  CHECK_THROWS( varie::partition( { 1 } , 0 ) , contract_violation );
@@ -2185,28 +2273,28 @@ ADS_TEST( "varie-11" )
   CHECK( varie::fourPairs( B , k ) == r );
   yes += r;
   }
- CHECK( yes > 0 );                          // some yes: their number
-                                            // depends on the library
+ CHECK( yes > 0 );  // some yes: their number
+		    // depends on the library
  CHECK( ! varie::fourCubic( V64() , 0 ) && ! varie::fourPairs( V64() , 0 ) );
  CHECK( varie::fourCubic( { 5 } , 20 ) && varie::fourPairs( { 5 } , 20 ) );
  CHECK( ! varie::fourCubic( { 5 } , 15 ) && ! varie::fourPairs( { 5 } , 15 ) );
  const std::int64_t M = ( std::int64_t( 1 ) << 60 ) - 1 , K = 4 * M;
  CHECK( varie::fourCubic( { -M , M } , K ) && varie::fourPairs( { -M , M } ,
-                                                                K ) );
- CHECK( varie::fourCubic( { -M , M } , -K ) && varie::fourPairs( { -M , M } ,
-                                                                 -K ) );
+								K ) );
+ CHECK( varie::fourCubic( { -M , M } , -K ) &&
+	varie::fourPairs( { -M , M } , -K ) );
  CHECK( ! varie::fourCubic( { -M , M } , 1 ) );
  CHECK( varie::fourCubic( { -M , M } , 0 ) && varie::fourPairs( { -M , M } ,
-                                                                0 ) );
+								0 ) );
  CHECK( varie::fourCubic( { 0 } , 0 ) && varie::fourPairs( { 0 } , 0 ) );
  CHECK( ! varie::fourCubic( V64( 9 , 2 ) , 9 ) &&
-        ! varie::fourPairs( V64( 9 , 2 ) , 9 ) );
+	! varie::fourPairs( V64( 9 , 2 ) , 9 ) );
  CHECK( varie::fourCubic( { 1 , 2 , 3 , 4 } , 10 ) &&
-        varie::fourPairs( { 1 , 2 , 3 , 4 } , 10 ) );
+	varie::fourPairs( { 1 , 2 , 3 , 4 } , 10 ) );
  CHECK( varie::fourCubic( { 1 , 2 , 3 , 4 } , 4 ) &&
-        varie::fourPairs( { 1 , 2 , 3 , 4 } , 16 ) );   // the least, the most
+	varie::fourPairs( { 1 , 2 , 3 , 4 } , 16 ) );  // the least, the most
  CHECK( ! varie::fourCubic( { 1 , 2 , 3 , 4 } , 3 ) &&
-        ! varie::fourPairs( { 1 , 2 , 3 , 4 } , 17 ) );
+	! varie::fourPairs( { 1 , 2 , 3 , 4 } , 17 ) );
  }
 
 // the example of the text, the four sides of every square checked on 400
@@ -2214,27 +2302,30 @@ ADS_TEST( "varie-11" )
 ADS_TEST( "varie-12" )
 {
  const Matrix A = { { 1 , 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ,
-                    { 0 , 1 , 1 , 0 , 0 , 1 , 1 , 1 } ,
-                    { 1 , 1 , 1 , 0 , 0 , 1 , 1 , 1 } ,
-                    { 0 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ,
-                    { 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ,
-                    { 0 , 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
-                    { 0 , 1 , 0 , 0 , 1 , 0 , 1 , 1 } };
+		    { 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ,
+		    { 0 , 1 , 1 , 0 , 0 , 1 , 1 , 1 } ,
+		    { 1 , 1 , 1 , 0 , 0 , 1 , 1 , 1 } ,
+		    { 0 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ,
+		    { 1 , 1 , 1 , 1 , 1 , 1 , 1 , 1 } ,
+		    { 0 , 0 , 1 , 1 , 1 , 1 , 1 , 0 } ,
+		    { 0 , 1 , 0 , 0 , 1 , 0 , 1 , 1 } };
  CHECK( varie::largestSquare( A ) == 5 );
  auto brute = []( const Matrix & B ) {
   const int n = int( B.size() );
   auto at = [ & ]( int i , int j ) {
-   return( B[ std::size_t( i ) ][ std::size_t( j ) ] ); };
+   return( B[ std::size_t( i ) ][ std::size_t( j ) ] );
+   };
   int best = 0;
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j )
     for( int k = 1 ; ( i + k <= n ) && ( j + k <= n ) ; ++k ) {
      bool ok = true;
      for( int q = 0 ; q < k ; ++q )
-      ok = ok && at( i , j + q ) && at( i + k - 1 , j + q ) &&
-           at( i + q , j ) && at( i + q , j + k - 1 );
-     if( ok ) best = std::max( best , k );
+      ok = ok && at( i , j + q ) && at( i + k - 1 , j + q ) && at( i + q ,
+								   j ) &&
+	   at( i + q , j + k - 1 );
+     if( ok )
+      best = std::max( best , k );
      }
   return( best );
   };
@@ -2248,18 +2339,21 @@ ADS_TEST( "varie-12" )
  CHECK( varie::largestSquare( { { 1 } } ) == 1 );
  CHECK( varie::largestSquare( { { 0 } } ) == 0 );
  CHECK( varie::largestSquare( { { 1 , 1 , 1 } , { 1 , 0 , 1 } ,
-                                { 1 , 1 , 1 } } ) == 3 );
+				{ 1 , 1 , 1 } } ) ==
+	3 );
  CHECK( varie::largestSquare( { { 0 , 1 , 1 } , { 0 , 1 , 1 } ,
-                                { 0 , 0 , 0 } } ) == 2 );
+				{ 0 , 0 , 0 } } ) ==
+	2 );
  CHECK( varie::largestSquare( Matrix( 25 , std::vector< int >( 25 , 1 ) ) ) ==
-        25 );
+	25 );
  CHECK( varie::largestSquare( { { 1 , 1 } , { 1 , 0 } } ) == 1 );
  CHECK( varie::largestSquare( { { 0 , 1 } , { 1 , 1 } } ) == 1 );
  CHECK( varie::largestSquare( { { 1 , 0 , 1 } , { 0 , 1 , 0 } ,
-                                { 1 , 0 , 1 } } ) == 1 );
+				{ 1 , 0 , 1 } } ) ==
+	1 );
  CHECK_THROWS( varie::largestSquare( { { 1 , 1 } } ) , contract_violation );
  CHECK_THROWS( varie::largestSquare( { { 1 , 1 } , { 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the examples of the text, the counts of every subvector on 600 random
@@ -2271,7 +2365,8 @@ ADS_TEST( "varie-13" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
   std::vector< int > A( g() % 30 );
-  for( auto & x : A ) x = int( g() % 2 );
+  for( auto & x : A )
+   x = int( g() % 2 );
   long long best = 0;
   for( std::size_t i = 0 ; i < A.size() ; ++i ) {
    long long z = 0;
@@ -2305,7 +2400,7 @@ ADS_TEST( "varie-14" )
   CHECK( varie::paths( n ) == C[ std::size_t( 2 * n ) ][ std::size_t( n ) ] );
  for( int n = 0 ; n <= 10 ; ++n )
   CHECK( ( varie::paths( n ) == binomial( 2 * n , n ) ) &&
-         ( varie::paths( n ) == binomialByFactorials( 2 * n , n ) ) );
+	 ( varie::paths( n ) == binomialByFactorials( 2 * n , n ) ) );
  CHECK( varie::paths( 1 ) == 2 );
  CHECK( varie::paths( 33 ) == 7219428434016265740ull );
  CHECK( varie::paths( 0 ) == 1 );
@@ -2321,21 +2416,26 @@ ADS_TEST( "varie-15" )
  for( int t = 0 ; t < 500 ; ++t ) {
   const std::size_t n = g() % 9;
   const std::vector< Vec > A = { randomVec( g , n , 1 , 20 ) ,
-                                 randomVec( g , n , 1 , 20 ) };
+				 randomVec( g , n , 1 , 20 ) };
   long long best = 0;
   std::size_t total = 1;
-  for( std::size_t i = 0 ; i < n ; ++i ) total *= 3;
+  for( std::size_t i = 0 ; i < n ; ++i )
+   total *= 3;
   for( std::size_t code = 0 ; code < total ; ++code ) {
-   std::vector< int > c( n );                // 0 none, 1 top, 2 bottom
+   std::vector< int > c( n );  // 0 none, 1 top, 2 bottom
    std::size_t x = code;
-   for( std::size_t i = 0 ; i < n ; ++i , x /= 3 ) c[ i ] = int( x % 3 );
+   for( std::size_t i = 0 ; i < n ; ++i , x /= 3 )
+    c[ i ] = int( x % 3 );
    bool ok = true;
    long long gain = 0;
    for( std::size_t i = 0 ; i < n ; ++i ) {
-    if( c[ i ] ) gain += A[ std::size_t( c[ i ] - 1 ) ][ i ];
-    if( ( i > 0 ) && c[ i ] && c[ i - 1 ] ) ok = false;
+    if( c[ i ] )
+     gain += A[ std::size_t( c[ i ] - 1 ) ][ i ];
+    if( ( i > 0 ) && c[ i ] && c[ i - 1 ] )
+     ok = false;
     }
-   if( ok ) best = std::max( best , gain );
+   if( ok )
+    best = std::max( best , gain );
    }
   CHECK( varie::maxGain( A ) == best );
   }
@@ -2351,7 +2451,7 @@ ADS_TEST( "varie-15" )
  CHECK_THROWS( varie::maxGain( { { 1 } } ) , contract_violation );
  CHECK_THROWS( varie::maxGain( { { 1 , 2 } , { 3 } } ) , contract_violation );
  CHECK_THROWS( varie::maxGain( { { 1 } , { 2 } , { 3 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the examples of the text (and the pairwise solutions they refute, by the
@@ -2360,8 +2460,8 @@ ADS_TEST( "varie-15" )
 ADS_TEST( "varie-16" )
 {
  CHECK( lcs3( "ccabbacc" , "ccccabba" , "cccc" ) == "cccc" );
- CHECK( lcs( std::string( "ccabbacc" ) ,
-             std::string( "ccccabba" ) ).size() == 6 );
+ CHECK( lcs( std::string( "ccabbacc" ) , std::string( "ccccabba" ) ).size() ==
+	6 );
  CHECK( lcs( std::string( "ccabba" ) , std::string( "cccc" ) ).size() == 2 );
  CHECK( lcs3( "ABC" , "BCD" , "CDE" ) == "C" );
  CHECK( lcs( std::string( "ABC" ) , std::string( "BCD" ) ).size() == 2 );
@@ -2370,17 +2470,19 @@ ADS_TEST( "varie-16" )
  std::mt19937 g( 1 );
  auto word = [ & ]( std::size_t n ) {
   std::string s;
-  for( ; n > 0 ; --n ) s += char( 'a' + g() % 3 );
+  for( ; n > 0 ; --n )
+   s += char( 'a' + g() % 3 );
   return( s );
   };
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string X = word( g() % 11 ) , Y = word( g() % 11 ) ,
-                    Z = word( g() % 11 );
+		    Z = word( g() % 11 );
   std::size_t best = 0;
   for( std::uint32_t s = 0 ; s < ( 1u << X.size() ) ; ++s ) {
    std::string P;
    for( std::size_t i = 0 ; i < X.size() ; ++i )
-    if( s >> i & 1 ) P += X[ i ];
+    if( s >> i & 1 )
+     P += X[ i ];
    if( subsequenceOf( P , Y ) && subsequenceOf( P , Z ) )
     best = std::max( best , P.size() );
    }
@@ -2394,10 +2496,11 @@ ADS_TEST( "varie-16" )
  CHECK( lcs3( "abc" , "def" , "abc" ).empty() );
  CHECK( lcs3( "" , "" , "" ).empty() );
  CHECK( lcs3( "abc" , "abc" , "" ).empty() );
- CHECK( lcs3( "abcd" , "abcd" , "abcd" ) == "abcd" );    // all equal
- CHECK( lcs3( "a" , "aaaa" , "aa" ) == "a" );            // one much shorter
+ CHECK( lcs3( "abcd" , "abcd" , "abcd" ) == "abcd" );  // all equal
+ CHECK( lcs3( "a" , "aaaa" , "aa" ) == "a" );          // one much shorter
  CHECK( lcs3( "abcdefghijklmnopqrstuvwxyz" , "zyxwvutsrqponmlkjihgfedcba" ,
-              "abcdefghijklmnopqrstuvwxyz" ).size() == 1 );
+	      "abcdefghijklmnopqrstuvwxyz" )
+	  .size() == 1 );
  }
 
 // the examples of the text, the two nested loops on 600 random sorted
@@ -2417,25 +2520,26 @@ ADS_TEST( "varie-17" )
   const long long k = LL( g() % 61 ) - 30;
   bool r = false;
   for( long long x : B1 )
-   for( long long y : B2 ) r = r || ( x + y == k );
+   for( long long y : B2 )
+    r = r || ( x + y == k );
   CHECK( varie::findPair( B1 , B2 , k ) == r );
   yes += r;
   }
- CHECK( yes > 0 );                          // some yes: their number
-                                            // depends on the library
+ CHECK( yes > 0 );  // some yes: their number
+		    // depends on the library
  CHECK( ! varie::findPair( Vec() , Vec() , 0 ) );
  CHECK( varie::findPair( { 3 } , { 4 } , 7 ) );
  CHECK( varie::findPair( Vec( 5 , 2 ) , Vec( 5 , 2 ) , 4 ) );
- CHECK( ! varie::findPair( { 1 , 2 } , Vec() , 3 ) );    // one side empty
+ CHECK( ! varie::findPair( { 1 , 2 } , Vec() , 3 ) );  // one side empty
  CHECK( ! varie::findPair( Vec() , { 1 , 2 } , 3 ) );
  CHECK( varie::findPair( { -5 , 0 , 5 } , { -5 , 0 , 5 } , -10 ) );
  CHECK( varie::findPair( { -5 , 0 , 5 } , { -5 , 0 , 5 } , 10 ) );
  CHECK( ! varie::findPair( { -5 , 0 , 5 } , { -5 , 0 , 5 } , 11 ) );
  CHECK( ! varie::findPair( { 3 } , { 4 } , 8 ) );
  CHECK_THROWS( varie::findPair( { 2 , 1 } , { 1 , 2 } , 3 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( varie::findPair( { 1 , 2 } , { 2 , 1 } , 3 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the distances of Floyd-Warshall and the same scan on 500 random graphs
@@ -2448,9 +2552,8 @@ ADS_TEST( "varie-18" )
  while( done < 500 ) {
   const int n = 1 + int( g() % 7 );
   ListGraph< double > G( n , true );
-  std::vector< std::vector< double > > F( std::size_t( n ) ,
-                                          std::vector< double >(
-                                           std::size_t( n ) , INF ) );
+  std::vector< std::vector< double > > F(
+    std::size_t( n ) , std::vector< double >( std::size_t( n ) , INF ) );
   for( int u = 0 ; u < n ; ++u ) {
    F[ std::size_t( u ) ][ std::size_t( u ) ] = 0;
    for( int v = 0 ; v < n ; ++v )
@@ -2466,13 +2569,15 @@ ADS_TEST( "varie-18" )
      if( ( row[ k ] < INF ) && ( F[ k ][ j ] < INF ) )
       row[ j ] = std::min( row[ j ] , row[ k ] + F[ k ][ j ] );
   bool negative = false;
-  for( std::size_t u = 0 ; u < F.size() ; ++u ) negative |= F[ u ][ u ] < 0;
-  if( negative ) continue;
+  for( std::size_t u = 0 ; u < F.size() ; ++u )
+   negative |= F[ u ][ u ] < 0;
+  if( negative )
+   continue;
   const int s = int( g() % unsigned( n ) ) , t = int( g() % unsigned( n ) );
   bool r = false;
   for( std::size_t u = 0 ; u < F.size() ; ++u )
    r = r || ( ( F[ std::size_t( s ) ][ u ] == F[ std::size_t( t ) ][ u ] ) &&
-              ( F[ std::size_t( s ) ][ u ] < INF ) );
+	      ( F[ std::size_t( s ) ][ u ] < INF ) );
   CHECK( varie::meetingPoint( G , s , t ) == r );
   yes += r;
   ++done;
@@ -2487,11 +2592,11 @@ ADS_TEST( "varie-18" )
  G.insertEdge( 1 , 2 , 2.5 );
  CHECK( ! varie::meetingPoint( G , 0 , 1 ) );
  ListGraph< double > H( 1 , true );
- CHECK( varie::meetingPoint( H , 0 , 0 ) );              // one node
- ListGraph< double > D( 2 , true );                      // 1 at 1 and 0,
- D.insertEdge( 0 , 1 , 1 );                              // 0 at 0 and inf
+ CHECK( varie::meetingPoint( H , 0 , 0 ) );  // one node
+ ListGraph< double > D( 2 , true );         // 1 at 1 and 0,
+ D.insertEdge( 0 , 1 , 1 );                  // 0 at 0 and inf
  CHECK( ! varie::meetingPoint( D , 0 , 1 ) );
- D.insertEdge( 1 , 0 , 0 );                              // 0 at 0 and 0
+ D.insertEdge( 1 , 0 , 0 );  // 0 at 0 and 0
  CHECK( varie::meetingPoint( D , 0 , 1 ) );
  CHECK_THROWS( varie::meetingPoint( G , 0 , 3 ) , contract_violation );
  G.insertEdge( 2 , 0 , -2 );
@@ -2509,17 +2614,20 @@ ADS_TEST( "varie-19" )
  CHECK( varie::countArithmetic( { 3 , 4 , 2 , 1 } ) == 0 );
  auto brute = []( const Vec & A ) {
   const std::size_t n = A.size();
-  auto arith = [ & ]( std::size_t i , std::size_t j ) {     // A[ i .. j ]
-   if( ( j >= n ) || ( j < i + 2 ) ) return( false );
+  auto arith = [ & ]( std::size_t i , std::size_t j ) {  // A[ i .. j ]
+   if( ( j >= n ) || ( j < i + 2 ) )
+    return( false );
    for( std::size_t q = i + 2 ; q <= j ; ++q )
-    if( A[ q ] - A[ q - 1 ] != A[ i + 1 ] - A[ i ] ) return( false );
+    if( A[ q ] - A[ q - 1 ] != A[ i + 1 ] - A[ i ] )
+     return( false );
    return( true );
    };
   std::size_t c = 0;
   for( std::size_t i = 0 ; i < n ; ++i )
    for( std::size_t j = i + 2 ; j < n ; ++j )
-    c += arith( i , j ) && !( i > 0 && arith( i - 1 , j ) ) &&
-         ! arith( i , j + 1 );
+    c +=
+      arith( i , j ) && ! ( i > 0 && arith( i - 1 , j ) ) && ! arith( i ,
+								      j + 1 );
   return( c );
   };
  std::mt19937 g( 1 );
@@ -2568,7 +2676,7 @@ ADS_TEST( "varie-20" )
  CHECK( varie::circularMaxSum( Vec( 6 , 3 ) ) == 18 );
  CHECK( varie::circularMaxSum( { 7 } ) == 7 );
  CHECK( varie::circularMaxSum( { 0 , 0 } ) == 0 );
- CHECK( varie::circularMaxSum( { 5 , -9 , 5 } ) == 10 );   // across the end
+ CHECK( varie::circularMaxSum( { 5 , -9 , 5 } ) == 10 );  // across the end
  CHECK( varie::circularMaxSum( { -1 , 5 , -1 } ) == 5 );
  CHECK( varie::circularMaxSum( { 4 , -1 , 4 , -1 } ) == 7 );
  }
@@ -2584,7 +2692,8 @@ ADS_TEST( "varie-21" )
   std::size_t best = 0;
   for( std::size_t i = 0 ; i < A.size() ; ++i )
    for( std::size_t j = i + 1 ; j < A.size() ; ++j )
-    if( A[ i ] == A[ j ] ) best = std::max( best , j - i );
+    if( A[ i ] == A[ j ] )
+     best = std::max( best , j - i );
   CHECK( varie::maxDistance( A ) == best );
   }
  CHECK( varie::maxDistance( Vec() ) == 0 );
@@ -2594,7 +2703,7 @@ ADS_TEST( "varie-21" )
  const long long M = std::numeric_limits< long long >::max();
  CHECK( varie::maxDistance( { M , -M , M } ) == 2 );
  CHECK( varie::maxDistance( { 3 , 3 } ) == 1 );
- CHECK( varie::maxDistance( { 1 , 2 , 1 , 2 } ) == 2 );    // two values
+ CHECK( varie::maxDistance( { 1 , 2 , 1 , 2 } ) == 2 );  // two values
  CHECK( varie::maxDistance( { 5 , 1 , 2 , 3 , 4 , 5 } ) == 5 );
  }
 }  // end( namespace )

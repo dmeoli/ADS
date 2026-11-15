@@ -47,7 +47,7 @@
 
 #ifndef __ADS_Trie
  #define __ADS_Trie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,9 +69,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS TrieIterator ----------------------------*/
@@ -83,7 +85,8 @@ namespace detail {
 /// `Labeled`; `*it` gives the pair \f$ ( \mathit{key} , \mathit{value} ) \f$
 /// by value
 template< class N , class V , bool Labeled >
-class TrieIterator {
+class TrieIterator
+{
  public:
  /// a reference to an item
  using reference = std::pair< std::string , const V & >;
@@ -97,13 +100,15 @@ class TrieIterator {
  using iterator_category = std::input_iterator_tag;
 
  /// the end
-TrieIterator( void ) = default;
+ TrieIterator( void ) = default;
 
  /// on the first key below `root` (`root` included), or at the end if nil
  explicit TrieIterator( const N * root ) {
-  if( ! root ) return;
+  if( ! root )
+   return;
   f_S.push_back( Frame{ root , root->next.begin() , 0 } );
-  if( ! root->value ) advance();
+  if( ! root->value )
+   advance();
   }
 
  /// the key and its value
@@ -117,41 +122,50 @@ TrieIterator( void ) = default;
   return( *this );
   }
  /// to the next key, returning the iterator before the step
-TrieIterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+ TrieIterator operator++( int ) {
+  auto t = *this;
+  ++*this;
+  return( t );
+  }
 
  /// equal on the same node, or both at the end
  bool operator==( const TrieIterator & o ) const {
   return( f_S.empty() ? o.f_S.empty()
-                      : ( ! o.f_S.empty() &&
-                          ( f_S.back().node == o.f_S.back().node ) ) );
+		       : ( ! o.f_S.empty() &&
+			   ( f_S.back().node == o.f_S.back().node ) ) );
   }
 
  private:
- struct Frame {
-  const N * node;                           ///< the node
-  typename decltype( N::next )::const_iterator child;   ///< the next one
-  std::size_t length;                       ///< of the key above the node
+ struct Frame
+ {
+  const N * node;                                      ///< the node
+  typename decltype( N::next )::const_iterator child;  ///< the next one
+  std::size_t length;  ///< of the key above the node
   };
 
  /// to the next node with a value in preorder, or to the end
  void advance( void ) {
   while( ! f_S.empty() ) {
    Frame & f = f_S.back();
-   if( f.child == f.node->next.end() ) {    // its subtree is done
+   if( f.child == f.node->next.end() ) {  // its subtree is done
     f_key.resize( f.length );
     f_S.pop_back();
     continue;
     }
    const std::size_t len = f_key.size();
    const auto & [ c , x ] = *f.child++;
-   if constexpr( Labeled ) f_key += x->label; else f_key += c;
+   if constexpr( Labeled )
+    f_key += x->label;
+   else
+    f_key += c;
    f_S.push_back( Frame{ x.get() , x->next.begin() , len } );
-   if( x->value ) return;
+   if( x->value )
+    return;
    }
   }
 
- std::vector< Frame > f_S;                  ///< the path from the root
- std::string f_key;                         ///< the key of the path
+ std::vector< Frame > f_S;  ///< the path from the root
+ std::string f_key;         ///< the key of the path
 
  };  // end( class TrieIterator )
 
@@ -163,13 +177,13 @@ TrieIterator operator++( int ) { auto t = *this; ++*this; return( t ); }
 
 /// a DICTIONARY of strings on a trie
 template< class V >
-class Trie {
+class Trie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = std::string;   ///< the type of the keys
- using Value = V;           ///< the type of the values
+ using Key = std::string;  ///< the type of the keys
+ using Value = V;          ///< the type of the values
 
  /// the value of the key \f$ k \f$, or nothing, in
  /// \f$ O( |k| \log \sigma ) \f$ time
@@ -206,23 +220,22 @@ class Trie {
 
  /// the keys that begin with \f$ p \f$, in increasing order: those below the
  /// node of \f$ p \f$
- [[nodiscard]] std::vector< std::string > keysWithPrefix(
-                                                  std::string_view p ) const;
+ [[nodiscard]] std::vector< std::string >
+ keysWithPrefix( std::string_view p ) const;
 
  /// the number of nodes, the root included
  [[nodiscard]] std::size_t nodes( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Node {
+ struct Node
+ {
   /// the children, by character
   std::map< char , std::unique_ptr< Node > > next;
-  std::optional< V > value;      ///< set if a key ends here
+  std::optional< V > value;  ///< set if a key ends here
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) in lexicographic order,
@@ -248,28 +261,29 @@ class Trie {
   return( const_iterator( &f_root ) );
   }
  /// the iterator past the last item
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// the constant iterator past the last item
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the node of the prefix \f$ p \f$, nil if none
  [[nodiscard]] const Node * find( std::string_view p ) const;
 
  /// removes \f$ k \f$ below \f$ x \f$ from its character \f$ d \f$; true if
-/// \f$ x \f$ became useless
+ /// \f$ x \f$ became useless
  bool remove( Node * x , std::string_view k , std::size_t d );
 
  static void collect( const Node * x , std::string & s ,
-                      std::vector< std::string > & out );
+		      std::vector< std::string > & out );
 
  static std::size_t count( const Node * x );
 
- Node f_root;              ///< the root, the empty prefix
- std::size_t f_size = 0;   ///< the number of keys
+ Node f_root;             ///< the root, the empty prefix
+ std::size_t f_size = 0;  ///< the number of keys
 
  };  // end( class Trie )
 
@@ -279,13 +293,13 @@ class Trie {
 
 /// a DICTIONARY of strings on a compact trie
 template< class V >
-class RadixTree {
+class RadixTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = std::string;   ///< the type of the keys
- using Value = V;           ///< the type of the values
+ using Key = std::string;  ///< the type of the keys
+ using Value = V;          ///< the type of the values
 
  /// the value of the key \f$ k \f$, or nothing, along the edges whose labels
  /// are pieces of \f$ k \f$
@@ -330,24 +344,23 @@ class RadixTree {
  [[nodiscard]] std::size_t size( void ) const;
 
  /// the keys that begin with \f$ p \f$, in increasing order
- [[nodiscard]] std::vector< std::string > keysWithPrefix(
-                                                  std::string_view p ) const;
+ [[nodiscard]] std::vector< std::string >
+ keysWithPrefix( std::string_view p ) const;
 
  /// the number of nodes, the root included
  [[nodiscard]] std::size_t nodes( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Node {
-  std::string label;             ///< the label of the edge into it
+ struct Node
+ {
+  std::string label;  ///< the label of the edge into it
   /// the children, by the first character of their labels
   std::map< char , std::unique_ptr< Node > > next;
-  std::optional< V > value;      ///< set if a key ends here
+  std::optional< V > value;  ///< set if a key ends here
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) in lexicographic order,
@@ -373,31 +386,32 @@ class RadixTree {
   return( const_iterator( &f_root ) );
   }
  /// the iterator past the last item
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// the constant iterator on the first item
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// the constant iterator past the last item
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// removes \f$ k \f$ below \f$ x \f$; true if \f$ x \f$ is left with no
-/// value and no child
+ /// value and no child
  bool remove( Node * x , std::string_view k );
 
  /// merges \f$ x \f$ with its only child, if it has no value
  static void compress( Node * x );
 
  static void collect( const Node * x , std::string & s ,
-                      std::vector< std::string > & out );
+		      std::vector< std::string > & out );
 
  static std::size_t count( const Node * x );
 
  /// no node but the root has one child and no value, \f$ O( n ) \f$
  static bool compact( const Node * x , bool root );
 
- Node f_root;              ///< the root, with the empty label
- std::size_t f_size = 0;   ///< the number of keys
+ Node f_root;             ///< the root, with the empty label
+ std::size_t f_size = 0;  ///< the number of keys
 
  };  // end( class RadixTree )
 
@@ -413,7 +427,7 @@ class RadixTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Trie.h included */
+#endif /* Trie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Trie.h -----------------------------*/

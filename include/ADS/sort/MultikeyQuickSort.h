@@ -38,7 +38,7 @@
 
 #ifndef __ADS_MultikeyQuickSort
  #define __ADS_MultikeyQuickSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,7 +57,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the multikey quicksort of strings
 ///
@@ -99,7 +100,7 @@ inline void multikeyQuickSort( std::vector< std::string > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MultikeyQuickSort.h included */
+#endif /* MultikeyQuickSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File MultikeyQuickSort.h ----------------------*/

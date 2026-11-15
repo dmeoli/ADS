@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// whether the rows of M have all the same length
 template< class T >
@@ -35,8 +37,8 @@ bool rectangular( const std::vector< std::vector< T > > & M )
 /// than one move farther
 template< class Free , class Moves >
 bool gridBfs( int rows , int cols , const std::vector< GridCell > & sources ,
-              Free & free , const Moves & moves ,
-              const std::vector< std::vector< int > > & D )
+	      Free & free , const Moves & moves ,
+	      const std::vector< std::vector< int > > & D )
 {
  for( const auto & x : sources )
   if( D[ x.first ][ x.second ] != 0 )
@@ -49,8 +51,8 @@ bool gridBfs( int rows , int cols , const std::vector< GridCell > & sources ,
    bool parent = false;
    for( const auto & [ dr , dc ] : moves ) {
     const GridCell y( r - dr , c - dc );
-    if( insideGrid( rows , cols , y ) && ( D[ y.first ][ y.second ] != INF )
-        && ( D[ y.first ][ y.second ] + 1 == d ) )
+    if( insideGrid( rows , cols , y ) && ( D[ y.first ][ y.second ] != INF ) &&
+	( D[ y.first ][ y.second ] + 1 == d ) )
      parent = true;
     }
    if( ! parent || ! free( GridCell( r , c ) ) )
@@ -62,7 +64,7 @@ bool gridBfs( int rows , int cols , const std::vector< GridCell > & sources ,
     for( const auto & [ dr , dc ] : moves ) {
      const GridCell y( r + dr , c + dc );
      if( insideGrid( rows , cols , y ) && free( y ) &&
-         ( D[ y.first ][ y.second ] > D[ r ][ c ] + 1 ) )
+	 ( D[ y.first ][ y.second ] > D[ r ][ c ] + 1 ) )
       return( false );
      }
  return( true );
@@ -77,18 +79,18 @@ bool gridBfs( int rows , int cols , const std::vector< GridCell > & sources ,
 inline bool insideGrid( int rows , int cols , GridCell x )
 {
  return( ( 0 <= x.first ) && ( x.first < rows ) && ( 0 <= x.second ) &&
-         ( x.second < cols ) );
+	  ( x.second < cols ) );
  }
 
 template< class Free , class Moves >
-std::vector< std::vector< int > > gridDistances( int rows , int cols ,
-                                    const std::vector< GridCell > & sources ,
-                                    Free && free , const Moves & moves )
+std::vector< std::vector< int > >
+gridDistances( int rows , int cols , const std::vector< GridCell > & sources ,
+	       Free && free , const Moves & moves )
 {
  ADS_PRE( ( rows >= 0 ) && ( cols >= 0 ) );
- std::vector< std::vector< int > > D( rows , std::vector< int >( cols ,
-                                                                 INF ) );
- std::vector< GridCell > Q;                    // the queue, read from h
+ std::vector< std::vector< int > > D( rows ,
+				      std::vector< int >( cols , INF ) );
+ std::vector< GridCell > Q;  // the queue, read from h
  for( const auto & x : sources ) {
   ADS_PRE( insideGrid( rows , cols , x ) && free( x ) );
   if( D[ x.first ][ x.second ] != 0 ) {
@@ -100,8 +102,8 @@ std::vector< std::vector< int > > gridDistances( int rows , int cols ,
   const auto [ r , c ] = Q[ h ];
   for( const auto & [ dr , dc ] : moves ) {
    const GridCell y( r + dr , c + dc );
-   if( insideGrid( rows , cols , y ) && ( D[ y.first ][ y.second ] == INF )
-       && free( y ) ) {
+   if( insideGrid( rows , cols , y ) && ( D[ y.first ][ y.second ] == INF ) &&
+       free( y ) ) {
     D[ y.first ][ y.second ] = D[ r ][ c ] + 1;
     Q.push_back( y );
     }
@@ -113,12 +115,13 @@ std::vector< std::vector< int > > gridDistances( int rows , int cols ,
 
 template< class Free , class Moves >
 int gridDistance( int rows , int cols , GridCell s , GridCell t ,
-                  Free && free , const Moves & moves )
+		  Free && free ,
+		  const Moves & moves )
 {
  ADS_PRE( ( rows >= 0 ) && ( cols >= 0 ) && insideGrid( rows , cols , s ) &&
-          insideGrid( rows , cols , t ) && free( s ) );
- std::vector< std::vector< int > > D( rows , std::vector< int >( cols ,
-                                                                 INF ) );
+	  insideGrid( rows , cols , t ) && free( s ) );
+ std::vector< std::vector< int > > D( rows ,
+				      std::vector< int >( cols , INF ) );
  std::vector< GridCell > Q = { s };
  D[ s.first ][ s.second ] = 0;
  for( std::size_t h = 0 ; h < Q.size() ; ++h ) {
@@ -127,8 +130,8 @@ int gridDistance( int rows , int cols , GridCell s , GridCell t ,
    return( D[ r ][ c ] );
   for( const auto & [ dr , dc ] : moves ) {
    const GridCell y( r + dr , c + dc );
-   if( insideGrid( rows , cols , y ) && ( D[ y.first ][ y.second ] == INF )
-       && free( y ) ) {
+   if( insideGrid( rows , cols , y ) && ( D[ y.first ][ y.second ] == INF ) &&
+       free( y ) ) {
     D[ y.first ][ y.second ] = D[ r ][ c ] + 1;
     Q.push_back( y );
     }
@@ -139,8 +142,8 @@ int gridDistance( int rows , int cols , GridCell s , GridCell t ,
 
 template< class T , class Moves >
 std::size_t floodFill( std::vector< std::vector< T > > & M , int r , int c ,
-                       const std::type_identity_t< T > & color ,
-                       const Moves & moves )
+		       const std::type_identity_t< T > & color ,
+		       const Moves & moves )
 {
  ADS_PRE( detail::rectangular( M ) );
  const int rows = int( M.size() );
@@ -150,7 +153,7 @@ std::size_t floodFill( std::vector< std::vector< T > > & M , int r , int c ,
  if( old == color )
   return( 0 );
  std::vector< GridCell > Q = { GridCell( r , c ) };
- M[ r ][ c ] = color;                  // painted when it enters the queue
+ M[ r ][ c ] = color;  // painted when it enters the queue
  for( std::size_t h = 0 ; h < Q.size() ; ++h )
   for( const auto & [ dr , dc ] : moves ) {
    const GridCell y( Q[ h ].first + dr , Q[ h ].second + dc );
@@ -166,8 +169,8 @@ std::size_t floodFill( std::vector< std::vector< T > > & M , int r , int c ,
 inline int knightDistance( int n , GridCell s , GridCell t )
 {
  ADS_PRE( ( n > 0 ) && insideGrid( n , n , s ) && insideGrid( n , n , t ) );
- return( gridDistance( n , n , s , t , []( GridCell ) { return( true ); } ,
-                       KNIGHT_MOVES ) );
+ return( gridDistance(
+   n , n , s , t , []( GridCell ) { return( true ); } , KNIGHT_MOVES ) );
  }
 
 /*--------------------------------------------------------------------------*/

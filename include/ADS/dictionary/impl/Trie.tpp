@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------------- TRIE -----------------------------------*/
@@ -68,7 +69,7 @@ bool Trie< V >::remove( Node * x , std::string_view k , std::size_t d )
  else {
   const auto it = x->next.find( k[ d ] );
   if( ( it != x->next.end() ) && remove( it->second.get() , k , d + 1 ) )
-   x->next.erase( it );                     // the child became useless
+   x->next.erase( it );  // the child became useless
   }
  return( ! x->value && x->next.empty() );
  }
@@ -94,7 +95,7 @@ std::size_t Trie< V >::size( void ) const
 
 template< class V >
 void Trie< V >::collect( const Node * x , std::string & s ,
-                         std::vector< std::string > & out )
+			 std::vector< std::string > & out )
 {
  if( x->value )
   out.push_back( s );
@@ -106,8 +107,8 @@ void Trie< V >::collect( const Node * x , std::string & s ,
  }
 
 template< class V >
-std::vector< std::string > Trie< V >::keysWithPrefix(
-                                                   std::string_view p ) const
+std::vector< std::string >
+Trie< V >::keysWithPrefix( std::string_view p ) const
 {
  std::vector< std::string > out;
  if( const Node * x = find( p ) ) {
@@ -121,7 +122,8 @@ template< class V >
 std::size_t Trie< V >::count( const Node * x )
 {
  std::size_t n = 1;
- for( const auto & e : x->next ) n += count( e.second.get() );
+ for( const auto & e : x->next )
+  n += count( e.second.get() );
  return( n );
  }
 
@@ -159,7 +161,7 @@ void RadixTree< V >::insert( std::string_view k , const V & v )
  Node * x = &f_root;
  while( ! k.empty() ) {
   auto it = x->next.find( k[ 0 ] );
-  if( it == x->next.end() ) {               // a new leaf with the rest
+  if( it == x->next.end() ) {  // a new leaf with the rest
    auto n = std::make_unique< Node >();
    n->label = std::string( k );
    n->value = v;
@@ -169,11 +171,11 @@ void RadixTree< V >::insert( std::string_view k , const V & v )
    return;
    }
   Node * y = it->second.get();
-  std::size_t j = 0;                        // the common prefix of label
+  std::size_t j = 0;  // the common prefix of label
   while( ( j < y->label.size() ) && ( j < k.size() ) &&
-         ( y->label[ j ] == k[ j ] ) )
+	 ( y->label[ j ] == k[ j ] ) )
    ++j;
-  if( j < y->label.size() ) {               // split the edge at j
+  if( j < y->label.size() ) {  // split the edge at j
    auto mid = std::make_unique< Node >();
    mid->label = y->label.substr( 0 , j );
    std::unique_ptr< Node > old = std::move( it->second );
@@ -219,9 +221,9 @@ bool RadixTree< V >::remove( Node * x , std::string_view k )
    Node * y = it->second.get();
    if( k.substr( 0 , y->label.size() ) == y->label ) {
     if( remove( y , k.substr( y->label.size() ) ) )
-     x->next.erase( it );                   // useless: away
+     x->next.erase( it );  // useless: away
     else
-     compress( y );                         // one child left: merged
+     compress( y );  // one child left: merged
     }
    }
   }
@@ -250,7 +252,7 @@ std::size_t RadixTree< V >::size( void ) const
 
 template< class V >
 void RadixTree< V >::collect( const Node * x , std::string & s ,
-                              std::vector< std::string > & out )
+			      std::vector< std::string > & out )
 {
  if( x->value )
   out.push_back( s );
@@ -262,13 +264,13 @@ void RadixTree< V >::collect( const Node * x , std::string & s ,
  }
 
 template< class V >
-std::vector< std::string > RadixTree< V >::keysWithPrefix(
-                                                   std::string_view p ) const
+std::vector< std::string >
+RadixTree< V >::keysWithPrefix( std::string_view p ) const
 {
  std::vector< std::string > out;
  const Node * x = &f_root;
  std::string s;
- while( ! p.empty() ) {                     // down to the node below p
+ while( ! p.empty() ) {  // down to the node below p
   const auto it = x->next.find( p[ 0 ] );
   if( it == x->next.end() )
    return( out );
@@ -288,7 +290,8 @@ template< class V >
 std::size_t RadixTree< V >::count( const Node * x )
 {
  std::size_t n = 1;
- for( const auto & e : x->next ) n += count( e.second.get() );
+ for( const auto & e : x->next )
+  n += count( e.second.get() );
  return( n );
  }
 
@@ -301,8 +304,8 @@ std::size_t RadixTree< V >::nodes( void ) const
 template< class V >
 bool RadixTree< V >::compact( const Node * x , bool root )
 {
- if( ! root && ( x->label.empty() ||
-                 ( ! x->value && ( x->next.size() < 2 ) ) ) )
+ if( ! root &&
+     ( x->label.empty() || ( ! x->value && ( x->next.size() < 2 ) ) ) )
   return( false );
  for( const auto & [ c , n ] : x->next )
   if( ( n->label[ 0 ] != c ) || ! compact( n.get() , false ) )

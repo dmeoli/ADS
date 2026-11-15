@@ -50,7 +50,7 @@
 
 #ifndef __ADS_XorList
  #define __ADS_XorList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,7 +71,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS XorList ------------------------------*/
@@ -80,18 +81,18 @@ namespace ADS {
 /// a doubly linked list with one word of links per cell, the exclusive or
 /// of the two neighbours
 template< class T >
-class XorList {
+class XorList
+{
 
  struct Cell;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
 
  /// the empty list
  XorList( void ) = default;
@@ -184,12 +185,13 @@ class XorList {
  /// the bidirectional iterator, the cell and the one before it, on items
  /// const if `Const`
  template< bool Const >
- class Iterator {
+ class Iterator
+ {
   public:
   /// bidirectional
   using iterator_category = std::bidirectional_iterator_tag;
-  using value_type = T;                     ///< the items
-  using difference_type = std::ptrdiff_t;   ///< the distances
+  using value_type = T;                    ///< the items
+  using difference_type = std::ptrdiff_t;  ///< the distances
   /// a reference to an item, constant if `Const`
   using reference = std::conditional_t< Const , const T & , T & >;
   /// a pointer to an item, constant if `Const`
@@ -199,11 +201,12 @@ class XorList {
   Iterator( void ) = default;
 
   /// on the cell \f$ c \f$, coming from \f$ p \f$
-  Iterator( Cell * p , Cell * c ) : f_p( p ) , f_c( c ) {}
+  Iterator( Cell * p , Cell * c ) : f_p( p ) , f_c( c ) { }
 
   /// the constant iterator from the mutable one
-  template< bool K > requires ( Const && ! K )
-  Iterator( const Iterator< K > & o ) : f_p( o.f_p ) , f_c( o.f_c ) {}
+  template< bool K >
+   requires( Const && ! K )
+  Iterator( const Iterator< K > & o ) : f_p( o.f_p ) , f_c( o.f_c ) { }
 
   /// the item
   reference operator*( void ) const { return( f_c->value ); }
@@ -224,22 +227,31 @@ class XorList {
    return( *this );
    }
   /// to the next item, returning the iterator before the step
-  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// to the previous item, returning the iterator before the step
-  Iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  Iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
   /// equal on the same cell
   bool operator==( const Iterator & o ) const {
    return( ( f_c == o.f_c ) && ( f_p == o.f_p ) );
    }
 
   private:
-  template< bool > friend class Iterator;
-  Cell * f_p = nullptr;   ///< the cell before
-  Cell * f_c = nullptr;   ///< the cell, nil past the last one
+  template< bool >
+  friend class Iterator;
+  Cell * f_p = nullptr;  ///< the cell before
+  Cell * f_c = nullptr;  ///< the cell, nil past the last one
   };  // end( class Iterator )
 
- using iterator = Iterator< false >;        ///< the iterator on the items
- using const_iterator = Iterator< true >;   ///< on the constant items
+ using iterator = Iterator< false >;       ///< the iterator on the items
+ using const_iterator = Iterator< true >;  ///< on the constant items
 
  /// the iterator on the first item
  [[nodiscard]] iterator begin( void ) {
@@ -258,12 +270,12 @@ class XorList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a cell: the exclusive or of the addresses of its neighbours, and the
  /// item
- struct Cell {
-  std::uintptr_t link;   ///< prev XOR next, nil being 0
-  T value;               ///< the item
+ struct Cell
+ {
+  std::uintptr_t link;  ///< prev XOR next, nil being 0
+  T value;              ///< the item
   };
 
  /// the address of \f$ a \f$ as an integer
@@ -316,7 +328,7 @@ constexpr void xorSwap( U & a , U & b );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* XorList.h included */
+#endif /* XorList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File XorList.h ---------------------------*/

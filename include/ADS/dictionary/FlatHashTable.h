@@ -144,7 +144,7 @@
 
 #ifndef __ADS_FlatHashTable
  #define __ADS_FlatHashTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -172,11 +172,11 @@
 /// 0 by broadword operations, on any machine; by default the first that
 /// the target has, and the same in all the translation units of a program
 #ifndef ADS_FLAT_SIMD
- #if defined( __SSE2__ ) || defined( _M_X64 ) || \
-     ( defined( _M_IX86_FP ) && ( _M_IX86_FP >= 2 ) )
+ #if defined( __SSE2__ ) || defined( _M_X64 ) ||                              \
+   ( defined( _M_IX86_FP ) && ( _M_IX86_FP >= 2 ) )
   #define ADS_FLAT_SIMD 1
- #elif ( defined( __ARM_NEON ) && defined( __AARCH64EL__ ) ) || \
-       defined( _M_ARM64 )
+ #elif ( defined( __ARM_NEON ) && defined( __AARCH64EL__ ) ) ||               \
+   defined( _M_ARM64 )
   #define ADS_FLAT_SIMD 2
  #else
   #define ADS_FLAT_SIMD 0
@@ -197,15 +197,15 @@
 #if defined( __GNUC__ ) || defined( __clang__ )
  #define ADS_FLAT_PREFETCH( p ) __builtin_prefetch( ( const void * )( p ) )
 #elif ( ADS_FLAT_SIMD == 1 ) && defined( _MSC_VER )
- #define ADS_FLAT_PREFETCH( p ) \
-  _mm_prefetch( ( const char * )( p ) , _MM_HINT_T0 )
+ #define ADS_FLAT_PREFETCH( p )                                               \
+ _mm_prefetch( ( const char * )( p ), _MM_HINT_T0 )
 #else
- #define ADS_FLAT_PREFETCH( p ) ( ( void ) 0 )
+ #define ADS_FLAT_PREFETCH( p ) ( ( void )0 )
 #endif
 
 /// a function inlined even where the compiler would not
 #if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_FLAT_INLINE inline __attribute__(( always_inline ))
+ #define ADS_FLAT_INLINE inline __attribute__( ( always_inline ) )
 #elif defined( _MSC_VER )
  #define ADS_FLAT_INLINE __forceinline
 #else
@@ -214,7 +214,7 @@
 
 /// a function never inlined, the rare path out of a loop
 #if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_FLAT_NOINLINE __attribute__(( noinline ))
+ #define ADS_FLAT_NOINLINE __attribute__( ( noinline ) )
 #elif defined( _MSC_VER )
  #define ADS_FLAT_NOINLINE __declspec( noinline )
 #else
@@ -225,9 +225,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the high 64 bits of the product \f$ a b \f$ on 128 bits XOR its low 64
 /// bits
@@ -235,7 +237,7 @@ namespace detail {
 
 /// `mulx( a , b )` by products of 32 bits, on any machine
 [[nodiscard]] constexpr std::uint64_t mulxPortable( std::uint64_t a ,
-                                                    std::uint64_t b );
+						    std::uint64_t b );
 
 }  // end( namespace detail )
 
@@ -245,14 +247,14 @@ namespace detail {
 
 /// a hash table with open addressing and control bytes in groups of 15
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > >
-class FlatHashTable {
+	  class Eq = std::equal_to< K > >
+class FlatHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty table, with room for \f$ n \f$ pairs before it grows
  explicit FlatHashTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
@@ -298,7 +300,7 @@ class FlatHashTable {
  [[nodiscard]] const V * find( const K & k ) const;
 
  /// the value of the key \f$ k \f$, to change in place, nil if it is not
-/// there
+ /// there
  [[nodiscard]] V * find( const K & k );
 
  /// associates the value \f$ v \f$ to the key \f$ k \f$; true if \f$ k \f$
@@ -334,12 +336,12 @@ class FlatHashTable {
  /// value read and then changed costs one inspection; the pointer is
  /// valid until the next removal of this pair or rebuild of the table
  /// \post \f$ k \f$ is in the table
- template< class ... A >
- std::pair< V * , bool > try_emplace( const K & k , A && ... a );
+ template< class... A >
+ std::pair< V * , bool > try_emplace( const K & k , A &&... a );
 
  /// as `try_emplace( k , a )`, moving the key
- template< class ... A >
- std::pair< V * , bool > try_emplace( K && k , A && ... a );
+ template< class... A >
+ std::pair< V * , bool > try_emplace( K && k , A &&... a );
 
  /// removes the key \f$ k \f$, if it is there, emptying its place, with no
  /// deleted mark, and adding 1 to the bound \f$ d \f$ of the places still
@@ -423,43 +425,44 @@ class FlatHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::uint8_t EMPTY = 0;        ///< a place never used
- static constexpr std::size_t GROUP = 16;        ///< the bytes of a group
- static constexpr std::size_t SLOTS = 15;        ///< the places of a group
- static constexpr std::size_t OVER = 15;         ///< the byte of overflow
+ static constexpr std::uint8_t EMPTY = 0;  ///< a place never used
+ static constexpr std::size_t GROUP = 16;  ///< the bytes of a group
+ static constexpr std::size_t SLOTS = 15;  ///< the places of a group
+ static constexpr std::size_t OVER = 15;   ///< the byte of overflow
 
  /// the control bytes of the 15 places of a group and its byte of overflow
- struct alignas( 16 ) Group {
-  std::uint8_t c[ GROUP ];       ///< the control bytes and the overflow
+ struct alignas( 16 ) Group
+ {
+  std::uint8_t c[ GROUP ];  ///< the control bytes and the overflow
   };
 
  /// the places of a group whose control bytes satisfy a test: on SSE2 and
  /// by SWAR the bit j for the place j, on NEON the bit 4 j + 3
 #if ADS_FLAT_SIMD == 2
  using Mask = std::uint64_t;
- static constexpr int STRIDE = 2;                ///< log2 of the bits of j
+ static constexpr int STRIDE = 2;  ///< log2 of the bits of j
 #else
  using Mask = std::uint32_t;
- static constexpr int STRIDE = 0;                ///< log2 of the bits of j
+ static constexpr int STRIDE = 0;  ///< log2 of the bits of j
 #endif
 
  /// the mask of the place 0 alone
  static constexpr Mask FIRST = Mask( 1 ) << ( ( 1 << STRIDE ) - 1 );
 
  /// a place, whose pair lives only while its control byte is full
- union Slot {
+ union Slot
+ {
   /// no pair built
-  Slot( void ) {}
+  Slot( void ) { }
   /// no pair destroyed: the table does it
-  ~Slot() {}
-  std::pair< K , V > kv;         ///< the pair
+  ~Slot() { }
+  std::pair< K , V > kv;  ///< the pair
   };
 
  /// the alignment of the slots, at least a line of cache, so that no
  /// slot of 16 , 32 or 64 bytes straddles two lines
  static constexpr std::size_t ALIGN = alignof( Slot ) > 64 ? alignof( Slot )
-                                                           : 64;
+							   : 64;
 
  /// the most groups whose control bytes share the block of memory of the
  /// slots: a small table, rebuilt often as it grows, then calls the
@@ -477,15 +480,15 @@ class FlatHashTable {
  /// all empty with their overflow 0 but the last, the sentinel [see
  /// `const_iterator`]: after the slots in the same block of memory if
  /// \f$ G \le \f$ `JOIN`, in a block of their own otherwise
- [[nodiscard]] static Slot * allocate( std::size_t G , Group * & c );
+ [[nodiscard]] static Slot * allocate( std::size_t G , Group *& c );
 
  /// frees the slots \f$ s \f$ and the groups \f$ c \f$ of
  /// `allocate( G , c )`
  static void deallocate( Slot * s , Group * c , std::size_t G ) noexcept;
 
  /// the hash taken as it is, if it declares `is_avalanching` on 64 bits
- static constexpr bool AVALANCHING = ( sizeof( std::size_t ) >= 8 ) &&
-  requires { typename H::is_avalanching; };
+ static constexpr bool AVALANCHING =
+   ( sizeof( std::size_t ) >= 8 ) && requires { typename H::is_avalanching; };
 
  /// the 2 groups of a place-less table, all empty, their overflow 0, and
  /// its sentinel; never written
@@ -518,11 +521,11 @@ class FlatHashTable {
 
 #if ADS_FLAT_SIMD == 0
  /// the 8 bytes from \f$ c \f$, the byte \f$ c[ j ] \f$ in the bits
-/// \f$ 8 j \f$ to \f$ 8 j + 7 \f$
+ /// \f$ 8 j \f$ to \f$ 8 j + 7 \f$
  [[nodiscard]] static std::uint64_t word( const std::uint8_t * c );
 
  /// the bit \f$ 8 j + 7 \f$ for each byte \f$ j \f$ of \f$ w \f$ that is 0,
-/// exactly
+ /// exactly
  [[nodiscard]] static std::uint64_t zeros( std::uint64_t w );
 
  /// the bits \f$ 8 j + 7 \f$ of \f$ z \f$ gathered in the bits \f$ j \f$
@@ -530,14 +533,14 @@ class FlatHashTable {
 #endif
 
  /// the control byte of the place \f$ i \f$, the place \f$ j \f$ of the
-/// group \f$ i / 16 \f$
+ /// group \f$ i / 16 \f$
  [[nodiscard]] std::uint8_t & ctrl( std::size_t i ) const;
 
  /// the slot of the place \f$ i \f$
  [[nodiscard]] Slot * slot( std::size_t i ) const;
 
  /// the place of \f$ k \f$, whose mixed hash is \f$ x \f$, nil if \f$ k \f$
-/// is not there
+ /// is not there
  [[nodiscard]] Slot * locate( std::uint64_t x , const K & k ) const;
 
  /// the place of \f$ k \f$ among the places \f$ m \f$ of the group \f$ g \f$,
@@ -547,13 +550,13 @@ class FlatHashTable {
  /// a key passed out of line: by value if it is a small trivial type, so
  /// that the common path never stores it to memory to take its address
  using KeyArg = std::conditional_t< std::is_trivially_copyable_v< K > &&
-                                    ( sizeof( K ) <= 2 * sizeof( void * ) ) ,
-                                    K , const K & >;
+				      ( sizeof( K ) <= 2 * sizeof( void * ) ) ,
+				    K , const K & >;
 
  /// `locate( x , k )` past the first group \f$ g \f$ of \f$ x \f$, whose
  /// overflow has the bit of \f$ x \f$
  ADS_FLAT_NOINLINE Slot * further( std::uint64_t x , std::size_t g ,
-                                   KeyArg k ) const;
+				   KeyArg k ) const;
 
  /// the first empty place of the inspection of \f$ x \f$, the bit of
  /// \f$ x \f$ set in the overflow of the full groups before it
@@ -567,21 +570,20 @@ class FlatHashTable {
  /// the pair of \f$ k \f$ and the value built from `a`; if it is there,
  /// its value assigned from `a` (a single value) when `Assign`; the value
  /// and true if \f$ k \f$ was not there
- template< bool Assign , class KK , class ... A >
- std::pair< V * , bool > place( KK && k , A && ... a );
+ template< bool Assign , class KK , class... A >
+ std::pair< V * , bool > place( KK && k , A &&... a );
 
  /// the table rebuilt for one more pair, the pair of \f$ k \f$ and the
  /// value built from `a`, of mixed hash \f$ x \f$, built in the new
  /// places before the old pairs move; its place
- template< class KK , class ... A >
- ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k ,
-                                     A && ... a );
+ template< class KK , class... A >
+ ADS_FLAT_NOINLINE std::size_t grow( std::uint64_t x , KK && k , A &&... a );
 
  /// empties the place \f$ i \f$, whose pair is destroyed
  void drop( std::size_t i );
 
  /// `f_deleted` set to `deleted()`; true if the table has room for
-/// `f_cap` / 16
+ /// `f_cap` / 16
  /// more pairs or places counted before the next recount, false if it is
  /// to be rebuilt
  ADS_FLAT_NOINLINE bool recount( void );
@@ -599,7 +601,7 @@ class FlatHashTable {
  [[nodiscard]] static std::size_t groups( std::size_t n );
 
  /// at most \f$ 7 / 8 \f$ of \f$ m \f$ places, the most that can be full or
-/// counted
+ /// counted
  [[nodiscard]] static constexpr std::size_t bound( std::size_t m );
 
  /// `f( i )` on each full place \f$ i \f$, group after group
@@ -616,21 +618,20 @@ class FlatHashTable {
  /// to its first group whose overflow lacks the bit of \f$ x \f$
  [[nodiscard]] bool consistent( std::uint64_t x ) const;
 
- Group * f_ctrl = s_none;          ///< the groups of control bytes
- Slot * f_slot = nullptr;          ///< the places, 15 per group
- std::size_t f_cap = 0;            ///< the number of places
- std::size_t f_mask = 0;           ///< the groups - 1
- int f_shift = 63;                 ///< 64 - log2 of the groups
- std::size_t f_max = 0;            ///< `bound( f_cap )`
- std::size_t f_size = 0;           ///< the full places
+ Group * f_ctrl = s_none;  ///< the groups of control bytes
+ Slot * f_slot = nullptr;  ///< the places, 15 per group
+ std::size_t f_cap = 0;    ///< the number of places
+ std::size_t f_mask = 0;   ///< the groups - 1
+ int f_shift = 63;         ///< 64 - log2 of the groups
+ std::size_t f_max = 0;    ///< `bound( f_cap )`
+ std::size_t f_size = 0;   ///< the full places
  /// a bound of `deleted()` [see `recount()`]
  std::size_t f_deleted = 0;
- H f_h;                            ///< the hash of the keys
- Eq f_eq;                          ///< the equality of the keys
+ H f_h;    ///< the hash of the keys
+ Eq f_eq;  ///< the equality of the keys
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the iterator on the full places, by its group, the slot of the first
  /// place of the group and the mask of the full places of the group from
  /// its own on, the lowest bit its place: a step clears that bit and
@@ -640,7 +641,8 @@ class FlatHashTable {
  /// empty groups whole, up to a sentinel group after the last, whose byte 0
  /// is full and whose first place is the end, so that a step tests no
  /// bound
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the type of the items, for the standard library
   using value_type = std::pair< const K & , const V & >;
@@ -687,10 +689,18 @@ class FlatHashTable {
   const_iterator & operator--( void );
 
   /// to the next full place, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// to the previous full place, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same place
   bool operator==( const const_iterator & o ) const {
@@ -703,16 +713,16 @@ class FlatHashTable {
   /// on the place of the lowest bit of \f$ m \f$ in the group \f$ g \f$,
   /// whose first slot is \f$ b \f$
   const_iterator( const Group * g , const Slot * b , Mask m )
-   : f_g( g ) , f_b( b ) , f_m( m ) {}
+      : f_g( g ) , f_b( b ) , f_m( m ) { }
 
   /// to the first full place of the groups after `f_g`, maybe the sentinel
   void forward( void );
 
-  const Group * f_g = nullptr;      ///< the group of the place
-  const Slot * f_b = nullptr;       ///< the slot of the place 0 of `f_g`
-  Mask f_m = FIRST;                 ///< the full places from this one on
+  const Group * f_g = nullptr;  ///< the group of the place
+  const Slot * f_b = nullptr;   ///< the slot of the place 0 of `f_g`
+  Mask f_m = FIRST;             ///< the full places from this one on
 
- };  // end( class const_iterator )
+  };  // end( class const_iterator )
 
  };  // end( class FlatHashTable )
 
@@ -728,7 +738,7 @@ class FlatHashTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FlatHashTable.h included */
+#endif /* FlatHashTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File FlatHashTable.h ------------------------*/

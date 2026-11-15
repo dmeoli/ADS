@@ -14,10 +14,10 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-inline ParentTree::ParentTree( int n )
- : f_p( n >= 0 ? n : 0 , -1 )
+inline ParentTree::ParentTree( int n ) : f_p( n >= 0 ? n : 0 , -1 )
 {
  ADS_PRE( n >= 0 );
  }
@@ -31,7 +31,7 @@ inline int ParentTree::parent( int i ) const
 inline void ParentTree::setParent( int i , int j )
 {
  ADS_PRE( ( i >= 0 ) && ( i < size() ) && ( j >= -1 ) && ( j < size() ) &&
-          ( i != j ) );
+	  ( i != j ) );
  ADS_AUDIT( ! below( j , i ) );
  f_p[ i ] = j;
  ADS_POST( parent( i ) == j );

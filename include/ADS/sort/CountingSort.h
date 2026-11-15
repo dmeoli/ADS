@@ -30,7 +30,7 @@
 
 #ifndef __ADS_CountingSort
  #define __ADS_CountingSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// \f$ A \f$, of integers in \f$ [ 0 , k ) \f$, in increasing order, by
 /// counting the occurrences of each key
@@ -85,7 +86,7 @@ void countingSort( std::vector< T > & A , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CountingSort.h included */
+#endif /* CountingSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File CountingSort.h -------------------------*/

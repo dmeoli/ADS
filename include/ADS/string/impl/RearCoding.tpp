@@ -19,9 +19,11 @@
 #include <bit>
 #include <cstring>
 
-namespace ADS {
+namespace ADS
+{
 
-inline std::vector< RearPair > rearCode( const std::vector< std::string > & D )
+inline std::vector< RearPair >
+rearCode( const std::vector< std::string > & D )
 {
  std::vector< RearPair > R;
  R.reserve( D.size() );
@@ -33,8 +35,8 @@ inline std::vector< RearPair > rearCode( const std::vector< std::string > & D )
  return( R );
  }
 
-inline std::vector< std::string > rearDecode(
-                                           const std::vector< RearPair > & R )
+inline std::vector< std::string >
+rearDecode( const std::vector< RearPair > & R )
 {
  std::vector< std::string > D;
  D.reserve( R.size() );
@@ -49,18 +51,20 @@ inline std::vector< std::string > rearDecode(
  }
 
 inline void RearCodedDictionary::Code::build(
-                                 const std::array< std::uint64_t , 256 > & f )
+  const std::array< std::uint64_t , 256 > & f )
 {
  len = limitedHuffmanLengths( f , kMax );
  for( int c = 0 ; c < 256 ; ++c )
   if( ( f[ c ] > 0 ) && ( len[ c ] == 0 ) )
-   len[ c ] = 1;                            // a lone byte takes one bit
+   len[ c ] = 1;  // a lone byte takes one bit
  // the canonical code: by length, then by byte; each codeword is turned
  // around, so that its first bit is the lowest, as the decoder reads
  std::array< int , 256 > by;
- for( int c = 0 ; c < 256 ; ++c ) by[ c ] = c;
+ for( int c = 0 ; c < 256 ; ++c )
+  by[ c ] = c;
  std::sort( by.begin() , by.end() , [ & ]( int a , int b ) {
-  return( len[ a ] < len[ b ] || ( len[ a ] == len[ b ] && a < b ) ); } );
+  return( len[ a ] < len[ b ] || ( len[ a ] == len[ b ] && a < b ) );
+  } );
  std::uint32_t code = 0;
  int last = 0;
  table.assign( std::size_t( 1 ) << kMax , 0 );
@@ -84,8 +88,8 @@ inline void RearCodedDictionary::Code::build(
  for( std::uint32_t v = 0 ; v < ( std::uint32_t( 1 ) << kWide ) ; ++v ) {
   std::uint32_t e = 0 , used = 0 , count = 0;
   while( count < 3 ) {
-   const std::uint16_t t = table[ ( v >> used ) &
-                                  ( ( std::uint32_t( 1 ) << kMax ) - 1 ) ];
+   const std::uint16_t t =
+     table[ ( v >> used ) & ( ( std::uint32_t( 1 ) << kMax ) - 1 ) ];
    const std::uint32_t l = t >> 8;
    if( ( l == 0 ) || ( used + l > std::uint32_t( kWide ) ) )
     break;
@@ -101,8 +105,10 @@ inline std::uint64_t RearCodedDictionary::peek( std::size_t pos ) const
 {
  if constexpr( std::endian::native == std::endian::little ) {
   std::uint64_t x;
-  std::memcpy( &x , reinterpret_cast< const unsigned char * >(
-                      f_C.words().data() ) + pos / 8 , 8 );
+  std::memcpy(
+    &x ,
+    reinterpret_cast< const unsigned char * >( f_C.words().data() ) + pos / 8 ,
+    8 );
   return( x >> ( pos % 8 ) );
   }
  else
@@ -110,22 +116,22 @@ inline std::uint64_t RearCodedDictionary::peek( std::size_t pos ) const
  }
 
 inline unsigned RearCodedDictionary::decode( const Code & c ,
-                                             std::size_t & pos ) const
+					     std::size_t & pos ) const
 {
  const std::uint16_t e = c.table[ std::size_t( peek( pos ) ) &
-                                  ( ( std::size_t( 1 ) << kMax ) - 1 ) ];
+				  ( ( std::size_t( 1 ) << kMax ) - 1 ) ];
  pos += std::size_t( e >> 8 );
  return( e & 255 );
  }
 
 inline std::size_t RearCodedDictionary::getLength( const Code & c ,
-                                                   std::size_t & pos ) const
+						   std::size_t & pos ) const
 {
  const unsigned v = decode( c , pos );
  if( v < 255 )
   return( v );
- const std::size_t w = std::size_t( peek( pos ) &             // an escape
-                                   ( ( std::uint64_t( 1 ) << 30 ) - 1 ) );
+ const std::size_t w = std::size_t( peek( pos ) &  // an escape
+				    ( ( std::uint64_t( 1 ) << 30 ) - 1 ) );
  pos += 30;
  return( w );
  }
@@ -141,8 +147,8 @@ inline void RearCodedDictionary::putLength( const Code & c , std::size_t v )
  }
 
 inline RearCodedDictionary::RearCodedDictionary(
-                    const std::vector< std::string > & D , std::size_t b )
- : f_n( D.size() ) , f_b( b )
+  const std::vector< std::string > & D , std::size_t b )
+    : f_n( D.size() ) , f_b( b )
 {
  ADS_PRE( b >= 1 );
  ADS_AUDIT( std::is_sorted( D.begin() , D.end() ) );
@@ -154,7 +160,7 @@ inline RearCodedDictionary::RearCodedDictionary(
  const std::size_t g = f_common.size();
  auto from = [ & ]( std::size_t i ) {
   return( i % b ? commonPrefixLength( D[ i - 1 ] , D[ i ] )
-                : std::min( D[ i ].size() , g + kHead ) );
+		 : std::min( D[ i ].size() , g + kHead ) );
   };
  // the frequencies of the bytes of the characters, of the rears and of
  // the lengths (255 an escape for the larger ones): of the rest for the
@@ -164,10 +170,11 @@ inline RearCodedDictionary::RearCodedDictionary(
   const std::string & s = D[ i ];
   ADS_PRE( s.size() < ( std::size_t( 1 ) << 30 ) );
   const std::size_t l = from( i );
-  if( i % b ) ++fr[ std::min< std::size_t >( D[ i - 1 ].size() - l , 255 ) ];
+  if( i % b )
+   ++fr[ std::min< std::size_t >( D[ i - 1 ].size() - l , 255 ) ];
   ++fs[ std::min< std::size_t >( i % b ? s.size() - l : s.size() , 255 ) ];
   for( std::size_t k = l ; k < s.size() ; ++k )
-   ++fc[ (unsigned char) s[ k ] ];
+   ++fc[ ( unsigned char )s[ k ] ];
   }
  f_char.build( fc );
  f_rear.build( fr );
@@ -176,11 +183,11 @@ inline RearCodedDictionary::RearCodedDictionary(
  for( std::size_t i = 0 ; i < f_n ; ++i ) {
   const std::string & s = D[ i ];
   const std::size_t l = from( i );
-  if( i % b == 0 ) {                        // the first of a bucket
+  if( i % b == 0 ) {  // the first of a bucket
    P.push_back( f_C.size() );
    for( std::size_t j = g ; j < g + kHead ; j += 8 )
-    f_head.push_back( prefix8( std::string_view( s ).substr(
-                                 std::min( j , s.size() ) ) ) );
+    f_head.push_back(
+      prefix8( std::string_view( s ).substr( std::min( j , s.size() ) ) ) );
    putLength( f_size , s.size() );
    }
   else {
@@ -188,30 +195,33 @@ inline RearCodedDictionary::RearCodedDictionary(
    putLength( f_size , s.size() - l );
    }
   for( std::size_t k = l ; k < s.size() ; ++k )
-   f_C.append( f_char.word[ (unsigned char) s[ k ] ] ,
-               f_char.len[ (unsigned char) s[ k ] ] );
+   f_C.append( f_char.word[ ( unsigned char )s[ k ] ] ,
+	       f_char.len[ ( unsigned char )s[ k ] ] );
   }
  f_P = EliasFano( P , f_C.size() + 1 );
- f_C.append( 0 , 64 );                      // so that a peek never ends
+ f_C.append( 0 , 64 );  // so that a peek never ends
  ADS_AUDIT( [ & ]( void ) {
   for( std::size_t i = 0 ; i < f_n ; ++i )
-   if( access( i ) != D[ i ] ) return( false );
-  return( true ); }() );
+   if( access( i ) != D[ i ] )
+    return( false );
+  return( true );
+  }() );
  }
 
 inline std::uint64_t RearCodedDictionary::prefix8( std::string_view s )
 {
  std::uint64_t v = 0;
  for( std::size_t k = 0 ; k < 8 ; ++k )
-  v = ( v << 8 ) | ( k < s.size() ? (unsigned char) s[ k ] : 0 );
+  v = ( v << 8 ) | ( k < s.size() ? ( unsigned char )s[ k ] : 0 );
  return( v );
  }
 
 inline unsigned RearCodedDictionary::byte( std::size_t k ,
-                                           std::size_t j ) const
+					   std::size_t j ) const
 {
- return( unsigned( f_head[ kHead / 8 * k + j / 8 ] >>
-                   ( 56 - 8 * ( j % 8 ) ) ) & 255 );
+ return(
+   unsigned( f_head[ kHead / 8 * k + j / 8 ] >> ( 56 - 8 * ( j % 8 ) ) ) &
+   255 );
  }
 
 inline std::size_t RearCodedDictionary::size( void ) const
@@ -229,14 +239,14 @@ inline std::size_t RearCodedDictionary::bucketSize( void ) const
  return( f_b );
  }
 
-inline void RearCodedDictionary::readRest( std::string & s ,
-                                           std::size_t len ,
-                                           std::size_t & pos ) const
+inline void RearCodedDictionary::readRest( std::string & s , std::size_t len ,
+					   std::size_t & pos ) const
 {
  // up to 3 characters a lookup of kWide bits, while 3 are left at least
  for( ; len >= 3 ; ) {
-  const std::uint32_t e = f_char.multi[ std::size_t( peek( pos ) ) &
-                                    ( ( std::size_t( 1 ) << kWide ) - 1 ) ];
+  const std::uint32_t e =
+    f_char.multi[ std::size_t( peek( pos ) ) &
+		  ( ( std::size_t( 1 ) << kWide ) - 1 ) ];
   const std::size_t count = ( e >> 24 ) & 3;
   for( std::size_t k = 0 ; k < count ; ++k )
    s.push_back( char( ( e >> ( 8 * k ) ) & 255 ) );
@@ -249,28 +259,30 @@ inline void RearCodedDictionary::readRest( std::string & s ,
 
 template< bool S >
 inline unsigned RearCodedDictionary::follow( std::string_view Q ,
-                                             std::size_t & l ,
-                                             std::size_t a , std::size_t n ,
-                                             std::size_t & pos ) const
+					     std::size_t & l , std::size_t a ,
+					     std::size_t n ,
+					     std::size_t & pos ) const
 {
  bool live = ( l == a );
- std::size_t k = a;                       // the place of the next character
+ std::size_t k = a;  // the place of the next character
  const std::size_t e = a + n;
  unsigned d = 256;
  // whether the character c at k ends the comparison
  auto stops = [ & ]( unsigned c ) {
-  if( ( k < Q.size() ) && ( c == (unsigned char) Q[ k ] ) ) {
+  if( ( k < Q.size() ) && ( c == ( unsigned char )Q[ k ] ) ) {
    l = k + 1;
    return( false );
    }
-  if( k < Q.size() ) d = c;
+  if( k < Q.size() )
+   d = c;
   live = false;
   return( true );
   };
  // up to 3 characters a lookup of kWide bits, while 3 are left at least
  for( ; k + 3 <= e ; ) {
-  const std::uint32_t w = f_char.multi[ std::size_t( peek( pos ) ) &
-                                    ( ( std::size_t( 1 ) << kWide ) - 1 ) ];
+  const std::uint32_t w =
+    f_char.multi[ std::size_t( peek( pos ) ) &
+		  ( ( std::size_t( 1 ) << kWide ) - 1 ) ];
   const std::size_t count = ( w >> 24 ) & 3;
   if( live ) {
    for( std::size_t t = 0 ; t < count ; ++t , ++k )
@@ -294,7 +306,7 @@ inline unsigned RearCodedDictionary::follow( std::string_view Q ,
  }
 
 inline std::string RearCodedDictionary::head( std::size_t k ,
-                                              std::size_t & pos ) const
+					      std::size_t & pos ) const
 {
  pos = std::size_t( f_P.access( k ) );
  const std::size_t len = getLength( f_size , pos );
@@ -321,17 +333,18 @@ inline std::string RearCodedDictionary::access( std::size_t i ) const
  }
 
 inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
-                                              bool * eq ) const
+					      bool * eq ) const
 {
  // all the strings begin with f_common: if Q leaves it, all of them are
  // on one side of Q
  const std::size_t g = f_common.size();
  const std::size_t lq = commonPrefixLength( f_common , Q );
  if( lq < g ) {
-  if( eq ) *eq = false;
-  if( ( lq == Q.size() ) ? upper
-                         : (unsigned char) f_common[ lq ] <
-                           (unsigned char) Q[ lq ] )
+  if( eq )
+   *eq = false;
+  if( ( lq == Q.size() )
+	? upper
+	: ( unsigned char )f_common[ lq ] < ( unsigned char )Q[ lq ] )
    return( f_n );
   return( 0 );
   }
@@ -346,13 +359,15 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
  for( std::size_t j = 0 ; j < W ; ++j ) {
   const std::size_t r = R.size() > 8 * j ? R.size() - 8 * j : 0;
   m[ j ] = ( ! upper ) || ( r >= 8 ) ? ~std::uint64_t( 0 )
-           : r == 0 ? 0 : ~std::uint64_t( 0 ) << ( 64 - 8 * r );
+	   : r == 0                  ? 0
+				     : ~std::uint64_t( 0 ) << ( 64 - 8 * r );
   q[ j ] = prefix8( R.substr( std::min( 8 * j , R.size() ) ) ) & m[ j ];
   }
  auto before = [ & ]( std::size_t k ) {
   for( std::size_t j = 0 ; j < W ; ++j ) {
    const std::uint64_t h = f_head[ W * k + j ] & m[ j ];
-   if( h != q[ j ] ) return( h < q[ j ] );
+   if( h != q[ j ] )
+    return( h < q[ j ] );
    }
   // the bytes in f_head that both strings have are equal: the code
   // goes on after them
@@ -362,7 +377,7 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
   if( l <= Q.size() ) {
    const unsigned d = follow< false >( Q , l , l , len - l , pos );
    if( d < 256 )
-    return( d < (unsigned char) Q[ l ] );
+    return( d < ( unsigned char )Q[ l ] );
    }
   return( upper || ( len < Q.size() ) );
   };
@@ -398,9 +413,9 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
  std::size_t len = getLength( f_size , pos ) , l = g;
  const std::size_t a = std::min( len , g + kHead );
  while( ( l < a ) && ( l < Q.size() ) &&
-        ( byte( lo - 1 , l - g ) == (unsigned char) Q[ l ] ) )
+	( byte( lo - 1 , l - g ) == ( unsigned char )Q[ l ] ) )
   ++l;
- (void) follow< true >( Q , l , a , len - a , pos );
+ ( void )follow< true >( Q , l , a , len - a , pos );
  // the string precedes Q here; a next string that keeps more than l of
  // its characters has its character at l, and precedes Q as it does;
  // one that keeps fewer is compared with Q from where it goes on
@@ -412,8 +427,8 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
   if( live )
    l = keep;
   const unsigned d = follow< true >( Q , l , keep , n , pos );
-  if( live && ! ( d < 256 ? d < (unsigned char) Q[ l ]
-                          : upper || ( len < Q.size() ) ) ) {
+  if( live && ! ( d < 256 ? d < ( unsigned char )Q[ l ]
+			  : upper || ( len < Q.size() ) ) ) {
    if( eq )
     *eq = ( l == Q.size() ) && ( len == Q.size() );
    return( i + 1 );
@@ -422,8 +437,8 @@ inline std::size_t RearCodedDictionary::rank( std::string_view Q , bool upper ,
  return( atHead( end ) );
  }
 
-inline std::size_t RearCodedDictionary::lexicographicPosition(
-                                                   std::string_view Q ) const
+inline std::size_t
+RearCodedDictionary::lexicographicPosition( std::string_view Q ) const
 {
  return( rank( Q , false ) );
  }
@@ -441,7 +456,7 @@ inline std::size_t RearCodedDictionary::prefixEnd( std::string_view P ) const
  }
 
 inline std::pair< std::size_t , std::size_t >
- RearCodedDictionary::prefixRange( std::string_view P ) const
+RearCodedDictionary::prefixRange( std::string_view P ) const
 {
  return( std::make_pair( rank( P , false ) , rank( P , true ) ) );
  }
@@ -453,11 +468,11 @@ inline std::size_t RearCodedDictionary::codeBytes( void ) const
 
 inline std::size_t RearCodedDictionary::bytes( void ) const
 {
- const std::size_t code = 3 * ( 256 * ( 1 + 4 ) +
-                                ( std::size_t( 1 ) << kMax ) * 2 +
-                                ( std::size_t( 1 ) << kWide ) * 4 );
+ const std::size_t code =
+   3 * ( 256 * ( 1 + 4 ) + ( std::size_t( 1 ) << kMax ) * 2 +
+	 ( std::size_t( 1 ) << kWide ) * 4 );
  return( codeBytes() + ( f_P.sizeInBits() + 7 ) / 8 +
-         f_head.size() * sizeof( std::uint64_t ) + f_common.size() + code );
+	  f_head.size() * sizeof( std::uint64_t ) + f_common.size() + code );
  }
 
 /*--------------------------------------------------------------------------*/

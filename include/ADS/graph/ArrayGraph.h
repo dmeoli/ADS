@@ -28,7 +28,7 @@
 
 #ifndef __ADS_ArrayGraph
  #define __ADS_ArrayGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -48,7 +48,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ArrayGraph ----------------------------*/
@@ -56,12 +57,12 @@ namespace ADS {
 
 /// a static graph with vectors of adjacency, all in one vector
 template< class W = std::monostate >
-class ArrayGraph {
+class ArrayGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the weights
+ using Weight = W;  ///< the type of the weights
 
  /// the graph of the nodes \f$ 0 , \ldots , n - 1 \f$ and of the given edges;
  /// an unoriented edge \f$ [ u , v ] \f$ is given once
@@ -86,7 +87,7 @@ class ArrayGraph {
  /// \f]
  /// \pre \f$ n \ge 0 \f$, and each edge joins two distinct nodes
  ArrayGraph( int n , const std::vector< std::tuple< int , int , W > > & E ,
-             bool directed = true );
+	     bool directed = true );
 
  /// the copy of any graph, with the nodes 0 , ... , g.bound() - 1: the
  /// names that are not nodes of g, deleted ones, become isolated nodes, so
@@ -146,7 +147,6 @@ class ArrayGraph {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  template< class G >
  static std::vector< std::tuple< int , int , W > > edges( const G & g );
 
@@ -154,11 +154,11 @@ class ArrayGraph {
  /// its entries are nodes
  [[nodiscard]] bool consistent( void ) const;
 
- bool f_directed;            ///< oriented or not
- std::vector< int > f_off;   ///< the adjacent nodes of u from f_off[ u ]
- std::vector< int > f_to;    ///< the adjacent nodes
- std::vector< W > f_w;       ///< the weights
- int f_m = 0;                ///< the number of edges
+ bool f_directed;           ///< oriented or not
+ std::vector< int > f_off;  ///< the adjacent nodes of u from f_off[ u ]
+ std::vector< int > f_to;   ///< the adjacent nodes
+ std::vector< W > f_w;      ///< the weights
+ int f_m = 0;               ///< the number of edges
 
  };  // end( class ArrayGraph )
 
@@ -174,7 +174,7 @@ class ArrayGraph {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ArrayGraph.h included */
+#endif /* ArrayGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ArrayGraph.h --------------------------*/

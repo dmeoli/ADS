@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// whether s is a balanced string of the parentheses open and close
 inline bool isBalanced( std::string_view s , char open , char close )
@@ -34,8 +36,8 @@ inline bool isBalanced( std::string_view s , char open , char close )
 
 /*--------------------------------------------------------------------------*/
 
-inline std::size_t longestBalancedSubsequence( std::string_view s ,
-                                               char open , char close )
+inline std::size_t longestBalancedSubsequence( std::string_view s , char open ,
+					       char close )
 {
  ADS_PRE( open != close );
  std::size_t pairs = 0 , pending = 0;
@@ -51,8 +53,8 @@ inline std::size_t longestBalancedSubsequence( std::string_view s ,
 
 /*--------------------------------------------------------------------------*/
 
-inline std::pair< std::size_t , std::size_t > longestBalancedSubstring(
-                                std::string_view s , char open , char close )
+inline std::pair< std::size_t , std::size_t >
+longestBalancedSubstring( std::string_view s , char open , char close )
 {
  ADS_PRE( open != close );
  std::size_t bestStart = 0 , bestLength = 0;
@@ -69,12 +71,12 @@ inline std::pair< std::size_t , std::size_t > longestBalancedSubstring(
     bestLength = i + 1 - start;
     }
    }
-  else {                            // an unmatched close or another char
+  else {  // an unmatched close or another char
    opens.clear();
    base = i + 1;
    }
- ADS_POST( detail::isBalanced( s.substr( bestStart , bestLength ) , open ,
-                               close ) );
+ ADS_POST(
+   detail::isBalanced( s.substr( bestStart , bestLength ) , open , close ) );
  return( std::pair( bestStart , bestLength ) );
  }
 

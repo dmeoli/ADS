@@ -57,7 +57,7 @@
 
 #ifndef __ADS_LoserTree
  #define __ADS_LoserTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,7 +77,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS LoserTree -----------------------------*/
@@ -86,11 +87,11 @@ namespace ADS {
 /// the tree of losers of \f$ k \f$ players, the winner the smallest key by
 /// `less`
 template< class T , class C = std::less<> >
-class LoserTree {
+class LoserTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the tree of the players with their first keys, an empty key for an
  /// exhausted one, its \f$ k - 1 \f$ matches played in \f$ O( k ) \f$ time
  ///
@@ -120,8 +121,7 @@ class LoserTree {
  /// \end{array}}
  /// \f]
  /// \pre at least one player
- explicit LoserTree( std::vector< std::optional< T > > keys ,
-                     C less = C() );
+ explicit LoserTree( std::vector< std::optional< T > > keys , C less = C() );
 
  /// the number of players, \f$ k \f$
  [[nodiscard]] std::size_t players( void ) const;
@@ -160,16 +160,15 @@ class LoserTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// i beats j: a key against none, or a smaller key, or the lower index
  [[nodiscard]] bool beats( std::size_t i , std::size_t j ) const;
 
  /// the winner is not beaten by any player, \f$ O( k ) \f$
  [[nodiscard]] bool winnerIsBest( void ) const;
 
- std::vector< std::optional< T > > f_key;   ///< the keys of the players
- std::vector< std::size_t > f_node;         ///< f_node[ 0 ] the winner,
-                                            ///< the others the losers
+ std::vector< std::optional< T > > f_key;  ///< the keys of the players
+ std::vector< std::size_t > f_node;        ///< f_node[ 0 ] the winner,
+					   ///< the others the losers
  C f_less;
 
  };  // end( class LoserTree )
@@ -197,7 +196,7 @@ class LoserTree {
 /// \post the items of \f$ R \f$, sorted (an audit)
 template< class T , class C = std::less<> >
 std::vector< T > kWayMerge( const std::vector< std::vector< T > > & R ,
-                            C less = C() );
+			    C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -211,7 +210,7 @@ std::vector< T > kWayMerge( const std::vector< std::vector< T > > & R ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LoserTree.h included */
+#endif /* LoserTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File LoserTree.h --------------------------*/

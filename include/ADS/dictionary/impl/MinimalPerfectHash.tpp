@@ -15,17 +15,20 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the odd constants of the two hashes and of the pilots
-inline constexpr std::uint64_t kPilotK[ 3 ] = {
- 0x9E3779B97F4A7C15ULL , 0xC2B2AE3D27D4EB4FULL , 0x165667B19E3779F9ULL };
+inline constexpr std::uint64_t kPilotK[ 3 ] = { 0x9E3779B97F4A7C15ULL ,
+						0xC2B2AE3D27D4EB4FULL ,
+						0x165667B19E3779F9ULL };
 
 /// the high half of the product a b on 128 bits, a place of [ 0 , b )
 [[nodiscard]] constexpr std::uint64_t mulHigh( std::uint64_t a ,
-                                               std::uint64_t b )
+					       std::uint64_t b )
 {
  return( product128( a , b ).hi );
  }
@@ -35,21 +38,22 @@ inline constexpr std::uint64_t kPilotK[ 3 ] = {
 /*--------------------------------------------------------------------------*/
 
 template< class T , class H >
-MinimalPerfectHash< T , H >::MinimalPerfectHash(
-                              const std::vector< T > & keys , double lambda ,
-                              double alpha , std::uint64_t seed , H h )
- : f_seed( seed ) , f_n( keys.size() ) , f_h( h )
+MinimalPerfectHash< T ,
+		    H >::MinimalPerfectHash( const std::vector< T > & keys ,
+						double lambda , double alpha ,
+						std::uint64_t seed , H h )
+    : f_seed( seed ) , f_n( keys.size() ) , f_h( h )
 {
  ADS_PRE( ( keys.size() < ( std::size_t( 1 ) << 32 ) ) && ( lambda >= 1 ) &&
-          ( alpha >= 0.5 ) && ( alpha <= 1 ) );
+	  ( alpha >= 0.5 ) && ( alpha <= 1 ) );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< T > S( keys );
   std::sort( S.begin() , S.end() );
   return( std::adjacent_find( S.begin() , S.end() ) == S.end() );
   }() );
  f_m = std::max( f_n , std::size_t( std::ceil( double( f_n ) / alpha ) ) );
- const auto nb = std::max< std::size_t >( 2 , std::size_t( std::ceil(
-                                          double( f_n ) / lambda ) ) );
+ const auto nb = std::max< std::size_t >(
+   2 , std::size_t( std::ceil( double( f_n ) / lambda ) ) );
  f_dense = std::max< std::size_t >( 1 , std::size_t( 0.3 * double( nb ) ) );
  f_sparse = nb - f_dense;
  std::vector< std::uint64_t > B;
@@ -59,10 +63,10 @@ MinimalPerfectHash< T , H >::MinimalPerfectHash(
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
    throw( std::runtime_error( "MinimalPerfectHash: no seed separates the "
-                              "keys" ) );
+			      "keys" ) );
   if( build( B ) )
    break;
-  f_seed = hashWord( f_seed , f_trials );   // a new seed
+  f_seed = hashWord( f_seed , f_trials );  // a new seed
   }
  ADS_AUDIT( [ & ]( void ) {
   std::vector< char > seen( f_n , 0 );
@@ -81,9 +85,8 @@ MinimalPerfectHash< T , H >::MinimalPerfectHash(
 template< class T , class H >
 std::uint64_t MinimalPerfectHash< T , H >::base( const T & k ) const
 {
- if constexpr( std::is_integral_v< T > &&
-               std::is_same_v< H , FastHash< T > > )
-  return( std::uint64_t( k ) );           // mixed by the two hashes
+ if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
+  return( std::uint64_t( k ) );  // mixed by the two hashes
  else if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( k ) ) );
  else
@@ -96,19 +99,19 @@ std::size_t MinimalPerfectHash< T , H >::bucket( std::uint64_t h ) const
  // 60 % of the hashes into the first 30 % of the buckets, each part by the
  // product of its size and of h rotated, so that the test and the place
  // in the part use different bits
- constexpr std::uint64_t T60 = 0x9999999999999999ULL;   // 0.6 2^64
+ constexpr std::uint64_t T60 = 0x9999999999999999ULL;  // 0.6 2^64
  const std::uint64_t r = std::rotl( h , 32 );
- return( h < T60 ? std::size_t( detail::mulHigh( r , f_dense ) ) :
-                   f_dense + std::size_t( detail::mulHigh( r , f_sparse ) ) );
+ return( h < T60 ? std::size_t( detail::mulHigh( r , f_dense ) )
+		  : f_dense + std::size_t( detail::mulHigh( r , f_sparse ) ) );
  }
 
 template< class T , class H >
 std::size_t MinimalPerfectHash< T , H >::place( std::uint64_t h2 ,
-                                                std::uint64_t k ) const
+					       std::uint64_t k ) const
 {
- return( std::size_t( detail::mulHigh( foldedProduct(
-          h2 ^ ( k * detail::kPilotK[ 2 ] ) , detail::kPilotK[ 0 ] ) ,
-          f_m ) ) );
+ return( std::size_t( detail::mulHigh(
+   foldedProduct( h2 ^ ( k * detail::kPilotK[ 2 ] ) , detail::kPilotK[ 0 ] ) ,
+   f_m ) ) );
  }
 
 template< class T , class H >
@@ -119,22 +122,22 @@ std::uint64_t MinimalPerfectHash< T , H >::pilot( std::size_t b ) const
  const std::size_t at = b * std::size_t( f_w );
  const std::size_t i = at >> 6;
  const unsigned s = unsigned( at & 63 );
- const std::uint64_t lo = f_P[ i ] >> s ,
-                     hi = ( f_P[ i + 1 ] << 1 ) << ( 63 - s );
+ const std::uint64_t lo = f_P[ i ] >> s , hi = ( f_P[ i + 1 ] << 1 )
+					      << ( 63 - s );
  return( ( lo | hi ) & ( ( std::uint64_t( 1 ) << f_w ) - 1 ) );
  }
 
 template< class T , class H >
 bool MinimalPerfectHash< T , H >::build(
-                                   const std::vector< std::uint64_t > & B )
+  const std::vector< std::uint64_t > & B )
 {
  const std::size_t n = f_n , m = f_m , nb = f_dense + f_sparse;
  // the second hashes grouped by bucket, by a counting sort
  std::vector< std::uint32_t > start( nb + 1 , 0 );
  auto b1 = std::make_unique_for_overwrite< std::uint32_t[] >( n );
  for( std::size_t i = 0 ; i < n ; ++i ) {
-  b1[ i ] = std::uint32_t( bucket( foldedProduct( B[ i ] ^ f_seed ,
-                                                  detail::kPilotK[ 0 ] ) ) );
+  b1[ i ] = std::uint32_t(
+    bucket( foldedProduct( B[ i ] ^ f_seed , detail::kPilotK[ 0 ] ) ) );
   ++start[ b1[ i ] + 1 ];
   }
  for( std::size_t b = 0 ; b < nb ; ++b )
@@ -143,8 +146,8 @@ bool MinimalPerfectHash< T , H >::build(
  {
   std::vector< std::uint32_t > next( start.begin() , start.end() - 1 );
   for( std::size_t i = 0 ; i < n ; ++i )
-   h2[ next[ b1[ i ] ]++ ] = foldedProduct( B[ i ] ^ f_seed ,
-                                            detail::kPilotK[ 1 ] );
+   h2[ next[ b1[ i ] ]++ ] =
+     foldedProduct( B[ i ] ^ f_seed , detail::kPilotK[ 1 ] );
   }
  // the buckets by decreasing size, by a counting sort of the sizes
  std::size_t smax = 0;
@@ -158,7 +161,7 @@ bool MinimalPerfectHash< T , H >::build(
  auto order = std::make_unique_for_overwrite< std::uint32_t[] >( nb );
  for( std::size_t b = 0 ; b < nb ; ++b )
   order[ bySize[ smax - ( start[ b + 1 ] - start[ b ] ) ]++ ] =
-   std::uint32_t( b );
+    std::uint32_t( b );
  // the search of the pilots, the places taken in a vector of bits
  std::vector< std::uint64_t > taken( m / 64 + 1 , 0 );
  std::vector< std::uint64_t > pilots( nb , 0 );
@@ -167,9 +170,9 @@ bool MinimalPerfectHash< T , H >::build(
  for( std::size_t o = 0 ; o < nb ; ++o ) {
   const std::size_t b = order[ o ] , s = start[ b + 1 ] - start[ b ];
   if( s == 0 )
-   break;                                 // the empty buckets are last
+   break;  // the empty buckets are last
   const std::uint64_t * K = h2.get() + start[ b ];
-  if( s > 1 ) {                           // equal hashes never separate
+  if( s > 1 ) {  // equal hashes never separate
    std::vector< std::uint64_t > E( K , K + s );
    std::sort( E.begin() , E.end() );
    if( std::adjacent_find( E.begin() , E.end() ) != E.end() )
@@ -185,12 +188,12 @@ bool MinimalPerfectHash< T , H >::build(
     const std::uint64_t bit = std::uint64_t( 1 ) << ( p & 63 );
     if( taken[ p >> 6 ] & bit )
      break;
-    taken[ p >> 6 ] |= bit;               // also against the bucket itself
+    taken[ p >> 6 ] |= bit;  // also against the bucket itself
     P[ i ] = p;
     }
    if( i == s )
     break;
-   while( i-- > 0 )                       // the places of a failed pilot
+   while( i-- > 0 )  // the places of a failed pilot
     taken[ P[ i ] >> 6 ] &= ~( std::uint64_t( 1 ) << ( P[ i ] & 63 ) );
    }
   pilots[ b ] = k;
@@ -199,7 +202,8 @@ bool MinimalPerfectHash< T , H >::build(
  // the free places below n of the keys placed beyond it
  f_free.assign( m - n , 0 );
  auto isTaken = [ & ]( std::size_t p ) {
-  return( ( taken[ p >> 6 ] >> ( p & 63 ) ) & 1 ); };
+  return( ( taken[ p >> 6 ] >> ( p & 63 ) ) & 1 );
+  };
  for( std::size_t p = n , f = 0 ; p < m ; ++p )
   if( isTaken( p ) ) {
    while( isTaken( f ) )
@@ -226,9 +230,9 @@ std::size_t MinimalPerfectHash< T , H >::operator()( const T & k ) const
 {
  ADS_PRE( f_n >= 1 );
  const std::uint64_t x = base( k ) ^ f_seed;
- const std::size_t p = place( foldedProduct( x , detail::kPilotK[ 1 ] ) ,
-                              pilot( bucket( foldedProduct( x ,
-                               detail::kPilotK[ 0 ] ) ) ) );
+ const std::size_t p =
+   place( foldedProduct( x , detail::kPilotK[ 1 ] ) ,
+	  pilot( bucket( foldedProduct( x , detail::kPilotK[ 0 ] ) ) ) );
  return( p < f_n ? p : f_free[ p - f_n ] );
  }
 

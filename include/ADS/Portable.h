@@ -44,7 +44,7 @@
 
 #ifndef __ADS_Portable
  #define __ADS_Portable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,13 +56,13 @@
 #include <cstdint>
 #include <type_traits>
 
-#if defined( _MSC_VER ) && !defined( __clang__ )
+#if defined( _MSC_VER ) && ! defined( __clang__ )
  #include <cstdlib>
  #include <intrin.h>
 #endif
 
 /// an empty member that takes no storage, with every compiler
-#if defined( _MSC_VER ) && !defined( __clang__ )
+#if defined( _MSC_VER ) && ! defined( __clang__ )
  #define ADS_NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
  #define ADS_NO_UNIQUE_ADDRESS [[no_unique_address]]
@@ -71,7 +71,7 @@
 /// a function of a rare path: never inlined, laid out away from the hot
 /// code
 #if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_COLD_PATH [[gnu::cold , gnu::noinline]]
+ #define ADS_COLD_PATH [[gnu::cold, gnu::noinline]]
 #elif defined( _MSC_VER )
  #define ADS_COLD_PATH __declspec( noinline )
 #else
@@ -95,21 +95,23 @@
 /// the sanitizer of addresses; no code elsewhere
 #if ADS_ASAN
  #include <sanitizer/asan_interface.h>
- #define ADS_POISON( p , n ) ASAN_POISON_MEMORY_REGION( ( p ) , ( n ) )
- #define ADS_UNPOISON( p , n ) ASAN_UNPOISON_MEMORY_REGION( ( p ) , ( n ) )
+ #define ADS_POISON( p, n ) ASAN_POISON_MEMORY_REGION( ( p ), ( n ) )
+ #define ADS_UNPOISON( p, n ) ASAN_UNPOISON_MEMORY_REGION( ( p ), ( n ) )
 #else
- #define ADS_POISON( p , n ) ( ( void ) 0 )
- #define ADS_UNPOISON( p , n ) ( ( void ) 0 )
+ #define ADS_POISON( p, n ) ( ( void )0 )
+ #define ADS_UNPOISON( p, n ) ( ( void )0 )
 #endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /*--------------------------------------------------------------------------*/
 
@@ -134,13 +136,12 @@ namespace detail {
 /// \end{array}}
 /// \f]
 constexpr std::uint64_t wideProductHalves( std::uint64_t a , std::uint64_t b ,
-                                           std::uint64_t & hi )
+					   std::uint64_t & hi )
 {
  constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
- const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW ,
-                     b1 = b >> 32;
+ const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW , b1 = b >> 32;
  const std::uint64_t p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
-                     p11 = a1 * b1;
+		     p11 = a1 * b1;
  const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
  hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
  return( ( mid << 32 ) | ( p00 & LOW ) );
@@ -148,7 +149,7 @@ constexpr std::uint64_t wideProductHalves( std::uint64_t a , std::uint64_t b ,
 
 /// the product of 128 bits of `a` and `b`, its high half in `hi`
 constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
-                                     std::uint64_t & hi )
+				     std::uint64_t & hi )
 {
 #if defined( __SIZEOF_INT128__ )
  __extension__ typedef unsigned __int128 U;
@@ -157,9 +158,9 @@ constexpr std::uint64_t wideProduct( std::uint64_t a , std::uint64_t b ,
  return( std::uint64_t( p ) );
 #else
  if( ! std::is_constant_evaluated() ) {
- #if defined( _MSC_VER ) && defined( _M_X64 ) && !defined( __clang__ )
+ #if defined( _MSC_VER ) && defined( _M_X64 ) && ! defined( __clang__ )
   return( _umul128( a , b , &hi ) );
- #elif defined( _MSC_VER ) && defined( _M_ARM64 ) && !defined( __clang__ )
+ #elif defined( _MSC_VER ) && defined( _M_ARM64 ) && ! defined( __clang__ )
   hi = __umulh( a , b );
   return( a * b );
  #endif
@@ -201,21 +202,22 @@ __extension__ typedef __int128 Int128;
 /// a signed integer of 128 bits in two's complement, with the sums, the
 /// differences, the products and the order of `__int128` (those modulo
 /// \f$ 2^{128} \f$, exact when the result fits)
-struct Int128 {
- std::uint64_t lo = 0;                ///< the low word
- std::uint64_t hi = 0;                ///< the high word, with the sign
+struct Int128
+{
+ std::uint64_t lo = 0;  ///< the low word
+ std::uint64_t hi = 0;  ///< the high word, with the sign
 
  constexpr Int128( void ) = default;
 
  template< std::integral I >
  constexpr Int128( I v )
-  : lo( std::uint64_t( v ) ) ,
-    hi( ( std::is_signed_v< I > && ( v < 0 ) ) ? ~std::uint64_t( 0 ) : 0 )
- { }
+     : lo( std::uint64_t( v ) ) ,
+       hi( ( std::is_signed_v< I > && ( v < 0 ) ) ? ~std::uint64_t( 0 ) : 0 ) {
+  }
 
  explicit operator long double( void ) const {
-  return( (long double)( std::int64_t( hi ) ) * 18446744073709551616.0L +
-          (long double)( lo ) );
+  return( ( long double )( std::int64_t( hi ) ) * 18446744073709551616.0L +
+	   ( long double )( lo ) );
   }
 
  friend constexpr Int128 operator+( Int128 a , Int128 b ) {
@@ -263,7 +265,7 @@ struct Int128 {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Portable.h included */
+#endif /* Portable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Portable.h ---------------------------*/

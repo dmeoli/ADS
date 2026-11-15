@@ -58,7 +58,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// the vectors of all the processes, concatenated in the order of the
 /// ranks, on every process
@@ -69,9 +70,9 @@ std::vector< T > gatherAll( const std::vector< T > & A )
  MPI_Comm_size( MPI_COMM_WORLD , &P );
  const int bytes = int( A.size() * sizeof( T ) );
  std::vector< int > count( static_cast< std::size_t >( P ) ) ,
-                    at( static_cast< std::size_t >( P ) , 0 );
+   at( static_cast< std::size_t >( P ) , 0 );
  MPI_Allgather( &bytes , 1 , MPI_INT , count.data() , 1 , MPI_INT ,
-                MPI_COMM_WORLD );
+		MPI_COMM_WORLD );
  int total = 0;
  for( int q = 0 ; q < P ; ++q ) {
   at[ std::size_t( q ) ] = total;
@@ -79,11 +80,12 @@ std::vector< T > gatherAll( const std::vector< T > & A )
   }
  std::vector< T > all( std::size_t( total ) / sizeof( T ) );
  MPI_Allgatherv( A.data() , bytes , MPI_BYTE , all.data() , count.data() ,
-                 at.data() , MPI_BYTE , MPI_COMM_WORLD );
+		 at.data() , MPI_BYTE , MPI_COMM_WORLD );
  return( all );
  }
 
-struct Rec {
+struct Rec
+{
  std::uint32_t key , pos;
  };
 
@@ -97,7 +99,8 @@ std::uint64_t mix( std::uint64_t x )
  }
 
 /// a node of a random tree: its key and its depth
-struct Node {
+struct Node
+{
  std::uint64_t key;
  std::uint32_t depth;
  };
@@ -105,8 +108,7 @@ struct Node {
 /// the children of a node of the random tree of the seed, 0 to 4 of them
 /// above the depth d
 template< class F >
-void children( const Node & v , std::uint32_t d , std::uint64_t seed ,
-               F && f )
+void children( const Node & v , std::uint32_t d , std::uint64_t seed , F && f )
 {
  if( v.depth >= d )
   return;
@@ -142,7 +144,7 @@ std::uint64_t sumAll( std::uint64_t x )
 /// with batches of b messages; true if no process saw the end before the
 /// last node, and the nodes are those of the tree
 bool mailboxTree( std::size_t b , std::uint32_t d , std::uint64_t seed ,
-                  bool root )
+		  bool root )
 {
  MPIExecutor ex;
  const std::size_t P = ex.size() , me = ex.rank();
@@ -173,11 +175,11 @@ bool mailboxTree( std::size_t b , std::uint32_t d , std::uint64_t seed ,
   }
  // nothing may come after the end
  const std::uint64_t atEnd = done;
- const std::uint64_t late = mb.poll( []( const Node & ) {} );
+ const std::uint64_t late = mb.poll( []( const Node & ) { } );
  const std::uint64_t n = root ? treeSize( d , seed ) : 0;
  const bool ok = ( late == 0 ) && ( mb.waves() >= 2 ) &&
-                 ( sumAll( atEnd ) == n ) &&
-                 ( sumAll( mb.sent() ) == sumAll( mb.received() ) );
+		 ( sumAll( atEnd ) == n ) &&
+		 ( sumAll( mb.sent() ) == sumAll( mb.received() ) );
  return( sumAll( ok ? 0 : 1 ) == 0 );
  }
 
@@ -197,8 +199,10 @@ ADS_TEST( "distributed-sort" )
   for( int pattern = 0 ; pattern < 6 ; ++pattern ) {
    std::mt19937_64 g( 100 * unsigned( me ) + unsigned( pattern ) );
    std::size_t n = 50000 + 1000 * std::size_t( me );
-   if( ( pattern == 3 ) && ( me % 2 == 1 ) ) n = 0;   // some empty
-   if( pattern == 4 ) n = me == 0 ? 120000 : 0;       // all on one
+   if( ( pattern == 3 ) && ( me % 2 == 1 ) )
+    n = 0;  // some empty
+   if( pattern == 4 )
+    n = me == 0 ? 120000 : 0;  // all on one
    std::vector< std::uint64_t > A( n );
    for( auto & x : A )
     x = pattern == 1 ? 7 : ( pattern == 2 ? g() % 5 : g() );
@@ -222,10 +226,12 @@ ADS_TEST( "distributed-sort" )
     distributed::sort( MPI_COMM_WORLD , R , by );
     const auto ra = gatherAll( R );
     CHECK( ( ra.size() == rb.size() ) &&
-           std::is_sorted( ra.begin() , ra.end() , by ) );
+	   std::is_sorted( ra.begin() , ra.end() , by ) );
     std::vector< std::uint64_t > ka , kb;
-    for( const auto & r : ra ) ka.push_back( r.key );
-    for( const auto & r : rb ) kb.push_back( r.key );
+    for( const auto & r : ra )
+     ka.push_back( r.key );
+    for( const auto & r : rb )
+     kb.push_back( r.key );
     std::sort( kb.begin() , kb.end() );
     CHECK( ka == kb );
     }
@@ -254,8 +260,8 @@ ADS_TEST( "distributed-sort-counts" )
  const auto c = fits< Count >( top + 1 , ok );
  const auto d = fits< Displacement >( top + 1 , ok );
  CHECK( ok == large );
- CHECK( large ? ( std::size_t( c ) == top + 1 &&
-                  std::size_t( d ) == top + 1 ) : ( c == 0 && d == 0 ) );
+ CHECK( large ? ( std::size_t( c ) == top + 1 && std::size_t( d ) == top + 1 )
+	      : ( c == 0 && d == 0 ) );
  }
 
 // the executor of the processes: rank and size as MPI gives them, one
@@ -269,7 +275,10 @@ ADS_TEST( "mpi-executor" )
  CHECK( ex.size() == std::size_t( P ) );
  CHECK( ex.rank() == std::size_t( me ) );
  std::size_t calls = 0 , who = 99;
- ex.run( [ & ]( std::size_t i ) { ++calls; who = i; } );
+ ex.run( [ & ]( std::size_t i ) {
+  ++calls;
+  who = i;
+  } );
  CHECK( ( calls == 1 ) && ( who == ex.rank() ) );
  ex.barrier();
  CHECK( sumAll( calls ) == std::uint64_t( P ) );
@@ -297,7 +306,10 @@ ADS_TEST( "mpi-mailbox" )
    }
   MPIMailbox< std::uint64_t > mb( ex.comm() , b );
   std::uint64_t got = 0 , sum = 0;
-  auto take = [ & ]( const std::uint64_t & x ) { ++got; sum += x; };
+  auto take = [ & ]( const std::uint64_t & x ) {
+   ++got;
+   sum += x;
+   };
   std::mt19937_64 g( 11 * me + b );
   for( std::uint64_t k = 0 ; k < N ; ++k ) {
    mb.send( std::size_t( g() % P ) , me * N + k );
@@ -324,7 +336,8 @@ ADS_TEST( "mpi-termination" )
   }
  }
 
-namespace {
+namespace
+{
 
 /// the bytes of the message k of the process q: its length and its content
 std::vector< std::byte > bytesOf( std::size_t q , std::uint64_t k )
@@ -381,7 +394,7 @@ ADS_TEST( "mpi-bytes" )
   std::mt19937_64 g( 13 * me + b );
   for( std::uint64_t k = 0 ; k < N ; ++k ) {
    mb.send( std::size_t( g() % P ) , std::uint32_t( k % 3 ) ,
-            bytesOf( me , k ) );
+	    bytesOf( me , k ) );
    if( k % 37 == 0 )
     mb.poll( take );
    }
@@ -398,13 +411,16 @@ ADS_TEST( "mpi-bytes" )
   }
  }
 
-namespace {
+namespace
+{
 
 /// two kinds of trivially copyable messages
-struct Ping {
+struct Ping
+{
  std::uint64_t id;
  };
-struct Pair {
+struct Pair
+{
  std::uint32_t a , b;
  };
 
@@ -418,8 +434,8 @@ ADS_TEST( "mpi-codec" )
  const std::size_t P = ex.size() , me = ex.rank();
  const std::uint64_t N = 500;
  auto text = []( std::size_t q , std::uint64_t k ) {
-  return( std::string( std::size_t( k % 9 ) , char( 'a' + ( q + k ) % 26 ) )
-          + std::to_string( q * 1000 + k ) );
+  return( std::string( std::size_t( k % 9 ) , char( 'a' + ( q + k ) % 26 ) ) +
+	   std::to_string( q * 1000 + k ) );
   };
  std::uint64_t expect = 0 , lenExpect = 0;
  for( std::size_t q = 0 ; q < P ; ++q )
@@ -466,7 +482,7 @@ ADS_TEST( "mpi-codec" )
    };
   for( std::uint64_t k = 0 ; k < N ; ++k )
    mb.send( ( me + k ) % P ,
-            std::vector< std::uint32_t >( k % 5 , std::uint32_t( me + k ) ) );
+	    std::vector< std::uint32_t >( k % 5 , std::uint32_t( me + k ) ) );
   while( ! mb.quiescent() )
    mb.poll( take );
   CHECK( ( got == expect ) && ( sum == sumExpect ) );
@@ -483,8 +499,8 @@ ADS_TEST( "mpi-codec" )
    if( k % 2 )
     mb.send( ( me + k ) % P , Kind( Ping{ k } ) );
    else
-    mb.send( ( me + k ) % P , Kind( Pair{ std::uint32_t( me ) ,
-                                           std::uint32_t( 2 * k ) } ) );
+    mb.send( ( me + k ) % P ,
+	     Kind( Pair{ std::uint32_t( me ) , std::uint32_t( 2 * k ) } ) );
   auto take = [ & ]( const Kind & x ) {
    if( const auto * p = std::get_if< Ping >( &x ) ) {
     ++pings;
@@ -501,7 +517,8 @@ ADS_TEST( "mpi-codec" )
   }
  }
 
-namespace {
+namespace
+{
 
 /// the traffic of N random messages per process over a mailbox M of
 /// batches of b, stopped by the processes of the mask `who` (bit q for the
@@ -510,7 +527,8 @@ namespace {
 /// processes tell
 template< class M , class Make , class Key >
 bool stopRun( std::size_t b , std::uint64_t who , std::uint64_t after ,
-              Make make , Key key )
+	      Make make ,
+	      Key key )
 {
  MPIExecutor ex;
  const std::size_t P = ex.size() , me = ex.rank();
@@ -539,10 +557,10 @@ bool stopRun( std::size_t b , std::uint64_t who , std::uint64_t after ,
  const std::uint64_t polled = got;
  const std::size_t left = mb.leftovers( take );
  const bool ok = ( left == got - polled ) && ( mb.terminated() ) &&
-                 ( sumAll( sends ) == sumAll( got ) ) &&
-                 ( sumAll( sendSum ) == sumAll( gotSum ) ) &&
-                 ( ( who == 0 ) ? ( ( left == 0 ) && ! stopped ) : true ) &&
-                 ( stopped || ! ( stopper && ( sends >= after ) ) );
+		 ( sumAll( sends ) == sumAll( got ) ) &&
+		 ( sumAll( sendSum ) == sumAll( gotSum ) ) &&
+		 ( ( who == 0 ) ? ( ( left == 0 ) && ! stopped ) : true ) &&
+		 ( stopped || ! ( stopper && ( sends >= after ) ) );
  return( sumAll( ok ? 0 : 1 ) == 0 );
  }
 
@@ -555,17 +573,21 @@ ADS_TEST( "mpi-stop" )
  MPIExecutor ex;
  const std::uint64_t last = std::uint64_t( 1 ) << ( ex.size() - 1 );
  for( std::size_t b : { 1 , 64 } )
-  for( auto [ who , after ] : { std::pair< std::uint64_t ,
-                                           std::uint64_t >( 1 , 1 ) ,
-                                { 1 , 500 } , { ~0ull , 100 } ,
-                                { last , 2000 } , { 0 , 0 } } ) {
-   CHECK( ( stopRun< MPIMailbox< std::uint64_t > >( b , who , after ,
-             []( std::uint64_t id ) { return( id ); } ,
-             []( std::uint64_t x ) { return( x ); } ) ) );
-   CHECK( ( stopRun< MPIMailbox< std::string > >( b * 16 , who , after ,
-             []( std::uint64_t id ) { return( std::to_string( id ) ); } ,
-             []( const std::string & s ) {
-              return( std::uint64_t( std::stoull( s ) ) ); } ) ) );
+  for( auto [ who , after ] :
+       { std::pair< std::uint64_t , std::uint64_t >( 1 , 1 ) ,
+	 { 1 , 500 } ,
+	 { ~0ull , 100 } ,
+	 { last , 2000 } ,
+	 { 0 , 0 } } ) {
+   CHECK( ( stopRun< MPIMailbox< std::uint64_t > >(
+     b , who , after , []( std::uint64_t id ) { return( id ); } ,
+     []( std::uint64_t x ) { return( x ); } ) ) );
+   CHECK( ( stopRun< MPIMailbox< std::string > >(
+     b * 16 , who , after ,
+     []( std::uint64_t id ) { return( std::to_string( id ) ); } ,
+     []( const std::string & s ) {
+      return( std::uint64_t( std::stoull( s ) ) );
+      } ) ) );
    }
  }
 
@@ -579,7 +601,7 @@ ADS_TEST( "mpi-min" )
  CHECK( ! m.test().has_value() );
  for( long round = 0 ; round < 5 ; ++round ) {
   CHECK( m.start( 100 - round + ( me * 7 ) % 13 ) );
-  CHECK( ! m.start( 0 ) );                 // one in flight
+  CHECK( ! m.start( 0 ) );  // one in flight
   long low = 100 - round + 0;
   for( long q = 0 ; q < P ; ++q )
    low = std::min( low , 100 - round + ( q * 7 ) % 13 );

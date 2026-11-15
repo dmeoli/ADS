@@ -66,7 +66,7 @@
 
 #ifndef __ADS_MPSCQueue
  #define __ADS_MPSCQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -86,7 +86,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS MPSCQueue -----------------------------*/
@@ -94,11 +95,12 @@ namespace ADS {
 
 /// an unbounded queue from many producers to one consumer, a lane each
 template< class T , std::size_t B = 1024 >
-class MPSCQueue {
+class MPSCQueue
+{
  static_assert( ( B >= 2 ) && ( ( B & ( B - 1 ) ) == 0 ) ,
-                "a block has 2^k places" );
+		"a block has 2^k places" );
 
- static constexpr std::size_t line = 64;   ///< a line of cache
+ static constexpr std::size_t line = 64;  ///< a line of cache
  /// the batch below which a consumer that is streaming waits, and the
  /// pauses of the processor of the wait
  static constexpr std::size_t want = B < 64 ? B : 64;
@@ -106,12 +108,13 @@ class MPSCQueue {
 
  /// a block of B places, with the count of the items written and the
  /// link to the next block on a line that only the producer writes
- struct Block {
+ struct Block
+ {
   /// the number of the items written, published with a release
   alignas( 2 * line ) std::atomic< std::size_t > filled{ 0 };
   /// the next block of the lane
   std::atomic< Block * > next{ nullptr };
-  Block * spare = nullptr;                  ///< in the stacks of the lane
+  Block * spare = nullptr;  ///< in the stacks of the lane
   /// the room of the items
   alignas( 2 * line ) unsigned char raw[ B * sizeof( T ) ];
   /// the item \f$ i \f$
@@ -126,35 +129,36 @@ class MPSCQueue {
 
  /// the lane of a producer: its block and place, the consumer's block
  /// and place, the blocks the consumer gave back, each on lines of its own
- struct Lane {
-  alignas( 2 * line ) Block * in;           ///< the producer's block
-  std::size_t pos = 0;                      ///< its next place
-  Block * spare = nullptr;                  ///< its blocks to reuse
-  alignas( 2 * line ) Block * out;          ///< the consumer's block
-  std::size_t at = 0;                       ///< its next place
-  bool streaming = false;                   ///< its last call took some
+ struct Lane
+ {
+  alignas( 2 * line ) Block * in;   ///< the producer's block
+  std::size_t pos = 0;              ///< its next place
+  Block * spare = nullptr;          ///< its blocks to reuse
+  alignas( 2 * line ) Block * out;  ///< the consumer's block
+  std::size_t at = 0;               ///< its next place
+  bool streaming = false;           ///< its last call took some
   /// the blocks that the consumer gave back
   alignas( 2 * line ) std::atomic< Block * > given{ nullptr };
-  Lane * nextLane = nullptr;                ///< in the list of the lanes
-  EventCount * wait;                        ///< the sleep of the consumer
+  Lane * nextLane = nullptr;  ///< in the list of the lanes
+  EventCount * wait;          ///< the sleep of the consumer
   /// the lane of one empty block, the sleep of its consumer in \f$ w \f$
-  explicit Lane( EventCount * w ) : in( new Block ) , out( in ) ,
-                                    wait( w ) {}
+  explicit Lane( EventCount * w ) : in( new Block ) , out( in ) , wait( w ) { }
   };
 
 /*--------------------------------------------------------------------------*/
  public:
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the handle of a producer, its lane: one thread at a time pushes
- class Producer {
+ class Producer
+ {
   public:
   /// a handle of no lane, to be assigned one from `producer()`
   Producer( void ) = default;
 
   /// the lane of \f$ o \f$, which is left with none
   Producer( Producer && o ) noexcept
-   : f_lane( std::exchange( o.f_lane , nullptr ) ) {}
+      : f_lane( std::exchange( o.f_lane , nullptr ) ) { }
 
   /// the lane of \f$ o \f$, which is left with none
   Producer & operator=( Producer && o ) noexcept {
@@ -184,8 +188,8 @@ class MPSCQueue {
   /// \end{array}}
   /// \f]
   /// \pre the handle comes from `producer()`
-  template< class ... Args >
-  void emplace( Args && ... args );
+  template< class... Args >
+  void emplace( Args &&... args );
 
   /// enqueues a copy of \f$ v \f$, as `emplace()`
   void push( const T & v ) { emplace( v ); }
@@ -203,7 +207,7 @@ class MPSCQueue {
 
   private:
   friend class MPSCQueue;
-  explicit Producer( Lane * l ) : f_lane( l ) {}
+  explicit Producer( Lane * l ) : f_lane( l ) { }
   Lane * f_lane = nullptr;
   };  // end( class Producer )
 
@@ -292,7 +296,9 @@ class MPSCQueue {
  /// 2 & \quad \mathrm{await}( \mathrm{tryPop}( x ) )
  /// \end{array}}
  /// \f]
- void waitPop( T & x ) { f_wait.await( [ & ] { return( tryPop( x ) ); } ); }
+ void waitPop( T & x ) {
+  f_wait.await( [ & ] { return( tryPop( x ) ); } );
+  }
 
  /// the items of `popInto()`, sleeping until at least one comes
  /// \pre \f$ n \ge 1 \f$
@@ -318,9 +324,9 @@ class MPSCQueue {
  /// the wait of a consumer for a batch
  static void relax( void );
 
- std::atomic< Lane * > f_lanes{ nullptr };   ///< the list of the lanes
- Lane * f_at = nullptr;                    ///< the consumer's lane
- EventCount f_wait;                        ///< the sleep of the consumer
+ std::atomic< Lane * > f_lanes{ nullptr };  ///< the list of the lanes
+ Lane * f_at = nullptr;                     ///< the consumer's lane
+ EventCount f_wait;                         ///< the sleep of the consumer
  };  // end( class MPSCQueue )
 
 /*--------------------------------------------------------------------------*/
@@ -335,7 +341,7 @@ class MPSCQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MPSCQueue.h included */
+#endif /* MPSCQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MPSCQueue.h --------------------------*/

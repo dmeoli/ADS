@@ -14,17 +14,18 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline PPMModel::PPMModel( int order , std::uint32_t sigma )
- : f_order( order ) , f_sigma( sigma )
+    : f_order( order ) , f_sigma( sigma )
 {
  ADS_PRE( order >= 0 );
  ADS_PRE( ( sigma >= 1 ) && ( sigma <= ( std::uint32_t( 1 ) << 16 ) ) );
  }
 
-inline std::map< std::uint32_t , std::uint64_t > PPMModel::counts(
-                               const std::vector< std::uint32_t > & ctx ) const
+inline std::map< std::uint32_t , std::uint64_t >
+PPMModel::counts( const std::vector< std::uint32_t > & ctx ) const
 {
  const auto it = f_ctx.find( ctx );
  return( it == f_ctx.end() ? Counts() : it->second );
@@ -40,7 +41,8 @@ std::uint32_t PPMModel::walk( Choose choose ) const
   const auto first = f_hist.end() - std::ptrdiff_t( o );
   const std::vector< std::uint32_t > key( first , f_hist.end() );
   const auto it = f_ctx.find( key );
-  if( it == f_ctx.end() ) continue;        // a context never seen
+  if( it == f_ctx.end() )
+   continue;  // a context never seen
   sym.clear();
   cum.assign( 1 , 0 );
   for( const auto & [ s , k ] : it->second )
@@ -48,13 +50,16 @@ std::uint32_t PPMModel::walk( Choose choose ) const
     sym.push_back( s );
     cum.push_back( cum.back() + k );
     }
-  if( sym.empty() ) continue;              // all excluded: no code
+  if( sym.empty() )
+   continue;  // all excluded: no code
   const std::uint64_t total = cum.back() + it->second.size();
   const std::size_t j = choose( sym , cum , total );
-  if( j < sym.size() ) return( sym[ j ] );
-  for( std::uint32_t s : sym ) excluded[ s ] = true;   // an escape
+  if( j < sym.size() )
+   return( sym[ j ] );
+  for( std::uint32_t s : sym )
+   excluded[ s ] = true;  // an escape
   }
- sym.clear();                              // the context of order -1
+ sym.clear();  // the context of order -1
  cum.assign( 1 , 0 );
  for( std::uint32_t s = 0 ; s < f_sigma ; ++s )
   if( ! excluded[ s ] ) {
@@ -71,12 +76,12 @@ inline std::vector< PPMModel::Step > PPMModel::steps( std::uint32_t c ) const
  ADS_PRE( c < f_sigma );
  std::vector< Step > S;
  walk( [ & ]( const std::vector< std::uint32_t > & sym ,
-              const std::vector< std::uint64_t > & cum ,
-              std::uint64_t total ) {
-  const std::size_t j = std::size_t( std::find( sym.begin() , sym.end() ,
-                                                c ) - sym.begin() );
+	      const std::vector< std::uint64_t > & cum ,
+	      std::uint64_t total ) {
+  const std::size_t j =
+    std::size_t( std::find( sym.begin() , sym.end() , c ) - sym.begin() );
   S.push_back( j < sym.size() ? Step{ cum[ j ] , cum[ j + 1 ] , total }
-                              : Step{ cum.back() , total , total } );
+			      : Step{ cum.back() , total , total } );
   return( j );
   } );
  return( S );
@@ -91,15 +96,17 @@ inline void PPMModel::encode( std::uint32_t c , RangeEncoder & e ) const
 inline std::uint32_t PPMModel::decode( RangeDecoder & d ) const
 {
  return( walk( [ & ]( const std::vector< std::uint32_t > & sym ,
-                      const std::vector< std::uint64_t > & cum ,
-                      std::uint64_t total ) {
+		       const std::vector< std::uint64_t > & cum ,
+		       std::uint64_t total ) {
   const std::uint64_t t = d.target( total );
-  if( t >= cum.back() ) {                 // the escape
+  if( t >= cum.back() ) {  // the escape
    d.consume( cum.back() , total , total );
    return( sym.size() );
    }
-  const std::size_t j = std::size_t( std::upper_bound( cum.begin() ,
-                                     cum.end() , t ) - cum.begin() ) - 1;
+  const std::size_t j =
+    std::size_t( std::upper_bound( cum.begin() , cum.end() , t ) -
+		 cum.begin() ) -
+    1;
   d.consume( cum[ j ] , cum[ j + 1 ] , total );
   return( j );
   } ) );
@@ -113,12 +120,15 @@ inline void PPMModel::update( std::uint32_t c )
   Counts & C = f_ctx[ std::vector< std::uint32_t >( first , f_hist.end() ) ];
   ++C[ c ];
   std::uint64_t sum = 0;
-  for( const auto & e : C ) sum += e.second;
+  for( const auto & e : C )
+   sum += e.second;
   if( sum > kLimit )
-   for( auto & e : C ) e.second = e.second / 2 + e.second % 2;
+   for( auto & e : C )
+    e.second = e.second / 2 + e.second % 2;
   }
  f_hist.push_back( c );
- if( f_hist.size() > std::size_t( f_order ) ) f_hist.erase( f_hist.begin() );
+ if( f_hist.size() > std::size_t( f_order ) )
+  f_hist.erase( f_hist.begin() );
  }
 
 inline std::vector< std::uint8_t > ppmEncode( std::string_view s , int K )
@@ -136,7 +146,7 @@ inline std::vector< std::uint8_t > ppmEncode( std::string_view s , int K )
  }
 
 inline std::string ppmDecode( std::span< const std::uint8_t > code ,
-                              std::size_t n , int K )
+			      std::size_t n , int K )
 {
  PPMModel M( K );
  RangeDecoder D( code );

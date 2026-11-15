@@ -27,7 +27,7 @@
 
 #ifndef __ADS_HashMultiset
  #define __ADS_HashMultiset
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS HashMultiset ---------------------------*/
@@ -59,12 +60,12 @@ namespace ADS {
 /// insertion of a new item sets it to 1, of an item already there adds 1,
 /// the removal subtracts 1 and removes the item at 0 (exercise 8.10)
 template< class T , class H = std::hash< T > >
-class HashMultiset {
+class HashMultiset
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty multiset
  HashMultiset( void );
@@ -125,9 +126,9 @@ class HashMultiset {
  using value_type = std::pair< T , std::size_t >;
  /// the iterator of the table of the counters, constant
  using const_iterator =
-  typename ChainedHashTable< T , std::size_t , Chain::FRONT , H >::
-   const_iterator;
- using iterator = const_iterator;   ///< the same, constant
+   typename ChainedHashTable< T , std::size_t , Chain::FRONT ,
+			      H >::const_iterator;
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the iterator on the first pair
  [[nodiscard]] const_iterator begin( void ) const {
@@ -142,13 +143,12 @@ class HashMultiset {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the size is the sum of the counters, none of which is 0, \f$ O( n ) \f$
  [[nodiscard]] bool counted( void ) const;
 
  /// the counters of the items
  ChainedHashTable< T , std::size_t , Chain::FRONT , H > f_count;
- std::size_t f_size = 0;   ///< the sum of the counters
+ std::size_t f_size = 0;  ///< the sum of the counters
 
  };  // end( class HashMultiset )
 
@@ -164,7 +164,7 @@ class HashMultiset {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HashMultiset.h included */
+#endif /* HashMultiset.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File HashMultiset.h -------------------------*/

@@ -102,7 +102,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 
@@ -121,7 +122,8 @@ template< class T >
 List< T > list_of( const std::vector< T > & v )
 {
  List< T > l;
- for( const T & x : v ) l.insert( l.next( l.tail() ) , x );
+ for( const T & x : v )
+  l.insert( l.next( l.tail() ) , x );
  return( l );
  }
 
@@ -131,7 +133,7 @@ std::vector< T > pre_values( const BinaryTree< T > * t )
 {
  std::vector< T > v;
  pre_visit( const_cast< BinaryTree< T > * >( t ) ,
-            [ & ]( BinaryTree< T > * u ) { v.push_back( u->read() ); } );
+	    [ & ]( BinaryTree< T > * u ) { v.push_back( u->read() ); } );
  return( v );
  }
 
@@ -146,7 +148,8 @@ std::vector< T > pre_values( const BinaryTree< T > * t )
 int freq( const List< int > & l , int k )
 {
  int c = 0;
- for( int x : items( l ) ) c += x % k == 0;
+ for( int x : items( l ) )
+  c += x % k == 0;
  return( c );
  }
 
@@ -154,10 +157,13 @@ std::vector< std::pair< int , int > > hist( const List< int > & l )
 {
  std::vector< std::pair< int , int > > H;
  for( int x : items( l ) ) {
-  auto it = std::find_if( H.begin() , H.end() , [ & ]( const auto & h ) {
-   return( h.first == x ); } );
-  if( it == H.end() ) H.emplace_back( x , 1 );
-  else ++it->second;
+  auto it = std::find_if(
+    H.begin() , H.end() ,
+    [ & ]( const auto & h ) { return( h.first == x ); } );
+  if( it == H.end() )
+   H.emplace_back( x , 1 );
+  else
+   ++it->second;
   }
  return( H );
  }
@@ -166,7 +172,8 @@ void remp( List< int > & l )
 {
  for( auto p = l.head() ; ! l.finished( p ) ; ) {
   const auto q = l.next( p );
-  if( ! l.finished( q ) && ( l.read( q ) % 2 != 0 ) ) l.remove( p );
+  if( ! l.finished( q ) && ( l.read( q ) % 2 != 0 ) )
+   l.remove( p );
   p = q;
   }
  }
@@ -175,47 +182,54 @@ void del( List< int > & l )
 {
  int i = 1;
  for( auto p = l.head() ; ! l.finished( p ) ; ++i )
-  if( l.read( p ) % i == 0 ) p = l.remove( p );
-  else p = l.next( p );
+  if( l.read( p ) % i == 0 )
+   p = l.remove( p );
+  else
+   p = l.next( p );
  }
 
 // the strings of even length in one list and those of odd length in
 // another, each new string at the head
 
-class EvenOddStrings {
+class EvenOddStrings
+{
  public:
-  void insert( const std::string & s ) {
-   List< std::string > & l = s.size() % 2 ? f_odd : f_even;
-   l.insert( l.head() , s );
-   }
-  /// removes every copy of s
-  void removeAll( const std::string & s ) {
-   List< std::string > & l = s.size() % 2 ? f_odd : f_even;
-   for( auto p = l.head() ; ! l.finished( p ) ; )
-    p = l.read( p ) == s ? l.remove( p ) : l.next( p );
-   }
-  /// removes the even strings that start with c
-  void removeStartingWith( char c ) {
-   for( auto p = f_even.head() ; ! f_even.finished( p ) ; )
-    p = ( ! f_even.read( p ).empty() && ( f_even.read( p )[ 0 ] == c ) )
-        ? f_even.remove( p ) : f_even.next( p );
-   }
-  [[nodiscard]] int evenCount( void ) const {
-   return( int( items( f_even ).size() ) );
-   }
-  /// the odd strings by length, equal lengths in order of insertion
-  [[nodiscard]] std::vector< std::string > oddByLength( void ) const {
-   auto v = items( f_odd );
-   std::reverse( v.begin() , v.end() );
-   std::stable_sort( v.begin() , v.end() , []( const auto & a ,
-                     const auto & b ) { return( a.size() < b.size() ); } );
-   return( v );
-   }
-  [[nodiscard]] std::vector< std::string > even( void ) const {
-   return( items( f_even ) );
-   }
+ void insert( const std::string & s ) {
+  List< std::string > & l = s.size() % 2 ? f_odd : f_even;
+  l.insert( l.head() , s );
+  }
+ /// removes every copy of s
+ void removeAll( const std::string & s ) {
+  List< std::string > & l = s.size() % 2 ? f_odd : f_even;
+  for( auto p = l.head() ; ! l.finished( p ) ; )
+   p = l.read( p ) == s ? l.remove( p ) : l.next( p );
+  }
+ /// removes the even strings that start with c
+ void removeStartingWith( char c ) {
+  for( auto p = f_even.head() ; ! f_even.finished( p ) ; )
+   p = ( ! f_even.read( p ).empty() && ( f_even.read( p )[ 0 ] == c ) )
+	 ? f_even.remove( p )
+	 : f_even.next( p );
+  }
+ [[nodiscard]] int evenCount( void ) const {
+  return( int( items( f_even ).size() ) );
+  }
+ /// the odd strings by length, equal lengths in order of insertion
+ [[nodiscard]] std::vector< std::string > oddByLength( void ) const {
+  auto v = items( f_odd );
+  std::reverse( v.begin() , v.end() );
+  std::stable_sort( v.begin() , v.end() ,
+		    []( const auto & a , const auto & b ) {
+   return( a.size() < b.size() );
+   } );
+  return( v );
+  }
+ [[nodiscard]] std::vector< std::string > even( void ) const {
+  return( items( f_even ) );
+  }
+
  private:
-  List< std::string > f_even , f_odd;
+ List< std::string > f_even , f_odd;
  };
 
 // sums, maxima, heights and counts on a binary tree of integers
@@ -231,48 +245,59 @@ int maxNode( const BT * t )
 {
  int m = t->read();
  for( const BT * c : { t->left() , t->right() } )
-  if( c ) m = std::max( m , maxNode( c ) );
+  if( c )
+   m = std::max( m , maxNode( c ) );
  return( m );
  }
 
 /// the largest sum along a path from the root to a leaf
 long maxPathCost( const BT * t )
 {
- if( ! t->left() && ! t->right() ) return( t->read() );
+ if( ! t->left() && ! t->right() )
+  return( t->read() );
  long best = std::numeric_limits< long >::min();
  for( const BT * c : { t->left() , t->right() } )
-  if( c ) best = std::max( best , maxPathCost( c ) );
+  if( c )
+   best = std::max( best , maxPathCost( c ) );
  return( t->read() + best );
  }
 
 /// the height counted in nodes, 0 for the empty tree
 int heightNodes( const BT * t )
 {
- return( t ? 1 + std::max( heightNodes( t->left() ) ,
-                           heightNodes( t->right() ) ) : 0 );
+ return( t ? 1 +
+		std::max( heightNodes( t->left() ) ,
+			  heightNodes( t->right() ) )
+	    : 0 );
  }
 
 /// whether the heights of the two subtrees of every node differ by at
 /// most 1
 bool heightBalanced( const BT * t )
 {
- if( ! t ) return( true );
- return( std::abs( heightNodes( t->left() ) - heightNodes( t->right() ) )
-         <= 1 && heightBalanced( t->left() ) && heightBalanced( t->right() ) );
+ if( ! t )
+  return( true );
+ return( std::abs( heightNodes( t->left() ) - heightNodes( t->right() ) ) <=
+	    1 &&
+	  heightBalanced( t->left() ) && heightBalanced( t->right() ) );
  }
 
 /// the odd nodes of level k, the root of level 0
 int oddAtLevel( const BT * t , int k )
 {
- if( ! t ) return( 0 );
- if( k == 0 ) return( t->read() % 2 != 0 );
+ if( ! t )
+  return( 0 );
+ if( k == 0 )
+  return( t->read() % 2 != 0 );
  return( oddAtLevel( t->left() , k - 1 ) + oddAtLevel( t->right() , k - 1 ) );
  }
 
 int evenLeaves( const BT * t )
 {
- if( ! t ) return( 0 );
- if( ! t->left() && ! t->right() ) return( t->read() % 2 == 0 );
+ if( ! t )
+  return( 0 );
+ if( ! t->left() && ! t->right() )
+  return( t->read() % 2 == 0 );
  return( evenLeaves( t->left() ) + evenLeaves( t->right() ) );
  }
 
@@ -281,14 +306,16 @@ int evenDescendants( const BT * t )
 {
  int c = 0;
  for( const BT * u : { t->left() , t->right() } )
-  if( u ) c += ( u->read() % 2 == 0 ) + evenDescendants( u );
+  if( u )
+   c += ( u->read() % 2 == 0 ) + evenDescendants( u );
  return( c );
  }
 
 /// each node gets the even proper descendants it had
 void relabelEven( BT * t )
 {
- if( ! t ) return;
+ if( ! t )
+  return;
  const int c = evenDescendants( t );
  relabelEven( t->left() );
  relabelEven( t->right() );
@@ -331,7 +358,7 @@ int evenParent( const OT * t )
 int greaterThan( const Ints & a , int k )
 {
  return( int( std::count_if( a.begin() , a.end() ,
-                             [ & ]( int x ) { return( x > k ); } ) ) );
+			      [ & ]( int x ) { return( x > k ); } ) ) );
  }
 
 bool member( const Ints & a , int k )
@@ -342,14 +369,17 @@ bool member( const Ints & a , int k )
 std::pair< int , int > largest( const Ints & a )
 {
  int p = 0;
- for( int i = 1 ; i < int( a.size() ) ; ++i ) if( a[ i ] > a[ p ] ) p = i;
+ for( int i = 1 ; i < int( a.size() ) ; ++i )
+  if( a[ i ] > a[ p ] )
+   p = i;
  return( std::pair( a[ p ] , p ) );
  }
 
 void removeElem( Ints & a , int k )
 {
  auto it = std::find( a.begin() , a.end() , k );
- if( it == a.end() ) return;
+ if( it == a.end() )
+  return;
  std::copy( it + 1 , a.end() , it );
  a.back() = 0;
  }
@@ -389,29 +419,29 @@ ADS_TEST( "array-binary-tree" )
  e.setRoot( 7 );
  CHECK( e.read( e.root() ) == 7 );
  CHECK( e.isLeaf( 0 ) && e.parent( 0 ) == e.NIL );
- e.insertLeft( 0 , ArrayBinaryTree< int >() );   // the empty tree: nothing
+ e.insertLeft( 0 , ArrayBinaryTree< int >() );  // the empty tree: nothing
  CHECK( e.isLeaf( 0 ) && e.preorder() == std::vector< long >( { 0 } ) );
- e.remove( 9 );                                  // an absent node: nothing
+ e.remove( 9 );  // an absent node: nothing
  CHECK( e.preorder() == std::vector< long >( { 0 } ) );
  CHECK_THROWS( e.setRoot( 1 ) , contract_violation );
- CHECK_THROWS( (void) e.read( 1 ) , contract_violation );
- CHECK_THROWS( (void) e.left( 3 ) , contract_violation );
- CHECK_THROWS( (void) e.parent( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )e.read( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )e.left( 3 ) , contract_violation );
+ CHECK_THROWS( ( void )e.parent( -1 ) , contract_violation );
  CHECK_THROWS( e.insertRight( 2 , r ) , contract_violation );
- e.insertLeft( 0 , e );                          // a copy of itself
+ e.insertLeft( 0 , e );  // a copy of itself
  e.insertRight( 0 , e );
  CHECK( e.preorder() == std::vector< long >( { 0 , 1 , 2 , 5 } ) );
  CHECK( e.read( 1 ) == 7 && e.read( 5 ) == 7 && e.isLeaf( 1 ) );
- e.remove( 0 );                                  // the root: all gone
+ e.remove( 0 );  // the root: all gone
  CHECK( e.empty() && e.root() == e.NIL && e.preorder().empty() );
- ArrayBinaryTree< int > c( 0 );                  // a chain to the left
+ ArrayBinaryTree< int > c( 0 );  // a chain to the left
  long i = 0;
  for( int d = 1 ; d <= 12 ; ++d ) {
   c.insertLeft( i , ArrayBinaryTree< int >( d ) );
   i = c.left( i );
   }
  CHECK( i == 4095 && c.read( i ) == 12 && c.isLeaf( i ) &&
-        c.preorder().size() == 13 && c.right( 0 ) == c.NIL );
+	c.preorder().size() == 13 && c.right( 0 ) == c.NIL );
  c.remove( 1 );
  CHECK( c.preorder() == std::vector< long >( { 0 } ) );
  }
@@ -424,40 +454,42 @@ ADS_TEST( "cursor-binary-tree" )
 {
  CursorBinaryTree< int > t( 1 );
  const int a = t.insertLeft( t.root() , 2 ) ,
-           b = t.insertRight( t.root() , 3 );
+   b = t.insertRight( t.root() , 3 );
  const int c = t.insertLeft( a , 4 );
  CHECK( t.parent( c ) == a && t.left( a ) == c && t.right( a ) == t.NIL );
  CHECK( t.size() == 4 && t.isLeaf( b ) );
  CursorBinaryTree< int > s( 9 );
- const int x = s.insertRight( s.root() , t , a );   // copy of 2 ( 4 )
+ const int x = s.insertRight( s.root() , t , a );  // copy of 2 ( 4 )
  CHECK( s.read( x ) == 2 && s.read( s.left( x ) ) == 4 && s.size() == 3 );
  t.remove( a );
  CHECK( t.size() == 2 && t.left( t.root() ) == t.NIL );
  const int y = t.insertLeft( t.root() , 5 );
- CHECK( ( y == a ) || ( y == c ) );               // a free place reused
+ CHECK( ( y == a ) || ( y == c ) );  // a free place reused
  Ints v;
- for( int n : t.preorder() ) v.push_back( t.read( n ) );
+ for( int n : t.preorder() )
+  v.push_back( t.read( n ) );
  CHECK( v == Ints( { 1 , 5 , 3 } ) );
  CHECK_THROWS( t.insertLeft( t.root() , 6 ) , contract_violation );
- CHECK_THROWS( t.insertRight( t.root() , s , s.root() ) ,
-               contract_violation );
- CHECK_THROWS( (void) t.read( 99 ) , contract_violation );
+ CHECK_THROWS( t.insertRight( t.root() , s , s.root() ) , contract_violation );
+ CHECK_THROWS( ( void )t.read( 99 ) , contract_violation );
  CHECK_THROWS( t.setRoot( 0 ) , contract_violation );
- t.insertLeft( y , t , t.root() );                // a copy of itself
+ t.insertLeft( y , t , t.root() );  // a copy of itself
  v.clear();
- for( int n : t.preorder() ) v.push_back( t.read( n ) );
+ for( int n : t.preorder() )
+  v.push_back( t.read( n ) );
  CHECK( v == Ints( { 1 , 5 , 1 , 5 , 3 , 3 } ) && t.size() == 6 );
- t.remove( t.root() );                            // the root: all gone
+ t.remove( t.root() );  // the root: all gone
  CHECK( t.empty() && t.size() == 0 && t.root() == t.NIL &&
-        t.preorder().empty() );
- CHECK_THROWS( (void) t.read( y ) , contract_violation );   // freed
+	t.preorder().empty() );
+ CHECK_THROWS( ( void )t.read( y ) , contract_violation );  // freed
  const int z = t.setRoot( 8 );
  CHECK( t.isLeaf( z ) && t.parent( z ) == t.NIL && t.size() == 1 );
- CursorBinaryTree< int > d( 0 );                  // a deep chain
+ CursorBinaryTree< int > d( 0 );  // a deep chain
  int w = d.root();
- for( int k = 1 ; k < 3000 ; ++k ) w = d.insertRight( w , k );
+ for( int k = 1 ; k < 3000 ; ++k )
+  w = d.insertRight( w , k );
  CHECK( d.size() == 3000 && d.read( w ) == 2999 &&
-        d.preorder().size() == 3000 );
+	d.preorder().size() == 3000 );
  d.remove( d.right( d.root() ) );
  CHECK( d.size() == 1 && d.isLeaf( d.root() ) );
  }
@@ -476,7 +508,8 @@ ADS_TEST( "cursor-tree" )
  t.insertSibling( t.leftmostChild( a ) , 4 );
  auto values = [ & ]( const std::vector< int > & N ) {
   Ints v;
-  for( int n : N ) v.push_back( t.read( n ) );
+  for( int n : N )
+   v.push_back( t.read( n ) );
   return( v );
   };
  CHECK( values( t.previsit() ) == Ints( { 0 , 1 , 3 , 4 , 2 } ) );
@@ -487,26 +520,27 @@ ADS_TEST( "cursor-tree" )
  s.insertChildTree( s.root() , t , a );
  s.insertSiblingTree( s.leftmostChild( s.root() ) , t , b );
  Ints v;
- for( int n : s.previsit() ) v.push_back( s.read( n ) );
+ for( int n : s.previsit() )
+  v.push_back( s.read( n ) );
  CHECK( v == Ints( { 9 , 1 , 3 , 4 , 2 } ) && s.size() == 5 );
  t.remove( a );
  CHECK( values( t.previsit() ) == Ints( { 0 , 2 } ) && t.size() == 2 );
  CHECK_THROWS( t.insertSibling( t.root() , 5 ) , std::logic_error );
  CHECK_THROWS( t.insertSiblingTree( t.root() , s , s.root() ) ,
-               contract_violation );
- CHECK_THROWS( (void) t.read( a ) , contract_violation );   // freed
+	       contract_violation );
+ CHECK_THROWS( ( void )t.read( a ) , contract_violation );  // freed
  CHECK( s.invisit( 0 ) == s.previsit() && s.invisit( 9 ) == s.postvisit() );
- t.insertChildTree( b , t , t.root() );         // a copy of itself
- CHECK( values( t.previsit() ) == Ints( { 0 , 2 , 0 , 2 } ) &&
-        t.size() == 4 );
- t.remove( t.root() );                          // the root: all gone
+ t.insertChildTree( b , t , t.root() );  // a copy of itself
+ CHECK( values( t.previsit() ) == Ints( { 0 , 2 , 0 , 2 } ) && t.size() == 4 );
+ t.remove( t.root() );  // the root: all gone
  CHECK( t.empty() && t.size() == 0 && t.previsit().empty() &&
-        t.postvisit().empty() && t.invisit( 1 ).empty() );
- CursorTree< int > d( 0 );                      // a deep chain
+	t.postvisit().empty() && t.invisit( 1 ).empty() );
+ CursorTree< int > d( 0 );  // a deep chain
  int w = d.root();
- for( int k = 1 ; k < 3000 ; ++k ) w = d.insertChild( w , k );
- CHECK( d.size() == 3000 && d.previsit().size() == 3000 &&
-        d.isLeaf( w ) && d.isLastSibling( w ) );
+ for( int k = 1 ; k < 3000 ; ++k )
+  w = d.insertChild( w , k );
+ CHECK( d.size() == 3000 && d.previsit().size() == 3000 && d.isLeaf( w ) &&
+	d.isLastSibling( w ) );
  d.remove( d.leftmostChild( d.root() ) );
  CHECK( d.size() == 1 && d.isLeaf( d.root() ) );
  }
@@ -522,23 +556,26 @@ ADS_TEST( "preorder-array-tree" )
  for( int r = 0 ; r < 50 ; ++r ) {
   PreorderArrayTree< int > p( 0 );
   CursorTree< int > c( 0 );
-  std::map< int , int > at;               // value -> place in c
+  std::map< int , int > at;  // value -> place in c
   at[ 0 ] = c.root();
   int next = 1;
   for( int op = 0 ; op < 40 ; ++op ) {
    std::vector< int > vals;
-   for( auto [ v , n ] : at ) vals.push_back( v );
+   for( auto [ v , n ] : at )
+    vals.push_back( v );
    const int v = vals[ g() % vals.size() ];
-   int i = 0;                             // the place of v in p
-   while( p.read( i ) != v ) ++i;
+   int i = 0;  // the place of v in p
+   while( p.read( i ) != v )
+    ++i;
    const int kind = int( g() % 4 );
-   if( ( kind == 3 ) && ( v != 0 ) ) {    // remove the subtree of v
+   if( ( kind == 3 ) && ( v != 0 ) ) {  // remove the subtree of v
     std::vector< int > gone;
     for( int j = i ; j < p.subtreeEnd( i ) ; ++j )
      gone.push_back( p.read( j ) );
     p.remove( i );
     c.remove( at[ v ] );
-    for( int w : gone ) at.erase( w );
+    for( int w : gone )
+     at.erase( w );
     }
    else if( ( kind == 2 ) && ( v != 0 ) ) {
     p.insertSibling( i , PreorderArrayTree< int >( next ) );
@@ -551,48 +588,54 @@ ADS_TEST( "preorder-array-tree" )
     ++next;
     }
    Ints a , b;
-   for( int j = 0 ; j < p.size() ; ++j ) a.push_back( p.read( j ) );
-   for( int n : c.previsit() ) b.push_back( c.read( n ) );
+   for( int j = 0 ; j < p.size() ; ++j )
+    a.push_back( p.read( j ) );
+   for( int n : c.previsit() )
+    b.push_back( c.read( n ) );
    CHECK( a == b );
    for( int j = 0 ; j < p.size() ; ++j ) {
     const int f = p.leftmostChild( j ) , s = p.rightSibling( j );
     const int cf = c.leftmostChild( at[ p.read( j ) ] ) ,
-              cs = c.rightSibling( at[ p.read( j ) ] );
+	      cs = c.rightSibling( at[ p.read( j ) ] );
     CHECK( ( f < 0 ) == ( cf < 0 ) && ( s < 0 ) == ( cs < 0 ) );
-    if( f >= 0 ) CHECK( p.read( f ) == c.read( cf ) );
-    if( s >= 0 ) CHECK( p.read( s ) == c.read( cs ) );
+    if( f >= 0 )
+     CHECK( p.read( f ) == c.read( cf ) );
+    if( s >= 0 )
+     CHECK( p.read( s ) == c.read( cs ) );
     }
    }
   }
  using PT = PreorderArrayTree< int >;
  auto parents = []( const PT & t ) {
   Ints v;
-  for( int j = 0 ; j < t.size() ; ++j ) v.push_back( t.parent( j ) );
+  for( int j = 0 ; j < t.size() ; ++j )
+   v.push_back( t.parent( j ) );
   return( v );
   };
  PT e;
  CHECK( e.empty() && e.size() == 0 && e.root() == e.NIL );
  PT t( 0 );
- t.insertChild( 0 , e );                        // the empty tree: nothing
+ t.insertChild( 0 , e );  // the empty tree: nothing
  CHECK( t.size() == 1 && t.isLeaf( 0 ) && t.rightSibling( 0 ) == t.NIL &&
-        t.subtreeEnd( 0 ) == 1 );
+	t.subtreeEnd( 0 ) == 1 );
  CHECK_THROWS( t.insertSibling( 0 , PT( 1 ) ) , contract_violation );
- CHECK_THROWS( (void) t.read( 1 ) , contract_violation );
- CHECK_THROWS( (void) t.read( -1 ) , contract_violation );
- PT u( 7 );                                     // a subtree of 3 nodes
+ CHECK_THROWS( ( void )t.read( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )t.read( -1 ) , contract_violation );
+ PT u( 7 );  // a subtree of 3 nodes
  u.insertChild( 0 , PT( 9 ) );
  u.insertChild( 0 , PT( 8 ) );
  t.insertChild( 0 , PT( 1 ) );
- t.insertChild( 1 , PT( 2 ) );                  // 0 ( 1 ( 2 ) )
- t.insertSibling( 1 , u );                      // 0 ( 1 ( 2 ) 7 ( 8 9 ) )
+ t.insertChild( 1 , PT( 2 ) );  // 0 ( 1 ( 2 ) )
+ t.insertSibling( 1 , u );      // 0 ( 1 ( 2 ) 7 ( 8 9 ) )
  CHECK( parents( t ) == Ints( { -1 , 0 , 1 , 0 , 3 , 3 } ) );
  t.remove( 3 );
- t.insertChild( 0 , t );                        // a copy of itself
+ t.insertChild( 0 , t );  // a copy of itself
  Ints a;
- for( int j = 0 ; j < t.size() ; ++j ) a.push_back( t.read( j ) );
+ for( int j = 0 ; j < t.size() ; ++j )
+  a.push_back( t.read( j ) );
  CHECK( a == Ints( { 0 , 0 , 1 , 2 , 1 , 2 } ) &&
-        parents( t ) == Ints( { -1 , 0 , 1 , 2 , 0 , 4 } ) );
- t.remove( 0 );                                 // the root: all gone
+	parents( t ) == Ints( { -1 , 0 , 1 , 2 , 0 , 4 } ) );
+ t.remove( 0 );  // the root: all gone
  CHECK( t.empty() && t.root() == t.NIL );
  }
 
@@ -607,7 +650,7 @@ ADS_TEST( "child-list-tree" )
  for( int r = 0 ; r < 50 ; ++r ) {
   ChildListTree< int > l( 0 );
   CursorTree< int > c( 0 );
-  std::map< int , std::pair< int , int > > at;   // value -> places
+  std::map< int , std::pair< int , int > > at;  // value -> places
   at[ 0 ] = { l.root() , c.root() };
   int next = 1;
   for( int op = 0 ; op < 40 ; ++op ) {
@@ -617,21 +660,21 @@ ADS_TEST( "child-list-tree" )
    const auto [ nl , nc ] = it->second;
    const int kind = int( g() % 4 );
    if( ( kind == 3 ) && ( v != 0 ) ) {
-    std::vector< int > gone;                // the values below v
+    std::vector< int > gone;  // the values below v
     std::function< void( int ) > down = [ & ]( int n ) {
      gone.push_back( c.read( n ) );
-     for( int m = c.leftmostChild( n ) ; m != c.NIL ;
-          m = c.rightSibling( m ) )
+     for( int m = c.leftmostChild( n ) ; m != c.NIL ; m = c.rightSibling( m ) )
       down( m );
      };
     down( nc );
     l.remove( nl );
     c.remove( nc );
-    for( int w : gone ) at.erase( w );
+    for( int w : gone )
+     at.erase( w );
     }
    else if( ( kind == 2 ) && ( v != 0 ) ) {
     at[ next ] = { l.insertSibling( nl , next ) ,
-                   c.insertSibling( nc , next ) };
+		   c.insertSibling( nc , next ) };
     ++next;
     }
    else {
@@ -640,7 +683,8 @@ ADS_TEST( "child-list-tree" )
     }
    auto values = []( const auto & t , const std::vector< int > & N ) {
     Ints w;
-    for( int n : N ) w.push_back( t.read( n ) );
+    for( int n : N )
+     w.push_back( t.read( n ) );
     return( w );
     };
    CHECK( values( l , l.previsit() ) == values( c , c.previsit() ) );
@@ -649,31 +693,33 @@ ADS_TEST( "child-list-tree" )
    CHECK( l.size() == c.size() );
    for( auto [ w , p ] : at ) {
     const int fl = l.leftmostChild( p.first ) ,
-              fc = c.leftmostChild( p.second );
-    const int sl = l.rightSibling( p.first ) ,
-              sc = c.rightSibling( p.second );
+	      fc = c.leftmostChild( p.second );
+    const int sl = l.rightSibling( p.first ) , sc = c.rightSibling( p.second );
     CHECK( ( fl < 0 ) == ( fc < 0 ) && ( sl < 0 ) == ( sc < 0 ) );
-    if( fl >= 0 ) CHECK( l.read( fl ) == c.read( fc ) );
-    if( sl >= 0 ) CHECK( l.read( sl ) == c.read( sc ) );
+    if( fl >= 0 )
+     CHECK( l.read( fl ) == c.read( fc ) );
+    if( sl >= 0 )
+     CHECK( l.read( sl ) == c.read( sc ) );
     }
    }
   }
  ChildListTree< int > t( 0 );
  CHECK_THROWS( t.insertSibling( t.root() , 1 ) , contract_violation );
- CHECK_THROWS( (void) t.read( 5 ) , contract_violation );
- CHECK_THROWS( (void) t.read( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )t.read( 5 ) , contract_violation );
+ CHECK_THROWS( ( void )t.read( -1 ) , contract_violation );
  CHECK( t.isLeaf( t.root() ) && t.isLastSibling( t.root() ) &&
-        t.children( t.root() ).empty() && t.size() == 1 );
+	t.children( t.root() ).empty() && t.size() == 1 );
  const int a = t.insertChild( t.root() , 1 );
  CHECK( t.invisit( 0 ) == t.previsit() && t.invisit( 7 ) == t.postvisit() );
  t.remove( a );
- CHECK_THROWS( (void) t.read( a ) , contract_violation );   // freed
- t.remove( t.root() );                          // the root: all gone
+ CHECK_THROWS( ( void )t.read( a ) , contract_violation );  // freed
+ t.remove( t.root() );  // the root: all gone
  CHECK( t.empty() && t.size() == 0 && t.previsit().empty() &&
-        t.postvisit().empty() && t.invisit( 1 ).empty() );
- ChildListTree< int > d( 0 );                   // a deep chain
+	t.postvisit().empty() && t.invisit( 1 ).empty() );
+ ChildListTree< int > d( 0 );  // a deep chain
  int w = d.root();
- for( int k = 1 ; k < 3000 ; ++k ) w = d.insertChild( w , k );
+ for( int k = 1 ; k < 3000 ; ++k )
+  w = d.insertChild( w , k );
  CHECK( d.size() == 3000 && d.postvisit().front() == w && d.isLeaf( w ) );
  d.remove( d.leftmostChild( d.root() ) );
  CHECK( d.size() == 1 && d.isLeaf( d.root() ) );
@@ -694,17 +740,18 @@ ADS_TEST( "child-list-tree-copy" )
  t.insertSibling( t.leftmostChild( a ) , 4 );
  auto values = []( const CL & u ) {
   Ints v;
-  for( int n : u.previsit() ) v.push_back( u.read( n ) );
+  for( int n : u.previsit() )
+   v.push_back( u.read( n ) );
   return( v );
   };
  std::unique_ptr< CL > s( new CL( t ) );
  CL c( *s ) , d;
  d = *s;
- s->remove( b );                                // the source changed
- s.reset();                                     // and gone
+ s->remove( b );  // the source changed
+ s.reset();       // and gone
  for( CL * u : { &c , &d } ) {
   CHECK( ( values( *u ) == Ints( { 0 , 1 , 3 , 4 , 2 } ) ) &&
-         ( u->rightSibling( a ) == b ) && ( u->size() == 5 ) );
+	 ( u->rightSibling( a ) == b ) && ( u->size() == 5 ) );
   u->insertSibling( b , 5 );
   u->insertSibling( a , 6 );
   CHECK( values( *u ) == Ints( { 0 , 1 , 3 , 4 , 6 , 2 , 5 } ) );
@@ -714,15 +761,14 @@ ADS_TEST( "child-list-tree-copy" )
  CL e( 9 );
  e.insertChildTree( e.root() , t , a );
  e.insertSiblingTree( e.leftmostChild( e.root() ) , t , b );
- CHECK( ( values( e ) == Ints( { 9 , 1 , 3 , 4 , 2 } ) ) &&
-        ( e.size() == 5 ) );
- CHECK_THROWS( e.insertSiblingTree( e.root() , t , a ) ,
-               contract_violation );
+ CHECK( ( values( e ) == Ints( { 9 , 1 , 3 , 4 ,
+				 2 } ) ) && ( e.size() == 5 ) );
+ CHECK_THROWS( e.insertSiblingTree( e.root() , t , a ) , contract_violation );
  CHECK_THROWS( e.insertChildTree( 7 , t , a ) , contract_violation );
  CHECK_THROWS( e.insertChildTree( e.root() , t , 7 ) , contract_violation );
- t.insertChildTree( b , t , t.root() );         // a copy of itself
+ t.insertChildTree( b , t , t.root() );  // a copy of itself
  CHECK( ( values( t ) == Ints( { 0 , 1 , 3 , 4 , 2 , 0 , 1 , 3 , 4 , 2 } ) ) &&
-        ( t.size() == 10 ) );
+	( t.size() == 10 ) );
  }
 
 // 5 , 3 , 9 , 2 , 10 come out as 2 , 3 , 5 , 9 , 10,
@@ -734,9 +780,11 @@ ADS_TEST( "child-list-tree-copy" )
 ADS_TEST( "linked-heap" )
 {
  LinkedHeapPriorityQueue< int > Q;
- for( int x : { 5 , 3 , 9 , 2 , 10 } ) Q.insert( x , x );
+ for( int x : { 5 , 3 , 9 , 2 , 10 } )
+  Q.insert( x , x );
  Ints out;
- while( ! Q.empty() ) out.push_back( Q.deleteMin() );
+ while( ! Q.empty() )
+  out.push_back( Q.deleteMin() );
  CHECK( out == Ints( { 2 , 3 , 5 , 9 , 10 } ) );
  CHECK_THROWS( Q.min() , std::logic_error );
  std::mt19937 g( 2 );
@@ -757,37 +805,40 @@ ADS_TEST( "linked-heap" )
   }
  auto edges = [ & ]< bool L >( void ) {
   constexpr int MIN = std::numeric_limits< int >::min() ,
-                MAX = std::numeric_limits< int >::max();
+		MAX = std::numeric_limits< int >::max();
   LinkedHeapPriorityQueue< char , int , L > E;
   CHECK( E.empty() && E.size() == 0 );
-  CHECK_THROWS( (void) E.min() , contract_violation );
-  CHECK_THROWS( (void) E.minPriority() , contract_violation );
+  CHECK_THROWS( ( void )E.min() , contract_violation );
+  CHECK_THROWS( ( void )E.minPriority() , contract_violation );
   CHECK_THROWS( E.deleteMin() , contract_violation );
-  for( int r = 0 ; r < 3 ; ++r ) {              // one item, in and out
+  for( int r = 0 ; r < 3 ; ++r ) {  // one item, in and out
    E.insert( 'x' , r );
    CHECK( E.size() == 1 && E.min() == 'x' && E.minPriority() == r );
    CHECK( E.deleteMin() == 'x' && E.empty() );
    }
-  for( int p : { MAX , 0 , MIN , -1 , MAX , MIN } ) E.insert( 'e' , p );
+  for( int p : { MAX , 0 , MIN , -1 , MAX , MIN } )
+   E.insert( 'e' , p );
   Ints P;
   while( ! E.empty() ) {
    P.push_back( E.minPriority() );
    E.deleteMin();
    }
   CHECK( P == Ints( { MIN , MIN , -1 , 0 , MAX , MAX } ) );
-  for( int i = 0 ; i < 33 ; ++i ) E.insert( char( 'a' + i % 26 ) , 7 );
-  for( int i = 0 ; i < 33 ; ++i )               // all equal
+  for( int i = 0 ; i < 33 ; ++i )
+   E.insert( char( 'a' + i % 26 ) , 7 );
+  for( int i = 0 ; i < 33 ; ++i )  // all equal
    CHECK( E.minPriority() == 7 && E.size() == 33 - i && E.deleteMin() );
-  for( bool up : { true , false } ) {          // sorted and reversed
+  for( bool up : { true , false } ) {  // sorted and reversed
    LinkedHeapPriorityQueue< int , int , L > S;
    for( int i = 0 ; i < 1100 ; ++i ) {
     const int x = up ? i : 1099 - i;
     S.insert( x , x );
     }
-   for( int i = 0 ; i < 1100 ; ++i ) CHECK( S.deleteMin() == i );
+   for( int i = 0 ; i < 1100 ; ++i )
+    CHECK( S.deleteMin() == i );
    CHECK( S.empty() );
    }
-  std::mt19937 h( 21 );                        // against std::multiset
+  std::mt19937 h( 21 );  // against std::multiset
   LinkedHeapPriorityQueue< int , int , L > H;
   std::multiset< int > M;
   for( int op = 0 ; op < 3000 ; ++op )
@@ -834,35 +885,35 @@ ADS_TEST( "pointer-graph" )
  CHECK( G.n() == 3 && a->degree == 2 && b->degree == 1 && c->degree == 1 );
  G.deleteEdge( a , b );
  CHECK( b->degree == 0 && G.deleteNode( b ) && G.n() == 2 );
- G.insertEdge( a , c , 9 );                     // already there: nothing
+ G.insertEdge( a , c , 9 );  // already there: nothing
  CHECK( a->degree == 1 && c->degree == 1 && a->out.size() == 1 &&
-        a->out.front().weight == 0 );
- G.insertEdge( c , c );                         // a loop counts twice
+	a->out.front().weight == 0 );
+ G.insertEdge( c , c );  // a loop counts twice
  CHECK( G.hasEdge( c , c ) && c->degree == 3 &&
-        G.adjacent( c ) == std::vector< PointerGraph< char >::Node * >(
-                              { c } ) );
+	G.adjacent( c ) ==
+	  std::vector< PointerGraph< char >::Node * >( { c } ) );
  s.clear();
- G.dfs( c , [ & ]( auto * u ) { s += u->label; } );   // a not reached
+ G.dfs( c , [ & ]( auto * u ) { s += u->label; } );  // a not reached
  CHECK( s == "c" );
- G.insertEdge( c , a );                         // the opposite edge
+ G.insertEdge( c , a );  // the opposite edge
  CHECK( G.hasEdge( a , c ) && G.hasEdge( c , a ) && a->degree == 2 );
  G.deleteEdge( c , a );
- G.deleteEdge( c , a );                         // absent: nothing
+ G.deleteEdge( c , a );  // absent: nothing
  CHECK( ! G.hasEdge( c , a ) && G.hasEdge( a , c ) && a->degree == 1 );
  CHECK_THROWS( G.insertEdge( nullptr , a ) , contract_violation );
- CHECK_THROWS( (void) G.hasEdge( a , nullptr ) , contract_violation );
+ CHECK_THROWS( ( void )G.hasEdge( a , nullptr ) , contract_violation );
  CHECK_THROWS( G.deleteEdge( nullptr , nullptr ) , contract_violation );
  CHECK_THROWS( G.deleteNode( nullptr ) , contract_violation );
  CHECK_THROWS( G.forceDeleteNode( nullptr ) , contract_violation );
- CHECK_THROWS( (void) G.adjacent( nullptr ) , contract_violation );
- CHECK_THROWS( G.dfs( nullptr , []( auto * ) {} ) , contract_violation );
- CHECK_THROWS( G.bfs( nullptr , []( auto * ) {} ) , contract_violation );
- G.forceDeleteNode( c );                        // with its loop
+ CHECK_THROWS( ( void )G.adjacent( nullptr ) , contract_violation );
+ CHECK_THROWS( G.dfs( nullptr , []( auto * ) { } ) , contract_violation );
+ CHECK_THROWS( G.bfs( nullptr , []( auto * ) { } ) , contract_violation );
+ G.forceDeleteNode( c );  // with its loop
  CHECK( G.n() == 1 && a->degree == 0 && a->out.empty() );
  s.clear();
  G.bfs( a , [ & ]( auto * u ) { s += u->label; } );
  CHECK( s == "a" && G.deleteNode( a ) && G.n() == 0 && ! G.find( 'a' ) );
- PointerGraph< int > C;                         // a chain of 3000 nodes
+ PointerGraph< int > C;  // a chain of 3000 nodes
  auto u = C.insertNode( 0 ) , r = u;
  for( int i = 1 ; i < 3000 ; ++i ) {
   auto v = C.insertNode( i );
@@ -901,19 +952,20 @@ ADS_TEST( "multistack" )
  CHECK_THROWS( MultiStack< int >( 0 ) , contract_violation );
  CHECK_THROWS( MultiStack< int >( -3 ) , contract_violation );
  CHECK_THROWS( M.push( -1 , 0 ) , contract_violation );
- CHECK_THROWS( (void) M.size( k ) , contract_violation );
- CHECK_THROWS( (void) M.empty( -1 ) , contract_violation );
- MultiStack< std::string > S( 1 );              // a single stack
+ CHECK_THROWS( ( void )M.size( k ) , contract_violation );
+ CHECK_THROWS( ( void )M.empty( -1 ) , contract_violation );
+ MultiStack< std::string > S( 1 );  // a single stack
  CHECK( S.stacks() == 1 && S.empty( 0 ) && S.size( 0 ) == 0 );
- CHECK_THROWS( (void) S.top( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )S.top( 0 ) , contract_violation );
  CHECK_THROWS( S.pop( 0 ) , contract_violation );
  S.push( 0 , std::string( 40 , 'x' ) );
- for( int i = 1 ; i < 100 ; ++i )               // its own top, as the
-  S.push( 0 , S.top( 0 ) );                     // vector grows
+ for( int i = 1 ; i < 100 ; ++i )  // its own top, as the
+  S.push( 0 , S.top( 0 ) );       // vector grows
  CHECK( S.size( 0 ) == 100 && S.top( 0 ) == std::string( 40 , 'x' ) );
- for( int i = 0 ; i < 100 ; ++i ) CHECK( S.pop( 0 ).size() == 40 );
+ for( int i = 0 ; i < 100 ; ++i )
+  CHECK( S.pop( 0 ).size() == 40 );
  CHECK( S.empty( 0 ) );
- S.push( 0 , "a" );                             // the cells reused
+ S.push( 0 , "a" );  // the cells reused
  CHECK( S.size( 0 ) == 1 && S.pop( 0 ) == "a" && S.empty( 0 ) );
  }
 
@@ -944,19 +996,19 @@ ADS_TEST( "deep-copy" )
  CHECK( o->read() == 0 );
  CHECK( copy( static_cast< const BT * >( nullptr ) ) == nullptr );
  CHECK_THROWS( copy( static_cast< const OT * >( nullptr ) ) ,
-               contract_violation );
+	       contract_violation );
  std::unique_ptr< BT > j( join( 5 , static_cast< const BT * >( nullptr ) ,
-                                static_cast< const BT * >( nullptr ) ) );
+				static_cast< const BT * >( nullptr ) ) );
  CHECK( j->read() == 5 && ! j->left() && ! j->right() );
- std::unique_ptr< BT > jj( join( 0 , l.get() , l.get() ) );   // twice
+ std::unique_ptr< BT > jj( join( 0 , l.get() , l.get() ) );  // twice
  CHECK( pre_values( jj.get() ) == Ints( { 0 , 2 , 4 , 2 , 4 } ) );
- std::unique_ptr< OT > s( copy( o->leftmostChild() ) );   // not the root:
- v.clear();                                    // no sibling, no parent
+ std::unique_ptr< OT > s( copy( o->leftmostChild() ) );  // not the root:
+ v.clear();  // no sibling, no parent
  pre_visit( s.get() , [ & ]( OT * x ) { v.push_back( x->read() ); } );
  CHECK( v == Ints( { 1 , 3 } ) && ! s->parent() && s->isLastSibling() );
  std::unique_ptr< OT > f( copy( o->leftmostChild()->leftmostChild() ) );
  CHECK( f->read() == 3 && f->isLeaf() && ! f->parent() );
- auto chain = std::make_unique< BT >( 0 );     // a chain of 10^4 nodes
+ auto chain = std::make_unique< BT >( 0 );  // a chain of 10^4 nodes
  BT * w = chain.get();
  for( int i = 1 ; i < 10000 ; ++i ) {
   w->insertLeft( new BT( i ) );
@@ -964,7 +1016,8 @@ ADS_TEST( "deep-copy" )
   }
  std::unique_ptr< BT > cc( copy( chain.get() ) );
  long sum = 0 , k = 0;
- for( const BT * x = cc.get() ; x ; x = x->left() , ++k ) sum += x->read();
+ for( const BT * x = cc.get() ; x ; x = x->left() , ++k )
+  sum += x->read();
  CHECK( k == 10000 && sum == 9999L * 10000 / 2 );
  }
 
@@ -978,29 +1031,30 @@ ADS_TEST( "queue-contains-sequence-equal" )
  Q.enqueue( 2 );
  Q.dequeue();
  Q.enqueue( 3 );
- Q.enqueue( 4 );                          // wraps around
+ Q.enqueue( 4 );  // wraps around
  CHECK( Q.contains( 4 ) && Q.contains( 2 ) && ! Q.contains( 1 ) );
  ArraySequence< int > a = { 1 , 2 , 3 } , b = { 1 , 2 , 3 } , c = { 1 , 2 };
- CHECK( a == b && !( a == c ) );
+ CHECK( a == b && ! ( a == c ) );
  b.write( 2 , 9 );
- CHECK( !( a == b ) );
- CHECK( Q.size() == 3 && Q.contains( 3 ) );      // full, wrapped
+ CHECK( ! ( a == b ) );
+ CHECK( Q.size() == 3 && Q.contains( 3 ) );  // full, wrapped
  CHECK_THROWS( Q.enqueue( 5 ) , contract_violation );
- while( ! Q.empty() ) Q.dequeue();
- CHECK( ! Q.contains( 2 ) && ! Q.contains( 4 ) );   // empty
+ while( ! Q.empty() )
+  Q.dequeue();
+ CHECK( ! Q.contains( 2 ) && ! Q.contains( 4 ) );  // empty
  CHECK_THROWS( Q.dequeue() , contract_violation );
- CHECK_THROWS( (void) Q.top() , contract_violation );
- ArrayQueue< int > Z( 0 );                      // no room at all
+ CHECK_THROWS( ( void )Q.top() , contract_violation );
+ ArrayQueue< int > Z( 0 );  // no room at all
  CHECK( Z.empty() && Z.capacity() == 0 && ! Z.contains( 0 ) );
  CHECK_THROWS( Z.enqueue( 1 ) , contract_violation );
- ArrayQueue< int > O( 1 );                      // one place, wrapping
- for( int i = 0 ; i < 5 ; ++i ) {               // at every step
+ ArrayQueue< int > O( 1 );       // one place, wrapping
+ for( int i = 0 ; i < 5 ; ++i ) {  // at every step
   O.enqueue( i );
   CHECK( O.contains( i ) && ! O.contains( i - 1 ) && O.top() == i );
   CHECK( O.dequeue() == i );
   }
  ArraySequence< int > e , f;
- CHECK( e == f && !( e == c ) && !( c == a ) && c == c );
+ CHECK( e == f && ! ( e == c ) && ! ( c == a ) && c == c );
  }
 
 // the inspection i ( i + 1 ) / 2 visits every place
@@ -1023,14 +1077,17 @@ ADS_TEST( "hashing" )
  const auto g = []( std::size_t h ) { return( hash_midsquare( h , 16 ) ); };
  for( auto P : { Probing::triangular() , Probing::double_hashing( g ) } ) {
   OpenHashTable< int , int > T( 64 , P );
-  for( int k = 0 ; k < 50 ; ++k ) T.insert( k * 37 , k );
-  for( int k = 0 ; k < 50 ; ++k ) CHECK( T.lookup( k * 37 ) == k );
+  for( int k = 0 ; k < 50 ; ++k )
+   T.insert( k * 37 , k );
+  for( int k = 0 ; k < 50 ; ++k )
+   CHECK( T.lookup( k * 37 ) == k );
   CHECK( ! T.lookup( 1 ) );
   }
  std::uint64_t h = 5;
- for( unsigned char ch : std::string( "abc" ) ) h = 3 * h + ch;
+ for( unsigned char ch : std::string( "abc" ) )
+  h = 3 * h + ch;
  CHECK( hash_division( "abc" , 1000003 , 3 , 5 ) == h % 1000003 );
- for( std::size_t m : { 1u , 7u , 12u , 64u } )   // pseudo-random
+ for( std::size_t m : { 1u , 7u , 12u , 64u } )  // pseudo-random
   for( std::size_t h0 : { 0u , 5u , 77u } ) {
    std::set< std::size_t > S;
    const auto P = Probing::pseudo_random( 3 );
@@ -1039,44 +1096,46 @@ ADS_TEST( "hashing" )
    CHECK( S.size() == m && P.at( h0 , 0 , m ) == h0 % m );
    }
  CHECK( hash_division( "" , 1000003 , 3 , 5 ) == 5 &&
-        hash_division( "abc" , 1 , 3 , 5 ) == 0 );
- CHECK( hash_division( "\xff\xff" , ( 1ull << 32 ) - 1 , 1ull << 32 , 0 )
-        == 510 );                               // 2^32 = 1 mod m
+	hash_division( "abc" , 1 , 3 , 5 ) == 0 );
+ CHECK( hash_division( "\xff\xff" , ( 1ull << 32 ) - 1 , 1ull << 32 , 0 ) ==
+	510 );  // 2^32 = 1 mod m
  CHECK( hash_division( "\xff\xff" , 1ull << 32 , 1ull << 32 , 0 ) ==
-        255 );                        // ( m - 1 ) base + 255 below 2^64
+	255 );  // ( m - 1 ) base + 255 below 2^64
  CHECK_THROWS( hash_division( "a" , 0 , 3 , 5 ) , contract_violation );
  CHECK_THROWS( hash_division( "a" , 7 , 0 , 5 ) , contract_violation );
  CHECK_THROWS( hash_division( "a" , ( 1ull << 32 ) + 1 , 1ull << 32 , 0 ) ,
-               contract_violation );            // it would overflow
+	       contract_violation );  // it would overflow
  const std::size_t H = std::numeric_limits< std::size_t >::max();
  for( auto P : { Probing::triangular() , Probing::double_hashing( g ) ,
-                 Probing::double_hashing() } )   // h at the top of size_t
+		 Probing::double_hashing() } )  // h at the top of size_t
   for( std::size_t m : { 1u , 2u , 32u } ) {
    std::set< std::size_t > S;
-   for( std::size_t i = 0 ; i < m ; ++i ) S.insert( P.at( H , i , m ) );
+   for( std::size_t i = 0 ; i < m ; ++i )
+    S.insert( P.at( H , i , m ) );
    CHECK( S.size() == m && P.at( H , 0 , m ) == H % m );
-   CHECK( P.at( H , 2 * m , m ) == P.at( H , 0 , m ) );   // periodic
-   CHECK_THROWS( (void) P.at( H , 0 , 0 ) , contract_violation );
+   CHECK( P.at( H , 2 * m , m ) == P.at( H , 0 , m ) );  // periodic
+   CHECK_THROWS( ( void )P.at( H , 0 , 0 ) , contract_violation );
    }
  CHECK( ! Probing::triangular().works( 0 ) &&
-        ! Probing::triangular().works( 3 ) );
+	! Probing::triangular().works( 3 ) );
  CHECK_THROWS( Probing::triangular().check( 0 ) , contract_violation );
  CHECK_THROWS( ( OpenHashTable< int , int >( 12 , Probing::triangular() ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( ( OpenHashTable< int , int >( 0 , Probing::linear() ) ) ,
-               contract_violation );
+	       contract_violation );
  for( auto P : { Probing::triangular() , Probing::double_hashing( g ) } ) {
-  OpenHashTable< int , int > T( 8 , P );        // full, then a new key
-  for( int k = 0 ; k < 8 ; ++k ) T.insert( k * 37 , k );
-  CHECK( T.size() == 8 && ! T.lookup( 1 ) );     // the search ends
+  OpenHashTable< int , int > T( 8 , P );  // full, then a new key
+  for( int k = 0 ; k < 8 ; ++k )
+   T.insert( k * 37 , k );
+  CHECK( T.size() == 8 && ! T.lookup( 1 ) );  // the search ends
   CHECK_THROWS( T.insert( 1 , 0 ) , std::overflow_error );
-  T.insert( 37 , 9 );                            // an old key, full table
+  T.insert( 37 , 9 );  // an old key, full table
   CHECK( T.lookup( 37 ) == 9 && T.size() == 8 );
   T.remove( 0 );
-  T.remove( 0 );                                 // absent: nothing
-  T.insert( 1 , 1 );                             // in the deleted place
+  T.remove( 0 );     // absent: nothing
+  T.insert( 1 , 1 );  // in the deleted place
   CHECK( T.lookup( 1 ) == 1 && ! T.lookup( 0 ) && T.size() == 8 );
-  OpenHashTable< int , int > O( 1 , P );         // a single place
+  OpenHashTable< int , int > O( 1 , P );  // a single place
   O.insert( -5 , 1 );
   CHECK( O.lookup( -5 ) == 1 && ! O.lookup( 5 ) );
   CHECK_THROWS( O.insert( 5 , 2 ) , std::overflow_error );
@@ -1094,68 +1153,74 @@ ADS_TEST( "hashing" )
 // bytes of int_bin() and the 9 refused, p at its bounds and past them
 ADS_TEST( "hash-examples" )
 {
- struct First {
+ struct First
+ {
   std::size_t operator()( const std::string & k ) const {
    return( std::size_t( k[ 0 ] - 'a' ) );
    }
   };
  OpenHashTable< std::string , int , First > T( 26 , Probing::linear() );
  const std::vector< std::string > K = { "albinoni" , "offenbach" ,
-  "palestrina" , "puccini" , "prokofev" , "rossini" };
- for( const auto & k : K ) T.insert( k , 0 );
+					"palestrina" ,
+					"puccini" ,  "prokofev" ,  "rossini" };
+ for( const auto & k : K )
+  T.insert( k , 0 );
  const std::vector< std::size_t > at = { 0 , 14 , 15 , 16 , 17 , 18 };
  for( std::size_t i = 0 ; i < K.size() ; ++i )
-  CHECK( T.keyAt( at[ i ] ) == K[ i ] );        // rossini overflows to 18
- T.insert( "zola" , 0 );                        // the last place, and
- T.insert( "zeta" , 0 );                        // around to the first
+  CHECK( T.keyAt( at[ i ] ) == K[ i ] );  // rossini overflows to 18
+ T.insert( "zola" , 0 );                   // the last place, and
+ T.insert( "zeta" , 0 );                   // around to the first
  CHECK( T.keyAt( 25 ) == "zola" && T.keyAt( 1 ) == "zeta" );
- CHECK_THROWS( (void) T.keyAt( 2 ) , contract_violation );   // empty
- CHECK_THROWS( (void) T.slot( 26 ) , contract_violation );
+ CHECK_THROWS( ( void )T.keyAt( 2 ) , contract_violation );  // empty
+ CHECK_THROWS( ( void )T.slot( 26 ) , contract_violation );
  ChainedHashTable< std::string , int , Chain::SORTED , First > C( 26 );
- for( const auto & k : K ) C.insert( k , 0 );
- CHECK( C.chain( 15 ) == std::vector< std::string >( { "palestrina" ,
-                                                       "prokofev" ,
-                                                       "puccini" } ) );
- CHECK( C.chain( 1 ).empty() && C.chain( 0 ) ==
-        std::vector< std::string >( { "albinoni" } ) );
+ for( const auto & k : K )
+  C.insert( k , 0 );
+ CHECK( C.chain( 15 ) == std::vector< std::string >(
+			   { "palestrina" , "prokofev" , "puccini" } ) );
+ CHECK( C.chain( 1 ).empty() &&
+	C.chain( 0 ) == std::vector< std::string >( { "albinoni" } ) );
  CHECK( int_bin( "" ) == 0 && int_bin( "\x01\x02" ) == 258 &&
-        int_bin( "\xff\xff\xff\xff\xff\xff\xff\xff" ) ==
-        std::numeric_limits< std::uint64_t >::max() );
+	int_bin( "\xff\xff\xff\xff\xff\xff\xff\xff" ) ==
+	  std::numeric_limits< std::uint64_t >::max() );
  CHECK_THROWS( int_bin( "123456789" ) , contract_violation );
- CHECK( hash_extraction( "" , 8 , 0 ) == 0 &&           // past the key:
-        hash_extraction( "\x80" , 3 , 6 ) == 0 &&       // zeros
-        hash_extraction( "\x80" , 1 , 0 ) == 1 && hash_xor( "" , 5 ) == 0 );
+ CHECK( hash_extraction( "" , 8 , 0 ) == 0 &&      // past the key:
+	hash_extraction( "\x80" , 3 , 6 ) == 0 &&  // zeros
+	hash_extraction( "\x80" , 1 , 0 ) == 1 && hash_xor( "" , 5 ) == 0 );
  CHECK( hash_xor( "\xff\xff" , 63 ) == 0xFFFFull << 47 );
  for( int p : { 0 , 64 } ) {
   CHECK_THROWS( hash_extraction( "a" , p , 0 ) , contract_violation );
   CHECK_THROWS( hash_xor( "a" , p ) , contract_violation );
   CHECK_THROWS( hash_fibonacci( 1 , p ) , contract_violation );
   }
- CHECK( hash_fibonacci( 0 , 1 ) == 0 && hash_fibonacci(
-        std::numeric_limits< std::uint64_t >::max() , 63 ) < ( 1ull << 63 ) );
+ CHECK( hash_fibonacci( 0 , 1 ) == 0 &&
+	hash_fibonacci( std::numeric_limits< std::uint64_t >::max() , 63 ) <
+	  ( 1ull << 63 ) );
  CHECK( hash_midsquare( 0xFFFFFFFFull , 32 ) < ( 1ull << 32 ) &&
-        hash_midsquare( 3 , 2 ) < 4 );
+	hash_midsquare( 3 , 2 ) < 4 );
  CHECK_THROWS( hash_midsquare( 1 , 33 ) , contract_violation );
  CHECK( hash_multiplication( 12345 , 100 , 0 ) == 0 &&
-        hash_multiplication( 12345 , 0 , 0.618L ) == 0 );
+	hash_multiplication( 12345 , 0 , 0.618L ) == 0 );
  CHECK_THROWS( hash_multiplication( 1 , 10 , 1.0L ) , contract_violation );
  CHECK_THROWS( hash_multiplication( 1 , 10 , -0.1L ) , contract_violation );
  auto code = []( std::string k ) {
   k.resize( 6 , ' ' );
   std::uint64_t v = 0;
-  for( char c : k ) v = 64 * v + ( c == ' ' ? 32 : c - 'a' + 1 );
-  return( v );                                   // 36 bits
+  for( char c : k )
+   v = 64 * v + ( c == ' ' ? 32 : c - 'a' + 1 );
+  return( v );  // 36 bits
   };
  auto extraction = [ & ]( const std::string & k ) {
   return( ( code( k ) << 4 ) >> ( 40 - 22 ) & 0xFF );
   };
  auto xor5 = [ & ]( const std::string & k ) {
   std::uint64_t v = code( k ) << 4 , x = 0;
-  for( int i = 0 ; i < 5 ; ++i ) x ^= ( v >> ( 8 * i ) ) & 0xFF;
+  for( int i = 0 ; i < 5 ; ++i )
+   x ^= ( v >> ( 8 * i ) ) & 0xFF;
   return( x );
   };
- CHECK( code( "weber" ) == 24780493984ULL && code( "webern" ) ==
-        24780493966ULL );
+ CHECK( code( "weber" ) == 24780493984ULL &&
+	code( "webern" ) == 24780493966ULL );
  CHECK( extraction( "weber" ) == 33 && extraction( "webern" ) == 33 );
  CHECK( xor5( "weber" ) == 195 && xor5( "webern" ) == 33 );
  CHECK( code( "weber" ) % 383 == 260 && code( "webern" ) % 383 == 242 );
@@ -1169,28 +1234,28 @@ ADS_TEST( "rectangular-matrix" )
 {
  const Matrix< long > A = { { 1 , 2 , 3 } , { 4 , 5 , 6 } };
  const Matrix< long > B = { { 7 , 8 } , { 9 , 10 } , { 11 , 12 } };
- CHECK( multiply( A , B ) == Matrix< long >( { { 58 , 64 } ,
-                                               { 139 , 154 } } ) );
+ CHECK( multiply( A ,
+		  B ) == Matrix< long >( { { 58 , 64 } , { 139 , 154 } } ) );
  CHECK( transpose( multiply( A , B ) ) ==
-        multiply( transpose( B ) , transpose( A ) ) );
+	multiply( transpose( B ) , transpose( A ) ) );
  CHECK( scale( A , 2L )[ 1 ][ 2 ] == 12 && transpose( A ).size() == 3 );
  using M = Matrix< long >;
  const M row = { { 1 , 2 , 3 } } , col = { { 4 } , { 5 } , { 6 } };
- CHECK( multiply( row , col ) == M( { { 32 } } ) );   // 1 x 1
- CHECK( multiply( col , row ) == M( { { 4 , 8 , 12 } , { 5 , 10 , 15 } ,
-                                      { 6 , 12 , 18 } } ) );
+ CHECK( multiply( row , col ) == M( { { 32 } } ) );  // 1 x 1
+ CHECK( multiply( col , row ) ==
+	M( { { 4 , 8 , 12 } , { 5 , 10 , 15 } , { 6 , 12 , 18 } } ) );
  CHECK( transpose( row ) == M( { { 1 } , { 2 } , { 3 } } ) &&
-        transpose( transpose( A ) ) == A );
+	transpose( transpose( A ) ) == A );
  CHECK( transpose( M() ).empty() && multiply( M() , M() ).empty() );
- const M z( 2 , std::vector< long >() );        // 2 x 0 times 0 x r
+ const M z( 2 , std::vector< long >() );  // 2 x 0 times 0 x r
  CHECK( multiply( z , M() ) == z && transpose( z ).empty() );
  CHECK( scale( A , 0L ) == M( { { 0 , 0 , 0 } , { 0 , 0 , 0 } } ) &&
-        scale( M() , 3L ).empty() );
+	scale( M() , 3L ).empty() );
  const long big = std::numeric_limits< long >::max();
  CHECK( multiply( M( { { big } } ) , M( { { 1 } } ) ) == M( { { big } } ) );
- CHECK_THROWS( multiply( A , A ) , contract_violation );   // 2 x 3 , 2 x 3
+ CHECK_THROWS( multiply( A , A ) , contract_violation );  // 2 x 3 , 2 x 3
  CHECK_THROWS( multiply( A , M( { { 1 , 2 } , { 3 } , { 4 , 5 } } ) ) ,
-               contract_violation );            // B not rectangular
+	       contract_violation );  // B not rectangular
  CHECK_THROWS( transpose( M( { { 1 , 2 } , { 3 } } ) ) , contract_violation );
  }
 
@@ -1204,23 +1269,23 @@ ADS_TEST( "sequence-search" )
  CHECK( search( l , 3 ) == 1 && search( l , 4 ) == -6 );
  CHECK( searchOrdered( l , 3 ) == 1 && searchOrdered( l , 4 ) == -3 );
  CHECK( searchOrdered( l , 10 ) == -5 && search( List< int >() , 1 ) == -1 );
- CHECK( search( l , 1 ) == 0 && search( l , 9 ) == 4 );   // the ends
+ CHECK( search( l , 1 ) == 0 && search( l , 9 ) == 4 );  // the ends
  CHECK( searchOrdered( l , 1 ) == 0 && searchOrdered( l , 9 ) == 4 );
- CHECK( searchOrdered( l , 0 ) == -1 );         // below all: 1 comparison
- CHECK( searchOrdered( List< int >() , 1 ) == -1 );   // never 0
+ CHECK( searchOrdered( l , 0 ) == -1 );              // below all: 1 comparison
+ CHECK( searchOrdered( List< int >() , 1 ) == -1 );  // never 0
  const auto o = list_of< int >( { 4 } );
  CHECK( search( o , 4 ) == 0 && search( o , 5 ) == -2 &&
-        searchOrdered( o , 4 ) == 0 && searchOrdered( o , 5 ) == -1 &&
-        searchOrdered( o , 3 ) == -1 );
- const auto d = list_of< int >( { 2 , 3 , 3 , 3 , 8 } );   // the first copy
+	searchOrdered( o , 4 ) == 0 && searchOrdered( o , 5 ) == -1 &&
+	searchOrdered( o , 3 ) == -1 );
+ const auto d = list_of< int >( { 2 , 3 , 3 , 3 , 8 } );  // the first copy
  CHECK( search( d , 3 ) == 1 && searchOrdered( d , 3 ) == 1 );
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
+	   m = std::numeric_limits< int >::min();
  const auto x = list_of< int >( { m , 0 , M } );
  CHECK( searchOrdered( x , m ) == 0 && searchOrdered( x , M ) == 2 &&
-        searchOrdered( x , M - 1 ) == -3 );
+	searchOrdered( x , M - 1 ) == -3 );
  CHECK_THROWS( searchOrdered( list_of< int >( { 3 , 1 } ) , 1 ) ,
-               contract_violation );            // not sorted
+	       contract_violation );  // not sorted
  }
 
 // the order of a sequence; the edge cases: two items either way, 50
@@ -1240,16 +1305,15 @@ ADS_TEST( "sequence-order" )
  CHECK( order( list_of< int >( { 1 , 2 } ) ) == Order::INCREASING );
  CHECK( order( list_of< int >( { 2 , 1 } ) ) == Order::DECREASING );
  CHECK( order( list_of( Ints( 50 , -7 ) ) ) == Order::CONSTANT );
- CHECK( order( list_of< int >( { 1 , 1 , 1 , 2 } ) ) ==
-        Order::NONDECREASING );
+ CHECK( order( list_of< int >( { 1 , 1 , 1 , 2 } ) ) == Order::NONDECREASING );
  CHECK( order( list_of< int >( { 1 , 2 , 2 , 1 } ) ) == Order::NONE );
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
+	   m = std::numeric_limits< int >::min();
  CHECK( order( list_of< int >( { m , 0 , M } ) ) == Order::INCREASING );
  CHECK( order( list_of< int >( { M , M , m } ) ) == Order::NONINCREASING );
- CHECK( order( ArraySequence< int >( { 5 , 5 , 4 } ) ) ==
-        Order::NONINCREASING && order( ArraySequence< int >() ) ==
-        Order::EMPTY );
+ CHECK( order( ArraySequence< int >( { 5 , 5 ,
+				       4 } ) ) == Order::NONINCREASING &&
+	order( ArraySequence< int >() ) == Order::EMPTY );
  }
 
 // the natural merge sort and the bubble sort on six names and on random
@@ -1258,38 +1322,45 @@ ADS_TEST( "sequence-order" )
 // reverse (log2 64 passes), the extremes of int with copies
 ADS_TEST( "sequence-sorting" )
 {
- auto names = list_of< std::string >( { "melissa" , "marta" , "luigi" ,
-                                        "mirko" , "antonio" , "gnomo" } );
+ auto names = list_of< std::string >(
+   { "melissa" , "marta" , "luigi" , "mirko" , "antonio" , "gnomo" } );
  naturalMergeSort( names );
- CHECK( items( names ) == std::vector< std::string >( { "antonio" , "gnomo" ,
-        "luigi" , "marta" , "melissa" , "mirko" } ) );
+ CHECK( items( names ) ==
+	std::vector< std::string >(
+	  { "antonio" , "gnomo" , "luigi" , "marta" , "melissa" ,
+	    "mirko" } ) );
  std::mt19937 g( 4 );
  for( int t = 0 ; t < 100 ; ++t ) {
   Ints v( g() % 30 );
-  for( auto & x : v ) x = int( g() % 20 );
+  for( auto & x : v )
+   x = int( g() % 20 );
   Ints s = v;
   std::sort( s.begin() , s.end() );
   auto l1 = list_of( v ) , l2 = list_of( v );
   ArraySequence< int > a;
-  for( int x : v ) a.insert( a.next( a.tail() ) , x );
+  for( int x : v )
+   a.insert( a.next( a.tail() ) , x );
   long passes = 0;
   naturalMergeSort( l1 , &passes );
   bubbleSort( l2 );
   naturalMergeSort( a );
   CHECK( items( l1 ) == s && items( l2 ) == s && items( a ) == s );
   long runs = v.empty() ? 0 : 1;
-  for( std::size_t i = 1 ; i < v.size() ; ++i ) runs += v[ i ] < v[ i - 1 ];
+  for( std::size_t i = 1 ; i < v.size() ; ++i )
+   runs += v[ i ] < v[ i - 1 ];
   long bound = 0;
-  for( long r = runs ; r > 1 ; r = ( r + 1 ) / 2 ) ++bound;
+  for( long r = runs ; r > 1 ; r = ( r + 1 ) / 2 )
+   ++bound;
   CHECK( passes <= bound );
   }
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
- Ints R( 64 );                                  // 64 runs of one item
- for( int i = 0 ; i < 64 ; ++i ) R[ i ] = 64 - i;
- for( const Ints & v : { Ints() , Ints( { 7 } ) , Ints( { 2 , 1 } ) ,
-                         Ints( 9 , 3 ) , Ints( { 1 , 2 , 3 , 4 } ) , R ,
-                         Ints( { M , m , 0 , M , m } ) } ) {
+	   m = std::numeric_limits< int >::min();
+ Ints R( 64 );  // 64 runs of one item
+ for( int i = 0 ; i < 64 ; ++i )
+  R[ i ] = 64 - i;
+ for( const Ints & v :
+      { Ints() , Ints( { 7 } ) , Ints( { 2 , 1 } ) , Ints( 9 , 3 ) ,
+	Ints( { 1 , 2 , 3 , 4 } ) , R , Ints( { M , m , 0 , M , m } ) } ) {
   Ints s = v;
   std::sort( s.begin() , s.end() );
   auto l1 = list_of( v ) , l2 = list_of( v );
@@ -1297,8 +1368,10 @@ ADS_TEST( "sequence-sorting" )
   naturalMergeSort( l1 , &passes );
   bubbleSort( l2 );
   CHECK( items( l1 ) == s && items( l2 ) == s );
-  if( std::is_sorted( v.begin() , v.end() ) ) CHECK( passes == 0 );
-  if( v == R ) CHECK( passes == 6 );            // log2 64
+  if( std::is_sorted( v.begin() , v.end() ) )
+   CHECK( passes == 0 );
+  if( v == R )
+   CHECK( passes == 6 );  // log2 64
   }
  }
 
@@ -1310,7 +1383,7 @@ ADS_TEST( "sequence-sorting" )
 ADS_TEST( "sequence-merge-dedup" )
 {
  const auto m = mergeSorted( list_of< int >( { 1 , 3 , 3 , 8 } ) ,
-                             list_of< int >( { 2 , 3 , 9 } ) );
+			     list_of< int >( { 2 , 3 , 9 } ) );
  CHECK( items( m ) == Ints( { 1 , 2 , 3 , 3 , 3 , 8 , 9 } ) );
  auto l = list_of< int >( { 4 , 1 , 4 , 2 , 1 , 4 , 3 } );
  removeDuplicates( l );
@@ -1319,11 +1392,12 @@ ADS_TEST( "sequence-merge-dedup" )
  const auto a = list_of< int >( { 5 , 6 } );
  CHECK( items( mergeSorted( e , e ) ).empty() );
  CHECK( items( mergeSorted( e , a ) ) == Ints( { 5 , 6 } ) &&
-        items( mergeSorted( a , e ) ) == Ints( { 5 , 6 } ) );
+	items( mergeSorted( a , e ) ) == Ints( { 5 , 6 } ) );
  CHECK( items( mergeSorted( a , list_of< int >( { 1 , 2 } ) ) ) ==
-        Ints( { 1 , 2 , 5 , 6 } ) );            // one side all first
+	Ints( { 1 , 2 , 5 , 6 } ) );  // one side all first
  CHECK( items( mergeSorted( a , a ) ) == Ints( { 5 , 5 , 6 , 6 } ) );
- struct Tag {                                   // equal keys: a first
+ struct Tag
+ {  // equal keys: a first
   int k;
   char t;
   bool operator<( const Tag & o ) const { return( k < o.k ); }
@@ -1335,15 +1409,17 @@ ADS_TEST( "sequence-merge-dedup" )
  for( Tag z : { Tag{ 1 , 'b' } , Tag{ 3 , 'b' } } )
   y.insert( y.next( y.tail() ) , z );
  std::string tags;
- for( const Tag & z : items( mergeSorted( x , y ) ) ) tags += z.t;
+ for( const Tag & z : items( mergeSorted( x , y ) ) )
+  tags += z.t;
  CHECK( tags == "abab" );
  CHECK_THROWS( mergeSorted( list_of< int >( { 2 , 1 } ) , a ) ,
-               contract_violation );            // not sorted
- for( const auto & [ in , out ] : { std::pair( Ints() , Ints() ) ,
-       std::pair( Ints( { 7 } ) , Ints( { 7 } ) ) ,
-       std::pair( Ints( 20 , 0 ) , Ints( { 0 } ) ) ,
-       std::pair( Ints( { 3 , 1 , 2 } ) , Ints( { 3 , 1 , 2 } ) ) ,
-       std::pair( Ints( { 1 , 2 , 2 , 1 } ) , Ints( { 1 , 2 } ) ) } ) {
+	       contract_violation );  // not sorted
+ for( const auto & [ in , out ] :
+      { std::pair( Ints() , Ints() ) ,
+	std::pair( Ints( { 7 } ) , Ints( { 7 } ) ) ,
+	std::pair( Ints( 20 , 0 ) , Ints( { 0 } ) ) ,
+	std::pair( Ints( { 3 , 1 , 2 } ) , Ints( { 3 , 1 , 2 } ) ) ,
+	std::pair( Ints( { 1 , 2 , 2 , 1 } ) , Ints( { 1 , 2 } ) ) } ) {
   auto r = list_of( in );
   removeDuplicates( r );
   CHECK( items( r ) == out );
@@ -1355,14 +1431,19 @@ ADS_TEST( "sequence-merge-dedup" )
 // the items, 2 m - 1 for a pass on m >= 1 items, and the 2 n of the audit
 // (the items read and counted again), for n = 0 to 40 items in every
 // order tried, the least item at the bottom included
-namespace {
+namespace
+{
 
-struct CountingStack {
+struct CountingStack
+{
  using Item = int;
  SequenceStack< List< int > > s;
  long pushes = 0;
  bool empty( void ) const { return( s.empty() ); }
- void push( const int & v ) { ++pushes; s.push( v ); }
+ void push( const int & v ) {
+  ++pushes;
+  s.push( v );
+  }
  int pop( void ) { return( s.pop() ); }
  int top( void ) const { return( s.top() ); }
  };
@@ -1375,16 +1456,18 @@ ADS_TEST( "stack-sort-passes" )
  for( long n = 0 ; n <= 40 ; ++n )
   for( int order = 0 ; order < 3 ; ++order ) {
    CountingStack S;
-   for( long i = 0 ; i < n ; ++i )            // rising, falling, random
-    S.push( order == 0 ? int( i ) : order == 1 ? int( n - i ) :
-            int( g() % 100 ) );
+   for( long i = 0 ; i < n ; ++i )  // rising, falling, random
+    S.push( order == 0   ? int( i )
+	    : order == 1 ? int( n - i )
+			 : int( g() % 100 ) );
    S.pushes = 0;
    sortStack( S );
    const long passes = n > 0 ? n - 1 : 0 ,
-              audit = ADS_CONTRACTS >= 3 ? 2 * n : 0;
+	      audit = ADS_CONTRACTS >= 3 ? 2 * n : 0;
    CHECK( S.pushes == n + passes * ( 2 * n - 1 ) + audit );
    Ints out;
-   while( ! S.empty() ) out.push_back( S.pop() );
+   while( ! S.empty() )
+    out.push_back( S.pop() );
    CHECK( std::is_sorted( out.begin() , out.end() ) );
    }
  }
@@ -1407,47 +1490,52 @@ ADS_TEST( "stack-algorithms" )
    }
   sortStack( S );
   Ints out;
-  while( ! S.empty() ) out.push_back( S.pop() );
+  while( ! S.empty() )
+   out.push_back( S.pop() );
   std::sort( v.begin() , v.end() );
-  CHECK( out == v );                      // the least on top
+  CHECK( out == v );  // the least on top
   }
  SequenceStack< List< int > > S;
- for( int x : { 5 , 1 , 7 , 3 , 9 , 2 } ) S.push( x );
+ for( int x : { 5 , 1 , 7 , 3 , 9 , 2 } )
+  S.push( x );
  removeGreater( S , 4 );
  Ints out;
- while( ! S.empty() ) out.push_back( S.pop() );
+ while( ! S.empty() )
+  out.push_back( S.pop() );
  CHECK( out == Ints( { 2 , 3 , 1 } ) );
  CHECK( isPalindrome( "x" ) && isPalindrome( "xx" ) &&
-        ! isPalindrome( "xy" ) && ! isPalindrome( "aab" ) &&
-        isPalindrome( std::string( 101 , 'z' ) ) );
+	! isPalindrome( "xy" ) && ! isPalindrome( "aab" ) &&
+	isPalindrome( std::string( 101 , 'z' ) ) );
  auto drain = []( SequenceStack< List< int > > & P ) {
   Ints o;
-  while( ! P.empty() ) o.push_back( P.pop() );
+  while( ! P.empty() )
+   o.push_back( P.pop() );
   return( o );
   };
  auto stack = []( const Ints & v ) {
   SequenceStack< List< int > > P;
-  for( int x : v ) P.push( x );
+  for( int x : v )
+   P.push( x );
   return( P );
   };
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
- for( const Ints & v : { Ints() , Ints( { 4 } ) , Ints( 6 , 2 ) ,
-                         Ints( { 1 , 2 , 3 } ) , Ints( { 3 , 2 , 1 } ) ,
-                         Ints( { M , m , 0 , m } ) } ) {
+	   m = std::numeric_limits< int >::min();
+ for( const Ints & v :
+      { Ints() , Ints( { 4 } ) , Ints( 6 , 2 ) , Ints( { 1 , 2 , 3 } ) ,
+	Ints( { 3 , 2 , 1 } ) , Ints( { M , m , 0 , m } ) } ) {
   auto P = stack( v );
   sortStack( P );
   Ints s = v;
   std::sort( s.begin() , s.end() );
   CHECK( drain( P ) == s );
   }
- auto P = stack( { 5 , 1 , 7 } );               // k below all: none left
+ auto P = stack( { 5 , 1 , 7 } );  // k below all: none left
  removeGreater( P , 0 );
  CHECK( P.empty() );
- P = stack( { 5 , 1 , 7 } );                    // k above all: all kept
- removeGreater( P , 7 );                        // (an item equal to k too)
+ P = stack( { 5 , 1 , 7 } );  // k above all: all kept
+ removeGreater( P , 7 );     // (an item equal to k too)
  CHECK( drain( P ) == Ints( { 7 , 1 , 5 } ) );
- removeGreater( P , 3 );                        // the empty stack
+ removeGreater( P , 3 );  // the empty stack
  CHECK( P.empty() );
  P = stack( { m , M } );
  removeGreater( P , m );
@@ -1470,8 +1558,10 @@ ADS_TEST( "string-matching" )
  std::mt19937 g( 6 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::string T( g() % 40 , 'a' ) , P( 1 + g() % 4 , 'a' );
-  for( auto & c : T ) c = "ab"[ g() % 2 ];
-  for( auto & c : P ) c = "ab"[ g() % 2 ];
+  for( auto & c : T )
+   c = "ab"[ g() % 2 ];
+  for( auto & c : P )
+   c = "ab"[ g() % 2 ];
   long comparisons = 0;
   CHECK( kmp( T , P , &comparisons ) == naiveMatching( T , P ) );
   CHECK( comparisons <= 2 * long( T.size() ) );
@@ -1479,21 +1569,20 @@ ADS_TEST( "string-matching" )
  using Places = std::vector< std::size_t >;
  using F = std::vector< long >;
  CHECK( naiveMatching( "" , "" ) == Places( { 0 } ) &&
-        kmp( "" , "" ) == Places( { 0 } ) );
+	kmp( "" , "" ) == Places( { 0 } ) );
  CHECK( naiveMatching( "" , "a" ).empty() && kmp( "" , "a" ).empty() );
  CHECK( naiveMatching( "abc" , "" ) == Places( { 0 , 1 , 2 , 3 } ) &&
-        kmp( "abc" , "" ) == Places( { 0 , 1 , 2 , 3 } ) );
+	kmp( "abc" , "" ) == Places( { 0 , 1 , 2 , 3 } ) );
  CHECK( kmp( "abc" , "abc" ) == Places( { 0 } ) &&
-        naiveMatching( "ab" , "abc" ).empty() );
+	naiveMatching( "ab" , "abc" ).empty() );
  CHECK( kmp( "abc" , "c" ) == Places( { 2 } ) &&
-        kmp( "abc" , "a" ) == Places( { 0 } ) && kmp( "abc" , "d" ).empty() );
+	kmp( "abc" , "a" ) == Places( { 0 } ) && kmp( "abc" , "d" ).empty() );
  CHECK( kmp( "aaaaa" , "aa" ) == Places( { 0 , 1 , 2 , 3 } ) );  // overlaps
  CHECK( failure( "" ) == F( { -1 } ) && failure( "x" ) == F( { -1 , 0 } ) );
  CHECK( failure( "aaaa" ) == F( { -1 , 0 , 1 , 2 , 3 } ) &&
-        failure( "abcd" ) == F( { -1 , 0 , 0 , 0 , 0 } ) );
+	failure( "abcd" ) == F( { -1 , 0 , 0 , 0 , 0 } ) );
  long c = 0;
- CHECK( kmp( std::string( 1000 , 'a' ) , "aab" , &c ).empty() &&
-        c <= 2000 );
+ CHECK( kmp( std::string( 1000 , 'a' ) , "aab" , &c ).empty() && c <= 2000 );
  c = 0;
  CHECK( kmp( "" , "ab" , &c ).empty() && c == 0 );
  }
@@ -1504,35 +1593,38 @@ ADS_TEST( "list-exercises" )
 {
  const auto l = list_of< int >( { 4 , 7 , 4 , 6 , 9 , 7 , 4 } );
  CHECK( freq( l , 2 ) == 4 && freq( l , 7 ) == 2 );
- const std::vector< std::pair< int , int > > H = { { 4 , 3 } , { 7 , 2 } ,
-                                                    { 6 , 1 } , { 9 , 1 } };
+ const std::vector< std::pair< int , int > > H = {
+  { 4 , 3 } , { 7 , 2 } , { 6 , 1 } , { 9 , 1 }
+  };
  CHECK( hist( l ) == H );
  auto r = l;
- remp( r );                               // 4 before 7, 6 before 9, 9 before 7
+ remp( r );  // 4 before 7, 6 before 9, 9 before 7
  CHECK( items( r ) == Ints( { 7 , 4 , 7 , 4 } ) );
  auto d = list_of< int >( { 1 , 3 , 6 , 5 , 10 , 7 } );
- del( d );                                // 1 at 1, 6 at 3, 10 at 5
+ del( d );  // 1 at 1, 6 at 3, 10 at 5
  CHECK( items( d ) == Ints( { 3 , 5 , 7 } ) );
  const List< int > e;
  CHECK( freq( e , 3 ) == 0 && hist( e ).empty() );
- const auto n = list_of< int >( { -4 , -3 , 0 , 5 } );   // negatives, 0
+ const auto n = list_of< int >( { -4 , -3 , 0 , 5 } );  // negatives, 0
  CHECK( freq( n , 2 ) == 2 && freq( n , 1 ) == 4 && freq( n , -3 ) == 2 );
  using HV = std::vector< std::pair< int , int > >;
  CHECK( hist( list_of< int >( { 7 , 7 , 7 } ) ) == HV( { { 7 , 3 } } ) );
- for( const auto & [ in , out ] : { std::pair( Ints() , Ints() ) ,
-       std::pair( Ints( { 2 } ) , Ints( { 2 } ) ) ,
-       std::pair( Ints( { 1 , 3 , 5 } ) , Ints( { 5 } ) ) ,   // all odd
-       std::pair( Ints( { 2 , 4 , 6 } ) , Ints( { 2 , 4 , 6 } ) ) ,
-       std::pair( Ints( { 2 , -1 } ) , Ints( { -1 } ) ) } ) {
+ for( const auto & [ in , out ] :
+      { std::pair( Ints() , Ints() ) ,
+	std::pair( Ints( { 2 } ) , Ints( { 2 } ) ) ,
+	std::pair( Ints( { 1 , 3 , 5 } ) , Ints( { 5 } ) ) ,  // all odd
+	std::pair( Ints( { 2 , 4 , 6 } ) , Ints( { 2 , 4 , 6 } ) ) ,
+	std::pair( Ints( { 2 , -1 } ) , Ints( { -1 } ) ) } ) {
   auto x = list_of( in );
   remp( x );
   CHECK( items( x ) == out );
   }
- for( const auto & [ in , out ] : { std::pair( Ints() , Ints() ) ,
-       std::pair( Ints( { 5 } ) , Ints() ) ,          // all multiples of 1
-       std::pair( Ints( { 2 , 2 , 2 } ) , Ints( { 2 } ) ) ,
-       std::pair( Ints( { 0 , 0 } ) , Ints() ) ,
-       std::pair( Ints( { -3 , -3 , -3 } ) , Ints( { -3 } ) ) } ) {
+ for( const auto & [ in , out ] :
+      { std::pair( Ints() , Ints() ) ,
+	std::pair( Ints( { 5 } ) , Ints() ) ,  // all multiples of 1
+	std::pair( Ints( { 2 , 2 , 2 } ) , Ints( { 2 } ) ) ,
+	std::pair( Ints( { 0 , 0 } ) , Ints() ) ,
+	std::pair( Ints( { -3 , -3 , -3 } ) , Ints( { -3 } ) ) } ) {
   auto x = list_of( in );
   del( x );
   CHECK( items( x ) == out );
@@ -1548,28 +1640,30 @@ ADS_TEST( "even-odd-strings" )
  for( const char * s : { "esame" , "algoritmi" , "e" , "strutture" , "dati" } )
   E.insert( s );
  CHECK( E.evenCount() == 1 );
- CHECK( E.oddByLength() == std::vector< std::string >( { "e" , "esame" ,
-        "algoritmi" , "strutture" } ) );
+ CHECK( E.oddByLength() == std::vector< std::string >(
+			     { "e" , "esame" , "algoritmi" , "strutture" } ) );
  E.insert( "esame" );
  E.removeAll( "esame" );
- CHECK( E.oddByLength() == std::vector< std::string >( { "e" ,
-        "algoritmi" , "strutture" } ) );
+ CHECK( E.oddByLength() ==
+	std::vector< std::string >( { "e" , "algoritmi" , "strutture" } ) );
  E.removeStartingWith( 'd' );
  CHECK( E.evenCount() == 0 && E.even().empty() );
- EvenOddStrings F;                              // nothing in it
+ EvenOddStrings F;  // nothing in it
  F.removeAll( "x" );
  F.removeStartingWith( 'x' );
  CHECK( F.evenCount() == 0 && F.oddByLength().empty() );
- for( const char * s : { "" , "ab" , "" , "c" , "d" , "c" } ) F.insert( s );
- CHECK( F.evenCount() == 3 && F.even() ==       // the newest first
-        std::vector< std::string >( { "" , "ab" , "" } ) );
- CHECK( F.oddByLength() ==                      // ties: insertion order
-        std::vector< std::string >( { "c" , "d" , "c" } ) );
- F.removeStartingWith( 'a' );                   // the empty ones stay
- F.removeAll( "zz" );                           // absent: nothing
- F.removeAll( "c" );                            // every copy
+ for( const char * s : { "" , "ab" , "" , "c" , "d" , "c" } )
+  F.insert( s );
+ CHECK( F.evenCount() == 3 &&
+	F.even() ==  // the newest first
+	  std::vector< std::string >( { "" , "ab" , "" } ) );
+ CHECK( F.oddByLength() ==  // ties: insertion order
+	std::vector< std::string >( { "c" , "d" , "c" } ) );
+ F.removeStartingWith( 'a' );  // the empty ones stay
+ F.removeAll( "zz" );          // absent: nothing
+ F.removeAll( "c" );           // every copy
  CHECK( F.even() == std::vector< std::string >( { "" , "" } ) &&
-        F.oddByLength() == std::vector< std::string >( { "d" } ) );
+	F.oddByLength() == std::vector< std::string >( { "d" } ) );
  F.removeAll( "" );
  CHECK( F.evenCount() == 0 );
  }
@@ -1594,35 +1688,37 @@ ADS_TEST( "binary-tree-exercises" )
  CHECK( evenDescendants( t->left() ) == 1 );
  relabelEven( t.get() );
  CHECK( pre_values( t.get() ) == Ints( { 3 , 1 , 0 , 0 , 1 , 0 , 0 } ) );
- std::unique_ptr< BT > c( new BT( 1 ) );   // a chain is not balanced
+ std::unique_ptr< BT > c( new BT( 1 ) );  // a chain is not balanced
  c->insertLeft( new BT( 2 ) );
  c->left()->insertLeft( new BT( 3 ) );
  CHECK( ! heightBalanced( c.get() ) && heightNodes( c.get() ) == 3 );
  CHECK( sumNodes( nullptr ) == 0 && heightNodes( nullptr ) == 0 &&
-        heightBalanced( nullptr ) && oddAtLevel( nullptr , 0 ) == 0 &&
-        evenLeaves( nullptr ) == 0 );
+	heightBalanced( nullptr ) && oddAtLevel( nullptr , 0 ) == 0 &&
+	evenLeaves( nullptr ) == 0 );
  relabelEven( nullptr );
- std::unique_ptr< BT > one( new BT( 4 ) );      // a single node
+ std::unique_ptr< BT > one( new BT( 4 ) );  // a single node
  CHECK( maxPathCost( one.get() ) == 4 && maxNode( one.get() ) == 4 &&
-        heightBalanced( one.get() ) && evenLeaves( one.get() ) == 1 &&
-        evenDescendants( one.get() ) == 0 &&
-        oddAtLevel( one.get() , 0 ) == 0 && oddAtLevel( one.get() , 1 ) == 0 );
- std::unique_ptr< BT > n( new BT( -5 ) );       // negatives, one child
- n->insertLeft( new BT( -1 ) );                 // missing
+	heightBalanced( one.get() ) && evenLeaves( one.get() ) == 1 &&
+	evenDescendants( one.get() ) == 0 && oddAtLevel( one.get() ,
+							 0 ) == 0 &&
+	oddAtLevel( one.get() , 1 ) == 0 );
+ std::unique_ptr< BT > n( new BT( -5 ) );  // negatives, one child
+ n->insertLeft( new BT( -1 ) );            // missing
  n->insertRight( new BT( -10 ) );
  n->right()->insertRight( new BT( -2 ) );
  CHECK( maxPathCost( n.get() ) == -6 && maxNode( n.get() ) == -1 &&
-        sumNodes( n.get() ) == -18 && heightBalanced( n.get() ) );
+	sumNodes( n.get() ) == -18 && heightBalanced( n.get() ) );
  CHECK( oddAtLevel( n.get() , 0 ) == 1 && oddAtLevel( n.get() , 7 ) == 0 &&
-        evenLeaves( n.get() ) == 1 && evenDescendants( n.get() ) == 2 );
- std::unique_ptr< BT > deep( new BT( 1 ) );     // a chain of 10^4 nodes
+	evenLeaves( n.get() ) == 1 && evenDescendants( n.get() ) == 2 );
+ std::unique_ptr< BT > deep( new BT( 1 ) );  // a chain of 10^4 nodes
  BT * w = deep.get();
  for( int i = 1 ; i < 10000 ; ++i ) {
   w->insertRight( new BT( 1 ) );
   w = w->right();
   }
- CHECK( heightNodes( deep.get() ) == 10000 && sumNodes( deep.get() ) ==
-        10000 && maxPathCost( deep.get() ) == 10000 );
+ CHECK( heightNodes( deep.get() ) == 10000 &&
+	sumNodes( deep.get() ) == 10000 &&
+	maxPathCost( deep.get() ) == 10000 );
  }
 
 // the sum of the descendants, the relabeling, the nodes of
@@ -1640,19 +1736,20 @@ ADS_TEST( "tree-exercises" )
  three->insertChild( new OT( 5 ) );
  t->insertChild( three );
  CHECK( sumDescendants( t.get() ) == 33 );
- CHECK( evenParent( t.get() ) == 5 );      // 3 , 4 , 6 of 2 , 7 , 8 of 6
+ CHECK( evenParent( t.get() ) == 5 );  // 3 , 4 , 6 of 2 , 7 , 8 of 6
  relabelSum( t.get() );
  Ints v;
  pre_visit( t.get() , [ & ]( OT * x ) { v.push_back( x->read() ); } );
  CHECK( v == Ints( { 33 , 5 , 0 , 0 , 15 , 0 , 0 } ) );
- std::unique_ptr< OT > one( new OT( 8 ) );      // a single node
+ std::unique_ptr< OT > one( new OT( 8 ) );  // a single node
  CHECK( sumDescendants( one.get() ) == 0 && evenParent( one.get() ) == 0 );
  relabelSum( one.get() );
  CHECK( one->read() == 0 );
- std::unique_ptr< OT > w( new OT( -2 ) );       // 100 children, negative
- for( int i = 1 ; i <= 100 ; ++i ) w->insertChild( new OT( -i ) );
+ std::unique_ptr< OT > w( new OT( -2 ) );  // 100 children, negative
+ for( int i = 1 ; i <= 100 ; ++i )
+  w->insertChild( new OT( -i ) );
  CHECK( sumDescendants( w.get() ) == -5050 && evenParent( w.get() ) == 100 );
- std::unique_ptr< OT > o( new OT( 1 ) );        // an odd parent: none
+ std::unique_ptr< OT > o( new OT( 1 ) );  // an odd parent: none
  o->insertChild( new OT( 2 ) );
  o->leftmostChild()->insertChild( new OT( 3 ) );
  CHECK( evenParent( o.get() ) == 1 && sumDescendants( o.get() ) == 5 );
@@ -1674,24 +1771,24 @@ ADS_TEST( "array-exercises" )
  reverseArray( e );
  CHECK( e.empty() );
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
+	   m = std::numeric_limits< int >::min();
  const Ints x = { m , M , -1 , M };
  CHECK( greaterThan( x , M ) == 0 && greaterThan( x , m ) == 3 &&
-        member( x , m ) && largest( x ) == std::pair( M , 1 ) );
- CHECK( largest( Ints( 4 , -3 ) ) == std::pair( -3 , 0 ) &&   // all equal
-        largest( Ints( { 7 } ) ) == std::pair( 7 , 0 ) &&
-        largest( Ints( { 1 , 2 , 8 } ) ) == std::pair( 8 , 2 ) );
+	member( x , m ) && largest( x ) == std::pair( M , 1 ) );
+ CHECK( largest( Ints( 4 , -3 ) ) == std::pair( -3 , 0 ) &&  // all equal
+	largest( Ints( { 7 } ) ) == std::pair( 7 , 0 ) &&
+	largest( Ints( { 1 , 2 , 8 } ) ) == std::pair( 8 , 2 ) );
  Ints s = { 5 };
- removeElem( s , 6 );                           // absent: unchanged
+ removeElem( s , 6 );  // absent: unchanged
  CHECK( s == Ints( { 5 } ) );
- removeElem( s , 5 );                           // the only item
+ removeElem( s , 5 );  // the only item
  CHECK( s == Ints( { 0 } ) );
  Ints t = { 1 , 2 , 3 };
- removeElem( t , 3 );                           // the last item
+ removeElem( t , 3 );  // the last item
  CHECK( t == Ints( { 1 , 2 , 0 } ) );
  reverseArray( s );
  CHECK( s == Ints( { 0 } ) );
- Ints u = { 1 , 2 , 3 , 4 };                    // an even length
+ Ints u = { 1 , 2 , 3 , 4 };  // an even length
  reverseArray( u );
  CHECK( u == Ints( { 4 , 3 , 2 , 1 } ) );
  reverseArray( a );
@@ -1709,19 +1806,24 @@ ADS_TEST( "cursor-list" )
 {
  auto S = std::make_shared< CursorSpace< int > >( 10 );
  CursorList< int > l( S ) , m( S ) , s( S );
- for( int x : { 7 , 2 } ) l.insert( l.next( l.tail() ) , x );
- for( int x : { 4 , 9 , 13 } ) m.insert( m.next( m.tail() ) , x );
- for( int x : { 13 , 4 , 9 , 13 } ) s.insert( s.next( s.tail() ) , x );
- CHECK( items( l ) == Ints( { 7 , 2 } ) && items( m ) == Ints( { 4 , 9 , 13 } )
-        && items( s ) == Ints( { 13 , 4 , 9 , 13 } ) );
+ for( int x : { 7 , 2 } )
+  l.insert( l.next( l.tail() ) , x );
+ for( int x : { 4 , 9 , 13 } )
+  m.insert( m.next( m.tail() ) , x );
+ for( int x : { 13 , 4 , 9 , 13 } )
+  s.insert( s.next( s.tail() ) , x );
+ CHECK( items( l ) == Ints( { 7 , 2 } ) && items( m ) == Ints( { 4 , 9 ,
+								 13 } ) &&
+	items( s ) == Ints( { 13 , 4 , 9 , 13 } ) );
  CHECK( S->used() == 9 && S->capacity() == 10 );
- m.remove( m.next( m.head() ) );                // 9 out, its cell freed
+ m.remove( m.next( m.head() ) );  // 9 out, its cell freed
  CHECK( items( m ) == Ints( { 4 , 13 } ) && S->used() == 8 );
  const long freed = s.first();
  s.remove( s.head() );
- l.insert( l.head() , 46 );                     // takes the cell just freed
+ l.insert( l.head() , 46 );  // takes the cell just freed
  CHECK( l.first() == freed && l.read( l.head() ) == 46 );
- for( int i = 0 ; i < 5 ; ++i ) s.insert( s.head() , i );   // grows
+ for( int i = 0 ; i < 5 ; ++i )
+  s.insert( s.head() , i );  // grows
  CHECK( S->capacity() == 20 && items( l ) == Ints( { 46 , 7 , 2 } ) );
  std::mt19937 g( 13 );
  CursorList< int > A;
@@ -1730,7 +1832,8 @@ ADS_TEST( "cursor-list" )
   const int k = R.empty() ? 0 : int( g() % ( R.size() + 1 ) );
   auto pa = A.head();
   auto pr = R.begin();
-  for( int i = 0 ; i < k ; ++i , pa = A.next( pa ) , ++pr ) {}
+  for( int i = 0 ; i < k ; ++i , pa = A.next( pa ) , ++pr ) {
+   }
   if( ( g() % 3 ) || R.empty() ) {
    A.insert( pa , op );
    R.insert( pr , op );
@@ -1745,30 +1848,30 @@ ADS_TEST( "cursor-list" )
  CHECK_THROWS( CursorSpace< int >( 0 ) , contract_violation );
  using SL = CursorList< std::string >;
  auto T = std::make_shared< CursorSpace< std::string > >( 1 );
- SL a( T );                                     // one cell, then doubling
+ SL a( T );  // one cell, then doubling
  CHECK( a.empty() && a.tail() == -1 && T->used() == 0 );
- CHECK_THROWS( (void) a.read( a.head() ) , contract_violation );
+ CHECK_THROWS( ( void )a.read( a.head() ) , contract_violation );
  CHECK_THROWS( a.remove( a.head() ) , contract_violation );
  CHECK_THROWS( a.insert( -1 , "x" ) , contract_violation );
  const std::string big( 40 , 'b' );
  a.insert( a.head() , big );
  CHECK( T->capacity() == 1 && T->used() == 1 );
- a.insert( a.head() , a.read( a.head() ) );     // its own item, growing
- CHECK( T->capacity() == 2 && items( a ) ==
-        std::vector< std::string >( { big , big } ) );
+ a.insert( a.head() , a.read( a.head() ) );  // its own item, growing
+ CHECK( T->capacity() == 2 &&
+	items( a ) == std::vector< std::string >( { big , big } ) );
  {
-  const SL b( a );                              // a copy in the full space
-  CHECK( items( b ) == items( a ) && T->used() == 4 &&
-         T->capacity() == 4 );
+  const SL b( a );  // a copy in the full space
+  CHECK( items( b ) == items( a ) && T->used() == 4 && T->capacity() == 4 );
   }
- CHECK( T->used() == 2 );                       // its cells given back
+ CHECK( T->used() == 2 );  // its cells given back
  const SL & same = a;
- a = same;                                      // itself
+ a = same;  // itself
  CHECK( items( a ) == std::vector< std::string >( { big , big } ) &&
-        T->used() == 2 );
- SL c( std::move( a ) );                        // a left empty
+	T->used() == 2 );
+ SL c( std::move( a ) );  // a left empty
  CHECK( a.empty() && items( c ).size() == 2 && T->used() == 2 );
- while( ! c.empty() ) c.remove( c.head() );
+ while( ! c.empty() )
+  c.remove( c.head() );
  CHECK( T->used() == 0 && c.tail() == -1 );
  }
 
@@ -1780,20 +1883,20 @@ ADS_TEST( "cursor-list" )
 // not sorted
 ADS_TEST( "sorted-list" )
 {
- List< std::string > L = { "anna" , "antonio" , "carlo" , "davide" ,
-                           "elena" , "filippo" , "giulio" };
+ List< std::string > L = { "anna" ,  "antonio" , "carlo" , "davide" ,
+			   "elena" , "filippo" , "giulio" };
  auto [ p , found ] = lowerBound( L , std::string( "dario" ) );
  CHECK( ! found && L.read( p ) == "davide" );
  L.insert( p , "dario" );
- CHECK( order( L ) == Order::INCREASING && lowerBound( L , std::string(
-        "dario" ) ).second );
+ CHECK( order( L ) == Order::INCREASING &&
+	lowerBound( L , std::string( "dario" ) ).second );
  CHECK( L.finished( lowerBound( L , std::string( "zeno" ) ).first ) );
  const auto a = L.next( L.head() ) , b = L.next( L.next( a ) );
  CHECK( items( sublist( L , a , b ) ) ==
-        std::vector< std::string >( { "antonio" , "carlo" , "dario" } ) );
+	std::vector< std::string >( { "antonio" , "carlo" , "dario" } ) );
  CHECK( sublist( L , L.next( L.tail() ) , L.tail() ).empty() );
- CHECK( items( sublist( L , a , a ) ) == std::vector< std::string >(
-        { "antonio" } ) );
+ CHECK( items( sublist( L , a , a ) ) ==
+	std::vector< std::string >( { "antonio" } ) );
  List< int > N = { 82 , 16 , 14 , 15 , 84 , 25 , 77 , 13 , 75 , 4 };
  long passes = 0;
  naturalMergeSort( N , &passes );
@@ -1811,12 +1914,12 @@ ADS_TEST( "sorted-list" )
  const auto [ p9 , f9 ] = lowerBound( D , 9 );  // the last item
  CHECK( f9 && p9 == D.tail() );
  D.insert( p0 , 1 );
- D.insert( D.next( D.tail() ) , 10 );           // at pos_n
+ D.insert( D.next( D.tail() ) , 10 );  // at pos_n
  CHECK( items( D ) == Ints( { 1 , 2 , 4 , 4 , 4 , 9 , 10 } ) );
  CHECK( items( sublist( D , D.head() , D.tail() ) ) == items( D ) );
  CHECK_THROWS( sublist( D , D.tail() , D.head() ) , contract_violation );
  CHECK_THROWS( lowerBound( List< int >( { 3 , 1 } ) , 2 ) ,
-               contract_violation );            // not sorted
+	       contract_violation );  // not sorted
  }
 
 // the decision tree of the binary search on 18 sorted names: the middle
@@ -1827,49 +1930,54 @@ ADS_TEST( "sorted-list" )
 // and of those absent, below all and above all), a vector not sorted
 ADS_TEST( "decision-tree" )
 {
- const std::vector< std::string > A = { "ALCESTE" , "ALDO" , "ALFIO" ,
-  "ARMANDO" , "BALDOVINO" , "CARLO" , "CLORINDA" , "DARIO" , "ERMINIA" ,
-  "EUSTACHIO" , "GOFFREDO" , "GUGLIELMO" , "MARCO" , "MARIO" , "RAIMONDO" ,
-  "ROBERTO" , "TANCREDI" , "UGO" };
+ const std::vector< std::string > A = {
+  "ALCESTE" ,  "ALDO" ,  "ALFIO" ,    "ARMANDO" ,   "BALDOVINO" , "CARLO" ,
+  "CLORINDA" , "DARIO" , "ERMINIA" ,  "EUSTACHIO" , "GOFFREDO" ,  "GUGLIELMO" ,
+  "MARCO" ,    "MARIO" , "RAIMONDO" , "ROBERTO" ,   "TANCREDI" ,  "UGO"
+  };
  std::unique_ptr< BinaryTree< std::string > > t( decisionTree( A ) );
  CHECK( t->read() == "ERMINIA" && t->left()->read() == "ARMANDO" &&
-        t->right()->read() == "MARIO" );
+	t->right()->read() == "MARIO" );
  std::function< int( const BinaryTree< std::string > * ) > height =
-  [ & ]( const BinaryTree< std::string > * u ) -> int {
-   return( u ? 1 + std::max( height( u->left() ) , height( u->right() ) )
-             : -1 ); };
+   [ & ]( const BinaryTree< std::string > * u ) -> int {
+  return( u ? 1 + std::max( height( u->left() ) , height( u->right() ) )
+	     : -1 );
+  };
  CHECK( height( t.get() ) == 4 );
  for( const auto & v : A ) {
   std::vector< std::string > trace , path;
-  binarySearch( A , v , [ & ]( long , long , long m ) {
-   trace.push_back( A[ m ] ); } );
+  binarySearch( A , v ,
+		[ & ]( long , long , long m ) { trace.push_back( A[ m ] ); } );
   for( auto * u = t.get() ; ; u = v < u->read() ? u->left() : u->right() ) {
    path.push_back( u->read() );
-   if( u->read() == v ) break;
+   if( u->read() == v )
+    break;
    }
   CHECK( path == trace );
   if( v == "CLORINDA" )
-   CHECK( path == std::vector< std::string >( { "ERMINIA" , "ARMANDO" ,
-                                                "CARLO" , "CLORINDA" } ) );
+   CHECK( path == std::vector< std::string >(
+		    { "ERMINIA" , "ARMANDO" , "CARLO" , "CLORINDA" } ) );
   }
  CHECK( decisionTree( std::vector< int >() ) == nullptr );
  CHECK( binarySearch( Ints() , 1 ) == -1 );
- for( int n = 1 ; n <= 33 ; ++n ) {             // 1 , 2 , 2^k - 1 , 2^k
+ for( int n = 1 ; n <= 33 ; ++n ) {  // 1 , 2 , 2^k - 1 , 2^k
   Ints B( n );
-  for( int i = 0 ; i < n ; ++i ) B[ i ] = 2 * i;
+  for( int i = 0 ; i < n ; ++i )
+   B[ i ] = 2 * i;
   std::unique_ptr< BinaryTree< int > > d( decisionTree( B ) );
   std::function< int( const BinaryTree< int > * ) > h =
-   [ & ]( const BinaryTree< int > * u ) -> int {
-    return( u ? 1 + std::max( h( u->left() ) , h( u->right() ) ) : -1 ); };
+    [ & ]( const BinaryTree< int > * u ) -> int {
+   return( u ? 1 + std::max( h( u->left() ) , h( u->right() ) ) : -1 );
+   };
   CHECK( h( d.get() ) == int( std::floor( std::log2( n ) ) ) );
-  for( int v = -1 ; v <= 2 * n ; ++v ) {        // present and absent
+  for( int v = -1 ; v <= 2 * n ; ++v ) {  // present and absent
    Ints trace , path;
-   const long r = binarySearch( B , v , [ & ]( long , long , long m ) {
-    trace.push_back( B[ m ] ); } );
-   for( auto * u = d.get() ; u ; u = v < u->read() ? u->left()
-                                                   : u->right() ) {
+   const long r = binarySearch(
+     B , v , [ & ]( long , long , long m ) { trace.push_back( B[ m ] ); } );
+   for( auto * u = d.get() ; u ; u = v < u->read() ? u->left() : u->right() ) {
     path.push_back( u->read() );
-    if( u->read() == v ) break;
+    if( u->read() == v )
+     break;
     }
    CHECK( path == trace && ( r == ( v % 2 == 0 && v < 2 * n ? v / 2 : -1 ) ) );
    }
@@ -1890,24 +1998,25 @@ ADS_TEST( "list-forms" )
  const std::string b = "( 8 () ( 5 ( 27 () () ) ( 16 () () ) ) )";
  std::unique_ptr< BinaryTree< int > > B( from_list< int >( b ) );
  CHECK( to_list( B.get() ) == b && B->right()->left()->read() == 27 );
- CHECK( from_list< int >( "()" ) == nullptr && to_list(
-        static_cast< BinaryTree< int > * >( nullptr ) ) == "()" );
+ CHECK( from_list< int >( "()" ) == nullptr &&
+	to_list( static_cast< BinaryTree< int > * >( nullptr ) ) == "()" );
  CHECK_THROWS( from_list< int >( "( 8 ()" ) , contract_violation );
  using CS = std::vector< char >;
- std::unique_ptr< BinaryTree< char > > H( from_list< char >(
-  "( h ( a ( d () () ) ( l ( o () () ) ( q () () ) ) ) "
-  "( c ( p () () ) ( s () () ) ) )" ) );
+ std::unique_ptr< BinaryTree< char > > H(
+   from_list< char >( "( h ( a ( d () () ) ( l ( o () () ) ( q () () ) ) ) "
+		      "( c ( p () () ) ( s () () ) ) )" ) );
  CS pre , in , post;
  using BC = BinaryTree< char >;
- dfs( H.get() , [ & ]( BC * u ) { pre.push_back( u->read() ); } ,
-      [ & ]( BC * u ) { in.push_back( u->read() ); } ,
-      [ & ]( BC * u ) { post.push_back( u->read() ); } );
+ dfs(
+   H.get() , [ & ]( BC * u ) { pre.push_back( u->read() ); } ,
+   [ & ]( BC * u ) { in.push_back( u->read() ); } ,
+   [ & ]( BC * u ) { post.push_back( u->read() ); } );
  CHECK( pre == CS( { 'h' , 'a' , 'd' , 'l' , 'o' , 'q' , 'c' , 'p' , 's' } ) );
  CHECK( in == CS( { 'd' , 'a' , 'o' , 'l' , 'q' , 'h' , 'p' , 'c' , 's' } ) );
- CHECK( post ==
-        CS( { 'd' , 'o' , 'q' , 'l' , 'a' , 'p' , 's' , 'c' , 'h' } ) );
+ CHECK( post == CS( { 'd' , 'o' , 'q' , 'l' , 'a' , 'p' , 's' , 'c' ,
+		      'h' } ) );
  const std::string n = "( 5 ( 4 ( 8 ) ( 9 ( 12 ) ( 11 ) ( 3 ) ) ) ( 15 ) "
-                       "( 6 ( 21 ) ( 20 ) ) )";
+		       "( 6 ( 21 ) ( 20 ) ) )";
  std::unique_ptr< Tree< int > > T( tree_from_list< int >( n ) );
  CHECK( to_list( T.get() ) == n );
  Ints p , q , r;
@@ -1918,35 +2027,36 @@ ADS_TEST( "list-forms" )
  CHECK( p == Ints( { 5 , 4 , 8 , 9 , 12 , 11 , 3 , 15 , 6 , 21 , 20 } ) );
  CHECK( q == Ints( { 8 , 12 , 11 , 3 , 9 , 4 , 15 , 21 , 20 , 6 , 5 } ) );
  CHECK( r == Ints( { 8 , 4 , 12 , 9 , 11 , 3 , 5 , 15 , 21 , 6 , 20 } ) );
- CHECK( T->leftmostChild()->leftmostChild()->isLeaf() &&
-        ! T->isLeaf() && T->isLastSibling() &&
-        T->leftmostChild()->rightSibling()->rightSibling()->isLastSibling() );
- for( const std::string & s : { std::string( "( 5 () () )" ) ,
-                                std::string( "( -3 () ( 0 () () ) )" ) ,
-                                std::string( "( 2147483647 () () )" ) } ) {
+ CHECK( T->leftmostChild()->leftmostChild()->isLeaf() && ! T->isLeaf() &&
+	T->isLastSibling() &&
+	T->leftmostChild()->rightSibling()->rightSibling()->isLastSibling() );
+ for( const std::string & s :
+      { std::string( "( 5 () () )" ) , std::string( "( -3 () ( 0 () () ) )" ) ,
+	std::string( "( 2147483647 () () )" ) } ) {
   std::unique_ptr< BinaryTree< int > > X( from_list< int >( s ) );
   CHECK( to_list( X.get() ) == s );
   }
  std::unique_ptr< BinaryTree< int > > S( from_list< int >( "(7()())" ) );
- CHECK( S->read() == 7 && ! S->left() && ! S->right() );   // no spaces
- for( const char * s : { "" , "(" , ")" , "( 8 () () ) )" ,
-                         "( 8 () () ) ( 1 () () )" , "( 8 () () () )" ,
-                         "( () () )" , "( 8x () () )" , "( x () () )" } )
+ CHECK( S->read() == 7 && ! S->left() && ! S->right() );  // no spaces
+ for( const char * s :
+      { "" , "(" , ")" , "( 8 () () ) )" , "( 8 () () ) ( 1 () () )" ,
+	"( 8 () () () )" , "( () () )" , "( 8x () () )" , "( x () () )" } )
   CHECK_THROWS( from_list< int >( s ) , contract_violation );
- for( const std::string & s : { std::string( "( 5 )" ) ,
-                                std::string( "( -1 ( -2 ( -3 ) ) )" ) } ) {
+ for( const std::string & s :
+      { std::string( "( 5 )" ) , std::string( "( -1 ( -2 ( -3 ) ) )" ) } ) {
   std::unique_ptr< Tree< int > > X( tree_from_list< int >( s ) );
   CHECK( to_list( X.get() ) == s );
   }
- for( const char * s : { "" , "()" , "( 5 ) )" , "( 5 ) ( 6 )" , "( 5" ,
-                         "( ( 5 ) )" , "( 5x )" } )
+ for( const char * s :
+      { "" , "()" , "( 5 ) )" , "( 5 ) ( 6 )" , "( 5" , "( ( 5 ) )" ,
+	"( 5x )" } )
   CHECK_THROWS( tree_from_list< int >( s ) , contract_violation );
  CHECK_THROWS( to_list( static_cast< Tree< int > * >( nullptr ) ) ,
-               contract_violation );
- std::unique_ptr< Tree< std::string > > W( tree_from_list< std::string >(
-  "( ab ( cd ) )" ) );
- CHECK( W->leftmostChild()->read() == "cd" && to_list( W.get() ) ==
-        "( ab ( cd ) )" );
+	       contract_violation );
+ std::unique_ptr< Tree< std::string > > W(
+   tree_from_list< std::string >( "( ab ( cd ) )" ) );
+ CHECK( W->leftmostChild()->read() == "cd" &&
+	to_list( W.get() ) == "( ab ( cd ) )" );
  }
 
 // the expression tree from the postfix form: the prefix and the infix
@@ -1956,39 +2066,40 @@ ADS_TEST( "list-forms" )
 // operators), a division by 0, the nil tree, 10^4 operators in a chain
 ADS_TEST( "expression-tree" )
 {
- std::unique_ptr< BinaryTree< std::string > > E( expressionTree(
-  "3 x 2 ^ y * 3 x * + / z 1 - *" ) );
+ std::unique_ptr< BinaryTree< std::string > > E(
+   expressionTree( "3 x 2 ^ y * 3 x * + / z 1 - *" ) );
  CHECK( prefixForm( E.get() ) ==
-        "(*(/(3)(+(*(^(x)(2))(y))(*(3)(x))))(-(z)(1)))" );
+	"(*(/(3)(+(*(^(x)(2))(y))(*(3)(x))))(-(z)(1)))" );
  const double x = 1.5 , y = 2 , z = 3;
- CHECK( std::abs( evaluate( E.get() , { { "x" , x } , { "y" , y } ,
-                                        { "z" , z } } ) -
-                  ( 3 / ( x * x * y + 3 * x ) ) * ( z - 1 ) ) < 1e-12 );
- std::unique_ptr< BinaryTree< std::string > > F( expressionTree(
-  toPostfix( "2 + 3 * 4" ) ) );
+ CHECK( std::abs( evaluate( E.get() ,
+			    { { "x" , x } , { "y" , y } , { "z" , z } } ) -
+		  ( 3 / ( x * x * y + 3 * x ) ) * ( z - 1 ) ) < 1e-12 );
+ std::unique_ptr< BinaryTree< std::string > > F(
+   expressionTree( toPostfix( "2 + 3 * 4" ) ) );
  CHECK( infixForm( F.get() ) == "( 2 + ( 3 * 4 ) )" &&
-        evaluate( F.get() ) == 14 );
+	evaluate( F.get() ) == 14 );
  CHECK_THROWS( expressionTree( "1 +" ) , contract_violation );
- CHECK_THROWS( evaluate( E.get() ) , contract_violation );   // no x
+ CHECK_THROWS( evaluate( E.get() ) , contract_violation );  // no x
  using U = std::unique_ptr< BinaryTree< std::string > >;
- const U one( expressionTree( "  7  " ) );      // a single leaf
+ const U one( expressionTree( "  7  " ) );  // a single leaf
  CHECK( prefixForm( one.get() ) == "(7)" && infixForm( one.get() ) == "7" &&
-        evaluate( one.get() ) == 7 );
- const U neg( expressionTree( "-3 +2.5 * .5 -" ) );   // signed numbers
+	evaluate( one.get() ) == 7 );
+ const U neg( expressionTree( "-3 +2.5 * .5 -" ) );  // signed numbers
  CHECK( infixForm( neg.get() ) == "( ( -3 * +2.5 ) - .5 )" &&
-        evaluate( neg.get() ) == -8 );
- const U v( expressionTree( "x x -" ) );        // the same variable twice
+	evaluate( neg.get() ) == -8 );
+ const U v( expressionTree( "x x -" ) );  // the same variable twice
  CHECK( evaluate( v.get() , { { "x" , 1e300 } } ) == 0 );
  for( const char * e : { "" , "   " , "1 2" , "+" , "+ 1 2" , "1 2 + +" } )
   CHECK_THROWS( expressionTree( e ) , contract_violation );
- const U d( expressionTree( "1 x 1 - /" ) );    // a division by 0
+ const U d( expressionTree( "1 x 1 - /" ) );  // a division by 0
  CHECK_THROWS( evaluate( d.get() , { { "x" , 1 } } ) , contract_violation );
  CHECK( evaluate( d.get() , { { "x" , 3 } } ) == 0.5 );
  CHECK_THROWS( evaluate( nullptr ) , contract_violation );
  CHECK_THROWS( prefixForm( nullptr ) , contract_violation );
  CHECK_THROWS( infixForm( nullptr ) , contract_violation );
- std::string chain = "1";                       // 10^4 operators deep
- for( int i = 0 ; i < 10000 ; ++i ) chain += " 1 +";
+ std::string chain = "1";  // 10^4 operators deep
+ for( int i = 0 ; i < 10000 ; ++i )
+  chain += " 1 +";
  const U c( expressionTree( chain ) );
  CHECK( evaluate( c.get() ) == 10001 );
  }
@@ -1999,8 +2110,9 @@ ListGraph<> exampleGraph( void )
 {
  ListGraph<> g( 10 , false );
  const std::string E[] = { "ab" , "ae" , "ah" , "bc" , "be" , "cd" , "ce" ,
-                           "cf" , "eg" , "eh" , "fj" , "gj" , "hi" , "hj" };
- for( const auto & e : E ) g.insertEdge( e[ 0 ] - 'a' , e[ 1 ] - 'a' );
+			   "cf" , "eg" , "eh" , "fj" , "gj" , "hi" , "hj" };
+ for( const auto & e : E )
+  g.insertEdge( e[ 0 ] - 'a' , e[ 1 ] - 'a' );
  return( g );
  }
 
@@ -2016,57 +2128,68 @@ ADS_TEST( "generic-visit" )
  const auto g = exampleGraph();
  const auto [ R , B ] = genericVisit( g , 0 , Choice::NEWEST );
  std::string order;
- for( int u : R ) order += char( 'a' + u );
+ for( int u : R )
+  order += char( 'a' + u );
  CHECK( order == "abcdegjfhi" && B.size() == 9 );
  std::vector< bool > seen( g.bound() , false );
  std::vector< int > depth( g.bound() , 0 );
  std::string rec;
  int level = 0;
- dfs( g , 0 , seen , [ & ]( int u ) { rec += char( 'a' + u );
-                                      depth[ u ] = level++; } ,
-      []( int , int ) {} , [ & ]( int ) { --level; } );
- CHECK( rec == order && depth == std::vector< int >( { 0 , 1 , 2 , 3 , 3 ,
-                                                       6 , 4 , 6 , 7 , 5 } ) );
+ dfs(
+   g , 0 , seen ,
+   [ & ]( int u ) {
+    rec += char( 'a' + u );
+    depth[ u ] = level++;
+    } ,
+   []( int , int ) { } , [ & ]( int ) { --level; } );
+ CHECK( rec == order &&
+	depth == std::vector< int >( { 0 , 1 , 2 , 3 , 3 , 6 , 4 , 6 , 7 ,
+				       5 } ) );
  const auto [ Rb , Bb ] = genericVisit( g , 0 , Choice::OLDEST );
  const auto [ d , p ] = distance( g , 0 );
- for( auto [ j , k ] : Bb ) CHECK( d[ k ] == d[ j ] + 1 );
+ for( auto [ j , k ] : Bb )
+  CHECK( d[ k ] == d[ j ] + 1 );
  CHECK( std::is_sorted( Rb.begin() , Rb.end() , [ & ]( int u , int v ) {
-  return( d[ u ] < d[ v ] ); } ) );
+  return( d[ u ] < d[ v ] );
+  } ) );
  std::mt19937 gen( 15 );
  for( int t = 0 ; t < 30 ; ++t ) {
   ListGraph<> h( 20 , t % 2 );
   for( int e = 0 ; e < 30 ; ++e ) {
    const int u = int( gen() % 20 ) , v = int( gen() % 20 );
-   if( u != v ) h.insertEdge( u , v );
+   if( u != v )
+    h.insertEdge( u , v );
    }
   const auto [ dh , ph ] = distance( h , 0 );
   for( Choice c : { Choice::NEWEST , Choice::OLDEST } ) {
    const auto RR = genericVisit( h , 0 , c ).first;
-   CHECK( long( RR.size() ) == std::count_if( dh.begin() , dh.end() ,
-                                [ & ]( int x ) { return( x != INF ); } ) );
+   CHECK( long( RR.size() ) ==
+	  std::count_if( dh.begin() , dh.end() ,
+			 [ & ]( int x ) { return( x != INF ); } ) );
    }
   }
- ListGraph<> one( 1 , true );                   // one node
- ListGraph<> back( 3 , true );                  // only 1 -> 0 , 2 alone
+ ListGraph<> one( 1 , true );   // one node
+ ListGraph<> back( 3 , true );  // only 1 -> 0 , 2 alone
  back.insertEdge( 1 , 0 );
  for( Choice c : { Choice::NEWEST , Choice::OLDEST } ) {
   const auto [ R1 , B1 ] = genericVisit( one , 0 , c );
   CHECK( R1 == std::vector< int >( { 0 } ) && B1.empty() );
   CHECK( genericVisit( back , 0 , c ).first == std::vector< int >( { 0 } ) );
   CHECK( genericVisit( back , 2 , c ).first == std::vector< int >( { 2 } ) );
-  CHECK( genericVisit( back , 1 , c ).first ==
-         std::vector< int >( { 1 , 0 } ) );
+  CHECK( genericVisit( back , 1 ,
+		       c ).first == std::vector< int >( { 1 , 0 } ) );
   CHECK_THROWS( genericVisit( back , 3 , c ) , contract_violation );
   CHECK_THROWS( genericVisit( back , -1 , c ) , contract_violation );
   }
  const auto [ d1 , p1 ] = distance( back , 0 );
  CHECK( d1 == std::vector< int >( { 0 , INF , INF } ) &&
-        p1 == std::vector< int >( { NIL , NIL , NIL } ) );
- ListGraph<> s( 6 , false );                    // a star: OLDEST takes the
- for( int v = 1 ; v < 6 ; ++v ) s.insertEdge( 0 , v );   // leaves in order
+	p1 == std::vector< int >( { NIL , NIL , NIL } ) );
+ ListGraph<> s( 6 , false );  // a star: OLDEST takes the
+ for( int v = 1 ; v < 6 ; ++v )
+  s.insertEdge( 0 , v );  // leaves in order
  const auto [ Rs , Bs ] = genericVisit( s , 0 , Choice::OLDEST );
- CHECK( Rs == std::vector< int >( { 0 , 1 , 2 , 3 , 4 , 5 } ) &&
-        Bs.size() == 5 );
+ CHECK( Rs == std::vector< int >( { 0 , 1 , 2 , 3 , 4 ,
+				    5 } ) && Bs.size() == 5 );
  }
 
 // the shortest paths of the example: the distances and the tree of
@@ -2079,48 +2202,48 @@ ADS_TEST( "dijkstra-example" )
 {
  ListGraph< int > g( 7 , true );
  const std::pair< std::string , int > E[] = { { "AB" , 2 } , { "AD" , 1 } ,
-  { "BC" , 3 } , { "BD" , 3 } , { "DF" , 1 } , { "FC" , 2 } , { "CG" , 2 } ,
-  { "FG" , 5 } };
+					     { "BC" , 3 } , { "BD" , 3 } ,
+					     { "DF" , 1 } , { "FC" , 2 } ,
+					     { "CG" , 2 } , { "FG" , 5 } };
  for( const auto & [ e , w ] : E )
   g.insertEdge( e[ 0 ] - 'A' , e[ 1 ] - 'A' , w );
  const auto R = dijkstra( g , 0 );
  CHECK( R.d == std::vector< int >( { 0 , 2 , 4 , 1 , infinity< int >() , 2 ,
-                                     6 } ) );
+				     6 } ) );
  CHECK( R.T == std::vector< int >( { NIL , 0 , 5 , 0 , NIL , 3 , 2 } ) );
- const auto R4 = dijkstra( g , 4 );             // a root with no edge
+ const auto R4 = dijkstra( g , 4 );  // a root with no edge
  CHECK( R4.d[ 4 ] == 0 && R4.T[ 4 ] == NIL &&
-        std::count( R4.d.begin() , R4.d.end() , infinity< int >() ) == 6 );
+	std::count( R4.d.begin() , R4.d.end() , infinity< int >() ) == 6 );
  ListGraph< int > one( 1 , true );
  CHECK( dijkstra( one , 0 ).d == std::vector< int >( { 0 } ) &&
-        dijkstra( one , 0 ).T == std::vector< int >( { NIL } ) );
+	dijkstra( one , 0 ).T == std::vector< int >( { NIL } ) );
  CHECK_THROWS( dijkstra( one , 1 ) , contract_violation );
  CHECK_THROWS( dijkstra( one , -1 ) , contract_violation );
- ListGraph< int > h( 3 , true );                // weights 0, then changed
+ ListGraph< int > h( 3 , true );  // weights 0, then changed
  h.insertEdge( 0 , 1 , 0 );
  h.insertEdge( 1 , 2 , 0 );
  h.insertEdge( 0 , 2 , 5 );
  CHECK( dijkstra( h , 0 ).d == std::vector< int >( { 0 , 0 , 0 } ) );
- h.insertEdge( 0 , 1 , 7 );                     // no parallel edge
+ h.insertEdge( 0 , 1 , 7 );  // no parallel edge
  CHECK( dijkstra( h , 0 ).d == std::vector< int >( { 0 , 7 , 5 } ) &&
-        dijkstra( h , 0 ).T == std::vector< int >( { NIL , 0 , 0 } ) );
- CHECK_THROWS( h.insertEdge( 2 , 2 , 1 ) , contract_violation );   // loop
- ListGraph< int > k( 3 , true );                // negative, no cycle
+	dijkstra( h , 0 ).T == std::vector< int >( { NIL , 0 , 0 } ) );
+ CHECK_THROWS( h.insertEdge( 2 , 2 , 1 ) , contract_violation );  // loop
+ ListGraph< int > k( 3 , true );  // negative, no cycle
  k.insertEdge( 0 , 1 , 5 );
  k.insertEdge( 0 , 2 , 2 );
  k.insertEdge( 2 , 1 , -4 );
  CHECK( dijkstra( k , 0 ).d == std::vector< int >( { 0 , -2 , 2 } ) &&
-        dijkstra( k , 0 ).T[ 1 ] == 2 );
- k.insertEdge( 1 , 2 , 1 );                     // a negative cycle
+	dijkstra( k , 0 ).T[ 1 ] == 2 );
+ k.insertEdge( 1 , 2 , 1 );  // a negative cycle
  CHECK_THROWS( dijkstra( k , 0 ) , contract_violation );
  const int big = std::numeric_limits< int >::max() / 2 - 1;
- ListGraph< int > b( 3 , true );                // sums just below INF
+ ListGraph< int > b( 3 , true );  // sums just below INF
  b.insertEdge( 0 , 1 , big );
  b.insertEdge( 1 , 2 , big );
- CHECK( dijkstra( b , 0 ).d[ 2 ] == 2 * big &&
-        2 * big < infinity< int >() );
- ListGraph< double > f( 2 , false );            // floating point: +inf
+ CHECK( dijkstra( b , 0 ).d[ 2 ] == 2 * big && 2 * big < infinity< int >() );
+ ListGraph< double > f( 2 , false );  // floating point: +inf
  CHECK( dijkstra( f , 0 ).d[ 1 ] == infinity< double >() &&
-        std::isinf( dijkstra( f , 0 ).d[ 1 ] ) );
+	std::isinf( dijkstra( f , 0 ).d[ 1 ] ) );
  }
 
 // the unilateral connection against the transitive closure on random
@@ -2131,29 +2254,32 @@ ADS_TEST( "dijkstra-example" )
 // in, a row that is not in the matrix
 ADS_TEST( "unilateral-incidence" )
 {
- ListGraph<> u( 4 , true );                     // u1 -> u2 -> u3 -> u4
+ ListGraph<> u( 4 , true );  // u1 -> u2 -> u3 -> u4
  for( auto [ a , b ] : { std::pair( 0 , 1 ) , { 1 , 2 } , { 2 , 3 } ,
-                         { 3 , 2 } } )
+			 { 3 , 2 } } )
   u.insertEdge( a , b );
  CHECK( unilaterallyConnected( u ) );
- CHECK( scc( u )[ 0 ] != scc( u )[ 3 ] );       // no path u4 -> u1
+ CHECK( scc( u )[ 0 ] != scc( u )[ 3 ] );  // no path u4 -> u1
  std::mt19937 gen( 16 );
  for( int t = 0 ; t < 200 ; ++t ) {
   const int n = 2 + int( gen() % 6 );
   ListGraph<> h( n , true );
   for( int e = int( gen() % ( 2 * n ) ) ; e > 0 ; --e ) {
    const int a = int( gen() % n ) , b = int( gen() % n );
-   if( a != b ) h.insertEdge( a , b );
+   if( a != b )
+    h.insertEdge( a , b );
    }
   std::vector< std::vector< bool > > C( n , std::vector< bool >( n ) );
   for( int a = 0 ; a < n ; ++a ) {
    C[ a ][ a ] = true;
-   for( int b : h.adj( a ) ) C[ a ][ b ] = true;
+   for( int b : h.adj( a ) )
+    C[ a ][ b ] = true;
    }
-  for( int k = 0 ; k < n ; ++k )                // Warshall
+  for( int k = 0 ; k < n ; ++k )  // Warshall
    for( int a = 0 ; a < n ; ++a )
     for( int b = 0 ; b < n ; ++b )
-     if( C[ a ][ k ] && C[ k ][ b ] ) C[ a ][ b ] = true;
+     if( C[ a ][ k ] && C[ k ][ b ] )
+      C[ a ][ b ] = true;
   bool uni = true;
   for( int a = 0 ; a < n ; ++a )
    for( int b = 0 ; b < n ; ++b )
@@ -2162,7 +2288,8 @@ ADS_TEST( "unilateral-incidence" )
   for( bool dir : { true , false } ) {
    ListGraph<> k( n , dir );
    for( int a = 0 ; a < n ; ++a )
-    for( int b : h.adj( a ) ) k.insertEdge( a , b );
+    for( int b : h.adj( a ) )
+     k.insertEdge( a , b );
    const auto Inc = incidence( k );
    for( int a = 0 ; a < n ; ++a ) {
     auto x = adjFromIncidence( Inc , a , dir ) , y = k.adj( a );
@@ -2172,23 +2299,23 @@ ADS_TEST( "unilateral-incidence" )
     }
    }
   }
- CHECK( unilaterallyConnected( ListGraph<>( 1 , true ) ) );   // one node
- ListGraph<> two( 2 , true );                   // two, no edge
+ CHECK( unilaterallyConnected( ListGraph<>( 1 , true ) ) );  // one node
+ ListGraph<> two( 2 , true );                                // two, no edge
  CHECK( ! unilaterallyConnected( two ) );
  CHECK( incidence( two ) == std::vector< std::vector< int > >( 2 ) );
  CHECK( adjFromIncidence( incidence( two ) , 1 , true ).empty() );
- two.insertEdge( 1 , 0 );                       // one way is enough
+ two.insertEdge( 1 , 0 );  // one way is enough
  CHECK( unilaterallyConnected( two ) );
- two.insertEdge( 0 , 1 );                       // both ways
+ two.insertEdge( 0 , 1 );  // both ways
  CHECK( unilaterallyConnected( two ) && scc( two )[ 0 ] == scc( two )[ 1 ] );
- ListGraph<> out( 3 , true );                   // 0 -> 1 , 0 -> 2: no
- out.insertEdge( 0 , 1 );                       // path between 1 and 2
+ ListGraph<> out( 3 , true );  // 0 -> 1 , 0 -> 2: no
+ out.insertEdge( 0 , 1 );      // path between 1 and 2
  out.insertEdge( 0 , 2 );
  CHECK( ! unilaterallyConnected( out ) );
  const auto Inc = incidence( out );
- CHECK( Inc == std::vector< std::vector< int > >( { { -1 , -1 } , { 1 , 0 } ,
-                                                    { 0 , 1 } } ) );
- CHECK( adjFromIncidence( Inc , 1 , true ).empty() );   // only edges in
+ CHECK( Inc == std::vector< std::vector< int > >(
+		 { { -1 , -1 } , { 1 , 0 } , { 0 , 1 } } ) );
+ CHECK( adjFromIncidence( Inc , 1 , true ).empty() );  // only edges in
  CHECK_THROWS( adjFromIncidence( Inc , 3 , true ) , contract_violation );
  CHECK_THROWS( adjFromIncidence( Inc , -1 , false ) , contract_violation );
  }
@@ -2207,36 +2334,38 @@ ADS_TEST( "notations" )
  using F = std::function< double( double ) >;
  auto holds = []( F g , F f , double c , long m , long N ) {
   for( long n = m ; n <= N ; ++n )
-   if( g( double( n ) ) > c * f( double( n ) ) ) return( false );
+   if( g( double( n ) ) > c * f( double( n ) ) )
+    return( false );
   return( true );
   };
  const F n1 = []( double n ) { return( n ); } ,
-         n2 = []( double n ) { return( n * n ); };
+	 n2 = []( double n ) { return( n * n ); };
  const F g1 = []( double n ) { return( 3 * n * n + 3 * n - 1 ); };
  CHECK( holds( g1 , n2 , 4 , 3 , 100000 ) && ! holds( g1 , n2 , 4 , 2 , 2 ) );
  const F g2 = []( double n ) { return( 3 * n * n + 2 * n + 1 ); };
- CHECK( holds( g2 , n2 , 6 , 1 , 100000 ) );           // O( n^2 )
- CHECK( holds( n1 , g2 , 1 , 1 , 100000 ) );           // Omega( n )
- CHECK( holds( n2 , g2 , 1 , 1 , 100000 ) );           // Theta( n^2 )
- CHECK( g2( 1e6 ) / n1( 1e6 ) > 1e6 );                 // not O( n )
+ CHECK( holds( g2 , n2 , 6 , 1 , 100000 ) );  // O( n^2 )
+ CHECK( holds( n1 , g2 , 1 , 1 , 100000 ) );  // Omega( n )
+ CHECK( holds( n2 , g2 , 1 , 1 , 100000 ) );  // Theta( n^2 )
+ CHECK( g2( 1e6 ) / n1( 1e6 ) > 1e6 );    // not O( n )
  const F a = []( double n ) { return( n + 3 ); } ,
-         b = []( double n ) { return( 100 * n + 3027 ); };
- CHECK( holds( a , b , 1 , 1 , 100000 ) &&
-        holds( b , a , 3127 , 1 , 100000 ) );
- const std::vector< Growth > H = { { 1 , 0 } , { 1 , 0 , 1 } , { 1 , 1 } ,
-  { 1 , 1 , 1 } , { 1 , 2 } , { 1 , 3 } , { 2 , 0 } };
+	 b = []( double n ) { return( 100 * n + 3027 ); };
+ CHECK( holds( a , b , 1 , 1 , 100000 ) && holds( b , a , 3127 , 1 ,
+						  100000 ) );
+ const std::vector< Growth > H = { { 1 , 0 } ,    { 1 , 0 , 1 } , { 1 , 1 } ,
+				   { 1 , 1 , 1 } , { 1 , 2 } ,    { 1 , 3 } ,
+				   { 2 , 0 } };
  for( std::size_t i = 1 ; i < H.size() ; ++i )
   CHECK( H[ i - 1 ] < H[ i ] );
- CHECK( master( 2 , 2 , 1 ) == Growth( { 1 , 1 , 1 } ) );   // n log n
- CHECK( master( 1 , 2 , 0 ) == Growth( { 1 , 0 , 1 } ) );   // log n
+ CHECK( master( 2 , 2 , 1 ) == Growth( { 1 , 1 , 1 } ) );  // n log n
+ CHECK( master( 1 , 2 , 0 ) == Growth( { 1 , 0 , 1 } ) );  // log n
  CHECK( master( 1 , 2 , 0 , -1 ) == Growth( { 1 , 0 , 0 , 1 } ) &&
-        master( 1 , 2 , 0 , -2 ) == Growth( { 1 , 0 } ) );  // k = -1 , -2
+	master( 1 , 2 , 0 , -2 ) == Growth( { 1 , 0 } ) );  // k = -1 , -2
  CHECK( master( 2 , 2 , 1 , -1 ) == Growth( { 1 , 1 , 0 , 1 } ) &&
-        master( 2 , 2 , 1 , 3 ) == Growth( { 1 , 1 , 4 } ) );
+	master( 2 , 2 , 1 , 3 ) == Growth( { 1 , 1 , 4 } ) );
  CHECK( master( 7 , 2 , 2 ) > Growth( { 1 , 2.8 } ) &&
-        master( 7 , 2 , 2 ) < Growth( { 1 , 2.81 } ) );       // n^log2 7
- CHECK( master( 2 , 2 , 2 , 5 ) == Growth( { 1 , 2 , 5 } ) );   // beta big
- for( int e = 1 ; e <= 6 ; ++e ) {               // log_b a an integer that
+	master( 7 , 2 , 2 ) < Growth( { 1 , 2.81 } ) );      // n^log2 7
+ CHECK( master( 2 , 2 , 2 , 5 ) == Growth( { 1 , 2 , 5 } ) );  // beta big
+ for( int e = 1 ; e <= 6 ; ++e ) {              // log_b a an integer that
   const double b = 10 , a = std::pow( b , e );  // the logarithms miss
   CHECK( master( a , b , e ) == Growth( { 1 , double( e ) , 1 } ) );
   CHECK( master( a , b , 0 ) == Growth( { 1 , double( e ) } ) );
@@ -2246,9 +2375,9 @@ ADS_TEST( "notations" )
  CHECK_THROWS( master( 2 , 1 , 0 ) , contract_violation );
  CHECK( linear( 1 , 0 ) == Growth( { 1 , 1 } ) && ! linear( 1 , 0 ).upper );
  CHECK( linear( 2 , 1 ) == Growth( { 2 , 1 } ) && linear( 2 , 1 ).upper );
- CHECK( linear( 1.5 , 0 ) == Growth( { 1.5 , 0 } ) );   // 1 < a < 2
+ CHECK( linear( 1.5 , 0 ) == Growth( { 1.5 , 0 } ) );  // 1 < a < 2
  CHECK_THROWS( linear( 0.5 , 0 ) , contract_violation );
- CHECK( Growth( { 1 , 0 } ) == Growth() && !( Growth() < Growth() ) );
+ CHECK( Growth( { 1 , 0 } ) == Growth() && ! ( Growth() < Growth() ) );
  }
 
 // the model of unit costs: an assignment, an operation or a comparison
@@ -2264,11 +2393,11 @@ ADS_TEST( "cost-model" )
 {
  auto factorial = []( long n , long & cost ) {
   long f = 1;
-  cost = 1;                                     // f = 1
-  cost += 2;                                    // i = 1 , the last test
+  cost = 1;   // f = 1
+  cost += 2;  // i = 1 , the last test
   for( long i = 1 ; i <= n ; ++i ) {
    f = f * i;
-   cost += 2 + 3;                               // the body, test and i++
+   cost += 2 + 3;  // the body, test and i++
    }
   return( f );
   };
@@ -2278,16 +2407,17 @@ ADS_TEST( "cost-model" )
   factorial( n , c );
   CHECK( c == 3 + 5 * n );
   }
- auto minCost = []( const Ints & B ) {          // C1 = ... = C6 = 1
-  long cost = 1 + 1;                            // the call, m = B[ j ]
+ auto minCost = []( const Ints & B ) {  // C1 = ... = C6 = 1
+  long cost = 1 + 1;                    // the call, m = B[ j ]
   int m = B[ 0 ];
   for( std::size_t i = 1 ; i < B.size() ; ++i ) {
-   cost += 1;                                   // the test of the for
-   cost += 1;                                   // B[ i ] < m
-   if( B[ i ] < m ) m = B[ i ];
-   cost += 1;                                   // counted as C5 ( n - 1 )
+   cost += 1;  // the test of the for
+   cost += 1;  // B[ i ] < m
+   if( B[ i ] < m )
+    m = B[ i ];
+   cost += 1;  // counted as C5 ( n - 1 )
    }
-  return( cost + 1 + 1 );                       // the last test, return
+  return( cost + 1 + 1 );  // the last test, return
   };
  Ints B;
  std::vector< long > T;
@@ -2299,29 +2429,36 @@ ADS_TEST( "cost-model" )
   CHECK( T[ i ] - T[ i - 1 ] == T[ 1 ] - T[ 0 ] );
  List< int > L;
  const int n = 50;
- for( int i = 0 ; i < n ; ++i ) L.insert( L.next( L.tail() ) , i );
+ for( int i = 0 ; i < n ; ++i )
+  L.insert( L.next( L.tail() ) , i );
  long total = 0;
- for( int i = 0 ; i < n ; ++i ) total += search( L , i ) + 1;
- CHECK( total == long( n ) * ( n + 1 ) / 2 );   // ( n + 1 ) / 2 on average
+ for( int i = 0 ; i < n ; ++i )
+  total += search( L , i ) + 1;
+ CHECK( total == long( n ) * ( n + 1 ) / 2 );  // ( n + 1 ) / 2 on average
  CHECK( search( L , -1 ) == -( n + 1 ) );       // n comparisons, worst
  long cmp = 0;
  Ints v( n ) , w( n );
- for( int i = 0 ; i < n ; ++i ) { v[ i ] = i; w[ i ] = n - 1 - i; }
- for( int x : w )                               // CercaInTutti
+ for( int i = 0 ; i < n ; ++i ) {
+  v[ i ] = i;
+  w[ i ] = n - 1 - i;
+  }
+ for( int x : w )  // CercaInTutti
   for( int y : v ) {
    ++cmp;
-   if( y == x ) break;
+   if( y == x )
+    break;
    }
  CHECK( cmp == long( n ) * ( n + 1 ) / 2 );
- CHECK( minCost( Ints( { 5 } ) ) == 4 );        // one item: no round
- CHECK( minCost( Ints( { 1 , 2 , 3 } ) ) ==     // the data do not count
-        minCost( Ints( { 3 , 2 , 1 } ) ) );
+ CHECK( minCost( Ints( { 5 } ) ) == 4 );   // one item: no round
+ CHECK( minCost( Ints( { 1 , 2 , 3 } ) ) ==  // the data do not count
+	minCost( Ints( { 3 , 2 , 1 } ) ) );
  CHECK( search( L , 0 ) == 0 && search( List< int >() , 0 ) == -1 );
  cmp = 0;
- for( int i = 0 ; i < n ; ++i )                 // each found first: N
+ for( int i = 0 ; i < n ; ++i )  // each found first: N
   for( int y : v ) {
    ++cmp;
-   if( y == v[ 0 ] ) break;
+   if( y == v[ 0 ] )
+    break;
    }
  CHECK( cmp == n );
  }
@@ -2332,7 +2469,8 @@ ADS_TEST( "cost-model" )
 // before the k-th of the second one (the comparisons of the audits
 // skipped); the edge cases: the empty lists, one item each, the second
 // list all first, all the items equal (those of the first list first)
-struct Counted {
+struct Counted
+{
  int v;
  static long count;
  bool operator<( const Counted & o ) const {
@@ -2347,29 +2485,30 @@ ADS_TEST( "merge-comparisons" )
 {
  auto list = []( std::initializer_list< int > I ) {
   List< Counted > L;
-  for( int x : I ) L.insert( L.next( L.tail() ) , Counted{ x } );
+  for( int x : I )
+   L.insert( L.next( L.tail() ) , Counted{ x } );
   return( L );
   };
  using LC = List< Counted >;
  auto merges = [ & ]( const LC & a , const LC & b ) {
   Counted::count = 0;
-  (void) mergeSorted( a , b );
+  ( void )mergeSorted( a , b );
   return( Counted::count );
   };
  CHECK( merges( list( { 1 , 2 } ) , list( { 5 , 6 , 7 } ) ) == 2 );
  CHECK( merges( list( { 1 , 3 , 5 } ) , list( { 2 , 4 , 6 } ) ) == 5 );
  const int m = 4 , n = 6;
- for( int k = 1 ; k <= n ; ++k ) {              // a ends before b[ k ]
+ for( int k = 1 ; k <= n ; ++k ) {  // a ends before b[ k ]
   List< Counted > a , b;
-  for( int i = 0 ; i < n ; ++i ) b.insert( b.next( b.tail() ) ,
-                                           Counted{ 10 * i } );
-  for( int i = 0 ; i < m ; ++i ) a.insert( a.next( a.tail() ) ,
-                                           Counted{ 10 * ( k - 1 ) - 5 + i } );
+  for( int i = 0 ; i < n ; ++i )
+   b.insert( b.next( b.tail() ) , Counted{ 10 * i } );
+  for( int i = 0 ; i < m ; ++i )
+   a.insert( a.next( a.tail() ) , Counted{ 10 * ( k - 1 ) - 5 + i } );
   CHECK( merges( a , b ) == m + k - 1 );
   }
  CHECK( merges( list( {} ) , list( {} ) ) == 0 &&
-        merges( list( {} ) , list( { 1 , 2 } ) ) == 0 &&
-        merges( list( { 1 , 2 } ) , list( {} ) ) == 0 );
+	merges( list( {} ) , list( { 1 , 2 } ) ) == 0 &&
+	merges( list( { 1 , 2 } ) , list( {} ) ) == 0 );
  CHECK( merges( list( { 4 } ) , list( { 4 } ) ) == 1 );
  CHECK( merges( list( { 5 , 6 , 7 } ) , list( { 1 , 2 } ) ) == 2 );
  CHECK( merges( list( { 3 , 3 } ) , list( { 3 , 3 , 3 } ) ) == 2 );
@@ -2383,14 +2522,17 @@ ADS_TEST( "merge-comparisons" )
 ADS_TEST( "kmp-strong" )
 {
  CHECK( kmpStrong( "110111011001" , "110110" ) ==
-        std::vector< std::size_t >( { 4 } ) );
+	std::vector< std::size_t >( { 4 } ) );
  const auto G = strongFailure( "110110" ) , F = failure( "110110" );
- for( std::size_t q = 0 ; q < G.size() ; ++q ) CHECK( G[ q ] <= F[ q ] );
+ for( std::size_t q = 0 ; q < G.size() ; ++q )
+  CHECK( G[ q ] <= F[ q ] );
  std::mt19937 g( 17 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::string T , P;
-  for( int i = int( g() % 60 ) ; i > 0 ; --i ) T += char( '0' + g() % 2 );
-  for( int i = 1 + int( g() % 6 ) ; i > 0 ; --i ) P += char( '0' + g() % 2 );
+  for( int i = int( g() % 60 ) ; i > 0 ; --i )
+   T += char( '0' + g() % 2 );
+  for( int i = 1 + int( g() % 6 ) ; i > 0 ; --i )
+   P += char( '0' + g() % 2 );
   long a = 0 , b = 0;
   CHECK( kmpStrong( T , P , &a ) == kmp( T , P , &b ) );
   CHECK( a <= b );
@@ -2398,15 +2540,17 @@ ADS_TEST( "kmp-strong" )
  using Places = std::vector< std::size_t >;
  using FV = std::vector< long >;
  CHECK( strongFailure( "" ) == FV( { -1 } ) &&
-        strongFailure( "aaaa" ) == FV( { -1 , -1 , -1 , -1 , 3 } ) &&
-        strongFailure( "ab" ) == FV( { -1 , 0 , 0 } ) );
- for( const auto & [ T , P ] : { std::pair( "" , "" ) , std::pair( "" , "a" ) ,
-       std::pair( "abc" , "" ) , std::pair( "abc" , "abc" ) ,
-       std::pair( "ab" , "abc" ) , std::pair( "aaaaa" , "aa" ) ,
-       std::pair( "aaaab" , "aab" ) , std::pair( "ba" , "a" ) } ) {
+	strongFailure( "aaaa" ) == FV( { -1 , -1 , -1 , -1 , 3 } ) &&
+	strongFailure( "ab" ) == FV( { -1 , 0 , 0 } ) );
+ for( const auto & [ T , P ] :
+      { std::pair( "" , "" ) , std::pair( "" , "a" ) ,
+	std::pair( "abc" , "" ) ,
+	std::pair( "abc" , "abc" ) , std::pair( "ab" , "abc" ) ,
+	std::pair( "aaaaa" , "aa" ) , std::pair( "aaaab" , "aab" ) ,
+	std::pair( "ba" , "a" ) } ) {
   long a = 0 , b = 0;
   CHECK( kmpStrong( T , P , &a ) == naiveMatching( T , P ) &&
-         kmp( T , P , &b ) == naiveMatching( T , P ) && a <= b );
+	 kmp( T , P , &b ) == naiveMatching( T , P ) && a <= b );
   }
  CHECK( kmpStrong( "aaaaa" , "aa" ) == Places( { 0 , 1 , 2 , 3 } ) );
  }
@@ -2439,40 +2583,45 @@ ADS_TEST( "knapsack-heuristics" )
   }
  using VL = std::vector< long >;
  auto all = [ & ]( const VL & P , const VL & V , long C , long best ) {
-  for( const auto & r : { knapsackBacktrack( P , V , C ) ,
-                          knapsackBB( P , V , C ) } ) {
+  for( const auto & r :
+       { knapsackBacktrack( P , V , C ) , knapsackBB( P , V , C ) } ) {
    long pr = 0 , vo = 0;
-   for( auto i : r.second ) { pr += P[ i ]; vo += V[ i ]; }
+   for( auto i : r.second ) {
+    pr += P[ i ];
+    vo += V[ i ];
+    }
    CHECK( r.first == best && pr == best && vo <= C );
    }
   const auto gr = knapsackGreedy( P , V , C );
   long vo = 0;
-  for( auto i : gr.second ) vo += V[ i ];
+  for( auto i : gr.second )
+   vo += V[ i ];
   CHECK( gr.first <= best && vo <= C && knapsack( P , V , C ).first == best );
   };
- all( VL() , VL() , 10 , 0 );                   // no object
- all( p , v , 0 , 0 );                          // no capacity
- all( p , v , 1 , 4 );                          // only the smallest fits
- all( VL( { 5 , 9 } ) , VL( { 6 , 7 } ) , 5 , 0 );   // none fits
- all( p , v , 100 , 17 );                       // all fit
- all( VL( 4 , 0 ) , VL( { 1 , 2 , 3 , 4 } ) , 5 , 0 );   // no profit
- all( VL( { 2 , 4 , 6 } ) , VL( { 1 , 2 , 3 } ) , 4 , 8 );   // equal ratios
- CHECK( knapsackGreedy( VL( { 2 , 4 , 6 } ) , VL( { 1 , 2 , 3 } ) , 4 ).first
-        <= 8 );
+ all( VL() , VL() , 10 , 0 );  // no object
+ all( p , v , 0 , 0 );         // no capacity
+ all( p , v , 1 ,
+      4 );                                           // only the smallest fits
+ all( VL( { 5 , 9 } ) , VL( { 6 , 7 } ) , 5 , 0 );        // none fits
+ all( p , v , 100 , 17 );                               // all fit
+ all( VL( 4 , 0 ) , VL( { 1 , 2 , 3 , 4 } ) , 5 , 0 );      // no profit
+ all( VL( { 2 , 4 , 6 } ) , VL( { 1 , 2 , 3 } ) , 4 , 8 );  // equal ratios
+ CHECK( knapsackGreedy( VL( { 2 , 4 , 6 } ) , VL( { 1 , 2 , 3 } ) ,
+			4 ).first <= 8 );
  CHECK_THROWS( knapsackBacktrack( p , VL( { 2 , 0 , 3 } ) , 5 ) ,
-               contract_violation );            // a volume 0
+	       contract_violation );  // a volume 0
  CHECK_THROWS( knapsackBB( p , v , -1 ) , contract_violation );
  CHECK_THROWS( knapsackGreedy( p , VL( { 2 , 1 } ) , 5 ) ,
-               contract_violation );            // sizes that differ
+	       contract_violation );  // sizes that differ
  CHECK_THROWS( knapsackBB( VL( { -1 , 4 , 7 } ) , v , 5 ) ,
-               contract_violation );            // a negative profit
+	       contract_violation );  // a negative profit
  // profits and volumes near a quarter of the largest long, whose cross
  // products overflow it, the denser object first all the same
  const long h = std::numeric_limits< long >::max() / 4;
  const VL bp = { h , 2 * h , 1 } , bv = { h , h , h };
  for( const auto & r : { knapsackGreedy( bp , bv , h ) ,
-                         knapsackBB( bp , bv , h ) ,
-                         knapsackBacktrack( bp , bv , h ) } )
+			 knapsackBB( bp , bv , h ) ,
+			 knapsackBacktrack( bp , bv , h ) } )
   CHECK( r.first == 2 * h && r.second == Nodes( { 1 } ) );
  }
 
@@ -2486,22 +2635,27 @@ ADS_TEST( "nqueens-iterative" )
  const long known[] = { 1 , 0 , 0 , 2 , 10 , 4 , 40 , 92 };
  for( int n = 1 ; n <= 8 ; ++n ) {
   CHECK( nQueensIterative( n , []( const std::vector< int > & ) {
-   return( false ); } ) == known[ n - 1 ] );
+	  return( false );
+	  } ) == known[ n - 1 ] );
   CHECK( nQueens( n , []( const std::vector< int > & ) {
-   return( false ); } ) == known[ n - 1 ] );
+	  return( false );
+	  } ) == known[ n - 1 ] );
   }
- auto stop = []( const std::vector< int > & Q ) {   // the first one only
+ auto stop = []( const std::vector< int > & Q ) {  // the first one only
   CHECK( admissible( Q ) );
-  return( true ); };
+  return( true );
+  };
  for( int n : { 1 , 4 , 8 } )
   CHECK( nQueensIterative( n , stop ) == 1 && nQueens( n , stop ) == 1 );
  CHECK( nQueensIterative( 3 , stop ) == 0 && nQueens( 2 , stop ) == 0 );
- std::vector< int > first;                      // the same first solution
+ std::vector< int > first;  // the same first solution
  nQueensIterative( 6 , [ & ]( const std::vector< int > & Q ) {
-  first = Q; return( true ); } );
+  first = Q;
+  return( true );
+  } );
  CHECK( first == std::vector< int >( { 1 , 3 , 5 , 0 , 2 , 4 } ) );
  CHECK( admissible( {} ) && admissible( { 0 } ) && ! admissible( { 0 , 1 } ) &&
-        ! admissible( { 2 , 2 } ) && admissible( { 1 , 3 , 0 , 2 } ) );
+	! admissible( { 2 , 2 } ) && admissible( { 1 , 3 , 0 , 2 } ) );
  for( auto f : { 0 , -1 } ) {
   CHECK_THROWS( nQueensIterative( f , stop ) , contract_violation );
   CHECK_THROWS( nQueens( f , stop ) , contract_violation );
@@ -2524,9 +2678,11 @@ ADS_TEST( "slide-sorts" )
  long c = 0;
  auto count = [ & ]( int a , int b ) {
   c += ! checkingContract();
-  return( a < b ); };
+  return( a < b );
+  };
  Ints S( 100 );
- for( int i = 0 ; i < 100 ; ++i ) S[ i ] = i;
+ for( int i = 0 ; i < 100 ; ++i )
+  S[ i ] = i;
  Ints A = S;
  mergeSort( A , 4 , count );
  CHECK( c == 99 && A == S );
@@ -2537,8 +2693,8 @@ ADS_TEST( "slide-sorts" )
  CHECK( H == Ints( { 3 , 8 , 14 , 35 , 18 , 39 , 20 , 41 } ) );
  shellSort( H , std::vector< std::size_t >( { 1 } ) );
  CHECK( std::is_sorted( H.begin() , H.end() ) );
- CHECK( hibbardGaps( 100 ) == std::vector< std::size_t >( { 1 , 3 , 7 , 15 ,
-                                                            31 , 63 } ) );
+ CHECK( hibbardGaps( 100 ) ==
+	std::vector< std::size_t >( { 1 , 3 , 7 , 15 , 31 , 63 } ) );
  c = 0;
  A = S;
  insertionSortSentinel( A , count );
@@ -2546,7 +2702,8 @@ ADS_TEST( "slide-sorts" )
  std::mt19937 g( 19 );
  for( int t = 0 ; t < 100 ; ++t ) {
   Ints B( int( g() % 30 ) );
-  for( auto & x : B ) x = int( g() % 50 );
+  for( auto & x : B )
+   x = int( g() % 50 );
   Ints C = B;
   insertionSortSentinel( B );
   std::sort( C.begin() , C.end() );
@@ -2555,27 +2712,30 @@ ADS_TEST( "slide-sorts" )
  Ints P = { 4 , 13 , 28 , 18 , 7 , 36 , 11 , 24 };
  CHECK( partitionByValue( P , 0 , 7 , 20 ) == 5 );
  CHECK( partitionByValue( P , 0 , 7 , 0 ) == 0 &&
-        partitionByValue( P , 0 , 7 , 99 ) == 8 );
+	partitionByValue( P , 0 , 7 , 99 ) == 8 );
  for( std::size_t n : { 1u , 2u , 7u , 16u , 33u } ) {
   Ints M( n );
-  for( auto & x : M ) x = int( g() % 1000 );
+  for( auto & x : M )
+   x = int( g() % 1000 );
   c = 0;
   const auto r = minMax( M , count );
-  CHECK( c == long( ( 3 * n + 1 ) / 2 ) - 2 );   // ceil( 3 n / 2 ) - 2
+  CHECK( c == long( ( 3 * n + 1 ) / 2 ) - 2 );  // ceil( 3 n / 2 ) - 2
   CHECK( r.first == *std::min_element( M.begin() , M.end() ) &&
-         r.second == *std::max_element( M.begin() , M.end() ) );
+	 r.second == *std::max_element( M.begin() , M.end() ) );
   c = 0;
   const auto d = minMaxDivide( M , count );
-  if( n == 16 ) CHECK( c == 3 * 16 / 2 - 2 );
+  if( n == 16 )
+   CHECK( c == 3 * 16 / 2 - 2 );
   CHECK( d == r );
   }
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
+	   m = std::numeric_limits< int >::min();
  for( const Ints & v : { Ints() , Ints( { 5 } ) , Ints( { 2 , 1 } ) ,
-                         Ints( 7 , 4 ) , Ints( { M , m , 0 , m , M } ) } ) {
+			 Ints( 7 , 4 ) ,
+			 Ints( { M , m , 0 , m , M } ) } ) {
   Ints s = v;
   std::sort( s.begin() , s.end() );
-  for( std::size_t cut : { 0u , 1u , 3u , 100u } ) {   // 0 taken as 1
+  for( std::size_t cut : { 0u , 1u , 3u , 100u } ) {  // 0 taken as 1
    Ints w = v;
    mergeSort( w , cut );
    CHECK( w == s );
@@ -2588,39 +2748,41 @@ ADS_TEST( "slide-sorts" )
   CHECK( w == s );
   if( ! v.empty() ) {
    CHECK( minMax( v ) == std::pair( s.front() , s.back() ) &&
-          minMaxDivide( v ) == std::pair( s.front() , s.back() ) );
+	  minMaxDivide( v ) == std::pair( s.front() , s.back() ) );
    w = v;
    const std::size_t e = v.size() - 1;
-   CHECK( partitionByValue( w , 0 , e , M ) == v.size() &&   // all <= M
-          partitionByValue( w , 0 , e , m ) ==
-          std::size_t( std::count( v.begin() , v.end() , m ) ) );
+   CHECK( partitionByValue( w , 0 , e , M ) == v.size() &&  // all <= M
+	  partitionByValue( w , 0 , e , m ) ==
+	    std::size_t( std::count( v.begin() , v.end() , m ) ) );
    }
   }
- using PI = std::pair< int , int >;            // stable: the earlier first
+ using PI = std::pair< int , int >;  // stable: the earlier first
  std::vector< PI > St = { { 2 , 0 } , { 1 , 1 } , { 2 , 2 } , { 1 , 3 } ,
-                          { 2 , 4 } };
+			  { 2 , 4 } };
  for( std::size_t cut : { 1u , 3u } ) {
   auto w = St;
   mergeSort( w , cut , []( const PI & a , const PI & b ) {
-   return( a.first < b.first ); } );
-  CHECK( w == std::vector< PI >( { { 1 , 1 } , { 1 , 3 } , { 2 , 0 } ,
-                                   { 2 , 2 } , { 2 , 4 } } ) );
+   return( a.first < b.first );
+   } );
+  CHECK( w == std::vector< PI >(
+		{ { 1 , 1 } , { 1 , 3 } , { 2 , 0 } , { 2 , 2 } ,
+		  { 2 , 4 } } ) );
   }
  c = 0;
- A = { 1 , 2 };                                 // 2 n - 3 = 1 for n = 2
+ A = { 1 , 2 };  // 2 n - 3 = 1 for n = 2
  insertionSortSentinel( A , count );
  CHECK( c == 1 );
  using G = std::vector< std::size_t >;
  CHECK( hibbardGaps( 0 ) == G( { 1 } ) && hibbardGaps( 3 ) == G( { 1 } ) &&
-        hibbardGaps( 4 ) == G( { 1 , 3 } ) );
+	hibbardGaps( 4 ) == G( { 1 , 3 } ) );
  Ints h = { 3 , 1 , 2 };
- shellSort( h , G( { 1 , 10 } ) );              // a gap past n
+ shellSort( h , G( { 1 , 10 } ) );  // a gap past n
  CHECK( h == Ints( { 1 , 2 , 3 } ) );
  CHECK_THROWS( shellSort( h , G( { 0 } ) ) , contract_violation );
  CHECK_THROWS( shellSort( h , G( { 3 , 1 } ) ) , contract_violation );
  Ints q = { 9 , 1 , 9 };
- CHECK( partitionByValue( q , 1 , 1 , 0 ) == 0 &&   // one item
-        partitionByValue( q , 1 , 1 , 1 ) == 1 && q == Ints( { 9 , 1 , 9 } ) );
+ CHECK( partitionByValue( q , 1 , 1 , 0 ) == 0 &&  // one item
+	partitionByValue( q , 1 , 1 , 1 ) == 1 && q == Ints( { 9 , 1 , 9 } ) );
  CHECK_THROWS( partitionByValue( q , 2 , 1 , 0 ) , contract_violation );
  CHECK_THROWS( partitionByValue( q , 0 , 3 , 0 ) , contract_violation );
  CHECK_THROWS( minMax( Ints() ) , contract_violation );
@@ -2637,34 +2799,37 @@ ADS_TEST( "slide-sorts" )
 ADS_TEST( "classical-instances" )
 {
  const long s[] = { 1 , 3 , 0 , 5 , 3 , 5 , 6 , 8 , 8 , 2 , 12 } ,
-            f[] = { 4 , 5 , 6 , 7 , 9 , 9 , 10 , 11 , 12 , 14 , 16 };
+	    f[] = { 4 , 5 , 6 , 7 , 9 , 9 , 10 , 11 , 12 , 14 , 16 };
  std::vector< std::pair< long , long > > I;
- for( int i = 0 ; i < 11 ; ++i ) I.emplace_back( s[ i ] , f[ i ] );
- CHECK( independentSet( I ) ==
-        std::vector< std::size_t >( { 0 , 3 , 7 , 10 } ) );
+ for( int i = 0 ; i < 11 ; ++i )
+  I.emplace_back( s[ i ] , f[ i ] );
+ CHECK( independentSet( I ) == std::vector< std::size_t >( { 0 , 3 , 7 ,
+							     10 } ) );
  std::vector< WeightedEdge< int > > E;
- const std::pair< std::string , int > W[] = { { "ab" , 4 } , { "ah" , 8 } ,
-  { "bc" , 8 } , { "bh" , 11 } , { "cd" , 7 } , { "ci" , 2 } , { "cf" , 4 } ,
-  { "de" , 9 } , { "df" , 14 } , { "ef" , 10 } , { "fg" , 2 } , { "gh" , 1 } ,
-  { "gi" , 6 } , { "hi" , 7 } };
+ const std::pair< std::string , int > W[] = {
+  { "ab" , 4 } , { "ah" , 8 } , { "bc" , 8 } , { "bh" , 11 } , { "cd" , 7 } ,
+  { "ci" , 2 } , { "cf" , 4 } , { "de" , 9 } , { "df" , 14 } , { "ef" , 10 } ,
+  { "fg" , 2 } , { "gh" , 1 } , { "gi" , 6 } , { "hi" , 7 }
+  };
  for( const auto & [ e , w ] : W )
   E.push_back( { e[ 0 ] - 'a' , e[ 1 ] - 'a' , w } );
  int total = 0;
- for( const auto & e : kruskal( 9 , E ) ) total += e.w;
+ for( const auto & e : kruskal( 9 , E ) )
+  total += e.w;
  CHECK( total == 37 );
  const auto P = partition( std::vector< long >( { 1 , 2 , 2 , 4 , 7 } ) );
  CHECK( P.has_value() );
  using IV = std::vector< std::pair< long , long > >;
  using SV = std::vector< std::size_t >;
  CHECK( independentSet( IV() ).empty() &&
-        independentSet( IV( { { 2 , 3 } } ) ) == SV( { 0 } ) );
+	independentSet( IV( { { 2 , 3 } } ) ) == SV( { 0 } ) );
  CHECK( independentSet( IV( { { 3 , 5 } , { 1 , 3 } } ) ) ==
-        SV( { 0 , 1 } ) );                      // touching: disjoint
- CHECK( independentSet( IV( 4 , { 0 , 9 } ) ) == SV( { 0 } ) );   // equal
+	SV( { 0 , 1 } ) );  // touching: disjoint
+ CHECK( independentSet( IV( 4 , { 0 , 9 } ) ) == SV( { 0 } ) );  // equal
  CHECK( independentSet( IV( { { 0 , 10 } , { 1 , 2 } , { 3 , 4 } } ) ) ==
-        SV( { 1 , 2 } ) );                      // nested
+	SV( { 1 , 2 } ) );  // nested
  CHECK_THROWS( independentSet( IV( { { 4 , 4 } } ) ) , contract_violation );
- std::mt19937 g( 22 );                          // the size against brute force
+ std::mt19937 g( 22 );  // the size against brute force
  for( int t = 0 ; t < 200 ; ++t ) {
   IV J( g() % 9 );
   for( auto & [ a , b ] : J ) {
@@ -2676,31 +2841,36 @@ ADS_TEST( "classical-instances" )
    bool ok = true;
    for( std::size_t x = 0 ; x < J.size() ; ++x )
     for( std::size_t y = x + 1 ; y < J.size() ; ++y )
-     if( ( S >> x & 1 ) && ( S >> y & 1 ) && ( J[ x ].first < J[ y ].second )
-         && ( J[ y ].first < J[ x ].second ) )
+     if( ( S >> x & 1 ) && ( S >> y & 1 ) &&
+	 ( J[ x ].first < J[ y ].second ) && ( J[ y ].first < J[ x ].second ) )
       ok = false;
    std::size_t k = 0;
-   for( unsigned s = S ; s ; s &= s - 1 ) ++k;
-   if( ok ) best = std::max( best , k );
+   for( unsigned s = S ; s ; s &= s - 1 )
+    ++k;
+   if( ok )
+    best = std::max( best , k );
    }
   CHECK( independentSet( J ).size() == best );
   }
  using WE = std::vector< WeightedEdge< int > >;
  CHECK( kruskal( 0 , WE() ).empty() && kruskal( 1 , WE() ).empty() );
- const auto F = kruskal( 4 , WE( { { 0 , 1 , 5 } , { 2 , 3 , 1 } ,
-                                   { 0 , 1 , 2 } } ) );   // two trees,
- total = 0;                                     // a parallel edge
- for( const auto & e : F ) total += e.w;
+ const auto F = kruskal(
+   4 ,
+   WE( { { 0 , 1 , 5 } , { 2 , 3 , 1 } , { 0 , 1 , 2 } } ) );  // two trees,
+ total = 0;                                               // a parallel edge
+ for( const auto & e : F )
+  total += e.w;
  CHECK( F.size() == 2 && total == 3 );
- const auto Z = kruskal( 3 , WE( { { 0 , 1 , 0 } , { 1 , 2 , 0 } ,
-                                   { 0 , 2 , 0 } } ) );   // all weights 0
+ const auto Z = kruskal(
+   3 ,
+   WE( { { 0 , 1 , 0 } , { 1 , 2 , 0 } , { 0 , 2 , 0 } } ) );  // all weights 0
  CHECK( Z.size() == 2 );
  CHECK_THROWS( kruskal( 2 , WE( { { 0 , 2 , 1 } } ) ) , contract_violation );
- CHECK( partition( std::vector< long >() ).has_value() &&   // two empty
-        partition( std::vector< long >( { 0 } ) ).has_value() );
+ CHECK( partition( std::vector< long >() ).has_value() &&  // two empty
+	partition( std::vector< long >( { 0 } ) ).has_value() );
  CHECK( ! partition( std::vector< long >( { 1 } ) ) &&
-        ! partition( std::vector< long >( { 1 , 2 } ) ) &&    // odd sum
-        ! partition( std::vector< long >( { 1 , 1 , 4 } ) ) );   // even
+	! partition( std::vector< long >( { 1 , 2 } ) ) &&     // odd sum
+	! partition( std::vector< long >( { 1 , 1 , 4 } ) ) );  // even
  const auto Q = partition( std::vector< long >( { 7 , 7 } ) );
  CHECK( Q && Q->size() == 1 );
  }
@@ -2716,8 +2886,8 @@ ADS_TEST( "eight-puzzle" )
  const Board goal = puzzleSpiralGoal( 3 );
  CHECK( goal == Board( { 1 , 2 , 3 , 8 , 0 , 4 , 7 , 6 , 5 } ) );
  CHECK( puzzleSpiralGoal( 4 ) ==
-        Board( { 1 , 2 , 3 , 4 , 12 , 13 , 14 , 5 , 11 , 0 , 15 , 6 , 10 , 9 ,
-                 8 , 7 } ) );
+	Board( { 1 , 2 , 3 , 4 , 12 , 13 , 14 , 5 , 11 , 0 , 15 , 6 , 10 , 9 ,
+		 8 , 7 } ) );
  const Board start = { 2 , 8 , 3 , 1 , 6 , 4 , 7 , 0 , 5 };
  long visited = 0;
  const auto S = puzzleBFS( start , goal , 3 , &visited );
@@ -2726,34 +2896,34 @@ ADS_TEST( "eight-puzzle" )
  CHECK( D5 && D5->size() <= 6 && D5->back() == goal );
  CHECK( ! puzzleDFS( start , goal , 3 , 4 ) );
  const auto A = solvePuzzle( puzzleMoves( puzzleGoal( 3 ) , 3 )[ 0 ] , 3 );
- const auto Bf = puzzleBFS( puzzleMoves( puzzleGoal( 3 ) , 3 )[ 0 ] ,
-                            puzzleGoal( 3 ) , 3 );
+ const auto Bf =
+   puzzleBFS( puzzleMoves( puzzleGoal( 3 ) , 3 )[ 0 ] , puzzleGoal( 3 ) , 3 );
  CHECK( A && Bf && A->size() == Bf->size() );
- const auto G = puzzleBFS( goal , goal , 3 );   // already at the goal
+ const auto G = puzzleBFS( goal , goal , 3 );  // already at the goal
  CHECK( G && G->size() == 1 && puzzleDFS( goal , goal , 3 , 0 ) &&
-        puzzleDFS( goal , goal , 3 , 0 )->size() == 1 );
+	puzzleDFS( goal , goal , 3 , 0 )->size() == 1 );
  CHECK( ! puzzleDFS( start , goal , 3 , 0 ) );
  const auto H = solvePuzzle( puzzleGoal( 3 ) , 3 );
  CHECK( H && H->size() == 1 );
- Board odd = goal;                              // two tiles swapped: the
- std::swap( odd[ 0 ] , odd[ 1 ] );              // other half of the boards
+ Board odd = goal;                 // two tiles swapped: the
+ std::swap( odd[ 0 ] , odd[ 1 ] );  // other half of the boards
  CHECK( ! puzzleBFS( odd , goal , 3 ) );
  Board unsolved = puzzleGoal( 3 );
  std::swap( unsolved[ 0 ] , unsolved[ 1 ] );
  CHECK( ! solvable( unsolved , 3 ) && ! solvePuzzle( unsolved , 3 ) );
  CHECK( puzzleGoal( 1 ) == Board( { 0 } ) &&
-        puzzleSpiralGoal( 1 ) == Board( { 0 } ) &&
-        puzzleMoves( Board( { 0 } ) , 1 ).empty() );
+	puzzleSpiralGoal( 1 ) == Board( { 0 } ) &&
+	puzzleMoves( Board( { 0 } ) , 1 ).empty() );
  const auto One = puzzleBFS( Board( { 0 } ) , Board( { 0 } ) , 1 );
  CHECK( One && One->size() == 1 );
  CHECK( puzzleSpiralGoal( 2 ) == Board( { 1 , 2 , 0 , 3 } ) );
  CHECK( puzzleMoves( goal , 3 ).size() == 4 &&  // the hole in the middle,
-        puzzleMoves( puzzleGoal( 3 ) , 3 ).size() == 2 &&   // in a corner,
-        puzzleMoves( start , 3 ).size() == 3 );            // on a side
+	puzzleMoves( puzzleGoal( 3 ) , 3 ).size() == 2 &&  // in a corner,
+	puzzleMoves( start , 3 ).size() == 3 );            // on a side
  CHECK_THROWS( puzzleGoal( 0 ) , contract_violation );
  CHECK_THROWS( puzzleDFS( start , goal , 3 , -1 ) , contract_violation );
  CHECK_THROWS( puzzleMoves( Board( { 1 , 1 , 0 , 2 } ) , 2 ) ,
-               contract_violation );            // not a configuration
+	       contract_violation );  // not a configuration
  CHECK_THROWS( puzzleBFS( start , goal , 4 ) , contract_violation );
  }
 
@@ -2771,163 +2941,232 @@ ADS_TEST( "paradigms" )
 {
  const Ints V = { 7 , 3 , 9 , 3 , 1 };
  for( int v : { 3 , 1 , 8 } ) {
-  const auto r = enumerateSearch( 0 , []( int i ) { return( i + 1 ); } ,
-   [ & ]( int i ) { return( i + 1 == int( V.size() ) ); } ,
-   [ & ]( int i ) { return( V[ i ] == v ); } ,
-   []( int i ) { return( i ); } );
+  const auto r = enumerateSearch(
+    0 , []( int i ) { return( i + 1 ); } ,
+    [ & ]( int i ) { return( i + 1 == int( V.size() ) ); } ,
+    [ & ]( int i ) { return( V[ i ] == v ); } ,
+    []( int i ) { return( i ); } );
   const auto e = std::find( V.begin() , V.end() , v );
   CHECK( r ? ( *r == e - V.begin() ) : ( e == V.end() ) );
   }
  std::mt19937 g( 20 );
  for( int t = 0 ; t < 20 ; ++t ) {
   Ints A( int( g() % 6 ) + 1 );
-  for( auto & x : A ) x = int( g() % 10 );
+  for( auto & x : A )
+   x = int( g() % 10 );
   Ints z( A.size() );
   std::iota( z.begin() , z.end() , 0 );
   auto apply = [ & ]( const Ints & p ) {
    Ints B;
-   for( int i : p ) B.push_back( A[ i ] );
-   return( B ); };
-  const auto sorted = enumerateSearch( z ,
-   []( Ints p ) { std::next_permutation( p.begin() , p.end() );
-                  return( p ); } ,
-   []( const Ints & p ) { return( std::is_sorted( p.rbegin() ,
-                                                  p.rend() ) ); } ,
-   [ & ]( const Ints & p ) {
-    const Ints B = apply( p );
-    return( std::is_sorted( B.begin() , B.end() ) ); } ,
-   apply );
+   for( int i : p )
+    B.push_back( A[ i ] );
+   return( B );
+   };
+  const auto sorted = enumerateSearch(
+    z ,
+    []( Ints p ) {
+     std::next_permutation( p.begin() , p.end() );
+     return( p );
+     } ,
+    []( const Ints & p ) {
+     return( std::is_sorted( p.rbegin() , p.rend() ) );
+     } ,
+    [ & ]( const Ints & p ) {
+     const Ints B = apply( p );
+     return( std::is_sorted( B.begin() , B.end() ) );
+     } ,
+    apply );
   Ints C = A;
   std::sort( C.begin() , C.end() );
   CHECK( sorted && *sorted == C );
   }
  for( int n = 1 ; n <= 7 ; ++n ) {
   long count = 0;
-  backtrack( Ints() , [ & ]( const Ints & Q ) {
-   std::vector< Ints > C;
-   for( int c = 0 ; c < n ; ++c ) { Ints R = Q; R.push_back( c );
-                                    C.push_back( R ); }
-   return( C ); } ,
-   []( const Ints & Q ) { return( ! admissible( Q ) ); } ,
-   [ & ]( const Ints & Q ) { return( int( Q.size() ) == n ); } ,
-   [ & ]( const Ints & ) { ++count; return( false ); } );
+  backtrack(
+    Ints() ,
+    [ & ]( const Ints & Q ) {
+     std::vector< Ints > C;
+     for( int c = 0 ; c < n ; ++c ) {
+      Ints R = Q;
+      R.push_back( c );
+      C.push_back( R );
+      }
+     return( C );
+     } ,
+    []( const Ints & Q ) { return( ! admissible( Q ) ); } ,
+    [ & ]( const Ints & Q ) { return( int( Q.size() ) == n ); } ,
+    [ & ]( const Ints & ) {
+     ++count;
+     return( false );
+     } );
   CHECK( count == nQueens( n , []( const std::vector< int > & ) {
-   return( false ); } ) );
+	  return( false );
+	  } ) );
   }
  for( int t = 0 ; t < 30 ; ++t ) {
   const int n = 1 + int( g() % 8 );
   std::vector< long > p( n ) , v( n );
-  for( int i = 0 ; i < n ; ++i ) { p[ i ] = g() % 20; v[ i ] = 1 + g() % 9; }
+  for( int i = 0 ; i < n ; ++i ) {
+   p[ i ] = g() % 20;
+   v[ i ] = 1 + g() % 9;
+   }
   const long C = long( g() % 25 );
-  auto vol = [ & ]( unsigned s ) { long w = 0;
-   for( int i = 0 ; i < n ; ++i ) if( s >> i & 1 ) w += v[ i ];
-   return( w ); };
-  auto prof = [ & ]( unsigned s ) { long w = 0;
-   for( int i = 0 ; i < n ; ++i ) if( s >> i & 1 ) w += p[ i ];
-   return( w ); };
-  const auto best = enumerateOptimize( 0u ,
-   []( unsigned s ) { return( s + 1 ); } ,
-   [ & ]( unsigned s ) { return( s + 1 == ( 1u << n ) ); } ,
-   [ & ]( unsigned s ) { return( vol( s ) <= C ); } , prof , prof ,
-   []( long a , long b ) { return( a > b ); } );
+  auto vol = [ & ]( unsigned s ) {
+   long w = 0;
+   for( int i = 0 ; i < n ; ++i )
+    if( s >> i & 1 )
+     w += v[ i ];
+   return( w );
+   };
+  auto prof = [ & ]( unsigned s ) {
+   long w = 0;
+   for( int i = 0 ; i < n ; ++i )
+    if( s >> i & 1 )
+     w += p[ i ];
+   return( w );
+   };
+  const auto best = enumerateOptimize(
+    0u , []( unsigned s ) { return( s + 1 ); } ,
+    [ & ]( unsigned s ) { return( s + 1 == ( 1u << n ) ); } ,
+    [ & ]( unsigned s ) { return( vol( s ) <= C ); } , prof , prof ,
+    []( long a , long b ) { return( a > b ); } );
   CHECK( best && *best == knapsack( p , v , C ).first );
   }
  using MM = std::pair< int , int >;
  const Ints M = { 5 , 9 , -2 , 7 , 3 , 11 , 0 };
- const MM mm = divideEtImpera( std::pair( 0 , int( M.size() ) - 1 ) ,
-  []( MM r ) { return( r.second - r.first <= 1 ); } ,
-  [ & ]( MM r ) { return( std::pair( std::min( M[ r.first ] , M[ r.second ] ) ,
-                          std::max( M[ r.first ] , M[ r.second ] ) ) ); } ,
-  []( MM r ) { const int h = r.first + ( r.second - r.first ) / 2;
-               return( std::vector< MM >( { { r.first , h } ,
-                                            { h + 1 , r.second } } ) ); } ,
-  []( const std::vector< MM > & P ) {
-   return( std::pair( std::min( P[ 0 ].first , P[ 1 ].first ) ,
-                      std::max( P[ 0 ].second , P[ 1 ].second ) ) ); } );
+ const MM mm = divideEtImpera(
+   std::pair( 0 , int( M.size() ) - 1 ) ,
+   []( MM r ) { return( r.second - r.first <= 1 ); } ,
+   [ & ]( MM r ) {
+    return( std::pair( std::min( M[ r.first ] , M[ r.second ] ) ,
+			std::max( M[ r.first ] , M[ r.second ] ) ) );
+    } ,
+   []( MM r ) {
+    const int h = r.first + ( r.second - r.first ) / 2;
+    return( std::vector< MM >( { { r.first , h } , { h + 1 , r.second } } ) );
+    } ,
+   []( const std::vector< MM > & P ) {
+    return( std::pair( std::min( P[ 0 ].first , P[ 1 ].first ) ,
+			std::max( P[ 0 ].second , P[ 1 ].second ) ) );
+    } );
  CHECK( mm == MM( -2 , 11 ) );
- long rest = 63;                                   // the greedy change
+ long rest = 63;  // the greedy change
  using VL = std::vector< long >;
- const auto coins = greedy< long >( 6 , [ & ]( int , const VL & ) {
-   VL c;
-   for( long d : { 50L , 20L , 10L , 5L , 2L , 1L } )
-    if( d <= rest ) c.push_back( d );
-   return( c ); } ,
-  [ & ]( const VL & c ) { rest -= c[ 0 ]; return( c[ 0 ] ); } );
+ const auto coins = greedy< long >(
+   6 ,
+   [ & ]( int , const VL & ) {
+    VL c;
+    for( long d : { 50L , 20L , 10L , 5L , 2L , 1L } )
+     if( d <= rest )
+      c.push_back( d );
+    return( c );
+    } ,
+   [ & ]( const VL & c ) {
+    rest -= c[ 0 ];
+    return( c[ 0 ] );
+    } );
  CHECK( coins == std::vector< long >( { 50 , 10 , 2 , 1 } ) && rest == 0 );
- std::unique_ptr< Tree< int > > T( tree_from_list< int >(
-  "( 1 ( 9 ( 2 ) ( 2 ) ) ( 3 ( 8 ) ) )" ) );
- CHECK( maxWeightLevel( T.get() ) == 1 );           // 12 > 1 , 12 = 12
+ std::unique_ptr< Tree< int > > T(
+   tree_from_list< int >( "( 1 ( 9 ( 2 ) ( 2 ) ) ( 3 ( 8 ) ) )" ) );
+ CHECK( maxWeightLevel( T.get() ) == 1 );  // 12 > 1 , 12 = 12
  const std::vector< std::string > W = { "TORRE" , "ERRORE" , "ZERO" ,
-                                        "TENORE" };
+					"TENORE" };
  using SV = std::vector< std::string >;
  CHECK( maximal( W , []( const std::string & a , const std::string & b ) {
-  return( a > b ); } ) == SV( { "ZERO" } ) );
+	 return( a > b );
+	 } ) == SV( { "ZERO" } ) );
  CHECK( maximal( W , []( const std::string & a , const std::string & b ) {
-  return( a.size() > b.size() ); } ) == SV( { "ERRORE" , "TENORE" } ) );
+	 return( a.size() > b.size() );
+	 } ) == SV( { "ERRORE" , "TENORE" } ) );
  auto letters = []( const std::string & a ) {
-  return( std::set< char >( a.begin() , a.end() ) ); };
+  return( std::set< char >( a.begin() , a.end() ) );
+  };
  CHECK( maximal( W , [ & ]( const std::string & a , const std::string & b ) {
-  const auto A = letters( a ) , B = letters( b );
-  return( A != B && std::includes( A.begin() , A.end() , B.begin() ,
-                                   B.end() ) ); } ) ==
-        SV( { "ZERO" , "TENORE" } ) );
+	 const auto A = letters( a ) , B = letters( b );
+	 return( A != B &&
+		  std::includes( A.begin() , A.end() , B.begin() , B.end() ) );
+	 } ) == SV( { "ZERO" , "TENORE" } ) );
  const auto gt = []( const std::string & a , const std::string & b ) {
-  return( a > b ); };
+  return( a > b );
+  };
  CHECK( maximal( SV() , gt ).empty() &&
-        maximal( SV( { "A" , "A" } ) , gt ) == SV( { "A" , "A" } ) );
+	maximal( SV( { "A" , "A" } ) , gt ) == SV( { "A" , "A" } ) );
  CHECK( maximal( W , []( const std::string & , const std::string & ) {
-  return( false ); } ) == W );                   // none comparable: all
- for( int v : { 4 , 5 } ) {                     // one state, first and last
-  const auto r = enumerateSearch( 0 , []( int i ) { return( i + 1 ); } ,
-   []( int ) { return( true ); } , [ & ]( int ) { return( v == 4 ); } ,
-   []( int i ) { return( i ); } );
+	 return( false );
+	 } ) == W );         // none comparable: all
+ for( int v : { 4 , 5 } ) {  // one state, first and last
+  const auto r = enumerateSearch(
+    0 , []( int i ) { return( i + 1 ); } , []( int ) { return( true ); } ,
+    [ & ]( int ) { return( v == 4 ); } , []( int i ) { return( i ); } );
   CHECK( bool( r ) == ( v == 4 ) );
   }
- CHECK( ! enumerateOptimize( 0 , []( int i ) { return( i + 1 ); } ,
-   []( int i ) { return( i == 9 ); } , []( int ) { return( false ); } ,
-   []( int i ) { return( i ); } , []( int i ) { return( i ); } ,
-   []( int a , int b ) { return( a > b ); } ) );   // none admissible
+ CHECK( ! enumerateOptimize(
+   0 , []( int i ) { return( i + 1 ); } , []( int i ) { return( i == 9 ); } ,
+   []( int ) { return( false ); } , []( int i ) { return( i ); } ,
+   []( int i ) { return( i ); } ,
+   []( int a , int b ) { return( a > b ); } ) );  // none admissible
  long leaves = 0;
  auto kids = []( const Ints & Q ) {
-  return( std::vector< Ints >( { Q , Q } ) ); };
- CHECK( ! backtrack( Ints() , kids , []( const Ints & ) { return( true ); } ,
-                     []( const Ints & ) { return( false ); } ,
-                     [ & ]( const Ints & ) { ++leaves; return( false ); } ) &&
-        leaves == 0 );                          // the root pruned
- CHECK( ! backtrack( Ints() , kids , []( const Ints & ) { return( false ); } ,
-                     []( const Ints & ) { return( true ); } ,
-                     [ & ]( const Ints & ) { ++leaves; return( false ); } ) &&
-        leaves == 1 );                          // the root a leaf
- CHECK( backtrack( Ints() , []( const Ints & Q ) {
-                    std::vector< Ints > C;
-                    for( int c = 0 ; c < 3 ; ++c ) {
-                     Ints R = Q;
-                     R.push_back( c );
-                     C.push_back( R ); }
-                    return( C ); } ,
-                   []( const Ints & ) { return( false ); } ,
-                   []( const Ints & Q ) { return( Q.size() == 2 ); } ,
-                   [ & ]( const Ints & ) { ++leaves; return( true ); } ) &&
-        leaves == 2 );                          // stopped at the first
+  return( std::vector< Ints >( { Q , Q } ) );
+  };
+ CHECK( ! backtrack(
+	  Ints() , kids , []( const Ints & ) { return( true ); } ,
+	  []( const Ints & ) { return( false ); } ,
+	  [ & ]( const Ints & ) {
+	   ++leaves;
+	   return( false );
+	   } ) &&
+	leaves == 0 );  // the root pruned
+ CHECK( ! backtrack(
+	  Ints() , kids , []( const Ints & ) { return( false ); } ,
+	  []( const Ints & ) { return( true ); } ,
+	  [ & ]( const Ints & ) {
+	   ++leaves;
+	   return( false );
+	   } ) &&
+	leaves == 1 );  // the root a leaf
+ CHECK( backtrack(
+	  Ints() ,
+	  []( const Ints & Q ) {
+	   std::vector< Ints > C;
+	   for( int c = 0 ; c < 3 ; ++c ) {
+	    Ints R = Q;
+	    R.push_back( c );
+	    C.push_back( R );
+	    }
+	   return( C );
+	   } ,
+	  []( const Ints & ) { return( false ); } ,
+	  []( const Ints & Q ) { return( Q.size() == 2 ); } ,
+	  [ & ]( const Ints & ) {
+	   ++leaves;
+	   return( true );
+	   } ) &&
+	leaves == 2 );  // stopped at the first
  using VL = std::vector< long >;
- CHECK( greedy< long >( 0 , []( int , const VL & ) { return( VL( { 1 } ) ); } ,
-                        []( const VL & c ) { return( c[ 0 ] ); } ).empty() );
- CHECK( greedy< long >( 5 , []( int , const VL & ) { return( VL() ); } ,
-                        []( const VL & c ) { return( c[ 0 ] ); } ).empty() );
- CHECK( divideEtImpera( 7 , []( int ) { return( true ); } ,
-                        []( int x ) { return( 2 * x ); } ,
-                        []( int ) { return( Ints() ); } ,
-                        []( const Ints & ) { return( -1 ); } ) == 14 );
+ CHECK( greedy< long >(
+	  0 , []( int , const VL & ) { return( VL( { 1 } ) ); } ,
+	  []( const VL & c ) { return( c[ 0 ] ); } )
+	  .empty() );
+ CHECK( greedy< long >(
+	  5 , []( int , const VL & ) { return( VL() ); } ,
+	  []( const VL & c ) { return( c[ 0 ] ); } )
+	  .empty() );
+ CHECK( divideEtImpera(
+	  7 , []( int ) { return( true ); } ,
+	  []( int x ) { return( 2 * x ); } ,
+	  []( int ) { return( Ints() ); } ,
+	  []( const Ints & ) { return( -1 ); } ) == 14 );
  std::unique_ptr< Tree< int > > O( tree_from_list< int >( "( 5 )" ) );
- CHECK( maxWeightLevel( O.get() ) == 0 );       // one node
+ CHECK( maxWeightLevel( O.get() ) == 0 );  // one node
  std::unique_ptr< Tree< int > > N( tree_from_list< int >(
-  "( -9 ( -1 ( 3 ) ) ( -2 ( -3 ) ) )" ) );      // negative: the last level
- CHECK( maxWeightLevel( N.get() ) == 2 );       // -9 , -3 , 0
- std::unique_ptr< Tree< int > > Eq( tree_from_list< int >(
-  "( 2 ( 1 ( 2 ) ) ( 1 ) )" ) );                // all 2: the first
+   "( -9 ( -1 ( 3 ) ) ( -2 ( -3 ) ) )" ) );  // negative: the last level
+ CHECK( maxWeightLevel( N.get() ) == 2 );    // -9 , -3 , 0
+ std::unique_ptr< Tree< int > > Eq(
+   tree_from_list< int >( "( 2 ( 1 ( 2 ) ) ( 1 ) )" ) );  // all 2: the first
  CHECK( maxWeightLevel( Eq.get() ) == 0 );
  CHECK_THROWS( maxWeightLevel( static_cast< Tree< int > * >( nullptr ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the factorial by a loop and by the recursion, the same specification
@@ -2950,41 +3189,41 @@ ADS_TEST( "factorial-fibonacci" )
   for( int k = 0 ; k <= n ; ++k )
    CHECK( binomialByFactorials( n , k ) == tartaglia( 20 )[ n ][ k ] );
  FibonacciCache F;
- for( int n : { 50 , 10 , 92 , 0 } ) CHECK( F.value( n ) == fibonacci( n ) );
+ for( int n : { 50 , 10 , 92 , 0 } )
+  CHECK( F.value( n ) == fibonacci( n ) );
  const int kept = F.size();
  CHECK( F.value( 50 ) == fibonacci( 50 ) && F.size() == kept && kept == 93 );
- CHECK( factorial( 0 ) == 1 && factorialRec( 0 ) == 1 &&
-        factorial( 1 ) == 1 );
+ CHECK( factorial( 0 ) == 1 && factorialRec( 0 ) == 1 && factorial( 1 ) == 1 );
  for( int n : { -1 , 21 } ) {
   CHECK_THROWS( factorial( n ) , contract_violation );
   CHECK_THROWS( factorialRec( n ) , contract_violation );
   }
  CHECK( fibonacci( 0 ) == 1 && fibonacci( 1 ) == 1 && fibonacci( 2 ) == 2 &&
-        fibonacci( 92 ) == 12200160415121876738ULL );   // F_0 = F_1 = 1
+	fibonacci( 92 ) == 12200160415121876738ULL );  // F_0 = F_1 = 1
  for( int n : { 0 , 1 , 2 , 92 } )
   CHECK( fibonacciTable( n ) == fibonacci( n ) );
  CHECK_THROWS( fibonacci( -1 ) , contract_violation );
  CHECK_THROWS( fibonacciTable( 93 ) , contract_violation );
  long calls = 0;
  CHECK( binomial( 67 , 0 , &calls ) == 1 && calls == 1 &&
-        binomial( 67 , 67 ) == 1 && binomial( 0 , 0 ) == 1 );
+	binomial( 67 , 67 ) == 1 && binomial( 0 , 0 ) == 1 );
  calls = 0;
  CHECK( binomial( 10 , 5 , &calls ) == 252 && calls == 2 * 252 - 1 );
- for( auto [ n , k ] : { std::pair( 5 , 6 ) , std::pair( 5 , -1 ) ,
-                         std::pair( -1 , 0 ) } )
+ for( auto [ n , k ] :
+      { std::pair( 5 , 6 ) , std::pair( 5 , -1 ) , std::pair( -1 , 0 ) } )
   CHECK_THROWS( binomial( n , k ) , contract_violation );
- const auto T = tartaglia( 67 );                // the last row that fits
+ const auto T = tartaglia( 67 );  // the last row that fits
  CHECK( T[ 67 ][ 33 ] == 14226520737620288370ULL && T[ 67 ][ 0 ] == 1 &&
-        T[ 67 ][ 67 ] == 1 && T[ 67 ][ 34 ] == T[ 67 ][ 33 ] );
- CHECK( tartaglia( 0 ) == std::vector< std::vector< std::uint64_t > >(
-        { { 1 } } ) );
+	T[ 67 ][ 67 ] == 1 && T[ 67 ][ 34 ] == T[ 67 ][ 33 ] );
+ CHECK( tartaglia( 0 ) ==
+	std::vector< std::vector< std::uint64_t > >( { { 1 } } ) );
  CHECK_THROWS( tartaglia( 68 ) , contract_violation );
  CHECK_THROWS( tartaglia( -1 ) , contract_violation );
  CHECK( binomialByFactorials( 0 , 0 ) == 1 &&
-        binomialByFactorials( 20 , 10 ) == 184756 );
+	binomialByFactorials( 20 , 10 ) == 184756 );
  CHECK_THROWS( binomialByFactorials( 21 , 1 ) , contract_violation );
  CHECK_THROWS( binomialByFactorials( 3 , 4 ) , contract_violation );
- FibonacciCache C;                              // F_0 and F_1 at the start
+ FibonacciCache C;  // F_0 and F_1 at the start
  CHECK( C.size() == 2 && C.value( 1 ) == 1 && C.size() == 2 );
  CHECK_THROWS( C.value( -1 ) , contract_violation );
  CHECK_THROWS( C.value( 93 ) , contract_violation );
@@ -2998,7 +3237,8 @@ ADS_TEST( "sequence-range" )
 {
  auto check = []( const auto & s ) {
   Ints a , b;
-  for( const auto & x : range( s ) ) a.push_back( x );
+  for( const auto & x : range( s ) )
+   a.push_back( x );
   for( auto p = s.head() ; ! s.finished( p ) ; p = s.next( p ) )
    b.push_back( s.read( p ) );
   CHECK( a == b );
@@ -3008,16 +3248,16 @@ ADS_TEST( "sequence-range" )
  check( SinglyList< int >( { 5 , 3 , 5 } ) );
  check( CursorList< int >( { 8 , 9 , 7 , 9 } ) );
  check( List< int >() );
- check( ArraySequence< int >() );               // the empty ones
+ check( ArraySequence< int >() );  // the empty ones
  check( SinglyList< int >() );
  check( CursorList< int >() );
- check( List< int >( { 7 } ) );                 // one item
+ check( List< int >( { 7 } ) );  // one item
  check( SinglyList< int >( { 7 } ) );
  CHECK( std::ranges::distance( range( ArraySequence< int >() ) ) == 0 &&
-        std::ranges::count( range( List< int >() ) , 1 ) == 0 );
+	std::ranges::count( range( List< int >() ) , 1 ) == 0 );
  List< int > L = { 1 , 2 , 3 };
  static_assert( std::ranges::input_range< SequenceRange< List< int > > > );
- CHECK( std::ranges::count( range( L ) , 2 ) == 1 );   // a range of C++
+ CHECK( std::ranges::count( range( L ) , 2 ) == 1 );  // a range of C++
  }
 
 // a specification by axioms of the integers from zero, the successor and
@@ -3026,9 +3266,11 @@ ADS_TEST( "sequence-range" )
 // pred( succ( n ) ) = n and succ( pred( n ) ) = n
 ADS_TEST( "algebraic-spec" )
 {
- class Peano {
+ class Peano
+ {
   long f_n = 0;
-  explicit Peano( long n ) : f_n( n ) {}
+  explicit Peano( long n ) : f_n( n ) { }
+
   public:
   static Peano zero( void ) { return( Peano( 0 ) ); }
   [[nodiscard]] Peano succ( void ) const { return( Peano( f_n + 1 ) ); }
@@ -3057,44 +3299,46 @@ ADS_TEST( "postfix" )
 {
  CHECK( evalPostfix( "5 9 8 + 4 6 * * 7 + *" ) == 2075 );
  CHECK( evalPostfix( "35 17 40 9 - * + 7 -" ) == 555 );
- CHECK( toPostfixParenthesized( "( 5 * ( ( ( 9 + 8 ) * ( 4 * 6 ) ) + 7 ) )" )
-        == "5 9 8 + 4 6 * * 7 + *" );
+ CHECK(
+   toPostfixParenthesized( "( 5 * ( ( ( 9 + 8 ) * ( 4 * 6 ) ) + 7 ) )" ) ==
+   "5 9 8 + 4 6 * * 7 + *" );
  CHECK( toPostfix( "35 + 17 * ( 40 - 9 ) - 7" ) == "35 17 40 9 - * + 7 -" );
- CHECK( toPostfix( "8 - 3 - 2" ) == "8 3 - 2 -" );   // to the left
+ CHECK( toPostfix( "8 - 3 - 2" ) == "8 3 - 2 -" );  // to the left
  CHECK( evalPostfix( toPostfix( "8 - 3 - 2" ) ) == 3 );
- CHECK( toPostfix( "2*(3+4)" ) == "2 3 4 + *" );     // no spaces
+ CHECK( toPostfix( "2*(3+4)" ) == "2 3 4 + *" );  // no spaces
  std::mt19937 g( 11 );
- for( int t = 0 ; t < 200 ; ++t ) {                // a + b * c - d / e
+ for( int t = 0 ; t < 200 ; ++t ) {  // a + b * c - d / e
   const long a = g() % 50 , b = g() % 50 , c = g() % 50 , d = g() % 50 ,
-             e = 1 + g() % 9;
+	     e = 1 + g() % 9;
   const std::string x = std::to_string( a ) + " + " + std::to_string( b ) +
-   " * " + std::to_string( c ) + " - ( " + std::to_string( d ) + " / " +
-   std::to_string( e ) + " )";
+			" * " + std::to_string( c ) + " - ( " +
+			std::to_string( d ) + " / " + std::to_string( e ) +
+			" )";
   CHECK( evalPostfix( toPostfix( x ) ) == a + b * c - d / e );
   }
  CHECK( evalPostfix( "42" ) == 42 && evalPostfix( "3 5 -" ) == -2 &&
-        evalPostfix( "7 2 /" ) == 3 && evalPostfix( "0 7 /" ) == 0 );
- const std::string M =                          // the largest long, of
-  std::to_string( std::numeric_limits< long >::max() );   // 32 or 64 bits
- const std::string m = "0 " + M + " - 1 -";     // the smallest one
+	evalPostfix( "7 2 /" ) == 3 && evalPostfix( "0 7 /" ) == 0 );
+ const std::string M =  // the largest long, of
+   std::to_string( std::numeric_limits< long >::max() );  // 32 or 64 bits
+ const std::string m = "0 " + M + " - 1 -";               // the smallest one
  CHECK( evalPostfix( M + " 0 +" ) == std::numeric_limits< long >::max() &&
-        evalPostfix( m ) == std::numeric_limits< long >::min() );
- for( const std::string & e : { M + " 1 +" , m + " 1 -" , m + " 0 1 - /" ,
-                                m + " 0 1 - *" , M + " 2 *" ,
-                                std::string( "7 0 /" ) , std::string( "" ) ,
-                                std::string( "1 2" ) , std::string( "1 +" ) ,
-                                std::string( "+" ) , std::string( "( 1 )" ) ,
-                                std::string( "1 & 2" ) } )
+	evalPostfix( m ) == std::numeric_limits< long >::min() );
+ for( const std::string & e :
+      { M + " 1 +" , m + " 1 -" , m + " 0 1 - /" , m + " 0 1 - *" ,
+	M + " 2 *" ,
+	std::string( "7 0 /" ) , std::string( "" ) , std::string( "1 2" ) ,
+	std::string( "1 +" ) , std::string( "+" ) , std::string( "( 1 )" ) ,
+	std::string( "1 & 2" ) } )
   CHECK_THROWS( evalPostfix( e ) , contract_violation );
  CHECK_THROWS( evalPostfix( "99999999999999999999" ) , std::logic_error );
  CHECK( toPostfix( "7" ) == "7" && toPostfix( "((7))" ) == "7" &&
-        toPostfix( "" ).empty() );
- CHECK( toPostfix( "1 * 2 / 3" ) == "1 2 * 3 /" &&   // the same precedence
-        toPostfix( "1 + 2 * 3 - 4" ) == "1 2 3 * + 4 -" );
+	toPostfix( "" ).empty() );
+ CHECK( toPostfix( "1 * 2 / 3" ) == "1 2 * 3 /" &&  // the same precedence
+	toPostfix( "1 + 2 * 3 - 4" ) == "1 2 3 * + 4 -" );
  CHECK_THROWS( toPostfix( "( 1 + 2" ) , contract_violation );
  CHECK_THROWS( toPostfix( "1 + 2 )" ) , contract_violation );
  CHECK( toPostfixParenthesized( "7" ) == "7" &&
-        toPostfixParenthesized( "( 1 - 2 )" ) == "1 2 -" );
+	toPostfixParenthesized( "( 1 - 2 )" ) == "1 2 -" );
  CHECK_THROWS( toPostfixParenthesized( "1 + 2" ) , contract_violation );
  CHECK_THROWS( toPostfixParenthesized( "( 1 ) )" ) , contract_violation );
  }
@@ -3109,7 +3353,10 @@ std::string lifo( S P , const std::string & trace )
 {
  std::string out;
  for( char c : trace )
-  if( c == '*' ) out += P.pop(); else P.push( c );
+  if( c == '*' )
+   out += P.pop();
+  else
+   P.push( c );
  CHECK( P.empty() );
  return( out );
  }
@@ -3119,7 +3366,10 @@ std::string fifo( Q q , const std::string & trace )
 {
  std::string out;
  for( char c : trace )
-  if( c == '*' ) out += q.dequeue(); else q.enqueue( c );
+  if( c == '*' )
+   out += q.dequeue();
+  else
+   q.enqueue( c );
  CHECK( q.empty() );
  return( out );
  }
@@ -3132,16 +3382,16 @@ ADS_TEST( "lifo-fifo-traces" )
  const std::string F = "FIRS*T*IN***FI*RS***T*OUT*****";
  CHECK( fifo( LinkedQueue< char >() , F ) == "FIRSTINFIRSTOUT" );
  CHECK( fifo( ArrayQueue< char >( 8 ) , F ) == "FIRSTINFIRSTOUT" );
- CHECK( lifo( ArrayStack< char >( 1 ) , "" ).empty() &&   // no operation
-        fifo( LinkedQueue< char >() , "" ).empty() );
- CHECK( lifo( ArrayStack< char >( 1 ) , "a*b*c*" ) == "abc" &&   // full
-        fifo( ArrayQueue< char >( 1 ) , "a*b*c*" ) == "abc" );   // each time
- CHECK( fifo( ArrayQueue< char >( 5 ) , F ) == "FIRSTINFIRSTOUT" );   // just
- CHECK_THROWS( lifo( ArrayStack< char >( 1 ) , "ab**" ) ,     // big enough
-               contract_violation );            // one push too many
+ CHECK( lifo( ArrayStack< char >( 1 ) , "" ).empty() &&  // no operation
+	fifo( LinkedQueue< char >() , "" ).empty() );
+ CHECK( lifo( ArrayStack< char >( 1 ) , "a*b*c*" ) == "abc" &&  // full
+	fifo( ArrayQueue< char >( 1 ) , "a*b*c*" ) == "abc" );  // each time
+ CHECK( fifo( ArrayQueue< char >( 5 ) , F ) == "FIRSTINFIRSTOUT" );  // just
+ CHECK_THROWS( lifo( ArrayStack< char >( 1 ) , "ab**" ) ,  // big enough
+	       contract_violation );                     // one push too many
  CHECK_THROWS( fifo( ArrayQueue< char >( 4 ) , F ) , contract_violation );
  CHECK_THROWS( lifo( SequenceStack< List< char > >() , "*" ) ,
-               contract_violation );            // a pop of nothing
+	       contract_violation );  // a pop of nothing
  CHECK_THROWS( fifo( LinkedQueue< char >() , "a**" ) , contract_violation );
  }
 
@@ -3150,33 +3400,38 @@ ADS_TEST( "lifo-fifo-traces" )
 ADS_TEST( "stack-bottom-up" )
 {
  ArrayStack< int > P( 10 );
- for( int i : { 4 , 8 , 15 , 16 } ) P.push( i );
+ for( int i : { 4 , 8 , 15 , 16 } )
+  P.push( i );
  Ints v;
  forEachBottomUp( P , [ & ]( int x ) { v.push_back( x ); } );
  CHECK( v == Ints( { 4 , 8 , 15 , 16 } ) && P.top() == 16 );
  SequenceStack< List< int > > E;
  forEachBottomUp( E , [ & ]( int ) { CHECK( false ); } );
  CHECK( E.empty() );
- ArrayStack< int > O( 1 );                      // one item, a full vector
+ ArrayStack< int > O( 1 );  // one item, a full vector
  O.push( 9 );
  v.clear();
  forEachBottomUp( O , [ & ]( int x ) { v.push_back( x ); } );
  CHECK( v == Ints( { 9 } ) && O.top() == 9 && O.size() == 1 );
- SequenceStack< List< int > > D;                // 10^4 items deep
- for( int i = 0 ; i < 10000 ; ++i ) D.push( i );
+ SequenceStack< List< int > > D;  // 10^4 items deep
+ for( int i = 0 ; i < 10000 ; ++i )
+  D.push( i );
  long sum = 0 , last = -1;
  bool rising = true;
  forEachBottomUp( D , [ & ]( int x ) {
   rising = rising && ( x == last + 1 );
   last = x;
-  sum += x; } );
+  sum += x;
+  } );
  CHECK( rising && sum == 9999L * 10000 / 2 && D.top() == 9999 );
  }
 
-namespace {
+namespace
+{
 
 /// an int whose equalities are counted
-struct CountedEq {
+struct CountedEq
+{
  int x;
  inline static long eqs = 0;
  friend bool operator==( const CountedEq & a , const CountedEq & b ) {
@@ -3198,15 +3453,17 @@ ADS_TEST( "unique-queue-one-scan" )
  for( long n = 1 ; n <= 12 ; ++n )
   for( long i = 0 ; i < n ; ++i ) {
    UniqueQueue< CountedEq , Duplicate::FORGET_OLD > Q;
-   for( long k = 0 ; k < n ; ++k ) Q.enqueue( CountedEq{ int( k ) } );
+   for( long k = 0 ; k < n ; ++k )
+    Q.enqueue( CountedEq{ int( k ) } );
    CountedEq::eqs = 0;
    Q.enqueue( CountedEq{ int( i ) } );
    const long post = ADS_CONTRACTS >= 2 ? 1 + n + 1 : 0 ,
-              audit = ADS_CONTRACTS >= 3 ? n * ( n - 1 ) / 2 : 0;
+	      audit = ADS_CONTRACTS >= 3 ? n * ( n - 1 ) / 2 : 0;
    CHECK( CountedEq::eqs == i + 1 + post + audit );
    CHECK( Q.size() == std::size_t( n ) );
    Ints out;
-   while( ! Q.empty() ) out.push_back( Q.dequeue().x );
+   while( ! Q.empty() )
+    out.push_back( Q.dequeue().x );
    CHECK( out.back() == int( i ) );
    }
  }
@@ -3219,13 +3476,15 @@ ADS_TEST( "unique-queue-one-scan" )
 ADS_TEST( "queue-algorithms" )
 {
  LinkedQueue< int > q , p , r;
- for( int x : { 3 , -1 , 0 , 7 , -5 , 2 } ) q.enqueue( x );
+ for( int x : { 3 , -1 , 0 , 7 , -5 , 2 } )
+  q.enqueue( x );
  copyPositive( q , p );
  CHECK( q.size() == 6 && q.top() == 3 );
  extractPositive( q , r );
  CHECK( q.empty() && p == r );
  Ints v;
- while( ! r.empty() ) v.push_back( r.dequeue() );
+ while( ! r.empty() )
+  v.push_back( r.dequeue() );
  CHECK( v == Ints( { 3 , 7 , 2 } ) );
  CHECK_THROWS( copyPositive( p , p ) , contract_violation );
  UniqueQueue< int , Duplicate::IGNORE_NEW > I;
@@ -3235,43 +3494,49 @@ ADS_TEST( "queue-algorithms" )
   O.enqueue( x );
   }
  Ints a , b;
- while( ! I.empty() ) a.push_back( I.dequeue() );
- while( ! O.empty() ) b.push_back( O.dequeue() );
+ while( ! I.empty() )
+  a.push_back( I.dequeue() );
+ while( ! O.empty() )
+  b.push_back( O.dequeue() );
  CHECK( a == Ints( { 1 , 2 , 3 } ) && b == Ints( { 1 , 3 , 2 } ) );
  CHECK_THROWS( I.dequeue() , contract_violation );
  auto drain = []( auto & Q ) {
   Ints w;
-  while( ! Q.empty() ) w.push_back( Q.dequeue() );
+  while( ! Q.empty() )
+   w.push_back( Q.dequeue() );
   return( w );
   };
  LinkedQueue< int > e , out;
- copyPositive( e , out );                       // the empty queue
+ copyPositive( e , out );  // the empty queue
  extractPositive( e , out );
  CHECK( e.empty() && out.empty() );
  for( int x : { 0 , -1 , std::numeric_limits< int >::min() } )
-  q.enqueue( x );                               // nothing positive
+  q.enqueue( x );  // nothing positive
  copyPositive( q , out );
  CHECK( out.empty() && q.size() == 3 );
  extractPositive( q , out );
  CHECK( out.empty() && q.empty() );
- out.enqueue( 9 );                              // out not empty: the back
- for( int x : { 1 , std::numeric_limits< int >::max() } ) q.enqueue( x );
+ out.enqueue( 9 );  // out not empty: the back
+ for( int x : { 1 , std::numeric_limits< int >::max() } )
+  q.enqueue( x );
  extractPositive( q , out );
- CHECK( drain( out ) == Ints( { 9 , 1 , std::numeric_limits< int >::max() } )
-        && q.empty() );
+ CHECK( drain( out ) == Ints( { 9 , 1 ,
+				std::numeric_limits< int >::max() } ) &&
+	q.empty() );
  CHECK_THROWS( extractPositive( q , q ) , contract_violation );
  I.enqueue( 5 );
  CHECK( I.dequeue() == 5 && I.empty() );
- I.enqueue( 5 );                                // again, after it left
+ I.enqueue( 5 );  // again, after it left
  I.enqueue( 5 );
  CHECK( I.size() == 1 && I.top() == 5 && I.contains( 5 ) &&
-        ! I.contains( 6 ) );
- for( int x : { 1 , 1 , 2 , 1 , 2 , 1 } ) O.enqueue( x );   // to the back
- CHECK( drain( O ) == Ints( { 2 , 1 } ) );                // each time
- O.enqueue( 4 );                                // one item, again
+	! I.contains( 6 ) );
+ for( int x : { 1 , 1 , 2 , 1 , 2 , 1 } )
+  O.enqueue( x );                          // to the back
+ CHECK( drain( O ) == Ints( { 2 , 1 } ) );  // each time
+ O.enqueue( 4 );                           // one item, again
  O.enqueue( 4 );
  CHECK( O.size() == 1 && drain( O ) == Ints( { 4 } ) );
- CHECK_THROWS( (void) O.top() , contract_violation );
+ CHECK_THROWS( ( void )O.top() , contract_violation );
  }
 
 // the sieve of Eratosthenes on a set: the 25 primes up to 100, and the
@@ -3284,9 +3549,9 @@ ADS_TEST( "sieve" )
  CHECK( sieve( 10000 ).size() == 1229 );
  using UV = std::vector< U64 >;
  CHECK( sieve( 0 ).empty() && sieve( 3 ) == UV( { 2 , 3 } ) &&
-        sieve( 4 ) == UV( { 2 , 3 } ) );
- CHECK( sieve( 25 ).back() == 23 && sieve( 49 ).back() == 47 &&   // squares
-        sieve( 97 ).back() == 97 && sieve( 96 ).back() == 89 );   // n prime
+	sieve( 4 ) == UV( { 2 , 3 } ) );
+ CHECK( sieve( 25 ).back() == 23 && sieve( 49 ).back() == 47 &&  // squares
+	sieve( 97 ).back() == 97 && sieve( 96 ).back() == 89 );  // n prime
  }
 
 // the dictionary on a sorted vector: random operations against std::map,
@@ -3310,7 +3575,7 @@ ADS_TEST( "sorted-array-dictionary" )
    }
   const auto it = R.find( k );
   const auto r = it == R.end() ? std::optional< int >()
-                               : std::optional< int >( it->second );
+			       : std::optional< int >( it->second );
   CHECK( D.lookup( k ) == r );
   }
  CHECK( D.size() == R.size() );
@@ -3319,15 +3584,16 @@ ADS_TEST( "sorted-array-dictionary" )
   CHECK( D.pairs()[ i ].first == k && D.pairs()[ i ].second == v );
   ++i;
   }
- SortedArrayDictionary< int , int > E;          // nothing in it
+ SortedArrayDictionary< int , int > E;  // nothing in it
  CHECK( E.size() == 0 && ! E.lookup( 0 ) );
- E.remove( 0 );                                 // absent: nothing
+ E.remove( 0 );  // absent: nothing
  const int M = std::numeric_limits< int >::max() ,
-           m = std::numeric_limits< int >::min();
- for( int k : { 0 , M , m } ) E.insert( k , k );   // at either end
- E.insert( M , 1 );                             // the value replaced
+	   m = std::numeric_limits< int >::min();
+ for( int k : { 0 , M , m } )
+  E.insert( k , k );  // at either end
+ E.insert( M , 1 );   // the value replaced
  CHECK( E.size() == 3 && E.lookup( M ) == 1 && E.lookup( m ) == m &&
-        E.pairs().front().first == m && E.pairs().back().first == M );
+	E.pairs().front().first == m && E.pairs().back().first == M );
  E.remove( m );
  E.remove( M );
  CHECK( E.size() == 1 && E.pairs().front().first == 0 && ! E.lookup( m ) );

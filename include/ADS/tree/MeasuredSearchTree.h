@@ -48,7 +48,7 @@
 
 #ifndef __ADS_MeasuredSearchTree
  #define __ADS_MeasuredSearchTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,7 +69,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS MeasuredSearchTree ------------------------*/
@@ -78,19 +79,20 @@ namespace ADS {
 /// a DICTIONARY on a binary search tree whose nodes keep the size, the
 /// depth and the height of their subtree
 template< std::totally_ordered K , class V >
-class MeasuredSearchTree {
+class MeasuredSearchTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the measures of a node
- struct Measures {
-  std::size_t size;      ///< the nodes of its subtree
-  std::size_t depth;     ///< the edges from the root to it
-  long height;           ///< the height of its subtree, 0 for a leaf
+ struct Measures
+ {
+  std::size_t size;   ///< the nodes of its subtree
+  std::size_t depth;  ///< the edges from the root to it
+  long height;        ///< the height of its subtree, 0 for a leaf
   };
 
  /// the empty tree
@@ -104,7 +106,7 @@ class MeasuredSearchTree {
 
  /// the nodes of `other`, which is left empty
  MeasuredSearchTree( MeasuredSearchTree && other ) noexcept
-  : f_root( other.f_root ) , f_size( other.f_size ) {
+     : f_root( other.f_root ) , f_size( other.f_size ) {
   other.f_root = nullptr;
   other.f_size = 0;
   }
@@ -171,8 +173,8 @@ class MeasuredSearchTree {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find(x)` of an SSet), in \f$ O( h ) \f$ time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( h ) \f$ time:
  /// the `find( x )` of a USet of Morin [see `DictionarySet`]; valid until the
@@ -195,25 +197,25 @@ class MeasuredSearchTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, with its three measures
- struct Node {
-  K key;                       ///< the key
-  V value;                     ///< the value
-  Node * left = nullptr;       ///< the left child
-  Node * right = nullptr;      ///< the right child
-  Node * parent = nullptr;     ///< the parent
-  std::size_t size = 1;        ///< the nodes of the subtree
-  std::size_t depth = 0;       ///< the depth
-  long height = 0;             ///< the height of the subtree
+ struct Node
+ {
+  K key;                    ///< the key
+  V value;                  ///< the value
+  Node * left = nullptr;    ///< the left child
+  Node * right = nullptr;   ///< the right child
+  Node * parent = nullptr;  ///< the parent
+  std::size_t size = 1;     ///< the nodes of the subtree
+  std::size_t depth = 0;    ///< the depth
+  long height = 0;          ///< the height of the subtree
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root ); }
   /// the left child of the node `n`
@@ -228,13 +230,13 @@ class MeasuredSearchTree {
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< MeasuredSearchTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -250,14 +252,13 @@ class MeasuredSearchTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the node of \f$ k \f$, or the last node of its search, nil if empty
  Node * findLast( const K & k ) const;
 
  /// the height of \f$ u \f$ from its children
  static long fresh( const Node * u ) {
   return( 1 + std::max( u->left ? u->left->height : -1L ,
-                        u->right ? u->right->height : -1L ) );
+			 u->right ? u->right->height : -1L ) );
   }
 
  /// the measures exact everywhere and the keys in order, \f$ O( n ) \f$
@@ -266,8 +267,8 @@ class MeasuredSearchTree {
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Node * f_root = nullptr;     ///< the root
- std::size_t f_size = 0;      ///< the number of keys
+ Node * f_root = nullptr;  ///< the root
+ std::size_t f_size = 0;   ///< the number of keys
 
  };  // end( class MeasuredSearchTree )
 
@@ -283,7 +284,7 @@ class MeasuredSearchTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MeasuredSearchTree.h included */
+#endif /* MeasuredSearchTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File MeasuredSearchTree.h ---------------------*/

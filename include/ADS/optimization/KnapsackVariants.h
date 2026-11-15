@@ -80,7 +80,7 @@
 
 #ifndef __ADS_KnapsackVariants
  #define __ADS_KnapsackVariants
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -99,7 +99,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the largest gain of a rod of length \f$ L \f$ cut in pieces of lengths
 /// \f$ 1 , \ldots , m \f$, \f$ m = |\mathit{price}| \f$,
@@ -128,8 +129,8 @@ namespace ADS {
 /// \pre \f$ L = 0 \f$ or `price` not empty
 /// \post the pieces sum to \f$ L \f$ and their prices to the gain (audit)
 template< class T >
-std::pair< T , std::vector< std::size_t > > rodCutting(
-                              const std::vector< T > & price , std::size_t L );
+std::pair< T , std::vector< std::size_t > >
+rodCutting( const std::vector< T > & price , std::size_t L );
 
 /// the largest profit of the objects of profits \f$ p \f$ and volumes
 /// \f$ v \f$, each in unlimited supply, in a knapsack of capacity \f$ C \f$,
@@ -158,8 +159,9 @@ std::pair< T , std::vector< std::size_t > > rodCutting(
 /// \pre \f$ |p| = |v| \f$, \f$ v_i > 0 \f$, \f$ C \ge 0 \f$
 /// \post the copies fit and give the profit (audit)
 template< class T , class V >
-std::pair< T , std::vector< std::size_t > > unboundedKnapsack(
-               const std::vector< T > & p , const std::vector< V > & v , V C );
+std::pair< T , std::vector< std::size_t > >
+unboundedKnapsack( const std::vector< T > & p , const std::vector< V > & v ,
+		   V C );
 
 /// the least value of coins of weights \f$ w \f$ and values \f$ v \f$, in
 /// unlimited supply, weighing exactly \f$ W \f$; nothing if there is none
@@ -182,7 +184,7 @@ std::pair< T , std::vector< std::size_t > > unboundedKnapsack(
 /// \pre \f$ |w| = |v| \f$, \f$ w_i > 0 \f$, \f$ W \ge 0 \f$
 template< class T , class V >
 std::optional< T > minValueExactWeight( const std::vector< V > & w ,
-                                        const std::vector< T > & v , V W );
+					const std::vector< T > & v , V W );
 
 /// the number of multisets of the coins of sum \f$ T \f$, each coin in
 /// unlimited supply; equal values in `coins` count as distinct kinds
@@ -259,7 +261,7 @@ inline int minimumSquares( std::int64_t n );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* KnapsackVariants.h included */
+#endif /* KnapsackVariants.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File KnapsackVariants.h -----------------------*/

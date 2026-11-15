@@ -60,35 +60,40 @@ int main( int argc , char ** argv )
     std::vector< std::string > P;
     for( std::size_t z = 0 ; z < k ; ++z ) {
      const std::size_t m = 8 + g() % 9;
-     if( z % 2 == 0 ) P.push_back( T.substr( g() % ( n - m + 1 ) , m ) );
+     if( z % 2 == 0 )
+      P.push_back( T.substr( g() % ( n - m + 1 ) , m ) );
      else {
       std::string p( m , ' ' );
-      for( auto & c : p ) c = alphabet[ g() % alphabet.size() ];
+      for( auto & c : p )
+       c = alphabet[ g() % alphabet.size() ];
       P.push_back( p );
       }
      }
-    const std::string what = std::string( kind ) + " k=" +
-                             std::to_string( k );
+    const std::string what = std::string( kind ) + " k=" + std::to_string( k );
     std::size_t expected = 0;
     bool first = true;
     auto run = [ & ]( const char * who , auto && count ) {
      if( skip( who ) )
       return;
      std::size_t c = 0;
-     const double t = median( [](){ return( 0 ); } , [ & ]( int ) {
-      c = count();
-      sink = sink + c; } , o.runs , n );
-     if( first ) expected = c;
+     const double t = median( []() { return( 0 ); } ,
+			      [ & ]( int ) {
+			       c = count();
+			       sink = sink + c;
+			       } ,
+			      o.runs , n );
+     if( first )
+      expected = c;
      else if( c != expected ) {
       std::fprintf( stderr , "%s: %zu occurrences, not %zu\n" , who , c ,
-                    expected );
+		    expected );
       std::exit( 1 );
       }
      first = false;
      print( "multi" , what , n , who , t );
      };
     if( ! skip( "ADS::MultiSearcher" ) ||
-        ! skip( "ADS::MultiSearcher A/A" ) ) {
+	! skip( "ADS::MultiSearcher A/A" ) ) {
      const ADS::MultiSearcher M( P );
      run( "ADS::MultiSearcher" , [ & ]() { return( M.count( T ) ); } );
      run( "ADS::MultiSearcher A/A" , [ & ]() { return( M.count( T ) ); } );
@@ -103,9 +108,10 @@ int main( int argc , char ** argv )
       const std::string_view V( T );
       for( const auto & p : P )
        for( std::size_t i = V.find( p ) ; i != V.npos ;
-            i = V.find( p , i + 1 ) )
-        ++c;
-      return( c ); } );
+	    i = V.find( p , i + 1 ) )
+	++c;
+      return( c );
+      } );
 #ifdef ADS_HAS_HYPERSCAN
     if( ! skip( "Vectorscan" ) ) {
      // each pattern as an expression of escaped bytes, \xHH (the literal
@@ -117,7 +123,7 @@ int main( int argc , char ** argv )
       for( const char c : P[ z ] ) {
        char h[ 5 ];
        std::snprintf( h , sizeof( h ) , "\\x%02x" ,
-                      unsigned( static_cast< unsigned char >( c ) ) );
+		      unsigned( static_cast< unsigned char >( c ) ) );
        X[ z ] += h;
        }
       E.push_back( X[ z ].c_str() );
@@ -127,8 +133,8 @@ int main( int argc , char ** argv )
      hs_database_t * db = nullptr;
      hs_compile_error_t * err = nullptr;
      if( hs_compile_multi( E.data() , F.data() , I.data() , unsigned( k ) ,
-                           HS_MODE_BLOCK , nullptr , &db , &err ) !=
-         HS_SUCCESS ) {
+			   HS_MODE_BLOCK , nullptr , &db ,
+			   &err ) != HS_SUCCESS ) {
       std::fprintf( stderr , "hyperscan: %s\n" , err->message );
       hs_free_compile_error( err );
       return( 1 );
@@ -137,12 +143,16 @@ int main( int argc , char ** argv )
      hs_alloc_scratch( db , &scratch );
      run( "Vectorscan" , [ & ]() {
       std::size_t c = 0;
-      hs_scan( db , T.data() , unsigned( n ) , 0 , scratch ,
-               []( unsigned , unsigned long long , unsigned long long ,
-                   unsigned , void * ctx ) {
-                ++*static_cast< std::size_t * >( ctx );
-                return( 0 ); } , &c );
-      return( c ); } );
+      hs_scan(
+	db , T.data() , unsigned( n ) , 0 , scratch ,
+	[]( unsigned , unsigned long long , unsigned long long , unsigned ,
+	    void * ctx ) {
+	 ++*static_cast< std::size_t * >( ctx );
+	 return( 0 );
+	 } ,
+	&c );
+      return( c );
+      } );
      hs_free_scratch( scratch );
      hs_free_database( db );
      }

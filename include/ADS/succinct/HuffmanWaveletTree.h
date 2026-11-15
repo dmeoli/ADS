@@ -68,7 +68,7 @@
 
 #ifndef __ADS_HuffmanWaveletTree
  #define __ADS_HuffmanWaveletTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -92,7 +92,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS HuffmanWaveletTree ------------------------*/
@@ -103,11 +104,11 @@ namespace ADS {
 /// `RS` is the rank and select of its bits, `RankSelect` or
 /// `CompactRankSelect`
 template< class RS = RankSelect >
-class HuffmanWaveletTree {
+class HuffmanWaveletTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty sequence
  HuffmanWaveletTree( void ) = default;
 
@@ -143,7 +144,7 @@ class HuffmanWaveletTree {
  /// \f]
  /// \pre \f$ |x| < 2^{40} \f$
  explicit HuffmanWaveletTree( std::span< const std::uint32_t > x ,
-                              bool withSelect = true );
+			      bool withSelect = true );
 
  /// the tree of `HuffmanWaveletTree( x , withSelect )` above, the same
  /// codes, nodes and bits, built on the threads of the executor `ex` (see
@@ -175,7 +176,7 @@ class HuffmanWaveletTree {
  /// \pre \f$ |x| < 2^{40} \f$
  template< Executor E >
  HuffmanWaveletTree( E & ex , std::span< const std::uint32_t > x ,
-                     bool withSelect = true );
+		     bool withSelect = true );
 
  /// the number of items
  [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
@@ -214,8 +215,8 @@ class HuffmanWaveletTree {
  /// \end{array}}
  /// \f]
  /// \pre \f$ i < \mathrm{size}() \f$
- [[nodiscard]] std::pair< std::uint32_t , std::size_t > accessRank(
-                                                       std::size_t i ) const;
+ [[nodiscard]] std::pair< std::uint32_t , std::size_t >
+ accessRank( std::size_t i ) const;
 
  /// the occurrences of \f$ c \f$ in \f$ [ 0 , i ) \f$
  ///
@@ -243,10 +244,8 @@ class HuffmanWaveletTree {
  /// \f$ [ 0 , j ) \f$, by one descent that moves both places as `rank()`
  /// above moves one
  /// \pre \f$ i \le j \le \mathrm{size}() \f$
- [[nodiscard]] std::pair< std::size_t , std::size_t > rank( std::uint32_t c ,
-                                                           std::size_t i ,
-                                                           std::size_t j )
-  const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ rank( std::uint32_t c , std::size_t i , std::size_t j ) const;
 
  /// the place of the \f$ k \f$-th occurrence of \f$ c \f$
  ///
@@ -284,22 +283,23 @@ class HuffmanWaveletTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// an internal node: the place of its bits in \f$ B \f$ and the 1s before
  /// them, and its children by the bits 0 and 1, a node or the leaf
  /// \f$ -1 - c \f$
- struct Node {
-  std::uint64_t off = 0 ,    ///< \f$ o_v \f$, the place of its bits
-                ones = 0;    ///< \f$ R_v \f$, the 1s before them
-  std::int32_t child[ 2 ] = { 0 , 0 };   ///< its children by the bit
+ struct Node
+ {
+  std::uint64_t off = 0 ,               ///< \f$ o_v \f$, the place of its bits
+    ones = 0;                          ///< \f$ R_v \f$, the 1s before them
+  std::int32_t child[ 2 ] = { 0 , 0 };  ///< its children by the bit
   };
 
  /// the rank and select of the bits \f$ b \f$, with select if asked for
  [[nodiscard]] static RS directory( BitVector b , bool withSelect ) {
   if constexpr( std::is_same_v< RS , RankSelect > )
    return( RS( std::move( b ) , withSelect ? RankSelect::Selects::BOTH
-                                           : RankSelect::Selects::NONE ) );
-  else return( RS( std::move( b ) ) );
+					   : RankSelect::Selects::NONE ) );
+  else
+   return( RS( std::move( b ) ) );
   }
 
  /// the rank and select of the bits \f$ b \f$ built on the threads of
@@ -308,18 +308,19 @@ class HuffmanWaveletTree {
  [[nodiscard]] static RS directory( E & ex , BitVector b , bool withSelect ) {
   if constexpr( std::is_same_v< RS , RankSelect > )
    return( RS( ex , std::move( b ) ,
-               withSelect ? RankSelect::Selects::BOTH
-                          : RankSelect::Selects::NONE ) );
+		withSelect ? RankSelect::Selects::BOTH
+			   : RankSelect::Selects::NONE ) );
   else if constexpr( std::is_same_v< RS , CompactRankSelect > )
    return( RS( ex , std::move( b ) ) );
-  else return( directory( std::move( b ) , withSelect ) );
+  else
+   return( directory( std::move( b ) , withSelect ) );
   }
 
  /// the fewest items of a slice of the parallel construction
 #ifndef ADS_WAVELET_SLICE
  static constexpr std::size_t kSlice = std::size_t( 1 ) << 16;
 #else
- static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;   // a test
+ static constexpr std::size_t kSlice = ADS_WAVELET_SLICE;  // a test
 #endif
 
  /// the tree of the items \f$ x \f$ built on the calling thread, with
@@ -328,19 +329,18 @@ class HuffmanWaveletTree {
 
  /// the codes of Huffman of the frequencies \f$ f \f$, the trie of the
  /// codes and the places of its nodes in \f$ B \f$; the bits of \f$ B \f$
- [[nodiscard]] std::uint64_t layout( const std::vector< std::uint64_t > &
-                                     f );
+ [[nodiscard]] std::uint64_t layout( const std::vector< std::uint64_t > & f );
 
  /// the bit \f$ d \f$ of the code of \f$ c \f$, from the highest
  [[nodiscard]] bool bit( std::uint32_t c , int d ) const {
   return( ( f_code[ c ] >> ( f_len[ c ] - 1 - d ) ) & 1 );
   }
 
- std::size_t f_n = 0;                   ///< the number of items
- std::vector< std::uint64_t > f_code;   ///< the code of each symbol
- std::vector< std::uint8_t > f_len;     ///< its length, 0 if absent
- std::vector< Node > f_node;            ///< the root first
- RS f_B;                                ///< the bits of all the nodes
+ std::size_t f_n = 0;                  ///< the number of items
+ std::vector< std::uint64_t > f_code;  ///< the code of each symbol
+ std::vector< std::uint8_t > f_len;    ///< its length, 0 if absent
+ std::vector< Node > f_node;           ///< the root first
+ RS f_B;                               ///< the bits of all the nodes
 
  };  // end( class HuffmanWaveletTree )
 
@@ -356,7 +356,7 @@ class HuffmanWaveletTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HuffmanWaveletTree.h included */
+#endif /* HuffmanWaveletTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File HuffmanWaveletTree.h ---------------------*/

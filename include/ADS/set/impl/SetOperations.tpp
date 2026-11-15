@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< IterableSet S >
 S setUnion( const S & A , const S & B )
@@ -64,15 +65,18 @@ S setSymmetricDifference( const S & A , const S & B )
  return( C );
  }
 
-namespace detail {
+namespace detail
+{
 
 template< class C , class A , class B >
 bool isSetOperation( const C & c , const A & a , const B & b , char op )
 {
  auto in = [ & ]( const auto & x ) {
   const bool p = a.contains( x ) , q = b.contains( x );
-  return( op == '|' ? ( p || q ) : op == '&' ? ( p && q ) :
-          op == '-' ? ( p && ! q ) : ( p != q ) );
+  return( op == '|'   ? ( p || q )
+	   : op == '&' ? ( p && q )
+	   : op == '-' ? ( p && ! q )
+		       : ( p != q ) );
   };
  bool ok = true;
  c.forEach( [ & ]( const auto & x ) { ok = ok && in( x ); } );

@@ -72,7 +72,7 @@
 
 #ifndef __ADS_Rearrangements
  #define __ADS_Rearrangements
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,7 +93,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the items of \f$ A \f$ by `colour( x )`, 0 then 1 then 2, with \f$ n \f$
 /// reads of the colors and at most \f$ n \f$ swaps, counted in `*swaps` if
@@ -120,9 +121,9 @@ namespace ADS {
 /// \pre `colour( x )` is 0, 1 or 2
 /// \post the colors in order (an audit)
 template< class T , class F >
-std::pair< std::size_t , std::size_t > dutchNationalFlag(
-                  std::vector< T > & A , F && colour ,
-                  std::size_t * swaps = nullptr );
+std::pair< std::size_t , std::size_t >
+dutchNationalFlag( std::vector< T > & A , F && colour ,
+		   std::size_t * swaps = nullptr );
 
 /// \f$ A[ 0 ] \le A[ 1 ] \ge A[ 2 ] \le \cdots \f$, by swaps of
 /// neighbors; \f$ n - 1 \f$ comparisons
@@ -209,7 +210,7 @@ std::pair< std::size_t , W > minimumSwapSort( const std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Rearrangements.h included */
+#endif /* Rearrangements.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File Rearrangements.h ------------------------*/

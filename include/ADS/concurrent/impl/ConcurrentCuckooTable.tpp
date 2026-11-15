@@ -27,17 +27,19 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the object x read atomically and relaxed if A, plainly otherwise
 template< bool A , class T >
 [[nodiscard]] inline T loadRelaxed( const T & x )
 {
  if constexpr( A )
-  return( std::atomic_ref< T >( const_cast< T & >( x ) ).load(
-           std::memory_order_relaxed ) );
+  return( std::atomic_ref< T >( const_cast< T & >( x ) )
+	     .load( std::memory_order_relaxed ) );
  else
   return( x );
  }
@@ -48,7 +50,7 @@ inline void storeRelaxed( T & x , U && v )
 {
  if constexpr( A )
   std::atomic_ref< T >( x ).store( T( std::forward< U >( v ) ) ,
-                                   std::memory_order_relaxed );
+				   std::memory_order_relaxed );
  else
   x = std::forward< U >( v );
  }
@@ -63,9 +65,8 @@ void ConcurrentCuckooTable< K , V , H , Eq >::lock( Stripe & s )
  for( int n = 0 ; ; ) {
   std::uint64_t v = s.version.load( std::memory_order_relaxed );
   if( ! ( v & 1 ) &&
-      s.version.compare_exchange_weak( v , v + 1 ,
-                                       std::memory_order_acquire ,
-                                       std::memory_order_relaxed ) ) {
+      s.version.compare_exchange_weak( v , v + 1 , std::memory_order_acquire ,
+				       std::memory_order_relaxed ) ) {
    // the odd version visible before any store of the holder, to a reader
    // that sees one of those stores
    if constexpr( optimistic )
@@ -83,13 +84,13 @@ template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::unlock( Stripe & s )
 {
  s.version.store( s.version.load( std::memory_order_relaxed ) + 1 ,
-                  std::memory_order_release );
+		  std::memory_order_release );
  }
 
 template< class K , class V , class H , class Eq >
 ConcurrentCuckooTable< K , V , H , Eq >::HoldAll::HoldAll(
-                                       const ConcurrentCuckooTable & t )
- : f_L( t.f_L.get() )
+  const ConcurrentCuckooTable & t )
+    : f_L( t.f_L.get() )
 {
  // the stripe 0 first: the table changes only under all the locks in use,
  // which include it
@@ -103,7 +104,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::HoldAll::extend( int lg )
 {
  const std::size_t m = std::size_t( 1 ) << ( lg - regionLg( lg ) );
  for( ; f_n < m ; ++f_n )
-  lock( f_L[ f_n ] );                     // in increasing order
+  lock( f_L[ f_n ] );  // in increasing order
  }
 
 template< class K , class V , class H , class Eq >
@@ -114,8 +115,9 @@ ConcurrentCuckooTable< K , V , H , Eq >::HoldAll::~HoldAll()
  }
 
 template< class K , class V , class H , class Eq >
-auto ConcurrentCuckooTable< K , V , H , Eq >::lockRegion( std::uint64_t h )
- const -> Table *
+auto ConcurrentCuckooTable< K , V , H ,
+			    Eq >::lockRegion( std::uint64_t h ) const
+  -> Table *
 {
  // the region of the size seen, and the table checked under its lock: a
  // doubling holds all the locks, so that it is over or not begun
@@ -140,9 +142,9 @@ int ConcurrentCuckooTable< K , V , H , Eq >::regionLg( int lg )
 
 template< class K , class V , class H , class Eq >
 ConcurrentCuckooTable< K , V , H , Eq >::Table::Table( int l )
- : lg( l ) , rg( regionLg( l ) ) ,
-   T( HugePageAllocator< std::uint32_t >().allocate( buckets() ) ) ,
-   B( nullptr )
+    : lg( l ) , rg( regionLg( l ) ) ,
+      T( HugePageAllocator< std::uint32_t >().allocate( buckets() ) ) ,
+      B( nullptr )
 {
  // on huge pages when large, so that a lookup misses the TLB once per 2 MB
  std::uninitialized_value_construct_n( T , buckets() );
@@ -167,20 +169,20 @@ ConcurrentCuckooTable< K , V , H , Eq >::Table::~Table()
  }
 
 template< class K , class V , class H , class Eq >
-ConcurrentCuckooTable< K , V , H , Eq >::ConcurrentCuckooTable(
-                                          std::size_t n , H h , Eq eq )
- : f_L( std::make_unique< Stripe[] >( kStripes ) ) , f_h( h ) , f_eq( eq )
+ConcurrentCuckooTable< K , V , H , Eq >::ConcurrentCuckooTable( std::size_t n ,
+							     H h , Eq eq )
+    : f_L( std::make_unique< Stripe[] >( kStripes ) ) , f_h( h ) , f_eq( eq )
 {
- const std::size_t b = std::bit_ceil( std::max< std::size_t >(
-                        2 , ( n * 10 + 35 ) / 36 ) );   // at load 0.9
+ const std::size_t b = std::bit_ceil(
+   std::max< std::size_t >( 2 , ( n * 10 + 35 ) / 36 ) );  // at load 0.9
  f_cur = std::make_unique< Table >( std::countr_zero( b ) );
  f_lg.store( f_cur->lg , std::memory_order_relaxed );
  f_table.store( f_cur.get() , std::memory_order_release );
  }
 
 template< class K , class V , class H , class Eq >
-std::uint64_t ConcurrentCuckooTable< K , V , H , Eq >::hash( const K & k )
- const
+std::uint64_t ConcurrentCuckooTable< K , V , H ,
+				     Eq >::hash( const K & k ) const
 {
  if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( k ) ) );
@@ -197,44 +199,46 @@ std::uint32_t ConcurrentCuckooTable< K , V , H , Eq >::tag( std::uint64_t h )
 
 template< class K , class V , class H , class Eq >
 std::size_t ConcurrentCuckooTable< K , V , H , Eq >::first( std::uint64_t h ,
-                                                            int lg )
+							 int lg )
 {
  return( std::size_t( h >> ( 64 - lg ) ) );
  }
 
 template< class K , class V , class H , class Eq >
 std::size_t ConcurrentCuckooTable< K , V , H , Eq >::other( std::size_t b ,
-                                                            std::uint32_t t ,
-                                                            int rg )
+							 std::uint32_t t ,
+							 int rg )
 {
  // an odd offset below the buckets of a region, so that the two differ
  // and stay in the region, by the top bits of the product of the tag by
  // the golden ratio
- const auto d = std::size_t( ( std::uint64_t( t ) * 0x9E3779B97F4A7C15ULL )
-                             >> ( 64 - rg ) );
+ const auto d = std::size_t( ( std::uint64_t( t ) * 0x9E3779B97F4A7C15ULL ) >>
+			     ( 64 - rg ) );
  return( b ^ ( d | 1 ) );
  }
 
 template< class K , class V , class H , class Eq >
 std::uint32_t ConcurrentCuckooTable< K , V , H , Eq >::tags( const Table & T ,
-                                                             std::size_t b )
+							  std::size_t b )
 {
  return( detail::loadRelaxed< optimistic >( T.T[ b ] ) );
  }
 
 template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::setTags( Table & T ,
-                                                       std::size_t b ,
-                                                       std::uint32_t w )
+						       std::size_t b ,
+						    std::uint32_t w )
 {
  detail::storeRelaxed< optimistic >( T.T[ b ] , w );
  }
 
 template< class K , class V , class H , class Eq >
-std::size_t ConcurrentCuckooTable< K , V , H , Eq >::locate(
-                                     const Table & T , const K & k ,
-                                     std::uint32_t t , std::size_t b1 ,
-                                     std::size_t b2 ) const
+std::size_t
+ConcurrentCuckooTable< K , V , H , Eq >::locate( const Table & T ,
+						 const K & k ,
+					      std::uint32_t t ,
+					      std::size_t b1 ,
+					      std::size_t b2 ) const
 {
  for( std::size_t b : { b1 , b2 } ) {
   std::uint32_t m = detail::zeroBytes( T.T[ b ] ^ ( t * 0x01010101U ) );
@@ -249,7 +253,7 @@ std::size_t ConcurrentCuckooTable< K , V , H , Eq >::locate(
 
 template< class K , class V , class H , class Eq >
 int ConcurrentCuckooTable< K , V , H , Eq >::freePlace( const Table & T ,
-                                                        std::size_t b )
+						     std::size_t b )
 {
  const std::uint32_t z = detail::zeroBytes( T.T[ b ] );
  return( z ? std::countr_zero( z ) >> 3 : 4 );
@@ -257,10 +261,9 @@ int ConcurrentCuckooTable< K , V , H , Eq >::freePlace( const Table & T ,
 
 template< class K , class V , class H , class Eq >
 template< class KK , class VV >
-void ConcurrentCuckooTable< K , V , H , Eq >::put( Table & T ,
-                                                   std::size_t b , int i ,
-                                                   std::uint32_t t ,
-                                                   KK && k , VV && v )
+void ConcurrentCuckooTable< K , V , H , Eq >::put( Table & T , std::size_t b ,
+						int i , std::uint32_t t ,
+						KK && k , VV && v )
 {
  Slot & s = T.S( 4 * b + std::size_t( i ) );
  detail::storeRelaxed< optimistic >( s.key , std::forward< KK >( k ) );
@@ -270,25 +273,25 @@ void ConcurrentCuckooTable< K , V , H , Eq >::put( Table & T ,
 
 template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::assign( Table & T ,
-                                                      std::size_t i ,
-                                                      const V & v )
+						      std::size_t i ,
+						   const V & v )
 {
  detail::storeRelaxed< optimistic >( T.S( i ).value , v );
  }
 
 template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::clearPlace( Table & T ,
-                                                          std::size_t i )
+						       std::size_t i )
 {
  setTags( T , i >> 2 , T.T[ i >> 2 ] & ~( 0xFFU << ( 8 * ( i & 3 ) ) ) );
  if constexpr( ! optimistic )
-  T.S( i ) = Slot{};                      // what the pair holds goes now
+  T.S( i ) = Slot{};  // what the pair holds goes now
  }
 
 template< class K , class V , class H , class Eq >
-void ConcurrentCuckooTable< K , V , H , Eq >::move( Table & T ,
-                                                    std::size_t a , int i ,
-                                                    std::size_t d , int j )
+void ConcurrentCuckooTable< K , V , H , Eq >::move( Table & T , std::size_t a ,
+						 int i , std::size_t d ,
+						 int j )
 {
  // first copied, then cleared: the key is always in one of its buckets
  Slot & s = T.S( 4 * a + std::size_t( i ) );
@@ -299,7 +302,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::move( Table & T ,
 
 template< class K , class V , class H , class Eq >
 bool ConcurrentCuckooTable< K , V , H , Eq >::inBucket( const Table & T ,
-                                                        std::size_t b ) const
+						     std::size_t b ) const
 {
  for( int i = 0 ; i < 4 ; ++i ) {
   const std::uint32_t t = ( T.T[ b ] >> ( 8 * i ) ) & 0xFF;
@@ -317,8 +320,8 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::inBucket( const Table & T ,
 
 template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::fetch( const Table & T ,
-                                                     std::size_t b1 ,
-                                                     std::size_t b2 )
+						  std::size_t b1 ,
+						  std::size_t b2 )
 {
  // the tags of both buckets and the places of the first at once, so that
  // their misses overlap; the places of the second, where fewer keys are,
@@ -330,8 +333,8 @@ void ConcurrentCuckooTable< K , V , H , Eq >::fetch( const Table & T ,
 
 template< class K , class V , class H , class Eq >
 int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
-                                                   std::uint64_t h ,
-                                                   V * out ) const
+						   std::uint64_t h ,
+						V * out ) const
 {
  // the seqlock: the version of the region even before the reads and the
  // same after them, and the table read after the version, so that it is
@@ -352,11 +355,10 @@ int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
    int found = 0;
    V x{};
    for( std::size_t b : { b1 , b2 } ) {
-    std::uint32_t m = detail::zeroBytes( tags( *T , b ) ^
-                                         ( t * 0x01010101U ) );
+    std::uint32_t m = detail::zeroBytes( tags( *T ,
+					       b ) ^ ( t * 0x01010101U ) );
     for( ; m ; m &= m - 1 ) {
-     const std::size_t i = 4 * b +
-                           std::size_t( std::countr_zero( m ) >> 3 );
+     const std::size_t i = 4 * b + std::size_t( std::countr_zero( m ) >> 3 );
      if( f_eq( detail::loadRelaxed< true >( T->S( i ).key ) , k ) ) {
       found = 1;
       if( out )
@@ -375,15 +377,15 @@ int ConcurrentCuckooTable< K , V , H , Eq >::peek( const K & k ,
     }
    }
   }
- (void) k;
- (void) h;
- (void) out;
+ ( void )k;
+ ( void )h;
+ ( void )out;
  return( 2 );
  }
 
 template< class K , class V , class H , class Eq >
-std::optional< V > ConcurrentCuckooTable< K , V , H , Eq >::find(
-                                                   const K & k ) const
+std::optional< V >
+ConcurrentCuckooTable< K , V , H , Eq >::find( const K & k ) const
 {
  const std::uint64_t h = hash( k );
  if constexpr( optimistic ) {
@@ -415,16 +417,16 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::contains( const K & k ) const
  const std::uint32_t t = tag( h );
  const std::size_t b1 = first( h , T->lg );
  Hold g( f_L[ b1 >> T->rg ] );
- return( locate( *T , k , t , b1 , other( b1 , t , T->rg ) ) !=
-         ~std::size_t( 0 ) );
+ return( locate( *T , k , t , b1 ,
+		 other( b1 , t , T->rg ) ) != ~std::size_t( 0 ) );
  }
 
 /*------------------------------ THE INSERTION -----------------------------*/
 
 template< class K , class V , class H , class Eq >
 int ConcurrentCuckooTable< K , V , H , Eq >::search( const Table & T ,
-                                                     std::uint64_t h ,
-                                                     Node * N ) const
+						  std::uint64_t h ,
+						  Node * N ) const
 {
  int nn = 0;
  const std::size_t b1 = first( h , T.lg );
@@ -434,7 +436,8 @@ int ConcurrentCuckooTable< K , V , H , Eq >::search( const Table & T ,
   for( ; x >= 0 ; x = N[ x ].parent )
    if( N[ x ].b == b )
     return( true );
-  return( false ); };
+  return( false );
+  };
  for( int q = 0 ; q < nn ; ++q ) {
   const std::uint32_t w = T.T[ N[ q ].b ];
   if( detail::zeroBytes( w ) )
@@ -452,40 +455,39 @@ int ConcurrentCuckooTable< K , V , H , Eq >::search( const Table & T ,
  }
 
 template< class K , class V , class H , class Eq >
-std::size_t ConcurrentCuckooTable< K , V , H , Eq >::makeRoom(
-                                         Table & T , std::uint64_t h ) const
+std::size_t
+ConcurrentCuckooTable< K , V , H , Eq >::makeRoom( Table & T ,
+						std::uint64_t h ) const
 {
  Node N[ kNodes ];
  const int q = search( T , h , N );
  if( q < 0 )
   return( ~std::size_t( 0 ) );
- int x = q;                               // the moves, from the end
+ int x = q;  // the moves, from the end
  for( ; N[ x ].parent >= 0 ; x = N[ x ].parent )
   move( T , N[ N[ x ].parent ].b , N[ x ].from , N[ x ].b ,
-        freePlace( T , N[ x ].b ) );
+	freePlace( T , N[ x ].b ) );
  return( 4 * N[ x ].b + std::size_t( freePlace( T , N[ x ].b ) ) );
  }
 
 template< class K , class V , class H , class Eq >
-std::size_t ConcurrentCuckooTable< K , V , H , Eq >::room(
-                                         Table & T , std::uint64_t h ,
-                                         std::int64_t n ) const
+std::size_t
+ConcurrentCuckooTable< K , V , H , Eq >::room( Table & T , std::uint64_t h ,
+					    std::int64_t n ) const
 {
- const std::size_t b1 = first( h , T.lg ) ,
-                   b2 = other( b1 , tag( h ) , T.rg );
- if( int j = freePlace( T , b1 ) ; j < 4 )
+ const std::size_t b1 = first( h , T.lg ) , b2 = other( b1 , tag( h ) , T.rg );
+ if( int j = freePlace( T , b1 ); j < 4 )
   return( 4 * b1 + std::size_t( j ) );
- if( int j = freePlace( T , b2 ) ; j < 4 )
+ if( int j = freePlace( T , b2 ); j < 4 )
   return( 4 * b2 + std::size_t( j ) );
  if( 50 * ( n + 1 ) > 49 * ( std::int64_t( 4 ) << T.rg ) )
-  return( ~std::size_t( 0 ) );            // past the load 0.98
+  return( ~std::size_t( 0 ) );  // past the load 0.98
  return( makeRoom( T , h ) );
  }
 
 template< class K , class V , class H , class Eq >
-bool ConcurrentCuckooTable< K , V , H , Eq >::add( const K & k ,
-                                                   const V & v ,
-                                                   bool assign )
+bool ConcurrentCuckooTable< K , V , H , Eq >::add( const K & k , const V & v ,
+						bool assign )
 {
  const std::uint64_t h = hash( k );
  const std::uint32_t t = tag( h );
@@ -518,13 +520,13 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::add( const K & k ,
 
 template< class K , class V , class H , class Eq >
 bool ConcurrentCuckooTable< K , V , H , Eq >::placeInto( Table & N ,
-                                                         std::uint64_t h ,
-                                                         Slot && x ) const
+						      std::uint64_t h ,
+						      Slot && x ) const
 {
  const std::size_t r = room( N , h , 0 );
  if( r == ~std::size_t( 0 ) )
   return( false );
- N.S( r ) = std::move( x );               // N is not yet seen by others
+ N.S( r ) = std::move( x );  // N is not yet seen by others
  N.T[ r >> 2 ] |= tag( h ) << ( 8 * ( r & 3 ) );
  return( true );
  }
@@ -541,8 +543,8 @@ void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
  std::vector< Slot > P;
  for( std::size_t i = 0 ; i < ( O.buckets() << 2 ) ; ++i )
   if( ( ( O.T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF ) &&
-      ( ! P.empty() || ! placeInto( *N , hash( O.S( i ).key ) ,
-                                    std::move( O.S( i ) ) ) ) )
+      ( ! P.empty() ||
+	! placeInto( *N , hash( O.S( i ).key ) , std::move( O.S( i ) ) ) ) )
    P.push_back( std::move( O.S( i ) ) );
  while( ! P.empty() ) {
   for( std::size_t j = 0 ; j < ( N->buckets() << 2 ) ; ++j )
@@ -555,15 +557,15 @@ void ConcurrentCuckooTable< K , V , H , Eq >::rehash( int lg , HoldAll & g )
     R.push_back( std::move( x ) );
   P.swap( R );
   }
- g.extend( lg );                          // before the table is seen
- for( std::size_t s = 0 ; s < g.held() ; ++s )   // the pairs per region
+ g.extend( lg );                              // before the table is seen
+ for( std::size_t s = 0 ; s < g.held() ; ++s )  // the pairs per region
   f_L[ s ].count.store( 0 , std::memory_order_relaxed );
  for( std::size_t b = 0 ; b < N->buckets() ; ++b )
   if( const std::uint32_t w = N->T[ b ] ) {
    Stripe & s = f_L[ b >> N->rg ];
    s.count.store( s.count.load( std::memory_order_relaxed ) + 4 -
-                  std::popcount( detail::zeroBytes( w ) ) ,
-                  std::memory_order_relaxed );
+		    std::popcount( detail::zeroBytes( w ) ) ,
+		  std::memory_order_relaxed );
    }
  f_table.store( N.get() , std::memory_order_release );
  f_lg.store( lg , std::memory_order_release );
@@ -578,14 +580,14 @@ void ConcurrentCuckooTable< K , V , H , Eq >::grow( int lg )
 {
  HoldAll g( *this );
  if( f_cur->lg != lg )
-  return;                                 // another thread doubled it
+  return;  // another thread doubled it
  std::int64_t n = 0;
  for( std::size_t s = 0 ; s < g.held() ; ++s )
   n += f_L[ s ].count.load( std::memory_order_relaxed );
  const std::size_t places = f_cur->buckets() << 2;
  if( ( places >= 256 ) && ( 16 * std::size_t( n ) < places ) )
   throw( std::length_error( "ConcurrentCuckooTable::grow: more than 8 "
-                            "keys share both their buckets" ) );
+			    "keys share both their buckets" ) );
  rehash( lg + 1 , g );
  }
 
@@ -593,14 +595,14 @@ void ConcurrentCuckooTable< K , V , H , Eq >::grow( int lg )
 
 template< class K , class V , class H , class Eq >
 bool ConcurrentCuckooTable< K , V , H , Eq >::insert( const K & k ,
-                                                      const V & v )
+						      const V & v )
 {
  return( add( k , v , false ) );
  }
 
 template< class K , class V , class H , class Eq >
 bool ConcurrentCuckooTable< K , V , H , Eq >::insertOrAssign( const K & k ,
-                                                              const V & v )
+							   const V & v )
 {
  return( add( k , v , true ) );
  }
@@ -617,7 +619,7 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::update( const K & k , F && f )
  const std::size_t i = locate( *T , k , t , b1 , other( b1 , t , T->rg ) );
  if( i == ~std::size_t( 0 ) )
   return( false );
- if constexpr( optimistic ) {             // a copy, stored atomically
+ if constexpr( optimistic ) {  // a copy, stored atomically
   V x = T->S( i ).value;
   std::invoke( std::forward< F >( f ) , x );
   assign( *T , i , x );
@@ -642,7 +644,7 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::erase( const K & k )
   return( false );
  clearPlace( *T , i );
  s.count.store( s.count.load( std::memory_order_relaxed ) - 1 ,
-                std::memory_order_relaxed );
+		std::memory_order_relaxed );
  ADS_INVARIANT( inBucket( *T , b1 ) && inBucket( *T , b2 ) );
  return( true );
  }
@@ -680,8 +682,8 @@ std::size_t ConcurrentCuckooTable< K , V , H , Eq >::rehashes( void ) const
 template< class K , class V , class H , class Eq >
 void ConcurrentCuckooTable< K , V , H , Eq >::reserve( std::size_t n )
 {
- const std::size_t b = std::bit_ceil( std::max< std::size_t >(
-                        2 , ( n * 10 + 35 ) / 36 ) );
+ const std::size_t b =
+   std::bit_ceil( std::max< std::size_t >( 2 , ( n * 10 + 35 ) / 36 ) );
  HoldAll g( *this );
  if( b > f_cur->buckets() )
   rehash( std::countr_zero( b ) , g );
@@ -709,7 +711,7 @@ void ConcurrentCuckooTable< K , V , H , Eq >::forEach( F && f )
  Table & T = *f_cur;
  for( std::size_t i = 0 ; i < ( T.buckets() << 2 ) ; ++i )
   if( ( T.T[ i >> 2 ] >> ( 8 * ( i & 3 ) ) ) & 0xFF ) {
-   if constexpr( optimistic ) {           // a copy, stored atomically
+   if constexpr( optimistic ) {  // a copy, stored atomically
     V x = T.S( i ).value;
     f( std::as_const( T.S( i ).key ) , x );
     assign( T , i , x );
@@ -750,16 +752,16 @@ bool ConcurrentCuckooTable< K , V , H , Eq >::consistent( void ) const
   const std::size_t b1 = first( h , T.lg ) , b2 = other( b1 , t , T.rg );
   if( ( tag( h ) != t ) || ( ( ( i >> 2 ) != b1 ) && ( ( i >> 2 ) != b2 ) ) )
    return( false );
-  int c = 0;                              // once in its two buckets
+  int c = 0;  // once in its two buckets
   for( std::size_t b : { b1 , b2 } )
    for( std::size_t j = 4 * b ; j < 4 * b + 4 ; ++j )
     if( ( ( ( T.T[ j >> 2 ] >> ( 8 * ( j & 3 ) ) ) & 0xFF ) == t ) &&
-        f_eq( T.S( j ).key , k ) )
+	f_eq( T.S( j ).key , k ) )
      ++c;
   if( c != 1 )
    return( false );
   }
- for( std::size_t s = 0 ; s < g.held() ; ++s )   // each region counted
+ for( std::size_t s = 0 ; s < g.held() ; ++s )  // each region counted
   if( n[ s ] != f_L[ s ].count.load( std::memory_order_relaxed ) )
    return( false );
  return( true );

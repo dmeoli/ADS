@@ -108,7 +108,7 @@
 
 #ifndef __ADS_Paths
  #define __ADS_Paths
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -132,18 +132,26 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the length of an edge of \f$ G \f$: its weight, or 1 if it has none
 template< class G >
-struct EdgeLength { using type = int; };
+struct EdgeLength
+{
+ using type = int;
+ };
 
 template< class G >
  requires requires { typename G::Weight; } &&
-          ( ! std::is_same_v< typename G::Weight , std::monostate > )
-struct EdgeLength< G > { using type = typename G::Weight; };
+	  ( ! std::is_same_v< typename G::Weight , std::monostate > )
+struct EdgeLength< G >
+{
+ using type = typename G::Weight;
+ };
 
 }  // end( namespace detail )
 
@@ -236,7 +244,7 @@ multiSourceDistance( const G & g , const std::vector< int > & S );
 /// \pre \f$ A \f$ and \f$ B \f$ have a place per name
 template< Graph G >
 int setDistance( const G & g , const std::vector< bool > & A ,
-                 const std::vector< bool > & B );
+		 const std::vector< bool > & B );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- LONGEST PATHS ------------------------------*/
@@ -378,8 +386,8 @@ void simpleCycles( const G & g , int s , F && f );
 ///      \f$ R \ge 0 \f$
 /// \post the stops increase, and no leg is longer than \f$ R \f$ (audit)
 template< class T >
-std::optional< std::vector< std::size_t > > refuelingStops(
-                                      const std::vector< T > & D , T L , T R );
+std::optional< std::vector< std::size_t > >
+refuelingStops( const std::vector< T > & D , T L , T R );
 
 /*--------------------------------------------------------------------------*/
 
@@ -393,7 +401,7 @@ std::optional< std::vector< std::size_t > > refuelingStops(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Paths.h included */
+#endif /* Paths.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Paths.h ----------------------------*/

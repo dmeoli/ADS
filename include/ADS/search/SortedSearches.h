@@ -71,7 +71,7 @@
 
 #ifndef __ADS_SortedSearches
  #define __ADS_SortedSearches
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -94,7 +94,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the place of the minimum of \f$ A \f$, a strictly increasing vector
 /// rotated right by that number of places; \f$ O( \log n ) \f$
@@ -194,7 +195,7 @@ pairWithSum( const std::vector< T > & A , const S & x );
 ///       (audit)
 template< class T , class C = std::less<> >
 T kthOfTwoSorted( const std::vector< T > & X , const std::vector< T > & Y ,
-                  std::size_t k , C less = C() );
+		  std::size_t k , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -208,7 +209,7 @@ T kthOfTwoSorted( const std::vector< T > & X , const std::vector< T > & Y ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SortedSearches.h included */
+#endif /* SortedSearches.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File SortedSearches.h ------------------------*/

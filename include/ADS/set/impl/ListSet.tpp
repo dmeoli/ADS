@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::equality_comparable T >
 ListSet< T >::ListSet( std::initializer_list< T > items )
@@ -86,7 +87,10 @@ std::optional< T > ListSet< T >::min( void ) const
  requires std::totally_ordered< T >
 {
  std::optional< T > m;
- forEach( [ & ]( const T & x ) { if( ! m || ( x < *m ) ) m = x; } );
+ forEach( [ & ]( const T & x ) {
+  if( ! m || ( x < *m ) )
+   m = x;
+  } );
  return( m );
  }
 
@@ -121,7 +125,7 @@ ListSet< T > setUnion( const ListSet< T > & A , const ListSet< T > & B )
 
 template< class T >
 ListSet< T > setIntersection( const ListSet< T > & A ,
-                              const ListSet< T > & B )
+			      const ListSet< T > & B )
 {
  ListSet< T > C;
  A.forEach( [ & ]( const T & x ) {
@@ -146,7 +150,7 @@ ListSet< T > setDifference( const ListSet< T > & A , const ListSet< T > & B )
 
 template< class T >
 ListSet< T > setSymmetricDifference( const ListSet< T > & A ,
-                                     const ListSet< T > & B )
+				     const ListSet< T > & B )
 {
  ListSet< T > C = setDifference( A , B );
  B.forEach( [ & ]( const T & x ) {

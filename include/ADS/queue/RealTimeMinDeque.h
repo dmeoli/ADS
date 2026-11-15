@@ -60,7 +60,7 @@
 
 #ifndef __ADS_RealTimeMinDeque
  #define __ADS_RealTimeMinDeque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS RealTimeMinDeque -------------------------*/
@@ -91,23 +92,25 @@ namespace ADS {
 /// a double ended queue with its least item, every operation in
 /// \f$ O( 1 ) \f$ worst-case time
 template< std::copy_constructible T , class C = std::less<> >
-class RealTimeMinDeque {
+class RealTimeMinDeque
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty deque, ordered by `less`
  explicit RealTimeMinDeque( C less = C() )
-  : f_A{ Array( 16 ) , Array( 16 ) } , f_less( std::move( less ) ) {}
+     : f_A{ Array( 16 ) , Array( 16 ) } , f_less( std::move( less ) ) { }
 
  /// a copy, item by item, in \f$ O( n ) \f$ time
  RealTimeMinDeque( const RealTimeMinDeque & o );
 
  /// the items of `o`, which is left empty
  RealTimeMinDeque( RealTimeMinDeque && o ) noexcept
-  : f_A{ Array( 16 ) , Array( 16 ) } , f_less( o.f_less ) { swap( o ); }
+     : f_A{ Array( 16 ) , Array( 16 ) } , f_less( o.f_less ) {
+  swap( o );
+  }
 
  /// the items of `o`, by copy and swap
  RealTimeMinDeque & operator=( const RealTimeMinDeque & o );
@@ -166,8 +169,7 @@ class RealTimeMinDeque {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- using Array = detail::MinArray< T , C >;   ///< a stack with the minimum
+ using Array = detail::MinArray< T , C >;  ///< a stack with the minimum
 
  /// the copies per operation, and the size below which a rebuild is done
  /// at once
@@ -255,17 +257,17 @@ class RealTimeMinDeque {
  /// at most \f$ k \f$ copies of the rebuild going on
  void steps( int k );
 
- std::array< Array , 2 > f_A;        ///< the front and the back
- std::array< Array , 2 > f_new;      ///< the new arrays of a rebuild
- std::array< Array , 4 > f_old;      ///< the old arrays to destroy
- int f_g = 0;                        ///< the larger side of the rebuild
- std::size_t f_p = 0;                ///< the bottom of G still to copy
- std::size_t f_cs = 0;               ///< the prefix of S copied
- std::size_t f_cg = 0;               ///< the end of the prefix of G
- std::size_t f_t = 0;                ///< the bottom of G passing to S
- std::size_t f_n = 0;                ///< the items
- bool f_rb = false;                  ///< a rebuild is going on
- ADS_NO_UNIQUE_ADDRESS C f_less;     ///< the order
+ std::array< Array , 2 > f_A;      ///< the front and the back
+ std::array< Array , 2 > f_new;    ///< the new arrays of a rebuild
+ std::array< Array , 4 > f_old;    ///< the old arrays to destroy
+ int f_g = 0;                     ///< the larger side of the rebuild
+ std::size_t f_p = 0;             ///< the bottom of G still to copy
+ std::size_t f_cs = 0;            ///< the prefix of S copied
+ std::size_t f_cg = 0;            ///< the end of the prefix of G
+ std::size_t f_t = 0;             ///< the bottom of G passing to S
+ std::size_t f_n = 0;             ///< the items
+ bool f_rb = false;               ///< a rebuild is going on
+ ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
 
  };  // end( class RealTimeMinDeque )
 
@@ -281,7 +283,7 @@ class RealTimeMinDeque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RealTimeMinDeque.h included */
+#endif /* RealTimeMinDeque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File RealTimeMinDeque.h -----------------------*/

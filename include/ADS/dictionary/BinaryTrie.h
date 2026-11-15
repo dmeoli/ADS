@@ -68,7 +68,7 @@
 
 #ifndef __ADS_BinaryTrie
  #define __ADS_BinaryTrie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -93,47 +93,56 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the number of bits of the keys of a trie on `U`: \f$ w \f$, if it is
 /// between 1 and the bits of `U`
 template< class U , int W >
 concept TrieWidth = std::unsigned_integral< U > && ( W >= 1 ) &&
-                    ( W <= std::numeric_limits< U >::digits );
+		    ( W <= std::numeric_limits< U >::digits );
 
-namespace detail {
+namespace detail
+{
 
 /// the prefix of the \f$ i \f$ most significant of the \f$ w \f$ bits of
 /// \f$ x \f$, \f$ \lfloor x / 2^{w-i} \rfloor \f$
 template< class U , int W >
-[[nodiscard]] constexpr U triePrefix( U x , int i ) {
+[[nodiscard]] constexpr U triePrefix( U x , int i )
+{
  return( i == 0 ? U( 0 ) : U( x >> ( W - i ) ) );
  }
 
 /// the bit \f$ i \f$ of \f$ x \f$, counted from the most significant of its
 /// \f$ w \f$ bits
 template< class U , int W >
-[[nodiscard]] constexpr int trieBit( U x , int i ) {
+[[nodiscard]] constexpr int trieBit( U x , int i )
+{
  return( int( ( x >> ( W - 1 - i ) ) & 1u ) );
  }
 
 /// true if \f$ x < 2^w \f$
 template< class U , int W >
-[[nodiscard]] constexpr bool trieKey( U x ) {
- if constexpr( W == std::numeric_limits< U >::digits ) return( true );
- else return( ( x >> W ) == 0 );
+[[nodiscard]] constexpr bool trieKey( U x )
+{
+ if constexpr( W == std::numeric_limits< U >::digits )
+  return( true );
+ else
+  return( ( x >> W ) == 0 );
  }
 
 /// the tables of the prefixes of an x-fast trie, one per depth: nothing
 /// for a binary trie
 template< class U , class N , int W , bool Hashed >
-struct TrieTables {};
+struct TrieTables
+{ };
 
 /// the tables of the prefixes of an x-fast trie, \f$ t[ i ] \f$ mapping the
 /// prefix of \f$ i \f$ bits to its node, for \f$ i = 1 , \ldots , w \f$
 template< class U , class N , int W >
-struct TrieTables< U , N , W , true > {
- std::array< FlatHashTable< U , N * > , W + 1 > t;   ///< \f$ t[ 0 ] \f$ unused
+struct TrieTables< U , N , W , true >
+{
+ std::array< FlatHashTable< U , N * > , W + 1 > t;  ///< \f$ t[ 0 ] \f$ unused
  };
 
 /*--------------------------------------------------------------------------*/
@@ -146,14 +155,14 @@ struct TrieTables< U , N , W , true > {
 /// the depth
 template< std::unsigned_integral U , class V , int W , bool Hashed >
  requires TrieWidth< U , W >
-class JumpTrie {
+class JumpTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = U;     ///< the type of the keys
- using Item = U;    ///< the items of the SSet, the keys
- using Value = V;   ///< the type of the values
+ using Key = U;    ///< the type of the keys
+ using Item = U;   ///< the items of the SSet, the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty trie
  JumpTrie( void );
@@ -283,27 +292,27 @@ class JumpTrie {
 
 /*--------------------------------------------------------------------------*/
  protected:
-
  /// a node: an internal node has its two children, its parent and its jump
  /// pointer; a leaf uses its two children as the links of the list
- struct Node {
-  Node * child[ 2 ] = { nullptr , nullptr };   ///< the children, or prev
-                                              ///< and next for a leaf
-  Node * jump = nullptr;                      ///< the jump pointer
-  Node * parent = nullptr;                    ///< the parent
-  U key = 0;                                  ///< the key of a leaf
-  V value{};                                  ///< the value of a leaf
+ struct Node
+ {
+  Node * child[ 2 ] = { nullptr , nullptr };  ///< the children, or prev
+					     ///< and next for a leaf
+  Node * jump = nullptr;                     ///< the jump pointer
+  Node * parent = nullptr;                   ///< the parent
+  U key = 0;                                 ///< the key of a leaf
+  V value{};                                 ///< the value of a leaf
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key, along
  // the list of the leaves
 
  /// the bidirectional iterator along the list of the leaves
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the category of the iterator
   using iterator_category = std::bidirectional_iterator_tag;
@@ -320,7 +329,7 @@ class JumpTrie {
   const_iterator( void ) = default;
 
   /// on the leaf \f$ l \f$
-  explicit const_iterator( const Node * l ) : f_l( l ) {}
+  explicit const_iterator( const Node * l ) : f_l( l ) { }
 
   /// the pair of the leaf
   reference operator*( void ) const {
@@ -334,7 +343,11 @@ class JumpTrie {
    }
 
   /// to the next leaf, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// to the previous leaf
   const_iterator & operator--( void ) {
@@ -343,7 +356,11 @@ class JumpTrie {
    }
 
   /// to the previous leaf, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same leaf
   bool operator==( const const_iterator & o ) const = default;
@@ -384,16 +401,13 @@ class JumpTrie {
 
 /*--------------------------------------------------------------------------*/
  protected:
-
  /// the deepest node of the path of \f$ x \f$ and its depth, by a walk
  /// from the root or, in the x-fast trie, by a binary search on the depth
  /// between \f$ \mathit{lo} \f$, a depth whose prefix of \f$ x \f$ is
  /// there, and \f$ \mathit{hi} \f$, one whose prefix is not (or
  /// \f$ w + 1 \f$)
- [[nodiscard]] std::pair< Node * , int > deepest( U x , int lo = 0 ,
-                                                   int hi = W + 1 ,
-                                                   Node * u = nullptr )
-                                                   const;
+ [[nodiscard]] std::pair< Node * , int >
+ deepest( U x , int lo = 0 , int hi = W + 1 , Node * u = nullptr ) const;
 
  /// the leaf of the smallest key \f$ \ge x \f$, or the dummy, from the
  /// deepest node \f$ u \f$ of the path of \f$ x \f$, at depth \f$ i \f$
@@ -416,18 +430,18 @@ class JumpTrie {
  /// whether the subtree of \f$ u \f$, at depth \f$ i \f$ and of prefix
  /// \f$ p \f$, is well formed;
  /// its smallest and largest leaf in `lo` and `hi`, its leaves in `n`
- [[nodiscard]] bool subtree( const Node * u , int i , U p ,
-                             const Node * & lo , const Node * & hi ,
-                             std::size_t & n , std::size_t & m ) const;
+ [[nodiscard]] bool subtree( const Node * u , int i , U p , const Node *& lo ,
+			     const Node *& hi , std::size_t & n ,
+			     std::size_t & m ) const;
 
  /// frees every node but the root and the dummy
  void destroy( Node * u , int i );
 
- ObjectPool< Node > f_pool{ 1 << 16 };    ///< the nodes
- Node * f_root = nullptr;                  ///< the root
- Node * f_dummy = nullptr;                 ///< the head of the list
- std::size_t f_n = 0;                      ///< the number of keys
- std::size_t f_nodes = 1;                  ///< the number of nodes
+ ObjectPool< Node > f_pool{ 1 << 16 };  ///< the nodes
+ Node * f_root = nullptr;               ///< the root
+ Node * f_dummy = nullptr;              ///< the head of the list
+ std::size_t f_n = 0;                   ///< the number of keys
+ std::size_t f_nodes = 1;               ///< the number of nodes
  ADS_NO_UNIQUE_ADDRESS TrieTables< U , Node , W , Hashed > f_t;  ///< tables
 
  };  // end( class JumpTrie )
@@ -441,9 +455,10 @@ class JumpTrie {
 /// a binary trie of the integers of \f$ w \f$ bits with the list of the
 /// leaves and the jump pointers, a SORTED SET with a value per key
 template< std::unsigned_integral U , class V = std::monostate ,
-          int W = std::numeric_limits< U >::digits >
+	  int W = std::numeric_limits< U >::digits >
  requires TrieWidth< U , W >
-class BinaryTrie : public detail::JumpTrie< U , V , W , false > {
+class BinaryTrie : public detail::JumpTrie< U , V , W , false >
+{
  public:
  using detail::JumpTrie< U , V , W , false >::JumpTrie;
  };
@@ -455,16 +470,16 @@ class BinaryTrie : public detail::JumpTrie< U , V , W , false > {
 /// a binary trie of the integers of \f$ w \f$ bits with no list and no jump
 /// pointers (exercise 13.1 of Morin's book)
 template< std::unsigned_integral U , class V = std::monostate ,
-          int W = std::numeric_limits< U >::digits >
+	  int W = std::numeric_limits< U >::digits >
  requires TrieWidth< U , W >
-class SimpleBinaryTrie {
+class SimpleBinaryTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = U;     ///< the type of the keys
- using Item = U;    ///< the items of the SSet, the keys
- using Value = V;   ///< the type of the values
+ using Key = U;    ///< the type of the keys
+ using Item = U;   ///< the items of the SSet, the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty trie
  SimpleBinaryTrie( void ) = default;
@@ -546,16 +561,17 @@ class SimpleBinaryTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// an internal node, two children
- struct Node {
-  Node * child[ 2 ] = { nullptr , nullptr };   ///< the children
+ struct Node
+ {
+  Node * child[ 2 ] = { nullptr , nullptr };  ///< the children
   };
 
  /// a leaf, its key and its value
- struct Leaf : Node {
-  U key = 0;     ///< the key
-  V value{};     ///< the value
+ struct Leaf : Node
+ {
+  U key = 0;  ///< the key
+  V value{};  ///< the value
   };
 
  /// the leaf of \f$ x \f$, or nil
@@ -568,9 +584,9 @@ class SimpleBinaryTrie {
  template< class F >
  static void visit( const Node * u , int i , F & f );
 
- Node f_root;                  ///< the root
- std::size_t f_n = 0;          ///< the number of keys
- std::size_t f_nodes = 1;      ///< the number of nodes
+ Node f_root;              ///< the root
+ std::size_t f_n = 0;      ///< the number of keys
+ std::size_t f_nodes = 1;  ///< the number of nodes
 
  };  // end( class SimpleBinaryTrie )
 
@@ -586,7 +602,7 @@ class SimpleBinaryTrie {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinaryTrie.h included */
+#endif /* BinaryTrie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BinaryTrie.h --------------------------*/

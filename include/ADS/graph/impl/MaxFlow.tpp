@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS FlowNetwork ----------------------------*/
@@ -30,13 +31,13 @@ inline FlowNetwork::FlowNetwork( int n )
 inline int FlowNetwork::addEdge( int u , int v , long long c )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          ( c >= 0 ) );
+	  ( c >= 0 ) );
  const int e = int( f_to.size() );
  f_to.push_back( v );
  f_cap.push_back( c );
  f_res.push_back( c );
  f_adj[ u ].push_back( { e , v } );
- f_to.push_back( u );                             // the residual twin
+ f_to.push_back( u );  // the residual twin
  f_cap.push_back( 0 );
  f_res.push_back( 0 );
  f_adj[ v ].push_back( { e + 1 , u } );
@@ -55,10 +56,10 @@ inline int FlowNetwork::addNode( void )
 inline void FlowNetwork::setCapacity( int e , long long c )
 {
  ADS_PRE( ( e >= 0 ) && ( e < int( f_to.size() ) ) && ( e % 2 == 0 ) &&
-          ( c >= 0 ) );
- if( c < flow( e ) ) {                         // the flow cut to c: the
-  const long long d = flow( e ) - c;           // tail keeps the excess,
-  push( e , -d );                              // the head the deficit
+	  ( c >= 0 ) );
+ if( c < flow( e ) ) {                // the flow cut to c: the
+  const long long d = flow( e ) - c;  // tail keeps the excess,
+  push( e , -d );                      // the head the deficit
   if( f_imb.empty() )
    f_imb.assign( n() , 0 );
   f_imb[ f_to[ e ^ 1 ] ] += d;
@@ -76,7 +77,7 @@ inline long long FlowNetwork::inflow( int t ) const
 {
  long long f = 0;
  for( const Incidence & a : f_adj[ t ] )
-  f -= f_cap[ a.e ] - f_res[ a.e ];              // the twins of those in
+  f -= f_cap[ a.e ] - f_res[ a.e ];  // the twins of those in
  return( f );
  }
 
@@ -93,16 +94,15 @@ inline long long FlowNetwork::capacity( int e ) const
  }
 
 inline long long FlowNetwork::maxFlow( int s , int t , Augment how ,
-                                      long long * paths )
+				       long long * paths )
 {
  ADS_PRE( ( s >= 0 ) && ( s < n() ) && ( t >= 0 ) && ( t < n() ) &&
-          ( s != t ) );
+	  ( s != t ) );
  // the value before the cuts of setCapacity(), whose excess or deficit
  // at t is the flow that they took from it or gave it
- const long long before = inflow( t ) -
-                          ( f_unbalanced ? f_imb[ t ] : 0 );
- if( f_unbalanced )                         // the push-relabel takes the
-  rebalance( s , t , how != Augment::PUSH_RELABEL );   // excesses itself
+ const long long before = inflow( t ) - ( f_unbalanced ? f_imb[ t ] : 0 );
+ if( f_unbalanced )  // the push-relabel takes the
+  rebalance( s , t , how != Augment::PUSH_RELABEL );  // excesses itself
  if( how == Augment::PUSH_RELABEL )
   pushRelabel( s , t );
  else
@@ -113,14 +113,16 @@ inline long long FlowNetwork::maxFlow( int s , int t , Augment how ,
      break;
     f_next.assign( n() , 0 );
     while( ( d = blocking( s , t , INF ) ) > 0 )
-     if( paths ) ++*paths;
+     if( paths )
+      ++*paths;
     continue;
     }
-   d = how == Augment::EDMONDS_KARP ? bfsAugment( s , t ) :
-                                      dfsAugment( s , t );
+   d = how == Augment::EDMONDS_KARP ? bfsAugment( s , t ) : dfsAugment( s ,
+									t );
    if( d == 0 )
     break;
-   if( paths ) ++*paths;
+   if( paths )
+    ++*paths;
    }
  ADS_AUDIT( ! minCut( s )[ t ] );
  ADS_INVARIANT( skewSymmetric() );
@@ -154,7 +156,7 @@ inline long long FlowNetwork::residual( int e ) const
 inline void FlowNetwork::push( int e , long long d )
 {
  f_res[ e ] -= d;
- f_res[ e ^ 1 ] += d;                          // opposite symmetry
+ f_res[ e ^ 1 ] += d;  // opposite symmetry
  }
 
 inline long long FlowNetwork::bfsAugment( int s , int t )
@@ -229,16 +231,16 @@ inline long long FlowNetwork::blocking( int u , int t , long long d )
   if( f_next[ u ] < f_adj[ u ].size() ) {
    const auto [ e , v ] = f_adj[ u ][ f_next[ u ] ];
    if( ( residual( e ) > 0 ) && ( f_level[ v ] == f_level[ u ] + 1 ) ) {
-    path.push_back( e );                      // forward along e
+    path.push_back( e );  // forward along e
     u = v;
     }
    else
     ++f_next[ u ];
    continue;
    }
-  if( path.empty() )                          // no path left from u
+  if( path.empty() )  // no path left from u
    return( 0 );
-  u = f_to[ path.back() ^ 1 ];              // back to the tail
+  u = f_to[ path.back() ^ 1 ];  // back to the tail
   path.pop_back();
   ++f_next[ u ];
   }
@@ -263,7 +265,7 @@ inline void FlowNetwork::rebalance( int s , int t , bool excesses )
  for( int dir = excesses ? 0 : 1 ; dir < 2 ; ++dir )
   for( const int x : f_imbNodes )
    while( ( x != s ) && ( x != t ) &&
-          ( dir == 0 ? f_imb[ x ] > 0 : f_imb[ x ] < 0 ) ) {
+	  ( dir == 0 ? f_imb[ x ] > 0 : f_imb[ x ] < 0 ) ) {
     // dir 0: forward from x to an end; dir 1: backward from x
     ++visit;
     Q.assign( 1 , x );
@@ -271,19 +273,19 @@ inline void FlowNetwork::rebalance( int s , int t , bool excesses )
     int y = -1;
     for( std::size_t i = 0 ; ( i < Q.size() ) && ( y < 0 ) ; ++i )
      for( const auto & [ e , v ] : f_adj[ Q[ i ] ] ) {
-      const int a = dir == 0 ? e : e ^ 1;     // the arc that is pushed
+      const int a = dir == 0 ? e : e ^ 1;  // the arc that is pushed
       if( ( seen[ v ] == visit ) || ( residual( a ) <= 0 ) )
        continue;
       seen[ v ] = visit;
       via[ v ] = a;
       Q.push_back( v );
       if( ( v == s ) || ( v == t ) ||
-          ( dir == 0 ? f_imb[ v ] < 0 : f_imb[ v ] > 0 ) ) {
+	  ( dir == 0 ? f_imb[ v ] < 0 : f_imb[ v ] > 0 ) ) {
        y = v;
        break;
        }
       }
-    ADS_INVARIANT( y >= 0 );                  // one is always there
+    ADS_INVARIANT( y >= 0 );  // one is always there
     if( y < 0 )
      return;
     long long d = dir == 0 ? f_imb[ x ] : -f_imb[ x ];
@@ -304,7 +306,7 @@ inline void FlowNetwork::rebalance( int s , int t , bool excesses )
      f_imb[ y ] += dir == 0 ? d : -d;
     }
  f_imb[ s ] = f_imb[ t ] = 0;
- if( excesses ) {                           // nothing left anywhere
+ if( excesses ) {  // nothing left anywhere
   f_imbNodes.clear();
   f_unbalanced = false;
   }
@@ -331,7 +333,7 @@ inline void FlowNetwork::pushRelabel( int s , int t )
   f_imbNodes.clear();
   f_unbalanced = false;
   }
- if( ! any && ( inflow( t ) != 0 ) ) {       // a flow already: warm
+ if( ! any && ( inflow( t ) != 0 ) ) {  // a flow already: warm
   std::vector< char > seen( N , 0 );
   std::vector< int > S = { s };
   seen[ s ] = 1;
@@ -392,7 +394,7 @@ inline void FlowNetwork::pushRelabel( int s , int t )
  auto relabelAll = [ & ]( bool first ) {
   int * const D = d.data();
   const char * const G = inGame.data();
-  int want = 0;                             // the active ones to label
+  int want = 0;  // the active ones to label
   for( int v = 0 ; v < N ; ++v )
    if( G[ v ] ) {
     D[ v ] = top;
@@ -412,14 +414,14 @@ inline void FlowNetwork::pushRelabel( int s , int t )
   std::size_t head = 0 , tail = 0;
   q[ tail++ ] = target;
   const int tp = top;
-  const bool all = target == t;             // the first phase: no node out
-  std::size_t level = tail;                 // the end of the level of now
-  int last = 0;                             // its label
+  const bool all = target == t;  // the first phase: no node out
+  std::size_t level = tail;      // the end of the level of now
+  int last = 0;                  // its label
   while( head < tail ) {
-   if( head == level ) {                    // a level done: all the
-    if( want == 0 )                         // active ones labeled, the
-     break;                                 // others above (the lazy
-    level = tail;                           // update of HIPR)
+   if( head == level ) {  // a level done: all the
+    if( want == 0 )       // active ones labeled, the
+     break;               // others above (the lazy
+    level = tail;         // update of HIPR)
     ++last;
     }
    const int v = q[ head++ ];
@@ -440,7 +442,7 @@ inline void FlowNetwork::pushRelabel( int s , int t )
    else
     for( ; a != z ; ++a ) {
      const int u = a->to;
-     if( D[ u ] != tp )                     // labeled, or s or t
+     if( D[ u ] != tp )  // labeled, or s or t
       continue;
      const int e = a->e;
      if( G[ u ] && ( R[ e ^ 1 ] > 0 ) ) {
@@ -451,11 +453,11 @@ inline void FlowNetwork::pushRelabel( int s , int t )
      }
    }
   D[ target == t ? s : t ] = tp;
-  if( head < tail ) {                       // stopped early: the nodes not
-   const int above = last + 2;              // reached get a lower bound of
-   for( int v = 0 ; v < N ; ++v )           // their distance
+  if( head < tail ) {            // stopped early: the nodes not
+   const int above = last + 2;   // reached get a lower bound of
+   for( int v = 0 ; v < N ; ++v )  // their distance
     if( G[ v ] && ( D[ v ] == tp ) && ( v != s ) && ( v != t ) &&
-        ( above < tp ) ) {
+	( above < tp ) ) {
      D[ v ] = above;
      q[ tail++ ] = v;
      }
@@ -485,18 +487,18 @@ inline void FlowNetwork::pushRelabel( int s , int t )
    queued[ u ] = 0;
    const int du = d[ u ];
    if( ( du != aMax ) || ( ex[ u ] == 0 ) )
-    continue;                               // a stale entry
+    continue;  // a stale entry
    long long x = ex[ u ];
    int nd = top;
    const auto & A = f_adj[ u ];
    for( const auto & [ e , v ] : A ) {
     const int dv = d[ v ];
     if( ( dv >= du ) && ( dv >= nd ) )
-     continue;                              // no use, read no edge
+     continue;  // no use, read no edge
     const long long r = R[ e ];
     if( r <= 0 )
      continue;
-    if( dv < du ) {                         // dv = du - 1, the labels valid
+    if( dv < du ) {  // dv = du - 1, the labels valid
      const long long y = r < x ? r : x;
      R[ e ] -= y;
      R[ e ^ 1 ] += y;
@@ -516,7 +518,7 @@ inline void FlowNetwork::pushRelabel( int s , int t )
    // an excess left: the relabeling of u, or a gap
    work += 12 + static_cast< long long >( A.size() );
    bDel( u );
-   if( bFirst[ du ] < 0 ) {                 // a gap at du: all above it
+   if( bFirst[ du ] < 0 ) {  // a gap at du: all above it
     for( int k = du + 1 ; k <= bMax ; ++k ) {
      for( int v = bFirst[ k ] ; v >= 0 ; v = bNext[ v ] )
       d[ v ] = top;
@@ -531,7 +533,7 @@ inline void FlowNetwork::pushRelabel( int s , int t )
     continue;
    bAdd( u );
    aPush( u );
-   if( global && ( 2 * work > nm ) ) {      // a global relabeling
+   if( global && ( 2 * work > nm ) ) {  // a global relabeling
     work = 0;
     relabelAll( false );
     }
@@ -582,12 +584,13 @@ inline bool FlowNetwork::skewSymmetric( void ) const
 /*----------------------------- CIRCULATIONS -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
+namespace detail
+{
 
 /// the flows are within the bounds of their edges and conserved at every
 /// node
 inline bool circulates( int n , const std::vector< BoundedEdge > & E ,
-                        const std::vector< long long > & f )
+			const std::vector< long long > & f )
 {
  if( f.size() != E.size() )
   return( false );
@@ -599,18 +602,19 @@ inline bool circulates( int n , const std::vector< BoundedEdge > & E ,
   net[ E[ i ].v ] += f[ i ];
   }
  return( std::all_of( net.begin() , net.end() ,
-                      []( long long x ) { return( x == 0 ); } ) );
+		       []( long long x ) { return( x == 0 ); } ) );
  }
 
 }  // end( namespace detail )
 
 inline bool feasibleCirculation( int n , const std::vector< BoundedEdge > & E ,
-                                 std::vector< long long > * flows )
+				 std::vector< long long > * flows )
 {
  ADS_PRE( n >= 0 );
  ADS_PRE( std::all_of( E.begin() , E.end() , [ & ]( const auto & e ) {
-  return( ( e.u >= 0 ) && ( e.u < n ) && ( e.v >= 0 ) && ( e.v < n ) ); } ) );
- FlowNetwork N( n + 2 );                     // n the source, n + 1 the sink
+  return( ( e.u >= 0 ) && ( e.u < n ) && ( e.v >= 0 ) && ( e.v < n ) );
+  } ) );
+ FlowNetwork N( n + 2 );  // n the source, n + 1 the sink
  std::vector< long long > excess( n , 0 );
  std::vector< int > id;
  for( const auto & e : E ) {

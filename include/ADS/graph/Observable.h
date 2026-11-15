@@ -109,7 +109,7 @@
 
 #ifndef __ADS_Observable
  #define __ADS_Observable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -136,24 +136,27 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- EVENTS ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a node inserted
-struct NodeInserted {
- static constexpr unsigned effects = mod::effect::grows;   ///< it grows
- int u;                                          ///< the node
+struct NodeInserted
+{
+ static constexpr unsigned effects = mod::effect::grows;  ///< it grows
+ int u;                                                   ///< the node
  /// whether the two events are the same
  bool operator==( const NodeInserted & ) const = default;
  };
 
 /// a node deleted, after the deletion of its edges
-struct NodeDeleted {
- static constexpr unsigned effects = mod::effect::shrinks;   ///< it shrinks
- int u;                                          ///< the node
+struct NodeDeleted
+{
+ static constexpr unsigned effects = mod::effect::shrinks;  ///< it shrinks
+ int u;                                                     ///< the node
  /// whether the two events are the same
  bool operator==( const NodeDeleted & ) const = default;
  };
@@ -161,41 +164,45 @@ struct NodeDeleted {
 /// an edge \f$ ( u , v ) \f$, or \f$ [ u , v ] \f$ with \f$ u < v \f$,
 /// inserted with the weight \f$ w \f$
 template< class W >
-struct EdgeInserted {
- static constexpr unsigned effects = mod::effect::grows;   ///< it grows
- int u;                                          ///< the tail
- int v;                                          ///< the head
- W w;                                            ///< the weight
+struct EdgeInserted
+{
+ static constexpr unsigned effects = mod::effect::grows;  ///< it grows
+ int u;                                                   ///< the tail
+ int v;                                                   ///< the head
+ W w;                                                     ///< the weight
  /// whether the two events are the same
  bool operator==( const EdgeInserted & ) const = default;
  };
 
 /// an edge deleted, \f$ w \f$ the weight that it had
 template< class W >
-struct EdgeDeleted {
- static constexpr unsigned effects = mod::effect::shrinks;   ///< it shrinks
- int u;                                          ///< the tail
- int v;                                          ///< the head
- W w;                                            ///< the weight it had
+struct EdgeDeleted
+{
+ static constexpr unsigned effects = mod::effect::shrinks;  ///< it shrinks
+ int u;                                                     ///< the tail
+ int v;                                                     ///< the head
+ W w;  ///< the weight it had
  /// whether the two events are the same
  bool operator==( const EdgeDeleted & ) const = default;
  };
 
 /// the weight of an edge changed from `from` to `to`
 template< class W >
-struct WeightChanged {
+struct WeightChanged
+{
  static constexpr unsigned effects = mod::effect::up | mod::effect::down;
- int u;                                          ///< the tail
- int v;                                          ///< the head
- W from;                                         ///< the weight before
- W to;                                           ///< the weight after
+ int u;   ///< the tail
+ int v;   ///< the head
+ W from;  ///< the weight before
+ W to;    ///< the weight after
  /// whether the two events are the same
  bool operator==( const WeightChanged & ) const = default;
  };
 
 /// the inverse of an insertion of an edge, its deletion
 template< class W >
-[[nodiscard]] constexpr EdgeDeleted< W > inverse( const EdgeInserted< W > & e )
+[[nodiscard]] constexpr EdgeDeleted< W >
+inverse( const EdgeInserted< W > & e )
 {
  return( EdgeDeleted< W >{ e.u , e.v , e.w } );
  }
@@ -203,46 +210,50 @@ template< class W >
 /// the inverse of a deletion of an edge, its insertion with the weight it
 /// had
 template< class W >
-[[nodiscard]] constexpr EdgeInserted< W > inverse( const EdgeDeleted< W > & e )
+[[nodiscard]] constexpr EdgeInserted< W >
+inverse( const EdgeDeleted< W > & e )
 {
  return( EdgeInserted< W >{ e.u , e.v , e.w } );
  }
 
 /// the inverse of a change of a weight, the change back
 template< class W >
-[[nodiscard]] constexpr WeightChanged< W > inverse(
-                                               const WeightChanged< W > & e )
+[[nodiscard]] constexpr WeightChanged< W >
+inverse( const WeightChanged< W > & e )
 {
  return( WeightChanged< W >{ e.u , e.v , e.to , e.from } );
  }
 
 /// the events of a graph of weights `W`, in the order of their kinds
 template< class W >
-using GraphModifications = mod::list< NodeInserted , NodeDeleted ,
-                                      EdgeInserted< W > , EdgeDeleted< W > ,
-                                      WeightChanged< W > >;
+using GraphModifications =
+  mod::list< NodeInserted , NodeDeleted , EdgeInserted< W > ,
+	     EdgeDeleted< W > ,
+	     WeightChanged< W > >;
 
 /// an event, whose kind is its index in the variant, the variant of
 /// `GraphModifications< W >`
 template< class W >
 using GraphEvent = std::variant< NodeInserted , NodeDeleted ,
-                                 EdgeInserted< W > , EdgeDeleted< W > ,
-                                 WeightChanged< W > >;
+				 EdgeInserted< W > ,
+				 EdgeDeleted< W > , WeightChanged< W > >;
 
 /// the kinds of event as bits of a mask
-struct GraphEvents {
- static constexpr unsigned NODE_INSERT = 1u;    ///< `NodeInserted`
- static constexpr unsigned NODE_DELETE = 2u;    ///< `NodeDeleted`
- static constexpr unsigned EDGE_INSERT = 4u;    ///< `EdgeInserted`
- static constexpr unsigned EDGE_DELETE = 8u;    ///< `EdgeDeleted`
- static constexpr unsigned WEIGHT = 16u;        ///< `WeightChanged`
- static constexpr unsigned EDGES = 28u;         ///< the three on edges
- static constexpr unsigned ALL = 31u;           ///< all of them
+struct GraphEvents
+{
+ static constexpr unsigned NODE_INSERT = 1u;  ///< `NodeInserted`
+ static constexpr unsigned NODE_DELETE = 2u;  ///< `NodeDeleted`
+ static constexpr unsigned EDGE_INSERT = 4u;  ///< `EdgeInserted`
+ static constexpr unsigned EDGE_DELETE = 8u;  ///< `EdgeDeleted`
+ static constexpr unsigned WEIGHT = 16u;      ///< `WeightChanged`
+ static constexpr unsigned EDGES = 28u;       ///< the three on edges
+ static constexpr unsigned ALL = 31u;         ///< all of them
  };
 
 /// the bit of the kind of \f$ e \f$
 template< class W >
-[[nodiscard]] constexpr unsigned kindOf( const GraphEvent< W > & e ) {
+[[nodiscard]] constexpr unsigned kindOf( const GraphEvent< W > & e )
+{
  return( 1u << e.index() );
  }
 
@@ -278,14 +289,15 @@ template< class W >
 /// \end{array}}
 /// \f]
 template< class W >
-[[nodiscard]] std::vector< GraphEvent< W > > coalesce(
-                               std::span< const GraphEvent< W > > E );
+[[nodiscard]] std::vector< GraphEvent< W > >
+coalesce( std::span< const GraphEvent< W > > E );
 
 /// an observer of the events of weights `W`: the kinds that it wants, and
 /// the two ways of getting them
 template< class O , class W >
 concept GraphObserver = requires( O & o , const GraphEvent< W > & e ,
-                                  std::span< const GraphEvent< W > > s ) {
+				  std::span< const GraphEvent< W > > s )
+{
  { o.mask() } -> std::convertible_to< unsigned >;
  o.notify( e );
  o.notify( s );
@@ -295,14 +307,16 @@ concept GraphObserver = requires( O & o , const GraphEvent< W > & e ,
 /*---------------------------- THE COALESCING ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace mod {
+namespace mod
+{
 
 /// the net effect of a batch of a graph, by coalesce() [see Observable.h]
 template< class W >
-struct coalesce_traits< GraphModifications< W > > {
+struct coalesce_traits< GraphModifications< W > >
+{
  /// `coalesce( B )`
- static std::vector< GraphEvent< W > > coalesce(
-                                      std::span< const GraphEvent< W > > B ) {
+ static std::vector< GraphEvent< W > >
+ coalesce( std::span< const GraphEvent< W > > B ) {
   return( ADS::coalesce< W >( B ) );
   }
  };
@@ -310,16 +324,18 @@ struct coalesce_traits< GraphModifications< W > > {
 }  // end( namespace mod )
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /// the adapter of an observer of the first form, with `mask()` and
 /// `notify()` [see GraphObserver]
 template< class W >
-struct GraphNotify {
+struct GraphNotify
+{
  /// `o.notify( e )`
  template< class O , class E >
   requires( mod::contains_v< E , GraphModifications< W > > &&
-            requires( O & o , const GraphEvent< W > & e ) { o.notify( e ); } )
+	    requires( O & o , const GraphEvent< W > & e ) { o.notify( e ); } )
  static void one( O & o , const E & e ) {
   const GraphEvent< W > x( e );
   o.notify( x );
@@ -327,7 +343,8 @@ struct GraphNotify {
  /// `o.notify( s )`
  template< class O >
   requires requires( O & o , std::span< const GraphEvent< W > > s ) {
-   o.notify( s ); }
+   o.notify( s );
+   }
  static void many( O & o , std::span< const GraphEvent< W > > s ) {
   o.notify( s );
   }
@@ -346,7 +363,9 @@ struct GraphNotify {
  /// `o.on( Rebuilt{} )`
  template< class O >
   requires( mod::with_policy< O > && mod::observes< O , mod::Rebuilt > )
- static void rebuilt( O & o ) noexcept { mod::Direct::rebuilt( o ); }
+ static void rebuilt( O & o ) noexcept {
+  mod::Direct::rebuilt( o );
+  }
  };
 
 }  // end( namespace detail )
@@ -359,13 +378,13 @@ struct GraphNotify {
 /// the graph \f$ g \f$, whose changes are sent through the subject policy
 /// `Policy` [see Modification.h]
 template< Graph G , class Policy = NoObservers >
-class ObservedGraph {
+class ObservedGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = typename G::Weight;    ///< the type of the weights
- using Event = GraphEvent< Weight >;   ///< the type of the events
+ using Weight = typename G::Weight;   ///< the type of the weights
+ using Event = GraphEvent< Weight >;  ///< the type of the events
  /// the events
  using modifications = GraphModifications< Weight >;
  /// the subject
@@ -375,8 +394,8 @@ class ObservedGraph {
 
  /// the wrapper of \f$ g \f$, the static observers `o...`; \f$ g \f$
  /// must stay alive, and change only through the wrapper
- template< class ... O >
- explicit ObservedGraph( G & g , O & ... o ) : f_g( g ) , f_sub( o... ) {}
+ template< class... O >
+ explicit ObservedGraph( G & g , O &... o ) : f_g( g ) , f_sub( o... ) { }
 
  /// not copied
  ObservedGraph( const ObservedGraph & ) = delete;
@@ -451,7 +470,9 @@ class ObservedGraph {
 /*---------------------------- THE CHANGES ---------------------------------*/
 
  /// `insertNode()` of the graph, and `NodeInserted`
- int insertNode( void ) requires DynamicGraph< G > {
+ int insertNode( void )
+  requires DynamicGraph< G >
+ {
   const int u = f_g.insertNode();
   if constexpr( Subject::template listened< NodeInserted > )
    if( f_sub.template live< NodeInserted >() ) [[unlikely]]
@@ -463,9 +484,10 @@ class ObservedGraph {
  /// the edge was there
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes
  void insertEdge( int u , int v , const Weight & w = Weight() )
-  requires DynamicGraph< G > {
+  requires DynamicGraph< G >
+ {
   if constexpr( Subject::template listened< EdgeInserted< Weight > > ||
-                Subject::template listened< WeightChanged< Weight > > )
+		Subject::template listened< WeightChanged< Weight > > )
    if( f_sub.template live< EdgeInserted< Weight > >() ||
        f_sub.template live< WeightChanged< Weight > >() ) [[unlikely]] {
     if constexpr( Subject::dynamic )
@@ -479,7 +501,9 @@ class ObservedGraph {
 
  /// `deleteEdge()` of the graph, and `EdgeDeleted` if the edge was there
  /// \pre \f$ u \f$ and \f$ v \f$ are distinct nodes
- void deleteEdge( int u , int v ) requires DynamicGraph< G > {
+ void deleteEdge( int u , int v )
+  requires DynamicGraph< G >
+ {
   if constexpr( Subject::template listened< EdgeDeleted< Weight > > )
    if( f_sub.template live< EdgeDeleted< Weight > >() ) [[unlikely]] {
     if constexpr( Subject::dynamic )
@@ -494,7 +518,8 @@ class ObservedGraph {
  /// `EdgeDeleted` for each edge of \f$ u \f$, `deleteNode()` of the graph,
  /// and `NodeDeleted`
  /// \pre \f$ u \f$ is a node
- void deleteNode( int u ) requires DynamicGraph< G >;
+ void deleteNode( int u )
+  requires DynamicGraph< G >;
 
  /// the weight of the edge \f$ ( u , v ) \f$ set to \f$ w \f$, and
  /// `WeightChanged`; false, and nothing, if there is no such edge
@@ -534,7 +559,7 @@ class ObservedGraph {
   else {
    if( ! f_g.weight( u , v ) )
     return( false );
-   f_g.insertEdge( u , v , w );         // only the weight changes
+   f_g.insertEdge( u , v , w );  // only the weight changes
    return( true );
    }
   }
@@ -542,11 +567,15 @@ class ObservedGraph {
 /*---------------------------- THE UNDO ------------------------------------*/
 
  /// the insertion of the edge of \f$ e \f$, for `UndoLog`
- void apply( const EdgeInserted< Weight > & e ) requires DynamicGraph< G > {
+ void apply( const EdgeInserted< Weight > & e )
+  requires DynamicGraph< G >
+ {
   insertEdge( e.u , e.v , e.w );
   }
  /// the deletion of the edge of \f$ e \f$, for `UndoLog`
- void apply( const EdgeDeleted< Weight > & e ) requires DynamicGraph< G > {
+ void apply( const EdgeDeleted< Weight > & e )
+  requires DynamicGraph< G >
+ {
   deleteEdge( e.u , e.v );
   }
  /// the change of the weight of \f$ e \f$, for `UndoLog`
@@ -559,7 +588,8 @@ class ObservedGraph {
  /// exits by an exception leaves the graph and the observers as they were
  /// [see `Batch`]
  [[nodiscard]] std::size_t checkpoint( void ) const
-  requires( ! Subject::none ) {
+  requires( ! Subject::none )
+ {
   return( f_sub.buffered() );
   }
 
@@ -573,7 +603,8 @@ class ObservedGraph {
  /// mute of the batch, which tells nobody); the graph is then the one at
  /// \f$ t \f$, up to the order of the edges in its lists
  /// \pre `revertible( t )`
- void rollback( std::size_t t ) requires( ! Subject::none );
+ void rollback( std::size_t t )
+  requires( ! Subject::none );
 
 /*--------------------------- THE OBSERVERS --------------------------------*/
 
@@ -581,13 +612,15 @@ class ObservedGraph {
  /// and gives its number
  /// \pre no channel is open
  template< class D >
- int attach( D & o ) requires( Subject::dynamic ) {
+ int attach( D & o )
+  requires( Subject::dynamic )
+ {
   if constexpr( mod::observer_of< D , modifications > )
    return( f_sub.attach( o ) );
   else {
    static_assert( GraphObserver< D , Weight > ,
-                  "ADS: neither an observer of the events of the graph nor "
-                  "one with mask() and notify()" );
+		  "ADS: neither an observer of the events of the graph nor "
+		  "one with mask() and notify()" );
    return( f_sub.template attachVia< detail::GraphNotify< Weight > >( o ) );
    }
   }
@@ -595,7 +628,11 @@ class ObservedGraph {
  /// detaches the observer number \f$ \mathit{id} \f$
  /// \pre \f$ \mathit{id} \f$ was given by `attach()` and not yet
  ///      detached, no channel is open
- void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
 
  /// opens a channel: the events are collected until it is closed
  [[nodiscard]] Batch batch( void ) { return( Batch( *this ) ); }
@@ -605,7 +642,6 @@ class ObservedGraph {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the key of an edge, its ends in order if unoriented
  [[nodiscard]] std::pair< int , int > key( int u , int v ) const {
   if( ! f_g.directed() && ( v < u ) )
@@ -630,9 +666,8 @@ class ObservedGraph {
  /// deleteEdge() when someone listens
  void deleteEdgeTold( int u , int v );
  /// deleteEdge() when someone listens, out of the hot code
- ADS_COLD_PATH void deleteEdgeCold( int u , int v ) {
-  deleteEdgeTold( u , v );
-  }
+ ADS_COLD_PATH void deleteEdgeCold( int u ,
+				    int v ) { deleteEdgeTold( u , v ); }
 
  /// setWeight() when someone listens
  bool setWeightTold( int u , int v , const Weight & w );
@@ -641,8 +676,8 @@ class ObservedGraph {
   return( setWeightTold( u , v , w ) );
   }
 
- G & f_g;                                  ///< the graph
- ADS_NO_UNIQUE_ADDRESS Subject f_sub;      ///< the observers
+ G & f_g;                              ///< the graph
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class ObservedGraph )
 
@@ -653,10 +688,12 @@ class ObservedGraph {
 /// the graph \f$ g \f$, whose changes are sent to the static observers
 /// `O...` of the first form [see GraphObserver] and to those attached
 /// later, of either form
-template< Graph G , class ... O >
-using Observable = ObservedGraph< G , Both< Static< mod::Via< O ,
-                    detail::GraphNotify< typename G::Weight > >... > ,
-                                            Dynamic<> > >;
+template< Graph G , class... O >
+using Observable = ObservedGraph<
+  G ,
+  Both< Static< mod::Via< O ,
+			  detail::GraphNotify< typename G::Weight > >... > ,
+	Dynamic<> > >;
 
 /*--------------------------------------------------------------------------*/
 
@@ -670,7 +707,7 @@ using Observable = ObservedGraph< G , Both< Static< mod::Via< O ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Observable.h included */
+#endif /* Observable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Observable.h --------------------------*/

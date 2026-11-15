@@ -14,18 +14,17 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
-Tree< T >::Tree( const T & v )
- : f_value( v )
-{
- }
+Tree< T >::Tree( const T & v ) : f_value( v )
+{ }
 
 template< class T >
 Tree< T >::~Tree()
 {
- std::vector< Tree * > S;   // iterative, as the height may be n
+ std::vector< Tree * > S;  // iterative, as the height may be n
  for( Tree * c = f_child ; c ; c = c->f_sibling )
   S.push_back( c );
  while( ! S.empty() ) {
@@ -33,7 +32,7 @@ Tree< T >::~Tree()
   S.pop_back();
   for( Tree * c = u->f_child ; c ; c = c->f_sibling )
    S.push_back( c );
-  u->f_child = nullptr;      // its children are on S
+  u->f_child = nullptr;  // its children are on S
   delete u;
   }
  }
@@ -84,7 +83,7 @@ template< class T >
 void Tree< T >::insertSibling( Tree * t )
 {
  ADS_PRE( ( t != nullptr ) && ( t->f_parent == nullptr ) && ( t != this ) &&
-          ( f_parent != nullptr ) );
+	  ( f_parent != nullptr ) );
  ADS_AUDIT( top() != t );
  t->f_parent = f_parent;
  t->f_sibling = f_sibling;
@@ -140,21 +139,25 @@ void dfs( Tree< T > * t , Pre && pre , Post && post )
  // iterative, as the height may be n: each node on the stack with the child
  // being visited, nil before the first one; the children are read after
  // pre( u ), the next sibling after the subtree, as the recursion would
- struct Item { Tree< T > * u; Tree< T > * c; };
+ struct Item
+ {
+  Tree< T > * u;
+  Tree< T > * c;
+  };
  std::vector< Item > S;
- pre( t );                                    // (1)
+ pre( t );  // (1)
  S.push_back( Item{ t , nullptr } );
  while( ! S.empty() ) {
   Item & x = S.back();
   x.c = x.c ? x.c->rightSibling() : x.u->leftmostChild();
   if( Tree< T > * c = x.c ) {
-   pre( c );                                  // (1)
+   pre( c );  // (1)
    S.push_back( Item{ c , nullptr } );
    }
   else {
    Tree< T > * u = x.u;
    S.pop_back();
-   post( u );                                 // (2)
+   post( u );  // (2)
    }
   }
  }
@@ -162,13 +165,13 @@ void dfs( Tree< T > * t , Pre && pre , Post && post )
 template< class T , class F >
 void pre_visit( Tree< T > * t , F && f )
 {
- dfs( t , f , []( Tree< T > * ) {} );
+ dfs( t , f , []( Tree< T > * ) { } );
  }
 
 template< class T , class F >
 void post_visit( Tree< T > * t , F && f )
 {
- dfs( t , []( Tree< T > * ) {} , f );
+ dfs( t , []( Tree< T > * ) { } , f );
  }
 
 template< class T , class F >
@@ -177,7 +180,13 @@ void in_visit( Tree< T > * t , int i , F && f )
  ADS_PRE( ( t != nullptr ) && ( i >= 0 ) );
  // iterative, as dfs(): k the children of u entered so far, and f( u )
  // once they are i, or they are over
- struct Item { Tree< T > * u; Tree< T > * c; int k; bool started , done; };
+ struct Item
+ {
+  Tree< T > * u;
+  Tree< T > * c;
+  int k;
+  bool started , done;
+  };
  std::vector< Item > S = { Item{ t , nullptr , 0 , false , false } };
  while( ! S.empty() ) {
   Item & x = S.back();
@@ -208,7 +217,8 @@ Tree< T > * copy( const Tree< T > * t )
  // with its copy, its next child to copy and the last child copied; a copy
  // is hung under its parent when its subtree is done, and the copies not
  // yet hung are freed if anything throws
- struct Item {
+ struct Item
+ {
   const Tree< T > * from;
   std::unique_ptr< Tree< T > > to;
   const Tree< T > * next;
@@ -230,8 +240,10 @@ Tree< T > * copy( const Tree< T > * t )
   if( S.empty() )
    break;
   Item & p = S.back();
-  if( p.last ) p.last->insertSibling( c.get() );
-  else p.to->insertChild( c.get() );
+  if( p.last )
+   p.last->insertSibling( c.get() );
+  else
+   p.to->insertChild( c.get() );
   p.last = c.release();
   }
  ADS_POST( c->parent() == nullptr );
@@ -254,7 +266,7 @@ template< class T >
 int maxWeightLevel( Tree< T > * t )
 {
  ADS_PRE( t != nullptr );
- std::vector< Tree< T > * > L = { t };      // the nodes of a level
+ std::vector< Tree< T > * > L = { t };  // the nodes of a level
  int level = 0 , best = 0;
  T bestWeight{};
  for( ; ! L.empty() ; ++level ) {
@@ -297,7 +309,8 @@ std::string to_list( const Tree< T > * t )
  return( out.str() );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// the tree of the list from L[ i ] on, i moved past it
 template< class T >
@@ -306,17 +319,21 @@ Tree< T > * readTree( const std::vector< std::string > & L , std::size_t & i )
  // the descent by the grammar with a stack of its own, as the height may
  // be n: each node open with its last child, hung under its parent at its
  // ")"; the nodes freed if a contract throws
- struct Item { std::unique_ptr< Tree< T > > t; Tree< T > * last; };
+ struct Item
+ {
+  std::unique_ptr< Tree< T > > t;
+  Tree< T > * last;
+  };
  std::vector< Item > S;
  for( ; ; ) {
   if( S.empty() || ( ( i < L.size() ) && ( L[ i ] == "(" ) ) ) {
    ADS_PRE( ( i + 1 < L.size() ) && ( L[ i ] == "(" ) &&
-            ( L[ i + 1 ] != "(" ) && ( L[ i + 1 ] != ")" ) );
+	    ( L[ i + 1 ] != "(" ) && ( L[ i + 1 ] != ")" ) );
    std::istringstream in( L[ i + 1 ] );
    T v{};
    in >> v;
-   ADS_PRE( ! in.fail() &&                  // all the atom, e.g., not 8x
-            ( in.peek() == std::char_traits< char >::eof() ) );
+   ADS_PRE( ! in.fail() &&  // all the atom, e.g., not 8x
+	    ( in.peek() == std::char_traits< char >::eof() ) );
    std::unique_ptr< Tree< T > > t( new Tree< T >( v ) );
    S.push_back( Item{ std::move( t ) , nullptr } );
    i += 2;
@@ -349,7 +366,7 @@ inline std::vector< std::string > listTokens( std::string_view s )
   else {
    std::size_t j = i;
    while( ( j < s.size() ) && ( s[ j ] != ' ' ) && ( s[ j ] != '(' ) &&
-          ( s[ j ] != ')' ) )
+	  ( s[ j ] != ')' ) )
     ++j;
    T.emplace_back( s.substr( i , j - i ) );
    i = j;
@@ -365,7 +382,7 @@ Tree< T > * tree_from_list( std::string_view s )
  const auto L = detail::listTokens( s );
  std::size_t i = 0;
  std::unique_ptr< Tree< T > > t( detail::readTree< T >( L , i ) );
- ADS_PRE( i == L.size() );                   // t freed if it throws
+ ADS_PRE( i == L.size() );  // t freed if it throws
  return( t.release() );
  }
 
@@ -373,7 +390,7 @@ template< class T , class F >
 void bfs( Tree< T > * t , F && f )
 {
  ADS_PRE( t != nullptr );
- List< Tree< T > * > Q;   // enqueue at the tail, dequeue from the head
+ List< Tree< T > * > Q;  // enqueue at the tail, dequeue from the head
  Q.insert( Q.next( Q.tail() ) , t );
  while( ! Q.empty() ) {
   Tree< T > * u = Q.read( Q.head() );

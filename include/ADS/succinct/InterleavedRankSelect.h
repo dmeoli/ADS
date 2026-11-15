@@ -64,7 +64,7 @@
 
 #ifndef __ADS_InterleavedRankSelect
  #define __ADS_InterleavedRankSelect
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -88,7 +88,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS InterleavedRankSelect ----------------------*/
@@ -96,13 +97,13 @@ namespace ADS {
 
 /// a static vector of bits with its counts inside its lines, rank with one
 /// access to the memory
-class InterleavedRankSelect {
+class InterleavedRankSelect
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the directory of no bit
- InterleavedRankSelect( void ) : InterleavedRankSelect( BitVector() ) {}
+ InterleavedRankSelect( void ) : InterleavedRankSelect( BitVector() ) { }
 
  /// the directory of the bits \f$ b \f$, laid out with them
  explicit InterleavedRankSelect( const BitVector & b );
@@ -192,10 +193,9 @@ class InterleavedRankSelect {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr std::size_t kData = 496;  ///< the bits of B in a line
- static constexpr std::size_t kLines = 128; ///< the lines of a superblock
- static constexpr std::size_t kSample = 8192;   ///< bits b between samples
+ static constexpr std::size_t kData = 496;     ///< the bits of B in a line
+ static constexpr std::size_t kLines = 128;    ///< the lines of a superblock
+ static constexpr std::size_t kSample = 8192;  ///< bits b between samples
 
  /// the lines from the words w of n bits (nullptr for none)
  void build( const Word * w , std::size_t n );
@@ -203,7 +203,7 @@ class InterleavedRankSelect {
  /// the 1s before the line l
  [[nodiscard]] std::size_t before( std::size_t l ) const {
   return( std::size_t( f_S[ l / kLines ] ) +
-          std::size_t( f_L[ 8 * l ] & 0xFFFF ) );
+	   std::size_t( f_L[ 8 * l ] & 0xFFFF ) );
   }
 
  /// the 1s among the bits [ 16 , p ) of the line l
@@ -216,10 +216,10 @@ class InterleavedRankSelect {
  [[nodiscard]] bool consistent( void ) const;
 
  std::size_t f_n = 0 , f_ones = 0;
- std::vector< Word , detail::LineAllocator< Word > > f_L;   ///< the lines
- std::vector< std::uint64_t > f_S;      ///< the 1s before each superblock
- std::vector< std::uint32_t > f_sl[ 2 ];   ///< the lines of the samples
- std::vector< std::uint64_t > f_sc[ 2 ];   ///< the bits b before them
+ std::vector< Word , detail::LineAllocator< Word > > f_L;  ///< the lines
+ std::vector< std::uint64_t > f_S;        ///< the 1s before each superblock
+ std::vector< std::uint32_t > f_sl[ 2 ];  ///< the lines of the samples
+ std::vector< std::uint64_t > f_sc[ 2 ];  ///< the bits b before them
 
  };  // end( class InterleavedRankSelect )
 
@@ -235,7 +235,7 @@ class InterleavedRankSelect {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* InterleavedRankSelect.h included */
+#endif /* InterleavedRankSelect.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- End File InterleavedRankSelect.h --------------------*/

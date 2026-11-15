@@ -76,7 +76,8 @@ using namespace ADS;
 /*---------------------------- THE SOLUTIONS -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace dp {
+namespace dp
+{
 
 using Int = std::int64_t;
 using Count = std::uint64_t;
@@ -99,17 +100,17 @@ constexpr Int INF = std::numeric_limits< Int >::max() / 4;
 /// chain of matrices, O( n^3 ) time and O( n^2 ) space
 /// \pre n >= 1 positive operands, n - 1 operators in { +, * }
 inline std::pair< Int , std::vector< std::vector< std::size_t > > >
- minParenthesization( const std::vector< Int > & C , const std::string & O )
+minParenthesization( const std::vector< Int > & C , const std::string & O )
 {
  ADS_PRE( ( ! C.empty() ) && ( O.size() + 1 == C.size() ) );
- ADS_PRE( std::all_of( C.begin() , C.end() ,
-                       []( Int c ) { return( c > 0 ); } ) );
+ ADS_PRE(
+   std::all_of( C.begin() , C.end() , []( Int c ) { return( c > 0 ); } ) );
  ADS_PRE( std::all_of( O.begin() , O.end() ,
-                       []( char o ) { return( o == '+' || o == '*' ); } ) );
+		       []( char o ) { return( o == '+' || o == '*' ); } ) );
  const std::size_t n = C.size();
  Table D( n , std::vector< Int >( n , 0 ) );
- std::vector< std::vector< std::size_t > > S( n ,
-                                     std::vector< std::size_t >( n , 0 ) );
+ std::vector< std::vector< std::size_t > > S(
+   n , std::vector< std::size_t >( n , 0 ) );
  for( std::size_t i = 0 ; i < n ; ++i )
   D[ i ][ i ] = C[ i ];
  for( std::size_t h = 2 ; h <= n ; ++h )
@@ -118,7 +119,7 @@ inline std::pair< Int , std::vector< std::vector< std::size_t > > >
    D[ i ][ j ] = INF;
    for( std::size_t k = i ; k < j ; ++k ) {
     const Int t = ( O[ k ] == '+' ) ? D[ i ][ k ] + D[ k + 1 ][ j ]
-                                    : D[ i ][ k ] * D[ k + 1 ][ j ];
+				    : D[ i ][ k ] * D[ k + 1 ][ j ];
     if( t < D[ i ][ j ] ) {
      D[ i ][ j ] = t;
      S[ i ][ j ] = k;
@@ -131,23 +132,25 @@ inline std::pair< Int , std::vector< std::vector< std::size_t > > >
 /// stampaPar: the expression C[ i .. j ] fully parenthesized by the splits
 /// S of minParenthesization(), "(a o b)" for each operator; O( n )
 /// \pre i <= j < n
-inline std::string printParenthesization(
-                  const std::vector< Int > & C , const std::string & O ,
-                  const std::vector< std::vector< std::size_t > > & S ,
-                  std::size_t i , std::size_t j )
+inline std::string
+printParenthesization( const std::vector< Int > & C , const std::string & O ,
+		       const std::vector< std::vector< std::size_t > > & S ,
+		       std::size_t i , std::size_t j )
 {
  ADS_PRE( ( i <= j ) && ( j < C.size() ) );
  if( i == j )
   return( std::to_string( C[ i ] ) );
  const std::size_t k = S[ i ][ j ];
- return( "(" + printParenthesization( C , O , S , i , k ) + " " + O[ k ] +
-         " " + printParenthesization( C , O , S , k + 1 , j ) + ")" );
+ return( "(" + printParenthesization( C , O , S , i ,
+				      k ) + " " + O[ k ] + " " +
+	  printParenthesization( C , O , S , k + 1 , j ) + ")" );
  }
 
 /*------------------------- 3, 2011-06-06, Scatole -------------------------*/
 
 /// a box, not to be rotated
-struct Box {
+struct Box
+{
  int x , y , z;
  };
 
@@ -176,8 +179,8 @@ inline std::vector< std::size_t > boxChain( const std::vector< Box > & S )
 /// multisetSum(): whether k is a sum of A[ 0 .. i - 1 ] with repetitions,
 /// memoized in M (-1 unknown)
 inline bool multisetSumRec( const std::vector< Int > & A , std::size_t i ,
-                            Int k ,
-                            std::vector< std::vector< signed char > > & M )
+			    Int k ,
+			    std::vector< std::vector< signed char > > & M )
 {
  if( k == 0 )
   return( true );
@@ -197,11 +200,11 @@ inline bool multisetSumRec( const std::vector< Int > & A , std::size_t i ,
 inline bool multisetSum( const std::vector< Int > & A , Int t )
 {
  ADS_PRE( t >= 0 );
- ADS_PRE( std::all_of( A.begin() , A.end() ,
-                       []( Int a ) { return( a > 0 ); } ) );
- std::vector< std::vector< signed char > > M( A.size() + 1 ,
-                std::vector< signed char >( static_cast< std::size_t >( t )
-                                            + 1 , -1 ) );
+ ADS_PRE(
+   std::all_of( A.begin() , A.end() , []( Int a ) { return( a > 0 ); } ) );
+ std::vector< std::vector< signed char > > M(
+   A.size() + 1 ,
+   std::vector< signed char >( static_cast< std::size_t >( t ) + 1 , -1 ) );
  return( multisetSumRec( A , A.size() , t , M ) );
  }
 
@@ -241,11 +244,11 @@ inline OptimalBst optimalBst( const std::vector< Int > & p )
 /// ey, and never stops for n = 1
 /// \pre X and Y sorted, of the same length n >= 1
 inline std::pair< Int , Int > medianPair( const std::vector< Int > & X ,
-                                          const std::vector< Int > & Y )
+					 const std::vector< Int > & Y )
 {
  ADS_PRE( ( ! X.empty() ) && ( X.size() == Y.size() ) );
  ADS_PRE( std::is_sorted( X.begin() , X.end() ) &&
-          std::is_sorted( Y.begin() , Y.end() ) );
+	  std::is_sorted( Y.begin() , Y.end() ) );
  std::size_t bx = 0 , ex = X.size() - 1 , by = 0 , ey = Y.size() - 1;
  while( ex - bx >= 2 ) {
   const std::size_t mx = ( bx + ex ) / 2 , my = ( by + ey + 1 ) / 2;
@@ -260,7 +263,7 @@ inline std::pair< Int , Int > medianPair( const std::vector< Int > & X ,
   else
    return( std::pair( X[ mx ] , Y[ my ] ) );
   }
- std::vector< Int > v;                          // mediana4: 2 or 4 items
+ std::vector< Int > v;  // mediana4: 2 or 4 items
  for( std::size_t i = bx ; i <= ex ; ++i )
   v.push_back( X[ i ] );
  for( std::size_t i = by ; i <= ey ; ++i )
@@ -279,12 +282,12 @@ inline std::pair< Int , Int > medianPair( const std::vector< Int > & X ,
 /// time, O( L ) space; rodCutting() of the library
 /// \pre L <= |G| and G not negative
 /// \post the pieces sum to L and their prices to the gain
-inline std::pair< Int , std::vector< std::size_t > > bestCut(
-                                const std::vector< Int > & G , std::size_t L )
+inline std::pair< Int , std::vector< std::size_t > >
+bestCut( const std::vector< Int > & G , std::size_t L )
 {
  ADS_PRE( L <= G.size() );
- ADS_PRE( std::all_of( G.begin() , G.end() ,
-                       []( Int x ) { return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( G.begin() , G.end() , []( Int x ) { return( x >= 0 ); } ) );
  return( rodCutting( G , L ) );
  }
 
@@ -293,7 +296,7 @@ inline std::pair< Int , std::vector< std::size_t > > bestCut(
 /// printRGRec(): the strings that complete S[ 0 .. i - 1 ] with n 'R' and
 /// m 'G'
 inline void printRGRec( std::string & S , std::size_t i , int n , int m ,
-                        std::vector< std::string > & out )
+			std::vector< std::string > & out )
 {
  if( ( n == 0 ) && ( m == 0 ) ) {
   out.push_back( S );
@@ -329,7 +332,7 @@ inline Count countRG( int n , int m )
 {
  ADS_PRE( ( n >= 0 ) && ( m >= 0 ) && ( n + m <= 67 ) );
  std::vector< std::vector< Count > > D( n + 1 ,
-                                        std::vector< Count >( m + 1 , 1 ) );
+					std::vector< Count >( m + 1 , 1 ) );
  for( int i = 1 ; i <= n ; ++i )
   for( int j = 1 ; j <= m ; ++j )
    D[ i ][ j ] = D[ i - 1 ][ j ] + D[ i ][ j - 1 ];
@@ -373,7 +376,8 @@ inline bool checkPairsHash( const std::vector< Int > & A )
  const std::unordered_set< Int > H( A.begin() , A.end() );
  ADS_PRE( H.size() == A.size() );
  return( std::all_of( A.begin() , A.end() , [ & ]( Int a ) {
-          return( ( S - a != a ) && H.count( S - a ) ); } ) );
+  return( ( S - a != a ) && H.count( S - a ) );
+  } ) );
  }
 
 /*------------------- 11, 2012-05-03, Ottimizza la somma -------------------*/
@@ -381,16 +385,16 @@ inline bool checkPairsHash( const std::vector< Int > & A )
 /// sum(): the largest sum X[ i ][ w ] <= w of multiples of V[ 0 .. i - 1 ],
 /// memoized (-1 unknown), - INF for w < 0
 inline Int maxSumRec( const std::vector< Int > & V , std::size_t i , Int w ,
-                      Table & X )
+		      Table & X )
 {
  if( w < 0 )
-  return( - INF );
+  return( -INF );
  if( ( i == 0 ) || ( w == 0 ) )
   return( 0 );
  Int & x = X[ i ][ static_cast< std::size_t >( w ) ];
  if( x < 0 )
   x = std::max( maxSumRec( V , i - 1 , w , X ) ,
-                maxSumRec( V , i , w - V[ i - 1 ] , X ) + V[ i - 1 ] );
+		maxSumRec( V , i , w - V[ i - 1 ] , X ) + V[ i - 1 ] );
  return( x );
  }
 
@@ -401,23 +405,23 @@ inline Int maxSumRec( const std::vector< Int > & V , std::size_t i , Int w ,
 /// while that is strictly better; O( n W ) time and space
 /// \pre W >= 0 and V positive
 /// \post the multiples sum to the largest value, at most W
-inline std::pair< Int , std::vector< Int > > maxSum(
-                                      const std::vector< Int > & V , Int W )
+inline std::pair< Int , std::vector< Int > >
+maxSum( const std::vector< Int > & V , Int W )
 {
  ADS_PRE( W >= 0 );
- ADS_PRE( std::all_of( V.begin() , V.end() ,
-                       []( Int v ) { return( v > 0 ); } ) );
+ ADS_PRE(
+   std::all_of( V.begin() , V.end() , []( Int v ) { return( v > 0 ); } ) );
  const std::size_t n = V.size();
- Table X( n + 1 , std::vector< Int >( static_cast< std::size_t >( W ) + 1 ,
-                                      -1 ) );
+ Table X( n + 1 ,
+	  std::vector< Int >( static_cast< std::size_t >( W ) + 1 , -1 ) );
  const Int best = maxSumRec( V , n , W , X );
  std::vector< Int > x( n , 0 );
  std::size_t i = n;
  Int w = W;
  while( ( i > 0 ) && ( w > 0 ) ) {
   const Int take = ( w >= V[ i - 1 ] )
-                    ? maxSumRec( V , i , w - V[ i - 1 ] , X ) + V[ i - 1 ]
-                    : - INF;
+		     ? maxSumRec( V , i , w - V[ i - 1 ] , X ) + V[ i - 1 ]
+		     : -INF;
   if( take > maxSumRec( V , i - 1 , w , X ) ) {
    ++x[ i - 1 ];
    w -= V[ i - 1 ];
@@ -425,8 +429,8 @@ inline std::pair< Int , std::vector< Int > > maxSum(
   else
    --i;
   }
- ADS_POST( std::inner_product( x.begin() , x.end() , V.begin() , Int( 0 ) )
-           == best );
+ ADS_POST( std::inner_product( x.begin() , x.end() , V.begin() , Int( 0 ) ) ==
+	   best );
  ADS_POST( best <= W );
  return( std::pair( best , x ) );
  }
@@ -504,8 +508,7 @@ inline Count countPaths( const std::vector< std::vector< int > > & B )
 /// taken: D[ n - 1 ] = 0, D[ i ] = min over j > i of C[ i ][ j ] + D[ j ]
 /// with the best j kept; O( n^2 ) time, O( n ) space
 /// \pre n >= 1, C at least n x n and not negative above the diagonal
-inline std::pair< Int , std::vector< std::size_t > > boats(
-                                                      const Table & C )
+inline std::pair< Int , std::vector< std::size_t > > boats( const Table & C )
 {
  const std::size_t n = C.size();
  ADS_PRE( n >= 1 );
@@ -533,16 +536,16 @@ inline std::pair< Int , std::vector< std::size_t > > boats(
 /// maxResto(): the most coins among V[ 0 .. i - 1 ] summing to t, - INF if
 /// none, memoized (INF unknown)
 inline Int maxCoinsRec( const std::vector< Int > & V , std::size_t i , Int t ,
-                        Table & D )
+			Table & D )
 {
  if( t == 0 )
   return( 0 );
  if( ( t < 0 ) || ( i == 0 ) )
-  return( - INF );
+  return( -INF );
  Int & d = D[ i ][ static_cast< std::size_t >( t ) ];
  if( d == INF )
   d = std::max( maxCoinsRec( V , i - 1 , t , D ) ,
-                maxCoinsRec( V , i - 1 , t - V[ i - 1 ] , D ) + 1 );
+		maxCoinsRec( V , i - 1 , t - V[ i - 1 ] , D ) + 1 );
  return( d );
  }
 
@@ -554,10 +557,10 @@ inline Int maxCoinsRec( const std::vector< Int > & V , std::size_t i , Int t ,
 inline std::optional< Int > maxCoins( const std::vector< Int > & V , Int T )
 {
  ADS_PRE( T >= 0 );
- ADS_PRE( std::all_of( V.begin() , V.end() ,
-                       []( Int v ) { return( v > 0 ); } ) );
+ ADS_PRE(
+   std::all_of( V.begin() , V.end() , []( Int v ) { return( v > 0 ); } ) );
  Table D( V.size() + 1 ,
-          std::vector< Int >( static_cast< std::size_t >( T ) + 1 , INF ) );
+	  std::vector< Int >( static_cast< std::size_t >( T ) + 1 , INF ) );
  const Int r = maxCoinsRec( V , V.size() , T , D );
  if( r < 0 )
   return( std::nullopt );
@@ -574,8 +577,8 @@ inline std::optional< Int > maxCoins( const std::vector< Int > & V , Int T )
 /// \pre D not negative
 inline Int fundraising( const std::vector< Int > & D )
 {
- ADS_PRE( std::all_of( D.begin() , D.end() ,
-                       []( Int d ) { return( d >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( D.begin() , D.end() , []( Int d ) { return( d >= 0 ); } ) );
  return( maxNonAdjacentSum( D ) );
  }
 
@@ -586,8 +589,8 @@ inline Int fundraising( const std::vector< Int > & D )
 /// \post increasing places, no two consecutive, of sum fundraising( D )
 inline std::vector< std::size_t > donors( const std::vector< Int > & D )
 {
- ADS_PRE( std::all_of( D.begin() , D.end() ,
-                       []( Int d ) { return( d >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( D.begin() , D.end() , []( Int d ) { return( d >= 0 ); } ) );
  return( nonAdjacentSelection( D ).second );
  }
 
@@ -603,8 +606,8 @@ inline std::vector< std::size_t > donors( const std::vector< Int > & D )
 inline Int coinGame( const std::vector< Int > & V )
 {
  ADS_PRE( V.size() % 2 == 0 );
- ADS_PRE( std::all_of( V.begin() , V.end() ,
-                       []( Int v ) { return( v >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( V.begin() , V.end() , []( Int v ) { return( v >= 0 ); } ) );
  return( coinsInALine( V ) );
  }
 
@@ -617,7 +620,8 @@ using DiceTable = std::vector< std::vector< std::vector< long long > > >;
 /// values from the last die, each at least m: the sum over m <= j <= F[ i ]
 /// of DP[ x - j ][ i - 1 ][ j ]
 inline long long diceRec( const std::vector< int > & F , std::size_t i ,
-                          int x , int m , DiceTable & DP )
+			  int x ,
+			  int m , DiceTable & DP )
 {
  if( ( x == 0 ) && ( i == 0 ) )
   return( 1 );
@@ -635,7 +639,7 @@ inline long long diceRec( const std::vector< int > & F , std::size_t i ,
 /// diceFast(): the same by DP[ x ][ i ][ m ] = DP[ x - m ][ i - 1 ][ m ] +
 /// DP[ x ][ i ][ m + 1 ], the second term only for m < F[ i ]
 inline long long diceFastRec( const std::vector< int > & F , std::size_t i ,
-                              int x , int m , DiceTable & DP )
+			      int x , int m , DiceTable & DP )
 {
  if( ( x == 0 ) && ( i == 0 ) )
   return( 1 );
@@ -660,14 +664,15 @@ inline long long diceFastRec( const std::vector< int > & F , std::size_t i ,
 inline long long dice( std::vector< int > F , int X , bool fast )
 {
  ADS_PRE( X >= 0 );
- ADS_PRE( std::all_of( F.begin() , F.end() ,
-                       []( int f ) { return( f > 0 ); } ) );
+ ADS_PRE(
+   std::all_of( F.begin() , F.end() , []( int f ) { return( f > 0 ); } ) );
  std::sort( F.begin() , F.end() , std::greater< int >() );
  const int M = F.empty() ? 1 : F.front();
- DiceTable DP( X + 1 , std::vector< std::vector< long long > >(
-                F.size() + 1 , std::vector< long long >( M + 2 , -1 ) ) );
+ DiceTable DP( X + 1 ,
+	       std::vector< std::vector< long long > >(
+		 F.size() + 1 , std::vector< long long >( M + 2 , -1 ) ) );
  return( fast ? diceFastRec( F , F.size() , X , 1 , DP )
-              : diceRec( F , F.size() , X , 1 , DP ) );
+	       : diceRec( F , F.size() , X , 1 , DP ) );
  }
 
 /*------------------------ 23, 2014-01-07, Altezza -------------------------*/
@@ -685,7 +690,7 @@ inline Int shelvesHeight( std::vector< Int > y , std::size_t L )
  Int total = 0;
  std::size_t left = 0;
  for( std::size_t i = y.size() ; i-- > 0 ; ) {
-  if( left == 0 ) {                             // a new shelf
+  if( left == 0 ) {  // a new shelf
    total += y[ i ];
    left = L;
    }
@@ -709,10 +714,11 @@ inline Int rooks( const std::array< std::vector< Int > , 4 > & S )
  ADS_PRE( n >= 4 );
  for( const auto & row : S ) {
   ADS_PRE( row.size() == n );
-  ADS_PRE( std::all_of( row.begin() , row.end() ,
-                        []( Int s ) { return( s > 0 ); } ) );
+  ADS_PRE(
+    std::all_of( row.begin() , row.end() ,
+		 []( Int s ) { return( s > 0 ); } ) );
   }
- std::array< Int , 16 > D{};                    // DP[ k - 1 ][ . ]
+ std::array< Int , 16 > D{};  // DP[ k - 1 ][ . ]
  for( std::size_t k = 0 ; k < n ; ++k ) {
   std::array< Int , 16 > E{};
   for( int m = 0 ; m < 15 ; ++m ) {
@@ -758,7 +764,7 @@ inline Int partition3( const std::vector< Int > & V )
  for( std::size_t i = 1 ; i + 2 <= n ; ++i )
   for( std::size_t j = i + 1 ; j + 1 <= n ; ++j )
    minSoFar = std::min( minSoFar , std::max( { tot[ i ] , tot[ j ] - tot[ i ] ,
-                                               tot[ n ] - tot[ j ] } ) );
+					      tot[ n ] - tot[ j ] } ) );
  return( minSoFar );
  }
 
@@ -780,8 +786,8 @@ inline Int partitionK( const std::vector< Int > & V , std::size_t k )
 /// the lengths up to f included; O( n ) time
 /// \pre order a permutation of the files
 inline double tapeCost( const std::vector< double > & L ,
-                        const std::vector< double > & P ,
-                        const std::vector< std::size_t > & order )
+			const std::vector< double > & P ,
+			const std::vector< std::size_t > & order )
 {
  ADS_PRE( ( L.size() == P.size() ) && ( order.size() == L.size() ) );
  double T = 0 , cost = 0;
@@ -797,12 +803,12 @@ inline double tapeCost( const std::vector< double > & L ,
 /// of this order never lowers the cost; O( n log n ) time, Smith's rule,
 /// smithOrder() of the library
 /// \pre L not negative and P positive
-inline std::vector< std::size_t > tapeOrder( const std::vector< double > & L ,
-                                             const std::vector< double > & P )
+inline std::vector< std::size_t >
+tapeOrder( const std::vector< double > & L , const std::vector< double > & P )
 {
  ADS_PRE( L.size() == P.size() );
- ADS_PRE( std::all_of( P.begin() , P.end() ,
-                       []( double p ) { return( p > 0 ); } ) );
+ ADS_PRE(
+   std::all_of( P.begin() , P.end() , []( double p ) { return( p > 0 ); } ) );
  return( smithOrder( L , P ) );
  }
 
@@ -818,14 +824,14 @@ inline std::vector< std::size_t > tapeOrder( const std::vector< double > & L ,
 /// tests d[ i ] for d[ i + 1 ]
 /// \pre |t| = |d| = n >= 1, A >= 0, d and t not negative
 inline std::optional< Int > mintime( const std::vector< Int > & t ,
-                                     const std::vector< Int > & d , Int A )
+				     const std::vector< Int > & d , Int A )
 {
  const std::size_t n = t.size();
  ADS_PRE( ( n >= 1 ) && ( d.size() == n ) && ( A >= 0 ) );
- ADS_PRE( std::all_of( d.begin() , d.end() ,
-                       []( Int x ) { return( x >= 0 ); } ) );
- ADS_PRE( std::all_of( t.begin() , t.end() ,
-                       []( Int x ) { return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( d.begin() , d.end() , []( Int x ) { return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( t.begin() , t.end() , []( Int x ) { return( x >= 0 ); } ) );
  const auto W = static_cast< std::size_t >( A ) + 1;
  Table T( n , std::vector< Int >( W , 0 ) );
  for( std::size_t i = n - 1 ; i-- > 0 ; )
@@ -834,8 +840,8 @@ inline std::optional< Int > mintime( const std::vector< Int > & t ,
    best = INF;
    for( Int g = 0 ; g <= A - a ; ++g )
     if( a + g >= d[ i + 1 ] ) {
-     const Int next = T[ i + 1 ][ static_cast< std::size_t >(
-                                                  a + g - d[ i + 1 ] ) ];
+     const Int next =
+       T[ i + 1 ][ static_cast< std::size_t >( a + g - d[ i + 1 ] ) ];
      if( next < INF )
       best = std::min( best , next + g * t[ i ] );
      }
@@ -860,11 +866,11 @@ inline std::optional< Int > mintime( const std::vector< Int > & t ,
 /// min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ) + 1; it is
 /// n + m - 2 LCS( P , S ); O( n m ) time
 inline std::size_t minAlignment( const std::string & P ,
-                                 const std::string & S )
+				 const std::string & S )
 {
  const std::size_t n = P.size() , m = S.size();
- std::vector< std::vector< std::size_t > > DP( n + 1 ,
-                                     std::vector< std::size_t >( m + 1 , 0 ) );
+ std::vector< std::vector< std::size_t > > DP(
+   n + 1 , std::vector< std::size_t >( m + 1 , 0 ) );
  for( std::size_t i = 0 ; i <= n ; ++i )
   DP[ i ][ 0 ] = i;
  for( std::size_t j = 0 ; j <= m ; ++j )
@@ -872,8 +878,8 @@ inline std::size_t minAlignment( const std::string & P ,
  for( std::size_t i = 1 ; i <= n ; ++i )
   for( std::size_t j = 1 ; j <= m ; ++j )
    DP[ i ][ j ] = ( P[ i - 1 ] == S[ j - 1 ] )
-                   ? DP[ i - 1 ][ j - 1 ]
-                   : std::min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ) + 1;
+		    ? DP[ i - 1 ][ j - 1 ]
+		    : std::min( DP[ i - 1 ][ j ] , DP[ i ][ j - 1 ] ) + 1;
  return( DP[ n ][ m ] );
  }
 
@@ -903,10 +909,10 @@ inline Count countStairs( int n )
 /// library
 /// \pre T >= 0, p positive and v not negative
 inline std::optional< Int > piggyBank( const std::vector< Int > & p ,
-                                       const std::vector< Int > & v , Int T )
+				       const std::vector< Int > & v , Int T )
 {
- ADS_PRE( std::all_of( v.begin() , v.end() ,
-                       []( Int x ) { return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( v.begin() , v.end() , []( Int x ) { return( x >= 0 ); } ) );
  return( minValueExactWeight( p , v , T ) );
  }
 
@@ -914,17 +920,16 @@ inline std::optional< Int > piggyBank( const std::vector< Int > & p ,
 
 /// soccerRec(): whether the first k players give a team of s players of
 /// total m, memoized in D[ m ][ s ][ k ] (-1 unknown)
-inline bool soccerRec( const std::vector< Int > & b , Int m , Int s ,
-                       std::size_t k ,
-                       std::vector< std::vector< std::vector< signed char > > >
-                        & D )
+inline bool
+soccerRec( const std::vector< Int > & b , Int m , Int s , std::size_t k ,
+	   std::vector< std::vector< std::vector< signed char > > > & D )
 {
  if( ( s == 0 ) && ( m == 0 ) )
   return( true );
  if( ( s < 0 ) || ( m < 0 ) || ( k == 0 ) )
   return( false );
  auto & d = D[ static_cast< std::size_t >( m ) ]
-             [ static_cast< std::size_t >( s ) ][ k ];
+	     [ static_cast< std::size_t >( s ) ][ k ];
  if( d < 0 )
   d = soccerRec( b , m - b[ k - 1 ] , s - 1 , k - 1 , D ) ||
       soccerRec( b , m , s , k - 1 , D );
@@ -939,16 +944,16 @@ inline bool soccerRec( const std::vector< Int > & b , Int m , Int s ,
 inline bool soccer( const std::vector< Int > & b )
 {
  ADS_PRE( b.size() % 2 == 0 );
- ADS_PRE( std::all_of( b.begin() , b.end() ,
-                       []( Int x ) { return( x >= 0 ); } ) );
+ ADS_PRE(
+   std::all_of( b.begin() , b.end() , []( Int x ) { return( x >= 0 ); } ) );
  const Int M = std::accumulate( b.begin() , b.end() , Int( 0 ) );
  if( M % 2 != 0 )
   return( false );
  const std::size_t n = b.size() / 2;
  std::vector< std::vector< std::vector< signed char > > > D(
-           static_cast< std::size_t >( M / 2 ) + 1 ,
-           std::vector< std::vector< signed char > >( n + 1 ,
-                         std::vector< signed char >( b.size() + 1 , -1 ) ) );
+   static_cast< std::size_t >( M / 2 ) + 1 ,
+   std::vector< std::vector< signed char > >(
+     n + 1 , std::vector< signed char >( b.size() + 1 , -1 ) ) );
  return( soccerRec( b , M / 2 , static_cast< Int >( n ) , b.size() , D ) );
  }
 
@@ -976,7 +981,8 @@ inline void repeatSort( std::vector< Int > & A )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 using dp::Int;
 using dp::Count;
@@ -989,7 +995,7 @@ Int rnd( std::mt19937 & g , Int a , Int b )
 
 /// a vector of n uniform integers in [ a , b ]
 std::vector< Int > rndVector( std::mt19937 & g , std::size_t n , Int a ,
-                              Int b )
+			      Int b )
 {
  std::vector< Int > v( n );
  for( auto & x : v )
@@ -1036,13 +1042,12 @@ bool palindrome( const std::string & s )
 ADS_TEST( "dp-1" )
 {
  CHECK( longestPalindromicSubstring( "casacca" ) == "casac" );
- CHECK( longestPalindromicSubstring( "ovattavo con l'ovatta" ) ==
-        "ovattavo" );
+ CHECK( longestPalindromicSubstring( "ovattavo con l'ovatta" ) == "ovattavo" );
  CHECK( longestPalindromicSubstring( "x" ) == "x" );
  CHECK( longestPalindromicSubstring( "aaaa" ) == "aaaa" );
  CHECK( longestPalindromicSubstring( "abcd" ) == "a" );
- CHECK( longestPalindromicSubstring( std::string( 2000 , 'z' ) ).size()
-        == 2000 );
+ CHECK( longestPalindromicSubstring( std::string( 2000 , 'z' ) ).size() ==
+	2000 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 600 ; ++r ) {
   const std::string s = rndString( g , rnd( g , 1 , 9 ) , 3 );
@@ -1053,17 +1058,18 @@ ADS_TEST( "dp-1" )
      best = std::max( best , j - i + 1 );
   const auto p = longestPalindromicSubstring( s );
   CHECK( ( p.size() == best ) && palindrome( p ) &&
-         ( s.find( p ) != std::string::npos ) );
+	 ( s.find( p ) != std::string::npos ) );
   }
  CHECK( longestPalindromicSubstring( "" ).empty() );
  }
 
-namespace {
+namespace
+{
 
 /// the least value of C[ i .. j ] over all the trees, no memoization
 Int minParenthesizationBrute( const std::vector< Int > & C ,
-                              const std::string & O , std::size_t i ,
-                              std::size_t j )
+			      const std::string & O , std::size_t i ,
+			      std::size_t j )
 {
  if( i == j )
   return( C[ i ] );
@@ -1079,16 +1085,16 @@ Int minParenthesizationBrute( const std::vector< Int > & C ,
 /// parses a fully parenthesized expression from s[ p ], appending its
 /// operands to C and its operators to O, and gives its value
 Int parseExpression( const std::string & s , std::size_t & p ,
-                     std::vector< Int > & C , std::string & O )
+		     std::vector< Int > & C , std::string & O )
 {
  if( s[ p ] == '(' ) {
   ++p;
   const Int a = parseExpression( s , p , C , O );
-  const char o = s[ p + 1 ];                    // " o "
+  const char o = s[ p + 1 ];  // " o "
   O.push_back( o );
   p += 3;
   const Int b = parseExpression( s , p , C , O );
-  ++p;                                          // ")"
+  ++p;  // ")"
   return( ( o == '+' ) ? a + b : a * b );
   }
  Int v = 0;
@@ -1116,18 +1122,18 @@ ADS_TEST( "dp-2-2" )
   for( std::size_t i = 1 ; i < n ; ++i )
    O.push_back( rnd( g , 0 , 1 ) ? '+' : '*' );
   CHECK( dp::minParenthesization( C , O ).first ==
-         minParenthesizationBrute( C , O , 0 , n - 1 ) );
+	 minParenthesizationBrute( C , O , 0 , n - 1 ) );
   }
  CHECK_THROWS( dp::minParenthesization( { 0 , 1 } , "+" ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::minParenthesization( { 1 , 1 } , "-" ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::minParenthesization( {} , "" ) , contract_violation );
  CHECK_THROWS( dp::minParenthesization( { 1 , 2 } , "" ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::minParenthesization( { 1 } , "+" ) , contract_violation );
  CHECK_THROWS( dp::minParenthesization( { 2 , -1 } , "*" ) ,
-               contract_violation );
+	       contract_violation );
  const Int big = Int( 1 ) << 40;
  CHECK( dp::minParenthesization( { big , big } , "+" ).first == 2 * big );
  CHECK( dp::minParenthesization( { 1 , 1 , 1 } , "+*" ).first == 2 );
@@ -1141,8 +1147,8 @@ ADS_TEST( "dp-2-3" )
  {
   const std::vector< Int > C = { 5 , 13 , 2 };
   const auto [ v , S ] = dp::minParenthesization( C , "+*" );
-  CHECK( dp::printParenthesization( C , "+*" , S , 0 , 2 ) ==
-         "(5 + (13 * 2))" );
+  CHECK( dp::printParenthesization( C , "+*" , S , 0 ,
+				    2 ) == "(5 + (13 * 2))" );
   CHECK( dp::printParenthesization( C , "+*" , S , 1 , 1 ) == "13" );
   }
  std::mt19937 g( 2 );
@@ -1165,15 +1171,16 @@ ADS_TEST( "dp-2-3" )
  const auto [ v , S ] = dp::minParenthesization( C , "" );
  CHECK( dp::printParenthesization( C , "" , S , 0 , 0 ) == "7" );
  CHECK_THROWS( dp::printParenthesization( C , "" , S , 0 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  const std::vector< Int > D = { 1 , 2 };
  const auto [ w , T ] = dp::minParenthesization( D , "+" );
  CHECK( dp::printParenthesization( D , "+" , T , 0 , 1 ) == "(1 + 2)" );
  CHECK_THROWS( dp::printParenthesization( D , "+" , T , 1 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the longest chain of boxes over all the subsets
 std::size_t boxChainBrute( const std::vector< dp::Box > & S )
@@ -1200,8 +1207,8 @@ std::vector< dp::Box > rndBoxes( std::mt19937 & g , std::size_t n , int k )
  std::vector< dp::Box > S( n );
  for( auto & b : S )
   b = dp::Box{ static_cast< int >( rnd( g , 1 , k ) ) ,
-               static_cast< int >( rnd( g , 1 , k ) ) ,
-               static_cast< int >( rnd( g , 1 , k ) ) };
+	       static_cast< int >( rnd( g , 1 , k ) ) ,
+	       static_cast< int >( rnd( g , 1 , k ) ) };
  return( S );
  }
 
@@ -1213,12 +1220,15 @@ ADS_TEST( "dp-3-1" )
 {
  CHECK( dp::boxChain( {} ).empty() );
  CHECK( dp::boxChain( { { 1 , 1 , 1 } } ).size() == 1 );
- CHECK( dp::boxChain( { { 2 , 2 , 2 } , { 2 , 2 , 2 } , { 2 , 2 , 2 } } )
-        .size() == 1 );
- CHECK( dp::boxChain( { { 1 , 2 , 3 } , { 2 , 3 , 4 } , { 3 , 4 , 5 } } )
-        .size() == 3 );
- CHECK( dp::boxChain( { { 3 , 4 , 5 } , { 2 , 3 , 4 } , { 1 , 2 , 3 } } )
-        .size() == 1 );
+ CHECK( dp::boxChain( { { 2 , 2 , 2 } , { 2 , 2 , 2 } ,
+			{ 2 , 2 , 2 } } ).size() ==
+	1 );
+ CHECK( dp::boxChain( { { 1 , 2 , 3 } , { 2 , 3 , 4 } ,
+			{ 3 , 4 , 5 } } ).size() ==
+	3 );
+ CHECK( dp::boxChain( { { 3 , 4 , 5 } , { 2 , 3 , 4 } ,
+			{ 1 , 2 , 3 } } ).size() ==
+	1 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 400 ; ++r ) {
   const auto S = rndBoxes( g , rnd( g , 0 , 12 ) , 5 );
@@ -1243,8 +1253,8 @@ ADS_TEST( "dp-3-2" )
   const auto c = dp::boxChain( S );
   bool ok = ! c.empty();
   for( std::size_t k = 1 ; k < c.size() ; ++k )
-   ok = ok && ( c[ k - 1 ] < c[ k ] ) && dp::fitsIn( S[ c[ k - 1 ] ] ,
-                                                      S[ c[ k ] ] );
+   ok = ok && ( c[ k - 1 ] < c[ k ] ) &&
+	dp::fitsIn( S[ c[ k - 1 ] ] , S[ c[ k ] ] );
   CHECK( ok && ( c.size() == boxChainBrute( S ) ) );
   }
  }
@@ -1282,11 +1292,12 @@ ADS_TEST( "dp-4" )
  CHECK_THROWS( dp::multisetSum( { 1 } , -1 ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the groups as sorted lists of sorted strings, to compare partitions
-std::vector< std::vector< std::string > > canonical(
-                              std::vector< std::vector< std::string > > G )
+std::vector< std::vector< std::string > >
+canonical( std::vector< std::vector< std::string > > G )
 {
  for( auto & group : G )
   std::sort( group.begin() , group.end() );
@@ -1300,14 +1311,15 @@ std::vector< std::vector< std::string > > canonical(
 // against the quadratic grouping by std::is_permutation
 ADS_TEST( "dp-5" )
 {
- const auto G = anagramGroups( { "rosa" , "pippo" , "poppi" , "raso" ,
-                                "orsa" , "giappone" } );
+ const auto G =
+   anagramGroups( { "rosa" , "pippo" , "poppi" , "raso" , "orsa" ,
+		    "giappone" } );
  CHECK( canonical( G ) == canonical( { { "rosa" , "raso" , "orsa" } ,
-                                       { "pippo" , "poppi" } ,
-                                       { "giappone" } } ) );
+				       { "pippo" , "poppi" } ,
+				       { "giappone" } } ) );
  CHECK( anagramGroups( {} ).empty() );
  CHECK( canonical( anagramGroups( { "ab" , "ab" , "ba" } ) ) ==
-        canonical( { { "ab" , "ab" , "ba" } } ) );
+	canonical( { { "ab" , "ab" , "ba" } } ) );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 300 ; ++r ) {
   std::vector< std::string > S( rnd( g , 1 , 20 ) );
@@ -1320,8 +1332,8 @@ ADS_TEST( "dp-5" )
     B.emplace_back();
     for( std::size_t j = i ; j < S.size() ; ++j )
      if( ( ! used[ j ] ) && ( S[ i ].size() == S[ j ].size() ) &&
-         std::is_permutation( S[ i ].begin() , S[ i ].end() ,
-                              S[ j ].begin() ) ) {
+	 std::is_permutation( S[ i ].begin() , S[ i ].end() ,
+			      S[ j ].begin() ) ) {
       used[ j ] = 1;
       B.back().push_back( S[ j ] );
       }
@@ -1330,7 +1342,8 @@ ADS_TEST( "dp-5" )
   }
  }
 
-namespace {
+namespace
+{
 
 /// the cost of the best tree of the keys i .. j - 1 at depth d and below,
 /// trying every root, no memoization
@@ -1340,20 +1353,21 @@ Int optimalBstBrute( const std::vector< Int > & p , int i , int j , Int d )
   return( 0 );
  Int best = dp::INF;
  for( int r = i ; r < j ; ++r )
-  best = std::min( best , p[ r ] * ( d + 1 ) +
-                          optimalBstBrute( p , i , r , d + 1 ) +
-                          optimalBstBrute( p , r + 1 , j , d + 1 ) );
+  best =
+    std::min( best ,
+	      p[ r ] * ( d + 1 ) + optimalBstBrute( p , i , r , d + 1 ) +
+		      optimalBstBrute( p , r + 1 , j , d + 1 ) );
  return( best );
  }
 
 /// the cost of the tree T of root u at depth d
 Int bstCost( const dp::OptimalBst & T , const std::vector< Int > & p , int u ,
-             Int d )
+	     Int d )
 {
  if( u < 0 )
   return( 0 );
  return( p[ u ] * ( d + 1 ) + bstCost( T , p , T.left[ u ] , d + 1 ) +
-         bstCost( T , p , T.right[ u ] , d + 1 ) );
+	  bstCost( T , p , T.right[ u ] , d + 1 ) );
  }
 
 }  // end( namespace )
@@ -1378,8 +1392,8 @@ ADS_TEST( "dp-6" )
   CHECK( bstCost( T , p , T.root , 0 ) == T.cost );
   }
  const auto zero = dp::optimalBst( { 0 , 0 , 0 , 0 } );
- CHECK( ( zero.cost == 0 ) && ( bstCost( zero , { 0 , 0 , 0 , 0 } ,
-                                         zero.root , 0 ) == 0 ) );
+ CHECK( ( zero.cost == 0 ) &&
+	( bstCost( zero , { 0 , 0 , 0 , 0 } , zero.root , 0 ) == 0 ) );
  const auto first = dp::optimalBst( { 100 , 1 , 1 } );
  CHECK( first.root == 0 );
  CHECK_THROWS( dp::optimalBst( { -1 } ) , contract_violation );
@@ -1393,15 +1407,15 @@ ADS_TEST( "dp-7" )
  CHECK( dp::medianPair( { 1 } , { 2 } ) == std::pair( Int( 1 ) , Int( 2 ) ) );
  CHECK( dp::medianPair( { 5 } , { 5 } ) == std::pair( Int( 5 ) , Int( 5 ) ) );
  CHECK( dp::medianPair( { 1 , 2 , 3 } , { 4 , 5 , 6 } ) ==
-        std::pair( Int( 3 ) , Int( 4 ) ) );
+	std::pair( Int( 3 ) , Int( 4 ) ) );
  CHECK( dp::medianPair( { 4 , 5 , 6 } , { 1 , 2 , 3 } ) ==
-        std::pair( Int( 3 ) , Int( 4 ) ) );
+	std::pair( Int( 3 ) , Int( 4 ) ) );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 2000 ; ++r ) {
   const std::size_t n = rnd( g , 1 , 40 );
   const Int top = ( r % 2 ) ? 1000000 : 6;
-  auto X = rndVector( g , n , - top , top );
-  auto Y = rndVector( g , n , - top , top );
+  auto X = rndVector( g , n , -top , top );
+  auto Y = rndVector( g , n , -top , top );
   std::sort( X.begin() , X.end() );
   std::sort( Y.begin() , Y.end() );
   std::vector< Int > Z( 2 * n );
@@ -1411,16 +1425,16 @@ ADS_TEST( "dp-7" )
  CHECK_THROWS( dp::medianPair( { 2 , 1 } , { 1 , 2 } ) , contract_violation );
  CHECK_THROWS( dp::medianPair( {} , {} ) , contract_violation );
  CHECK_THROWS( dp::medianPair( { 1 } , { 1 , 2 } ) , contract_violation );
- CHECK_THROWS( dp::medianPair( { 1 , 2 } , { 2 , 1 } ) ,
-               contract_violation );
+ CHECK_THROWS( dp::medianPair( { 1 , 2 } , { 2 , 1 } ) , contract_violation );
  const Int lo = std::numeric_limits< Int >::min() ,
-           hi = std::numeric_limits< Int >::max();
+	   hi = std::numeric_limits< Int >::max();
  CHECK( dp::medianPair( { lo , hi } , { lo , hi } ) == std::pair( lo , hi ) );
  CHECK( dp::medianPair( { lo , lo , lo } , { hi , hi , hi } ) ==
-        std::pair( lo , hi ) );
- CHECK( dp::medianPair( std::vector< Int >( 9 , 4 ) ,
-                        std::vector< Int >( 9 , 4 ) ) ==
-        std::pair( Int( 4 ) , Int( 4 ) ) );
+	std::pair( lo , hi ) );
+ CHECK(
+   dp::medianPair( std::vector< Int >( 9 , 4 ) ,
+		   std::vector< Int >( 9 , 4 ) ) ==
+   std::pair( Int( 4 ) , Int( 4 ) ) );
  }
 
 // 2012-02-01, Best cut: random prices against all the partitions of the
@@ -1454,9 +1468,9 @@ ADS_TEST( "dp-8" )
   }
  CHECK( dp::bestCut( { 0 , 0 } , 2 ).first == 0 );
  CHECK( dp::bestCut( { 1 , 100 } , 2 ).second ==
-        std::vector< std::size_t >( 1 , 2 ) );
+	std::vector< std::size_t >( 1 , 2 ) );
  CHECK( dp::bestCut( { 100 , 1 } , 2 ).second ==
-        std::vector< std::size_t >( 2 , 1 ) );
+	std::vector< std::size_t >( 2 , 1 ) );
  CHECK_THROWS( dp::bestCut( { 1 } , 2 ) , contract_violation );
  CHECK_THROWS( dp::bestCut( {} , 1 ) , contract_violation );
  CHECK_THROWS( dp::bestCut( { 1 , -1 } , 1 ) , contract_violation );
@@ -1482,8 +1496,8 @@ ADS_TEST( "dp-9-1" )
    CHECK( out == all );
    }
  CHECK( dp::printRG( 0 , 3 ) == std::vector< std::string >( 1 , "GGG" ) );
- CHECK( dp::printRG( 1 , 1 ) == ( std::vector< std::string >{ "RG" ,
-                                                             "GR" } ) );
+ CHECK( dp::printRG( 1 ,
+		     1 ) == ( std::vector< std::string >{ "RG" , "GR" } ) );
  CHECK_THROWS( dp::printRG( -1 , 2 ) , contract_violation );
  CHECK_THROWS( dp::printRG( 2 , -1 ) , contract_violation );
  }
@@ -1504,7 +1518,8 @@ ADS_TEST( "dp-9-2" )
  CHECK_THROWS( dp::countRG( 0 , -1 ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// whether the items of A split into pairs of the same sum, over all the
 /// perfect matchings
@@ -1543,7 +1558,7 @@ ADS_TEST( "dp-10" )
   std::vector< Int > A;
   const std::size_t h = rnd( g , 1 , 5 );
   std::set< Int > used;
-  if( r % 2 ) {                                 // planted: pairs of sum S
+  if( r % 2 ) {  // planted: pairs of sum S
    const Int S = rnd( g , -20 , 20 );
    while( A.size() < 2 * h ) {
     const Int a = rnd( g , -30 , 30 );
@@ -1572,13 +1587,14 @@ ADS_TEST( "dp-10" )
  CHECK_THROWS( dp::checkPairsHash( { 1 , 1 } ) , contract_violation );
  CHECK_THROWS( dp::checkPairsHash( { 1 } ) , contract_violation );
  const Int lo = std::numeric_limits< Int >::min() ,
-           hi = std::numeric_limits< Int >::max();
+	   hi = std::numeric_limits< Int >::max();
  CHECK( dp::checkPairs( { lo , hi , lo + 1 , hi - 1 } ) );
  CHECK( dp::checkPairsHash( { lo , hi , lo + 1 , hi - 1 } ) );
  CHECK( ! dp::checkPairs( { lo , hi , 0 , 1 } ) );
  }
 
-namespace {
+namespace
+{
 
 /// the largest sum <= W of multiples of V, by the sums reachable
 Int maxSumBrute( const std::vector< Int > & V , Int W )
@@ -1628,24 +1644,26 @@ ADS_TEST( "dp-11-2" )
  const std::vector< Int > V = { 18 , 3 , 21 , 9 , 12 , 24 };
  const std::vector< Int > text = { 0 , 2 , 0 , 1 , 0 , 0 };
  CHECK( std::inner_product( text.begin() , text.end() , V.begin() ,
-                            Int( 0 ) ) == 15 );
+			    Int( 0 ) ) ==
+	15 );
  const auto [ X , x ] = dp::maxSum( V , 17 );
  CHECK( ( X == 15 ) && ( x.size() == V.size() ) );
- CHECK( std::inner_product( x.begin() , x.end() , V.begin() , Int( 0 ) )
-        == 15 );
+ CHECK( std::inner_product( x.begin() , x.end() , V.begin() ,
+			    Int( 0 ) ) == 15 );
  std::mt19937 g( 2 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const auto A = rndVector( g , rnd( g , 0 , 6 ) , 1 , 30 );
   const Int W = rnd( g , 0 , 80 );
   const auto [ best , m ] = dp::maxSum( A , W );
-  CHECK( std::all_of( m.begin() , m.end() ,
-                      []( Int c ) { return( c >= 0 ); } ) );
-  CHECK( std::inner_product( m.begin() , m.end() , A.begin() , Int( 0 ) )
-         == maxSumBrute( A , W ) );
+  CHECK(
+    std::all_of( m.begin() , m.end() , []( Int c ) { return( c >= 0 ); } ) );
+  CHECK( std::inner_product( m.begin() , m.end() , A.begin() , Int( 0 ) ) ==
+	 maxSumBrute( A , W ) );
   }
  }
 
-namespace {
+namespace
+{
 
 /// the multisets of B of sum T, over all the multiplicities
 Count changeWaysBrute( const std::vector< Int > & B , std::size_t i , Int T )
@@ -1704,7 +1722,8 @@ ADS_TEST( "dp-14" )
   Int best = 0;
   for( std::uint32_t mask = 0 ; mask < ( 1u << ( 3 * n ) ) ; ++mask ) {
    auto on = [ & ]( std::size_t i , int x ) {
-    return( ( mask >> ( 3 * i + x ) ) & 1 ); };
+    return( ( mask >> ( 3 * i + x ) ) & 1 );
+    };
    bool ok = true;
    Int v = 0;
    for( std::size_t i = 0 ; i < n ; ++i )
@@ -1712,7 +1731,7 @@ ADS_TEST( "dp-14" )
      if( on( i , x ) ) {
       v += A[ i ][ x ];
       ok = ok && ! ( ( x < 2 ) && on( i , x + 1 ) ) &&
-           ! ( ( i + 1 < n ) && on( i + 1 , x ) );
+	   ! ( ( i + 1 < n ) && on( i + 1 , x ) );
       }
    if( ok )
     best = std::max( best , v );
@@ -1724,15 +1743,16 @@ ADS_TEST( "dp-14" )
  CHECK( dp::boardTokens( tall ) == 1500 );
  CHECK_THROWS( dp::boardTokens( { { 0 , 1 , 1 } } ) , contract_violation );
  CHECK_THROWS( dp::boardTokens( { { 1 , 1 , 1 } , { 1 , 1 , -1 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the segmentations of X[ i .. ] by plain recursion
 Count segmentationsBrute( const std::string & X ,
-                          const std::vector< std::string > & S ,
-                          std::size_t i )
+			  const std::vector< std::string > & S ,
+			  std::size_t i )
 {
  if( i == X.size() )
   return( 1 );
@@ -1755,7 +1775,7 @@ ADS_TEST( "dp-15" )
  CHECK( countSegmentations( "" , S ) == 1 );
  CHECK( countSegmentations( "01" , {} ) == 0 );
  CHECK( countSegmentations( std::string( 90 , 'a' ) , { "a" , "aa" } ) ==
-        4660046610375530309ULL );               // Fibonacci( 91 )
+	4660046610375530309ULL );  // Fibonacci( 91 )
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 400 ; ++r ) {
   std::vector< std::string > P( rnd( g , 1 , 5 ) );
@@ -1775,11 +1795,12 @@ ADS_TEST( "dp-15" )
  CHECK_THROWS( countSegmentations( "0" , { "" } ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the right and down paths from ( i , j ) to the corner, by search
 Count countPathsBrute( const std::vector< std::vector< int > > & B ,
-                       std::size_t i , std::size_t j )
+		       std::size_t i , std::size_t j )
 {
  if( ( i >= B.size() ) || ( j >= B[ 0 ].size() ) || ! B[ i ][ j ] )
   return( 0 );
@@ -1801,13 +1822,14 @@ ADS_TEST( "dp-16" )
  for( int m = 1 ; m <= 30 ; ++m )
   for( int n = 1 ; n <= 30 ; ++n )
    CHECK( dp::countPaths( std::vector< std::vector< int > >(
-           m , std::vector< int >( n , 1 ) ) ) == choose( m + n - 2 ,
-                                                          m - 1 ) );
+	    m ,
+	    std::vector< int >( n , 1 ) ) ) == choose( m + n - 2 , m - 1 ) );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 400 ; ++r ) {
   const std::size_t m = rnd( g , 1 , 7 );
   std::vector< std::vector< int > > B( m ,
-                               std::vector< int >( rnd( g , 1 , 7 ) ) );
+				       std::vector< int >( rnd( g , 1 ,
+								7 ) ) );
   for( auto & row : B )
    for( auto & c : row )
     c = rnd( g , 0 , 4 ) > 0;
@@ -1860,10 +1882,10 @@ ADS_TEST( "dp-17" )
 ADS_TEST( "dp-18" )
 {
  CHECK( dp::boats( { { 0 } } ) ==
-        std::pair( Int( 0 ) , std::vector< std::size_t >() ) );
+	std::pair( Int( 0 ) , std::vector< std::size_t >() ) );
  const dp::Table C3 = { { 0 , 2 , 10 } , { 0 , 0 , 3 } , { 0 , 0 , 0 } };
  CHECK( dp::boats( C3 ) ==
-        std::pair( Int( 5 ) , std::vector< std::size_t >( { 0 , 1 } ) ) );
+	std::pair( Int( 5 ) , std::vector< std::size_t >( { 0 , 1 } ) ) );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 400 ; ++r ) {
   const std::size_t n = rnd( g , 1 , 10 );
@@ -1887,8 +1909,8 @@ ADS_TEST( "dp-18" )
   CHECK( cost == ( ( n == 1 ) ? 0 : best ) );
   Int again = 0;
   for( std::size_t k = 0 ; k < ports.size() ; ++k )
-   again += C[ ports[ k ] ][ ( k + 1 < ports.size() ) ? ports[ k + 1 ]
-                                                      : n - 1 ];
+   again +=
+     C[ ports[ k ] ][ ( k + 1 < ports.size() ) ? ports[ k + 1 ] : n - 1 ];
   CHECK( ( ports.empty() == ( n == 1 ) ) && ( again == cost ) );
   CHECK( ports.empty() || ( ports.front() == 0 ) );
   }
@@ -1896,11 +1918,10 @@ ADS_TEST( "dp-18" )
  CHECK( dp::boats( Z ).first == 0 );
  const dp::Table W = { { 0 , 9 } , { 0 , 0 } };
  CHECK( dp::boats( W ) ==
-        std::pair( Int( 9 ) , std::vector< std::size_t >( 1 , 0 ) ) );
+	std::pair( Int( 9 ) , std::vector< std::size_t >( 1 , 0 ) ) );
  CHECK_THROWS( dp::boats( {} ) , contract_violation );
  CHECK_THROWS( dp::boats( { { 0 } , { 0 , 0 } } ) , contract_violation );
- CHECK_THROWS( dp::boats( { { 0 , -1 } , { 0 , 0 } } ) ,
-               contract_violation );
+ CHECK_THROWS( dp::boats( { { 0 , -1 } , { 0 , 0 } } ) , contract_violation );
  }
 
 // 2013-05-31, Max resto: the examples, where the least coins first fails,
@@ -1936,7 +1957,8 @@ ADS_TEST( "dp-19" )
  CHECK_THROWS( dp::maxCoins( { 0 } , 1 ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the largest sum of D with no two neighbours, over all the subsets
 Int fundraisingBrute( const std::vector< Int > & D )
@@ -1979,7 +2001,7 @@ ADS_TEST( "dp-20-2" )
  CHECK( dp::donors( { 4 } ) == std::vector< std::size_t >( 1 , 0 ) );
  CHECK( dp::donors( { 4 , 9 } ) == std::vector< std::size_t >( 1 , 1 ) );
  CHECK( dp::donors( { 5 , 1 , 1 , 5 } ) ==
-        std::vector< std::size_t >( { 0 , 3 } ) );
+	std::vector< std::size_t >( { 0 , 3 } ) );
  std::mt19937 g( 2 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const auto D = rndVector( g , rnd( g , 0 , 16 ) , 0 , 30 );
@@ -1998,19 +2020,20 @@ ADS_TEST( "dp-20-2" )
  CHECK_THROWS( dp::donors( { 1 , -1 } ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the most the player to move gets from V[ i .. j - 1 ], by minimax with
 /// the sums, no memoization
 Int coinGameBrute( const std::vector< Int > & V , std::size_t i ,
-                   std::size_t j )
+		   std::size_t j )
 {
  if( i >= j )
   return( 0 );
  const Int sum = std::accumulate( V.begin() + std::ptrdiff_t( i ) ,
-                                  V.begin() + std::ptrdiff_t( j ) , Int( 0 ) );
+				  V.begin() + std::ptrdiff_t( j ) , Int( 0 ) );
  return( std::max( sum - coinGameBrute( V , i + 1 , j ) ,
-                   sum - coinGameBrute( V , i , j - 1 ) ) );
+		    sum - coinGameBrute( V , i , j - 1 ) ) );
  }
 
 }  // end( namespace )
@@ -2035,7 +2058,8 @@ ADS_TEST( "dp-21" )
  CHECK_THROWS( dp::coinGame( { 1 , -2 } ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the multisets of values of sum X over all the outcomes of the dice
 long long diceBrute( const std::vector< int > & F , int X )
@@ -2095,7 +2119,8 @@ ADS_TEST( "dp-22" )
  CHECK_THROWS( dp::dice( { 6 , -6 } , 3 , false ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the least total height over all the partitions of the books in shelves
 /// of at most L, by the restricted growth strings
@@ -2107,25 +2132,26 @@ Int shelvesBrute( const std::vector< Int > & y , std::size_t L )
  Int best = dp::INF;
  std::vector< std::size_t > a( n , 0 );
  std::function< void( std::size_t , std::size_t ) > rec =
-  [ & ]( std::size_t i , std::size_t blocks ) {
-   if( i == n ) {
-    std::vector< std::size_t > size( blocks , 0 );
-    std::vector< Int > top( blocks , 0 );
-    for( std::size_t k = 0 ; k < n ; ++k ) {
-     ++size[ a[ k ] ];
-     top[ a[ k ] ] = std::max( top[ a[ k ] ] , y[ k ] );
+   [ & ]( std::size_t i , std::size_t blocks ) {
+    if( i == n ) {
+     std::vector< std::size_t > size( blocks , 0 );
+     std::vector< Int > top( blocks , 0 );
+     for( std::size_t k = 0 ; k < n ; ++k ) {
+      ++size[ a[ k ] ];
+      top[ a[ k ] ] = std::max( top[ a[ k ] ] , y[ k ] );
+      }
+     if( std::all_of( size.begin() , size.end() ,
+		      [ L ]( std::size_t s ) { return( s <= L ); } ) )
+      best =
+	std::min( best ,
+		  std::accumulate( top.begin() , top.end() , Int( 0 ) ) );
+     return;
      }
-    if( std::all_of( size.begin() , size.end() ,
-                     [ L ]( std::size_t s ) { return( s <= L ); } ) )
-     best = std::min( best , std::accumulate( top.begin() , top.end() ,
-                                              Int( 0 ) ) );
-    return;
-    }
-   for( std::size_t b = 0 ; b <= blocks ; ++b ) {
-    a[ i ] = b;
-    rec( i + 1 , std::max( blocks , b + 1 ) );
-    }
-   };
+    for( std::size_t b = 0 ; b <= blocks ; ++b ) {
+     a[ i ] = b;
+     rec( i + 1 , std::max( blocks , b + 1 ) );
+     }
+    };
  rec( 0 , 0 );
  return( best );
  }
@@ -2180,7 +2206,7 @@ ADS_TEST( "dp-24" )
       std::sort( rows.begin() , rows.end() );
       do
        best = std::max( best , S[ rows[ 0 ] ][ a ] + S[ rows[ 1 ] ][ b ] +
-                               S[ rows[ 2 ] ][ c ] + S[ rows[ 3 ] ][ d ] );
+				S[ rows[ 2 ] ][ c ] + S[ rows[ 3 ] ][ d ] );
       while( std::next_permutation( rows.begin() , rows.end() ) );
       }
   CHECK( dp::rooks( S ) == best );
@@ -2198,7 +2224,8 @@ ADS_TEST( "dp-24" )
  CHECK_THROWS( dp::rooks( ragged ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the least cost of V in k parts over all the sets of k - 1 cuts
 Int partitionBrute( const std::vector< Int > & V , std::size_t k )
@@ -2208,7 +2235,7 @@ Int partitionBrute( const std::vector< Int > & V , std::size_t k )
  for( std::uint32_t mask = 0 ; mask < ( 1u << ( n - 1 ) ) ; ++mask ) {
   if( std::popcount( mask ) != int( k - 1 ) )
    continue;
-  Int part = 0 , worst = - dp::INF;
+  Int part = 0 , worst = -dp::INF;
   for( std::size_t i = 0 ; i < n ; ++i ) {
    part += V[ i ];
    if( ( i + 1 == n ) || ( ( mask >> i ) & 1 ) ) {
@@ -2328,7 +2355,7 @@ ADS_TEST( "dp-26-3" )
   CHECK( dp::tapeCost( L , P , dp::tapeOrder( L , P ) ) == best );
   }
  CHECK( dp::tapeOrder( { 5 } , { 1 } ) == std::vector< std::size_t >( 1 ,
-                                                                    0 ) );
+								      0 ) );
  const auto Z = dp::tapeOrder( { 0 , 0 , 0 } , { 1 , 2 , 3 } );
  CHECK( dp::tapeCost( { 0 , 0 , 0 } , { 1 , 2 , 3 } , Z ) == 0 );
  CHECK_THROWS( dp::tapeOrder( { 1 } , { 0 } ) , contract_violation );
@@ -2336,25 +2363,26 @@ ADS_TEST( "dp-26-3" )
  CHECK_THROWS( dp::tapeOrder( { -1 } , { 1 } ) , contract_violation );
  }
 
-namespace {
+namespace
+{
 
 /// the least recharge time over all the vectors of recharges
 std::optional< Int > mintimeBrute( const std::vector< Int > & t ,
-                                   const std::vector< Int > & d , Int A )
+				   const std::vector< Int > & d , Int A )
 {
  const std::size_t n = t.size();
  std::optional< Int > best;
  std::function< void( std::size_t , Int , Int ) > rec =
-  [ & ]( std::size_t i , Int a , Int time ) {
-   if( i + 1 == n ) {
-    if( ! best || ( time < *best ) )
-     best = time;
-    return;
-    }
-   for( Int g = 0 ; a + g <= A ; ++g )
-    if( a + g >= d[ i + 1 ] )
-     rec( i + 1 , a + g - d[ i + 1 ] , time + g * t[ i ] );
-   };
+   [ & ]( std::size_t i , Int a , Int time ) {
+    if( i + 1 == n ) {
+     if( ! best || ( time < *best ) )
+      best = time;
+     return;
+     }
+    for( Int g = 0 ; a + g <= A ; ++g )
+     if( a + g >= d[ i + 1 ] )
+      rec( i + 1 , a + g - d[ i + 1 ] , time + g * t[ i ] );
+    };
  rec( 0 , 0 , 0 );
  return( best );
  }
@@ -2385,9 +2413,9 @@ ADS_TEST( "dp-27" )
  CHECK_THROWS( dp::mintime( { 1 , 1 } , { 0 } , 3 ) , contract_violation );
  CHECK_THROWS( dp::mintime( { 1 } , { 0 } , -1 ) , contract_violation );
  CHECK_THROWS( dp::mintime( { 1 , 1 } , { 0 , -1 } , 3 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( dp::mintime( { -1 , 1 } , { 0 , 1 } , 3 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // 2014-07-21, Longest palindrome: the example, length 7, and random
@@ -2396,12 +2424,12 @@ ADS_TEST( "dp-28" )
 {
  const auto p = longestPalindromicSubsequence( "BBABCBCAB" );
  CHECK( ( p.size() == 7 ) && palindrome( p ) &&
-        isSubsequence( p , "BBABCBCAB" ) );
+	isSubsequence( p , "BBABCBCAB" ) );
  CHECK( longestPalindromicSubsequence( "" ).empty() );
  CHECK( longestPalindromicSubsequence( "q" ) == "q" );
  CHECK( longestPalindromicSubsequence( "abc" ).size() == 1 );
- CHECK( longestPalindromicSubsequence( std::string( 500 , 'k' ) )
-        .size() == 500 );
+ CHECK( longestPalindromicSubsequence( std::string( 500 , 'k' ) ).size() ==
+	500 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const std::string s = rndString( g , rnd( g , 0 , 30 ) , 4 );
@@ -2418,7 +2446,7 @@ ADS_TEST( "dp-29" )
 {
  const std::string alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
  CHECK( lcs( std::string( "RSTUARSTUBRSTUCRSTUDRSTUE" ) , alphabet ) ==
-        "ABCDRSTU" );
+	"ABCDRSTU" );
  CHECK( lcs( std::string( "CBA" ) , alphabet ).size() == 1 );
  CHECK( lcs( std::string() , alphabet ).empty() );
  CHECK( lcs( std::string( 100 , 'Q' ) , alphabet ) == "Q" );
@@ -2432,23 +2460,24 @@ ADS_TEST( "dp-29" )
   const auto o = lcs( S , alphabet );
   CHECK( o.size() == lisLength( codes ) );
   CHECK( std::adjacent_find( o.begin() , o.end() ,
-                             std::greater_equal< char >() ) == o.end() );
+			     std::greater_equal< char >() ) == o.end() );
   CHECK( isSubsequence( o , S ) );
   }
  }
 
-namespace {
+namespace
+{
 
 /// the fewest dashes aligning P[ i .. ] and S[ j .. ], plain recursion
 std::size_t minAlignmentBrute( const std::string & P , const std::string & S ,
-                               std::size_t i , std::size_t j )
+			       std::size_t i , std::size_t j )
 {
  if( i == P.size() )
   return( S.size() - j );
  if( j == S.size() )
   return( P.size() - i );
  std::size_t best = 1 + std::min( minAlignmentBrute( P , S , i + 1 , j ) ,
-                                  minAlignmentBrute( P , S , i , j + 1 ) );
+				  minAlignmentBrute( P , S , i , j + 1 ) );
  if( P[ i ] == S[ j ] )
   best = std::min( best , minAlignmentBrute( P , S , i + 1 , j + 1 ) );
  return( best );
@@ -2469,23 +2498,25 @@ ADS_TEST( "dp-30" )
  CHECK( dp::minAlignment( "abc" , "xyz" ) == 6 );
  CHECK( dp::minAlignment( "abc" , "cba" ) == 4 );
  CHECK( dp::minAlignment( std::string( 300 , 'a' ) ,
-                          std::string( 100 , 'a' ) ) == 200 );
+			  std::string( 100 , 'a' ) ) ==
+	200 );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   const std::string P = rndString( g , rnd( g , 0 , 9 ) , 3 );
   const std::string S = rndString( g , rnd( g , 0 , 9 ) , 3 );
   const std::size_t a = dp::minAlignment( P , S );
   CHECK( a == P.size() + S.size() -
-              2 * std::size_t( lcsTable( P , S )[ P.size() ][ S.size() ] ) );
+		2 * std::size_t( lcsTable( P , S )[ P.size() ][ S.size() ] ) );
   CHECK( a == minAlignmentBrute( P , S , 0 , 0 ) );
   }
  }
 
-namespace {
+namespace
+{
 
 /// the compositions of n in parts 1 .. 4, each one as a sequence
 void stairsBrute( int n , std::vector< int > & prefix ,
-                  std::set< std::vector< int > > & out )
+		  std::set< std::vector< int > > & out )
 {
  if( n == 0 ) {
   out.insert( prefix );
@@ -2510,9 +2541,12 @@ ADS_TEST( "dp-31" )
  std::vector< int > prefix;
  stairsBrute( 7 , prefix , seven );
  CHECK( ( seven.size() == 56 ) && ( dp::countStairs( 7 ) == 56 ) );
- const std::vector< std::vector< int > > text = {
-  { 1 , 1 , 1 , 1 , 1 , 1 , 1 } , { 1 , 2 , 4 } , { 4 , 2 , 1 } ,
-  { 2 , 2 , 2 , 1 } , { 1 , 2 , 2 , 1 , 1 } };
+ const std::vector< std::vector< int > > text = { { 1 , 1 , 1 , 1 , 1 , 1 ,
+						    1 } ,
+						  { 1 , 2 , 4 } ,
+						  { 4 , 2 , 1 } ,
+						  { 2 , 2 , 2 , 1 } ,
+						  { 1 , 2 , 2 , 1 , 1 } };
  for( const auto & w : text )
   CHECK( seven.count( w ) == 1 );
  CHECK( dp::countStairs( 0 ) == 1 );
@@ -2521,12 +2555,12 @@ ADS_TEST( "dp-31" )
   stairsBrute( n , prefix , all );
   CHECK( dp::countStairs( n ) == all.size() );
   }
- double x = 2;                                  // Newton on the quartic
+ double x = 2;  // Newton on the quartic
  for( int k = 0 ; k < 50 ; ++k )
   x -= ( x * x * x * x - x * x * x - x * x - x - 1 ) /
        ( 4 * x * x * x - 3 * x * x - 2 * x - 1 );
- const double ratio = double( dp::countStairs( 64 ) ) /
-                      double( dp::countStairs( 63 ) );
+ const double ratio =
+   double( dp::countStairs( 64 ) ) / double( dp::countStairs( 63 ) );
  CHECK( std::abs( ratio - x ) < 1e-9 );
  CHECK( std::abs( x - 1.92756 ) < 1e-5 );
  CHECK( ( dp::countStairs( 1 ) == 1 ) && ( dp::countStairs( 4 ) == 8 ) );
@@ -2586,9 +2620,9 @@ ADS_TEST( "dp-33" )
  CHECK( limited( { 3 } , 3 , 1 ) && ! limited( { 3 } , 4 , 100 ) );
  CHECK( limited( { 1 } , 50 , 50 ) && ! limited( { 1 } , 50 , 49 ) );
  CHECK_THROWS( optimalChange( std::vector< long >{ 1 } , -1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( optimalChange( std::vector< long >{ 0 } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 500 ; ++r ) {
   std::vector< long > v( rnd( g , 1 , 5 ) );
@@ -2596,7 +2630,7 @@ ADS_TEST( "dp-33" )
    c = static_cast< long >( rnd( g , 1 , 15 ) );
   const long R = static_cast< long >( rnd( g , 0 , 50 ) );
   const long k = static_cast< long >( rnd( g , 0 , 6 ) );
-  std::set< long > reach = { 0 };               // sums of at most j coins
+  std::set< long > reach = { 0 };  // sums of at most j coins
   for( long j = 0 ; j < k ; ++j ) {
    auto next = reach;
    for( long s : reach )
@@ -2617,7 +2651,7 @@ ADS_TEST( "dp-34" )
  CHECK( dp::soccer( {} ) );
  CHECK( dp::soccer( { 6 , 6 } ) );
  CHECK( ! dp::soccer( { 1 , 3 } ) );
- CHECK( ! dp::soccer( { 1 , 1 , 1 , 3 } ) );    // equal sums, not halves
+ CHECK( ! dp::soccer( { 1 , 1 , 1 , 3 } ) );  // equal sums, not halves
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 400 ; ++r ) {
   const auto b = rndVector( g , 2 * rnd( g , 0 , 7 ) , 0 , 12 );
@@ -2645,9 +2679,10 @@ ADS_TEST( "dp-34" )
 // arrays of few values from a large range against std::sort
 ADS_TEST( "dp-36" )
 {
- std::vector< Int > A = { 100 , 12 , 100 , 1 , 1 , 12 , 100 , 1 , 12 , 100 ,
-                          1 , 1 , 1 , 100999 , 12 , 1 , 100999 , 1 , 1 ,
-                          100 };
+ std::vector< Int > A = { 100 , 12 , 100 , 1 ,      1 ,  12 , 100 ,    1 , 12 ,
+			  100 ,
+			  1 ,   1 ,  1 ,   100999 , 12 , 1 ,  100999 , 1 , 1 ,
+			  100 };
  auto B = A;
  std::sort( B.begin() , B.end() );
  dp::repeatSort( A );
@@ -2655,13 +2690,12 @@ ADS_TEST( "dp-36" )
  std::vector< Int > E;
  dp::repeatSort( E );
  CHECK( E.empty() );
- for( std::vector< Int > F : { std::vector< Int >{ 9 } ,
-                               std::vector< Int >( 50 , -3 ) ,
-                               std::vector< Int >{ 1 , 2 , 3 } ,
-                               std::vector< Int >{ 3 , 2 , 1 , 3 , 2 , 1 } ,
-                               std::vector< Int >{
-                                std::numeric_limits< Int >::max() ,
-                                std::numeric_limits< Int >::min() } } ) {
+ for( std::vector< Int > F :
+      { std::vector< Int >{ 9 } , std::vector< Int >( 50 , -3 ) ,
+	std::vector< Int >{ 1 , 2 , 3 } ,
+	std::vector< Int >{ 3 , 2 , 1 , 3 , 2 , 1 } ,
+	std::vector< Int >{ std::numeric_limits< Int >::max() ,
+			    std::numeric_limits< Int >::min() } } ) {
   auto G = F;
   std::sort( G.begin() , G.end() );
   dp::repeatSort( F );
@@ -2669,9 +2703,9 @@ ADS_TEST( "dp-36" )
   }
  std::mt19937 g( 1 );
  for( int r = 0 ; r < 300 ; ++r ) {
-  const auto values = rndVector( g , rnd( g , 1 , 6 ) ,
-                                 std::numeric_limits< Int >::min() ,
-                                 std::numeric_limits< Int >::max() );
+  const auto values =
+    rndVector( g , rnd( g , 1 , 6 ) , std::numeric_limits< Int >::min() ,
+	       std::numeric_limits< Int >::max() );
   std::vector< Int > C( rnd( g , 0 , 200 ) );
   for( auto & c : C )
    c = values[ rnd( g , 0 , Int( values.size() ) - 1 ) ];

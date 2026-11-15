@@ -103,7 +103,7 @@
 
 #ifndef __ADS_RandomSampling
  #define __ADS_RandomSampling
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -129,7 +129,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// \f$ n \f$ of the positions \f$ 0 , \ldots , N - 1 \f$, sorted, by
 /// \f$ n \f$ swaps in an array of the \f$ N \f$ positions
@@ -150,7 +151,7 @@ namespace ADS {
 /// \post \f$ n \f$ distinct positions below \f$ N \f$, sorted (audit)
 template< class R >
 std::vector< std::size_t > sampleBySwaps( std::size_t n , std::size_t N ,
-                                          R & g );
+					  R & g );
 
 /// \f$ n \f$ of the positions \f$ 0 , \ldots , N - 1 \f$, sorted, by a hash
 /// table of those drawn
@@ -173,8 +174,8 @@ std::vector< std::size_t > sampleBySwaps( std::size_t n , std::size_t N ,
 /// \pre \f$ n \le N \f$
 /// \post \f$ n \f$ distinct positions below \f$ N \f$, sorted (audit)
 template< class R >
-std::vector< std::size_t > sampleByDictionary( std::size_t n ,
-                                               std::size_t N , R & g );
+std::vector< std::size_t > sampleByDictionary( std::size_t n , std::size_t N ,
+					       R & g );
 
 /// \f$ n \f$ of the positions \f$ 0 , \ldots , N - 1 \f$, sorted, by a
 /// bucket sort of random positions; the rounds of draws go to `*rounds`, if
@@ -202,8 +203,8 @@ std::vector< std::size_t > sampleByDictionary( std::size_t n ,
 /// \post \f$ n \f$ distinct positions below \f$ N \f$, sorted (audit)
 template< class R >
 std::vector< std::size_t > sampleBySorting( std::size_t n , std::size_t N ,
-                                            R & g ,
-                                            std::size_t * rounds = nullptr );
+					    R & g ,
+					    std::size_t * rounds = nullptr );
 
 /// \f$ n \f$ of the positions \f$ 0 , \ldots , N - 1 \f$, sorted, by the
 /// gaps of Vitter's Algorithm D (A when \f$ 13 n \ge N \f$); the random
@@ -234,8 +235,8 @@ std::vector< std::size_t > sampleBySorting( std::size_t n , std::size_t N ,
 /// \post \f$ n \f$ distinct positions below \f$ N \f$, sorted (audit)
 template< class R >
 std::vector< std::size_t > sampleBySkips( std::size_t n , std::size_t N ,
-                                          R & g ,
-                                          std::size_t * randoms = nullptr );
+					  R & g ,
+					  std::size_t * randoms = nullptr );
 
 /// \f$ n \f$ items of the stream \f$ S \f$, in the order of \f$ S \f$, by
 /// the \f$ n \f$ largest of random keys, as if the length of \f$ S \f$ were
@@ -261,7 +262,7 @@ std::vector< std::size_t > sampleBySkips( std::size_t n , std::size_t N ,
 /// \pre \f$ n \le |S| \f$
 template< class T , class R >
 std::vector< T > heapSampling( const std::vector< T > & S , std::size_t n ,
-                               R & g );
+			       R & g );
 
 /// \f$ n \f$ items of \f$ [ \mathit{first} , \mathit{last} ) \f$, a stream
 /// of unknown length, by the skips of Algorithm L, in no particular order;
@@ -284,8 +285,8 @@ std::vector< T > heapSampling( const std::vector< T > & S , std::size_t n ,
 /// \f]
 template< std::input_iterator I , std::sentinel_for< I > S , class R >
 std::vector< std::iter_value_t< I > > reservoirSampleL( I first , S last ,
-                                                        std::size_t n ,
-                                                        R & g );
+							std::size_t n ,
+							R & g );
 
 /*--------------------------------------------------------------------------*/
 
@@ -299,7 +300,7 @@ std::vector< std::iter_value_t< I > > reservoirSampleL( I first , S last ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RandomSampling.h included */
+#endif /* RandomSampling.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File RandomSampling.h ------------------------*/

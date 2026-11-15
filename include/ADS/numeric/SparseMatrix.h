@@ -40,7 +40,7 @@
 
 #ifndef __ADS_SparseMatrix
  #define __ADS_SparseMatrix
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,15 +60,18 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// a forward iterator along an orthogonal list of the nodes of a sparse
 /// matrix [see `SparseMatrix`], by row or by column, the head of the list
 /// being the end; `*it` gives the column (or the row) and the value
 template< class Node >
-class OrthogonalIterator {
+class OrthogonalIterator
+{
  public:
  using reference = std::pair< std::size_t , double >;
  using value_type = reference;
@@ -78,7 +81,7 @@ class OrthogonalIterator {
 
  OrthogonalIterator( void ) = default;
  OrthogonalIterator( const std::vector< Node > * N , long q , bool byRow )
-  : f_N( N ) , f_q( q ) , f_row( byRow ) {}
+     : f_N( N ) , f_q( q ) , f_row( byRow ) { }
 
  /// the column (or row) of the entry and its value
  reference operator*( void ) const {
@@ -100,7 +103,7 @@ class OrthogonalIterator {
 
  private:
  const std::vector< Node > * f_N = nullptr;
- long f_q = -1;            ///< the node, the head of the list at the end
+ long f_q = -1;  ///< the node, the head of the list at the end
  bool f_row = true;
 
  };  // end( class OrthogonalIterator )
@@ -112,11 +115,11 @@ class OrthogonalIterator {
 /*--------------------------------------------------------------------------*/
 
 /// a sparse matrix on orthogonal circular lists
-class SparseMatrix {
+class SparseMatrix
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the zero matrix of \f$ m \f$ rows and \f$ n \f$ columns, the
  /// \f$ m + n \f$ head nodes alone
  SparseMatrix( std::size_t m , std::size_t n );
@@ -161,13 +164,13 @@ class SparseMatrix {
 
  /// the nonzeros of the row \f$ i \f$, by column
  /// \pre \f$ i < m \f$
- [[nodiscard]] std::vector< std::pair< std::size_t , double > > row(
-                                                       std::size_t i ) const;
+ [[nodiscard]] std::vector< std::pair< std::size_t , double > >
+ row( std::size_t i ) const;
 
  /// the nonzeros of the column \f$ j \f$, by row
  /// \pre \f$ j < n \f$
- [[nodiscard]] std::vector< std::pair< std::size_t , double > > col(
-                                                       std::size_t j ) const;
+ [[nodiscard]] std::vector< std::pair< std::size_t , double > >
+ col( std::size_t j ) const;
 
  /// the pivot step on the entry \f$ ( r , c ) \f$; the entries of absolute
  /// value at most \f$ \varepsilon \f$ vanish
@@ -199,18 +202,17 @@ class SparseMatrix {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: a nonzero entry, or the head of a row or of a column
- struct Node {
-  std::size_t row ,   ///< the row
-              col;    ///< the column
-  double val;         ///< the value
-  long right ,        ///< the next on the row
-       down;          ///< the next on the column
+ struct Node
+ {
+  std::size_t row ,  ///< the row
+    col;            ///< the column
+  double val;       ///< the value
+  long right ,       ///< the next on the row
+    down;           ///< the next on the column
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // the nonzeros of a row or of a column as ranges, forward along the
@@ -220,32 +222,31 @@ class SparseMatrix {
 
  /// the nonzeros of the row \f$ i \f$ as (column, value), by column
  /// \pre \f$ i < m \f$
- [[nodiscard]] std::ranges::subrange< const_iterator > rowEntries(
-                                                       std::size_t i ) const;
+ [[nodiscard]] std::ranges::subrange< const_iterator >
+ rowEntries( std::size_t i ) const;
 
  /// the nonzeros of the column \f$ j \f$ as (row, value), by row
  /// \pre \f$ j < n \f$
- [[nodiscard]] std::ranges::subrange< const_iterator > colEntries(
-                                                       std::size_t j ) const;
+ [[nodiscard]] std::ranges::subrange< const_iterator >
+ colEntries( std::size_t j ) const;
 
  private:
-
  /// the node before the column \f$ j \f$ on the row \f$ i \f$, and that of
  /// \f$ ( i , j ) \f$, or \f$ -1 \f$
  [[nodiscard]] std::pair< long , long > findInRow( std::size_t i ,
-                                                   std::size_t j ) const;
+						  std::size_t j ) const;
  /// the node before the row \f$ i \f$ on the column \f$ j \f$
  [[nodiscard]] long beforeInCol( std::size_t i , std::size_t j ) const;
 
  /// the lists sorted, each node on the lists of its row and column
  [[nodiscard]] bool linked( void ) const;
 
- std::size_t f_m ,   ///< the rows
-             f_n;    ///< the columns
+ std::size_t f_m ,  ///< the rows
+   f_n;            ///< the columns
  /// the heads of the rows, those of the columns, then the entries
  std::vector< Node > f_N;
- std::vector< long > f_freeNodes;   ///< the free nodes of the entries
- std::size_t f_nnz = 0;             ///< the nonzero entries
+ std::vector< long > f_freeNodes;  ///< the free nodes of the entries
+ std::size_t f_nnz = 0;            ///< the nonzero entries
 
  };  // end( class SparseMatrix )
 
@@ -261,7 +262,7 @@ class SparseMatrix {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SparseMatrix.h included */
+#endif /* SparseMatrix.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SparseMatrix.h -------------------------*/

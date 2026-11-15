@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- XFastTrie ----------------------------------*/
@@ -30,11 +31,11 @@ const U * XFastTrie< U , V , W >::findNear( U x ) const
   return( nullptr );
  if( const auto * l = this->node( x , W ) )
   return( &l->key );
- int h = W;   // a depth whose prefix of x is not there
+ int h = W;  // a depth whose prefix of x is not there
  for( int K = 1 ; ; K = std::min( 2 * K , W ) ) {
   const int d = W - K;
   const U p = detail::triePrefix< U , W >( x , d );
-  if( auto * u = this->node( p , d ) ) {   // the root, at d = 0, is there
+  if( auto * u = this->node( p , d ) ) {  // the root, at d = 0, is there
    const auto [ v , i ] = this->deepest( x , d , h , u );
    const auto * l = this->successor( x , v , i );
    return( l == this->f_dummy ? nullptr : &l->key );
@@ -63,15 +64,15 @@ ListXFastTrie< U , V , W >::ListXFastTrie( void )
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
 ListXFastTrie< U , V , W >::ListXFastTrie( ListXFastTrie && o )
- : ListXFastTrie()
+    : ListXFastTrie()
 {
  *this = std::move( o );
  }
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
-ListXFastTrie< U , V , W > & ListXFastTrie< U , V , W >::operator=(
-                                             ListXFastTrie && o ) noexcept
+ListXFastTrie< U , V , W > &
+ListXFastTrie< U , V , W >::operator=( ListXFastTrie && o ) noexcept
 {
  f_pool.swap( o.f_pool );
  std::swap( f_dummy , o.f_dummy );
@@ -115,7 +116,7 @@ bool ListXFastTrie< U , V , W >::entry( U p , int i , Entry & e ) const
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
 int ListXFastTrie< U , V , W >::deepest( U x , int lo , int hi ,
-                                         Entry & e ) const
+					 Entry & e ) const
 {
  while( hi - lo > 1 ) {
   const int m = ( lo + hi ) / 2;
@@ -125,14 +126,14 @@ int ListXFastTrie< U , V , W >::deepest( U x , int lo , int hi ,
    hi = m;
   }
  // e holds the entry of lo only if a probe found it: read it again
- ( void ) entry( detail::triePrefix< U , W >( x , lo ) , lo , e );
+ ( void )entry( detail::triePrefix< U , W >( x , lo ) , lo , e );
  return( lo );
  }
 
 template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
 auto ListXFastTrie< U , V , W >::follow( U x , const Entry & e , int l ) const
- -> Leaf *
+  -> Leaf *
 {
  if( l == W )
   return( e.min );
@@ -279,7 +280,7 @@ bool ListXFastTrie< U , V , W >::remove( U x )
   if( ( e->min == l ) && ( e->max == l ) )
    f_t[ i ].remove( p );
   else if( e->min == l )
-   e->min = l->next;   // the keys of a prefix are consecutive in the list
+   e->min = l->next;  // the keys of a prefix are consecutive in the list
   else if( e->max == l )
    e->max = l->prev;
   }
@@ -296,14 +297,13 @@ template< std::unsigned_integral U , class V , int W >
  requires TrieWidth< U , W >
 bool ListXFastTrie< U , V , W >::consistent( U x ) const
 {
- if( f_n > 256 ) {   // around x only
+ if( f_n > 256 ) {  // around x only
   const Entry * e = f_t[ W ].find( x );
   if( ! e )
    return( true );
   const Leaf * l = e->min;
-  return( ( l->key == x ) &&
-          ( l->prev == f_dummy || l->prev->key < x ) &&
-          ( l->next == f_dummy || l->next->key > x ) );
+  return( ( l->key == x ) && ( l->prev == f_dummy || l->prev->key < x ) &&
+	   ( l->next == f_dummy || l->next->key > x ) );
   }
  std::size_t k = 0;
  for( const Leaf * l = f_dummy->next ; l != f_dummy ; l = l->next , ++k )
@@ -327,7 +327,7 @@ bool ListXFastTrie< U , V , W >::consistent( U x ) const
     return( false );
    const Leaf * m = l;
    while( ( m->next != f_dummy ) &&
-          ( detail::triePrefix< U , W >( m->next->key , i ) == p ) )
+	  ( detail::triePrefix< U , W >( m->next->key , i ) == p ) )
     m = m->next;
    if( e->max != m )
     return( false );

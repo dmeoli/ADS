@@ -19,12 +19,13 @@
 
 #include <vector>
 
-namespace ADS {
+namespace ADS
+{
 
-#define ADS_BTM_T template< class K , class V , class Less , std::size_t B , \
-                           bool R > \
- requires std::default_initializable< K > && std::default_initializable< V >
-#define ADS_BTM BTreeMap< K , V , Less , B , R >
+#define ADS_BTM_T                                                             \
+ template< class K, class V, class Less, std::size_t B, bool R >              \
+  requires std::default_initializable< K > && std::default_initializable< V >
+#define ADS_BTM BTreeMap< K, V, Less, B, R >
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE NODES ---------------------------------*/
@@ -81,16 +82,16 @@ inline std::size_t ADS_BTM::total( const void * x , int h )
 
 ADS_BTM_T
 inline void ADS_BTM::recount( Inner * u , int h , std::uint32_t from ,
-                               std::uint32_t to )
+			      std::uint32_t to )
 {
  if constexpr( R )
   for( std::uint32_t j = from ; ( j < to ) && ( j <= u->n ) ; ++j )
    u->cnt[ j ] = total( u->c[ j ] , h - 1 );
  else {
-  ( void ) u;
-  ( void ) h;
-  ( void ) from;
-  ( void ) to;
+  ( void )u;
+  ( void )h;
+  ( void )from;
+  ( void )to;
   }
  }
 
@@ -102,18 +103,18 @@ inline void ADS_BTM::fetch( const void * x , std::size_t bytes )
  for( std::size_t o = 0 ; o < bytes ; o += 64 )
   __builtin_prefetch( p + o );
 #else
- ( void ) x;
- ( void ) bytes;
+ ( void )x;
+ ( void )bytes;
 #endif
  }
 
 ADS_BTM_T
 template< std::size_t C >
 inline std::size_t ADS_BTM::place( const K * a , std::uint32_t n ,
-                                   const K & x ) const
+				   const K & x ) const
 {
- if constexpr( FAST ) {                     // all the places, padded
-  ( void ) n;
+ if constexpr( FAST ) {  // all the places, padded
+  ( void )n;
   return( detail::countLess< C >( a , x ) );
   }
  else
@@ -126,21 +127,22 @@ inline bool ADS_BTM::equal( const K & a , const K & b ) const
  if constexpr( FAST )
   return( a == b );
  else
-  return( ! f_less( b , a ) );              // a is not smaller than b
+  return( ! f_less( b , a ) );  // a is not smaller than b
  }
 
 ADS_BTM_T
 template< bool Values >
-inline auto ADS_BTM::descend( const K & x , const Inner * * up ,
-                              std::uint32_t * at ) const -> const Leaf *
+inline auto ADS_BTM::descend( const K & x , const Inner ** up ,
+			      std::uint32_t * at ) const -> const Leaf *
 {
  const void * u = f_root;
  for( int h = f_height ; h > 1 ; --h ) {
   const Inner * w = static_cast< const Inner * >( u );
   const auto i = std::uint32_t( place< I >( w->k , w->n , x ) );
   u = w->c[ i ];
-  fetch( u , h > 2 ? I * sizeof( K ) : Values ? sizeof( Leaf ) :
-                                                L * sizeof( K ) );
+  fetch( u , h > 2    ? I * sizeof( K )
+	    : Values ? sizeof( Leaf )
+		     : L * sizeof( K ) );
   if( up && ( h == 2 ) ) {
    *up = w;
    *at = i;
@@ -162,7 +164,7 @@ auto ADS_BTM::edge( bool right ) const -> const Inner *
 
 ADS_BTM_T
 inline auto ADS_BTM::descend( const K & x , Step * path ) const
- -> const Leaf *
+  -> const Leaf *
 {
  const void * u = f_root;
  for( int h = f_height , d = 0 ; h > 1 ; --h , ++d ) {
@@ -181,8 +183,7 @@ inline auto ADS_BTM::descend( const K & x , Step * path ) const
 
 ADS_BTM_T
 ADS_BTM::BTreeMap( Less less ) : f_less( std::move( less ) )
-{
- }
+{ }
 
 ADS_BTM_T
 ADS_BTM::BTreeMap( const BTreeMap & o ) : f_less( o.f_less )
@@ -240,8 +241,8 @@ void ADS_BTM::clear( void )
 {
  if( f_root ) {
   if constexpr( std::is_trivially_destructible_v< K > &&
-                std::is_trivially_destructible_v< V > ) {
-   ObjectPool< Leaf >().swap( f_leaves );   // the blocks, all at once
+		std::is_trivially_destructible_v< V > ) {
+   ObjectPool< Leaf >().swap( f_leaves );  // the blocks, all at once
    ObjectPool< Inner >().swap( f_inners );
    }
   else
@@ -326,9 +327,8 @@ inline auto ADS_BTM::lowerBound( const K & k ) const -> const_iterator
  const Inner * u = nullptr;
  std::uint32_t c = 0;
  const Leaf * x = descend< false >( k , &u , &c );
- return( const_iterator( this , x ,
-                         std::uint32_t( place< L >( x->k , x->n , k ) ) ,
-                         u , c ) );
+ return( const_iterator(
+   this , x , std::uint32_t( place< L >( x->k , x->n , k ) ) , u , c ) );
  }
 
 ADS_BTM_T
@@ -338,15 +338,15 @@ inline auto ADS_BTM::upperBound( const K & k ) const -> const_iterator
   return( end() );
  const Inner * u = nullptr;
  std::uint32_t c = 0;
- const Leaf * x = descend< false >( k , &u , &c );   // where k would be
+ const Leaf * x = descend< false >( k , &u , &c );  // where k would be
  std::size_t p;
  if constexpr( FAST ) {
   p = detail::countLess< L , true >( x->k , k );
   p = std::min< std::size_t >( p , x->n );  // k may be the padding
   }
  else
-  p = std::size_t( std::upper_bound( x->k , x->k + x->n , k , f_less ) -
-                   x->k );
+  p = std::size_t( std::upper_bound( x->k , x->k + x->n , k ,
+				     f_less ) - x->k );
  return( const_iterator( this , x , std::uint32_t( p ) , u , c ) );
  }
 
@@ -370,13 +370,14 @@ void ADS_BTM::forRange( const K & lo , const K & hi , F && f ) const
  }
 
 ADS_BTM_T
-std::size_t ADS_BTM::rank( const K & k ) const requires R
+std::size_t ADS_BTM::rank( const K & k ) const
+ requires R
 {
  std::size_t r = 0;
  if( ! f_root )
   return( 0 );
  const void * x = f_root;
- for( int h = f_height ; h > 1 ; --h ) {    // the children before the way
+ for( int h = f_height ; h > 1 ; --h ) {  // the children before the way
   const Inner * u = static_cast< const Inner * >( x );
   const auto i = std::uint32_t( place< I >( u->k , u->n , k ) );
   for( std::uint32_t j = 0 ; j < i ; ++j )
@@ -390,14 +391,15 @@ std::size_t ADS_BTM::rank( const K & k ) const requires R
  }
 
 ADS_BTM_T
-auto ADS_BTM::select( std::size_t i ) const -> const_iterator requires R
+auto ADS_BTM::select( std::size_t i ) const -> const_iterator
+ requires R
 {
  if( i >= f_size )
   return( end() );
  const void * x = f_root;
  const Inner * up = nullptr;
  std::uint32_t at = 0;
- for( int h = f_height ; h > 1 ; --h ) {    // the child that holds rank i
+ for( int h = f_height ; h > 1 ; --h ) {  // the child that holds rank i
   const Inner * u = static_cast< const Inner * >( x );
   std::uint32_t j = 0;
   while( i >= u->cnt[ j ] ) {
@@ -411,7 +413,7 @@ auto ADS_BTM::select( std::size_t i ) const -> const_iterator requires R
   x = u->c[ j ];
   }
  return( const_iterator( this , static_cast< const Leaf * >( x ) ,
-                         std::uint32_t( i ) , up , at ) );
+			  std::uint32_t( i ) , up , at ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -432,9 +434,9 @@ bool ADS_BTM::insert( const K & k , const V & v )
   ADS_POST( contains( k ) );
   return( true );
   }
- if constexpr( ! R )                        // past the largest key, in a
-  if( ( f_last->n < L ) &&                  // leaf with room: no descent,
-      f_less( f_last->k[ f_last->n - 1 ] , k ) ) {   // no bound to change
+ if constexpr( ! R )        // past the largest key, in a
+  if( ( f_last->n < L ) &&  // leaf with room: no descent,
+      f_less( f_last->k[ f_last->n - 1 ] , k ) ) {  // no bound to change
    f_last->k[ f_last->n ] = k;
    f_last->v[ f_last->n ] = v;
    ++f_last->n;
@@ -450,12 +452,12 @@ bool ADS_BTM::insert( const K & k , const V & v )
   x->v[ p ] = v;
   return( false );
   }
- if constexpr( R )                          // one pair more below the way
+ if constexpr( R )  // one pair more below the way
   for( int d = 0 ; d + 1 < f_height ; ++d )
    ++path[ d ].u->cnt[ path[ d ].i ];
  if( x->n < L ) [[likely]] {
   if constexpr( std::is_trivially_copyable_v< V > ) {
-   const V w = v;                           // v may live in x
+   const V w = v;  // v may live in x
    std::move_backward( x->k + p , x->k + x->n , x->k + x->n + 1 );
    std::move_backward( x->v + p , x->v + x->n , x->v + x->n + 1 );
    x->k[ p ] = k;
@@ -483,10 +485,10 @@ bool ADS_BTM::insert( const K & k , const V & v )
 
 ADS_BTM_T
 void ADS_BTM::split( Leaf * x , std::uint32_t p , const K & k , const V & v ,
-                     Step * path , int d )
+		     Step * path , int d )
 {
- V w = v;                                   // v may live in x
- if( ( p == L ) && ! x->next ) {            // past the largest key
+ V w = v;                         // v may live in x
+ if( ( p == L ) && ! x->next ) {  // past the largest key
   Leaf * r = make< Leaf >();
   r->k[ 0 ] = k;
   r->v[ 0 ] = std::move( w );
@@ -497,7 +499,7 @@ void ADS_BTM::split( Leaf * x , std::uint32_t p , const K & k , const V & v ,
   climb( x->k[ L - 1 ] , r , path , d , 1 );
   return;
   }
- if( ( p == 0 ) && ! x->prev ) {            // before the smallest key
+ if( ( p == 0 ) && ! x->prev ) {  // before the smallest key
   Leaf * l = make< Leaf >();
   l->k[ 0 ] = k;
   l->v[ 0 ] = std::move( w );
@@ -508,7 +510,7 @@ void ADS_BTM::split( Leaf * x , std::uint32_t p , const K & k , const V & v ,
   climb( k , l , path , d , -1 );
   return;
   }
- Leaf * r = make< Leaf >();                 // L + 1 pairs, m of them in x
+ Leaf * r = make< Leaf >();  // L + 1 pairs, m of them in x
  constexpr std::uint32_t m = ( L + 1 ) / 2;
  if( p < m ) {
   std::move( x->k + m - 1 , x->k + L , r->k );
@@ -549,7 +551,7 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
  // tree, on its left
  bool before = ( edge < 0 );
  for( ; ; --d ) {
-  if( d < 0 ) {                             // a new root
+  if( d < 0 ) {  // a new root
    Inner * u = make< Inner >();
    u->k[ 0 ] = std::move( s );
    u->c[ 0 ] = before ? r : f_root;
@@ -565,19 +567,18 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   if( u->n < I ) [[likely]] {
    std::move_backward( u->k + i , u->k + u->n , u->k + u->n + 1 );
    std::move_backward( u->c + i + 1 , u->c + u->n + 1 , u->c + u->n + 2 );
-   if constexpr( R )                        // the counts with the children
-    std::copy_backward( u->cnt.begin() + i + 1 ,
-                        u->cnt.begin() + u->n + 1 ,
-                        u->cnt.begin() + u->n + 2 );
+   if constexpr( R )  // the counts with the children
+    std::copy_backward( u->cnt.begin() + i + 1 , u->cnt.begin() + u->n + 1 ,
+			u->cnt.begin() + u->n + 2 );
    u->k[ i ] = std::move( s );
    u->c[ i + 1 ] = r;
    if( before )
     std::swap( u->c[ i ] , u->c[ i + 1 ] );
    ++u->n;
-   recount( u , f_height - d , i , i + 2 ); // only the two parts
+   recount( u , f_height - d , i , i + 2 );  // only the two parts
    return;
    }
-  K t[ I + 1 ];                             // I + 1 keys, I + 2 children
+  K t[ I + 1 ];  // I + 1 keys, I + 2 children
   void * c[ I + 2 ];
   std::move( u->k , u->k + i , t );
   t[ i ] = std::move( s );
@@ -598,10 +599,11 @@ void ADS_BTM::climb( K s , void * r , Step * path , int d , int edge )
   // u keeps m keys, t[ m ] goes up, the new node on its right takes the
   // I - m others; on the edges of the tree u stays almost full, or almost
   // empty, so that the keys inserted in order fill the nodes
-  const std::uint32_t m = edge > 0 ? std::uint32_t( I - 1 ) :
-                          edge < 0 ? 1 : std::uint32_t( ( I + 1 ) / 2 );
+  const std::uint32_t m = edge > 0   ? std::uint32_t( I - 1 )
+			  : edge < 0 ? 1
+				     : std::uint32_t( ( I + 1 ) / 2 );
   Inner * w = make< Inner >();
-  w->prev = u;                              // w after u on its level
+  w->prev = u;  // w after u on its level
   w->next = u->next;
   if( u->next )
    u->next->prev = w;
@@ -637,7 +639,7 @@ bool ADS_BTM::remove( const K & k )
  const auto p = std::uint32_t( place< L >( x->k , x->n , k ) );
  if( ( p >= x->n ) || ! equal( x->k[ p ] , k ) )
   return( false );
- if constexpr( R )                          // one pair less below the way
+ if constexpr( R )  // one pair less below the way
   for( int d = 0 ; d + 1 < f_height ; ++d )
    --path[ d ].u->cnt[ path[ d ].i ];
  std::move( x->k + p + 1 , x->k + x->n , x->k + p );
@@ -664,13 +666,13 @@ bool ADS_BTM::remove( const K & k )
 ADS_BTM_T
 void ADS_BTM::shrink( Leaf * x , Step * path , int d )
 {
- ( void ) x;
- Inner * u = path[ d ].u;                   // at least 1 key
+ ( void )x;
+ Inner * u = path[ d ].u;  // at least 1 key
  const std::uint32_t i = path[ d ].i;
- const std::uint32_t a = i < u->n ? i : i - 1;   // the left of the two
+ const std::uint32_t a = i < u->n ? i : i - 1;  // the left of the two
  Leaf * l = static_cast< Leaf * >( u->c[ a ] );
  Leaf * r = static_cast< Leaf * >( u->c[ a + 1 ] );
- if( l->n + r->n <= L ) {                   // r into l
+ if( l->n + r->n <= L ) {  // r into l
   std::move( r->k , r->k + r->n , l->k + l->n );
   std::move( r->v , r->v + r->n , l->v + l->n );
   l->n += r->n;
@@ -686,7 +688,7 @@ void ADS_BTM::shrink( Leaf * x , Step * path , int d )
   clean( u->k , u->n , u->n + 1 );
   recount( u , f_height - d );
   if( d == 0 ) {
-   if( u->n == 0 ) {                        // the root gives way
+   if( u->n == 0 ) {  // the root gives way
     f_root = u->c[ 0 ];
     --f_height;
     free( u );
@@ -696,8 +698,8 @@ void ADS_BTM::shrink( Leaf * x , Step * path , int d )
    shrink( u , path , d - 1 );
   return;
   }
- const std::uint32_t h = ( l->n + r->n ) / 2;    // l keeps h
- if( l->n < h ) {                           // from r to l
+ const std::uint32_t h = ( l->n + r->n ) / 2;  // l keeps h
+ if( l->n < h ) {                              // from r to l
   const std::uint32_t t = h - l->n;
   std::move( r->k , r->k + t , l->k + l->n );
   std::move( r->v , r->v + t , l->v + l->n );
@@ -709,7 +711,7 @@ void ADS_BTM::shrink( Leaf * x , Step * path , int d )
   l->n += t;
   r->n -= t;
   }
- else {                                     // from l to r
+ else {  // from l to r
   const std::uint32_t t = l->n - h;
   std::move_backward( r->k , r->k + r->n , r->k + r->n + t );
   std::move_backward( r->v , r->v + r->n , r->v + r->n + t );
@@ -728,22 +730,22 @@ void ADS_BTM::shrink( Leaf * x , Step * path , int d )
 ADS_BTM_T
 void ADS_BTM::shrink( Inner * x , Step * path , int d )
 {
- ( void ) x;
- Inner * u = path[ d ].u;                   // at least 1 key
+ ( void )x;
+ Inner * u = path[ d ].u;  // at least 1 key
  const std::uint32_t i = path[ d ].i;
  const std::uint32_t a = i < u->n ? i : i - 1;
  Inner * l = static_cast< Inner * >( u->c[ a ] );
  Inner * r = static_cast< Inner * >( u->c[ a + 1 ] );
- if( l->n + 1 + r->n <= I ) {               // r and the bound into l
+ if( l->n + 1 + r->n <= I ) {  // r and the bound into l
   l->k[ l->n ] = std::move( u->k[ a ] );
   std::move( r->k , r->k + r->n , l->k + l->n + 1 );
   std::copy( r->c , r->c + r->n + 1 , l->c + l->n + 1 );
-  if constexpr( R ) {                       // the counts with the children
+  if constexpr( R ) {  // the counts with the children
    std::copy( r->cnt.begin() , r->cnt.begin() + r->n + 1 ,
-              l->cnt.begin() + l->n + 1 );
+	      l->cnt.begin() + l->n + 1 );
    u->cnt[ a ] += u->cnt[ a + 1 ];
    std::copy( u->cnt.begin() + a + 2 , u->cnt.begin() + u->n + 1 ,
-              u->cnt.begin() + a + 1 );
+	      u->cnt.begin() + a + 1 );
    }
   l->n += 1 + r->n;
   l->next = r->next;
@@ -765,8 +767,8 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
    shrink( u , path , d - 1 );
   return;
   }
- const std::uint32_t h = ( l->n + r->n ) / 2;    // l keeps h keys
- if( l->n < h ) {                           // through the bound, from r
+ const std::uint32_t h = ( l->n + r->n ) / 2;  // l keeps h keys
+ if( l->n < h ) {                              // through the bound, from r
   const std::uint32_t t = h - l->n;
   l->k[ l->n ] = std::move( u->k[ a ] );
   std::move( r->k , r->k + t - 1 , l->k + l->n + 1 );
@@ -774,7 +776,7 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   u->k[ a ] = std::move( r->k[ t - 1 ] );
   std::move( r->k + t , r->k + r->n , r->k );
   std::copy( r->c + t , r->c + r->n + 1 , r->c );
-  if constexpr( R ) {                       // the counts with the children
+  if constexpr( R ) {  // the counts with the children
    const auto b = r->cnt.begin();
    std::copy( b , b + t , l->cnt.begin() + l->n + 1 );
    const std::size_t moved = std::accumulate( b , b + t , std::size_t( 0 ) );
@@ -786,20 +788,20 @@ void ADS_BTM::shrink( Inner * x , Step * path , int d )
   l->n += t;
   r->n -= t;
   }
- else {                                     // through the bound, from l
+ else {  // through the bound, from l
   const std::uint32_t t = l->n - h;
   std::move_backward( r->k , r->k + r->n , r->k + r->n + t );
   std::copy_backward( r->c , r->c + r->n + 1 , r->c + r->n + 1 + t );
   r->k[ t - 1 ] = std::move( u->k[ a ] );
   std::move( l->k + h + 1 , l->k + l->n , r->k );
   std::copy( l->c + h + 1 , l->c + l->n + 1 , r->c );
-  if constexpr( R ) {                       // the counts with the children
+  if constexpr( R ) {  // the counts with the children
    const auto b = l->cnt.begin();
    std::copy_backward( r->cnt.begin() , r->cnt.begin() + r->n + 1 ,
-                       r->cnt.begin() + r->n + 1 + t );
+		       r->cnt.begin() + r->n + 1 + t );
    std::copy( b + h + 1 , b + l->n + 1 , r->cnt.begin() );
-   const std::size_t moved = std::accumulate( b + h + 1 , b + l->n + 1 ,
-                                              std::size_t( 0 ) );
+   const std::size_t moved =
+     std::accumulate( b + h + 1 , b + l->n + 1 , std::size_t( 0 ) );
    u->cnt[ a ] -= moved;
    u->cnt[ a + 1 ] += moved;
    }
@@ -827,21 +829,21 @@ template< std::input_iterator It >
 void ADS_BTM::build( It first , It last )
 {
  clear();
- std::vector< std::pair< K , V > > P;       // a single pass on the input
+ std::vector< std::pair< K , V > > P;  // a single pass on the input
  for( ; first != last ; ++first ) {
   auto && [ k , v ] = *first;
   P.emplace_back( k , v );
   }
  ADS_AUDIT( std::adjacent_find( P.begin() , P.end() ,
-                                [ & ]( const auto & a , const auto & b ) {
-                                 return( ! f_less( a.first , b.first ) );
-                                 } ) == P.end() );
+				[ & ]( const auto & a , const auto & b ) {
+				 return( ! f_less( a.first , b.first ) );
+				 } ) == P.end() );
  const std::size_t n = P.size();
  if( n == 0 )
   return;
  // the leaves, as full and as even as they can be
  std::vector< void * > level;
- std::vector< K > top;                      // the largest key below each
+ std::vector< K > top;  // the largest key below each
  std::size_t g = ( n + L - 1 ) / L;
  Leaf * prev = nullptr;
  for( std::size_t j = 0 , s = 0 ; j < g ; ++j ) {
@@ -864,13 +866,13 @@ void ADS_BTM::build( It first , It last )
   }
  f_last = prev;
  f_height = 1;
- while( level.size() > 1 ) {                // a level of internal nodes
+ while( level.size() > 1 ) {  // a level of internal nodes
   const std::size_t m = level.size();
   g = ( m + I ) / ( I + 1 );
   std::vector< void * > up;
   std::vector< K > ut;
   for( std::size_t j = 0 , s = 0 ; j < g ; ++j ) {
-   const std::size_t c = m / g + ( j < m % g ? 1 : 0 );   // children
+   const std::size_t c = m / g + ( j < m % g ? 1 : 0 );  // children
    Inner * u = make< Inner >();
    // the children, and then the c - 1 bounds between them, in two loops:
    // with the bound under a test of q in the same loop, the code that the
@@ -910,23 +912,21 @@ bool ADS_BTM::valid( void ) const
  const Leaf * last = nullptr;
  std::vector< const Inner * > left( std::size_t( f_height ) + 1 , nullptr );
  std::size_t count = 0;
- if( ! valid( f_root , f_height , nullptr , nullptr , last , left ,
-              count ) )
+ if( ! valid( f_root , f_height , nullptr , nullptr , last , left , count ) )
   return( false );
  for( const Inner * u : left )
   if( u && u->next )
    return( false );
  return( ( count == f_size ) && ( last == f_last ) && ! last->next &&
-         ( f_first->prev == nullptr ) );
+	  ( f_first->prev == nullptr ) );
  }
 
 ADS_BTM_T
 bool ADS_BTM::valid( const void * x , int h , const K * lo , const K * hi ,
-                     const Leaf * & last ,
-                     std::vector< const Inner * > & left ,
-                     std::size_t & count ) const
+		     const Leaf *& last , std::vector< const Inner * > & left ,
+		     std::size_t & count ) const
 {
- auto inside = [ & ]( const K & k ) {       // in ( lo , hi ]
+ auto inside = [ & ]( const K & k ) {  // in ( lo , hi ]
   return( ( ! lo || f_less( *lo , k ) ) && ( ! hi || ! f_less( *hi , k ) ) );
   };
  if( h == 1 ) {
@@ -939,7 +939,7 @@ bool ADS_BTM::valid( const void * x , int h , const K * lo , const K * hi ,
     return( false );
   if constexpr( FAST )
    for( std::uint32_t i = l->n ; i < L ; ++i )
-    if( !( l->k[ i ] == pad() ) )
+    if( ! ( l->k[ i ] == pad() ) )
      return( false );
   if( ( l->prev != last ) || ( last ? last->next != l : f_first != l ) )
    return( false );
@@ -958,14 +958,14 @@ bool ADS_BTM::valid( const void * x , int h , const K * lo , const K * hi ,
    return( false );
  if constexpr( FAST )
   for( std::uint32_t i = u->n ; i < I ; ++i )
-   if( !( u->k[ i ] == pad() ) )
+   if( ! ( u->k[ i ] == pad() ) )
     return( false );
  for( std::uint32_t i = 0 ; i <= u->n ; ++i ) {
   const std::size_t before = count;
   if( ! valid( u->c[ i ] , h - 1 , i > 0 ? &u->k[ i - 1 ] : lo ,
-               i < u->n ? &u->k[ i ] : hi , last , left , count ) )
+	       i < u->n ? &u->k[ i ] : hi , last , left , count ) )
    return( false );
-  if constexpr( R )                         // the counts of the children
+  if constexpr( R )  // the counts of the children
    if( u->cnt[ i ] != count - before )
     return( false );
   }

@@ -46,7 +46,7 @@
 
 #ifndef __ADS_MPMCQueue
  #define __ADS_MPMCQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS MPMCQueue -----------------------------*/
@@ -74,10 +75,12 @@ namespace ADS {
 
 /// a bounded queue of many producers and many consumers
 template< class T >
-class MPMCQueue {
+class MPMCQueue
+{
 
  /// a place: its sequence and the room of an item
- struct Cell {
+ struct Cell
+ {
   /// the sequence of the place
   std::atomic< std::size_t > seq;
   /// the room of the item
@@ -90,8 +93,7 @@ class MPMCQueue {
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue of capacity \f$ c \f$
  /// \pre \f$ c \ge 2 \f$ is a power of 2
@@ -131,8 +133,8 @@ class MPMCQueue {
  ///     \text{ producer took } p
  /// \end{array}}
  /// \f]
- template< class ... Args >
- bool emplace( Args && ... args );
+ template< class... Args >
+ bool emplace( Args &&... args );
 
  /// enqueues a copy of \f$ v \f$, false if the queue is full; any thread
  /// may call it
@@ -179,14 +181,13 @@ class MPMCQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
+ static constexpr std::size_t line = 64;  ///< a line of cache
 
- static constexpr std::size_t line = 64;   ///< a line of cache
-
- alignas( 2 * line ) Cell * f_cell;        ///< the places
- std::size_t f_mask;                       ///< capacity - 1
- alignas( 2 * line ) std::atomic< std::size_t > f_tail{ 0 };   ///< pushes
- alignas( 2 * line ) std::atomic< std::size_t > f_head{ 0 };   ///< pops
- alignas( 2 * line ) char f_end = 0;       ///< no other data on that line
+ alignas( 2 * line ) Cell * f_cell;                           ///< the places
+ std::size_t f_mask;                                          ///< capacity - 1
+ alignas( 2 * line ) std::atomic< std::size_t > f_tail{ 0 };  ///< pushes
+ alignas( 2 * line ) std::atomic< std::size_t > f_head{ 0 };  ///< pops
+ alignas( 2 * line ) char f_end = 0;  ///< no other data on that line
  };  // end( class MPMCQueue )
 
 /*--------------------------------------------------------------------------*/
@@ -201,7 +202,7 @@ class MPMCQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MPMCQueue.h included */
+#endif /* MPMCQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File MPMCQueue.h --------------------------*/

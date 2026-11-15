@@ -71,7 +71,7 @@
 
 #ifndef __ADS_StringSort
  #define __ADS_StringSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -98,7 +98,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the stable sort of strings by integer keys of their prefixes
 ///
@@ -143,7 +144,7 @@ inline void prefixKeySort( std::vector< std::string > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StringSort.h included */
+#endif /* StringSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File StringSort.h -------------------------*/

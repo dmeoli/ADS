@@ -71,12 +71,14 @@
 using namespace ADS;
 using ADS::bench::Options;
 
-namespace {
+namespace
+{
 
 #ifdef ADS_LEMON_MCF
 /// the bipartite network of the assignment in LEMON: a unit of supply at
 /// each row, of demand at each column, an arc per pair
-struct LemonNet {
+struct LemonNet
+{
  lemon::SmartDigraph g;
  lemon::SmartDigraph::ArcMap< long long > cost{ g };
  lemon::SmartDigraph::NodeMap< long long > supply{ g };
@@ -92,8 +94,8 @@ struct LemonNet {
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j ) {
     arc.push_back( g.addArc( V[ i ] , V[ n + j ] ) );
-    cost[ arc.back() ] = C[ std::size_t( i ) * std::size_t( n ) +
-                           std::size_t( j ) ];
+    cost[ arc.back() ] =
+      C[ std::size_t( i ) * std::size_t( n ) + std::size_t( j ) ];
     }
   }
 
@@ -111,18 +113,20 @@ struct LemonNet {
 /// the weighted matching of Boost on the complete bipartite graph
 long long boostMatching( int n , const std::vector< long long > & C )
 {
- using G = boost::adjacency_list< boost::vecS , boost::vecS ,
-           boost::undirectedS , boost::no_property ,
-           boost::property< boost::edge_weight_t , long long > >;
+ using G =
+   boost::adjacency_list< boost::vecS , boost::vecS , boost::undirectedS ,
+			  boost::no_property ,
+			  boost::property< boost::edge_weight_t ,
+					   long long > >;
  G g( 2 * n );
  const long long big = 1000000000LL;
  for( int i = 0 ; i < n ; ++i )
   for( int j = 0 ; j < n ; ++j )
-   boost::add_edge( i , n + j ,
-                    big - C[ std::size_t( i ) * std::size_t( n ) +
-                            std::size_t( j ) ] , g );
+   boost::add_edge(
+     i , n + j ,
+     big - C[ std::size_t( i ) * std::size_t( n ) + std::size_t( j ) ] , g );
  std::vector< boost::graph_traits< G >::vertex_descriptor > mate( 2 * n );
- boost::maximum_weighted_matching( g , & mate[ 0 ] );
+ boost::maximum_weighted_matching( g , &mate[ 0 ] );
  long long s = 0;
  for( int i = 0 ; i < n ; ++i )
   s += C[ std::size_t( i ) * std::size_t( n ) + ( mate[ i ] - n ) ];
@@ -142,40 +146,51 @@ void assign( int n , int r , unsigned seed )
  for( int twice = 0 ; twice < 2 ; ++twice ) {
   const std::string who = twice ? "ADS A/A" : "ADS";
   if( ! ADS::bench::skip( who ) )
-   ADS::bench::print( "assign" , "random" , N , who ,
-    ADS::bench::median( [ & ]( void ) {
-     return( std::make_unique< Assignment<> >( n , C ) ); } ,
-     [ & ]( auto & A ) { ADS::bench::sink = std::uint64_t( A->total() ); } ,
-     r , N ) );
+   ADS::bench::print(
+     "assign" , "random" , N , who ,
+     ADS::bench::median(
+       [ & ]( void ) { return( std::make_unique< Assignment<> >( n , C ) ); } ,
+       [ & ]( auto & A ) { ADS::bench::sink = std::uint64_t( A->total() ); } ,
+       r , N ) );
   }
 #ifdef ADS_LEMON_MCF
  if( ! ADS::bench::skip( "LEMON NetworkSimplex" ) )
-  ADS::bench::print( "assign" , "random" , N , "LEMON NetworkSimplex" ,
-   ADS::bench::median( [ & ]( void ) {
-    return( std::make_unique< LemonNet >( n , C ) ); } , [ & ]( auto & L ) {
-    ADS::bench::sink = std::uint64_t( L->template run<
-                       lemon::NetworkSimplex< lemon::SmartDigraph ,
-                       long long , long long > >() ); } , r , N ) );
+  ADS::bench::print(
+    "assign" , "random" , N , "LEMON NetworkSimplex" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< LemonNet >( n , C ) ); } ,
+      [ & ]( auto & L ) {
+       ADS::bench::sink = std::uint64_t(
+	 L->template run< lemon::NetworkSimplex< lemon::SmartDigraph ,
+						 long long , long long > >() );
+       } ,
+      r , N ) );
 #endif
  if( ( n <= 1000 ) && ! ADS::bench::skip( "ADS maxWeightMatching" ) ) {
   std::vector< std::tuple< int , int , long long > > E;
   E.reserve( N * N );
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j )
-    E.emplace_back( i , n + j , - C[ std::size_t( i ) * N +
-                                     std::size_t( j ) ] );
-  ADS::bench::print( "assign" , "random" , N , "ADS maxWeightMatching" ,
-   ADS::bench::median( [ & ]( void ) { return( 0 ); } , [ & ]( int ) {
-    ADS::bench::sink = std::uint64_t( - ADS::maxWeightMatching( 2 * n , E ,
-                                                       true ).first ); } ,
-    r , N ) );
+    E.emplace_back( i , n + j ,
+		    -C[ std::size_t( i ) * N + std::size_t( j ) ] );
+  ADS::bench::print(
+    "assign" , "random" , N , "ADS maxWeightMatching" ,
+    ADS::bench::median( [ & ]( void ) { return( 0 ); } ,
+			[ & ]( int ) {
+			 ADS::bench::sink = std::uint64_t(
+			   -ADS::maxWeightMatching( 2 * n , E , true ).first );
+			 } ,
+			r , N ) );
   }
 #ifdef ADS_BOOST_MATCHING
  if( ( n <= 1000 ) && ! ADS::bench::skip( "Boost matching" ) )
   ADS::bench::print( "assign" , "random" , N , "Boost matching" ,
-   ADS::bench::median( [ & ]( void ) { return( 0 ); } , [ & ]( int ) {
-    ADS::bench::sink = std::uint64_t( boostMatching( n , C ) ); } , r ,
-    N ) );
+		     ADS::bench::median( [ & ]( void ) { return( 0 ); } ,
+					 [ & ]( int ) {
+					  ADS::bench::sink = std::uint64_t(
+					    boostMatching( n , C ) );
+					  } ,
+					 r , N ) );
 #endif
 
  // a row at a time
@@ -191,41 +206,57 @@ void assign( int n , int r , unsigned seed )
   const std::string who = twice ? "ADS warm A/A" : "ADS warm";
   if( ! ADS::bench::skip( who ) )
    ADS::bench::print( "reassign" , "random" , N , who ,
-    ADS::bench::median( [ & ]( void ) {
-     auto A = std::make_unique< Assignment<> >( n , C );
-     ADS::bench::sink = std::uint64_t( A->total() );
-     return( A ); } , [ & ]( auto & A ) {
-     std::uint64_t h = 0;
-     for( const auto & [ i , row ] : R ) {
-      A->setRow( i , row );
-      h += std::uint64_t( A->total() );
-      }
-     ADS::bench::sink = h; } , r , k ) );
+		      ADS::bench::median(
+			[ & ]( void ) {
+			 auto A = std::make_unique< Assignment<> >( n , C );
+			 ADS::bench::sink = std::uint64_t( A->total() );
+			 return( A );
+			 } ,
+			[ & ]( auto & A ) {
+			 std::uint64_t h = 0;
+			 for( const auto & [ i , row ] : R ) {
+			  A->setRow( i , row );
+			  h += std::uint64_t( A->total() );
+			  }
+			 ADS::bench::sink = h;
+			 } ,
+			r , k ) );
   }
  if( ! ADS::bench::skip( "ADS scratch" ) )
   ADS::bench::print( "reassign" , "random" , N , "ADS scratch" ,
-   ADS::bench::median( [ & ]( void ) { return( C ); } , [ & ]( auto & D ) {
-    std::uint64_t h = 0;
-    for( const auto & [ i , row ] : R ) {
-     std::copy( row.begin() , row.end() ,
-                D.begin() + std::ptrdiff_t( std::size_t( i ) * N ) );
-     h += std::uint64_t( Assignment<>( n , D ).total() );
-     }
-    ADS::bench::sink = h; } , r , k ) );
+		     ADS::bench::median(
+		       [ & ]( void ) { return( C ); } ,
+		       [ & ]( auto & D ) {
+			std::uint64_t h = 0;
+			for( const auto & [ i , row ] : R ) {
+			 std::copy( row.begin() , row.end() ,
+				    D.begin() +
+				      std::ptrdiff_t( std::size_t( i ) * N ) );
+			 h += std::uint64_t( Assignment<>( n , D ).total() );
+			 }
+			ADS::bench::sink = h;
+		        } ,
+		       r , k ) );
 #ifdef ADS_LEMON_MCF
  if( ! ADS::bench::skip( "LEMON NetworkSimplex" ) )
-  ADS::bench::print( "reassign" , "random" , N , "LEMON NetworkSimplex" ,
-   ADS::bench::median( [ & ]( void ) {
-    return( std::make_unique< LemonNet >( n , C ) ); } , [ & ]( auto & L ) {
-    std::uint64_t h = 0;
-    for( const auto & [ i , row ] : R ) {
-     for( int j = 0 ; j < n ; ++j )
-      L->cost[ L->arc[ std::size_t( i ) * N + std::size_t( j ) ] ] =
-                                                                  row[ j ];
-     h += std::uint64_t( L->template run< lemon::NetworkSimplex<
-                         lemon::SmartDigraph , long long , long long > >() );
-     }
-    ADS::bench::sink = h; } , r , k ) );
+  ADS::bench::print(
+    "reassign" , "random" , N , "LEMON NetworkSimplex" ,
+    ADS::bench::median(
+      [ & ]( void ) { return( std::make_unique< LemonNet >( n , C ) ); } ,
+      [ & ]( auto & L ) {
+       std::uint64_t h = 0;
+       for( const auto & [ i , row ] : R ) {
+	for( int j = 0 ; j < n ; ++j )
+	 L->cost[ L->arc[ std::size_t( i ) * N + std::size_t( j ) ] ] =
+	   row[ j ];
+	h += std::uint64_t(
+	  L->template run< lemon::NetworkSimplex< lemon::SmartDigraph ,
+						  long long ,
+						  long long > >() );
+        }
+       ADS::bench::sink = h;
+       } ,
+      r , k ) );
 #endif
  }
 

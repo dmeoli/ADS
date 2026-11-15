@@ -50,7 +50,7 @@
 
 #ifndef __ADS_TreapList
  #define __ADS_TreapList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,7 +69,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS TreapList -----------------------------*/
@@ -78,17 +79,17 @@ namespace ADS {
 /// a sequence of items of type `T` on an implicit treap, the `TreapList`
 /// of Morin
 template< class T >
-class TreapList {
+class TreapList
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;    ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty sequence, its priorities drawn from the seed, by default
  /// one of its own [see `detail::instanceSeed()`]
  explicit TreapList( std::uint64_t seed = detail::instanceSeed() )
-  : f_g( seed ) {}
+     : f_g( seed ) { }
 
  /// the number \f$ n \f$ of items
  [[nodiscard]] std::size_t size( void ) const { return( sz( f_root ) ); }
@@ -163,7 +164,7 @@ class TreapList {
  /// the item of index \f$ i \f$ removed, `remove( i )` (the name of
  /// `IndexedList`)
  /// \pre \f$ i < n \f$
- void erase( std::size_t i ) { ( void ) remove( i ); }
+ void erase( std::size_t i ) { ( void )remove( i ); }
 
  /// \f$ v \f$ appended, `add( size() , v )`
  void push_back( const T & v ) { add( size() , v ); }
@@ -215,22 +216,22 @@ class TreapList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: the item, its priority, the size of its subtree
- struct Node {
-  T item;                          ///< the item
-  std::uint64_t priority;          ///< the random priority
-  std::size_t s = 1;               ///< the nodes of the subtree
-  std::unique_ptr< Node > left ,   ///< the left child
-                          right;   ///< the right child
+ struct Node
+ {
+  T item;                        ///< the item
+  std::uint64_t priority;        ///< the random priority
+  std::size_t s = 1;             ///< the nodes of the subtree
+  std::unique_ptr< Node > left ,  ///< the left child
+    right;                       ///< the right child
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root.get() ); }
   /// the left child of the node `n`
@@ -241,14 +242,14 @@ class TreapList {
   static const T & read( const auto * n ) { return( n->item ); }
   };
 
- using value_type = T;                     ///< the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = const T &;              ///< a constant reference
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = const T &;             ///< a constant reference
+ using const_reference = const T &;       ///< a constant reference
  /// the constant iterator in the order of the sequence
  using const_iterator = PathIterator< TreapList , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the first item
  [[nodiscard]] const_iterator begin( void ) const {
@@ -277,8 +278,8 @@ class TreapList {
  static Ptr join( Ptr a , Ptr b );
  static bool valid( const Ptr & t );
 
- Ptr f_root;                       ///< the root
- SplitMix64 f_g;                   ///< the generator of the priorities
+ Ptr f_root;      ///< the root
+ SplitMix64 f_g;  ///< the generator of the priorities
 
  };  // end( class TreapList )
 
@@ -294,7 +295,7 @@ class TreapList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TreapList.h included */
+#endif /* TreapList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File TreapList.h --------------------------*/

@@ -34,7 +34,7 @@
 
 #ifndef __ADS_PreorderArrayTree
  #define __ADS_PreorderArrayTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -50,7 +50,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS PreorderArrayTree -------------------------*/
@@ -58,13 +59,13 @@ namespace ADS {
 
 /// an ordered tree in a vector of ( parent , value ) in preorder
 template< class T >
-class PreorderArrayTree {
+class PreorderArrayTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;              ///< the type of the values
- static constexpr int NIL = -1;   ///< no node
+ using Item = T;                 ///< the type of the values
+ static constexpr int NIL = -1;  ///< no node
 
  /// the empty tree
  PreorderArrayTree( void ) = default;
@@ -175,11 +176,11 @@ class PreorderArrayTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: the place of its parent and its value
- struct Cell {
-  int parent;   ///< the place of the parent, `NIL` for the root
-  T value;      ///< the value
+ struct Cell
+ {
+  int parent;  ///< the place of the parent, `NIL` for the root
+  T value;     ///< the value
   };
 
  const Cell & cell( int i ) const;
@@ -192,7 +193,7 @@ class PreorderArrayTree {
  /// \f$ t \f$
  void splice( int at , int p , const PreorderArrayTree & t );
 
- std::vector< Cell > f_A;   ///< the nodes in preorder
+ std::vector< Cell > f_A;  ///< the nodes in preorder
 
  };  // end( class PreorderArrayTree )
 
@@ -208,7 +209,7 @@ class PreorderArrayTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PreorderArrayTree.h included */
+#endif /* PreorderArrayTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File PreorderArrayTree.h ----------------------*/

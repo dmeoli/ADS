@@ -61,7 +61,7 @@
  #include <flint/fmpz.h>
 #endif
 
-#ifdef ADS_BENCH_OWN                        // the code of ADS alone
+#ifdef ADS_BENCH_OWN  // the code of ADS alone
  #undef ADS_HAS_BOOST
  #undef ADS_HAS_GMP
  #undef ADS_HAS_FLINT
@@ -75,13 +75,15 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// a random hexadecimal number of n digits of 32 bits
 std::string hex( std::size_t n , std::mt19937_64 & g )
 {
  std::string s( 8 * n , '0' );
- for( auto & c : s ) c = "0123456789abcdef"[ g() % 16 ];
+ for( auto & c : s )
+  c = "0123456789abcdef"[ g() % 16 ];
  s[ 0 ] = '1';
  return( s );
  }
@@ -93,36 +95,53 @@ std::string hex( std::size_t n , std::mt19937_64 & g )
 /// so that the short ones last many ticks of the clock
 template< class N , class M , class D , class Mul , class G , class S >
 void run( const std::string & who , std::size_t n , const std::string & a ,
-          const std::string & b , const std::string & c , int r , M && make ,
-          D && dec , Mul && mul , bool all , G && gcd , S && root )
+	  const std::string & b , const std::string & c , int r , M && make ,
+	  D && dec , Mul && mul , bool all , G && gcd , S && root )
 {
  if( skip( who ) )
   return;
- const N x = make( a ) , y = make( b ) , z = make( c );   // c has 2n digits
+ const N x = make( a ) , y = make( b ) , z = make( c );  // c has 2n digits
  const N x3 = mul( x , make( "3" ) ) , y3 = mul( y , make( "3" ) );
  const std::size_t k = std::max< std::size_t >( 1 , 4096 / n );
  auto cell = [ & ]( const char * name , auto && op ) {
-  print( "bignum" , name , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           for( std::size_t i = 0 ; i < k ; ++i ) op(); } , r , k ) );
+  print( "bignum" , name , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  for( std::size_t i = 0 ; i < k ; ++i )
+		   op();
+		  } ,
+		 r , k ) );
   };
- cell( "product" , [ & ] { const N p = mul( x , y );
-                           sink = sink + ( p != 0 ); } );
- if( all ) cell( "square" , [ & ] { const N p = mul( x , x );
-                                    sink = sink + ( p != 0 ); } );
- cell( "quotient 2n/n" , [ & ] { const N q = z / y;
-                                 sink = sink + ( q != 0 ); } );
+ cell( "product" , [ & ] {
+  const N p = mul( x , y );
+  sink = sink + ( p != 0 );
+  } );
+ if( all )
+  cell( "square" , [ & ] {
+   const N p = mul( x , x );
+   sink = sink + ( p != 0 );
+   } );
+ cell( "quotient 2n/n" , [ & ] {
+  const N q = z / y;
+  sink = sink + ( q != 0 );
+  } );
  cell( "to decimal" , [ & ] { sink = sink + dec( x ).size(); } );
- if( ! all ) return;
- cell( "gcd" , [ & ] { const N g = gcd( x3 , y3 );
-                       sink = sink + ( g != 0 ); } );
- cell( "square root 2n" , [ & ] { const N s = root( z );
-                                  sink = sink + ( s != 0 ); } );
+ if( ! all )
+  return;
+ cell( "gcd" , [ & ] {
+  const N g = gcd( x3 , y3 );
+  sink = sink + ( g != 0 );
+  } );
+ cell( "square root 2n" , [ & ] {
+  const N s = root( z );
+  sink = sink + ( s != 0 );
+  } );
  }
 
 #ifdef ADS_HAS_FLINT
 /// fmpz_t of FLINT with what run() asks of a number
-struct Fmpz {
+struct Fmpz
+{
  fmpz_t v;
  Fmpz( void ) { fmpz_init( v ); }
  explicit Fmpz( const std::string & s , int base = 16 ) {
@@ -144,7 +163,8 @@ struct Fmpz {
  };
 
 /// fmpq_t of FLINT with what harmonic() asks of a fraction
-struct Fmpq {
+struct Fmpq
+{
  fmpq_t v;
  Fmpq( long p , long q ) {
   fmpq_init( v );
@@ -175,37 +195,47 @@ struct Fmpq {
 /// frac( a , b ), each run repeating the operation k times, k n about 2^12
 template< class R , class Make >
 void fractions( const std::string & who , std::size_t n , int r ,
-                const std::string & a , const std::string & b ,
-                const std::string & c , const std::string & d , Make && frac )
+		const std::string & a , const std::string & b ,
+		const std::string & c , const std::string & d , Make && frac )
 {
  if( skip( who ) )
   return;
  const R x = frac( a , b ) , y = frac( c , d ) , z = frac( "0" , "1" );
  const std::size_t k = std::max< std::size_t >( 1 , 4096 / n );
  auto cell = [ & ]( const char * name , auto && op ) {
-  print( "bignum" , name , n , who , median( [](){ return( 0 ); } ,
-          [ & ]( int ) {
-           for( std::size_t i = 0 ; i < k ; ++i ) op(); } , r , k ) );
+  print( "bignum" , name , n , who ,
+	 median( []() { return( 0 ); } ,
+		 [ & ]( int ) {
+		  for( std::size_t i = 0 ; i < k ; ++i )
+		   op();
+		  } ,
+		 r , k ) );
   };
- cell( "fraction sum" , [ & ] { const R s = x + y;
-                                sink = sink + ( s != z ); } );
- cell( "fraction product" , [ & ] { const R p = x * y;
-                                    sink = sink + ( p != z ); } );
+ cell( "fraction sum" , [ & ] {
+  const R s = x + y;
+  sink = sink + ( s != z );
+  } );
+ cell( "fraction product" , [ & ] {
+  const R p = x * y;
+  sink = sink + ( p != z );
+  } );
  }
 
 /// the harmonic number H_n summed as a fraction of the type R
 template< class R , class Make >
-void harmonic( const std::string & who , std::size_t n , int r ,
-               Make && frac )
+void harmonic( const std::string & who , std::size_t n , int r , Make && frac )
 {
  if( skip( who ) )
   return;
- print( "bignum" , "harmonic H_n" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          R h = frac( 0 , 1 );
-          for( std::size_t i = 1 ; i <= n ; ++i )
-           h = h + frac( 1 , long( i ) );
-          sink = sink + ( h != frac( 0 , 1 ) ); } , r , 1 ) );
+ print( "bignum" , "harmonic H_n" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 R h = frac( 0 , 1 );
+		 for( std::size_t i = 1 ; i <= n ; ++i )
+		  h = h + frac( 1 , long( i ) );
+		 sink = sink + ( h != frac( 0 , 1 ) );
+		 } ,
+		r , 1 ) );
  }
 
 }  // end( namespace )
@@ -219,124 +249,141 @@ int main( int argc , char ** argv )
   const int r = o.runs;
   using ADS::BigInteger;
   auto adsMake = []( const std::string & s ) {
-   return( BigInteger( s , 16 ) ); };
+   return( BigInteger( s , 16 ) );
+   };
   auto adsDec = []( const BigInteger & x ) { return( x.toString() ); };
   auto adsMul = []( const auto & x , const auto & y ) { return( x * y ); };
   auto adsGcd = []( const auto & x , const auto & y ) {
-   return( BigInteger::gcd( x , y ) ); };
+   return( BigInteger::gcd( x , y ) );
+   };
   auto adsRoot = []( const auto & x ) { return( BigInteger::sqrt( x ) ); };
-  run< BigInteger >( "ADS::BigInteger" ADS_WHO , n , a , b , c , r ,
-                     adsMake , adsDec , adsMul , true , adsGcd , adsRoot );
+  run< BigInteger >( "ADS::BigInteger" ADS_WHO , n , a , b , c , r , adsMake ,
+		     adsDec ,
+		     adsMul , true , adsGcd , adsRoot );
   run< BigInteger >( "ADS::BigInteger" ADS_WHO " A/A" , n , a , b , c , r ,
-                     adsMake , adsDec , adsMul , true , adsGcd , adsRoot );
+		     adsMake ,
+		     adsDec , adsMul , true , adsGcd , adsRoot );
 #ifndef ADS_BENCH_OWN
-  run< BigInteger >( "ADS::BigInteger school" , n , a , b , c , r , adsMake ,
-                     adsDec , []( const auto & x , const auto & y ) {
-                      return( BigInteger::multiplySchool( x , y ) ); } ,
-                     false , adsGcd , adsRoot );
-  run< BigInteger >( "ADS::BigInteger Karatsuba" , n , a , b , c , r ,
-                     adsMake , adsDec , []( const auto & x , const auto & y ) {
-                      return( BigInteger::multiplyKaratsuba( x , y ) ); } ,
-                     false , adsGcd , adsRoot );
-  run< BigInteger >( "ADS::BigInteger FFT" , n , a , b , c , r , adsMake ,
-                     adsDec , []( const auto & x , const auto & y ) {
-                      return( BigInteger::multiplyFFT( x , y ) ); } ,
-                     false , adsGcd , adsRoot );
+  run< BigInteger >(
+    "ADS::BigInteger school" , n , a , b , c , r , adsMake , adsDec ,
+    []( const auto & x , const auto & y ) {
+     return( BigInteger::multiplySchool( x , y ) );
+     } ,
+    false , adsGcd , adsRoot );
+  run< BigInteger >(
+    "ADS::BigInteger Karatsuba" , n , a , b , c , r , adsMake , adsDec ,
+    []( const auto & x , const auto & y ) {
+     return( BigInteger::multiplyKaratsuba( x , y ) );
+     } ,
+    false , adsGcd , adsRoot );
+  run< BigInteger >(
+    "ADS::BigInteger FFT" , n , a , b , c , r , adsMake , adsDec ,
+    []( const auto & x , const auto & y ) {
+     return( BigInteger::multiplyFFT( x , y ) );
+     } ,
+    false , adsGcd , adsRoot );
 #endif
 #ifdef ADS_HAS_BOOST
   using boost::multiprecision::cpp_int;
-  run< cpp_int >( "boost::multiprecision::cpp_int" , n , a , b , c , r ,
-                  []( const std::string & s ) {
-                   return( cpp_int( "0x" + s ) ); } ,
-                  []( const cpp_int & x ) { return( x.str() ); } ,
-                  []( const auto & x , const auto & y ) {
-                   return( cpp_int( x * y ) ); } , true ,
-                  []( const auto & x , const auto & y ) {
-                   return( cpp_int( boost::multiprecision::gcd( x , y ) ) );
-                   } ,
-                  []( const auto & x ) {
-                   return( cpp_int( boost::multiprecision::sqrt( x ) ) ); } );
+  run< cpp_int >(
+    "boost::multiprecision::cpp_int" , n , a , b , c , r ,
+    []( const std::string & s ) { return( cpp_int( "0x" + s ) ); } ,
+    []( const cpp_int & x ) { return( x.str() ); } ,
+    []( const auto & x , const auto & y ) { return( cpp_int( x * y ) ); } ,
+    true ,
+    []( const auto & x , const auto & y ) {
+     return( cpp_int( boost::multiprecision::gcd( x , y ) ) );
+     } ,
+    []( const auto & x ) {
+     return( cpp_int( boost::multiprecision::sqrt( x ) ) );
+     } );
 #endif
 #ifdef ADS_HAS_GMP
-  run< mpz_class >( "GMP mpz_class" , n , a , b , c , r ,
-                    []( const std::string & s ) {
-                     return( mpz_class( s , 16 ) ); } ,
-                    []( const mpz_class & x ) { return( x.get_str( 10 ) ); } ,
-                    []( const auto & x , const auto & y ) {
-                     return( mpz_class( x * y ) ); } , true ,
-                    []( const auto & x , const auto & y ) {
-                     return( mpz_class( gcd( x , y ) ) ); } ,
-                    []( const auto & x ) {
-                     return( mpz_class( sqrt( x ) ) ); } );
+  run< mpz_class >(
+    "GMP mpz_class" , n , a , b , c , r ,
+    []( const std::string & s ) { return( mpz_class( s , 16 ) ); } ,
+    []( const mpz_class & x ) { return( x.get_str( 10 ) ); } ,
+    []( const auto & x , const auto & y ) { return( mpz_class( x * y ) ); } ,
+    true ,
+    []( const auto & x , const auto & y ) {
+     return( mpz_class( gcd( x , y ) ) );
+     } ,
+    []( const auto & x ) { return( mpz_class( sqrt( x ) ) ); } );
 #endif
 #ifdef ADS_HAS_FLINT
-  run< Fmpz >( "FLINT fmpz_t" , n , a , b , c , r ,
-               []( const std::string & s ) { return( Fmpz( s ) ); } ,
-               []( const Fmpz & x ) {
-                char * t = fmpz_get_str( nullptr , 10 , x.v );
-                std::string d( t );
-                flint_free( t );
-                return( d ); } ,
-               []( const Fmpz & x , const Fmpz & y ) {
-                Fmpz p;
-                fmpz_mul( p.v , x.v , y.v );
-                return( p ); } , true ,
-               []( const Fmpz & x , const Fmpz & y ) {
-                Fmpz g;
-                fmpz_gcd( g.v , x.v , y.v );
-                return( g ); } ,
-               []( const Fmpz & x ) {
-                Fmpz s;
-                fmpz_sqrt( s.v , x.v );
-                return( s ); } );
+  run< Fmpz >(
+    "FLINT fmpz_t" , n , a , b , c , r ,
+    []( const std::string & s ) { return( Fmpz( s ) ); } ,
+    []( const Fmpz & x ) {
+     char * t = fmpz_get_str( nullptr , 10 , x.v );
+     std::string d( t );
+     flint_free( t );
+     return( d );
+     } ,
+    []( const Fmpz & x , const Fmpz & y ) {
+     Fmpz p;
+     fmpz_mul( p.v , x.v , y.v );
+     return( p );
+     } ,
+    true ,
+    []( const Fmpz & x , const Fmpz & y ) {
+     Fmpz g;
+     fmpz_gcd( g.v , x.v , y.v );
+     return( g );
+     } ,
+    []( const Fmpz & x ) {
+     Fmpz s;
+     fmpz_sqrt( s.v , x.v );
+     return( s );
+     } );
 #endif
   // the fractions: the terms of n digits, the denominators odd
   std::string fd = hex( n , g ) , fb = hex( n , g );
   fd.back() = fb.back() = '7';
   const std::string fa = hex( n , g ) , fc = hex( n , g );
-  fractions< ADS::Rational >( "ADS::Rational" ADS_WHO , n , r , fa , fb , fc ,
-                              fd , []( const std::string & p ,
-                                       const std::string & q ) {
-                               return( ADS::Rational( BigInteger( p , 16 ) ,
-                                                      BigInteger( q , 16 ) ) );
-                               } );
+  fractions< ADS::Rational >(
+    "ADS::Rational" ADS_WHO , n , r , fa , fb , fc , fd ,
+    []( const std::string & p , const std::string & q ) {
+     return( ADS::Rational( BigInteger( p , 16 ) , BigInteger( q , 16 ) ) );
+     } );
 #ifdef ADS_HAS_BOOST
-  fractions< boost::rational< cpp_int > >( "boost::rational<cpp_int>" , n ,
-                                           r , fa , fb , fc , fd , [](
-                                            const std::string & p ,
-                                            const std::string & q ) {
-                                            return( boost::rational< cpp_int >(
-                                             cpp_int( "0x" + p ) ,
-                                             cpp_int( "0x" + q ) ) ); } );
+  fractions< boost::rational< cpp_int > >(
+    "boost::rational<cpp_int>" , n , r , fa , fb , fc , fd ,
+    []( const std::string & p , const std::string & q ) {
+     return( boost::rational< cpp_int >( cpp_int( "0x" + p ) ,
+					  cpp_int( "0x" + q ) ) );
+     } );
 #endif
 #ifdef ADS_HAS_GMP
-  fractions< mpq_class >( "GMP mpq_class" , n , r , fa , fb , fc , fd , [](
-                           const std::string & p , const std::string & q ) {
-                           mpq_class x( mpz_class( p , 16 ) ,
-                                        mpz_class( q , 16 ) );
-                           x.canonicalize();
-                           return( x ); } );
+  fractions< mpq_class >( "GMP mpq_class" , n , r , fa , fb , fc , fd ,
+			  []( const std::string & p , const std::string & q ) {
+			   mpq_class x( mpz_class( p , 16 ) ,
+					mpz_class( q , 16 ) );
+			   x.canonicalize();
+			   return( x );
+			   } );
 #endif
-  const std::size_t h = 64 * n;             // the terms of H_n
-  if( h > 300000 ) continue;
-  harmonic< ADS::Rational >( "ADS::Rational" ADS_WHO , h , r ,
-                             []( long p , long q ) {
-                              return( ADS::Rational( p , q ) ); } );
+  const std::size_t h = 64 * n;  // the terms of H_n
+  if( h > 300000 )
+   continue;
+  harmonic< ADS::Rational >(
+    "ADS::Rational" ADS_WHO , h , r ,
+    []( long p , long q ) { return( ADS::Rational( p , q ) ); } );
 #ifdef ADS_HAS_BOOST
-  harmonic< boost::rational< cpp_int > >( "boost::rational<cpp_int>" , h , r ,
-                                          []( long p , long q ) {
-                                           return( boost::rational< cpp_int >(
-                                                    p , q ) ); } );
+  harmonic< boost::rational< cpp_int > >(
+    "boost::rational<cpp_int>" , h , r ,
+    []( long p , long q ) { return( boost::rational< cpp_int >( p , q ) ); } );
 #endif
 #ifdef ADS_HAS_FLINT
-  harmonic< Fmpq >( "FLINT fmpq_t" , h , r , []( long p , long q ) {
-                     return( Fmpq( p , q ) ); } );
+  harmonic< Fmpq >( "FLINT fmpq_t" , h , r ,
+		    []( long p , long q ) { return( Fmpq( p , q ) ); } );
 #endif
 #ifdef ADS_HAS_GMP
   harmonic< mpq_class >( "GMP mpq_class" , h , r , []( long p , long q ) {
-                          mpq_class x( p , q );
-                          x.canonicalize();
-                          return( x ); } );
+   mpq_class x( p , q );
+   x.canonicalize();
+   return( x );
+   } );
 #endif
   }
  return( 0 );

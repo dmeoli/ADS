@@ -60,7 +60,7 @@
 
 #ifndef __ADS_LZ77Linear
  #define __ADS_LZ77Linear
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the phrases of LZ77 of \f$ s \f$ with no window, in \f$ O( |s| ) \f$ time
 ///
@@ -120,8 +121,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ |s| < 2^{32} - 1 \f$
 /// \post `lz77Decode( result ) == s` (an audit)
-[[nodiscard]] inline std::vector< LZ77Phrase > lz77ParseLinear(
-                                                        std::string_view s );
+[[nodiscard]] inline std::vector< LZ77Phrase >
+lz77ParseLinear( std::string_view s );
 
 /*--------------------------------------------------------------------------*/
 
@@ -135,7 +136,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LZ77Linear.h included */
+#endif /* LZ77Linear.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File LZ77Linear.h --------------------------*/

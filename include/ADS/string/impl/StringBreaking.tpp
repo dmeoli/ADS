@@ -15,24 +15,26 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the tables of the least costs D and of the largest optimal splits K on
 /// the places w_0 = 0 , cuts , w_{n+1} = length, by the speedup of Knuth
 template< class I >
-struct StringBreakingTables {
+struct StringBreakingTables
+{
  std::vector< I > w;
  std::vector< std::vector< I > > D;
  std::vector< std::vector< std::size_t > > K;
 
- StringBreakingTables( const std::vector< I > & cuts , I length )
- {
+ StringBreakingTables( const std::vector< I > & cuts , I length ) {
   const std::size_t n = cuts.size();
   for( std::size_t i = 0 ; i < n ; ++i )
    ADS_PRE( ( cuts[ i ] > ( i ? cuts[ i - 1 ] : I( 0 ) ) ) &&
-            ( cuts[ i ] < length ) );
+	    ( cuts[ i ] < length ) );
   w.assign( n + 2 , I( 0 ) );
   std::copy( cuts.begin() , cuts.end() , w.begin() + 1 );
   w[ n + 1 ] = length;
@@ -44,7 +46,7 @@ struct StringBreakingTables {
    for( std::size_t i = 0 ; i + d < n + 2 ; ++i ) {
     const std::size_t j = i + d;
     const std::size_t lo = std::max( K[ i ][ j - 1 ] , i + 1 ) ,
-                      hi = std::min( K[ i + 1 ][ j ] , j - 1 );
+		      hi = std::min( K[ i + 1 ][ j ] , j - 1 );
     std::size_t best = lo;
     for( std::size_t k = lo + 1 ; k <= hi ; ++k )
      if( D[ i ][ k ] + D[ k ][ j ] <= D[ i ][ best ] + D[ best ][ j ] )
@@ -75,7 +77,7 @@ I breakingCostOf( const std::vector< I > & order , I length )
 
 template< class I >
 I stringBreakingCost( const std::vector< I > & cuts ,
-                      std::type_identity_t< I > length )
+		      std::type_identity_t< I > length )
 {
  const detail::StringBreakingTables< I > T( cuts , length );
  return( T.D[ 0 ][ cuts.size() + 1 ] );
@@ -83,8 +85,9 @@ I stringBreakingCost( const std::vector< I > & cuts ,
 
 /*--------------------------------------------------------------------------*/
 
-inline std::int64_t stringBreakingCost(
-               const std::vector< std::int64_t > & cuts , std::int64_t length )
+inline std::int64_t
+stringBreakingCost( const std::vector< std::int64_t > & cuts ,
+		    std::int64_t length )
 {
  return( stringBreakingCost< std::int64_t >( cuts , length ) );
  }
@@ -93,12 +96,12 @@ inline std::int64_t stringBreakingCost(
 
 template< class I >
 std::vector< I > stringBreakingOrder( const std::vector< I > & cuts ,
-                                      std::type_identity_t< I > length )
+				      std::type_identity_t< I > length )
 {
  const detail::StringBreakingTables< I > T( cuts , length );
  std::vector< I > order;
- std::vector< std::pair< std::size_t , std::size_t > > todo = {
-  std::pair( std::size_t( 0 ) , cuts.size() + 1 ) };
+ std::vector< std::pair< std::size_t , std::size_t > > todo = { std::pair(
+   std::size_t( 0 ) , cuts.size() + 1 ) };
  while( ! todo.empty() ) {
   const auto [ i , j ] = todo.back();
   todo.pop_back();
@@ -111,16 +114,17 @@ std::vector< I > stringBreakingOrder( const std::vector< I > & cuts ,
   }
  ADS_POST( order.size() == cuts.size() );
  ADS_AUDIT( std::is_permutation( order.begin() , order.end() , cuts.begin() ,
-                                 cuts.end() ) &&
-            ( detail::breakingCostOf( order , I( length ) ) ==
-              T.D[ 0 ][ cuts.size() + 1 ] ) );
+				 cuts.end() ) &&
+	    ( detail::breakingCostOf( order , I( length ) ) ==
+	      T.D[ 0 ][ cuts.size() + 1 ] ) );
  return( order );
  }
 
 /*--------------------------------------------------------------------------*/
 
-inline std::vector< std::int64_t > stringBreakingOrder(
-               const std::vector< std::int64_t > & cuts , std::int64_t length )
+inline std::vector< std::int64_t >
+stringBreakingOrder( const std::vector< std::int64_t > & cuts ,
+		     std::int64_t length )
 {
  return( stringBreakingOrder< std::int64_t >( cuts , length ) );
  }

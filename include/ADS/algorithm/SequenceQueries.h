@@ -66,7 +66,7 @@
 
 #ifndef __ADS_SequenceQueries
  #define __ADS_SequenceQueries
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -92,7 +92,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the counts \f$ c[ i ] \f$ of the places \f$ j > i \f$ with
 /// \f$ A[ j ] < A[ i ] \f$, by mergesort on the places; \f$ O( n \log n ) \f$
@@ -123,7 +124,7 @@ namespace ADS {
 ///       (audit)
 template< class T , class C = std::less<> >
 std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
-                                              C less = C() );
+					      C less = C() );
 
 /// the start and the length of the first longest run of consecutive items
 /// of \f$ S \f$ with at most \f$ k \f$ distinct values, by a sliding window;
@@ -150,7 +151,7 @@ std::vector< std::size_t > smallerToTheRight( const std::vector< T > & A ,
 /// \post the run has at most \f$ k \f$ distinct values (audit)
 template< std::ranges::random_access_range R >
 std::pair< std::size_t , std::size_t > longestKDistinctRun( const R & S ,
-                                                            std::size_t k );
+							   std::size_t k );
 
 /// the longest stretch \f$ ( x , y ) \f$, between the first start and the
 /// last end, covered by none of the closed intervals \f$ I \f$, the first one
@@ -175,8 +176,8 @@ std::pair< std::size_t , std::size_t > longestKDistinctRun( const R & S ,
 /// \post no interval meets \f$ ( x , y ) \f$ (audit)
 template< class T >
  requires( std::is_arithmetic_v< T > && ! std::is_same_v< T , bool > )
-std::optional< std::pair< T , T > > largestGap(
-                                       std::vector< std::pair< T , T > > I );
+std::optional< std::pair< T , T > >
+largestGap( std::vector< std::pair< T , T > > I );
 
 /// the least sum of \f$ | H[ i ] - L[ \pi( i ) ] | \f$ over the permutations
 /// \f$ \pi \f$, computed in the type `W`, by sorting; \f$ O( n \log n ) \f$
@@ -207,7 +208,7 @@ W lineAssignment( std::vector< T > H , std::vector< T > L );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SequenceQueries.h included */
+#endif /* SequenceQueries.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File SequenceQueries.h -----------------------*/

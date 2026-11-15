@@ -52,7 +52,7 @@
 
 #ifndef __ADS_ShellSort
  #define __ADS_ShellSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -70,7 +70,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the gaps \f$ h_1 = 1 \f$, \f$ h_{i+1} = 3 h_i + 1 \f$ below \f$ n \f$
 /// (\f$ 1 , 4 , 13 , 40 , \ldots \f$), increasing
@@ -117,7 +118,8 @@ inline std::vector< std::size_t > ciuraGaps( std::size_t n );
 /// \post \f$ A \f$ holds the same items, sorted if the first gap is 1 (audit)
 template< class T , class C = std::less<> >
 void shellSort( std::vector< T > & A ,
-                const std::vector< std::size_t > & gaps , C less = C() );
+		const std::vector< std::size_t > & gaps ,
+		C less = C() );
 
 /// the Shell Sort of the book, with the gaps \f$ 1 , 4 , 13 , \ldots \f$
 /// \f[
@@ -141,7 +143,7 @@ void shellSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ShellSort.h included */
+#endif /* ShellSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File ShellSort.h --------------------------*/

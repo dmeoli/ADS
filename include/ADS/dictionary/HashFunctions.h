@@ -63,7 +63,7 @@
 
 #ifndef __ADS_HashFunctions
  #define __ADS_HashFunctions
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- HASH FUNCTIONS -----------------------------*/
@@ -155,8 +156,8 @@ std::uint64_t hash_xor( std::string_view k , int p );
 ///      fits in 64 bits
 /// \post the result is below \f$ m \f$
 std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
-                             std::uint64_t base = 256 ,
-                             std::uint64_t seed = 0 );
+			     std::uint64_t base = 256 ,
+			     std::uint64_t seed = 0 );
 
 /// the multiplication in floating point, the formula of the book,
 /// \f$ \lfloor m ( C i - \lfloor C i \rfloor ) \rfloor \f$: exact only
@@ -166,8 +167,8 @@ std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
 /// \pre \f$ 0 \le C < 1 \f$
 /// \post the result is below \f$ m \f$, if \f$ m > 0 \f$
 std::uint64_t hash_multiplication( std::uint64_t i , std::uint64_t m ,
-                                   long double C =
-                                    ( std::sqrt( 5.0L ) - 1 ) / 2 );
+				   long double C = ( std::sqrt( 5.0L ) - 1 ) /
+						   2 );
 
 /// the multiplication with integers for \f$ m = 2^p \f$, \f$ w = 64 \f$:
 /// the \f$ p \f$ most significant bits of the 64 least significant ones of
@@ -218,7 +219,7 @@ std::uint64_t hash_midsquare( std::uint64_t i , int p );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HashFunctions.h included */
+#endif /* HashFunctions.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File HashFunctions.h ------------------------*/

@@ -15,14 +15,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 
 template< class T , class F , class H >
 RibbonFilter< T , F , H >::RibbonFilter( const std::vector< T > & keys ,
-                                         std::uint64_t seed , H h )
- : f_seed( seed ) , f_n( keys.size() ) , f_h( h )
+				       std::uint64_t seed , H h )
+    : f_seed( seed ) , f_n( keys.size() ) , f_h( h )
 {
  ADS_PRE( keys.size() <= std::size_t( 0xFFFFFFFFU ) );
  if( keys.empty() )
@@ -31,21 +32,22 @@ RibbonFilter< T , F , H >::RibbonFilter( const std::vector< T > & keys ,
  // multiple of 64
  const double n = double( keys.size() );
  const double eps = std::max( 0.01 , 0.0083 * std::log2( n ) - 0.025 );
- f_m = std::max< std::size_t >( 64 , ( std::size_t( std::ceil(
-                                 n * ( 1 + eps ) ) ) + 63 ) & ~std::size_t(
-                                 63 ) );
+ f_m = std::max< std::size_t >(
+   64 ,
+   ( std::size_t( std::ceil( n * ( 1 + eps ) ) ) + 63 ) & ~std::size_t( 63 ) );
  const std::size_t grow = ( keys.size() / 50 + 63 ) & ~std::size_t( 63 );
  for( ; ; ) {
   if( ++f_trials > kMaxTrials )
    throw( std::runtime_error( "RibbonFilter: no seed solves the system" ) );
-  f_seed = hashWord( f_seed , f_trials );   // a new seed at each trial
+  f_seed = hashWord( f_seed , f_trials );  // a new seed at each trial
   if( build( keys ) )
    break;
   if( f_trials % 4 == 0 )
    f_m += std::max< std::size_t >( 64 , grow );
   }
- ADS_AUDIT( std::all_of( keys.begin() , keys.end() ,
-                         [ this ]( const T & k ) { return( maybe( k ) ); } ) );
+ ADS_AUDIT( std::all_of( keys.begin() , keys.end() , [ this ]( const T & k ) {
+  return( maybe( k ) );
+  } ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -53,9 +55,8 @@ RibbonFilter< T , F , H >::RibbonFilter( const std::vector< T > & keys ,
 template< class T , class F , class H >
 std::uint64_t RibbonFilter< T , F , H >::base( const T & x ) const
 {
- if constexpr( std::is_integral_v< T > &&
-               std::is_same_v< H , FastHash< T > > )
-  return( std::uint64_t( x ) );           // mixed once, with the seed
+ if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
+  return( std::uint64_t( x ) );  // mixed once, with the seed
  else if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( x ) ) );
  else
@@ -88,43 +89,49 @@ F RibbonFilter< T , F , H >::fingerprint( std::uint64_t h )
 
 template< class T , class F , class H >
 std::uint32_t RibbonFilter< T , F , H >::parities( const std::uint64_t * u ,
-                                                   std::uint64_t lo ,
-                                                   std::uint64_t hi )
+						 std::uint64_t lo ,
+						 std::uint64_t hi )
 {
 #if defined( __AVX512BW__ )
  // ( u_j & lo ) ^ ( v_j & hi ) in the 8 lanes, the parity of each byte by
  // a table of the 16 nibbles, the sum of the 8 bytes of a lane, its bit 0
- const __m512i x = _mm512_ternarylogic_epi64( _mm512_and_si512(
-                    _mm512_load_si512( u ) , _mm512_set1_epi64(
-                    std::int64_t( lo ) ) ) , _mm512_load_si512( u + kR ) ,
-                    _mm512_set1_epi64( std::int64_t( hi ) ) , 0x78 );
+ const __m512i x = _mm512_ternarylogic_epi64(
+   _mm512_and_si512( _mm512_load_si512( u ) ,
+		     _mm512_set1_epi64( std::int64_t( lo ) ) ) ,
+   _mm512_load_si512( u + kR ) , _mm512_set1_epi64( std::int64_t( hi ) ) ,
+   0x78 );
  const __m512i nib = _mm512_set1_epi8( 0x0F );
- const __m512i odd = _mm512_broadcast_i32x4( _mm_setr_epi8( 0 , 1 , 1 , 0 ,
-                      1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 , 0 ) );
- const __m512i p = _mm512_shuffle_epi8( odd , _mm512_and_si512(
-                    _mm512_xor_si512( x , _mm512_srli_epi64( x , 4 ) ) ,
-                    nib ) );
- return( std::uint32_t( _mm512_test_epi64_mask( _mm512_sad_epu8( p ,
-          _mm512_setzero_si512() ) , _mm512_set1_epi64( 1 ) ) ) );
+ const __m512i odd = _mm512_broadcast_i32x4(
+   _mm_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 ,
+		  0 ) );
+ const __m512i p = _mm512_shuffle_epi8(
+   odd ,
+   _mm512_and_si512( _mm512_xor_si512( x , _mm512_srli_epi64( x , 4 ) ) ,
+		     nib ) );
+ return( std::uint32_t( _mm512_test_epi64_mask(
+   _mm512_sad_epu8( p , _mm512_setzero_si512() ) ,
+   _mm512_set1_epi64( 1 ) ) ) );
 #elif defined( __AVX2__ )
  const __m256i L = _mm256_set1_epi64x( std::int64_t( lo ) ) ,
-               G = _mm256_set1_epi64x( std::int64_t( hi ) );
+	       G = _mm256_set1_epi64x( std::int64_t( hi ) );
  const __m256i nib = _mm256_set1_epi8( 0x0F );
- const __m256i odd = _mm256_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 ,
-  0 , 0 , 1 , 0 , 1 , 1 , 0 , 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 ,
-  1 , 0 , 1 , 1 , 0 );
+ const __m256i odd =
+   _mm256_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 ,
+		     1 , 0 , 0 , 1 , 1 ,
+		     0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 , 0 );
  std::uint32_t y = 0;
  for( int k = 0 ; k < 2 ; ++k ) {
   const auto * a = reinterpret_cast< const __m256i * >( u + 4 * k );
   const auto * b = reinterpret_cast< const __m256i * >( u + kR + 4 * k );
-  const __m256i x = _mm256_xor_si256( _mm256_and_si256(
-                     _mm256_load_si256( a ) , L ) , _mm256_and_si256(
-                     _mm256_load_si256( b ) , G ) );
-  const __m256i p = _mm256_shuffle_epi8( odd , _mm256_and_si256(
-                     _mm256_xor_si256( x , _mm256_srli_epi64( x , 4 ) ) ,
-                     nib ) );
-  const __m256i c = _mm256_slli_epi64( _mm256_sad_epu8( p ,
-                     _mm256_setzero_si256() ) , 63 );
+  const __m256i x =
+    _mm256_xor_si256( _mm256_and_si256( _mm256_load_si256( a ) , L ) ,
+		      _mm256_and_si256( _mm256_load_si256( b ) , G ) );
+  const __m256i p = _mm256_shuffle_epi8(
+    odd ,
+    _mm256_and_si256( _mm256_xor_si256( x , _mm256_srli_epi64( x , 4 ) ) ,
+			   nib ) );
+  const __m256i c =
+    _mm256_slli_epi64( _mm256_sad_epu8( p , _mm256_setzero_si256() ) , 63 );
   y |= std::uint32_t( _mm256_movemask_pd( _mm256_castsi256_pd( c ) ) )
        << ( 4 * k );
   }
@@ -132,8 +139,9 @@ std::uint32_t RibbonFilter< T , F , H >::parities( const std::uint64_t * u ,
 #else
  std::uint32_t y = 0;
  for( int j = 0 ; j < 8 ; ++j )
-  y |= std::uint32_t( std::popcount( ( lo & u[ j ] ) ^
-                                     ( hi & u[ kR + j ] ) ) & 1 ) << j;
+  y |= std::uint32_t( std::popcount( ( lo & u[ j ] ) ^ ( hi & u[ kR + j ] ) ) &
+		      1 )
+       << j;
  return( y );
 #endif
  }
@@ -175,8 +183,8 @@ bool RibbonFilter< T , F , H >::build( const std::vector< T > & keys )
    r = F( r ^ R[ s ] );
    if( c == 0 ) {
     if( r != 0 )
-     return( false );                   // inconsistent
-    break;                              // redundant, a repeated key
+     return( false );  // inconsistent
+    break;              // redundant, a repeated key
     }
    const int z = std::countr_zero( c );
    s += std::size_t( z );
@@ -190,7 +198,7 @@ bool RibbonFilter< T , F , H >::build( const std::vector< T > & keys )
 
 template< class T , class F , class H >
 void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
-                                       const std::vector< F > & R )
+				     const std::vector< F > & R )
 {
  // the back substitution from the last row; the right side of a row with
  // no equation is pseudorandom
@@ -208,16 +216,19 @@ void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
  for( int g = 0 ; g < kG ; ++g )
   W[ g ] = _mm512_setzero_si512();
  const __m512i nib = _mm512_set1_epi8( 0x0F );
- const __m512i odd = _mm512_broadcast_i32x4( _mm_setr_epi8( 0 , 1 , 1 , 0 ,
-                      1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 , 0 ) );
+ const __m512i odd = _mm512_broadcast_i32x4(
+   _mm_setr_epi8( 0 , 1 , 1 , 0 , 1 , 0 , 0 , 1 , 1 , 0 , 0 , 1 , 0 , 1 , 1 ,
+		  0 ) );
  auto par = [ & ]( __m512i w , std::uint64_t c ) {
-  const __m512i x = _mm512_and_si512( w , _mm512_set1_epi64(
-                                          std::int64_t( c ) ) );
-  const __m512i p = _mm512_shuffle_epi8( odd , _mm512_and_si512(
-                     _mm512_xor_si512( x , _mm512_srli_epi64( x , 4 ) ) ,
-                     nib ) );
-  return( std::uint32_t( _mm512_test_epi64_mask( _mm512_sad_epu8( p ,
-           _mm512_setzero_si512() ) , _mm512_set1_epi64( 1 ) ) ) );
+  const __m512i x =
+    _mm512_and_si512( w , _mm512_set1_epi64( std::int64_t( c ) ) );
+  const __m512i p = _mm512_shuffle_epi8(
+    odd ,
+    _mm512_and_si512( _mm512_xor_si512( x , _mm512_srli_epi64( x , 4 ) ) ,
+			   nib ) );
+  return( std::uint32_t( _mm512_test_epi64_mask(
+    _mm512_sad_epu8( p , _mm512_setzero_si512() ) ,
+    _mm512_set1_epi64( 1 ) ) ) );
   };
  auto bit = []( std::uint64_t c , int k ) {
   return( std::uint32_t( 0 ) - std::uint32_t( ( c >> k ) & 1 ) );
@@ -225,31 +236,28 @@ void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
  for( std::size_t i = m ; i > 0 ; ) {
   // the rows i - 1 to i - 4: row i - d sees the old W from its bit d
   const std::uint64_t c1 = C[ i - 1 ] , c2 = C[ i - 2 ] , c3 = C[ i - 3 ] ,
-                      c4 = C[ i - 4 ];
+		      c4 = C[ i - 4 ];
   const std::uint64_t r1 = side( i - 1 ) , r2 = side( i - 2 ) ,
-                      r3 = side( i - 3 ) , r4 = side( i - 4 );
+		      r3 = side( i - 3 ) , r4 = side( i - 4 );
   i -= 4;
   for( int g = 0 ; g < kG ; ++g ) {
    const int o = 8 * g;
-   const std::uint32_t b1 = ( std::uint32_t( r1 >> o ) & 255 ) ^
-                            par( W[ g ] , c1 >> 1 );
+   const std::uint32_t b1 =
+     ( std::uint32_t( r1 >> o ) & 255 ) ^ par( W[ g ] , c1 >> 1 );
    const std::uint32_t b2 = ( std::uint32_t( r2 >> o ) & 255 ) ^
-                            par( W[ g ] , c2 >> 2 ) ^ ( b1 & bit( c2 , 1 ) );
+			    par( W[ g ] , c2 >> 2 ) ^ ( b1 & bit( c2 , 1 ) );
    const std::uint32_t b3 = ( std::uint32_t( r3 >> o ) & 255 ) ^
-                            par( W[ g ] , c3 >> 3 ) ^ ( b2 & bit( c3 , 1 ) ) ^
-                            ( b1 & bit( c3 , 2 ) );
+			    par( W[ g ] , c3 >> 3 ) ^ ( b2 & bit( c3 , 1 ) ) ^
+			    ( b1 & bit( c3 , 2 ) );
    const std::uint32_t b4 = ( std::uint32_t( r4 >> o ) & 255 ) ^
-                            par( W[ g ] , c4 >> 4 ) ^ ( b3 & bit( c4 , 1 ) ) ^
-                            ( b2 & bit( c4 , 2 ) ) ^ ( b1 & bit( c4 , 3 ) );
+			    par( W[ g ] , c4 >> 4 ) ^ ( b3 & bit( c4 , 1 ) ) ^
+			    ( b2 & bit( c4 , 2 ) ) ^ ( b1 & bit( c4 , 3 ) );
    __m512i w = _mm512_slli_epi64( W[ g ] , 4 );
-   w = _mm512_mask_or_epi64( w , __mmask8( b1 ) , w ,
-                             _mm512_set1_epi64( 8 ) );
-   w = _mm512_mask_or_epi64( w , __mmask8( b2 ) , w ,
-                             _mm512_set1_epi64( 4 ) );
-   w = _mm512_mask_or_epi64( w , __mmask8( b3 ) , w ,
-                             _mm512_set1_epi64( 2 ) );
-   W[ g ] = _mm512_mask_or_epi64( w , __mmask8( b4 ) , w ,
-                                  _mm512_set1_epi64( 1 ) );
+   w = _mm512_mask_or_epi64( w , __mmask8( b1 ) , w , _mm512_set1_epi64( 8 ) );
+   w = _mm512_mask_or_epi64( w , __mmask8( b2 ) , w , _mm512_set1_epi64( 4 ) );
+   w = _mm512_mask_or_epi64( w , __mmask8( b3 ) , w , _mm512_set1_epi64( 2 ) );
+   W[ g ] =
+     _mm512_mask_or_epi64( w , __mmask8( b4 ) , w , _mm512_set1_epi64( 1 ) );
    }
   if( ( i & 63 ) == 0 )
    for( int g = 0 ; g < kG ; ++g )
@@ -262,8 +270,8 @@ void RibbonFilter< T , F , H >::solve( const std::vector< std::uint64_t > & C ,
   const std::uint64_t c = C[ i ] , r = side( i );
   for( int j = 0 ; j < kR ; ++j ) {
    const std::uint64_t w = W[ j ] << 1;
-   W[ j ] = w | ( ( ( r >> j ) ^ std::uint64_t( std::popcount( c & w ) ) )
-                  & 1 );
+   W[ j ] =
+     w | ( ( ( r >> j ) ^ std::uint64_t( std::popcount( c & w ) ) ) & 1 );
    }
   if( ( i & 63 ) == 0 )
    for( int j = 0 ; j < kR ; ++j )

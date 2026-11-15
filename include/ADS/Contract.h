@@ -44,7 +44,7 @@
 
 #ifndef __ADS_Contract
  #define __ADS_Contract
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -59,7 +59,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the level of the contracts checked: 0 none, 1 preconditions,
 /// 2 postconditions, 3 invariants and audits; 1 by default, 0 with `NDEBUG`
@@ -72,20 +73,22 @@ namespace ADS {
 #endif
 
 /// a contract violated: a bug of the caller (a precondition) or of ADS
-class contract_violation : public std::logic_error {
+class contract_violation : public std::logic_error
+{
  public:
-  using std::logic_error::logic_error;
+ using std::logic_error::logic_error;
  };
 
-namespace detail {
+namespace detail
+{
 
 [[noreturn]] inline void violated( const char * kind , const char * cond ,
-                                   const char * func , const char * file ,
-                                   int line )
+				   const char * func , const char * file ,
+				   int line )
 {
  throw( contract_violation( std::string( "ADS: " ) + kind + " ( " + cond +
-                            " ) violated in " + func + ", " + file + ":" +
-                            std::to_string( line ) ) );
+			    " ) violated in " + func + ", " + file + ":" +
+			    std::to_string( line ) ) );
  }
 
 }  // end( namespace detail )
@@ -106,33 +109,33 @@ namespace detail {
 /// \end{array}}
 /// \f]
 //! [check]
-#define ADS_CONTRACT_CHECK( level , kind , cond )                         \
- do {                                                                     \
-  if constexpr( ADS_CONTRACTS >= ( level ) )                              \
-   if( !( cond ) )                                                        \
-    ::ADS::detail::violated( kind , #cond , __func__ , __FILE__ ,         \
-                             __LINE__ );                                  \
-  } while( false )
+#define ADS_CONTRACT_CHECK( level, kind, cond )                               \
+ do {                                                                         \
+  if constexpr( ADS_CONTRACTS >= ( level ) )                                  \
+   if( ! ( cond ) )                                                           \
+    ::ADS::detail::violated( kind, #cond, __func__, __FILE__, __LINE__ );     \
+ } while( false )
 //! [check]
 
 /// a precondition, checked from level 1
-#define ADS_PRE( cond ) ADS_CONTRACT_CHECK( 1 , "precondition" , cond )
+#define ADS_PRE( cond ) ADS_CONTRACT_CHECK( 1, "precondition", cond )
 
 /// a postcondition, checked from level 2
-#define ADS_POST( cond ) ADS_CONTRACT_CHECK( 2 , "postcondition" , cond )
+#define ADS_POST( cond ) ADS_CONTRACT_CHECK( 2, "postcondition", cond )
 
 /// an invariant, checked from level 3
-#define ADS_INVARIANT( cond ) ADS_CONTRACT_CHECK( 3 , "invariant" , cond )
+#define ADS_INVARIANT( cond ) ADS_CONTRACT_CHECK( 3, "invariant", cond )
 
 /// a precondition or a postcondition dearer than the operation, checked
 /// from level 3
-#define ADS_AUDIT( cond ) ADS_CONTRACT_CHECK( 3 , "audit" , cond )
+#define ADS_AUDIT( cond ) ADS_CONTRACT_CHECK( 3, "audit", cond )
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- HELPERS OF THE CONDITIONS ------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace detail {
+namespace detail
+{
 
 /// `a == b` if `T` has an equality, true otherwise: a postcondition that
 /// compares items does not restrict the types of the items; two items
@@ -142,7 +145,7 @@ template< class T >
 bool equal( const T & a , const T & b )
 {
  if constexpr( std::equality_comparable< T > )
-  return( ( a == b ) || ( !( a == a ) && !( b == b ) ) );
+  return( ( a == b ) || ( ! ( a == a ) && ! ( b == b ) ) );
  else
   return( true );
  }
@@ -167,7 +170,7 @@ std::optional< X > snapshot( const X & x )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Contract.h included */
+#endif /* Contract.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Contract.h ---------------------------*/

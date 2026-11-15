@@ -133,7 +133,7 @@
 
 #ifndef __ADS_BigInteger
  #define __ADS_BigInteger
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -179,8 +179,8 @@
 #if defined( ADS_WITH_GMP )
  #include <cstring>
  #include <gmp.h>
- #if ! defined( ADS_BIGINT_GMP ) && ( GMP_LIMB_BITS == 64 ) && \
-     ( GMP_NAIL_BITS == 0 )
+ #if ! defined( ADS_BIGINT_GMP ) && ( GMP_LIMB_BITS == 64 ) &&                \
+   ( GMP_NAIL_BITS == 0 )
   #define ADS_BIGINT_GMP 1
  #endif
 #endif
@@ -192,9 +192,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Limbs --------------------------------*/
@@ -206,14 +208,14 @@ namespace detail {
 /// of the heap whose capacity at least doubles when it grows, freed when the
 /// object is; the digits added by `resize()` are set to the value given, 0
 /// by default
-class Limbs {
+class Limbs
+{
 
  public:
-
- using T = std::uint64_t;   ///< a digit
+ using T = std::uint64_t;  ///< a digit
 
  /// no digit
- Limbs( void ) noexcept {}
+ Limbs( void ) noexcept { }
  /// \f$ n \f$ digits 0
  explicit Limbs( std::size_t n ) { resize( n ); }
  /// \f$ n \f$ digits \f$ v \f$
@@ -225,15 +227,15 @@ class Limbs {
   f_n = std::size_t( e - b );
   }
  /// the digits of the list
- Limbs( std::initializer_list< T > l ) : Limbs( l.begin() , l.end() ) {}
+ Limbs( std::initializer_list< T > l ) : Limbs( l.begin() , l.end() ) { }
  /// a copy of the digits of \f$ o \f$
- Limbs( const Limbs & o ) : Limbs( o.f_p , o.f_p + o.f_n ) {}
+ Limbs( const Limbs & o ) : Limbs( o.f_p , o.f_p + o.f_n ) { }
  /// the digits of \f$ o \f$, taken from it, which is left empty
  Limbs( Limbs && o ) noexcept { take( o ); }
  /// a copy of the digits of \f$ o \f$; unchanged if the allocation throws
  Limbs & operator=( const Limbs & o ) {
   if( this != &o ) {
-   if( o.f_n > f_cap ) {                    // the new block first
+   if( o.f_n > f_cap ) {  // the new block first
     T * q = std::allocator< T >().allocate( o.f_n );
     release();
     f_p = q;
@@ -281,12 +283,14 @@ class Limbs {
 
  /// room for \f$ n \f$ digits; unchanged if the allocation throws
  void reserve( std::size_t n ) {
-  if( n > f_cap ) regrow( std::max( n , 2 * f_cap ) );
+  if( n > f_cap )
+   regrow( std::max( n , 2 * f_cap ) );
   }
  /// \f$ n \f$ digits, those added set to \f$ v \f$
  void resize( std::size_t n , T v = 0 ) {
   reserve( n );
-  if( n > f_n ) std::fill( f_p + f_n , f_p + n , v );
+  if( n > f_n )
+   std::fill( f_p + f_n , f_p + n , v );
   f_n = n;
   }
  /// \f$ n \f$ digits \f$ v \f$
@@ -308,8 +312,7 @@ class Limbs {
   }
 
  private:
-
- static constexpr std::size_t kIn = 2;      ///< the digits in place
+ static constexpr std::size_t kIn = 2;  ///< the digits in place
 
  /// the digits moved to a block of \f$ c \f$ digits of the heap
  void regrow( std::size_t c ) {
@@ -332,7 +335,8 @@ class Limbs {
  void take( Limbs & o ) noexcept {
   f_n = o.f_n;
   f_cap = o.f_cap;
-  if( o.f_p != o.f_in ) f_p = o.f_p;
+  if( o.f_p != o.f_in )
+   f_p = o.f_p;
   else {
    std::copy( o.f_in , o.f_in + o.f_n , f_in );
    f_p = f_in;
@@ -342,10 +346,10 @@ class Limbs {
   o.f_cap = kIn;
   }
 
- T * f_p = f_in;                            ///< `f_in` or on the heap
- std::size_t f_n = 0 ,                      ///< the digits
-             f_cap = kIn;                   ///< the room for them
- T f_in[ kIn ] = {};                        ///< the digits in place
+ T * f_p = f_in;       ///< `f_in` or on the heap
+ std::size_t f_n = 0 ,  ///< the digits
+   f_cap = kIn;        ///< the room for them
+ T f_in[ kIn ] = {};   ///< the digits in place
 
  };  // end( class Limbs )
 
@@ -356,19 +360,19 @@ class Limbs {
 /*--------------------------------------------------------------------------*/
 
 /// an integer of any length, sign and magnitude in base \f$ 2^{64} \f$
-class BigInteger {
+class BigInteger
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Limb = std::uint64_t;   ///< a digit, in base \f$ 2^{64} \f$
+ using Limb = std::uint64_t;  ///< a digit, in base \f$ 2^{64} \f$
 
  // the lengths, in digits of the shorter factor, from which the code of
  // the book multiplies by Karatsuba and by the NTT: round numbers near
  // where each method overtakes the one before, not tuned to a processor,
  // the backend of GMP being the fast route
- static constexpr std::size_t kKaratsuba = 32;   ///< limbs for Karatsuba
- static constexpr std::size_t kFFT = 4096;       ///< limbs for the NTT
+ static constexpr std::size_t kKaratsuba = 32;  ///< limbs for Karatsuba
+ static constexpr std::size_t kFFT = 4096;      ///< limbs for the NTT
 
  /// the number \f$ v \f$
  BigInteger( long long v = 0 );
@@ -472,12 +476,12 @@ class BigInteger {
  /// the product \f$ x b \f$ into \f$ x \f$
  BigInteger & operator*=( const BigInteger & b );
  /// true if the two numbers are equal
- friend bool operator==( const BigInteger & a , const BigInteger & b ) =
-                                                                     default;
+ friend bool operator==( const BigInteger & a ,
+			 const BigInteger & b ) = default;
  /// the order of \f$ a \f$ and \f$ b \f$, by the signs, the lengths and the
  /// digits from the most significant
  friend std::strong_ordering operator<=>( const BigInteger & a ,
-                                          const BigInteger & b );
+					  const BigInteger & b );
 
  /// the quotient truncated toward zero and the remainder, by Algorithm D
  /// [see `divModSchool()`] or by the backend
@@ -486,7 +490,7 @@ class BigInteger {
  ///       sign of \f$ a \f$, and the pair equals `divModSchool( a , b )`
  ///       (audits)
  static std::pair< BigInteger , BigInteger > divMod( const BigInteger & a ,
-                                                     const BigInteger & b );
+						    const BigInteger & b );
 
  /// the quotient and the remainder by Algorithm D, \f$ O( m n ) \f$
  ///
@@ -511,8 +515,8 @@ class BigInteger {
  /// \end{array}}
  /// \f]
  /// \pre \f$ b \ne 0 \f$
- static std::pair< BigInteger , BigInteger > divModSchool(
-                                const BigInteger & a , const BigInteger & b );
+ static std::pair< BigInteger , BigInteger >
+ divModSchool( const BigInteger & a , const BigInteger & b );
 
  /// the product by Algorithm M, \f$ O( n_a n_b ) \f$
  ///
@@ -532,7 +536,7 @@ class BigInteger {
  /// \post `multiplyKaratsuba( a , b )` and `multiplyFFT( a , b )` equal
  ///       `multiplySchool( a , b )` (audit)
  static BigInteger multiplySchool( const BigInteger & a ,
-                                   const BigInteger & b );
+				   const BigInteger & b );
  /// the product by Karatsuba at every length down to factors of fewer than
  /// 4 digits, which Algorithm M multiplies, never by the NTT
  ///
@@ -543,7 +547,7 @@ class BigInteger {
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{function}\ \mathrm{karatsuba}( a , b ) \cr
  /// 2 & \quad \textbf{if}\ n_b < 4\ \textbf{then return}
-///     \ \mathrm{multiplySchool}( a , b ) \cr
+ ///     \ \mathrm{multiplySchool}( a , b ) \cr
  /// 3 & \quad \textbf{if}\ n_b \le l\ \textbf{then return}
  ///     \ \mathrm{karatsuba}( a_1 , b ) \beta^l + \mathrm{karatsuba}( a_0 ,
  ///     b ) \cr
@@ -554,7 +558,7 @@ class BigInteger {
  /// \f]
  /// \post the result equals `multiplySchool( a , b )` (audit)
  static BigInteger multiplyKaratsuba( const BigInteger & a ,
-                                      const BigInteger & b );
+				      const BigInteger & b );
  /// the product by the number theoretic transform at every length
  ///
  /// In pseudocode (sections 4.3.3 and 4.6.4), \f$ p_1 , p_2 , p_3 \f$
@@ -605,7 +609,7 @@ class BigInteger {
 
  /// \f$ r \gets r + a b \f$
  static void addMul( BigInteger & r , const BigInteger & a ,
-                     const BigInteger & b );
+		     const BigInteger & b );
 
  /// the power \f$ x^n \f$, by `mpz_pow_ui()` with the backend, else by the
  /// binary method
@@ -700,8 +704,7 @@ class BigInteger {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- using Mag = detail::Limbs;   ///< a magnitude, no leading zero
+ using Mag = detail::Limbs;  ///< a magnitude, no leading zero
 
  /// the digits of the two factors of the longest convolution of the NTT,
  /// \f$ 2^{26} \f$ pieces of 32 bits, which stays exact
@@ -713,7 +716,7 @@ class BigInteger {
   AUTO ,       ///< Algorithm M, Karatsuba or the NTT, by the lengths
   SCHOOL ,     ///< Algorithm M
   KARATSUBA ,  ///< Karatsuba down to fewer than 4 digits
-  FFT          ///< the NTT
+  FFT         ///< the NTT
   };
 
  /// the number of the sign and of the digits, the leading zeros removed
@@ -727,11 +730,13 @@ class BigInteger {
  /// \f$ r \gets a + b \f$, \f$ n_a \ge n_b \f$, the carry returned
  /// (Algorithm 4.3.1A)
  static Limb addN( Limb * r , const Limb * a , std::size_t na ,
-                   const Limb * b , std::size_t nb );
+		   const Limb * b ,
+		   std::size_t nb );
  /// \f$ r \gets a - b \f$, \f$ n_a \ge n_b \f$, the borrow returned
  /// (Algorithm 4.3.1S)
  static Limb subN( Limb * r , const Limb * a , std::size_t na ,
-                   const Limb * b , std::size_t nb );
+		   const Limb * b ,
+		   std::size_t nb );
  /// \f$ r \gets r + a m \f$ on \f$ n \f$ digits, the carry returned
  static Limb addMul1( Limb * r , const Limb * a , std::size_t n , Limb m );
  /// \f$ r \gets r - a m \f$ on \f$ n \f$ digits, the borrow returned
@@ -743,19 +748,19 @@ class BigInteger {
  static Mag subMag( const Mag & a , const Mag & b );
  /// the sum of \f$ a \f$ and of \f$ b \f$ with the sign `bneg`
  static BigInteger addSigned( const BigInteger & a , const BigInteger & b ,
-                              bool bneg );
+			      bool bneg );
 
  /// \f$ r \gets a b \f$ of two magnitudes by the method asked, by the
  /// backend if `AUTO`, \f$ r \f$ distinct from \f$ a \f$ and \f$ b \f$
  static void mulMag( Mag & r , const Mag & a , const Mag & b ,
-                     Method how = Method::AUTO );
+		     Method how = Method::AUTO );
  /// the product \f$ a b \f$ by the method asked, its digits written in
  /// place by `mulMag()`
  static BigInteger product( const BigInteger & a , const BigInteger & b ,
-                            Method how );
+			    Method how );
  /// the product of Algorithm M, \f$ r \f$ of \f$ n_a + n_b \f$ digits
  static void mulSchool( Limb * r , const Limb * a , std::size_t na ,
-                        const Limb * b , std::size_t nb );
+			const Limb * b , std::size_t nb );
  /// the digits of scratch space of `mulRec()` for factors of up to
  /// \f$ n \f$ digits
  static std::size_t mulScratch( std::size_t n );
@@ -764,11 +769,11 @@ class BigInteger {
  /// must, its parts in the scratch space \f$ w \f$ of `mulScratch()`
  /// digits
  static void mulRec( Limb * r , const Limb * a , std::size_t na ,
-                     const Limb * b , std::size_t nb , Method how ,
-                     Limb * w );
+		     const Limb * b ,
+		     std::size_t nb , Method how , Limb * w );
  /// the product by the NTT, \f$ n_a + n_b \le \f$ `kNTTMax`
  static Mag mulNTT( const Limb * a , std::size_t na , const Limb * b ,
-                    std::size_t nb );
+		    std::size_t nb );
 
  /// \f$ a \gets \lfloor a / d \rfloor \f$ for one digit \f$ d > 0 \f$, the
  /// remainder returned (exercise 16 of section 4.3.1)
@@ -778,7 +783,7 @@ class BigInteger {
  /// the quotient and the remainder of two magnitudes by Algorithm D, or by
  /// the backend unless `school`
  static std::pair< Mag , Mag > divModMag( const Mag & u , const Mag & v ,
-                                          bool school );
+					 bool school );
 
  /// the figures of the magnitude \f$ a \f$ in the base by the code of the
  /// book, appended to `out`
@@ -806,7 +811,7 @@ class BigInteger {
  [[nodiscard]] bool normal( void ) const;
 
  bool f_neg = false;
- Mag f_d;                   ///< the digits, the least significant first
+ Mag f_d;  ///< the digits, the least significant first
 
  };  // end( class BigInteger )
 
@@ -822,7 +827,7 @@ class BigInteger {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BigInteger.h included */
+#endif /* BigInteger.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BigInteger.h --------------------------*/

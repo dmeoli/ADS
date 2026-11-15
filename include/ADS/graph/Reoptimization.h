@@ -108,7 +108,7 @@
 
 #ifndef __ADS_Reoptimization
  #define __ADS_Reoptimization
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -138,7 +138,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- CONCEPTS --------------------------------*/
@@ -146,14 +147,15 @@ namespace ADS {
 
 /// a solution that follows the events of weights `W`
 template< class R , class W >
-concept Reoptimizable = GraphObserver< R , W > &&
- requires( R & r , const GraphEvent< W > & e ,
-           std::span< const GraphEvent< W > > s ) {
- r.apply( e );
- r.apply( s );
- r.solve();
- { r.outcome() } -> std::convertible_to< int >;
- };
+concept Reoptimizable =
+  GraphObserver< R , W > && requires( R & r , const GraphEvent< W > & e ,
+				     std::span< const GraphEvent< W > > s )
+{
+   r.apply( e );
+   r.apply( s );
+   r.solve();
+   { r.outcome() } -> std::convertible_to< int >;
+   };
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS EventQueue -----------------------------*/
@@ -185,13 +187,13 @@ concept Reoptimizable = GraphObserver< R , W > &&
 /// \end{array}}
 /// \f]
 template< class W , ReoptPolicy P = RatioPolicy >
-class EventQueue {
+class EventQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Event = GraphEvent< W >;   ///< the type of the events
- using Policy = P;                ///< the type of the policy
+ using Event = GraphEvent< W >;  ///< the type of the events
+ using Policy = P;               ///< the type of the policy
 
  /// all the kinds of event
  [[nodiscard]] static constexpr unsigned mask( void ) {
@@ -253,14 +255,14 @@ class EventQueue {
  /// times the edges: \f$ \rho \f$ of the policy
  /// \pre \f$ \mathit{ratio} \ge 0 \f$
  void setRecomputeRatio( double ratio )
-  requires requires( P & p ) { p.rho = 0.0; } {
+  requires requires( P & p ) { p.rho = 0.0; }
+ {
   ADS_PRE( ratio >= 0 );
   f_policy.rho = ratio;
   }
 
 /*--------------------------------------------------------------------------*/
  protected:
-
  /// the queue coalesced, emptied
  std::vector< Event > take( void ) {
   std::vector< Event > E = coalesce< W >( std::span< const Event >( f_q ) );
@@ -307,13 +309,13 @@ class EventQueue {
   f_policy.record( cause , w );
   }
 
- std::vector< Event > f_q;              ///< the events queued
- P f_policy{};                          ///< the recompute policy
- bool f_stale = false;                  ///< whether `Rebuilt` came
- int f_outcome = Reopt::SCRATCH;        ///< the last outcome
- int f_cause = Reopt::SCRATCH_BY_EVENT; ///< the last cause
- long long f_count[ 3 ] = { 0 , 0 , 0 };   ///< the solves by outcome
- long long f_byCause[ Reopt::CAUSES ] = {};   ///< the solves by cause
+ std::vector< Event > f_q;                   ///< the events queued
+ P f_policy{};                               ///< the recompute policy
+ bool f_stale = false;                       ///< whether `Rebuilt` came
+ int f_outcome = Reopt::SCRATCH;             ///< the last outcome
+ int f_cause = Reopt::SCRATCH_BY_EVENT;      ///< the last cause
+ long long f_count[ 3 ] = { 0 , 0 , 0 };       ///< the solves by outcome
+ long long f_byCause[ Reopt::CAUSES ] = {};  ///< the solves by cause
 
  };  // end( class EventQueue )
 
@@ -324,18 +326,17 @@ class EventQueue {
 /// the shortest paths from \f$ r \f$ in \f$ g \f$, kept up to date, by
 /// the recompute policy `P`
 template< Graph G , ReoptPolicy P = RatioPolicy >
-class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
+class ShortestPathsObserver : public EventQueue< typename G::Weight , P >
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = typename G::Weight;   ///< the type of the weights
+ using Weight = typename G::Weight;  ///< the type of the weights
 
  /// the shortest paths from \f$ r \f$ in \f$ g \f$, computed by `how` at
  /// the first query
  /// \pre \f$ r \f$ is a node of \f$ g \f$
- ShortestPathsObserver( const G & g , int r ,
-                        Frontier how = Frontier::HEAP );
+ ShortestPathsObserver( const G & g , int r , Frontier how = Frontier::HEAP );
 
  /// brings the tree up to date
  ///
@@ -404,13 +405,12 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using B = EventQueue< Weight , P >;
 
  /// the tree from scratch, by `how`
  void scratch( Frontier how );
 
- using Event = GraphEvent< Weight >;   ///< the type of the events
+ using Event = GraphEvent< Weight >;  ///< the type of the events
 
  /// the prototype from the seeds \f$ S \f$, which it leaves with the
  /// nodes extracted: `REPAIRED`, `CYCLE` if a node was extracted more than
@@ -418,9 +418,9 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
  /// on the reinsertions, polled with the statistics \f$ s \f$
  int repair( std::vector< int > & S , ReoptStats & s );
 
- static constexpr int REPAIRED = 0;    ///< the repair ended
- static constexpr int CYCLE = 1;       ///< a negative cycle found
- static constexpr int ABANDONED = 2;   ///< the repair abandoned
+ static constexpr int REPAIRED = 0;   ///< the repair ended
+ static constexpr int CYCLE = 1;      ///< a negative cycle found
+ static constexpr int ABANDONED = 2;  ///< the repair abandoned
 
  /// the lists of the children of \f$ T \f$, from the parents
  void buildTree( void );
@@ -447,17 +447,17 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
  template< class F >
  void forEachIn( int x , F && f ) const;
 
- const G & f_g;                     ///< the graph
- int f_r;                           ///< the root
- Frontier f_how;                    ///< the algorithm from scratch
- bool f_ready = false;              ///< whether there is a tree
- ShortestPathTree< Weight > f_R;    ///< the tree
- std::vector< int > f_child;        ///< the first child in \f$ T \f$
- std::vector< int > f_next;         ///< the next sibling in \f$ T \f$
- std::vector< int > f_prev;         ///< the previous sibling in \f$ T \f$
- std::vector< int > f_pops;         ///< the extractions of a repair
- std::vector< char > f_inA;         ///< the nodes whose distance is lost
- bool f_inOk = false;               ///< whether `f_in` is up to date
+ const G & f_g;                   ///< the graph
+ int f_r;                         ///< the root
+ Frontier f_how;                  ///< the algorithm from scratch
+ bool f_ready = false;            ///< whether there is a tree
+ ShortestPathTree< Weight > f_R;  ///< the tree
+ std::vector< int > f_child;      ///< the first child in \f$ T \f$
+ std::vector< int > f_next;       ///< the next sibling in \f$ T \f$
+ std::vector< int > f_prev;       ///< the previous sibling in \f$ T \f$
+ std::vector< int > f_pops;       ///< the extractions of a repair
+ std::vector< char > f_inA;       ///< the nodes whose distance is lost
+ bool f_inOk = false;             ///< whether `f_in` is up to date
  /// the arcs \f$ ( u , x ) \f$ that enter each node \f$ x \f$ with their
  /// weights, kept for an oriented graph from the first increase on
  std::vector< std::vector< std::pair< int , Weight > > > f_in;
@@ -471,12 +471,12 @@ class ShortestPathsObserver : public EventQueue< typename G::Weight , P > {
 /// the minimum spanning forest of an unoriented \f$ g \f$, kept up to
 /// date, by the recompute policy `P`
 template< Graph G , ReoptPolicy P = RatioPolicy >
-class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
+class SpanningForestObserver : public EventQueue< typename G::Weight , P >
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = typename G::Weight;   ///< the type of the weights
+ using Weight = typename G::Weight;  ///< the type of the weights
 
  /// the forest of \f$ g \f$, computed by Kruskal at the first query;
  /// \f$ \alpha = 1 \f$ if the policy is a `RatioPolicy`
@@ -543,26 +543,27 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using B = EventQueue< Weight , P >;
- using Event = GraphEvent< Weight >;   ///< the type of the events
+ using Event = GraphEvent< Weight >;  ///< the type of the events
 
  /// an edge of the copy: its weight, its node in the link-cut tree if it
  /// is in the forest (`NIL` if not) and its place in `f_F`
- struct Rec {
-  Weight w;                                      ///< the weight
-  int node = NIL;                                ///< its node in `f_lct`
-  int at = -1;                                   ///< its place in `f_F`
-  bool held = false;                             ///< lowered in a batch,
-                                                 ///< left to after `join()`
+ struct Rec
+ {
+  Weight w;           ///< the weight
+  int node = NIL;     ///< its node in `f_lct`
+  int at = -1;        ///< its place in `f_F`
+  bool held = false;  ///< lowered in a batch,
+		      ///< left to after `join()`
   };
 
  /// the value of a node of the link-cut tree: the weight of its edge and
  /// the node, none for the nodes of the graph
- struct Heavy {
-  bool has = false;                              ///< whether an edge
-  Weight w = Weight();                           ///< its weight
-  int node = NIL;                                ///< its node
+ struct Heavy
+ {
+  bool has = false;     ///< whether an edge
+  Weight w = Weight();  ///< its weight
+  int node = NIL;       ///< its node
   /// whether the two values are the same
   bool operator==( const Heavy & h ) const {
    return( ( has == h.has ) && ( node == h.node ) );
@@ -570,29 +571,34 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
   };
 
  /// the heavier of two values, the maximum of the paths
- struct Heavier {
+ struct Heavier
+ {
   /// the heavier of \f$ a \f$ and \f$ b \f$, by the weight and then by
   /// the node
   Heavy operator()( const Heavy & a , const Heavy & b ) const {
-   if( ! a.has ) return( b );
-   if( ! b.has ) return( a );
-   if( a.w < b.w ) return( b );
-   if( b.w < a.w ) return( a );
+   if( ! a.has )
+    return( b );
+   if( ! b.has )
+    return( a );
+   if( a.w < b.w )
+    return( b );
+   if( b.w < a.w )
+    return( a );
    return( a.node < b.node ? b : a );
    }
   };
 
  /// the key of \f$ [ u , v ] \f$
  static std::uint64_t key( int u , int v ) {
-  if( v < u ) std::swap( u , v );
+  if( v < u )
+   std::swap( u , v );
   return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) |
-          std::uint32_t( v ) );
+	   std::uint32_t( v ) );
   }
 
  /// the ends of the key \f$ k \f$
  static std::pair< int , int > ends( std::uint64_t k ) {
-  return( std::pair< int , int >( int( k >> 32 ) ,
-                                  int( k & 0xffffffffu ) ) );
+  return( std::pair< int , int >( int( k >> 32 ) , int( k & 0xffffffffu ) ) );
   }
 
  /// the copy of the edges from the graph, and Kruskal on it
@@ -651,52 +657,53 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
  /// \f]
  void join( void );
 
- const G & f_g;                                  ///< the graph
- bool f_ready = false;                           ///< whether there is
-                                                 ///< \f$ F \f$
- int f_n = 0;                                    ///< the bound of the nodes
+ const G & f_g;                                 ///< the graph
+ bool f_ready = false;                          ///< whether there is
+						///< \f$ F \f$
+ int f_n = 0;                                   ///< the bound of the nodes
  std::unordered_map< std::uint64_t , Rec > f_E;  ///< the copy of the edges
  /// an edge of the copy at a node: its other end, its weight and whether
  /// it is set aside by a batch, so that the scans of `replacement()` and
  /// of `join()` read no table
- struct Inc {
-  int y;                                         ///< the other end
-  bool held;                                     ///< set aside
-  Weight w;                                      ///< the weight
+ struct Inc
+ {
+  int y;      ///< the other end
+  bool held;  ///< set aside
+  Weight w;   ///< the weight
   };
 
  /// the edge \f$ [ a , b ] \f$ in the list of \f$ a \f$
  Inc & inc( int a , int b );
 
- std::vector< std::vector< Inc > > f_inc;        ///< the edges of the copy
-                                                 ///< at each node
- std::vector< std::vector< int > > f_adjF;       ///< those of the forest
- std::vector< std::uint64_t > f_F;               ///< the edges of \f$ F \f$
- LinkCutTree< Heavy , Heavier > f_lct;           ///< \f$ F \f$, a node per
-                                                 ///< node and per edge
- std::vector< int > f_vid;                       ///< the node of `f_lct`
-                                                 ///< of each node
- std::vector< std::uint64_t > f_edgeOf;          ///< the edge of a node
-                                                 ///< of `f_lct`
- std::vector< int > f_free;                      ///< the nodes of `f_lct`
-                                                 ///< free for the edges
- std::vector< int > f_mark;                      ///< the visits of
-                                                 ///< `replacement()`
+ std::vector< std::vector< Inc > > f_inc;   ///< the edges of the copy
+					    ///< at each node
+ std::vector< std::vector< int > > f_adjF;  ///< those of the forest
+ std::vector< std::uint64_t > f_F;          ///< the edges of \f$ F \f$
+ LinkCutTree< Heavy , Heavier > f_lct;       ///< \f$ F \f$, a node per
+					    ///< node and per edge
+ std::vector< int > f_vid;                  ///< the node of `f_lct`
+					    ///< of each node
+ std::vector< std::uint64_t > f_edgeOf;     ///< the edge of a node
+					    ///< of `f_lct`
+ std::vector< int > f_free;                 ///< the nodes of `f_lct`
+					    ///< free for the edges
+ std::vector< int > f_mark;                 ///< the visits of
+					    ///< `replacement()`
  /// the edges out of \f$ F \f$ by increasing weight
  std::set< std::pair< Weight , std::uint64_t > > f_off;
  /// whether the weights subtract, so that the total is kept as they change
  static constexpr bool SUBTRACT = requires( Weight a , Weight b ) {
   { a - b } -> std::convertible_to< Weight >;
   };
- double f_replAvg = 0;                           ///< the mean work of
-                                                 ///< `replacement()`
- double f_steps = 0;                             ///< the work of the
-                                                 ///< replacements of now
- NeumaierSum< Weight > f_total;                  ///< the total weight of
-                                                 ///< \f$ F \f$, if they do
- std::size_t f_changes = 0;                      ///< the changes since the
-                                                 ///< total was summed
- int f_stamp = 0;                                ///< the visit of now
+ double f_replAvg = 0;           ///< the mean work of
+				 ///< `replacement()`
+ double f_steps = 0;             ///< the work of the
+				 ///< replacements of now
+ NeumaierSum< Weight > f_total;  ///< the total weight of
+				 ///< \f$ F \f$, if they do
+ std::size_t f_changes = 0;      ///< the changes since the
+				 ///< total was summed
+ int f_stamp = 0;                ///< the visit of now
 
  /// the total summed again from \f$ F \f$ after \f$ \mathit{changes} \f$
  /// more, when it drifts (floating weights) and the policy asks it
@@ -718,19 +725,18 @@ class SpanningForestObserver : public EventQueue< typename G::Weight , P > {
 /// the maximum flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, the weights
 /// the capacities, kept up to date
 template< Graph G , ReoptPolicy P = RatioPolicy >
-requires std::is_integral_v< typename G::Weight >
-class MaxFlowObserver : public EventQueue< typename G::Weight , P > {
+ requires std::is_integral_v< typename G::Weight >
+class MaxFlowObserver : public EventQueue< typename G::Weight , P >
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = typename G::Weight;   ///< the type of the weights
+ using Weight = typename G::Weight;  ///< the type of the weights
 
  /// the flow from \f$ s \f$ to \f$ t \f$ in \f$ g \f$, computed by `how`
  /// at the first query
  /// \pre \f$ s \f$ and \f$ t \f$ are distinct nodes of \f$ g \f$
- MaxFlowObserver( const G & g , int s , int t ,
-                  Augment how = Augment::DINIC );
+ MaxFlowObserver( const G & g , int s , int t , Augment how = Augment::DINIC );
 
  /// brings the flow up to date
  ///
@@ -776,13 +782,12 @@ class MaxFlowObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using B = EventQueue< Weight , P >;
 
  /// the key of \f$ ( u , v ) \f$
  static std::uint64_t key( int u , int v ) {
   return( ( std::uint64_t( std::uint32_t( u ) ) << 32 ) |
-          std::uint32_t( v ) );
+	   std::uint32_t( v ) );
   }
 
  /// the flow from scratch
@@ -791,16 +796,16 @@ class MaxFlowObserver : public EventQueue< typename G::Weight , P > {
  /// the capacity of the cut `f_S` in the graph
  [[nodiscard]] long long cutCapacity( void ) const;
 
- const G & f_g;                                 ///< the graph
- int f_s;                                       ///< the source
- int f_t;                                       ///< the sink
- Augment f_how;                                 ///< the augmenting paths
- bool f_ready = false;                          ///< whether there is f
- FlowNetwork f_net{ 0 };                        ///< the network
+ const G & f_g;           ///< the graph
+ int f_s;                 ///< the source
+ int f_t;                 ///< the sink
+ Augment f_how;           ///< the augmenting paths
+ bool f_ready = false;    ///< whether there is f
+ FlowNetwork f_net{ 0 };  ///< the network
  /// the number of the arc \f$ ( u , v ) \f$ in the network
  std::unordered_map< std::uint64_t , int > f_arc;
- long long f_value = 0;                         ///< \f$ | f | \f$
- std::vector< bool > f_S;                       ///< the side of \f$ s \f$
+ long long f_value = 0;    ///< \f$ | f | \f$
+ std::vector< bool > f_S;  ///< the side of \f$ s \f$
 
  };  // end( class MaxFlowObserver )
 
@@ -813,13 +818,13 @@ class MaxFlowObserver : public EventQueue< typename G::Weight , P > {
 /// 2 k - 1 \f$, the weights of the edges between them the costs, kept up
 /// to date [see `Assignment.h`]
 template< Graph G , ReoptPolicy P = RatioPolicy >
-requires std::is_arithmetic_v< typename G::Weight >
-class AssignmentObserver : public EventQueue< typename G::Weight , P > {
+ requires std::is_arithmetic_v< typename G::Weight >
+class AssignmentObserver : public EventQueue< typename G::Weight , P >
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = typename G::Weight;   ///< the type of the weights
+ using Weight = typename G::Weight;  ///< the type of the weights
 
  /// the assignment of the \f$ k \f$ rows of \f$ g \f$, computed at the
  /// first query; a pair with no edge is forbidden
@@ -878,15 +883,14 @@ class AssignmentObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using B = EventQueue< Weight , P >;
 
  /// every row of the costs again from the graph, after `Rebuilt`
  ADS_COLD_PATH void reload( void );
 
- const G & f_g;                     ///< the graph
- int f_k;                           ///< the rows
- Assignment< Weight , P > f_A;      ///< the assignment
+ const G & f_g;                ///< the graph
+ int f_k;                      ///< the rows
+ Assignment< Weight , P > f_A;  ///< the assignment
 
  };  // end( class AssignmentObserver )
 
@@ -902,7 +906,7 @@ class AssignmentObserver : public EventQueue< typename G::Weight , P > {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Reoptimization.h included */
+#endif /* Reoptimization.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File Reoptimization.h ------------------------*/

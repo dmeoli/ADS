@@ -56,7 +56,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// the pairs of a map in the order of its iterators, forward
 template< class M >
@@ -86,7 +87,7 @@ auto pairs( const R & r )
 {
  using K = std::remove_cv_t< typename R::key_type >;
  std::vector< std::pair< K , typename R::mapped_type > > P( r.begin() ,
-                                                             r.end() );
+							   r.end() );
  return( P );
  }
 
@@ -123,7 +124,7 @@ void against( std::mt19937 & g , int ops , int u )
    CHECK( ( ub == m.end() ) == ( ru == ref.end() ) );
    if( ru != ref.end() )
     CHECK( ( *ub ).first == ru->first );
-   if constexpr( requires { m.rank( k ); } ) {   // the order statistics
+   if constexpr( requires { m.rank( k ); } ) {  // the order statistics
     const auto r = std::size_t( std::distance( ref.begin() , rl ) );
     CHECK( m.rank( k ) == r );
     const auto s = m.select( r );
@@ -137,7 +138,7 @@ void against( std::mt19937 & g , int ops , int u )
   }
  CHECK( forward( m ) == pairs( ref ) );
  CHECK( backward( m ) == pairs( ref ) );
- for( const auto & [ k , v ] : ref )        // all out, the tree shrinks
+ for( const auto & [ k , v ] : ref )  // all out, the tree shrinks
   CHECK( m.remove( k ) );
  CHECK( m.empty() && ( m.height() == 0 ) && ( m.begin() == m.end() ) );
  }
@@ -193,37 +194,36 @@ ADS_TEST( "btree-map" )
 {
  std::mt19937 g( 31 );
  against< BTreeMap< int , int , std::less< int > , 16 > >( g , 20000 , 50 );
- against< BTreeMap< int , int , std::less< int > , 16 > >( g , 20000 ,
-                                                           5000 );
+ against< BTreeMap< int , int , std::less< int > , 16 > >( g , 20000 , 5000 );
  against< BTreeMap< int , int > >( g , 30000 , 3000 );
  against< BTreeMap< int , int , std::less<> , 64 > >( g , 20000 , 400 );
  against< BTreeMap< int , int , std::less< int > , 16 , true > >( g , 20000 ,
-                                                                 3000 );
- against< BTreeMap< int , int , std::less< int > , 512 , true > >( g ,
-                                                                  20000 ,
-                                                                  5000 );
+								  3000 );
+ against< BTreeMap< int , int , std::less< int > , 512 , true > >( g , 20000 ,
+							       5000 );
 
  BTreeMap< int , int > e;
  CHECK( e.empty() && ! e.lookup( 1 ) && ! e.remove( 1 ) );
  CHECK( ( e.begin() == e.end() ) && ( e.lowerBound( 0 ) == e.end() ) &&
-        ( e.upperBound( 0 ) == e.end() ) && ( e.height() == 0 ) );
- CHECK( e.insert( 7 , 70 ) && ! e.insert( 7 , 71 ) && ( *e.lookup( 7 ) ==
-                                                         71 ) );
+	( e.upperBound( 0 ) == e.end() ) && ( e.height() == 0 ) );
+ CHECK( e.insert( 7 , 70 ) && ! e.insert( 7 ,
+					  71 ) && ( *e.lookup( 7 ) == 71 ) );
  CHECK( ( e.size() == 1 ) && ( e.height() == 1 ) );
  CHECK( ( ( *e.begin() ).first == 7 ) && ( e.upperBound( 7 ) == e.end() ) );
  CHECK( ( *--e.end() ).first == 7 );
  CHECK( e.remove( 7 ) && e.empty() && ( e.begin() == e.end() ) );
 
- for( int dir = 0 ; dir < 2 ; ++dir ) {     // in order: full nodes
-  BTreeMap< int , int , std::less< int > , 64 > m;   // 8 pairs, 7 keys
+ for( int dir = 0 ; dir < 2 ; ++dir ) {            // in order: full nodes
+  BTreeMap< int , int , std::less< int > , 64 > m;  // 8 pairs, 7 keys
   const int n = 5000;
   for( int i = 0 ; i < n ; ++i ) {
    const int k = dir ? n - 1 - i : i;
    CHECK( m.insert( k , -k ) );
    }
   CHECK( m.size() == std::size_t( n ) );
-  int h = 1;                                // the height of full nodes
-  for( long c = 8 ; c < n ; c *= 8 ) ++h;
+  int h = 1;  // the height of full nodes
+  for( long c = 8 ; c < n ; c *= 8 )
+   ++h;
   CHECK( m.height() <= h + 1 );
   int i = 0;
   for( const auto & [ k , v ] : m ) {
@@ -236,7 +236,7 @@ ADS_TEST( "btree-map" )
    CHECK( m.contains( k ) == ( k % 2 == 1 ) );
   }
 
- {                                          // the limits of the type
+ {  // the limits of the type
   BTreeMap< std::int64_t , int , std::less< std::int64_t > , 16 > m;
   const auto M = std::numeric_limits< std::int64_t >::max();
   const auto m0 = std::numeric_limits< std::int64_t >::min();
@@ -253,18 +253,19 @@ ADS_TEST( "btree-map" )
   CHECK( m.lowerBound( M ) == m.end() );
   }
 
- {                                          // the infinity as a key
+ {  // the infinity as a key
   BTreeMap< double , int , std::less< double > , 32 > m;
   const double inf = std::numeric_limits< double >::infinity();
   m.insert( inf , 1 );
   m.insert( -inf , 2 );
-  for( int k = 0 ; k < 30 ; ++k ) m.insert( k * 0.5 , k );
+  for( int k = 0 ; k < 30 ; ++k )
+   m.insert( k * 0.5 , k );
   CHECK( m.contains( inf ) && m.contains( -inf ) && ! m.contains( 0.25 ) );
   CHECK( ( *m.lowerBound( 100.0 ) ).first == inf );
   CHECK( m.upperBound( inf ) == m.end() );
   }
 
- {                                          // strings: the binary search
+ {  // strings: the binary search
   BTreeMap< std::string , int , std::less< std::string > , 128 > m;
   std::map< std::string , int > ref;
   for( int t = 0 ; t < 3000 ; ++t ) {
@@ -278,16 +279,17 @@ ADS_TEST( "btree-map" )
    }
   CHECK( forward( m ) == pairs( ref ) );
   CHECK( ( *m.lowerBound( "key5" ) ).first ==
-         ref.lower_bound( "key5" )->first );
+	 ref.lower_bound( "key5" )->first );
   }
 
- {                                          // build, copies, erase( it )
+ {  // build, copies, erase( it )
   std::vector< std::pair< int , int > > P;
-  for( int i = 0 ; i < 1000 ; ++i ) P.emplace_back( 3 * i , i );
+  for( int i = 0 ; i < 1000 ; ++i )
+   P.emplace_back( 3 * i , i );
   BTreeMap< int , int , std::less< int > , 64 > m;
   m.build( P.begin() , P.end() );
   CHECK( ( m.size() == 1000 ) && ( forward( m ) == P ) );
-  auto c = m;                               // a copy is independent
+  auto c = m;  // a copy is independent
   CHECK( forward( c ) == P );
   c.remove( 0 );
   CHECK( m.contains( 0 ) && ! c.contains( 0 ) );
@@ -297,7 +299,7 @@ ADS_TEST( "btree-map" )
   CHECK( ( c.size() == 999 ) && d.empty() );
   d = c;
   CHECK( forward( d ) == forward( c ) );
-  auto it = m.lowerBound( 1 );              // the pair of 3, erased
+  auto it = m.lowerBound( 1 );  // the pair of 3, erased
   it = m.erase( it );
   CHECK( ( ( *it ).first == 6 ) && ! m.contains( 3 ) );
   std::vector< int > R;
@@ -306,7 +308,7 @@ ADS_TEST( "btree-map" )
   R.clear();
   m.forRange( 5000 , 6000 , [ & ]( int k , int ) { R.push_back( k ); } );
   CHECK( R.empty() );
-  m.build( P.begin() , P.begin() );         // empty
+  m.build( P.begin() , P.begin() );  // empty
   CHECK( m.empty() && ( m.begin() == m.end() ) );
   m.build( P.begin() , P.begin() + 1 );
   CHECK( ( m.size() == 1 ) && ( m.height() == 1 ) );
@@ -314,7 +316,7 @@ ADS_TEST( "btree-map" )
   CHECK_THROWS( m.build( P.begin() , P.end() ) , contract_violation );
   }
 
- {                                          // a value of the tree itself
+ {  // a value of the tree itself
   BTreeMap< int , std::string , std::less< int > , 64 > m;
   for( int i = 0 ; i < 200 ; i += 2 )
    m.insert( i , std::string( 40 , char( 'a' + i % 26 ) ) );
@@ -338,18 +340,18 @@ ADS_TEST( "static-search" )
 {
  std::mt19937 g( 32 );
  auto check = [ & ]< class T , class C >( const std::vector< T > & A ,
-                                          const std::vector< T > & Q ,
-                                          C less ) {
+					 const std::vector< T > & Q ,
+					 C less ) {
   const SPlusTree< T , C > S( A , less );
-  const SPlusTree< T , C > S2 = S;          // a copy
+  const SPlusTree< T , C > S2 = S;  // a copy
   CHECK( ( S.size() == A.size() ) && ( S.empty() == A.empty() ) );
   for( std::size_t i = 0 ; i < A.size() ; ++i )
-   CHECK( !( less( S[ i ] , A[ i ] ) || less( A[ i ] , S[ i ] ) ) );
+   CHECK( ! ( less( S[ i ] , A[ i ] ) || less( A[ i ] , S[ i ] ) ) );
   for( const T & q : Q ) {
-   const auto lo = std::size_t( std::lower_bound( A.begin() , A.end() , q ,
-                                                  less ) - A.begin() );
-   const auto up = std::size_t( std::upper_bound( A.begin() , A.end() , q ,
-                                                  less ) - A.begin() );
+   const auto lo = std::size_t(
+     std::lower_bound( A.begin() , A.end() , q , less ) - A.begin() );
+   const auto up = std::size_t(
+     std::upper_bound( A.begin() , A.end() , q , less ) - A.begin() );
    CHECK( S.lowerBound( q ) == lo );
    CHECK( S2.lowerBound( q ) == lo );
    CHECK( S.upperBound( q ) == up );
@@ -359,48 +361,56 @@ ADS_TEST( "static-search" )
   };
  for( std::size_t n = 0 ; n <= 300 ; n += ( n < 80 ? 1 : 29 ) ) {
   std::vector< std::uint32_t > A( n ) , Q;
-  for( auto & a : A ) a = g() % ( 3 * n + 1 );
+  for( auto & a : A )
+   a = g() % ( 3 * n + 1 );
   std::sort( A.begin() , A.end() );
-  for( std::uint32_t q = 0 ; q <= 3 * n + 2 ; ++q ) Q.push_back( q );
+  for( std::uint32_t q = 0 ; q <= 3 * n + 2 ; ++q )
+   Q.push_back( q );
   check( A , Q , std::less< std::uint32_t >() );
   }
- {                                          // a few levels, the limits
+ {  // a few levels, the limits
   std::vector< std::uint64_t > A( 20000 ) , Q;
-  for( auto & a : A ) a = g() % 5000;
+  for( auto & a : A )
+   a = g() % 5000;
   const auto M = std::numeric_limits< std::uint64_t >::max();
   A[ 0 ] = 0;
   A[ 1 ] = M;
   A[ 2 ] = M;
   std::sort( A.begin() , A.end() );
-  for( int t = 0 ; t < 3000 ; ++t ) Q.push_back( g() % 5100 );
+  for( int t = 0 ; t < 3000 ; ++t )
+   Q.push_back( g() % 5100 );
   for( std::uint64_t q : { std::uint64_t( 0 ) , M , M - 1 } )
    Q.push_back( q );
   check( A , Q , std::less< std::uint64_t >() );
-  std::vector< std::uint64_t > E( 20000 , 7 );   // all equal
+  std::vector< std::uint64_t > E( 20000 , 7 );  // all equal
   check( E , std::vector< std::uint64_t >( { 6 , 7 , 8 } ) ,
-         std::less< std::uint64_t >() );
+	 std::less< std::uint64_t >() );
   }
  {
   const double inf = std::numeric_limits< double >::infinity();
   std::vector< double > A = { -inf , -1.5 , 0 , 0 , 2.5 , inf , inf };
   check( A , std::vector< double >( { -inf , -2 , 0 , 1 , 3 , inf } ) ,
-         std::less< double >() );
-  std::vector< int > R( 1000 );             // a reversed order
-  for( int i = 0 ; i < 1000 ; ++i ) R[ i ] = 2000 - 2 * i;
+	 std::less< double >() );
+  std::vector< int > R( 1000 );  // a reversed order
+  for( int i = 0 ; i < 1000 ; ++i )
+   R[ i ] = 2000 - 2 * i;
   std::vector< int > QR;
-  for( int q = -3 ; q < 2004 ; ++q ) QR.push_back( q );
+  for( int q = -3 ; q < 2004 ; ++q )
+   QR.push_back( q );
   check( R , QR , std::greater< int >() );
-  std::vector< std::int64_t > N( 777 );     // negative keys, std::less<>
-  for( int i = 0 ; i < 777 ; ++i ) N[ i ] = 3 * i - 1000;
+  std::vector< std::int64_t > N( 777 );  // negative keys, std::less<>
+  for( int i = 0 ; i < 777 ; ++i )
+   N[ i ] = 3 * i - 1000;
   std::vector< std::int64_t > QN;
-  for( int q = -1005 ; q < 1340 ; ++q ) QN.push_back( q );
+  for( int q = -1005 ; q < 1340 ; ++q )
+   QN.push_back( q );
   check( N , QN , std::less<>() );
   }
  const SPlusTree< int > E0;
  CHECK( E0.empty() && ( E0.lowerBound( 5 ) == 0 ) && ( E0.height() == 0 ) );
  std::vector< int > U = { 1 , 3 , 2 };
  CHECK_THROWS( SPlusTree< int >( U ) , contract_violation );
- CHECK_THROWS( (void) branchlessLowerBound( U , 2 ) , contract_violation );
+ CHECK_THROWS( ( void )branchlessLowerBound( U , 2 ) , contract_violation );
  }
 
 // the selection against std::nth_element on random, sorted, reversed,
@@ -416,16 +426,19 @@ ADS_TEST( "nth-element" )
   std::vector< int > B = A;
   std::sort( B.begin() , B.end() );
   CHECK( nthElement( A , k ) == B[ k ] );
-  std::sort( A.begin() , A.end() );         // the same items
+  std::sort( A.begin() , A.end() );  // the same items
   CHECK( A == B );
   };
  for( std::size_t n = 1 ; n <= 100 ; ++n )
   for( int p = 0 ; p < 6 ; ++p ) {
    std::vector< int > A( n );
    for( std::size_t i = 0 ; i < n ; ++i )
-    A[ i ] = p == 0 ? int( g() % 1000 ) : p == 1 ? int( i ) :
-             p == 2 ? int( n - i ) : p == 3 ? 5 : p == 4 ? int( g() % 3 ) :
-             int( std::min( i , n - 1 - i ) );
+    A[ i ] = p == 0   ? int( g() % 1000 )
+	     : p == 1 ? int( i )
+	     : p == 2 ? int( n - i )
+	     : p == 3 ? 5
+	     : p == 4 ? int( g() % 3 )
+		      : int( std::min( i , n - 1 - i ) );
    for( std::size_t k = 0 ; k < n ; ++k )
     check( A , k );
    }
@@ -433,34 +446,43 @@ ADS_TEST( "nth-element" )
   for( int p = 0 ; p < 6 ; ++p ) {
    std::vector< int > A( n );
    for( std::size_t i = 0 ; i < n ; ++i )
-    A[ i ] = p == 0 ? int( g() ) : p == 1 ? int( i ) :
-             p == 2 ? int( n - i ) : p == 3 ? 5 : p == 4 ? int( g() % 3 ) :
-             int( std::min( i , n - 1 - i ) );
+    A[ i ] = p == 0   ? int( g() )
+	     : p == 1 ? int( i )
+	     : p == 2 ? int( n - i )
+	     : p == 3 ? 5
+	     : p == 4 ? int( g() % 3 )
+		      : int( std::min( i , n - 1 - i ) );
    for( std::size_t k : { std::size_t( 0 ) , n / 10 , n / 2 , n - 1 } )
     check( A , k );
    }
  {
   std::vector< double > D( 5000 );
-  for( auto & d : D ) d = double( g() % 100000 ) / 7;
+  for( auto & d : D )
+   d = double( g() % 100000 ) / 7;
   auto E = D;
   std::sort( E.begin() , E.end() );
   CHECK( nthElement( D , 1234 ) == E[ 1234 ] );
   std::vector< std::string > S;
-  for( int i = 0 ; i < 3000 ; ++i ) S.push_back( std::to_string( g() ) );
+  for( int i = 0 ; i < 3000 ; ++i )
+   S.push_back( std::to_string( g() ) );
   auto T = S;
   std::sort( T.begin() , T.end() , std::greater<>() );
   CHECK( nthElement( S , 100 , std::greater<>() ) == T[ 100 ] );
   }
- {                                          // the pivot always the largest
+ {  // the pivot always the largest
   std::size_t calls = 0;
   std::vector< int > A( 3000 );
-  for( int i = 0 ; i < 3000 ; ++i ) A[ i ] = i;
-  auto rigged = [ & ]( int a , int b ) { ++calls; return( a < b ); };
+  for( int i = 0 ; i < 3000 ; ++i )
+   A[ i ] = i;
+  auto rigged = [ & ]( int a , int b ) {
+   ++calls;
+   return( a < b );
+   };
   nthElement( A.begin() , A.begin() , A.end() , rigged );
   CHECK( A[ 0 ] == 0 );
   }
  std::vector< int > Z;
- nthElement( Z.begin() , Z.begin() , Z.end() );   // an empty range
+ nthElement( Z.begin() , Z.begin() , Z.end() );  // an empty range
  CHECK_THROWS( nthElement( Z , 0 ) , contract_violation );
  }
 
@@ -474,7 +496,7 @@ ADS_TEST( "nth-element" )
 ADS_TEST( "nth-element-adversary" )
 {
  for( std::size_t n : { std::size_t( 1 ) << 12 , std::size_t( 1 ) << 16 ,
-                        std::size_t( 1 ) << 18 } )
+			std::size_t( 1 ) << 18 } )
   for( std::size_t k : { n / 2 , n / 10 } ) {
    QuicksortAdversary a( n );
    std::vector< std::size_t > A = a.items();
@@ -487,14 +509,14 @@ ADS_TEST( "nth-element-adversary" )
  constexpr std::size_t gas = std::size_t( -1 );
  for( std::size_t r : { 2 , 10 , 100 } )
   for( std::size_t n : { std::size_t( 1 ) << 12 , std::size_t( 1 ) << 16 ,
-                         std::size_t( 1 ) << 18 } )
+			 std::size_t( 1 ) << 18 } )
    for( std::size_t k : { n / 2 , n / 10 } ) {
     std::vector< std::size_t > v( n , gas );  // the values, gas the largest
     std::size_t solid = 0 , candidate = 0 , calls = 0;
     auto less = [ & ]( std::size_t x , std::size_t y ) {
      ++calls;
      if( ( v[ x ] == gas ) && ( v[ y ] == gas ) )
-      v[ x == candidate ? x : y ] = solid++ / r;   // r copies of a value
+      v[ x == candidate ? x : y ] = solid++ / r;  // r copies of a value
      if( v[ x ] == gas )
       candidate = x;
      else if( v[ y ] == gas )
@@ -502,11 +524,12 @@ ADS_TEST( "nth-element-adversary" )
      return( v[ x ] < v[ y ] );
      };
     std::vector< std::size_t > A( n );
-    for( std::size_t i = 0 ; i < n ; ++i ) A[ i ] = i;
+    for( std::size_t i = 0 ; i < n ; ++i )
+     A[ i ] = i;
     const auto nth = A.begin() + std::ptrdiff_t( k );
     nthElement( A.begin() , nth , A.end() , less );
     CHECK( calls <= 16 * n );
-    std::size_t below = 0 , upto = 0;       // the rank of the value put
+    std::size_t below = 0 , upto = 0;  // the rank of the value put
     for( std::size_t x = 0 ; x < n ; ++x ) {
      below += v[ x ] < v[ *nth ];
      upto += v[ x ] <= v[ *nth ];
@@ -522,22 +545,25 @@ ADS_TEST( "nth-element-adversary" )
 ADS_TEST( "word-range-minimum" )
 {
  std::mt19937 g( 34 );
- auto scan = []( const std::vector< int > & A , std::size_t i ,
-                 std::size_t j , auto less ) {
+ auto scan = []( const std::vector< int > & A , std::size_t i , std::size_t j ,
+		 auto less ) {
   std::size_t r = i;
   for( std::size_t t = i + 1 ; t <= j ; ++t )
-   if( less( A[ t ] , A[ r ] ) ) r = t;
+   if( less( A[ t ] , A[ r ] ) )
+    r = t;
   return( r );
   };
  for( std::size_t n : { 1 , 2 , 63 , 64 , 65 , 128 , 129 , 200 } )
   for( int p = 0 ; p < 4 ; ++p ) {
    std::vector< int > A( n );
    for( std::size_t i = 0 ; i < n ; ++i )
-    A[ i ] = p == 0 ? int( g() % 50 ) : p == 1 ? int( i ) :
-             p == 2 ? -int( i ) : 3;
+    A[ i ] = p == 0   ? int( g() % 50 )
+	     : p == 1 ? int( i )
+	     : p == 2 ? -int( i )
+		      : 3;
    const WordRangeMinimum< int > R( A );
-   const WordRangeMinimum< int , std::greater< int > > M( A ,
-                                                std::greater< int >() );
+   const WordRangeMinimum< int , std::greater< int > > M(
+     A , std::greater< int >() );
    for( std::size_t i = 0 ; i < n ; ++i )
     for( std::size_t j = i ; j < n ; ++j ) {
      CHECK( R.query( i , j ) == scan( A , i , j , std::less< int >() ) );
@@ -545,18 +571,20 @@ ADS_TEST( "word-range-minimum" )
      }
    }
  std::vector< int > A( 100000 );
- for( auto & a : A ) a = int( g() % 1000 );
+ for( auto & a : A )
+  a = int( g() % 1000 );
  const WordRangeMinimum< int > R( A );
  CHECK( ( R.size() == A.size() ) && ( R[ 5 ] == A[ 5 ] ) );
  for( int t = 0 ; t < 2000 ; ++t ) {
   std::size_t i = g() % A.size() , j = g() % A.size();
-  if( i > j ) std::swap( i , j );
+  if( i > j )
+   std::swap( i , j );
   CHECK( R.query( i , j ) == scan( A , i , j , std::less< int >() ) );
   }
  const WordRangeMinimum< int > E( std::vector< int >{} );
  CHECK( E.size() == 0 );
- CHECK_THROWS( (void) R.query( 5 , 4 ) , contract_violation );
- CHECK_THROWS( (void) R.query( 0 , A.size() ) , contract_violation );
+ CHECK_THROWS( ( void )R.query( 5 , 4 ) , contract_violation );
+ CHECK_THROWS( ( void )R.query( 0 , A.size() ) , contract_violation );
  }
 
 // the intersection against std::set_intersection: empty lists, one item,
@@ -569,33 +597,34 @@ ADS_TEST( "vector-intersection" )
 {
  std::mt19937 g( 35 );
  auto check = [ & ]< class T >( const std::vector< T > & A ,
-                                const std::vector< T > & B ) {
+				const std::vector< T > & B ) {
   std::vector< T > C;
   std::set_intersection( A.begin() , A.end() , B.begin() , B.end() ,
-                         std::back_inserter( C ) );
+			 std::back_inserter( C ) );
   std::vector< T > out( std::min( A.size() , B.size() ) + 8 );
-  const std::size_t k = intersect( A.data() , A.size() , B.data() ,
-                                   B.size() , out.data() );
+  const std::size_t k =
+    intersect( A.data() , A.size() , B.data() , B.size() , out.data() );
   out.resize( k );
   CHECK( out == C );
   CHECK( intersect( B , A ) == C );
   };
  auto list = [ & ]< class T >( std::size_t n , std::uint64_t u , T ) {
   std::set< T > S;
-  while( S.size() < n ) S.insert( T( g() % u ) );
+  while( S.size() < n )
+   S.insert( T( g() % u ) );
   return( std::vector< T >( S.begin() , S.end() ) );
   };
  check( std::vector< std::uint32_t >() , std::vector< std::uint32_t >() );
  check( std::vector< std::uint32_t >( { 5 } ) ,
-        std::vector< std::uint32_t >() );
+	std::vector< std::uint32_t >() );
  check( std::vector< std::uint32_t >( { 5 } ) ,
-        std::vector< std::uint32_t >( { 5 } ) );
+	std::vector< std::uint32_t >( { 5 } ) );
  for( std::size_t n : { 1 , 7 , 8 , 9 , 16 , 17 , 100 , 1000 } )
   for( std::size_t m : { 1 , 7 , 8 , 9 , 16 , 17 , 100 , 1000 } ) {
    check( list( n , 3 * ( n + m ) , std::uint32_t() ) ,
-          list( m , 3 * ( n + m ) , std::uint32_t() ) );
+	  list( m , 3 * ( n + m ) , std::uint32_t() ) );
    check( list( n , 3 * ( n + m ) , std::int32_t() ) ,
-          list( m , 3 * ( n + m ) , std::int32_t() ) );
+	  list( m , 3 * ( n + m ) , std::int32_t() ) );
    }
  for( std::size_t r : { 1 , 2 , 31 , 32 , 33 , 100 , 1000 } ) {
   const auto A = list( 20000 , 60000 , std::uint32_t() );
@@ -605,24 +634,24 @@ ADS_TEST( "vector-intersection" )
  {
   std::vector< std::uint32_t > A( 5000 );
   std::iota( A.begin() , A.end() , 0u );
-  check( A , A );                           // equal
+  check( A , A );  // equal
   std::vector< std::uint32_t > B( 5000 );
   std::iota( B.begin() , B.end() , 5000u );
-  check( A , B );                           // disjoint
-  B.front() = 4999;                         // one in common, at the ends
+  check( A , B );     // disjoint
+  B.front() = 4999;  // one in common, at the ends
   check( A , B );
-  const std::vector< std::uint32_t > E = { 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
-                                           0xFFFFFFFE , 0xFFFFFFFF };
+  const std::vector< std::uint32_t > E = { 0 , 1 , 2 ,          3 ,         4 ,
+					   5 , 6 , 0xFFFFFFFE , 0xFFFFFFFF };
   check( E , std::vector< std::uint32_t >( { 0 , 0xFFFFFFFF } ) );
-  const std::vector< std::int32_t > S = { INT32_MIN , -5 , -1 , 0 , 3 , 9 ,
-                                          11 , 12 , INT32_MAX };
-  check( S , std::vector< std::int32_t >( { INT32_MIN , -1 , 12 ,
-                                            INT32_MAX } ) );
+  const std::vector< std::int32_t > S = { INT32_MIN , -5 , -1 , 0 ,        3 ,
+					  9 ,         11 , 12 , INT32_MAX };
+  check( S ,
+	 std::vector< std::int32_t >( { INT32_MIN , -1 , 12 , INT32_MAX } ) );
   }
  check( list( 3000 , 9000 , std::uint64_t() ) ,
-        list( 2000 , 9000 , std::uint64_t() ) );
+	list( 2000 , 9000 , std::uint64_t() ) );
  check( std::vector< double >( { -1.5 , 0 , 2 , 7.25 } ) ,
-        std::vector< double >( { -2 , 0 , 7.25 , 9 } ) );
+	std::vector< double >( { -2 , 0 , 7.25 , 9 } ) );
  std::vector< int > U = { 3 , 1 } , V = { 1 , 3 };
  CHECK_THROWS( intersect( U , V ) , contract_violation );
  }
@@ -637,10 +666,14 @@ ADS_TEST( "rem-union-find-contracts" )
  RemUnionFind U( n );
  std::vector< std::uint32_t > p( n );
  std::iota( p.begin() , p.end() , 0u );
- auto merge = [ & ]( std::uint32_t a , std::uint32_t b ) {   // Rem's
+ auto merge = [ & ]( std::uint32_t a , std::uint32_t b ) {  // Rem's
   while( p[ a ] != p[ b ] ) {
-   if( p[ a ] > p[ b ] ) std::swap( a , b );
-   if( a == p[ a ] ) { p[ a ] = p[ b ]; return; }
+   if( p[ a ] > p[ b ] )
+    std::swap( a , b );
+   if( a == p[ a ] ) {
+    p[ a ] = p[ b ];
+    return;
+    }
    const std::uint32_t z = p[ a ];
    p[ a ] = p[ b ];
    a = z;
@@ -680,7 +713,7 @@ ADS_TEST( "rem-union-find" )
    CHECK( U.parent( r ) == r );
    }
   }
- for( int dir = 0 ; dir < 2 ; ++dir ) {     // chains
+ for( int dir = 0 ; dir < 2 ; ++dir ) {  // chains
   const std::uint32_t n = 5000;
   RemUnionFind U( n );
   for( std::uint32_t i = 0 ; i + 1 < n ; ++i ) {
@@ -727,34 +760,35 @@ ADS_TEST( "bool-set-words" )
     B.insert( x );
     b.insert( x );
     }
-   if( N > 0 ) {                            // the two ends
+   if( N > 0 ) {  // the two ends
     A.insert( N - 1 );
     a.insert( N - 1 );
     }
    CHECK( items( A ) == std::vector< long >( a.begin() , a.end() ) );
    CHECK( A.size() == a.size() );
-   CHECK( A.min() == ( a.empty() ? std::nullopt :
-                       std::optional< long >( *a.begin() ) ) );
-   CHECK( A.max() == ( a.empty() ? std::nullopt :
-                       std::optional< long >( *a.rbegin() ) ) );
+   CHECK( A.min() ==
+	  ( a.empty() ? std::nullopt : std::optional< long >( *a.begin() ) ) );
+   CHECK( A.max() == ( a.empty() ? std::nullopt
+				 : std::optional< long >( *a.rbegin() ) ) );
    std::vector< long > u , i , d , x;
    std::set_union( a.begin() , a.end() , b.begin() , b.end() ,
-                   std::back_inserter( u ) );
+		   std::back_inserter( u ) );
    std::set_intersection( a.begin() , a.end() , b.begin() , b.end() ,
-                          std::back_inserter( i ) );
+			  std::back_inserter( i ) );
    std::set_difference( a.begin() , a.end() , b.begin() , b.end() ,
-                        std::back_inserter( d ) );
-   std::set_symmetric_difference( a.begin() , a.end() , b.begin() ,
-                                  b.end() , std::back_inserter( x ) );
+			std::back_inserter( d ) );
+   std::set_symmetric_difference( a.begin() , a.end() , b.begin() , b.end() ,
+				  std::back_inserter( x ) );
    const BoolSet U = setUnion( A , B ) , I = setIntersection( A , B ) ,
-                 D = setDifference( A , B ) ,
-                 X = setSymmetricDifference( A , B );
+		 D = setDifference( A , B ) ,
+		 X = setSymmetricDifference( A , B );
    CHECK( ( items( U ) == u ) && ( U.size() == u.size() ) );
    CHECK( ( items( I ) == i ) && ( I.size() == i.size() ) );
    CHECK( ( items( D ) == d ) && ( D.size() == d.size() ) );
    CHECK( ( items( X ) == x ) && ( X.size() == x.size() ) );
-   CHECK( ( U.dim() == std::max( N , M ) ) &&
-          ( I.dim() == std::min( N , M ) ) && ( D.dim() == N ) );
+   CHECK( ( U.dim() == std::max( N , M ) ) && ( I.dim() == std::min( N ,
+								     M ) ) &&
+	  ( D.dim() == N ) );
    }
  }
 
@@ -777,7 +811,8 @@ void stringMap( void )
   };
  auto pairs = []( const auto & t ) {
   std::vector< std::pair< std::string , int > > P;
-  for( const auto & [ k , v ] : t ) P.emplace_back( std::string( k ) , v );
+  for( const auto & [ k , v ] : t )
+   P.emplace_back( std::string( k ) , v );
   return( P );
   };
  for( int round = 0 ; round < 4 ; ++round ) {
@@ -798,27 +833,29 @@ void stringMap( void )
     const auto v = t.lookup( k );
     const auto it = ref.find( k );
     CHECK( v.has_value() == ( it != ref.end() ) );
-    if( v ) CHECK( *v == it->second );
+    if( v )
+     CHECK( *v == it->second );
     }
    CHECK( t.size() == ref.size() );
    }
-  std::vector< std::pair< std::string , int > > R( ref.begin() ,
-                                                   ref.end() );
+  std::vector< std::pair< std::string , int > > R( ref.begin() , ref.end() );
   CHECK( pairs( t ) == R );
   std::vector< std::pair< std::string , int > > F;
   t.forEach( [ & ]( std::string_view k , int v ) {
-   F.emplace_back( std::string( k ) , v ); } );
+   F.emplace_back( std::string( k ) , v );
+   } );
   CHECK( F == R );
-  for( int q = 0 ; q < 200 ; ++q ) {        // the prefixes
+  for( int q = 0 ; q < 200 ; ++q ) {  // the prefixes
    const std::string p = key( sigma , sigma == 2 ? 6 : 2 , base );
    std::vector< std::string > E;
-   for( auto it = ref.lower_bound( p ) ; ( it != ref.end() ) &&
-        ( it->first.compare( 0 , p.size() , p ) == 0 ) ; ++it )
+   for( auto it = ref.lower_bound( p ) ;
+	( it != ref.end() ) && ( it->first.compare( 0 , p.size() , p ) == 0 ) ;
+	++it )
     E.push_back( it->first );
    CHECK( t.keysWithPrefix( p ) == E );
    }
   CHECK( t.keysWithPrefix( "" ).size() == ref.size() );
-  auto c = t;                               // a copy is independent
+  auto c = t;  // a copy is independent
   CHECK( pairs( c ) == R );
   if( ! ref.empty() ) {
    c.remove( ref.begin()->first );
@@ -826,7 +863,7 @@ void stringMap( void )
    }
   auto m = std::move( c );
   CHECK( c.empty() );
-  for( const auto & [ k , v ] : ref )       // all out
+  for( const auto & [ k , v ] : ref )  // all out
    CHECK( t.remove( k ) );
   CHECK( t.empty() && ( t.begin() == t.end() ) );
   }
@@ -838,13 +875,13 @@ void stringMap( void )
  CHECK( ( *t.begin() ).first == "" );
  *t.find( "a" ) = 5;
  CHECK( *t.lookup( "a" ) == 5 );
- for( int b = 0 ; b < 256 ; ++b )           // a node of 256 children
+ for( int b = 0 ; b < 256 ; ++b )  // a node of 256 children
   t.insert( std::string( 1 , char( b ) ) + "tail" , b );
  for( int b = 0 ; b < 256 ; b += 2 )
   CHECK( t.remove( std::string( 1 , char( b ) ) + "tail" ) );
  for( int b = 1 ; b < 256 ; b += 2 )
   CHECK( *t.lookup( std::string( 1 , char( b ) ) + "tail" ) == b );
- for( int b = 1 ; b < 256 ; b += 2 ) {      // down to 4 children, and 1
+ for( int b = 1 ; b < 256 ; b += 2 ) {  // down to 4 children, and 1
   CHECK( t.remove( std::string( 1 , char( b ) ) + "tail" ) );
   for( int c = b + 2 ; c < 256 ; c += 2 )
    CHECK( *t.lookup( std::string( 1 , char( c ) ) + "tail" ) == c );
@@ -859,8 +896,8 @@ ADS_TEST( "adaptive-radix-tree" )
  stringMap< AdaptiveRadixTree< int > >();
  AdaptiveRadixTree< std::string > t;
  for( int i = 0 ; i < 3000 ; ++i )
-  t.insert( "k" + std::to_string( i % 1000 ) , std::string( 30 , char( 'a' +
-                                                            i % 26 ) ) );
+  t.insert( "k" + std::to_string( i % 1000 ) ,
+	    std::string( 30 , char( 'a' + i % 26 ) ) );
  CHECK( t.size() == 1000 );
  for( int i = 0 ; i < 1000 ; i += 2 )
   CHECK( t.remove( "k" + std::to_string( i ) ) );
@@ -878,14 +915,14 @@ ADS_TEST( "pgm-index" )
 {
  std::mt19937_64 g( 39 );
  auto check = [ & ]< class I >( const std::vector< typename I::Item > & A ,
-                                const std::vector< typename I::Item > & Q ) {
+				const std::vector< typename I::Item > & Q ) {
   const I P( A );
   CHECK( P.size() == A.size() );
   for( const auto & q : Q ) {
-   const auto r = std::size_t( std::lower_bound( A.begin() , A.end() , q ) -
-                               A.begin() );
+   const auto r =
+     std::size_t( std::lower_bound( A.begin() , A.end() , q ) - A.begin() );
    CHECK( P.lowerBound( q ) == r );
-   CHECK( P.contains( q ) == ( ( r < A.size() ) && !( q < A[ r ] ) ) );
+   CHECK( P.contains( q ) == ( ( r < A.size() ) && ! ( q < A[ r ] ) ) );
    }
   return( P.segments() );
   };
@@ -896,45 +933,51 @@ ADS_TEST( "pgm-index" )
  for( int t = 0 ; t < 3 ; ++t ) {
   std::vector< U > A( 50000 ) , Q;
   for( std::size_t i = 0 ; i < A.size() ; ++i )
-   A[ i ] = t == 0 ? g() : t == 1 ? 1000 + i :
-            ( i / 500 ) * 1000000 + g() % 1000;   // clusters
+   A[ i ] = t == 0   ? g()
+	    : t == 1 ? 1000 + i
+		     : ( i / 500 ) * 1000000 + g() % 1000;  // clusters
   A.push_back( 0 );
   A.push_back( ~U( 0 ) );
   std::sort( A.begin() , A.end() );
   for( int q = 0 ; q < 20000 ; ++q )
-   Q.push_back( q % 2 ? A[ g() % A.size() ] + ( q % 4 == 1 ? 0 : 1 ) :
-                g() % ( A[ A.size() - 2 ] + 2 ) );
+   Q.push_back( q % 2 ? A[ g() % A.size() ] + ( q % 4 == 1 ? 0 : 1 )
+		      : g() % ( A[ A.size() - 2 ] + 2 ) );
   Q.push_back( 0 );
   Q.push_back( ~U( 0 ) );
   const std::size_t s = check.operator()< PGMIndex< U > >( A , Q );
-  if( t == 1 ) CHECK( s <= 3 );             // a line, and the extremes
+  if( t == 1 )
+   CHECK( s <= 3 );  // a line, and the extremes
   check.operator()< PGMIndex< U , 1 , 1 > >( A , Q );
   }
- {                                          // repeated keys
+ {  // repeated keys
   std::vector< U > A;
   for( U k = 0 ; k < 50 ; ++k )
    A.insert( A.end() , std::size_t( 1 + g() % 3000 ) , 10 * k );
   std::vector< U > Q;
-  for( U q = 0 ; q < 510 ; ++q ) Q.push_back( q );
+  for( U q = 0 ; q < 510 ; ++q )
+   Q.push_back( q );
   check.operator()< PGMIndex< U , 4 , 2 > >( A , Q );
   check.operator()< PGMIndex< U > >( A , Q );
   }
- {                                          // signed and floating keys
+ {  // signed and floating keys
   std::vector< std::int32_t > A( 20000 ) , Q;
-  for( auto & a : A ) a = std::int32_t( g() );
+  for( auto & a : A )
+   a = std::int32_t( g() );
   std::sort( A.begin() , A.end() );
-  for( int q = 0 ; q < 5000 ; ++q ) Q.push_back( std::int32_t( g() ) );
+  for( int q = 0 ; q < 5000 ; ++q )
+   Q.push_back( std::int32_t( g() ) );
   Q.push_back( INT32_MIN );
   Q.push_back( INT32_MAX );
   check.operator()< PGMIndex< std::int32_t , 8 , 2 > >( A , Q );
   const double inf = std::numeric_limits< double >::infinity();
-  std::vector< double > D = { -inf , -3.5 , -0.0 , 0.0 , 1e-300 , 2.25 ,
-                              1e300 , inf };
-  for( int i = 0 ; i < 3000 ; ++i ) D.push_back( double( g() % 100000 ) /
-                                                 7 - 5000 );
+  std::vector< double > D = {
+   -inf , -3.5 , -0.0 , 0.0 , 1e-300 , 2.25 , 1e300 , inf
+   };
+  for( int i = 0 ; i < 3000 ; ++i )
+   D.push_back( double( g() % 100000 ) / 7 - 5000 );
   std::sort( D.begin() , D.end() );
-  check.operator()< PGMIndex< double , 2 , 1 > >( D , { -inf , -1e301 ,
-                    -3.5 , 0.0 , 1.0 , 2.25 , 1e299 , inf , -0.5 } );
+  check.operator()< PGMIndex< double , 2 , 1 > >(
+    D , { -inf , -1e301 , -3.5 , 0.0 , 1.0 , 2.25 , 1e299 , inf , -0.5 } );
   }
  std::vector< U > W = { 3 , 1 , 2 };
  CHECK_THROWS( PGMIndex< U >( W ) , contract_violation );
@@ -951,17 +994,18 @@ ADS_TEST( "pgm-compressed" )
 {
  std::mt19937_64 g( 41 );
  auto check = [ & ]< class I >( const std::vector< typename I::Item > & A ,
-                                const std::vector< typename I::Item > & Q ) {
+				const std::vector< typename I::Item > & Q ) {
   const I P( A );
   CHECK( P.size() == A.size() );
   CHECK( P.empty() == A.empty() );
   CHECK( P.slopes() <= P.segments() + ( A.empty() ? 0 : 1 ) );
-  for( std::size_t i = 0 ; i < A.size() ; i += 97 ) CHECK( P[ i ] == A[ i ] );
+  for( std::size_t i = 0 ; i < A.size() ; i += 97 )
+   CHECK( P[ i ] == A[ i ] );
   for( const auto & q : Q ) {
-   const auto r = std::size_t( std::lower_bound( A.begin() , A.end() , q ) -
-                               A.begin() );
+   const auto r =
+     std::size_t( std::lower_bound( A.begin() , A.end() , q ) - A.begin() );
    CHECK( P.lowerBound( q ) == r );
-   CHECK( P.contains( q ) == ( ( r < A.size() ) && !( q < A[ r ] ) ) );
+   CHECK( P.contains( q ) == ( ( r < A.size() ) && ! ( q < A[ r ] ) ) );
    }
   return( P.slopes() );
   };
@@ -969,64 +1013,71 @@ ADS_TEST( "pgm-compressed" )
  check.operator()< CompressedPGMIndex< U > >( {} , { 0 , 5 } );
  check.operator()< CompressedPGMIndex< U > >( { 7 } , { 0 , 7 , 8 } );
  check.operator()< CompressedPGMIndex< U > >( { 7 , 9 } ,
-                                              { 0 , 7 , 8 , 9 , 10 } );
+					      { 0 , 7 , 8 , 9 , 10 } );
  check.operator()< CompressedPGMIndex< U > >( { 0 , ~U( 0 ) } ,
-                                              { 0 , 1 , ~U( 0 ) - 1 ,
-                                                ~U( 0 ) } );
+					      { 0 , 1 , ~U( 0 ) - 1 ,
+						~U( 0 ) } );
  for( int t = 0 ; t < 3 ; ++t ) {
   std::vector< U > A( 50000 ) , Q;
   for( std::size_t i = 0 ; i < A.size() ; ++i )
-   A[ i ] = t == 0 ? g() : t == 1 ? 1000 + i :
-            ( i / 500 ) * 1000000 + g() % 1000;   // clusters
+   A[ i ] = t == 0   ? g()
+	    : t == 1 ? 1000 + i
+		     : ( i / 500 ) * 1000000 + g() % 1000;  // clusters
   A.push_back( 0 );
   A.push_back( ~U( 0 ) );
   std::sort( A.begin() , A.end() );
   for( int q = 0 ; q < 20000 ; ++q )
-   Q.push_back( q % 2 ? A[ g() % A.size() ] + ( q % 4 == 1 ? 0 : 1 ) :
-                g() % ( A[ A.size() - 2 ] + 2 ) );
+   Q.push_back( q % 2 ? A[ g() % A.size() ] + ( q % 4 == 1 ? 0 : 1 )
+		      : g() % ( A[ A.size() - 2 ] + 2 ) );
   Q.push_back( 0 );
   Q.push_back( ~U( 0 ) );
   Q.push_back( ~U( 0 ) - 1 );
   check.operator()< CompressedPGMIndex< U > >( A , Q );
   check.operator()< CompressedPGMIndex< U , 1 > >( A , Q );
   const std::size_t s = check.operator()< CompressedPGMIndex< U , 8 > >( A ,
-                                                                        Q );
-  if( t == 1 ) CHECK( s <= 3 );             // a line, and the extremes
+									 Q );
+  if( t == 1 )
+   CHECK( s <= 3 );  // a line, and the extremes
   }
- {                                          // many segments: fewer bytes
+ {  // many segments: fewer bytes
   std::vector< U > A( 200000 );
-  for( auto & a : A ) a = g() >> ( 1 + g() % 40 );
+  for( auto & a : A )
+   a = g() >> ( 1 + g() % 40 );
   std::sort( A.begin() , A.end() );
   const CompressedPGMIndex< U , 8 > C( A );
   const PGMIndex< U , 8 , 4 > P( A );
   CHECK( C.segments() == P.segments() );
   CHECK( 3 * C.bytes() < 2 * P.bytes() );
   }
- {                                          // repeated keys
+ {  // repeated keys
   std::vector< U > A;
   for( U k = 0 ; k < 50 ; ++k )
    A.insert( A.end() , std::size_t( 1 + g() % 3000 ) , 10 * k );
   std::vector< U > Q;
-  for( U q = 0 ; q < 510 ; ++q ) Q.push_back( q );
+  for( U q = 0 ; q < 510 ; ++q )
+   Q.push_back( q );
   check.operator()< CompressedPGMIndex< U , 4 > >( A , Q );
   check.operator()< CompressedPGMIndex< U > >( A , Q );
   }
- {                                          // signed and floating keys
+ {  // signed and floating keys
   std::vector< std::int32_t > A( 20000 ) , Q;
-  for( auto & a : A ) a = std::int32_t( g() );
+  for( auto & a : A )
+   a = std::int32_t( g() );
   std::sort( A.begin() , A.end() );
-  for( int q = 0 ; q < 5000 ; ++q ) Q.push_back( std::int32_t( g() ) );
+  for( int q = 0 ; q < 5000 ; ++q )
+   Q.push_back( std::int32_t( g() ) );
   Q.push_back( INT32_MIN );
   Q.push_back( INT32_MAX );
   check.operator()< CompressedPGMIndex< std::int32_t , 8 > >( A , Q );
   const double inf = std::numeric_limits< double >::infinity();
-  std::vector< double > D = { -inf , -3.5 , -0.0 , 0.0 , 1e-300 , 2.25 ,
-                              1e300 , inf };
-  for( int i = 0 ; i < 3000 ; ++i ) D.push_back( double( g() % 100000 ) /
-                                                 7 - 5000 );
+  std::vector< double > D = {
+   -inf , -3.5 , -0.0 , 0.0 , 1e-300 , 2.25 , 1e300 , inf
+   };
+  for( int i = 0 ; i < 3000 ; ++i )
+   D.push_back( double( g() % 100000 ) / 7 - 5000 );
   std::sort( D.begin() , D.end() );
-  check.operator()< CompressedPGMIndex< double , 2 > >( D , { -inf , -1e301 ,
-                    -3.5 , 0.0 , 1.0 , 2.25 , 1e299 , inf , -0.5 } );
+  check.operator()< CompressedPGMIndex< double , 2 > >(
+    D , { -inf , -1e301 , -3.5 , 0.0 , 1.0 , 2.25 , 1e299 , inf , -0.5 } );
   }
  std::vector< U > W = { 3 , 1 , 2 };
  CHECK_THROWS( CompressedPGMIndex< U >( W ) , contract_violation );
@@ -1049,7 +1100,8 @@ ADS_TEST( "pgm-dynamic" )
   auto key = [ & ]( void ) {
    const std::uint64_t r = g();
    return( r % 50 == 0 ? ( r % 100 == 0 ? 0 : ~std::uint64_t( 0 ) )
-                       : mod ? r % mod : r );
+	    : mod       ? r % mod
+			: r );
    };
   for( int it = 0 ; it < ops ; ++it ) {
    const std::uint64_t k = key();
@@ -1071,60 +1123,62 @@ ADS_TEST( "pgm-dynamic" )
     const auto lb = P.lowerBound( k );
     const auto ml = M.lower_bound( k );
     CHECK( lb.has_value() == ( ml != M.end() ) );
-    CHECK( ! lb || ( ( lb->first == ml->first ) &&
-                     ( lb->second == ml->second ) ) );
+    CHECK( ! lb ||
+	   ( ( lb->first == ml->first ) && ( lb->second == ml->second ) ) );
     }
-   if( it % 997 == 0 ) {                    // a range
+   if( it % 997 == 0 ) {  // a range
     std::uint64_t a = key() , b = key();
-    if( b < a ) std::swap( a , b );
+    if( b < a )
+     std::swap( a , b );
     std::vector< std::pair< std::uint64_t , int > > R , E;
-    P.forEach( a , b , [ & ]( std::uint64_t x , int v ) {
-     R.emplace_back( x , v ); } );
+    P.forEach( a , b ,
+	       [ & ]( std::uint64_t x , int v ) { R.emplace_back( x , v ); } );
     for( auto i = M.lower_bound( a ) ; ( i != M.end() ) && ( i->first < b ) ;
-         ++i )
+	 ++i )
      E.emplace_back( *i );
     CHECK( R == E );
     }
    }
   std::vector< std::pair< std::uint64_t , int > > R;
-  P.forEach( 0 , ~std::uint64_t( 0 ) , [ & ]( std::uint64_t x , int v ) {
-   R.emplace_back( x , v ); } );
+  P.forEach( 0 , ~std::uint64_t( 0 ) ,
+	     [ & ]( std::uint64_t x , int v ) { R.emplace_back( x , v ); } );
   const auto f = P.find( ~std::uint64_t( 0 ) );
-  if( f ) R.emplace_back( ~std::uint64_t( 0 ) , *f );
+  if( f )
+   R.emplace_back( ~std::uint64_t( 0 ) , *f );
   const std::vector< std::pair< std::uint64_t , int > > E( M.begin() ,
-                                                          M.end() );
+							   M.end() );
   CHECK( R == E );
   CHECK( P.entries() >= M.size() );
   };
  {
   DynamicPGMIndex< std::uint64_t , int > P;
   CHECK( ! P.find( 5 ) && ! P.lowerBound( 0 ) && ( P.entries() == 0 ) );
-  run( P , 60 , 5000 );                     // all in the buffer
+  run( P , 60 , 5000 );  // all in the buffer
   CHECK( ( P.levels() == 0 ) && ( P.entries() <= 62 ) );
   }
  {
   DynamicPGMIndex< std::uint64_t , int > P;
-  run( P , 300 , 20000 );                   // one level, and the buffer
+  run( P , 300 , 20000 );  // one level, and the buffer
   CHECK( P.levels() >= 1 );
   }
  {
   DynamicPGMIndex< std::uint64_t , int , 1 , 2 > P;
-  run( P , 5000 , 60000 );                  // many merges
+  run( P , 5000 , 60000 );  // many merges
   CHECK( P.levels() >= 3 );
   }
  {
   DynamicPGMIndex< std::uint64_t , int , 16 , 8 > P;
-  run( P , 0 , 60000 );                     // 64 bits
+  run( P , 0 , 60000 );  // 64 bits
   }
- {                                          // every level with an index
+ {  // every level with an index
   DynamicPGMIndex< std::uint64_t , int , 4 , 4 , 1 > P;
   run( P , 20000 , 60000 );
   }
- {                                          // levels with and without
+ {  // levels with and without
   DynamicPGMIndex< std::uint64_t , int , 8 , 2 , 1000 > P;
   run( P , 0 , 60000 );
   }
- {                                          // from sorted pairs
+ {  // from sorted pairs
   std::vector< std::pair< std::int32_t , double > > S;
   for( std::int32_t i = -5000 ; i < 5000 ; ++i )
    S.emplace_back( 3 * i , i / 2.0 );
@@ -1135,13 +1189,16 @@ ADS_TEST( "pgm-dynamic" )
   CHECK( ! P.find( -15 ) && ( *P.find( -14 ) == 1.0 ) );
   CHECK( P.lowerBound( -16 )->first == -14 );
   CHECK( ! P.lowerBound( 15000 ) );
-  CHECK_THROWS( ( DynamicPGMIndex< std::int32_t , double >(
-                   { { 2 , 0.0 } , { 1 , 0.0 } } ) ) , contract_violation );
+  CHECK_THROWS(
+    ( DynamicPGMIndex< std::int32_t ,
+		       double >( { { 2 , 0.0 } , { 1 , 0.0 } } ) ) ,
+    contract_violation );
   }
- {                                          // floating keys
+ {  // floating keys
   DynamicPGMIndex< double , int > P;
   const double inf = std::numeric_limits< double >::infinity();
-  for( int i = 0 ; i < 1000 ; ++i ) P.insert( double( i ) / 3 , i );
+  for( int i = 0 ; i < 1000 ; ++i )
+   P.insert( double( i ) / 3 , i );
   P.insert( -inf , -1 );
   P.insert( inf , -2 );
   CHECK( ( *P.find( -inf ) == -1 ) && ( *P.find( inf ) == -2 ) );
@@ -1159,38 +1216,39 @@ ADS_TEST( "pgm-dynamic" )
 // rank(), select() and lowerBound(), copies, and items not sorted
 ADS_TEST( "roaring-bitmap" )
 {
- {                                          // the kernels of the arrays
+ {  // the kernels of the arrays
   std::mt19937_64 h( 41 );
   auto list = [ & ]( std::size_t n , unsigned u ) {
    std::set< std::uint16_t > S;
-   while( S.size() < n ) S.insert( std::uint16_t( h() % u ) );
+   while( S.size() < n )
+    S.insert( std::uint16_t( h() % u ) );
    return( std::vector< std::uint16_t >( S.begin() , S.end() ) );
    };
   for( std::size_t na = 0 ; na < 70 ; na += 1 + na / 8 )
    for( std::size_t nb = 0 ; nb < 70 ; nb += 1 + nb / 8 )
     for( unsigned u : { 80u , 400u , 65536u } ) {
-     if( ( na > u ) || ( nb > u ) ) continue;
+     if( ( na > u ) || ( nb > u ) )
+      continue;
      for( int rep = 0 ; rep < 3 ; ++rep ) {
       const auto A = list( na , u ) , B = list( nb , u );
       std::vector< std::uint16_t > E , O( na + nb + 8 );
       std::set_union( A.begin() , A.end() , B.begin() , B.end() ,
-                      std::back_inserter( E ) );
-      O.resize( detail::union16( A.data() , na , B.data() , nb ,
-                                 O.data() ) );
+		      std::back_inserter( E ) );
+      O.resize( detail::union16( A.data() , na , B.data() , nb , O.data() ) );
       CHECK( O == E );
       E.clear();
       O.assign( na + 8 , 0 );
       std::set_difference( A.begin() , A.end() , B.begin() , B.end() ,
-                           std::back_inserter( E ) );
+			   std::back_inserter( E ) );
       O.resize( detail::difference16( A.data() , na , B.data() , nb ,
-                                      O.data() ) );
+				      O.data() ) );
       CHECK( O == E );
       E.clear();
       O.assign( std::min( na , nb ) + 8 , 0 );
       std::set_intersection( A.begin() , A.end() , B.begin() , B.end() ,
-                             std::back_inserter( E ) );
+			     std::back_inserter( E ) );
       O.resize( detail::intersect16( A.data() , na , B.data() , nb ,
-                                     O.data() ) );
+				     O.data() ) );
       CHECK( O == E );
       }
      }
@@ -1201,9 +1259,12 @@ ADS_TEST( "roaring-bitmap" )
   const std::size_t n = kind == 0 ? 3000 : kind == 1 ? 30000 : 9000;
   while( S.size() < n ) {
    std::uint32_t x;
-   if( kind == 0 ) x = std::uint32_t( g() );           // sparse
-   else if( kind == 1 ) x = std::uint32_t( g() % 160000 );   // dense
-   else x = std::uint32_t( ( g() % 3 ) << 16 | ( g() % 9000 ) );
+   if( kind == 0 )
+    x = std::uint32_t( g() );  // sparse
+   else if( kind == 1 )
+    x = std::uint32_t( g() % 160000 );  // dense
+   else
+    x = std::uint32_t( ( g() % 3 ) << 16 | ( g() % 9000 ) );
    S.insert( x );
    }
   for( std::uint32_t x : { 0u , 65535u , 65536u , 0xFFFFFFFFu } )
@@ -1229,20 +1290,21 @@ ADS_TEST( "roaring-bitmap" )
   for( int b = 0 ; b < 3 ; ++b ) {
    std::vector< std::uint32_t > u , i , d , x;
    std::set_union( S[ a ].begin() , S[ a ].end() , S[ b ].begin() ,
-                   S[ b ].end() , std::back_inserter( u ) );
+		   S[ b ].end() ,
+		   std::back_inserter( u ) );
    std::set_intersection( S[ a ].begin() , S[ a ].end() , S[ b ].begin() ,
-                          S[ b ].end() , std::back_inserter( i ) );
+			  S[ b ].end() , std::back_inserter( i ) );
    std::set_difference( S[ a ].begin() , S[ a ].end() , S[ b ].begin() ,
-                        S[ b ].end() , std::back_inserter( d ) );
+			S[ b ].end() , std::back_inserter( d ) );
    std::set_symmetric_difference( S[ a ].begin() , S[ a ].end() ,
-                                  S[ b ].begin() , S[ b ].end() ,
-                                  std::back_inserter( x ) );
+				  S[ b ].begin() ,
+				  S[ b ].end() , std::back_inserter( x ) );
    CHECK( items( setUnion( R[ a ] , R[ b ] ) ) == u );
    CHECK( items( setIntersection( R[ a ] , R[ b ] ) ) == i );
    CHECK( items( setDifference( R[ a ] , R[ b ] ) ) == d );
    CHECK( items( setSymmetricDifference( R[ a ] , R[ b ] ) ) == x );
    }
- {                                          // across 4096, both ways
+ {  // across 4096, both ways
   RoaringBitmap T;
   std::set< std::uint32_t > ref;
   for( int t = 0 ; t < 30000 ; ++t ) {
@@ -1256,17 +1318,18 @@ ADS_TEST( "roaring-bitmap" )
    }
   for( std::uint32_t v = 69990 ; v < 79010 ; ++v )
    CHECK( T.contains( v ) == ( ref.count( v ) == 1 ) );
-  CHECK( items( T ) == std::vector< std::uint32_t >( ref.begin() ,
-                                                     ref.end() ) );
+  CHECK( items( T ) ==
+	 std::vector< std::uint32_t >( ref.begin() , ref.end() ) );
   for( auto v : std::vector< std::uint32_t >( ref.begin() , ref.end() ) )
    CHECK( T.remove( v ) );
   CHECK( T.empty() && ( T.containers() == 0 ) && ( T.begin() == T.end() ) );
   }
- for( int k = 0 ; k < 3 ; ++k ) {           // ranks, selections, bounds
+ for( int k = 0 ; k < 3 ; ++k ) {  // ranks, selections, bounds
   const std::vector< std::uint32_t > V( S[ k ].begin() , S[ k ].end() );
   for( int q = 0 ; q < 2000 ; ++q ) {
-   const std::uint32_t x = q % 3 ? std::uint32_t( g() ) :
-                           V[ g() % V.size() ] + std::uint32_t( q % 2 );
+   const std::uint32_t x = q % 3
+			     ? std::uint32_t( g() )
+			     : V[ g() % V.size() ] + std::uint32_t( q % 2 );
    const auto lb = std::lower_bound( V.begin() , V.end() , x );
    const std::size_t r = std::size_t( lb - V.begin() );
    CHECK( R[ k ].rank( x ) == r );
@@ -1279,9 +1342,9 @@ ADS_TEST( "roaring-bitmap" )
    }
   CHECK( R[ k ].select( V.size() ) == R[ k ].end() );
   CHECK( ( *R[ k ].select( 0 ) == V.front() ) &&
-         ( *R[ k ].lowerBound( 0xFFFFFFFFu ) == 0xFFFFFFFFu ) );
+	 ( *R[ k ].lowerBound( 0xFFFFFFFFu ) == 0xFFFFFFFFu ) );
   }
- RoaringBitmap C = R[ 1 ];                  // a copy is independent
+ RoaringBitmap C = R[ 1 ];  // a copy is independent
  C.remove( 0 );
  CHECK( R[ 1 ].contains( 0 ) && ! C.contains( 0 ) );
  RoaringBitmap E;

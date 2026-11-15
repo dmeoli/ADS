@@ -92,7 +92,7 @@
 
 #ifndef __ADS_ConcurrentPool
  #define __ADS_ConcurrentPool
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -113,7 +113,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS ConcurrentPoolResource ----------------------*/
@@ -122,25 +123,24 @@ namespace ADS {
 /// pools of the size classes of 8 bytes up to \f$ M \f$, a heap per thread,
 /// the objects freed by any thread
 template< std::size_t M = 256 >
-class ConcurrentPoolResource {
+class ConcurrentPoolResource
+{
 
  static_assert( ( M >= 16 ) && ( M % 16 == 0 ) && ( M <= 4096 ) ,
-                "the largest class is a multiple of 16 bytes, up to 4096" );
+		"the largest class is a multiple of 16 bytes, up to 4096" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- static constexpr std::size_t GRAIN = 8;           ///< the step of a class
- static constexpr std::size_t ALIGN = 16;          ///< the largest alignment
- static constexpr std::size_t MAX = M;             ///< the largest class
- static constexpr std::size_t CLASSES = M / GRAIN; ///< the classes
+ static constexpr std::size_t GRAIN = 8;            ///< the step of a class
+ static constexpr std::size_t ALIGN = 16;           ///< the largest alignment
+ static constexpr std::size_t MAX = M;              ///< the largest class
+ static constexpr std::size_t CLASSES = M / GRAIN;  ///< the classes
  /// the bytes of a segment of the heaps
  static constexpr std::size_t SEGMENT = detail::PageHeap< CLASSES >::SEGMENT;
 
  /// true if a request of \f$ b \f$ bytes aligned to \f$ a \f$ takes a class,
  /// i.e., if \f$ 1 \le b \le M \f$ and \f$ a \le 16 \f$
- [[nodiscard]] static constexpr bool pooled( std::size_t b ,
-                                             std::size_t a ) {
+ [[nodiscard]] static constexpr bool pooled( std::size_t b , std::size_t a ) {
   return( ( b >= 1 ) && ( b <= M ) && ( a <= ALIGN ) );
   }
 
@@ -150,8 +150,7 @@ class ConcurrentPoolResource {
  /// no copy, since its objects and allocators point to it
  ConcurrentPoolResource( const ConcurrentPoolResource & ) = delete;
  /// no copy, since its objects and allocators point to it
- ConcurrentPoolResource & operator=( const ConcurrentPoolResource & ) =
-  delete;
+ ConcurrentPoolResource & operator=( const ConcurrentPoolResource & ) = delete;
 
  /// frees the segments and the heaps; the objects still alive are not
  /// destroyed
@@ -221,14 +220,13 @@ class ConcurrentPoolResource {
 
  /// \f$ b \f$ bytes aligned to \f$ a \f$, as `allocate< b , a >()` above
  [[nodiscard]] void * allocate( std::size_t b ,
-                                std::size_t a = alignof( std::max_align_t )
-                                );
+				std::size_t a = alignof( std::max_align_t ) );
 
  /// the memory \f$ p \f$ of `allocate( b , a )` given back, by any thread,
  /// as `deallocate< b , a >()` above
  /// \pre \f$ p \f$ was given by `allocate( b , a )`, by any thread
  void deallocate( void * p , std::size_t b ,
-                  std::size_t a = alignof( std::max_align_t ) );
+		  std::size_t a = alignof( std::max_align_t ) );
 
  /// the batches of the calling thread go back to their heaps, and the
  /// slots that other threads freed into its heap go on its free lists
@@ -254,13 +252,13 @@ class ConcurrentPoolResource {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Pages = detail::PageHeap< CLASSES >;
  using Free = typename Pages::Free;
  using Page = typename Pages::Page;
 
  /// the returns of a class, on a line of cache of their own
- struct alignas( 64 ) Returns {
+ struct alignas( 64 ) Returns
+ {
   /// the top of the stack of the returns
   std::atomic< Free * > top{ nullptr };
   };
@@ -268,24 +266,26 @@ class ConcurrentPoolResource {
  struct Heap;
 
  /// a batch of slots of a class freed by a thread for another heap
- struct Batch {
-  Heap * to = nullptr;                ///< the heap they go back to
-  Free * head = nullptr;              ///< the slots, linked
+ struct Batch
+ {
+  Heap * to = nullptr;    ///< the heap they go back to
+  Free * head = nullptr;  ///< the slots, linked
   /// the last slot of the batch
   Free * tail = nullptr;
-  std::uint32_t n = 0;                ///< their number
+  std::uint32_t n = 0;  ///< their number
   };
 
  /// the slots of a batch, at most
  static constexpr std::uint32_t BATCH = 32;
 
  /// the heap of a thread
- struct Heap {
-  std::thread::id id;                 ///< its thread
-  Heap * link = nullptr;              ///< the heap made before
-  Pages pages{ this };                ///< its pages
-  Batch out[ CLASSES ];               ///< the slots freed for others
-  Returns returns[ CLASSES ];         ///< the slots freed by others
+ struct Heap
+ {
+  std::thread::id id;          ///< its thread
+  Heap * link = nullptr;       ///< the heap made before
+  Pages pages{ this };         ///< its pages
+  Batch out[ CLASSES ];        ///< the slots freed for others
+  Returns returns[ CLASSES ];  ///< the slots freed by others
   };
 
  /// sends the batch b to its heap, one compare-and-swap
@@ -294,12 +294,13 @@ class ConcurrentPoolResource {
  /// the class of b bytes aligned to a: b rounded up to a multiple of 8,
  /// or of 16 if a > 8, so that the slots of the class are aligned to a
  [[nodiscard]] static constexpr std::size_t classOf( std::size_t b ,
-                                                     std::size_t a ) {
+						     std::size_t a ) {
   return( ( a > GRAIN ? ( b + 15 ) / 16 * 2 : ( b + 7 ) / 8 ) - 1 );
   }
 
  /// the identity of the resource and the heap of a thread
- struct Cache {
+ struct Cache
+ {
   /// the identity of the resource, 0 for none
   std::uint64_t id = 0;
   /// the heap of the thread in that resource
@@ -324,8 +325,8 @@ class ConcurrentPoolResource {
  inline static thread_local Cache s_cache;
  inline static std::atomic< std::uint64_t > s_ids{ 0 };
 
- const std::uint64_t f_id;                    ///< never 0, never reused
- std::atomic< Heap * > f_heaps{ nullptr };    ///< the last heap made
+ const std::uint64_t f_id;                  ///< never 0, never reused
+ std::atomic< Heap * > f_heaps{ nullptr };  ///< the last heap made
 
  };  // end( class ConcurrentPoolResource )
 
@@ -341,7 +342,7 @@ class ConcurrentPoolResource {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ConcurrentPool.h included */
+#endif /* ConcurrentPool.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ConcurrentPool.h ------------------------*/

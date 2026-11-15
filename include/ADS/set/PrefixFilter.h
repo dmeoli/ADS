@@ -159,7 +159,7 @@
 
 #ifndef __ADS_PrefixFilter
  #define __ADS_PrefixFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -184,7 +184,7 @@
 /// a function inlined even where the compiler would not
 #ifndef ADS_FILTER_INLINE
  #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_INLINE inline __attribute__(( always_inline ))
+  #define ADS_FILTER_INLINE inline __attribute__( ( always_inline ) )
  #elif defined( _MSC_VER )
   #define ADS_FILTER_INLINE __forceinline
  #else
@@ -195,7 +195,7 @@
 /// a function never inlined, the rare path out of a query
 #ifndef ADS_FILTER_NOINLINE
  #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_NOINLINE __attribute__(( noinline ))
+  #define ADS_FILTER_NOINLINE __attribute__( ( noinline ) )
  #elif defined( _MSC_VER )
   #define ADS_FILTER_NOINLINE __declspec( noinline )
  #else
@@ -207,7 +207,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS PrefixFilter ---------------------------*/
@@ -216,11 +217,11 @@ namespace ADS {
 /// an incremental filter of at most \f$ n \f$ keys of type `T`: bins of 25
 /// fingerprints of 8 bits over 25 quotients, the overflow in a spare
 template< class T , class H = DefaultHash< T > >
-class PrefixFilter {
+class PrefixFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty filter for \f$ n \f$ keys, its bins at the load 0.95 when
  /// they are in, at least one bin
  /// \pre \f$ n < 2^{32} \f$
@@ -315,19 +316,19 @@ class PrefixFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a pocket dictionary: the header in the low 50 bits, the quotient of
  /// the maximum (63 before an overflow) in the next 6, the 25 remainders
  /// in the other bytes
- struct alignas( 32 ) Bin {
+ struct alignas( 32 ) Bin
+ {
   /// the bytes, the 6 bits of the quotient at 63 in an empty bin
   unsigned char b[ 32 ] = { 0 , 0 , 0 , 0 , 0 , 0 , 0xFC };
   };
 
- static constexpr unsigned kK = 25;        ///< remainders in a bin
- static constexpr unsigned kQ = 25;        ///< quotients
- static constexpr std::uint32_t kS = kQ << 8;   ///< mini-fingerprints
- static constexpr unsigned kBody = 7;      ///< the first byte of the body
+ static constexpr unsigned kK = 25;            ///< remainders in a bin
+ static constexpr unsigned kQ = 25;            ///< quotients
+ static constexpr std::uint32_t kS = kQ << 8;  ///< mini-fingerprints
+ static constexpr unsigned kBody = 7;          ///< the first byte of the body
  static constexpr std::uint64_t kHead = ( std::uint64_t( 1 ) << 50 ) - 1;
  static constexpr std::uint64_t kTop = std::uint64_t( 63 ) << 50;
  static constexpr double kAlpha = 0.95;    ///< the load of the bins
@@ -346,8 +347,7 @@ class PrefixFilter {
  [[nodiscard]] static unsigned select0( std::uint64_t w , unsigned j );
 
  /// the slots \f$ [ s , e ) \f$ of the body holding the run of \f$ q \f$
- static void run( std::uint64_t w , unsigned q , unsigned & s ,
-                  unsigned & e );
+ static void run( std::uint64_t w , unsigned q , unsigned & s , unsigned & e );
 
  /// the bits \f$ i \f$ of the body bytes \f$ i \f$ of \f$ B \f$ equal to
  /// \f$ r \f$
@@ -362,18 +362,17 @@ class PrefixFilter {
 
  /// true if \f$ r \f$ is in the run of \f$ q \f$ of \f$ B \f$, whose
  /// header is \f$ w \f$
- [[nodiscard]] static bool find( const Bin & B , std::uint64_t w ,
-                                 unsigned q , unsigned r );
+ [[nodiscard]] static bool find( const Bin & B , std::uint64_t w , unsigned q ,
+				 unsigned r );
 
  /// the largest mini-fingerprint of the full bin \f$ B \f$, whose header
  /// is \f$ w \f$
- [[nodiscard]] static std::uint32_t maximum( const Bin & B ,
-                                             std::uint64_t w );
+ [[nodiscard]] static std::uint32_t maximum( const Bin & B , std::uint64_t w );
 
  /// \f$ ( q , r ) \f$ put into \f$ B \f$, which holds \f$ c < 25 \f$
  /// remainders, \f$ w \f$ its header
  static void put( Bin & B , std::uint64_t w , unsigned q , unsigned r ,
-                  unsigned c );
+		  unsigned c );
 
  /// the bins for \f$ n \f$ keys, at least one
  [[nodiscard]] static std::size_t binsFor( std::size_t n );
@@ -398,14 +397,14 @@ class PrefixFilter {
  /// the hash in the spare of the mini-fingerprint \f$ x \f$ of the bin
  /// \f$ i \f$
  [[nodiscard]] static std::uint64_t spareHash( std::size_t i ,
-                                               std::uint32_t x );
+					       std::uint32_t x );
 
- std::vector< Bin > f_B;                   ///< the bins
- std::size_t f_cap;                        ///< n
- std::size_t f_n = 0;                      ///< the keys in
- std::size_t f_spareN = 0;                 ///< the fingerprints spared
- BlockedBloomFilter< std::uint64_t > f_spare;   ///< the spare
- H f_h;                                    ///< the hash of the keys
+ std::vector< Bin > f_B;                       ///< the bins
+ std::size_t f_cap;                            ///< n
+ std::size_t f_n = 0;                          ///< the keys in
+ std::size_t f_spareN = 0;                     ///< the fingerprints spared
+ BlockedBloomFilter< std::uint64_t > f_spare;  ///< the spare
+ H f_h;                                        ///< the hash of the keys
 
  };  // end( class PrefixFilter )
 
@@ -421,7 +420,7 @@ class PrefixFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PrefixFilter.h included */
+#endif /* PrefixFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File PrefixFilter.h ------------------------*/

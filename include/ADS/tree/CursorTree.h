@@ -31,7 +31,7 @@
 
 #ifndef __ADS_CursorTree
  #define __ADS_CursorTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -51,7 +51,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS CursorTree ----------------------------*/
@@ -59,13 +60,13 @@ namespace ADS {
 
 /// an ordered tree on a vector of nodes linked by their places
 template< class T >
-class CursorTree {
+class CursorTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;              ///< the type of the values
- static constexpr int NIL = -1;   ///< no node
+ using Item = T;                 ///< the type of the values
+ static constexpr int NIL = -1;  ///< no node
 
  /// the empty tree
  CursorTree( void ) = default;
@@ -210,7 +211,8 @@ class CursorTree {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the places in use, for `SlotIterator`
- struct Used {
+ struct Used
+ {
   /// the places
   static std::size_t size( const auto & o ) { return( o.f_N.size() ); }
   /// whether the place \f$ i \f$ holds a node
@@ -224,13 +226,13 @@ class CursorTree {
  /// the nodes, in the order of their places, bidirectional
  [[nodiscard]] auto nodes( void ) const {
   using It = SlotIterator< CursorTree , Used >;
-  return( std::ranges::subrange( It( this , 0 ) ,
-                                 It( this , f_N.size() ) ) );
+  return( std::ranges::subrange( It( this , 0 ) , It( this , f_N.size() ) ) );
   }
 
  /// the walk of the children of a node
- struct Siblings {
-  static constexpr int none = NIL;   ///< the end
+ struct Siblings
+ {
+  static constexpr int none = NIL;  ///< the end
   /// the next sibling of \f$ n \f$
   static int next( const CursorTree * o , int n , int ) {
    return( o->rightSibling( n ) );
@@ -242,19 +244,19 @@ class CursorTree {
  [[nodiscard]] auto children( int n ) const {
   using It = WalkIterator< CursorTree , int , Siblings >;
   return( std::ranges::subrange( It( this , leftmostChild( n ) , n ) ,
-                                 It() ) );
+				 It() ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: its value, its links and whether the place is used
- struct Node {
-  T value;                        ///< the value
-  int parent ,                    ///< the parent, `NIL` for the root
-      child ,                     ///< the first child, `NIL` if missing
-      sibling;                    ///< the next sibling, `NIL` if missing
-  bool used;                      ///< false for a free place
+ struct Node
+ {
+  T value;     ///< the value
+  int parent ,  ///< the parent, `NIL` for the root
+    child ,     ///< the first child, `NIL` if missing
+    sibling;   ///< the next sibling, `NIL` if missing
+  bool used;   ///< false for a free place
   };
 
  const Node & node( int n ) const;
@@ -279,10 +281,10 @@ class CursorTree {
  /// \f$ i \f$
  void visit( int n , int i , std::vector< int > & P , int kind ) const;
 
- std::vector< Node > f_N;   ///< the nodes, used or free
- int f_root = NIL;          ///< the root
- int f_free = NIL;          ///< the first free place
- int f_size = 0;            ///< the number of nodes
+ std::vector< Node > f_N;  ///< the nodes, used or free
+ int f_root = NIL;         ///< the root
+ int f_free = NIL;         ///< the first free place
+ int f_size = 0;           ///< the number of nodes
 
  };  // end( class CursorTree )
 
@@ -298,7 +300,7 @@ class CursorTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CursorTree.h included */
+#endif /* CursorTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File CursorTree.h --------------------------*/

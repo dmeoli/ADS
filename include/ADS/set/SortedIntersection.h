@@ -104,7 +104,7 @@
 
 #ifndef __ADS_SortedIntersection
  #define __ADS_SortedIntersection
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -126,7 +126,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the items common to \f$ A \f$ and \f$ B \f$, by merging
 ///
@@ -148,7 +149,7 @@ namespace ADS {
 /// \pre \f$ A \f$ and \f$ B \f$ strictly increasing (an audit)
 template< class T , class C = std::less<> >
 std::vector< T > intersectMerge( const std::vector< T > & A ,
-                                 const std::vector< T > & B , C less = C() );
+				 const std::vector< T > & B , C less = C() );
 
 /// the items common to \f$ A \f$ and \f$ B \f$, by a binary search in
 /// the longer list of each item of the shorter one
@@ -171,8 +172,8 @@ std::vector< T > intersectMerge( const std::vector< T > & A ,
 /// \post the result of `intersectMerge()` (an audit)
 template< class T , class C = std::less<> >
 std::vector< T > intersectBinarySearch( const std::vector< T > & A ,
-                                        const std::vector< T > & B ,
-                                        C less = C() );
+					const std::vector< T > & B ,
+					C less = C() );
 
 /// the items common to \f$ A \f$ and \f$ B \f$, by mutual partitions
 ///
@@ -202,8 +203,8 @@ std::vector< T > intersectBinarySearch( const std::vector< T > & A ,
 /// \post the result of `intersectMerge()` (an audit)
 template< class T , class C = std::less<> >
 std::vector< T > intersectMutualPartition( const std::vector< T > & A ,
-                                           const std::vector< T > & B ,
-                                           C less = C() );
+					   const std::vector< T > & B ,
+					   C less = C() );
 
 /// the items common to \f$ A \f$ and \f$ B \f$, by doubling searches
 ///
@@ -229,8 +230,8 @@ std::vector< T > intersectMutualPartition( const std::vector< T > & A ,
 /// \post the result of `intersectMerge()` (an audit)
 template< class T , class C = std::less<> >
 std::vector< T > intersectDoubling( const std::vector< T > & A ,
-                                    const std::vector< T > & B ,
-                                    C less = C() );
+				    const std::vector< T > & B ,
+				    C less = C() );
 
 /// the items common to \f$ A \f$ and \f$ B \f$, by the first items of
 /// the blocks of \f$ L \f$ items of \f$ A \f$
@@ -260,15 +261,16 @@ std::vector< T > intersectDoubling( const std::vector< T > & A ,
 /// \post the result of `intersectMerge()` (an audit)
 template< class T , class C = std::less<> >
 std::vector< T > intersectTwoLevel( const std::vector< T > & A ,
-                                    const std::vector< T > & B ,
-                                    std::size_t L , C less = C() );
+				    const std::vector< T > & B ,
+				    std::size_t L ,
+				    C less = C() );
 
 /// the first item of each block of \f$ L \f$ items of \f$ A \f$, into
 /// \f$ H \f$, by one scan
 /// \pre \f$ L \ge 1 \f$, \f$ H \f$ empty, the files on the same memory
 template< class T >
 void twoLevelHeaders( const DiskFile< T > & A , std::size_t L ,
-                      DiskFile< T > & H );
+		      DiskFile< T > & H );
 
 /// the items common to the sorted files \f$ A \f$ and \f$ B \f$ into
 /// `out`, by merging, \f$ \lceil n / B \rceil + \lceil m / B \rceil \f$
@@ -290,8 +292,8 @@ void twoLevelHeaders( const DiskFile< T > & A , std::size_t L ,
 ///      \f$ A \f$ and \f$ B \f$ strictly increasing (an audit)
 template< class T , class C = std::less<> >
 void intersectMergeExternal( const DiskFile< T > & A ,
-                             const DiskFile< T > & B , DiskFile< T > & out ,
-                             C less = C() );
+			     const DiskFile< T > & B ,
+			     DiskFile< T > & out , C less = C() );
 
 /// the items common to the sorted files \f$ A \f$ and \f$ B \f$ into
 /// `out`, by the headers \f$ H \f$ of the blocks of \f$ L \f$ items of
@@ -319,9 +321,9 @@ void intersectMergeExternal( const DiskFile< T > & A ,
 /// \post the result of `intersectMerge()` (an audit)
 template< class T , class C = std::less<> >
 void intersectTwoLevelExternal( const DiskFile< T > & A ,
-                                const DiskFile< T > & H , std::size_t L ,
-                                const DiskFile< T > & B ,
-                                DiskFile< T > & out , C less = C() );
+				const DiskFile< T > & H , std::size_t L ,
+				const DiskFile< T > & B , DiskFile< T > & out ,
+				C less = C() );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS PermutedBuckets --------------------------*/
@@ -330,11 +332,11 @@ void intersectTwoLevelExternal( const DiskFile< T > & A ,
 /// a set of values below \f$ 2^w \f$, permuted by
 /// \f$ x \mapsto ( a x + c ) \bmod 2^w \f$ and split by the top bits of the
 /// images into buckets of \f$ L \f$ items on average
-class PermutedBuckets {
+class PermutedBuckets
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the values of \f$ A \f$, distinct, in any order
  ///
  /// In pseudocode (Sanders and Transier, and Ferragina, chapter 6):
@@ -351,7 +353,7 @@ class PermutedBuckets {
  /// \pre \f$ 1 \le w \le 63 \f$, \f$ a \f$ odd, \f$ L \ge 1 \f$, the
  ///      values of \f$ A \f$ distinct and below \f$ 2^w \f$
  PermutedBuckets( const std::vector< std::uint64_t > & A , unsigned w ,
-                  std::size_t L , std::uint64_t a , std::uint64_t c );
+		  std::size_t L , std::uint64_t a , std::uint64_t c );
 
  /// the items
  [[nodiscard]] std::size_t size( void ) const;
@@ -385,16 +387,15 @@ class PermutedBuckets {
  /// \f]
  /// \pre the same \f$ w \f$, \f$ a \f$ and \f$ c \f$
  /// \post the intersection of the two sets (an audit)
- [[nodiscard]] std::vector< std::uint64_t > intersect(
-                                     const PermutedBuckets & other ,
-                                     std::size_t * scanned = nullptr ) const;
+ [[nodiscard]] std::vector< std::uint64_t >
+ intersect( const PermutedBuckets & other ,
+	    std::size_t * scanned = nullptr ) const;
 
  /// the values of the set, sorted, by inverting the permutation
  [[nodiscard]] std::vector< std::uint64_t > values( void ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// \f$ 2^w - 1 \f$
  [[nodiscard]] std::uint64_t mask( void ) const;
 
@@ -404,12 +405,12 @@ class PermutedBuckets {
  /// \f$ \pi^{-1}( y ) = a^{-1} ( y - c ) \bmod 2^w \f$
  [[nodiscard]] std::uint64_t invert( std::uint64_t y ) const;
 
- unsigned f_w;                     ///< the bits of the universe
- unsigned f_ell;                   ///< the bits of a bucket number
- std::uint64_t f_a , f_c;          ///< the permutation
- std::uint64_t f_ainv;             ///< the inverse of a modulo 2^w
- std::vector< std::uint64_t > f_img;   ///< the images, sorted
- std::vector< std::size_t > f_off;     ///< the start of each bucket
+ unsigned f_w;                        ///< the bits of the universe
+ unsigned f_ell;                      ///< the bits of a bucket number
+ std::uint64_t f_a , f_c;              ///< the permutation
+ std::uint64_t f_ainv;                ///< the inverse of a modulo 2^w
+ std::vector< std::uint64_t > f_img;  ///< the images, sorted
+ std::vector< std::size_t > f_off;    ///< the start of each bucket
 
  };  // end( class PermutedBuckets )
 
@@ -425,7 +426,7 @@ class PermutedBuckets {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SortedIntersection.h included */
+#endif /* SortedIntersection.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File SortedIntersection.h ---------------------*/

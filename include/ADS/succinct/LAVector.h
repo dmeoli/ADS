@@ -92,7 +92,7 @@
 
 #ifndef __ADS_LAVector
  #define __ADS_LAVector
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -114,7 +114,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS LAVector ------------------------------*/
@@ -122,11 +123,11 @@ namespace ADS {
 
 /// a non-decreasing sequence of integers of 64 bits as the segments of an
 /// optimal piecewise linear approximation and the corrections of the items
-class LAVector {
+class LAVector
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty sequence
  LAVector( void ) = default;
 
@@ -290,28 +291,30 @@ class LAVector {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a segment: the base, the slope, and where its corrections begin
  /// times 128 plus their width
- struct Segment {
-  std::uint64_t base;        ///< \f$ \beta_j \f$
-  double slope;              ///< \f$ \alpha_j \f$, not negative
-  std::uint64_t ow;          ///< its first bit in C times 128, plus w_j
+ struct Segment
+ {
+  std::uint64_t base;  ///< \f$ \beta_j \f$
+  double slope;        ///< \f$ \alpha_j \f$, not negative
+  std::uint64_t ow;    ///< its first bit in C times 128, plus w_j
   };
 
  /// integers of a fixed number of bits, the least that holds them all,
  /// one after the other in words with one more at the end, so that an
  /// integer is read by one load of 8 bytes from its first byte
- struct Packed {
-  std::vector< std::uint64_t > words;   ///< the bits, from the lowest
-  int width = 0;                        ///< the bits of an integer
-  std::uint64_t mask = 0;               ///< their mask
-  std::size_t bits = 0;                 ///< the bits of the integers
+ struct Packed
+ {
+  std::vector< std::uint64_t > words;  ///< the bits, from the lowest
+  int width = 0;                       ///< the bits of an integer
+  std::uint64_t mask = 0;              ///< their mask
+  std::size_t bits = 0;                ///< the bits of the integers
 
   /// the integers of \f$ v \f$
   void pack( const std::vector< std::uint64_t > & v ) {
    std::uint64_t top = 0;
-   for( const auto x : v ) top = std::max( top , x );
+   for( const auto x : v )
+    top = std::max( top , x );
    width = top == 0 ? 0 : lambda( top ) + 1;
    ADS_PRE( width <= 56 );
    mask = ( std::uint64_t( 1 ) << width ) - 1;
@@ -325,17 +328,18 @@ class LAVector {
    }
   /// the integers \f$ i \f$ and \f$ i + 1 \f$, by one load when they
   /// fit in it
-  [[nodiscard]] std::pair< std::size_t , std::size_t > pair(
-                                                   std::size_t i ) const {
+  [[nodiscard]] std::pair< std::size_t , std::size_t >
+  pair( std::size_t i ) const {
    if constexpr( std::endian::native == std::endian::little )
     if( width <= 28 ) {
      const std::size_t b = i * std::size_t( width );
      std::uint64_t x;
-     std::memcpy( &x , reinterpret_cast< const unsigned char * >(
-                         words.data() ) + b / 8 , 8 );
+     std::memcpy(
+       &x , reinterpret_cast< const unsigned char * >( words.data() ) + b / 8 ,
+       8 );
      x >>= b % 8;
      return( std::make_pair( std::size_t( x & mask ) ,
-                             std::size_t( ( x >> width ) & mask ) ) );
+			      std::size_t( ( x >> width ) & mask ) ) );
      }
    return( std::make_pair( ( *this )[ i ] , ( *this )[ i + 1 ] ) );
    }
@@ -344,15 +348,16 @@ class LAVector {
    const std::size_t b = i * std::size_t( width );
    if constexpr( std::endian::native == std::endian::little ) {
     std::uint64_t x;
-    std::memcpy( &x , reinterpret_cast< const unsigned char * >(
-                        words.data() ) + b / 8 , 8 );
+    std::memcpy(
+      &x , reinterpret_cast< const unsigned char * >( words.data() ) + b / 8 ,
+      8 );
     return( std::size_t( ( x >> ( b % 8 ) ) & mask ) );
     }
    else {
     const std::size_t o = b % 64;
     return( std::size_t( ( ( words[ b / 64 ] >> o ) |
-                           ( ( words[ b / 64 + 1 ] << 1 ) << ( 63 - o ) ) )
-                         & mask ) );
+			    ( ( words[ b / 64 + 1 ] << 1 ) << ( 63 - o ) ) ) &
+			  mask ) );
     }
    }
   };
@@ -370,7 +375,7 @@ class LAVector {
  /// appends the segment of the places \f$ [ f , l ) \f$ of \f$ x \f$ with
  /// the slope \f$ a \f$
  void append( const std::vector< std::uint64_t > & x , std::size_t f ,
-              std::size_t l , double a );
+	      std::size_t l , double a );
 
  /// the tables of the searches, once the segments are appended
  void finish( const std::vector< std::uint64_t > & x );
@@ -380,24 +385,23 @@ class LAVector {
  [[nodiscard]] static std::uint64_t whole( double v );
 
  /// the segment of the place \f$ i \f$, and in \f$ p \f$ its first place
- [[nodiscard]] std::size_t segmentOf( std::size_t i , std::size_t & p )
-  const;
+ [[nodiscard]] std::size_t segmentOf( std::size_t i , std::size_t & p ) const;
 
  /// the item \f$ d \f$ places after the first of the segment \f$ j \f$
  [[nodiscard]] std::uint64_t item( std::size_t j , std::size_t d ) const;
 
- std::size_t f_n = 0;                    ///< the items
- int f_c = 0;                            ///< the bits asked for
- BitVector f_C;                          ///< the corrections
- std::vector< Segment > f_seg;           ///< the segments
- Packed f_p;                             ///< their first places, and n
- std::vector< std::uint64_t > f_first;   ///< the same, while building
- Packed f_J;                             ///< the segment of each block
- int f_t = 0;                            ///< the places of a block, log
- Packed f_V;                             ///< the segments before a bucket
- int f_l = 0;                            ///< the low bits of a bucket
- std::uint64_t f_x0 = 0;                 ///< the first item
- std::uint64_t f_last = 0;               ///< the last item
+ std::size_t f_n = 0;                   ///< the items
+ int f_c = 0;                           ///< the bits asked for
+ BitVector f_C;                         ///< the corrections
+ std::vector< Segment > f_seg;          ///< the segments
+ Packed f_p;                            ///< their first places, and n
+ std::vector< std::uint64_t > f_first;  ///< the same, while building
+ Packed f_J;                            ///< the segment of each block
+ int f_t = 0;                           ///< the places of a block, log
+ Packed f_V;                            ///< the segments before a bucket
+ int f_l = 0;                           ///< the low bits of a bucket
+ std::uint64_t f_x0 = 0;                ///< the first item
+ std::uint64_t f_last = 0;              ///< the last item
 
  };  // end( class LAVector )
 
@@ -413,7 +417,7 @@ class LAVector {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LAVector.h included */
+#endif /* LAVector.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File LAVector.h ---------------------------*/

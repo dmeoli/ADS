@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE DICTIONARY ------------------------------*/
@@ -24,8 +25,8 @@ namespace ADS {
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
 ChainedHashTable< K , V , C , H >::ChainedHashTable( std::size_t m ,
-                                                     bool restructure , H h )
- : f_T( m ) , f_m0( m ) , f_restructure( restructure ) , f_h( h )
+						  bool restructure , H h )
+    : f_T( m ) , f_m0( m ) , f_restructure( restructure ) , f_h( h )
 {
  ADS_PRE( m > 0 );
  if constexpr( PlaceHash< H , K > )
@@ -34,11 +35,11 @@ ChainedHashTable< K , V , C , H >::ChainedHashTable( std::size_t m ,
 
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
-ChainedHashTable< K , V , C , H >::ChainedHashTable( std::size_t m ,
-                                                     double g , double s ,
-                                                     H h )
- : f_T( m ) , f_m0( m ) , f_restructure( true ) , f_grow( g ) ,
-   f_shrink( s ) , f_h( h )
+ChainedHashTable< K , V , C , H >::ChainedHashTable( std::size_t m , double g ,
+						  double s , H h )
+    : f_T( m ) , f_m0( m ) , f_restructure( true ) , f_grow( g ) ,
+      f_shrink( s ) ,
+      f_h( h )
 {
  ADS_PRE( ( m > 0 ) && ( s >= 0 ) && ( g > 2 * s ) );
  if constexpr( PlaceHash< H , K > )
@@ -76,12 +77,11 @@ void ChainedHashTable< K , V , C , H >::insert( const K & k , const V & v )
   return;
   }
  if constexpr( C == Chain::SORTED )
-  L.insert( p , { k , v } );           // before the first larger key
+  L.insert( p , { k , v } );  // before the first larger key
  else
   L.insert( L.head() , { k , v } );
  ++f_size;
- if( f_restructure &&
-     ( double( f_size ) > f_grow * double( f_T.size() ) ) )
+ if( f_restructure && ( double( f_size ) > f_grow * double( f_T.size() ) ) )
   rebuild( resized( f_T.size() , true , f_m0 ) );
  ADS_POST( present( k ) );
  ADS_INVARIANT( consistent( k ) );
@@ -153,8 +153,8 @@ void ChainedHashTable< K , V , C , H >::forEach( F && f ) const
 
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
-std::vector< K >
-ChainedHashTable< K , V , C , H >::chain( std::size_t i ) const
+std::vector< K > ChainedHashTable< K , V , C ,
+				   H >::chain( std::size_t i ) const
 {
  ADS_PRE( i < f_T.size() );
  std::vector< K > out;
@@ -202,8 +202,7 @@ std::size_t ChainedHashTable< K , V , C , H >::place( const K & k ) const
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
 typename ChainedHashTable< K , V , C , H >::Pos
-ChainedHashTable< K , V , C , H >::find( const Bucket & L ,
-                                         const K & k ) const
+ChainedHashTable< K , V , C , H >::find( const Bucket & L , const K & k ) const
 {
  f_probes = 1;
  auto p = L.head();
@@ -230,9 +229,8 @@ bool ChainedHashTable< K , V , C , H >::present( const K & k ) const
 
 template< class K , class V , Chain C , class H >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
-bool
-ChainedHashTable< K , V , C , H >::listOk( std::size_t i , const K & k ,
-                                           std::size_t & n ) const
+bool ChainedHashTable< K , V , C , H >::listOk( std::size_t i , const K & k ,
+					     std::size_t & n ) const
 {
  const auto & L = f_T[ i ];
  int copies = 0;
@@ -243,7 +241,7 @@ ChainedHashTable< K , V , C , H >::listOk( std::size_t i , const K & k ,
   copies += x == k;
   if constexpr( C == Chain::SORTED ) {
    const auto q = L.next( p );
-   if( ! L.finished( q ) && !( x < L.read( q ).first ) )
+   if( ! L.finished( q ) && ! ( x < L.read( q ).first ) )
     return( false );
    }
   }
@@ -288,8 +286,8 @@ const K * ChainedHashTable< K , V , C , H >::findKey( const K & k ) const
 {
  auto & L = f_T[ place( k ) ];
  auto p = find( L , k );
- return( ! L.finished( p ) && ( L.read( p ).first == k )
-         ? &L.read( p ).first : nullptr );
+ return( ! L.finished( p ) && ( L.read( p ).first == k ) ? &L.read( p ).first
+							  : nullptr );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -116,16 +116,18 @@
 using namespace ADS::bench;
 using U64 = std::uint64_t;
 
-namespace {
+namespace
+{
 
 #ifdef ADS_BENCH_OLD
-using Gen = std::mt19937_64;                // xoshiro is not there
+using Gen = std::mt19937_64;  // xoshiro is not there
 #else
 using Gen = ADS::Xoshiro256;
 #endif
 
 /// an input iterator over a vector, which std::sample cannot jump
-struct InputIt {
+struct InputIt
+{
  using iterator_category = std::input_iterator_tag;
  using value_type = U64;
  using difference_type = std::ptrdiff_t;
@@ -133,23 +135,34 @@ struct InputIt {
  using reference = const U64 &;
  const U64 * p;
  reference operator*( void ) const { return( *p ); }
- InputIt & operator++( void ) { ++p; return( *this ); }
- InputIt operator++( int ) { InputIt t = *this; ++p; return( t ); }
+ InputIt & operator++( void ) {
+  ++p;
+  return( *this );
+  }
+ InputIt operator++( int ) {
+  InputIt t = *this;
+  ++p;
+  return( t );
+  }
  bool operator==( const InputIt & o ) const { return( p == o.p ); }
  };
 
 /// a cell of n operations op( i ), i = 0 , ... , n - 1
 template< class F >
 void cell( const char * bench , const char * what , std::size_t n ,
-           const std::string & who , int r , F && op )
+	   const std::string & who , int r , F && op )
 {
  if( skip( who ) )
   return;
- print( bench , what , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          U64 s = 0;
-          for( std::size_t i = 0 ; i < n ; ++i ) s += U64( op( i ) );
-          sink = sink + s; } , r , n ) );
+ print( bench , what , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 U64 s = 0;
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  s += U64( op( i ) );
+		 sink = sink + s;
+		 } ,
+		r , n ) );
  }
 
 void gcds( std::size_t n , unsigned seed , int r )
@@ -160,11 +173,11 @@ void gcds( std::size_t n , unsigned seed , int r )
   A[ i ] = g();
   B[ i ] = g();
   }
- std::vector< U64 > F = { 1 , 2 };          // the pairs of Fibonacci, the
- while( F.back() < ( U64( 1 ) << 62 ) )     // largest first
+ std::vector< U64 > F = { 1 , 2 };        // the pairs of Fibonacci, the
+ while( F.back() < ( U64( 1 ) << 62 ) )  // largest first
   F.push_back( F[ F.size() - 1 ] + F[ F.size() - 2 ] );
- std::vector< U64 > FA( n ) , FB( n );      // times a random factor, so
- for( std::size_t i = 0 ; i < n ; ++i ) {   // that no two pairs repeat
+ std::vector< U64 > FA( n ) , FB( n );    // times a random factor, so
+ for( std::size_t i = 0 ; i < n ; ++i ) {  // that no two pairs repeat
   const std::size_t k = 40 + g() % ( F.size() - 41 );
   const U64 m = 1 + g() % ( ( U64( 1 ) << 62 ) / F[ k ] );
   FA[ i ] = F[ k ] * m;
@@ -175,17 +188,19 @@ void gcds( std::size_t n , unsigned seed , int r )
   const auto & X = c ? FA : A;
   const auto & Y = c ? FB : B;
   for( const char * who : { "std::gcd" , "std::gcd A/A" } )
-   cell( "gcd" , what , n , who , r , [ & ]( std::size_t i ) {
-    return( std::gcd( X[ i ] , Y[ i ] ) ); } );
+   cell( "gcd" , what , n , who , r ,
+	 [ & ]( std::size_t i ) { return( std::gcd( X[ i ] , Y[ i ] ) ); } );
 #ifdef ADS_HAS_BOOST
   cell( "gcd" , what , n , "boost::integer::gcd" , r , [ & ]( std::size_t i ) {
-   return( boost::integer::gcd( X[ i ] , Y[ i ] ) ); } );
+   return( boost::integer::gcd( X[ i ] , Y[ i ] ) );
+   } );
 #endif
-  cell( "gcd" , what , n , "ADS::gcd" , r , [ & ]( std::size_t i ) {
-   return( ADS::gcd( X[ i ] , Y[ i ] ) ); } );
+  cell( "gcd" , what , n , "ADS::gcd" , r ,
+	[ & ]( std::size_t i ) { return( ADS::gcd( X[ i ] , Y[ i ] ) ); } );
 #ifndef ADS_BENCH_OLD
   cell( "gcd" , what , n , "ADS::binaryGcd" , r , [ & ]( std::size_t i ) {
-   return( ADS::binaryGcd( X[ i ] , Y[ i ] ) ); } );
+   return( ADS::binaryGcd( X[ i ] , Y[ i ] ) );
+   } );
 #endif
   }
  }
@@ -197,16 +212,18 @@ void powers( std::size_t n , unsigned seed , int r )
   const char * what = c == 0 ? "odd63" : c == 1 ? "odd32" : "mersenne61";
   std::vector< U64 > X( n ) , V( n ) , M( n );
   for( std::size_t i = 0 ; i < n ; ++i ) {
-   M[ i ] = c == 0 ? ( g() >> 1 ) | 1 : c == 1 ? ( g() >> 32 ) | 1
-                                               : ADS::kMersenne61;
+   M[ i ] = c == 0   ? ( g() >> 1 ) | 1
+	    : c == 1 ? ( g() >> 32 ) | 1
+		     : ADS::kMersenne61;
    X[ i ] = g() % M[ i ];
    V[ i ] = g();
    }
 #ifdef ADS_HAS_BOOST
-  for( const char * who : { "boost::multiprecision::powm" ,
-                            "boost::multiprecision::powm A/A" } )
+  for( const char * who :
+       { "boost::multiprecision::powm" , "boost::multiprecision::powm A/A" } )
    cell( "powmod" , what , n , who , r , [ & ]( std::size_t i ) {
-    return( boost::multiprecision::powm( X[ i ] , V[ i ] , M[ i ] ) ); } );
+    return( boost::multiprecision::powm( X[ i ] , V[ i ] , M[ i ] ) );
+    } );
 #endif
 #ifdef ADS_HAS_GMP
   {
@@ -217,18 +234,21 @@ void powers( std::size_t n , unsigned seed , int r )
     mpz_set_ui( v , V[ i ] );
     mpz_set_ui( m , M[ i ] );
     mpz_powm( y , x , v , m );
-    return( mpz_get_ui( y ) ); } );
+    return( mpz_get_ui( y ) );
+    } );
    mpz_clears( x , v , m , y , nullptr );
    }
 #endif
 #ifdef ADS_HAS_HURCHALLA
   cell( "powmod" , what , n , "hurchalla MontgomeryForm" , r ,
-        [ & ]( std::size_t i ) {
-   const hurchalla::MontgomeryForm< U64 > mf( M[ i ] );
-   return( mf.convertOut( mf.pow( mf.convertIn( X[ i ] ) , V[ i ] ) ) ); } );
+	[ & ]( std::size_t i ) {
+	 const hurchalla::MontgomeryForm< U64 > mf( M[ i ] );
+	 return( mf.convertOut( mf.pow( mf.convertIn( X[ i ] ) , V[ i ] ) ) );
+	 } );
 #endif
   cell( "powmod" , what , n , "ADS::powMod" , r , [ & ]( std::size_t i ) {
-   return( ADS::powMod( X[ i ] , V[ i ] , M[ i ] ) ); } );
+   return( ADS::powMod( X[ i ] , V[ i ] , M[ i ] ) );
+   } );
   }
  }
 
@@ -236,40 +256,43 @@ void primality( std::size_t n , unsigned seed , int r )
 {
  std::mt19937_64 g( seed );
  for( int c = 0 ; c < 3 ; ++c ) {
-  const char * what = c == 0 ? "random64" : c == 1 ? "primes64"
-                                                   : "random32";
+  const char * what = c == 0 ? "random64" : c == 1 ? "primes64" : "random32";
   std::vector< U64 > N( n );
   for( std::size_t i = 0 ; i < n ; ++i )
-   if( c == 1 )                             // a cycle of 64 primes
+   if( c == 1 )  // a cycle of 64 primes
     N[ i ] = i < 64 ? [ & ]() {
      for( ; ; )
-      if( const U64 p = g() | 1 ; ADS::isPrime( p ) ) return( p ); }()
-                    : N[ i - 64 ];
+      if( const U64 p = g() | 1; ADS::isPrime( p ) )
+       return( p );
+     }()
+		    : N[ i - 64 ];
    else
     N[ i ] = c == 0 ? g() | 1 : ( g() >> 32 ) | 1;
 #ifdef ADS_HAS_BOOST
   for( const char * who : { "boost::multiprecision::miller_rabin_test" ,
-                            "boost::multiprecision::miller_rabin_test A/A" } )
+			    "boost::multiprecision::miller_rabin_test A/A" } )
    cell( "isprime" , what , n , who , r , [ & ]( std::size_t i ) {
-    return( boost::multiprecision::miller_rabin_test( N[ i ] , 25 ) ); } );
+    return( boost::multiprecision::miller_rabin_test( N[ i ] , 25 ) );
+    } );
 #endif
 #ifdef ADS_HAS_GMP
   {
    mpz_t x;
    mpz_init( x );
    cell( "isprime" , what , n , "GMP mpz_probab_prime_p" , r ,
-         [ & ]( std::size_t i ) {
-    mpz_set_ui( x , N[ i ] );
-    return( mpz_probab_prime_p( x , 24 ) ); } );
+	 [ & ]( std::size_t i ) {
+	  mpz_set_ui( x , N[ i ] );
+	  return( mpz_probab_prime_p( x , 24 ) );
+	  } );
    mpz_clear( x );
    }
 #endif
 #ifdef ADS_HAS_HURCHALLA
   cell( "isprime" , what , n , "hurchalla::is_prime" , r ,
-        [ & ]( std::size_t i ) { return( hurchalla::is_prime( N[ i ] ) ); } );
+	[ & ]( std::size_t i ) { return( hurchalla::is_prime( N[ i ] ) ); } );
 #endif
-  cell( "isprime" , what , n , "ADS::isPrime" , r , [ & ]( std::size_t i ) {
-   return( ADS::isPrime( N[ i ] ) ); } );
+  cell( "isprime" , what , n , "ADS::isPrime" , r ,
+	[ & ]( std::size_t i ) { return( ADS::isPrime( N[ i ] ) ); } );
   }
  }
 
@@ -280,26 +303,32 @@ void factorizations( std::size_t n , unsigned seed , int r )
   const char * what = c ? "semiprime64" : "random64";
   std::vector< U64 > N( n );
   for( auto & x : N )
-   if( c ) {                                // two primes of 32 bits
+   if( c ) {  // two primes of 32 bits
     U64 p , q;
-    do p = ( g() >> 32 ) | 1; while( ! ADS::isPrime( p ) );
-    do q = ( g() >> 32 ) | 1; while( ! ADS::isPrime( q ) );
+    do
+     p = ( g() >> 32 ) | 1;
+    while( ! ADS::isPrime( p ) );
+    do
+     q = ( g() >> 32 ) | 1;
+    while( ! ADS::isPrime( q ) );
     x = p * q;
     }
    else
     x = g() | 1;
 #ifdef ADS_HAS_HURCHALLA
-  for( const char * who : { "hurchalla::factorize" ,
-                            "hurchalla::factorize A/A" } )
+  for( const char * who :
+       { "hurchalla::factorize" , "hurchalla::factorize A/A" } )
    cell( "factorize" , what , n , who , r , [ & ]( std::size_t i ) {
     std::vector< U64 > F;
     hurchalla::factorize( N[ i ] , F );
-    return( F.back() ); } );
+    return( F.back() );
+    } );
 #endif
 #ifndef ADS_BENCH_OLD
   cell( "factorize" , what , n , "ADS::factorize" , r ,
-        [ & ]( std::size_t i ) {
-         return( ADS::factorize( N[ i ] ).back() ); } );
+	[ & ]( std::size_t i ) {
+   return( ADS::factorize( N[ i ] ).back() );
+   } );
 #endif
   }
  }
@@ -310,76 +339,86 @@ void words( const std::string & who , std::size_t n , int r , M && make )
 {
  if( skip( who ) )
   return;
- print( "generators" , "words" , n , who , median( make ,
-         [ & ]( auto & G ) {
-          U64 s = 0;
-          for( std::size_t i = 0 ; i < n ; ++i ) s += U64( G() );
-          sink = sink + s; } , r , n ) );
+ print( "generators" , "words" , n , who ,
+	median(
+	  make ,
+	  [ & ]( auto & G ) {
+	   U64 s = 0;
+	   for( std::size_t i = 0 ; i < n ; ++i )
+	    s += U64( G() );
+	   sink = sink + s;
+	   } ,
+	  r , n ) );
  }
 
 void generators( std::size_t n , unsigned seed , int r )
 {
  for( const char * who : { "std::mt19937_64" , "std::mt19937_64 A/A" } )
-  words( who , n , r , [ & ](){ return( std::mt19937_64( seed ) ); } );
- words( "std::minstd_rand" , n , r , [ & ](){
-        return( std::minstd_rand( seed ) ); } );
+  words( who , n , r , [ & ]() { return( std::mt19937_64( seed ) ); } );
+ words( "std::minstd_rand" , n , r ,
+	[ & ]() { return( std::minstd_rand( seed ) ); } );
 #ifdef ADS_HAS_BOOST
- words( "boost::random::mt19937_64" , n , r , [ & ](){
-        return( boost::random::mt19937_64( seed ) ); } );
- words( "boost::random::taus88" , n , r , [ & ](){
-        return( boost::random::taus88( seed ) ); } );
+ words( "boost::random::mt19937_64" , n , r ,
+	[ & ]() { return( boost::random::mt19937_64( seed ) ); } );
+ words( "boost::random::taus88" , n , r ,
+	[ & ]() { return( boost::random::taus88( seed ) ); } );
 #endif
 #ifdef ADS_HAS_PCG
- words( "pcg64" , n , r , [ & ](){ return( pcg64( seed ) ); } );
- words( "pcg32" , n , r , [ & ](){ return( pcg32( seed ) ); } );
+ words( "pcg64" , n , r , [ & ]() { return( pcg64( seed ) ); } );
+ words( "pcg32" , n , r , [ & ]() { return( pcg32( seed ) ); } );
 #endif
- words( "ADS::LinearCongruential mmix" , n , r , [ & ](){
-        return( ADS::LinearCongruential::mmix( seed ) ); } );
+ words( "ADS::LinearCongruential mmix" , n , r ,
+	[ & ]() { return( ADS::LinearCongruential::mmix( seed ) ); } );
 #ifndef ADS_BENCH_OLD
- words( "ADS::Xoshiro256" , n , r , [ & ](){
-        return( ADS::Xoshiro256( seed ) ); } );
- words( "ADS::Xoshiro256StarStar" , n , r , [ & ](){
-        return( ADS::Xoshiro256StarStar( seed ) ); } );
- words( "ADS::WyRand" , n , r , [ & ](){ return( ADS::WyRand( seed ) ); } );
+ words( "ADS::Xoshiro256" , n , r ,
+	[ & ]() { return( ADS::Xoshiro256( seed ) ); } );
+ words( "ADS::Xoshiro256StarStar" , n , r ,
+	[ & ]() { return( ADS::Xoshiro256StarStar( seed ) ); } );
+ words( "ADS::WyRand" , n , r , [ & ]() { return( ADS::WyRand( seed ) ); } );
 #endif
 #ifdef ADS_HAS_RANDOM123
- words( "r123 Philox4x32" , n , r , [ & ](){
-        return( r123::Engine< r123::Philox4x32 >( seed ) ); } );
- words( "r123 Philox4x64" , n , r , [ & ](){
-        return( r123::Engine< r123::Philox4x64 >( seed ) ); } );
+ words( "r123 Philox4x32" , n , r ,
+	[ & ]() { return( r123::Engine< r123::Philox4x32 >( seed ) ); } );
+ words( "r123 Philox4x64" , n , r ,
+	[ & ]() { return( r123::Engine< r123::Philox4x64 >( seed ) ); } );
 #endif
 #ifndef ADS_BENCH_OLD
- words( "ADS::Philox4x32" , n , r , [ & ](){
-        return( ADS::Philox4x32( seed ) ); } );
- words( "ADS::Philox4x64" , n , r , [ & ](){
-        return( ADS::Philox4x64( seed ) ); } );
+ words( "ADS::Philox4x32" , n , r ,
+	[ & ]() { return( ADS::Philox4x32( seed ) ); } );
+ words( "ADS::Philox4x64" , n , r ,
+	[ & ]() { return( ADS::Philox4x64( seed ) ); } );
 #endif
 
- std::mt19937_64 h( seed );                 // the bounds below 2^32
+ std::mt19937_64 h( seed );  // the bounds below 2^32
  std::vector< U64 > S( 1024 );
- for( auto & s : S ) s = ( h() >> 32 ) | 1;
+ for( auto & s : S )
+  s = ( h() >> 32 ) | 1;
  auto bounded = [ & ]( const std::string & who , auto && draw ) {
   if( skip( who ) )
    return;
-  print( "bounded" , "below2^32" , n , who , median(
-          [ & ](){ return( Gen( seed ) ); } , [ & ]( Gen & G ) {
-           U64 s = 0;
-           for( std::size_t i = 0 ; i < n ; ++i )
-            s += draw( G , S[ i & 1023 ] );
-           sink = sink + s; } , r , n ) );
+  print( "bounded" , "below2^32" , n , who ,
+	 median( [ & ]() { return( Gen( seed ) ); } ,
+		 [ & ]( Gen & G ) {
+		  U64 s = 0;
+		  for( std::size_t i = 0 ; i < n ; ++i )
+		   s += draw( G , S[ i & 1023 ] );
+		  sink = sink + s;
+		  } ,
+		 r , n ) );
   };
  for( const char * who : { "std::uniform_int_distribution" ,
-                           "std::uniform_int_distribution A/A" } )
+			   "std::uniform_int_distribution A/A" } )
   bounded( who , []( Gen & G , U64 s ) {
-   return( std::uniform_int_distribution< U64 >( 0 , s - 1 )( G ) ); } );
+   return( std::uniform_int_distribution< U64 >( 0 , s - 1 )( G ) );
+   } );
 #ifdef ADS_HAS_BOOST
  bounded( "boost::random::uniform_int_distribution" , []( Gen & G , U64 s ) {
   return( boost::random::uniform_int_distribution< U64 >( 0 , s - 1 )( G ) );
   } );
 #endif
 #ifndef ADS_BENCH_OLD
- bounded( "ADS::uniformBelow" , []( Gen & G , U64 s ) {
-  return( ADS::uniformBelow( G , s ) ); } );
+ bounded( "ADS::uniformBelow" ,
+	  []( Gen & G , U64 s ) { return( ADS::uniformBelow( G , s ) ); } );
 #endif
 
  std::vector< std::uint32_t > A( n );
@@ -387,22 +426,28 @@ void generators( std::size_t n , unsigned seed , int r )
  auto shuffle = [ & ]( const std::string & who , auto && sh ) {
   if( skip( who ) )
    return;
-  print( "shuffle" , "uint32" , n , who , median( [ & ](){
-          return( std::pair( A , Gen( seed ) ) ); } , [ & ]( auto & P ) {
-           sh( P.first , P.second );
-           sink = sink + P.first[ 0 ]; } , r , n ) );
+  print( "shuffle" , "uint32" , n , who ,
+	 median( [ & ]() { return( std::pair( A , Gen( seed ) ) ); } ,
+		 [ & ]( auto & P ) {
+		  sh( P.first , P.second );
+		  sink = sink + P.first[ 0 ];
+		  } ,
+		 r , n ) );
   };
  for( const char * who : { "std::shuffle" , "std::shuffle A/A" } )
-  shuffle( who , []( auto & B , Gen & G ) {
-   std::shuffle( B.begin() , B.end() , G ); } );
+  shuffle(
+    who ,
+    []( auto & B , Gen & G ) { std::shuffle( B.begin() , B.end() , G ); } );
  shuffle( "std::shuffle mt19937_64" , [ & ]( auto & B , Gen & ) {
   std::mt19937_64 m( seed );
-  std::shuffle( B.begin() , B.end() , m ); } );
- shuffle( "ADS::shuffle" , []( auto & B , Gen & G ) {
-  ADS::shuffle( B , G ); } );
+  std::shuffle( B.begin() , B.end() , m );
+  } );
+ shuffle( "ADS::shuffle" ,
+	  []( auto & B , Gen & G ) { ADS::shuffle( B , G ); } );
 #ifndef ADS_BENCH_OLD
  shuffle( "ADS::shuffleFast" , []( auto & B , Gen & G ) {
-  ADS::shuffleFast( B.begin() , B.end() , G ); } );
+  ADS::shuffleFast( B.begin() , B.end() , G );
+  } );
 #endif
  }
 
@@ -410,41 +455,47 @@ void generators( std::size_t n , unsigned seed , int r )
 void deviates( std::size_t n , unsigned seed , int r )
 {
  auto cellOf = [ & ]( const char * what , const std::string & who ,
-                      auto && draw ) {
+		      auto && draw ) {
   if( skip( who ) )
    return;
-  print( what , "sum" , n , who , median( [ & ](){
-          return( Gen( seed ) ); } , [ & ]( Gen & G ) {
-           double s = 0;
-           for( std::size_t i = 0 ; i < n ; ++i ) s += draw( G );
-           sink = sink + U64( s ); } , r , n ) );
+  print( what , "sum" , n , who ,
+	 median( [ & ]() { return( Gen( seed ) ); } ,
+		 [ & ]( Gen & G ) {
+		  double s = 0;
+		  for( std::size_t i = 0 ; i < n ; ++i )
+		   s += draw( G );
+		  sink = sink + U64( s );
+		  } ,
+		 r , n ) );
   };
- for( const char * who : { "std::normal_distribution" ,
-                           "std::normal_distribution A/A" } )
-  cellOf( "normal" , who , [ D = std::normal_distribution< double >() ](
-                            Gen & G ) mutable { return( D( G ) ); } );
+ for( const char * who :
+      { "std::normal_distribution" , "std::normal_distribution A/A" } )
+  cellOf( "normal" , who ,
+	  [ D = std::normal_distribution< double >() ]( Gen & G ) mutable {
+	   return( D( G ) );
+	   } );
 #ifdef ADS_HAS_BOOST
  cellOf( "normal" , "boost::random::normal_distribution" ,
-         [ D = boost::random::normal_distribution< double >() ](
-          Gen & G ) mutable { return( D( G ) ); } );
+	 [ D = boost::random::normal_distribution< double >() ](
+	   Gen & G ) mutable { return( D( G ) ); } );
 #endif
 #ifndef ADS_BENCH_OLD
- cellOf( "normal" , "ADS::normalZiggurat" , []( Gen & G ) {
-  return( ADS::normalZiggurat( G ) ); } );
+ cellOf( "normal" , "ADS::normalZiggurat" ,
+	 []( Gen & G ) { return( ADS::normalZiggurat( G ) ); } );
 #endif
  for( const char * who : { "std::exponential_distribution" ,
-                           "std::exponential_distribution A/A" } )
+			   "std::exponential_distribution A/A" } )
   cellOf( "exponential" , who ,
-          [ D = std::exponential_distribution< double >() ](
-           Gen & G ) mutable { return( D( G ) ); } );
+	  [ D = std::exponential_distribution< double >() ](
+	    Gen & G ) mutable { return( D( G ) ); } );
 #ifdef ADS_HAS_BOOST
  cellOf( "exponential" , "boost::random::exponential_distribution" ,
-         [ D = boost::random::exponential_distribution< double >() ](
-          Gen & G ) mutable { return( D( G ) ); } );
+	 [ D = boost::random::exponential_distribution< double >() ](
+	   Gen & G ) mutable { return( D( G ) ); } );
 #endif
 #ifndef ADS_BENCH_OLD
- cellOf( "exponential" , "ADS::exponentialZiggurat" , []( Gen & G ) {
-  return( ADS::exponentialZiggurat( G ) ); } );
+ cellOf( "exponential" , "ADS::exponentialZiggurat" ,
+	 []( Gen & G ) { return( ADS::exponentialZiggurat( G ) ); } );
 #endif
  }
 
@@ -455,30 +506,35 @@ void discrete( std::size_t n , unsigned seed , int r )
   const std::string what = "k=" + std::to_string( k );
   std::mt19937_64 h( seed );
   std::vector< double > w( k );
-  for( auto & x : w ) x = double( h() % 1000 + 1 );
+  for( auto & x : w )
+   x = double( h() % 1000 + 1 );
   auto cellOf = [ & ]( const std::string & who , auto && draw ) {
    if( skip( who ) )
     return;
-   print( "discrete" , what.c_str() , n , who , median( [ & ](){
-           return( Gen( seed ) ); } , [ & ]( Gen & G ) {
-            U64 s = 0;
-            for( std::size_t i = 0 ; i < n ; ++i ) s += U64( draw( G ) );
-            sink = sink + s; } , r , n ) );
+   print( "discrete" , what.c_str() , n , who ,
+	  median( [ & ]() { return( Gen( seed ) ); } ,
+		  [ & ]( Gen & G ) {
+		   U64 s = 0;
+		   for( std::size_t i = 0 ; i < n ; ++i )
+		    s += U64( draw( G ) );
+		   sink = sink + s;
+		   } ,
+		  r , n ) );
    };
   // each table built only if one of its cells runs
   if( ! skip( "std::discrete_distribution" ) ||
       ! skip( "std::discrete_distribution A/A" ) ) {
    std::discrete_distribution< std::size_t > D( w.begin() , w.end() );
-   for( const char * who : { "std::discrete_distribution" ,
-                             "std::discrete_distribution A/A" } )
+   for( const char * who :
+	{ "std::discrete_distribution" , "std::discrete_distribution A/A" } )
     cellOf( who , [ & ]( Gen & G ) { return( D( G ) ); } );
    }
 #ifdef ADS_HAS_BOOST
   if( ! skip( "boost::random::discrete_distribution" ) ) {
    boost::random::discrete_distribution< std::size_t > E( w.begin() ,
-                                                          w.end() );
-   cellOf( "boost::random::discrete_distribution" , [ & ]( Gen & G ) {
-    return( E( G ) ); } );
+							  w.end() );
+   cellOf( "boost::random::discrete_distribution" ,
+	   [ & ]( Gen & G ) { return( E( G ) ); } );
    }
 #endif
 #ifndef ADS_BENCH_OLD
@@ -498,31 +554,39 @@ void sampling( std::size_t N , unsigned seed , int r )
  auto sample = [ & ]( const std::string & who , auto && smp ) {
   if( skip( who ) )
    return;
-  print( "sampling" , "1000" , N , who , median( [ & ](){
-          return( Gen( seed ) ); } , [ & ]( Gen & G ) {
-           sink = sink + smp( G ); } , r , N ) );
+  print( "sampling" , "1000" , N , who ,
+	 median( [ & ]() { return( Gen( seed ) ); } ,
+		 [ & ]( Gen & G ) { sink = sink + smp( G ); } , r , N ) );
   };
  for( const char * who : { "std::sample forward" ,
-                           "std::sample forward A/A" } )
+			   "std::sample forward A/A" } )
   sample( who , [ & ]( Gen & G ) {
    std::vector< U64 > out( n );
    std::sample( S.begin() , S.end() , out.begin() , n , G );
-   return( out[ 0 ] ); } );
+   return( out[ 0 ] );
+   } );
  sample( "std::sample input" , [ & ]( Gen & G ) {
   std::vector< U64 > out( n );
-  std::sample( InputIt{ S.data() } , InputIt{ S.data() + N } ,
-               out.begin() , n , G );
-  return( out[ 0 ] ); } );
+  std::sample( InputIt{ S.data() } , InputIt{ S.data() + N } , out.begin() ,
+	       n ,
+	       G );
+  return( out[ 0 ] );
+  } );
  sample( "ADS::reservoirSampling" , [ & ]( Gen & G ) {
-  return( ADS::reservoirSampling( S , n , G )[ 0 ] ); } );
- sample( "ADS::sampleBySkips" , [ & ]( Gen & G ) {
-  return( ADS::sampleBySkips( n , N , G )[ 0 ] ); } );
+  return( ADS::reservoirSampling( S , n , G )[ 0 ] );
+  } );
+ sample( "ADS::sampleBySkips" ,
+	 [ & ]( Gen & G ) { return( ADS::sampleBySkips( n , N ,
+							G )[ 0 ] ); } );
 #ifndef ADS_BENCH_OLD
  sample( "ADS::reservoirSampleL" , [ & ]( Gen & G ) {
-  return( ADS::reservoirSampleL( S.begin() , S.end() , n , G )[ 0 ] ); } );
+  return( ADS::reservoirSampleL( S.begin() , S.end() , n , G )[ 0 ] );
+  } );
  sample( "ADS::reservoirSampleL input" , [ & ]( Gen & G ) {
   return( ADS::reservoirSampleL( InputIt{ S.data() } ,
-                                 InputIt{ S.data() + N } , n , G )[ 0 ] ); } );
+				 InputIt{ S.data() + N } ,
+				  n , G )[ 0 ] );
+  } );
 #endif
  }
 

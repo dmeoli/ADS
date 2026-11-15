@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class P >
 void ObservableArray< T , P >::clear( void )
@@ -61,7 +62,7 @@ template< class T , class P >
 void ObservableArray< T , P >::popTold( void )
 {
  const std::size_t i = f_a.size() - 1;
- f_sub.emit( Erase{ i , i , f_a[ i ] } );   // before the removal
+ f_sub.emit( Erase{ i , i , f_a[ i ] } );  // before the removal
  f_a.pop_back();
  f_sub.audit( *this );
  }

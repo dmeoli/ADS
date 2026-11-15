@@ -63,7 +63,7 @@
 
 #ifndef __ADS_ParallelGreedy
  #define __ADS_ParallelGreedy
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,14 +84,15 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a random permutation of \f$ [ 0 , n ) \f$ from the seed, the same on
 /// every machine (the shuffle of Fisher and Yates on a SplitMix64
 /// generator)
 /// \pre \f$ n \ge 0 \f$
 [[nodiscard]] inline std::vector< int > randomOrder( int n ,
-                                                     unsigned long long seed );
+						     unsigned long long seed );
 
 /// the places in \f$ A \f$ of the edges of the minimum spanning forest
 /// that Kruskal gives on the order \f$ ( w , \mathit{place} ) \f$, in that
@@ -124,8 +125,8 @@ namespace ADS {
 /// \pre \f$ n \ge 0 \f$, the ends of the edges in \f$ [ 0 , n ) \f$
 /// \post the forest of the sequential greedy algorithm (audit)
 template< Executor E , class W >
-[[nodiscard]] std::vector< int > parallelKruskal( E & ex , int n ,
-                                const std::vector< WeightedEdge< W > > & A );
+[[nodiscard]] std::vector< int >
+parallelKruskal( E & ex , int n , const std::vector< WeightedEdge< W > > & A );
 
 /// the forest of `parallelKruskal()` above, by filter-Kruskal
 ///
@@ -150,8 +151,8 @@ template< Executor E , class W >
 /// \pre \f$ n \ge 0 \f$, the ends of the edges in \f$ [ 0 , n ) \f$
 /// \post the forest of the sequential greedy algorithm (audit)
 template< Executor E , class W >
-[[nodiscard]] std::vector< int > filterKruskal( E & ex , int n ,
-                                const std::vector< WeightedEdge< W > > & A );
+[[nodiscard]] std::vector< int >
+filterKruskal( E & ex , int n , const std::vector< WeightedEdge< W > > & A );
 
 /// the places in \f$ A \f$ of the edges of the spanning forest of the
 /// greedy algorithm in the order of \f$ A \f$, increasing
@@ -169,8 +170,9 @@ template< Executor E , class W >
 /// \pre \f$ n \ge 0 \f$, the ends of the edges in \f$ [ 0 , n ) \f$
 /// \post the forest of the sequential greedy algorithm (audit)
 template< Executor E >
-[[nodiscard]] std::vector< int > spanningForest( E & ex , int n ,
-                          const std::vector< std::pair< int , int > > & A );
+[[nodiscard]] std::vector< int >
+spanningForest( E & ex , int n ,
+		const std::vector< std::pair< int , int > > & A );
 
 /// the nodes of the greedy maximal independent set of \f$ g \f$ in the
 /// order \f$ \pi \f$ (the node \f$ \pi[ 0 ] \f$ first), increasing
@@ -197,9 +199,9 @@ template< Executor E >
 /// \pre \f$ g \f$ is unoriented, \f$ \pi \f$ is a permutation of its nodes
 /// \post the set of the sequential greedy algorithm (audit)
 template< Executor E , class W >
-[[nodiscard]] std::vector< int > maximalIndependentSet( E & ex ,
-                                 const StaticGraph< W > & g ,
-                                 const std::vector< int > & pi );
+[[nodiscard]] std::vector< int >
+maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
+		       const std::vector< int > & pi );
 
 /// the places in \f$ A \f$ of the edges of the greedy maximal matching in
 /// the order \f$ \pi \f$ of the edges (the edge \f$ A[ \pi[ 0 ] ] \f$
@@ -230,9 +232,10 @@ template< Executor E , class W >
 ///      \f$ \pi \f$ is a permutation of \f$ [ 0 , |A| ) \f$
 /// \post the matching of the sequential greedy algorithm (audit)
 template< Executor E >
-[[nodiscard]] std::vector< int > maximalMatching( E & ex , int n ,
-                          const std::vector< std::pair< int , int > > & A ,
-                          const std::vector< int > & pi );
+[[nodiscard]] std::vector< int >
+maximalMatching( E & ex , int n ,
+		 const std::vector< std::pair< int , int > > & A ,
+		 const std::vector< int > & pi );
 
 /*--------------------------------------------------------------------------*/
 
@@ -246,7 +249,7 @@ template< Executor E >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ParallelGreedy.h included */
+#endif /* ParallelGreedy.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ParallelGreedy.h -----------------------*/

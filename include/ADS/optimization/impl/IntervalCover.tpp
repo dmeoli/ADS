@@ -15,22 +15,26 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
-std::optional< std::vector< std::size_t > > minimumIntervalCover(
-                   const std::vector< std::pair< T , T > > & I , T lo , T hi )
+std::optional< std::vector< std::size_t > >
+minimumIntervalCover( const std::vector< std::pair< T , T > > & I , T lo ,
+		      T hi )
 {
  ADS_PRE( lo < hi );
  ADS_PRE( std::all_of( I.begin() , I.end() ,
-                       []( const std::pair< T , T > & x ) {
-                        return( ! ( x.second < x.first ) ); } ) );
+		       []( const std::pair< T , T > & x ) {
+  return( ! ( x.second < x.first ) );
+  } ) );
  const std::size_t n = I.size();
  std::vector< std::size_t > order( n );
  std::iota( order.begin() , order.end() , std::size_t( 0 ) );
  std::stable_sort( order.begin() , order.end() ,
-                   [ & ]( std::size_t a , std::size_t b ) {
-                    return( I[ a ].first < I[ b ].first ); } );
+		   [ & ]( std::size_t a , std::size_t b ) {
+		    return( I[ a ].first < I[ b ].first );
+		    } );
  std::vector< std::size_t > out;
  T covered = lo;
  std::size_t i = 0;
@@ -45,14 +49,14 @@ std::optional< std::vector< std::size_t > > minimumIntervalCover(
   out.push_back( pick );
   }
  ADS_AUDIT( [ & ] {
-             T reach = lo;
-             for( std::size_t k : out ) {
-              if( reach < I[ k ].first )
-               return( false );
-              reach = std::max( reach , I[ k ].second );
-              }
-             return( ! ( reach < hi ) );
-             }() );
+  T reach = lo;
+  for( std::size_t k : out ) {
+   if( reach < I[ k ].first )
+    return( false );
+   reach = std::max( reach , I[ k ].second );
+   }
+  return( ! ( reach < hi ) );
+  }() );
  return( out );
  }
 

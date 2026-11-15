@@ -42,7 +42,7 @@
 
 #ifndef __ADS_RandomQueue
  #define __ADS_RandomQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -61,7 +61,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RandomQueue ----------------------------*/
@@ -69,15 +70,15 @@ namespace ADS {
 
 /// a bag from which `pop()` takes an item uniformly at random
 template< class T >
-class RandomQueue {
+class RandomQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue, its draws from the seed
- explicit RandomQueue( std::uint64_t seed = 1 ) : f_g( seed ) {}
+ explicit RandomQueue( std::uint64_t seed = 1 ) : f_g( seed ) { }
 
  /// true if there is no item
  [[nodiscard]] bool empty( void ) const { return( f_A.empty() ); }
@@ -137,9 +138,8 @@ class RandomQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< T > f_A;   ///< the items
- SplitMix64 f_g;         ///< the generator of the draws
+ std::vector< T > f_A;  ///< the items
+ SplitMix64 f_g;        ///< the generator of the draws
 
  };  // end( class RandomQueue )
 
@@ -155,7 +155,7 @@ class RandomQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RandomQueue.h included */
+#endif /* RandomQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File RandomQueue.h -------------------------*/

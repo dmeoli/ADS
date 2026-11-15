@@ -56,7 +56,7 @@
 
 #ifndef __ADS_RowFingerprint
  #define __ADS_RowFingerprint
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ FUNCTIONS ---------------------------------*/
@@ -104,7 +105,7 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 [[nodiscard]] std::uint64_t rowFingerprint( std::span< const double > x ,
-                                            std::uint64_t seed = 0 );
+					    std::uint64_t seed = 0 );
 
 /// the fingerprint of the sparse row of the \f$ n \f$ entries
 /// \f$ ( \mathit{ind}[ k ] , \mathit{val}[ k ] ) \f$ under the seed: the
@@ -113,8 +114,8 @@ namespace ADS {
 /// \pre `ind` and `val` are not nil if \f$ n > 0 \f$
 template< class I >
 [[nodiscard]] std::uint64_t rowFingerprint( std::size_t n , const I * ind ,
-                                            const double * val ,
-                                            std::uint64_t seed = 0 );
+					    const double * val ,
+					    std::uint64_t seed = 0 );
 
 /// true if the dense rows \f$ a \f$ and \f$ b \f$ have the same length and
 /// equal values, \f$ +0 \f$ equal to \f$ -0 \f$ and every NaN equal to
@@ -135,15 +136,15 @@ template< class I >
 /// \end{array}}
 /// \f]
 [[nodiscard]] bool sameRow( std::span< const double > a ,
-                            std::span< const double > b );
+			    std::span< const double > b );
 
 /// true if the sparse rows of \f$ n_a \f$ and \f$ n_b \f$ entries have the
 /// same indices in the same order and equal values, in the sense above
 /// \pre the pointers are not nil where there are entries
 template< class I >
-[[nodiscard]] bool sameRow( std::size_t na , const I * ia ,
-                            const double * va , std::size_t nb ,
-                            const I * ib , const double * vb );
+[[nodiscard]] bool sameRow( std::size_t na , const I * ia , const double * va ,
+			    std::size_t nb , const I * ib ,
+			    const double * vb );
 
 /*--------------------------------------------------------------------------*/
 
@@ -157,7 +158,7 @@ template< class I >
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RowFingerprint.h included */
+#endif /* RowFingerprint.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RowFingerprint.h -----------------------*/

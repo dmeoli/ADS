@@ -27,7 +27,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS RecordFile ----------------------------*/
@@ -36,7 +37,8 @@ namespace ADS {
 template< class T >
  requires std::is_trivially_copyable_v< T >
 inline RecordFile< T >::RecordFile( std::filesystem::path path )
- : f_path( std::move( path ) ) {}
+    : f_path( std::move( path ) )
+{ }
 
 /*--------------------------------------------------------------------------*/
 
@@ -75,16 +77,15 @@ inline void RecordFile< T >::append( const T * src , std::size_t n )
 {
  ADS_PRE( src || ( n == 0 ) );
  // the size before, read only when the postconditions are checked
- [[maybe_unused]] const std::size_t before = ADS_CONTRACTS >= 2 ? size()
-                                                                : 0;
+ [[maybe_unused]] const std::size_t before = ADS_CONTRACTS >= 2 ? size() : 0;
  std::ofstream out( f_path , std::ios::binary | std::ios::app );
  if( n )
   out.write( reinterpret_cast< const char * >( src ) ,
-             std::streamsize( n * sizeof( T ) ) );
+	     std::streamsize( n * sizeof( T ) ) );
  out.close();
  if( ! out )
   throw( std::runtime_error( "ADS::RecordFile::append: cannot write " +
-                             f_path.string() ) );
+			     f_path.string() ) );
  ADS_POST( size() == before + n );
  }
 
@@ -98,19 +99,19 @@ inline void RecordFile< T >::forEach( F && f , std::size_t buffer ) const
  ADS_PRE( buffer >= 1 );
  std::error_code ec;
  if( ! std::filesystem::exists( f_path , ec ) )
-  return;                                   // no file, no record
+  return;  // no file, no record
  std::ifstream in( f_path , std::ios::binary );
  if( ! in )
   throw( std::runtime_error( "ADS::RecordFile::forEach: cannot read " +
-                             f_path.string() ) );
+			     f_path.string() ) );
  std::vector< T > buf( buffer );
  for( std::size_t left = size() ; left ; ) {
   const std::size_t k = left < buffer ? left : buffer;
   in.read( reinterpret_cast< char * >( buf.data() ) ,
-           std::streamsize( k * sizeof( T ) ) );
+	   std::streamsize( k * sizeof( T ) ) );
   if( std::size_t( in.gcount() ) != k * sizeof( T ) )
    throw( std::runtime_error( "ADS::RecordFile::forEach: short read of " +
-                              f_path.string() ) );
+			      f_path.string() ) );
   for( std::size_t i = 0 ; i < k ; ++i )
    f( std::as_const( buf[ i ] ) );
   left -= k;
@@ -138,7 +139,7 @@ inline void RecordFile< T >::clear( void )
  std::ofstream out( f_path , std::ios::binary | std::ios::trunc );
  if( ! out )
   throw( std::runtime_error( "ADS::RecordFile::clear: cannot write " +
-                             f_path.string() ) );
+			     f_path.string() ) );
  out.close();
  ADS_POST( empty() );
  }
@@ -153,7 +154,7 @@ inline void RecordFile< T >::remove( void )
  std::filesystem::remove( f_path , ec );
  if( ec )
   throw( std::runtime_error( "ADS::RecordFile::remove: cannot remove " +
-                             f_path.string() ) );
+			     f_path.string() ) );
  ADS_POST( empty() );
  }
 
@@ -164,8 +165,8 @@ inline void RecordFile< T >::remove( void )
 template< class T >
  requires std::is_trivially_copyable_v< T >
 inline RecordWriter< T >::RecordWriter( RecordFile< T > & file ,
-                                        std::size_t buffer )
- : f_file( &file ) , f_cap( buffer )
+					std::size_t buffer )
+    : f_file( &file ) , f_cap( buffer )
 {
  ADS_PRE( buffer >= 1 );
  }
@@ -180,7 +181,8 @@ inline RecordWriter< T >::~RecordWriter()
   if( f_file )
    flush();
   }
- catch( ... ) {}            // a destructor does not throw
+ catch( ... ) {
+  }  // a destructor does not throw
  }
 
 /*--------------------------------------------------------------------------*/
@@ -190,7 +192,7 @@ template< class T >
 inline void RecordWriter< T >::push( const T & x )
 {
  if( f_buf.capacity() < f_cap )
-  f_buf.reserve( f_cap );                  // the buffer at the first push
+  f_buf.reserve( f_cap );  // the buffer at the first push
  f_buf.push_back( x );
  if( f_buf.size() >= f_cap )
   flush();
@@ -232,15 +234,16 @@ inline RecordFile< T > & RecordWriter< T >::file( void ) const
 /*--------------------------------------------------------------------------*/
 
 inline TempDirectory::TempDirectory( const std::filesystem::path & parent ,
-                                     const std::string & prefix )
+				     const std::string & prefix )
 {
  static std::atomic< std::uint64_t > counter{ 0 };
- const auto base = parent.empty() ? std::filesystem::temp_directory_path()
-                                  : parent;
+ const auto base =
+   parent.empty() ? std::filesystem::temp_directory_path() : parent;
  std::filesystem::create_directories( base );
- std::mt19937_64 rng( std::random_device{}() ^
-                      std::uint64_t( std::chrono::steady_clock::now()
-                                      .time_since_epoch().count() ) );
+ std::mt19937_64 rng(
+   std::random_device{}() ^
+   std::uint64_t(
+     std::chrono::steady_clock::now().time_since_epoch().count() ) );
  for( int attempt = 0 ; attempt < 100 ; ++attempt ) {
   const auto name = prefix + std::to_string( rng() ^ counter++ );
   std::error_code ec;
@@ -250,13 +253,16 @@ inline TempDirectory::TempDirectory( const std::filesystem::path & parent ,
    }
   }
  throw( std::runtime_error( "ADS::TempDirectory: cannot make a directory"
-                            " in " + base.string() ) );
+			    " in " +
+			    base.string() ) );
  }
 
 /*--------------------------------------------------------------------------*/
 
 inline TempDirectory::TempDirectory( TempDirectory && other ) noexcept
- : f_path( std::exchange( other.f_path , {} ) ) {}
+    : f_path( std::exchange( other.f_path ,
+{} ) )
+{ }
 
 /*--------------------------------------------------------------------------*/
 
@@ -277,8 +283,8 @@ inline const std::filesystem::path & TempDirectory::path( void ) const
 
 /*--------------------------------------------------------------------------*/
 
-inline std::filesystem::path TempDirectory::operator/(
- const std::string & name ) const
+inline std::filesystem::path
+TempDirectory::operator/( const std::string & name ) const
 {
  return( f_path / name );
  }

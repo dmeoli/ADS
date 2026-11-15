@@ -32,7 +32,7 @@
 
 #ifndef __ADS_ArrayQueue
  #define __ADS_ArrayQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ArrayQueue ----------------------------*/
@@ -57,12 +58,12 @@ namespace ADS {
 
 /// a QUEUE realized with a circular vector of a given capacity
 template< class T >
-class ArrayQueue {
+class ArrayQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue of at most \f$ \mathit{dim} \f$ items
  explicit ArrayQueue( std::size_t dim );
@@ -130,13 +131,13 @@ class ArrayQueue {
  // a constant view of the items from the front to the back, random
  // access on the circular vector
 
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = const T &;              ///< a constant reference
- using const_reference = const T &;        ///< a constant reference
- using iterator = CircularIterator< T >;   ///< a constant iterator
- using const_iterator = CircularIterator< T >;   ///< a constant iterator
+ using value_type = T;                          ///< the type of the items
+ using size_type = std::size_t;                 ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;        ///< the type of the distances
+ using reference = const T &;                   ///< a constant reference
+ using const_reference = const T &;             ///< a constant reference
+ using iterator = CircularIterator< T >;        ///< a constant iterator
+ using const_iterator = CircularIterator< T >;  ///< a constant iterator
 
  /// the iterator on the item at the front
  [[nodiscard]] const_iterator begin( void ) const {
@@ -145,7 +146,7 @@ class ArrayQueue {
  /// the iterator past the item at the back
  [[nodiscard]] const_iterator end( void ) const {
   return( const_iterator( f_A.get() , f_head , f_capacity ,
-                          std::ptrdiff_t( f_size ) ) );
+			   std::ptrdiff_t( f_size ) ) );
   }
  /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
@@ -155,14 +156,13 @@ class ArrayQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the items fit in the vector and the front is in it
  [[nodiscard]] bool fits( void ) const;
 
- std::unique_ptr< T[] > f_A;   ///< the circular vector
- std::size_t f_size;           ///< the number of items
- std::size_t f_head;           ///< the place of the front
- std::size_t f_capacity;       ///< the maximum number of items
+ std::unique_ptr< T[] > f_A;  ///< the circular vector
+ std::size_t f_size;          ///< the number of items
+ std::size_t f_head;          ///< the place of the front
+ std::size_t f_capacity;      ///< the maximum number of items
 
  };  // end( class ArrayQueue )
 
@@ -178,7 +178,7 @@ class ArrayQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ArrayQueue.h included */
+#endif /* ArrayQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ArrayQueue.h --------------------------*/

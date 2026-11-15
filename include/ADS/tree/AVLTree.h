@@ -51,7 +51,7 @@
 
 #ifndef __ADS_AVLTree
  #define __ADS_AVLTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,7 +72,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS AVLTree -------------------------------*/
@@ -88,16 +89,16 @@ struct AVLTreeNodes;
 /// a DICTIONARY on an AVL tree, with the operations based on join [see
 /// `Joinable`]
 template< std::totally_ordered K , class V >
-class AVLTree
- : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > , K , V > {
+class AVLTree : public Joinable< AVLTree< K , V > , AVLTreeNodes< K , V > , K ,
+				 V >
+{
 
  friend struct AVLTreeNodes< K , V >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the value of \f$ k \f$, or nothing, by the descent of a binary search
  /// tree, in \f$ O( \log n ) \f$ time
@@ -167,8 +168,8 @@ class AVLTree
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find( x )` of an SSet of Morin), in \f$ O( \log n ) \f$ time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -196,34 +197,34 @@ class AVLTree
  /// the rebalancings of `insert()` and `remove()` so far, i.e., the nodes
  /// found unbalanced on their paths and mended by one or two rotations,
  /// and those rotations (exercise 9.12 of Morin)
- [[nodiscard]] std::pair< std::size_t , std::size_t > rebalancings( void )
-  const {
-  return( std::pair< std::size_t , std::size_t >( f_rebalances ,
-                                                  f_rotations ) );
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ rebalancings( void ) const {
+  return(
+    std::pair< std::size_t , std::size_t >( f_rebalances , f_rotations ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node, with the height and the size of its subtree
- struct Node {
+ struct Node
+ {
   K key;                         ///< the key
   V value;                       ///< the value
   int h = 0;                     ///< the height of the subtree
   std::size_t s = 1;             ///< the nodes of the subtree
-  std::unique_ptr< Node > left ,   ///< the left child
-                          right;   ///< the right child
+  std::unique_ptr< Node > left ,  ///< the left child
+    right;                       ///< the right child
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key,
  // bidirectional, along the path from the root (the nodes have no parent)
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root.get() ); }
   /// the left child of the node `n`
@@ -238,13 +239,13 @@ class AVLTree
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< AVLTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -280,10 +281,10 @@ class AVLTree
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
- Ptr f_root;              ///< the root
- std::size_t f_size = 0;  ///< the number of keys
- std::size_t f_rebalances = 0;   ///< the rebalancings so far
- std::size_t f_rotations = 0;    ///< their rotations
+ Ptr f_root;                    ///< the root
+ std::size_t f_size = 0;        ///< the number of keys
+ std::size_t f_rebalances = 0;  ///< the rebalancings so far
+ std::size_t f_rotations = 0;   ///< their rotations
 
  };  // end( class AVLTree )
 
@@ -299,7 +300,7 @@ class AVLTree
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* AVLTree.h included */
+#endif /* AVLTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File AVLTree.h ---------------------------*/

@@ -43,7 +43,7 @@
 
 #ifndef __ADS_SortingNetworks
  #define __ADS_SortingNetworks
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -63,7 +63,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a comparator \f$ ( i , j ) \f$ of a network: the smaller of \f$ A[ i ] \f$
 /// and \f$ A[ j ] \f$ goes to \f$ A[ i ] \f$
@@ -130,7 +131,7 @@ inline std::vector< Comparator > bitonicNetwork( std::size_t n );
 /// \pre each comparator is within \f$ A \f$
 template< class T , class C = std::less<> >
 void applyNetwork( std::vector< T > & A , const std::vector< Comparator > & N ,
-                   C less = C() );
+		   C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
@@ -144,7 +145,7 @@ void applyNetwork( std::vector< T > & A , const std::vector< Comparator > & N ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SortingNetworks.h included */
+#endif /* SortingNetworks.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File SortingNetworks.h -----------------------*/

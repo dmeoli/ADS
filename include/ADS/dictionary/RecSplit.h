@@ -150,7 +150,7 @@
 
 #ifndef __ADS_RecSplit
  #define __ADS_RecSplit
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -180,17 +180,20 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the tables of the splitting trees of RecSplit for the sizes m of a
 /// subtree: the parameter of Golomb and Rice of its root, the low bits of
 /// all its codes and its number of codes
-struct RecSplitTables {
- std::vector< std::uint8_t > rice;     ///< the parameter of the root
- std::vector< std::uint32_t > low;     ///< the low bits of all the codes
- std::vector< std::uint16_t > nodes;   ///< the number of codes
+struct RecSplitTables
+{
+ std::vector< std::uint8_t > rice;    ///< the parameter of the root
+ std::vector< std::uint32_t > low;    ///< the low bits of all the codes
+ std::vector< std::uint16_t > nodes;  ///< the number of codes
  };
 
 /// the place of the 1 of rank \f$ k \f$ in \f$ x \f$, \f$ k \f$ below the
@@ -201,10 +204,11 @@ struct RecSplitTables {
 /// place of every 64th 1 of its high bits, so that the item i costs the
 /// inventory and one or two words of the high bits, and the items \f$ i \f$
 /// and \f$ i + 1 \f$ the same plus the next 1
-class RecSplitSequence {
+class RecSplitSequence
+{
  public:
  /// the empty sequence
-RecSplitSequence( void ) = default;
+ RecSplitSequence( void ) = default;
 
  /// the sequence \f$ x \f$, non-decreasing
  explicit RecSplitSequence( const std::vector< std::uint64_t > & x );
@@ -213,25 +217,24 @@ RecSplitSequence( void ) = default;
  [[nodiscard]] std::uint64_t access( std::size_t i ) const;
 
  /// the items \f$ i \f$ and \f$ i + 1 \f$
- [[nodiscard]] std::pair< std::uint64_t , std::uint64_t > pair(
-                                                    std::size_t i ) const;
+ [[nodiscard]] std::pair< std::uint64_t , std::uint64_t >
+ pair( std::size_t i ) const;
 
  /// the bits of the sequence and of its inventory
  [[nodiscard]] std::size_t sizeInBits( void ) const;
 
  private:
-
  /// the place of the 1 of the item \f$ i \f$ in the high bits
  [[nodiscard]] std::size_t select( std::size_t i ) const;
 
  /// the \f$ l \f$ low bits of the item \f$ i \f$
  [[nodiscard]] std::uint64_t low( std::size_t i ) const;
 
- int f_l = 0;                          ///< the low bits of an item
- std::vector< std::uint64_t > f_low;   ///< the low bits, one word more
+ int f_l = 0;                         ///< the low bits of an item
+ std::vector< std::uint64_t > f_low;  ///< the low bits, one word more
  /// the item \f$ i \f$: a 1 at \f$ \lfloor x_i / 2^l \rfloor + i \f$
  std::vector< std::uint64_t > f_high;
- std::vector< std::uint64_t > f_inv;   ///< the place of the 1 of item 64 j
+ std::vector< std::uint64_t > f_inv;  ///< the place of the 1 of item 64 j
  };
 
 }  // end( namespace detail )
@@ -243,14 +246,14 @@ RecSplitSequence( void ) = default;
 /// a minimal perfect hash function of a static set of keys by recursive
 /// splitting, with leaves of at most `L` keys
 template< class T , unsigned L = 8 , class H = DefaultHash< T > >
-class RecSplit {
+class RecSplit
+{
 
  static_assert( ( L >= 1 ) && ( L <= 24 ) , "RecSplit: 1 <= L <= 24" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = T;   ///< the type of the keys
+ using Key = T;  ///< the type of the keys
 
  /// the function of the distinct keys, with \f$ b \f$ keys per bucket on
  /// average
@@ -287,7 +290,7 @@ class RecSplit {
  /// \post the keys are mapped onto \f$ \{ 0 , \ldots , n - 1 \} \f$ (an
  ///       audit)
  explicit RecSplit( const std::vector< T > & keys , std::size_t b = 100 ,
-                    std::uint64_t seed = 1 , H h = H() );
+		    std::uint64_t seed = 1 , H h = H() );
 
  /// the value of \f$ k \f$, in \f$ [ 0 , n ) \f$; some value in it for a key
  /// out of \f$ S \f$
@@ -333,14 +336,13 @@ class RecSplit {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::size_t kMaxTrials = 100;
  static constexpr std::size_t kMaxBucket = 4096;  ///< the bound of a size
  /// the parts of the lower and of the upper aggregation
  static constexpr std::size_t kLower =
-  std::max< std::size_t >( 2 , ( 35 * L + 50 + 99 ) / 100 ) * L;
+   std::max< std::size_t >( 2 , ( 35 * L + 50 + 99 ) / 100 ) * L;
  static constexpr std::size_t kUpper =
-  ( L >= 7 ? ( 21 * L + 90 + 99 ) / 100 : 2 ) * kLower;
+   ( L >= 7 ? ( 21 * L + 90 + 99 ) / 100 : 2 ) * kLower;
 
  /// the tables of `L`, computed at the first use
  [[nodiscard]] static const detail::RecSplitTables & tables( void );
@@ -349,9 +351,9 @@ class RecSplit {
  [[nodiscard]] static constexpr std::size_t left( std::size_t m );
 
  /// the hash of a key of second hash \f$ h \f$ at the depth \f$ d \f$ with
-/// the seed \f$ x \f$
- [[nodiscard]] static std::uint64_t node( std::uint64_t h ,
-                                          std::uint64_t x , unsigned d );
+ /// the seed \f$ x \f$
+ [[nodiscard]] static std::uint64_t node( std::uint64_t h , std::uint64_t x ,
+					  unsigned d );
 
  /// the place in \f$ [ 0 , m ) \f$ of the hash \f$ g \f$
  [[nodiscard]] static std::size_t remap( std::uint64_t g , std::size_t m );
@@ -364,14 +366,14 @@ class RecSplit {
 
  /// the place after the \f$ c \f$-th 1 of the codes from the bit `at`
  [[nodiscard]] std::uint64_t skipOnes( std::uint64_t at ,
-                                       std::size_t c ) const;
+				       std::size_t c ) const;
 
  /// the seeds of the \f$ m \f$ keys \f$ K \f$ of a node at the depth
  /// \f$ d \f$, in preorder, as the pairs of the seed and of the bits of its
  /// low part; \f$ S \f$ is as long as \f$ K \f$
  static void split( std::uint64_t * K , std::uint64_t * S , std::size_t m ,
-                    unsigned d , std::vector< std::uint64_t > & seeds ,
-                    std::vector< std::uint8_t > & rice );
+		    unsigned d , std::vector< std::uint64_t > & seeds ,
+		    std::vector< std::uint8_t > & rice );
 
  /// the codes of the base hashes \f$ B \f$; false if two hashes of a bucket
  /// cannot be separated or a bucket is too large
@@ -385,13 +387,13 @@ class RecSplit {
  detail::RecSplitSequence f_keys;
  /// the place of the bucket \f$ i \f$, less its estimate
  detail::RecSplitSequence f_place;
- std::uint64_t f_dk = 0;    ///< the least gap of the keys before
- std::int64_t f_dp = 0;     ///< the least gap of the places, less beta
+ std::uint64_t f_dk = 0;  ///< the least gap of the keys before
+ std::int64_t f_dp = 0;   ///< the least gap of the places, less beta
  /// the bits per key of the codes, by \f$ 2^{16} \f$
  std::uint64_t f_beta = 0;
- const detail::RecSplitTables * f_t = nullptr;   ///< the tables of `L`
- std::size_t f_trials = 0;  ///< the seeds drawn
- H f_h;                     ///< the hash of the keys
+ const detail::RecSplitTables * f_t = nullptr;  ///< the tables of `L`
+ std::size_t f_trials = 0;                      ///< the seeds drawn
+ H f_h;                                         ///< the hash of the keys
 
  };  // end( class RecSplit )
 
@@ -407,7 +409,7 @@ class RecSplit {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RecSplit.h included */
+#endif /* RecSplit.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File RecSplit.h ---------------------------*/

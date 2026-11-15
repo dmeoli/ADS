@@ -96,7 +96,7 @@
 
 #ifndef __ADS_MPIMailbox
  #define __ADS_MPIMailbox
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #if defined( ADS_WITH_MPI )
 
@@ -122,7 +122,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the customization point of the messages that are not trivially copyable
 /// for `MPIMailbox`: a specialization `MPICodec< Msg >` has
@@ -137,27 +138,28 @@ struct MPICodec;
 
 /// the bytes of a string
 template<>
-struct MPICodec< std::string > {
+struct MPICodec< std::string >
+{
  /// the characters appended to `out`
- static void encode( const std::string & x , std::vector< std::byte > & out )
- {
+ static void encode( const std::string & x , std::vector< std::byte > & out ) {
   const auto * b = reinterpret_cast< const std::byte * >( x.data() );
   out.insert( out.end() , b , b + x.size() );
   }
  /// the string of the bytes \f$ b \f$
  static std::string decode( std::span< const std::byte > b ) {
-  return( std::string( reinterpret_cast< const char * >( b.data() ) ,
-                       b.size() ) );
+  return(
+    std::string( reinterpret_cast< const char * >( b.data() ) , b.size() ) );
   }
  };
 
 /// the bytes of a vector of trivially copyable items
 template< class T >
  requires std::is_trivially_copyable_v< T >
-struct MPICodec< std::vector< T > > {
+struct MPICodec< std::vector< T > >
+{
  /// the bytes of the items appended to `out`
  static void encode( const std::vector< T > & x ,
-                     std::vector< std::byte > & out ) {
+		     std::vector< std::byte > & out ) {
   const std::size_t at = out.size();
   out.resize( at + x.size() * sizeof( T ) );
   if( ! x.empty() )
@@ -172,7 +174,8 @@ struct MPICodec< std::vector< T > > {
   }
  };
 
-namespace detail {
+namespace detail
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS MPIMailboxCore --------------------------*/
@@ -183,11 +186,11 @@ namespace detail {
 /// `B`, the counters, the waves of Mattern, the stop and the closing; a
 /// batch of no bytes is the note of a stop
 template< class B >
-class MPIMailboxCore {
+class MPIMailboxCore
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// no copy, since MPI holds the buffers
  MPIMailboxCore( const MPIMailboxCore & ) = delete;
  /// no copy, since MPI holds the buffers
@@ -226,8 +229,9 @@ class MPIMailboxCore {
    if( q != f_rank ) {
     f_buf.emplace_back();
     f_req.push_back( MPI_REQUEST_NULL );
-    detail::mpiCheck( MPI_Isend( nullptr , 0 , MPI_BYTE , q , kTag ,
-                                 f_comm , &f_req.back() ) , "MPI_Isend" );
+    detail::mpiCheck(
+      MPI_Isend( nullptr , 0 , MPI_BYTE , q , kTag , f_comm , &f_req.back() ) ,
+      "MPI_Isend" );
     ++f_to[ 2 * std::size_t( q ) + 1 ];
     }
   }
@@ -239,9 +243,7 @@ class MPIMailboxCore {
  [[nodiscard]] std::uint64_t batches( void ) const { return( f_batches ); }
 
  /// the messages received by this process so far, by `poll()`
- [[nodiscard]] std::uint64_t received( void ) const {
-  return( f_received );
-  }
+ [[nodiscard]] std::uint64_t received( void ) const { return( f_received ); }
 
  /// the waves completed so far
  [[nodiscard]] std::uint64_t waves( void ) const { return( f_waves ); }
@@ -251,7 +253,6 @@ class MPIMailboxCore {
 
 /*--------------------------------------------------------------------------*/
  protected:
-
  /// the tag of the batches and of the notes
  static constexpr int kTag = 1;
 
@@ -280,8 +281,9 @@ class MPIMailboxCore {
   const auto & x = f_buf.back();
   f_req.push_back( MPI_REQUEST_NULL );
   detail::mpiCheck( MPI_Isend( x.data() , int( x.size() * sizeof( B ) ) ,
-                               MPI_BYTE , int( to ) , kTag , f_comm ,
-                               &f_req.back() ) , "MPI_Isend" );
+			       MPI_BYTE , int( to ) , kTag , f_comm ,
+			       &f_req.back() ) ,
+		    "MPI_Isend" );
   f_to[ 2 * to ] += k;
   ++f_batches;
   }
@@ -295,11 +297,12 @@ class MPIMailboxCore {
    int flag = 0;
    MPI_Status st;
    detail::mpiCheck( MPI_Iprobe( MPI_ANY_SOURCE , kTag , f_comm , &flag ,
-                                 &st ) , "MPI_Iprobe" );
+				 &st ) ,
+		     "MPI_Iprobe" );
    if( ! flag )
     break;
    const std::size_t k = receiveOne( st , take );
-   if( k == 0 ) {                          // the note of a stop
+   if( k == 0 ) {  // the note of a stop
     f_stopped = true;
     break;
     }
@@ -315,9 +318,9 @@ class MPIMailboxCore {
    return;
   int done = 0;
   f_index.resize( f_req.size() );
-  detail::mpiCheck( MPI_Testsome( int( f_req.size() ) , f_req.data() ,
-                                  &done , f_index.data() ,
-                                  MPI_STATUSES_IGNORE ) , "MPI_Testsome" );
+  detail::mpiCheck( MPI_Testsome( int( f_req.size() ) , f_req.data() , &done ,
+				  f_index.data() , MPI_STATUSES_IGNORE ) ,
+		    "MPI_Testsome" );
   if( ( done == MPI_UNDEFINED ) || ( done == 0 ) )
    return;
   // the requests completed are now MPI_REQUEST_NULL: keep the others
@@ -343,13 +346,13 @@ class MPIMailboxCore {
   if( f_waving ) {
    int flag = 0;
    detail::mpiCheck( MPI_Test( &f_wave , &flag , MPI_STATUS_IGNORE ) ,
-                     "MPI_Test" );
+		     "MPI_Test" );
    if( ! flag )
     return( false );
    f_waving = false;
    ++f_waves;
    if( f_sums[ 2 ] == std::uint64_t( f_size ) )
-    return( f_done = true );               // all stopped
+    return( f_done = true );  // all stopped
    if( f_waves > 1 && ( f_sums[ 0 ] == f_lastR ) )
     return( f_done = true );
    f_lastR = f_sums[ 1 ];
@@ -358,8 +361,9 @@ class MPIMailboxCore {
   f_mine[ 1 ] = f_received;
   f_mine[ 2 ] = f_stopped ? 1 : 0;
   detail::mpiCheck( MPI_Iallreduce( f_mine , f_sums , 3 , MPI_UINT64_T ,
-                                    MPI_SUM , f_comm , &f_wave ) ,
-                    "MPI_Iallreduce" );
+				    MPI_SUM ,
+				    f_comm , &f_wave ) ,
+		    "MPI_Iallreduce" );
   f_waving = true;
   return( false );
   }
@@ -375,19 +379,20 @@ class MPIMailboxCore {
   f_closed = true;
   std::uint64_t in[ 2 ] = { 0 , 0 };
   detail::mpiCheck( MPI_Reduce_scatter_block( f_to.data() , in , 2 ,
-                                              MPI_UINT64_T , MPI_SUM ,
-                                              f_comm ) ,
-                    "MPI_Reduce_scatter_block" );
+					      MPI_UINT64_T ,
+					      MPI_SUM , f_comm ) ,
+		    "MPI_Reduce_scatter_block" );
   std::size_t n = 0;
   while( ( f_inMsgs < in[ 0 ] ) || ( f_inNotes < in[ 1 ] ) ) {
    MPI_Status st;
    detail::mpiCheck( MPI_Probe( MPI_ANY_SOURCE , kTag , f_comm , &st ) ,
-                     "MPI_Probe" );
+		     "MPI_Probe" );
    n += receiveOne( st , take );
    }
   if( ! f_req.empty() )
-   detail::mpiCheck( MPI_Waitall( int( f_req.size() ) , f_req.data() ,
-                                  MPI_STATUSES_IGNORE ) , "MPI_Waitall" );
+   detail::mpiCheck(
+     MPI_Waitall( int( f_req.size() ) , f_req.data() , MPI_STATUSES_IGNORE ) ,
+     "MPI_Waitall" );
   f_req.clear();
   f_buf.clear();
   return( n );
@@ -404,18 +409,17 @@ class MPIMailboxCore {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the batch of the status received and handed to `take`; its messages,
  /// 0 for a note
  template< class T >
  std::size_t receiveOne( const MPI_Status & st , T & take ) {
   int bytes = 0;
   detail::mpiCheck( MPI_Get_count( &st , MPI_BYTE , &bytes ) ,
-                    "MPI_Get_count" );
+		    "MPI_Get_count" );
   f_in.resize( std::size_t( bytes ) / sizeof( B ) );
-  detail::mpiCheck( MPI_Recv( f_in.data() , bytes , MPI_BYTE ,
-                              st.MPI_SOURCE , kTag , f_comm ,
-                              MPI_STATUS_IGNORE ) , "MPI_Recv" );
+  detail::mpiCheck( MPI_Recv( f_in.data() , bytes , MPI_BYTE , st.MPI_SOURCE ,
+			      kTag , f_comm , MPI_STATUS_IGNORE ) ,
+		    "MPI_Recv" );
   if( bytes == 0 ) {
    ++f_inNotes;
    return( 0 );
@@ -425,13 +429,13 @@ class MPIMailboxCore {
   return( k );
   }
 
- MPI_Comm f_comm = MPI_COMM_NULL;          ///< the duplicate
- int f_rank = 0;                           ///< this process
- int f_size = 1;                           ///< the processes
- std::vector< B > f_in;                    ///< the batch received
- std::vector< MPI_Request > f_req;         ///< the sends pending
- std::vector< std::vector< B > > f_buf;    ///< their buffers
- std::vector< int > f_index;               ///< for MPI_Testsome
+ MPI_Comm f_comm = MPI_COMM_NULL;        ///< the duplicate
+ int f_rank = 0;                         ///< this process
+ int f_size = 1;                         ///< the processes
+ std::vector< B > f_in;                  ///< the batch received
+ std::vector< MPI_Request > f_req;       ///< the sends pending
+ std::vector< std::vector< B > > f_buf;  ///< their buffers
+ std::vector< int > f_index;             ///< for MPI_Testsome
  /// the messages and the notes sent to each process by MPI
  std::vector< std::uint64_t > f_to;
  std::uint64_t f_inMsgs = 0;               ///< messages received by MPI
@@ -441,8 +445,8 @@ class MPIMailboxCore {
  std::uint64_t f_received = 0;             ///< the messages received
  MPI_Request f_wave = MPI_REQUEST_NULL;    ///< the wave in flight
  bool f_waving = false;                    ///< whether one is
- std::uint64_t f_mine[ 3 ] = { 0 , 0 , 0 };   ///< its counters here
- std::uint64_t f_sums[ 3 ] = { 0 , 0 , 0 };   ///< their sums
+ std::uint64_t f_mine[ 3 ] = { 0 , 0 , 0 };  ///< its counters here
+ std::uint64_t f_sums[ 3 ] = { 0 , 0 , 0 };  ///< their sums
  std::uint64_t f_lastR = 0;                ///< the receipts of the last
  std::uint64_t f_waves = 0;                ///< the waves completed
  bool f_stopped = false;                   ///< stopped here
@@ -458,19 +462,19 @@ class MPIMailboxCore {
 
 /// the mailbox of the processes of a communicator for messages of bytes,
 /// each with a tag of its own, in batches of records
-class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
+class MPIByteMailbox : public detail::MPIMailboxCore< std::byte >
+{
 
- using Core = detail::MPIMailboxCore< std::byte >;   ///< the core
+ using Core = detail::MPIMailboxCore< std::byte >;  ///< the core
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the mailbox of the processes of `comm`, which sends an outbox when it
  /// holds `batch` bytes; a collective operation
  /// \pre MPI is initialized, \f$ \mathit{batch} \ge 1 \f$
  explicit MPIByteMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
-                          std::size_t batch = 65536 )
-  : Core( comm ) , f_batch( batch ) {
+			  std::size_t batch = 65536 )
+     : Core( comm ) , f_batch( batch ) {
   ADS_PRE( batch >= 1 );
   f_out.resize( size() );
   f_count.assign( size() , 0 );
@@ -481,10 +485,9 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
  ~MPIByteMailbox() {
   if( terminated() && ! closed() )
    try {
-    close( []( std::span< const std::byte > b ) {
-     return( records( b ) ); } );
+    close( []( std::span< const std::byte > b ) { return( records( b ) ); } );
     }
-   catch( ... ) {                          // a destructor does not throw
+   catch( ... ) {  // a destructor does not throw
     }
   }
 
@@ -504,7 +507,7 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
  /// \f]
  /// \pre `to` is a rank, \f$ |b| < 2^{32} \f$
  void send( std::size_t to , std::uint32_t t ,
-            std::span< const std::byte > b ) {
+	    std::span< const std::byte > b ) {
   ADS_PRE( ( to < size() ) && ( b.size() <= 0xFFFFFFFFull ) );
   auto & o = f_out[ to ];
   const std::uint32_t head[ 2 ] = { t , std::uint32_t( b.size() ) };
@@ -564,7 +567,8 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
    countSelf( n );
    }
   return( n + receive( [ & ]( std::span< const std::byte > b ) {
-   return( forEach( b , f ) ); } ) );
+	    return( forEach( b , f ) );
+	    } ) );
   }
 
  /// true if the computation has ended, or its stop; called with no work
@@ -585,8 +589,8 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
  template< class F >
  std::size_t leftovers( F && f ) {
   ADS_PRE( terminated() );
-  std::size_t n = close( [ & ]( std::span< const std::byte > b ) {
-   return( forEach( b , f ) ); } );
+  std::size_t n = close(
+    [ & ]( std::span< const std::byte > b ) { return( forEach( b , f ) ); } );
   n += forEach( f_self , f );
   f_self.clear();
   for( auto & o : f_out ) {
@@ -598,7 +602,6 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// \f$ k \f$ rounded up to a multiple of 8
  static std::size_t padded( std::size_t k ) { return( ( k + 7 ) & ~7ull ); }
 
@@ -618,7 +621,7 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
 
  /// the records of the bytes x
  static std::size_t records( std::span< const std::byte > x ) {
-  auto none = []( std::uint32_t , std::span< const std::byte > ) {};
+  auto none = []( std::uint32_t , std::span< const std::byte > ) { };
   return( forEach( x , none ) );
   }
 
@@ -638,11 +641,11 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
   f_count[ to ] = 0;
   }
 
- std::size_t f_batch;                      ///< the bytes of a batch
- std::vector< std::vector< std::byte > > f_out;   ///< the outboxes
- std::vector< std::uint64_t > f_count;     ///< their messages
- std::vector< std::byte > f_self;          ///< the messages to itself
- std::vector< std::byte > f_selfTaken;     ///< those of a poll
+ std::size_t f_batch;                            ///< the bytes of a batch
+ std::vector< std::vector< std::byte > > f_out;  ///< the outboxes
+ std::vector< std::uint64_t > f_count;           ///< their messages
+ std::vector< std::byte > f_self;                ///< the messages to itself
+ std::vector< std::byte > f_selfTaken;           ///< those of a poll
  };  // end( class MPIByteMailbox )
 
 /*--------------------------------------------------------------------------*/
@@ -655,21 +658,21 @@ class MPIByteMailbox : public detail::MPIMailboxCore< std::byte > {
 /// copied as bytes; otherwise [see the specialization below] each message
 /// is a record of the bytes that `MPICodec< Msg >` gives
 template< class Msg , bool = std::is_trivially_copyable_v< Msg > >
-class MPIMailbox : public detail::MPIMailboxCore< Msg > {
+class MPIMailbox : public detail::MPIMailboxCore< Msg >
+{
 
- using Core = detail::MPIMailboxCore< Msg >;   ///< the core
+ using Core = detail::MPIMailboxCore< Msg >;  ///< the core
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;   ///< the type of the messages
+ using Message = Msg;  ///< the type of the messages
 
  /// the mailbox of the processes of `comm`, which sends batches of `batch`
  /// messages; a collective operation
  /// \pre MPI is initialized, \f$ \mathit{batch} \ge 1 \f$
  explicit MPIMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
-                      std::size_t batch = 256 )
-  : Core( comm ) , f_batch( batch ) {
+		      std::size_t batch = 256 )
+     : Core( comm ) , f_batch( batch ) {
   ADS_PRE( batch >= 1 );
   f_out.resize( this->size() );
   }
@@ -681,7 +684,7 @@ class MPIMailbox : public detail::MPIMailboxCore< Msg > {
    try {
     this->close( []( std::span< const Msg > b ) { return( b.size() ); } );
     }
-   catch( ... ) {                          // a destructor does not throw
+   catch( ... ) {  // a destructor does not throw
     }
   }
 
@@ -784,7 +787,8 @@ class MPIMailbox : public detail::MPIMailboxCore< Msg > {
   return( n + this->receive( [ & ]( std::span< const Msg > b ) {
    for( const auto & x : b )
     f( x );
-   return( b.size() ); } ) );
+   return( b.size() );
+   } ) );
   }
 
  /// true if the computation has ended, or its stop; called with no work
@@ -847,7 +851,8 @@ class MPIMailbox : public detail::MPIMailboxCore< Msg > {
   std::size_t n = this->close( [ & ]( std::span< const Msg > b ) {
    for( const auto & x : b )
     f( x );
-   return( b.size() ); } );
+   return( b.size() );
+   } );
   for( auto * v : { &f_self , &f_selfTaken } ) {
    for( const auto & x : *v )
     f( x );
@@ -865,7 +870,6 @@ class MPIMailbox : public detail::MPIMailboxCore< Msg > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the outbox for `to` sent, or moved to the messages to itself
  void post( std::size_t to ) {
   auto & o = f_out[ to ];
@@ -897,24 +901,27 @@ class MPIMailbox : public detail::MPIMailboxCore< Msg > {
 /// `MPICodec< Msg >` gives, on an `MPIByteMailbox` (the same waves, the
 /// same stop and the same `leftovers()`)
 template< class Msg >
-class MPIMailbox< Msg , false > {
+class MPIMailbox< Msg , false >
+{
 
- static_assert( requires( const Msg & x , std::vector< std::byte > & out ,
-                          std::span< const std::byte > b ) {
-  MPICodec< Msg >::encode( x , out );
-  { MPICodec< Msg >::decode( b ) } -> std::convertible_to< Msg >;
-  } , "a message that is not trivially copyable needs MPICodec< Msg >" );
+ static_assert(
+   requires( const Msg & x , std::vector< std::byte > & out ,
+	     std::span< const std::byte > b ) {
+    MPICodec< Msg >::encode( x , out );
+    { MPICodec< Msg >::decode( b ) } -> std::convertible_to< Msg >;
+    } ,
+   "a message that is not trivially copyable needs MPICodec< Msg >" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;   ///< the type of the messages
+ using Message = Msg;  ///< the type of the messages
 
  /// the mailbox of the processes of `comm`, which sends an outbox when it
  /// holds `batch` bytes; a collective operation
  /// \pre MPI is initialized, \f$ \mathit{batch} \ge 1 \f$
  explicit MPIMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
-                      std::size_t batch = 65536 ) : f_box( comm , batch ) {}
+		      std::size_t batch = 65536 )
+     : f_box( comm , batch ) { }
 
  /// the rank of this process
  [[nodiscard]] std::size_t rank( void ) const { return( f_box.rank() ); }
@@ -936,9 +943,9 @@ class MPIMailbox< Msg , false > {
  /// the calls `f( x )` on the messages received, rebuilt, and their number
  template< class F >
  std::size_t poll( F && f ) {
-  return( f_box.poll( [ & ]( std::uint32_t ,
-                             std::span< const std::byte > b ) {
-   f( MPICodec< Msg >::decode( b ) ); } ) );
+  return( f_box.poll( [ & ]( std::uint32_t , std::span< const std::byte > b ) {
+   f( MPICodec< Msg >::decode( b ) );
+   } ) );
   }
 
  /// as `MPIByteMailbox::quiescent()`
@@ -948,9 +955,10 @@ class MPIMailbox< Msg , false > {
  /// \pre `terminated()`
  template< class F >
  std::size_t leftovers( F && f ) {
-  return( f_box.leftovers( [ & ]( std::uint32_t ,
-                                  std::span< const std::byte > b ) {
-   f( MPICodec< Msg >::decode( b ) ); } ) );
+  return(
+    f_box.leftovers( [ & ]( std::uint32_t , std::span< const std::byte > b ) {
+     f( MPICodec< Msg >::decode( b ) );
+     } ) );
   }
 
  /// as `MPIByteMailbox::stop()`
@@ -958,9 +966,7 @@ class MPIMailbox< Msg , false > {
  /// true once this process has stopped
  [[nodiscard]] bool stopped( void ) const { return( f_box.stopped() ); }
  /// true once `quiescent()` has seen the end
- [[nodiscard]] bool terminated( void ) const {
-  return( f_box.terminated() );
-  }
+ [[nodiscard]] bool terminated( void ) const { return( f_box.terminated() ); }
  /// the messages sent by this process so far
  [[nodiscard]] std::uint64_t sent( void ) const { return( f_box.sent() ); }
  /// the batches sent by MPI so far
@@ -978,20 +984,19 @@ class MPIMailbox< Msg , false > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- MPIByteMailbox f_box;                     ///< the mailbox of bytes
- std::vector< std::byte > f_bytes;         ///< the bytes of a send
+ MPIByteMailbox f_box;              ///< the mailbox of bytes
+ std::vector< std::byte > f_bytes;  ///< the bytes of a send
  };  // end( class MPIMailbox< Msg , false > )
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
-#endif  /* ADS_WITH_MPI */
+#endif /* ADS_WITH_MPI */
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MPIMailbox.h included */
+#endif /* MPIMailbox.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MPIMailbox.h --------------------------*/

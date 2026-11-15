@@ -116,7 +116,7 @@
 
 #ifndef __ADS_SuffixTree
  #define __ADS_SuffixTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -137,38 +137,40 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS SuffixTree ----------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the suffix tree of \f$ T \$ \f$, its nodes in a vector, the root at 0
-class SuffixTree {
+class SuffixTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// no node, no suffix
  static constexpr std::size_t npos = std::numeric_limits< std::size_t >::max();
 
  /// the construction
  enum class Build {
-  naive ,         ///< each suffix by a walk down from the root
-  mcCreight ,     ///< the suffix links of McCreight
-  suffixArray     ///< the leaves in the order of SA, climbing by LCP
+  naive ,       ///< each suffix by a walk down from the root
+  mcCreight ,   ///< the suffix links of McCreight
+  suffixArray  ///< the leaves in the order of SA, climbing by LCP
   };
 
  /// a node \f$ u \f$; the edge into it is labelled by the symbols of
  /// \f$ T \f$ from `pos` plus the depth of the parent to `pos + depth` (the
  /// terminator at \f$ n \f$)
- struct Node {
-  std::size_t pos = 0;          ///< where \f$ s[ u ] \f$ occurs once
-  std::size_t depth = 0;        ///< the string depth \f$ |s[ u ]| \f$
-  std::size_t parent = npos;    ///< `npos` at the root
-  std::size_t suffix = npos;    ///< the suffix of a leaf, `npos` inside
-  std::size_t leaves = 0;       ///< the leaves below
-  std::map< std::size_t , std::size_t > child;   ///< by first symbol
+ struct Node
+ {
+  std::size_t pos = 0;        ///< where \f$ s[ u ] \f$ occurs once
+  std::size_t depth = 0;      ///< the string depth \f$ |s[ u ]| \f$
+  std::size_t parent = npos;  ///< `npos` at the root
+  std::size_t suffix = npos;  ///< the suffix of a leaf, `npos` inside
+  std::size_t leaves = 0;     ///< the leaves below
+  std::map< std::size_t , std::size_t > child;  ///< by first symbol
   };
 
  /// the tree of no text, with no node
@@ -218,8 +220,7 @@ class SuffixTree {
 
  /// the suffix tree of an integer text, built as the one of the bytes above
  /// \pre every symbol of \f$ T \f$ is less than \f$ K \f$
- SuffixTree( const Symbols & T , std::size_t K ,
-             Build b = Build::mcCreight );
+ SuffixTree( const Symbols & T , std::size_t K , Build b = Build::mcCreight );
 
  /// the length \f$ n \f$ of \f$ T \f$, without the terminator
  [[nodiscard]] std::size_t textSize( void ) const;
@@ -347,8 +348,8 @@ class SuffixTree {
  /// \end{array}}
  /// \f]
  [[nodiscard]] std::pair< std::vector< std::size_t > ,
-                          std::vector< std::size_t > > toSuffixArray( void )
-                                                                       const;
+			  std::vector< std::size_t > >
+ toSuffixArray( void ) const;
 
  /// the nodes in preorder, the children by increasing first symbol
  [[nodiscard]] std::vector< std::size_t > preorder( void ) const;
@@ -360,14 +361,14 @@ class SuffixTree {
 
  // a constant view of the nodes, random access, the root first
 
- using value_type = Node;                       ///< a node
- using size_type = std::size_t;                 ///< the type of the names
- using difference_type = std::ptrdiff_t;        ///< a difference of names
- using const_reference = const Node &;          ///< a node
- using reference = const_reference;             ///< a node
+ using value_type = Node;                 ///< a node
+ using size_type = std::size_t;           ///< the type of the names
+ using difference_type = std::ptrdiff_t;  ///< a difference of names
+ using const_reference = const Node &;    ///< a node
+ using reference = const_reference;       ///< a node
  /// a constant iterator on the nodes
  using const_iterator = std::vector< Node >::const_iterator;
- using iterator = const_iterator;               ///< on the nodes
+ using iterator = const_iterator;  ///< on the nodes
 
  /// the root
  [[nodiscard]] const_iterator begin( void ) const { return( f_N.begin() ); }
@@ -380,7 +381,6 @@ class SuffixTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// \f$ T \$ \f$ stored, the constructions, and the leaves, the counts and
  /// the Euler tour at the end
  void construct( const Symbols & T , std::size_t K , Build b );
@@ -391,7 +391,7 @@ class SuffixTree {
 
  /// a new node
  std::size_t newNode( std::size_t pos , std::size_t depth ,
-                      std::size_t parent );
+		      std::size_t parent );
 
  /// the leaf of the suffix \f$ i \f$ below \f$ u \f$
  std::size_t attachLeaf( std::size_t u , std::size_t i );
@@ -403,12 +403,12 @@ class SuffixTree {
  /// the invariant of the tree
  [[nodiscard]] bool valid( void ) const;
 
- Symbols f_T;                          ///< \f$ T \$ \f$ stored
- std::vector< Node > f_N;              ///< the nodes, the root at 0
- std::vector< std::size_t > f_leaf;    ///< the leaf of each suffix
- std::vector< std::size_t > f_E;       ///< the Euler tour of the nodes
- std::vector< std::size_t > f_first;   ///< the first visit of each node
- PlusMinusOneRangeMinimum f_tour;      ///< on the depths along the tour
+ Symbols f_T;                         ///< \f$ T \$ \f$ stored
+ std::vector< Node > f_N;             ///< the nodes, the root at 0
+ std::vector< std::size_t > f_leaf;   ///< the leaf of each suffix
+ std::vector< std::size_t > f_E;      ///< the Euler tour of the nodes
+ std::vector< std::size_t > f_first;  ///< the first visit of each node
+ PlusMinusOneRangeMinimum f_tour;     ///< on the depths along the tour
 
  };  // end( class SuffixTree )
 
@@ -424,7 +424,7 @@ class SuffixTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SuffixTree.h included */
+#endif /* SuffixTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SuffixTree.h --------------------------*/

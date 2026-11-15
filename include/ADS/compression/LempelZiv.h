@@ -98,7 +98,7 @@
 
 #ifndef __ADS_LempelZiv
  #define __ADS_LempelZiv
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -122,37 +122,41 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a phrase of LZ77: copy `length` symbols from `distance` back, then
 /// `next` (none at the end of the text); `distance` is 0 when `length` is 0
-struct LZ77Phrase {
- std::size_t distance ,   ///< how far back the copy starts
-             length;      ///< the symbols copied
- std::optional< char > next;   ///< the symbol after the copy, if any
+struct LZ77Phrase
+{
+ std::size_t distance ,        ///< how far back the copy starts
+   length;                    ///< the symbols copied
+ std::optional< char > next;  ///< the symbol after the copy, if any
  /// whether the two phrases are equal
  friend bool operator==( const LZ77Phrase & a ,
-                         const LZ77Phrase & b ) = default;
+			 const LZ77Phrase & b ) = default;
  };
 
 /// a phrase of LZSS: a copy of `length` symbols from `distance` back, or
 /// the literal when `distance` is 0
-struct LZSSPhrase {
- std::size_t distance ,   ///< how far back the copy starts, 0 for a literal
-             length;      ///< the symbols copied, 1 for a literal
- char literal;            ///< the symbol of a literal
+struct LZSSPhrase
+{
+ std::size_t distance ,  ///< how far back the copy starts, 0 for a literal
+   length;              ///< the symbols copied, 1 for a literal
+ char literal;          ///< the symbol of a literal
  /// whether the two phrases are equal
  friend bool operator==( const LZSSPhrase & a ,
-                         const LZSSPhrase & b ) = default;
+			 const LZSSPhrase & b ) = default;
  };
 
 /// a phrase of LZ78: the phrase `id` followed by `next`
-struct LZ78Phrase {
- std::size_t id;   ///< the phrase of the dictionary, 0 the empty one
- char next;        ///< the symbol that follows it
+struct LZ78Phrase
+{
+ std::size_t id;  ///< the phrase of the dictionary, 0 the empty one
+ char next;       ///< the symbol that follows it
  /// whether the two phrases are equal
  friend bool operator==( const LZ78Phrase & a ,
-                         const LZ78Phrase & b ) = default;
+			 const LZ78Phrase & b ) = default;
  };
 
 /// the parse of LZ77 of \f$ s \f$ with a window of \f$ w \f$ symbols, the
@@ -184,9 +188,9 @@ struct LZ78Phrase {
 /// \f]
 /// \pre \f$ w > 0 \f$
 /// \post `lz77Decode( result ) == s` (an audit)
-[[nodiscard]] inline std::vector< LZ77Phrase > lz77Parse(
-           std::string_view s ,
-           std::size_t w = std::numeric_limits< std::size_t >::max() );
+[[nodiscard]] inline std::vector< LZ77Phrase >
+lz77Parse( std::string_view s ,
+	   std::size_t w = std::numeric_limits< std::size_t >::max() );
 
 /// the text of the phrases \f$ P \f$ of LZ77
 ///
@@ -207,8 +211,8 @@ struct LZ78Phrase {
 /// \end{array}}
 /// \f]
 /// \pre each copy refers to symbols already decoded
-[[nodiscard]] inline std::string lz77Decode(
-                                     const std::vector< LZ77Phrase > & P );
+[[nodiscard]] inline std::string
+lz77Decode( const std::vector< LZ77Phrase > & P );
 
 /// the parse of LZSS of \f$ s \f$ with a window of \f$ w \f$ symbols, a copy
 /// for the closest among the longest prefixes of length at least
@@ -232,10 +236,10 @@ struct LZ78Phrase {
 /// \f]
 /// \pre \f$ w > 0 \f$, `minLength > 0`
 /// \post `lzssDecode( result ) == s` (an audit)
-[[nodiscard]] inline std::vector< LZSSPhrase > lzssParse(
-           std::string_view s ,
-           std::size_t w = std::numeric_limits< std::size_t >::max() ,
-           std::size_t minLength = 1 );
+[[nodiscard]] inline std::vector< LZSSPhrase >
+lzssParse( std::string_view s ,
+	   std::size_t w = std::numeric_limits< std::size_t >::max() ,
+	   std::size_t minLength = 1 );
 
 /// the parse of LZSS of \f$ s \f$ by the chains of the hashes of 3 symbols,
 /// as in gzip, following at most `maxChain` candidates
@@ -278,8 +282,8 @@ struct LZ78Phrase {
 /// \post `lzssDecode( result ) == s` (an audit); with no bound on
 ///       `maxChain`, the result of `lzssParse( s , w , minLength )`
 [[nodiscard]] inline std::vector< LZSSPhrase > lzssParseHashed(
-           std::string_view s , std::size_t w , std::size_t minLength = 3 ,
-           std::size_t maxChain = std::numeric_limits< std::size_t >::max() );
+  std::string_view s , std::size_t w , std::size_t minLength = 3 ,
+  std::size_t maxChain = std::numeric_limits< std::size_t >::max() );
 
 /// the text of the phrases \f$ P \f$ of LZSS
 ///
@@ -298,8 +302,8 @@ struct LZ78Phrase {
 /// \end{array}}
 /// \f]
 /// \pre each copy refers to symbols already decoded
-[[nodiscard]] inline std::string lzssDecode(
-                                     const std::vector< LZSSPhrase > & P );
+[[nodiscard]] inline std::string
+lzssDecode( const std::vector< LZSSPhrase > & P );
 
 /// the parse of LZ78 of \f$ s \f$, the dictionary restarting when it has
 /// `maxPhrases` phrases besides the empty one
@@ -329,8 +333,8 @@ struct LZ78Phrase {
 /// \pre `maxPhrases > 0`
 /// \post `lz78Decode( result , maxPhrases ) == s` (an audit)
 [[nodiscard]] inline std::vector< LZ78Phrase > lz78Parse(
-      std::string_view s ,
-      std::size_t maxPhrases = std::numeric_limits< std::size_t >::max() );
+  std::string_view s ,
+  std::size_t maxPhrases = std::numeric_limits< std::size_t >::max() );
 
 /// the text of the phrases \f$ P \f$ of LZ78
 ///
@@ -351,8 +355,8 @@ struct LZ78Phrase {
 /// \f]
 /// \pre `maxPhrases > 0`, each identifier refers to a phrase
 [[nodiscard]] inline std::string lz78Decode(
-      const std::vector< LZ78Phrase > & P ,
-      std::size_t maxPhrases = std::numeric_limits< std::size_t >::max() );
+  const std::vector< LZ78Phrase > & P ,
+  std::size_t maxPhrases = std::numeric_limits< std::size_t >::max() );
 
 /// the identifiers of the code of LZW of \f$ s \f$
 ///
@@ -375,8 +379,8 @@ struct LZ78Phrase {
 /// \end{array}}
 /// \f]
 /// \post `lzwDecode( result ) == s` (an audit)
-[[nodiscard]] inline std::vector< std::uint32_t > lzwEncode(
-                                                         std::string_view s );
+[[nodiscard]] inline std::vector< std::uint32_t >
+lzwEncode( std::string_view s );
 
 /// the text of the code \f$ I \f$ of LZW
 ///
@@ -399,8 +403,8 @@ struct LZ78Phrase {
 /// \end{array}}
 /// \f]
 /// \pre each identifier is a phrase, or the one being built
-[[nodiscard]] inline std::string lzwDecode(
-                                      const std::vector< std::uint32_t > & I );
+[[nodiscard]] inline std::string
+lzwDecode( const std::vector< std::uint32_t > & I );
 
 /*--------------------------------------------------------------------------*/
 
@@ -414,7 +418,7 @@ struct LZ78Phrase {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LempelZiv.h included */
+#endif /* LempelZiv.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File LempelZiv.h --------------------------*/

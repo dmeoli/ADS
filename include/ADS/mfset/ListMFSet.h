@@ -29,7 +29,7 @@
 
 #ifndef __ADS_ListMFSet
  #define __ADS_ListMFSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -45,7 +45,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ListMFSet -----------------------------*/
@@ -53,11 +54,11 @@ namespace ADS {
 
 /// the union of disjoint sets on lists, each element with the head of its
 /// list
-class ListMFSet {
+class ListMFSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  /// \pre \f$ n \ge 0 \f$
  explicit ListMFSet( int n );
@@ -101,7 +102,6 @@ class ListMFSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// each element is once in the list of its head, \f$ O( n ) \f$
  [[nodiscard]] bool listed( void ) const;
 
@@ -121,7 +121,7 @@ class ListMFSet {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ListMFSet.h included */
+#endif /* ListMFSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File ListMFSet.h --------------------------*/

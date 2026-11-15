@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered T >
 SortedListSet< T >::SortedListSet( std::initializer_list< T > items )
@@ -82,7 +83,7 @@ bool SortedListSet< T >::sorted( void ) const
  std::size_t n = 0;
  for( auto p = f_L.head() ; ! f_L.finished( p ) ; p = f_L.next( p ) , ++n )
   if( ! f_L.finished( f_L.next( p ) ) &&
-      !( f_L.read( p ) < f_L.read( f_L.next( p ) ) ) )
+      ! ( f_L.read( p ) < f_L.read( f_L.next( p ) ) ) )
    return( false );
  return( n == f_size );
  }
@@ -128,8 +129,8 @@ typename List< T >::Pos SortedListSet< T >::lower( const T & x ) const
 
 template< class T >
 SortedListSet< T > merge( const SortedListSet< T > & A ,
-                          const SortedListSet< T > & B ,
-                          bool a , bool b , bool both )
+			  const SortedListSet< T > & B , bool a , bool b ,
+			  bool both )
 {
  SortedListSet< T > C;
  const auto & LA = A.list();
@@ -140,16 +141,19 @@ SortedListSet< T > merge( const SortedListSet< T > & A ,
   const T & x = LA.read( p );
   const T & y = LB.read( q );
   if( x == y ) {
-   if( both ) C.insertLast( x );
+   if( both )
+    C.insertLast( x );
    p = LA.next( p );
    q = LB.next( q );
    }
   else if( x < y ) {
-   if( a ) C.insertLast( x );
+   if( a )
+    C.insertLast( x );
    p = LA.next( p );
    }
   else {
-   if( b ) C.insertLast( y );
+   if( b )
+    C.insertLast( y );
    q = LB.next( q );
    }
   }
@@ -162,7 +166,7 @@ SortedListSet< T > merge( const SortedListSet< T > & A ,
 
 template< class T >
 SortedListSet< T > setUnion( const SortedListSet< T > & A ,
-                             const SortedListSet< T > & B )
+			     const SortedListSet< T > & B )
 {
  const auto C = merge( A , B , true , true , true );
  ADS_AUDIT( detail::isSetOperation( C , A , B , '|' ) );
@@ -171,7 +175,7 @@ SortedListSet< T > setUnion( const SortedListSet< T > & A ,
 
 template< class T >
 SortedListSet< T > setIntersection( const SortedListSet< T > & A ,
-                                    const SortedListSet< T > & B )
+				    const SortedListSet< T > & B )
 {
  const auto C = merge( A , B , false , false , true );
  ADS_AUDIT( detail::isSetOperation( C , A , B , '&' ) );
@@ -180,7 +184,7 @@ SortedListSet< T > setIntersection( const SortedListSet< T > & A ,
 
 template< class T >
 SortedListSet< T > setDifference( const SortedListSet< T > & A ,
-                                  const SortedListSet< T > & B )
+				  const SortedListSet< T > & B )
 {
  const auto C = merge( A , B , true , false , false );
  ADS_AUDIT( detail::isSetOperation( C , A , B , '-' ) );
@@ -189,7 +193,7 @@ SortedListSet< T > setDifference( const SortedListSet< T > & A ,
 
 template< class T >
 SortedListSet< T > setSymmetricDifference( const SortedListSet< T > & A ,
-                                           const SortedListSet< T > & B )
+					   const SortedListSet< T > & B )
 {
  const auto C = merge( A , B , true , true , false );
  ADS_AUDIT( detail::isSetOperation( C , A , B , '^' ) );

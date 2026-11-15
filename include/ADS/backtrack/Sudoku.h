@@ -32,7 +32,7 @@
 
 #ifndef __ADS_Sudoku
  #define __ADS_Sudoku
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -47,9 +47,10 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-using Grid = std::vector< std::vector< int > >;   ///< the squares, 0 empty
+using Grid = std::vector< std::vector< int > >;  ///< the squares, 0 empty
 
 /// whether \f$ c \f$ can be written in the square \f$ ( x , y ) \f$ of
 /// \f$ S \f$, i.e., it is not on its row, its column or its block
@@ -116,7 +117,7 @@ inline bool sudoku( Grid & S , std::size_t i = 0 );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Sudoku.h included */
+#endif /* Sudoku.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Sudoku.h ----------------------------*/

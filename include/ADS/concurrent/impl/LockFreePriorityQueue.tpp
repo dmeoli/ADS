@@ -24,22 +24,23 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*-------------------------------- THE NODES -------------------------------*/
 
 template< class K , class T , class Less >
-void * LockFreePriorityQueue< K , T , Less >::allocate(
- std::size_t n , int h , std::atomic< Word > * & next )
+void *
+LockFreePriorityQueue< K , T , Less >::allocate( std::size_t n , int h ,
+					       std::atomic< Word > *& next )
 {
- constexpr std::size_t a = std::max( { alignof( Node ) , alignof( Link ) ,
-                                       alignof( std::atomic< Word > ) } );
+ constexpr std::size_t a = std::max(
+   { alignof( Node ) , alignof( Link ) , alignof( std::atomic< Word > ) } );
  constexpr std::size_t w = sizeof( std::atomic< Word > );
- n = ( n + w - 1 ) / w * w;              // the pointers aligned after it
- void * p = ::operator new( n + std::size_t( h ) * w ,
-                            std::align_val_t( a ) );
- next = reinterpret_cast< std::atomic< Word > * >(
-  static_cast< char * >( p ) + n );
+ n = ( n + w - 1 ) / w * w;  // the pointers aligned after it
+ void * p = ::operator new( n + std::size_t( h ) * w , std::align_val_t( a ) );
+ next =
+   reinterpret_cast< std::atomic< Word > * >( static_cast< char * >( p ) + n );
  for( int i = 0 ; i < h ; ++i )
   ::new( static_cast< void * >( next + i ) ) std::atomic< Word >( 0 );
  return( p );
@@ -55,22 +56,22 @@ auto LockFreePriorityQueue< K , T , Less >::makeLink( int h ) -> Link *
 
 template< class K , class T , class Less >
 auto LockFreePriorityQueue< K , T , Less >::make( int h , const K & k ,
-                                                  std::uint64_t s , T && x )
- -> Node *
+						std::uint64_t s , T && x )
+  -> Node *
 {
  std::atomic< Word > * next;
  void * p = allocate( sizeof( Node ) , h , next );
  // no exception past the allocation: the key is copied, the item moved,
  // both without exceptions
- return( ::new( p ) Node{ { next , nullptr , h , true } , k , s ,
-                          std::move( x ) } );
+ return( ::new( p )
+	    Node{ { next , nullptr , h , true } , k , s , std::move( x ) } );
  }
 
 template< class K , class T , class Less >
 void LockFreePriorityQueue< K , T , Less >::destroy( Node * p )
 {
- constexpr std::size_t a = std::max( { alignof( Node ) , alignof( Link ) ,
-                                       alignof( std::atomic< Word > ) } );
+ constexpr std::size_t a = std::max(
+   { alignof( Node ) , alignof( Link ) , alignof( std::atomic< Word > ) } );
  p->~Node();
  ::operator delete( static_cast< void * >( p ) , std::align_val_t( a ) );
  }
@@ -78,8 +79,8 @@ void LockFreePriorityQueue< K , T , Less >::destroy( Node * p )
 template< class K , class T , class Less >
 void LockFreePriorityQueue< K , T , Less >::destroyLink( Link * p )
 {
- constexpr std::size_t a = std::max( { alignof( Node ) , alignof( Link ) ,
-                                       alignof( std::atomic< Word > ) } );
+ constexpr std::size_t a = std::max(
+   { alignof( Node ) , alignof( Link ) , alignof( std::atomic< Word > ) } );
  p->~Link();
  ::operator delete( static_cast< void * >( p ) , std::align_val_t( a ) );
  }
@@ -96,21 +97,22 @@ void LockFreePriorityQueue< K , T , Less >::destroyAll( Link * p )
 
 template< class K , class T , class Less >
 bool LockFreePriorityQueue< K , T , Less >::before( const Link * p ,
-                                                    const K & k ,
-                                                    std::uint64_t s ) const
+						    const K & k ,
+						  std::uint64_t s ) const
 {
  const Node * n = static_cast< const Node * >( p );
  return( f_less( n->key , k ) ||
-         ( ( ! f_less( k , n->key ) ) && ( n->stamp < s ) ) );
+	  ( ( ! f_less( k , n->key ) ) && ( n->stamp < s ) ) );
  }
 
 /*-------------------------------- THE QUEUE -------------------------------*/
 
 template< class K , class T , class Less >
-LockFreePriorityQueue< K , T , Less >::LockFreePriorityQueue(
- unsigned offset , std::uint64_t seed , Less less )
- : f_b( offset ) , f_less( less ) , f_head( nullptr ) , f_tail( nullptr ) ,
-   f_seed( seed )
+LockFreePriorityQueue< K , T , Less >::LockFreePriorityQueue( unsigned offset ,
+							    std::uint64_t seed ,
+							    Less less )
+    : f_b( offset ) , f_less( less ) , f_head( nullptr ) , f_tail( nullptr ) ,
+      f_seed( seed )
 {
  ADS_PRE( offset >= 1 );
  f_tail = makeLink( 1 );
@@ -158,8 +160,8 @@ auto LockFreePriorityQueue< K , T , Less >::handle( void ) -> Handle
 {
  // the seed of a handle is a counter mixed as by splitmix64 [see
  // MultiQueue::handle()]
- std::uint64_t z = f_seed.fetch_add( 0x9E3779B97F4A7C15ULL ,
-                                     std::memory_order_relaxed );
+ std::uint64_t z =
+   f_seed.fetch_add( 0x9E3779B97F4A7C15ULL , std::memory_order_relaxed );
  z = ( z ^ ( z >> 30 ) ) * 0xBF58476D1CE4E5B9ULL;
  z = ( z ^ ( z >> 27 ) ) * 0x94D049BB133111EBULL;
  z ^= z >> 31;
@@ -174,17 +176,17 @@ auto LockFreePriorityQueue< K , T , Less >::handle( void ) -> Handle
  Record * r = new Record;
  r->id = id;
  r->next = f_records.load( std::memory_order_relaxed );
- while( ! f_records.compare_exchange_weak( r->next , r ,
-                                           std::memory_order_release ,
-                                           std::memory_order_relaxed ) ) {}
+ while( ! f_records.compare_exchange_weak(
+   r->next , r , std::memory_order_release , std::memory_order_relaxed ) ) {
+  }
  return( Handle( *this , r , z ) );
  }
 
 template< class K , class T , class Less >
 void LockFreePriorityQueue< K , T , Less >::locate( const K & k ,
-                                                    std::uint64_t s ,
-                                                    Link ** preds ,
-                                                    Link ** succs ) const
+						    std::uint64_t s ,
+						  Link ** preds ,
+						  Link ** succs ) const
 {
  // the walk of Lindén and Jonsson: at the upper levels a node whose
  // successor is deleted is passed, at level 0 a deleted node as well
@@ -193,7 +195,7 @@ void LockFreePriorityQueue< K , T , Less >::locate( const K & k ,
   Word w = p->next[ i ].load( std::memory_order_acquire );
   Link * c = ptr( w );
   while( ( ( c != f_tail ) && before( c , k , s ) ) || marked( c ) ||
-         ( ( i == 0 ) && ( w & kMark ) ) ) {
+	 ( ( i == 0 ) && ( w & kMark ) ) ) {
    p = c;
    w = p->next[ i ].load( std::memory_order_acquire );
    c = ptr( w );
@@ -205,7 +207,7 @@ void LockFreePriorityQueue< K , T , Less >::locate( const K & k ,
 
 template< class K , class T , class Less >
 bool LockFreePriorityQueue< K , T , Less >::behind( const Link * c ,
-                                                    const Link * n ) const
+						  const Link * n ) const
 {
  // c is the successor at an upper level of the node n, already linked at
  // level 0; c is before n only if it is deleted, and then either its
@@ -220,8 +222,8 @@ bool LockFreePriorityQueue< K , T , Less >::behind( const Link * c ,
   return( true );
  const Link * f = ptr( w );
  const Node * m = static_cast< const Node * >( n );
- return( ( f == n ) ||
-         ( ( f != f_tail ) && before( f , m->key , m->stamp ) ) );
+ return( ( f == n ) || ( ( f != f_tail ) && before( f , m->key ,
+						    m->stamp ) ) );
  }
 
 template< class K , class T , class Less >
@@ -303,9 +305,8 @@ bool LockFreePriorityQueue< K , T , Less >::consistent( void ) const
     return( false );
    last = n;
    }
-  else
-   if( live )
-    return( false );                 // a deleted node after a live one
+  else if( live )
+   return( false );  // a deleted node after a live one
   order.push_back( p );
   w = p->next[ 0 ].load( std::memory_order_acquire );
   if( w & kCut )
@@ -316,8 +317,8 @@ bool LockFreePriorityQueue< K , T , Less >::consistent( void ) const
  // head, of nodes high enough, up to the tail
  for( int i = 1 ; i < kLevels ; ++i ) {
   std::size_t j = 0;
-  for( const Link * p = ptr( f_head->next[ i ].load(
-                             std::memory_order_acquire ) ) ;
+  for( const Link * p =
+	 ptr( f_head->next[ i ].load( std::memory_order_acquire ) ) ;
        p != f_tail ;
        p = ptr( p->next[ i ].load( std::memory_order_acquire ) ) ) {
    while( ( j < order.size() ) && ( order[ j ] != p ) )
@@ -334,7 +335,7 @@ bool LockFreePriorityQueue< K , T , Less >::consistent( void ) const
 
 template< class K , class T , class Less >
 LockFreePriorityQueue< K , T , Less >::Handle::Handle( Handle && o ) noexcept
- : f_q( o.f_q ) , f_r( o.f_r ) , f_x( o.f_x ) , f_c( o.f_c )
+    : f_q( o.f_q ) , f_r( o.f_r ) , f_x( o.f_x ) , f_c( o.f_c )
 {
  o.f_r = nullptr;
  }
@@ -361,7 +362,7 @@ int LockFreePriorityQueue< K , T , Less >::Handle::height( void )
  // the trailing zeros of a random word: h with probability 2^-h, and the
  // bit L - 1 set so that h is at most L
  return( 1 + std::countr_zero( next() |
-                               ( std::uint64_t( 1 ) << ( kLevels - 1 ) ) ) );
+				( std::uint64_t( 1 ) << ( kLevels - 1 ) ) ) );
  }
 
 template< class K , class T , class Less >
@@ -409,10 +410,9 @@ void LockFreePriorityQueue< K , T , Less >::Handle::advance( void )
       r = r->next ) {
   const std::uint64_t v = r->local.load( std::memory_order_seq_cst );
   if( ( v & 1 ) && ( v != 2 * e + 1 ) )
-   return;                           // a thread still in an older epoch
+   return;  // a thread still in an older epoch
   }
- f_q->f_epoch.compare_exchange_strong( e , e + 1 ,
-                                       std::memory_order_seq_cst );
+ f_q->f_epoch.compare_exchange_strong( e , e + 1 , std::memory_order_seq_cst );
  }
 
 template< class K , class T , class Less >
@@ -430,12 +430,12 @@ void LockFreePriorityQueue< K , T , Less >::Handle::insert( K k , T x )
   Word e = word( S[ 0 ] );
   ++f_c.rmw;
   if( P[ 0 ]->next[ 0 ].compare_exchange_strong( e , word( n ) ) )
-   break;                            // the linearization point
+   break;  // the linearization point
   ++f_c.failed;
   }
  for( int i = 1 ; i < h ; ) {
   if( marked( n ) || f_q->behind( S[ i ] , n ) )
-   break;                            // n deleted, or S[ i ] before n
+   break;  // n deleted, or S[ i ] before n
   n->next[ i ].store( word( S[ i ] ) , std::memory_order_relaxed );
   Word e = word( S[ i ] );
   ++f_c.rmw;
@@ -445,7 +445,7 @@ void LockFreePriorityQueue< K , T , Less >::Handle::insert( K k , T x )
    ++f_c.failed;
    f_q->locate( k , s , P , S );
    if( S[ 0 ] != n )
-    break;                           // n deleted
+    break;  // n deleted
    }
   }
  n->inserting.store( false , std::memory_order_release );
@@ -454,7 +454,7 @@ void LockFreePriorityQueue< K , T , Less >::Handle::insert( K k , T x )
 
 template< class K , class T , class Less >
 auto LockFreePriorityQueue< K , T , Less >::Handle::tryDeleteMin( void )
- -> std::optional< Entry >
+  -> std::optional< Entry >
 {
  enter();
  Link * const head = f_q->f_head;
@@ -465,16 +465,16 @@ auto LockFreePriorityQueue< K , T , Less >::Handle::tryDeleteMin( void )
  for( ; ; ) {
   ++o;
   Word w = x->next[ 0 ].load( std::memory_order_acquire );
-  if( ptr( w ) == f_q->f_tail ) {      // empty, linearized at this read
+  if( ptr( w ) == f_q->f_tail ) {  // empty, linearized at this read
    f_c.walked += o;
    leave();
    return( std::nullopt );
    }
   if( ( ! nh ) && x->inserting.load( std::memory_order_acquire ) )
-   nh = x;                           // the head stops before an insertion
+   nh = x;  // the head stops before an insertion
   if( ! ( w & kMark ) ) {
    ++f_c.rmw;
-   w = x->next[ 0 ].fetch_or( kMark );   // the linearization point
+   w = x->next[ 0 ].fetch_or( kMark );  // the linearization point
    if( w & kMark )
     ++f_c.failed;
    }
@@ -495,8 +495,8 @@ auto LockFreePriorityQueue< K , T , Less >::Handle::tryDeleteMin( void )
      ( head->next[ 0 ].load( std::memory_order_relaxed ) == obs ) ) {
   Word e = obs;
   ++f_c.rmw;
-  if( head->next[ 0 ].compare_exchange_strong( e , word( nh ) | kMark |
-                                                   kCut ) ) {
+  if( head->next[ 0 ].compare_exchange_strong( e ,
+					       word( nh ) | kMark | kCut ) ) {
    ++f_c.cuts;
    f_q->restructure( f_c );
    ++f_c.rmw;
@@ -517,7 +517,7 @@ auto LockFreePriorityQueue< K , T , Less >::Handle::tryDeleteMin( void )
 
 template< class K , class T , class Less >
 auto LockFreePriorityQueue< K , T , Less >::Handle::tryMinKey( void )
- -> std::optional< K >
+  -> std::optional< K >
 {
  enter();
  std::optional< K > r;
@@ -525,7 +525,7 @@ auto LockFreePriorityQueue< K , T , Less >::Handle::tryMinKey( void )
   const Word w = x->next[ 0 ].load( std::memory_order_acquire );
   if( ptr( w ) == f_q->f_tail )
    break;
-  if( ! ( w & kMark ) ) {             // the first node not deleted
+  if( ! ( w & kMark ) ) {  // the first node not deleted
    r.emplace( static_cast< Node * >( ptr( w ) )->key );
    break;
    }

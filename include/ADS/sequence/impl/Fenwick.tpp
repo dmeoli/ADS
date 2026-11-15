@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS Fenwick -----------------------------*/
@@ -110,7 +111,7 @@ void Fenwick< G >::counted( void )
 {
  if constexpr( ! exact_v< G > )
   if( ++f_since >= f_period )
-   build();                                  // the drift dropped
+   build();  // the drift dropped
  }
 
 /*--------------------------------------------------------------------------*/
@@ -125,12 +126,12 @@ bool FenwickObserver< G >::audit( const A & a ) const
  if( f_f.size() != a.size() )
   return( false );
  for( std::size_t i = 0 ; i < a.size() ; ++i )
-  if( !( f_f.get( i ) == a[ i ] ) )
+  if( ! ( f_f.get( i ) == a[ i ] ) )
    return( false );
  if constexpr( exact_v< G > ) {
   Value x = G::identity();
   for( std::size_t r = 0 ; r <= a.size() ; ++r ) {
-   if( !( f_f.prefix( r ) == x ) )
+   if( ! ( f_f.prefix( r ) == x ) )
     return( false );
    if( r < a.size() )
     x = G::combine( x , a[ r ] );

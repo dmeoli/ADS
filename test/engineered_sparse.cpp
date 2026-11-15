@@ -47,20 +47,24 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// an object of a model
-struct Row {
+struct Row
+{
  int id = 0;
  };
 
 /// the worst hash: every key at home 7
-struct Constant {
+struct Constant
+{
  std::size_t operator()( const Row * ) const { return( 7 ); }
  };
 
 /// a hash of few homes, the address over 64: long runs that wrap
-struct Coarse {
+struct Coarse
+{
  std::size_t operator()( const Row * p ) const {
   return( std::size_t( reinterpret_cast< std::uintptr_t >( p ) >> 6 ) );
   }
@@ -69,7 +73,7 @@ struct Coarse {
 /// the index of v rebuilt by hand
 template< class H >
 bool indexes( const PositionIndex< Row , H > & X ,
-              const std::vector< Row * > & v )
+	      const std::vector< Row * > & v )
 {
  if( X.size() != v.size() )
   return( false );
@@ -80,7 +84,8 @@ bool indexes( const PositionIndex< Row , H > & X ,
  bool ok = true;
  X.forEach( [ & ]( const Row * p , std::uint32_t i ) {
   ++n;
-  ok = ok && ( i < v.size() ) && ( v[ i ] == p ); } );
+  ok = ok && ( i < v.size() ) && ( v[ i ] == p );
+  } );
  return( ok && ( n == v.size() ) );
  }
 
@@ -101,14 +106,19 @@ void erasures( std::size_t n , unsigned seed )
  for( int round = 0 ; round < 12 && ! v.empty() ; ++round ) {
   std::vector< std::uint32_t > E;
   switch( round % 6 ) {
-   case 0: E = { 0 }; break;                           // the first
-   case 1: E = { std::uint32_t( v.size() - 1 ) }; break;  // the last
-   case 2:                                             // a block
+   case 0:
+    E = { 0 };
+    break;  // the first
+   case 1:
+    E = { std::uint32_t( v.size() - 1 ) };
+    break;  // the last
+   case 2:  // a block
     for( std::size_t i = v.size() / 3 ; i < v.size() / 2 ; ++i )
      E.push_back( std::uint32_t( i ) );
     break;
-   case 3: break;                                      // none
-   default:                                            // a random half
+   case 3:
+    break;   // none
+   default:  // a random half
     for( std::size_t i = 0 ; i < v.size() ; ++i )
      if( g() % 2 )
       E.push_back( std::uint32_t( i ) );
@@ -118,12 +128,12 @@ void erasures( std::size_t n , unsigned seed )
   X.renumber( E );
   CHECK( indexes( X , v ) );
   for( std::size_t k = 0 ; k < n / 8 && next < rows.size() ; ++k ) {
-   X.insert( &rows[ next ] , std::uint32_t( v.size() ) );   // appended
+   X.insert( &rows[ next ] , std::uint32_t( v.size() ) );  // appended
    v.push_back( &rows[ next++ ] );
    }
   CHECK( indexes( X , v ) );
   }
- std::vector< std::uint32_t > all( v.size() );       // everything erased
+ std::vector< std::uint32_t > all( v.size() );  // everything erased
  for( std::size_t i = 0 ; i < all.size() ; ++i )
   all[ i ] = std::uint32_t( i );
  X.renumber( all );
@@ -131,9 +141,9 @@ void erasures( std::size_t n , unsigned seed )
  }
 
 /// the compressed form of triplets by std::map, by major index
-std::map< std::pair< long , long > , double > byMap(
- const std::vector< long > & major , const std::vector< long > & minor ,
- const std::vector< double > & value )
+std::map< std::pair< long , long > , double >
+byMap( const std::vector< long > & major , const std::vector< long > & minor ,
+       const std::vector< double > & value )
 {
  std::map< std::pair< long , long > , double > M;
  for( std::size_t k = 0 ; k < major.size() ; ++k )
@@ -145,9 +155,9 @@ std::map< std::pair< long , long > , double > byMap(
 /// indices increasing in each major one
 template< class I >
 bool compressed( const std::map< std::pair< long , long > , double > & M ,
-                 std::size_t nmajor , const std::vector< I > & beg ,
-                 const std::vector< I > & ind ,
-                 const std::vector< double > & val , std::size_t z )
+		 std::size_t nmajor , const std::vector< I > & beg ,
+		 const std::vector< I > & ind ,
+		 const std::vector< double > & val , std::size_t z )
 {
  if( ( beg.size() != nmajor + 1 ) || ( beg[ 0 ] != 0 ) ||
      ( std::size_t( beg[ nmajor ] ) != z ) || ( z != M.size() ) )
@@ -177,12 +187,12 @@ ADS_TEST( "position-index" )
  PositionIndex< Row > E;
  Row a;
  CHECK( E.empty() && E.capacity() == 0 && E.find( &a ) == E.NONE &&
-        ! E.erase( &a ) && ! E.contains( &a ) );
+	! E.erase( &a ) && ! E.contains( &a ) );
  CHECK_THROWS( E.insert( nullptr , 0 ) , contract_violation );
  CHECK_THROWS( E.insert( &a , E.NONE ) , contract_violation );
- CHECK_THROWS( (void) E.find( nullptr ) , contract_violation );
+ CHECK_THROWS( ( void )E.find( nullptr ) , contract_violation );
  CHECK( E.insert( &a , 5 ) && ! E.insert( &a , 6 ) && E.find( &a ) == 6 &&
-        E.size() == 1 && E.capacity() >= 1 );
+	E.size() == 1 && E.capacity() >= 1 );
  CHECK( E.erase( &a ) && E.empty() && ! E.erase( &a ) );
  E.reserve( 1000 );
  CHECK( E.capacity() >= 1000 && E.empty() );
@@ -195,10 +205,13 @@ ADS_TEST( "position-index" )
    const Row * p = &rows[ g() % keys ];
    const std::uint32_t i = std::uint32_t( g() % 1000000 );
    switch( g() % 4 ) {
-    case 0: case 1:
+    case 0:
+    case 1:
      CHECK( X.insert( p , i ) == U.insert_or_assign( p , i ).second );
      break;
-    case 2: CHECK( X.erase( p ) == ( U.erase( p ) == 1 ) ); break;
+    case 2:
+     CHECK( X.erase( p ) == ( U.erase( p ) == 1 ) );
+     break;
     default: {
      const auto it = U.find( p );
      CHECK( X.find( p ) == ( it == U.end() ? X.NONE : it->second ) );
@@ -215,7 +228,7 @@ ADS_TEST( "position-index" )
    CHECK( Y.find( p ) == i && Z.find( p ) == i );
   Z.clear();
   CHECK( Z.empty() && Z.capacity() == Y.capacity() &&
-         Z.find( U.begin()->first ) == Z.NONE );
+	 Z.find( U.begin()->first ) == Z.NONE );
   };
  random( FastHash< const Row * >() , 50 , 20000 );
  random( FastHash< const Row * >() , 5000 , 200000 );
@@ -239,16 +252,16 @@ ADS_TEST( "position-index-renumber" )
  X.insert( &r[ 0 ] , 10 );
  X.insert( &r[ 1 ] , 20 );
  X.insert( &r[ 2 ] , 3 );
- X.renumber( std::vector< std::uint32_t >{ 4 , 5 } );   // past the last
+ X.renumber( std::vector< std::uint32_t >{ 4 , 5 } );  // past the last
  CHECK( X.find( &r[ 0 ] ) == 8 && X.find( &r[ 1 ] ) == 18 &&
-        X.find( &r[ 2 ] ) == 3 );
+	X.find( &r[ 2 ] ) == 3 );
  X.renumber( std::vector< std::uint32_t >{} );
  CHECK( X.size() == 3 && X.find( &r[ 2 ] ) == 3 );
  CHECK_THROWS( X.renumber( std::vector< std::uint32_t >{ 2 , 1 } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( X.renumber( std::vector< std::uint32_t >{ 1 , 1 } ) ,
-               contract_violation );
- PositionIndex< Row > E;                    // nothing to renumber
+	       contract_violation );
+ PositionIndex< Row > E;  // nothing to renumber
  E.renumber( std::vector< std::uint32_t >{ 0 , 7 } );
  CHECK( E.empty() );
  }
@@ -263,33 +276,32 @@ ADS_TEST( "sparse-assembly" )
 {
  std::mt19937_64 g( 11 );
  AssemblyWorkspace< int , double > W;
- auto check = [ & ]( std::size_t m , std::size_t n ,
-                     const std::vector< long > & R ,
-                     const std::vector< long > & C ,
-                     const std::vector< double > & V ) {
-  const std::size_t z = R.size();
-  std::vector< int > beg( n + 1 ) , ind( z + 1 );
-  std::vector< double > val( z + 1 );
-  std::size_t k = assembleCsc( m , n , z , R.data() , C.data() , V.data() ,
-                               beg.data() , ind.data() , val.data() , W );
-  CHECK( compressed( byMap( C , R , V ) , n , beg , ind , val , k ) );
-  std::vector< unsigned > beg2( m + 1 ) , ind2( z + 1 );
-  AssemblyWorkspace< unsigned , double > W2;
-  k = assembleCsr( m , n , z , R.data() , C.data() , V.data() ,
-                   beg2.data() , ind2.data() , val.data() , W2 );
-  CHECK( compressed( byMap( R , C , V ) , m , beg2 , ind2 , val , k ) );
-  std::vector< std::int64_t > beg3( m + 1 ) , ind3( z + 1 );
-  k = compressTriplets( m , n , z , R.data() , C.data() , V.data() ,
-                        beg3.data() , ind3.data() , val.data() );
-  CHECK( compressed( byMap( R , C , V ) , m , beg3 , ind3 , val , k ) );
-  };
+ auto check =
+   [ & ]( std::size_t m , std::size_t n , const std::vector< long > & R ,
+	  const std::vector< long > & C , const std::vector< double > & V ) {
+    const std::size_t z = R.size();
+    std::vector< int > beg( n + 1 ) , ind( z + 1 );
+    std::vector< double > val( z + 1 );
+    std::size_t k = assembleCsc( m , n , z , R.data() , C.data() , V.data() ,
+				 beg.data() , ind.data() , val.data() , W );
+    CHECK( compressed( byMap( C , R , V ) , n , beg , ind , val , k ) );
+    std::vector< unsigned > beg2( m + 1 ) , ind2( z + 1 );
+    AssemblyWorkspace< unsigned , double > W2;
+    k = assembleCsr( m , n , z , R.data() , C.data() , V.data() , beg2.data() ,
+		     ind2.data() , val.data() , W2 );
+    CHECK( compressed( byMap( R , C , V ) , m , beg2 , ind2 , val , k ) );
+    std::vector< std::int64_t > beg3( m + 1 ) , ind3( z + 1 );
+    k = compressTriplets( m , n , z , R.data() , C.data() , V.data() ,
+			  beg3.data() ,
+			  ind3.data() , val.data() );
+    CHECK( compressed( byMap( R , C , V ) , m , beg3 , ind3 , val , k ) );
+    };
  for( int round = 0 ; round < 30 ; ++round ) {
-  const std::size_t m = 1 + g() % 60 , n = 1 + g() % 60 ,
-                    z = g() % 2000;
+  const std::size_t m = 1 + g() % 60 , n = 1 + g() % 60 , z = g() % 2000;
   std::vector< long > R( z ) , C( z );
   std::vector< double > V( z );
   for( std::size_t k = 0 ; k < z ; ++k ) {
-   R[ k ] = long( g() % ( m / 2 + 1 ) );    // half the rows empty
+   R[ k ] = long( g() % ( m / 2 + 1 ) );  // half the rows empty
    C[ k ] = long( g() % n );
    V[ k ] = double( long( g() % 21 ) - 10 );
    }
@@ -300,8 +312,8 @@ ADS_TEST( "sparse-assembly" )
  check( 3 , 0 , {} , {} , {} );
  check( 1 , 1 , { 0 } , { 0 } , { 2.5 } );
  check( 4 , 4 , { 3 , 3 , 3 , 3 } , { 2 , 2 , 2 , 2 } ,
-        { 1 , -1 , 2 , -2 } );               // summed to 0, kept
- {                                          // one long column, reversed
+	{ 1 , -1 , 2 , -2 } );  // summed to 0, kept
+ {                           // one long column, reversed
   std::vector< long > R , C;
   std::vector< double > V;
   for( long i = 999 ; i >= 0 ; --i )
@@ -324,9 +336,9 @@ ADS_TEST( "sparse-assembly" )
  const long r[ 2 ] = { 0 , 2 } , c[ 2 ] = { 0 , 0 } , neg[ 2 ] = { 0 , -1 };
  const double v[ 2 ] = { 1 , 1 };
  CHECK_THROWS( assembleCsr( 2 , 2 , 2 , r , c , v , beg , ind , val , W ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( assembleCsr( 2 , 2 , 2 , c , neg , v , beg , ind , val , W ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // DynamicCsr against a vector of rows: random appends of single rows and
@@ -357,7 +369,7 @@ ADS_TEST( "dynamic-csr" )
    z += x.size();
    }
   return( ( std::size_t( D.beg()[ V.size() ] ) == z ) &&
-          ( D.nonzeros() == z ) );
+	   ( D.nonzeros() == z ) );
   };
  auto row = [ & ]( void ) {
   Entries e;
@@ -368,27 +380,33 @@ ADS_TEST( "dynamic-csr" )
   };
  for( int t = 0 ; t < 3000 ; ++t ) {
   const unsigned c = unsigned( g() % 6 );
-  if( c <= 1 ) {                              // one row
+  if( c <= 1 ) {  // one row
    const Entries e = row();
    std::vector< int > x;
    std::vector< double > y;
-   for( auto [ j , v ] : e ) { x.push_back( j ); y.push_back( v ); }
+   for( auto [ j , v ] : e ) {
+    x.push_back( j );
+    y.push_back( v );
+    }
    CHECK( D.append( x , y ) == V.size() );
    V.push_back( e );
    }
-  else if( c == 2 ) {                         // a batch, offset in its arrays
+  else if( c == 2 ) {  // a batch, offset in its arrays
    const std::size_t r = g() % 5;
    std::vector< int > beg{ 3 } , x( 3 , -1 );
    std::vector< double > y( 3 , -1 );
    for( std::size_t k = 0 ; k < r ; ++k ) {
     const Entries e = row();
-    for( auto [ j , v ] : e ) { x.push_back( j ); y.push_back( v ); }
+    for( auto [ j , v ] : e ) {
+     x.push_back( j );
+     y.push_back( v );
+     }
     beg.push_back( int( x.size() ) );
     V.push_back( e );
     }
    D.append( r , beg.data() , x.data() , y.data() );
    }
-  else if( c == 3 && ! V.empty() ) {          // a random set
+  else if( c == 3 && ! V.empty() ) {  // a random set
    std::vector< std::uint32_t > R;
    for( std::size_t i = 0 ; i < V.size() ; ++i )
     if( g() % 3 == 0 )
@@ -397,13 +415,13 @@ ADS_TEST( "dynamic-csr" )
    for( auto i = R.rbegin() ; i != R.rend() ; ++i )
     V.erase( V.begin() + *i );
    }
-  else if( c == 4 && ! V.empty() ) {          // the first or the last
+  else if( c == 4 && ! V.empty() ) {  // the first or the last
    const std::size_t i = g() % 2 ? 0 : V.size() - 1;
    const std::vector< std::size_t > R{ i };
    D.remove( std::span< const std::size_t >( R ) );
    V.erase( V.begin() + i );
    }
-  else if( ! V.empty() ) {                    // a range
+  else if( ! V.empty() ) {  // a range
    const std::size_t a = g() % V.size() , b = a + g() % ( V.size() - a + 1 );
    D.remove( a , b );
    V.erase( V.begin() + a , V.begin() + b );
@@ -421,12 +439,12 @@ ADS_TEST( "dynamic-csr" )
  D.clear();
  CHECK( D.empty() && D.beg()[ 0 ] == 0 );
  CHECK_THROWS( D.append( std::vector< int >{ 1 } , std::vector< double >{} ) ,
-               contract_violation );
+	       contract_violation );
  D.append( std::vector< int >{} , std::vector< double >{} );
  CHECK_THROWS( D.remove( std::span< const int >( std::vector< int >{ 1 } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( D.remove( 0 , 2 ) , contract_violation );
- CHECK_THROWS( (void) D.indices( 1 ) , contract_violation );
+ CHECK_THROWS( ( void )D.indices( 1 ) , contract_violation );
  }
 
 // the fingerprints: +0 and -0, the NaNs of any sign and payload, equal;
@@ -437,11 +455,11 @@ ADS_TEST( "row-fingerprint" )
 {
  const double nan1 = std::numeric_limits< double >::quiet_NaN();
  const double nan2 = -std::bit_cast< double >( 0x7FF0000000000123ULL );
- CHECK( std::isnan( nan2 ) && canonicalWord( nan1 ) == canonicalWord( nan2 )
-        && canonicalWord( 0.0 ) == canonicalWord( -0.0 ) &&
-        canonicalWord( 1.0 ) != canonicalWord( -1.0 ) );
+ CHECK( std::isnan( nan2 ) && canonicalWord( nan1 ) == canonicalWord( nan2 ) &&
+	canonicalWord( 0.0 ) == canonicalWord( -0.0 ) &&
+	canonicalWord( 1.0 ) != canonicalWord( -1.0 ) );
  CHECK( rowFingerprint( std::vector< double >{} ) ==
-        rowFingerprint( std::vector< double >{} ) );
+	rowFingerprint( std::vector< double >{} ) );
  std::mt19937_64 g( 9 );
  for( std::size_t n : { 1 , 2 , 7 , 8 , 63 , 64 , 65 , 128 , 129 , 1000 } ) {
   std::vector< double > x( n );
@@ -454,7 +472,7 @@ ADS_TEST( "row-fingerprint" )
   y[ n - 1 ] = nan2;
   CHECK( rowFingerprint( x ) == rowFingerprint( y ) && sameRow( x , y ) );
   CHECK( rowFingerprint( x , 1 ) != rowFingerprint( x , 2 ) );
-  y[ ( n - 1 ) / 2 ] += n == 1 ? 0 : 1;   // not the NaN at the end
+  y[ ( n - 1 ) / 2 ] += n == 1 ? 0 : 1;  // not the NaN at the end
   if( n > 1 )
    CHECK( rowFingerprint( x ) != rowFingerprint( y ) && ! sameRow( x , y ) );
   std::vector< double > s( x.begin() , x.end() - 1 );
@@ -464,33 +482,33 @@ ADS_TEST( "row-fingerprint" )
    j[ k ] = int( 3 * k );
   const auto f = rowFingerprint( n , j.data() , x.data() );
   y = x;
-  if( x[ 0 ] == 0 )                         // not the NaN of n = 1
+  if( x[ 0 ] == 0 )  // not the NaN of n = 1
    y[ 0 ] = -0.0;
   CHECK( f == rowFingerprint( n , j.data() , y.data() ) &&
-         sameRow( n , j.data() , x.data() , n , j.data() , y.data() ) );
+	 sameRow( n , j.data() , x.data() , n , j.data() , y.data() ) );
   const std::vector< int > j0 = j;
   j[ n - 1 ] += 1;
   CHECK( f != rowFingerprint( n , j.data() , x.data() ) &&
-         ! sameRow( n , j0.data() , x.data() , n , j.data() , x.data() ) );
-  CHECK( f != rowFingerprint( x ) );        // dense and sparse apart
+	 ! sameRow( n , j0.data() , x.data() , n , j.data() , x.data() ) );
+  CHECK( f != rowFingerprint( x ) );  // dense and sparse apart
   }
  std::unordered_set< std::uint64_t > F;
  for( int r = 0 ; r < 100000 ; ++r ) {
   std::vector< double > x( 1 + g() % 20 );
   for( auto & v : x )
-   v = double( g() % 3 );                   // many rows alike
+   v = double( g() % 3 );  // many rows alike
   x[ 0 ] = double( r );
   F.insert( rowFingerprint( x ) );
   }
  CHECK( F.size() == 100000 );
  const int i1[ 2 ] = { 1 , 2 } , i2[ 2 ] = { 1 , 3 };
  const double v1[ 2 ] = { 1 , -0.0 } , v2[ 2 ] = { 1 , 0.0 };
- CHECK( sameRow( 2 , i1 , v1 , 2 , i1 , v2 ) &&
-        ! sameRow( 2 , i1 , v1 , 2 , i2 , v1 ) &&
-        ! sameRow( 2 , i1 , v1 , 1 , i1 , v1 ) &&
-        sameRow< int >( 0 , nullptr , nullptr , 0 , nullptr , nullptr ) );
- CHECK_THROWS( (void) rowFingerprint< int >( 1 , nullptr , v1 ) ,
-               contract_violation );
+ CHECK( sameRow( 2 , i1 , v1 , 2 , i1 , v2 ) && ! sameRow( 2 , i1 , v1 , 2 ,
+							   i2 , v1 ) &&
+	! sameRow( 2 , i1 , v1 , 1 , i1 , v1 ) &&
+	sameRow< int >( 0 , nullptr , nullptr , 0 , nullptr , nullptr ) );
+ CHECK_THROWS( ( void )rowFingerprint< int >( 1 , nullptr , v1 ) ,
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -66,7 +66,7 @@
 
 #ifndef __ADS_Rans
  #define __ADS_Rans
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -85,7 +85,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the rANS code of order 0 of the bytes of `in`, with the frequencies and
 /// the size
@@ -115,8 +116,8 @@ namespace ADS {
 /// The division by \f$ f_s \f$ is a multiplication by a reciprocal (Granlund
 /// and Montgomery), exact on the states below \f$ 2^{32} \f$.
 /// \post the output decompresses to the input (audit)
-[[nodiscard]] inline std::vector< std::uint8_t > ransCompress(
-                                          std::span< const std::uint8_t > in );
+[[nodiscard]] inline std::vector< std::uint8_t >
+ransCompress( std::span< const std::uint8_t > in );
 
 /// the bytes that `ransCompress()` coded in `in`
 ///
@@ -139,8 +140,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre `in` is an output of `ransCompress()`
-[[nodiscard]] inline std::vector< std::uint8_t > ransDecompress(
-                                          std::span< const std::uint8_t > in );
+[[nodiscard]] inline std::vector< std::uint8_t >
+ransDecompress( std::span< const std::uint8_t > in );
 
 /// the frequencies \f$ f \f$ scaled to sum to \f$ 2^b \f$, each positive one
 /// kept positive
@@ -165,8 +166,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre some frequency is positive, and at most \f$ 2^b \f$ are
-[[nodiscard]] inline std::array< std::uint32_t , 256 > scaleFrequencies(
-                       const std::array< std::uint64_t , 256 > & f , int b );
+[[nodiscard]] inline std::array< std::uint32_t , 256 >
+scaleFrequencies( const std::array< std::uint64_t , 256 > & f , int b );
 
 /*--------------------------------------------------------------------------*/
 
@@ -180,7 +181,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Rans.h included */
+#endif /* Rans.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Rans.h -----------------------------*/

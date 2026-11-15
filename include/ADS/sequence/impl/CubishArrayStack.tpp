@@ -15,26 +15,29 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 CubishArrayStack< T >::CubishArrayStack( std::initializer_list< T > l )
 {
- for( const T & x : l ) push_back( x );
+ for( const T & x : l )
+  push_back( x );
  }
 
 template< class T >
 CubishArrayStack< T >::CubishArrayStack( const CubishArrayStack & o )
 {
  rebuild( o.f_n );
- for( const T & x : o ) push_back( x );
+ for( const T & x : o )
+  push_back( x );
  }
 
 template< class T >
 CubishArrayStack< T >::CubishArrayStack( CubishArrayStack && o ) noexcept
- : f_mids( std::move( o.f_mids ) ) , f_spare( std::move( o.f_spare ) ) ,
-   f_n( std::exchange( o.f_n , 0 ) ) , f_b( std::exchange( o.f_b , 16 ) ) ,
-   f_lg( std::exchange( o.f_lg , 4 ) )
+    : f_mids( std::move( o.f_mids ) ) , f_spare( std::move( o.f_spare ) ) ,
+      f_n( std::exchange( o.f_n , 0 ) ) , f_b( std::exchange( o.f_b , 16 ) ) ,
+      f_lg( std::exchange( o.f_lg , 4 ) )
 {
  o.f_mids.clear();
  o.f_spare.clear();
@@ -89,7 +92,7 @@ std::unique_ptr< T[] > CubishArrayStack< T >::newLeaf( void )
 template< class T >
 void CubishArrayStack< T >::freeLeaf( std::unique_ptr< T[] > a )
 {
- if( f_spare.size() < 4 )   // enough for the cascades of one operation
+ if( f_spare.size() < 4 )  // enough for the cascades of one operation
   f_spare.push_back( std::move( a ) );
  }
 
@@ -104,7 +107,7 @@ void CubishArrayStack< T >::reset( Mid & M )
 template< class T >
 void CubishArrayStack< T >::pushFront( Mid & M , T && x )
 {
- if( M.g == 0 ) {                           // a new leaf at the front
+ if( M.g == 0 ) {  // a new leaf at the front
   M.head = ( M.head - 1 ) & ( 2 * f_b - 1 );
   M.L[ M.head ] = Leaf{ newLeaf() , 0 };
   ++M.nl;
@@ -120,7 +123,7 @@ template< class T >
 void CubishArrayStack< T >::pushBack( Mid & M , T && x )
 {
  const std::size_t v = M.g + M.n;
- if( v == M.nl * f_b ) {                    // a new leaf at the back
+ if( v == M.nl * f_b ) {  // a new leaf at the back
   leaf( M , M.nl ) = Leaf{ newLeaf() , 0 };
   ++M.nl;
   }
@@ -137,7 +140,7 @@ T CubishArrayStack< T >::popFront( Mid & M )
  --M.n;
  if( M.n == 0 )
   reset( M );
- else if( M.g == f_b ) {                    // the first leaf empty
+ else if( M.g == f_b ) {  // the first leaf empty
   freeLeaf( std::move( M.L[ M.head ].a ) );
   M.head = ( M.head + 1 ) & ( 2 * f_b - 1 );
   --M.nl;
@@ -154,7 +157,7 @@ T CubishArrayStack< T >::popBack( Mid & M )
  --M.n;
  if( M.n == 0 )
   reset( M );
- else if( ( v & ( f_b - 1 ) ) == 0 ) {      // the last leaf empty
+ else if( ( v & ( f_b - 1 ) ) == 0 ) {  // the last leaf empty
   freeLeaf( std::move( leaf( M , M.nl - 1 ).a ) );
   --M.nl;
   }
@@ -165,21 +168,21 @@ template< class T >
 void CubishArrayStack< T >::insert( Mid & M , std::size_t r , T && x )
 {
  const std::size_t m = f_b - 1;
- if( M.g + M.n == M.nl * f_b ) {            // a new leaf at the back
+ if( M.g + M.n == M.nl * f_b ) {  // a new leaf at the back
   leaf( M , M.nl ) = Leaf{ newLeaf() , 0 };
   ++M.nl;
   }
  const std::size_t v = M.g + r;
  const std::size_t k = v >> f_lg , L = ( M.g + M.n ) >> f_lg;
- for( std::size_t j = L ; j > k ; --j ) {   // the last item of each leaf
-  Leaf & p = leaf( M , j - 1 );             // to the front of the next
+ for( std::size_t j = L ; j > k ; --j ) {  // the last item of each leaf
+  Leaf & p = leaf( M , j - 1 );           // to the front of the next
   Leaf & q = leaf( M , j );
   q.off = ( q.off - 1 ) & m;
   q.a[ q.off ] = std::move( p.a[ ( p.off + m ) & m ] );
   }
- Leaf & c = leaf( M , k );                  // and the items of the leaf
- const std::size_t end = k < L ? m : M.g + M.n - ( k << f_lg );   // after
- for( std::size_t q = end ; q > ( v & m ) ; --q )   // r one place on
+ Leaf & c = leaf( M , k );  // and the items of the leaf
+ const std::size_t end = k < L ? m : M.g + M.n - ( k << f_lg );  // after
+ for( std::size_t q = end ; q > ( v & m ) ; --q )  // r one place on
   c.a[ ( c.off + q ) & m ] = std::move( c.a[ ( c.off + q - 1 ) & m ] );
  c.a[ ( c.off + v ) & m ] = std::move( x );
  ++M.n;
@@ -191,20 +194,20 @@ void CubishArrayStack< T >::erase( Mid & M , std::size_t r )
  const std::size_t m = f_b - 1;
  const std::size_t v = M.g + r;
  const std::size_t k = v >> f_lg , L = ( M.g + M.n - 1 ) >> f_lg;
- Leaf & c = leaf( M , k );                  // the items of the leaf after
- const std::size_t end = k < L ? f_b : M.g + M.n - ( k << f_lg );   // r
- for( std::size_t q = ( v & m ) + 1 ; q < end ; ++q )   // one place back
+ Leaf & c = leaf( M , k );  // the items of the leaf after
+ const std::size_t end = k < L ? f_b : M.g + M.n - ( k << f_lg );  // r
+ for( std::size_t q = ( v & m ) + 1 ; q < end ; ++q )  // one place back
   c.a[ ( c.off + q - 1 ) & m ] = std::move( c.a[ ( c.off + q ) & m ] );
- for( std::size_t j = k + 1 ; j <= L ; ++j ) {   // the first item of each
-  Leaf & p = leaf( M , j - 1 );                  // leaf to the back of the
-  Leaf & q = leaf( M , j );                      // one before
+ for( std::size_t j = k + 1 ; j <= L ; ++j ) {  // the first item of each
+  Leaf & p = leaf( M , j - 1 );                // leaf to the back of the
+  Leaf & q = leaf( M , j );                    // one before
   p.a[ ( p.off + m ) & m ] = std::move( q.a[ q.off ] );
   q.off = ( q.off + 1 ) & m;
   }
  --M.n;
  if( M.n == 0 )
   reset( M );
- else if( M.g + M.n <= ( M.nl - 1 ) * f_b ) {   // the last leaf empty
+ else if( M.g + M.n <= ( M.nl - 1 ) * f_b ) {  // the last leaf empty
   freeLeaf( std::move( leaf( M , M.nl - 1 ).a ) );
   --M.nl;
   }
@@ -213,9 +216,10 @@ void CubishArrayStack< T >::erase( Mid & M , std::size_t r )
 template< class T >
 void CubishArrayStack< T >::rebuild( std::size_t n )
 {
- std::size_t b = 16;                        // the least power of 2, 16 at
- while( b * b * b < n ) b *= 2;             // least, whose cube is not
- if( b == f_b )                             // below n
+ std::size_t b = 16;  // the least power of 2, 16 at
+ while( b * b * b < n )
+  b *= 2;        // least, whose cube is not
+ if( b == f_b )  // below n
   return;
  CubishArrayStack o;
  o.f_b = b;
@@ -235,7 +239,7 @@ void CubishArrayStack< T >::insert( std::size_t i , const T & x )
 {
  ADS_PRE( i <= f_n );
  [[maybe_unused]] const std::size_t n = f_n;
- T y = x;                                   // x may be an item
+ T y = x;  // x may be an item
  if( f_n + 1 > 8 * f_b * f_b * f_b )
   rebuild( f_n + 1 );
  const std::size_t C = f_b * f_b;
@@ -285,7 +289,7 @@ bool CubishArrayStack< T >::operator==( const CubishArrayStack & o ) const
  if( f_n != o.f_n )
   return( false );
  for( std::size_t i = 0 ; i < f_n ; ++i )
-  if( !( ( *this )[ i ] == o[ i ] ) )
+  if( ! ( ( *this )[ i ] == o[ i ] ) )
    return( false );
  return( true );
  }
@@ -297,11 +301,10 @@ bool CubishArrayStack< T >::full( void ) const
  std::size_t s = 0;
  for( std::size_t j = 0 ; j < f_mids.size() ; ++j ) {
   const Mid & M = f_mids[ j ];
-  if( ( M.n == 0 ) || ( M.n > C ) || ( ( j + 1 < f_mids.size() ) &&
-                                       ( M.n < C ) ) )
+  if( ( M.n == 0 ) || ( M.n > C ) ||
+      ( ( j + 1 < f_mids.size() ) && ( M.n < C ) ) )
    return( false );
-  if( ( M.g >= f_b ) ||
-      ( M.nl != ( M.g + M.n + f_b - 1 ) / f_b ) )
+  if( ( M.g >= f_b ) || ( M.nl != ( M.g + M.n + f_b - 1 ) / f_b ) )
    return( false );
   s += M.n;
   }

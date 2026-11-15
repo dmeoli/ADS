@@ -32,7 +32,7 @@
 
 #ifndef __ADS_LinkedQueue
  #define __ADS_LinkedQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -49,7 +49,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS LinkedQueue -----------------------------*/
@@ -57,12 +58,12 @@ namespace ADS {
 
 /// a QUEUE realized as a singly linked list with a front and a back
 template< class T >
-class LinkedQueue {
+class LinkedQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue
  LinkedQueue( void ) = default;
@@ -132,29 +133,28 @@ class LinkedQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a cell of the list
- struct Cell {
+ struct Cell
+ {
   T value;      ///< the item
   Cell * next;  ///< the next cell, toward the back
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the items from the front to the back, forward
 
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = const T &;              ///< a constant reference
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = const T &;             ///< a constant reference
+ using const_reference = const T &;       ///< a constant reference
  /// a constant iterator along the cells
  using iterator = LinkedIterator< Cell , T , &Cell::next , &Cell::value >;
  /// a constant iterator along the cells
- using const_iterator =
-  LinkedIterator< Cell , T , &Cell::next , &Cell::value >;
+ using const_iterator = LinkedIterator< Cell , T , &Cell::next ,
+					&Cell::value >;
 
  /// the iterator on the item at the front
  [[nodiscard]] const_iterator begin( void ) const {
@@ -162,7 +162,9 @@ class LinkedQueue {
   }
 
  /// the iterator past the item at the back, nil
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
 
  /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
@@ -171,7 +173,6 @@ class LinkedQueue {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  Cell * f_front = nullptr;   ///< the first cell
  Cell * f_back = nullptr;    ///< the last cell
  std::size_t f_size = 0;     ///< the number of items
@@ -191,7 +192,7 @@ class LinkedQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LinkedQueue.h included */
+#endif /* LinkedQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File LinkedQueue.h -------------------------*/

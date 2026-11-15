@@ -124,7 +124,7 @@
 
 #ifndef __ADS_MultiSearch
  #define __ADS_MultiSearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -145,7 +145,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS MultiSearcher ----------------------------*/
@@ -153,11 +154,11 @@ namespace ADS {
 
 /// the search of many patterns at once, by a SIMD filter or by the
 /// automaton of Aho and Corasick
-class MultiSearcher {
+class MultiSearcher
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the patterns \f$ P \f$, numbered \f$ 0 , 1 , \ldots \f$ in their order,
  /// and the filter that suits them
  ///
@@ -227,7 +228,7 @@ class MultiSearcher {
  /// \f]
  /// \post the occurrences of `naiveMatching()` for each pattern (audit)
  [[nodiscard]] std::vector< std::pair< std::size_t , std::size_t > >
-  findAll( std::string_view T ) const;
+ findAll( std::string_view T ) const;
 
  /// the number of the occurrences of the patterns in \f$ T \f$, by the
  /// search of `findAll()`
@@ -250,7 +251,6 @@ class MultiSearcher {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the occurrences in T, each ( start , number ) given to report(), by
  /// increasing start; npos, or the place from which the automaton must
  /// go on, if the filter lets too much through
@@ -263,8 +263,7 @@ class MultiSearcher {
  /// the occurrences that start at from or later, by the automaton, given
  /// to report() by increasing end
  template< class F >
- void automaton( std::string_view T , std::size_t from ,
-                 F && report ) const;
+ void automaton( std::string_view T , std::size_t from , F && report ) const;
 
  /// scan() by the shift-or filter on super characters
  template< class F >
@@ -277,35 +276,35 @@ class MultiSearcher {
  /// the occurrences that start at s, by the table of the prefixes of the
  /// shift-or filter; the number of the bytes compared
  template< class F >
- std::size_t verify( const unsigned char * T , std::size_t n ,
-                     std::size_t s , F && report ) const;
+ std::size_t verify( const unsigned char * T , std::size_t n , std::size_t s ,
+		     F && report ) const;
 
  /// the places s .. s + 63 whose bits are on in mask, candidates for the
  /// buckets in C[ 0 .. 63 ], checked against their patterns; the number
  /// of the bytes compared
  template< class F >
  std::size_t check( const unsigned char * T , std::size_t n , std::size_t s ,
-             std::uint64_t mask , const unsigned char * C ,
-             F && report ) const;
+		    std::uint64_t mask , const unsigned char * C ,
+		    F && report ) const;
 
- std::vector< std::string > f_P;     ///< the patterns
- std::size_t f_q = 0;                ///< the bytes of the filter, 0 if none
- std::size_t f_least = 0;            ///< the length of the shortest one
- std::size_t f_longest = 0;          ///< and of the longest one
+ std::vector< std::string > f_P;  ///< the patterns
+ std::size_t f_q = 0;             ///< the bytes of the filter, 0 if none
+ std::size_t f_least = 0;         ///< the length of the shortest one
+ std::size_t f_longest = 0;       ///< and of the longest one
  /// the halves of the bytes r < q: lo[ r ][ x ] and hi[ r ][ x ]
  std::array< std::array< std::uint8_t , 16 > , 8 > f_lo{} , f_hi{};
  std::array< std::vector< std::uint32_t > , 8 > f_bucket;  ///< patterns
- std::vector< std::uint64_t > f_head;  ///< the first 8 bytes of each
- std::vector< std::uint64_t > f_mask;  ///< those of them in the pattern
- std::size_t f_L = 0;                ///< the window of the shift-or filter
- std::vector< std::uint64_t > f_sh;  ///< its masks, by super character
- std::size_t f_W = 0;                ///< the window of stride 2, 0 if none
- std::vector< std::uint64_t > f_sh2;  ///< its masks
+ std::vector< std::uint64_t > f_head;   ///< the first 8 bytes of each
+ std::vector< std::uint64_t > f_mask;   ///< those of them in the pattern
+ std::size_t f_L = 0;                   ///< the window of the shift-or filter
+ std::vector< std::uint64_t > f_sh;     ///< its masks, by super character
+ std::size_t f_W = 0;                   ///< the window of stride 2, 0 if none
+ std::vector< std::uint64_t > f_sh2;    ///< its masks
  std::vector< std::uint32_t > f_first;  ///< the table of the prefixes
  std::vector< std::uint32_t > f_next;   ///< its chains
  std::vector< std::uint64_t > f_key;    ///< the prefix of each pattern
- int f_bits = 0;                     ///< the bits of the table
- AhoCorasick f_ac;                   ///< on many checks
+ int f_bits = 0;                        ///< the bits of the table
+ AhoCorasick f_ac;                      ///< on many checks
 
  };  // end( class MultiSearcher )
 
@@ -321,7 +320,7 @@ class MultiSearcher {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MultiSearch.h included */
+#endif /* MultiSearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MultiSearch.h -------------------------*/

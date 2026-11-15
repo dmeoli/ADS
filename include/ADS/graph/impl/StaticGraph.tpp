@@ -16,7 +16,8 @@
 
 #include <climits>
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CONSTRUCTION ------------------------------*/
@@ -33,8 +34,7 @@ void StaticGraph< W >::build( int n , const Edges & E , Get && get )
  std::vector< int > cnt( std::size_t( n ) + 1 , 0 );
  for( const auto & e : E ) {
   const auto [ u , v , w ] = get( e );
-  ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) &&
-           ( u != v ) );
+  ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) );
   ++cnt[ v + 1 ];
   if( ! f_directed )
    ++cnt[ u + 1 ];
@@ -43,8 +43,12 @@ void StaticGraph< W >::build( int n , const Edges & E , Get && get )
   cnt[ v + 1 ] += cnt[ v ];
  std::vector< std::pair< int , Arc > > byHead( na );
  auto arc = []( int v , const auto & w ) {
-  if constexpr( weighted ) return( Arc{ v , W( w ) } );
-  else { ( void ) w; return( Arc( v ) ); }
+  if constexpr( weighted )
+   return( Arc{ v , W( w ) } );
+  else {
+   ( void )w;
+   return( Arc( v ) );
+   }
   };
  for( const auto & e : E ) {
   const auto [ u , v , w ] = get( e );
@@ -66,21 +70,25 @@ void StaticGraph< W >::build( int n , const Edges & E , Get && get )
  }
 
 template< class W >
-StaticGraph< W >::StaticGraph( int n ,
-                  const std::vector< std::tuple< int , int , W > > & E ,
-                  bool directed ) : f_directed( directed )
+StaticGraph< W >::StaticGraph(
+  int n , const std::vector< std::tuple< int , int , W > > & E ,
+  bool directed )
+    : f_directed( directed )
 {
  build( n , E , []( const auto & e ) { return( e ); } );
  }
 
 template< class W >
 StaticGraph< W >::StaticGraph( int n ,
-                       const std::vector< std::pair< int , int > > & E ,
-                       bool directed ) requires( ! weighted )
- : f_directed( directed )
+			       const std::vector< std::pair< int ,
+							     int > > & E ,
+			       bool directed )
+ requires( ! weighted )
+    : f_directed( directed )
 {
  build( n , E , []( const auto & e ) {
-  return( std::tuple< int , int , W >( e.first , e.second , W() ) ); } );
+  return( std::tuple< int , int , W >( e.first , e.second , W() ) );
+  } );
  }
 
 template< class W >
@@ -166,10 +174,9 @@ int StaticGraph< W >::find( int u , int v ) const
   return( -1 );
  const Arc * const a = f_arc.data() + f_off[ u ];
  const Arc * const end = f_arc.data() + f_off[ u + 1 ];
- const Arc * k = std::partition_point( a , end , [ & ]( const Arc & x ) {
-  return( head( x ) < v ); } );
- return( ( k != end ) && ( head( *k ) == v ) ? int( k - f_arc.data() ) :
-                                               -1 );
+ const Arc * k = std::partition_point(
+   a , end , [ & ]( const Arc & x ) { return( head( x ) < v ); } );
+ return( ( k != end ) && ( head( *k ) == v ) ? int( k - f_arc.data() ) : -1 );
  }
 
 template< class W >
@@ -200,12 +207,12 @@ bool StaticGraph< W >::setWeight( int u , int v , const W & w )
  }
 
 template< class W >
-std::span< const typename StaticGraph< W >::Arc > StaticGraph< W >::out(
-                                                             int u ) const
+std::span< const typename StaticGraph< W >::Arc >
+StaticGraph< W >::out( int u ) const
 {
  ADS_PRE( hasNode( u ) );
- return( std::span< const Arc >( f_arc.data() + f_off[ u ] ,
-                          std::size_t( f_off[ u + 1 ] - f_off[ u ] ) ) );
+ return( std::span< const Arc >(
+   f_arc.data() + f_off[ u ] , std::size_t( f_off[ u + 1 ] - f_off[ u ] ) ) );
  }
 
 template< class W >
@@ -226,8 +233,8 @@ StaticGraph< W > StaticGraph< W >::transpose( void ) const
  }
 
 template< class W >
-StaticGraph< W > StaticGraph< W >::relabel( const std::vector< int > & p )
-                                                                      const
+StaticGraph< W >
+StaticGraph< W >::relabel( const std::vector< int > & p ) const
 {
  ADS_PRE( int( p.size() ) == n() );
  ADS_AUDIT( [ & ]( void ) {
@@ -245,7 +252,7 @@ StaticGraph< W > StaticGraph< W >::relabel( const std::vector< int > & p )
   for( int k = f_off[ u ] ; k < f_off[ u + 1 ] ; ++k ) {
    const int v = head( f_arc[ k ] );
    if( ! f_directed && ( v < u ) )
-    continue;                        // each unoriented edge once
+    continue;  // each unoriented edge once
    if constexpr( weighted )
     E.emplace_back( p[ u ] , p[ v ] , f_arc[ k ].w );
    else
@@ -288,7 +295,7 @@ std::vector< int > bfsOrder( const StaticGraph< W > & g , int r )
  const int * off = g.offsets();
  const auto * arc = g.arcData();
  for( int k = -1 ; k < n ; ++k ) {
-  const int x = k < 0 ? r : k;          // r, then the least not reached
+  const int x = k < 0 ? r : k;  // r, then the least not reached
   if( ( n == 0 ) || ( p[ x ] >= 0 ) )
    continue;
   p[ x ] = next++;

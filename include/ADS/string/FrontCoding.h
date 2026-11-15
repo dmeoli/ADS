@@ -87,7 +87,7 @@
 
 #ifndef __ADS_FrontCoding
  #define __ADS_FrontCoding
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -109,7 +109,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a pair \f$ ( \ell , \hat s ) \f$ of the front coding, the length of the
 /// prefix shared with the string before and the rest
@@ -130,8 +131,8 @@ using FrontPair = std::pair< std::size_t , std::string >;
 /// \end{array}}
 /// \f]
 /// \post `frontDecode()` of the result is \f$ D \f$ (audit)
-[[nodiscard]] inline std::vector< FrontPair > frontCode(
-                                       const std::vector< std::string > & D );
+[[nodiscard]] inline std::vector< FrontPair >
+frontCode( const std::vector< std::string > & D );
 
 /// the strings of the front coding \f$ F \f$
 ///
@@ -149,8 +150,8 @@ using FrontPair = std::pair< std::size_t , std::string >;
 /// \f]
 /// \pre the first pair has \f$ \ell = 0 \f$, and each \f$ \ell \f$ is at
 ///      most the length of the string before
-[[nodiscard]] inline std::vector< std::string > frontDecode(
-                                       const std::vector< FrontPair > & F );
+[[nodiscard]] inline std::vector< std::string >
+frontDecode( const std::vector< FrontPair > & F );
 
 /// appends to `out` the code of \f$ \ell \f$ in 1 to 4 bytes, the first two
 /// bits giving the number of bytes minus 1
@@ -190,18 +191,18 @@ inline void encodeLength( std::uint32_t l , std::string & out );
 /// \f]
 /// \pre a code begins at `pos` and is within `in`
 [[nodiscard]] inline std::uint32_t decodeLength( std::string_view in ,
-                                                 std::size_t & pos );
+						 std::size_t & pos );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- CLASS FrontCodedDictionary ------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a sorted dictionary of strings in the front coding, with anchors
-class FrontCodedDictionary {
+class FrontCodedDictionary
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the front coding of \f$ D \f$ with an anchor every \f$ b \f$ strings
  ///
  /// In pseudocode (the front coding with bucketing of chapter 9, Searching
@@ -221,9 +222,8 @@ class FrontCodedDictionary {
  /// \end{array}}
  /// \f]
  /// \pre \f$ D \f$ is sorted (audit) and \f$ b \ge 1 \f$
- [[nodiscard]] static FrontCodedDictionary bucketed(
-                           const std::vector< std::string > & D ,
-                           std::size_t b );
+ [[nodiscard]] static FrontCodedDictionary
+ bucketed( const std::vector< std::string > & D , std::size_t b );
 
  /// the locality-preserving front coding of \f$ D \f$, of parameter
  /// \f$ c \f$
@@ -251,8 +251,8 @@ class FrontCodedDictionary {
  /// \post for \f$ c > 2 \f$, `characters()` is at most
  ///       \f$ ( 1 + 2 / ( c - 2 ) ) \, \mathit{FC}( D ) \f$ and
  ///       `decodeCost( i )` at most \f$ ( c + 1 ) | s_i | \f$
- [[nodiscard]] static FrontCodedDictionary localityPreserving(
-                           const std::vector< std::string > & D , double c );
+ [[nodiscard]] static FrontCodedDictionary
+ localityPreserving( const std::vector< std::string > & D , double c );
 
  /// the string \f$ i \f$, decoded from the anchor before it
  ///
@@ -308,8 +308,8 @@ class FrontCodedDictionary {
 
  /// the range \f$ [ l , r ) \f$ of the strings prefixed by \f$ P \f$, by
  /// `lexicographicPosition()` and `prefixEnd()`
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
 
  /// the number of strings smaller than \f$ P \f$ (or \f$ P\# \f$ if
  /// `upper`), given that \f$ k \f$ anchors are: the scan of the bucket
@@ -335,7 +335,7 @@ class FrontCodedDictionary {
  /// \pre \f$ k \f$ is at most `anchors()`, and it is the number of anchors
  ///      that precede the pattern
  [[nodiscard]] std::size_t rankInBucket( std::size_t k , std::string_view P ,
-                                         bool upper ) const;
+					 bool upper ) const;
 
  /// the number \f$ n \f$ of strings
  [[nodiscard]] std::size_t size( void ) const;
@@ -361,7 +361,8 @@ class FrontCodedDictionary {
 
  /// a constant view of the strings in their order, decoded one after the
  /// other, forward; `*it` is the string decoded in the iterator
- class const_iterator {
+ class const_iterator
+ {
   public:
   using reference = const std::string &;   ///< the string decoded
   using value_type = std::string;          ///< a string
@@ -377,7 +378,9 @@ class FrontCodedDictionary {
   /// the iterator on the string \f$ i \f$ of `*d`, decoded from the
   /// string 0
   const_iterator( const FrontCodedDictionary * d , std::size_t i )
-   : f_d( d ) , f_i( i ) { load(); }
+      : f_d( d ) , f_i( i ) {
+   load();
+   }
 
   /// the string decoded
   reference operator*( void ) const { return( f_s ); }
@@ -388,7 +391,11 @@ class FrontCodedDictionary {
    return( *this );
    }
   /// the next string, this one returned
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// whether the two iterators are at the same place
   bool operator==( const const_iterator & o ) const {
    return( f_i == o.f_i );
@@ -408,12 +415,12 @@ class FrontCodedDictionary {
   std::string f_s;
   };
 
- using value_type = std::string;                ///< a string
- using size_type = std::size_t;                 ///< a number of strings
- using difference_type = std::ptrdiff_t;        ///< a distance of places
- using reference = const std::string &;         ///< a string decoded
- using const_reference = const std::string &;   ///< a string decoded
- using iterator = const_iterator;               ///< the constant view
+ using value_type = std::string;               ///< a string
+ using size_type = std::size_t;                ///< a number of strings
+ using difference_type = std::ptrdiff_t;       ///< a distance of places
+ using reference = const std::string &;        ///< a string decoded
+ using const_reference = const std::string &;  ///< a string decoded
+ using iterator = const_iterator;              ///< the constant view
 
  /// the first string
  [[nodiscard]] const_iterator begin( void ) const {
@@ -430,7 +437,6 @@ class FrontCodedDictionary {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  FrontCodedDictionary( void ) = default;
 
  /// the coding of D, s_i whole if anchor( i , l , chars , | s_i | ) says
@@ -438,7 +444,7 @@ class FrontCodedDictionary {
  /// the coding since the last anchor
  template< class A >
  static FrontCodedDictionary build( const std::vector< std::string > & D ,
-                                    A anchor );
+				    A anchor );
 
  /// the rest of the string i
  [[nodiscard]] std::string_view rest( std::size_t i ) const;
@@ -447,13 +453,12 @@ class FrontCodedDictionary {
  [[nodiscard]] std::size_t anchorBefore( std::size_t i ) const;
 
  /// the number of anchors smaller than P (or P# if upper)
- [[nodiscard]] std::size_t anchorRank( std::string_view P ,
-                                       bool upper ) const;
+ [[nodiscard]] std::size_t anchorRank( std::string_view P , bool upper ) const;
 
- std::vector< std::size_t > f_l;   ///< the shared prefixes, 0 at anchors
- std::vector< std::size_t > f_off; ///< where each rest begins in f_chars
- std::string f_chars;              ///< the rests, one after the other
- std::vector< std::size_t > f_a;   ///< the places of the anchors
+ std::vector< std::size_t > f_l;    ///< the shared prefixes, 0 at anchors
+ std::vector< std::size_t > f_off;  ///< where each rest begins in f_chars
+ std::string f_chars;               ///< the rests, one after the other
+ std::vector< std::size_t > f_a;    ///< the places of the anchors
  std::size_t f_bytes = 0;
 
  };  // end( class FrontCodedDictionary )
@@ -470,7 +475,7 @@ class FrontCodedDictionary {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FrontCoding.h included */
+#endif /* FrontCoding.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File FrontCoding.h -------------------------*/

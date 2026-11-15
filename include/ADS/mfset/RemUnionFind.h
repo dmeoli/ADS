@@ -67,7 +67,7 @@
 
 #ifndef __ADS_RemUnionFind
  #define __ADS_RemUnionFind
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -83,18 +83,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RemUnionFind ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the union of disjoint sets of the elements \f$ 0 , \ldots , n - 1 \f$
-class RemUnionFind {
+class RemUnionFind
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the \f$ n \f$ sets \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  /// \pre \f$ 0 \le n < 2^{32} \f$
  explicit RemUnionFind( std::size_t n = 0 );
@@ -150,7 +151,6 @@ class RemUnionFind {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// every parent at least its child, and `count()` roots, \f$ O( n ) \f$
  [[nodiscard]] bool forest( void ) const;
 
@@ -158,8 +158,8 @@ class RemUnionFind {
  /// contracts, which must not compress the paths
  [[nodiscard]] std::uint32_t root( std::uint32_t x ) const;
 
- std::vector< std::uint32_t > f_p;   ///< the parents
- std::size_t f_count = 0;            ///< the number of the sets
+ std::vector< std::uint32_t > f_p;  ///< the parents
+ std::size_t f_count = 0;           ///< the number of the sets
 
  };  // end( class RemUnionFind )
 
@@ -175,7 +175,7 @@ class RemUnionFind {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RemUnionFind.h included */
+#endif /* RemUnionFind.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RemUnionFind.h -------------------------*/

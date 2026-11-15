@@ -32,7 +32,7 @@
 
 #ifndef __ADS_CursorBinaryTree
  #define __ADS_CursorBinaryTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS CursorBinaryTree -------------------------*/
@@ -60,13 +61,13 @@ namespace ADS {
 
 /// a binary tree on a vector of nodes linked by their places
 template< class T >
-class CursorBinaryTree {
+class CursorBinaryTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;              ///< the type of the values
- static constexpr int NIL = -1;   ///< no node
+ using Item = T;                 ///< the type of the values
+ static constexpr int NIL = -1;  ///< no node
 
  /// the empty tree
  CursorBinaryTree( void ) = default;
@@ -170,7 +171,8 @@ class CursorBinaryTree {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the places in use, for `SlotIterator`
- struct Used {
+ struct Used
+ {
   /// the places
   static std::size_t size( const auto & o ) { return( o.f_N.size() ); }
   /// whether the place \f$ i \f$ holds a node
@@ -184,20 +186,19 @@ class CursorBinaryTree {
  /// the nodes, in the order of their places, bidirectional
  [[nodiscard]] auto nodes( void ) const {
   using It = SlotIterator< CursorBinaryTree , Used >;
-  return( std::ranges::subrange( It( this , 0 ) ,
-                                 It( this , f_N.size() ) ) );
+  return( std::ranges::subrange( It( this , 0 ) , It( this , f_N.size() ) ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: its value, its links and whether the place is used
- struct Node {
-  T value;                      ///< the value
-  int parent ,                  ///< the parent, `NIL` for the root
-      left ,                    ///< the left child, `NIL` if missing
-      right;                    ///< the right child, `NIL` if missing
-  bool used;                    ///< false for a free place
+ struct Node
+ {
+  T value;     ///< the value
+  int parent ,  ///< the parent, `NIL` for the root
+    left ,      ///< the left child, `NIL` if missing
+    right;     ///< the right child, `NIL` if missing
+  bool used;   ///< false for a free place
   };
 
  const Node & node( int n ) const;
@@ -214,10 +215,10 @@ class CursorBinaryTree {
 
  int copy( const CursorBinaryTree & t , int s , int p );
 
- std::vector< Node > f_N;   ///< the nodes, used or free
- int f_root = NIL;          ///< the root
- int f_free = NIL;          ///< the first free place
- int f_size = 0;            ///< the number of nodes
+ std::vector< Node > f_N;  ///< the nodes, used or free
+ int f_root = NIL;         ///< the root
+ int f_free = NIL;         ///< the first free place
+ int f_size = 0;           ///< the number of nodes
 
  };  // end( class CursorBinaryTree )
 
@@ -233,7 +234,7 @@ class CursorBinaryTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CursorBinaryTree.h included */
+#endif /* CursorBinaryTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File CursorBinaryTree.h -----------------------*/

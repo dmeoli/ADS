@@ -48,7 +48,8 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// the combination of boost::hash_combine
 inline std::size_t combine( std::size_t h , std::size_t x )
@@ -60,12 +61,14 @@ inline std::size_t combine( std::size_t h , std::size_t x )
 /// of the n
 template< class F >
 void rows( const char * what , const char * who , std::size_t n , int r ,
-           F && f )
+	   F && f )
 {
  if( skip( who ) )
   return;
- print( "fingerprints" , what , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) { sink = sink + f(); } , r , n ) );
+ print( "fingerprints" , what , n , who ,
+	median( []() { return( 0 ); } , [ & ]( int ) { sink = sink + f(); } ,
+		r ,
+		n ) );
  }
 
 }  // end( namespace )
@@ -89,11 +92,11 @@ int main( int argc , char ** argv )
    auto ads = [ & ]() {
     std::uint64_t t = 0;
     for( std::size_t i = 0 ; i < R ; ++i )
-     t += ADS::rowFingerprint( std::span< const double >( &x[ i * L ] ,
-                                                          L ) );
-    return( t ); };
-   for( const char * who : { "ADS::rowFingerprint" ,
-                             "ADS::rowFingerprint A/A" } )
+     t += ADS::rowFingerprint( std::span< const double >( &x[ i * L ] , L ) );
+    return( t );
+    };
+   for( const char * who :
+	{ "ADS::rowFingerprint" , "ADS::rowFingerprint A/A" } )
     rows( what.c_str() , who , n , r , ads );
    rows( what.c_str() , "std::hash" , n , r , [ & ]() {
     std::uint64_t t = 0;
@@ -103,13 +106,15 @@ int main( int argc , char ** argv )
       h = combine( h , std::hash< double >()( x[ i * L + k ] ) );
      t += h;
      }
-    return( t ); } );
+    return( t );
+    } );
 #ifdef ADS_HAS_BOOST
    rows( what.c_str() , "boost::hash_range" , n , r , [ & ]() {
     std::uint64_t t = 0;
     for( std::size_t i = 0 ; i < R ; ++i )
      t += boost::hash_range( x.begin() + i * L , x.begin() + ( i + 1 ) * L );
-    return( t ); } );
+    return( t );
+    } );
 #endif
    }
 
@@ -120,9 +125,10 @@ int main( int argc , char ** argv )
     std::uint64_t t = 0;
     for( std::size_t i = 0 ; i < R ; ++i )
      t += ADS::rowFingerprint( L , &J[ i * L ] , &x[ i * L ] );
-    return( t ); };
-   for( const char * who : { "ADS::rowFingerprint" ,
-                             "ADS::rowFingerprint A/A" } )
+    return( t );
+    };
+   for( const char * who :
+	{ "ADS::rowFingerprint" , "ADS::rowFingerprint A/A" } )
     rows( what.c_str() , who , n , r , ads );
    rows( what.c_str() , "std::hash" , n , r , [ & ]() {
     std::uint64_t t = 0;
@@ -134,18 +140,21 @@ int main( int argc , char ** argv )
       }
      t += h;
      }
-    return( t ); } );
+    return( t );
+    } );
 #ifdef ADS_HAS_BOOST
    rows( what.c_str() , "boost::hash_range" , n , r , [ & ]() {
     std::uint64_t t = 0;
     for( std::size_t i = 0 ; i < R ; ++i ) {
-     std::size_t h = boost::hash_range( J.begin() + i * L ,
-                                        J.begin() + ( i + 1 ) * L );
-     boost::hash_combine( h , boost::hash_range( x.begin() + i * L ,
-                                                 x.begin() + ( i + 1 ) * L ) );
+     std::size_t h =
+       boost::hash_range( J.begin() + i * L , J.begin() + ( i + 1 ) * L );
+     boost::hash_combine(
+       h ,
+       boost::hash_range( x.begin() + i * L , x.begin() + ( i + 1 ) * L ) );
      t += h;
      }
-    return( t ); } );
+    return( t );
+    } );
 #endif
    }
 
@@ -157,16 +166,18 @@ int main( int argc , char ** argv )
     std::uint64_t t = 0;
     for( std::size_t i = 0 ; i < R ; ++i )
      t += ADS::sameRow( std::span< const double >( &x[ i * L ] , L ) ,
-                        std::span< const double >( &y[ i * L ] , L ) );
-    return( t ); };
+			std::span< const double >( &y[ i * L ] , L ) );
+    return( t );
+    };
    for( const char * who : { "ADS::sameRow" , "ADS::sameRow A/A" } )
     rows( "equal64" , who , n , r , ads );
    rows( "equal64" , "std::equal" , n , r , [ & ]() {
     std::uint64_t t = 0;
     for( std::size_t i = 0 ; i < R ; ++i )
      t += std::equal( x.begin() + i * L , x.begin() + ( i + 1 ) * L ,
-                      y.begin() + i * L );
-    return( t ); } );
+		      y.begin() + i * L );
+    return( t );
+    } );
    }
   }
  return( 0 );

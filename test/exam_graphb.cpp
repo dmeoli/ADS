@@ -62,7 +62,8 @@ using namespace ADS;
 /*--------------------------------- COMMON ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 using Ints = std::vector< int >;
 using Matrix = std::vector< std::vector< int > >;
@@ -96,7 +97,7 @@ bool allReached( const G & g , int v )
 {
  ADS_PRE( g.hasNode( v ) );
  std::vector< bool > visited( g.bound() , false );
- auto none = []( auto... ) {};
+ auto none = []( auto... ) { };
  dfs( g , v , visited , none , none , none );
  for( int u : g.V() )
   if( ! visited[ u ] )
@@ -110,7 +111,8 @@ bool allReached( const G & g , int v )
 /*-------------------------------- HELPERS ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 using graph::BoolMatrix;
 using graph::Ints;
@@ -301,8 +303,9 @@ bool nurikabeOracle( const Matrix & G , const Matrix & S )
 {
  const int n = int( G.size() );
  auto same = [ & ]( int color ) {
-  return( [ & S , color ]( int a , int b , int c , int d ) {
-   return( ( S[ a ][ b ] == color ) && ( S[ c ][ d ] == color ) ); } );
+  return( [ &S , color ]( int a , int b , int c , int d ) {
+   return( ( S[ a ][ b ] == color ) && ( S[ c ][ d ] == color ) );
+   } );
   };
  const auto white = cellComponents( n , same( 0 ) );
  const auto black = cellComponents( n , same( 1 ) );
@@ -313,7 +316,7 @@ bool nurikabeOracle( const Matrix & G , const Matrix & S )
    const int i = r * n + c;
    if( S[ r ][ c ] == 1 ) {
     if( G[ r ][ c ] > 0 )
-     return( false );                       // a number on the wall
+     return( false );  // a number on the wall
     walls.insert( black[ i ] );
     }
    else {
@@ -325,7 +328,7 @@ bool nurikabeOracle( const Matrix & G , const Matrix & S )
     }
    if( ( r + 1 < n ) && ( c + 1 < n ) && S[ r ][ c ] && S[ r ][ c + 1 ] &&
        S[ r + 1 ][ c ] && S[ r + 1 ][ c + 1 ] )
-    return( false );                        // a black square
+    return( false );  // a black square
    }
  if( walls.size() != 1 )
   return( false );
@@ -344,7 +347,8 @@ bool nurikabeOracle( const Matrix & G , const Matrix & S )
 
 /*------------------------ 25. 2018-07-25, Shangai -------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// shangai(): whether all the n sticks can be taken away, the stick X[ i ]
 /// lying on Y[ i ] (sticks numbered from 0, not from 1 as in the text);
@@ -421,7 +425,8 @@ ADS_TEST( "graph-25" )
 
 /*----------------------- 26. 2018-08-21, Minecraft ------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// topIsland(): the largest average height of an island, a 4-connected set
 /// of cells > 0, 0 if there is no land; from each land cell not visited
@@ -440,7 +445,7 @@ inline double topIsland( Matrix A )
   if( inside( n , r , c ) && ( A[ r ][ c ] > 0 ) ) {
    height += A[ r ][ c ];
    ++count;
-   A[ r ][ c ] = 0;                          // visited
+   A[ r ][ c ] = 0;  // visited
    for( int k = 0 ; k < 4 ; ++k )
     self( self , r + DR[ k ] , c + DC[ k ] );
    }
@@ -462,9 +467,11 @@ inline double topIsland( Matrix A )
 ADS_TEST( "graph-26" )
 {
  // the example: islands of average 1.5, 1 and 2, the last in the last row
- const Matrix A = { { 1 , 1 , 1 , 0 , 1 } , { 2 , 2 , 2 , -1 , 1 } ,
-                    { 0 , -1 , 0 , -2 , 1 } , { 0 , 0 , -1 , -2 , 1 } ,
-                    { 2 , 2 , -1 , 0 , 0 } };
+ const Matrix A = { { 1 , 1 , 1 , 0 , 1 } ,
+		    { 2 , 2 , 2 , -1 , 1 } ,
+		    { 0 , -1 , 0 , -2 , 1 } ,
+		    { 0 , 0 , -1 , -2 , 1 } ,
+		    { 2 , 2 , -1 , 0 , 0 } };
  CHECK( graph::topIsland( A ) == 2 );
  // the islands by a merge-find set
  std::mt19937 r( 29 );
@@ -472,7 +479,8 @@ ADS_TEST( "graph-26" )
   const int n = uniform( r , 1 , 7 );
   const auto M = randomMatrix( r , n , -2 , 3 );
   const auto rep = cellComponents( n , [ & ]( int a , int b , int c , int d ) {
-   return( ( M[ a ][ b ] > 0 ) && ( M[ c ][ d ] > 0 ) ); } );
+   return( ( M[ a ][ b ] > 0 ) && ( M[ c ][ d ] > 0 ) );
+   } );
   std::vector< long long > sum( n * n , 0 );
   Ints count( n * n , 0 );
   for( int i = 0 ; i < n ; ++i )
@@ -504,7 +512,8 @@ ADS_TEST( "graph-26" )
 
 /*----------------------- 27. 2019-06-17, Coast len ------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// coastLen(): the number of cells of the coast of the sea of ( r , c ),
 /// the cells >= 0 next to a cell of that sea, the 4-connected cells < 0; a
@@ -536,12 +545,12 @@ ADS_TEST( "graph-27" )
 {
  // the example, the cell ( 2 , 4 ) of the text counting from 1
  const Matrix M = { { 1 , 2 , 3 , 4 , 5 , 6 , 1 } ,
-                    { 3 , -2 , -3 , -3 , -1 , 3 , 3 } ,
-                    { 4 , -2 , 1 , -2 , -3 , 4 , 5 } ,
-                    { 2 , -1 , 2 , -1 , -1 , 7 , 7 } ,
-                    { 1 , 2 , 2 , -1 , 1 , -3 , -2 } ,
-                    { 4 , 4 , 4 , -1 , 2 , -2 , -3 } ,
-                    { 4 , 4 , 4 , 4 , 3 , 2 , 2 } };
+		    { 3 , -2 , -3 , -3 , -1 , 3 , 3 } ,
+		    { 4 , -2 , 1 , -2 , -3 , 4 , 5 } ,
+		    { 2 , -1 , 2 , -1 , -1 , 7 , 7 } ,
+		    { 1 , 2 , 2 , -1 , 1 , -3 , -2 } ,
+		    { 4 , 4 , 4 , -1 , 2 , -2 , -3 } ,
+		    { 4 , 4 , 4 , 4 , 3 , 2 , 2 } };
  CHECK( graph::coastLen( M , 1 , 3 ) == 18 );
  // the sea flooded, then its land neighbours counted
  std::mt19937 r( 30 );
@@ -558,8 +567,8 @@ ADS_TEST( "graph-27" )
    Q.pop_front();
    for( int k = 0 ; k < 4 ; ++k ) {
     const int a = x + graph::DR[ k ] , b = y + graph::DC[ k ];
-    if( graph::inside( n , a , b ) && ! sea[ a ][ b ] &&
-        ( A[ a ][ b ] < 0 ) ) {
+    if( graph::inside( n , a ,
+		       b ) && ! sea[ a ][ b ] && ( A[ a ][ b ] < 0 ) ) {
      sea[ a ][ b ] = true;
      Q.push_back( { a , b } );
      }
@@ -580,21 +589,23 @@ ADS_TEST( "graph-27" )
   }
  CHECK( graph::coastLen( { { -1 } } , 0 , 0 ) == 0 );
  CHECK( graph::coastLen( { { 0 , 0 , 0 } , { 0 , -5 , 0 } , { 0 , 0 , 0 } } ,
-                         1 , 1 ) == 4 );
+			 1 , 1 ) ==
+	4 );
  CHECK( graph::coastLen( { { -1 , 0 } , { 0 , 0 } } , 0 , 0 ) == 2 );
  // all sea; a land cell next to the sea twice counts once; another sea
  // beyond the land does not count
  CHECK( graph::coastLen( Matrix( 4 , Ints( 4 , -1 ) ) , 3 , 0 ) == 0 );
  CHECK( graph::coastLen( { { -1 , -1 } , { -1 , 5 } } , 0 , 0 ) == 1 );
  CHECK( graph::coastLen( { { -1 , 0 , -1 } , { -1 , 0 , -1 } ,
-                           { -1 , 0 , -1 } } , 0 , 0 ) == 3 );
+			   { -1 , 0 , -1 } } , 0 ,
+			 0 ) == 3 );
  // a sea of 100 x 100 cells with one rock in the middle
  Matrix big( 100 , Ints( 100 , -1 ) );
  big[ 50 ][ 50 ] = 0;
  CHECK( graph::coastLen( big , 0 , 0 ) == 1 );
  // the contracts: M square, ( r , c ) a cell of the sea
  CHECK_THROWS( graph::coastLen( { { -1 , 0 } } , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::coastLen( { { -1 } } , 1 , 0 ) , contract_violation );
  CHECK_THROWS( graph::coastLen( { { -1 } } , 0 , -1 ) , contract_violation );
  CHECK_THROWS( graph::coastLen( { { 0 } } , 0 , 0 ) , contract_violation );
@@ -602,7 +613,8 @@ ADS_TEST( "graph-27" )
 
 /*------------------------ 28. 2019-07-18, Nurikabe ------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// isSolution(): whether S (0 white, 1 black) solves the Nurikabe G (0 no
 /// number, > 0 a number); scanning the cells, a numbered cell already
@@ -618,7 +630,9 @@ inline bool nurikabe( const Matrix & G , const Matrix & S )
  ADS_PRE( square( G ) && square( S ) && ( int( S.size() ) == n ) );
  ADS_PRE( std::all_of( S.begin() , S.end() , []( const Ints & row ) {
   return( std::all_of( row.begin() , row.end() , []( int x ) {
-   return( ( x == 0 ) || ( x == 1 ) ); } ) ); } ) );
+   return( ( x == 0 ) || ( x == 1 ) );
+   } ) );
+  } ) );
  BoolMatrix visited( n , std::vector< bool >( n , false ) );
  auto rec = [ & ]( auto & self , int r , int c , int color ) -> int {
   if( ! inside( n , r , c ) || visited[ r ][ c ] || ( S[ r ][ c ] != color ) )
@@ -636,7 +650,8 @@ inline bool nurikabe( const Matrix & G , const Matrix & S )
     return( false );
    if( ( r + 1 < n ) && ( c + 1 < n ) &&
        ( S[ r ][ c ] + S[ r ][ c + 1 ] + S[ r + 1 ][ c ] +
-         S[ r + 1 ][ c + 1 ] == 4 ) )
+	   S[ r + 1 ][ c + 1 ] ==
+	 4 ) )
     return( false );
    if( ! visited[ r ][ c ] && ( S[ r ][ c ] == 0 ) && ( G[ r ][ c ] > 0 ) &&
        ( rec( rec , r , c , 0 ) != G[ r ][ c ] ) )
@@ -658,28 +673,30 @@ inline bool nurikabe( const Matrix & G , const Matrix & S )
 ADS_TEST( "graph-28" )
 {
  // a puzzle and its solution, then each rule broken
- const Matrix G = { { 2 , 0 , 0 , 2 } , { 0 , 0 , 0 , 0 } ,
-                    { 0 , 0 , 1 , 0 } , { 0 , 2 , 0 , 0 } };
- const Matrix S = { { 0 , 1 , 0 , 0 } , { 0 , 1 , 1 , 1 } ,
-                    { 1 , 1 , 0 , 1 } , { 0 , 0 , 1 , 1 } };
+ const Matrix G = {
+  { 2 , 0 , 0 , 2 } , { 0 , 0 , 0 , 0 } , { 0 , 0 , 1 , 0 } , { 0 , 2 , 0 , 0 }
+  };
+ const Matrix S = {
+  { 0 , 1 , 0 , 0 } , { 0 , 1 , 1 , 1 } , { 1 , 1 , 0 , 1 } , { 0 , 0 , 1 , 1 }
+  };
  CHECK( graph::nurikabe( G , S ) && nurikabeOracle( G , S ) );
  auto G2 = G;
- G2[ 0 ][ 0 ] = 3;                                     // a wrong size
+ G2[ 0 ][ 0 ] = 3;  // a wrong size
  CHECK( ! graph::nurikabe( G2 , S ) );
  G2 = G;
- G2[ 1 ][ 0 ] = 2;                                     // two numbers
+ G2[ 1 ][ 0 ] = 2;  // two numbers
  CHECK( ! graph::nurikabe( G2 , S ) );
  G2 = G;
- G2[ 0 ][ 1 ] = 1;                                     // a number on the wall
+ G2[ 0 ][ 1 ] = 1;  // a number on the wall
  CHECK( ! graph::nurikabe( G2 , S ) );
  G2 = G;
- G2[ 2 ][ 2 ] = 0;                                     // a room with no number
+ G2[ 2 ][ 2 ] = 0;  // a room with no number
  CHECK( ! graph::nurikabe( G2 , S ) );
  auto S2 = S;
- S2[ 1 ][ 2 ] = 0;                                     // two walls
+ S2[ 1 ][ 2 ] = 0;  // two walls
  CHECK( ! graph::nurikabe( G , S2 ) );
  S2 = S;
- S2[ 2 ][ 2 ] = 1;                                     // a black square
+ S2[ 2 ][ 2 ] = 1;  // a black square
  CHECK( ! graph::nurikabe( G , S2 ) );
  // random colorings with a number placed in each room, sometimes changed
  std::mt19937 r( 31 );
@@ -688,7 +705,8 @@ ADS_TEST( "graph-28" )
   const int n = uniform( r , 1 , 4 );
   const auto B = randomMatrix( r , n , 0 , 1 );
   const auto rep = cellComponents( n , [ & ]( int a , int b , int c , int d ) {
-   return( ( B[ a ][ b ] == 0 ) && ( B[ c ][ d ] == 0 ) ); } );
+   return( ( B[ a ][ b ] == 0 ) && ( B[ c ][ d ] == 0 ) );
+   } );
   Ints size( n * n , 0 );
   for( int i = 0 ; i < n * n ; ++i )
    if( B[ i / n ][ i % n ] == 0 )
@@ -698,8 +716,8 @@ ADS_TEST( "graph-28" )
    if( ( B[ i / n ][ i % n ] == 0 ) && ( rep[ i ] == i ) )
     P[ i / n ][ i % n ] = size[ i ];
   if( real( r ) < 0.3 )
-   P[ uniform( r , 0 , n - 1 ) ][ uniform( r , 0 , n - 1 ) ] =
-                                                        uniform( r , 0 , 3 );
+   P[ uniform( r , 0 , n - 1 ) ][ uniform( r , 0 , n - 1 ) ] = uniform( r , 0 ,
+									3 );
   const bool ref = nurikabeOracle( P , B );
   CHECK( graph::nurikabe( P , B ) == ref );
   solved += ref ? 1 : 0;
@@ -707,28 +725,28 @@ ADS_TEST( "graph-28" )
  CHECK( solved > 100 );
  // all white, and a single black cell
  CHECK( ! graph::nurikabe( { { 4 , 0 } , { 0 , 0 } } ,
-                           { { 0 , 0 } , { 0 , 0 } } ) );
+			   { { 0 , 0 } , { 0 , 0 } } ) );
  CHECK( graph::nurikabe( { { 0 } } , { { 1 } } ) );
  // no cell: no wall, no solution; one white cell numbered 1, with no
  // wall; a full black square of 2 x 2
  CHECK( ! graph::nurikabe( {} , {} ) && ! nurikabeOracle( {} , {} ) );
  CHECK( ! graph::nurikabe( { { 1 } } , { { 0 } } ) );
  CHECK( ! graph::nurikabe( { { 0 , 0 } , { 0 , 0 } } ,
-                           { { 1 , 1 } , { 1 , 1 } } ) );
+			   { { 1 , 1 } , { 1 , 1 } } ) );
  // an L of wall and a room of 1
  CHECK( graph::nurikabe( { { 1 , 0 } , { 0 , 0 } } ,
-                         { { 0 , 1 } , { 1 , 1 } } ) );
+			 { { 0 , 1 } , { 1 , 1 } } ) );
  // the contracts: G and S square of the same size, S of 0 and 1
  CHECK_THROWS( graph::nurikabe( G , { { 0 } } ) , contract_violation );
  CHECK_THROWS( graph::nurikabe( { { 0 , 0 } } , { { 0 , 0 } } ) ,
-               contract_violation );
- CHECK_THROWS( graph::nurikabe( { { 0 } } , { { 2 } } ) ,
-               contract_violation );
+	       contract_violation );
+ CHECK_THROWS( graph::nurikabe( { { 0 } } , { { 2 } } ) , contract_violation );
  }
 
 /*---------------------- 29. 2019-08-22, Min sessions ----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// minSessions(): the least number of sessions for the exams of the
 /// acyclic graph of the prerequisites, the number of nodes of a longest
@@ -749,8 +767,8 @@ int minSessions( const G & g )
 ADS_TEST( "graph-29" )
 {
  // the figure: A and B before C, C before D
- CHECK( graph::minSessions( make( 4 , { { 0 , 2 } , { 1 , 2 } , { 2 , 3 } } ,
-                                  true ) ) == 3 );
+ CHECK( graph::minSessions(
+	  make( 4 , { { 0 , 2 } , { 1 , 2 } , { 2 , 3 } } , true ) ) == 3 );
  // the rounds of removal of the nodes with no entering edge
  std::mt19937 r( 32 );
  for( int t = 0 ; t < 400 ; ++t ) {
@@ -794,12 +812,14 @@ ADS_TEST( "graph-29" )
  // the contracts: g with a node, acyclic
  CHECK_THROWS( graph::minSessions( ListGraph<>( 0 ) ) , contract_violation );
  CHECK_THROWS( graph::minSessions( make( 2 , { { 0 , 1 } , { 1 , 0 } } ,
-                                         true ) ) , contract_violation );
+					 true ) ) ,
+	       contract_violation );
  }
 
 /*------------------------ 30. 2020-02-04, Has path ------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// hasPath(): whether there is a path with no repeated cell from ( 0 , 0 )
 /// to ( n - 1 , n - 1 ), each move from ( i , j ) going A[ i ][ j ] cells
@@ -819,10 +839,10 @@ inline bool hasPath( const Matrix & A )
   visited[ i ][ j ] = true;
   const int a = A[ i ][ j ];
   ADS_PRE( a > 0 );
-  if( a >= n )                     // off the board, and i + a may overflow
+  if( a >= n )  // off the board, and i + a may overflow
    return( false );
   return( self( self , i + a , j ) || self( self , i , j + a ) ||
-          self( self , i - a , j ) || self( self , i , j - a ) );
+	   self( self , i - a , j ) || self( self , i , j - a ) );
   };
  return( rec( rec , 0 , 0 ) );
  }
@@ -832,8 +852,9 @@ inline bool hasPath( const Matrix & A )
 ADS_TEST( "graph-30" )
 {
  // the example of the text
- CHECK( graph::hasPath( { { 1 , 2 , 4 , 3 } , { 1 , 2 , 3 , 2 } ,
-                          { 1 , 2 , 3 , 2 } , { 1 , 4 , 4 , 5 } } ) );
+ CHECK( graph::hasPath(
+   { { 1 , 2 , 4 , 3 } , { 1 , 2 , 3 , 2 } , { 1 , 2 , 3 , 2 } ,
+     { 1 , 4 , 4 , 5 } } ) );
  // a breadth first visit of the explicit graph of the jumps
  std::mt19937 r( 33 );
  for( int t = 0 ; t < 400 ; ++t ) {
@@ -844,12 +865,12 @@ ADS_TEST( "graph-30" )
    for( int j = 0 ; j < n ; ++j )
     for( int k = 0 ; k < 4 ; ++k ) {
      const int a = i + graph::DR[ k ] * A[ i ][ j ] ,
-               b = j + graph::DC[ k ] * A[ i ][ j ];
+	       b = j + graph::DC[ k ] * A[ i ][ j ];
      if( graph::inside( n , a , b ) )
       h.insertEdge( i * n + j , a * n + b );
      }
-  CHECK( graph::hasPath( A ) == ( distance( h , 0 ).first[ n * n - 1 ] !=
-                                  INF ) );
+  CHECK( graph::hasPath( A ) ==
+	 ( distance( h , 0 ).first[ n * n - 1 ] != INF ) );
   }
  CHECK( graph::hasPath( { { 5 } } ) );
  CHECK( ! graph::hasPath( Matrix( 3 , Ints( 3 , 3 ) ) ) );
@@ -865,14 +886,15 @@ ADS_TEST( "graph-30" )
  CHECK_THROWS( graph::hasPath( {} ) , contract_violation );
  CHECK_THROWS( graph::hasPath( { { 1 , 1 } } ) , contract_violation );
  CHECK_THROWS( graph::hasPath( { { 0 , 1 } , { 1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::hasPath( { { 1 , 1 } , { -1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------- 31. 2020-09-04, Meeting point ----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// meetingPoint(): a node z with the least d( u , z ) + d( v , z ) +
 /// d( w , z ) in edges, by three breadth first visits, O( n + m ); on a
@@ -883,7 +905,7 @@ int meetingPoint( const G & g , int u , int v , int w )
 {
  ADS_PRE( g.hasNode( u ) && g.hasNode( v ) && g.hasNode( w ) );
  const auto du = distance( g , u ).first , dv = distance( g , v ).first ,
-            dw = distance( g , w ).first;
+	    dw = distance( g , w ).first;
  long long best = -1;
  int z = NIL;
  for( int i : g.V() ) {
@@ -923,7 +945,7 @@ ADS_TEST( "graph-31" )
   const auto g = randomConnected( r , n , 0.3 * real( r ) );
   const auto D = unitDistances( g );
   const int u = uniform( r , 0 , n - 1 ) , v = uniform( r , 0 , n - 1 ) ,
-            w = uniform( r , 0 , n - 1 );
+	    w = uniform( r , 0 , n - 1 );
   int best = INF;
   for( int z = 0 ; z < n ; ++z )
    best = std::min( best , D[ u ][ z ] + D[ v ][ z ] + D[ w ][ z ] );
@@ -941,12 +963,13 @@ ADS_TEST( "graph-31" )
  // the contracts: u, v and w nodes, every node reached (connected)
  CHECK_THROWS( graph::meetingPoint( k3 , 0 , 1 , 3 ) , contract_violation );
  CHECK_THROWS( graph::meetingPoint( ListGraph<>( 2 , false ) , 0 , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*------------------------ 32. 2022-02-07, Gazprom -------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// gazprom(): the largest total capacity of a connected component of the
 /// unoriented graph of the deposits, from the components of cc(),
@@ -984,33 +1007,33 @@ ADS_TEST( "graph-32" )
   for( int u = 0 ; u < n ; ++u )
    sum[ S.find( u ) ] += C[ u ];
   CHECK( graph::gazprom( g , C ) ==
-         *std::max_element( sum.begin() , sum.end() ) );
+	 *std::max_element( sum.begin() , sum.end() ) );
   }
  CHECK( graph::gazprom( ListGraph<>( 1 , false ) , { 7 } ) == 7 );
  CHECK( graph::gazprom( ListGraph<>( 3 , false ) , { 4 , 9 , 2 } ) == 9 );
  const auto p = make( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
  CHECK( graph::gazprom( p , { 1000000000 , 1000000000 , 1000000000 } ) ==
-        3000000000LL );
+	3000000000LL );
  // the largest int at every deposit of a component of 10^4, summed in 64
  // bits; a deleted node does not count
  ListGraph<> big( 10000 , false );
  for( int u = 1 ; u < 10000 ; ++u )
   big.insertEdge( u - 1 , u );
- CHECK( graph::gazprom( big , Ints( 10000 , INT_MAX ) ) ==
-        10000LL * INT_MAX );
+ CHECK( graph::gazprom( big , Ints( 10000 , INT_MAX ) ) == 10000LL * INT_MAX );
  auto h = make( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
  h.deleteNode( 1 );
  CHECK( graph::gazprom( h , { 3 , 100 , 4 } ) == 4 );
  // the contracts: g with a node, C of a place per name, positive
  CHECK_THROWS( graph::gazprom( ListGraph<>( 0 , false ) , {} ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::gazprom( p , { 1 , 1 } ) , contract_violation );
  CHECK_THROWS( graph::gazprom( p , { 1 , 0 , 1 } ) , contract_violation );
  }
 
 /*----------------------- 33. 2022-06-21, Mele marce -----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// badApples(): the number of days after which no apple rots, M[ i ][ j ]
 /// being 1 for a good apple, -1 for a rotten one and 0 for an empty place;
@@ -1037,8 +1060,8 @@ inline int badApples( const Matrix & M )
   days = std::max( days , dist[ i ][ j ] );
   for( int k = 0 ; k < 4 ; ++k ) {
    const int x = i + DR[ k ] , y = j + DC[ k ];
-   if( inside( n , x , y ) && ( M[ x ][ y ] == 1 ) &&
-       ( dist[ x ][ y ] < 0 ) ) {
+   if( inside( n , x ,
+	       y ) && ( M[ x ][ y ] == 1 ) && ( dist[ x ][ y ] < 0 ) ) {
     dist[ x ][ y ] = dist[ i ][ j ] + 1;
     Q.push_back( { x , y } );
     }
@@ -1071,8 +1094,8 @@ ADS_TEST( "graph-33" )
       for( int k = 0 ; k < 4 ; ++k ) {
        const int a = i + graph::DR[ k ] , b = j + graph::DC[ k ];
        if( graph::inside( n , a , b ) && ( M[ a ][ b ] == 1 ) ) {
-        M[ a ][ b ] = -1;
-        infected = true;
+	M[ a ][ b ] = -1;
+	infected = true;
         }
        }
    }
@@ -1095,8 +1118,8 @@ ADS_TEST( "graph-33" )
       for( int k = 0 ; k < 4 ; ++k ) {
        const int a = i + graph::DR[ k ] , b = j + graph::DC[ k ];
        if( graph::inside( n , a , b ) && ( N[ a ][ b ] == 1 ) ) {
-        N[ a ][ b ] = -1;
-        changed = true;
+	N[ a ][ b ] = -1;
+	changed = true;
         }
        }
    if( ! changed )
@@ -1110,14 +1133,19 @@ ADS_TEST( "graph-33" )
  CHECK( graph::badApples( { { 1 } } ) == 0 );
  CHECK( graph::badApples( Matrix( 4 , Ints( 4 , 1 ) ) ) == 0 );
  CHECK( graph::badApples( Matrix( 4 , Ints( 4 , -1 ) ) ) == 0 );
- CHECK( graph::badApples( { { -1 , 1 , 0 , 1 } , { 0 , 0 , 0 , 0 } ,
-                            { 0 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } } ) == 1 );
+ CHECK(
+   graph::badApples(
+     { { -1 , 1 , 0 , 1 } , { 0 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } ,
+       { 0 , 0 , 0 , 0 } } ) ==
+   1 );
  // all empty; two rotten apples racing from the two ends of a row; a
  // crate of 100 x 100 from a corner
  CHECK( graph::badApples( Matrix( 3 , Ints( 3 , 0 ) ) ) == 0 );
- CHECK( graph::badApples( { { -1 , 1 , 1 , 1 , -1 } , { 0 , 0 , 0 , 0 , 0 } ,
-                            { 0 , 0 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 , 0 } ,
-                            { 0 , 0 , 0 , 0 , 0 } } ) == 2 );
+ CHECK( graph::badApples( { { -1 , 1 , 1 , 1 , -1 } ,
+			    { 0 , 0 , 0 , 0 , 0 } ,
+			    { 0 , 0 , 0 , 0 , 0 } ,
+			    { 0 , 0 , 0 , 0 , 0 } ,
+			    { 0 , 0 , 0 , 0 , 0 } } ) == 2 );
  Matrix big( 100 , Ints( 100 , 1 ) );
  big[ 0 ][ 0 ] = -1;
  CHECK( graph::badApples( big ) == 198 );
@@ -1128,7 +1156,8 @@ ADS_TEST( "graph-33" )
 
 /*--------------------- 34. 2022-07-13, Lago ricorsivo ---------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// containsLake(): whether the island of the map M (1 land, 0 water, the
 /// border all water) holds a lake; a depth first visit floods the sea from
@@ -1141,7 +1170,7 @@ inline bool containsLake( Matrix M )
  ADS_PRE( ( n > 0 ) && square( M ) );
  for( int i = 0 ; i < n ; ++i )
   ADS_PRE( ( M[ 0 ][ i ] == 0 ) && ( M[ n - 1 ][ i ] == 0 ) &&
-           ( M[ i ][ 0 ] == 0 ) && ( M[ i ][ n - 1 ] == 0 ) );
+	   ( M[ i ][ 0 ] == 0 ) && ( M[ i ][ n - 1 ] == 0 ) );
  auto sea = [ & ]( auto & self , int i , int j ) -> void {
   if( inside( n , i , j ) && ( M[ i ][ j ] == 0 ) ) {
    M[ i ][ j ] = -1;
@@ -1163,17 +1192,17 @@ ADS_TEST( "graph-34" )
 {
  // four maps, true , true , false , false
  const Matrix m1 = { { 0 , 0 , 0 , 0 , 0 , 0 } , { 0 , 1 , 1 , 1 , 0 , 0 } ,
-                     { 0 , 1 , 0 , 1 , 1 , 0 } , { 0 , 1 , 1 , 0 , 1 , 0 } ,
-                     { 0 , 0 , 1 , 1 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
+		     { 0 , 1 , 0 , 1 , 1 , 0 } , { 0 , 1 , 1 , 0 , 1 , 0 } ,
+		     { 0 , 0 , 1 , 1 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
  const Matrix m2 = { { 0 , 0 , 0 , 0 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 1 , 0 , 1 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 0 , 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
+		     { 0 , 1 , 0 , 1 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 0 , 0 , 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
  const Matrix m3 = { { 0 , 0 , 0 , 0 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 1 , 1 , 1 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 0 , 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
+		     { 0 , 1 , 1 , 1 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 0 , 0 , 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
  const Matrix m4 = { { 0 , 0 , 0 , 0 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 1 , 0 , 0 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
-                     { 0 , 0 , 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
+		     { 0 , 1 , 0 , 0 , 0 , 0 } , { 0 , 1 , 1 , 1 , 1 , 0 } ,
+		     { 0 , 0 , 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 , 0 , 0 } };
  CHECK( graph::containsLake( m1 ) && graph::containsLake( m2 ) );
  CHECK( ! graph::containsLake( m3 ) && ! graph::containsLake( m4 ) );
  // more than one component of water, by a merge-find set
@@ -1185,7 +1214,8 @@ ADS_TEST( "graph-34" )
    for( int j = 1 ; j + 1 < n ; ++j )
     M[ i ][ j ] = real( r ) < 0.6 ? 1 : 0;
   const auto rep = cellComponents( n , [ & ]( int a , int b , int c , int d ) {
-   return( ( M[ a ][ b ] == 0 ) && ( M[ c ][ d ] == 0 ) ); } );
+   return( ( M[ a ][ b ] == 0 ) && ( M[ c ][ d ] == 0 ) );
+   } );
   std::set< int > water;
   for( int i = 0 ; i < n * n ; ++i )
    if( M[ i / n ][ i % n ] == 0 )
@@ -1225,7 +1255,8 @@ ADS_TEST( "graph-34" )
 
 /*--------------------- 35. 2022-08-24, DAG massimale ----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// maxDag(): the largest number of edges that can be added to the acyclic
 /// graph without a cycle, n ( n - 1 ) / 2 - m since a topological order
@@ -1272,12 +1303,13 @@ ADS_TEST( "graph-35" )
  CHECK( graph::maxDag( ListGraph<>( 100000 ) ) == 4999950000LL );
  // the contracts: g acyclic (audit)
  CHECK_THROWS( graph::maxDag( make( 2 , { { 0 , 1 } , { 1 , 0 } } , true ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*---------------- 36. 2023-01-17, Albero di altezza minima ----------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// minHeight(): the least height of a binary tree rooted at a node of the
 /// unoriented tree g, of degree at most 3; only a node of degree below 3
@@ -1308,8 +1340,10 @@ ADS_TEST( "graph-36" )
 {
  // the figures: A - B - C , A - D , B - E , C - F - G gives 3; a star
  // with centre B of degree 3 gives 2, not the 1 of B as a root
- const auto f = make( 7 , { { 0 , 1 } , { 1 , 2 } , { 0 , 3 } , { 1 , 4 } ,
-                            { 2 , 5 } , { 5 , 6 } } , false );
+ const auto f = make(
+   7 ,
+   { { 0 , 1 } , { 1 , 2 } , { 0 , 3 } , { 1 , 4 } , { 2 , 5 } , { 5 , 6 } } ,
+   false );
  CHECK( graph::minHeight( f ) == 3 );
  const auto star = make( 4 , { { 1 , 0 } , { 1 , 2 } , { 1 , 3 } } , false );
  CHECK( graph::minHeight( star ) == 2 );
@@ -1331,8 +1365,8 @@ ADS_TEST( "graph-36" )
   for( int u = 0 ; u < n ; ++u )
    if( g.adj( u ).size() < 3 ) {
     ref = std::min( ref , height( height , u , NIL ) );
-    ref2 = std::min( ref2 , *std::max_element( D[ u ].begin() ,
-                                               D[ u ].end() ) );
+    ref2 = std::min( ref2 ,
+		     *std::max_element( D[ u ].begin() , D[ u ].end() ) );
     }
   CHECK( ( graph::minHeight( g ) == ref ) && ( ref == ref2 ) );
   }
@@ -1348,23 +1382,33 @@ ADS_TEST( "graph-36" )
  for( int u = 0 ; u + 1 < 8 ; ++u )
   q.insertEdge( u , u + 1 );
  CHECK( graph::minHeight( q ) == 4 );
- const auto t3 = make( 10 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 1 , 4 } ,
-                              { 1 , 5 } , { 2 , 6 } , { 2 , 7 } , { 3 , 8 } ,
-                              { 3 , 9 } } , false );
+ const auto t3 = make( 10 ,
+		       { { 0 , 1 } ,
+			 { 0 , 2 } ,
+			 { 0 , 3 } ,
+			 { 1 , 4 } ,
+			 { 1 , 5 } ,
+			 { 2 , 6 } ,
+			 { 2 , 7 } ,
+			 { 3 , 8 } ,
+			 { 3 , 9 } } ,
+		       false );
  CHECK( graph::minHeight( t3 ) == 4 );
  // the contracts: g unoriented with a node, the degrees at most 3
  CHECK_THROWS( graph::minHeight( ListGraph<>( 0 , false ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::minHeight( make( 2 , { { 0 , 1 } } , true ) ) ,
-               contract_violation );
- CHECK_THROWS( graph::minHeight( make( 5 , { { 0 , 1 } , { 0 , 2 } ,
-                                             { 0 , 3 } , { 0 , 4 } } ,
-                                       false ) ) , contract_violation );
+	       contract_violation );
+ CHECK_THROWS( graph::minHeight( make(
+		 5 , { { 0 , 1 } , { 0 , 2 } , { 0 , 3 } , { 0 , 4 } } ,
+		 false ) ) ,
+	       contract_violation );
  }
 
 /*--------------------- 38. 2023-08-23, Diretto o no? ----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// isUndirected(): whether ( y , x ) is an edge for each edge ( x , y ); a
 /// set with hashing of the adjacent nodes of each node makes each test
@@ -1388,10 +1432,13 @@ ADS_TEST( "graph-38" )
 {
  // the figures, A , B , C as 0 , 1 , 2: every edge in both directions on
  // the left, ( C , A ) missing on the right
- const auto left = make( 3 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } ,
-                               { 2 , 1 } , { 0 , 2 } , { 2 , 0 } } , true );
- const auto right = make( 3 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } ,
-                                { 2 , 1 } , { 0 , 2 } } , true );
+ const auto left = make(
+   3 ,
+   { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } , { 2 , 1 } , { 0 , 2 } , { 2 , 0 } } ,
+   true );
+ const auto right =
+   make( 3 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } , { 2 , 1 } , { 0 , 2 } } ,
+	 true );
  CHECK( graph::isUndirected( left ) && ! graph::isUndirected( right ) );
  // the set of the pairs
  std::mt19937 r( 40 );
@@ -1426,7 +1473,8 @@ ADS_TEST( "graph-38" )
 
 /*-------------------- 39. 2024-01-09, Tree Repair Shop --------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// repairTree(): makes a tree of the unoriented graph made of a tree and
 /// one more edge, deleting an edge of its cycle; a depth first visit from
@@ -1437,7 +1485,7 @@ namespace graph {
 inline void repairTreeDelete( ListGraph<> & g )
 {
  ADS_PRE( ! g.directed() && ( g.n() > 0 ) && ( g.bound() == g.n() ) &&
-          ( g.m() == g.n() ) );
+	  ( g.m() == g.n() ) );
  std::vector< bool > visited( g.bound() , false );
  auto rec = [ & ]( auto & self , int curr , int prev ) -> bool {
   visited[ curr ] = true;
@@ -1482,11 +1530,12 @@ ADS_TEST( "graph-39" )
  CHECK( ( c.m() == 2 ) && connected( c ) );
  // the cycle away from 0, at the end of a path; the whole graph a cycle
  // of 5000 nodes, the recursion as deep
- auto t = make( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 4 } ,
-                      { 4 , 2 } } , false );
+ auto t =
+   make( 5 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 4 } , { 4 , 2 } } ,
+	 false );
  graph::repairTreeDelete( t );
  CHECK( ( t.m() == 4 ) && connected( t ) && t.hasEdge( 0 , 1 ) &&
-        t.hasEdge( 1 , 2 ) );
+	t.hasEdge( 1 , 2 ) );
  ListGraph<> big( 5000 , false );
  for( int u = 0 ; u < 5000 ; ++u )
   big.insertEdge( u , ( u + 1 ) % 5000 );
@@ -1506,7 +1555,8 @@ ADS_TEST( "graph-39" )
 
 /*------------------- 40. 2024-02-01, Tree Repair Shop 2 -------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// repairTree(): makes a tree of the unoriented forest, adding edges; the
 /// component of 0 is visited, then each node not visited yet is joined to
@@ -1517,7 +1567,7 @@ inline void repairTreeInsert( ListGraph<> & g )
 {
  ADS_PRE( ! g.directed() && ( g.n() > 0 ) && ( g.bound() == g.n() ) );
  std::vector< bool > visited( g.bound() , false );
- auto none = []( auto... ) {};
+ auto none = []( auto... ) { };
  dfs( g , 0 , visited , none , none , none );
  for( int u : g.V() )
   if( ! visited[ u ] ) {
@@ -1570,7 +1620,8 @@ ADS_TEST( "graph-40" )
 
 /*------------------------ 41. 2024-06-14, Big Fire ------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// bigfire(): the number of cells that burn when the fire starts at
 /// ( i , j ), a burning forest cell (1) igniting its four neighbours and
@@ -1604,12 +1655,14 @@ inline int bigFire( const Matrix & A , int i , int j )
 ADS_TEST( "graph-41" )
 {
  // the examples of the text
- CHECK( graph::bigFire( { { 1 , 1 , 1 , 1 } , { 0 , 0 , 0 , 0 } ,
-                          { 0 , 0 , 0 , 0 } , { 1 , 1 , 1 , 1 } } ,
-                        0 , 0 ) == 8 );
- CHECK( graph::bigFire( { { 1 , 1 , 1 , 1 } , { 0 , 0 , 0 , 1 } ,
-                          { 0 , 0 , 0 , 0 } , { 0 , 0 , 1 , 1 } } ,
-                        0 , 0 ) == 13 );
+ CHECK( graph::bigFire(
+	  { { 1 , 1 , 1 , 1 } , { 0 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } ,
+	    { 1 , 1 , 1 , 1 } } ,
+	  0 , 0 ) == 8 );
+ CHECK( graph::bigFire(
+	  { { 1 , 1 , 1 , 1 } , { 0 , 0 , 0 , 1 } , { 0 , 0 , 0 , 0 } ,
+	    { 0 , 0 , 1 , 1 } } ,
+	  0 , 0 ) == 13 );
  // the fire spread round after round
  std::mt19937 r( 43 );
  for( int t = 0 ; t < 400 ; ++t ) {
@@ -1626,9 +1679,9 @@ ADS_TEST( "graph-41" )
       for( int k = 0 ; k < 4 ; ++k ) {
        const int a = x + graph::DR[ k ] , b = y + graph::DC[ k ];
        if( graph::inside( n , a , b ) && ! B[ a ][ b ] &&
-           ( ( A[ x ][ y ] == 1 ) || ( A[ a ][ b ] == 1 ) ) ) {
-        B[ a ][ b ] = true;
-        more = true;
+	   ( ( A[ x ][ y ] == 1 ) || ( A[ a ][ b ] == 1 ) ) ) {
+	B[ a ][ b ] = true;
+	more = true;
         }
        }
    }
@@ -1659,7 +1712,8 @@ ADS_TEST( "graph-41" )
 
 /*------------------ 42. 2024-07-02, Circuiti matriciali -------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// hasCircuit(): whether the free cells (false) of M hold a cycle of the
 /// unoriented grid graph; a depth first visit from each free cell not
@@ -1697,11 +1751,11 @@ ADS_TEST( "graph-42" )
 {
  // a free 2 x 2 square is a circuit; free cells in a tree are not
  CHECK( graph::hasCircuit( { { false , false , true } ,
-                             { false , false , true } ,
-                             { true , true , true } } ) );
+			     { false , false , true } ,
+			     { true , true , true } } ) );
  CHECK( ! graph::hasCircuit( { { false , false , false } ,
-                               { true , false , true } ,
-                               { false , false , false } } ) );
+			       { true , false , true } ,
+			       { false , false , false } } ) );
  // a merge-find set on the edges between free cells: a cycle closes when
  // an edge joins two cells already in one component
  std::mt19937 r( 44 );
@@ -1721,28 +1775,29 @@ ADS_TEST( "graph-42" )
   CHECK( graph::hasCircuit( M ) == ref );
   }
  CHECK( ! graph::hasCircuit( { { false } } ) );
- CHECK( ! graph::hasCircuit( BoolMatrix( 4 , std::vector< bool >( 4 ,
-                                                                 true ) ) ) );
- CHECK( graph::hasCircuit( BoolMatrix( 2 , std::vector< bool >( 2 ,
-                                                               false ) ) ) );
+ CHECK(
+   ! graph::hasCircuit( BoolMatrix( 4 , std::vector< bool >( 4 , true ) ) ) );
+ CHECK(
+   graph::hasCircuit( BoolMatrix( 2 , std::vector< bool >( 2 , false ) ) ) );
  // no cell; a free row; the free ring around a wall, a cycle of 8; two
  // free cells touching at a corner only
  CHECK( ! graph::hasCircuit( {} ) );
- CHECK( ! graph::hasCircuit( { { false , false , false } ,
-                               { true , true , true } ,
-                               { true , true , true } } ) );
+ CHECK( ! graph::hasCircuit(
+   { { false , false , false } , { true , true , true } ,
+     { true , true , true } } ) );
  CHECK( graph::hasCircuit( { { false , false , false } ,
-                             { false , true , false } ,
-                             { false , false , false } } ) );
+			     { false , true , false } ,
+			     { false , false , false } } ) );
  CHECK( ! graph::hasCircuit( { { false , true } , { true , false } } ) );
  // the contracts: M square
  CHECK_THROWS( graph::hasCircuit( { { false , false } } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*----------------------- 43. 2025-01-14, Flood fill -----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// floodfill(): paints with color the cell ( x , y ) of M and all the cells
 /// 4-connected to it of its old color: floodFill() of the library, a
@@ -1757,21 +1812,21 @@ ADS_TEST( "graph-43" )
 {
  // the example of the text
  Matrix M = { { 7 , 5 , 3 , 4 , 4 , 6 , 7 , 8 } ,
-              { 6 , 3 , 3 , 3 , 3 , 3 , 3 , 5 } ,
-              { 4 , 3 , 3 , 3 , 2 , 1 , 3 , 4 } ,
-              { 4 , 5 , 2 , 1 , 7 , 8 , 2 , 3 } ,
-              { 5 , 2 , 1 , 3 , 3 , 3 , 3 , 2 } ,
-              { 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 } ,
-              { 1 , 4 , 1 , 4 , 1 , 4 , 1 , 4 } ,
-              { 4 , 1 , 1 , 4 , 4 , 1 , 8 , 8 } };
+	      { 6 , 3 , 3 , 3 , 3 , 3 , 3 , 5 } ,
+	      { 4 , 3 , 3 , 3 , 2 , 1 , 3 , 4 } ,
+	      { 4 , 5 , 2 , 1 , 7 , 8 , 2 , 3 } ,
+	      { 5 , 2 , 1 , 3 , 3 , 3 , 3 , 2 } ,
+	      { 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 } ,
+	      { 1 , 4 , 1 , 4 , 1 , 4 , 1 , 4 } ,
+	      { 4 , 1 , 1 , 4 , 4 , 1 , 8 , 8 } };
  const Matrix R = { { 7 , 5 , 5 , 4 , 4 , 6 , 7 , 8 } ,
-                    { 6 , 5 , 5 , 5 , 5 , 5 , 5 , 5 } ,
-                    { 4 , 5 , 5 , 5 , 2 , 1 , 5 , 4 } ,
-                    { 4 , 5 , 2 , 1 , 7 , 8 , 2 , 3 } ,
-                    { 5 , 2 , 1 , 3 , 3 , 3 , 3 , 2 } ,
-                    { 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 } ,
-                    { 1 , 4 , 1 , 4 , 1 , 4 , 1 , 4 } ,
-                    { 4 , 1 , 1 , 4 , 4 , 1 , 8 , 8 } };
+		    { 6 , 5 , 5 , 5 , 5 , 5 , 5 , 5 } ,
+		    { 4 , 5 , 5 , 5 , 2 , 1 , 5 , 4 } ,
+		    { 4 , 5 , 2 , 1 , 7 , 8 , 2 , 3 } ,
+		    { 5 , 2 , 1 , 3 , 3 , 3 , 3 , 2 } ,
+		    { 2 , 2 , 2 , 2 , 2 , 2 , 2 , 2 } ,
+		    { 1 , 4 , 1 , 4 , 1 , 4 , 1 , 4 } ,
+		    { 4 , 1 , 1 , 4 , 4 , 1 , 8 , 8 } };
  graph::floodFill( M , 1 , 6 , 5 );
  CHECK( M == R );
  // a recursive depth first fill of a copy
@@ -1780,7 +1835,7 @@ ADS_TEST( "graph-43" )
   const int n = uniform( r , 1 , 6 );
   auto A = randomMatrix( r , n , 0 , 2 ) , B = A;
   const int x = uniform( r , 0 , n - 1 ) , y = uniform( r , 0 , n - 1 ) ,
-            color = uniform( r , 0 , 2 ) , old = B[ x ][ y ];
+	    color = uniform( r , 0 , 2 ) , old = B[ x ][ y ];
   auto rec = [ & ]( auto & self , int i , int j ) -> void {
    if( graph::inside( n , i , j ) && ( B[ i ][ j ] == old ) ) {
     B[ i ][ j ] = color;
@@ -1816,18 +1871,19 @@ ADS_TEST( "graph-43" )
 
 /*------------------------ 44. 2025-06-13, 1D Board ------------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// minSteps(): the least number of moves from start to the cell 0, -1 if
 /// there is no way, a move going from x to x + f or to x - b, on the board,
 /// onto a walkable cell; a breadth first visit, O( n )
 /// \pre A[ start ] is walkable, f > 0, b > 0
 inline int minSteps( const std::vector< bool > & A , int start , int f ,
-                     int b )
+		     int b )
 {
  const int n = int( A.size() );
  ADS_PRE( ( 0 <= start ) && ( start < n ) && A[ start ] && ( f > 0 ) &&
-          ( b > 0 ) );
+	  ( b > 0 ) );
  std::deque< std::pair< int , int > > Q = { { start , 0 } };
  std::vector< bool > visited( n , false );
  visited[ start ] = true;
@@ -1851,8 +1907,8 @@ ADS_TEST( "graph-44" )
 {
  // the example, and the trap of 4 , 5 , 6 between two blocked cells
  CHECK( graph::minSteps( std::vector< bool >( 6 , true ) , 4 , 1 , 2 ) == 2 );
- const std::vector< bool > trap = { true , true , true , false , true ,
-                                    true , true , false , true , true };
+ const std::vector< bool > trap = { true , true , true ,  false , true ,
+				    true , true , false , true ,  true };
  CHECK( graph::minSteps( trap , 5 , 1 , 1 ) == -1 );
  // Bellman-Ford on the graph of the moves
  std::mt19937 r( 46 );
@@ -1862,7 +1918,7 @@ ADS_TEST( "graph-44" )
   for( int i = 0 ; i < n ; ++i )
    A[ i ] = real( r ) < 0.7;
   const int start = uniform( r , 0 , n - 1 ) , f = uniform( r , 1 , 4 ) ,
-            b = uniform( r , 1 , 4 );
+	    b = uniform( r , 1 , 4 );
   A[ start ] = true;
   Ints d( n , INF );
   d[ start ] = 0;
@@ -1872,33 +1928,35 @@ ADS_TEST( "graph-44" )
      for( int y : { x - b , x + f } )
       if( ( 0 <= y ) && ( y < n ) && A[ y ] )
        d[ y ] = std::min( d[ y ] , d[ x ] + 1 );
-  CHECK( graph::minSteps( A , start , f , b ) == ( d[ 0 ] == INF ? -1
-                                                                 : d[ 0 ] ) );
+  CHECK( graph::minSteps( A , start , f , b ) ==
+	 ( d[ 0 ] == INF ? -1 : d[ 0 ] ) );
   }
  CHECK( graph::minSteps( { true } , 0 , 1 , 1 ) == 0 );
  CHECK( graph::minSteps( { false , true } , 1 , 1 , 1 ) == -1 );
  // steps of the largest int, whose sums with a place overflowed; a step
  // back as long as the board; forward steps only, the way round
- CHECK( graph::minSteps( { true , true , true } , 2 , INT_MAX , INT_MAX ) ==
-        -1 );
+ CHECK( graph::minSteps( { true , true , true } , 2 , INT_MAX ,
+			 INT_MAX ) == -1 );
  CHECK( graph::minSteps( { true , true , true } , 2 , INT_MAX , 2 ) == 1 );
  CHECK( graph::minSteps( { true , true , true } , 2 , 1 , 3 ) == -1 );
  CHECK( graph::minSteps( std::vector< bool >( 7 , true ) , 6 , 2 , 3 ) == 2 );
  // a board of 10^5 cells, steps back of 1
  CHECK( graph::minSteps( std::vector< bool >( 100000 , true ) , 99999 , 5 ,
-                         1 ) == 99999 );
+			 1 ) ==
+	99999 );
  // the contracts: start a walkable cell, f , b > 0
  CHECK_THROWS( graph::minSteps( { true } , 1 , 1 , 1 ) , contract_violation );
  CHECK_THROWS( graph::minSteps( { true } , -1 , 1 , 1 ) , contract_violation );
  CHECK_THROWS( graph::minSteps( { true , false } , 1 , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::minSteps( { true } , 0 , 0 , 1 ) , contract_violation );
  CHECK_THROWS( graph::minSteps( { true } , 0 , 1 , 0 ) , contract_violation );
  }
 
 /*---------------------- 45. 2025-07-14, Most distant ----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// mostDistant(): the largest distance of a sea cell (false) from the land
 /// (true), the distance being the Manhattan one to the nearest land cell;
@@ -1956,7 +2014,7 @@ ADS_TEST( "graph-45" )
      for( int x = 0 ; x < n ; ++x )
       for( int y = 0 ; y < n ; ++y )
        if( M[ x ][ y ] )
-        d = std::min( d , std::abs( i - x ) + std::abs( j - y ) );
+	d = std::min( d , std::abs( i - x ) + std::abs( j - y ) );
      ref = std::max( ref , d );
      }
   CHECK( graph::mostDistant( M ) == ref );
@@ -1970,21 +2028,24 @@ ADS_TEST( "graph-45" )
  land[ 2 ][ 1 ] = false;
  CHECK( graph::mostDistant( land ) == 1 );
  CHECK( graph::mostDistant( { { true , true , true } ,
-                              { false , false , false } ,
-                              { true , true , true } } ) == 1 );
+			      { false , false , false } ,
+			      { true , true , true } } ) == 1 );
  // the contracts: A square, with a land cell and a sea cell
  CHECK_THROWS( graph::mostDistant( { { true , false } } ) ,
-               contract_violation );
- CHECK_THROWS( graph::mostDistant( BoolMatrix( 3 , std::vector< bool >( 3 ,
-                                   false ) ) ) , contract_violation );
- CHECK_THROWS( graph::mostDistant( BoolMatrix( 3 , std::vector< bool >( 3 ,
-                                   true ) ) ) , contract_violation );
+	       contract_violation );
+ CHECK_THROWS(
+   graph::mostDistant( BoolMatrix( 3 , std::vector< bool >( 3 , false ) ) ) ,
+   contract_violation );
+ CHECK_THROWS(
+   graph::mostDistant( BoolMatrix( 3 , std::vector< bool >( 3 , true ) ) ) ,
+   contract_violation );
  CHECK_THROWS( graph::mostDistant( {} ) , contract_violation );
  }
 
 /*---------------------- 46. 2025-08-25, Tassografia -----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// categorizeGraph(): 1 if g is an arborescence, 2 if it is acyclic but not
 /// an arborescence, 3 if it has a cycle; an acyclic graph with one node of
@@ -2025,7 +2086,7 @@ ADS_TEST( "graph-46" )
    g = randomGraph( r , n , 0.2 + 0.4 * real( r ) , true );
   else if( t % 3 == 1 )
    g = randomDag( r , n , 0.5 * real( r ) );
-  else {                                      // an arborescence
+  else {  // an arborescence
    const auto tree = randomTree( r , n , 3 );
    const int root = uniform( r , 0 , n - 1 );
    const auto p = distance( tree , root ).second;
@@ -2042,8 +2103,8 @@ ADS_TEST( "graph-46" )
    const int roots = int( std::count( in.begin() , in.end() , 0 ) );
    ref = 2;
    if( ( roots == 1 ) && ( g.m() == n - 1 ) ) {
-    const int root = int( std::find( in.begin() , in.end() , 0 ) -
-                          in.begin() );
+    const int root = int( std::find( in.begin() , in.end() ,
+				     0 ) - in.begin() );
     if( graph::allReached( g , root ) )
      ref = 1;
     }
@@ -2054,10 +2115,10 @@ ADS_TEST( "graph-46" )
  CHECK( ( kind[ 1 ] > 50 ) && ( kind[ 2 ] > 50 ) && ( kind[ 3 ] > 50 ) );
  CHECK( graph::categorize( ListGraph<>( 1 ) ) == 1 );
  CHECK( graph::categorize( ListGraph<>( 2 ) ) == 2 );
- CHECK( graph::categorize( make( 2 , { { 0 , 1 } , { 1 , 0 } } , true ) ) ==
-        3 );
- CHECK( graph::categorize( make( 3 , { { 0 , 1 } , { 0 , 2 } , { 1 , 2 } } ,
-                                 true ) ) == 2 );
+ CHECK( graph::categorize( make( 2 , { { 0 , 1 } , { 1 , 0 } } ,
+				 true ) ) == 3 );
+ CHECK( graph::categorize(
+	  make( 3 , { { 0 , 1 } , { 0 , 2 } , { 1 , 2 } } , true ) ) == 2 );
  // a chain of 10^5 nodes, then closed into a cycle; a node with two
  // parents and one root; a deleted node leaving an arborescence
  ListGraph<> p( 100000 , true );
@@ -2066,8 +2127,9 @@ ADS_TEST( "graph-46" )
  CHECK( graph::categorize( p ) == 1 );
  p.insertEdge( 99999 , 0 );
  CHECK( graph::categorize( p ) == 3 );
- CHECK( graph::categorize( make( 4 , { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } ,
-                                       { 2 , 3 } } , true ) ) == 2 );
+ CHECK( graph::categorize(
+	  make( 4 , { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } } ,
+		true ) ) == 2 );
  auto h = make( 3 , { { 0 , 2 } , { 1 , 2 } } , true );
  CHECK( graph::categorize( h ) == 2 );
  h.deleteNode( 1 );
@@ -2078,7 +2140,8 @@ ADS_TEST( "graph-46" )
 
 /*----------------- 47. 2026-01-12, Massimo raggiungibile ------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// maxReachable(): M[ u ], the largest value of a node reachable from u in
 /// the unoriented graph, the largest of its connected component, from the
@@ -2111,7 +2174,7 @@ ADS_TEST( "graph-47" )
 {
  // the example: the path 1 - 2 - 3 gives 3 to every node
  CHECK( graph::maxReachable( make( 3 , { { 0 , 1 } , { 1 , 2 } } , false ) ,
-                             { 1 , 2 , 3 } ) == Ints( { 3 , 3 , 3 } ) );
+			     { 1 , 2 , 3 } ) == Ints( { 3 , 3 , 3 } ) );
  // a breadth first visit from every node
  std::mt19937 r( 49 );
  for( int t = 0 ; t < 400 ; ++t ) {
@@ -2132,23 +2195,24 @@ ADS_TEST( "graph-47" )
   }
  CHECK( graph::maxReachable( ListGraph<>( 0 , false ) , {} ).empty() );
  CHECK( graph::maxReachable( ListGraph<>( 3 , false ) , { -1 , -7 , 4 } ) ==
-        Ints( { -1 , -7 , 4 } ) );
+	Ints( { -1 , -7 , 4 } ) );
  // the extremes of int; equal values; a deleted node, its place left at 0
  const auto two = make( 4 , { { 0 , 1 } , { 2 , 3 } } , false );
  CHECK( graph::maxReachable( two , { INT_MIN , INT_MIN , INT_MAX , 5 } ) ==
-        Ints( { INT_MIN , INT_MIN , INT_MAX , INT_MAX } ) );
+	Ints( { INT_MIN , INT_MIN , INT_MAX , INT_MAX } ) );
  CHECK( graph::maxReachable( two , { 2 , 2 , 2 , 2 } ) == Ints( 4 , 2 ) );
  auto h = make( 3 , { { 0 , 1 } , { 1 , 2 } } , false );
  h.deleteNode( 1 );
  CHECK( graph::maxReachable( h , { 1 , 9 , 3 } ) == Ints( { 1 , 0 , 3 } ) );
  // the contracts: value of a place per name
  CHECK_THROWS( graph::maxReachable( two , { 1 , 2 , 3 } ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------- 48. 2026-06-22, Nodi aciclici ----------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// acyclicNodes(): the number of nodes on no cycle, those whose strongly
 /// connected component has one node, from scc(), O( n + m )
@@ -2193,14 +2257,25 @@ ADS_TEST( "graph-48" )
 {
  // a -> b -> c -> d -> b has only a acyclic, a -> b -> c all three; and a
  // graph with seven acyclic nodes around a cycle of 3 and one of 2
- CHECK( graph::acyclicNodes( make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } ,
-                                         { 3 , 1 } } , true ) ) == 1 );
- CHECK( graph::acyclicNodes( make( 3 , { { 0 , 1 } , { 1 , 2 } } , true ) ) ==
-        3 );
- const auto f = make( 12 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 3 , 4 } ,
-                             { 4 , 3 } , { 5 , 0 } , { 2 , 6 } , { 6 , 7 } ,
-                             { 4 , 8 } , { 9 , 3 } , { 10 , 9 } , { 7 , 3 } } ,
-                      true );
+ CHECK( graph::acyclicNodes(
+	  make( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 1 } } ,
+		true ) ) == 1 );
+ CHECK( graph::acyclicNodes( make( 3 , { { 0 , 1 } , { 1 , 2 } } ,
+				   true ) ) == 3 );
+ const auto f = make( 12 ,
+		      { { 0 , 1 } ,
+			{ 1 , 2 } ,
+			{ 2 , 0 } ,
+			{ 3 , 4 } ,
+			{ 4 , 3 } ,
+			{ 5 , 0 } ,
+			{ 2 , 6 } ,
+			{ 6 , 7 } ,
+			{ 4 , 8 } ,
+			{ 9 , 3 } ,
+			{ 10 , 9 } ,
+			{ 7 , 3 } } ,
+		      true );
  CHECK( graph::acyclicNodes( f ) == 7 );
  CHECK( graph::acyclicNodesNaive( f ) == 7 );
  // the transitive closure: s is acyclic if it does not reach itself
@@ -2221,21 +2296,22 @@ ADS_TEST( "graph-48" )
  CHECK( graph::acyclicNodesNaive( ListGraph<>( 0 ) ) == 0 );
  const auto two = make( 3 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } } , true );
  CHECK( ( graph::acyclicNodes( two ) == 1 ) &&
-        ( graph::acyclicNodesNaive( two ) == 1 ) );
+	( graph::acyclicNodesNaive( two ) == 1 ) );
  auto h = make( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , true );
  h.deleteNode( 1 );
  CHECK( ( graph::acyclicNodes( h ) == 2 ) &&
-        ( graph::acyclicNodesNaive( h ) == 2 ) );
+	( graph::acyclicNodesNaive( h ) == 2 ) );
  ListGraph<> c( 3000 , true );
  for( int u = 0 ; u < 3000 ; ++u )
   c.insertEdge( u , ( u + 1 ) % 3000 );
  CHECK( ( graph::acyclicNodes( c ) == 0 ) &&
-        ( graph::acyclicNodesNaive( c ) == 0 ) );
+	( graph::acyclicNodesNaive( c ) == 0 ) );
  }
 
 /*----------------- 49. 2026-08-28, Cavallo su scacchiera ------------------*/
 
-namespace graph {
+namespace graph
+{
 
 /// minKnightMoves(): the least number of moves of a knight from
 /// ( sr , sc ) to ( er , ec ) on an n x n board, -1 if it cannot get
@@ -2268,8 +2344,8 @@ ADS_TEST( "graph-49" )
       for( int k = 0 ; k < 8 ; ++k ) {
        const int a = u / n + R[ k ] , b = u % n + C[ k ];
        if( graph::inside( n , a , b ) && ( d[ u ] + 1 < d[ a * n + b ] ) ) {
-        d[ a * n + b ] = d[ u ] + 1;
-        more = true;
+	d[ a * n + b ] = d[ u ] + 1;
+	more = true;
         }
        }
     }
@@ -2295,11 +2371,11 @@ ADS_TEST( "graph-49" )
  CHECK( graph::minKnightMoves( 1000 , 0 , 0 , 999 , 999 ) == 666 );
  // the contracts: n > 0, both squares on the board
  CHECK_THROWS( graph::minKnightMoves( 0 , 0 , 0 , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::minKnightMoves( 3 , 3 , 0 , 0 , 0 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( graph::minKnightMoves( 3 , 0 , 0 , 0 , -1 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/

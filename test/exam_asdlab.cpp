@@ -78,7 +78,8 @@ using namespace ADS;
 /*------------------------------- SOLUTIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace asdlab {
+namespace asdlab
+{
 
 using std::int64_t;
 using std::uint64_t;
@@ -103,7 +104,7 @@ inline bool validArcs( int n , const Arcs & A )
 {
  return( std::all_of( A.begin() , A.end() , [ n ]( const Arc & a ) {
   return( ( a.first >= 0 ) && ( a.first < n ) && ( a.second >= 0 ) &&
-          ( a.second < n ) );
+	   ( a.second < n ) );
   } ) );
  }
 
@@ -122,15 +123,15 @@ inline bool validArcs( int n , const Arcs & A )
 uint64_t batman( int n , const Arcs & A , int s , int d )
 {
  ADS_PRE( ( n > 0 ) && ( s >= 0 ) && ( s < n ) && ( d >= 0 ) && ( d < n ) &&
-          validArcs( n , A ) );
+	  validArcs( n , A ) );
  const auto C = scc( arrayGraph( n , A ) );
  const int k = *std::max_element( C.begin() , C.end() );
- Arcs D;                                       // the condensation
+ Arcs D;  // the condensation
  for( const auto & a : A )
   if( C[ a.first ] != C[ a.second ] )
    D.emplace_back( C[ a.first ] - 1 , C[ a.second ] - 1 );
  const auto cg = arrayGraph( k , D );
- std::vector< uint64_t > np( k , 0 );          // the paths from C[ s ]
+ std::vector< uint64_t > np( k , 0 );  // the paths from C[ s ]
  np[ C[ s ] - 1 ] = 1;
  for( int c : topsortKahn( cg ) )
   cg.forEachAdj( c , [ & ]( int e ) { np[ e ] += np[ c ]; } );
@@ -155,17 +156,18 @@ std::vector< int > flatland( const std::string & s )
 {
  const int n = int( s.size() );
  ADS_PRE( ( n % 2 == 1 ) && std::all_of( s.begin() , s.end() , []( char c ) {
-  return( ( c == 's' ) || ( c == 'd' ) ); } ) );
+	   return( ( c == 's' ) || ( c == 'd' ) );
+	   } ) );
  // whether [ x , y ) can be emptied, by the flags
  std::vector< std::vector< char > > FF( n + 1 ,
-                                        std::vector< char >( n + 1 , 0 ) );
+					std::vector< char >( n + 1 , 0 ) );
  auto TF = FF , FT = FF;
  for( int x = 0 ; x <= n ; ++x )
   FF[ x ][ x ] = TF[ x ][ x ] = FT[ x ][ x ] = 1;
  for( int len = 2 ; len <= n ; len += 2 )
   for( int x = 0 ; x + len <= n ; ++x ) {
    const int y = x + len;
-   for( int z = x + 1 ; z < y ; z += 2 ) {      // the partner of x
+   for( int z = x + 1 ; z < y ; z += 2 ) {  // the partner of x
     if( ! FF[ x + 1 ][ z ] )
      continue;
     const bool byX = s[ x ] == 'd' , byZ = s[ z ] == 's';
@@ -194,8 +196,8 @@ using Incidence = std::vector< std::vector< std::pair< int , int > > >;
 /// to the parent is skipped by its name, so that parallel edges are no
 /// bridges; O( n + m )
 inline std::vector< int > bridges( const Incidence & A ,
-                                   const std::vector< char > & off ,
-                                   const std::vector< int > & S )
+				   const std::vector< char > & off ,
+				   const std::vector< int > & S )
 {
  const int n = int( A.size() );
  std::vector< int > pre( n , -1 ) , low( n , 0 ) , B;
@@ -223,9 +225,10 @@ inline std::vector< int > bridges( const Incidence & A ,
 
 /// the answer of pokemon: the number K of species and the species of each
 /// edge
-struct Pokemon {
- int K;                        ///< the most species
- std::vector< int > species;   ///< the species of each edge
+struct Pokemon
+{
+ int K;                       ///< the most species
+ std::vector< int > species;  ///< the species of each edge
  };
 
 /// the edges of an undirected graph get species 0 , ... , K - 1 so that
@@ -242,8 +245,9 @@ struct Pokemon {
 Pokemon pokemon( int n , const Arcs & E )
 {
  ADS_PRE( ( n > 0 ) && validArcs( n , E ) &&
-          std::all_of( E.begin() , E.end() , []( const Arc & e ) {
-           return( e.first != e.second ); } ) );
+	  std::all_of( E.begin() , E.end() , []( const Arc & e ) {
+	   return( e.first != e.second );
+	   } ) );
  const int m = int( E.size() );
  Incidence A( n );
  for( int e = 0 ; e < m ; ++e ) {
@@ -283,8 +287,9 @@ Pokemon pokemon( int n , const Arcs & E )
 /*--------------------- 2016, La vendetta del Re Lich ----------------------*/
 
 /// an edge of a weighted tree
-struct WEdge {
- int u , v , w;   ///< the ends and the weight
+struct WEdge
+{
+ int u , v , w;  ///< the ends and the weight
  };
 
 /// the distance of each node of a weighted tree from its farthest node
@@ -293,7 +298,7 @@ struct WEdge {
 /// children of the parent; O( n ), with no recursion
 /// \pre the edges make a tree on [ 0 , n ), n > 0
 inline std::vector< int64_t > farthest( int n ,
-                                       const std::vector< WEdge > & E )
+					const std::vector< WEdge > & E )
 {
  std::vector< std::vector< std::pair< int , int > > > A( n );
  for( const auto & e : E ) {
@@ -310,8 +315,8 @@ inline std::vector< int64_t > farthest( int n ,
     }
  ADS_PRE( int( order.size() ) == n );
  std::vector< int64_t > down( n , 0 ) , best1( n , 0 ) , best2( n , 0 ) ,
-                        up( n , 0 );
- std::vector< int > child( n , -1 );           // the deepest child
+   up( n , 0 );
+ std::vector< int > child( n , -1 );  // the deepest child
  for( int i = n - 1 ; i > 0 ; --i ) {
   const int v = order[ i ] , p = par[ v ];
   const int64_t h = down[ v ] + pw[ v ];
@@ -343,11 +348,11 @@ inline std::vector< int64_t > farthest( int n ,
 /// best one with it as the minimum; O( n log n + K n alpha( n ) ).
 /// \pre the edges make a tree on [ 0 , n ), n > 0, every L >= 0
 std::vector< int > lich( int n , const std::vector< WEdge > & E ,
-                         const std::vector< int64_t > & Ls )
+			 const std::vector< int64_t > & Ls )
 {
  ADS_PRE( ( n > 0 ) && ( int( E.size() ) == n - 1 ) &&
-          std::all_of( Ls.begin() , Ls.end() ,
-                       []( int64_t l ) { return( l >= 0 ); } ) );
+	  std::all_of( Ls.begin() , Ls.end() ,
+		       []( int64_t l ) { return( l >= 0 ); } ) );
  const auto d = farthest( n , E );
  std::vector< std::vector< int > > A( n );
  for( const auto & e : E ) {
@@ -363,11 +368,11 @@ std::vector< int > lich( int n , const std::vector< WEdge > & E ,
     order.push_back( v );
     }
  std::stable_sort( order.begin() , order.end() ,
-                   [ & ]( int a , int b ) { return( d[ a ] > d[ b ] ); } );
+		   [ & ]( int a , int b ) { return( d[ a ] > d[ b ] ); } );
  std::vector< int > out;
  for( int64_t L : Ls ) {
   MFSet S( n );
-  std::vector< int > cnt( n , 1 );             // the nodes left, by root
+  std::vector< int > cnt( n , 1 );  // the nodes left, by root
   int best = 0;
   size_t it = 0;
   for( int u : order ) {
@@ -390,8 +395,9 @@ std::vector< int > lich( int n , const std::vector< WEdge > & E ,
 
 /// an edge of laser: crossing it takes w and must fit in one window
 /// [ f + k ( off + on ) , f + k ( off + on ) + off ) when the laser is off
-struct Laser {
- int s , t , w , f , off , on;   ///< ends, time, first off, periods
+struct Laser
+{
+ int s , t , w , f , off , on;  ///< ends, time, first off, periods
  };
 
 /// the earliest time >= t at which e can be crossed
@@ -413,14 +419,15 @@ inline int64_t laserDeparture( const Laser & e , int64_t t )
 /// to leave from; O( ( n + m ) log n ) with a binary heap.
 /// \pre n > 0, the edges join nodes, w > 0, f >= 0, off >= 0, on >= 0,
 ///      off + on > 0
-std::pair< int64_t , std::vector< int > > laser(
-                                       int n , const std::vector< Laser > & E )
+std::pair< int64_t , std::vector< int > >
+laser( int n , const std::vector< Laser > & E )
 {
- ADS_PRE( ( n > 0 ) && std::all_of( E.begin() , E.end() ,
-                                     [ n ]( const Laser & e ) {
-  return( ( e.s >= 0 ) && ( e.s < n ) && ( e.t >= 0 ) && ( e.t < n ) &&
-          ( e.w > 0 ) && ( e.f >= 0 ) && ( e.off >= 0 ) && ( e.on >= 0 ) &&
-          ( e.off + e.on > 0 ) ); } ) );
+ ADS_PRE( ( n > 0 ) &&
+	  std::all_of( E.begin() , E.end() , [ n ]( const Laser & e ) {
+	   return( ( e.s >= 0 ) && ( e.s < n ) && ( e.t >= 0 ) &&
+		    ( e.t < n ) && ( e.w > 0 ) && ( e.f >= 0 ) &&
+		    ( e.off >= 0 ) && ( e.on >= 0 ) && ( e.off + e.on > 0 ) );
+	   } ) );
  std::vector< std::vector< int > > A( n );
  for( int i = 0 ; i < int( E.size() ) ; ++i )
   if( E[ i ].off >= E[ i ].w ) {
@@ -510,9 +517,9 @@ double nassau( int V , int F , int M )
 /// removes a node of the core, until the core is empty; nothing if more
 /// than limit nodes would be removed
 template< class Pick >
-std::optional< std::vector< int > > alpiniRound(
-                          const std::vector< std::vector< int > > & A ,
-                          Pick && pick , size_t limit )
+std::optional< std::vector< int > >
+alpiniRound( const std::vector< std::vector< int > > & A , Pick && pick ,
+	     size_t limit )
 {
  const int n = int( A.size() );
  std::vector< int > deg( n ) , Q , R;
@@ -548,7 +555,7 @@ std::optional< std::vector< int > > alpiniRound(
 /// the removed nodes R made minimal: each one, in turn, is kept again when
 /// its kept neighbours lie in distinct trees of the forest (a MFSET)
 inline std::vector< int > alpiniTrim( int n , const Arcs & E ,
-                                      std::vector< int > R )
+				      std::vector< int > R )
 {
  std::vector< char > out( n , 0 );
  for( int u : R )
@@ -572,8 +579,8 @@ inline std::vector< int > alpiniTrim( int n , const Arcs & E ,
     roots.push_back( S.find( v ) );
    }
   std::sort( roots.begin() , roots.end() );
-  if( ok && ( std::adjacent_find( roots.begin() , roots.end() ) ==
-              roots.end() ) ) {
+  if( ok &&
+      ( std::adjacent_find( roots.begin() , roots.end() ) == roots.end() ) ) {
    out[ u ] = 0;
    for( int v : A[ u ] )
     if( ! out[ v ] )
@@ -594,7 +601,7 @@ inline std::vector< int > alpiniTrim( int n , const Arcs & E ,
 /// limit; O( n ( n + m ) ) per round. The removed nodes, increasing.
 /// \pre n > 0, the edges join nodes (loops and parallel edges allowed)
 std::vector< int > alpini( int n , const Arcs & E , int rounds = 300 ,
-                           unsigned seed = 1 )
+			   unsigned seed = 1 )
 {
  ADS_PRE( ( n > 0 ) && validArcs( n , E ) && ( rounds >= 0 ) );
  std::vector< std::vector< int > > A( n );
@@ -603,18 +610,18 @@ std::vector< int > alpini( int n , const Arcs & E , int rounds = 300 ,
   A[ v ].push_back( u );
   }
  auto maxDegree = []( const std::vector< int > & deg ,
-                      const std::vector< char > & core ) {
+		      const std::vector< char > & core ) {
   int b = -1;
   for( int u = 0 ; u < int( deg.size() ) ; ++u )
    if( core[ u ] && ( ( b < 0 ) || ( deg[ u ] > deg[ b ] ) ) )
     b = u;
   return( b );
   };
- auto best = alpiniTrim( n , E , *alpiniRound( A , maxDegree ,
-                                               size_t( n ) + 1 ) );
+ auto best = alpiniTrim( n , E ,
+			 *alpiniRound( A , maxDegree , size_t( n ) + 1 ) );
  std::mt19937 g( seed );
  auto random = [ & ]( const std::vector< int > & deg ,
-                      const std::vector< char > & core ) {
+		      const std::vector< char > & core ) {
   std::vector< double > W( deg.size() , 0.0 );
   for( size_t u = 0 ; u < deg.size() ; ++u )
    if( core[ u ] )
@@ -647,11 +654,11 @@ using Castle = std::array< int , 3 >;
 /// another value and touches no region of the same value. The number of
 /// castles inside the regions; O( sum of v^2 ) over the castles of value v.
 inline int gotRound( const Grid & A , const std::vector< Castle > & O ,
-                     const Grid & rank , Grid & out )
+		     const Grid & rank , Grid & out )
 {
  const int N = int( A.size() ) , M = int( A[ 0 ].size() );
  out.assign( N , std::vector< int >( M , 0 ) );
- Grid in( N , std::vector< int >( M , 0 ) );   // the region being grown
+ Grid in( N , std::vector< int >( M , 0 ) );  // the region being grown
  int stamp = 0 , nv = 0;
  static constexpr int dx[] = { 1 , -1 , 0 , 0 } , dy[] = { 0 , 0 , 1 , -1 };
  auto inside = [ & ]( int x , int y ) {
@@ -696,12 +703,12 @@ inline int gotRound( const Grid & A , const std::vector< Castle > & O ,
      const int a = c.first + dx[ k ] , b = c.second + dy[ k ];
      if( ! inside( a , b ) || ! admissible( a , b , v ) )
       continue;
-     int touch = 0;                            // the cells of R next to it
+     int touch = 0;  // the cells of R next to it
      for( int h = 0 ; h < 4 ; ++h )
       touch += inside( a + dx[ h ] , b + dy[ h ] ) &&
-               ( in[ a + dx[ h ] ][ b + dy[ h ] ] == stamp );
+	       ( in[ a + dx[ h ] ][ b + dy[ h ] ] == stamp );
      const std::tuple< int , int , int > key( priority( a , b , v ) , -touch ,
-                                               rank[ a ][ b ] );
+					    rank[ a ][ b ] );
      if( key < bk ) {
       bk = key;
       bx = a;
@@ -737,20 +744,20 @@ inline int gotRound( const Grid & A , const std::vector< Castle > & O ,
 Grid got( const Grid & A , int rounds = 40 , unsigned seed = 1 )
 {
  ADS_PRE( ! A.empty() && ! A[ 0 ].empty() && ( rounds >= 2 ) &&
-          std::all_of( A.begin() , A.end() , [ & ]( const auto & r ) {
-           return( ( r.size() == A[ 0 ].size() ) &&
-                   std::all_of( r.begin() , r.end() ,
-                                []( int x ) { return( x >= 0 ); } ) );
-           } ) );
+	  std::all_of( A.begin() , A.end() , [ & ]( const auto & r ) {
+	   return( ( r.size() == A[ 0 ].size() ) &&
+		    std::all_of( r.begin() , r.end() ,
+				 []( int x ) { return( x >= 0 ); } ) );
+	   } ) );
  const int N = int( A.size() ) , M = int( A[ 0 ].size() );
  std::vector< Castle > O;
  for( int x = 0 ; x < N ; ++x )
   for( int y = 0 ; y < M ; ++y )
    if( A[ x ][ y ] > 0 )
     O.push_back( { x , y , A[ x ][ y ] } );
- std::stable_sort( O.begin() , O.end() , []( const Castle & a ,
-                                            const Castle & b ) {
-  return( a[ 2 ] < b[ 2 ] ); } );
+ std::stable_sort(
+   O.begin() , O.end() ,
+   []( const Castle & a , const Castle & b ) { return( a[ 2 ] < b[ 2 ] ); } );
  Grid rank( N , std::vector< int >( M , 0 ) ) , out;
  int bestNv = gotRound( A , O , rank , out );
  Grid best = out;
@@ -779,7 +786,7 @@ Grid got( const Grid & A , int rounds = 40 , unsigned seed = 1 )
 inline int64_t somma( int64_t N , int64_t M )
 {
  ADS_PRE( ( M >= 0 ) ? ( N <= std::numeric_limits< int64_t >::max() - M )
-                     : ( N >= std::numeric_limits< int64_t >::min() - M ) );
+		     : ( N >= std::numeric_limits< int64_t >::min() - M ) );
  return( N + M );
  }
 
@@ -802,7 +809,8 @@ inline int64_t sottoseq( const std::vector< int64_t > & A )
 int64_t sottomat( const std::vector< std::vector< int64_t > > & A )
 {
  ADS_PRE( std::all_of( A.begin() , A.end() , [ & ]( const auto & r ) {
-  return( r.size() == A[ 0 ].size() ); } ) );
+  return( r.size() == A[ 0 ].size() );
+  } ) );
  int64_t best = 0;
  for( size_t top = 0 ; top < A.size() ; ++top ) {
   std::vector< int64_t > S( A[ top ].size() , 0 );
@@ -831,8 +839,8 @@ inline void sortLab( std::vector< int > & A )
 /// start, and a gap whenever a start is past the farthest end so far;
 /// O( n log n )
 /// \pre I is not empty, a <= b for each interval
-std::optional< std::pair< int , int > > intervalli(
-                              const std::vector< std::pair< int , int > > & I )
+std::optional< std::pair< int , int > >
+intervalli( const std::vector< std::pair< int , int > > & I )
 {
  ADS_PRE( ! I.empty() );
  return( largestGap( I ) );
@@ -846,7 +854,7 @@ std::optional< std::pair< int , int > > intervalli(
 /// a -1, which cannot then be told apart from none
 /// \pre A is sorted
 std::vector< int > ceilLab( const std::vector< int > & V ,
-                            const std::vector< int > & A )
+			    const std::vector< int > & A )
 {
  ADS_PRE( std::is_sorted( A.begin() , A.end() ) );
  std::vector< int > out;
@@ -880,8 +888,9 @@ std::pair< int , int64_t > sortpesato( const std::vector< int > & A )
 /*-------------------- 2026-10-29, Visita di un albero ---------------------*/
 
 /// the three visits of a tree
-struct Visits {
- std::vector< int > pre , in , post;   ///< preorder, inorder, postorder
+struct Visits
+{
+ std::vector< int > pre , in , post;  ///< preorder, inorder, postorder
  };
 
 /// the preorder, the inorder (the first subtree, the root, the others) and
@@ -909,12 +918,12 @@ Visits visitaAlbero( const std::vector< int > & P , int r )
    last[ P[ u ] ] = T[ u ];
    }
  Visits V;
- pre_visit( root.get() , [ & ]( Tree< int > * t ) {
-  V.pre.push_back( t->read() ); } );
- in_visit( root.get() , 1 , [ & ]( Tree< int > * t ) {
-  V.in.push_back( t->read() ); } );
- post_visit( root.get() , [ & ]( Tree< int > * t ) {
-  V.post.push_back( t->read() ); } );
+ pre_visit( root.get() ,
+	    [ & ]( Tree< int > * t ) { V.pre.push_back( t->read() ); } );
+ in_visit( root.get() , 1 ,
+	   [ & ]( Tree< int > * t ) { V.in.push_back( t->read() ); } );
+ post_visit( root.get() ,
+	     [ & ]( Tree< int > * t ) { V.post.push_back( t->read() ); } );
  ADS_POST( int( V.pre.size() ) == n );
  return( V );
  }
@@ -928,7 +937,7 @@ int visitaGrafo( int n , const Arcs & A , int s )
 {
  ADS_PRE( ( s >= 0 ) && ( s < n ) && validArcs( n , A ) );
  int c = 0;
- bfs( arrayGraph( n , A ) , s , [ & ]( int ) { ++c; } , []( int , int ) {} );
+ bfs( arrayGraph( n , A ) , s , [ & ]( int ) { ++c; } , []( int , int ) { } );
  return( c );
  }
 
@@ -971,8 +980,9 @@ inline RedBlackTree< int , int > redBlack( const std::vector< int > & K )
 inline bool ciclo( int n , const Arcs & A )
 {
  ADS_PRE( validArcs( n , A ) &&
-          std::none_of( A.begin() , A.end() , []( const Arc & a ) {
-           return( a.first == a.second ); } ) );
+	  std::none_of( A.begin() , A.end() , []( const Arc & a ) {
+	   return( a.first == a.second );
+	   } ) );
  return( hasCycle( arrayGraph( n , A ) ) );
  }
 
@@ -986,7 +996,7 @@ inline bool ciclo( int n , const Arcs & A )
 uint64_t numCammini( int n , const Arcs & A , int s , int t )
 {
  ADS_PRE( ( s >= 0 ) && ( s < n ) && ( t >= 0 ) && ( t < n ) &&
-          validArcs( n , A ) );
+	  validArcs( n , A ) );
  return( countShortestPaths( arrayGraph( n , A ) , s )[ t ] );
  }
 
@@ -1037,7 +1047,8 @@ int camminoLungo( int n , const Arcs & A )
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 using namespace asdlab;
 
@@ -1137,10 +1148,10 @@ uint64_t batmanBrute( int n , const Arcs & A , int s , int d )
 // or d out of the graph, an arc out of it refused
 ADS_TEST( "asdlab-batman" )
 {
- const Arcs ex = { { 0 , 10 } , { 1 , 7 } , { 2 , 0 } , { 2 , 3 } ,
-                   { 2 , 6 } , { 3 , 4 } , { 4 , 5 } , { 5 , 3 } ,
-                   { 6 , 0 } , { 6 , 5 } , { 7 , 9 } , { 8 , 3 } ,
-                   { 8 , 7 } , { 9 , 8 } , { 9 , 10 } , { 10 , 2 } };
+ const Arcs ex = { { 0 , 10 } , { 1 , 7 } , { 2 , 0 } ,  { 2 , 3 } ,
+		   { 2 , 6 } ,  { 3 , 4 } , { 4 , 5 } ,  { 5 , 3 } ,
+		   { 6 , 0 } ,  { 6 , 5 } , { 7 , 9 } ,  { 8 , 3 } ,
+		   { 8 , 7 } ,  { 9 , 8 } , { 9 , 10 } , { 10 , 2 } };
  CHECK( batman( 11 , ex , 7 , 5 ) == 3 );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 600 ; ++it ) {
@@ -1149,17 +1160,17 @@ ADS_TEST( "asdlab-batman" )
   const int s = int( g() % unsigned( n ) ) , d = int( g() % unsigned( n ) );
   CHECK( batman( n , A , s , d ) == batmanBrute( n , A , s , d ) );
   }
- CHECK( batman( 1 , {} , 0 , 0 ) == 1 );                 // the empty set
- CHECK( batman( 2 , { { 1 , 0 } } , 0 , 1 ) == 0 );      // no walk
+ CHECK( batman( 1 , {} , 0 , 0 ) == 1 );            // the empty set
+ CHECK( batman( 2 , { { 1 , 0 } } , 0 , 1 ) == 0 );  // no walk
  CHECK( batman( 3 , { { 0 , 1 } , { 1 , 0 } , { 1 , 2 } , { 2 , 1 } } , 0 ,
-                2 ) == 1 );                              // one component
- Arcs P;                                       // 30 pairs of parallel arcs
+		2 ) == 1 );  // one component
+ Arcs P;                     // 30 pairs of parallel arcs
  for( int i = 0 ; i < 30 ; ++i ) {
   P.emplace_back( i , i + 1 );
   P.emplace_back( i , i + 1 );
   }
  CHECK( batman( 31 , P , 0 , 30 ) == ( uint64_t( 1 ) << 30 ) );
- const int W = 5 , H = 400;                    // the layers
+ const int W = 5 , H = 400;  // the layers
  Arcs L;
  std::vector< uint64_t > c( W , 1 );
  for( int h = 0 ; h + 1 < H ; ++h ) {
@@ -1171,7 +1182,7 @@ ADS_TEST( "asdlab-batman" )
    }
   c = nc;
   }
- for( int a = 0 ; a < W ; ++a )                // a source and a sink
+ for( int a = 0 ; a < W ; ++a )  // a source and a sink
   L.emplace_back( W * H , a );
  for( int b = 0 ; b < W ; ++b )
   L.emplace_back( ( H - 1 ) * W + b , W * H + 1 );
@@ -1183,8 +1194,10 @@ ADS_TEST( "asdlab-batman" )
  // routes into one component (two sets), the contracts
  CHECK( batman( 2 , { { 0 , 0 } , { 0 , 1 } } , 0 , 1 ) == 1 );
  CHECK( batman( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , 1 , 1 ) == 1 );
- CHECK( batman( 4 , { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } ,
-                      { 3 , 2 } } , 0 , 3 ) == 2 );
+ CHECK( batman( 4 ,
+		{ { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } , { 3 , 2 } } ,
+		0 ,
+		3 ) == 2 );
  CHECK_THROWS( batman( 0 , {} , 0 , 0 ) , contract_violation );
  CHECK_THROWS( batman( 2 , {} , 0 , 2 ) , contract_violation );
  CHECK_THROWS( batman( 2 , {} , -1 , 0 ) , contract_violation );
@@ -1249,7 +1262,7 @@ ADS_TEST( "asdlab-flatland" )
    c = g() % 2 ? 'd' : 's';
   CHECK( flatland( s ) == flatlandBrute( s ) );
   }
- for( int it = 0 ; it < 5 ; ++it ) {           // the mirror of the row
+ for( int it = 0 ; it < 5 ; ++it ) {  // the mirror of the row
   std::string s( 199 , 's' ) , r;
   for( auto & c : s )
    c = g() % 2 ? 'd' : 's';
@@ -1285,7 +1298,7 @@ std::vector< unsigned > cycles( int n , const Arcs & E )
  std::set< unsigned > C;
  for( int s = 0 ; s < n ; ++s ) {
   auto rec = [ & ]( auto & self , int u , unsigned nodes ,
-                    unsigned edges ) -> void {
+		    unsigned edges ) -> void {
    for( const auto & [ v , e ] : A[ u ] ) {
     if( ( edges >> e ) & 1u )
      continue;
@@ -1302,7 +1315,8 @@ std::vector< unsigned > cycles( int n , const Arcs & E )
 
 // whether each cycle of C meets each species of P equally often
 bool balanced( const std::vector< unsigned > & C ,
-               const std::vector< int > & P , int K )
+	       const std::vector< int > & P ,
+	       int K )
 {
  for( unsigned c : C ) {
   std::vector< int > cnt( K , 0 );
@@ -1312,8 +1326,8 @@ bool balanced( const std::vector< unsigned > & C ,
      return( false );
     ++cnt[ P[ e ] ];
     }
-  if( std::adjacent_find( cnt.begin() , cnt.end() ,
-                          std::not_equal_to<>() ) != cnt.end() )
+  if( std::adjacent_find( cnt.begin() , cnt.end() , std::not_equal_to<>() ) !=
+      cnt.end() )
    return( false );
   }
  return( true );
@@ -1333,7 +1347,7 @@ int pokemonBrute( int m , const std::vector< unsigned > & C )
     return( balanced( C , P , K ) );
    for( int k = 0 ; k <= std::min( used , K - 1 ) ; ++k ) {
     P[ e ] = k;
-    bool ok = true;                            // no species too frequent
+    bool ok = true;  // no species too frequent
     for( unsigned c : C ) {
      if( ! ( ( c >> e ) & 1u ) )
       continue;
@@ -1361,15 +1375,19 @@ int pokemonBrute( int m , const std::vector< unsigned > & C )
 // node, a loop, an edge out of the nodes refused
 ADS_TEST( "asdlab-pokemon" )
 {
- const Arcs ex = { { 0 , 1 } , { 0 , 3 } , { 0 , 4 } , { 0 , 8 } ,
-                   { 0 , 12 } , { 1 , 2 } , { 1 , 7 } , { 2 , 3 } ,
-                   { 4 , 5 } , { 4 , 6 } , { 6 , 12 } , { 8 , 9 } ,
-                   { 8 , 10 } , { 9 , 11 } , { 10 , 11 } };
+ const Arcs ex = { { 0 , 1 } ,  { 0 , 3 } , { 0 , 4 } ,  { 0 , 8 } ,
+		   { 0 , 12 } ,
+		   { 1 , 2 } ,  { 1 , 7 } , { 2 , 3 } ,  { 4 , 5 } ,
+		   { 4 , 6 } ,
+		   { 6 , 12 } , { 8 , 9 } , { 8 , 10 } , { 9 , 11 } ,
+		   { 10 , 11 } };
  const auto P = pokemon( 13 , ex );
  const auto C = cycles( 13 , ex );
  CHECK( ( P.K == 4 ) && balanced( C , P.species , 4 ) );
- CHECK( balanced( C , { 0 , 1 , 2 , 3 , 3 , 2 , 0 , 3 , 3 , 1 , 0 , 0 , 2 ,
-                        3 , 1 } , 4 ) );           // the statement's
+ CHECK( balanced( C ,
+		  { 0 , 1 , 2 , 3 , 3 , 2 , 0 , 3 , 3 , 1 , 0 , 0 , 2 , 3 ,
+		    1 } ,
+		  4 ) );  // the statement's
  const Arcs sq = { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 0 , 3 } };
  CHECK( pokemon( 4 , sq ).K == 4 );
  CHECK( pokemon( 4 , sq ).species == std::vector< int >( { 0 , 1 , 2 , 3 } ) );
@@ -1377,7 +1395,7 @@ ADS_TEST( "asdlab-pokemon" )
  int multi = 0;
  for( int it = 0 ; it < 300 ; ++it ) {
   const int n = 3 + int( g() % 5 );
-  Arcs E;                                     // a random tree
+  Arcs E;  // a random tree
   for( int u = 1 ; u < n ; ++u )
    E.emplace_back( int( g() % unsigned( u ) ) , u );
   std::set< Arc > S( E.begin() , E.end() );
@@ -1400,26 +1418,26 @@ ADS_TEST( "asdlab-pokemon" )
   multi += Q.K > 1;
   }
  CHECK( multi > 30 );
- std::vector< int > T( 4500 );                 // one cycle of 4500
+ std::vector< int > T( 4500 );  // one cycle of 4500
  Arcs ring;
  for( int u = 0 ; u < 4500 ; ++u )
   ring.emplace_back( std::min( u , ( u + 1 ) % 4500 ) ,
-                     std::max( u , ( u + 1 ) % 4500 ) );
+		     std::max( u , ( u + 1 ) % 4500 ) );
  const auto R = pokemon( 4500 , ring );
  CHECK( R.K == 4500 );
  std::iota( T.begin() , T.end() , 0 );
  auto sp = R.species;
  std::sort( sp.begin() , sp.end() );
  CHECK( sp == T );
- for( int it = 0 ; it < 20 ; ++it ) {          // cactus graphs
+ for( int it = 0 ; it < 20 ; ++it ) {  // cactus graphs
   Arcs E;
   int n = 1;
   U64 G = 0;
   const int base = 3 + int( g() % 4 );
   while( n < 300 ) {
    const int len = base * ( 1 + int( g() % 4 ) ) + ( it % 5 == 0 );
-   int first = int( g() % unsigned( n ) );     // where the cycle hangs,
-   if( g() % 3 == 0 ) {                        // maybe through a bridge
+   int first = int( g() % unsigned( n ) );  // where the cycle hangs,
+   if( g() % 3 == 0 ) {                     // maybe through a bridge
     E.emplace_back( first , n );
     first = n++;
     }
@@ -1437,11 +1455,11 @@ ADS_TEST( "asdlab-pokemon" )
  // cycle of 2), a triangle with a pendant edge, and the contracts
  CHECK( ( pokemon( 1 , {} ).K == 1 ) && pokemon( 1 , {} ).species.empty() );
  CHECK( pokemon( 4 , { { 0 , 1 } , { 1 , 2 } , { 1 , 3 } } ).species ==
-        std::vector< int >( 3 , 0 ) );
+	std::vector< int >( 3 , 0 ) );
  const auto two = pokemon( 2 , { { 0 , 1 } , { 0 , 1 } } );
  CHECK( ( two.K == 2 ) && ( two.species == std::vector< int >( { 0 , 1 } ) ) );
- CHECK( pokemon( 4 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 2 , 3 } } ).K ==
-        3 );
+ CHECK( pokemon( 4 ,
+		 { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 2 , 3 } } ).K == 3 );
  CHECK_THROWS( pokemon( 0 , {} ) , contract_violation );
  CHECK_THROWS( pokemon( 2 , { { 1 , 1 } } ) , contract_violation );
  CHECK_THROWS( pokemon( 2 , { { 0 , 2 } } ) , contract_violation );
@@ -1452,7 +1470,7 @@ ADS_TEST( "asdlab-pokemon" )
 // d by a visit from each node, then from each node r the nodes with d in
 // [ d[ r ] , d[ r ] + L ] it reaches through such nodes; O( n^2 ) per L
 std::vector< int > lichBrute( int n , const std::vector< WEdge > & E ,
-                              const std::vector< int64_t > & Ls )
+			      const std::vector< int64_t > & Ls )
 {
  std::vector< std::vector< std::pair< int , int > > > A( n );
  for( const auto & e : E ) {
@@ -1506,32 +1524,39 @@ std::vector< int > lichBrute( int n , const std::vector< WEdge > & E ,
 // not a tree refused
 ADS_TEST( "asdlab-lich" )
 {
- const std::vector< WEdge > ex1 = { { 0 , 5 , 3 } , { 1 , 10 , 7 } ,
-  { 2 , 3 , 2 } , { 2 , 11 , 8 } , { 3 , 5 , 8 } , { 3 , 10 , 1 } ,
-  { 4 , 5 , 4 } , { 5 , 6 , 4 } , { 5 , 8 , 1 } , { 5 , 9 , 4 } ,
-  { 7 , 10 , 8 } };
+ const std::vector< WEdge > ex1 = { { 0 , 5 , 3 } ,  { 1 , 10 , 7 } ,
+				    { 2 , 3 , 2 } ,
+				    { 2 , 11 , 8 } , { 3 , 5 , 8 } ,
+				    { 3 , 10 , 1 } ,
+				    { 4 , 5 , 4 } ,  { 5 , 6 , 4 } ,
+				    { 5 , 8 , 1 } ,
+				    { 5 , 9 , 4 } ,  { 7 , 10 , 8 } };
  const std::vector< WEdge > ex2 = { { 0 , 5 , 1 } , { 1 , 4 , 1 } ,
-  { 1 , 6 , 1 } , { 2 , 3 , 1 } , { 2 , 8 , 1 } , { 3 , 7 , 1 } ,
-  { 4 , 5 , 1 } , { 6 , 10 , 1 } , { 7 , 9 , 1 } , { 8 , 10 , 1 } };
+				    { 1 , 6 , 1 } ,
+				    { 2 , 3 , 1 } , { 2 , 8 , 1 } ,
+				    { 3 , 7 , 1 } ,
+				    { 4 , 5 , 1 } , { 6 , 10 , 1 } ,
+				    { 7 , 9 , 1 } ,
+				    { 8 , 10 , 1 } };
  const std::vector< int64_t > q = { 0 , 1 , 2 , 3 , 4 , 5 };
- CHECK( lich( 12 , ex1 , q ) == std::vector< int >( { 1 , 2 , 3 , 3 , 6 ,
-                                                       6 } ) );
- CHECK( lich( 11 , ex2 , q ) == std::vector< int >( { 1 , 3 , 5 , 7 , 9 ,
-                                                       11 } ) );
+ CHECK( lich( 12 , ex1 ,
+	      q ) == std::vector< int >( { 1 , 2 , 3 , 3 , 6 , 6 } ) );
+ CHECK( lich( 11 , ex2 ,
+	      q ) == std::vector< int >( { 1 , 3 , 5 , 7 , 9 , 11 } ) );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = 1 + int( g() % 40 );
   const int wmax = it % 2 ? 5 : 1000;
   std::vector< WEdge > E;
   for( int u = 1 ; u < n ; ++u )
-   E.push_back( { int( g() % unsigned( u ) ) , u ,
-                  1 + int( g() % unsigned( wmax ) ) } );
+   E.push_back(
+     { int( g() % unsigned( u ) ) , u , 1 + int( g() % unsigned( wmax ) ) } );
   std::vector< int64_t > Ls = { 0 , 1 , 1000000 };
   for( int k = 0 ; k < 4 ; ++k )
    Ls.push_back( int64_t( g() % unsigned( 3 * wmax ) ) );
   CHECK( lich( n , E , Ls ) == lichBrute( n , E , Ls ) );
   }
- for( int n = 1 ; n <= 30 ; ++n ) {            // the unweighted path
+ for( int n = 1 ; n <= 30 ; ++n ) {  // the unweighted path
   std::vector< WEdge > E;
   for( int u = 1 ; u < n ; ++u )
    E.push_back( { u - 1 , u , 1 } );
@@ -1539,30 +1564,32 @@ ADS_TEST( "asdlab-lich" )
   std::iota( Ls.begin() , Ls.end() , 0 );
   const auto r = lich( n , E , Ls );
   for( int64_t L = 0 ; L < 36 ; ++L )
-   CHECK( r[ L ] == int( std::min< int64_t >( n , n % 2 ? 1 + 2 * L
-                                                        : 2 * ( 1 + L ) ) ) );
+   CHECK( r[ L ] ==
+	  int( std::min< int64_t >( n ,
+				    n % 2 ? 1 + 2 * L : 2 * ( 1 + L ) ) ) );
   }
- std::vector< WEdge > E;                       // a long path
+ std::vector< WEdge > E;  // a long path
  for( int u = 1 ; u < 3000 ; ++u )
   E.push_back( { u - 1 , u , 1000 } );
  CHECK( lich( 3000 , E , { 0 , 7000 , 1000000 , 2999000 } ) ==
-        std::vector< int >( { 2 , 16 , 2002 , 3000 } ) );
+	std::vector< int >( { 2 , 16 , 2002 , 3000 } ) );
  // one node, no query, a star (the leaves, of d 6, joined only through
  // the center, of d 3), the largest L of 64 bits, and the contracts: no
  // node, a negative L, edges that are not a tree
  CHECK( lich( 1 , {} , { 0 , 5 } ) == std::vector< int >( { 1 , 1 } ) );
  CHECK( lich( 3 , { { 0 , 1 , 2 } , { 1 , 2 , 2 } } , {} ).empty() );
  const std::vector< WEdge > star = { { 0 , 1 , 3 } , { 0 , 2 , 3 } ,
-                                     { 0 , 3 , 3 } };
- CHECK( lich( 4 , star , { 0 , 2 , 3 } ) ==
-        std::vector< int >( { 1 , 1 , 4 } ) );
+				     { 0 , 3 , 3 } };
+ CHECK( lich( 4 , star ,
+	      { 0 , 2 , 3 } ) == std::vector< int >( { 1 , 1 , 4 } ) );
  CHECK( lich( 4 , star , { std::numeric_limits< int64_t >::max() } ) ==
-        std::vector< int >( 1 , 4 ) );
+	std::vector< int >( 1 , 4 ) );
  CHECK_THROWS( lich( 0 , {} , { 0 } ) , contract_violation );
  CHECK_THROWS( lich( 1 , {} , { -1 } ) , contract_violation );
  CHECK_THROWS( lich( 3 , { { 0 , 1 , 1 } } , { 0 } ) , contract_violation );
  CHECK_THROWS( lich( 4 , { { 0 , 1 , 1 } , { 1 , 0 , 1 } , { 2 , 3 , 1 } } ,
-                     { 0 } ) , contract_violation );
+		     { 0 } ) ,
+	       contract_violation );
  }
 
 /*---------------------- 2017, 007: Pioggia di laser -----------------------*/
@@ -1584,8 +1611,8 @@ int64_t laserBrute( int n , const std::vector< Laser > & E , int T )
    for( const auto & e : E ) {
     if( ( e.s != u ) && ( e.t != u ) )
      continue;
-    const bool off = ( t >= e.f ) &&
-                     ( ( t - e.f ) % ( e.off + e.on ) + e.w <= e.off );
+    const bool off =
+      ( t >= e.f ) && ( ( t - e.f ) % ( e.off + e.on ) + e.w <= e.off );
     if( off && ( t + e.w <= T ) )
      R[ t + e.w ][ e.s == u ? e.t : e.s ] = 1;
     }
@@ -1597,7 +1624,7 @@ int64_t laserBrute( int n , const std::vector< Laser > & E , int T )
 // whether P goes from 0 to n - 1 along edges and, crossed as early as
 // possible, arrives at T
 bool laserPath( int n , const std::vector< Laser > & E ,
-                const std::vector< int > & P , int64_t T )
+		const std::vector< int > & P , int64_t T )
 {
  if( P.empty() || ( P.front() != 0 ) || ( P.back() != n - 1 ) )
   return( false );
@@ -1607,7 +1634,7 @@ bool laserPath( int n , const std::vector< Laser > & E ,
   for( const auto & e : E )
    if( ( e.off >= e.w ) &&
        ( ( ( e.s == P[ i ] ) && ( e.t == P[ i + 1 ] ) ) ||
-         ( ( e.t == P[ i ] ) && ( e.s == P[ i + 1 ] ) ) ) ) {
+	 ( ( e.t == P[ i ] ) && ( e.s == P[ i + 1 ] ) ) ) ) {
     const int64_t a = laserDeparture( e , t ) + e.w;
     if( ( best < 0 ) || ( a < best ) )
      best = a;
@@ -1626,19 +1653,28 @@ bool laserPath( int n , const std::vector< Laser > & E ,
 // nodes, w = 0, off + on = 0, f < 0, off < w for the departure refused
 ADS_TEST( "asdlab-laser" )
 {
- const std::vector< Laser > ex1 = { { 0 , 1 , 8 , 7 , 2 , 2 } ,
-  { 0 , 2 , 1 , 5 , 1 , 2 } , { 1 , 3 , 6 , 16 , 5 , 5 } ,
+ const std::vector< Laser > ex1 = {
+  { 0 , 1 , 8 , 7 , 2 , 2 } ,    { 0 , 2 , 1 , 5 , 1 , 2 } ,
+  { 1 , 3 , 6 , 16 , 5 , 5 } ,
   { 2 , 3 , 4 , 12 , 18 , 10 } , { 3 , 6 , 10 , 8 , 13 , 4 } ,
-  { 4 , 1 , 13 , 6 , 10 , 16 } , { 5 , 3 , 2 , 11 , 4 , 2 } ,
-  { 5 , 6 , 4 , 6 , 6 , 1 } , { 6 , 2 , 12 , 15 , 24 , 5 } };
+  { 4 , 1 , 13 , 6 , 10 , 16 } ,
+  { 5 , 3 , 2 , 11 , 4 , 2 } ,   { 5 , 6 , 4 , 6 , 6 , 1 } ,
+  { 6 , 2 , 12 , 15 , 24 , 5 }
+  };
  const auto r1 = laser( 7 , ex1 );
  CHECK( ( r1.first == 24 ) && laserPath( 7 , ex1 , r1.second , 24 ) );
  CHECK( r1.second == std::vector< int >( { 0 , 2 , 3 , 5 , 6 } ) );
  std::vector< Laser > ex2;
- for( const auto & [ s , t ] : Arcs( { { 0 , 6 } , { 1 , 0 } , { 2 , 5 } ,
-                                       { 2 , 7 } , { 3 , 4 } , { 4 , 1 } ,
-                                       { 4 , 5 } , { 4 , 9 } , { 7 , 5 } ,
-                                       { 7 , 6 } } ) )
+ for( const auto & [ s , t ] : Arcs( { { 0 , 6 } ,
+				      { 1 , 0 } ,
+				      { 2 , 5 } ,
+				      { 2 , 7 } ,
+				      { 3 , 4 } ,
+				      { 4 , 1 } ,
+				      { 4 , 5 } ,
+				      { 4 , 9 } ,
+				      { 7 , 5 } ,
+				      { 7 , 6 } } ) )
   ex2.push_back( { s , t , 1 , 0 , 1000000 , 1 } );
  const auto r2 = laser( 10 , ex2 );
  CHECK( ( r2.first == 3 ) && laserPath( 10 , ex2 , r2.second , 3 ) );
@@ -1651,7 +1687,8 @@ ADS_TEST( "asdlab-laser" )
    const int s = int( g() % unsigned( n ) ) , t = int( g() % unsigned( n ) );
    if( s != t )
     E.push_back( { s , t , 1 + int( g() % 5 ) , int( g() % 12 ) ,
-                   int( g() % 9 ) , int( g() % 9 ) } );
+		   int( g() % 9 ) ,
+		   int( g() % 9 ) } );
    if( E.size() && ( E.back().off + E.back().on == 0 ) )
     E.back().on = 1;
    }
@@ -1666,18 +1703,18 @@ ADS_TEST( "asdlab-laser" )
    CHECK( ( r.first == -1 ) || ( r.first > 400 ) );
   }
  CHECK( reached > 150 );
- CHECK( laser( 1 , {} ) == std::pair( int64_t( 0 ) ,
-                                     std::vector< int >( { 0 } ) ) );
+ CHECK( laser( 1 , {} ) ==
+	std::pair( int64_t( 0 ) , std::vector< int >( { 0 } ) ) );
  CHECK( laser( 2 , {} ).first == -1 );
  CHECK( laser( 2 , { { 0 , 1 , 5 , 0 , 4 , 1 } } ).first == -1 );  // y < w
- CHECK( laser( 2 , { { 1 , 0 , 100 , 1000000 , 100 , 1 } } ).first ==
-        1000100 );
+ CHECK( laser( 2 ,
+	       { { 1 , 0 , 100 , 1000000 , 100 , 1 } } ).first == 1000100 );
  CHECK( laser( 2 , { { 0 , 1 , 2 , 0 , 2 , 3 } } ).first == 2 );
  CHECK( laserDeparture( { 0 , 1 , 2 , 0 , 3 , 3 } , 2 ) == 6 );
  // laserDeparture() at the bounds of a window: its start, the last time
  // that still fits, the first that does not, an off period equal to the
  // crossing (only the start of each window), before the first off
- const Laser e = { 0 , 1 , 2 , 5 , 4 , 6 };   // off in [ 5 + 10 k , 9 + )
+ const Laser e = { 0 , 1 , 2 , 5 , 4 , 6 };  // off in [ 5 + 10 k , 9 + )
  CHECK( laserDeparture( e , 5 ) == 5 && laserDeparture( e , 7 ) == 7 );
  CHECK( laserDeparture( e , 8 ) == 15 && laserDeparture( e , 0 ) == 5 );
  const Laser tight = { 0 , 1 , 3 , 0 , 3 , 1 };
@@ -1686,19 +1723,21 @@ ADS_TEST( "asdlab-laser" )
  // better one), and the contracts
  CHECK( laser( 1 , { { 0 , 0 , 1 , 0 , 1 , 0 } } ).first == 0 );
  CHECK( laser( 2 , { { 0 , 1 , 3 , 0 , 3 , 0 } } ).first == 3 );
- CHECK( laser( 2 , { { 0 , 1 , 9 , 0 , 9 , 1 } ,
-                     { 0 , 1 , 2 , 0 , 2 , 50 } } ).first == 2 );
+ CHECK( laser( 2 ,
+	       { { 0 , 1 , 9 , 0 , 9 , 1 } ,
+		 { 0 , 1 , 2 , 0 , 2 , 50 } } ).first ==
+	2 );
  CHECK_THROWS( laser( 0 , {} ) , contract_violation );
  CHECK_THROWS( laser( 2 , { { 0 , 2 , 1 , 0 , 1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( laser( 2 , { { 0 , 1 , 0 , 0 , 1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( laser( 2 , { { 0 , 1 , 1 , 0 , 0 , 0 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( laser( 2 , { { 0 , 1 , 1 , -1 , 1 , 1 } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( laserDeparture( { 0 , 1 , 5 , 0 , 4 , 1 } , 0 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*------------------------- 2017, Assalto a Nassau -------------------------*/
@@ -1710,11 +1749,12 @@ T nassauBrute( int V , int F , int M , Make && make )
 {
  std::map< std::array< int , 4 > , T > memo;
  std::function< T( int , int , int , int ) > EP = [ & ]( int v , int d ,
-                                                        int f , int m ) {
+							 int f ,
+						      int m ) {
   if( ( m == 0 ) || ( v + d + f == 0 ) )
    return( make( ( v + d ) * f ) );
   const std::array< int , 4 > key = { v , d , f , m };
-  if( const auto it = memo.find( key ) ; it != memo.end() )
+  if( const auto it = memo.find( key ); it != memo.end() )
    return( it->second );
   T r = make( 0 );
   if( v )
@@ -1744,25 +1784,25 @@ ADS_TEST( "asdlab-nassau" )
   for( int F = 1 ; F <= 3 ; ++F )
    for( int M = 0 ; M <= 2 * V + F + 1 ; ++M ) {
     const Rational e = nassauBrute< Rational >( V , F , M , rational );
-    const double x = std::stod( e.num().toString() ) /
-                     std::stod( e.den().toString() );
+    const double x =
+      std::stod( e.num().toString() ) / std::stod( e.den().toString() );
     CHECK( std::abs( nassau( V , F , M ) - x ) <= 1e-12 * ( 1 + x ) );
     }
  CHECK( nassauBrute< Rational >( 1 , 2 , 2 , rational ) ==
-        Rational( BigInteger( 5 ) , BigInteger( 9 ) ) );
+	Rational( BigInteger( 5 ) , BigInteger( 9 ) ) );
  std::mt19937 g( 1 );
  auto real = []( int x ) { return( double( x ) ); };
  for( int it = 0 ; it < 60 ; ++it ) {
   const int V = 1 + int( g() % 12 ) , F = 1 + int( g() % 12 ) ,
-            M = int( g() % unsigned( 2 * V + F + 3 ) );
+	    M = int( g() % unsigned( 2 * V + F + 3 ) );
   const double x = nassauBrute< double >( V , F , M , real );
   CHECK( std::abs( nassau( V , F , M ) - x ) <= 1e-9 * ( 1 + x ) );
   }
  CHECK( nassau( 0 , 5 , 3 ) == 0 && nassau( 5 , 0 , 3 ) == 0 );
  CHECK( std::abs( nassau( 7 , 9 , 0 ) - 63 ) < 1e-9 );
- CHECK( std::abs( nassau( 7 , 9 , 23 ) ) < 1e-12 );       // all sunk
+ CHECK( std::abs( nassau( 7 , 9 , 23 ) ) < 1e-12 );  // all sunk
  double prev = 4999.0 * 4999.0;
- for( int M : { 0 , 1 , 100 , 2500 , 4999 } ) {           // the largest
+ for( int M : { 0 , 1 , 100 , 2500 , 4999 } ) {  // the largest
   const double x = nassau( 4999 , 4999 , M );
   CHECK( ( x <= prev * ( 1 + 1e-12 ) ) && ( x > 0 ) );
   prev = x;
@@ -1873,12 +1913,12 @@ ADS_TEST( "asdlab-alpini" )
   ++total;
   }
  CHECK( optimal * 100 >= total * 97 );
- Arcs K;                                       // the complete graph K10
+ Arcs K;  // the complete graph K10
  for( int u = 0 ; u < 10 ; ++u )
   for( int v = u + 1 ; v < 10 ; ++v )
    K.emplace_back( u , v );
  CHECK( alpini( 10 , K ).size() == 8 );
- Arcs T;                                       // a tree, a cycle
+ Arcs T;  // a tree, a cycle
  for( int u = 1 ; u < 50 ; ++u )
   T.emplace_back( int( g() % unsigned( u ) ) , u );
  CHECK( alpini( 50 , T ).empty() );
@@ -1886,7 +1926,7 @@ ADS_TEST( "asdlab-alpini" )
  const auto R1 = alpini( 50 , T );
  CHECK( ( R1.size() == 1 ) && acyclicWithout( 50 , T , R1 ) );
  CHECK( alpini( 3 , { { 0 , 1 } , { 0 , 1 } , { 2 , 2 } } ).size() == 2 );
- for( int it = 0 ; it < 3 ; ++it ) {           // the largest instances
+ for( int it = 0 ; it < 3 ; ++it ) {  // the largest instances
   const auto E = simpleArcs( g , 99 , 2000 );
   const auto R = alpini( 99 , E , 30 );
   CHECK( acyclicWithout( 99 , E , R ) && ( R.size() <= 97 ) );
@@ -1896,8 +1936,9 @@ ADS_TEST( "asdlab-alpini" )
  // round, and the contracts
  CHECK( alpini( 1 , {} ).empty() );
  CHECK( alpini( 1 , { { 0 , 0 } } ) == std::vector< int >( { 0 } ) );
- const Arcs tt = { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 3 , 4 } ,
-                   { 4 , 5 } , { 5 , 3 } };
+ const Arcs tt = {
+  { 0 , 1 } , { 1 , 2 } , { 2 , 0 } , { 3 , 4 } , { 4 , 5 } , { 5 , 3 }
+  };
  const auto R2 = alpini( 6 , tt , 0 );
  CHECK( ( R2.size() == 2 ) && acyclicWithout( 6 , tt , R2 ) );
  CHECK_THROWS( alpini( 0 , {} ) , contract_violation );
@@ -1941,7 +1982,7 @@ int gotScore( const Grid & A , const Grid & B )
     for( int d = 0 ; d < 4 ; ++d ) {
      const int a = x + dx[ d ] , b = y + dy[ d ];
      if( ( a >= 0 ) && ( a < N ) && ( b >= 0 ) && ( b < M ) &&
-         ! seen[ a ][ b ] && ( B[ a ][ b ] == k ) ) {
+	 ! seen[ a ][ b ] && ( B[ a ][ b ] == k ) ) {
       seen[ a ][ b ] = 1;
       Q.emplace_back( a , b );
       }
@@ -1976,7 +2017,7 @@ int gotBaseline( const Grid & A )
 // a region of the same size next to it has one already; the castles and
 // their number
 std::pair< Grid , int > gotInstance( std::mt19937 & g , int N , int M ,
-                                     int vmax )
+				    int vmax )
 {
  Grid id( N , std::vector< int >( M , -1 ) );
  std::vector< std::vector< std::pair< int , int > > > R;
@@ -1992,10 +2033,10 @@ std::pair< Grid , int > gotInstance( std::mt19937 & g , int N , int M ,
    R.push_back( { { i , j } } );
    id[ i ][ j ] = r;
    for( int t = 0 ; ( int( R[ r ].size() ) < want ) && ( t < 8 * want ) ;
-        ++t ) {
+	++t ) {
     const auto c = R[ r ][ g() % R[ r ].size() ];
     const int d = int( g() % 4 ) , a = c.first + dx[ d ] ,
-              b = c.second + dy[ d ];
+	      b = c.second + dy[ d ];
     if( inside( a , b ) && ( id[ a ][ b ] < 0 ) ) {
      id[ a ][ b ] = r;
      R[ r ].emplace_back( a , b );
@@ -2013,7 +2054,7 @@ std::pair< Grid , int > gotInstance( std::mt19937 & g , int N , int M ,
    for( int d = 0 ; d < 4 ; ++d ) {
     const int x = a + dx[ d ] , y = b + dy[ d ];
     if( inside( x , y ) && ( id[ x ][ y ] != int( r ) ) &&
-        has[ id[ x ][ y ] ] && ( R[ id[ x ][ y ] ].size() == R[ r ].size() ) )
+	has[ id[ x ][ y ] ] && ( R[ id[ x ][ y ] ].size() == R[ r ].size() ) )
      clash = true;
     }
   if( clash )
@@ -2025,7 +2066,7 @@ std::pair< Grid , int > gotInstance( std::mt19937 & g , int N , int M ,
    S[ a ][ b ] = int( R[ r ].size() );
   ++nc;
   }
- CHECK( gotScore( A , S ) == nc );             // S takes all the castles
+ CHECK( gotScore( A , S ) == nc );  // S takes all the castles
  return( std::pair( A , nc ) );
  }
 
@@ -2036,13 +2077,17 @@ std::pair< Grid , int > gotInstance( std::mt19937 & g , int N , int M ,
 // than 2 rounds refused
 ADS_TEST( "asdlab-got" )
 {
- const Grid ex = { { 0 , 0 , 0 , 6 , 0 } , { 0 , 2 , 0 , 0 , 0 } ,
-                   { 4 , 0 , 0 , 8 , 0 } , { 0 , 0 , 0 , 0 , 0 } ,
-                   { 0 , 0 , 0 , 0 , 5 } };
- const Grid sol = { { 6 , 6 , 6 , 6 , 8 } , { 2 , 2 , 6 , 6 , 8 } ,
-                    { 4 , 8 , 8 , 8 , 8 } , { 4 , 4 , 5 , 8 , 8 } ,
-                    { 4 , 5 , 5 , 5 , 5 } };
- CHECK( gotScore( ex , sol ) == 5 );           // the statement's
+ const Grid ex = { { 0 , 0 , 0 , 6 , 0 } ,
+		   { 0 , 2 , 0 , 0 , 0 } ,
+		   { 4 , 0 , 0 , 8 , 0 } ,
+		   { 0 , 0 , 0 , 0 , 0 } ,
+		   { 0 , 0 , 0 , 0 , 5 } };
+ const Grid sol = { { 6 , 6 , 6 , 6 , 8 } ,
+		    { 2 , 2 , 6 , 6 , 8 } ,
+		    { 4 , 8 , 8 , 8 , 8 } ,
+		    { 4 , 4 , 5 , 8 , 8 } ,
+		    { 4 , 5 , 5 , 5 , 5 } };
+ CHECK( gotScore( ex , sol ) == 5 );  // the statement's
  CHECK( gotScore( ex , got( ex ) ) >= 4 );
  std::mt19937 g( 1 );
  int nv = 0 , nc = 0;
@@ -2067,10 +2112,12 @@ ADS_TEST( "asdlab-got" )
  // (one only), a castle filling the grid, and the contracts
  CHECK( gotScore( { { 2 } , { 0 } } , got( { { 2 } , { 0 } } ) ) == 1 );
  CHECK( gotScore( { { 5 , 0 } , { 0 , 0 } } ,
-                  got( { { 5 , 0 } , { 0 , 0 } } ) ) == 0 );
+		  got( { { 5 , 0 } , { 0 , 0 } } ) ) ==
+	0 );
  CHECK( gotScore( { { 1 , 1 , 1 } } , got( { { 1 , 1 , 1 } } ) ) == 2 );
  CHECK( gotScore( { { 4 , 0 } , { 0 , 0 } } ,
-                  got( { { 4 , 0 } , { 0 , 0 } } ) ) == 1 );
+		  got( { { 4 , 0 } , { 0 , 0 } } ) ) ==
+	1 );
  CHECK_THROWS( got( {} ) , contract_violation );
  CHECK_THROWS( got( { {} } ) , contract_violation );
  CHECK_THROWS( got( { { 1 , 0 } , { 0 } } ) , contract_violation );
@@ -2089,15 +2136,15 @@ ADS_TEST( "asdlab-2026-lab01-somma" )
  std::mt19937_64 g( 1 );
  for( int it = 0 ; it < 1000 ; ++it ) {
   const int64_t a = int64_t( g() >> 2 ) - ( int64_t( 1 ) << 61 ) ,
-                b = int64_t( g() >> 2 ) - ( int64_t( 1 ) << 61 );
+		b = int64_t( g() >> 2 ) - ( int64_t( 1 ) << 61 );
   CHECK( somma( a , b ) == a + b );
   }
  CHECK( somma( std::numeric_limits< int >::max() ,
-               std::numeric_limits< int >::max() ) == 4294967294LL );
+	       std::numeric_limits< int >::max() ) == 4294967294LL );
  CHECK( somma( 0 , 0 ) == 0 && somma( -7 , 7 ) == 0 );
  // the extremes of 64 bits: sums that just fit, and those that overflow
  const int64_t M = std::numeric_limits< int64_t >::max() ,
-               m = std::numeric_limits< int64_t >::min();
+	       m = std::numeric_limits< int64_t >::min();
  CHECK( somma( M , m ) == -1 && somma( M , 0 ) == M && somma( m , 0 ) == m );
  CHECK( somma( M - 5 , 5 ) == M && somma( m + 5 , -5 ) == m );
  CHECK_THROWS( somma( M , 1 ) , contract_violation );
@@ -2129,7 +2176,7 @@ ADS_TEST( "asdlab-2026-lab01-sottoseq" )
  CHECK( sottoseq( {} ) == 0 && sottoseq( { -5 , -1 } ) == 0 );
  CHECK( sottoseq( { 7 , 7 , 7 } ) == 21 );
  CHECK( sottoseq( std::vector< int64_t >( 100000 , 1000000000 ) ) ==
-        100000LL * 1000000000LL );
+	100000LL * 1000000000LL );
  // one item, positive or not; the best run at either end; a negative
  // item worth crossing and one that is not; the smallest of 64 bits
  CHECK( sottoseq( { 9 } ) == 9 && sottoseq( { -9 } ) == 0 );
@@ -2148,7 +2195,8 @@ ADS_TEST( "asdlab-2026-lab01-sottoseq" )
 ADS_TEST( "asdlab-2026-lab01-sottomat" )
 {
  CHECK( sottomat( { { 2 , -9 , 2 , 3 } , { 1 , 4 , 5 , 1 } ,
-                    { -2 , 3 , 4 , 1 } } ) == 18 );
+		    { -2 , 3 , 4 , 1 } } ) ==
+	18 );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 300 ; ++it ) {
   const size_t R = g() % 7 , C = 1 + g() % 7;
@@ -2157,24 +2205,24 @@ ADS_TEST( "asdlab-2026-lab01-sottomat" )
    for( auto & x : row )
     x = int64_t( g() % 21 ) - 10;
   std::vector< std::vector< int64_t > > P(
-                               R + 1 , std::vector< int64_t >( C + 1 , 0 ) );
+    R + 1 , std::vector< int64_t >( C + 1 , 0 ) );
   for( size_t i = 0 ; i < R ; ++i )
    for( size_t j = 0 ; j < C ; ++j )
-    P[ i + 1 ][ j + 1 ] = A[ i ][ j ] + P[ i ][ j + 1 ] + P[ i + 1 ][ j ] -
-                          P[ i ][ j ];
+    P[ i + 1 ][ j + 1 ] =
+      A[ i ][ j ] + P[ i ][ j + 1 ] + P[ i + 1 ][ j ] - P[ i ][ j ];
   int64_t best = 0;
   for( size_t a = 0 ; a < R ; ++a )
    for( size_t b = a + 1 ; b <= R ; ++b )
     for( size_t c = 0 ; c < C ; ++c )
      for( size_t d = c + 1 ; d <= C ; ++d )
-      best = std::max( best , P[ b ][ d ] - P[ a ][ d ] - P[ b ][ c ] +
-                              P[ a ][ c ] );
+      best = std::max( best ,
+		       P[ b ][ d ] - P[ a ][ d ] - P[ b ][ c ] + P[ a ][ c ] );
   CHECK( sottomat( A ) == best );
   }
  CHECK( sottomat( { { -1 , -2 } , { -3 , -4 } } ) == 0 );
  CHECK( sottomat( { { 5 } } ) == 5 );
  CHECK( sottomat( std::vector< std::vector< int64_t > >(
-         100 , std::vector< int64_t >( 100 , 3 ) ) ) == 30000 );
+	  100 , std::vector< int64_t >( 100 , 3 ) ) ) == 30000 );
  // no row, rows of no column, one row and one column (the 1D problem),
  // the best rectangle in a corner, a ragged matrix refused
  using M64 = std::vector< std::vector< int64_t > >;
@@ -2182,7 +2230,8 @@ ADS_TEST( "asdlab-2026-lab01-sottomat" )
  CHECK( sottomat( M64( { { 4 , -3 , 4 } } ) ) == 5 );
  CHECK( sottomat( M64( { { 4 } , { -5 } , { 4 } } ) ) == 4 );
  CHECK( sottomat( M64( { { -1 , -1 , -1 } , { -1 , 2 , 3 } ,
-                         { -1 , 3 , 4 } } ) ) == 12 );
+			 { -1 , 3 , 4 } } ) ) ==
+	12 );
  CHECK_THROWS( sottomat( M64( { { 1 , 2 } , { 3 } } ) ) , contract_violation );
  }
 
@@ -2208,7 +2257,7 @@ ADS_TEST( "asdlab-2026-lab02-sort" )
  sortLab( one );
  sortLab( eq );
  CHECK( E.empty() && ( one == std::vector< int >( { 4 } ) ) &&
-        ( eq == std::vector< int >( 50 , 7 ) ) );
+	( eq == std::vector< int >( 50 , 7 ) ) );
  for( auto & x : big )
   x = int( g() );
  auto sb = big;
@@ -2217,9 +2266,9 @@ ADS_TEST( "asdlab-2026-lab02-sort" )
  CHECK( big == sb );
  // two items, reversed, already sorted, the extremes of int
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
- std::vector< int > two = { 2 , 1 } , rev( 1000 ) , ext = { hi , 0 , lo , hi ,
-                                                            lo };
+	   hi = std::numeric_limits< int >::max();
+ std::vector< int > two = { 2 , 1 } , rev( 1000 ) ,
+   ext = { hi , 0 , lo , hi , lo };
  std::iota( rev.rbegin() , rev.rend() , -500 );
  auto srt = rev;
  std::sort( srt.begin() , srt.end() );
@@ -2254,7 +2303,7 @@ std::optional< std::pair< int , int > > intervalliBrute( const Intervals & I )
    cov = cov || ( ( 2 * a <= x ) && ( x <= 2 * b ) );
   if( ! cov && ( start < 0 ) )
    start = x;
-  if( cov && ( start >= 0 ) ) {                // the run [ start , x )
+  if( cov && ( start >= 0 ) ) {  // the run [ start , x )
    const std::pair< int , int > gap( ( start - 1 ) / 2 , x / 2 );
    if( ! best || ( gap.second - gap.first > best->second - best->first ) )
     best = gap;
@@ -2271,7 +2320,7 @@ ADS_TEST( "asdlab-2026-lab02-intervalli" )
 {
  using P = std::vector< std::pair< int , int > >;
  CHECK( intervalli( P( { { 1 , 3 } , { 7 , 9 } , { 4 , 5 } } ) ) ==
-        std::pair( 5 , 7 ) );
+	std::pair( 5 , 7 ) );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 1000 ; ++it ) {
   P I( 1 + g() % 6 );
@@ -2284,19 +2333,19 @@ ADS_TEST( "asdlab-2026-lab02-intervalli" )
  CHECK( ! intervalli( P( { { 2 , 2 } } ) ) );
  CHECK( ! intervalli( P( { { 1 , 3 } , { 3 , 5 } } ) ) );  // touching
  CHECK( intervalli( P( { { 0 , 0 } , { 1 , 1 } , { 3 , 3 } } ) ) ==
-        std::pair( 1 , 3 ) );
+	std::pair( 1 , 3 ) );
  CHECK( intervalli( P( { { 0 , 1 } , { 1000000000 , 1000000000 } } ) ) ==
-        std::pair( 1 , 1000000000 ) );
+	std::pair( 1 , 1000000000 ) );
  CHECK_THROWS( intervalli( P() ) , contract_violation );
  // nested intervals, negative ends, a tie between two gaps (the first),
  // intervals given in any order, and one reversed refused
  CHECK( ! intervalli( P( { { 0 , 10 } , { 2 , 3 } , { 4 , 9 } } ) ) );
- CHECK( intervalli( P( { { -9 , -7 } , { -3 , -1 } } ) ) ==
-        std::pair( -7 , -3 ) );
+ CHECK( intervalli( P( { { -9 , -7 } , { -3 , -1 } } ) ) == std::pair( -7 ,
+								       -3 ) );
  CHECK( intervalli( P( { { 0 , 1 } , { 3 , 4 } , { 6 , 7 } } ) ) ==
-        std::pair( 1 , 3 ) );
+	std::pair( 1 , 3 ) );
  CHECK( intervalli( P( { { 6 , 7 } , { 0 , 1 } , { 3 , 4 } } ) ) ==
-        std::pair( 1 , 3 ) );
+	std::pair( 1 , 3 ) );
  CHECK_THROWS( intervalli( P( { { 3 , 1 } } ) ) , contract_violation );
  }
 
@@ -2308,7 +2357,7 @@ ADS_TEST( "asdlab-2026-lab02-intervalli" )
 ADS_TEST( "asdlab-2026-lab02-ceil" )
 {
  CHECK( ceilLab( { 1 , 5 , 9 } , { 2 , 2 , 5 , 6 } ) ==
-        std::vector< int >( { 2 , 6 , -1 } ) );
+	std::vector< int >( { 2 , 6 , -1 } ) );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 500 ; ++it ) {
   std::vector< int > A( g() % 20 ) , V;
@@ -2335,11 +2384,11 @@ ADS_TEST( "asdlab-2026-lab02-ceil" )
  CHECK( ceilLab( { 3 } , {} ) == std::vector< int >( { -1 } ) );
  CHECK( ceilLab( {} , { 1 } ).empty() );
  CHECK( ceilLab( { 4 , 3 } , std::vector< int >( 9 , 4 ) ) ==
-        std::vector< int >( { -1 , 4 } ) );
+	std::vector< int >( { -1 , 4 } ) );
  // v below all, equal to the largest, between two equal runs; the -1 of
  // an item and of none look the same (see ceilLab()); A not sorted refused
  CHECK( ceilLab( { -100 , 9 , 5 } , { 1 , 5 , 5 , 7 , 9 } ) ==
-        std::vector< int >( { 1 , -1 , 7 } ) );
+	std::vector< int >( { 1 , -1 , 7 } ) );
  CHECK( ceilLab( { -2 , -1 } , { -1 } ) == std::vector< int >( { -1 , -1 } ) );
  CHECK_THROWS( ceilLab( { 1 } , { 2 , 1 } ) , contract_violation );
  }
@@ -2376,9 +2425,9 @@ std::pair< int , int64_t > sortpesatoBrute( const std::vector< int > & A )
    for( int i = 0 ; i < n ; ++i )
     for( int j = i + 1 ; j < n ; ++j ) {
      const uint64_t a = ( c >> ( 4 * i ) ) & 15u ,
-                    b = ( c >> ( 4 * j ) ) & 15u;
-     const uint64_t q = c ^ ( ( a ^ b ) << ( 4 * i ) ) ^
-                        ( ( a ^ b ) << ( 4 * j ) );
+     b = ( c >> ( 4 * j ) ) & 15u;
+     const uint64_t q =
+       c ^ ( ( a ^ b ) << ( 4 * i ) ) ^ ( ( a ^ b ) << ( 4 * j ) );
      const int64_t nd = d + ( weighted ? int64_t( a + b ) : 1 );
      const auto it = D.find( q );
      if( ( it == D.end() ) || ( nd < it->second ) ) {
@@ -2413,25 +2462,25 @@ ADS_TEST( "asdlab-2026-lab02-sortpesato" )
   CHECK( sortpesato( p ) == sortpesatoBrute( p ) );
   }
  const std::vector< int > p8 = { 1 , 2 , 4 , 5 , 6 , 7 , 8 , 3 };
- CHECK( sortpesato( p8 ) == sortpesatoBrute( p8 ) );   // through the item 1
+ CHECK( sortpesato( p8 ) == sortpesatoBrute( p8 ) );  // through the item 1
  CHECK( sortpesato( p8 ) == std::pair( 5 , int64_t( 33 + 3 + 7 ) ) );
  CHECK( sortpesato( {} ) == std::pair( 0 , int64_t( 0 ) ) );
  CHECK( sortpesato( { 2 , 1 } ) == std::pair( 1 , int64_t( 3 ) ) );
  // a cycle of large items, cheaper through the item 1
  CHECK( sortpesato( { 1 , 3 , 4 , 5 , 6 , 7 , 8 , 9 , 10 , 2 } ).second ==
-        std::min< int64_t >( 54 + 7 * 2 , 54 + 2 + 10 ) );
+	std::min< int64_t >( 54 + 7 * 2 , 54 + 2 + 10 ) );
  std::vector< int > big( 100000 );
  std::iota( big.begin() , big.end() , 1 );
  std::rotate( big.begin() , big.begin() + 1 , big.end() );
- CHECK( sortpesato( big ) == std::pair( 99999 , int64_t( 5000050000LL ) +
-                                        99998 ) );
+ CHECK( sortpesato( big ) ==
+	std::pair( 99999 , int64_t( 5000050000LL ) + 99998 ) );
  CHECK_THROWS( sortpesato( { 1 , 1 } ) , contract_violation );
  // one item, sorted already, the reversal (n / 2 swaps of two), and items
  // that are not 1 .. n refused
  CHECK( sortpesato( { 1 } ) == std::pair( 0 , int64_t( 0 ) ) );
  CHECK( sortpesato( { 1 , 2 , 3 , 4 } ) == std::pair( 0 , int64_t( 0 ) ) );
  CHECK( sortpesato( { 4 , 3 , 2 , 1 } ) ==
-        std::pair( 2 , int64_t( 4 + 1 + 3 + 2 ) ) );
+	std::pair( 2 , int64_t( 4 + 1 + 3 + 2 ) ) );
  CHECK_THROWS( sortpesato( { 0 , 1 } ) , contract_violation );
  CHECK_THROWS( sortpesato( { 2 , 3 } ) , contract_violation );
  }
@@ -2488,28 +2537,28 @@ ADS_TEST( "asdlab-2026-lab03-visita-albero" )
    int j;
    do
     j = int( g() % unsigned( i ) );
-   while( ( it % 3 == 0 ) && ( kids[ j ] == 2 ) );   // binary trees
+   while( ( it % 3 == 0 ) && ( kids[ j ] == 2 ) );  // binary trees
    ++kids[ j ];
    P[ p[ i ] ] = p[ j ];
    }
   const auto A = visitaAlbero( P , p[ 0 ] ) ,
-             B = visitaAlberoBrute( P , p[ 0 ] );
+    B = visitaAlberoBrute( P , p[ 0 ] );
   CHECK( ( A.pre == B.pre ) && ( A.in == B.in ) && ( A.post == B.post ) );
   }
  const auto one = visitaAlbero( { -1 } , 0 );
  CHECK( one.pre == one.in && one.in == one.post && one.post.size() == 1 );
- std::vector< int > chain( 2000 );             // a path of 2000 nodes
+ std::vector< int > chain( 2000 );  // a path of 2000 nodes
  std::iota( chain.begin() , chain.end() , -1 );
  const auto C = visitaAlbero( chain , 0 );
  CHECK( ( C.pre.front() == 0 ) && ( C.post.front() == 1999 ) &&
-        ( C.in.front() == 1999 ) );
+	( C.in.front() == 1999 ) );
  // a root that is not node 0, a star (the root after its first child in
  // order), and the contracts: no root, a root with a parent, a parent out
  // of the nodes
  const auto S = visitaAlbero( { 2 , 2 , -1 , 2 } , 2 );
  CHECK( ( S.pre == std::vector< int >( { 2 , 0 , 1 , 3 } ) ) &&
-        ( S.in == std::vector< int >( { 0 , 2 , 1 , 3 } ) ) &&
-        ( S.post == std::vector< int >( { 0 , 1 , 3 , 2 } ) ) );
+	( S.in == std::vector< int >( { 0 , 2 , 1 , 3 } ) ) &&
+	( S.post == std::vector< int >( { 0 , 1 , 3 , 2 } ) ) );
  CHECK_THROWS( visitaAlbero( {} , 0 ) , contract_violation );
  CHECK_THROWS( visitaAlbero( { -1 , 0 } , 1 ) , contract_violation );
  CHECK_THROWS( visitaAlbero( { -1 , 5 } , 0 ) , contract_violation );
@@ -2523,9 +2572,10 @@ ADS_TEST( "asdlab-2026-lab03-visita-albero" )
 ADS_TEST( "asdlab-2026-lab03-visita-grafo" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 4 , 3 } , { 4 , 5 } ,
-                   { 3 , 2 } , { 2 , 4 } , { 3 , 0 } };
- const Arcs g2 = { { 0 , 2 } , { 0 , 4 } , { 1 , 4 } , { 3 , 2 } ,
-                   { 2 , 4 } , { 4 , 3 } };
+		   { 3 , 2 } , { 2 , 4 } , { 3 , 0 } };
+ const Arcs g2 = {
+  { 0 , 2 } , { 0 , 4 } , { 1 , 4 } , { 3 , 2 } , { 2 , 4 } , { 4 , 3 }
+  };
  CHECK( visitaGrafo( 6 , g1 , 0 ) == 6 && visitaGrafo( 6 , g1 , 1 ) == 1 );
  CHECK( visitaGrafo( 5 , g2 , 0 ) == 4 && visitaGrafo( 5 , g2 , 1 ) == 4 );
  std::mt19937 g( 1 );
@@ -2535,7 +2585,7 @@ ADS_TEST( "asdlab-2026-lab03-visita-grafo" )
   const auto R = closure( n , A );
   const int s = int( g() % unsigned( n ) );
   CHECK( visitaGrafo( n , A , s ) ==
-         int( std::count( R[ s ].begin() , R[ s ].end() , 1 ) ) );
+	 int( std::count( R[ s ].begin() , R[ s ].end() , 1 ) ) );
   }
  CHECK( visitaGrafo( 1 , {} , 0 ) == 1 );
  Arcs P;
@@ -2580,7 +2630,7 @@ int diametroBrute( int n , const Arcs & E )
 ADS_TEST( "asdlab-2026-lab03-diametro" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 4 , 3 } , { 4 , 5 } ,
-                   { 3 , 2 } , { 2 , 4 } , { 3 , 0 } };
+		   { 3 , 2 } , { 2 , 4 } , { 3 , 0 } };
  CHECK( diametro( 6 , g1 ) == 4 );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
@@ -2595,10 +2645,14 @@ ADS_TEST( "asdlab-2026-lab03-diametro" )
  CHECK( diametro( 1500 , P ) == 1499 );
  // two components (the largest of their diameters), a cycle, parallel
  // edges, and the contracts
- CHECK( diametro( 7 , { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 5 } } ) ==
-        3 );
- CHECK( diametro( 6 , { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 4 } ,
-                        { 4 , 5 } , { 5 , 0 } } ) == 3 );
+ CHECK( diametro( 7 ,
+		  { { 0 , 1 } , { 2 , 3 } , { 3 , 4 } , { 4 , 5 } } ) == 3 );
+ CHECK(
+   diametro(
+     6 ,
+     { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } , { 3 , 4 } , { 4 , 5 } ,
+       { 5 , 0 } } ) ==
+   3 );
  CHECK( diametro( 2 , { { 0 , 1 } , { 1 , 0 } , { 0 , 1 } } ) == 1 );
  CHECK_THROWS( diametro( 0 , {} ) , contract_violation );
  CHECK_THROWS( diametro( 2 , { { 0 , 2 } } ) , contract_violation );
@@ -2608,8 +2662,8 @@ ADS_TEST( "asdlab-2026-lab03-diametro" )
 
 // a Red-Black tree of its own, with the insertion of Cormen, Leiserson,
 // Rivest and Stein, on vectors; its preorder of ( key , red )
-std::vector< std::pair< int , bool > > redBlackOther(
-                                                const std::vector< int > & K )
+std::vector< std::pair< int , bool > >
+redBlackOther( const std::vector< int > & K )
 {
  std::vector< int > key , l , r , p;
  std::vector< char > red;
@@ -2688,27 +2742,27 @@ std::vector< std::pair< int , bool > > redBlackOther(
 // the preorder of ( key , red ) of the tree of the library, and whether it
 // keeps the order of the keys, a black root, no red node with a red child
 // and one number of black nodes on every path to a leaf
-std::pair< std::vector< std::pair< int , bool > > , bool > redBlackCheck(
-                                          const RedBlackTree< int , int > & T )
+std::pair< std::vector< std::pair< int , bool > > , bool >
+redBlackCheck( const RedBlackTree< int , int > & T )
 {
  using Link = RedBlackTree< int , int >::Link;
  std::vector< std::pair< int , bool > > out;
  bool ok = T.isNil( T.root() ) || ( T.root()->color == Color::BLACK );
  std::function< int( const Link * , int64_t , int64_t ) > rec =
-  [ & ]( const Link * u , int64_t lo , int64_t hi ) {
-  if( T.isNil( u ) )
-   return( 1 );
-  const int k = T.key( u );
-  const bool red = u->color == Color::RED;
-  out.emplace_back( k , red );
-  ok = ok && ( k > lo ) && ( k < hi );
-  if( red )
-   for( const Link * c : { u->left , u->right } )
-    ok = ok && ( T.isNil( c ) || ( c->color == Color::BLACK ) );
-  const int a = rec( u->left , lo , k ) , b = rec( u->right , k , hi );
-  ok = ok && ( a == b );
-  return( a + ( red ? 0 : 1 ) );
-  };
+   [ & ]( const Link * u , int64_t lo , int64_t hi ) {
+    if( T.isNil( u ) )
+     return( 1 );
+    const int k = T.key( u );
+    const bool red = u->color == Color::RED;
+    out.emplace_back( k , red );
+    ok = ok && ( k > lo ) && ( k < hi );
+    if( red )
+     for( const Link * c : { u->left , u->right } )
+      ok = ok && ( T.isNil( c ) || ( c->color == Color::BLACK ) );
+    const int a = rec( u->left , lo , k ) , b = rec( u->right , k , hi );
+    ok = ok && ( a == b );
+    return( a + ( red ? 0 : 1 ) );
+    };
  rec( T.root() , std::numeric_limits< int64_t >::min() ,
       std::numeric_limits< int64_t >::max() );
  return( std::pair( out , ok ) );
@@ -2737,8 +2791,8 @@ ADS_TEST( "asdlab-2026-lab04-red-black" )
  const auto [ e , eok ] = redBlackCheck( redBlack( {} ) );
  CHECK( e.empty() && eok );
  const auto [ o , ook ] = redBlackCheck( redBlack( { 5 } ) );
- CHECK( ook && ( o == std::vector< std::pair< int , bool > >( { { 5 ,
-                                                               false } } ) ) );
+ CHECK( ook &&
+	( o == std::vector< std::pair< int , bool > >( { { 5 , false } } ) ) );
  std::vector< int > big( 3000 );
  std::iota( big.begin() , big.end() , 1 );
  const auto [ b , bok ] = redBlackCheck( redBlack( big ) );
@@ -2746,15 +2800,15 @@ ADS_TEST( "asdlab-2026-lab04-red-black" )
  // two and three keys in order (a red child, then a rotation), a key
  // inserted again (one node, its value replaced), the extremes of int
  const auto [ t2 , ok2 ] = redBlackCheck( redBlack( { 1 , 2 } ) );
- CHECK( ok2 && ( t2 == std::vector< std::pair< int , bool > >( {
-         { 1 , false } , { 2 , true } } ) ) );
+ CHECK( ok2 && ( t2 == std::vector< std::pair< int , bool > >(
+			 { { 1 , false } , { 2 , true } } ) ) );
  const auto [ t3 , ok3 ] = redBlackCheck( redBlack( { 1 , 2 , 3 } ) );
- CHECK( ok3 && ( t3 == std::vector< std::pair< int , bool > >( {
-         { 2 , false } , { 1 , true } , { 3 , true } } ) ) );
+ CHECK( ok3 && ( t3 == std::vector< std::pair< int , bool > >(
+			 { { 2 , false } , { 1 , true } , { 3 , true } } ) ) );
  const auto [ d , dok ] = redBlackCheck( redBlack( { 5 , 3 , 5 , 3 , 5 } ) );
  CHECK( dok && ( d.size() == 2 ) );
  const int lo = std::numeric_limits< int >::min() ,
-           hi = std::numeric_limits< int >::max();
+	   hi = std::numeric_limits< int >::max();
  const auto [ x , xok ] = redBlackCheck( redBlack( { hi , lo , 0 } ) );
  CHECK( xok && ( x == redBlackOther( { hi , lo , 0 } ) ) );
  }
@@ -2792,7 +2846,7 @@ std::pair< bool , std::vector< int > > kahn( int n , const Arcs & A )
 ADS_TEST( "asdlab-2026-lab04-ciclo" )
 {
  const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 4 , 3 } , { 4 , 5 } ,
-                   { 3 , 2 } , { 2 , 4 } , { 3 , 0 } };
+		   { 3 , 2 } , { 2 , 4 } , { 3 , 0 } };
  CHECK( ciclo( 6 , g1 ) );
  std::mt19937 g( 1 );
  int yes = 0;
@@ -2821,7 +2875,7 @@ ADS_TEST( "asdlab-2026-lab04-ciclo" )
   }
  CHECK( ( yes > 50 ) && ( yes < 450 ) );
  CHECK( ! ciclo( 1 , {} ) && ciclo( 2 , { { 0 , 1 } , { 1 , 0 } } ) );
- Arcs R;                                       // one cycle of 2000
+ Arcs R;  // one cycle of 2000
  for( int u = 0 ; u < 2000 ; ++u )
   R.emplace_back( u , ( u + 1 ) % 2000 );
  CHECK( ciclo( 2000 , R ) );
@@ -2869,8 +2923,9 @@ uint64_t numCamminiBrute( int n , const Arcs & A , int s , int t )
 // the nodes refused
 ADS_TEST( "asdlab-2026-lab04-numcammini" )
 {
- const Arcs g1 = { { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } ,
-                   { 3 , 4 } , { 0 , 4 } };
+ const Arcs g1 = {
+  { 0 , 1 } , { 0 , 2 } , { 1 , 3 } , { 2 , 3 } , { 3 , 4 } , { 0 , 4 }
+  };
  CHECK( numCammini( 5 , g1 , 0 , 3 ) == 2 );
  CHECK( numCammini( 5 , g1 , 0 , 4 ) == 1 );
  std::mt19937 g( 1 );
@@ -2882,7 +2937,7 @@ ADS_TEST( "asdlab-2026-lab04-numcammini" )
   }
  CHECK( numCammini( 3 , { { 0 , 1 } } , 0 , 2 ) == 0 );
  CHECK( numCammini( 1 , {} , 0 , 0 ) == 1 );
- const int k = 30;                              // a k x k lattice
+ const int k = 30;  // a k x k lattice
  Arcs L;
  for( int i = 0 ; i < k ; ++i )
   for( int j = 0 ; j < k ; ++j ) {
@@ -2891,22 +2946,19 @@ ADS_TEST( "asdlab-2026-lab04-numcammini" )
    if( j + 1 < k )
     L.emplace_back( i * k + j , i * k + j + 1 );
    }
- uint64_t binom = 1;                           // C( 58 , 29 )
+ uint64_t binom = 1;  // C( 58 , 29 )
  for( int i = 1 ; i <= k - 1 ; ++i )
   binom = binom * uint64_t( k - 1 + i ) / uint64_t( i );
  CHECK( numCammini( k * k , L , 0 , k * k - 1 ) == binom );
  // s = t on a cycle (the empty path only), parallel arcs (two paths), a
  // loop (none), a longer path ignored, and the contracts
- CHECK( numCammini( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , 1 , 1 ) ==
-        1 );
+ CHECK( numCammini( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } , 1 , 1 ) == 1 );
  CHECK( numCammini( 2 , { { 0 , 1 } , { 0 , 1 } } , 0 , 1 ) == 2 );
  CHECK( numCammini( 2 , { { 0 , 0 } , { 0 , 1 } } , 0 , 1 ) == 1 );
- CHECK( numCammini( 3 , { { 0 , 2 } , { 0 , 1 } , { 1 , 2 } } , 0 , 2 ) ==
-        1 );
+ CHECK( numCammini( 3 , { { 0 , 2 } , { 0 , 1 } , { 1 , 2 } } , 0 , 2 ) == 1 );
  CHECK_THROWS( numCammini( 2 , {} , 0 , 2 ) , contract_violation );
  CHECK_THROWS( numCammini( 2 , {} , -1 , 0 ) , contract_violation );
- CHECK_THROWS( numCammini( 2 , { { 2 , 0 } } , 0 , 1 ) ,
-               contract_violation );
+ CHECK_THROWS( numCammini( 2 , { { 2 , 0 } } , 0 , 1 ) , contract_violation );
  }
 
 /*--------------- 2026-11-26, Componente fortemente connessa ---------------*/
@@ -2916,8 +2968,9 @@ ADS_TEST( "asdlab-2026-lab04-numcammini" )
 // way, a loop; no node, an arc out of the nodes refused
 ADS_TEST( "asdlab-2026-lab05-componente" )
 {
- const Arcs g2 = { { 0 , 2 } , { 0 , 4 } , { 1 , 4 } , { 3 , 2 } ,
-                   { 2 , 4 } , { 4 , 3 } };
+ const Arcs g2 = {
+  { 0 , 2 } , { 0 , 4 } , { 1 , 4 } , { 3 , 2 } , { 2 , 4 } , { 4 , 3 }
+  };
  CHECK( componente( 5 , g2 ) == 3 );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
@@ -2940,8 +2993,12 @@ ADS_TEST( "asdlab-2026-lab05-componente" )
  CHECK( componente( 3000 , R ) == 3000 );
  // two components of 2 and 3 joined one way, a loop alone, and the
  // contracts
- CHECK( componente( 5 , { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } , { 3 , 4 } ,
-                          { 4 , 2 } , { 1 , 2 } } ) == 3 );
+ CHECK(
+   componente(
+     5 ,
+     { { 0 , 1 } , { 1 , 0 } , { 2 , 3 } , { 3 , 4 } , { 4 , 2 } ,
+       { 1 , 2 } } ) ==
+   3 );
  CHECK( componente( 2 , { { 0 , 0 } } ) == 1 );
  CHECK_THROWS( componente( 0 , {} ) , contract_violation );
  CHECK_THROWS( componente( 2 , { { 0 , 5 } } ) , contract_violation );
@@ -2965,24 +3022,25 @@ ADS_TEST( "asdlab-2026-lab05-toporder" )
    if( ( S[ i ] >= 0 ) && ( S[ i ] < n ) && ( pos[ S[ i ] ] < 0 ) )
     pos[ S[ i ] ] = i;
   CHECK( ( int( S.size() ) == n ) &&
-         std::none_of( pos.begin() , pos.end() ,
-                       []( int x ) { return( x < 0 ); } ) );
+	 std::none_of( pos.begin() , pos.end() ,
+		       []( int x ) { return( x < 0 ); } ) );
   for( const auto & [ u , v ] : A )
    CHECK( pos[ u ] < pos[ v ] );
   }
  CHECK( topOrder( 1 , {} ) == std::vector< int >( { 0 } ) );
  CHECK( topOrder( 3 , { { 2 , 1 } , { 1 , 0 } } ) ==
-        std::vector< int >( { 2 , 1 , 0 } ) );
+	std::vector< int >( { 2 , 1 , 0 } ) );
  // no arc (any permutation), parallel arcs, a graph with a cycle (still a
  // permutation, see topOrder()), an arc out of the nodes refused
  auto perm = []( std::vector< int > S , int n ) {
   std::sort( S.begin() , S.end() );
   std::vector< int > I( n );
   std::iota( I.begin() , I.end() , 0 );
-  return( S == I ); };
+  return( S == I );
+  };
  CHECK( perm( topOrder( 5 , {} ) , 5 ) );
  CHECK( topOrder( 2 , { { 1 , 0 } , { 1 , 0 } } ) ==
-        std::vector< int >( { 1 , 0 } ) );
+	std::vector< int >( { 1 , 0 } ) );
  CHECK( perm( topOrder( 3 , { { 0 , 1 } , { 1 , 2 } , { 2 , 0 } } ) , 3 ) );
  CHECK_THROWS( topOrder( 2 , { { 0 , 2 } } ) , contract_violation );
  }
@@ -3003,8 +3061,10 @@ int longestFrom( int u , const std::vector< std::vector< int > > & adj )
 // and an arc out of the nodes refused
 ADS_TEST( "asdlab-2026-lab05-camminolungo" )
 {
- CHECK( camminoLungo( 5 , { { 0 , 1 } , { 1 , 2 } , { 0 , 3 } , { 3 , 4 } ,
-                            { 4 , 2 } } ) == 3 );
+ CHECK( camminoLungo(
+	  5 ,
+	  { { 0 , 1 } , { 1 , 2 } , { 0 , 3 } , { 3 , 4 } ,
+	    { 4 , 2 } } ) == 3 );
  std::mt19937 g( 1 );
  for( int it = 0 ; it < 400 ; ++it ) {
   const int n = 1 + int( g() % 12 ) , m = int( g() % 30 );
@@ -3023,13 +3083,14 @@ ADS_TEST( "asdlab-2026-lab05-camminolungo" )
   P.emplace_back( u , u + 1 );
  CHECK( camminoLungo( 3000 , P ) == 2999 );
  CHECK_THROWS( camminoLungo( 2 , { { 0 , 1 } , { 1 , 0 } } ) ,
-               contract_violation );
+	       contract_violation );
  // no node, parallel arcs (one arc), a shortcut beside a longer path, an
  // arc out of the nodes refused
  CHECK( camminoLungo( 0 , {} ) == 0 );
  CHECK( camminoLungo( 2 , { { 0 , 1 } , { 0 , 1 } } ) == 1 );
- CHECK( camminoLungo( 4 , { { 0 , 3 } , { 0 , 1 } , { 1 , 2 } ,
-                            { 2 , 3 } } ) == 3 );
+ CHECK( camminoLungo( 4 ,
+		      { { 0 , 3 } , { 0 , 1 } , { 1 , 2 } ,
+			{ 2 , 3 } } ) == 3 );
  CHECK_THROWS( camminoLungo( 2 , { { 0 , 2 } } ) , contract_violation );
  }
 

@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the multiplicity of each edge of g, ( u , v ) with u < v if unoriented
 template< Graph G >
@@ -38,7 +40,7 @@ std::map< std::pair< int , int > , int > edgeCounts( const G & g )
 /// using an edge more times than the graph has it
 template< Graph G >
 bool disjointPaths( const G & g , int s , int t , long long k ,
-                    const std::vector< std::vector< int > > & P )
+		    const std::vector< std::vector< int > > & P )
 {
  if( static_cast< long long >( P.size() ) > k )
   return( false );
@@ -65,20 +67,20 @@ bool disjointPaths( const G & g , int s , int t , long long k ,
 /// path left
 template< class T >
 bool maximumFlow( const std::vector< std::vector< T > > & c ,
-                  const std::vector< std::vector< T > > & f , int s , int t )
+		  const std::vector< std::vector< T > > & f , int s , int t )
 {
  const int n = int( c.size() );
  for( int x = 0 ; x < n ; ++x ) {
   T net = T( 0 );
   for( int y = 0 ; y < n ; ++y ) {
-   if( ( f[ x ][ y ] != - f[ y ][ x ] ) || ( f[ x ][ y ] > c[ x ][ y ] ) )
+   if( ( f[ x ][ y ] != -f[ y ][ x ] ) || ( f[ x ][ y ] > c[ x ][ y ] ) )
     return( false );
    net += f[ x ][ y ];
    }
   if( ( x != s ) && ( x != t ) && ( net != T( 0 ) ) )
    return( false );
   }
- std::vector< bool > seen( n , false );       // the residual network from s
+ std::vector< bool > seen( n , false );  // the residual network from s
  std::vector< int > Q = { s };
  seen[ s ] = true;
  for( std::size_t h = 0 ; h < Q.size() ; ++h )
@@ -120,7 +122,7 @@ bool cancelFlowPath( std::vector< std::vector< T > > & f , int x , int y )
 /// visit in breadth, and its least residual capacity added along it
 template< class T >
 void augmentOnce( const std::vector< std::vector< T > > & c ,
-                  std::vector< std::vector< T > > & f , int s , int t )
+		  std::vector< std::vector< T > > & f , int s , int t )
 {
  const int n = int( c.size() );
  std::vector< int > p( n , -1 ) , Q = { s };
@@ -149,13 +151,17 @@ void augmentOnce( const std::vector< std::vector< T > > & c ,
 /*--------------------------------------------------------------------------*/
 
 template< Graph G >
-std::vector< std::vector< int > > edgeDisjointPaths(
-                  const G & g , int s , int t , long long k )
+std::vector< std::vector< int > > edgeDisjointPaths( const G & g , int s ,
+						     int t ,
+						     long long k )
 {
  ADS_PRE( g.hasNode( s ) && g.hasNode( t ) && ( s != t ) && ( k >= 0 ) );
  const int n = g.bound();
- FlowNetwork N( n + 1 );                         // n, the new source
- struct Arc { int u , v , e; };
+ FlowNetwork N( n + 1 );  // n, the new source
+ struct Arc
+ {
+  int u , v , e;
+  };
  std::vector< Arc > A;
  long long out = 0;
  for( int u : g.V() )
@@ -165,13 +171,13 @@ std::vector< std::vector< int > > edgeDisjointPaths(
    } );
  N.addEdge( n , s , std::min( k , out ) );
  const long long F = N.maxFlow( n , t );
- std::vector< std::vector< int > > next( n );   // the edges of flow 1
+ std::vector< std::vector< int > > next( n );  // the edges of flow 1
  if( g.directed() ) {
   for( const auto & a : A )
    if( N.flow( a.e ) == 1 )
     next[ a.u ].push_back( a.v );
   }
- else {                                          // opposite flows cancel
+ else {  // opposite flows cancel
   std::map< std::pair< int , int > , long long > net;
   for( const auto & a : A )
    if( N.flow( a.e ) == 1 ) {
@@ -189,14 +195,14 @@ std::vector< std::vector< int > > edgeDisjointPaths(
     }
   }
  std::vector< std::vector< int > > P;
- std::vector< int > at( n , -1 );                // the place in the walk
+ std::vector< int > at( n , -1 );  // the place in the walk
  for( long long i = 0 ; i < F ; ++i ) {
   std::vector< int > p = { s };
   at[ s ] = 0;
   while( p.back() != t ) {
    const int x = p.back() , y = next[ x ].back();
    next[ x ].pop_back();
-   if( at[ y ] >= 0 ) {                          // a cycle, cut out
+   if( at[ y ] >= 0 ) {  // a cycle, cut out
     while( p.back() != y ) {
      at[ p.back() ] = -1;
      p.pop_back();
@@ -217,24 +223,27 @@ std::vector< std::vector< int > > edgeDisjointPaths(
 
 template< class T >
 CapacityDecrease decreaseCapacity( std::vector< std::vector< T > > & c ,
-                                   std::vector< std::vector< T > > & f ,
-                                   int s , int t , int u , int v )
+				   std::vector< std::vector< T > > & f ,
+				   int s ,
+				   int t , int u , int v )
 {
  const int n = int( c.size() );
  ADS_PRE( ( int( f.size() ) == n ) &&
-          std::all_of( c.begin() , c.end() , [ n ]( const auto & r ) {
-           return( int( r.size() ) == n ); } ) &&
-          std::all_of( f.begin() , f.end() , [ n ]( const auto & r ) {
-           return( int( r.size() ) == n ); } ) );
+	  std::all_of(
+	    c.begin() , c.end() ,
+	    [ n ]( const auto & r ) { return( int( r.size() ) == n ); } ) &&
+	  std::all_of( f.begin() , f.end() , [ n ]( const auto & r ) {
+	   return( int( r.size() ) == n );
+	   } ) );
  ADS_PRE( ( s >= 0 ) && ( s < n ) && ( t >= 0 ) && ( t < n ) && ( s != t ) &&
-          ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) &&
-          ( c[ u ][ v ] > T( 0 ) ) );
+	  ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) &&
+	  ( c[ u ][ v ] > T( 0 ) ) );
  ADS_AUDIT( detail::maximumFlow( c , f , s , t ) );
  const CapacityDecrease result = [ & ]( void ) {
   --c[ u ][ v ];
   if( f[ u ][ v ] <= c[ u ][ v ] )
    return( CapacityDecrease::SLACK );
-  --f[ u ][ v ];                 // an excess at u and a deficit at v
+  --f[ u ][ v ];  // an excess at u and a deficit at v
   ++f[ v ][ u ];
   if( detail::cancelFlowPath( f , v , u ) )
    return( CapacityDecrease::CYCLE );

@@ -51,7 +51,7 @@
 
 #ifndef __ADS_Selection
  #define __ADS_Selection
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,7 +71,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the item of rank \f$ k \f$, \f$ 1 \le k \le n \f$, of \f$ A \f$ (the
 /// selezione() of the book); with a generator the pivots are random,
@@ -146,7 +147,7 @@ T medianOfMedians( std::vector< T > & A , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Selection.h included */
+#endif /* Selection.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Selection.h --------------------------*/

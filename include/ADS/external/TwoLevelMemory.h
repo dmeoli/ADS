@@ -63,7 +63,7 @@
 
 #ifndef __ADS_TwoLevelMemory
  #define __ADS_TwoLevelMemory
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS TwoLevelMemory ---------------------------*/
@@ -89,11 +90,11 @@ namespace ADS {
 
 /// the parameters \f$ B \f$ and \f$ M \f$ of the model, the counters of the
 /// I/Os and the occupation of the internal memory
-class TwoLevelMemory {
+class TwoLevelMemory
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a memory of \f$ M \f$ items and blocks of \f$ B \f$ items
  /// \pre \f$ B \ge 1 \f$ and \f$ M \ge 2 B \f$
  TwoLevelMemory( std::size_t B , std::size_t M );
@@ -146,13 +147,12 @@ class TwoLevelMemory {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::size_t f_B;                ///< the items of a block
- std::size_t f_M;                ///< the items of the internal memory
- std::uint64_t f_reads = 0;    ///< the reads counted
- std::uint64_t f_writes = 0;   ///< the writes counted
- std::size_t f_used = 0;         ///< the items of memory in use
- std::size_t f_peak = 0;         ///< the largest `f_used`
+ std::size_t f_B;             ///< the items of a block
+ std::size_t f_M;             ///< the items of the internal memory
+ std::uint64_t f_reads = 0;   ///< the reads counted
+ std::uint64_t f_writes = 0;  ///< the writes counted
+ std::size_t f_used = 0;      ///< the items of memory in use
+ std::size_t f_peak = 0;      ///< the largest `f_used`
 
  };  // end( class TwoLevelMemory )
 
@@ -162,11 +162,11 @@ class TwoLevelMemory {
 
 /// \f$ k \f$ items of the internal memory, taken on construction and given
 /// back on destruction
-class MemoryLease {
+class MemoryLease
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the lease of \f$ k \f$ items of `mem`
  /// \pre `mem.used()` plus \f$ k \f$ is at most \f$ M \f$
  MemoryLease( TwoLevelMemory & mem , std::size_t k );
@@ -184,9 +184,8 @@ class MemoryLease {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- TwoLevelMemory * f_mem;   ///< the memory the items come from
- std::size_t f_k;          ///< the items taken
+ TwoLevelMemory * f_mem;  ///< the memory the items come from
+ std::size_t f_k;         ///< the items taken
 
  };  // end( class MemoryLease )
 
@@ -196,12 +195,12 @@ class MemoryLease {
 
 /// a file of items on the disk of the model, in blocks of \f$ B \f$ items
 template< class T >
-class DiskFile {
+class DiskFile
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;          ///< the type of the items
+ using value_type = T;           ///< the type of the items
  using size_type = std::size_t;  ///< the type of the sizes
 
  /// an empty file
@@ -251,7 +250,6 @@ class DiskFile {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  TwoLevelMemory * f_mem;    ///< the memory of the model
  std::vector< T > f_items;  ///< the items, in the order of the file
 
@@ -264,11 +262,11 @@ class DiskFile {
 /// reads a file through a buffer of one block, \f$ B \f$ items of the
 /// memory
 template< class T >
-class DiskReader {
+class DiskReader
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the reader of `f`, its buffer taken from the memory of `f`
  /// \pre \f$ B \f$ items of memory are free
  explicit DiskReader( const DiskFile< T > & f );
@@ -313,15 +311,14 @@ class DiskReader {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the block \f$ b \f$ into the buffer, one read unless it is there
  void load( std::size_t b );
 
- const DiskFile< T > * f_file;    ///< the file read
- MemoryLease f_lease;             ///< the memory of the buffer
- std::vector< T > f_buf;          ///< the block in memory
- std::size_t f_block;             ///< its number, or \f$ -1 \f$
- std::size_t f_pos = 0;           ///< the next item of the scan
+ const DiskFile< T > * f_file;  ///< the file read
+ MemoryLease f_lease;           ///< the memory of the buffer
+ std::vector< T > f_buf;        ///< the block in memory
+ std::size_t f_block;           ///< its number, or \f$ -1 \f$
+ std::size_t f_pos = 0;         ///< the next item of the scan
 
  };  // end( class DiskReader )
 
@@ -333,11 +330,11 @@ class DiskReader {
 /// memory; the last partial block is written by `close()` or by the
 /// destructor
 template< class T >
-class DiskWriter {
+class DiskWriter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the writer at the end of `f`, its buffer taken from the memory of `f`
  /// \pre \f$ B \f$ items of memory are free, and the size of `f` a multiple
  ///      of \f$ B \f$
@@ -360,11 +357,10 @@ class DiskWriter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- DiskFile< T > * f_file;   ///< the file written
- MemoryLease f_lease;      ///< the memory of the buffer
- std::vector< T > f_buf;   ///< the items not written yet
- bool f_closed = false;    ///< whether `close()` was called
+ DiskFile< T > * f_file;  ///< the file written
+ MemoryLease f_lease;     ///< the memory of the buffer
+ std::vector< T > f_buf;  ///< the items not written yet
+ bool f_closed = false;   ///< whether `close()` was called
 
  };  // end( class DiskWriter )
 
@@ -380,7 +376,7 @@ class DiskWriter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TwoLevelMemory.h included */
+#endif /* TwoLevelMemory.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File TwoLevelMemory.h ------------------------*/

@@ -14,12 +14,13 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered T >
  requires std::numeric_limits< T >::is_specialized
 auto RangeTree< T >::counted( std::vector< Point > & P )
- -> std::vector< std::pair< Point , std::size_t > >
+  -> std::vector< std::pair< Point , std::size_t > >
 {
  std::sort( P.begin() , P.end() );
  std::vector< std::pair< Point , std::size_t > > B;
@@ -67,15 +68,17 @@ void RangeTree< T >::remove( const T & x , const T & y )
  const auto c = f_map.lookup( p );
  if( ! c )
   return;
- if( *c == 1 ) f_map.remove( p );
- else f_map.insert( p , *c - 1 );
+ if( *c == 1 )
+  f_map.remove( p );
+ else
+  f_map.insert( p , *c - 1 );
  --f_n;
  }
 
 template< std::totally_ordered T >
  requires std::numeric_limits< T >::is_specialized
-std::size_t RangeTree< T >::count( const T & x1 , const T & x2 ,
-                                   const T & y1 , const T & y2 ) const
+std::size_t RangeTree< T >::count( const T & x1 , const T & x2 , const T & y1 ,
+				   const T & y2 ) const
 {
  if( ( x2 < x1 ) || ( y2 < y1 ) )
   return( 0 );
@@ -88,11 +91,11 @@ std::size_t RangeTree< T >::count( const T & x1 , const T & x2 ,
   hi = L::infinity();
   }
  std::size_t c = 0;
- f_map.augVisit( Point( x1 , lo ) , Point( x2 , hi ) ,
-                 [ & ]( const std::vector< T > & Y ) {
-  c += std::size_t( std::upper_bound( Y.begin() , Y.end() , y2 ) -
-                    std::lower_bound( Y.begin() , Y.end() , y1 ) );
-  } );
+ f_map.augVisit(
+   Point( x1 , lo ) , Point( x2 , hi ) , [ & ]( const std::vector< T > & Y ) {
+    c += std::size_t( std::upper_bound( Y.begin() , Y.end() , y2 ) -
+		      std::lower_bound( Y.begin() , Y.end() , y1 ) );
+    } );
  return( c );
  }
 

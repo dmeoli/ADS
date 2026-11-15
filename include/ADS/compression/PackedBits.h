@@ -38,7 +38,7 @@
 
 #ifndef __ADS_PackedBits
  #define __ADS_PackedBits
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -56,7 +56,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS PackedBitWriter --------------------------*/
@@ -64,11 +65,11 @@ namespace ADS {
 
 /// a growing sequence of bits, packed in bytes, the first bit in the most
 /// significant bit of the first byte
-class PackedBitWriter {
+class PackedBitWriter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// appends the bit \f$ b \f$
  void put( bool b );
 
@@ -90,9 +91,8 @@ class PackedBitWriter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  std::vector< std::uint8_t > f_bytes;
- std::size_t f_size = 0;               ///< the bits written
+ std::size_t f_size = 0;  ///< the bits written
 
  };  // end( class PackedBitWriter )
 
@@ -102,14 +102,14 @@ class PackedBitWriter {
 
 /// reads the bits of a sequence of bytes in the order of a
 /// `PackedBitWriter`, and zeros past its end
-class PackedBitReader {
+class PackedBitReader
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the reader of the bytes \f$ b \f$, which must outlive it
  explicit PackedBitReader( std::span< const std::uint8_t > b )
-  : f_bytes( b ) {}
+     : f_bytes( b ) { }
 
  /// the next bit, 0 past the end
  bool get( void );
@@ -128,9 +128,8 @@ class PackedBitReader {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  std::span< const std::uint8_t > f_bytes;
- std::size_t f_pos = 0;                ///< the bits read
+ std::size_t f_pos = 0;  ///< the bits read
 
  };  // end( class PackedBitReader )
 
@@ -146,7 +145,7 @@ class PackedBitReader {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PackedBits.h included */
+#endif /* PackedBits.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File PackedBits.h --------------------------*/

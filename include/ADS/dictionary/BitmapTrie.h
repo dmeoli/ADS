@@ -61,7 +61,7 @@
 
 #ifndef __ADS_BitmapTrie
  #define __ADS_BitmapTrie
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -85,7 +85,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS BitmapTrie ------------------------------*/
@@ -94,11 +95,11 @@ namespace ADS {
 /// a trie of strings with the bitmaps of the children, the list of the
 /// strings and the smallest and largest string below each node
 template< class V = std::monostate >
-class BitmapTrie {
+class BitmapTrie
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  using Key = std::string;   ///< the type of the keys
  using Item = std::string;  ///< the items of the SSet, the strings
  using Value = V;           ///< the type of the values
@@ -211,36 +212,37 @@ class BitmapTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  struct Node;
 
  /// a string in the list
- struct Cell {
-  std::string key;         ///< the string
-  V value{};               ///< its value
-  Cell * prev = nullptr;   ///< the previous string, or the dummy
-  Cell * next = nullptr;   ///< the next string, or the dummy
+ struct Cell
+ {
+  std::string key;        ///< the string
+  V value{};              ///< its value
+  Cell * prev = nullptr;  ///< the previous string, or the dummy
+  Cell * next = nullptr;  ///< the next string, or the dummy
   };
 
  /// a node: the bitmap and the array of its children, the string that
  /// ends there and the smallest and the largest string below it
- struct Node {
-  std::array< std::uint64_t , 4 > bits{};   ///< the bytes of the children
-  std::vector< Node * > kids;               ///< the children, by byte
-  Cell * term = nullptr;                    ///< the string ending here
-  Cell * min = nullptr;                     ///< the smallest string below
-  Cell * max = nullptr;                     ///< the largest string below
+ struct Node
+ {
+  std::array< std::uint64_t , 4 > bits{};  ///< the bytes of the children
+  std::vector< Node * > kids;             ///< the children, by byte
+  Cell * term = nullptr;                  ///< the string ending here
+  Cell * min = nullptr;                   ///< the smallest string below
+  Cell * max = nullptr;                   ///< the largest string below
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( string , value ) in increasing order,
  // along the list
 
  /// the bidirectional iterator along the list
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the category of the iterator
   using iterator_category = std::bidirectional_iterator_tag;
@@ -257,7 +259,7 @@ class BitmapTrie {
   const_iterator( void ) = default;
 
   /// on the item \f$ l \f$
-  explicit const_iterator( const Cell * l ) : f_l( l ) {}
+  explicit const_iterator( const Cell * l ) : f_l( l ) { }
 
   /// the pair of the item
   reference operator*( void ) const {
@@ -265,16 +267,30 @@ class BitmapTrie {
    }
 
   /// to the next string
-  const_iterator & operator++( void ) { f_l = f_l->next; return( *this ); }
+  const_iterator & operator++( void ) {
+   f_l = f_l->next;
+   return( *this );
+   }
 
   /// to the next string, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// to the previous string
-  const_iterator & operator--( void ) { f_l = f_l->prev; return( *this ); }
+  const_iterator & operator--( void ) {
+   f_l = f_l->prev;
+   return( *this );
+   }
 
   /// to the previous string, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same item
   bool operator==( const const_iterator & o ) const = default;
@@ -314,7 +330,6 @@ class BitmapTrie {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// whether \f$ u \f$ has a child of the byte \f$ c \f$
  [[nodiscard]] static bool has( const Node * u , unsigned c );
 
@@ -344,13 +359,13 @@ class BitmapTrie {
 
  /// whether the subtree of \f$ u \f$ is well formed: its smallest and
  /// largest string in `lo` and `hi`, its strings in `n`
- [[nodiscard]] bool subtree( const Node * u , const Cell * & lo ,
-                             const Cell * & hi , std::size_t & n ) const;
+ [[nodiscard]] bool subtree( const Node * u , const Cell *& lo ,
+			     const Cell *& hi , std::size_t & n ) const;
 
- Node * f_root;             ///< the root
- Cell * f_dummy;            ///< the head of the list
- std::size_t f_n = 0;       ///< the number of strings
- std::size_t f_nodes = 1;   ///< the number of nodes
+ Node * f_root;            ///< the root
+ Cell * f_dummy;           ///< the head of the list
+ std::size_t f_n = 0;      ///< the number of strings
+ std::size_t f_nodes = 1;  ///< the number of nodes
 
  };  // end( class BitmapTrie )
 
@@ -366,7 +381,7 @@ class BitmapTrie {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BitmapTrie.h included */
+#endif /* BitmapTrie.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BitmapTrie.h --------------------------*/

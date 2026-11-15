@@ -71,13 +71,15 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// a message of 48 bytes, as a change of a model
-struct Message {
+struct Message
+{
  std::uint64_t id;
  std::uint64_t data[ 5 ];
- explicit Message( std::uint64_t i ) : id( i ) , data{} {}
+ explicit Message( std::uint64_t i ) : id( i ) , data{} { }
  };
 
 /// the keys of the maps, and a random order of 0 .. n - 1
@@ -88,17 +90,20 @@ std::vector< std::uint32_t > order;
 template< class C , class M , class Insert >
 double passes( int r , std::size_t n , M && make , Insert && insert )
 {
- return( median( [](){ return( 0 ); } , [ & ]( int ) {
-  C c = make();
-  using It = typename C::iterator;
-  std::vector< It > at( n );
-  for( std::size_t i = 0 ; i < n ; ++i )
-   at[ i ] = insert( c , i );
-  for( std::size_t i = 0 ; i < n ; ++i )
-   c.erase( at[ order[ i ] ] );
-  for( std::size_t i = 0 ; i < n ; ++i )
-   insert( c , i );
-  sink = sink + c.size(); } , r , 4 * n ) );
+ return( median( []() { return( 0 ); } ,
+		  [ & ]( int ) {
+		   C c = make();
+		   using It = typename C::iterator;
+		   std::vector< It > at( n );
+		   for( std::size_t i = 0 ; i < n ; ++i )
+		    at[ i ] = insert( c , i );
+		   for( std::size_t i = 0 ; i < n ; ++i )
+		    c.erase( at[ order[ i ] ] );
+		   for( std::size_t i = 0 ; i < n ; ++i )
+		    insert( c , i );
+		   sink = sink + c.size();
+		   } ,
+		  r , 4 * n ) );
  }
 
 /// the cases on one thread for the allocator a of the given name
@@ -110,75 +115,89 @@ void cases( const std::string & who , std::size_t n , int r , const A & a )
  using T = std::allocator_traits< A >;
  using LA = typename T::template rebind_alloc< std::uint64_t >;
  using MA = typename T::template rebind_alloc<
-             std::pair< const std::uint64_t , std::uint64_t > >;
+   std::pair< const std::uint64_t , std::uint64_t > >;
  using L = std::list< std::uint64_t , LA >;
- using M = std::map< std::uint64_t , std::uint64_t ,
-                     std::less< std::uint64_t > , MA >;
+ using M =
+   std::map< std::uint64_t , std::uint64_t , std::less< std::uint64_t > , MA >;
  using U = std::unordered_map< std::uint64_t , std::uint64_t ,
-                               std::hash< std::uint64_t > ,
-                               std::equal_to< std::uint64_t > , MA >;
- print( "allocators" , "list" , n , who , passes< L >( r , n ,
-         [ & ](){ return( L( LA( a ) ) ); } ,
-         []( L & c , std::size_t i ) {
-          return( c.insert( c.end() , i ) ); } ) );
- print( "allocators" , "map" , n , who , passes< M >( r , n ,
-         [ & ](){ return( M( MA( a ) ) ); } ,
-         []( M & c , std::size_t i ) {
-          return( c.emplace( K[ i ] , i ).first ); } ) );
- print( "allocators" , "unordered_map" , n , who , passes< U >( r , n ,
-         [ & ](){ return( U( 0 , std::hash< std::uint64_t >() ,
-                             std::equal_to< std::uint64_t >() , MA( a ) ) );
-         } ,
-         []( U & c , std::size_t i ) {
-          return( c.emplace( K[ i ] , i ).first ); } ) );
+			       std::hash< std::uint64_t > ,
+			       std::equal_to< std::uint64_t > , MA >;
+ print(
+   "allocators" , "list" , n , who ,
+   passes< L >(
+     r , n , [ & ]() { return( L( LA( a ) ) ); } ,
+     []( L & c , std::size_t i ) { return( c.insert( c.end() , i ) ); } ) );
+ print( "allocators" , "map" , n , who ,
+	passes< M >(
+	  r , n , [ & ]() { return( M( MA( a ) ) ); } ,
+	  []( M & c , std::size_t i ) {
+	   return( c.emplace( K[ i ] , i ).first );
+	   } ) );
+ print( "allocators" , "unordered_map" , n , who ,
+	passes< U >(
+	  r , n ,
+	  [ & ]() {
+	   return( U( 0 , std::hash< std::uint64_t >() ,
+		       std::equal_to< std::uint64_t >() , MA( a ) ) );
+	   } ,
+	  []( U & c , std::size_t i ) {
+	   return( c.emplace( K[ i ] , i ).first );
+	   } ) );
  using SA = typename T::template rebind_alloc< Message >;
- print( "allocators" , "shared_ptr" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          std::vector< std::shared_ptr< Message > > S( n );
-          for( std::size_t i = 0 ; i < n ; ++i )
-           S[ i ] = std::allocate_shared< Message >( SA( a ) , i );
-          for( std::size_t i = 0 ; i < n ; ++i )
-           S[ order[ i ] ].reset();
-          for( std::size_t i = 0 ; i < n ; ++i )
-           S[ i ] = std::allocate_shared< Message >( SA( a ) , i );
-          std::uint64_t t = 0;
-          for( const auto & p : S )
-           t += p->id;
-          S.clear();
-          sink = sink + t; } , r , 4 * n ) );
+ print( "allocators" , "shared_ptr" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 std::vector< std::shared_ptr< Message > > S( n );
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  S[ i ] = std::allocate_shared< Message >( SA( a ) , i );
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  S[ order[ i ] ].reset();
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  S[ i ] = std::allocate_shared< Message >( SA( a ) , i );
+		 std::uint64_t t = 0;
+		 for( const auto & p : S )
+		  t += p->id;
+		 S.clear();
+		 sink = sink + t;
+		 } ,
+		r , 4 * n ) );
  }
 
 /// the case cross-thread for the allocator a of the given name
 template< class A >
 void crossThread( const std::string & who , std::size_t n , int r ,
-                  const A & a )
+		  const A & a )
 {
  if( skip( who ) )
   return;
- using SA = typename std::allocator_traits< A >::template rebind_alloc<
-             Message >;
+ using SA =
+   typename std::allocator_traits< A >::template rebind_alloc< Message >;
  print( "allocators" , "cross-thread" , n , who ,
-        median( [](){ return( 0 ); } , [ & ]( int ) {
-         ADS::SPSCQueue< std::shared_ptr< Message > > Q( 4096 );
-         std::thread consumer( [ & ]() {
-          std::uint64_t t = 0;
-          for( std::size_t i = 0 ; i < n ; ) {
-           std::shared_ptr< Message > m;
-           if( Q.tryPop( m ) ) {
-            t += m->id;
-            m.reset();                      // the free of another thread
-            ++i;
-            }
-           else
-            std::this_thread::yield();
-           }
-          sink = sink + t; } );
-         for( std::size_t i = 0 ; i < n ; ++i ) {
-          auto m = std::allocate_shared< Message >( SA( a ) , i );
-          while( ! Q.push( std::move( m ) ) )
-           std::this_thread::yield();
-          }
-         consumer.join(); } , r , n ) );
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 ADS::SPSCQueue< std::shared_ptr< Message > > Q( 4096 );
+		 std::thread consumer( [ & ]() {
+		  std::uint64_t t = 0;
+		  for( std::size_t i = 0 ; i < n ; ) {
+		   std::shared_ptr< Message > m;
+		   if( Q.tryPop( m ) ) {
+		    t += m->id;
+		    m.reset();  // the free of another thread
+		    ++i;
+		    }
+		   else
+		    std::this_thread::yield();
+		   }
+		  sink = sink + t;
+		  } );
+		 for( std::size_t i = 0 ; i < n ; ++i ) {
+		  auto m = std::allocate_shared< Message >( SA( a ) , i );
+		  while( ! Q.push( std::move( m ) ) )
+		   std::this_thread::yield();
+		  }
+		 consumer.join();
+		 } ,
+		r , n ) );
  }
 
 }  // end( namespace )
@@ -200,13 +219,13 @@ int main( int argc , char ** argv )
   {
    std::pmr::unsynchronized_pool_resource m;
    cases( "std::pmr::unsynchronized_pool_resource" , n , r ,
-          std::pmr::polymorphic_allocator< std::uint64_t >( &m ) );
+	  std::pmr::polymorphic_allocator< std::uint64_t >( &m ) );
    }
 #ifdef ADS_HAS_BOOST
   cases( "boost::fast_pool_allocator" , n , r ,
-         boost::fast_pool_allocator< std::uint64_t ,
-          boost::default_user_allocator_new_delete ,
-          boost::details::pool::null_mutex >() );
+	 boost::fast_pool_allocator< std::uint64_t ,
+				     boost::default_user_allocator_new_delete ,
+				     boost::details::pool::null_mutex >() );
 #endif
 #ifdef ADS_HAS_MIMALLOC
   cases( "mimalloc" , n , r , mi_stl_allocator< std::uint64_t >() );
@@ -214,13 +233,14 @@ int main( int argc , char ** argv )
   {
    ADS::PoolResource<> p;
    cases( "ADS::PoolAllocator" , n , r ,
-          ADS::PoolAllocator< std::uint64_t >( p ) );
+	  ADS::PoolAllocator< std::uint64_t >( p ) );
    }
   {
    ADS::ConcurrentPoolResource<> p;
-   cases( "ADS::PoolAllocator concurrent" , n , r ,
-          ADS::PoolAllocator< std::uint64_t ,
-                              ADS::ConcurrentPoolResource<> >( p ) );
+   cases(
+     "ADS::PoolAllocator concurrent" , n , r ,
+     ADS::PoolAllocator< std::uint64_t ,
+			 ADS::ConcurrentPoolResource<> >( p ) );
    }
 
   // the frees from another thread
@@ -230,20 +250,21 @@ int main( int argc , char ** argv )
   {
    std::pmr::synchronized_pool_resource m;
    crossThread( "std::pmr::synchronized_pool_resource" , n , r ,
-                std::pmr::polymorphic_allocator< std::uint64_t >( &m ) );
+		std::pmr::polymorphic_allocator< std::uint64_t >( &m ) );
    }
 #ifdef ADS_HAS_BOOST
   crossThread( "boost::fast_pool_allocator mutex" , n , r ,
-               boost::fast_pool_allocator< std::uint64_t >() );
+	       boost::fast_pool_allocator< std::uint64_t >() );
 #endif
 #ifdef ADS_HAS_MIMALLOC
   crossThread( "mimalloc" , n , r , mi_stl_allocator< std::uint64_t >() );
 #endif
   {
    ADS::ConcurrentPoolResource<> p;
-   crossThread( "ADS::PoolAllocator concurrent" , n , r ,
-                ADS::PoolAllocator< std::uint64_t ,
-                                    ADS::ConcurrentPoolResource<> >( p ) );
+   crossThread(
+     "ADS::PoolAllocator concurrent" , n , r ,
+     ADS::PoolAllocator< std::uint64_t ,
+			 ADS::ConcurrentPoolResource<> >( p ) );
    }
   }
  return( 0 );

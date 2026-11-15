@@ -239,21 +239,19 @@ def write_module( out_file , headers , names ):
         for n , header in names[ ns ].items():
             by_header[ header ].append( n )
         parts = ns.split( "::" )
-        out.append( "export namespace " + parts[ 0 ] + " {" )
-        for depth , p in enumerate( parts[ 1: ] , 1 ):
-            out.append( " " * depth + "namespace " + p + " {" )
-        pad = " " * len( parts )
+        out += [ "export namespace " + parts[ 0 ] , "{" ]
+        for p in parts[ 1: ]:
+            out += [ "namespace " + p , "{" ]
         for header in sorted( by_header ):
             out.append( "" )
-            out.append( pad + "// " + header )
+            out.append( "// " + header )
             if header in OPTIONAL:
                 out.append( f"#if defined( {OPTIONAL[ header ]} )" )
             for n in sorted( by_header[ header ] ):
-                out.append( f"{pad}using {ns}::{n};" )
+                out.append( f"using {ns}::{n};" )
             if header in OPTIONAL:
                 out.append( "#endif" )
-        for depth in range( len( parts ) - 1 , -1 , -1 ):
-            out.append( " " * depth + "}" )
+        out += [ "}" ] * len( parts )
         out.append( "" )
     out += [ BANNER , title( f"End File {base}" ) , BANNER ]
     os.makedirs( os.path.dirname( out_file ) , exist_ok = True )

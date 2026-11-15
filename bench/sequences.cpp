@@ -77,80 +77,108 @@
 
 using namespace ADS::bench;
 
-namespace {
+namespace
+{
 
 /// the cases on the sequence that make() builds and add( s , x ) fills;
 /// reorder( s ) sorts or reverses it in place
 template< class M , class A , class R >
 void run( const std::string & who , const std::vector< int > & X , int r ,
-          M && make , A && add , const char * what , R && reorder )
+	  M && make , A && add , const char * what , R && reorder )
 {
  if( skip( who ) )
   return;
  const std::size_t n = X.size();
  auto fill = [ & ]( void ) {
   auto s = make();
-  for( int x : X ) add( s , x );
+  for( int x : X )
+   add( s , x );
   return( s );
   };
- print( "sequences" , "fill" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) { auto s = fill(); sink = sink + *s.begin(); } , r ,
-         n ) );
+ print( "sequences" , "fill" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = fill();
+		 sink = sink + *s.begin();
+		 } ,
+		r , n ) );
  const auto s = fill();
- print( "sequences" , "visit" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          sink = sink + std::uint64_t( std::accumulate( s.begin() , s.end() ,
-                                                        0L ) ); } , r , n ) );
- print( "sequences" , what , n , who , median( fill , [ & ]( auto & t ) {
-         reorder( t );
-         sink = sink + *t.begin(); } , r , n ) );
+ print( "sequences" , "visit" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 sink = sink + std::uint64_t(
+				 std::accumulate( s.begin() , s.end() , 0L ) );
+		 } ,
+		r , n ) );
+ print( "sequences" , what , n , who ,
+	median(
+	  fill ,
+	  [ & ]( auto & t ) {
+	   reorder( t );
+	   sink = sink + *t.begin();
+	   } ,
+	  r , n ) );
  }
 
 /// the visit by the positions of the book
 template< class S >
-void positions( const std::string & who , const S & s , std::size_t n ,
-                int r )
+void positions( const std::string & who , const S & s , std::size_t n , int r )
 {
  if( skip( who ) )
   return;
- print( "sequences" , "visit by positions" , n , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          long t = 0;
-          for( auto p = s.head() ; ! s.finished( p ) ; p = s.next( p ) )
-           t += s.read( p );
-          sink = sink + std::uint64_t( t ); } , r , n ) );
+ print( "sequences" , "visit by positions" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 long t = 0;
+		 for( auto p = s.head() ; ! s.finished( p ) ; p = s.next( p ) )
+		  t += s.read( p );
+		 sink = sink + std::uint64_t( t );
+		 } ,
+		r , n ) );
  }
 
 /// n insertions, reads and removals at random places R on the sequence
 /// that make() builds, by insert( s , i , x ) and erase( s , i )
 template< class M , class I , class E >
 void middle( const std::string & who , const std::vector< int > & X ,
-             const std::vector< std::size_t > & R , int r , M && make ,
-             I && insert , E && erase )
+	     const std::vector< std::size_t > & R , int r , M && make ,
+	     I && insert , E && erase )
 {
  if( skip( who ) )
   return;
  const std::size_t n = X.size();
  auto fill = [ & ]( void ) {
   auto s = make();
-  for( std::size_t i = 0 ; i < n ; ++i ) insert( s , R[ i ] % ( i + 1 ) ,
-                                                X[ i ] );
+  for( std::size_t i = 0 ; i < n ; ++i )
+   insert( s , R[ i ] % ( i + 1 ) , X[ i ] );
   return( s );
   };
- print( "sequences" , "insert anywhere" , n , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          auto s = fill();
-          sink = sink + std::uint64_t( s[ 0 ] ); } , r , n ) );
+ print( "sequences" , "insert anywhere" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = fill();
+		 sink = sink + std::uint64_t( s[ 0 ] );
+		 } ,
+		r , n ) );
  const auto s = fill();
- print( "sequences" , "read anywhere" , n , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          long t = 0;
-          for( std::size_t i = 0 ; i < n ; ++i ) t += s[ R[ i ] % n ];
-          sink = sink + std::uint64_t( t ); } , r , n ) );
- print( "sequences" , "erase anywhere" , n , who , median( fill ,
-         [ & ]( auto & t ) {
-          for( std::size_t i = n ; i > 0 ; --i ) erase( t , R[ i - 1 ] % i );
-          sink = sink + std::uint64_t( t.size() ); } , r , n ) );
+ print( "sequences" , "read anywhere" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 long t = 0;
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  t += s[ R[ i ] % n ];
+		 sink = sink + std::uint64_t( t );
+		 } ,
+		r , n ) );
+ print( "sequences" , "erase anywhere" , n , who ,
+	median(
+	  fill ,
+	  [ & ]( auto & t ) {
+	   for( std::size_t i = n ; i > 0 ; --i )
+	    erase( t , R[ i - 1 ] % i );
+	   sink = sink + std::uint64_t( t.size() );
+	   } ,
+	  r , n ) );
  }
 
 /// n / 8 vectors V of 8 items, made one after another and then visited
@@ -160,46 +188,58 @@ void many( const std::string & who , const std::vector< int > & X , int r )
  if( skip( who ) )
   return;
  const std::size_t n = X.size() / 8 * 8;
- print( "sequences" , "8-item vectors" , X.size() , who , median(
-         [](){ return( 0 ); } , [ & ]( int ) {
-          std::vector< V > W( n / 8 );
-          for( std::size_t i = 0 ; i < n ; ++i )
-           W[ i / 8 ].push_back( X[ i ] );
-          long t = 0;
-          for( const V & v : W )
-           for( int x : v ) t += x;
-          sink = sink + std::uint64_t( t ); } , r , X.size() ) );
+ print( "sequences" , "8-item vectors" , X.size() , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 std::vector< V > W( n / 8 );
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  W[ i / 8 ].push_back( X[ i ] );
+		 long t = 0;
+		 for( const V & v : W )
+		  for( int x : v )
+		   t += x;
+		 sink = sink + std::uint64_t( t );
+		 } ,
+		r , X.size() ) );
  }
 
 /// n pushes and n pops on the stack that make() builds, by push( s , x )
 /// and pop( s ), which gives the top removed
 template< class M , class Push , class Pop >
 void stack( const std::string & who , const std::vector< int > & X , int r ,
-            M && make , Push && push , Pop && pop )
+	    M && make , Push && push , Pop && pop )
 {
  if( skip( who ) )
   return;
  const std::size_t n = X.size();
- print( "sequences" , "stack" , n , who , median( [](){ return( 0 ); } ,
-         [ & ]( int ) {
-          auto s = make();
-          for( int x : X ) push( s , x );
-          long t = 0;
-          for( std::size_t i = 0 ; i < n ; ++i ) t += pop( s );
-          sink = sink + std::uint64_t( t ); } , r , n ) );
+ print( "sequences" , "stack" , n , who ,
+	median( []() { return( 0 ); } ,
+		[ & ]( int ) {
+		 auto s = make();
+		 for( int x : X )
+		  push( s , x );
+		 long t = 0;
+		 for( std::size_t i = 0 ; i < n ; ++i )
+		  t += pop( s );
+		 sink = sink + std::uint64_t( t );
+		 } ,
+		r , n ) );
  }
 
 /// a case on a copy of A, of n items, by f( copy ), the copy not timed
 template< class V , class F >
 void onCopy( const char * what , const std::string & who , const V & A ,
-             std::size_t n , int r , F && f )
+	     std::size_t n , int r , F && f )
 {
  if( skip( who ) )
   return;
- print( "sequences" , what , n , who , median( [ & ](){
-         return( A ); } , [ & ]( V & B ) {
-          f( B );
-          sink = sink + std::uint64_t( *B.begin() ); } , r , n ) );
+ print( "sequences" , what , n , who ,
+	median( [ & ]() { return( A ); } ,
+		[ & ]( V & B ) {
+		 f( B );
+		 sink = sink + std::uint64_t( *B.begin() );
+		 } ,
+		r , n ) );
  }
 
 }  // end( namespace )
@@ -210,47 +250,59 @@ int main( int argc , char ** argv )
  for( std::size_t n : o.sizes ) {
   std::mt19937_64 g( o.seed );
   std::vector< int > X( n );
-  for( auto & x : X ) x = int( g() % 1000000 );
+  for( auto & x : X )
+   x = int( g() % 1000000 );
   const int r = o.runs;
   auto back = []( auto & s , int x ) { s.push_back( x ); };
   auto front = []( auto & s , int x ) { s.push_front( x ); };
   auto sort = []( auto & s ) { std::sort( s.begin() , s.end() ); };
   auto reverse = []( auto & s ) { std::reverse( s.begin() , s.end() ); };
   auto again = []( auto & s ) {
-   sink = sink + std::uint64_t( std::accumulate( s.begin() , s.end() ,
-                                                 0L ) ); };
+   sink = sink + std::uint64_t( std::accumulate( s.begin() , s.end() , 0L ) );
+   };
 
   // the sequences
 
   for( const char * who : { "std::vector" , "std::vector A/A" } )
-   run( who , X , r , [](){ return( std::vector< int >() ); } , back ,
-        "std::sort" , sort );
+   run(
+     who , X , r , []() { return( std::vector< int >() ); } , back ,
+     "std::sort" ,
+     sort );
 #ifdef ADS_HAS_BOOST
-  run( "boost::container::vector" , X , r , [](){
-       return( boost::container::vector< int >() ); } , back , "std::sort" ,
-       sort );
-  run( "boost::container::devector" , X , r , [](){
-       return( boost::container::devector< int >() ); } , back ,
-       "std::sort" , sort );
-  run( "boost::container::small_vector" , X , r , [](){
-       return( boost::container::small_vector< int , 16 >() ); } , back ,
-       "std::sort" , sort );
+  run(
+    "boost::container::vector" , X , r ,
+    []() { return( boost::container::vector< int >() ); } , back ,
+    "std::sort" ,
+    sort );
+  run(
+    "boost::container::devector" , X , r ,
+    []() { return( boost::container::devector< int >() ); } , back ,
+    "std::sort" , sort );
+  run(
+    "boost::container::small_vector" , X , r ,
+    []() { return( boost::container::small_vector< int , 16 >() ); } , back ,
+    "std::sort" , sort );
 #endif
-  run( "ADS::ArraySequence" , X , r , [](){
-       return( ADS::ArraySequence< int >() ); } , back , "std::sort" , sort );
-  run( "std::list" , X , r , [](){ return( std::list< int >() ); } , back ,
-       "reverse" , reverse );
-  run( "ADS::List" , X , r , [](){ return( ADS::List< int >() ); } , back ,
-       "reverse" , reverse );
-  run( "std::forward_list" , X , r , [](){
-       return( std::forward_list< int >() ); } , front , "visit again" ,
-       again );
-  run( "ADS::SinglyList" , X , r , [](){
-       return( ADS::SinglyList< int >() ); } , front , "visit again" ,
-       again );
-  run( "ADS::CursorList" , X , r , [](){
-       return( ADS::CursorList< int >() ); } , front , "visit again" ,
-       again );
+  run(
+    "ADS::ArraySequence" , X , r ,
+    []() { return( ADS::ArraySequence< int >() ); } , back , "std::sort" ,
+    sort );
+  run(
+    "std::list" , X , r , []() { return( std::list< int >() ); } , back ,
+    "reverse" , reverse );
+  run(
+    "ADS::List" , X , r , []() { return( ADS::List< int >() ); } , back ,
+    "reverse" , reverse );
+  run(
+    "std::forward_list" , X , r ,
+    []() { return( std::forward_list< int >() ); } ,
+    front , "visit again" , again );
+  run(
+    "ADS::SinglyList" , X , r , []() { return( ADS::SinglyList< int >() ); } ,
+    front , "visit again" , again );
+  run(
+    "ADS::CursorList" , X , r , []() { return( ADS::CursorList< int >() ); } ,
+    front , "visit again" , again );
   std::optional< ADS::ArraySequence< int > > A;
   if( ! skip( "ADS::ArraySequence" ) )
    A.emplace( X.begin() , X.end() );
@@ -263,20 +315,27 @@ int main( int argc , char ** argv )
 
   if( n <= 100000 ) {
    std::vector< std::size_t > R( n );
-   for( auto & i : R ) i = std::size_t( g() );
+   for( auto & i : R )
+    i = std::size_t( g() );
    auto vIns = []( auto & s , std::size_t i , int x ) {
-    s.insert( s.begin() + std::ptrdiff_t( i ) , x ); };
+    s.insert( s.begin() + std::ptrdiff_t( i ) , x );
+    };
    auto vErase = []( auto & s , std::size_t i ) {
-    s.erase( s.begin() + std::ptrdiff_t( i ) ); };
+    s.erase( s.begin() + std::ptrdiff_t( i ) );
+    };
    for( const char * who : { "std::vector" , "std::vector A/A" } )
-    middle( who , X , R , r , [](){ return( std::vector< int >() ); } ,
-            vIns , vErase );
-   middle( "std::deque" , X , R , r , [](){ return( std::deque< int >() ); } ,
-           vIns , vErase );
-   middle( "ADS::TieredVector" , X , R , r , [](){
-           return( ADS::TieredVector< int >() ); } ,
-           []( auto & s , std::size_t i , int x ) { s.insert( i , x ); } ,
-           []( auto & s , std::size_t i ) { s.erase( i ); } );
+    middle(
+      who , X , R , r , []() { return( std::vector< int >() ); } , vIns ,
+      vErase );
+   middle(
+     "std::deque" , X , R , r , []() { return( std::deque< int >() ); } ,
+     vIns ,
+     vErase );
+   middle(
+     "ADS::TieredVector" , X , R , r ,
+     []() { return( ADS::TieredVector< int >() ); } ,
+     []( auto & s , std::size_t i , int x ) { s.insert( i , x ); } ,
+     []( auto & s , std::size_t i ) { s.erase( i ); } );
    }
 
   // the vectors with room inside themselves
@@ -285,7 +344,7 @@ int main( int argc , char ** argv )
    many< std::vector< int > >( who , X , r );
 #ifdef ADS_HAS_BOOST
   many< boost::container::small_vector< int , 8 > >(
-   "boost::container::small_vector" , X , r );
+    "boost::container::small_vector" , X , r );
 #endif
   many< ADS::SmallVector< int , 8 > >( "ADS::SmallVector" , X , r );
 
@@ -294,60 +353,65 @@ int main( int argc , char ** argv )
   auto stdPop = []( auto & s ) {
    const int x = s.top();
    s.pop();
-   return( x ); };
+   return( x );
+   };
   auto stdPush = []( auto & s , int x ) { s.push( x ); };
-  for( const char * who : { "std::stack<vector>" ,
-                            "std::stack<vector> A/A" } )
-   stack( who , X , r , [](){
-          return( std::stack< int , std::vector< int > >() ); } , stdPush ,
-          stdPop );
-  stack( "std::stack<deque>" , X , r , [](){
-         return( std::stack< int , std::deque< int > >() ); } , stdPush ,
-         stdPop );
-  stack( "ADS::ArrayStack" , X , r , [ n ](){
-         return( ADS::ArrayStack< int >( n ) ); } , stdPush ,
-         []( auto & s ) { return( s.pop() ); } );
-  stack( "ADS::SequenceStack" , X , r , [](){
-         return( ADS::SequenceStack< ADS::SinglyList< int > >() ); } ,
-         stdPush , []( auto & s ) { return( s.pop() ); } );
+  for( const char * who : { "std::stack<vector>" , "std::stack<vector> A/A" } )
+   stack(
+     who , X , r ,
+     []() { return( std::stack< int , std::vector< int > >() ); } ,
+     stdPush , stdPop );
+  stack(
+    "std::stack<deque>" , X , r ,
+    []() { return( std::stack< int , std::deque< int > >() ); } , stdPush ,
+    stdPop );
+  stack(
+    "ADS::ArrayStack" , X , r ,
+    [ n ]() { return( ADS::ArrayStack< int >( n ) ); } , stdPush ,
+    []( auto & s ) { return( s.pop() ); } );
+  stack(
+    "ADS::SequenceStack" , X , r ,
+    []() { return( ADS::SequenceStack< ADS::SinglyList< int > >() ); } ,
+    stdPush , []( auto & s ) { return( s.pop() ); } );
 
   // the rearrangements and the sorts
 
-  std::vector< int > C( n );                // the colours
-  for( auto & c : C ) c = int( g() % 3 );
+  std::vector< int > C( n );  // the colours
+  for( auto & c : C )
+   c = int( g() % 3 );
   auto colour = []( int c ) { return( c ); };
   onCopy( "dutch flag" , "std::partition x2" , C , n , r ,
-          [ & ]( std::vector< int > & B ) {
-           auto m = std::partition( B.begin() , B.end() , []( int c ) {
-                                     return( c == 0 ); } );
-           std::partition( m , B.end() , []( int c ) {
-                            return( c == 1 ); } ); } );
-  onCopy( "dutch flag" , "ADS::dutchNationalFlag" , C , n , r ,
-          [ & ]( std::vector< int > & B ) {
-           ADS::dutchNationalFlag( B , colour ); } );
-  std::vector< int > K( X );                // 16-sorted
+	  [ & ]( std::vector< int > & B ) {
+	   auto m = std::partition( B.begin() , B.end() ,
+				    []( int c ) { return( c == 0 ); } );
+	   std::partition( m , B.end() , []( int c ) { return( c == 1 ); } );
+	   } );
+  onCopy(
+    "dutch flag" , "ADS::dutchNationalFlag" , C , n , r ,
+    [ & ]( std::vector< int > & B ) { ADS::dutchNationalFlag( B ,
+							      colour ); } );
+  std::vector< int > K( X );  // 16-sorted
   std::sort( K.begin() , K.end() );
   for( std::size_t i = 0 ; i + 16 < n ; i += 16 )
    std::shuffle( K.begin() + std::ptrdiff_t( i ) ,
-                 K.begin() + std::ptrdiff_t( i + 16 ) , g );
-  onCopy( "k-sorted k=16" , "std::sort" , K , n , r ,
-          [ & ]( std::vector< int > & B ) {
-           std::sort( B.begin() , B.end() ); } );
+		 K.begin() + std::ptrdiff_t( i + 16 ) , g );
+  onCopy(
+    "k-sorted k=16" , "std::sort" , K , n , r ,
+    [ & ]( std::vector< int > & B ) { std::sort( B.begin() , B.end() ); } );
   onCopy( "k-sorted k=16" , "ADS::sortKSorted" , K , n , r ,
-          [ & ]( std::vector< int > & B ) {
-           ADS::sortKSorted( B , 16 ); } );
+	  [ & ]( std::vector< int > & B ) { ADS::sortKSorted( B , 16 ); } );
   const std::list< int > SL( X.begin() , X.end() );
   onCopy( "list sort" , "std::list::sort" , SL , n , r ,
-          []( std::list< int > & B ) { B.sort(); } );
+	  []( std::list< int > & B ) { B.sort(); } );
   onCopy( "list sort" , "ADS::naturalMergeSort" , L , n , r ,
-          []( ADS::List< int > & B ) { ADS::naturalMergeSort( B ); } );
+	  []( ADS::List< int > & B ) { ADS::naturalMergeSort( B ); } );
   onCopy( "list sort" , "ADS::listSort" , L , n , r ,
-          []( ADS::List< int > & B ) { ADS::listSort( B ); } );
+	  []( ADS::List< int > & B ) { ADS::listSort( B ); } );
   onCopy( "list sort by greater" , "std::list::sort" , SL , n , r ,
-          []( std::list< int > & B ) { B.sort( std::greater<>() ); } );
-  onCopy( "list sort by greater" , "ADS::listSort" , L , n , r ,
-          []( ADS::List< int > & B ) {
-           ADS::listSort( B , std::greater<>() ); } );
+	  []( std::list< int > & B ) { B.sort( std::greater<>() ); } );
+  onCopy(
+    "list sort by greater" , "ADS::listSort" , L , n , r ,
+    []( ADS::List< int > & B ) { ADS::listSort( B , std::greater<>() ); } );
   }
  return( 0 );
  }

@@ -95,7 +95,7 @@
 
 #ifndef __ADS_MaximumSegments
  #define __ADS_MaximumSegments
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -114,15 +114,17 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a segment \f$ D[ f .. f + \ell - 1 ] \f$ of the array and its sum, with
 /// \f$ f \f$ the place `first` and \f$ \ell \f$ the `length`
 template< class T >
-struct Segment {
- T sum{};                                   ///< the sum of its items
- std::size_t first = 0;                     ///< the place of its first item
- std::size_t length = 0;                    ///< 0 for no segment
+struct Segment
+{
+ T sum{};                 ///< the sum of its items
+ std::size_t first = 0;   ///< the place of its first item
+ std::size_t length = 0;  ///< 0 for no segment
  };
 
 /// a nonempty segment of largest sum, by all the pairs, \f$ O( n^3 ) \f$
@@ -245,8 +247,8 @@ Segment< T > maxSumSegmentPrefix( const std::vector< T > & D );
 /// \f]
 /// \pre \f$ 1 \le L \le U \f$ and \f$ L \le n \f$
 template< class T >
-Segment< T > maxSumSegmentLength( const std::vector< T > & D ,
-                                  std::size_t L , std::size_t U );
+Segment< T > maxSumSegmentLength( const std::vector< T > & D , std::size_t L ,
+				  std::size_t U );
 
 /// the longest segment of sum at least \f$ t \f$, length 0 if none,
 /// \f$ O( n ) \f$
@@ -292,8 +294,8 @@ Segment< T > longestSegmentAtLeast( const std::vector< T > & D , T t );
 /// \f]
 /// \pre \f$ q > 0 \f$
 template< class T >
-Segment< T > longestSegmentAverageAtLeast( const std::vector< T > & D ,
-                                           T p , T q );
+Segment< T > longestSegmentAverageAtLeast( const std::vector< T > & D , T p ,
+					   T q );
 
 /// a segment of largest average among those of length at least \f$ L \f$,
 /// its sum in the result, \f$ O( n \log n ) \f$
@@ -324,12 +326,10 @@ Segment< T > longestSegmentAverageAtLeast( const std::vector< T > & D ,
 /// \f]
 /// \pre \f$ 1 \le L \le n \f$
 template< class T >
-Segment< T > maxDensitySegment( const std::vector< T > & D ,
-                                std::size_t L );
+Segment< T > maxDensitySegment( const std::vector< T > & D , std::size_t L );
 
 /// 1 for the nucleotides C and G, in either case, and 0 for the others
-[[nodiscard]] inline std::vector< int > gcIndicator(
-                                                 const std::string & dna );
+[[nodiscard]] inline std::vector< int > gcIndicator( const std::string & dna );
 
 /*--------------------------------------------------------------------------*/
 
@@ -343,7 +343,7 @@ Segment< T > maxDensitySegment( const std::vector< T > & D ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MaximumSegments.h included */
+#endif /* MaximumSegments.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File MaximumSegments.h -----------------------*/

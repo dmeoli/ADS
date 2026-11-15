@@ -45,7 +45,7 @@
 
 #ifndef __ADS_IntervalCover
  #define __ADS_IntervalCover
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -64,7 +64,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the places of the fewest closed intervals \f$ I \f$ whose union contains
 /// \f$ [ \mathit{lo} , \mathit{hi} ] \f$, by increasing left end; nothing if
@@ -91,8 +92,9 @@ namespace ADS {
 ///      interval \f$ [ a , b ] \f$
 /// \post the intervals cover \f$ [ \mathit{lo} , \mathit{hi} ] \f$ (audit)
 template< class T >
-std::optional< std::vector< std::size_t > > minimumIntervalCover(
-                  const std::vector< std::pair< T , T > > & I , T lo , T hi );
+std::optional< std::vector< std::size_t > >
+minimumIntervalCover( const std::vector< std::pair< T , T > > & I , T lo ,
+		      T hi );
 
 /*--------------------------------------------------------------------------*/
 
@@ -106,7 +108,7 @@ std::optional< std::vector< std::size_t > > minimumIntervalCover(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IntervalCover.h included */
+#endif /* IntervalCover.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File IntervalCover.h ------------------------*/

@@ -43,7 +43,7 @@
 
 #ifndef __ADS_Subsequences
  #define __ADS_Subsequences
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -59,7 +59,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a longest increasing subsequence, \f$ O( n^2 ) \f$
 ///
@@ -135,7 +136,7 @@ T maxSubarraySum( const std::vector< T > & A );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Subsequences.h included */
+#endif /* Subsequences.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File Subsequences.h -------------------------*/

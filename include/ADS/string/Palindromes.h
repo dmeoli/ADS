@@ -99,7 +99,7 @@
 
 #ifndef __ADS_Palindromes
  #define __ADS_Palindromes
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -121,7 +121,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// where a longest palindromic substring of \f$ s \f$ starts and its
 /// length, the leftmost one among the longest; \f$ ( 0 , 0 ) \f$ for the
@@ -161,9 +162,10 @@ namespace ADS {
 /// \f]
 /// \post \f$ s[ \mathit{start} .. \mathit{start} + \mathit{length} ) \f$
 ///       is a palindrome
-template< class S > requires std::is_class_v< S >
-[[nodiscard]] std::pair< std::size_t , std::size_t > longestPalindrome(
-                                                              const S & s );
+template< class S >
+ requires std::is_class_v< S >
+[[nodiscard]] std::pair< std::size_t , std::size_t >
+longestPalindrome( const S & s );
 
 /// the leftmost of the longest palindromic substrings of \f$ s \f$
 ///
@@ -176,13 +178,14 @@ template< class S > requires std::is_class_v< S >
 /// \end{array}}
 /// \f]
 /// \post a palindrome occurring in \f$ s \f$, empty only if \f$ s \f$ is
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S longestPalindromicSubstring( const S & s );
 
 /// the substring of `longestPalindromicSubstring()` above, on a
 /// `std::string` (or a literal)
-[[nodiscard]] inline std::string longestPalindromicSubstring(
-                                                     const std::string & s );
+[[nodiscard]] inline std::string
+longestPalindromicSubstring( const std::string & s );
 
 /// a longest palindromic subsequence of \f$ s \f$
 ///
@@ -212,13 +215,14 @@ template< class S > requires std::is_class_v< S >
 /// \f]
 /// \post a palindrome, a subsequence of \f$ s \f$ as long as the LCS of
 ///       \f$ s \f$ and its reverse (audit)
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] S longestPalindromicSubsequence( const S & s );
 
 /// the subsequence of `longestPalindromicSubsequence()` above, on a
 /// `std::string` (or a literal)
-[[nodiscard]] inline std::string longestPalindromicSubsequence(
-                                                     const std::string & s );
+[[nodiscard]] inline std::string
+longestPalindromicSubsequence( const std::string & s );
 
 /// the fewest palindromes into which \f$ s \f$ can be cut, in their order;
 /// none for the empty \f$ s \f$
@@ -246,24 +250,25 @@ template< class S > requires std::is_class_v< S >
 /// \f]
 /// \post every piece a palindrome, and the pieces joined give \f$ s \f$
 ///       (audit)
-template< class S > requires std::is_class_v< S >
+template< class S >
+ requires std::is_class_v< S >
 [[nodiscard]] std::vector< S > palindromicPartition( const S & s );
 
 /// the pieces of `palindromicPartition()` above, on a `std::string` (or a
 /// literal)
-[[nodiscard]] inline std::vector< std::string > palindromicPartition(
-                                                     const std::string & s );
+[[nodiscard]] inline std::vector< std::string >
+palindromicPartition( const std::string & s );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Eertree ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the eertree (palindromic tree) of a string, built a byte at a time
-class Eertree {
+class Eertree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the eertree of the empty string: the two roots, of length \f$ -1 \f$
  /// and 0
  Eertree( void );
@@ -317,23 +322,22 @@ class Eertree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- friend std::vector< std::string > palindromicFactorization(
-                                                        std::string_view s );
+ friend std::vector< std::string >
+ palindromicFactorization( std::string_view s );
 
  /// the first palindromic suffix of the string from v (v itself or a
  /// suffix of it on the links) that c before it extends
  [[nodiscard]] std::uint32_t extensible( std::uint32_t v ,
-                                         unsigned char c ) const;
+					 unsigned char c ) const;
 
  std::string f_s;
- std::vector< long > f_len;                         ///< -1 , 0 , ...
- std::vector< std::uint32_t > f_link;               ///< suffix palindrome
- std::vector< long > f_diff;                        ///< len - len( link )
+ std::vector< long > f_len;              ///< -1 , 0 , ...
+ std::vector< std::uint32_t > f_link;    ///< suffix palindrome
+ std::vector< long > f_diff;             ///< len - len( link )
  std::vector< std::uint32_t > f_series;  ///< the link past the series
  std::vector< std::vector< std::pair< unsigned char , std::uint32_t > > >
-  f_next;                                           ///< c v c
- std::uint32_t f_last = 1;               ///< the longest suffix palindrome
+   f_next;                  ///< c v c
+ std::uint32_t f_last = 1;  ///< the longest suffix palindrome
 
  };  // end( class Eertree )
 
@@ -363,8 +367,8 @@ class Eertree {
 /// \f]
 /// \post as many pieces as `palindromicPartition( s )`, palindromes, that
 ///       give \f$ s \f$ back (audit)
-[[nodiscard]] inline std::vector< std::string > palindromicFactorization(
-                                                        std::string_view s );
+[[nodiscard]] inline std::vector< std::string >
+palindromicFactorization( std::string_view s );
 
 /*--------------------------------------------------------------------------*/
 
@@ -378,7 +382,7 @@ class Eertree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Palindromes.h included */
+#endif /* Palindromes.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Palindromes.h -------------------------*/

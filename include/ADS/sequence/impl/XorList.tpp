@@ -14,27 +14,29 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 XorList< T >::XorList( std::initializer_list< T > l )
 {
- for( const T & x : l ) push_back( x );
+ for( const T & x : l )
+  push_back( x );
  }
 
 template< class T >
 XorList< T >::XorList( const XorList & o )
 {
- for( const T & x : o ) push_back( x );
+ for( const T & x : o )
+  push_back( x );
  }
 
 template< class T >
 XorList< T >::XorList( XorList && o ) noexcept
- : f_head( std::exchange( o.f_head , nullptr ) ) ,
-   f_tail( std::exchange( o.f_tail , nullptr ) ) ,
-   f_n( std::exchange( o.f_n , 0 ) ) , f_pool( std::move( o.f_pool ) )
-{
- }
+    : f_head( std::exchange( o.f_head , nullptr ) ) ,
+      f_tail( std::exchange( o.f_tail , nullptr ) ) ,
+      f_n( std::exchange( o.f_n , 0 ) ) , f_pool( std::move( o.f_pool ) )
+{ }
 
 template< class T >
 XorList< T > & XorList< T >::operator=( XorList o ) noexcept
@@ -104,7 +106,7 @@ void XorList< T >::pop_front( void )
 {
  ADS_PRE( f_n > 0 );
  Cell * c = f_head;
- f_head = other( c , nullptr );             // its only neighbour
+ f_head = other( c , nullptr );  // its only neighbour
  if( f_head )
   f_head->link ^= word( c );
  else
@@ -143,7 +145,7 @@ bool XorList< T >::operator==( const XorList & o ) const
   return( false );
  auto a = begin();
  for( auto b = o.begin() ; b != o.end() ; ++a , ++b )
-  if( !( *a == *b ) )
+  if( ! ( *a == *b ) )
    return( false );
  return( true );
  }
@@ -151,7 +153,7 @@ bool XorList< T >::operator==( const XorList & o ) const
 template< class T >
 bool XorList< T >::walks( void ) const
 {
- const Cell * p = nullptr , * c = f_head;
+ const Cell *p = nullptr , *c = f_head;
  std::size_t k = 0;
  for( ; c ; ++k ) {
   const Cell * n = other( c , p );

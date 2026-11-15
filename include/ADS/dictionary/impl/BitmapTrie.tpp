@@ -14,11 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class V >
-BitmapTrie< V >::BitmapTrie( void )
- : f_root( new Node ) , f_dummy( new Cell )
+BitmapTrie< V >::BitmapTrie( void ) : f_root( new Node ) , f_dummy( new Cell )
 {
  f_dummy->prev = f_dummy->next = f_dummy;
  }
@@ -54,7 +54,7 @@ BitmapTrie< V >::~BitmapTrie()
 template< class V >
 void BitmapTrie< V >::destroy( Node * u )
 {
- std::vector< Node * > S{ u };   // a stack: the strings may be long
+ std::vector< Node * > S{ u };  // a stack: the strings may be long
  while( ! S.empty() ) {
   Node * x = S.back();
   S.pop_back();
@@ -143,8 +143,7 @@ const std::string * BitmapTrie< V >::find( std::string_view s ) const
  }
 
 template< class V >
-auto BitmapTrie< V >::seek( std::string_view s ) const
- -> const_iterator
+auto BitmapTrie< V >::seek( std::string_view s ) const -> const_iterator
 {
  return( const_iterator( successor( s ) ) );
  }
@@ -168,7 +167,7 @@ bool BitmapTrie< V >::contains( std::string_view s ) const
 template< class V >
 bool BitmapTrie< V >::insert( std::string_view s , const V & v )
 {
- if( Node * e = node( s ) ; e && e->term ) {
+ if( Node * e = node( s ); e && e->term ) {
   e->term->value = v;
   return( false );
   }
@@ -177,7 +176,7 @@ bool BitmapTrie< V >::insert( std::string_view s , const V & v )
  succ->prev->next = it;
  succ->prev = it;
 
- std::vector< Node * > P( s.size() + 1 );   // the path of s
+ std::vector< Node * > P( s.size() + 1 );  // the path of s
  P[ 0 ] = f_root;
  for( std::size_t i = 0 ; i < s.size() ; ++i ) {
   const unsigned c = static_cast< unsigned char >( s[ i ] );
@@ -225,8 +224,8 @@ bool BitmapTrie< V >::remove( std::string_view s )
  std::vector< Node * > P( s.size() + 1 );
  P[ 0 ] = f_root;
  for( std::size_t i = 0 ; i < s.size() ; ++i )
-  if( ! ( P[ i + 1 ] = child( P[ i ] ,
-                              static_cast< unsigned char >( s[ i ] ) ) ) )
+  if( ! ( P[ i + 1 ] =
+	    child( P[ i ] , static_cast< unsigned char >( s[ i ] ) ) ) )
    return( false );
  Node * e = P[ s.size() ];
  Cell * it = e->term;
@@ -266,8 +265,8 @@ bool BitmapTrie< V >::remove( std::string_view s )
  }
 
 template< class V >
-bool BitmapTrie< V >::subtree( const Node * u , const Cell * & lo ,
-                               const Cell * & hi , std::size_t & n ) const
+bool BitmapTrie< V >::subtree( const Node * u , const Cell *& lo ,
+			       const Cell *& hi , std::size_t & n ) const
 {
  std::size_t k = 0;
  for( const auto b : u->bits )
@@ -278,8 +277,8 @@ bool BitmapTrie< V >::subtree( const Node * u , const Cell * & lo ,
  if( u->term )
   ++n;
  for( const Node * c : u->kids ) {
-  const Cell * a , * b;
-  if( ! subtree( c , a , b , n ) || ! a )   // a child is never empty
+  const Cell *a , *b;
+  if( ! subtree( c , a , b , n ) || ! a )  // a child is never empty
    return( false );
   if( ! lo )
    lo = a;
@@ -300,7 +299,7 @@ bool BitmapTrie< V >::consistent( void ) const
   if( ( l->next->prev != l ) ||
       ( ( l->next != f_dummy ) && ! ( l->key < l->next->key ) ) )
    return( false );
- const Cell * lo , * hi;
+ const Cell *lo , *hi;
  std::size_t n = 0;
  return( ( k == f_n ) && subtree( f_root , lo , hi , n ) && ( n == f_n ) );
  }

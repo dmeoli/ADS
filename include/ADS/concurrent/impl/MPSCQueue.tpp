@@ -14,16 +14,18 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::size_t B >
 MPSCQueue< T , B >::~MPSCQueue()
 {
  for( Lane * l = f_lanes.load( std::memory_order_acquire ) ; l ; ) {
-  std::size_t h = l->at;                    // the items left, the blocks
+  std::size_t h = l->at;  // the items left, the blocks
   for( Block * b = l->out ; b ; h = 0 ) {
    const std::size_t f = b->filled.load( std::memory_order_acquire );
-   for( ; h < f ; ++h ) b->at( h )->~T();
+   for( ; h < f ; ++h )
+    b->at( h )->~T();
    Block * n = b->next.load( std::memory_order_acquire );
    delete b;
    b = n;
@@ -45,22 +47,23 @@ typename MPSCQueue< T , B >::Producer MPSCQueue< T , B >::producer( void )
 {
  Lane * l = new Lane( &f_wait );
  l->nextLane = f_lanes.load( std::memory_order_relaxed );
- while( ! f_lanes.compare_exchange_weak( l->nextLane , l ,
-                                         std::memory_order_release ,
-                                         std::memory_order_relaxed ) ) {}
+ while( ! f_lanes.compare_exchange_weak(
+   l->nextLane , l , std::memory_order_release ,
+   std::memory_order_relaxed ) ) {
+  }
  return( Producer( l ) );
  }
 
 template< class T , std::size_t B >
-template< class ... Args >
-void MPSCQueue< T , B >::Producer::emplace( Args && ... args )
+template< class... Args >
+void MPSCQueue< T , B >::Producer::emplace( Args &&... args )
 {
  ADS_PRE( f_lane != nullptr );
  Lane * l = f_lane;
  Block * b = l->in;
- std::size_t p = b->filled.load( std::memory_order_relaxed );   // its own
- if( p == B ) [[unlikely]] {                // full: a block given back, or
-  Block * n = l->spare;                     // a new one, linked after it
+ std::size_t p = b->filled.load( std::memory_order_relaxed );  // its own
+ if( p == B ) [[unlikely]] {  // full: a block given back, or
+  Block * n = l->spare;       // a new one, linked after it
   if( ! n )
    n = l->given.exchange( nullptr , std::memory_order_acquire );
   if( n ) {
@@ -82,9 +85,9 @@ template< class T , std::size_t B >
 void MPSCQueue< T , B >::giveBack( Lane * l , Block * b )
 {
  b->spare = l->given.load( std::memory_order_relaxed );
- while( ! l->given.compare_exchange_weak( b->spare , b ,
-                                          std::memory_order_release ,
-                                          std::memory_order_relaxed ) ) {}
+ while( ! l->given.compare_exchange_weak(
+   b->spare , b , std::memory_order_release , std::memory_order_relaxed ) ) {
+  }
  }
 
 template< class T , std::size_t B >
@@ -107,8 +110,8 @@ std::size_t MPSCQueue< T , B >::drain( Lane * l , T * out , std::size_t n )
  std::size_t k = 0 , h = l->at;
  Block * b = l->out;
  while( k < n ) {
-  if( h == B ) {                            // all taken: the next block,
-   Block * nb = b->next.load( std::memory_order_acquire );   // if linked
+  if( h == B ) {  // all taken: the next block,
+   Block * nb = b->next.load( std::memory_order_acquire );  // if linked
    if( ! nb )
     break;
    giveBack( l , b );
@@ -142,18 +145,21 @@ std::size_t MPSCQueue< T , B >::drain( Lane * l , T * out , std::size_t n )
 template< class T , std::size_t B >
 std::size_t MPSCQueue< T , B >::popInto( T * out , std::size_t n )
 {
- Lane * first = nullptr;                    // a turn from the lane at
+ Lane * first = nullptr;  // a turn from the lane at
  for( Lane * l = f_at ; ; ) {
-  if( ! l ) l = f_lanes.load( std::memory_order_acquire );
+  if( ! l )
+   l = f_lanes.load( std::memory_order_acquire );
   if( ! l || ( l == first ) )
    return( 0 );
-  if( ! first ) first = l;
+  if( ! first )
+   first = l;
   if( const std::size_t k = drain( l , out , n ) ) {
-   f_at = l;                                // the next call starts here
+   f_at = l;  // the next call starts here
    return( k );
    }
   l = l->nextLane;
-  if( ! l ) l = f_lanes.load( std::memory_order_acquire );
+  if( ! l )
+   l = f_lanes.load( std::memory_order_acquire );
   }
  }
 

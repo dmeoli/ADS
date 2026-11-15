@@ -14,9 +14,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the chains a and b, sorted and ended by nil along succ, merged into one,
 /// a first on equal items
@@ -24,7 +26,7 @@ template< class Cell , class C >
 Cell * mergeChains( Cell * a , Cell * b , C & less )
 {
  Cell * r = nullptr;
- Cell ** t = &r;                            // where the next cell goes
+ Cell ** t = &r;  // where the next cell goes
  while( a && b )
   if( less( b->value , a->value ) ) {
    *t = b;
@@ -57,8 +59,10 @@ void relink( Cell * s , Cell * x )
 /// the numbers in their natural order: an arithmetic type sorted by
 /// std::less
 template< class T , class C >
-inline constexpr bool kNaturalNumbers = RadixKey< T > &&
- ( std::is_same_v< C , std::less<> > || std::is_same_v< C , std::less< T > > );
+inline constexpr bool kNaturalNumbers =
+  RadixKey< T > &&
+  ( std::is_same_v< C , std::less<> > || std::is_same_v< C ,
+							 std::less< T > > );
 
 }  // end( namespace detail )
 
@@ -68,17 +72,18 @@ void listSort( List< T , P > & L , C less )
  using Cell = typename List< T , P >::Cell;
  if( L.empty() || ( L.head() == L.tail() ) )
   return;
- Cell * const s = L.next( L.tail() );       // the sentinel
+ Cell * const s = L.next( L.tail() );  // the sentinel
  [[maybe_unused]] std::size_t n = 0;
  if constexpr( ADS_CONTRACTS >= 3 )
-  for( Cell * x = s->succ ; x != s ; x = x->succ ) ++n;
+  for( Cell * x = s->succ ; x != s ; x = x->succ )
+   ++n;
  if constexpr( detail::kNaturalNumbers< T , C > ) {
   using K = decltype( radixKey( std::declval< T >() ) );
   std::vector< std::pair< K , Cell * > > A;
   for( Cell * x = s->succ ; x != s ; x = x->succ )
    A.emplace_back( radixKey( x->value ) , x );
-  radixSortBy( A , []( const std::pair< K , Cell * > & e ) {
-   return( e.first ); } );
+  radixSortBy(
+    A , []( const std::pair< K , Cell * > & e ) { return( e.first ); } );
   Cell * p = s;
   for( const auto & e : A ) {
    p->succ = e.second;
@@ -89,14 +94,14 @@ void listSort( List< T , P > & L , C less )
   s->pred = p;
   }
  else {
-  s->pred->succ = nullptr;                  // a chain ended by nil
+  s->pred->succ = nullptr;  // a chain ended by nil
   Cell * x = s->succ;
-  Cell * R[ 64 ] = {};                      // R[ i ]: about 2^i runs
+  Cell * R[ 64 ] = {};  // R[ i ]: about 2^i runs
   int top = 0;
   while( x ) {
-   Cell * r = x;                            // the next run
+   Cell * r = x;  // the next run
    Cell * y = x->succ;
-   if( y && less( y->value , x->value ) ) { // strictly decreasing: reversed
+   if( y && less( y->value , x->value ) ) {  // strictly decreasing: reversed
     Cell * rev = x;                         // x and y, compared, the first
     rev->succ = nullptr;                    // two of it
     do {
@@ -108,8 +113,8 @@ void listSort( List< T , P > & L , C less )
     r = rev;
     x = y;
     }
-   else {                                   // not decreasing
-    Cell * last = y ? y : x;                // x and y, compared, in it
+   else {                     // not decreasing
+    Cell * last = y ? y : x;  // x and y, compared, in it
     if( y )
      y = y->succ;
     while( y && ! less( y->value , last->value ) ) {
@@ -119,15 +124,16 @@ void listSort( List< T , P > & L , C less )
     last->succ = nullptr;
     x = y;
     }
-   int i = 0;                               // the carries of the counter
+   int i = 0;  // the carries of the counter
    for( ; R[ i ] ; ++i ) {
     r = detail::mergeChains( R[ i ] , r , less );
     R[ i ] = nullptr;
     }
    R[ i ] = r;
-   if( i >= top ) top = i + 1;
+   if( i >= top )
+    top = i + 1;
    }
-  Cell * r = nullptr;                       // the earlier runs are higher
+  Cell * r = nullptr;  // the earlier runs are higher
   for( int i = 0 ; i < top ; ++i )
    if( R[ i ] )
     r = r ? detail::mergeChains( R[ i ] , r , less ) : R[ i ];

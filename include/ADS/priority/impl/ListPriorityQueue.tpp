@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::totally_ordered P , bool Sorted >
 bool ListPriorityQueue< T , P , Sorted >::empty( void ) const
@@ -45,7 +46,7 @@ T ListPriorityQueue< T , P , Sorted >::deleteMin( void )
  T v = f_L.read( p ).second;
  f_L.remove( p );
  --f_size;
- ADS_POST( empty() || !( f_L.read( first() ).first < q ) );
+ ADS_POST( empty() || ! ( f_L.read( first() ).first < q ) );
  ADS_INVARIANT( consistent() );
  return( v );
  }
@@ -68,7 +69,7 @@ template< class T , std::totally_ordered P , bool Sorted >
 void ListPriorityQueue< T , P , Sorted >::decrease( Handle & y , const P & p )
 {
  ADS_AUDIT( owns( y ) );
- ADS_PRE( !( f_L.read( y ).first < p ) );
+ ADS_PRE( ! ( f_L.read( y ).first < p ) );
  if constexpr( Sorted ) {
   const T x = f_L.read( y ).second;
   f_L.remove( y );

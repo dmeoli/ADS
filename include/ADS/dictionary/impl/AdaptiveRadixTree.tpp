@@ -24,7 +24,8 @@
  #define ADS_ART_SSE2 1
 #endif
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE ALLOCATION ------------------------------*/
@@ -36,15 +37,16 @@ void * AdaptiveRadixTree< V >::Slab::take( std::size_t bytes )
  const std::size_t c = ( bytes + STEP - 1 ) / STEP;
  if( c > CLASSES )
   return( ::operator new( bytes ) );
- if( Free * f = f_free[ c ] ) {             // a slot of the size, freed
+ if( Free * f = f_free[ c ] ) {  // a slot of the size, freed
   f_free[ c ] = f->next;
   return( f );
   }
  const std::size_t size = c * STEP;
- if( std::size_t( f_end - f_cur ) < size ) {   // a new block
-  const std::size_t b = f_blocks.empty() ? std::size_t( 4096 ) :
-   std::min< std::size_t >( 2 * f_blocks.back().second ,
-                            std::size_t( 1 ) << 21 );
+ if( std::size_t( f_end - f_cur ) < size ) {  // a new block
+  const std::size_t b =
+    f_blocks.empty() ? std::size_t( 4096 )
+		     : std::min< std::size_t >( 2 * f_blocks.back().second ,
+						std::size_t( 1 ) << 21 );
   char * p = HugePageAllocator< char >().allocate( b );
   f_blocks.emplace_back( p , b );
   f_cur = p;
@@ -56,8 +58,8 @@ void * AdaptiveRadixTree< V >::Slab::take( std::size_t bytes )
  }
 
 template< class V >
-void AdaptiveRadixTree< V >::Slab::give( void * p , std::size_t bytes )
- noexcept
+void AdaptiveRadixTree< V >::Slab::give( void * p ,
+					 std::size_t bytes ) noexcept
 {
  const std::size_t c = ( bytes + STEP - 1 ) / STEP;
  if( c > CLASSES ) {
@@ -76,7 +78,8 @@ void AdaptiveRadixTree< V >::Slab::release( void ) noexcept
   HugePageAllocator< char >().deallocate( p , b );
  f_blocks.clear();
  f_cur = f_end = nullptr;
- for( auto & f : f_free ) f = nullptr;
+ for( auto & f : f_free )
+  f = nullptr;
  }
 
 template< class V >
@@ -91,7 +94,7 @@ void AdaptiveRadixTree< V >::Slab::swap( Slab & o ) noexcept
 
 template< class V >
 auto AdaptiveRadixTree< V >::newLeaf( std::string_view k , const V & v )
- -> Leaf *
+  -> Leaf *
 {
  static_assert( alignof( Leaf ) <= 16 , "a leaf on a slot of 16 bytes" );
  void * p = f_slab.take( sizeof( Leaf ) + k.size() );
@@ -127,10 +130,17 @@ template< class V >
 void AdaptiveRadixTree< V >::freeNode( Node * n ) noexcept
 {
  switch( n->type ) {
-  case( N4 ): f_n4.free( static_cast< Node4 * >( n ) ); break;
-  case( N16 ): f_n16.free( static_cast< Node16 * >( n ) ); break;
-  case( N48 ): f_n48.free( static_cast< Node48 * >( n ) ); break;
-  default: f_n256.free( static_cast< Node256 * >( n ) );
+  case( N4 ):
+   f_n4.free( static_cast< Node4 * >( n ) );
+   break;
+  case( N16 ):
+   f_n16.free( static_cast< Node16 * >( n ) );
+   break;
+  case( N48 ):
+   f_n48.free( static_cast< Node48 * >( n ) );
+   break;
+  default:
+   f_n256.free( static_cast< Node256 * >( n ) );
   }
  }
 
@@ -140,7 +150,7 @@ void AdaptiveRadixTree< V >::freeNode( Node * n ) noexcept
 
 template< class V >
 inline void * const * AdaptiveRadixTree< V >::child( const Node * n ,
-                                                      unsigned char c )
+						     unsigned char c )
 {
  switch( n->type ) {
   case( N4 ): {
@@ -153,11 +163,11 @@ inline void * const * AdaptiveRadixTree< V >::child( const Node * n ,
   case( N16 ): {
    const Node16 * m = static_cast< const Node16 * >( n );
 #ifdef ADS_ART_SSE2
-   const __m128i e = _mm_cmpeq_epi8( _mm_set1_epi8( char( c ) ) ,
-                      _mm_load_si128( reinterpret_cast< const __m128i * >(
-                                       m->key ) ) );
-   const unsigned b = unsigned( _mm_movemask_epi8( e ) ) &
-                      ( ( 1u << m->count ) - 1 );
+   const __m128i e = _mm_cmpeq_epi8(
+     _mm_set1_epi8( char( c ) ) ,
+     _mm_load_si128( reinterpret_cast< const __m128i * >( m->key ) ) );
+   const unsigned b =
+     unsigned( _mm_movemask_epi8( e ) ) & ( ( 1u << m->count ) - 1 );
    return( b ? &m->child[ std::countr_zero( b ) ] : nullptr );
 #else
    for( unsigned i = 0 ; i < m->count ; ++i )
@@ -178,10 +188,10 @@ inline void * const * AdaptiveRadixTree< V >::child( const Node * n ,
  }
 
 template< class V >
-inline void * * AdaptiveRadixTree< V >::child( Node * n , unsigned char c )
+inline void ** AdaptiveRadixTree< V >::child( Node * n , unsigned char c )
 {
- return( const_cast< void * * >( child( static_cast< const Node * >( n ) ,
-                                        c ) ) );
+ return(
+   const_cast< void ** >( child( static_cast< const Node * >( n ) , c ) ) );
  }
 
 template< class V >
@@ -192,19 +202,25 @@ auto AdaptiveRadixTree< V >::minimum( const void * p ) -> const Leaf *
   if( n->term )
    return( n->term );
   switch( n->type ) {
-   case( N4 ): p = static_cast< const Node4 * >( n )->child[ 0 ]; break;
-   case( N16 ): p = static_cast< const Node16 * >( n )->child[ 0 ]; break;
+   case( N4 ):
+    p = static_cast< const Node4 * >( n )->child[ 0 ];
+    break;
+   case( N16 ):
+    p = static_cast< const Node16 * >( n )->child[ 0 ];
+    break;
    case( N48 ): {
     const Node48 * m = static_cast< const Node48 * >( n );
     unsigned c = 0;
-    while( ! m->index[ c ] ) ++c;
+    while( ! m->index[ c ] )
+     ++c;
     p = m->child[ m->index[ c ] - 1 ];
     break;
     }
    default: {
     const Node256 * m = static_cast< const Node256 * >( n );
     unsigned c = 0;
-    while( ! m->child[ c ] ) ++c;
+    while( ! m->child[ c ] )
+     ++c;
     p = m->child[ c ];
     }
    }
@@ -214,16 +230,16 @@ auto AdaptiveRadixTree< V >::minimum( const void * p ) -> const Leaf *
 
 template< class V >
 std::uint32_t AdaptiveRadixTree< V >::mismatch( const Node * n ,
-                                                std::string_view k ,
-                                                std::size_t d )
+						std::string_view k ,
+						std::size_t d )
 {
  const std::uint32_t m = std::min< std::uint32_t >( n->plen , MAXP );
  std::uint32_t i = 0;
  for( ; i < m ; ++i )
   if( ( d + i >= k.size() ) ||
-      ( n->prefix[ i ] != (unsigned char) k[ d + i ] ) )
+      ( n->prefix[ i ] != ( unsigned char )k[ d + i ] ) )
    return( i );
- if( n->plen > MAXP ) {                     // the rest from a leaf below
+ if( n->plen > MAXP ) {  // the rest from a leaf below
   const char * full = minimum( n )->key();
   for( ; i < n->plen ; ++i )
    if( ( d + i >= k.size() ) || ( full[ d + i ] != k[ d + i ] ) )
@@ -233,8 +249,9 @@ std::uint32_t AdaptiveRadixTree< V >::mismatch( const Node * n ,
  }
 
 template< class V >
-void AdaptiveRadixTree< V >::addChild( void * * ref , Node * n ,
-                                       unsigned char c , void * x )
+void AdaptiveRadixTree< V >::addChild( void ** ref , Node * n ,
+				       unsigned char c ,
+				       void * x )
 {
  auto header = []( Node * to , const Node * from ) {
   to->count = from->count;
@@ -247,16 +264,17 @@ void AdaptiveRadixTree< V >::addChild( void * * ref , Node * n ,
    Node4 * m = static_cast< Node4 * >( n );
    if( m->count < 4 ) {
     unsigned i = 0;
-    while( ( i < m->count ) && ( m->key[ i ] < c ) ) ++i;
+    while( ( i < m->count ) && ( m->key[ i ] < c ) )
+     ++i;
     std::memmove( m->key + i + 1 , m->key + i , m->count - i );
     std::memmove( m->child + i + 1 , m->child + i ,
-                  ( m->count - i ) * sizeof( void * ) );
+		  ( m->count - i ) * sizeof( void * ) );
     m->key[ i ] = c;
     m->child[ i ] = x;
     ++m->count;
     return;
     }
-   Node16 * g = make< Node16 >();           // grow
+   Node16 * g = make< Node16 >();  // grow
    header( g , m );
    std::memcpy( g->key , m->key , 4 );
    std::memcpy( g->child , m->child , 4 * sizeof( void * ) );
@@ -269,10 +287,11 @@ void AdaptiveRadixTree< V >::addChild( void * * ref , Node * n ,
    Node16 * m = static_cast< Node16 * >( n );
    if( m->count < 16 ) {
     unsigned i = 0;
-    while( ( i < m->count ) && ( m->key[ i ] < c ) ) ++i;
+    while( ( i < m->count ) && ( m->key[ i ] < c ) )
+     ++i;
     std::memmove( m->key + i + 1 , m->key + i , m->count - i );
     std::memmove( m->child + i + 1 , m->child + i ,
-                  ( m->count - i ) * sizeof( void * ) );
+		  ( m->count - i ) * sizeof( void * ) );
     m->key[ i ] = c;
     m->child[ i ] = x;
     ++m->count;
@@ -284,7 +303,8 @@ void AdaptiveRadixTree< V >::addChild( void * * ref , Node * n ,
     g->child[ i ] = m->child[ i ];
     g->index[ m->key[ i ] ] = std::uint8_t( i + 1 );
     }
-   for( unsigned i = 16 ; i < 48 ; ++i ) g->child[ i ] = nullptr;
+   for( unsigned i = 16 ; i < 48 ; ++i )
+    g->child[ i ] = nullptr;
    *ref = g;
    f_n16.free( m );
    addChild( ref , g , c , x );
@@ -294,7 +314,8 @@ void AdaptiveRadixTree< V >::addChild( void * * ref , Node * n ,
    Node48 * m = static_cast< Node48 * >( n );
    if( m->count < 48 ) {
     unsigned i = 0;
-    while( m->child[ i ] ) ++i;             // a free place
+    while( m->child[ i ] )
+     ++i;  // a free place
     m->child[ i ] = x;
     m->index[ c ] = std::uint8_t( i + 1 );
     ++m->count;
@@ -319,13 +340,14 @@ void AdaptiveRadixTree< V >::addChild( void * * ref , Node * n ,
  }
 
 template< class V >
-void AdaptiveRadixTree< V >::removeChild( void * * ref , Node * n ,
-                                          unsigned char c , void * * slot )
+void AdaptiveRadixTree< V >::removeChild( void ** ref , Node * n ,
+					  unsigned char c , void ** slot )
 {
  switch( n->type ) {
-  case( N4 ): case( N16 ): {
+  case( N4 ):
+  case( N16 ): {
    unsigned char * key;
-   void * * ch;
+   void ** ch;
    if( n->type == N4 ) {
     key = static_cast< Node4 * >( n )->key;
     ch = static_cast< Node4 * >( n )->child;
@@ -336,8 +358,8 @@ void AdaptiveRadixTree< V >::removeChild( void * * ref , Node * n ,
     }
    const unsigned i = unsigned( slot - ch );
    std::memmove( key + i , key + i + 1 , n->count - i - 1 );
-   std::memmove( ch + i , ch + i + 1 , ( n->count - i - 1 ) *
-                                        sizeof( void * ) );
+   std::memmove( ch + i , ch + i + 1 ,
+		 ( n->count - i - 1 ) * sizeof( void * ) );
    break;
    }
   case( N48 ): {
@@ -354,7 +376,7 @@ void AdaptiveRadixTree< V >::removeChild( void * * ref , Node * n ,
  }
 
 template< class V >
-void AdaptiveRadixTree< V >::shrink( void * * ref , Node * n )
+void AdaptiveRadixTree< V >::shrink( void ** ref , Node * n )
 {
  auto header = []( Node * to , const Node * from ) {
   to->count = from->count;
@@ -362,7 +384,7 @@ void AdaptiveRadixTree< V >::shrink( void * * ref , Node * n )
   std::memcpy( to->prefix , from->prefix , MAXP );
   to->term = from->term;
   };
- if( n->count == 0 ) {                      // the term alone, or nothing
+ if( n->count == 0 ) {  // the term alone, or nothing
   *ref = n->term ? tag( n->term ) : nullptr;
   freeNode( n );
   return;
@@ -370,7 +392,7 @@ void AdaptiveRadixTree< V >::shrink( void * * ref , Node * n )
  if( ( n->count == 1 ) && ! n->term && ( n->type == N4 ) ) {
   Node4 * m = static_cast< Node4 * >( n );  // into its only child
   void * x = m->child[ 0 ];
-  if( ! isLeaf( x ) ) {                     // the prefixes joined
+  if( ! isLeaf( x ) ) {  // the prefixes joined
    Node * y = static_cast< Node * >( x );
    unsigned char buf[ MAXP ];
    std::uint32_t k = std::min< std::uint32_t >( m->plen , MAXP );
@@ -378,7 +400,7 @@ void AdaptiveRadixTree< V >::shrink( void * * ref , Node * n )
    if( k < MAXP )
     buf[ k++ ] = m->key[ 0 ];
    std::memcpy( buf + k , y->prefix ,
-                std::min< std::uint32_t >( y->plen , MAXP - k ) );
+		std::min< std::uint32_t >( y->plen , MAXP - k ) );
    y->plen += m->plen + 1;
    std::memcpy( y->prefix , buf , MAXP );
    }
@@ -418,7 +440,8 @@ void AdaptiveRadixTree< V >::shrink( void * * ref , Node * n )
     s->child[ j ] = m->child[ b ];
     s->index[ b ] = std::uint8_t( ++j );
     }
-  for( ; j < 48 ; ++j ) s->child[ j ] = nullptr;
+  for( ; j < 48 ; ++j )
+   s->child[ j ] = nullptr;
   *ref = s;
   f_n256.free( m );
   }
@@ -442,20 +465,20 @@ inline void AdaptiveRadixTree< V >::ahead( const void * p , unsigned char c )
   __builtin_prefetch( b - 1 );
   return;
   }
- __builtin_prefetch( b );                   // the header, a Node4, the
- __builtin_prefetch( b + 64 );              // keys and the children of a
- __builtin_prefetch( b + 128 );             // Node16
- __builtin_prefetch( b + i48 + c );         // the index of a Node48
- __builtin_prefetch( b + c256 + 8 * c );    // the child of a Node256
+ __builtin_prefetch( b );                 // the header, a Node4, the
+ __builtin_prefetch( b + 64 );            // keys and the children of a
+ __builtin_prefetch( b + 128 );           // Node16
+ __builtin_prefetch( b + i48 + c );       // the index of a Node48
+ __builtin_prefetch( b + c256 + 8 * c );  // the child of a Node256
 #else
- ( void ) p;
- ( void ) c;
+ ( void )p;
+ ( void )c;
 #endif
  }
 
 template< class V >
 inline auto AdaptiveRadixTree< V >::search( std::string_view k ) const
- -> const Leaf *
+  -> const Leaf *
 {
  const void * p = f_root;
  std::size_t d = 0;
@@ -463,31 +486,33 @@ inline auto AdaptiveRadixTree< V >::search( std::string_view k ) const
   if( isLeaf( p ) ) {
    const Leaf * l = asLeaf( p );
    return( ( l->len == k.size() ) &&
-           ( std::memcmp( l->key() , k.data() , k.size() ) == 0 ) ? l :
-                                                                    nullptr );
+		( std::memcmp( l->key() , k.data() , k.size() ) == 0 )
+	      ? l
+	      : nullptr );
    }
   const Node * n = static_cast< const Node * >( p );
-  if( n->plen ) {                           // the first MAXP bytes only
+  if( n->plen ) {  // the first MAXP bytes only
    if( d + n->plen > k.size() )
     return( nullptr );
    if( std::memcmp( n->prefix , k.data() + d ,
-                    std::min< std::uint32_t >( n->plen , MAXP ) ) != 0 )
+		    std::min< std::uint32_t >( n->plen , MAXP ) ) != 0 )
     return( nullptr );
    d += n->plen;
    }
   if( d == k.size() ) {
    const Leaf * l = n->term;
    return( l && ( l->len == k.size() ) &&
-           ( std::memcmp( l->key() , k.data() , k.size() ) == 0 ) ? l :
-                                                                    nullptr );
+		( std::memcmp( l->key() , k.data() , k.size() ) == 0 )
+	      ? l
+	      : nullptr );
    }
-  void * const * s = child( n , (unsigned char) k[ d ] );
+  void * const * s = child( n , ( unsigned char )k[ d ] );
   if( ! s )
    return( nullptr );
   p = *s;
   ++d;
-  if( d < k.size() )                        // the byte of p, if no prefix
-   ahead( p , (unsigned char) k[ d ] );
+  if( d < k.size() )  // the byte of p, if no prefix
+   ahead( p , ( unsigned char )k[ d ] );
   }
  return( nullptr );
  }
@@ -506,8 +531,8 @@ inline V * AdaptiveRadixTree< V >::find( std::string_view k )
  }
 
 template< class V >
-inline std::optional< V > AdaptiveRadixTree< V >::lookup(
-                                               std::string_view k ) const
+inline std::optional< V >
+AdaptiveRadixTree< V >::lookup( std::string_view k ) const
 {
  const V * v = find( k );
  return( v ? std::optional< V >( *v ) : std::nullopt );
@@ -532,24 +557,29 @@ bool AdaptiveRadixTree< V >::empty( void ) const
  }
 
 template< class V >
-void AdaptiveRadixTree< V >::split( void * * ref , std::size_t d ,
-                                    std::string_view k , const V & v )
+void AdaptiveRadixTree< V >::split( void ** ref , std::size_t d ,
+				    std::string_view k , const V & v )
 {
  void * p = *ref;
  Leaf * o = asLeaf( p );
  const std::string_view ok = o->view();
- std::size_t i = d;                         // the bytes shared from d on
+ std::size_t i = d;  // the bytes shared from d on
  const std::size_t m = std::min( ok.size() , k.size() );
- while( ( i < m ) && ( ok[ i ] == k[ i ] ) ) ++i;
+ while( ( i < m ) && ( ok[ i ] == k[ i ] ) )
+  ++i;
  Node4 * n = make< Node4 >();
  n->plen = std::uint32_t( i - d );
  std::memcpy( n->prefix , k.data() + d ,
-              std::min< std::uint32_t >( n->plen , MAXP ) );
+	      std::min< std::uint32_t >( n->plen , MAXP ) );
  Leaf * w = newLeaf( k , v );
- if( i == ok.size() ) n->term = o;
- else addChild( ref , n , (unsigned char) ok[ i ] , p );
- if( i == k.size() ) n->term = w;
- else addChild( ref , n , (unsigned char) k[ i ] , tag( w ) );
+ if( i == ok.size() )
+  n->term = o;
+ else
+  addChild( ref , n , ( unsigned char )ok[ i ] , p );
+ if( i == k.size() )
+  n->term = w;
+ else
+  addChild( ref , n , ( unsigned char )k[ i ] , tag( w ) );
  *ref = n;
  }
 
@@ -571,16 +601,16 @@ bool AdaptiveRadixTree< V >::insert( std::string_view k , const V & v )
  // second pass goes down again to the node or the leaf that splits at c
  const Leaf * l = nullptr;
  {
-  void * * ref = &f_root;
+  void ** ref = &f_root;
   std::size_t d = 0;
-  bool skipped = false;                     // a prefix longer than MAXP
+  bool skipped = false;  // a prefix longer than MAXP
   for( ; ; ) {
    void * p = *ref;
    if( isLeaf( p ) ) {
     l = asLeaf( p );
     if( skipped || ( l->view() == k ) )
      break;
-    split( ref , d , k , v );               // the way is that of k
+    split( ref , d , k , v );  // the way is that of k
     ++f_size;
     ADS_POST( contains( k ) );
     ADS_INVARIANT( ( f_size > 2048 ) || valid() );
@@ -589,13 +619,13 @@ bool AdaptiveRadixTree< V >::insert( std::string_view k , const V & v )
    Node * n = static_cast< Node * >( p );
    if( ( d + n->plen > k.size() ) ||
        ( std::memcmp( n->prefix , k.data() + d ,
-                      std::min< std::uint32_t >( n->plen , MAXP ) ) ) ) {
+		      std::min< std::uint32_t >( n->plen , MAXP ) ) ) ) {
     l = minimum( n );
     break;
     }
    skipped |= n->plen > MAXP;
    d += n->plen;
-   if( d == k.size() ) {                    // k ends at n
+   if( d == k.size() ) {  // k ends at n
     if( skipped ) {
      l = minimum( n );
      break;
@@ -610,13 +640,13 @@ bool AdaptiveRadixTree< V >::insert( std::string_view k , const V & v )
     ADS_INVARIANT( ( f_size > 2048 ) || valid() );
     return( added );
     }
-   void * * s = child( n , (unsigned char) k[ d ] );
+   void ** s = child( n , ( unsigned char )k[ d ] );
    if( ! s ) {
     if( skipped ) {
      l = minimum( n );
      break;
      }
-    addChild( ref , n , (unsigned char) k[ d ] , tag( newLeaf( k , v ) ) );
+    addChild( ref , n , ( unsigned char )k[ d ] , tag( newLeaf( k , v ) ) );
     ++f_size;
     ADS_POST( contains( k ) );
     ADS_INVARIANT( ( f_size > 2048 ) || valid() );
@@ -626,53 +656,56 @@ bool AdaptiveRadixTree< V >::insert( std::string_view k , const V & v )
    ++d;
 #ifdef ARTAHEAD
    if( d < k.size() )
-    ahead( *ref , (unsigned char) k[ d ] );
+    ahead( *ref , ( unsigned char )k[ d ] );
 #endif
    }
- }
+  }
  const std::string_view lk = l->view();
- std::size_t c = 0;                         // the bytes shared with l
+ std::size_t c = 0;  // the bytes shared with l
  const std::size_t lim = std::min( lk.size() , k.size() );
- while( ( c < lim ) && ( lk[ c ] == k[ c ] ) ) ++c;
+ while( ( c < lim ) && ( lk[ c ] == k[ c ] ) )
+  ++c;
  if( ( c == lk.size() ) && ( c == k.size() ) ) {
   const_cast< Leaf * >( l )->value = v;
   return( false );
   }
- void * * ref = &f_root;
+ void ** ref = &f_root;
  std::size_t d = 0;
  for( ; ; ) {
   void * p = *ref;
-  if( isLeaf( p ) ) {                       // the leaf splits at c
+  if( isLeaf( p ) ) {  // the leaf splits at c
    split( ref , d , k , v );
    break;
    }
   Node * n = static_cast< Node * >( p );
-  if( d + n->plen > c ) {                   // the prefix splits at c - d
+  if( d + n->plen > c ) {  // the prefix splits at c - d
    const std::uint32_t m = std::uint32_t( c - d );
    Node4 * top = make< Node4 >();
    top->plen = m;
    std::memcpy( top->prefix , n->prefix ,
-                std::min< std::uint32_t >( m , MAXP ) );
-   const unsigned char e = (unsigned char) lk[ c ];
+		std::min< std::uint32_t >( m , MAXP ) );
+   const unsigned char e = ( unsigned char )lk[ c ];
    n->plen -= m + 1;
    std::memcpy( n->prefix , lk.data() + c + 1 ,
-                std::min< std::uint32_t >( n->plen , MAXP ) );
+		std::min< std::uint32_t >( n->plen , MAXP ) );
    void * up = top;
    addChild( &up , top , e , n );
    Leaf * w = newLeaf( k , v );
-   if( c == k.size() ) top->term = w;
-   else addChild( &up , top , (unsigned char) k[ c ] , tag( w ) );
+   if( c == k.size() )
+    top->term = w;
+   else
+    addChild( &up , top , ( unsigned char )k[ c ] , tag( w ) );
    *ref = top;
    break;
    }
   d += n->plen;
-  if( d == k.size() ) {                     // k ends at n, not there yet
+  if( d == k.size() ) {  // k ends at n, not there yet
    n->term = newLeaf( k , v );
    break;
    }
-  void * * s = child( n , (unsigned char) k[ d ] );
+  void ** s = child( n , ( unsigned char )k[ d ] );
   if( ! s ) {
-   addChild( ref , n , (unsigned char) k[ d ] , tag( newLeaf( k , v ) ) );
+   addChild( ref , n , ( unsigned char )k[ d ] , tag( newLeaf( k , v ) ) );
    break;
    }
   ref = s;
@@ -687,7 +720,7 @@ bool AdaptiveRadixTree< V >::insert( std::string_view k , const V & v )
 template< class V >
 bool AdaptiveRadixTree< V >::remove( std::string_view k )
 {
- void * * ref = &f_root , * * pref = nullptr;
+ void **ref = &f_root , **pref = nullptr;
  Node * parent = nullptr;
  unsigned char pc = 0;
  std::size_t d = 0;
@@ -712,7 +745,7 @@ bool AdaptiveRadixTree< V >::remove( std::string_view k )
   if( n->plen ) {
    if( ( d + n->plen > k.size() ) ||
        ( std::memcmp( n->prefix , k.data() + d ,
-                      std::min< std::uint32_t >( n->plen , MAXP ) ) != 0 ) )
+		      std::min< std::uint32_t >( n->plen , MAXP ) ) != 0 ) )
     break;
    d += n->plen;
    }
@@ -725,12 +758,12 @@ bool AdaptiveRadixTree< V >::remove( std::string_view k )
     }
    break;
    }
-  void * * s = child( n , (unsigned char) k[ d ] );
+  void ** s = child( n , ( unsigned char )k[ d ] );
   if( ! s )
    break;
   pref = ref;
   parent = n;
-  pc = (unsigned char) k[ d ];
+  pc = ( unsigned char )k[ d ];
   ref = s;
   ++d;
   }
@@ -757,9 +790,9 @@ inline void AdaptiveRadixTree< V >::children( const Node * n )
   return;
  for( unsigned i = 0 ; i < n->count ; ++i )
   __builtin_prefetch( static_cast< const char * >( c[ i ] ) -
-                      ( isLeaf( c[ i ] ) ? 1 : 0 ) );
+		      ( isLeaf( c[ i ] ) ? 1 : 0 ) );
 #else
- ( void ) n;
+ ( void )n;
 #endif
  }
 
@@ -770,24 +803,28 @@ void AdaptiveRadixTree< V >::each( const Node * n , F && f )
  switch( n->type ) {
   case( N4 ): {
    const Node4 * m = static_cast< const Node4 * >( n );
-   for( unsigned i = 0 ; i < m->count ; ++i ) f( m->child[ i ] );
+   for( unsigned i = 0 ; i < m->count ; ++i )
+    f( m->child[ i ] );
    break;
    }
   case( N16 ): {
    const Node16 * m = static_cast< const Node16 * >( n );
-   for( unsigned i = 0 ; i < m->count ; ++i ) f( m->child[ i ] );
+   for( unsigned i = 0 ; i < m->count ; ++i )
+    f( m->child[ i ] );
    break;
    }
   case( N48 ): {
    const Node48 * m = static_cast< const Node48 * >( n );
    for( unsigned b = 0 ; b < 256 ; ++b )
-    if( m->index[ b ] ) f( m->child[ m->index[ b ] - 1 ] );
+    if( m->index[ b ] )
+     f( m->child[ m->index[ b ] - 1 ] );
    break;
    }
   default: {
    const Node256 * m = static_cast< const Node256 * >( n );
    for( unsigned b = 0 ; b < 256 ; ++b )
-    if( m->child[ b ] ) f( m->child[ b ] );
+    if( m->child[ b ] )
+     f( m->child[ b ] );
    }
   }
  }
@@ -833,18 +870,18 @@ void AdaptiveRadixTree< V >::forPrefix( std::string_view p , F && f ) const
    }
   const Node * n = static_cast< const Node * >( x );
   const std::size_t r = std::min< std::size_t >( n->plen , p.size() - d );
-  if( r > MAXP ) {                          // past the bytes kept
+  if( r > MAXP ) {  // past the bytes kept
    if( minimum( n )->view().substr( d , r ) != p.substr( d , r ) )
     return;
    }
   else if( std::memcmp( n->prefix , p.data() + d , r ) != 0 )
    return;
-  if( d + n->plen >= p.size() ) {           // all the subtree
+  if( d + n->plen >= p.size() ) {  // all the subtree
    visit( x , f );
    return;
    }
   d += n->plen;
-  void * const * s = child( n , (unsigned char) p[ d ] );
+  void * const * s = child( n , ( unsigned char )p[ d ] );
   if( ! s )
    return;
   x = *s;
@@ -853,23 +890,23 @@ void AdaptiveRadixTree< V >::forPrefix( std::string_view p , F && f ) const
  }
 
 template< class V >
-std::vector< std::string > AdaptiveRadixTree< V >::keysWithPrefix(
-                                                std::string_view p ) const
+std::vector< std::string >
+AdaptiveRadixTree< V >::keysWithPrefix( std::string_view p ) const
 {
  std::vector< std::string > K;
- forPrefix( p , [ & ]( std::string_view k , const V & ) {
-             K.emplace_back( k ); } );
+ forPrefix( p ,
+	    [ & ]( std::string_view k , const V & ) { K.emplace_back( k ); } );
  return( K );
  }
 
 template< class V >
 auto AdaptiveRadixTree< V >::const_iterator::step( std::vector< Frame > & S )
- -> const Leaf *
+  -> const Leaf *
 {
  while( ! S.empty() ) {
   Frame & f = S.back();
   const Node * n = f.node;
-  if( f.next < 0 ) {                        // the term first
+  if( f.next < 0 ) {  // the term first
    f.next = 0;
    if( n->term )
     return( n->term );
@@ -879,25 +916,29 @@ auto AdaptiveRadixTree< V >::const_iterator::step( std::vector< Frame > & S )
   switch( n->type ) {
    case( N4 ): {
     const Node4 * m = static_cast< const Node4 * >( n );
-    if( f.next < m->count ) c = m->child[ f.next++ ];
+    if( f.next < m->count )
+     c = m->child[ f.next++ ];
     break;
     }
    case( N16 ): {
     const Node16 * m = static_cast< const Node16 * >( n );
-    if( f.next < m->count ) c = m->child[ f.next++ ];
+    if( f.next < m->count )
+     c = m->child[ f.next++ ];
     break;
     }
    case( N48 ): {
     const Node48 * m = static_cast< const Node48 * >( n );
     while( ( f.next < 256 ) && ! c ) {
      const unsigned i = m->index[ f.next++ ];
-     if( i ) c = m->child[ i - 1 ];
+     if( i )
+      c = m->child[ i - 1 ];
      }
     break;
     }
    default: {
     const Node256 * m = static_cast< const Node256 * >( n );
-    while( ( f.next < 256 ) && ! c ) c = m->child[ f.next++ ];
+    while( ( f.next < 256 ) && ! c )
+     c = m->child[ f.next++ ];
     }
    }
   if( ! c ) {
@@ -909,9 +950,9 @@ auto AdaptiveRadixTree< V >::const_iterator::step( std::vector< Frame > & S )
   // the children of the next sibling too, if a node of a few children,
   // so that its leaves are on their way while this subtree is visited
   if( ( n->type <= N16 ) && ( f.next < n->count ) ) {
-   const void * s = n->type == N4 ?
-    static_cast< const Node4 * >( n )->child[ f.next ] :
-    static_cast< const Node16 * >( n )->child[ f.next ];
+   const void * s = n->type == N4
+		      ? static_cast< const Node4 * >( n )->child[ f.next ]
+		      : static_cast< const Node16 * >( n )->child[ f.next ];
    if( ! isLeaf( s ) )
     children( static_cast< const Node * >( s ) );
    }
@@ -951,7 +992,7 @@ AdaptiveRadixTree< V >::AdaptiveRadixTree( AdaptiveRadixTree && o ) noexcept
 
 template< class V >
 auto AdaptiveRadixTree< V >::operator=( AdaptiveRadixTree o ) noexcept
- -> AdaptiveRadixTree &
+  -> AdaptiveRadixTree &
 {
  swap( o );
  return( *this );
@@ -1008,18 +1049,18 @@ bool AdaptiveRadixTree< V >::valid( void ) const
  std::size_t leaves = 0;
  std::string path;
  return( ( ! f_root || valid( f_root , path , leaves , true ) ) &&
-         ( leaves == f_size ) );
+	  ( leaves == f_size ) );
  }
 
 template< class V >
 bool AdaptiveRadixTree< V >::valid( const void * p , std::string & path ,
-                                    std::size_t & leaves , bool root ) const
+				    std::size_t & leaves , bool root ) const
 {
  if( isLeaf( p ) ) {
   ++leaves;
   const std::string_view k = asLeaf( p )->view();
   return( ( k.size() >= path.size() ) &&
-          ( k.substr( 0 , path.size() ) == path ) );
+	   ( k.substr( 0 , path.size() ) == path ) );
   }
  const Node * n = static_cast< const Node * >( p );
  const std::string_view m = minimum( n )->view();
@@ -1027,9 +1068,9 @@ bool AdaptiveRadixTree< V >::valid( const void * p , std::string & path ,
      ( m.substr( 0 , path.size() ) != path ) )
   return( false );
  const std::size_t d = path.size();
- path.append( m.substr( d , n->plen ) );     // the whole prefix
+ path.append( m.substr( d , n->plen ) );  // the whole prefix
  if( std::memcmp( n->prefix , path.data() + d ,
-                  std::min< std::uint32_t >( n->plen , MAXP ) ) != 0 )
+		  std::min< std::uint32_t >( n->plen , MAXP ) ) != 0 )
   return( false );
  if( ! root && ( n->count + ( n->term ? 1 : 0 ) < 2 ) )
   return( false );
@@ -1038,17 +1079,21 @@ bool AdaptiveRadixTree< V >::valid( const void * p , std::string & path ,
   if( n->term->view() != path )
    return( false );
   }
- const unsigned cap = n->type == N4 ? 4 : n->type == N16 ? 16 :
-                      n->type == N48 ? 48 : 256;
- const unsigned low = n->type == N4 ? 0 : n->type == N16 ? 3 :
-                      n->type == N48 ? 12 : 37;   // the shrinking counts
+ const unsigned cap = n->type == N4    ? 4
+		      : n->type == N16 ? 16
+		      : n->type == N48 ? 48
+				       : 256;
+ const unsigned low = n->type == N4    ? 0
+		      : n->type == N16 ? 3
+		      : n->type == N48 ? 12
+				       : 37;  // the shrinking counts
  if( ( n->count > cap ) || ( ( n->type != N4 ) && ( n->count <= low ) ) )
   return( false );
  bool ok = true;
  unsigned seen = 0;
  int last = -1;
  for( unsigned b = 0 ; ok && ( b < 256 ) ; ++b ) {
-  void * const * s = child( n , (unsigned char) b );
+  void * const * s = child( n , ( unsigned char )b );
   if( ! s )
    continue;
   ++seen;
@@ -1057,11 +1102,11 @@ bool AdaptiveRadixTree< V >::valid( const void * p , std::string & path ,
   ok = valid( *s , path , leaves , false );
   path.pop_back();
   }
- ( void ) last;
- if( n->type == N4 || n->type == N16 ) {     // the bytes sorted
-  const unsigned char * key = n->type == N4 ?
-   static_cast< const Node4 * >( n )->key :
-   static_cast< const Node16 * >( n )->key;
+ ( void )last;
+ if( n->type == N4 || n->type == N16 ) {  // the bytes sorted
+  const unsigned char * key = n->type == N4
+				? static_cast< const Node4 * >( n )->key
+				: static_cast< const Node16 * >( n )->key;
   for( unsigned i = 1 ; i < n->count ; ++i )
    if( key[ i - 1 ] >= key[ i ] )
     return( false );

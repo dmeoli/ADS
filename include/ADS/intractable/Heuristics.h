@@ -61,7 +61,7 @@
 
 #ifndef __ADS_Heuristics
  #define __ADS_Heuristics
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -87,7 +87,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ GREEDY TSP --------------------------------*/
@@ -120,8 +121,8 @@ namespace ADS {
 /// \pre \f$ D \f$ is square and symmetric, and \f$ n \ge 3 \f$
 /// \post \f$ n \f$ edges and a permutation of the cities
 template< class T >
-std::pair< std::vector< std::pair< int , int > > , Nodes > greedyTsp(
-                        const std::vector< std::vector< T > > & D );
+std::pair< std::vector< std::pair< int , int > > , Nodes >
+greedyTsp( const std::vector< std::vector< T > > & D );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- LOCAL SEARCH --------------------------------*/
@@ -161,7 +162,7 @@ inline Nodes twoOptMove( Nodes pi , int i , int j );
 /// \post a permutation of the cities
 template< class T >
 Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
-              std::vector< T > * trace = nullptr );
+	      std::vector< T > * trace = nullptr );
 
 /// the size of \f$ I_k( \pi ) \f$ on \f$ n \ge 3 \f$ nodes: the circuits that
 /// share exactly \f$ n - k \f$ edges with \f$ \pi \f$, by enumeration of all
@@ -206,7 +207,7 @@ inline long kOptNeighbours( int n , int k );
 /// \pre `side` gives each element 0 or 1
 /// \post sides 0 or 1, the difference not larger than that of `side`
 inline std::vector< int > partitionLocalSearch( const std::vector< long > & A ,
-                                                std::vector< int > side );
+						std::vector< int > side );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- BISECTION -----------------------------------*/
@@ -217,11 +218,11 @@ inline std::vector< int > partitionLocalSearch( const std::vector< long > & A ,
 /// `bucket( k , h )`, its size `dim( k , h )`, and the least and largest
 /// bucket not empty; a node leaves a bucket in \f$ O( 1 ) \f$ by its place
 /// in it
-class Buckets {
+class Buckets
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the empty structure for the nodes \f$ [ 0 , n ) \f$
  /// \pre \f$ n \ge 0 \f$
  explicit Buckets( int n );
@@ -300,7 +301,6 @@ class Buckets {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  void put( int k , int u );
 
  void take( int k , int u );
@@ -456,7 +456,7 @@ inline std::vector< int > dsatur( const Adjacency & G );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Heuristics.h included */
+#endif /* Heuristics.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Heuristics.h --------------------------*/

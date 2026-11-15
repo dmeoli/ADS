@@ -72,7 +72,7 @@
 
 #ifndef __ADS_SEList
  #define __ADS_SEList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS SEList ------------------------------*/
@@ -100,18 +101,18 @@ namespace ADS {
 /// a list of blocks of \f$ b - 1 \f$ to \f$ b + 1 \f$ items, with
 /// \f$ O( n / b ) \f$ pointers
 template< class T >
-class SEList {
+class SEList
+{
 
  struct Node;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
 
  /// the empty list with blocks of \f$ b + 1 \f$ items at most
  /// \pre \f$ b \ge 3 \f$
@@ -247,14 +248,15 @@ class SEList {
 
  /// the bidirectional iterator, on items const if `Const`
  template< bool Const >
- class Iterator {
+ class Iterator
+ {
   using Owner = std::conditional_t< Const , const SEList , SEList >;
 
   public:
   /// bidirectional
   using iterator_category = std::bidirectional_iterator_tag;
-  using value_type = T;                     ///< the items
-  using difference_type = std::ptrdiff_t;   ///< the distances
+  using value_type = T;                    ///< the items
+  using difference_type = std::ptrdiff_t;  ///< the distances
   /// a reference to an item, constant if `Const`
   using reference = std::conditional_t< Const , const T & , T & >;
   /// a pointer to an item, constant if `Const`
@@ -265,12 +267,13 @@ class SEList {
 
   /// on the item \f$ j \f$ of the block \f$ u \f$ of `l`
   Iterator( Owner * l , Node * u , std::size_t j )
-   : f_l( l ) , f_u( u ) , f_j( j ) {}
+      : f_l( l ) , f_u( u ) , f_j( j ) { }
 
   /// the constant iterator from the mutable one
-  template< bool K > requires ( Const && ! K )
+  template< bool K >
+   requires( Const && ! K )
   Iterator( const Iterator< K > & o )
-   : f_l( o.f_l ) , f_u( o.f_u ) , f_j( o.f_j ) {}
+      : f_l( o.f_l ) , f_u( o.f_u ) , f_j( o.f_j ) { }
 
   /// the item
   reference operator*( void ) const { return( f_l->at( f_u , f_j ) ); }
@@ -278,33 +281,48 @@ class SEList {
   pointer operator->( void ) const { return( &**this ); }
   /// to the next item, the next block after the last one of a block
   Iterator & operator++( void ) {
-   if( ++f_j == f_u->n ) { f_u = f_u->next; f_j = 0; }
+   if( ++f_j == f_u->n ) {
+    f_u = f_u->next;
+    f_j = 0;
+    }
    return( *this );
    }
   /// to the previous item
   Iterator & operator--( void ) {
-   if( f_j == 0 ) { f_u = f_u->prev; f_j = f_u->n; }
+   if( f_j == 0 ) {
+    f_u = f_u->prev;
+    f_j = f_u->n;
+    }
    --f_j;
    return( *this );
    }
   /// to the next item, returning the iterator before the step
-  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// to the previous item, returning the iterator before the step
-  Iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  Iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
   /// equal on the same item
   bool operator==( const Iterator & o ) const {
    return( ( f_u == o.f_u ) && ( f_j == o.f_j ) );
    }
 
   private:
-  template< bool > friend class Iterator;
+  template< bool >
+  friend class Iterator;
   Owner * f_l = nullptr;
   Node * f_u = nullptr;
   std::size_t f_j = 0;
   };  // end( class Iterator )
 
- using iterator = Iterator< false >;        ///< the iterator on the items
- using const_iterator = Iterator< true >;   ///< on the constant items
+ using iterator = Iterator< false >;       ///< the iterator on the items
+ using const_iterator = Iterator< true >;  ///< on the constant items
 
  /// the iterator on the first item
  [[nodiscard]] iterator begin( void ) {
@@ -325,26 +343,27 @@ class SEList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a block: its header, followed by its places
- struct Node {
-  Node * prev;        ///< the block before, the dummy before the first
-  Node * next;        ///< the block after, the dummy after the last
-  std::size_t head;   ///< the place of the first item
-  std::size_t n;      ///< the number of items
+ struct Node
+ {
+  Node * prev;       ///< the block before, the dummy before the first
+  Node * next;       ///< the block after, the dummy after the last
+  std::size_t head;  ///< the place of the first item
+  std::size_t n;     ///< the number of items
   };
 
  /// the offset of the places from the header
- static constexpr std::size_t OFF = ( sizeof( Node ) + alignof( T ) - 1 ) /
-                                    alignof( T ) * alignof( T );
+ static constexpr std::size_t OFF =
+   ( sizeof( Node ) + alignof( T ) - 1 ) / alignof( T ) * alignof( T );
  /// the alignment of a block
- static constexpr std::size_t ALIGN = alignof( T ) > alignof( Node ) ?
-                                      alignof( T ) : alignof( Node );
+ static constexpr std::size_t ALIGN = alignof( T ) > alignof( Node )
+					? alignof( T )
+					: alignof( Node );
 
  /// the places of the block \f$ u \f$
  T * places( Node * u ) const {
-  return( reinterpret_cast< T * >( reinterpret_cast< unsigned char * >( u )
-                                   + OFF ) );
+  return( reinterpret_cast< T * >( reinterpret_cast< unsigned char * >( u ) +
+				    OFF ) );
   }
 
  /// the place \f$ i < 2 ( b + 1 ) \f$ of a block reduced modulo
@@ -432,12 +451,12 @@ class SEList {
  /// \f$ b - 1 \f$ at least, and count \f$ n \f$ items
  [[nodiscard]] bool bounded( void ) const;
 
- mutable Node f_dummy;        ///< the dummy, before the first block
- Node * f_spare = nullptr;    ///< a block kept for later
- std::size_t f_n = 0;         ///< the number of items
- std::size_t f_blocks = 0;    ///< the number of blocks
- std::size_t f_b;             ///< the parameter \f$ b \f$
- std::size_t f_cap;           ///< the places of a block, b + 1
+ mutable Node f_dummy;      ///< the dummy, before the first block
+ Node * f_spare = nullptr;  ///< a block kept for later
+ std::size_t f_n = 0;       ///< the number of items
+ std::size_t f_blocks = 0;  ///< the number of blocks
+ std::size_t f_b;           ///< the parameter \f$ b \f$
+ std::size_t f_cap;         ///< the places of a block, b + 1
 
  };  // end( class SEList )
 
@@ -453,7 +472,7 @@ class SEList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SEList.h included */
+#endif /* SEList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File SEList.h ----------------------------*/

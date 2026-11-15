@@ -58,7 +58,7 @@
 
 #ifndef __ADS_Algebra
  #define __ADS_Algebra
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,21 +73,24 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE CONCEPTS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /// whether `G::commutative` is declared and true
 template< class G >
 constexpr bool commutativeFlag( void )
 {
- if constexpr( requires { { G::commutative } -> std::convertible_to< bool >;
-                        } )
+ if constexpr( requires {
+		{ G::commutative } -> std::convertible_to< bool >;
+	        } )
   return( bool( G::commutative ) );
  else
   return( false );
@@ -97,8 +100,9 @@ constexpr bool commutativeFlag( void )
 template< class G >
 constexpr bool selectiveFlag( void )
 {
- if constexpr( requires { { G::selective } -> std::convertible_to< bool >;
-                        } )
+ if constexpr( requires {
+		{ G::selective } -> std::convertible_to< bool >;
+	        } )
   return( bool( G::selective ) );
  else
   return( false );
@@ -110,7 +114,8 @@ constexpr bool selectiveFlag( void )
 /// a monoid on `G::Value`: the identity `G::identity()` and the associative
 /// operation `G::combine( a , b )`
 template< class G >
-concept Monoid = requires( const typename G::Value & a ) {
+concept Monoid = requires( const typename G::Value & a )
+{
  { G::identity() } -> std::convertible_to< typename G::Value >;
  { G::combine( a , a ) } -> std::convertible_to< typename G::Value >;
  };
@@ -122,7 +127,8 @@ concept CommutativeMonoid = Monoid< G > && detail::commutativeFlag< G >();
 /// a monoid with the inverse `G::inverse( a )`, i.e., `combine( inverse( a
 /// ) , a )` and `combine( a , inverse( a ) )` are the identity
 template< class G >
-concept Group = Monoid< G > && requires( const typename G::Value & a ) {
+concept Group = Monoid< G > && requires( const typename G::Value & a )
+{
  { G::inverse( a ) } -> std::convertible_to< typename G::Value >;
  };
 
@@ -140,19 +146,20 @@ concept Selective = Monoid< G > && detail::selectiveFlag< G >();
 /// \f$ g \f$, then \f$ f \f$), and `A::apply( f , a , n )`, the map applied
 /// to the aggregate \f$ a \f$ of \f$ n \f$ values
 template< class A , class G >
-concept Action = Monoid< G > &&
-                 requires( const typename A::Map & f ,
-                           const typename G::Value & a , std::size_t n ) {
- { A::id() } -> std::convertible_to< typename A::Map >;
- { A::compose( f , f ) } -> std::convertible_to< typename A::Map >;
- { A::apply( f , a , n ) } -> std::convertible_to< typename G::Value >;
- };
+concept Action =
+  Monoid< G > && requires( const typename A::Map & f ,
+			   const typename G::Value & a , std::size_t n )
+{
+   { A::id() } -> std::convertible_to< typename A::Map >;
+   { A::compose( f , f ) } -> std::convertible_to< typename A::Map >;
+   { A::apply( f , a , n ) } -> std::convertible_to< typename G::Value >;
+   };
 
 /// whether the values of `G` are exact, false for the floating point types,
 /// whose groups drift by rounding when a value leaves by its inverse
 template< class G >
 inline constexpr bool exact_v =
- ! std::is_floating_point_v< typename G::Value >;
+  ! std::is_floating_point_v< typename G::Value >;
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE ALGEBRAS ------------------------------*/
@@ -160,9 +167,10 @@ inline constexpr bool exact_v =
 
 /// the abelian group of the sums of `T`, of identity `T()`
 template< class T >
-struct SumOf {
- using Value = T;                              ///< the sums
- static constexpr bool commutative = true;     ///< \f$ a + b = b + a \f$
+struct SumOf
+{
+ using Value = T;                           ///< the sums
+ static constexpr bool commutative = true;  ///< \f$ a + b = b + a \f$
  /// 0, the value made by `T()`
  static constexpr Value identity( void ) { return( T() ); }
  /// \f$ a + b \f$
@@ -176,10 +184,11 @@ struct SumOf {
 /// the selective commutative monoid of the least value of `T`, of identity
 /// \f$ +\infty \f$ if `T` has it, its largest value otherwise
 template< class T >
-struct MinOf {
- using Value = T;                              ///< the minima
- static constexpr bool commutative = true;     ///< it commutes
- static constexpr bool selective = true;       ///< one of the two
+struct MinOf
+{
+ using Value = T;                           ///< the minima
+ static constexpr bool commutative = true;  ///< it commutes
+ static constexpr bool selective = true;    ///< one of the two
  /// the largest value of the type
  static constexpr Value identity( void ) {
   if constexpr( std::numeric_limits< T >::has_infinity )
@@ -196,10 +205,11 @@ struct MinOf {
 /// the selective commutative monoid of the largest value of `T`, of
 /// identity \f$ -\infty \f$ if `T` has it, its least value otherwise
 template< class T >
-struct MaxOf {
- using Value = T;                              ///< the maxima
- static constexpr bool commutative = true;     ///< it commutes
- static constexpr bool selective = true;       ///< one of the two
+struct MaxOf
+{
+ using Value = T;                           ///< the maxima
+ static constexpr bool commutative = true;  ///< it commutes
+ static constexpr bool selective = true;    ///< one of the two
  /// the least value of the type
  static constexpr Value identity( void ) {
   if constexpr( std::numeric_limits< T >::has_infinity )
@@ -219,7 +229,7 @@ struct MaxOf {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Algebra.h included */
+#endif /* Algebra.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Algebra.h ---------------------------*/

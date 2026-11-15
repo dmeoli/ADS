@@ -64,7 +64,7 @@
 
 #ifndef __ADS_PrefixSearch
  #define __ADS_PrefixSearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -86,7 +86,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the number of strings of the sorted \f$ A \f$ smaller than \f$ Q \f$
 ///
@@ -107,9 +108,9 @@ namespace ADS {
 /// \f]
 /// \pre \f$ A \f$ is sorted (audit)
 /// \post \f$ A[ r - 1 ] < Q \le A[ r ] \f$
-[[nodiscard]] inline std::size_t lexicographicPosition(
-                                       const std::vector< std::string > & A ,
-                                       std::string_view Q );
+[[nodiscard]] inline std::size_t
+lexicographicPosition( const std::vector< std::string > & A ,
+		       std::string_view Q );
 
 /// the number of strings of the sorted \f$ A \f$ smaller than \f$ P\# \f$,
 /// i.e., smaller than \f$ P \f$ or prefixed by \f$ P \f$
@@ -132,9 +133,8 @@ namespace ADS {
 /// \pre \f$ A \f$ is sorted (audit)
 /// \post the strings before \f$ r \f$ are smaller than \f$ P\# \f$, those
 ///       from \f$ r \f$ on are not
-[[nodiscard]] inline std::size_t prefixEnd(
-                                       const std::vector< std::string > & A ,
-                                       std::string_view P );
+[[nodiscard]] inline std::size_t
+prefixEnd( const std::vector< std::string > & A , std::string_view P );
 
 /// the range \f$ [ l , r ) \f$ of the strings of the sorted \f$ A \f$
 /// prefixed by \f$ P \f$
@@ -149,20 +149,20 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is sorted (audit)
-[[nodiscard]] inline std::pair< std::size_t , std::size_t > prefixRange(
-                                       const std::vector< std::string > & A ,
-                                       std::string_view P );
+[[nodiscard]] inline std::pair< std::size_t , std::size_t >
+prefixRange( const std::vector< std::string > & A , std::string_view P );
 
 /// the length of the longest common prefix of \f$ a \f$ and \f$ b \f$, by
 /// comparing them from their start
 [[nodiscard]] inline std::size_t commonPrefixLength( std::string_view a ,
-                                                     std::string_view b );
+						     std::string_view b );
 
-namespace detail {
+namespace detail
+{
 
 /// \f$ s < P \f$, or \f$ s < P\# \f$ if `upper`
 [[nodiscard]] inline bool precedes( std::string_view s , std::string_view P ,
-                                    bool upper );
+				    bool upper );
 
 /// the integer of the first 8 characters of \f$ s \f$, the first one the
 /// most significant, padded with the character 0
@@ -175,7 +175,8 @@ namespace detail {
 /*--------------------------------------------------------------------------*/
 
 /// the search by interpolation of a sorted array of integers by bins
-class BinnedSearch {
+class BinnedSearch
+{
  public:
  /// the bins of \f$ X \f$, in \f$ O( m ) \f$
  ///
@@ -232,8 +233,8 @@ class BinnedSearch {
  /// the places \f$ [ \mathit{first} , \mathit{last} ) \f$ of \f$ X \f$ in
  /// the bin \f$ j \f$
  /// \pre \f$ j \f$ is less than `bins()`
- [[nodiscard]] std::pair< std::size_t , std::size_t > bin(
-                                                      std::size_t j ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ bin( std::size_t j ) const;
 
  /// the bin of \f$ y \f$, or none if \f$ y \f$ is out of
  /// \f$ [ x_1 , x_m ] \f$
@@ -250,8 +251,8 @@ class BinnedSearch {
 
  private:
  std::vector< std::uint64_t > f_X;
- std::uint64_t f_b = 1;                     ///< the width of a bin
- std::vector< std::size_t > f_start;        ///< where each bin starts
+ std::uint64_t f_b = 1;               ///< the width of a bin
+ std::vector< std::size_t > f_start;  ///< where each bin starts
  };
 
 /*--------------------------------------------------------------------------*/
@@ -259,7 +260,8 @@ class BinnedSearch {
 /*--------------------------------------------------------------------------*/
 
 /// the search by interpolation of a sorted array of strings by bins
-class BinnedStringSearch {
+class BinnedStringSearch
+{
  public:
  /// the bins of the integers of the first 8 characters of \f$ A \f$, a
  /// `BinnedSearch` on them
@@ -313,8 +315,8 @@ class BinnedStringSearch {
 
  /// the range \f$ [ l , r ) \f$ of the strings prefixed by \f$ P \f$, by
  /// `lexicographicPosition()` and `prefixEnd()`
- [[nodiscard]] std::pair< std::size_t , std::size_t > prefixRange(
-                                                   std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ prefixRange( std::string_view P ) const;
 
  /// the `BinnedSearch` of the integers of the strings
  [[nodiscard]] const BinnedSearch & keys( void ) const;
@@ -323,10 +325,10 @@ class BinnedStringSearch {
  /// the number of strings that precede P (or P# if upper), the bin found
  /// by the integer k
  [[nodiscard]] std::size_t rank( std::string_view P , bool upper ,
-                                 std::uint64_t k ) const;
+				 std::uint64_t k ) const;
 
  std::vector< std::string > f_A;
- BinnedSearch f_K;                          ///< on the integers of A
+ BinnedSearch f_K;  ///< on the integers of A
  };
 
 /*--------------------------------------------------------------------------*/
@@ -341,7 +343,7 @@ class BinnedStringSearch {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PrefixSearch.h included */
+#endif /* PrefixSearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File PrefixSearch.h ------------------------*/

@@ -50,7 +50,7 @@
 
 #ifndef __ADS_Heapsort
  #define __ADS_Heapsort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,7 +69,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 
@@ -94,7 +95,7 @@ namespace ADS {
 /// \pre \f$ i < \mathit{dim} \le n \f$
 template< class T , class C = std::less<> >
 void maxHeapRestore( std::vector< T > & A , std::size_t i , std::size_t dim ,
-                     C less = C() );
+		     C less = C() );
 
 /// \f$ A \f$ made a max-heap, \f$ O( n ) \f$ time
 ///
@@ -146,7 +147,7 @@ bool isMaxHeap( const std::vector< T > & A , std::size_t dim , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Heapsort.h included */
+#endif /* Heapsort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Heapsort.h ---------------------------*/

@@ -52,7 +52,7 @@
 
 #ifndef __ADS_HugePageAllocator
  #define __ADS_HugePageAllocator
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -71,16 +71,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the large blocks given back and kept by a thread, for the requests of
 /// the same size
-struct HugeCache {
- static constexpr int N = 16;                            ///< the blocks
- static constexpr std::size_t BYTES = std::size_t( 64 ) << 20;   ///< all
- static constexpr std::size_t LEAST = std::size_t( 8 ) << 20;    ///< each
+struct HugeCache
+{
+ static constexpr int N = 16;                                   ///< the blocks
+ static constexpr std::size_t BYTES = std::size_t( 64 ) << 20;  ///< all
+ static constexpr std::size_t LEAST = std::size_t( 8 ) << 20;   ///< each
 
  /// the blocks kept
  void * p[ N ];
@@ -123,7 +126,7 @@ struct HugeCache {
 /// die later) go to the system
 inline bool & hugeCacheGone( void )
 {
- thread_local bool gone = false;           // no destructor: always there
+ thread_local bool gone = false;  // no destructor: always there
  return( gone );
  }
 
@@ -151,11 +154,11 @@ inline HugeCache & hugeCache( void )
 
 /// an allocator of objects of type `T`, on huge pages for the large blocks
 template< class T >
-class HugePageAllocator {
+class HugePageAllocator
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the objects
  using value_type = T;
 
@@ -167,7 +170,7 @@ class HugePageAllocator {
 
  /// the allocator of objects of type `T`, from that of type `U`
  template< class U >
- HugePageAllocator( const HugePageAllocator< U > & ) noexcept {}
+ HugePageAllocator( const HugePageAllocator< U > & ) noexcept { }
 
  /// room for \f$ n \f$ objects, on huge pages if they fill one at least
  ///
@@ -188,14 +191,13 @@ class HugePageAllocator {
  /// \end{array}}
  /// \f]
  [[nodiscard]] T * allocate( std::size_t n ) {
-  if( n > ( std::numeric_limits< std::size_t >::max() - PAGE ) /
-          sizeof( T ) )
+  if( n > ( std::numeric_limits< std::size_t >::max() - PAGE ) / sizeof( T ) )
    throw( std::bad_array_new_length() );
   const std::size_t b = n * sizeof( T );
   if( b < PAGE )
    return( std::allocator< T >().allocate( n ) );
   const std::size_t r = ( b + PAGE - 1 ) & ~( PAGE - 1 );
-  if( ! detail::hugeCacheGone() )           // a block kept
+  if( ! detail::hugeCacheGone() )  // a block kept
    if( void * q = detail::hugeCache().take( r ) )
     return( static_cast< T * >( q ) );
   void * p = ::operator new( r , std::align_val_t( PAGE ) );
@@ -214,8 +216,7 @@ class HugePageAllocator {
   if( b < PAGE )
    std::allocator< T >().deallocate( p , n );
   else if( detail::hugeCacheGone() ||
-           ! detail::hugeCache().keep( p ,
-                                       ( b + PAGE - 1 ) & ~( PAGE - 1 ) ) )
+	   ! detail::hugeCache().keep( p , ( b + PAGE - 1 ) & ~( PAGE - 1 ) ) )
    ::operator delete( p , std::align_val_t( PAGE ) );
   }
 
@@ -233,7 +234,7 @@ class HugePageAllocator {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* HugePageAllocator.h included */
+#endif /* HugePageAllocator.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File HugePageAllocator.h ----------------------*/

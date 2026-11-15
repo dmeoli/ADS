@@ -57,7 +57,8 @@
 /*--------------------------------- MAIN -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 using K = std::uint64_t;
 
@@ -65,19 +66,21 @@ using K = std::uint64_t;
 /// `make()` builds with the keys S
 template< class M , class F >
 void measure( const char * what , const std::string & who ,
-              const std::vector< K > & S , const std::vector< K > & Q ,
-              int r , M && make , F && has )
+	      const std::vector< K > & S , const std::vector< K > & Q , int r ,
+	      M && make , F && has )
 {
  if( ADS::bench::skip( who ) )
   return;
  const auto t = make( S );
  const double ns = ADS::bench::median( [ & ]() { return( 0 ); } ,
-  [ & ]( int ) {
-   std::uint64_t c = 0;
-   for( const K k : Q )
-    c += has( *t , k ) ? 1 : 0;
-   ADS::bench::sink = ADS::bench::sink + c;
-   } , r , Q.size() );
+				       [ & ]( int ) {
+					std::uint64_t c = 0;
+					for( const K k : Q )
+					 c += has( *t , k ) ? 1 : 0;
+					ADS::bench::sink =
+					  ADS::bench::sink + c;
+				        } ,
+				       r , Q.size() );
  ADS::bench::print( "hashattack" , what , S.size() , who , ns );
  }
 
@@ -100,46 +103,60 @@ int main( int argc , char ** argv )
    const char * what = c == 0 ? "find-attack" : "find-random";
    const auto & SS = c == 0 ? stdAttack : random;
    const auto & SP = c == 0 ? powAttack : random;
-   measure( what , "std::unordered_map" , SS , SS , o.runs ,
-            [ & ]( const std::vector< K > & S ) {
-             auto m = std::make_unique< std::unordered_map< K , K > >();
-             m->reserve( n );
-             for( const K k : S ) m->emplace( k , k );
-             return( m ); } ,
-            []( const auto & m , K k ) { return( m.count( k ) > 0 ); } );
-   measure( what , "ChainedHashTable/std::hash" , SP , SP , o.runs ,
-            [ & ]( const std::vector< K > & S ) {
-             auto t = std::make_unique< ADS::ChainedHashTable< K , K > >(
-                                               1024 , 1.0 , 1.0 / 3 );
-             for( const K k : S ) t->insert( k , k );
-             return( t ); } ,
-            []( const auto & t , K k ) { return( t.contains( k ) ); } );
+   measure(
+     what , "std::unordered_map" , SS , SS , o.runs ,
+     [ & ]( const std::vector< K > & S ) {
+      auto m = std::make_unique< std::unordered_map< K , K > >();
+      m->reserve( n );
+      for( const K k : S )
+       m->emplace( k , k );
+      return( m );
+      } ,
+     []( const auto & m , K k ) { return( m.count( k ) > 0 ); } );
+   measure(
+     what , "ChainedHashTable/std::hash" , SP , SP , o.runs ,
+     [ & ]( const std::vector< K > & S ) {
+      auto t = std::make_unique< ADS::ChainedHashTable< K , K > >( 1024 , 1.0 ,
+								  1.0 / 3 );
+      for( const K k : S )
+       t->insert( k , k );
+      return( t );
+      } ,
+     []( const auto & t , K k ) { return( t.contains( k ) ); } );
    using MH = ADS::MultiplicativeHash< K >;
-   measure( what , "ChainedHashTable/multiplicative" , SP , SP , o.runs ,
-            [ & ]( const std::vector< K > & S ) {
-             auto t = std::make_unique< ADS::ChainedHashTable< K , K ,
-                                       ADS::Chain::FRONT , MH > >(
-                                       1024 , 1.0 , 1.0 / 3 , MH( o.seed ) );
-             for( const K k : S ) t->insert( k , k );
-             return( t ); } ,
-            []( const auto & t , K k ) { return( t.contains( k ) ); } );
-   measure( what , "OpenHashTable/std::hash" , SP , SP , o.runs ,
-            [ & ]( const std::vector< K > & S ) {
-             auto t = std::make_unique< ADS::OpenHashTable< K , K > >(
-                                       1024 , ADS::Probing::linear( 1 ) ,
-                                       true );
-             for( const K k : S ) t->insert( k , k );
-             return( t ); } ,
-            []( const auto & t , K k ) { return( t.contains( k ) ); } );
-   measure( what , "OpenHashTable/tabulation" , SP , SP , o.runs ,
-            [ & ]( const std::vector< K > & S ) {
-             auto t = std::make_unique< ADS::OpenHashTable< K , K ,
-                                       ADS::TabulationHash > >(
-                                       1024 , ADS::Probing::linear( 1 ) ,
-                                       true , ADS::TabulationHash( o.seed ) );
-             for( const K k : S ) t->insert( k , k );
-             return( t ); } ,
-            []( const auto & t , K k ) { return( t.contains( k ) ); } );
+   measure(
+     what , "ChainedHashTable/multiplicative" , SP , SP , o.runs ,
+     [ & ]( const std::vector< K > & S ) {
+      auto t = std::make_unique<
+	ADS::ChainedHashTable< K , K , ADS::Chain::FRONT , MH > >(
+	1024 , 1.0 , 1.0 / 3 , MH( o.seed ) );
+      for( const K k : S )
+       t->insert( k , k );
+      return( t );
+      } ,
+     []( const auto & t , K k ) { return( t.contains( k ) ); } );
+   measure(
+     what , "OpenHashTable/std::hash" , SP , SP , o.runs ,
+     [ & ]( const std::vector< K > & S ) {
+      auto t = std::make_unique< ADS::OpenHashTable< K , K > >(
+	1024 , ADS::Probing::linear( 1 ) , true );
+      for( const K k : S )
+       t->insert( k , k );
+      return( t );
+      } ,
+     []( const auto & t , K k ) { return( t.contains( k ) ); } );
+   measure(
+     what , "OpenHashTable/tabulation" , SP , SP , o.runs ,
+     [ & ]( const std::vector< K > & S ) {
+      auto t =
+	std::make_unique< ADS::OpenHashTable< K , K , ADS::TabulationHash > >(
+	  1024 , ADS::Probing::linear( 1 ) , true ,
+	  ADS::TabulationHash( o.seed ) );
+      for( const K k : S )
+       t->insert( k , k );
+      return( t );
+      } ,
+     []( const auto & t , K k ) { return( t.contains( k ) ); } );
    }
   }
  return( 0 );

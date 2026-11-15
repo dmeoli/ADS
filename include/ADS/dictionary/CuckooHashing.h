@@ -83,7 +83,7 @@
 
 #ifndef __ADS_CuckooHashing
  #define __ADS_CuckooHashing
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -107,7 +107,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS CuckooHashTable --------------------------*/
@@ -115,19 +116,19 @@ namespace ADS {
 
 /// a DICTIONARY on the cuckoo hashing, with a stash
 template< class K , class V , class H = std::hash< K > >
-class CuckooHashTable {
+class CuckooHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty table of \f$ m \f$ places and a stash of \f$ s \f$ places
  /// \pre \f$ m \ge 2 \f$ and \f$ 0 < \mathit{maxLoad} < 1 / 2 \f$
  explicit CuckooHashTable( std::size_t m = 16 , double maxLoad = 0.4 ,
-                           std::size_t s = 0 , std::uint64_t seed = 1 ,
-                           H h = H() );
+			   std::size_t s = 0 , std::uint64_t seed = 1 ,
+			   H h = H() );
 
  /// the value of the key \f$ k \f$, or nothing, from its two places
  /// \f$ h_1( k ) \f$ and \f$ h_2( k ) \f$ and the stash, \f$ O( 1 ) \f$ in the
@@ -194,15 +195,14 @@ class CuckooHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Cell {
-  bool full = false;              ///< whether the cell holds a key
-  K key{};                        ///< the key
-  V value{};                      ///< its value
+ struct Cell
+ {
+  bool full = false;  ///< whether the cell holds a key
+  K key{};            ///< the key
+  V value{};          ///< its value
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ), in the order of the
@@ -210,7 +210,8 @@ class CuckooHashTable {
  // invalidates it
 
  /// the places and the stash, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places, the stash included
   static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
   /// whether the place \f$ i \f$ holds a key
@@ -219,8 +220,8 @@ class CuckooHashTable {
    }
   /// the pair of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return( std::pair< const K & , const V & >( o.f_T[ i ].key ,
-                                              o.f_T[ i ].value ) );
+   return(
+     std::pair< const K & , const V & >( o.f_T[ i ].key , o.f_T[ i ].value ) );
    }
   };
 
@@ -253,7 +254,6 @@ class CuckooHashTable {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the place of \f$ k \f$ for the function \f$ i \f$ (0 or 1)
  [[nodiscard]] std::size_t place( const K & k , int i ) const;
 
@@ -268,7 +268,7 @@ class CuckooHashTable {
  bool settle( Cell & c );
 
  /// the table rebuilt on \f$ m \f$ places with new functions, with the
-/// `extra` key
+ /// `extra` key
  void rebuild( std::size_t m , std::optional< Cell > extra );
 
  /// the functions of the seed
@@ -278,17 +278,17 @@ class CuckooHashTable {
  /// up to 1024 places, every key so and counted right
  [[nodiscard]] bool placed( const K & k ) const;
 
- std::vector< Cell > f_T;          ///< the m places, then the stash
- std::size_t f_m;                  ///< the places of the table
- std::size_t f_m0;                 ///< the least capacity
- std::size_t f_s;                  ///< the places of the stash
- double f_maxLoad;                 ///< the load past which it doubles
- std::size_t f_n = 0;              ///< the number of keys
- std::size_t f_rehashes = 0;       ///< the rebuilds with new functions
- std::size_t f_evictions = 0;      ///< the evictions
- SplitMix64 f_seeds;               ///< the seeds of the functions
- TabulationHash f_g1 , f_g2;      ///< the two functions
- H f_h;                            ///< the hash of the keys
+ std::vector< Cell > f_T;      ///< the m places, then the stash
+ std::size_t f_m;              ///< the places of the table
+ std::size_t f_m0;             ///< the least capacity
+ std::size_t f_s;              ///< the places of the stash
+ double f_maxLoad;             ///< the load past which it doubles
+ std::size_t f_n = 0;          ///< the number of keys
+ std::size_t f_rehashes = 0;   ///< the rebuilds with new functions
+ std::size_t f_evictions = 0;  ///< the evictions
+ SplitMix64 f_seeds;           ///< the seeds of the functions
+ TabulationHash f_g1 , f_g2;    ///< the two functions
+ H f_h;                        ///< the hash of the keys
 
  };  // end( class CuckooHashTable )
 
@@ -304,7 +304,7 @@ class CuckooHashTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CuckooHashing.h included */
+#endif /* CuckooHashing.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File CuckooHashing.h ------------------------*/

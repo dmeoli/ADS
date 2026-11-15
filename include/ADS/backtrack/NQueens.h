@@ -33,7 +33,7 @@
 
 #ifndef __ADS_NQueens
  #define __ADS_NQueens
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -53,7 +53,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the placements of \f$ n \le 32 \f$ queens, `f( Q )` on each, \f$ Q[ r ] \f$
 /// the column of the queen of the row \f$ r \f$, and true from `f` to stop;
@@ -148,7 +149,7 @@ inline std::string board( const std::vector< int > & Q );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* NQueens.h included */
+#endif /* NQueens.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File NQueens.h ---------------------------*/

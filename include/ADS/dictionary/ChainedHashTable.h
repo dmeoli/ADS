@@ -58,7 +58,7 @@
 
 #ifndef __ADS_ChainedHashTable
  #define __ADS_ChainedHashTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -80,7 +80,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS ChainedHashTable -------------------------*/
@@ -90,26 +91,26 @@ namespace ADS {
 enum class Chain {
  FRONT ,          ///< a new key at the head, nothing moves
  MOVE_TO_FRONT ,  ///< also the key found by `lookup()` goes to the head
- SORTED           ///< the keys of a list in increasing order
+ SORTED          ///< the keys of a list in increasing order
  };
 
 /// a hash table with lists of overflow
 template< class K , class V , Chain C = Chain::FRONT ,
-          class H = std::hash< K > >
+	  class H = std::hash< K > >
  requires( C != Chain::SORTED || std::totally_ordered< K > )
-class ChainedHashTable {
+class ChainedHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty table of \f$ m \f$ lists, which restructures itself or not,
  /// at the loads 2 and \f$ 1 / 2 \f$
  /// \pre \f$ m > 0 \f$, a power of two if \f$ H \f$ is a `PlaceHash`
  explicit ChainedHashTable( std::size_t m , bool restructure = false ,
-                            H h = H() );
+			    H h = H() );
 
  /// the empty table of \f$ m \f$ lists, which doubles when its load
  /// exceeds \f$ g \f$ and halves, down to \f$ m \f$, when it falls below
@@ -211,13 +212,11 @@ class ChainedHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using Pair = std::pair< K , V >;
- using Bucket = List< Pair , false >;   ///< a chain, short: no pool
+ using Bucket = List< Pair , false >;  ///< a chain, short: no pool
  using Pos = typename Bucket::Pos;
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ), list by list, forward;
@@ -226,7 +225,8 @@ class ChainedHashTable {
  // which invalidate it
 
  /// the iterator on the pairs, list by list
- class const_iterator {
+ class const_iterator
+ {
   using Lists = std::vector< Bucket >;
 
   public:
@@ -246,7 +246,8 @@ class ChainedHashTable {
 
   /// on the first pair from the list \f$ b \f$, or at the end
   const_iterator( const Lists * T , std::size_t b ) : f_T( T ) , f_b( b ) {
-   if( f_b < f_T->size() ) f_c = ( *f_T )[ f_b ].begin();
+   if( f_b < f_T->size() )
+    f_c = ( *f_T )[ f_b ].begin();
    settle();
    }
 
@@ -265,19 +266,24 @@ class ChainedHashTable {
    }
 
   /// to the next pair, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same pair, or both at the end
   bool operator==( const const_iterator & o ) const {
-   return( ( f_b == o.f_b ) &&
-           ( ( f_T == nullptr ) || ( f_b >= f_T->size() ) ||
-             ( f_c == o.f_c ) ) );
+   return(
+     ( f_b == o.f_b ) &&
+     ( ( f_T == nullptr ) || ( f_b >= f_T->size() ) || ( f_c == o.f_c ) ) );
    }
 
   private:
-  void settle( void ) {                     // past the empty lists
+  void settle( void ) {  // past the empty lists
    while( ( f_b < f_T->size() ) && ( f_c == ( *f_T )[ f_b ].end() ) )
-    if( ++f_b < f_T->size() ) f_c = ( *f_T )[ f_b ].begin();
+    if( ++f_b < f_T->size() )
+     f_c = ( *f_T )[ f_b ].begin();
    }
 
   const Lists * f_T = nullptr;
@@ -312,10 +318,9 @@ class ChainedHashTable {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the list of \f$ k \f$, \f$ H( k ) = h( k ) \bmod m \f$, or
  /// `h.place( k , m )` for a `PlaceHash`
-[[nodiscard]] std::size_t place( const K & k ) const;
+ [[nodiscard]] std::size_t place( const K & k ) const;
 
  /// the cell of \f$ k \f$, or where the search stopped: the end of the list,
  /// or for a sorted list the first larger key
@@ -332,21 +337,21 @@ class ChainedHashTable {
  /// the keys of the list \f$ i \f$ in it, sorted if they must be, \f$ k \f$ at
  /// most once; their number goes to `n`
  [[nodiscard]] bool listOk( std::size_t i , const K & k ,
-                            std::size_t & n ) const;
+			    std::size_t & n ) const;
 
  /// every pair moved to a table of \f$ m \f$ lists
-void rebuild( std::size_t m );
+ void rebuild( std::size_t m );
 
- mutable std::vector< Bucket > f_T;       ///< the lists
- std::size_t f_m0;                         ///< the initial size
- bool f_restructure;                       ///< whether it restructures
- double f_grow = 2;                        ///< the load that doubles it
- double f_shrink = 0.5;                    ///< the load that halves it
- H f_h;                                    ///< the hash of the keys
- std::size_t f_size = 0;                   ///< the number of keys
- mutable std::size_t f_probes = 0;         ///< see `probes()`
- std::size_t f_rebuilds = 0;               ///< see `restructures()`
- std::size_t f_moved = 0;                  ///< see `moved()`
+ mutable std::vector< Bucket > f_T;  ///< the lists
+ std::size_t f_m0;                   ///< the initial size
+ bool f_restructure;                 ///< whether it restructures
+ double f_grow = 2;                  ///< the load that doubles it
+ double f_shrink = 0.5;              ///< the load that halves it
+ H f_h;                              ///< the hash of the keys
+ std::size_t f_size = 0;             ///< the number of keys
+ mutable std::size_t f_probes = 0;   ///< see `probes()`
+ std::size_t f_rebuilds = 0;         ///< see `restructures()`
+ std::size_t f_moved = 0;            ///< see `moved()`
 
  };  // end( class ChainedHashTable )
 
@@ -362,7 +367,7 @@ void rebuild( std::size_t m );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ChainedHashTable.h included */
+#endif /* ChainedHashTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File ChainedHashTable.h -----------------------*/

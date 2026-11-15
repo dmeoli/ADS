@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the items, \f$ b \f$, that the buckets of `learnedSortIf()` aim at
 inline constexpr std::size_t kLearnedBucket = 4096;
@@ -43,9 +45,9 @@ inline constexpr std::size_t kCellSplitters = 4;
 /// cells per bucket that holds at most \f$ c_{\max} \f$ splitters per
 /// cell; with none, the model does not fit
 template< class U >
-class CdfModel {
+class CdfModel
+{
  public:
-
  /// the model of the sorted keys \f$ S[ 0 .. s ) \f$, \f$ s \ge 2 \f$,
  /// for \f$ k \f$ buckets, \f$ k \ge 2 \f$ a power of 2
  CdfModel( const U * S , std::size_t s , std::size_t k ) {
@@ -123,16 +125,15 @@ class CdfModel {
   }
 
  private:
-
- std::vector< U > f_sp;                    ///< the splitters, padded
- std::vector< std::uint32_t > f_first;     ///< the first splitter of each
-                                           ///< cell, and their end
- U f_lo = 0;                               ///< \f$ S_{\min} \f$
- int f_shift = 0;                          ///< \f$ \log_2 w \f$
- std::size_t f_last = 0;                   ///< the last cell
- std::size_t f_ns = 0;                     ///< the splitters, not padded
- bool f_eq = false;                        ///< a splitter repeated
- bool f_fit = false;                       ///< whether the model fits
+ std::vector< U > f_sp;                 ///< the splitters, padded
+ std::vector< std::uint32_t > f_first;  ///< the first splitter of each
+					///< cell, and their end
+ U f_lo = 0;                            ///< \f$ S_{\min} \f$
+ int f_shift = 0;                       ///< \f$ \log_2 w \f$
+ std::size_t f_last = 0;                ///< the last cell
+ std::size_t f_ns = 0;                  ///< the splitters, not padded
+ bool f_eq = false;                     ///< a splitter repeated
+ bool f_fit = false;                    ///< whether the model fits
  };
 
 /// the keys of `radixKey()` of a sample of \f$ s \f$ items of \f$ A \f$ at
@@ -161,8 +162,9 @@ bool learnedSortIf( std::vector< T > & A )
  const std::size_t n = A.size();
  if( n < 4 * kLearnedBucket )
   return( false );
- const std::size_t k = std::clamp< std::size_t >(
-                        std::bit_floor( n / kLearnedBucket ) , 64 , 2048 );
+ const std::size_t k =
+   std::clamp< std::size_t >( std::bit_floor( n / kLearnedBucket ) , 64 ,
+			      2048 );
  const auto S = learnedSample( A , std::min( n , 16 * k ) );
  const CdfModel< U > M( S.data() , S.size() , k );
  if( ( M.splitters() < k / 2 ) || ! M.fits() )
@@ -200,7 +202,7 @@ bool learnedSortIf( std::vector< T > & A )
    }
   for( std::size_t b = 0 ; b < K ; ++b )
    std::memcpy( B + next[ b ] , line[ b ].data() , fill[ b ] * sizeof( T ) );
- }
+  }
  // each bucket back to its place, and sorted there
  for( std::size_t b = 0 ; b < K ; ++b ) {
   const std::size_t s = start[ b ] , m = start[ b + 1 ] - s;
@@ -208,8 +210,9 @@ bool learnedSortIf( std::vector< T > & A )
   if( ( m > 1 ) && ! M.equal( b ) )
    vectorQuickSort( a + s , m );
   }
- ADS_AUDIT( sortedPermutation( A , before , []( T x , T y ) {
-  return( radixKey( x ) < radixKey( y ) ); } ) );
+ ADS_AUDIT( sortedPermutation(
+   A , before ,
+   []( T x , T y ) { return( radixKey( x ) < radixKey( y ) ); } ) );
  return( true );
  }
 
@@ -221,8 +224,9 @@ template< VectorKey T >
 void learnedSort( std::vector< T > & A )
 {
  if( ! detail::learnedSortIf( A ) )
-  sampleSort( A , []( T x , T y ) {        // the total order of the
-   return( radixKey( x ) < radixKey( y ) ); } );   // keys, as the model's
+  sampleSort( A , []( T x , T y ) {  // the total order of the
+   return( radixKey( x ) < radixKey( y ) );
+   } );  // keys, as the model's
  }
 
 /*--------------------------------------------------------------------------*/

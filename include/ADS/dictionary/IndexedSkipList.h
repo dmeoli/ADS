@@ -45,7 +45,7 @@
 
 #ifndef __ADS_IndexedSkipList
  #define __ADS_IndexedSkipList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,7 +69,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS IndexedSkipList --------------------------*/
@@ -78,13 +79,13 @@ namespace ADS {
 /// a DICTIONARY on a skip list with the widths of the links, which reaches
 /// a key by its rank
 template< std::totally_ordered K , class V >
-class IndexedSkipList {
+class IndexedSkipList
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty list, its levels drawn by a generator from the seed
  explicit IndexedSkipList( std::uint64_t seed = 1 );
@@ -179,41 +180,42 @@ class IndexedSkipList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr int kMax = 32;   ///< the largest number of levels
+ static constexpr int kMax = 32;  ///< the largest number of levels
 
  struct Node;
 
  /// a link of a level: the successor and the width
- struct Link {
-  Node * next;                     ///< the successor, nil at the end
-  std::size_t w;                   ///< the ranks it advances by
+ struct Link
+ {
+  Node * next;    ///< the successor, nil at the end
+  std::size_t w;  ///< the ranks it advances by
   };
 
  /// a node, followed in its block by the tower of its links
- struct Node {
-  K key;                           ///< the key
-  V value;                         ///< its value
-  int height;                      ///< the number of levels
+ struct Node
+ {
+  K key;       ///< the key
+  V value;     ///< its value
+  int height;  ///< the number of levels
   };
 
  /// the offset of the tower from the start of a node
  static constexpr std::size_t kTower =
-  ( sizeof( Node ) + alignof( Link ) - 1 ) / alignof( Link ) *
-  alignof( Link );
+   ( sizeof( Node ) + alignof( Link ) - 1 ) / alignof( Link ) *
+   alignof( Link );
 
  /// the tower of the links of \f$ x \f$
  static Link * tower( Node * x ) {
   return( std::launder( reinterpret_cast< Link * >(
-           reinterpret_cast< std::byte * >( x ) + kTower ) ) );
+    reinterpret_cast< std::byte * >( x ) + kTower ) ) );
   }
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the iterator on the pairs, along the bottom level
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a reference to an item
   using reference = std::pair< const K & , const V & >;
@@ -230,7 +232,7 @@ class IndexedSkipList {
   const_iterator( void ) = default;
 
   /// on the pair of the node \f$ x \f$
-  explicit const_iterator( Node * x ) : f_x( x ) {}
+  explicit const_iterator( Node * x ) : f_x( x ) { }
 
   /// the pair of the node
   reference operator*( void ) const {
@@ -242,7 +244,11 @@ class IndexedSkipList {
    return( *this );
    }
   /// to the next node, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same node
   bool operator==( const const_iterator & o ) const = default;
@@ -253,18 +259,20 @@ class IndexedSkipList {
 
  /// the type of the items, for the standard library
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
- using iterator = const_iterator;          ///< the constant iterator
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
+ using iterator = const_iterator;         ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
   return( const_iterator( f_head[ 0 ].next ) );
   }
  /// the iterator past the largest key
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
  /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
  /// as `end()`
@@ -303,7 +311,6 @@ class IndexedSkipList {
  [[nodiscard]] const_iterator select( std::size_t i ) const;
 
  private:
-
  /// the tower of \f$ x \f$, that of the head if \f$ x \f$ is nil
  Link * towerOf( Node * x ) const {
   return( x ? tower( x ) : const_cast< Link * >( f_head ) );
@@ -312,7 +319,7 @@ class IndexedSkipList {
  /// the last node before \f$ k \f$ on each level in `update` and its rank
  /// plus one in `rank`; the node of \f$ k \f$, or nil
  Node * before( const K & k , Node * update[ kMax ] ,
-                std::size_t rank[ kMax ] ) const;
+		std::size_t rank[ kMax ] ) const;
 
  /// a new node of \f$ L \f$ levels
  static Node * make( const K & k , const V & v , int L );
@@ -323,10 +330,10 @@ class IndexedSkipList {
  /// the keys sorted and the widths consistent, \f$ O( n \log n ) \f$
  [[nodiscard]] bool valid( void ) const;
 
- Link f_head[ kMax ];              ///< the tower of the head
- int f_levels = 0;                 ///< the levels in use
- std::size_t f_size = 0;           ///< the number of keys
- SplitMix64 f_g;                   ///< the generator of the levels
+ Link f_head[ kMax ];     ///< the tower of the head
+ int f_levels = 0;        ///< the levels in use
+ std::size_t f_size = 0;  ///< the number of keys
+ SplitMix64 f_g;          ///< the generator of the levels
 
  };  // end( class IndexedSkipList )
 
@@ -342,7 +349,7 @@ class IndexedSkipList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IndexedSkipList.h included */
+#endif /* IndexedSkipList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File IndexedSkipList.h -----------------------*/

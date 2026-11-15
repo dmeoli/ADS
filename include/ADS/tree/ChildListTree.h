@@ -38,7 +38,7 @@
 
 #ifndef __ADS_ChildListTree
  #define __ADS_ChildListTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -54,7 +54,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS ChildListTree ----------------------------*/
@@ -62,13 +63,13 @@ namespace ADS {
 
 /// an ordered tree whose nodes keep the list of their children
 template< class T >
-class ChildListTree {
+class ChildListTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;              ///< the type of the values
- static constexpr int NIL = -1;   ///< no node
+ using Item = T;                 ///< the type of the values
+ static constexpr int NIL = -1;  ///< no node
 
  /// the empty tree
  ChildListTree( void ) = default;
@@ -201,14 +202,14 @@ class ChildListTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: its value, its parent, its children and its own cell
- struct Node {
-  T value;                            ///< the value
-  int parent;                         ///< the parent, or the next free place
-  List< int > children;               ///< the places of the children
-  typename List< int >::Pos where;    ///< the cell of the node in its parent
-  bool used;                          ///< false for a free place
+ struct Node
+ {
+  T value;                          ///< the value
+  int parent;                       ///< the parent, or the next free place
+  List< int > children;             ///< the places of the children
+  typename List< int >::Pos where;  ///< the cell of the node in its parent
+  bool used;                        ///< false for a free place
   };
 
  const Node & node( int n ) const;
@@ -233,10 +234,10 @@ class ChildListTree {
  /// the list of their parent, and are all the nodes, \f$ O( n ) \f$
  [[nodiscard]] bool linked( void ) const;
 
- std::vector< Node > f_N;   ///< the nodes, used or free
- int f_root = NIL;          ///< the root
- int f_free = NIL;          ///< the first free place, linked by parent
- int f_size = 0;            ///< the number of nodes
+ std::vector< Node > f_N;  ///< the nodes, used or free
+ int f_root = NIL;         ///< the root
+ int f_free = NIL;         ///< the first free place, linked by parent
+ int f_size = 0;           ///< the number of nodes
 
  };  // end( class ChildListTree )
 
@@ -252,7 +253,7 @@ class ChildListTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ChildListTree.h included */
+#endif /* ChildListTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ChildListTree.h ------------------------*/

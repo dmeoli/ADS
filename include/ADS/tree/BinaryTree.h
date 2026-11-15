@@ -66,7 +66,7 @@
 
 #ifndef __ADS_BinaryTree
  #define __ADS_BinaryTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -91,7 +91,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS BinaryTree ------------------------------*/
@@ -99,12 +100,12 @@ namespace ADS {
 
 /// a binary tree with pointers to the parent and to the two children
 template< class T >
-class BinaryTree {
+class BinaryTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the values
+ using Item = T;  ///< the type of the values
 
  /// a new tree, made of one node containing \f$ v \f$ (the `Tree( v )` of
  /// the book)
@@ -188,12 +189,11 @@ class BinaryTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// \f$ t \f$ as the child `child`, missing
- void insert( BinaryTree * & child , BinaryTree * t );
+ void insert( BinaryTree *& child , BinaryTree * t );
 
  /// the subtree of the child `child`, detached
- BinaryTree * detach( BinaryTree * & child );
+ BinaryTree * detach( BinaryTree *& child );
 
  /// each child of this node has it as its parent (the links that a
  /// change of the tree touches), \f$ O( 1 ) \f$ per child
@@ -202,10 +202,10 @@ class BinaryTree {
  /// the root of the tree of this node, \f$ O( \mathit{depth} ) \f$
  [[nodiscard]] const BinaryTree * top( void ) const;
 
- T f_value;                       ///< the value
- BinaryTree * f_parent = nullptr; ///< the parent
- BinaryTree * f_left = nullptr;   ///< the left child
- BinaryTree * f_right = nullptr;  ///< the right child
+ T f_value;                        ///< the value
+ BinaryTree * f_parent = nullptr;  ///< the parent
+ BinaryTree * f_left = nullptr;    ///< the left child
+ BinaryTree * f_right = nullptr;   ///< the right child
 
  };  // end( class BinaryTree )
 
@@ -275,7 +275,7 @@ BinaryTree< T > * copy( const BinaryTree< T > * t );
 /// \f]
 template< class T >
 BinaryTree< T > * join( const T & v , const BinaryTree< T > * l ,
-                        const BinaryTree< T > * r );
+			const BinaryTree< T > * r );
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- REPRESENTATIONS ------------------------------*/
@@ -362,16 +362,20 @@ inline long dary_parent( long i , long d );
 // the nodes of a binary tree as ranges, forward, by the links to the
 // parents, with no stack; *it is a node
 
-namespace detail {
+namespace detail
+{
 
 /// the preorder below a root
-struct BinaryPreorder {
+struct BinaryPreorder
+{
  static constexpr std::nullptr_t none = nullptr;
  template< class N >
  static N * next( const void * , N * n , N * root ) {
-  if( n->left() ) return( n->left() );
-  if( n->right() ) return( n->right() );
-  for( ; n != root ; n = n->parent() )      // up to a right sibling
+  if( n->left() )
+   return( n->left() );
+  if( n->right() )
+   return( n->right() );
+  for( ; n != root ; n = n->parent() )  // up to a right sibling
    if( ( n == n->parent()->left() ) && n->parent()->right() )
     return( n->parent()->right() );
   return( nullptr );
@@ -379,24 +383,29 @@ struct BinaryPreorder {
  };
 
 /// the symmetric order below a root
-struct BinaryInorder {
+struct BinaryInorder
+{
  static constexpr std::nullptr_t none = nullptr;
  template< class N >
  static N * leftmost( N * n ) {
-  while( n->left() ) n = n->left();
+  while( n->left() )
+   n = n->left();
   return( n );
   }
  template< class N >
  static N * next( const void * , N * n , N * root ) {
-  if( n->right() ) return( leftmost( n->right() ) );
-  for( ; n != root ; n = n->parent() )      // up from a left child
-   if( n == n->parent()->left() ) return( n->parent() );
+  if( n->right() )
+   return( leftmost( n->right() ) );
+  for( ; n != root ; n = n->parent() )  // up from a left child
+   if( n == n->parent()->left() )
+    return( n->parent() );
   return( nullptr );
   }
  };
 
 /// the postorder below a root
-struct BinaryPostorder {
+struct BinaryPostorder
+{
  static constexpr std::nullptr_t none = nullptr;
  template< class N >
  static N * firstLeaf( N * n ) {
@@ -406,9 +415,10 @@ struct BinaryPostorder {
   }
  template< class N >
  static N * next( const void * , N * n , N * root ) {
-  if( n == root ) return( nullptr );
+  if( n == root )
+   return( nullptr );
   N * p = n->parent();
-  if( ( n == p->left() ) && p->right() )   // down the right sibling
+  if( ( n == p->left() ) && p->right() )  // down the right sibling
    return( firstLeaf( p->right() ) );
   return( p );
   }
@@ -440,8 +450,7 @@ struct BinaryPostorder {
 template< class T >
 auto preorder( BinaryTree< T > * t )
 {
- using It = WalkIterator< void , BinaryTree< T > * ,
-                          detail::BinaryPreorder >;
+ using It = WalkIterator< void , BinaryTree< T > * , detail::BinaryPreorder >;
  return( std::ranges::subrange( It( nullptr , t , t ) , It() ) );
  }
 
@@ -468,7 +477,7 @@ auto inorder( BinaryTree< T > * t )
 {
  using It = WalkIterator< void , BinaryTree< T > * , detail::BinaryInorder >;
  return( std::ranges::subrange(
-          It( nullptr , detail::BinaryInorder::leftmost( t ) , t ) , It() ) );
+   It( nullptr , detail::BinaryInorder::leftmost( t ) , t ) , It() ) );
  }
 
 /// the nodes of the subtree of \f$ t \f$ in postorder, \f$ t \f$ last, by
@@ -491,11 +500,9 @@ auto inorder( BinaryTree< T > * t )
 template< class T >
 auto postorder( BinaryTree< T > * t )
 {
- using It = WalkIterator< void , BinaryTree< T > * ,
-                          detail::BinaryPostorder >;
+ using It = WalkIterator< void , BinaryTree< T > * , detail::BinaryPostorder >;
  return( std::ranges::subrange(
-          It( nullptr , detail::BinaryPostorder::firstLeaf( t ) , t ) ,
-          It() ) );
+   It( nullptr , detail::BinaryPostorder::firstLeaf( t ) , t ) , It() ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -510,7 +517,7 @@ auto postorder( BinaryTree< T > * t )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BinaryTree.h included */
+#endif /* BinaryTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BinaryTree.h --------------------------*/

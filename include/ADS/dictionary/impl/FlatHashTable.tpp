@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE MIXED HASH ------------------------------*/
@@ -24,7 +25,7 @@ namespace ADS {
 inline std::uint64_t detail::mulx( std::uint64_t a , std::uint64_t b )
 {
 #if defined( __SIZEOF_INT128__ )
- __extension__ typedef unsigned __int128 U128;   // not ISO C++
+ __extension__ typedef unsigned __int128 U128;  // not ISO C++
  const U128 p = static_cast< U128 >( a ) * b;
  return( std::uint64_t( p ) ^ std::uint64_t( p >> 64 ) );
 #elif defined( _MSC_VER ) && defined( _M_X64 )
@@ -39,25 +40,25 @@ inline std::uint64_t detail::mulx( std::uint64_t a , std::uint64_t b )
  }
 
 constexpr std::uint64_t detail::mulxPortable( std::uint64_t a ,
-                                              std::uint64_t b )
+					      std::uint64_t b )
 {
  constexpr std::uint64_t LOW = 0xFFFFFFFFULL;
- const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW ,
-                     b1 = b >> 32;
+ const std::uint64_t a0 = a & LOW , a1 = a >> 32 , b0 = b & LOW , b1 = b >> 32;
  const std::uint64_t p00 = a0 * b0 , p01 = a0 * b1 , p10 = a1 * b0 ,
-                     p11 = a1 * b1;
+		     p11 = a1 * b1;
  const std::uint64_t mid = ( p00 >> 32 ) + ( p01 & LOW ) + ( p10 & LOW );
  const std::uint64_t lo = ( mid << 32 ) | ( p00 & LOW );
- const std::uint64_t hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) +
-                          ( mid >> 32 );
+ const std::uint64_t hi = p11 + ( p01 >> 32 ) + ( p10 >> 32 ) + ( mid >> 32 );
  return( lo ^ hi );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// the fingerprint of each low byte b of a mixed hash, b or 1 for 0, in
 /// each of 4 bytes, so that SSE2 spreads it by one shuffle of words
-alignas( 64 ) inline constexpr auto flatTags = []( void ) {
+alignas( 64 ) inline constexpr auto flatTags = []( void )
+{
  std::array< std::uint32_t , 256 > t{};
  for( std::uint32_t b = 0 ; b < 256 ; ++b )
   t[ b ] = ( b ? b : 1 ) * 0x01010101U;
@@ -72,15 +73,15 @@ alignas( 64 ) inline constexpr auto flatTags = []( void ) {
 
 template< class K , class V , class H , class Eq >
 FlatHashTable< K , V , H , Eq >::FlatHashTable( std::size_t n , H h , Eq eq )
- : f_h( std::move( h ) ) , f_eq( std::move( eq ) )
+    : f_h( std::move( h ) ) , f_eq( std::move( eq ) )
 {
  if( n > 0 )
-  rebuild( groups( n ) , []( FlatHashTable & , auto & ) {} );
+  rebuild( groups( n ) , []( FlatHashTable & , auto & ) { } );
  }
 
 template< class K , class V , class H , class Eq >
 FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
- : f_h( o.f_h ) , f_eq( o.f_eq )
+    : f_h( o.f_h ) , f_eq( o.f_eq )
 {
  if( o.f_cap == 0 )
   return;
@@ -88,8 +89,8 @@ FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
  Group * ctrl;
  Slot * const slot = allocate( G , ctrl );
  std::memcpy( static_cast< void * >( ctrl ) , o.f_ctrl , G * sizeof( Group ) );
- std::size_t n = 0;                         // the pairs copied so far
- try {                                      // the same places, copied
+ std::size_t n = 0;  // the pairs copied so far
+ try {               // the same places, copied
   o.each( [ & ]( std::size_t i ) {
    std::construct_at( &slot[ i - i / GROUP ].kv , o.slot( i )->kv );
    ++n;
@@ -117,10 +118,11 @@ FlatHashTable< K , V , H , Eq >::FlatHashTable( const FlatHashTable & o )
 
 template< class K , class V , class H , class Eq >
 FlatHashTable< K , V , H , Eq >::FlatHashTable( FlatHashTable && o ) noexcept
- : f_ctrl( o.f_ctrl ) , f_slot( o.f_slot ) , f_cap( o.f_cap ) ,
-   f_mask( o.f_mask ) , f_shift( o.f_shift ) , f_max( o.f_max ) ,
-   f_size( o.f_size ) , f_deleted( o.f_deleted ) ,
-   f_h( std::move( o.f_h ) ) , f_eq( std::move( o.f_eq ) )
+    : f_ctrl( o.f_ctrl ) , f_slot( o.f_slot ) , f_cap( o.f_cap ) ,
+      f_mask( o.f_mask ) , f_shift( o.f_shift ) , f_max( o.f_max ) ,
+      f_size( o.f_size ) , f_deleted( o.f_deleted ) ,
+      f_h( std::move( o.f_h ) ) ,
+      f_eq( std::move( o.f_eq ) )
 {
  o.f_ctrl = s_none;
  o.f_slot = nullptr;
@@ -187,15 +189,14 @@ ADS_FLAT_INLINE V * FlatHashTable< K , V , H , Eq >::find( const K & k )
  }
 
 template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE bool
-FlatHashTable< K , V , H , Eq >::insert( const K & k , const V & v )
+ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq >::insert( const K & k ,
+							   const V & v )
 {
  return( put( k , v ) );
  }
 
 template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE bool
-FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
+ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq >::insert( K && k , V && v )
 {
  return( put( std::move( k ) , std::move( v ) ) );
  }
@@ -220,7 +221,7 @@ bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
    if( f_eq( p[ j ].kv.first , k ) ) [[likely]] {
     std::destroy_at( &p[ j ].kv );
     vacate( c , j );
-    ++f_deleted;                            // see drop()
+    ++f_deleted;  // see drop()
     --f_size;
     ADS_POST( locate( x , k ) == nullptr );
     ADS_INVARIANT( consistent( x ) );
@@ -230,11 +231,11 @@ bool FlatHashTable< K , V , H , Eq >::remove( const K & k )
    } while( m );
   }
  if( ! ( over & bit( x ) ) ) [[likely]]
-  return( false );                          // no key of x went past g
+  return( false );  // no key of x went past g
  Slot * s = further( x , g , k );
  if( ! s )
   return( false );
- const std::size_t e = std::size_t( s - f_slot );   // the place of s
+ const std::size_t e = std::size_t( s - f_slot );  // the place of s
  drop( e + e / SLOTS );
  ADS_POST( locate( x , k ) == nullptr );
  ADS_INVARIANT( consistent( x ) );
@@ -275,7 +276,7 @@ double FlatHashTable< K , V , H , Eq >::load( void ) const
 template< class K , class V , class H , class Eq >
 std::size_t FlatHashTable< K , V , H , Eq >::deleted( void ) const
 {
- std::size_t d = 0;                         // the empty places counted
+ std::size_t d = 0;  // the empty places counted
  for( std::size_t g = 0 ; f_cap && ( g <= f_mask ) ; ++g )
   if( f_ctrl[ g ].c[ OVER ] )
    d += std::size_t( std::popcount( empties( f_ctrl[ g ] ) ) );
@@ -294,7 +295,7 @@ void FlatHashTable< K , V , H , Eq >::reserve( std::size_t n )
 {
  const std::size_t G = groups( n );
  if( G * SLOTS > f_cap )
-  rebuild( G , []( FlatHashTable & , auto & ) {} );
+  rebuild( G , []( FlatHashTable & , auto & ) { } );
  }
 
 template< class K , class V , class H , class Eq >
@@ -304,7 +305,7 @@ void FlatHashTable< K , V , H , Eq >::clear( void )
   each( [ & ]( std::size_t i ) { std::destroy_at( &slot( i )->kv ); } );
  if( f_cap )
   std::memset( static_cast< void * >( f_ctrl ) , 0 ,
-               ( f_mask + 1 ) * sizeof( Group ) );
+	       ( f_mask + 1 ) * sizeof( Group ) );
  f_size = f_deleted = 0;
  }
 
@@ -345,20 +346,20 @@ typename FlatHashTable< K , V , H , Eq >::const_iterator
 FlatHashTable< K , V , H , Eq >::end( void ) const
 {
  return( const_iterator( f_cap ? f_ctrl + f_mask + 1 : s_none + 2 ,
-                         f_slot + f_cap , FIRST ) );
+			  f_slot + f_cap , FIRST ) );
  }
 
 template< class K , class V , class H , class Eq >
 typename FlatHashTable< K , V , H , Eq >::const_iterator
 FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
 {
- const std::size_t i = std::size_t( it.f_g - f_ctrl ) * GROUP +
-                       lowest( it.f_m );
+ const std::size_t i =
+   std::size_t( it.f_g - f_ctrl ) * GROUP + lowest( it.f_m );
  ADS_PRE( ( f_cap > 0 ) && ( it.f_g >= f_ctrl ) &&
-          ( i < ( f_mask + 1 ) * GROUP ) && ( ctrl( i ) != EMPTY ) &&
-          ( slot( i ) == it.f_b + lowest( it.f_m ) ) );
- [[maybe_unused]] const std::uint64_t x =       // for the invariant only
-  ADS_CONTRACTS >= 3 ? mix( slot( i )->kv.first ) : 0;
+	  ( i < ( f_mask + 1 ) * GROUP ) && ( ctrl( i ) != EMPTY ) &&
+	  ( slot( i ) == it.f_b + lowest( it.f_m ) ) );
+ [[maybe_unused]] const std::uint64_t x =  // for the invariant only
+   ADS_CONTRACTS >= 3 ? mix( slot( i )->kv.first ) : 0;
  drop( i );
  ADS_INVARIANT( consistent( x ) );
  return( ++it );
@@ -367,7 +368,7 @@ FlatHashTable< K , V , H , Eq >::erase( const_iterator it )
 template< class K , class V , class H , class Eq >
 void FlatHashTable< K , V , H , Eq >::const_iterator::forward( void )
 {
- do {                                       // the sentinel ends it
+ do {  // the sentinel ends it
   ++f_g;
   f_b += SLOTS;
   } while( ! ( f_m = fulls( *f_g ) ) );
@@ -384,7 +385,7 @@ FlatHashTable< K , V , H , Eq >::const_iterator::operator--( void )
   f_b -= SLOTS;
   m = fulls( *f_g );
   }
- const int h = std::bit_width( m ) - 1;     // the highest, and on from it
+ const int h = std::bit_width( m ) - 1;  // the highest, and on from it
  f_m = fulls( *f_g ) >> h << h;
  return( *this );
  }
@@ -400,8 +401,7 @@ FlatHashTable< K , V , H , Eq >::mix( const K & k ) const
  if constexpr( AVALANCHING )
   return( std::uint64_t( f_h( k ) ) );
  else
-  return( detail::mulx( std::uint64_t( f_h( k ) ) ,
-                        0x9e3779b97f4a7c15ULL ) );
+  return( detail::mulx( std::uint64_t( f_h( k ) ) , 0x9e3779b97f4a7c15ULL ) );
  }
 
 template< class K , class V , class H , class Eq >
@@ -432,9 +432,10 @@ ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
 FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 {
  const __m128i w =
-  _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
+   _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
  return( Mask( _mm_movemask_epi8(
-          _mm_cmpeq_epi8( w , _mm_set1_epi32( int( t ) ) ) ) ) & 0x7FFF );
+	    _mm_cmpeq_epi8( w , _mm_set1_epi32( int( t ) ) ) ) ) &
+	  0x7FFF );
  }
 
 template< class K , class V , class H , class Eq >
@@ -442,9 +443,10 @@ ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Mask
 FlatHashTable< K , V , H , Eq >::empties( const Group & c )
 {
  const __m128i w =
-  _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
- return( Mask( _mm_movemask_epi8(
-          _mm_cmpeq_epi8( w , _mm_setzero_si128() ) ) ) & 0x7FFF );
+   _mm_load_si128( reinterpret_cast< const __m128i * >( c.c ) );
+ return(
+   Mask( _mm_movemask_epi8( _mm_cmpeq_epi8( w , _mm_setzero_si128() ) ) ) &
+   0x7FFF );
  }
 
 template< class K , class V , class H , class Eq >
@@ -462,11 +464,11 @@ FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 {
  // the 16 bytes of 0 or 0xFF narrowed to 16 nibbles, the byte j in the
  // nibble j
- const uint8x16_t e = vceqq_u8( vld1q_u8( c.c ) ,
-                                vreinterpretq_u8_u32( vdupq_n_u32( t ) ) );
+ const uint8x16_t e =
+   vceqq_u8( vld1q_u8( c.c ) , vreinterpretq_u8_u32( vdupq_n_u32( t ) ) );
  const uint8x8_t n = vshrn_n_u16( vreinterpretq_u16_u8( e ) , 4 );
  return( vget_lane_u64( vreinterpret_u64_u8( n ) , 0 ) &
-         0x0888888888888888ULL );
+	  0x0888888888888888ULL );
  }
 
 template< class K , class V , class H , class Eq >
@@ -492,7 +494,7 @@ FlatHashTable< K , V , H , Eq >::word( const std::uint8_t * c )
  std::uint64_t w;
  std::memcpy( &w , c , 8 );
  if constexpr( std::endian::native == std::endian::big ) {
-  std::uint64_t r = 0;                      // the byte 0 in the low bits
+  std::uint64_t r = 0;  // the byte 0 in the low bits
   for( int j = 0 ; j < 8 ; ++j , w >>= 8 )
    r = ( r << 8 ) | ( w & 0xFF );
   w = r;
@@ -525,7 +527,8 @@ FlatHashTable< K , V , H , Eq >::match( const Group & c , std::uint32_t t )
 {
  const std::uint64_t b = ( std::uint64_t( t ) << 32 ) | t;
  return( ( gather( zeros( word( c.c ) ^ b ) ) |
-           ( gather( zeros( word( c.c + 8 ) ^ b ) ) << 8 ) ) & 0x7FFF );
+	    ( gather( zeros( word( c.c + 8 ) ^ b ) ) << 8 ) ) &
+	  0x7FFF );
  }
 
 template< class K , class V , class H , class Eq >
@@ -545,8 +548,7 @@ FlatHashTable< K , V , H , Eq >::fulls( const Group & c )
 #endif
 
 template< class K , class V , class H , class Eq >
-ADS_FLAT_INLINE std::size_t
-FlatHashTable< K , V , H , Eq >::lowest( Mask m )
+ADS_FLAT_INLINE std::size_t FlatHashTable< K , V , H , Eq >::lowest( Mask m )
 {
  return( std::size_t( std::countr_zero( m ) ) >> STRIDE );
  }
@@ -573,20 +575,20 @@ std::size_t FlatHashTable< K , V , H , Eq >::offset( std::size_t G )
 
 template< class K , class V , class H , class Eq >
 typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::allocate( std::size_t G , Group * & c )
+FlatHashTable< K , V , H , Eq >::allocate( std::size_t G , Group *& c )
 {
  // no cookie before the array, unlike new Slot[ n ] with a destructor; the
  // groups are implicit-lifetime bytes
  const std::size_t at = offset( G ) , bytes = ( G + 1 ) * sizeof( Group );
  const bool join = G <= JOIN;
- void * const b = ::operator new( join ? at + bytes : at ,
-                                  std::align_val_t( ALIGN ) );
+ void * const b =
+   ::operator new( join ? at + bytes : at , std::align_val_t( ALIGN ) );
  if( join )
   c = reinterpret_cast< Group * >( static_cast< unsigned char * >( b ) + at );
  else
   try {
-   c = static_cast< Group * >( ::operator new( bytes ,
-                                               std::align_val_t( ALIGN ) ) );
+   c = static_cast< Group * >(
+     ::operator new( bytes , std::align_val_t( ALIGN ) ) );
    }
   catch( ... ) {
    ::operator delete( b , std::align_val_t( ALIGN ) );
@@ -596,13 +598,13 @@ FlatHashTable< K , V , H , Eq >::allocate( std::size_t G , Group * & c )
  for( std::size_t i = 0 ; i < G * SLOTS ; ++i )
   ::new( static_cast< void * >( s + i ) ) Slot;
  std::memset( static_cast< void * >( c ) , 0 , bytes );
- c[ G ].c[ 0 ] = 1;                         // the sentinel, full
+ c[ G ].c[ 0 ] = 1;  // the sentinel, full
  return( s );
  }
 
 template< class K , class V , class H , class Eq >
 void FlatHashTable< K , V , H , Eq >::deallocate( Slot * s , Group * c ,
-                                                 std::size_t G ) noexcept
+					       std::size_t G ) noexcept
 {
  if( G > JOIN )
   ::operator delete( static_cast< void * >( c ) , std::align_val_t( ALIGN ) );
@@ -616,10 +618,10 @@ void FlatHashTable< K , V , H , Eq >::deallocate( Slot * s , Group * c ,
 template< class K , class V , class H , class Eq >
 ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Slot *
 FlatHashTable< K , V , H , Eq >::scan( std::size_t g , Mask m ,
-                                       const K & k ) const
+				    const K & k ) const
 {
  Slot * p = f_slot + g * SLOTS;
- ADS_FLAT_PREFETCH( p );                    // issued while m is predicted
+ ADS_FLAT_PREFETCH( p );  // issued while m is predicted
  do {
   const std::size_t j = lowest( m );
   if( f_eq( p[ j ].kv.first , k ) ) [[likely]]
@@ -631,8 +633,7 @@ FlatHashTable< K , V , H , Eq >::scan( std::size_t g , Mask m ,
 
 template< class K , class V , class H , class Eq >
 ADS_FLAT_INLINE typename FlatHashTable< K , V , H , Eq >::Slot *
-FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x ,
-                                         const K & k ) const
+FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x , const K & k ) const
 {
  // the whole inspection in line, with no call: a call would take the
  // registers that the loop of the caller keeps its values in, and the
@@ -646,9 +647,9 @@ FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x ,
    if( Slot * p = scan( g , m , k ) ) [[likely]]
     return( p );
   if( ! ( c.c[ OVER ] & bit( x ) ) ) [[likely]]
-   return( nullptr );                       // no key of x went past g
+   return( nullptr );  // no key of x went past g
   if( ++i > f_mask ) [[unlikely]]
-   return( nullptr );                       // all the groups seen
+   return( nullptr );  // all the groups seen
   g = ( g + i ) & f_mask;
   }
  }
@@ -656,7 +657,7 @@ FlatHashTable< K , V , H , Eq >::locate( std::uint64_t x ,
 template< class K , class V , class H , class Eq >
 typename FlatHashTable< K , V , H , Eq >::Slot *
 FlatHashTable< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
-                                          KeyArg k ) const
+				       KeyArg k ) const
 {
  const std::uint32_t t = tag( x );
  for( std::size_t i = 1 ; i <= f_mask ; ++i ) {
@@ -668,7 +669,7 @@ FlatHashTable< K , V , H , Eq >::further( std::uint64_t x , std::size_t g ,
   if( ! ( c.c[ OVER ] & bit( x ) ) )
    return( nullptr );
   }
- return( nullptr );                         // all the groups seen
+ return( nullptr );  // all the groups seen
  }
 
 template< class K , class V , class H , class Eq >
@@ -678,40 +679,39 @@ std::size_t FlatHashTable< K , V , H , Eq >::claim( std::uint64_t x )
  for( std::size_t i = 1 ; ; ++i ) {
   if( const Mask m = empties( f_ctrl[ g ] ) )
    return( g * GROUP + lowest( m ) );
-  f_ctrl[ g ].c[ OVER ] |= bit( x );        // x goes past g
+  f_ctrl[ g ].c[ OVER ] |= bit( x );  // x goes past g
   g = ( g + i ) & f_mask;
   }
  }
 
 template< class K , class V , class H , class Eq >
 template< class KK , class VV >
-ADS_FLAT_INLINE bool
-FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
+ADS_FLAT_INLINE bool FlatHashTable< K , V , H , Eq >::put( KK && k , VV && v )
 {
- return( place< true >( std::forward< KK >( k ) ,
-                        std::forward< VV >( v ) ).second );
+ return(
+   place< true >( std::forward< KK >( k ) , std::forward< VV >( v ) ).second );
  }
 
 template< class K , class V , class H , class Eq >
-template< class ... A >
+template< class... A >
 ADS_FLAT_INLINE std::pair< V * , bool >
-FlatHashTable< K , V , H , Eq >::try_emplace( const K & k , A && ... a )
+FlatHashTable< K , V , H , Eq >::try_emplace( const K & k , A &&... a )
 {
  return( place< false >( k , std::forward< A >( a )... ) );
  }
 
 template< class K , class V , class H , class Eq >
-template< class ... A >
+template< class... A >
 ADS_FLAT_INLINE std::pair< V * , bool >
-FlatHashTable< K , V , H , Eq >::try_emplace( K && k , A && ... a )
+FlatHashTable< K , V , H , Eq >::try_emplace( K && k , A &&... a )
 {
  return( place< false >( std::move( k ) , std::forward< A >( a )... ) );
  }
 
 template< class K , class V , class H , class Eq >
-template< bool Assign , class KK , class ... A >
+template< bool Assign , class KK , class... A >
 ADS_FLAT_INLINE std::pair< V * , bool >
-FlatHashTable< K , V , H , Eq >::place( KK && k , A && ... a )
+FlatHashTable< K , V , H , Eq >::place( KK && k , A &&... a )
 {
  // the search of locate(), whose first group also gives the place of a
  // new key when it has an empty one, the common case
@@ -724,7 +724,7 @@ FlatHashTable< K , V , H , Eq >::place( KK && k , A && ... a )
  if( ! s && ( c.c[ OVER ] & bit( x ) ) ) [[unlikely]]
   s = further( x , g , k );
  if( s ) {
-  if constexpr( Assign )                     // replaced in place
+  if constexpr( Assign )  // replaced in place
    ( ( s->kv.second = std::forward< A >( a ) ) , ... );
   ADS_INVARIANT( consistent( x ) );
   return( std::pair< V * , bool >( &s->kv.second , false ) );
@@ -736,8 +736,8 @@ FlatHashTable< K , V , H , Eq >::place( KK && k , A && ... a )
   const Mask e = empties( c );
   i = e ? g * GROUP + lowest( e ) : claim( x );
   std::construct_at( &slot( i )->kv , std::piecewise_construct ,
-                     std::forward_as_tuple( std::forward< KK >( k ) ) ,
-                     std::forward_as_tuple( std::forward< A >( a )... ) );
+		     std::forward_as_tuple( std::forward< KK >( k ) ) ,
+		     std::forward_as_tuple( std::forward< A >( a )... ) );
   // a place counted, by no branch past the test of the bound, 0 with no
   // removals; an empty place of a group with some overflow was emptied by
   // a removal, so that then the bound is at least 1
@@ -752,23 +752,22 @@ FlatHashTable< K , V , H , Eq >::place( KK && k , A && ... a )
  }
 
 template< class K , class V , class H , class Eq >
-template< class KK , class ... A >
-std::size_t FlatHashTable< K , V , H , Eq >::grow( std::uint64_t x ,
-                                                  KK && k , A && ... a )
+template< class KK , class... A >
+std::size_t FlatHashTable< K , V , H , Eq >::grow( std::uint64_t x , KK && k ,
+						A &&... a )
 {
  const std::size_t G = f_cap ? f_mask + 1 : 0;
  std::size_t i = 0;
  rebuild( f_size + 1 > f_max / 2 ? ( G ? 2 * G : 2 ) : G ,
-          [ & ]( FlatHashTable & o , auto & place ) {
-           i = place( x );
-           std::construct_at( &o.slot( i )->kv , std::piecewise_construct ,
-                              std::forward_as_tuple(
-                               std::forward< KK >( k ) ) ,
-                              std::forward_as_tuple(
-                               std::forward< A >( a )... ) );
-           o.ctrl( i ) = std::uint8_t( tag( x ) );
-           ++o.f_size;
-           } );
+	  [ & ]( FlatHashTable & o , auto & place ) {
+	   i = place( x );
+	   std::construct_at(
+	     &o.slot( i )->kv , std::piecewise_construct ,
+	     std::forward_as_tuple( std::forward< KK >( k ) ) ,
+	     std::forward_as_tuple( std::forward< A >( a )... ) );
+	   o.ctrl( i ) = std::uint8_t( tag( x ) );
+	   ++o.f_size;
+	   } );
  return( i );
  }
 
@@ -777,27 +776,30 @@ void FlatHashTable< K , V , H , Eq >::drop( std::size_t i )
 {
  std::destroy_at( &slot( i )->kv );
  ctrl( i ) = EMPTY;
- ++f_deleted;                               // a bound, see f_deleted
+ ++f_deleted;  // a bound, see f_deleted
  --f_size;
  }
 
 template< class K , class V , class H , class Eq >
 ADS_FLAT_INLINE void FlatHashTable< K , V , H , Eq >::vacate( Group & c ,
-                                                              std::size_t j )
+							   std::size_t j )
 {
 #if ADS_FLAT_SIMD == 1
  const __m128i w = _mm_load_si128( reinterpret_cast< __m128i * >( c.c ) ) ,
-               at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 ,
-                                     6 , 7 , 8 , 9 , 10 , 11 , 12 , 13 , 14 ,
-                                     15 ) , _mm_set1_epi8( char( j ) ) );
+	       at = _mm_cmpeq_epi8( _mm_setr_epi8( 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
+						   7 , 8 ,
+						   9 , 10 , 11 , 12 , 13 , 14 ,
+						   15 ) ,
+				    _mm_set1_epi8( char( j ) ) );
  _mm_store_si128( reinterpret_cast< __m128i * >( c.c ) ,
-                  _mm_andnot_si128( at , w ) );
+		  _mm_andnot_si128( at , w ) );
 #elif ADS_FLAT_SIMD == 2
- static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 , 3 , 4 , 5 , 6 ,
-                                              7 , 8 , 9 , 10 , 11 , 12 , 13 ,
-                                              14 , 15 };
- const uint8x16_t at = vceqq_u8( vld1q_u8( iota ) ,
-                                 vdupq_n_u8( std::uint8_t( j ) ) );
+ static constexpr std::uint8_t iota[ 16 ] = { 0 , 1 , 2 ,  3 ,  4 ,  5 ,  6 ,
+					      7 ,
+					      8 , 9 , 10 , 11 , 12 , 13 , 14 ,
+					      15 };
+ const uint8x16_t at =
+   vceqq_u8( vld1q_u8( iota ) , vdupq_n_u8( std::uint8_t( j ) ) );
  vst1q_u8( c.c , vbicq_u8( vld1q_u8( c.c ) , at ) );
 #else
  c.c[ j ] = EMPTY;
@@ -808,7 +810,7 @@ template< class K , class V , class H , class Eq >
 template< class F >
 void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
 {
- FlatHashTable o( 0 , f_h , f_eq );         // the new places, in o
+ FlatHashTable o( 0 , f_h , f_eq );  // the new places, in o
  o.f_slot = allocate( G , o.f_ctrl );
  o.f_cap = G * SLOTS;
  o.f_mask = G - 1;
@@ -822,13 +824,13 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
  constexpr std::size_t SMALL = 256;
  std::uint8_t local[ SMALL ];
  std::unique_ptr< std::uint8_t[] > big( G > SMALL ? new std::uint8_t[ G ]
-                                                  : nullptr );
+						  : nullptr );
  std::uint8_t * const n = big ? big.get() : local;
  std::memset( n , 0 , G );
- auto place = [ & ]( std::uint64_t x ) {   // claim( x ) on o, by n
+ auto place = [ & ]( std::uint64_t x ) {  // claim( x ) on o, by n
   std::size_t g = o.home( x );
   for( std::size_t r = 1 ; n[ g ] == SLOTS ; ++r ) {
-   o.f_ctrl[ g ].c[ OVER ] |= bit( x );     // x goes past g
+   o.f_ctrl[ g ].c[ OVER ] |= bit( x );  // x goes past g
    g = ( g + r ) & o.f_mask;
    }
   return( g * GROUP + n[ g ]++ );
@@ -839,8 +841,8 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
  // whose hash throws none, is destroyed at once, while its memory is in
  // the cache, instead of by a walk of the old places after
  constexpr bool MOVED =
-  std::is_nothrow_move_constructible_v< std::pair< K , V > > &&
-  noexcept( std::declval< const H & >()( std::declval< const K & >() ) );
+   std::is_nothrow_move_constructible_v< std::pair< K , V > > &&
+   noexcept( std::declval< const H & >()( std::declval< const K & >() ) );
  auto move = [ & ]( std::size_t i ) {
   auto & kv = this->slot( i )->kv;
   const std::uint64_t x = mix( kv.first );
@@ -872,7 +874,7 @@ void FlatHashTable< K , V , H , Eq >::rebuild( std::size_t G , F && first )
  else
   each( move );
  if constexpr( MOVED )
-  release( false );                         // the old places alone
+  release( false );  // the old places alone
  swap( o );
  }
 

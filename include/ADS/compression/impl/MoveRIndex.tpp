@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline MoveRIndex::MoveRIndex( std::string_view s ) : f_n( s.size() )
 {
@@ -25,14 +26,18 @@ inline MoveRIndex::MoveRIndex( std::string_view s ) : f_n( s.size() )
  const auto sa = detail::sentinelSuffixArray( s );
  const std::size_t rows = f_n + 1;
  f_w = std::max( 1 , int( std::bit_width( rows ) ) );
- auto sym = [ & ]( std::size_t i ) {        // L[ i ], the $ as 0
-  return( sa[ i ] == 0 ? 0u : std::uint32_t( static_cast< unsigned char >(
-                                               s[ sa[ i ] - 1 ] ) ) + 1 );
+ auto sym = [ & ]( std::size_t i ) {  // L[ i ], the $ as 0
+  return( sa[ i ] == 0 ? 0u
+			: std::uint32_t( static_cast< unsigned char >(
+			    s[ sa[ i ] - 1 ] ) ) +
+			    1 );
   };
  // the runs of L and their images by LF: C[ c ] plus the c before them
  std::array< std::uint64_t , 258 > C{};
- for( std::size_t i = 0 ; i < rows ; ++i ) ++C[ sym( i ) + 1 ];
- for( std::size_t c = 1 ; c < C.size() ; ++c ) C[ c ] += C[ c - 1 ];
+ for( std::size_t i = 0 ; i < rows ; ++i )
+  ++C[ sym( i ) + 1 ];
+ for( std::size_t c = 1 ; c < C.size() ; ++c )
+  C[ c ] += C[ c - 1 ];
  std::vector< std::uint64_t > p , q;
  std::vector< std::uint32_t > head;
  std::array< std::uint64_t , 257 > seen{};
@@ -61,8 +66,9 @@ inline MoveRIndex::MoveRIndex( std::string_view s ) : f_n( s.size() )
   key[ k ] = kv[ k ].first;
   val[ k ] = kv[ k ].second;
   }
- f_phi = MoveStructure( key , val , std::vector< std::uint32_t >(
-                                     key.size() , 0 ) , rows );
+ f_phi = MoveStructure( key , val ,
+			std::vector< std::uint32_t >( key.size() , 0 ) ,
+			rows );
  // the samples at the ends of the intervals of LF, with the interval of
  // phi of each of them less 1 (the toehold after a run of another symbol)
  f_wi = std::max( 1 , int( std::bit_width( f_phi.intervals() ) ) );
@@ -72,15 +78,16 @@ inline MoveRIndex::MoveRIndex( std::string_view s ) : f_n( s.size() )
   const std::uint64_t x = sa[ f_lf.start( i + 1 ) - 1 ];
   f_end.put( i * std::size_t( f_w ) , x , f_w );
   f_endPhi.put( i * std::size_t( f_wi ) ,
-                x == 0 ? 0 : f_phi.interval( x - 1 ) , f_wi );
+		x == 0 ? 0 : f_phi.interval( x - 1 ) ,
+		f_wi );
   }
  }
 
 template< bool Toehold >
 bool MoveRIndex::search( std::string_view P , std::uint64_t & s ,
-                         std::size_t & is , std::uint64_t & e ,
-                         std::size_t & ie , std::uint64_t & v ,
-                         std::size_t & iv ) const
+			 std::size_t & is , std::uint64_t & e ,
+			 std::size_t & ie ,
+			 std::uint64_t & v , std::size_t & iv ) const
 {
  ADS_PRE( ! P.empty() );
  const std::size_t m = f_lf.intervals();
@@ -93,18 +100,20 @@ bool MoveRIndex::search( std::string_view P , std::uint64_t & s ,
   iv = f_phi.interval( v );
   }
  for( std::size_t i = P.size() ; i-- > 0 ; ) {
-  const std::uint32_t c = std::uint32_t( static_cast< unsigned char >(
-                                          P[ i ] ) ) + 1;
+  const std::uint32_t c =
+    std::uint32_t( static_cast< unsigned char >( P[ i ] ) ) + 1;
   // s to the first row of c at or after it, e to the last at or before
   if( f_lf.tag( is ) != c ) {
    const std::size_t k = f_tag.rank( c , is );
-   if( k == f_cnt[ c ] ) return( false );
+   if( k == f_cnt[ c ] )
+    return( false );
    is = f_tag.select( c , k + 1 );
    s = f_lf.start( is );
    }
   if( f_lf.tag( ie ) != c ) {
    const std::size_t k = f_tag.rank( c , ie );
-   if( k == 0 ) return( false );
+   if( k == 0 )
+    return( false );
    ie = f_tag.select( c , k );
    e = f_lf.start( ie + 1 ) - 1;
    if constexpr( Toehold ) {
@@ -114,9 +123,11 @@ bool MoveRIndex::search( std::string_view P , std::uint64_t & s ,
    }
   else if constexpr( Toehold ) {
    --v;
-   if( v < f_phi.start( iv ) ) --iv;
+   if( v < f_phi.start( iv ) )
+    --iv;
    }
-  if( s > e ) return( false );
+  if( s > e )
+   return( false );
   std::tie( s , is ) = f_lf.move( s , is );
   std::tie( e , ie ) = f_lf.move( e , ie );
   }
@@ -127,17 +138,19 @@ inline std::size_t MoveRIndex::count( std::string_view P ) const
 {
  std::uint64_t s , e , v = 0;
  std::size_t is , ie , iv = 0;
- return( search< false >( P , s , is , e , ie , v , iv )
-          ? std::size_t( e - s + 1 ) : 0 );
+ return( search< false >( P , s , is , e , ie , v ,
+			  iv ) ? std::size_t( e - s + 1 )
+						    : 0 );
  }
 
-inline std::vector< std::size_t > MoveRIndex::locate( std::string_view P )
- const
+inline std::vector< std::size_t >
+MoveRIndex::locate( std::string_view P ) const
 {
  std::uint64_t s , e , v;
  std::size_t is , ie , iv;
  std::vector< std::size_t > R;
- if( ! search< true >( P , s , is , e , ie , v , iv ) ) return( R );
+ if( ! search< true >( P , s , is , e , ie , v , iv ) )
+  return( R );
  R.reserve( e - s + 1 );
  R.push_back( std::size_t( v ) );
  for( std::uint64_t k = s ; k < e ; ++k ) {
@@ -147,7 +160,8 @@ inline std::vector< std::size_t > MoveRIndex::locate( std::string_view P )
  std::sort( R.begin() , R.end() );
 #if ADS_CONTRACTS >= 3
  ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( std::size_t x ) {
-  return( f_text.compare( x , P.size() , P ) == 0 ); } ) );
+  return( f_text.compare( x , P.size() , P ) == 0 );
+  } ) );
 #endif
  return( R );
  }
@@ -155,7 +169,7 @@ inline std::vector< std::size_t > MoveRIndex::locate( std::string_view P )
 inline std::size_t MoveRIndex::sizeInBits( void ) const
 {
  return( f_lf.sizeInBits() + f_tag.sizeInBits() + f_phi.sizeInBits() +
-         f_end.size() + f_endPhi.size() + 64 * f_cnt.size() );
+	  f_end.size() + f_endPhi.size() + 64 * f_cnt.size() );
  }
 
 /*--------------------------------------------------------------------------*/

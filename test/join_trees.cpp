@@ -64,7 +64,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Pairs = std::vector< std::pair< int , int > >;
 
@@ -73,8 +74,8 @@ template< class T >
 Pairs pairs( const T & t )
 {
  Pairs P;
- t.forEach( [ & ]( const int & k , const int & v ) {
-  P.emplace_back( k , v ); } );
+ t.forEach(
+   [ & ]( const int & k , const int & v ) { P.emplace_back( k , v ); } );
  return( P );
  }
 
@@ -103,7 +104,7 @@ T make( const std::map< int , int > & m )
 
 /// n random pairs with keys in [ 0 , range )
 std::map< int , int > randomMap( std::mt19937_64 & g , std::size_t n ,
-                                 int range )
+				int range )
 {
  std::map< int , int > m;
  for( std::size_t i = 0 ; i < n ; ++i )
@@ -119,8 +120,9 @@ int heightOf( const T & t )
   return( t.height() );
  else {
   auto h = [ & ]( auto & self , const auto * u ) -> int {
-   return( t.isNil( u ) ? -1 : 1 + std::max( self( self , u->left ) ,
-                                             self( self , u->right ) ) );
+   return( t.isNil( u ) ? -1
+			 : 1 + std::max( self( self , u->left ) ,
+					 self( self , u->right ) ) );
    };
   return( h( h , t.root() ) );
   }
@@ -137,14 +139,14 @@ void checkHeight( const T & t )
   return;
   }
  if constexpr( std::is_same_v< T , AVLTree< int , int > > ||
-               std::is_same_v< T , JoinAVLTree< int , int > > )
+	       std::is_same_v< T , JoinAVLTree< int , int > > )
   CHECK( h <= 1.4405 * std::log2( n + 2 ) - 0.3277 + 1e-9 );
  else if constexpr( std::is_same_v< T , RedBlackTree< int , int > > ||
-                    std::is_same_v< T , JoinRedBlackTree< int , int > > )
+		    std::is_same_v< T , JoinRedBlackTree< int , int > > )
   CHECK( h <= 2 * std::log2( n + 1 ) );
  else if constexpr( std::is_same_v< T , WeightBalancedTree< int , int > > )
   CHECK( h + 1 <= std::log( n + 1 ) / std::log( 1 / ( 1 - 0.29 ) ) + 1 );
- else                                     // a treap: with high probability
+ else  // a treap: with high probability
   CHECK( h + 1 <= 6 * std::log2( n + 2 ) );
  }
 
@@ -176,7 +178,7 @@ void splitJoinEdges( void )
     CHECK( a > k );
    CHECK( l.size() + r.size() + ( v ? 1 : 0 ) == m.size() );
    T u = v ? T::join( std::move( l ) , k , *v , std::move( r ) )
-           : T::join2( std::move( l ) , std::move( r ) );
+	   : T::join2( std::move( l ) , std::move( r ) );
    CHECK( pairs( u ) == pairs( m ) );
    checkHeight( u );
    }
@@ -217,9 +219,9 @@ void splitJoinEdges( void )
  CHECK( h.size() == big.size() + 4 );
  // the preconditions: keys not in order
  CHECK_THROWS( T::join( make< T >( big ) , 5 , 0 , T() ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( T::join2( make< T >( big ) , make< T >( big ) ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /// random splits and joins against std::map
@@ -233,16 +235,18 @@ void splitJoinRandom( void )
   T t = make< T >( m );
   auto [ l , v , r ] = std::move( t ).split( k );
   std::map< int , int > ml( m.begin() , m.lower_bound( k ) ) ,
-                        mr( m.upper_bound( k ) , m.end() );
+    mr( m.upper_bound( k ) , m.end() );
   CHECK( pairs( l ) == pairs( ml ) );
   CHECK( pairs( r ) == pairs( mr ) );
   checkHeight( l );
   checkHeight( r );
   // the two sides joined in the other order of their roles
   T u = T::join2( std::move( l ) , std::move( r ) );
-  if( v ) ml[ k ] = *v;
+  if( v )
+   ml[ k ] = *v;
   ml.insert( mr.begin() , mr.end() );
-  if( v ) u.insert( k , *v );
+  if( v )
+   u.insert( k , *v );
   CHECK( pairs( u ) == pairs( m ) );
   }
  }
@@ -254,7 +258,7 @@ void splitJoinRandom( void )
 /// union, intersection and difference of a and b by T, and by std::map
 template< class T , class E >
 void setOps( E & ex , const std::map< int , int > & a ,
-             const std::map< int , int > & b )
+	     const std::map< int , int > & b )
 {
  auto sum = []( const int & x , const int & y ) { return( x + 10 * y ); };
  {
@@ -268,7 +272,7 @@ void setOps( E & ex , const std::map< int , int > & a ,
   }
  {
   T x = make< T >( a ) , y = make< T >( b );
-  x.unionWith( ex , std::move( y ) );   // the value of b by default
+  x.unionWith( ex , std::move( y ) );  // the value of b by default
   std::map< int , int > r = a;
   for( const auto & [ k , v ] : b )
    r[ k ] = v;
@@ -286,7 +290,7 @@ void setOps( E & ex , const std::map< int , int > & a ,
   }
  {
   T x = make< T >( a ) , y = make< T >( b );
-  x.intersectWith( ex , std::move( y ) );   // the value of a by default
+  x.intersectWith( ex , std::move( y ) );  // the value of a by default
   std::map< int , int > r;
   for( const auto & [ k , v ] : a )
    if( b.contains( k ) )
@@ -310,8 +314,7 @@ template< class T >
 void setOperations( void )
 {
  Sequential seq;
- const std::map< int , int > none , one = { { 5 , 1 } } ,
-                             same = { { 5 , 2 } };
+ const std::map< int , int > none , one = { { 5 , 1 } } , same = { { 5 , 2 } };
  std::map< int , int > evens , odds , all , few;
  for( int i = 0 ; i < 3000 ; ++i ) {
   ( i % 2 ? odds : evens )[ i ] = i;
@@ -320,11 +323,14 @@ void setOperations( void )
  for( int i : { -7 , 0 , 1500 , 2999 , 5000 } )
   few[ i ] = 1;
  const std::vector< std::pair< std::map< int , int > ,
-                              std::map< int , int > > > cases = {
-  { none , none } , { none , all } , { all , none } , { one , one } ,
-  { one , same } , { one , all } , { all , one } , { evens , odds } ,
-  { odds , evens } , { all , all } , { evens , all } , { all , evens } ,
-  { few , all } , { all , few } , { few , few } };
+			       std::map< int , int > > >
+   cases = { { none , none } ,  { none , all } , { all , none } ,
+	     { one , one } ,
+	     { one , same } ,   { one , all } ,  { all , one } ,
+	     { evens , odds } ,
+	     { odds , evens } , { all , all } ,  { evens , all } ,
+	     { all , evens } ,
+	     { few , all } ,    { all , few } ,  { few , few } };
  for( const auto & [ a , b ] : cases )
   setOps< T >( seq , a , b );
  std::mt19937_64 g( 3 );
@@ -357,8 +363,8 @@ void batchOps( E & ex , std::mt19937_64 & g , std::size_t n , std::size_t m )
   }
  {
   T x = make< T >( a );
-  x.multiInsert( ex , B , []( const int & u , const int & w ) {
-   return( u - w ); } );
+  x.multiInsert( ex , B ,
+		 []( const int & u , const int & w ) { return( u - w ); } );
   std::map< int , int > r = a;
   for( const auto & [ k , v ] : b )
    r[ k ] = a.contains( k ) ? a.at( k ) - v : v;
@@ -379,25 +385,28 @@ void batchOps( E & ex , std::mt19937_64 & g , std::size_t n , std::size_t m )
  {
   T x = make< T >( a );
   x.filter( ex , []( const int & k , const int & v ) {
-   return( ( k + v ) % 3 != 0 ); } );
+   return( ( k + v ) % 3 != 0 );
+   } );
   std::map< int , int > r;
   for( const auto & [ k , v ] : a )
    if( ( k + v ) % 3 != 0 )
     r[ k ] = v;
   CHECK( pairs( x ) == pairs( r ) );
   checkHeight( x );
-  const long long s = x.mapReduce( ex ,
-   []( const int & k , const int & v ) { return( 1LL * k * v ); } ,
-   []( long long u , long long w ) { return( u + w ); } , 0LL );
+  const long long s = x.mapReduce(
+    ex , []( const int & k , const int & v ) { return( 1LL * k * v ); } ,
+    []( long long u , long long w ) { return( u + w ); } , 0LL );
   long long t = 0;
   for( const auto & [ k , v ] : r )
    t += 1LL * k * v;
   CHECK( s == t );
   // the order of the reduction: the keys concatenated
-  const std::string c = x.mapReduce( ex ,
-   []( const int & k , const int & ) { return( std::to_string( k ) + ";" ); } ,
-   []( std::string u , const std::string & w ) { return( u + w ); } ,
-   std::string() );
+  const std::string c = x.mapReduce(
+    ex ,
+    []( const int & k ,
+	const int & ) { return( std::to_string( k ) + ";" ); } ,
+    []( std::string u , const std::string & w ) { return( u + w ); } ,
+    std::string() );
   std::string d;
   for( const auto & kv : r )
    d += std::to_string( kv.first ) + ";";
@@ -411,10 +420,16 @@ void batches( void )
 {
  Sequential seq;
  std::mt19937_64 g( 5 );
- for( auto [ n , m ] : std::vector< std::pair< std::size_t ,
-                                               std::size_t > >{
-       { 0 , 0 } , { 0 , 1 } , { 1 , 0 } , { 0 , 500 } , { 500 , 0 } ,
-       { 1 , 1 } , { 2000 , 3 } , { 3 , 2000 } , { 1500 , 1500 } } )
+ for( auto [ n , m ] :
+      std::vector< std::pair< std::size_t , std::size_t > >{ { 0 , 0 } ,
+							    { 0 , 1 } ,
+							    { 1 , 0 } ,
+							    { 0 , 500 } ,
+							    { 500 , 0 } ,
+							    { 1 , 1 } ,
+							    { 2000 , 3 } ,
+							    { 3 , 2000 } ,
+							    { 1500 , 1500 } } )
   batchOps< T >( seq , g , n , m );
  // every key of the batch already there, and all of the tree removed
  std::map< int , int > a;
@@ -422,8 +437,7 @@ void batches( void )
   a[ i ] = i;
  T x = make< T >( a );
  const Pairs B( a.begin() , a.end() );
- x.multiInsert( B , []( const int & u , const int & w ) {
-  return( u + w ); } );
+ x.multiInsert( B , []( const int & u , const int & w ) { return( u + w ); } );
  for( const auto & [ k , v ] : pairs( x ) )
   CHECK( v == 2 * k );
  std::vector< int > K;
@@ -446,9 +460,10 @@ void ranges( void )
  for( int i = 0 ; i < 200 ; i += 2 )
   m[ i ] = i;
  const std::vector< std::pair< int , int > > Q = {
-  { -10 , -1 } , { -10 , 0 } , { 0 , 0 } , { 1 , 1 } , { 0 , 198 } ,
-  { -5 , 500 } , { 198 , 198 } , { 199 , 300 } , { 50 , 20 } , { 31 , 77 } ,
-  { 30 , 78 } };
+  { -10 , -1 } ,  { -10 , 0 } ,   { 0 , 0 } ,   { 1 , 1 } ,   { 0 , 198 } ,
+  { -5 , 500 } ,
+  { 198 , 198 } , { 199 , 300 } , { 50 , 20 } , { 31 , 77 } , { 30 , 78 }
+  };
  for( const auto & [ lo , hi ] : Q ) {
   T t = make< T >( m );
   T r = t.extractRange( lo , hi );
@@ -475,7 +490,8 @@ std::vector< std::pair< int , std::size_t > > shape( const T & t )
 {
  std::vector< std::pair< int , std::size_t > > S;
  auto rec = [ & ]( auto & self , const auto * u ) -> void {
-  if( ! u ) return;
+  if( ! u )
+   return;
   S.emplace_back( u->key , u->size );
   self( self , u->left );
   self( self , u->right );
@@ -494,7 +510,7 @@ void executors( void )
  std::mt19937_64 g( 11 );
  for( int it = 0 ; it < 3 ; ++it ) {
   const auto a = randomMap( g , 30000 , 200000 ) ,
-             b = randomMap( g , it == 2 ? 50 : 20000 , 200000 );
+	     b = randomMap( g , it == 2 ? 50 : 20000 , 200000 );
   setOps< T >( seq , a , b );
   setOps< T >( p1 , a , b );
   setOps< T >( p2 , a , b );
@@ -506,7 +522,7 @@ void executors( void )
   }
  if constexpr( requires( const T & t ) { t.root()->key; } ) {
   const auto a = randomMap( g , 40000 , 100000 ) ,
-             b = randomMap( g , 40000 , 100000 );
+	     b = randomMap( g , 40000 , 100000 );
   T x1 = make< T >( a ) , x2 = make< T >( a );
   x1.unionWith( seq , make< T >( b ) );
   x2.unionWith( p8 , make< T >( b ) );
@@ -525,9 +541,11 @@ void executors( void )
 
 /// a monoid that is not commutative: the hash of the sequence of the keys
 /// and its length, ( h , l ) * ( h' , l' ) = ( h B^{l'} + h' , l + l' )
-struct SequenceHash {
- struct Value {
-  std::uint64_t h = 0 , p = 1;           // the hash and B^length
+struct SequenceHash
+{
+ struct Value
+ {
+  std::uint64_t h = 0 , p = 1;  // the hash and B^length
   bool operator==( const Value & ) const = default;
   };
  static constexpr std::uint64_t kB = 1000003;
@@ -556,17 +574,19 @@ void augmented( void )
   SumMap s = make< SumMap >( a );
   MaxMap x = make< MaxMap >( a );
   SeqMap q = make< SeqMap >( a );
-  if( it % 3 == 1 ) {              // after a union
+  if( it % 3 == 1 ) {  // after a union
    s.unionWith( make< SumMap >( b ) );
    x.unionWith( make< MaxMap >( b ) );
    q.unionWith( make< SeqMap >( b ) );
-   for( const auto & [ k , v ] : b ) a[ k ] = v;
+   for( const auto & [ k , v ] : b )
+    a[ k ] = v;
    }
-  if( it % 3 == 2 ) {              // after a difference
+  if( it % 3 == 2 ) {  // after a difference
    s.differenceWith( make< SumMap >( b ) );
    x.differenceWith( make< MaxMap >( b ) );
    q.differenceWith( make< SeqMap >( b ) );
-   for( const auto & kv : b ) a.erase( kv.first );
+   for( const auto & kv : b )
+    a.erase( kv.first );
    }
   for( int t = 0 ; t < 200 ; ++t ) {
    const int lo = int( g() % 1100 ) - 50 , hi = int( g() % 1100 ) - 50;
@@ -584,16 +604,18 @@ void augmented( void )
    CHECK( q.augRange( lo , hi ) == h );
    long long pre = 0;
    for( const auto & [ k , v ] : a )
-    if( k <= hi ) pre += v;
+    if( k <= hi )
+     pre += v;
    CHECK( s.augPrefix( hi ) == pre );
    }
   long long all = 0;
-  for( const auto & kv : a ) all += kv.second;
+  for( const auto & kv : a )
+   all += kv.second;
   CHECK( s.augValue() == all );
   }
  SumMap e;
  CHECK( ( e.augValue() == 0 ) && ( e.augRange( 0 , 10 ) == 0 ) &&
-        ( e.augPrefix( 3 ) == 0 ) );
+	( e.augPrefix( 3 ) == 0 ) );
  }
 
 
@@ -605,12 +627,13 @@ using Ins = mod::Inserted< int , int , int >;
 using Era = mod::Erased< int , int , int >;
 using Asg = mod::Assigned< int , int >;
 using TreeEvent = std::variant< Ins , Era , Asg , mod::Cleared ,
-                                mod::Rebuilt >;
+				mod::Rebuilt >;
 
 /// an observer that records the events of a tree, and on an erasure
 /// whether the key was still there, by `has`; with `throwOn`, it throws on
 /// the insertion of that key
-struct Recorder {
+struct Recorder
+{
  std::vector< TreeEvent > E;
  std::function< bool( int ) > has;
  bool before = true;
@@ -631,57 +654,54 @@ struct Recorder {
  };
 
 /// an observer that refuses the insertion of the key 555
-struct Refuser {
+struct Refuser
+{
  bool prepare( const Ins & e ) const { return( e.key != 555 ); }
- void on( const Ins & ) {}
+ void on( const Ins & ) { }
  };
 
 /// the bitwise or of the values, a commutative monoid that is neither a
 /// group nor selective
-struct OrAugmentation {
+struct OrAugmentation
+{
  using Value = unsigned;
  static constexpr bool commutative = true;
  static Value identity( void ) { return( 0 ); }
  static Value from( const int & , const int & v ) { return( unsigned( v ) ); }
- static Value combine( const Value & a , const Value & b ) {
-  return( a | b );
-  }
+ static Value combine( const Value & a , const Value & b ) { return( a | b ); }
  };
 
 /// the sums of the values as doubles, an abelian group of inexact values
-struct RealSum {
+struct RealSum
+{
  using Value = double;
  static constexpr bool commutative = true;
  static Value identity( void ) { return( 0 ); }
  static Value from( const int & k , const int & v ) {
   return( v / 7.0 + k * 1e-3 );
   }
- static Value combine( const Value & a , const Value & b ) {
-  return( a + b );
-  }
+ static Value combine( const Value & a , const Value & b ) { return( a + b ); }
  static Value inverse( const Value & a ) { return( -a ); }
  };
 
 static_assert( AbelianGroup< SumAugmentation< long long > > );
 static_assert( ! Group< MaxAugmentation< int > > &&
-               Selective< MaxAugmentation< int > > );
+	       Selective< MaxAugmentation< int > > );
 static_assert( CommutativeMonoid< OrAugmentation > &&
-               ! Group< OrAugmentation > &&
-               ! Selective< OrAugmentation > );
+	       ! Group< OrAugmentation > && ! Selective< OrAugmentation > );
 static_assert( ! exact_v< RealSum > );
-static_assert( MaterializedAggregate< SumAugmentation< long long > >::kind ==
-               MaterializedAggregate< SumAugmentation< long long > >::Kind::
-                Group );
-static_assert( MaterializedAggregate< MaxAugmentation< int > >::kind ==
-               MaterializedAggregate< MaxAugmentation< int > >::Kind::
-                Selective );
+static_assert(
+  MaterializedAggregate< SumAugmentation< long long > >::kind ==
+  MaterializedAggregate< SumAugmentation< long long > >::Kind::Group );
+static_assert(
+  MaterializedAggregate< MaxAugmentation< int > >::kind ==
+  MaterializedAggregate< MaxAugmentation< int > >::Kind::Selective );
 static_assert( MaterializedAggregate< OrAugmentation >::kind ==
-               MaterializedAggregate< OrAugmentation >::Kind::Monoid );
+	       MaterializedAggregate< OrAugmentation >::Kind::Monoid );
 static_assert( sizeof( JoinAVLTree< int , int > ) ==
-               sizeof( void * ) + sizeof( std::uint64_t ) );
-static_assert( selectable< JoinAVLTree< int , int ,
-                                        SumAugmentation< int > > ,
-                           SumAugmentation< int > > );
+	       sizeof( void * ) + sizeof( std::uint64_t ) );
+static_assert( selectable< JoinAVLTree< int , int , SumAugmentation< int > > ,
+			   SumAugmentation< int > > );
 
 /// the aggregate by G of the pairs of a map
 template< class G >
@@ -697,14 +717,18 @@ typename G::Value fold( const std::map< int , int > & m )
 /// their aggregate by G from scratch; on Rebuilt it reads the tree again,
 /// by `refill`, at the next query
 template< class G >
-struct Scratch {
+struct Scratch
+{
  std::map< int , int > m;
  std::function< void( std::map< int , int > & ) > refill;
  bool redo = false;
  void on( const Ins & e ) { m[ e.key ] = e.value; }
  void on( const Era & e ) noexcept { m.erase( e.key ); }
  void on( const Asg & e ) { m[ e.h ] = e.to; }
- void on( const mod::Cleared & ) noexcept { m.clear(); redo = false; }
+ void on( const mod::Cleared & ) noexcept {
+  m.clear();
+  redo = false;
+  }
  void on( const mod::Rebuilt & ) noexcept { redo = true; }
  [[nodiscard]] typename G::Value value( void ) {
   if( redo ) {
@@ -717,7 +741,8 @@ struct Scratch {
  };
 
 /// the same aggregates, within a tolerance for the floating values
-struct Close {
+struct Close
+{
  template< class X >
  bool operator()( const X & a , const X & b ) const {
   if constexpr( std::is_floating_point_v< X > )
@@ -729,15 +754,16 @@ struct Close {
 
 /// the materialized aggregates of G under test, with their shadow
 template< class G >
-struct Observers {
+struct Observers
+{
  using MA = MaterializedAggregate< G , 16 >;
- MA inc;                                   // under the shadow
+ MA inc;  // under the shadow
  Scratch< G > sc;
  Shadow< MA , Scratch< G > , Close > sh{ inc , sc };
  template< class T >
  void bind( const T & t ) {
   inc.bind( t );
-  sc.refill = [ & t ]( std::map< int , int > & m ) {
+  sc.refill = [ &t ]( std::map< int , int > & m ) {
    t.forEach( [ & ]( const int & k , const int & v ) { m[ k ] = v; } );
    };
   }
@@ -748,50 +774,67 @@ struct Observers {
 /// check() the comparison of the aggregates with those of m
 template< class T , class Make , class Check >
 void drive( T & t , std::map< int , int > & m , std::uint64_t seed ,
-            Make && make , Check && check )
+	    Make && make ,
+	    Check && check )
 {
  std::mt19937_64 g( seed );
  for( int r = 0 ; r < 1500 ; ++r ) {
   const int k = int( g() % 200 ) , v = int( g() % 1000 );
   const auto c = g() % 100;
-  if( c < 35 ) { t.insert( k , v ); m[ k ] = v; }
-  else if( c < 55 ) { t.remove( k ); m.erase( k ); }
+  if( c < 35 ) {
+   t.insert( k , v );
+   m[ k ] = v;
+   }
+  else if( c < 55 ) {
+   t.remove( k );
+   m.erase( k );
+   }
   else if( c < 75 ) {
    const bool there = m.contains( k );
    CHECK( t.assign( k , v ) == there );
-   if( there ) m[ k ] = v;
+   if( there )
+    m[ k ] = v;
    }
-  else if( c < 85 ) {                     // a batch, coalesced
+  else if( c < 85 ) {  // a batch, coalesced
    auto b = batch( t );
    for( int i = 0 ; i < 6 ; ++i ) {
     const int x = int( g() % 200 ) , y = int( g() % 1000 );
-    if( g() % 3 == 0 ) { t.remove( x ); m.erase( x ); }
-    else if( g() % 2 ) { t.insert( x , y ); m[ x ] = y; }
-    else if( t.assign( x , y ) ) m[ x ] = y;
+    if( g() % 3 == 0 ) {
+     t.remove( x );
+     m.erase( x );
+     }
+    else if( g() % 2 ) {
+     t.insert( x , y );
+     m[ x ] = y;
+     }
+    else if( t.assign( x , y ) )
+     m[ x ] = y;
     }
    }
-  else if( c < 90 ) {                     // a union
+  else if( c < 90 ) {  // a union
    auto o = make();
    std::vector< std::pair< int , int > > P;
    for( int x = int( g() % 50 ) ; x < 400 ; x += 1 + int( g() % 60 ) )
     P.emplace_back( x , int( g() % 1000 ) );
    o.multiInsert( P );
    t.unionWith( std::move( o ) );
-   for( const auto & [ x , y ] : P ) m[ x ] = y;
+   for( const auto & [ x , y ] : P )
+    m[ x ] = y;
    }
-  else if( c < 94 ) {                     // a bulk removal
+  else if( c < 94 ) {  // a bulk removal
    std::vector< int > K;
    for( int x = int( g() % 20 ) ; x < 400 ; x += 1 + int( g() % 40 ) )
     K.push_back( x );
    t.multiRemove( K );
-   for( const int x : K ) m.erase( x );
+   for( const int x : K )
+    m.erase( x );
    }
-  else if( c < 96 ) {                     // a mute: Rebuilt at its end
+  else if( c < 96 ) {  // a mute: Rebuilt at its end
    auto q = quiet( t );
    t.insert( k , v );
    m[ k ] = v;
    }
-  else if( c < 98 ) {                     // a swap
+  else if( c < 98 ) {  // a swap
    auto o = make();
    o.insert( 7 , 7 );
    o.insert( 300 , 1 );
@@ -826,33 +869,32 @@ void materialized( std::uint64_t seed )
   alone.bind( t );
   t.subject().attach( alone );
   std::map< int , int > m;
-  drive( t , m , seed , [ & ]( void ) { return( T( seed + 1 ) ); } ,
-         [ & ]( void ) {
-          const auto a = ob.sh.query( []( auto & o ) {
-           return( o.value() ); } );
-          CHECK( Close()( a , fold< G >( m ) ) );
-          CHECK( Close()( alone.value() , fold< G >( m ) ) );
-          CHECK( pairs( t ) == pairs( m ) );
-          } );
+  drive(
+    t , m , seed , [ & ]( void ) { return( T( seed + 1 ) ); } ,
+    [ & ]( void ) {
+     const auto a = ob.sh.query( []( auto & o ) { return( o.value() ); } );
+     CHECK( Close()( a , fold< G >( m ) ) );
+     CHECK( Close()( alone.value() , fold< G >( m ) ) );
+     CHECK( pairs( t ) == pairs( m ) );
+     } );
   CHECK( ( ob.sh.counts().mismatches == 0 ) &&
-         ( ob.sh.counts().queries > 0 ) );
+	 ( ob.sh.counts().queries > 0 ) );
   if constexpr( MA::kind == MA::Kind::Group && ! exact_v< G > )
-   CHECK( ob.inc.recomputations() > 2 );   // the periodic ones
+   CHECK( ob.inc.recomputations() > 2 );  // the periodic ones
   }
  {
   using T = JoinTree< int , int , B , NoAugmentation ,
-                      Static< Shadow< MA , Scratch< G > , Close > > >;
+		      Static< Shadow< MA , Scratch< G > , Close > > >;
   Observers< G > ob , other;
   T t( seed , ob.sh );
   ob.bind( t );
   std::map< int , int > m;
-  drive( t , m , seed + 3 , [ & ]( void ) {
-          return( T( seed + 1 , other.sh ) ); } ,
-         [ & ]( void ) {
-          const auto a = ob.sh.query( []( auto & o ) {
-           return( o.value() ); } );
-          CHECK( Close()( a , fold< G >( m ) ) );
-          } );
+  drive(
+    t , m , seed + 3 , [ & ]( void ) { return( T( seed + 1 , other.sh ) ); } ,
+    [ & ]( void ) {
+     const auto a = ob.sh.query( []( auto & o ) { return( o.value() ); } );
+     CHECK( Close()( a , fold< G >( m ) ) );
+     } );
   CHECK( ob.sh.counts().mismatches == 0 );
   }
  }
@@ -928,13 +970,20 @@ ADS_TEST( "join-tree-dictionary" )
   std::map< int , int > m;
   for( int i = 0 ; i < 3000 ; ++i ) {
    const int k = int( g() % 700 );
-   if( g() % 3 ) { t.insert( k , i ); m[ k ] = i; }
-   else { t.remove( k ); m.erase( k ); }
+   if( g() % 3 ) {
+    t.insert( k , i );
+    m[ k ] = i;
+    }
+   else {
+    t.remove( k );
+    m.erase( k );
+    }
    CHECK( t.size() == m.size() );
    }
   for( int k = -1 ; k < 702 ; ++k )
-   CHECK( t.lookup( k ) == ( m.contains( k ) ? std::optional< int >(
-                                m.at( k ) ) : std::nullopt ) );
+   CHECK(
+     t.lookup( k ) ==
+     ( m.contains( k ) ? std::optional< int >( m.at( k ) ) : std::nullopt ) );
   checkHeight( t );
   T c( t );
   c.insert( 1000 , 0 );
@@ -946,10 +995,10 @@ ADS_TEST( "join-tree-dictionary" )
   t.clear();
   CHECK( t.empty() && ( t.height() == -1 ) );
   };
- run( ( JoinAVLTree< int , int > * ) nullptr );
- run( ( JoinRedBlackTree< int , int > * ) nullptr );
- run( ( WeightBalancedTree< int , int > * ) nullptr );
- run( ( JoinTreap< int , int > * ) nullptr );
+ run( ( JoinAVLTree< int , int > * )nullptr );
+ run( ( JoinRedBlackTree< int , int > * )nullptr );
+ run( ( WeightBalancedTree< int , int > * )nullptr );
+ run( ( JoinTreap< int , int > * )nullptr );
  }
 
 ADS_TEST( "augmented-maps" )
@@ -969,11 +1018,12 @@ ADS_TEST( "interval-tree" )
   for( std::size_t i = 0 ; i < n ; ++i ) {
    const int a = int( g() % 1000 ) , b = a + int( g() % ( it % 2 ? 5 : 200 ) );
    I.emplace_back( a , b );
-   if( g() % 5 == 0 ) I.emplace_back( a , b );   // copies
+   if( g() % 5 == 0 )
+    I.emplace_back( a , b );  // copies
    }
   ThreadPool pool( 4 );
   IntervalTree< int > T1( I ) , T2( pool , I );
-  for( int r = 0 ; r < 30 && ! I.empty() ; ++r ) {   // updates
+  for( int r = 0 ; r < 30 && ! I.empty() ; ++r ) {  // updates
    const auto i = I[ g() % I.size() ];
    T1.remove( i.first , i.second );
    T2.remove( i.first , i.second );
@@ -998,7 +1048,7 @@ ADS_TEST( "interval-tree" )
    }
   }
  IntervalTree< double > D;
- D.insert( 0.5 , 0.5 );                      // a point
+ D.insert( 0.5 , 0.5 );  // a point
  CHECK( D.stabbed( 0.5 ) && ! D.stabbed( 0.49 ) && ! D.stabbed( 0.51 ) );
  CHECK_THROWS( D.insert( 2 , 1 ) , contract_violation );
  }
@@ -1009,7 +1059,7 @@ ADS_TEST( "range-tree" )
  for( int it = 0 ; it < 12 ; ++it ) {
   std::vector< std::pair< int , int > > P;
   const std::size_t n = it == 0 ? 0 : g() % 500;
-  const int side = it % 2 ? 20 : 1000;      // many equal coordinates
+  const int side = it % 2 ? 20 : 1000;  // many equal coordinates
   for( std::size_t i = 0 ; i < n ; ++i )
    P.emplace_back( int( g() % side ) , int( g() % side ) );
   ThreadPool pool( 4 );
@@ -1026,7 +1076,8 @@ ADS_TEST( "range-tree" )
    const auto w = std::uint64_t( side + 10 );
    int x1 = int( g() % w ) - 5 , x2 = int( g() % w ) - 5 ,
        y1 = int( g() % ( w + 10 ) ) - 15 , y2 = int( g() % w ) - 5;
-   if( q % 7 == 0 ) std::swap( x1 , x2 );   // empty rectangles too
+   if( q % 7 == 0 )
+    std::swap( x1 , x2 );  // empty rectangles too
    std::size_t c = 0;
    for( const auto & [ x , y ] : P )
     c += ( x1 <= x ) && ( x <= x2 ) && ( y1 <= y ) && ( y <= y2 );
@@ -1035,13 +1086,13 @@ ADS_TEST( "range-tree" )
   }
  RangeTree< int > E;
  CHECK( E.count( std::numeric_limits< int >::lowest() ,
-                 std::numeric_limits< int >::max() ,
-                 std::numeric_limits< int >::lowest() ,
-                 std::numeric_limits< int >::max() ) == 0 );
+		 std::numeric_limits< int >::max() ,
+		 std::numeric_limits< int >::lowest() ,
+		 std::numeric_limits< int >::max() ) == 0 );
  E.insert( std::numeric_limits< int >::max() ,
-           std::numeric_limits< int >::lowest() );
+	   std::numeric_limits< int >::lowest() );
  CHECK( E.count( 0 , std::numeric_limits< int >::max() ,
-                 std::numeric_limits< int >::lowest() , 0 ) == 1 );
+		 std::numeric_limits< int >::lowest() , 0 ) == 1 );
  }
 
 ADS_TEST( "infinite-bounds" )
@@ -1049,10 +1100,16 @@ ADS_TEST( "infinite-bounds" )
  // the points, the intervals and the values at the infinities of a
  // floating type, which no finite sentinel bounds
  constexpr double inf = std::numeric_limits< double >::infinity();
- RangeTree< double > R( { { 0 , -inf } , { 0 , inf } , { 1 , -inf } ,
-                          { 1 , 0 } , { 1 , inf } , { 2 , inf } ,
-                          { -inf , 5 } , { inf , 5 } , { -inf , -inf } ,
-                          { inf , inf } } );
+ RangeTree< double > R( { { 0 , -inf } ,
+			  { 0 , inf } ,
+			  { 1 , -inf } ,
+			  { 1 , 0 } ,
+			  { 1 , inf } ,
+			  { 2 , inf } ,
+			  { -inf , 5 } ,
+			  { inf , 5 } ,
+			  { -inf , -inf } ,
+			  { inf , inf } } );
  CHECK( R.count( 0 , 1 , -inf , inf ) == 5 );
  CHECK( R.count( 1 , 1 , -inf , -inf ) == 1 );
  CHECK( R.count( 0 , 2 , inf , inf ) == 3 );
@@ -1060,8 +1117,8 @@ ADS_TEST( "infinite-bounds" )
  CHECK( R.count( -inf , -inf , -inf , inf ) == 2 );
  CHECK( R.count( inf , inf , -inf , inf ) == 2 );
  CHECK( R.count( -inf , inf , -inf , inf ) == 10 );
- IntervalTree< double > I( { { -inf , 0 } , { 5 , inf } , { inf , inf } ,
-                             { -inf , -inf } } );
+ IntervalTree< double > I(
+   { { -inf , 0 } , { 5 , inf } , { inf , inf } , { -inf , -inf } } );
  CHECK( ( I.count( -inf ) == 2 ) && I.stabbed( -inf ) );
  CHECK( ( I.count( inf ) == 2 ) && I.stabbed( inf ) );
  CHECK( ( I.count( 3 ) == 0 ) && ! I.stabbed( 3 ) );
@@ -1082,18 +1139,19 @@ ADS_TEST( "join-tree-events" )
  // removal, clearings, the bulk operations, the batches coalesced, copies,
  // moves and swaps, the strong guarantee and the refusals
  auto run = []< class B >( B * ) {
-  using S = JoinTree< int , int , B , SumAugmentation< long long > ,
-                      Static< Recorder > >;
+  using S =
+    JoinTree< int , int , B , SumAugmentation< long long > ,
+	      Static< Recorder > >;
   using D = JoinTree< int , int , B , SumAugmentation< long long > ,
-                      Dynamic<> >;
+		      Dynamic<> >;
   Recorder rs;
   S s( 1 , rs );
   s.insert( 1 , 10 );
-  s.insert( 1 , 11 );                       // there: an assignment
+  s.insert( 1 , 11 );  // there: an assignment
   CHECK( s.assign( 1 , 12 ) && ! s.assign( 2 , 0 ) );
-  s.remove( 2 );                            // not there: nothing
+  s.remove( 2 );  // not there: nothing
   s.remove( 1 );
-  s.clear();                                // empty: nothing
+  s.clear();  // empty: nothing
   s.insert( 3 , 30 );
   s.clear();
   CHECK( rs.E.size() == 6 );
@@ -1102,7 +1160,7 @@ ADS_TEST( "join-tree-events" )
   CHECK( std::get< Asg >( rs.E[ 2 ] ) == ( Asg{ 1 , 11 , 12 } ) );
   CHECK( std::get< Era >( rs.E[ 3 ] ) == ( Era{ 1 , 1 , 12 } ) );
   CHECK( std::holds_alternative< Ins >( rs.E[ 4 ] ) &&
-         std::holds_alternative< mod::Cleared >( rs.E[ 5 ] ) );
+	 std::holds_alternative< mod::Cleared >( rs.E[ 5 ] ) );
   Recorder rd;
   D d;
   rd.has = [ & ]( int k ) { return( d.contains( k ) ); };
@@ -1110,36 +1168,36 @@ ADS_TEST( "join-tree-events" )
   for( int k = 0 ; k < 20 ; ++k )
    d.insert( k , k );
   d.remove( 5 );
-  CHECK( rd.before && ( rd.E.size() == 21 ) );   // told before
+  CHECK( rd.before && ( rd.E.size() == 21 ) );  // told before
   rd.E.clear();
-  {                                         // a batch: the net effect
+  {  // a batch: the net effect
    auto b = batch( d );
    d.insert( 100 , 1 );
-   d.remove( 100 );                         // cancels
+   d.remove( 100 );  // cancels
    d.remove( 6 );
-   d.insert( 6 , 60 );                      // an assignment
+   d.insert( 6 , 60 );  // an assignment
    d.assign( 7 , 70 );
-   d.assign( 7 , 71 );                      // composed
-   d.assign( 8 , 8 );                       // a touch
+   d.assign( 7 , 71 );  // composed
+   d.assign( 8 , 8 );   // a touch
    CHECK( rd.E.empty() );
    }
   CHECK( rd.E.size() == 2 );
   CHECK( std::get< Asg >( rd.E[ 0 ] ) == ( Asg{ 6 , 6 , 60 } ) );
   CHECK( std::get< Asg >( rd.E[ 1 ] ) == ( Asg{ 7 , 7 , 71 } ) );
   rd.E.clear();
-  D o;                                      // a union: Cleared, Rebuilt
+  D o;  // a union: Cleared, Rebuilt
   Recorder ro;
   o.subject().attach( ro );
   o.insert( 50 , 5 );
   ro.E.clear();
   d.unionWith( std::move( o ) );
   CHECK( ( ro.E.size() == 1 ) &&
-         std::holds_alternative< mod::Cleared >( ro.E[ 0 ] ) );
+	 std::holds_alternative< mod::Cleared >( ro.E[ 0 ] ) );
   CHECK( ( rd.E.size() == 2 ) &&
-         std::holds_alternative< mod::Cleared >( rd.E[ 0 ] ) &&
-         std::holds_alternative< mod::Rebuilt >( rd.E[ 1 ] ) );
+	 std::holds_alternative< mod::Cleared >( rd.E[ 0 ] ) &&
+	 std::holds_alternative< mod::Rebuilt >( rd.E[ 1 ] ) );
   rd.E.clear();
-  {                                         // in a batch, Rebuilt alone
+  {  // in a batch, Rebuilt alone
    auto b = batch( d );
    d.insert( 200 , 2 );
    const std::pair< int , int > P[] = { { 300 , 3 } , { 301 , 4 } };
@@ -1147,17 +1205,17 @@ ADS_TEST( "join-tree-events" )
    d.insert( 302 , 5 );
    }
   CHECK( ( rd.E.size() == 2 ) &&
-         std::holds_alternative< mod::Rebuilt >( rd.E[ 0 ] ) &&
-         ( std::get< Ins >( rd.E[ 1 ] ) == ( Ins{ 302 , 302 , 5 } ) ) );
+	 std::holds_alternative< mod::Rebuilt >( rd.E[ 0 ] ) &&
+	 ( std::get< Ins >( rd.E[ 1 ] ) == ( Ins{ 302 , 302 , 5 } ) ) );
   rd.E.clear();
-  D c( d );                                 // a copy: no observer
+  D c( d );  // a copy: no observer
   c.insert( 999 , 9 );
   CHECK( rd.E.empty() && ( c.size() == d.size() + 1 ) );
-  D e( std::move( c ) );                    // a move: nothing to tell
+  D e( std::move( c ) );  // a move: nothing to tell
   CHECK( rd.E.empty() && c.empty() && ( e.size() == d.size() + 1 ) );
-  d.swap( e );                              // a swap: Rebuilt
+  d.swap( e );  // a swap: Rebuilt
   CHECK( ( rd.E.size() == 1 ) &&
-         std::holds_alternative< mod::Rebuilt >( rd.E[ 0 ] ) );
+	 std::holds_alternative< mod::Rebuilt >( rd.E[ 0 ] ) );
   CHECK( d.contains( 999 ) );
   rd.E.clear();
   // the strong guarantee: an observer that throws, the change undone
@@ -1177,10 +1235,10 @@ ADS_TEST( "join-tree-events" )
   d.insert( 14 , 1 );
   CHECK( rd.E.empty() );
   };
- run( ( AVLBalance * ) nullptr );
- run( ( RedBlackBalance * ) nullptr );
- run( ( WeightBalance * ) nullptr );
- run( ( TreapBalance * ) nullptr );
+ run( ( AVLBalance * )nullptr );
+ run( ( RedBlackBalance * )nullptr );
+ run( ( WeightBalance * )nullptr );
+ run( ( TreapBalance * )nullptr );
  }
 
 ADS_TEST( "join-tree-assign" )
@@ -1221,17 +1279,18 @@ ADS_TEST( "join-tree-assign" )
     const int lo = int( g() % 600 ) , hi = lo + int( g() % 100 );
     long long sum = 0;
     for( const auto & [ y , w ] : a )
-     if( ( lo <= y ) && ( y <= hi ) ) sum += w;
+     if( ( lo <= y ) && ( y <= hi ) )
+      sum += w;
     CHECK( s.augRange( lo , hi ) == sum );
     }
    }
   SumMap e;
   CHECK( ! e.assign( 1 , 1 ) && e.empty() );
   };
- run( ( AVLBalance * ) nullptr );
- run( ( RedBlackBalance * ) nullptr );
- run( ( WeightBalance * ) nullptr );
- run( ( TreapBalance * ) nullptr );
+ run( ( AVLBalance * )nullptr );
+ run( ( RedBlackBalance * )nullptr );
+ run( ( WeightBalance * )nullptr );
+ run( ( TreapBalance * )nullptr );
  }
 
 ADS_TEST( "join-tree-select-filter" )
@@ -1252,7 +1311,8 @@ ADS_TEST( "join-tree-select-filter" )
    SumMap s = make< SumMap >( a );
    MaxMap x = make< MaxMap >( a );
    std::map< int , int > ones;
-   for( const auto & kv : a ) ones[ kv.first ] = 1;
+   for( const auto & kv : a )
+    ones[ kv.first ] = 1;
    SumMap c = make< SumMap >( ones );
    const long long total = fold< SumAugmentation< long long > >( a );
    for( long long th = 0 ; th <= total + 60 ; th += 1 + total / 97 ) {
@@ -1260,22 +1320,26 @@ ADS_TEST( "join-tree-select-filter" )
     long long pre = 0;
     for( const auto & kv : a ) {
      pre += kv.second;
-     if( pre >= th ) { want = kv; break; }
+     if( pre >= th ) {
+      want = kv;
+      break;
+      }
      }
     if( th == 0 && ! a.empty() )
      want = *a.begin();
-    const auto got = s.augSelect( [ th ]( long long p ) {
-     return( p >= th ); } );
+    const auto got =
+      s.augSelect( [ th ]( long long p ) { return( p >= th ); } );
     CHECK( got == want );
     }
    for( std::size_t i = 1 ; i <= a.size() + 1 ; i += 1 + a.size() / 50 ) {
-    const auto got = c.augSelect( [ i ]( long long p ) {
-     return( p >= (long long)( i ) ); } );
+    const auto got = c.augSelect(
+      [ i ]( long long p ) { return( p >= ( long long )( i ) ); } );
     if( i > a.size() )
      CHECK( ! got );
     else
-     CHECK( got && ( got->first == std::next( a.begin() ,
-                                    std::ptrdiff_t( i - 1 ) )->first ) );
+     CHECK( got &&
+	    ( got->first ==
+	      std::next( a.begin() , std::ptrdiff_t( i - 1 ) )->first ) );
     }
    const int h = x.height();
    for( int th = 0 ; th <= 52 ; ++th ) {
@@ -1283,23 +1347,27 @@ ADS_TEST( "join-tree-select-filter" )
     Pairs want , got;
     for( const auto & kv : a )
      if( kv.second >= th ) {
-      if( ! first ) first = kv;
+      if( ! first )
+       first = kv;
       want.push_back( kv );
       }
     CHECK( x.augSelect( [ th ]( int p ) { return( p >= th ); } ) == first );
     std::size_t calls = 0;
-    x.augFilter( [ & ]( int p ) { ++calls; return( p >= th ); } ,
-                 [ & ]( const int & k , const int & v ) {
-                  got.emplace_back( k , v ); } );
+    x.augFilter(
+      [ & ]( int p ) {
+       ++calls;
+       return( p >= th );
+       } ,
+      [ & ]( const int & k , const int & v ) { got.emplace_back( k , v ); } );
     CHECK( got == want );
     CHECK( calls <= 3 * want.size() * std::size_t( h + 1 ) + 1 );
     }
    }
   };
- run( ( AVLBalance * ) nullptr );
- run( ( RedBlackBalance * ) nullptr );
- run( ( WeightBalance * ) nullptr );
- run( ( TreapBalance * ) nullptr );
+ run( ( AVLBalance * )nullptr );
+ run( ( RedBlackBalance * )nullptr );
+ run( ( WeightBalance * )nullptr );
+ run( ( TreapBalance * )nullptr );
  }
 
 ADS_TEST( "materialized-aggregate" )
@@ -1322,7 +1390,7 @@ ADS_TEST( "materialized-aggregate" )
  CHECK( lone.value() == 6u );
  lone.on( Era{ 1 , 1 , 6 } );
  CHECK( lone.stale() && ! lone.bound() );
- CHECK_THROWS( (void)lone.value() , contract_violation );
+ CHECK_THROWS( ( void )lone.value() , contract_violation );
  }
 
 ADS_TEST( "join-executors" )

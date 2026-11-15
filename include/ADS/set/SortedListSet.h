@@ -34,7 +34,7 @@
 
 #ifndef __ADS_SortedListSet
  #define __ADS_SortedListSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,7 +57,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SortedListSet ---------------------------*/
@@ -65,12 +66,12 @@ namespace ADS {
 
 /// a set as a list sorted in increasing order
 template< std::totally_ordered T >
-class SortedListSet {
+class SortedListSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty set
  SortedListSet( void ) = default;
@@ -152,7 +153,7 @@ class SortedListSet {
  using const_reference = const T &;       ///< a constant reference
  /// the iterator of the list, constant
  using const_iterator = typename List< T >::const_iterator;
- using iterator = const_iterator;         ///< the same, constant
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the iterator on the smallest item
  [[nodiscard]] const_iterator begin( void ) const { return( f_L.begin() ); }
@@ -165,15 +166,14 @@ class SortedListSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the position of the first item not smaller than \f$ x \f$
  typename List< T >::Pos lower( const T & x ) const;
 
  /// the list increases strictly, and the size is its length, \f$ O( n ) \f$
  [[nodiscard]] bool sorted( void ) const;
 
- List< T > f_L;              ///< the items, in increasing order
- std::size_t f_size = 0;     ///< the number of items
+ List< T > f_L;           ///< the items, in increasing order
+ std::size_t f_size = 0;  ///< the number of items
 
  };  // end( class SortedListSet )
 
@@ -212,8 +212,8 @@ class SortedListSet {
 /// \f]
 template< class T >
 SortedListSet< T > merge( const SortedListSet< T > & A ,
-                          const SortedListSet< T > & B ,
-                          bool a , bool b , bool both );
+			  const SortedListSet< T > & B , bool a , bool b ,
+			  bool both );
 
 /// the union, \f$ O( n + m ) \f$ time (exercise 8.3)
 ///
@@ -227,7 +227,7 @@ SortedListSet< T > merge( const SortedListSet< T > & A ,
 /// \f]
 template< class T >
 SortedListSet< T > setUnion( const SortedListSet< T > & A ,
-                             const SortedListSet< T > & B );
+			     const SortedListSet< T > & B );
 
 /// the intersection, \f$ O( n + m ) \f$ time (the procedure of section 8.3)
 ///
@@ -241,7 +241,7 @@ SortedListSet< T > setUnion( const SortedListSet< T > & A ,
 /// \f]
 template< class T >
 SortedListSet< T > setIntersection( const SortedListSet< T > & A ,
-                                    const SortedListSet< T > & B );
+				    const SortedListSet< T > & B );
 
 /// the difference, \f$ O( n + m ) \f$ time (exercise 8.4)
 ///
@@ -255,7 +255,7 @@ SortedListSet< T > setIntersection( const SortedListSet< T > & A ,
 /// \f]
 template< class T >
 SortedListSet< T > setDifference( const SortedListSet< T > & A ,
-                                  const SortedListSet< T > & B );
+				  const SortedListSet< T > & B );
 
 /// the symmetric difference, \f$ O( n + m ) \f$ time (exercise 8.5)
 ///
@@ -269,7 +269,7 @@ SortedListSet< T > setDifference( const SortedListSet< T > & A ,
 /// \f]
 template< class T >
 SortedListSet< T > setSymmetricDifference( const SortedListSet< T > & A ,
-                                           const SortedListSet< T > & B );
+					   const SortedListSet< T > & B );
 
 }  // end( namespace ADS )
 
@@ -281,7 +281,7 @@ SortedListSet< T > setSymmetricDifference( const SortedListSet< T > & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SortedListSet.h included */
+#endif /* SortedListSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SortedListSet.h ------------------------*/

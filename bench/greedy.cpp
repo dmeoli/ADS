@@ -65,32 +65,36 @@
  #include <examples/helper/speculative_for.h>
  #include <examples/helper/union_find.h>
  #define ADS_HAS_PARLAY_GREEDY 1
-namespace pk {
+namespace pk
+{
  #include <examples/kruskal.h>
- }
-namespace pf {
+}
+namespace pf
+{
  #include <examples/filter_kruskal.h>
- }
-namespace pm {
+}
+namespace pm
+{
  #include <examples/maximal_independent_set.h>
  #include <examples/maximal_matching.h>
  #include <examples/spanning_tree.h>
- }
+}
 #endif
 
 using namespace ADS;
 using ADS::bench::Options;
 
-namespace {
+namespace
+{
 
-int threads = 1;                            ///< -t
+int threads = 1;  ///< -t
 
 /// a cell: the structures by name, each a work on nothing, its first one
 /// twice, the second time as "A/A"
 void cell( const std::string & bench , const char * c , std::size_t n ,
-           std::size_t ops , int r ,
-           const std::vector< std::pair< std::string ,
-                                    std::function< void( void ) > > > & S )
+	   std::size_t ops , int r ,
+	   const std::vector<
+	     std::pair< std::string , std::function< void( void ) > > > & S )
 {
  const std::string b = bench + " t" + std::to_string( threads );
  for( std::size_t i = 0 ; i < S.size() ; ++i )
@@ -98,10 +102,10 @@ void cell( const std::string & bench , const char * c , std::size_t n ,
    const std::string who = S[ i ].first + ( twice ? " A/A" : "" );
    if( ADS::bench::skip( who ) )
     continue;
-   S[ i ].second();                         // the threads started
-   const double ns = ADS::bench::median( []( void ) { return( 0 ); } ,
-                                         [ & ]( int ) { S[ i ].second(); } ,
-                                         r , ops );
+   S[ i ].second();  // the threads started
+   const double ns = ADS::bench::median(
+     []( void ) { return( 0 ); } , [ & ]( int ) { S[ i ].second(); } , r ,
+     ops );
    ADS::bench::print( b.c_str() , c , n , who , ns );
    }
  }
@@ -158,44 +162,51 @@ int main( int argc , char ** argv )
    for( int v : G.adj( u ) )
     PG[ u ].push_back( v );
 #endif
-  using Battery = std::vector< std::pair< std::string ,
-                                          std::function< void( void ) > > >;
+  using Battery =
+    std::vector< std::pair< std::string , std::function< void( void ) > > >;
   auto sink = []( std::size_t x ) { ADS::bench::sink = x; };
   Battery K = {
    { "ADS pool" , [ & ] { sink( parallelKruskal( pool , n , E ).size() ); } } ,
-   { "ADS pool filter" , [ & ] {
-     sink( filterKruskal( pool , n , E ).size() ); } } };
-  Battery F = { { "ADS pool" , [ & ] {
-                  sink( spanningForest( pool , n , P ).size() ); } } };
+   { "ADS pool filter" ,
+     [ & ] { sink( filterKruskal( pool , n , E ).size() ); } }
+   };
+  Battery F = { { "ADS pool" ,
+		  [ & ] { sink( spanningForest( pool , n , P ).size() ); } } };
   Battery M = { { "ADS pool" , [ & ] {
-                  sink( maximalIndependentSet( pool , G , id ).size() ); } } };
+		  sink( maximalIndependentSet( pool , G , id ).size() );
+		  } } };
   Battery X = { { "ADS pool" , [ & ] {
-                  sink( maximalMatching( pool , n , P , ide ).size() ); } } };
+		  sink( maximalMatching( pool , n , P , ide ).size() );
+		  } } };
   if( threads == 1 ) {
-   K.push_back( { "sequential" , [ & ] {
-                  sink( parallelKruskal( seq , n , E ).size() ); } } );
-   F.push_back( { "sequential" , [ & ] {
-                  sink( spanningForest( seq , n , P ).size() ); } } );
+   K.push_back( { "sequential" ,
+		  [ & ] { sink( parallelKruskal( seq , n , E ).size() ); } } );
+   F.push_back(
+     { "sequential" ,
+       [ & ] { sink( spanningForest( seq , n , P ).size() ); } } );
    M.push_back( { "sequential" , [ & ] {
-                  sink( maximalIndependentSet( seq , G , id ).size() ); } } );
+		  sink( maximalIndependentSet( seq , G , id ).size() );
+		  } } );
    X.push_back( { "sequential" , [ & ] {
-                  sink( maximalMatching( seq , n , P , ide ).size() ); } } );
+		  sink( maximalMatching( seq , n , P , ide ).size() );
+		  } } );
    }
 #if defined( ADS_HAS_PARLAY_GREEDY )
-  K.push_back( { "parlay" , [ & ] {
-                 sink( pk::min_spanning_forest( PE , n ).size() ); } } );
+  K.push_back(
+    { "parlay" ,
+      [ & ] { sink( pk::min_spanning_forest( PE , n ).size() ); } } );
   K.push_back( { "parlay filter" , [ & ] {
-                 sink( pf::min_spanning_forest( PE , n ).size() ); } } );
-  F.push_back( { "parlay" , [ & ] {
-                 sink( pm::spanning_forest( PP , n ).size() ); } } );
+		 sink( pf::min_spanning_forest( PE , n ).size() );
+		 } } );
+  F.push_back(
+    { "parlay" , [ & ] { sink( pm::spanning_forest( PP , n ).size() ); } } );
   M.push_back( { "parlay" , [ & ] { sink( pm::MIS( PG ).size() ); } } );
-  X.push_back( { "parlay" , [ & ] {
-                 sink( pm::maximal_matching( PP , n ).size() ); } } );
+  X.push_back(
+    { "parlay" , [ & ] { sink( pm::maximal_matching( PP , n ).size() ); } } );
 #endif
   cell( "greedy kruskal" , "gnm8" , n0 , E.size() , o.runs , K );
   cell( "greedy forest" , "gnm8" , n0 , P.size() , o.runs , F );
-  cell( "greedy mis" , "gnm8" , n0 , std::size_t( G.arcs() ) , o.runs ,
-        M );
+  cell( "greedy mis" , "gnm8" , n0 , std::size_t( G.arcs() ) , o.runs , M );
   cell( "greedy matching" , "gnm8" , n0 , P.size() , o.runs , X );
   }
  return( 0 );

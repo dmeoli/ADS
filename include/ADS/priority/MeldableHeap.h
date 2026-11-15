@@ -59,7 +59,7 @@
 
 #ifndef __ADS_MeldableHeap
  #define __ADS_MeldableHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -81,7 +81,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS MeldableHeap ----------------------------*/
@@ -89,20 +90,20 @@ namespace ADS {
 
 /// a randomized meldable heap, the smallest item by `less` on top
 template< class T , class Less = std::less< T > ,
-          class A = std::allocator< T > >
-class MeldableHeap {
+	  class A = std::allocator< T > >
+class MeldableHeap
+{
 
  struct Node;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;            ///< the type of the items
- using Handle = Node *;     ///< what `push()` gives, for `erase()`
+ using Item = T;         ///< the type of the items
+ using Handle = Node *;  ///< what `push()` gives, for `erase()`
 
  /// the empty heap of the order `less`, its coins drawn from the seed
  explicit MeldableHeap( Less less = Less() , std::uint64_t seed = 1 ,
-                        const A & alloc = A() );
+			const A & alloc = A() );
 
  /// the heap of `o`, which is left empty
  MeldableHeap( MeldableHeap && o ) noexcept;
@@ -200,17 +201,17 @@ class MeldableHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node of the tree
- struct Node {
-  T x;                       ///< the item
-  Node * left = nullptr;     ///< the left subtree
-  Node * right = nullptr;    ///< the right subtree
-  Node * parent = nullptr;   ///< the parent, nil for the root
+ struct Node
+ {
+  T x;                      ///< the item
+  Node * left = nullptr;    ///< the left subtree
+  Node * right = nullptr;   ///< the right subtree
+  Node * parent = nullptr;  ///< the parent, nil for the root
   };
 
  using NodeAlloc =
-  typename std::allocator_traits< A >::template rebind_alloc< Node >;
+   typename std::allocator_traits< A >::template rebind_alloc< Node >;
  using Traits = std::allocator_traits< NodeAlloc >;
 
  /// a fair coin, a bit of the word in hand
@@ -256,13 +257,13 @@ class MeldableHeap {
  /// \f$ n \le 256 \f$, the root alone beyond
  [[nodiscard]] bool consistent( void ) const;
 
- Node * f_root = nullptr;                    ///< the root
- std::size_t f_n = 0;                        ///< the number of items
- ADS_NO_UNIQUE_ADDRESS Less f_less;          ///< the order
- SplitMix64 f_g;                             ///< the coins
- std::uint64_t f_bits = 0;                   ///< the coins in hand
- int f_left = 0;                             ///< how many are left
- ADS_NO_UNIQUE_ADDRESS NodeAlloc f_alloc;    ///< the allocator
+ Node * f_root = nullptr;                  ///< the root
+ std::size_t f_n = 0;                      ///< the number of items
+ ADS_NO_UNIQUE_ADDRESS Less f_less;        ///< the order
+ SplitMix64 f_g;                           ///< the coins
+ std::uint64_t f_bits = 0;                 ///< the coins in hand
+ int f_left = 0;                           ///< how many are left
+ ADS_NO_UNIQUE_ADDRESS NodeAlloc f_alloc;  ///< the allocator
 
  };  // end( class MeldableHeap )
 
@@ -278,7 +279,7 @@ class MeldableHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MeldableHeap.h included */
+#endif /* MeldableHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File MeldableHeap.h -------------------------*/

@@ -56,7 +56,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// a random string of n letters among the first k
 std::string word( std::mt19937 & g , std::size_t n , int k )
@@ -80,7 +81,8 @@ bool subsequenceOf( const S & a , const S & b )
 {
  std::size_t i = 0;
  for( std::size_t j = 0 ; ( i < a.size() ) && ( j < b.size() ) ; ++j )
-  if( a[ i ] == b[ j ] ) ++i;
+  if( a[ i ] == b[ j ] )
+   ++i;
  return( i == a.size() );
  }
 
@@ -89,7 +91,8 @@ std::string pick( const std::string & s , std::uint32_t mask )
 {
  std::string r;
  for( std::size_t i = 0 ; i < s.size() ; ++i )
-  if( mask >> i & 1 ) r += s[ i ];
+  if( mask >> i & 1 )
+   r += s[ i ];
  return( r );
  }
 
@@ -116,22 +119,22 @@ std::uint64_t fibonacci( int n )
 ADS_TEST( "palindromic-substring" )
 {
  CHECK( longestPalindromicSubstring( "casacca" ) == "casac" );
- CHECK( longestPalindromicSubstring( "ovattavo con l'ovatta" ) ==
-        "ovattavo" );
+ CHECK( longestPalindromicSubstring( "ovattavo con l'ovatta" ) == "ovattavo" );
  CHECK( longestPalindromicSubstring( "abcd" ) == "a" );
  CHECK( longestPalindromicSubstring( "abba" ) == "abba" );
  CHECK( longestPalindromicSubstring( "" ).empty() );
- CHECK( longestPalindrome( std::string() ) == std::pair( std::size_t( 0 ) ,
-                                                         std::size_t( 0 ) ) );
+ CHECK( longestPalindrome( std::string() ) ==
+	std::pair( std::size_t( 0 ) , std::size_t( 0 ) ) );
  CHECK( longestPalindromicSubstring( std::string( 5000 , 'z' ) ).size() ==
-        5000 );
- std::string abc( 26 , 'a' );               // the whole alphabet: one
- for( int i = 0 ; i < 26 ; ++i ) abc[ i ] = char( 'a' + i );   // letter
- CHECK( longestPalindrome( abc ) == std::pair( std::size_t( 0 ) ,
-                                               std::size_t( 1 ) ) &&
-        longestPalindromicSubstring( "x" ) == "x" &&
-        longestPalindromicSubstring( "xy" ) == "x" &&
-        longestPalindromicSubstring( "abcdcbz" ) == "bcdcb" );
+	5000 );
+ std::string abc( 26 , 'a' );  // the whole alphabet: one
+ for( int i = 0 ; i < 26 ; ++i )
+  abc[ i ] = char( 'a' + i );  // letter
+ CHECK( longestPalindrome( abc ) ==
+	  std::pair( std::size_t( 0 ) , std::size_t( 1 ) ) &&
+	longestPalindromicSubstring( "x" ) == "x" &&
+	longestPalindromicSubstring( "xy" ) == "x" &&
+	longestPalindromicSubstring( "abcdcbz" ) == "bcdcb" );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 2000 ; ++t ) {
   const std::string s = word( g , g() % 15 , 2 + int( g() % 2 ) );
@@ -148,7 +151,7 @@ ADS_TEST( "palindromic-substring" )
   }
  const std::vector< int > v = { 1 , 2 , 3 , 2 , 1 , 1 , 2 };
  CHECK( longestPalindromicSubstring( v ) ==
-        std::vector< int >( { 1 , 2 , 3 , 2 , 1 } ) );
+	std::vector< int >( { 1 , 2 , 3 , 2 , 1 } ) );
  }
 
 // against the longest palindrome among all the subsequences of up to 12
@@ -158,19 +161,20 @@ ADS_TEST( "palindromic-subsequence" )
 {
  const auto p = longestPalindromicSubsequence( "BBABCBCAB" );
  CHECK( ( p.size() == 7 ) && palindrome( p ) &&
-        subsequenceOf( p , std::string( "BBABCBCAB" ) ) );
+	subsequenceOf( p , std::string( "BBABCBCAB" ) ) );
  CHECK( longestPalindromicSubsequence( "" ).empty() );
  CHECK( longestPalindromicSubsequence( "q" ) == "q" );
  CHECK( longestPalindromicSubsequence( "abc" ).size() == 1 );
  CHECK( longestPalindromicSubsequence( std::string( 600 , 'k' ) ).size() ==
-        600 );
+	600 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 400 ; ++t ) {
   const std::string s = word( g , g() % 13 , 2 + int( g() % 2 ) );
   std::size_t best = 0;
   for( std::uint32_t m = 0 ; m < ( 1u << s.size() ) ; ++m ) {
    const auto q = pick( s , m );
-   if( palindrome( q ) ) best = std::max( best , q.size() );
+   if( palindrome( q ) )
+    best = std::max( best , q.size() );
    }
   const auto r = longestPalindromicSubsequence( s );
   CHECK( ( r.size() == best ) && palindrome( r ) && subsequenceOf( r , s ) );
@@ -178,7 +182,7 @@ ADS_TEST( "palindromic-subsequence" )
  for( int t = 0 ; t < 200 ; ++t ) {
   const std::string s = word( g , g() % 41 , 4 );
   CHECK( longestPalindromicSubsequence( s ).size() ==
-         lcs( s , std::string( s.rbegin() , s.rend() ) ).size() );
+	 lcs( s , std::string( s.rbegin() , s.rend() ) ).size() );
   }
  const std::vector< int > v = { 5 , 1 , 7 , 2 , 1 , 5 };
  CHECK( longestPalindromicSubsequence( v ).size() == 5 );
@@ -210,12 +214,13 @@ ADS_TEST( "palindromic-partition" )
      ++parts;
      start = i + 1;
      }
-   if( ok ) best = std::min( best , parts );
+   if( ok )
+    best = std::min( best , parts );
    }
   const auto pieces = palindromicPartition( s );
   CHECK( pieces.size() == best );
-  CHECK( std::accumulate( pieces.begin() , pieces.end() , std::string() ) ==
-         s );
+  CHECK( std::accumulate( pieces.begin() , pieces.end() ,
+			  std::string() ) == s );
   }
  for( int t = 0 ; t < 20 ; ++t ) {
   const std::string s = word( g , 80 , 2 );
@@ -242,15 +247,16 @@ ADS_TEST( "palindromic-partition" )
 ADS_TEST( "interleaving" )
 {
  std::function< bool( const std::string & , const std::string & ,
-                      const std::string & , std::size_t , std::size_t ) >
-  rec = [ & ]( const std::string & X , const std::string & Y ,
-               const std::string & Z , std::size_t i , std::size_t j ) {
-   if( i + j == Z.size() ) return( ( i == X.size() ) && ( j == Y.size() ) );
-   return( ( ( i < X.size() ) && ( X[ i ] == Z[ i + j ] ) &&
-             rec( X , Y , Z , i + 1 , j ) ) ||
-           ( ( j < Y.size() ) && ( Y[ j ] == Z[ i + j ] ) &&
-             rec( X , Y , Z , i , j + 1 ) ) );
-   };
+		      const std::string & , std::size_t , std::size_t ) >
+   rec = [ & ]( const std::string & X , const std::string & Y ,
+		const std::string & Z , std::size_t i , std::size_t j ) {
+    if( i + j == Z.size() )
+     return( ( i == X.size() ) && ( j == Y.size() ) );
+    return( ( ( i < X.size() ) && ( X[ i ] == Z[ i + j ] ) &&
+	       rec( X , Y , Z , i + 1 , j ) ) ||
+	     ( ( j < Y.size() ) && ( Y[ j ] == Z[ i + j ] ) &&
+	       rec( X , Y , Z , i , j + 1 ) ) );
+    };
  CHECK( isInterleaving( "AB" , "CD" , "ACBD" ) );
  CHECK( ! isInterleaving( "AB" , "CD" , "BACD" ) );
  CHECK( isInterleaving( "123" , "345" , "123435" ) );
@@ -259,7 +265,7 @@ ADS_TEST( "interleaving" )
  CHECK( ! isInterleaving( "AB" , "C" , "ABCD" ) );
  CHECK( isInterleaving( "" , "" , "" ) && ! isInterleaving( "" , "" , "a" ) );
  CHECK( isInterleaving( "ab" , "" , "ab" ) &&
-        ! isInterleaving( "" , "ab" , "ba" ) );
+	! isInterleaving( "" , "ab" , "ba" ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 600 ; ++t ) {
   const std::string X = word( g , g() % 7 , 2 ) , Y = word( g , g() % 7 , 2 );
@@ -278,7 +284,7 @@ ADS_TEST( "interleaving" )
   CHECK( isInterleaving( X , Y , Z ) == rec( X , Y , Z , 0 , 0 ) );
   }
  const std::vector< int > a = { 1 , 2 } , b = { 3 } , c = { 1 , 3 , 2 } ,
-                          d = { 2 , 3 , 1 };
+			  d = { 2 , 3 , 1 };
  CHECK( isInterleaving( a , b , c ) && ! isInterleaving( a , b , d ) );
  }
 
@@ -295,7 +301,7 @@ ADS_TEST( "supersequence" )
  CHECK( shortestCommonSupersequence( "" , "abc" ) == "abc" );
  CHECK( shortestCommonSupersequence( "abc" , "abc" ) == "abc" );
  CHECK( scsLength( std::string( 500 , 'a' ) , std::string( 500 , 'b' ) ) ==
-        1000 );
+	1000 );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string P = word( g , g() % 5 , 2 ) , T = word( g , g() % 5 , 2 );
@@ -304,7 +310,8 @@ ADS_TEST( "supersequence" )
    for( std::uint32_t w = 0 ; ( w < ( 1u << best ) ) && ! found ; ++w ) {
     std::string s( best , 'a' );
     for( std::size_t i = 0 ; i < best ; ++i )
-     if( w >> i & 1 ) s[ i ] = 'b';
+     if( w >> i & 1 )
+      s[ i ] = 'b';
     found = subsequenceOf( P , s ) && subsequenceOf( T , s );
     }
   --best;
@@ -312,7 +319,7 @@ ADS_TEST( "supersequence" )
   }
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string P = word( g , g() % 30 , 3 ) ,
-                    T = word( g , g() % 30 , 3 );
+  T = word( g , g() % 30 , 3 );
   const auto S = shortestCommonSupersequence( P , T );
   CHECK( S.size() == P.size() + T.size() - lcs( P , T ).size() );
   CHECK( scsLength( P , T ) == S.size() );
@@ -335,10 +342,11 @@ ADS_TEST( "subsequence-occurrences" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   const std::string T = word( g , g() % 13 , 2 + int( g() % 2 ) ) ,
-                    P = word( g , g() % 5 , 2 + int( g() % 2 ) );
+		    P = word( g , g() % 5 , 2 + int( g() % 2 ) );
   std::uint64_t brute = 0;
   for( std::uint32_t m = 0 ; m < ( 1u << T.size() ) ; ++m )
-   if( pick( T , m ) == P ) ++brute;
+   if( pick( T , m ) == P )
+    ++brute;
   CHECK( subsequenceOccurrences( P , T ) == brute );
   }
  std::vector< std::vector< std::uint64_t > > C( 101 );
@@ -350,7 +358,7 @@ ADS_TEST( "subsequence-occurrences" )
  for( std::size_t n : { 10 , 60 , 100 } )
   for( std::size_t m = 0 ; m <= n ; m += 7 )
    CHECK( subsequenceOccurrences( std::string( m , 'a' ) ,
-                                  std::string( n , 'a' ) ) == C[ n ][ m ] );
+				  std::string( n , 'a' ) ) == C[ n ][ m ] );
  const std::vector< int > p = { 1 , 2 } , q = { 1 , 1 , 2 , 2 };
  CHECK( subsequenceOccurrences( p , q ) == 4 );
  }
@@ -368,8 +376,8 @@ ADS_TEST( "lcs3" )
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 300 ; ++t ) {
   const std::string X = word( g , g() % 11 , 3 ) ,
-                    Y = word( g , g() % 11 , 3 ) ,
-                    Z = word( g , g() % 11 , 3 );
+  Y = word( g , g() % 11 , 3 ) ,
+		    Z = word( g , g() % 11 , 3 );
   std::size_t best = 0;
   for( std::uint32_t m = 0 ; m < ( 1u << X.size() ) ; ++m ) {
    const auto P = pick( X , m );
@@ -378,10 +386,10 @@ ADS_TEST( "lcs3" )
    }
   const auto r = lcs3( X , Y , Z );
   CHECK( ( r.size() == best ) && subsequenceOf( r , X ) &&
-         subsequenceOf( r , Y ) && subsequenceOf( r , Z ) );
+	 subsequenceOf( r , Y ) && subsequenceOf( r , Z ) );
   }
  const std::vector< int > a = { 1 , 2 , 3 } , b = { 2 , 3 , 1 } ,
-                          c = { 3 , 2 , 3 };
+   c = { 3 , 2 , 3 };
  CHECK( lcs3( a , b , c ) == std::vector< int >( { 2 , 3 } ) );
  }
 
@@ -397,23 +405,25 @@ ADS_TEST( "segmentations" )
  CHECK( countSegmentations( "01" , {} ) == 0 );
  CHECK( countSegmentations( "aa" , { "a" , "a" } ) == 4 );
  CHECK( countSegmentations( std::string( 90 , 'a' ) , { "a" , "aa" } ) ==
-        fibonacci( 91 ) );
- std::function< std::uint64_t( const std::string & ,
-                               const std::vector< std::string > & ,
-                               std::size_t ) > brute =
-  [ & ]( const std::string & X , const std::vector< std::string > & W ,
-         std::size_t i ) -> std::uint64_t {
-   if( i == X.size() ) return( 1 );
-   std::uint64_t c = 0;
-   for( const auto & w : W )
-    if( X.compare( i , w.size() , w ) == 0 )
-     c += brute( X , W , i + w.size() );
-   return( c );
-   };
+	fibonacci( 91 ) );
+ std::function< std::uint64_t(
+   const std::string & , const std::vector< std::string > & , std::size_t ) >
+   brute = [ & ]( const std::string & X ,
+		  const std::vector< std::string > & W ,
+		  std::size_t i ) -> std::uint64_t {
+  if( i == X.size() )
+   return( 1 );
+  std::uint64_t c = 0;
+  for( const auto & w : W )
+   if( X.compare( i , w.size() , w ) == 0 )
+    c += brute( X , W , i + w.size() );
+  return( c );
+  };
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 400 ; ++t ) {
   std::vector< std::string > W( 1 + g() % 5 );
-  for( auto & w : W ) w = word( g , 1 + g() % 3 , 2 );
+  for( auto & w : W )
+   w = word( g , 1 + g() % 3 , 2 );
   const std::string X = word( g , g() % 19 , 2 );
   CHECK( countSegmentations( X , W ) == brute( X , W , 0 ) );
   }
@@ -435,20 +445,23 @@ ADS_TEST( "decodings" )
  CHECK( countDecodings( { 2 , 0 , 2 , 0 } ) == 1 );
  CHECK( countDecodings( { 0 , 1 , 1 } ) == 0 );
  CHECK( countDecodings( std::vector< int >( 90 , 1 ) ) == fibonacci( 91 ) );
- std::function< std::uint64_t( const std::vector< int > & ,
-                               std::size_t ) > brute =
-  [ & ]( const std::vector< int > & T , std::size_t i ) -> std::uint64_t {
-   if( i == T.size() ) return( 1 );
-   if( T[ i ] == 0 ) return( 0 );
-   std::uint64_t c = brute( T , i + 1 );
-   if( ( i + 1 < T.size() ) && ( 10 * T[ i ] + T[ i + 1 ] <= 26 ) )
-    c += brute( T , i + 2 );
-   return( c );
-   };
+ std::function< std::uint64_t( const std::vector< int > & , std::size_t ) >
+   brute =
+     [ & ]( const std::vector< int > & T , std::size_t i ) -> std::uint64_t {
+  if( i == T.size() )
+   return( 1 );
+  if( T[ i ] == 0 )
+   return( 0 );
+  std::uint64_t c = brute( T , i + 1 );
+  if( ( i + 1 < T.size() ) && ( 10 * T[ i ] + T[ i + 1 ] <= 26 ) )
+   c += brute( T , i + 2 );
+  return( c );
+  };
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 1000 ; ++t ) {
   std::vector< int > T( g() % 19 );
-  for( auto & d : T ) d = g() % 4 ? int( g() % 3 ) : int( g() % 10 );
+  for( auto & d : T )
+   d = g() % 4 ? int( g() % 3 ) : int( g() % 10 );
   CHECK( countDecodings( T ) == brute( T , 0 ) );
   }
  CHECK_THROWS( countDecodings( { 1 , 10 } ) , contract_violation );
@@ -466,30 +479,35 @@ ADS_TEST( "balanced-subsequence" )
  CHECK( longestBalancedSubsequence( ")(" ) == 0 );
  CHECK( longestBalancedSubsequence( "[x]][" , '[' , ']' ) == 2 );
  CHECK( longestBalancedSubsequence( std::string( 500 , '(' ) +
-                                    std::string( 500 , ')' ) ) == 1000 );
+				    std::string( 500 , ')' ) ) == 1000 );
  auto balanced = []( const std::string & s ) {
   int d = 0;
   for( char c : s ) {
    d += c == '(' ? 1 : -1;
-   if( d < 0 ) return( false );
+   if( d < 0 )
+    return( false );
    }
   return( d == 0 );
   };
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 500 ; ++t ) {
   std::string S;
-  for( std::size_t i = g() % 15 ; i > 0 ; --i ) S += "()x"[ g() % 3 ];
+  for( std::size_t i = g() % 15 ; i > 0 ; --i )
+   S += "()x"[ g() % 3 ];
   std::string p;
-  for( char c : S ) if( c != 'x' ) p += c;
+  for( char c : S )
+   if( c != 'x' )
+    p += c;
   std::size_t best = 0;
   for( std::uint32_t m = 0 ; m < ( 1u << p.size() ) ; ++m ) {
    const auto s = pick( p , m );
-   if( balanced( s ) ) best = std::max( best , s.size() );
+   if( balanced( s ) )
+    best = std::max( best , s.size() );
    }
   CHECK( longestBalancedSubsequence( S ) == best );
   }
  CHECK_THROWS( longestBalancedSubsequence( "aa" , 'a' , 'a' ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // against every substring of 1000 random strings over ( ) and another
@@ -508,9 +526,11 @@ ADS_TEST( "balanced-substring" )
  auto balanced = []( const std::string & s ) {
   int d = 0;
   for( char c : s ) {
-   if( ( c != '(' ) && ( c != ')' ) ) return( false );
+   if( ( c != '(' ) && ( c != ')' ) )
+    return( false );
    d += c == '(' ? 1 : -1;
-   if( d < 0 ) return( false );
+   if( d < 0 )
+    return( false );
    }
   return( d == 0 );
   };
@@ -530,15 +550,16 @@ ADS_TEST( "balanced-substring" )
   CHECK( longestBalancedSubstring( S ) == best );
   }
  CHECK_THROWS( longestBalancedSubstring( "aa" , 'a' , 'a' ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /// a hash of a vector of integers
-struct VectorHash {
- std::size_t operator()( const std::vector< int > & v ) const
- {
+struct VectorHash
+{
+ std::size_t operator()( const std::vector< int > & v ) const {
   std::size_t h = 0;
-  for( int x : v ) h = h * 1000003u + std::hash< int >()( x );
+  for( int x : v )
+   h = h * 1000003u + std::hash< int >()( x );
   return( h );
   }
  };
@@ -549,35 +570,39 @@ struct VectorHash {
 ADS_TEST( "anagrams" )
 {
  using G = std::vector< std::vector< std::string > >;
- CHECK( anagramGroups( { "rosa" , "pippo" , "poppi" , "raso" , "orsa" ,
-                         "lupo" } ) ==
-        G( { { "rosa" , "raso" , "orsa" } , { "pippo" , "poppi" } ,
-             { "lupo" } } ) );
+ CHECK(
+   anagramGroups( { "rosa" , "pippo" , "poppi" , "raso" , "orsa" ,
+		    "lupo" } ) ==
+   G( { { "rosa" , "raso" , "orsa" } , { "pippo" , "poppi" } ,
+	{ "lupo" } } ) );
  CHECK( anagramGroups( {} ).empty() );
  CHECK( anagramGroups( { "ab" , "ab" , "ba" } ) ==
-        G( { { "ab" , "ab" , "ba" } } ) );
+	G( { { "ab" , "ab" , "ba" } } ) );
  CHECK( anagramGroups( { "" , "a" , "" } ) == G( { { "" , "" } , { "a" } } ) );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::vector< std::string > W( g() % 20 );
-  for( auto & w : W ) w = word( g , g() % 4 , 3 );
+  for( auto & w : W )
+   w = word( g , g() % 4 , 3 );
   G expected;
   for( const auto & w : W ) {
-   auto it = std::find_if( expected.begin() , expected.end() ,
-                           [ & ]( const std::vector< std::string > & e ) {
-                            return( std::is_permutation( w.begin() , w.end() ,
-                                                         e[ 0 ].begin() ,
-                                                         e[ 0 ].end() ) ); } );
-   if( it == expected.end() ) expected.push_back( { w } );
-   else it->push_back( w );
+   auto it =
+     std::find_if( expected.begin() , expected.end() ,
+		   [ & ]( const std::vector< std::string > & e ) {
+		    return( std::is_permutation(
+		      w.begin() , w.end() , e[ 0 ].begin() , e[ 0 ].end() ) );
+		    } );
+   if( it == expected.end() )
+    expected.push_back( { w } );
+   else
+    it->push_back( w );
    }
   CHECK( anagramGroups( W ) == expected );
   }
- const std::vector< std::vector< int > > V = { { 1 , 2 } , { 3 } ,
-                                               { 2 , 1 } };
+ const std::vector< std::vector< int > > V = { { 1 , 2 } , { 3 } , { 2 , 1 } };
  const auto H = anagramGroups< std::vector< int > , VectorHash >( V );
  CHECK( ( H.size() == 2 ) && ( H[ 0 ].size() == 2 ) &&
-        ( H[ 1 ].size() == 1 ) );
+	( H[ 1 ].size() == 1 ) );
  }
 
 /// the cost of the cuts in the given order on a string of length L
@@ -605,7 +630,7 @@ ADS_TEST( "string-breaking" )
  CHECK( cutCost( { 10 , 3 , 8 } , 19 ) == 36 );
  CHECK( stringBreakingCost( { 3 , 8 , 10 } , 19 ) == 36 );
  CHECK( stringBreakingOrder( { 3 , 8 , 10 } , 19 ) ==
-        std::vector< std::int64_t >( { 10 , 3 , 8 } ) );
+	std::vector< std::int64_t >( { 10 , 3 , 8 } ) );
  CHECK( stringBreakingCost( {} , 7 ) == 0 );
  CHECK( stringBreakingOrder( {} , 7 ).empty() );
  CHECK( stringBreakingCost( { 4 } , 7 ) == 7 );
@@ -619,7 +644,8 @@ ADS_TEST( "string-breaking" )
    s.insert( 1 + g() % ( L - 1 ) );
   V P( s.begin() , s.end() );
   long long best = std::numeric_limits< long long >::max();
-  do best = std::min( best , cutCost( P , L ) );
+  do
+   best = std::min( best , cutCost( P , L ) );
   while( std::next_permutation( P.begin() , P.end() ) );
   const V cuts( s.begin() , s.end() );
   CHECK( stringBreakingCost( cuts , L ) == best );
@@ -629,7 +655,8 @@ ADS_TEST( "string-breaking" )
   const long long L = 70 + g() % 1000;
   std::set< long long > s;
   const std::size_t n = g() % 61;
-  while( s.size() < n ) s.insert( 1 + g() % ( L - 1 ) );
+  while( s.size() < n )
+   s.insert( 1 + g() % ( L - 1 ) );
   V w = { 0 };
   w.insert( w.end() , s.begin() , s.end() );
   w.push_back( L );

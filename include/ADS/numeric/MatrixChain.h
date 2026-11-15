@@ -40,7 +40,7 @@
 
 #ifndef __ADS_MatrixChain
  #define __ADS_MatrixChain
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -59,7 +59,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the least cost \f$ \mathit{DP}[ 0 ][ n - 1 ] \f$ and the table \f$ S \f$
 /// of the splits, for the \f$ n \f$ matrices of sizes \f$ c[ 0 .. n ] \f$ (the
@@ -103,9 +104,9 @@ matrixChain( const std::vector< long > & c );
 /// \end{array}}
 /// \f]
 /// \pre \f$ i \le j < n \f$
-inline std::string parenthesization(
-                         const std::vector< std::vector< std::size_t > > & S ,
-                         std::size_t i , std::size_t j );
+inline std::string
+parenthesization( const std::vector< std::vector< std::size_t > > & S ,
+		  std::size_t i , std::size_t j );
 
 /*--------------------------------------------------------------------------*/
 
@@ -119,7 +120,7 @@ inline std::string parenthesization(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MatrixChain.h included */
+#endif /* MatrixChain.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MatrixChain.h -------------------------*/

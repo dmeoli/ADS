@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::totally_ordered P >
 bool TreePriorityQueue< T , P >::empty( void ) const
@@ -64,7 +65,7 @@ template< class T , std::totally_ordered P >
 void TreePriorityQueue< T , P >::decrease( Handle y , const P & p )
 {
  ADS_PRE( ( y >= 0 ) && ( y < long( f_p.size() ) ) &&
-          f_t.contains( { f_p[ y ] , y } ) && !( f_p[ y ] < p ) );
+	  f_t.contains( { f_p[ y ] , y } ) && ! ( f_p[ y ] < p ) );
  const auto v = f_t.lookup( { f_p[ y ] , y } );
  f_t.remove( { f_p[ y ] , y } );
  f_t.insert( { p , y } , *v );
@@ -78,7 +79,8 @@ bool TreePriorityQueue< T , P >::consistent( void ) const
  bool ok = true;
  f_t.forEach( [ & ]( const Key & k , const T & ) {
   ok = ok && ( k.second >= 0 ) && ( k.second < long( f_p.size() ) ) &&
-       ( f_p[ k.second ] == k.first ); } );
+       ( f_p[ k.second ] == k.first );
+  } );
  return( ok );
  }
 

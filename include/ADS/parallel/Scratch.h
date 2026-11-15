@@ -29,7 +29,7 @@
 
 #ifndef __ADS_Scratch
  #define __ADS_Scratch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -46,16 +46,17 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS::detail {
+namespace ADS::detail
+{
 
 /// the room of the parallel algorithms, kept between their calls: the
 /// block of the last call that gave its room back, which the next one
 /// takes if it is large enough, so that its pages are already faulted in;
 /// the block goes back to the system at the exit, or when a larger one
 /// replaces it
-class ScratchRoom {
+class ScratchRoom
+{
  public:
-
  /// a block of at least \f$ b \f$ bytes, aligned to a huge page, and its
  /// size in `got`
  ///
@@ -84,7 +85,7 @@ class ScratchRoom {
     got = slot().size;
     return( std::exchange( slot().p , nullptr ) );
     }
-  }
+   }
   got = b;
   return( HugePageAllocator< std::byte >().allocate( b ) );
   }
@@ -99,19 +100,20 @@ class ScratchRoom {
     std::swap( drop , slot().p );
     std::swap( db , slot().size );
     }
-  }
+   }
   if( drop )
    HugePageAllocator< std::byte >().deallocate( drop , db );
   }
 
  private:
-
- struct Slot {
+ struct Slot
+ {
   std::mutex lock;
   std::byte * p = nullptr;
   std::size_t size = 0;
   ~Slot() {
-   if( p ) HugePageAllocator< std::byte >().deallocate( p , size );
+   if( p )
+    HugePageAllocator< std::byte >().deallocate( p , size );
    }
   };
 
@@ -123,13 +125,13 @@ class ScratchRoom {
 
 /// room for \f$ n \f$ items, not constructed, from `ScratchRoom`
 template< class T >
-class ScratchBuffer {
+class ScratchBuffer
+{
  public:
  /// the room for \f$ n \f$ items
  explicit ScratchBuffer( std::size_t n )
-  : f_p( reinterpret_cast< T * >( ScratchRoom::take(
-                                  std::max< std::size_t >( n , 1 ) *
-                                  sizeof( T ) , f_b ) ) ) {}
+     : f_p( reinterpret_cast< T * >( ScratchRoom::take(
+	 std::max< std::size_t >( n , 1 ) * sizeof( T ) , f_b ) ) ) { }
  /// gives the room back to `ScratchRoom`
  ~ScratchBuffer() {
   ScratchRoom::give( reinterpret_cast< std::byte * >( f_p ) , f_b );
@@ -138,8 +140,9 @@ class ScratchBuffer {
  ScratchBuffer & operator=( const ScratchBuffer & ) = delete;
  /// the first item of the room
  [[nodiscard]] T * data( void ) const { return( f_p ); }
+
  private:
- std::size_t f_b = 0;                      ///< the bytes of the block
+ std::size_t f_b = 0;  ///< the bytes of the block
  T * f_p;
  };
 
@@ -147,7 +150,7 @@ class ScratchBuffer {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Scratch.h included */
+#endif /* Scratch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Scratch.h ---------------------------*/

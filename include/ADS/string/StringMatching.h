@@ -92,7 +92,7 @@
 
 #ifndef __ADS_StringMatching
  #define __ADS_StringMatching
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -109,7 +109,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the places of all the occurrences of \f$ P \f$ in \f$ T \f$, by trying
 /// every shift
@@ -126,7 +127,7 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 inline std::vector< std::size_t > naiveMatching( std::string_view T ,
-                                                 std::string_view P );
+						 std::string_view P );
 
 /// the failure function: \f$ F[ q ] \f$ is the length of the longest proper
 /// border of \f$ P[ 0 .. q - 1 ] \f$, and \f$ F[ 0 ] = -1 \f$
@@ -171,8 +172,8 @@ inline std::vector< long > failure( std::string_view P );
 /// \f]
 /// \post the occurrences of `naiveMatching( T , P )`
 inline std::vector< std::size_t > kmp( std::string_view T ,
-                                       std::string_view P ,
-                                       long * comparisons = nullptr );
+				       std::string_view P ,
+				       long * comparisons = nullptr );
 
 /// the strong failure function: \f$ G[ q ] = F[ q ] \f$ unless
 /// \f$ P[ F[ q ] ] = P[ q ] \f$, in which case \f$ G[ q ] = G[ F[ q ] ] \f$;
@@ -207,8 +208,8 @@ inline std::vector< long > strongFailure( std::string_view P );
 /// \f]
 /// \post the occurrences of `naiveMatching( T , P )`
 inline std::vector< std::size_t > kmpStrong( std::string_view T ,
-                                             std::string_view P ,
-                                             long * comparisons = nullptr );
+					     std::string_view P ,
+					     long * comparisons = nullptr );
 
 /// the places of all the occurrences of \f$ P \f$ in \f$ T \f$, by
 /// Boyer-Moore with the bad character and the strong good suffix rules
@@ -237,8 +238,8 @@ inline std::vector< std::size_t > kmpStrong( std::string_view T ,
 /// \f]
 /// \post the occurrences of `naiveMatching( T , P )` (audit)
 inline std::vector< std::size_t > boyerMoore( std::string_view T ,
-                                              std::string_view P ,
-                                              long * comparisons = nullptr );
+					      std::string_view P ,
+					      long * comparisons = nullptr );
 
 /// the places of all the occurrences of \f$ P \f$ in \f$ T \f$, by Horspool
 ///
@@ -262,8 +263,8 @@ inline std::vector< std::size_t > boyerMoore( std::string_view T ,
 /// \f]
 /// \post the occurrences of `naiveMatching( T , P )` (audit)
 inline std::vector< std::size_t > horspool( std::string_view T ,
-                                            std::string_view P ,
-                                            long * comparisons = nullptr );
+					    std::string_view P ,
+					    long * comparisons = nullptr );
 
 /// the places of all the occurrences of \f$ P \f$ in \f$ T \f$, by Shift-Or
 ///
@@ -288,7 +289,7 @@ inline std::vector< std::size_t > horspool( std::string_view T ,
 /// \pre \f$ m \le 64 \f$
 /// \post the occurrences of `naiveMatching( T , P )` (audit)
 inline std::vector< std::size_t > shiftOr( std::string_view T ,
-                                           std::string_view P );
+					   std::string_view P );
 
 /// the Z-function: \f$ Z[ i ] \f$ is the length of the longest common
 /// prefix of \f$ S \f$ and \f$ S[ i .. ] \f$, and \f$ Z[ 0 ] = |S| \f$
@@ -339,7 +340,7 @@ inline std::vector< std::size_t > zFunction( std::string_view S );
 /// \f]
 /// \post the occurrences of `naiveMatching( T , P )` (audit)
 inline std::vector< std::size_t > zMatching( std::string_view T ,
-                                             std::string_view P );
+					     std::string_view P );
 
 /// the places of all the occurrences of \f$ P \f$ in \f$ T \f$, by the
 /// Two-Way algorithm of Crochemore and Perrin
@@ -378,7 +379,7 @@ inline std::vector< std::size_t > zMatching( std::string_view T ,
 /// \f]
 /// \post the occurrences of `naiveMatching( T , P )` (audit)
 inline std::vector< std::size_t > twoWay( std::string_view T ,
-                                          std::string_view P );
+					  std::string_view P );
 
 /*--------------------------------------------------------------------------*/
 
@@ -392,7 +393,7 @@ inline std::vector< std::size_t > twoWay( std::string_view T ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StringMatching.h included */
+#endif /* StringMatching.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File StringMatching.h ------------------------*/

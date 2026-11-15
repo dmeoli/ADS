@@ -48,7 +48,7 @@
 
 #ifndef __ADS_Affinity
  #define __ADS_Affinity
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -68,7 +68,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the processors on which the process may run, in increasing order, as
 /// the first call found them; empty where the placement does not exist
@@ -96,7 +97,7 @@ inline unsigned availableCpus( void )
 {
  const std::vector< int > & c = affinityCpus();
  return( c.empty() ? std::thread::hardware_concurrency()
-                   : unsigned( c.size() ) );
+		    : unsigned( c.size() ) );
  }
 
 /// binds the calling thread to the processor \f$ i \bmod c \f$ of
@@ -123,10 +124,9 @@ inline bool pinThread( unsigned i )
  cpu_set_t s;
  CPU_ZERO( &s );
  CPU_SET( c[ i % c.size() ] , &s );
- return( pthread_setaffinity_np( pthread_self() , sizeof( s ) , &s ) ==
-         0 );
+ return( pthread_setaffinity_np( pthread_self() , sizeof( s ) , &s ) == 0 );
 #else
- (void) i;
+ ( void )i;
  return( false );
 #endif
  }
@@ -148,7 +148,7 @@ inline int currentCpu( void )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Affinity.h included */
+#endif /* Affinity.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Affinity.h --------------------------*/

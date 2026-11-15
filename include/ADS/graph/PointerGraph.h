@@ -34,7 +34,7 @@
 
 #ifndef __ADS_PointerGraph
  #define __ADS_PointerGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS PointerGraph ---------------------------*/
@@ -60,25 +61,27 @@ namespace ADS {
 
 /// an oriented graph of node objects linked by pointers
 template< class T , class W = int >
-class PointerGraph {
+class PointerGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  struct Node;
 
  /// an edge, to its other end
- struct Edge {
-  Node * to;   ///< the other end
-  W weight;    ///< the weight
+ struct Edge
+ {
+  Node * to;  ///< the other end
+  W weight;   ///< the weight
   };
 
  /// a node
- struct Node {
-  T label;                     ///< the label
-  int degree = 0;              ///< the edges that enter or leave it
-  bool seen = false;           ///< the flag of the visits
-  std::list< Edge > out;       ///< the edges that leave it
+ struct Node
+ {
+  T label;                ///< the label
+  int degree = 0;         ///< the edges that enter or leave it
+  bool seen = false;      ///< the flag of the visits
+  std::list< Edge > out;  ///< the edges that leave it
   };
 
  /// the empty graph
@@ -166,7 +169,6 @@ class PointerGraph {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  void clear( void );
 
  /// \f$ u \f$ is one of the nodes, \f$ O( n ) \f$
@@ -175,7 +177,7 @@ class PointerGraph {
  /// the degrees count the edges in and out, and the edges lead to nodes
  [[nodiscard]] bool consistent( void ) const;
 
- std::list< Node > f_V;   ///< the nodes, at fixed addresses
+ std::list< Node > f_V;  ///< the nodes, at fixed addresses
 
  };  // end( class PointerGraph )
 
@@ -191,7 +193,7 @@ class PointerGraph {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PointerGraph.h included */
+#endif /* PointerGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File PointerGraph.h -------------------------*/

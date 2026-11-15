@@ -15,23 +15,26 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 RootishArrayStack< T >::RootishArrayStack( std::initializer_list< T > l )
 {
- for( const T & x : l ) emplace_back( x );
+ for( const T & x : l )
+  emplace_back( x );
  }
 
 template< class T >
 RootishArrayStack< T >::RootishArrayStack( const RootishArrayStack & o )
 {
- for( const T & x : o ) emplace_back( x );
+ for( const T & x : o )
+  emplace_back( x );
  }
 
 template< class T >
 RootishArrayStack< T >::RootishArrayStack( RootishArrayStack && o ) noexcept
- : f_blocks( std::move( o.f_blocks ) ) , f_n( std::exchange( o.f_n , 0 ) )
+    : f_blocks( std::move( o.f_blocks ) ) , f_n( std::exchange( o.f_n , 0 ) )
 {
  o.f_blocks.clear();
  }
@@ -61,10 +64,12 @@ template< class T >
 std::size_t RootishArrayStack< T >::block( std::size_t i )
 {
  // (1), then the least b with ( b + 1 ) ( b + 2 ) / 2 > i by a correction
- auto b = std::size_t( std::ceil( ( -3.0 +
-                        std::sqrt( 9.0 + 8.0 * double( i ) ) ) / 2.0 ) );
- while( ( b > 0 ) && ( b * ( b + 1 ) / 2 > i ) ) --b;
- while( ( b + 1 ) * ( b + 2 ) / 2 <= i ) ++b;
+ auto b = std::size_t(
+   std::ceil( ( -3.0 + std::sqrt( 9.0 + 8.0 * double( i ) ) ) / 2.0 ) );
+ while( ( b > 0 ) && ( b * ( b + 1 ) / 2 > i ) )
+  --b;
+ while( ( b + 1 ) * ( b + 2 ) / 2 <= i )
+  ++b;
  return( b );
  }
 
@@ -106,7 +111,7 @@ const T & RootishArrayStack< T >::back( void ) const
 template< class T >
 void RootishArrayStack< T >::grow( void )
 {
- f_blocks.reserve( f_blocks.size() + 1 );   // so that push_back cannot throw
+ f_blocks.reserve( f_blocks.size() + 1 );  // so that push_back cannot throw
  f_blocks.push_back( std::allocator< T >().allocate( f_blocks.size() + 1 ) );
  }
 
@@ -122,18 +127,18 @@ void RootishArrayStack< T >::shrink( void )
  }
 
 template< class T >
-template< class ... Args >
-T & RootishArrayStack< T >::emplace_back( Args && ... args )
+template< class... Args >
+T & RootishArrayStack< T >::emplace_back( Args &&... args )
 {
  if( capacity() == f_n ) {
-  T x( std::forward< Args >( args )... );   // which may be an item
+  T x( std::forward< Args >( args )... );  // which may be an item
   grow();
   T * p = ::new( static_cast< void * >( place( f_n ) ) ) T( std::move( x ) );
   ++f_n;
   return( *p );
   }
  T * p = ::new( static_cast< void * >( place( f_n ) ) )
-          T( std::forward< Args >( args )... );
+   T( std::forward< Args >( args )... );
  ++f_n;
  ADS_INVARIANT( fits() );
  return( *p );
@@ -148,7 +153,7 @@ void RootishArrayStack< T >::insert( std::size_t i , const T & x )
   return;
   }
  [[maybe_unused]] const std::size_t n = f_n;
- T y = x;                                   // x may be an item
+ T y = x;  // x may be an item
  emplace_back( std::move( ( *this )[ f_n - 1 ] ) );
  for( std::size_t k = f_n - 2 ; k > i ; --k )
   *place( k ) = std::move( *place( k - 1 ) );
@@ -189,7 +194,7 @@ bool RootishArrayStack< T >::operator==( const RootishArrayStack & o ) const
  if( f_n != o.f_n )
   return( false );
  for( std::size_t i = 0 ; i < f_n ; ++i )
-  if( !( *place( i ) == *o.place( i ) ) )
+  if( ! ( *place( i ) == *o.place( i ) ) )
    return( false );
  return( true );
  }
@@ -201,7 +206,7 @@ bool RootishArrayStack< T >::fits( void ) const
  if( f_n == 0 )
   return( r == 0 );
  return( ( f_n <= r * ( r + 1 ) / 2 ) &&
-         ( ( r < 2 ) || ( ( r - 2 ) * ( r - 1 ) / 2 < f_n ) ) );
+	  ( ( r < 2 ) || ( ( r - 2 ) * ( r - 1 ) / 2 < f_n ) ) );
  }
 
 /*--------------------------------------------------------------------------*/

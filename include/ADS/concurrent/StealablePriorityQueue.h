@@ -132,7 +132,7 @@
 
 #ifndef __ADS_StealablePriorityQueue
  #define __ADS_StealablePriorityQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -159,7 +159,7 @@
 /// a function of the common path of the owner, inlined even where the
 /// compiler would not
 #if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_SPQ_INLINE inline __attribute__(( always_inline ))
+ #define ADS_SPQ_INLINE inline __attribute__( ( always_inline ) )
 #elif defined( _MSC_VER )
  #define ADS_SPQ_INLINE __forceinline
 #else
@@ -168,7 +168,7 @@
 
 /// a function never inlined, the rare path out of the common one
 #if defined( __GNUC__ ) || defined( __clang__ )
- #define ADS_SPQ_NOINLINE __attribute__(( noinline ))
+ #define ADS_SPQ_NOINLINE __attribute__( ( noinline ) )
 #elif defined( _MSC_VER )
  #define ADS_SPQ_NOINLINE __declspec( noinline )
 #else
@@ -179,27 +179,32 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the bound of the pairs of a queue without bounds, a type with no value
-struct SpqNoBound {};
+struct SpqNoBound
+{ };
 
 /// a pair of a `StealablePriorityQueue` with bounds: its key, its bound and
 /// its item
 template< class K , class T , class Bd >
-struct SpqEntry {
- K key;      ///< the key, the least popped first
- Bd bound;   ///< the bound, whose least `minBound()` gives
- T item;     ///< the item
+struct SpqEntry
+{
+ K key;     ///< the key, the least popped first
+ Bd bound;  ///< the bound, whose least `minBound()` gives
+ T item;    ///< the item
  };
 
 /// a pair of a `StealablePriorityQueue` without bounds: its key and its item
 template< class K , class T >
-struct SpqEntry< K , T , void > {
- K key;      ///< the key, the least popped first
- T item;     ///< the item
+struct SpqEntry< K , T , void >
+{
+ K key;   ///< the key, the least popped first
+ T item;  ///< the item
  };
 
 /// a heap of the pairs of a `StealablePriorityQueue` by their keys, which
@@ -218,21 +223,21 @@ struct SpqEntry< K , T , void > {
 /// bound is less, and a pop computes it again on the paths it changes (see
 /// \ref theory_concurrent_spq)
 template< class E , class By , class Bd , class BdLess >
-class SpqHalf {
+class SpqHalf
+{
 
  static_assert( std::is_nothrow_copy_constructible_v< Bd > &&
-                std::is_nothrow_move_constructible_v< E > &&
-                std::is_nothrow_move_assignable_v< E > ,
-                "the moves of the pairs and the copies of the bounds do not "
-                "throw" );
+		  std::is_nothrow_move_constructible_v< E > &&
+		  std::is_nothrow_move_assignable_v< E > ,
+		"the moves of the pairs and the copies of the bounds do not "
+		"throw" );
 
  public:
-
  /// whether the pairs have bounds
  static constexpr bool bounded = true;
 
  /// the empty heap of the orders by and bl
- SpqHalf( By by , BdLess bl ) : f_by( by ) , f_bl( bl ) {}
+ SpqHalf( By by , BdLess bl ) : f_by( by ) , f_bl( bl ) { }
 
  /// pushes the pair e, \f$ O( \log m ) \f$: the hole of a new leaf moved up
  /// while e goes before its parent; with \f$ \mu \f$, \f$ \mu \f$ computed
@@ -240,7 +245,7 @@ class SpqHalf {
  /// parents, and lowered from the place of e up while its bound is less
  void push( const E & e ) {
   std::size_t i = f_E.size();
-  f_E.push_back( e );                        // the only throws, no change
+  f_E.push_back( e );  // the only throws, no change
   if( f_sub )
    try {
     f_M.push_back( e.bound );
@@ -263,12 +268,12 @@ class SpqHalf {
    }
   if( f_sub ) {
    for( std::size_t j = leaf ; j != i ; j = ( j - 1 ) / 4 )
-    fix( j );                                // the nodes the hole passed
-   const Bd b = e.bound;                     // the leaf has it already
+    fix( j );             // the nodes the hole passed
+   const Bd b = e.bound;  // the leaf has it already
    for( std::size_t j = i ; ; j = ( j - 1 ) / 4 ) {
     if( j != leaf ) {
      if( ! f_bl( b , f_M[ j ] ) )
-      break;                                 // and so all those above
+      break;  // and so all those above
      f_M[ j ] = b;
      }
     if( j == 0 )
@@ -293,7 +298,7 @@ class SpqHalf {
   const std::size_t n = f_E.size();
   ++f_pops;
   if( f_known && ! f_bl( f_least , r.bound ) )
-   f_known = false;                          // the least bound may be gone
+   f_known = false;  // the least bound may be gone
   if( n == 0 )
    return( r );
   std::size_t i = 0;
@@ -323,7 +328,7 @@ class SpqHalf {
      break;
     fix( j );
     }
-   for( std::size_t j = i ; ; j = ( j - 1 ) / 4 ) {   // the path down
+   for( std::size_t j = i ; ; j = ( j - 1 ) / 4 ) {  // the path down
     fix( j );
     if( j == 0 )
      break;
@@ -376,7 +381,7 @@ class SpqHalf {
  void assign( I first , S last ) {
   std::vector< E , HugePageAllocator< E > > A( first , last );
   std::vector< Bd , HugePageAllocator< Bd > > M( f_sub ? A.size() : 0 );
-  f_E.swap( A );                             // nothing thrown from here on
+  f_E.swap( A );  // nothing thrown from here on
   f_M.swap( M );
   f_known = false;
   const std::size_t n = f_E.size();
@@ -437,7 +442,6 @@ class SpqHalf {
   }
 
  private:
-
  /// the least bound by a scan of the pairs, and \f$ \mu \f$ built if the
  /// scans cost too much, out of the way of `minBound()`
  ADS_SPQ_NOINLINE Bd rescan( void ) const {
@@ -451,13 +455,13 @@ class SpqHalf {
   f_known = true;
   f_scanned += n;
   if( ( n >= 64 ) && ( f_scanned > 16 * ( f_pops + n ) + 65536 ) )
-   try {                                     // to the least bounds of the
-    f_M.resize( n );                         // subtrees, if there is room
+   try {              // to the least bounds of the
+    f_M.resize( n );  // subtrees, if there is room
     for( std::size_t k = n ; k-- > 0 ; )
      fix( k );
     f_sub = true;
     }
-   catch( const std::bad_alloc & ) {         // the scans go on
+   catch( const std::bad_alloc & ) {  // the scans go on
     f_M.clear();
     }
   return( m );
@@ -489,31 +493,32 @@ class SpqHalf {
   if constexpr( std::is_scalar_v< Bd > )
    asm( "" : "+r"( x ) );
 #else
-  ( void ) x;
+  ( void )x;
 #endif
   }
 
- std::vector< E , HugePageAllocator< E > > f_E;    ///< the pairs
+ std::vector< E , HugePageAllocator< E > > f_E;  ///< the pairs
  /// their \f$ \mu \f$, if kept
  mutable std::vector< Bd , HugePageAllocator< Bd > > f_M;
- By f_by;                                  ///< the order of the pairs
- BdLess f_bl;                              ///< the order of the bounds
- mutable Bd f_least{};                     ///< the least bound, when known
- mutable bool f_known = false;             ///< whether f_least is it
- mutable bool f_sub = false;               ///< whether \f$ \mu \f$ is kept
- mutable std::size_t f_scanned = 0;        ///< the pairs scanned so far
- std::size_t f_pops = 0;                   ///< the pops so far
+ By f_by;                            ///< the order of the pairs
+ BdLess f_bl;                        ///< the order of the bounds
+ mutable Bd f_least{};               ///< the least bound, when known
+ mutable bool f_known = false;       ///< whether f_least is it
+ mutable bool f_sub = false;         ///< whether \f$ \mu \f$ is kept
+ mutable std::size_t f_scanned = 0;  ///< the pairs scanned so far
+ std::size_t f_pops = 0;             ///< the pops so far
  };
 
 /// a heap of the pairs of a `StealablePriorityQueue` without bounds, a
 /// 4-ary heap [see `DaryHeap.h`]
 template< class E , class By , class BdLess >
-class SpqHalf< E , By , void , BdLess > : public DaryHeap< E , By , 4 > {
+class SpqHalf< E , By , void , BdLess > : public DaryHeap< E , By , 4 >
+{
  public:
  /// whether the pairs have bounds
  static constexpr bool bounded = false;
  /// the empty heap of the order by
- SpqHalf( By by , BdLess ) : DaryHeap< E , By , 4 >( by ) {}
+ SpqHalf( By by , BdLess ) : DaryHeap< E , By , 4 >( by ) { }
  /// the order of the heap, checked by its own operations
  [[nodiscard]] bool consistent( void ) const { return( true ); }
  };
@@ -528,15 +533,15 @@ class SpqHalf< E , By , void , BdLess > : public DaryHeap< E , By , 4 > {
 /// of the pairs, offered by the owner at its next operation; with a bound
 /// per pair of the type `Bd` (none if void), ordered by `BdLess`, it also
 /// knows the least bound of the pairs that its owner holds
-template< class K , class T , class Less = std::less< K > ,
-          class Bd = void , class BdLess = std::less<> >
-class StealablePriorityQueue {
+template< class K , class T , class Less = std::less< K > , class Bd = void ,
+	  class BdLess = std::less<> >
+class StealablePriorityQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Item = T;    ///< the type of the items
+ using Key = K;   ///< the type of the keys
+ using Item = T;  ///< the type of the items
 
  /// whether the pairs have bounds
  static constexpr bool bounded = ! std::is_void_v< Bd >;
@@ -554,8 +559,7 @@ class StealablePriorityQueue {
  /// no copy, since the thieves share it by its address
  StealablePriorityQueue( const StealablePriorityQueue & ) = delete;
  /// no copy, since the thieves share it by its address
- StealablePriorityQueue & operator=( const StealablePriorityQueue & ) =
-                                                                 delete;
+ StealablePriorityQueue & operator=( const StealablePriorityQueue & ) = delete;
 
  /// the free of the offer not claimed
  ~StealablePriorityQueue();
@@ -574,14 +578,18 @@ class StealablePriorityQueue {
  /// 3 & \quad \mathrm{push}( H_j , ( k , x ) );\ \mathrm{serve}()
  /// \end{array}}
  /// \f]
- void push( K k , T x ) requires ( ! bounded ) {
+ void push( K k , T x )
+  requires( ! bounded )
+ {
   place( Entry{ std::move( k ) , std::move( x ) } );
   }
 
  /// pushes \f$ ( k , b , x ) \f$, the pair of the key \f$ k \f$ with the
  /// bound \f$ b \f$, as `push( k , x )` above, and \f$ b \f$ into the
  /// bounds of its heap
- void push( K k , Bound b , T x ) requires bounded {
+ void push( K k , Bound b , T x )
+  requires bounded
+ {
   place( Entry{ std::move( k ) , std::move( b ) , std::move( x ) } );
   }
 
@@ -727,7 +735,7 @@ class StealablePriorityQueue {
  /// victim
  [[nodiscard]] bool stealable( void ) const {
   return( ( f_offer.load( std::memory_order_relaxed ) != nullptr ) ||
-          f_canGive.load( std::memory_order_relaxed ) );
+	   f_canGive.load( std::memory_order_relaxed ) );
   }
 
  /// whether an offer of the owner waits for a thief, for the owner
@@ -751,10 +759,10 @@ class StealablePriorityQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a before b, by the keys
- struct ByKey {
-  Less less;    ///< the order of the keys
+ struct ByKey
+ {
+  Less less;  ///< the order of the keys
   /// whether the key of a is less than that of b
   bool operator()( const Entry & a , const Entry & b ) const {
    return( less( a.key , b.key ) );
@@ -794,25 +802,25 @@ class StealablePriorityQueue {
  /// their own operations)
  [[nodiscard]] bool hinted( void ) const;
 
- static constexpr std::size_t line = 64;   ///< a line of cache
+ static constexpr std::size_t line = 64;  ///< a line of cache
 
  // of the owner alone
- Heap f_h[ 2 ];                            ///< the two heaps
- ByKey f_less;                             ///< the order of the pairs
- BdLess f_bl;                              ///< the order of the bounds
- std::optional< K > f_offerKey;            ///< the least key of the offer
- std::optional< Bound > f_offerBound;      ///< its least bound, if any
- std::size_t f_offerSize = 0;              ///< the pairs of the offer
- std::size_t f_n[ 2 ] = { 0 , 0 };        ///< the sizes of the two heaps
- bool f_offered = false;                   ///< an offer was made
- bool f_can = false;                       ///< the last hint
- unsigned char f_turn = 1;                 ///< the turn of the pushes
+ Heap f_h[ 2 ];                        ///< the two heaps
+ ByKey f_less;                         ///< the order of the pairs
+ BdLess f_bl;                          ///< the order of the bounds
+ std::optional< K > f_offerKey;        ///< the least key of the offer
+ std::optional< Bound > f_offerBound;  ///< its least bound, if any
+ std::size_t f_offerSize = 0;          ///< the pairs of the offer
+ std::size_t f_n[ 2 ] = { 0 , 0 };      ///< the sizes of the two heaps
+ bool f_offered = false;               ///< an offer was made
+ bool f_can = false;                   ///< the last hint
+ unsigned char f_turn = 1;             ///< the turn of the pushes
 
  // shared with the thieves, on lines of their own (the alignment of the
  // first rounds the size of the queue up to a multiple of two lines)
- alignas( 2 * line ) std::atomic< Heap * > f_offer{ nullptr }; ///< offer
- std::atomic< bool > f_hungry{ false };    ///< a thief asked
- std::atomic< bool > f_canGive{ false };   ///< at least two pairs, a hint
+ alignas( 2 * line ) std::atomic< Heap * > f_offer{ nullptr };  ///< offer
+ std::atomic< bool > f_hungry{ false };   ///< a thief asked
+ std::atomic< bool > f_canGive{ false };  ///< at least two pairs, a hint
 
  };  // end( class StealablePriorityQueue )
 
@@ -824,13 +832,13 @@ class StealablePriorityQueue {
 /// `StealablePriorityQueue` each, with the steals from random victims and
 /// the detection of the termination; with the bounds `Bd` of the pairs, if
 /// not void, ordered by `BdLess`
-template< class K , class T , class Less = std::less< K > ,
-          class Bd = void , class BdLess = std::less<> >
-class StealingFrontier {
+template< class K , class T , class Less = std::less< K > , class Bd = void ,
+	  class BdLess = std::less<> >
+class StealingFrontier
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the queue of a worker
  using Queue = StealablePriorityQueue< K , T , Less , Bd , BdLess >;
  /// a pair of a queue
@@ -842,7 +850,7 @@ class StealingFrontier {
  /// seed `seed`
  /// \pre \f$ p \ge 1 \f$
  explicit StealingFrontier( std::size_t p , std::uint64_t seed = 1 ,
-                            Less less = Less() , BdLess bl = BdLess() );
+			    Less less = Less() , BdLess bl = BdLess() );
 
  /// no copy, since the workers share it by its address
  StealingFrontier( const StealingFrontier & ) = delete;
@@ -864,7 +872,9 @@ class StealingFrontier {
 
  /// pushes \f$ ( k , x ) \f$ into the queue of the worker \f$ i \f$
  /// \pre \f$ i < p \f$
- void push( std::size_t i , K k , T x ) requires ( ! Queue::bounded ) {
+ void push( std::size_t i , K k , T x )
+  requires( ! Queue::bounded )
+ {
   ADS_PRE( i < workers() );
   f_w[ i ].q.push( std::move( k ) , std::move( x ) );
   }
@@ -873,7 +883,8 @@ class StealingFrontier {
  /// queue of the worker \f$ i \f$
  /// \pre \f$ i < p \f$
  void push( std::size_t i , K k , Bound b , T x )
-  requires Queue::bounded {
+  requires Queue::bounded
+ {
   ADS_PRE( i < workers() );
   f_w[ i ].q.push( std::move( k ) , std::move( b ) , std::move( x ) );
   }
@@ -883,7 +894,8 @@ class StealingFrontier {
  /// `StealablePriorityQueue::minBound()`]
  /// \pre \f$ i < p \f$
  [[nodiscard]] std::optional< Bound > minBound( std::size_t i ) const
-  requires Queue::bounded {
+  requires Queue::bounded
+ {
   ADS_PRE( i < workers() );
   return( f_w[ i ].q.minBound() );
   }
@@ -970,16 +982,16 @@ class StealingFrontier {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a worker: its queue, its generator and its steals, on lines of their
  /// own
- struct alignas( 128 ) Worker {
-  Queue q;                     ///< the queue
-  std::uint64_t x;             ///< the state of the generator of victims
-  std::atomic< std::size_t > steals{ 0 };   ///< the steals that succeeded
+ struct alignas( 128 ) Worker
+ {
+  Queue q;          ///< the queue
+  std::uint64_t x;  ///< the state of the generator of victims
+  std::atomic< std::size_t > steals{ 0 };  ///< the steals that succeeded
   /// the worker of the orders less and bl, its draws from the seed
   Worker( const Less & less , const BdLess & bl , std::uint64_t seed )
-   : q( less , bl ) , x( seed ) {}
+      : q( less , bl ) , x( seed ) { }
   };
 
  /// a random number of 64 bits for the worker w (the splitmix64 of Steele
@@ -990,8 +1002,8 @@ class StealingFrontier {
  /// taken back or claimed: the steals until the end
  std::optional< Entry > idle( std::size_t i );
 
- std::size_t f_p;                          ///< the number of the workers
- Worker * f_w;                             ///< the workers, in a row
+ std::size_t f_p;  ///< the number of the workers
+ Worker * f_w;     ///< the workers, in a row
  alignas( 128 ) std::atomic< std::int64_t > f_active;  ///< the counter C
  alignas( 128 ) std::atomic< bool > f_stop{ false };   ///< the stop
 
@@ -1009,7 +1021,7 @@ class StealingFrontier {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StealablePriorityQueue.h included */
+#endif /* StealablePriorityQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------- End File StealablePriorityQueue.h --------------------*/

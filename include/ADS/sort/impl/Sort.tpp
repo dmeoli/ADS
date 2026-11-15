@@ -15,9 +15,11 @@
 /*--------------------------------------------------------------------------*/
 
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the end of the stretch of a[ 0 .. n ) from j where each item is in
 /// order with the one before it, i.e., where less( a[ k ] , a[ k - 1 ] )
@@ -36,7 +38,8 @@ std::size_t runEnd( const T * a , std::size_t j , std::size_t n , C & less )
    if( stop )
     break;
    }
- while( ( j < n ) && ( less( a[ j ] , a[ j - 1 ] ) == Down ) ) ++j;
+ while( ( j < n ) && ( less( a[ j ] , a[ j - 1 ] ) == Down ) )
+  ++j;
  return( j );
  }
 
@@ -57,8 +60,9 @@ std::size_t ascendingIn( const T * a , std::size_t n , C & less )
  constexpr std::size_t B = 64;
  const std::size_t q = n / S;
  const T * b[ S ];
- for( std::size_t j = 0 ; j < S ; ++j ) b[ j ] = a + j * q;
- for( std::size_t j = 1 ; j < S ; ++j )     // the joints
+ for( std::size_t j = 0 ; j < S ; ++j )
+  b[ j ] = a + j * q;
+ for( std::size_t j = 1 ; j < S ; ++j )  // the joints
   if( less( b[ j ][ 0 ] , b[ j ][ -1 ] ) )
    return( 1 );
  std::size_t t = 1;
@@ -66,10 +70,10 @@ std::size_t ascendingIn( const T * a , std::size_t n , C & less )
   unsigned stop = 0;
 #if defined( __GNUC__ ) || defined( __clang__ )
   if constexpr( P )
-   for( std::size_t j = 0 ; j < S ; ++j )   // the block kAhead on
+   for( std::size_t j = 0 ; j < S ; ++j )  // the block kAhead on
     for( std::size_t c = 0 ; c < B * sizeof( T ) ; c += 64 )
      __builtin_prefetch( reinterpret_cast< const char * >( b[ j ] + t ) +
-                         kAhead * B * sizeof( T ) + c );
+			 kAhead * B * sizeof( T ) + c );
 #endif
   for( std::size_t j = 0 ; j < S ; ++j )
    for( std::size_t k = t ; k < t + B ; ++k )
@@ -103,10 +107,10 @@ std::size_t ascending( const T * a , std::size_t n , C & less )
 {
  const bool four = ( sizeof( T ) <= 8 ) && ( n * sizeof( T ) > kStreamBytes );
  if( kZen )
-  return( four ? ascendingIn< 4 , false >( a , n , less ) :
-                 ascendingIn< 1 , false >( a , n , less ) );
- return( four ? ascendingIn< 4 , true >( a , n , less ) :
-                ascendingIn< 1 , true >( a , n , less ) );
+  return( four ? ascendingIn< 4 , false >( a , n , less )
+		: ascendingIn< 1 , false >( a , n , less ) );
+ return( four ? ascendingIn< 4 , true >( a , n , less )
+	       : ascendingIn< 1 , true >( a , n , less ) );
  }
 
 /// true if less( a[ k ] , a[ k - 1 ] ) for every k in [ 1 , n ), n >= 128,
@@ -124,8 +128,8 @@ bool reverseIfDescending( T * a , std::size_t n , C & less )
  std::size_t t = 0;
  bool down = true;
  for( ; t + B <= h ; t += B ) {
-  T * const f = a + t , * const g = a + n - t - B;
-  unsigned stop = 0;                       // f[ 1 .. B ] and g[ -1 .. B )
+  T *const f = a + t , *const g = a + n - t - B;
+  unsigned stop = 0;  // f[ 1 .. B ] and g[ -1 .. B )
   for( std::size_t k = 1 ; k <= B ; ++k )
    stop |= unsigned( ! less( f[ k ] , f[ k - 1 ] ) );
   for( std::size_t k = 0 ; k < B ; ++k )
@@ -140,7 +144,7 @@ bool reverseIfDescending( T * a , std::size_t n , C & less )
    g[ B - 1 - k ] = x;
    }
   }
- if( down )                                 // the middle, as it is
+ if( down )  // the middle, as it is
   for( std::size_t k = t + 1 ; k < n - t ; ++k )
    if( ! less( a[ k ] , a[ k - 1 ] ) ) {
     down = false;
@@ -150,7 +154,7 @@ bool reverseIfDescending( T * a , std::size_t n , C & less )
   std::reverse( a + t , a + n - t );
   return( true );
   }
- for( std::size_t i = 0 ; i < t ; ++i ) {   // undone
+ for( std::size_t i = 0 ; i < t ; ++i ) {  // undone
   const T x = a[ i ];
   a[ i ] = a[ n - 1 - i ];
   a[ n - 1 - i ] = x;
@@ -168,11 +172,11 @@ bool reverseIfDescending( T * a , std::size_t n , C & less )
 /// from where ascending() stopped
 template< class T , class C >
 std::size_t runs( std::vector< T > & A , C & less , std::size_t cap ,
-                  std::size_t * E )
+		  std::size_t * E )
 {
  const std::size_t n = A.size();
  T * const a = A.data();
- std::size_t r = 0 , from = 1;              // a[ 0 .. from ) in order
+ std::size_t r = 0 , from = 1;  // a[ 0 .. from ) in order
  if constexpr( std::is_trivially_copyable_v< T > )
   if( n >= kOneRun ) {
    if( less( a[ 1 ] , a[ 0 ] ) ) {
@@ -188,8 +192,8 @@ std::size_t runs( std::vector< T > & A , C & less , std::size_t cap ,
    }
  for( std::size_t i = 0 ; ( i < n ) && ( r <= cap ) ; ++r ) {
   std::size_t j = i + 1;
-  if( ( i == 0 ) && ( from > 1 ) )          // the first run, scanned on
-   j = runEnd< false >( a , from , n , less );   // from where it stopped
+  if( ( i == 0 ) && ( from > 1 ) )           // the first run, scanned on
+   j = runEnd< false >( a , from , n , less );  // from where it stopped
   else if( ( j < n ) && less( a[ j ] , a[ i ] ) )
    j = runEnd< true >( a , j + 1 , n , less );
   else
@@ -204,7 +208,7 @@ std::size_t runs( std::vector< T > & A , C & less , std::size_t cap ,
 /// second search for them
 template< class T , class C >
 void powerSortRuns( std::vector< T > & A , C & less , const std::size_t * E ,
-                    std::size_t r )
+		    std::size_t r )
 {
  const auto before = auditCopy( A );
  RunMerger< T , C > M( A , less );
@@ -213,8 +217,9 @@ void powerSortRuns( std::vector< T > & A , C & less , const std::size_t * E ,
   const std::size_t e = E[ t++ ];
   if( ( e - lo > 1 ) && less( A[ lo + 1 ] , A[ lo ] ) )
    std::reverse( A.begin() + std::ptrdiff_t( lo ) ,
-                 A.begin() + std::ptrdiff_t( e ) );
-  return( std::pair( e , false ) ); } );
+		 A.begin() + std::ptrdiff_t( e ) );
+  return( std::pair( e , false ) );
+  } );
  ADS_POST( t == r );
  ADS_AUDIT( sortedPermutation( A , before , less ) );
  }
@@ -232,8 +237,8 @@ void oneRun( std::vector< T > & A , C & less )
 /// n >= 64, the bytes in which they differ and the difference of the
 /// largest and the smallest
 template< RadixKey T >
-std::tuple< std::size_t , int , std::uint64_t > sampleKeys(
- const std::vector< T > & A )
+std::tuple< std::size_t , int , std::uint64_t >
+sampleKeys( const std::vector< T > & A )
 {
  using U = decltype( radixKey( T() ) );
  std::array< U , 64 > S;
@@ -242,7 +247,7 @@ std::tuple< std::size_t , int , std::uint64_t > sampleKeys(
   S[ i ] = radixKey( A[ i * step ] );
  std::sort( S.begin() , S.end() );
  std::size_t k = 1;
- std::uint64_t diff = 0;                    // the bits that differ
+ std::uint64_t diff = 0;  // the bits that differ
  for( std::size_t i = 1 ; i < S.size() ; ++i ) {
   k += S[ i ] != S[ i - 1 ];
   diff |= std::uint64_t( S[ i ] ^ S[ 0 ] );
@@ -275,10 +280,10 @@ inline constexpr std::size_t kVectorRuns = sizeof( T ) == 4 ? 8 : kRuns;
 template< class T >
 bool negativeZero( const std::vector< T > & A )
 {
- using U = std::conditional_t< sizeof( T ) == 4 , std::uint32_t ,
-                               std::uint64_t >;
+ using U =
+   std::conditional_t< sizeof( T ) == 4 , std::uint32_t , std::uint64_t >;
  constexpr U z = U( 1 ) << ( 8 * sizeof( T ) - 1 );
- std::size_t c = 0;                         // a count, which vectorizes
+ std::size_t c = 0;  // a count, which vectorizes
  for( const T x : A ) {
   U b;
   std::memcpy( &b , &x , sizeof( b ) );
@@ -295,12 +300,15 @@ inline bool fewStrings( const std::vector< std::string > & A )
 {
  std::array< const std::string * , 64 > S;
  const std::size_t step = A.size() / S.size();
- for( std::size_t i = 0 ; i < S.size() ; ++i ) S[ i ] = &A[ i * step ];
- std::sort( S.begin() , S.end() , []( const std::string * x ,
-                                      const std::string * y ) {
-  return( *x < *y ); } );
+ for( std::size_t i = 0 ; i < S.size() ; ++i )
+  S[ i ] = &A[ i * step ];
+ std::sort( S.begin() , S.end() ,
+	    []( const std::string * x , const std::string * y ) {
+	     return( *x < *y );
+	     } );
  std::size_t k = 1;
- for( std::size_t i = 1 ; i < S.size() ; ++i ) k += *S[ i ] != *S[ i - 1 ];
+ for( std::size_t i = 1 ; i < S.size() ; ++i )
+  k += *S[ i ] != *S[ i - 1 ];
  return( k <= 16 );
  }
 
@@ -321,7 +329,7 @@ bool fewKeysSort( std::vector< T > & A , C & less )
  for( std::size_t i = 0 ; i < S.size() ; ++i )
   S[ i ] = A[ i * step ];
  std::sort( S.begin() , S.end() , less );
- std::size_t k = 1;                         // the distinct keys
+ std::size_t k = 1;  // the distinct keys
  for( std::size_t i = 1 ; i < S.size() ; ++i )
   if( less( S[ k - 1 ] , S[ i ] ) ) {
    if( k == 16 )
@@ -331,9 +339,9 @@ bool fewKeysSort( std::vector< T > & A , C & less )
  const auto I = std::make_unique_for_overwrite< std::uint8_t[] >( n );
  const std::size_t r = n / 2 , l = n - r;
  std::array< std::size_t , 17 > L{} , R{};  // the counts by key, of the
- T * const a = A.data();                    // left half and of the right
+ T * const a = A.data();                  // left half and of the right
  for( std::size_t i = 0 ; i < n ; ++i ) {
-  std::size_t b = 0;                        // the first key not before
+  std::size_t b = 0;                      // the first key not before
   for( std::size_t len = k ; len > 1 ; ) {  // a[ i ]
    const std::size_t half = len / 2;
    b += less( S[ b + half ] , a[ i ] ) ? half : 0;
@@ -341,11 +349,11 @@ bool fewKeysSort( std::vector< T > & A , C & less )
    }
   b += less( S[ b ] , a[ i ] );
   if( ( b == k ) || less( a[ i ] , S[ b ] ) )
-   return( false );                         // a key out of the sample
+   return( false );  // a key out of the sample
   I[ i ] = std::uint8_t( b );
   ++( i < l ? L : R )[ b + 1 ];
   }
- for( std::size_t b = 0 ; b < k ; ++b ) {   // the starts
+ for( std::size_t b = 0 ; b < k ; ++b ) {  // the starts
   L[ b + 1 ] += L[ b ];
   R[ b + 1 ] += R[ b ];
   }
@@ -358,9 +366,9 @@ bool fewKeysSort( std::vector< T > & A , C & less )
  for( std::size_t i = l ; i < n ; ++i )
   a[ nr[ I[ i ] ]++ ] = a[ i ];
  for( std::size_t b = k ; b-- > 0 ; ) {
-  const std::size_t t = L[ b ] + R[ b ];    // the place of the key b
+  const std::size_t t = L[ b ] + R[ b ];  // the place of the key b
   std::copy_backward( a + R[ b ] , a + R[ b + 1 ] ,
-                      a + t + L[ b + 1 ] - L[ b ] + R[ b + 1 ] - R[ b ] );
+		      a + t + L[ b + 1 ] - L[ b ] + R[ b + 1 ] - R[ b ] );
   std::copy( buf + L[ b ] , buf + L[ b + 1 ] , a + t );
   }
  ADS_AUDIT( sortedPermutation( A , before , less ) );
@@ -386,7 +394,7 @@ void bothEndsMerge( const T * s , T * d , std::size_t n , C & less )
 {
  const std::size_t l = n / 2;
  std::size_t i = 0 , j = l , ie = l - 1 , je = n - 1;
- T * f = d , * b = d + n;
+ T *f = d , *b = d + n;
  for( std::size_t t = 0 ; t < l ; ++t ) {
   const bool r = less( s[ j ] , s[ i ] );
   *f++ = s[ select( r , j , i ) ];
@@ -397,8 +405,8 @@ void bothEndsMerge( const T * s , T * d , std::size_t n , C & less )
   ie -= q;
   je -= ! q;
   }
- if( n - l > l )                            // the middle item: s[ i ] is
-  *f = s[ less( s[ j ] , s[ i ] ) ? j : i ];   // s[ l ] if the left ended
+ if( n - l > l )                             // the middle item: s[ i ] is
+  *f = s[ less( s[ j ] , s[ i ] ) ? j : i ];  // s[ l ] if the left ended
  }
 
 /// the stable merge sort of s[ 0 .. n ) into d[ 0 .. n ) if into, or in
@@ -414,7 +422,8 @@ void mergeSortTo( T * s , T * d , std::size_t n , C & less , bool into )
   for( std::size_t i = 0 ; i < n ; ++i ) {
    const T x = s[ i ];
    std::size_t k = i;
-   for( ; ( k > 0 ) && less( x , o[ k - 1 ] ) ; --k ) o[ k ] = o[ k - 1 ];
+   for( ; ( k > 0 ) && less( x , o[ k - 1 ] ) ; --k )
+    o[ k ] = o[ k - 1 ];
    o[ k ] = x;
    }
   return;
@@ -422,7 +431,7 @@ void mergeSortTo( T * s , T * d , std::size_t n , C & less , bool into )
  const std::size_t l = n / 2;
  mergeSortTo( s , d , l , less , ! into );
  mergeSortTo( s + l , d + l , n - l , less , ! into );
- const T * const x = into ? s : d;          // the sorted halves
+ const T * const x = into ? s : d;  // the sorted halves
  T * const y = into ? d : s;
  if( ! less( x[ l ] , x[ l - 1 ] ) )
   std::copy( x , x + n , y );
@@ -447,9 +456,9 @@ void pingPongSort( std::vector< T > & A , C & less )
   T * const b = B.get();
   mergeSortTo( a , b , l , less , true );
   mergeSortTo( a + l , a , r , less , false );
-  if( ! less( a[ l ] , b[ l - 1 ] ) )        // in order
+  if( ! less( a[ l ] , b[ l - 1 ] ) )  // in order
    std::copy( b , b + l , a );
-  else if( less( a[ n - 1 ] , b[ 0 ] ) )     // in reverse
+  else if( less( a[ n - 1 ] , b[ 0 ] ) )  // in reverse
    std::copy( b , b + l , std::copy( a + l , a + n , a ) );
   else {
    std::size_t i = 0 , j = l , k = 0;
@@ -457,11 +466,11 @@ void pingPongSort( std::vector< T > & A , C & less )
    while( ( i < l ) && ( j < n ) ) {
     const bool q = less( a[ j ] , b[ i ] );
     a[ k++ ] = *reinterpret_cast< const T * >(
-     select( q , pa + j * sizeof( T ) , pb + i * sizeof( T ) ) );
+      select( q , pa + j * sizeof( T ) , pb + i * sizeof( T ) ) );
     j += q;
     i += ! q;
     }
-   std::copy( b + i , b + l , a + k );       // the right rest in place
+   std::copy( b + i , b + l , a + k );  // the right rest in place
    }
   }
  ADS_AUDIT( sortedPermutation( A , before , less ) );
@@ -471,9 +480,10 @@ void pingPongSort( std::vector< T > & A , C & less )
 /// own keys in the vector registers (AVX-512); on keys of 64 bits, 8 to a
 /// register, the merges of powerSort() are faster
 template< class T >
-inline constexpr bool kVectorRunsOf = []() {
+inline constexpr bool kVectorRunsOf = []()
+{
  if constexpr( std::is_integral_v< T > && VectorKey< T > &&
-               ( sizeof( T ) == 4 ) )
+	       ( sizeof( T ) == 4 ) )
   return( std::is_signed_v< T > == std::is_signed_v< vqs::KeyOf< T > > );
  else
   return( false );
@@ -487,7 +497,7 @@ inline constexpr bool kVectorRunsOf = []() {
 /// right one, with the other in place
 template< class T , class C >
 void mergeVectorRuns( std::vector< T > & A , C & less , const std::size_t * E ,
-                      std::size_t r )
+		      std::size_t r )
 {
  using V = vqs::Best< vqs::KeyOf< T > >;
  using K = typename V::K;
@@ -509,7 +519,7 @@ void mergeVectorRuns( std::vector< T > & A , C & less , const std::size_t * E ,
   std::size_t w = 1;
   for( std::size_t j = 0 ; j + 2 < b.size() ; j += 2 ) {
    const std::size_t s = b[ j ] , m = b[ j + 1 ] , e = b[ j + 2 ];
-   if( a[ m ] < a[ m - 1 ] ) {              // not already in order
+   if( a[ m ] < a[ m - 1 ] ) {  // not already in order
     if( m - s <= e - m ) {
      std::memcpy( buf , a + s , ( m - s ) * sizeof( K ) );
      vqs::mergeRuns< V , false >( buf , m - s , a + m , e - m , a + s );
@@ -521,8 +531,8 @@ void mergeVectorRuns( std::vector< T > & A , C & less , const std::size_t * E ,
     }
    b[ w++ ] = e;
    }
-  if( b.size() % 2 == 0 )                   // an odd run out, to the next
-   b[ w++ ] = b.back();                     // round
+  if( b.size() % 2 == 0 )  // an odd run out, to the next
+   b[ w++ ] = b.back();    // round
   b.resize( w );
   }
  ADS_AUDIT( sortedPermutation( A , before , less ) );
@@ -540,7 +550,8 @@ template< class T , class C >
 void vectorNumbers( std::vector< T > & A , C & less , bool stable )
 {
  auto zeros = [ & ]() {
-  return( stable && std::is_floating_point_v< T > && negativeZero( A ) ); };
+  return( stable && std::is_floating_point_v< T > && negativeZero( A ) );
+  };
  if( A.size() < kRadix ) {
   if( zeros() )
    powerSort( A , less );
@@ -559,15 +570,16 @@ void vectorNumbers( std::vector< T > & A , C & less , bool stable )
  else if( r <= kVectorRuns< T > )
   powerSortRuns( A , less , E.data() , r );
  else if( sizeof( T ) == 8 && std::is_integral_v< T > && [ & ]() {
-           const auto [ k , bytes , range ] = sampleKeys( A );
-           static_cast< void >( k );
-           return( ( bytes <= 1 ) && ( range >= vqs::kCountRange ) ); }() )
-  radixSort( A );                           // one byte: a counting sort
+	   const auto [ k , bytes , range ] = sampleKeys( A );
+	   static_cast< void >( k );
+	   return( ( bytes <= 1 ) && ( range >= vqs::kCountRange ) );
+	   }() )
+  radixSort( A );  // one byte: a counting sort
  else if( ! zeros() )
   vectorQuickSort( A );
- else if constexpr( std::is_floating_point_v< T > )   // -0 and +0 equal
-  radixSortBy( A , []( T x ) {
-   return( radixKey( x == T( 0 ) ? T( 0 ) : x ) ); } );
+ else if constexpr( std::is_floating_point_v< T > )  // -0 and +0 equal
+  radixSortBy(
+    A , []( T x ) { return( radixKey( x == T( 0 ) ? T( 0 ) : x ) ); } );
  }
 
 }  // end( namespace detail )
@@ -575,8 +587,7 @@ void vectorNumbers( std::vector< T > & A , C & less , bool stable )
 template< class T , class C >
 void sort( std::vector< T > & A , C less )
 {
- if constexpr( detail::naturalOrder< T , C > && VectorKey< T > &&
-               kVectorSort )
+ if constexpr( detail::naturalOrder< T , C > && VectorKey< T > && kVectorSort )
   detail::vectorNumbers( A , less , false );
  else if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
@@ -593,7 +604,7 @@ void sort( std::vector< T > & A , C less )
    radixSort( A );
   }
  else if constexpr( detail::naturalOrder< T , C > &&
-                    std::is_same_v< T , std::string > ) {
+		    std::is_same_v< T , std::string > ) {
   std::array< std::size_t , kRuns + 1 > E;
   std::size_t r = 0;
   if( A.size() < kStrings )
@@ -608,7 +619,7 @@ void sort( std::vector< T > & A , C less )
    msdRadixSort( A );
   }
  else if constexpr( std::is_trivially_copyable_v< T > &&
-                    std::is_trivially_default_constructible_v< T > ) {
+		    std::is_trivially_default_constructible_v< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
   std::size_t r = 0;
   if( A.size() < kRadix )
@@ -618,7 +629,7 @@ void sort( std::vector< T > & A , C less )
   else if( r <= kRuns )
    detail::powerSortRuns( A , less , E.data() , r );
   else
-   sampleSort( A , less );                  // its buckets of equal keys
+   sampleSort( A , less );  // its buckets of equal keys
   }
  else if( A.size() < kRadix )
   pdqSort( A , less );
@@ -629,32 +640,29 @@ void sort( std::vector< T > & A , C less )
 template< class T , class C >
 void stableSort( std::vector< T > & A , C less )
 {
- if constexpr( detail::naturalOrder< T , C > && VectorKey< T > &&
-               kVectorSort )
+ if constexpr( detail::naturalOrder< T , C > && VectorKey< T > && kVectorSort )
   detail::vectorNumbers( A , less , true );
  else if constexpr( detail::naturalOrder< T , C > && RadixKey< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
-  const std::size_t r = A.size() < kRadix ? 0 : detail::runs( A , less ,
-                                                               kRuns ,
-                                                               E.data() );
+  const std::size_t r =
+    A.size() < kRadix ? 0 : detail::runs( A , less , kRuns , E.data() );
   if( r == 0 )
    powerSort( A , less );
   else if( r == 1 )
    detail::oneRun( A , less );
   else if( r <= kRuns )
    detail::powerSortRuns( A , less , E.data() , r );
-  else if constexpr( std::is_floating_point_v< T > )   // -0 and +0 equal
-   radixSortBy( A , []( T x ) {
-    return( radixKey( x == T( 0 ) ? T( 0 ) : x ) ); } );
+  else if constexpr( std::is_floating_point_v< T > )  // -0 and +0 equal
+   radixSortBy(
+     A , []( T x ) { return( radixKey( x == T( 0 ) ? T( 0 ) : x ) ); } );
   else
    radixSort( A );
   }
  else if constexpr( detail::naturalOrder< T , C > &&
-                    std::is_same_v< T , std::string > ) {
+		    std::is_same_v< T , std::string > ) {
   std::array< std::size_t , kRuns + 1 > E;
-  const std::size_t r = A.size() < kStrings ? 0 : detail::runs( A , less ,
-                                                                 kRuns ,
-                                                                 E.data() );
+  const std::size_t r =
+    A.size() < kStrings ? 0 : detail::runs( A , less , kRuns , E.data() );
   if( r == 0 )
    powerSort( A , less );
   else if( r == 1 )
@@ -667,7 +675,7 @@ void stableSort( std::vector< T > & A , C less )
    msdRadixSort( A );
   }
  else if constexpr( std::is_trivially_copyable_v< T > &&
-                    std::is_trivially_default_constructible_v< T > ) {
+		    std::is_trivially_default_constructible_v< T > ) {
   std::array< std::size_t , kRuns + 1 > E;
   const std::size_t r = detail::runs( A , less , kRuns , E.data() );
   if( r <= 1 )

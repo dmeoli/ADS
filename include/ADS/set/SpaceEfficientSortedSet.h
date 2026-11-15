@@ -65,7 +65,7 @@
 
 #ifndef __ADS_SpaceEfficientSortedSet
  #define __ADS_SpaceEfficientSortedSet
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -84,7 +84,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- CLASS SpaceEfficientSortedSet ----------------------*/
@@ -94,24 +95,24 @@ namespace ADS {
 /// skip list, the `SESSet` of Morin
 template< std::totally_ordered T >
  requires std::semiregular< T >
-class SpaceEfficientSortedSet {
+class SpaceEfficientSortedSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;    ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty set, with blocks of \f$ b + 1 \f$ places
  /// \pre \f$ b \ge 3 \f$
  explicit SpaceEfficientSortedSet( std::size_t b = 32 ,
-                                   std::uint64_t seed = 1 );
+				   std::uint64_t seed = 1 );
 
  /// no copy, since the blocks are linked by pointers
  SpaceEfficientSortedSet( const SpaceEfficientSortedSet & ) = delete;
 
  /// no copy, since the blocks are linked by pointers
- SpaceEfficientSortedSet & operator=( const SpaceEfficientSortedSet & ) =
-  delete;
+ SpaceEfficientSortedSet &
+ operator=( const SpaceEfficientSortedSet & ) = delete;
 
  /// frees the blocks
  ~SpaceEfficientSortedSet();
@@ -223,23 +224,24 @@ class SpaceEfficientSortedSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a block: a circular buffer of \f$ b + 1 \f$ places, in the list of the
  /// blocks
- struct Block {
-  std::unique_ptr< T[] > a;        ///< the places
-  std::size_t h = 0;               ///< the place of the first item
-  std::size_t s = 0;               ///< the number of items
-  Block * prev = nullptr;          ///< the previous block
-  Block * next = nullptr;          ///< the next block
+ struct Block
+ {
+  std::unique_ptr< T[] > a;  ///< the places
+  std::size_t h = 0;         ///< the place of the first item
+  std::size_t s = 0;         ///< the number of items
+  Block * prev = nullptr;    ///< the previous block
+  Block * next = nullptr;    ///< the next block
   };
 
  /// the key of a block in the skip list, or of an item sought: the
  /// largest item of the block, or the item
- struct Key {
-  const SpaceEfficientSortedSet * o;   ///< the set
-  const Block * b;                     ///< the block, or nil
-  const T * x;                         ///< the item, if no block
+ struct Key
+ {
+  const SpaceEfficientSortedSet * o;  ///< the set
+  const Block * b;                    ///< the block, or nil
+  const T * x;                        ///< the item, if no block
   /// the item compared
   const T & item( void ) const { return( b ? o->at( b , b->s - 1 ) : *x ); }
   /// by the items
@@ -254,11 +256,11 @@ class SpaceEfficientSortedSet {
   friend bool operator>( const Key & p , const Key & q ) { return( q < p ); }
   /// by the items
   friend bool operator<=( const Key & p , const Key & q ) {
-   return( !( q < p ) );
+   return( ! ( q < p ) );
    }
   /// by the items
   friend bool operator>=( const Key & p , const Key & q ) {
-   return( !( p < q ) );
+   return( ! ( p < q ) );
    }
   };
 
@@ -292,12 +294,12 @@ class SpaceEfficientSortedSet {
  /// the items increasing and the blocks filled within their bounds
  [[nodiscard]] bool valid( void ) const;
 
- std::size_t f_b;                  ///< the parameter \f$ b \f$
- std::size_t f_size = 0;           ///< the number of items
- std::size_t f_blocks = 0;         ///< the number of blocks
- Block * f_first = nullptr;        ///< the first block
- Block * f_last = nullptr;         ///< the last block
- SkipList< Key , Block * > f_index;   ///< the blocks by their largest items
+ std::size_t f_b;                   ///< the parameter \f$ b \f$
+ std::size_t f_size = 0;            ///< the number of items
+ std::size_t f_blocks = 0;          ///< the number of blocks
+ Block * f_first = nullptr;         ///< the first block
+ Block * f_last = nullptr;          ///< the last block
+ SkipList< Key , Block * > f_index;  ///< the blocks by their largest items
 
  };  // end( class SpaceEfficientSortedSet )
 
@@ -313,7 +315,7 @@ class SpaceEfficientSortedSet {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SpaceEfficientSortedSet.h included */
+#endif /* SpaceEfficientSortedSet.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------- End File SpaceEfficientSortedSet.h -------------------*/

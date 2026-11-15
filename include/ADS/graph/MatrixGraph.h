@@ -33,7 +33,7 @@
 
 #ifndef __ADS_MatrixGraph
  #define __ADS_MatrixGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -53,7 +53,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS MatrixGraph ----------------------------*/
@@ -61,15 +62,15 @@ namespace ADS {
 
 /// a graph with an adjacency matrix
 template< class W = std::monostate , class T = std::monostate >
-class MatrixGraph : public GraphNodes< T > {
+class MatrixGraph : public GraphNodes< T >
+{
 
  using B = GraphNodes< T >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the weights
- using Label = T;    ///< the type of the labels
+ using Weight = W;  ///< the type of the weights
+ using Label = T;   ///< the type of the labels
 
  /// the graph of the nodes \f$ 0 , \ldots , n - 1 \f$, with no edge
  /// \pre \f$ n \ge 0 \f$
@@ -147,7 +148,8 @@ class MatrixGraph : public GraphNodes< T > {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the columns of the edges in a row, for `SlotIterator`
- struct Present {
+ struct Present
+ {
   /// the number of the columns
   static std::size_t size( const auto & r ) { return( r.size() ); }
   /// whether the column \f$ i \f$ holds an edge
@@ -168,7 +170,6 @@ class MatrixGraph : public GraphNodes< T > {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the matrix is \f$ \mathrm{bound}() \times \mathrm{bound}() \f$, with `m()`
  /// entries off the diagonal between nodes, symmetric if unoriented,
  /// \f$ \Theta( n^2 ) \f$
@@ -178,7 +179,7 @@ class MatrixGraph : public GraphNodes< T > {
  /// of the nodes, and they are equal if unoriented, \f$ O( n ) \f$
  [[nodiscard]] bool consistentAt( int u ) const;
 
- std::vector< std::vector< std::optional< W > > > f_M;   ///< the matrix
+ std::vector< std::vector< std::optional< W > > > f_M;  ///< the matrix
 
  };  // end( class MatrixGraph )
 
@@ -194,7 +195,7 @@ class MatrixGraph : public GraphNodes< T > {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MatrixGraph.h included */
+#endif /* MatrixGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File MatrixGraph.h -------------------------*/

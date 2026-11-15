@@ -14,21 +14,24 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the branch and bound of branchAndBoundMatching() from the node u
 template< class W >
-struct MatchingSearch {
+struct MatchingSearch
+{
  int n;
  const std::vector< std::tuple< int , int , W > > & E;
- std::vector< std::vector< std::size_t > > inc;   ///< the edges to the
-                                                  ///< later nodes
- std::vector< W > rest;    ///< the best weights at the nodes >= u, summed
+ std::vector< std::vector< std::size_t > > inc;  ///< the edges to the
+						 ///< later nodes
+ std::vector< W > rest;  ///< the best weights at the nodes >= u, summed
  std::vector< bool > used;
  std::vector< std::size_t > S , best;
- W w , bw;                 ///< the weight of S and of best
+ W w , bw;  ///< the weight of S and of best
 
  void search( int u ) {
   while( ( u < n ) && used[ u ] )
@@ -40,11 +43,11 @@ struct MatchingSearch {
     }
    return;
    }
-  if( ! ( w + w + rest[ u ] > bw + bw ) )   // no better matching below
+  if( ! ( w + w + rest[ u ] > bw + bw ) )  // no better matching below
    return;
   for( std::size_t e : inc[ u ] ) {
    const auto & [ a , b , c ] = E[ e ];
-   const int v = a == u ? b : a;          // the later end
+   const int v = a == u ? b : a;  // the later end
    if( ! used[ v ] ) {
     used[ u ] = used[ v ] = true;
     S.push_back( e );
@@ -55,7 +58,7 @@ struct MatchingSearch {
     used[ u ] = used[ v ] = false;
     }
    }
-  search( u + 1 );                          // u unmatched
+  search( u + 1 );  // u unmatched
   }
  };
 
@@ -63,31 +66,32 @@ struct MatchingSearch {
 /// time, the blossoms as the sets of a union-find whose representatives
 /// know their bases
 template< Graph G >
-struct CardinalityBlossom {
+struct CardinalityBlossom
+{
  enum Label : unsigned char { NONE , EVEN , ODD , BRIDGED };
 
  const Rows< G > & A;
  std::vector< int > mate;
  std::vector< Label > label;
- std::vector< int > parent;               ///< of an odd node, the even one
- std::vector< int > ba , bb;              ///< of a bridged node, its edge
- std::vector< int > link , base;          ///< the union-find of the blossoms
+ std::vector< int > parent;      ///< of an odd node, the even one
+ std::vector< int > ba , bb;      ///< of a bridged node, its edge
+ std::vector< int > link , base;  ///< the union-find of the blossoms
  std::vector< unsigned char > rank;
  std::vector< bool > mark , dead;
  std::vector< int > touched , Q , walked;
  std::vector< std::pair< int , int > > St;
 
  CardinalityBlossom( const Rows< G > & a , int n )
-  : A( a ) , mate( n , NIL ) , label( n , NONE ) , parent( n , NIL ) ,
-    ba( n , NIL ) , bb( n , NIL ) , link( n ) , base( n ) , rank( n , 0 ) ,
-    mark( n , false ) , dead( n , false ) {
+     : A( a ) , mate( n , NIL ) , label( n , NONE ) , parent( n , NIL ) ,
+       ba( n , NIL ) , bb( n , NIL ) , link( n ) , base( n ) , rank( n , 0 ) ,
+       mark( n , false ) , dead( n , false ) {
   for( int v = 0 ; v < n ; ++v )
    link[ v ] = base[ v ] = v;
   }
 
  int find( int v ) {
   while( link[ v ] != v ) {
-   link[ v ] = link[ link[ v ] ];         // halving
+   link[ v ] = link[ link[ v ] ];  // halving
    v = link[ v ];
    }
   return( v );
@@ -153,18 +157,18 @@ struct CardinalityBlossom {
   while( ! St.empty() ) {
    auto [ v , w ] = St.back();
    St.pop_back();
-   for( ; ; ) {                            // v takes w, the rest of P( v )
-    const int t = mate[ v ];               // is rematched
+   for( ; ; ) {                // v takes w, the rest of P( v )
+    const int t = mate[ v ];  // is rematched
     mate[ v ] = w;
     if( ( t == NIL ) || ( mate[ t ] != v ) )
-     break;                                // the root, or a part done
-    if( label[ v ] == EVEN ) {             // P( v ) = v , t , P( p[ t ] )
+     break;                     // the root, or a part done
+    if( label[ v ] == EVEN ) {  // P( v ) = v , t , P( p[ t ] )
      const int u = parent[ t ];
      mate[ t ] = u;
      w = t;
      v = u;
      }
-    else {                                 // P( v ) = v .. a , P( b )
+    else {  // P( v ) = v .. a , P( b )
      St.emplace_back( bb[ v ] , ba[ v ] );
      w = bb[ v ];
      v = ba[ v ];
@@ -187,12 +191,12 @@ struct CardinalityBlossom {
     if( dead[ y ] || ( label[ y ] == ODD ) || ( y == x ) )
      continue;
     if( label[ y ] == NONE ) {
-     if( mate[ y ] == NIL ) {               // an augmenting path
+     if( mate[ y ] == NIL ) {  // an augmenting path
       augment( x , y );
       grown = true;
       break;
       }
-     label[ y ] = ODD;                      // the tree grows by two
+     label[ y ] = ODD;  // the tree grows by two
      parent[ y ] = x;
      const int z = mate[ y ];
      label[ z ] = EVEN;
@@ -202,7 +206,7 @@ struct CardinalityBlossom {
      }
     else {
      const int bx = B( x ) , by = B( y );
-     if( bx != by ) {                       // a blossom
+     if( bx != by ) {  // a blossom
       const int c = meet( bx , by , r );
       shrink( x , y , c );
       shrink( y , x , c );
@@ -226,42 +230,44 @@ struct CardinalityBlossom {
 /// end p and p ^ 1 is the other end of its edge; the names of the blossoms
 /// are n .. 2 n - 1, those of the nodes 0 .. n - 1 the trivial blossoms
 template< class W >
-struct WeightedBlossom {
+struct WeightedBlossom
+{
  int n;
  bool maxCardinality;
- std::vector< std::tuple< int , int , W > > E;   ///< the edges kept
- std::vector< std::size_t > id;                  ///< their places given
+ std::vector< std::tuple< int , int , W > > E;  ///< the edges kept
+ std::vector< std::size_t > id;               ///< their places given
  std::vector< int > endpoint;
- std::vector< std::vector< int > > adj;   ///< of each node, the far ends
- std::vector< int > mate;                 ///< of a node, the far end of its
-                                          ///< edge in M, or -1
- std::vector< int > label;                ///< 0 free, 1 S, 2 T
- std::vector< int > labelend;             ///< the end through which a node
-                                          ///< or a blossom got its label
- std::vector< int > inblossom;            ///< the outermost blossom
- std::vector< int > parent;               ///< the blossom just around
- std::vector< std::vector< int > > childs;   ///< the cycle, from the base
- std::vector< std::vector< int > > endps;    ///< the ends of the cycle
+ std::vector< std::vector< int > > adj;     ///< of each node, the far ends
+ std::vector< int > mate;                   ///< of a node, the far end of its
+					    ///< edge in M, or -1
+ std::vector< int > label;                  ///< 0 free, 1 S, 2 T
+ std::vector< int > labelend;               ///< the end through which a node
+					    ///< or a blossom got its label
+ std::vector< int > inblossom;              ///< the outermost blossom
+ std::vector< int > parent;                 ///< the blossom just around
+ std::vector< std::vector< int > > childs;  ///< the cycle, from the base
+ std::vector< std::vector< int > > endps;   ///< the ends of the cycle
  std::vector< int > base;
- std::vector< int > bestedge;             ///< the least slack to S
- std::vector< std::vector< int > > bestedges;   ///< of an S-blossom
+ std::vector< int > bestedge;                  ///< the least slack to S
+ std::vector< std::vector< int > > bestedges;  ///< of an S-blossom
  std::vector< bool > hasBest;
  std::vector< int > unused;
  std::vector< W > dual;
- std::vector< bool > allowed;             ///< tight edges known
+ std::vector< bool > allowed;  ///< tight edges known
  std::vector< int > queue , path , ends , stack;
  std::vector< bool > scanned;
  std::vector< int > bestto;
  std::vector< std::pair< int , int > > tasks;
 
- WeightedBlossom( int nn , const std::vector< std::tuple< int , int , W > > &
-                  F , bool mc ) : n( nn ) , maxCardinality( mc ) {
+ WeightedBlossom( int nn ,
+		  const std::vector< std::tuple< int , int , W > > & F ,
+		  bool mc )
+     : n( nn ) , maxCardinality( mc ) {
   W top( 0 );
   for( std::size_t k = 0 ; k < F.size() ; ++k ) {
    const auto & [ u , v , w ] = F[ k ];
-   ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) &&
-            ( u != v ) );
-   if( mc || ( W( 0 ) < w ) ) {          // a light edge never helps
+   ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) );
+   if( mc || ( W( 0 ) < w ) ) {  // a light edge never helps
     E.push_back( F[ k ] );
     id.push_back( k );
     top = std::max( top , w );
@@ -281,18 +287,22 @@ struct WeightedBlossom {
   label.assign( 2 * n , 0 );
   labelend.assign( 2 * n , -1 );
   inblossom.resize( n );
-  for( int v = 0 ; v < n ; ++v ) inblossom[ v ] = v;
+  for( int v = 0 ; v < n ; ++v )
+   inblossom[ v ] = v;
   parent.assign( 2 * n , -1 );
   childs.assign( 2 * n , {} );
   endps.assign( 2 * n , {} );
   base.assign( 2 * n , -1 );
-  for( int v = 0 ; v < n ; ++v ) base[ v ] = v;
+  for( int v = 0 ; v < n ; ++v )
+   base[ v ] = v;
   bestedge.assign( 2 * n , -1 );
   bestedges.assign( 2 * n , {} );
   hasBest.assign( 2 * n , false );
-  for( int b = 2 * n - 1 ; b >= n ; --b ) unused.push_back( b );
+  for( int b = 2 * n - 1 ; b >= n ; --b )
+   unused.push_back( b );
   dual.assign( 2 * n , W( 0 ) );
-  for( int v = 0 ; v < n ; ++v ) dual[ v ] = top;
+  for( int v = 0 ; v < n ; ++v )
+   dual[ v ] = top;
   allowed.assign( m , false );
   scanned.assign( 2 * n , false );
   bestto.assign( 2 * n , -1 );
@@ -301,20 +311,25 @@ struct WeightedBlossom {
  /// the slack of the edge k, the blossoms around both ends left out
  W slack( int k ) const {
   return( dual[ std::get< 0 >( E[ k ] ) ] + dual[ std::get< 1 >( E[ k ] ) ] -
-          std::get< 2 >( E[ k ] ) - std::get< 2 >( E[ k ] ) );
+	   std::get< 2 >( E[ k ] ) - std::get< 2 >( E[ k ] ) );
   }
 
  /// f( v ) for each node v of the blossom b
  template< class F >
  void leaves( int b , F && f ) {
-  if( b < n ) { f( b ); return; }
+  if( b < n ) {
+   f( b );
+   return;
+   }
   stack.assign( 1 , b );
   while( ! stack.empty() ) {
    const int t = stack.back();
    stack.pop_back();
-   if( t < n ) f( t );
+   if( t < n )
+    f( t );
    else
-    for( int c : childs[ t ] ) stack.push_back( c );
+    for( int c : childs[ t ] )
+     stack.push_back( c );
    }
   }
 
@@ -336,7 +351,7 @@ struct WeightedBlossom {
     leaves( b , [ & ]( int v ) { queue.push_back( v ); } );
     return;
     }
-   const int q = mate[ base[ b ] ];        // T: on to the mate of its base
+   const int q = mate[ base[ b ] ];  // T: on to the mate of its base
    w = endpoint[ q ];
    t = 1;
    p = q ^ 1;
@@ -356,9 +371,9 @@ struct WeightedBlossom {
     }
    path.push_back( b );
    scanned[ b ] = true;
-   if( labelend[ b ] == -1 )             // a root
+   if( labelend[ b ] == -1 )  // a root
     v = -1;
-   else {                                 // up through a T-blossom
+   else {  // up through a T-blossom
     v = endpoint[ labelend[ b ] ];
     b = inblossom[ v ];
     v = endpoint[ labelend[ b ] ];
@@ -366,7 +381,8 @@ struct WeightedBlossom {
    if( w != -1 )
     std::swap( v , w );
    }
-  for( int b : path ) scanned[ b ] = false;
+  for( int b : path )
+   scanned[ b ] = false;
   return( b0 );
   }
 
@@ -382,7 +398,7 @@ struct WeightedBlossom {
   parent[ bb ] = b;
   path.clear();
   ends.clear();
-  while( bv != bb ) {                     // from v down to the base
+  while( bv != bb ) {  // from v down to the base
    parent[ bv ] = b;
    path.push_back( bv );
    ends.push_back( labelend[ bv ] );
@@ -393,7 +409,7 @@ struct WeightedBlossom {
   std::reverse( path.begin() , path.end() );
   std::reverse( ends.begin() , ends.end() );
   ends.push_back( 2 * k );
-  while( bw != bb ) {                     // and from w back up
+  while( bw != bb ) {  // and from w back up
    parent[ bw ] = b;
    path.push_back( bw );
    ends.push_back( labelend[ bw ] ^ 1 );
@@ -406,7 +422,7 @@ struct WeightedBlossom {
   labelend[ b ] = labelend[ bb ];
   dual[ b ] = W( 0 );
   leaves( b , [ & ]( int x ) {
-   if( label[ inblossom[ x ] ] == 2 )     // a T-node becomes S
+   if( label[ inblossom[ x ] ] == 2 )  // a T-node becomes S
     queue.push_back( x );
    inblossom[ x ] = b;
    } );
@@ -420,16 +436,19 @@ struct WeightedBlossom {
    const int bj = inblossom[ j ];
    if( ( bj != b ) && ( label[ bj ] == 1 ) &&
        ( ( bestto[ bj ] == -1 ) || ( slack( e ) < slack( bestto[ bj ] ) ) ) ) {
-    if( bestto[ bj ] == -1 ) to.push_back( bj );
+    if( bestto[ bj ] == -1 )
+     to.push_back( bj );
     bestto[ bj ] = e;
     }
    };
   for( int s : childs[ b ] ) {
    if( hasBest[ s ] )
-    for( int e : bestedges[ s ] ) offer( e );
+    for( int e : bestedges[ s ] )
+     offer( e );
    else
     leaves( s , [ & ]( int x ) {
-     for( int p : adj[ x ] ) offer( p / 2 );
+     for( int p : adj[ x ] )
+      offer( p / 2 );
      } );
    bestedges[ s ].clear();
    hasBest[ s ] = false;
@@ -486,10 +505,17 @@ struct WeightedBlossom {
   const int entry = inblossom[ endpoint[ labelend[ b ] ^ 1 ] ];
   int j = int( std::find( C.begin() , C.end() , entry ) - C.begin() );
   int step , trick;
-  if( j & 1 ) { j -= int( L ); step = 1; trick = 0; }
-  else { step = -1; trick = 1; }
+  if( j & 1 ) {
+   j -= int( L );
+   step = 1;
+   trick = 0;
+   }
+  else {
+   step = -1;
+   trick = 1;
+   }
   int p = labelend[ b ];
-  while( j != 0 ) {                       // T and S in turn to the base
+  while( j != 0 ) {  // T and S in turn to the base
    label[ endpoint[ p ^ 1 ] ] = 0;
    label[ endpoint[ P[ at( j - trick , L ) ] ^ trick ^ 1 ] ] = 0;
    assignLabel( endpoint[ p ^ 1 ] , 2 , p );
@@ -499,16 +525,19 @@ struct WeightedBlossom {
    allowed[ p / 2 ] = true;
    j += step;
    }
-  const int bv = C[ at( j , L ) ];        // the base: T, not its mate
+  const int bv = C[ at( j , L ) ];  // the base: T, not its mate
   label[ endpoint[ p ^ 1 ] ] = label[ bv ] = 2;
   labelend[ endpoint[ p ^ 1 ] ] = labelend[ bv ] = p;
   bestedge[ bv ] = -1;
   for( j += step ; C[ at( j , L ) ] != entry ; j += step ) {
-   const int s = C[ at( j , L ) ];       // the odd side: T if reached
+   const int s = C[ at( j , L ) ];  // the odd side: T if reached
    if( label[ s ] == 1 )
     continue;
    int r = -1;
-   leaves( s , [ & ]( int x ) { if( ( r == -1 ) && label[ x ] ) r = x; } );
+   leaves( s , [ & ]( int x ) {
+    if( ( r == -1 ) && label[ x ] )
+     r = x;
+    } );
    if( r != -1 ) {
     label[ r ] = 0;
     label[ endpoint[ mate[ base[ s ] ] ] ] = 0;
@@ -525,23 +554,34 @@ struct WeightedBlossom {
    const auto [ b , v ] = tasks.back();
    tasks.pop_back();
    int t = v;
-   while( parent[ t ] != b ) t = parent[ t ];
-   if( t >= n ) tasks.emplace_back( t , v );
+   while( parent[ t ] != b )
+    t = parent[ t ];
+   if( t >= n )
+    tasks.emplace_back( t , v );
    std::vector< int > & C = childs[ b ];
    std::vector< int > & P = endps[ b ];
    const std::size_t L = C.size();
    const int i = int( std::find( C.begin() , C.end() , t ) - C.begin() );
    int j = i , step , trick;
-   if( i & 1 ) { j -= int( L ); step = 1; trick = 0; }
-   else { step = -1; trick = 1; }
+   if( i & 1 ) {
+    j -= int( L );
+    step = 1;
+    trick = 0;
+    }
+   else {
+    step = -1;
+    trick = 1;
+    }
    while( j != 0 ) {
     j += step;
     t = C[ at( j , L ) ];
     const int p = P[ at( j - trick , L ) ] ^ trick;
-    if( t >= n ) tasks.emplace_back( t , endpoint[ p ] );
+    if( t >= n )
+     tasks.emplace_back( t , endpoint[ p ] );
     j += step;
     t = C[ at( j , L ) ];
-    if( t >= n ) tasks.emplace_back( t , endpoint[ p ^ 1 ] );
+    if( t >= n )
+     tasks.emplace_back( t , endpoint[ p ^ 1 ] );
     mate[ endpoint[ p ] ] = p ^ 1;
     mate[ endpoint[ p ^ 1 ] ] = p;
     }
@@ -554,21 +594,22 @@ struct WeightedBlossom {
  /// the matching augmented along the edge k between two S-nodes of two
  /// trees and their paths to the roots
  void augmentMatching( int k ) {
-  for( auto [ s , p ] : { std::pair( std::get< 0 >( E[ k ] ) ,
-                                     int( 2 * k + 1 ) ) ,
-                          std::pair( std::get< 1 >( E[ k ] ) ,
-                                     int( 2 * k ) ) } )
+  for( auto [ s , p ] :
+       { std::pair( std::get< 0 >( E[ k ] ) , int( 2 * k + 1 ) ) ,
+	 std::pair( std::get< 1 >( E[ k ] ) , int( 2 * k ) ) } )
    for( ; ; ) {
     const int bs = inblossom[ s ];
-    if( bs >= n ) augmentBlossom( bs , s );
+    if( bs >= n )
+     augmentBlossom( bs , s );
     mate[ s ] = p;
-    if( labelend[ bs ] == -1 )           // the root
+    if( labelend[ bs ] == -1 )  // the root
      break;
     const int t = endpoint[ labelend[ bs ] ];
     const int bt = inblossom[ t ];
     s = endpoint[ labelend[ bt ] ];
     const int j = endpoint[ labelend[ bt ] ^ 1 ];
-    if( bt >= n ) augmentBlossom( bt , j );
+    if( bt >= n )
+     augmentBlossom( bt , j );
     mate[ j ] = labelend[ bt ];
     p = labelend[ bt ] ^ 1;
     }
@@ -601,34 +642,34 @@ struct WeightedBlossom {
       if( ! allowed[ k ] ) {
        ks = slack( k );
        if( ks <= W( 0 ) )
-        allowed[ k ] = true;
+	allowed[ k ] = true;
        }
       if( allowed[ k ] ) {
        if( label[ inblossom[ w ] ] == 0 )
-        assignLabel( w , 2 , p ^ 1 );
+	assignLabel( w , 2 , p ^ 1 );
        else if( label[ inblossom[ w ] ] == 1 ) {
-        const int b0 = scanBlossom( v , w );
-        if( b0 >= 0 )
-         addBlossom( b0 , k );
-        else {
-         augmentMatching( k );
-         augmented = true;
-         break;
-         }
+	const int b0 = scanBlossom( v , w );
+	if( b0 >= 0 )
+	 addBlossom( b0 , k );
+	else {
+	 augmentMatching( k );
+	 augmented = true;
+	 break;
+	 }
         }
-       else if( label[ w ] == 0 ) {     // a node of a T-blossom, reached
-        label[ w ] = 2;
-        labelend[ w ] = p ^ 1;
+       else if( label[ w ] == 0 ) {  // a node of a T-blossom, reached
+	label[ w ] = 2;
+	labelend[ w ] = p ^ 1;
         }
        }
       else if( label[ inblossom[ w ] ] == 1 ) {
        const int b = inblossom[ v ];
        if( ( bestedge[ b ] == -1 ) || ( ks < slack( bestedge[ b ] ) ) )
-        bestedge[ b ] = k;
+	bestedge[ b ] = k;
        }
       else if( label[ w ] == 0 ) {
        if( ( bestedge[ w ] == -1 ) || ( ks < slack( bestedge[ w ] ) ) )
-        bestedge[ w ] = k;
+	bestedge[ w ] = k;
        }
       }
      }
@@ -652,7 +693,7 @@ struct WeightedBlossom {
       }
     for( int b = 0 ; b < 2 * n ; ++b )
      if( ( parent[ b ] == -1 ) && ( label[ b ] == 1 ) &&
-         ( bestedge[ b ] != -1 ) ) {
+	 ( bestedge[ b ] != -1 ) ) {
       const W d = slack( bestedge[ b ] ) / 2;
       if( ( type == -1 ) || ( d < delta ) ) {
        delta = d;
@@ -661,24 +702,29 @@ struct WeightedBlossom {
        }
       }
     for( int b = n ; b < 2 * n ; ++b )
-     if( ( base[ b ] >= 0 ) && ( parent[ b ] == -1 ) && ( label[ b ] == 2 )
-         && ( ( type == -1 ) || ( dual[ b ] < delta ) ) ) {
+     if( ( base[ b ] >= 0 ) && ( parent[ b ] == -1 ) && ( label[ b ] == 2 ) &&
+	 ( ( type == -1 ) || ( dual[ b ] < delta ) ) ) {
       delta = dual[ b ];
       type = 4;
       blossom = b;
       }
-    if( type == -1 ) {                    // no bound: the optimum
+    if( type == -1 ) {  // no bound: the optimum
      type = 1;
-     delta = std::max( W( 0 ) , *std::min_element( dual.begin() ,
-                                                   dual.begin() + n ) );
+     delta =
+       std::max( W( 0 ) ,
+		 *std::min_element( dual.begin() , dual.begin() + n ) );
      }
     for( int v = 0 ; v < n ; ++v )
-     if( label[ inblossom[ v ] ] == 1 ) dual[ v ] -= delta;
-     else if( label[ inblossom[ v ] ] == 2 ) dual[ v ] += delta;
+     if( label[ inblossom[ v ] ] == 1 )
+      dual[ v ] -= delta;
+     else if( label[ inblossom[ v ] ] == 2 )
+      dual[ v ] += delta;
     for( int b = n ; b < 2 * n ; ++b )
      if( ( base[ b ] >= 0 ) && ( parent[ b ] == -1 ) ) {
-      if( label[ b ] == 1 ) dual[ b ] += delta;
-      else if( label[ b ] == 2 ) dual[ b ] -= delta;
+      if( label[ b ] == 1 )
+       dual[ b ] += delta;
+      else if( label[ b ] == 2 )
+       dual[ b ] -= delta;
       }
     if( type == 1 )
      break;
@@ -686,7 +732,7 @@ struct WeightedBlossom {
      expandBlossom( blossom , false );
      continue;
      }
-    allowed[ edge ] = true;               // types 2 and 3: a tight edge
+    allowed[ edge ] = true;  // types 2 and 3: a tight edge
     int i = std::get< 0 >( E[ edge ] );
     if( label[ inblossom[ i ] ] == 0 )
      i = std::get< 1 >( E[ edge ] );
@@ -694,9 +740,9 @@ struct WeightedBlossom {
     }
    if( ! augmented )
     break;
-   for( int b = n ; b < 2 * n ; ++b )    // the S-blossoms of dual 0
-    if( ( parent[ b ] == -1 ) && ( base[ b ] >= 0 ) && ( label[ b ] == 1 )
-        && ( dual[ b ] == W( 0 ) ) )
+   for( int b = n ; b < 2 * n ; ++b )  // the S-blossoms of dual 0
+    if( ( parent[ b ] == -1 ) && ( base[ b ] >= 0 ) && ( label[ b ] == 1 ) &&
+	( dual[ b ] == W( 0 ) ) )
      expandBlossom( b , true );
    }
   }
@@ -707,8 +753,9 @@ struct WeightedBlossom {
   if( n == 0 )
    return( true );
   if( maxCardinality )
-   offset = std::max( W( 0 ) , - *std::min_element( dual.begin() ,
-                                                    dual.begin() + n ) );
+   offset =
+     std::max( W( 0 ) ,
+	       -*std::min_element( dual.begin() , dual.begin() + n ) );
   for( int v = 0 ; v < n ; ++v )
    if( ( dual[ v ] + offset < W( 0 ) ) ||
        ( ( mate[ v ] == -1 ) && ( dual[ v ] + offset != W( 0 ) ) ) )
@@ -722,24 +769,26 @@ struct WeightedBlossom {
    W s = dual[ u ] + dual[ v ] - w - w;
    I.assign( 1 , u );
    J.assign( 1 , v );
-   while( parent[ I.back() ] != -1 ) I.push_back( parent[ I.back() ] );
-   while( parent[ J.back() ] != -1 ) J.push_back( parent[ J.back() ] );
+   while( parent[ I.back() ] != -1 )
+    I.push_back( parent[ I.back() ] );
+   while( parent[ J.back() ] != -1 )
+    J.push_back( parent[ J.back() ] );
    for( auto a = I.rbegin() , c = J.rbegin() ;
-        ( a != I.rend() ) && ( c != J.rend() ) && ( *a == *c ) ; ++a , ++c )
+	( a != I.rend() ) && ( c != J.rend() ) && ( *a == *c ) ; ++a , ++c )
     s += dual[ *a ] + dual[ *a ];
    const bool iu = ( mate[ u ] != -1 ) && ( mate[ u ] / 2 == int( k ) );
    const bool iv = ( mate[ v ] != -1 ) && ( mate[ v ] / 2 == int( k ) );
    if( ( s < W( 0 ) ) || ( iu != iv ) || ( iu && ( s != W( 0 ) ) ) )
     return( false );
    }
-  for( int b = n ; b < 2 * n ; ++b )     // full where the dual is positive
+  for( int b = n ; b < 2 * n ; ++b )  // full where the dual is positive
    if( ( base[ b ] >= 0 ) && ( dual[ b ] > W( 0 ) ) ) {
     if( endps[ b ].size() % 2 == 0 )
      return( false );
     for( std::size_t i = 1 ; i < endps[ b ].size() ; i += 2 ) {
      const int p = endps[ b ][ i ];
      if( ( mate[ endpoint[ p ] ] != ( p ^ 1 ) ) ||
-         ( mate[ endpoint[ p ^ 1 ] ] != p ) )
+	 ( mate[ endpoint[ p ^ 1 ] ] != p ) )
       return( false );
      }
     }
@@ -753,17 +802,17 @@ struct WeightedBlossom {
 /*------------------------------- FUNCTIONS --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-inline std::vector< std::pair< int , int > > bipartiteBMatching(
-                      const std::vector< std::vector< int > > & A , int nr ,
-                      const std::vector< long long > & capL ,
-                      const std::vector< long long > & capR )
+inline std::vector< std::pair< int , int > >
+bipartiteBMatching( const std::vector< std::vector< int > > & A , int nr ,
+		    const std::vector< long long > & capL ,
+		    const std::vector< long long > & capR )
 {
  const int nl = int( A.size() );
  ADS_PRE( ( nr >= 0 ) && ( int( capL.size() ) == nl ) &&
-          ( int( capR.size() ) == nr ) );
+	  ( int( capR.size() ) == nr ) );
  FlowNetwork N( nl + nr + 2 );
  const int s = nl + nr , t = s + 1;
- std::vector< std::tuple< int , int , int > > id;   // edge , u , v
+ std::vector< std::tuple< int , int , int > > id;  // edge , u , v
  for( int u = 0 ; u < nl ; ++u ) {
   ADS_PRE( capL[ u ] >= 0 );
   N.addEdge( s , u , capL[ u ] );
@@ -800,7 +849,7 @@ std::vector< int > maxCardinalityMatching( const G & g )
  const int n = g.bound();
  const detail::Rows< G > A( g );
  detail::CardinalityBlossom< G > S( A , n );
- for( int u = 0 ; u < n ; ++u )               // a greedy matching
+ for( int u = 0 ; u < n ; ++u )  // a greedy matching
   if( g.hasNode( u ) && ( S.mate[ u ] == NIL ) )
    for( std::size_t i = A.first( u ) ; i < A.last( u ) ; ++i ) {
     const int v = A.head( i );
@@ -831,10 +880,11 @@ std::vector< int > maxCardinalityMatching( const G & g )
  }
 
 template< class W >
-requires std::is_arithmetic_v< W > && std::is_signed_v< W >
-std::pair< W , std::vector< std::size_t > > maxWeightMatching( int n ,
-                     const std::vector< std::tuple< int , int , W > > & E ,
-                     bool maxCardinality )
+ requires std::is_arithmetic_v< W > && std::is_signed_v< W >
+std::pair< W , std::vector< std::size_t > >
+maxWeightMatching( int n ,
+		   const std::vector< std::tuple< int , int , W > > & E ,
+		   bool maxCardinality )
 {
  ADS_PRE( n >= 0 );
  detail::WeightedBlossom< W > B( n , E , maxCardinality );
@@ -845,7 +895,7 @@ std::pair< W , std::vector< std::size_t > > maxWeightMatching( int n ,
  W total( 0 );
  for( int v = 0 ; v < n ; ++v )
   if( ( B.mate[ v ] != -1 ) && ( ( B.mate[ v ] & 1 ) == 1 ) ) {
-   const int k = B.mate[ v ] / 2;        // v is the first end of edge k
+   const int k = B.mate[ v ] / 2;  // v is the first end of edge k
    M.push_back( B.id[ k ] );
    total += std::get< 2 >( B.E[ k ] );
    }
@@ -865,21 +915,25 @@ std::pair< W , std::vector< std::size_t > > maxWeightMatching( int n ,
  }
 
 template< class W >
-std::pair< W , std::vector< std::size_t > > branchAndBoundMatching( int n ,
-                     const std::vector< std::tuple< int , int , W > > & E )
+std::pair< W , std::vector< std::size_t > >
+branchAndBoundMatching( int n ,
+			const std::vector< std::tuple< int , int , W > > & E )
 {
  ADS_PRE( n >= 0 );
- detail::MatchingSearch< W > M{ n , E ,
-                             std::vector< std::vector< std::size_t > >( n ) ,
-                             std::vector< W >( n + 1 , W( 0 ) ) ,
-                             std::vector< bool >( n , false ) , {} , {} ,
-                             W( 0 ) , W( 0 ) };
- std::vector< W > top( n , W( 0 ) );        // the best weight at each node
+ detail::MatchingSearch< W > M{ n ,
+				E ,
+				std::vector< std::vector< std::size_t > >( n ) ,
+				std::vector< W >( n + 1 , W( 0 ) ) ,
+				std::vector< bool >( n , false ) ,
+				{} ,
+				{} ,
+				W( 0 ) ,
+				W( 0 ) };
+ std::vector< W > top( n , W( 0 ) );  // the best weight at each node
  for( std::size_t e = 0 ; e < E.size() ; ++e ) {
   const auto & [ u , v , w ] = E[ e ];
-  ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) &&
-           ( u != v ) );
-  if( W( 0 ) < w ) {                     // the others never help
+  ADS_PRE( ( u >= 0 ) && ( u < n ) && ( v >= 0 ) && ( v < n ) && ( u != v ) );
+  if( W( 0 ) < w ) {  // the others never help
    M.inc[ std::min( u , v ) ].push_back( e );
    top[ u ] = std::max( top[ u ] , w );
    top[ v ] = std::max( top[ v ] , w );

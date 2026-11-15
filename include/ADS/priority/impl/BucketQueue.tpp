@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , std::integral K , BucketTie Tie >
 inline void BucketQueue< T , K , Tie >::push( const T & x , K f , K g )
@@ -26,9 +27,9 @@ inline void BucketQueue< T , K , Tie >::push( const T & x , K f , K g )
  Layer & l = f_layers[ F ];
  if( ( G < D ) || l.dense() || ! pushRun( l , x , g ) ) {  // a dense list
   if( ( G >= S ) && ( G - S >= l.big.size() ) ) {
-   if( G >= NIL )                           // topG would not hold it
+   if( G >= NIL )  // topG would not hold it
     throw( std::length_error( "BucketQueue::push: a second key of a dense "
-                              "layer past 2^32 - 2" ) );
+			      "layer past 2^32 - 2" ) );
    l.big.resize( G - S + 1 , NIL );
    }
   Index & h = l.head( G );
@@ -51,13 +52,13 @@ inline void BucketQueue< T , K , Tie >::push( const T & x , K f , K g )
 template< class T , std::integral K , BucketTie Tie >
 inline auto BucketQueue< T , K , Tie >::cell( const T & x ) -> Index
 {
- if( f_free != NIL ) {                      // the cell freed last
+ if( f_free != NIL ) {  // the cell freed last
   const Index c = f_free;
-  f_cells[ c ].item = x;                    // first, in case it throws
+  f_cells[ c ].item = x;  // first, in case it throws
   f_free = f_cells[ c ].next;
   return( c );
   }
- if( f_cells.size() >= NIL )                // the next index would be NIL
+ if( f_cells.size() >= NIL )  // the next index would be NIL
   throw( std::length_error( "BucketQueue::push: more than 2^32 - 1 items" ) );
  f_cells.push_back( Cell{ x , NIL } );
  return( Index( f_cells.size() - 1 ) );
@@ -67,23 +68,23 @@ template< class T , std::integral K , BucketTie Tie >
 bool BucketQueue< T , K , Tie >::pushRun( Layer & l , const T & x , K g )
 {
  if( ( l.runs != NIL ) && ( f_runs[ l.runs ].size() == R ) ) {
-  densify( l );                             // one run too many: dense
+  densify( l );  // one run too many: dense
   return( false );
   }
- Index k = l.runs;                          // the runs of the layer
+ Index k = l.runs;  // the runs of the layer
  if( k == NIL ) {
   if( f_spare.empty() ) {
-   f_spare.reserve( f_runs.size() + 1 );    // release() will not throw
+   f_spare.reserve( f_runs.size() + 1 );  // release() will not throw
    f_runs.emplace_back();
    f_spare.push_back( Index( f_runs.size() - 1 ) );
    }
   k = f_spare.back();
   }
  Runs & v = f_runs[ k ];
- if( v.size() == v.capacity() )             // run() will not throw
+ if( v.size() == v.capacity() )  // run() will not throw
   v.reserve( std::max< std::size_t >( 4 , 2 * v.size() ) );
  const Index c = cell( x );
- if( l.runs == NIL ) {                      // the spare runs taken
+ if( l.runs == NIL ) {  // the spare runs taken
   l.runs = k;
   f_spare.pop_back();
   }
@@ -99,17 +100,21 @@ auto BucketQueue< T , K , Tie >::run( Runs & v , K g ) -> Index &
  // the runs by increasing g, or by decreasing g if the least comes first,
  // so that the last run is the top
  auto after = []( K a , K b ) {
-  if constexpr( Tie::least ) return( a < b ); else return( a > b );
+  if constexpr( Tie::least )
+   return( a < b );
+  else
+   return( a > b );
   };
- if( v.empty() || after( g , v.back().g ) ) {   // a new last run
+ if( v.empty() || after( g , v.back().g ) ) {  // a new last run
   v.push_back( Run{ g , NIL } );
   return( v.back().head );
   }
  if( g == v.back().g )
   return( v.back().head );
- const auto it = std::lower_bound( v.begin() , v.end() , g ,
-                  [ & ]( const Run & r , K k ) { return( after( k , r.g ) );
-                  } );
+ const auto it =
+   std::lower_bound( v.begin() , v.end() , g , [ & ]( const Run & r , K k ) {
+    return( after( k , r.g ) );
+    } );
  if( it->g == g )
   return( it->head );
  return( v.insert( it , Run{ g , NIL } )->head );
@@ -119,24 +124,23 @@ template< class T , std::integral K , BucketTie Tie >
 void BucketQueue< T , K , Tie >::densify( Layer & l )
 {
  const Runs & v = f_runs[ l.runs ];
- const std::size_t G = std::size_t( Tie::least ? v.front().g :
-                                    v.back().g );
- if( G >= NIL )                             // topG would not hold it
+ const std::size_t G = std::size_t( Tie::least ? v.front().g : v.back().g );
+ if( G >= NIL )  // topG would not hold it
   throw( std::length_error( "BucketQueue::push: a second key of a dense "
-                            "layer past 2^32 - 2" ) );
- l.big.resize( G - S + 1 , NIL );           // more than D - S: dense
+			    "layer past 2^32 - 2" ) );
+ l.big.resize( G - S + 1 , NIL );  // more than D - S: dense
  for( const Run & r : v )
   l.big[ std::size_t( r.g ) - S ] = r.head;
- if constexpr( ! Tie::least )               // below them if least first
-  l.topG = Index( G );                      // above every dense g < D
+ if constexpr( ! Tie::least )  // below them if least first
+  l.topG = Index( G );         // above every dense g < D
  release( l );
  }
 
 template< class T , std::integral K , BucketTie Tie >
 void BucketQueue< T , K , Tie >::release( Layer & l )
 {
- f_runs[ l.runs ].clear();                  // kept for the next layer
- f_spare.push_back( l.runs );               // within its capacity
+ f_runs[ l.runs ].clear();     // kept for the next layer
+ f_spare.push_back( l.runs );  // within its capacity
  l.runs = NIL;
  }
 
@@ -166,15 +170,15 @@ template< class T , std::integral K , BucketTie Tie >
 inline auto BucketQueue< T , K , Tie >::front( void ) -> Layer &
 {
  ADS_PRE( f_size > 0 );
- while( f_layers[ f_minF ].count == 0 )     // forward to the least f
+ while( f_layers[ f_minF ].count == 0 )  // forward to the least f
   ++f_minF;
  Layer & l = f_layers[ f_minF ];
- if constexpr( Tie::least ) {               // forward to the least g
+ if constexpr( Tie::least ) {  // forward to the least g
   while( ( l.topG < l.lists() ) && ( l.head( l.topG ) == NIL ) )
    ++l.topG;
   }
  else if( l.runs == NIL )
-  while( l.head( l.topG ) == NIL )          // backward to the largest g
+  while( l.head( l.topG ) == NIL )  // backward to the largest g
    --l.topG;
  return( l );
  }
@@ -196,7 +200,7 @@ template< class T , std::integral K , BucketTie Tie >
 auto BucketQueue< T , K , Tie >::popEntry( void ) -> Entry
 {
  const K g = topKey( front() ) , f = K( f_minF );
- return( Entry{ pop() , f , g } );          // front() is now O( 1 )
+ return( Entry{ pop() , f , g } );  // front() is now O( 1 )
  }
 
 template< class T , std::integral K , BucketTie Tie >
@@ -209,7 +213,7 @@ template< class T , std::integral K , BucketTie Tie >
 inline T BucketQueue< T , K , Tie >::pop( void )
 {
  Layer & l = front();
- if( inRuns( l ) )                          // from the last run
+ if( inRuns( l ) )  // from the last run
   return( popRun( l ) );
  T x = take( l.head( l.topG ) );
  taken( l );
@@ -222,7 +226,7 @@ T BucketQueue< T , K , Tie >::popRun( Layer & l )
 {
  Runs & v = f_runs[ l.runs ];
  T x = take( v.back().head );
- if( v.back().head == NIL ) {               // the last run is empty
+ if( v.back().head == NIL ) {  // the last run is empty
   v.pop_back();
   if( v.empty() )
    release( l );
@@ -238,7 +242,7 @@ inline T BucketQueue< T , K , Tie >::take( Index & h )
  const Index c = h;
  h = f_cells[ c ].next;
  T x = std::move( f_cells[ c ].item );
- f_cells[ c ].next = f_free;                // the cell is free
+ f_cells[ c ].next = f_free;  // the cell is free
  f_free = c;
  --f_size;
  return( x );
@@ -247,7 +251,7 @@ inline T BucketQueue< T , K , Tie >::take( Index & h )
 template< class T , std::integral K , BucketTie Tie >
 inline void BucketQueue< T , K , Tie >::taken( Layer & l )
 {
- if( --l.count == 0 ) {                     // free the heads of large g
+ if( --l.count == 0 ) {  // free the heads of large g
   if( ! l.big.empty() )
    std::vector< Index >().swap( l.big );
   l.topG = 0;
@@ -297,8 +301,8 @@ bool BucketQueue< T , K , Tie >::ordered( const Layer & l ) const
   return( false );
  for( std::size_t i = 0 ; i < v.size() ; ++i )
   if( ( std::size_t( v[ i ].g ) < D ) || ( v[ i ].head == NIL ) ||
-      ( i && ( Tie::least ? v[ i - 1 ].g <= v[ i ].g :
-                            v[ i - 1 ].g >= v[ i ].g ) ) )
+      ( i && ( Tie::least ? v[ i - 1 ].g <= v[ i ].g
+			  : v[ i - 1 ].g >= v[ i ].g ) ) )
    return( false );
  return( true );
  }

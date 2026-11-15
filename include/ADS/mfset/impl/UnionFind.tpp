@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< Union L , Compression C >
 inline DisjointSets< L , C >::DisjointSets( int n )
@@ -40,7 +41,7 @@ inline int DisjointSets< L , C >::find( int x )
    const int y = p[ x ];
    if( p[ y ] < 0 )
     return( y );
-   p[ x ] = p[ y ];                       // x under its grandparent
+   p[ x ] = p[ y ];  // x under its grandparent
    x = p[ y ];
    }
   return( x );
@@ -49,7 +50,7 @@ inline int DisjointSets< L , C >::find( int x )
   int r = x;
   while( p[ r ] >= 0 )
    r = p[ r ];
-  while( x != r ) {                       // the path under the root
+  while( x != r ) {  // the path under the root
    const int y = p[ x ];
    p[ x ] = r;
    x = y;
@@ -67,12 +68,12 @@ inline bool DisjointSets< L , C >::merge( int x , int y )
  if( x == y )
   return( false );
  // the roots hold - size, or - 1 - rank: the more negative is the larger
- if( f_p[ x ] < f_p[ y ] )                // x larger: y under x
+ if( f_p[ x ] < f_p[ y ] )  // x larger: y under x
   std::swap( x , y );
  if constexpr( L == Union::SIZE )
   f_p[ y ] += f_p[ x ];
  else if( f_p[ x ] == f_p[ y ] )
-  --f_p[ y ];                             // a tie: the rank of y grows
+  --f_p[ y ];  // a tie: the rank of y grows
  f_p[ x ] = y;
  --f_count;
  ADS_INVARIANT( forest() );
@@ -86,7 +87,8 @@ inline bool DisjointSets< L , C >::same( int x , int y )
  }
 
 template< Union L , Compression C >
-inline int DisjointSets< L , C >::size( int x ) requires( L == Union::SIZE )
+inline int DisjointSets< L , C >::size( int x )
+ requires( L == Union::SIZE )
 {
  return( -f_p[ find( x ) ] );
  }
@@ -110,9 +112,9 @@ bool DisjointSets< L , C >::forest( void ) const
  for( int x = 0 ; x < n ; ++x )
   if( f_p[ x ] < 0 ) {
    ++roots;
-   if( L == Union::SIZE ? -f_p[ x ] != size[ x ] :
-                          height[ x ] > -1 - f_p[ x ] )
-    return( false );                      // a rank bounds the height
+   if( L == Union::SIZE ? -f_p[ x ] != size[ x ]
+			: height[ x ] > -1 - f_p[ x ] )
+    return( false );  // a rank bounds the height
    }
  return( roots == f_count );
  }

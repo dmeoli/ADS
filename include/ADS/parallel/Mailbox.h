@@ -135,7 +135,7 @@
 
 #ifndef __ADS_Mailbox
  #define __ADS_Mailbox
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -161,14 +161,15 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the owner of the key \f$ k \f$ among \f$ p \f$ workers or processes,
 /// \f$ h( k ) \bmod p \f$ for the hash function \f$ h \f$
 /// \pre \f$ p \ge 1 \f$
 template< class K , class H = std::hash< K > >
 [[nodiscard]] std::size_t ownerOf( const K & k , std::size_t p ,
-                                   const H & h = H() )
+				   const H & h = H() )
 {
  ADS_PRE( p >= 1 );
  return( std::size_t( h( k ) ) % p );
@@ -180,7 +181,8 @@ template< class K , class H = std::hash< K > >
 
 /// no coalescing of the messages in the outboxes of `Mailbox`: no member
 /// and no code, and no `send()` with a merge; the default
-struct NoCoalescing {};
+struct NoCoalescing
+{ };
 
 /// the coalescing of the messages of one key in an outbox of `Mailbox`:
 /// `K()( x )` the key of the message \f$ x \f$, and `M` the map from a key
@@ -189,44 +191,50 @@ struct NoCoalescing {};
 /// `DenseHashMap` and `FlatHashTable`, which allocate no node per key), by
 /// default (`void`) a `std::unordered_map` of the keys to `std::size_t`
 template< class K , class M = void >
-struct CoalesceBy {
- using KeyOf = K;   ///< the function of the key
- using Map = M;     ///< the map, or void for the default
+struct CoalesceBy
+{
+ using KeyOf = K;  ///< the function of the key
+ using Map = M;    ///< the map, or void for the default
  };
 
-namespace detail {
+namespace detail
+{
 
 /// the function of the key and the map of the policy C, if it merges
 template< class C >
-struct CoalescePolicy {
+struct CoalescePolicy
+{
  static constexpr bool on = false;
  };
 
 /// those of CoalesceBy< K , M >
 template< class K , class M >
-struct CoalescePolicy< CoalesceBy< K , M > > {
+struct CoalescePolicy< CoalesceBy< K , M > >
+{
  static constexpr bool on = true;
  using KeyOf = K;
  };
 
 /// the coalescing of the policy C for the messages Msg: none
 template< class C , class Msg >
-struct Coalescing {
+struct Coalescing
+{
  static constexpr bool on = false;
- struct Slots {};                          ///< no map
+ struct Slots
+ { };  ///< no map
  };
 
 /// the coalescing of CoalesceBy< K , M >: the key, the map, a map per
 /// outbox
 template< class K , class M , class Msg >
-struct Coalescing< CoalesceBy< K , M > , Msg > {
+struct Coalescing< CoalesceBy< K , M > , Msg >
+{
  static constexpr bool on = true;
  using KeyOf = K;
- using Key = std::remove_cvref_t< std::invoke_result_t< const K & ,
-                                                        const Msg & > >;
+ using Key =
+   std::remove_cvref_t< std::invoke_result_t< const K & , const Msg & > >;
  using Map = std::conditional_t< std::is_void_v< M > ,
-                                 std::unordered_map< Key , std::size_t > ,
-                                 M >;
+				 std::unordered_map< Key , std::size_t > , M >;
  using Slots = std::vector< Map >;
  };
 
@@ -234,7 +242,8 @@ struct Coalescing< CoalesceBy< K , M > , Msg > {
 /// the iterator of a map of the standard, or the value a pointer of a flat
 /// map of ADS points to [see `DenseHashMap`, `FlatHashTable`]
 template< class I >
-[[nodiscard]] constexpr auto & mappedOf( const I & it ) {
+[[nodiscard]] constexpr auto & mappedOf( const I & it )
+{
  if constexpr( std::is_pointer_v< I > )
   return( *it );
  else
@@ -249,20 +258,23 @@ template< class I >
 /// place of `std::size_t` by `try_emplace()`, `clear()` and `empty()`
 template< class C , class Msg >
 concept MailboxCoalescing =
- std::same_as< C , NoCoalescing > ||
- ( detail::CoalescePolicy< C >::on &&
-   std::default_initializable< typename detail::CoalescePolicy< C >::KeyOf >
-   && std::invocable< const typename detail::CoalescePolicy< C >::KeyOf & ,
-                      const Msg & > &&
-   requires( typename detail::Coalescing< C , Msg >::Map & m ,
-             const typename detail::Coalescing< C , Msg >::Key & k ,
-             std::size_t i ) {
-    { detail::mappedOf( m.try_emplace( k , i ).first ) }
-     -> std::same_as< std::size_t & >;
-    { m.try_emplace( k , i ).second } -> std::convertible_to< bool >;
-    m.clear();
-    { m.empty() } -> std::convertible_to< bool >;
-    } );
+  std::same_as< C , NoCoalescing > ||
+  ( detail::CoalescePolicy< C >::on &&
+    std::default_initializable<
+      typename detail::CoalescePolicy< C >::KeyOf > &&
+    std::invocable< const typename detail::CoalescePolicy< C >::KeyOf & ,
+		    const Msg & > &&
+    requires( typename detail::Coalescing< C , Msg >::Map & m ,
+	      const typename detail::Coalescing< C , Msg >::Key & k ,
+	      std::size_t i )
+{
+     {
+      detail::mappedOf( m.try_emplace( k , i ).first )
+      } -> std::same_as< std::size_t & >;
+     { m.try_emplace( k , i ).second } -> std::convertible_to< bool >;
+     m.clear();
+     { m.empty() } -> std::convertible_to< bool >;
+     } );
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Mailbox ------------------------------*/
@@ -274,12 +286,13 @@ concept MailboxCoalescing =
 /// recovery of the messages left, and the coalescing of the messages of one
 /// key in an outbox by the policy `Co`
 template< class Msg , ChannelFamily Ch = MeshChannels< Msg > ,
-          class Co = NoCoalescing >
-class Mailbox {
+	  class Co = NoCoalescing >
+class Mailbox
+{
 
  static_assert( MailboxCoalescing< Co , Msg > ,
-                "the policy of the coalescing is NoCoalescing or a "
-                "CoalesceBy with a key and a map" );
+		"the policy of the coalescing is NoCoalescing or a "
+		"CoalesceBy with a key and a map" );
 
  /// the coalescing of the policy
  using Coalesce = detail::Coalescing< Co , Msg >;
@@ -293,18 +306,17 @@ class Mailbox {
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Message = Msg;      ///< the type of the messages
- using Channels = Ch;      ///< the family of the channels
- using Coalescing = Co;    ///< the policy of the coalescing
+ using Message = Msg;    ///< the type of the messages
+ using Channels = Ch;    ///< the family of the channels
+ using Coalescing = Co;  ///< the policy of the coalescing
 
  /// the mailbox of \f$ p \f$ workers, all active, pushing batches of
  /// `batch` messages, on channels built from \f$ p \f$ and `args`
  /// \pre \f$ p \ge 1 \f$, \f$ \mathit{batch} \ge 1 \f$
- template< class ... A >
- explicit Mailbox( std::size_t p , std::size_t batch = 64 , A && ... args )
-  : f_ch( p , std::forward< A >( args )... ) , f_worker( p ) ,
-    f_batch( batch ) {
+ template< class... A >
+ explicit Mailbox( std::size_t p , std::size_t batch = 64 , A &&... args )
+     : f_ch( p , std::forward< A >( args )... ) , f_worker( p ) ,
+       f_batch( batch ) {
   ADS_PRE( ( p >= 1 ) && ( batch >= 1 ) );
   for( auto & w : f_worker ) {
    w = std::make_unique< Worker >();
@@ -394,12 +406,12 @@ class Mailbox {
    }
   o.push_back( std::move( x ) );
   const std::size_t i = o.size() - 1;
-  auto [ it , fresh ] = w.slots[ to ].try_emplace(
-                         typename Coalesce::KeyOf()( o.back() ) , i );
+  auto [ it , fresh ] =
+    w.slots[ to ].try_emplace( typename Coalesce::KeyOf()( o.back() ) , i );
   if( ! fresh ) {
    ADS_INVARIANT( detail::mappedOf( it ) < i );
    if( absorb( merge , o[ detail::mappedOf( it ) ] , o.back() ) ) {
-    o.pop_back();                         // never counted, never pushed
+    o.pop_back();  // never counted, never pushed
     ++w.merged;
     return;
     }
@@ -477,7 +489,7 @@ class Mailbox {
    return( 0 );
   Worker & w = *f_worker[ me ];
   const std::size_t k = f_ch.drain( me , [ & ]( Msg && x ) {
-   if( ! w.active ) {                        // back to work, counted
+   if( ! w.active ) {  // back to work, counted
     f_count.value.fetch_add( 1 , std::memory_order_acq_rel );
     w.active = true;
     }
@@ -528,7 +540,7 @@ class Mailbox {
  /// thread may ask)
  [[nodiscard]] bool terminated( void ) const {
   return( stopped() ||
-          ( f_count.value.load( std::memory_order_acquire ) == 0 ) );
+	   ( f_count.value.load( std::memory_order_acquire ) == 0 ) );
   }
 
  /// ends the computation at once, whatever the messages on their way: from
@@ -581,7 +593,9 @@ class Mailbox {
 
  /// `rearm()` above with all the workers active, as at the construction
  /// \pre as `rearm( active )`
- void rearm( void ) { rearm( []( std::size_t ) { return( true ); } ); }
+ void rearm( void ) {
+  rearm( []( std::size_t ) { return( true ); } );
+  }
 
  /// at the level of the audits, the predicate of the consumer checked at a
  /// quiescent point: `pred( me )` for each worker, if it takes one, or
@@ -653,8 +667,7 @@ class Mailbox {
    w.next[ to ] = f_batch;
    }
   w.dirty.clear();
-  return( n + f_ch.drain( me , [ & ]( Msg && x ) { f( std::move( x ) ); } )
-          );
+  return( n + f_ch.drain( me , [ & ]( Msg && x ) { f( std::move( x ) ); } ) );
   }
 
  /// `leftovers( me , f )` of every worker, in the order of the workers,
@@ -699,31 +712,33 @@ class Mailbox {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the state of a worker, which only the worker touches
- struct alignas( 128 ) Worker {
-  std::vector< std::vector< Msg > > out;   ///< the outboxes
-  std::vector< std::size_t > next;         ///< the size of the next push
-  std::vector< char > listed;              ///< whether in dirty
-  std::vector< std::size_t > dirty;        ///< those that may not be empty
-  bool active = true;                      ///< holds an activity of C
-  std::uint64_t sent = 0;                  ///< the messages pushed
-  std::uint64_t batches = 0;               ///< the pushes taken
-  std::uint64_t received = 0;              ///< the messages drained
-  std::uint64_t merged = 0;                ///< the messages merged
+ struct alignas( 128 ) Worker
+ {
+  std::vector< std::vector< Msg > > out;  ///< the outboxes
+  std::vector< std::size_t > next;        ///< the size of the next push
+  std::vector< char > listed;             ///< whether in dirty
+  std::vector< std::size_t > dirty;       ///< those that may not be empty
+  bool active = true;                     ///< holds an activity of C
+  std::uint64_t sent = 0;                 ///< the messages pushed
+  std::uint64_t batches = 0;              ///< the pushes taken
+  std::uint64_t received = 0;             ///< the messages drained
+  std::uint64_t merged = 0;               ///< the messages merged
   /// the maps of the outboxes, from a key to its place; nothing with
   /// NoCoalescing
   ADS_NO_UNIQUE_ADDRESS typename Coalesce::Slots slots{};
   };
 
  /// the shared counter, on lines of its own
- struct alignas( 128 ) Counter {
-  std::atomic< std::int64_t > value{ 0 };   ///< activities and messages
+ struct alignas( 128 ) Counter
+ {
+  std::atomic< std::int64_t > value{ 0 };  ///< activities and messages
   };
 
  /// the flag of the stop, on lines of its own, read at each send
- struct alignas( 128 ) Flag {
-  std::atomic< bool > value{ false };      ///< set by stop()
+ struct alignas( 128 ) Flag
+ {
+  std::atomic< bool > value{ false };  ///< set by stop()
   };
 
  /// whether the computation has ended or stopped and no outbox holds a
@@ -734,7 +749,7 @@ class Mailbox {
     if( ! w->out[ to ].empty() )
      return( false );
   return( stopped() ||
-          ( f_count.value.load( std::memory_order_acquire ) == 0 ) );
+	   ( f_count.value.load( std::memory_order_acquire ) == 0 ) );
   }
 
  /// whether no inbox holds a message; drains them, so that it is only
@@ -742,7 +757,7 @@ class Mailbox {
  [[nodiscard]] bool drained( void ) {
   std::size_t n = 0;
   for( std::size_t me = 0 ; me < size() ; ++me )
-   n += f_ch.drain( me , []( Msg && ) {} );
+   n += f_ch.drain( me , []( Msg && ) { } );
   return( n == 0 );
   }
 
@@ -750,8 +765,8 @@ class Mailbox {
  /// result, or true if it has none
  template< class F >
  static bool absorb( F & merge , Msg & p , const Msg & x ) {
-  if constexpr( std::is_void_v< std::invoke_result_t< F & , Msg & ,
-                                                      const Msg & > > ) {
+  if constexpr( std::is_void_v<
+		  std::invoke_result_t< F & , Msg & , const Msg & > > ) {
    merge( p , x );
    return( true );
    }
@@ -768,27 +783,26 @@ class Mailbox {
   if( k == 0 )
    return;
   f_count.value.fetch_add( std::int64_t( k ) , std::memory_order_acq_rel );
-  const std::size_t j = f_ch.tryPush( me , to ,
-                                      std::span< const Msg >( o ) );
+  const std::size_t j = f_ch.tryPush( me , to , std::span< const Msg >( o ) );
   if( j < k )
    f_count.value.fetch_sub( std::int64_t( k - j ) ,
-                            std::memory_order_acq_rel );
+			    std::memory_order_acq_rel );
   if( j > 0 ) {
    w.sent += j;
    ++w.batches;
    o.erase( o.begin() , o.begin() + std::ptrdiff_t( j ) );
-   if constexpr( coalescing )             // the places have shifted
+   if constexpr( coalescing )  // the places have shifted
     if( ! w.slots[ to ].empty() )
      w.slots[ to ].clear();
    }
   w.next[ to ] = o.size() + f_batch;
   }
 
- Ch f_ch;                                  ///< the channels
- std::vector< std::unique_ptr< Worker > > f_worker;   ///< one per worker
- std::size_t f_batch;                      ///< the messages of a batch
- Counter f_count;                          ///< the shared counter
- Flag f_stop;                              ///< the stop
+ Ch f_ch;                                            ///< the channels
+ std::vector< std::unique_ptr< Worker > > f_worker;  ///< one per worker
+ std::size_t f_batch;  ///< the messages of a batch
+ Counter f_count;      ///< the shared counter
+ Flag f_stop;          ///< the stop
  };  // end( class Mailbox )
 
 /*--------------------------------------------------------------------------*/
@@ -797,7 +811,7 @@ class Mailbox {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Mailbox.h included */
+#endif /* Mailbox.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Mailbox.h ----------------------------*/

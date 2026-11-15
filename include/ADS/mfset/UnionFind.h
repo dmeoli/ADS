@@ -49,7 +49,7 @@
 
 #ifndef __ADS_UnionFind
  #define __ADS_UnionFind
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS DisjointSets ---------------------------*/
@@ -74,25 +75,27 @@ namespace ADS {
 
 /// how the roots of two trees are joined: the smaller tree under the root
 /// of the larger, or the lower rank under the higher
-enum class Union { SIZE ,   ///< the smaller tree under the root of the larger
-                   RANK     ///< the lower rank under the higher
-                   };
+enum class Union {
+ SIZE ,  ///< the smaller tree under the root of the larger
+ RANK   ///< the lower rank under the higher
+ };
 
 /// how `find()` shortens the path: halving it (every other node on the way
 /// made a child of its grandparent, one pass), or compressing it (all the
 /// nodes on the way made children of the root, two passes)
-enum class Compression { HALVING ,   ///< half the path under grandparents
-                         FULL        ///< each node under the root
-                         };
+enum class Compression {
+ HALVING ,  ///< half the path under grandparents
+ FULL      ///< each node under the root
+ };
 
 /// the union of disjoint sets of \f$ [ 0 , n ) \f$, the roots joined by `L`,
 /// the paths shortened by `C`
 template< Union L = Union::SIZE , Compression C = Compression::HALVING >
-class DisjointSets {
+class DisjointSets
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the \f$ n \f$ components \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  /// \pre \f$ n \ge 0 \f$
  explicit DisjointSets( int n = 0 );
@@ -155,17 +158,17 @@ class DisjointSets {
 
  /// the number of elements of the component of \f$ x \f$
  /// \pre \f$ x \in [ 0 , n ) \f$, the union by size
- int size( int x ) requires( L == Union::SIZE );
+ int size( int x )
+  requires( L == Union::SIZE );
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a forest of `count()` trees, the roots holding minus their sizes (or
  /// minus one less their ranks)
  [[nodiscard]] bool forest( void ) const;
 
- std::vector< int > f_p;   ///< the parents, the size or rank at a root
- int f_count = 0;          ///< the number of components
+ std::vector< int > f_p;  ///< the parents, the size or rank at a root
+ int f_count = 0;         ///< the number of components
 
  };  // end( class DisjointSets )
 
@@ -184,7 +187,7 @@ using UnionFind = DisjointSets<>;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* UnionFind.h included */
+#endif /* UnionFind.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File UnionFind.h --------------------------*/

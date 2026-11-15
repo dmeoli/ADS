@@ -33,7 +33,7 @@
 
 #ifndef __ADS_ArrayBinaryTree
  #define __ADS_ArrayBinaryTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -55,7 +55,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS ArrayBinaryTree --------------------------*/
@@ -63,13 +64,13 @@ namespace ADS {
 
 /// a binary tree in a positional vector
 template< class T >
-class ArrayBinaryTree {
+class ArrayBinaryTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;              ///< the type of the values
- static constexpr long NIL = -1;   ///< no node
+ using Item = T;                  ///< the type of the values
+ static constexpr long NIL = -1;  ///< no node
 
  /// the empty tree
  ArrayBinaryTree( void ) = default;
@@ -80,7 +81,7 @@ class ArrayBinaryTree {
  /// a new root of value \f$ v \f$ with copies of \f$ l \f$ and \f$ r \f$
  /// as its subtrees
  ArrayBinaryTree( const T & v , const ArrayBinaryTree & l ,
-                  const ArrayBinaryTree & r );
+		  const ArrayBinaryTree & r );
 
  /// true if the tree has no node
  [[nodiscard]] bool empty( void ) const;
@@ -152,7 +153,8 @@ class ArrayBinaryTree {
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the places in use, for `SlotIterator`
- struct Used {
+ struct Used
+ {
   /// the places
   static std::size_t size( const auto & o ) { return( o.f_A.size() ); }
   /// whether the place \f$ i \f$ holds a node
@@ -166,13 +168,11 @@ class ArrayBinaryTree {
  /// the nodes, in the order of their places, bidirectional
  [[nodiscard]] auto nodes( void ) const {
   using It = SlotIterator< ArrayBinaryTree , Used >;
-  return( std::ranges::subrange( It( this , 0 ) ,
-                                 It( this , f_A.size() ) ) );
+  return( std::ranges::subrange( It( this , 0 ) , It( this , f_A.size() ) ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  [[nodiscard]] bool has( long i ) const;
 
  std::optional< T > & place( long i );
@@ -194,7 +194,7 @@ class ArrayBinaryTree {
 
  void graft( long i , long c , const ArrayBinaryTree & t );
 
- std::vector< std::optional< T > > f_A;   ///< the places
+ std::vector< std::optional< T > > f_A;  ///< the places
 
  };  // end( class ArrayBinaryTree )
 
@@ -210,7 +210,7 @@ class ArrayBinaryTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ArrayBinaryTree.h included */
+#endif /* ArrayBinaryTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ArrayBinaryTree.h -----------------------*/

@@ -14,13 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
 T coinsInALine( const std::vector< T > & V )
 {
  const std::size_t n = V.size();
- std::vector< T > D( n + 1 , T( 0 ) );          // D[ i ]: V[ i .. i + h )
+ std::vector< T > D( n + 1 , T( 0 ) );  // D[ i ]: V[ i .. i + h )
  for( std::size_t h = 1 ; h <= n ; ++h )
   for( std::size_t i = 0 ; i + h <= n ; ++i )
    D[ i ] = std::max( V[ i ] - D[ i + 1 ] , V[ i + h - 1 ] - D[ i ] );

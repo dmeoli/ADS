@@ -43,7 +43,7 @@
 
 #ifndef __ADS_Tree
  #define __ADS_Tree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS Tree ---------------------------------*/
@@ -74,12 +75,12 @@ namespace ADS {
 
 /// an ordered tree, with pointers to parent, first child and next sibling
 template< class T >
-class Tree {
+class Tree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the values
+ using Item = T;  ///< the type of the values
 
  /// a new tree, made of one node containing \f$ v \f$ (the `Tree( v )` of
  /// the book)
@@ -172,7 +173,6 @@ class Tree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// each child of this node has it as its parent (the links that a
  /// change of the tree touches), \f$ O( 1 ) \f$ per child
  [[nodiscard]] bool linked( void ) const;
@@ -180,10 +180,10 @@ class Tree {
  /// the root of the tree of this node, \f$ O( \mathit{depth} ) \f$
  [[nodiscard]] const Tree * top( void ) const;
 
- T f_value;                    ///< the value
- Tree * f_parent = nullptr;    ///< the parent
- Tree * f_child = nullptr;     ///< the first child
- Tree * f_sibling = nullptr;   ///< the next sibling
+ T f_value;                   ///< the value
+ Tree * f_parent = nullptr;   ///< the parent
+ Tree * f_child = nullptr;    ///< the first child
+ Tree * f_sibling = nullptr;  ///< the next sibling
 
  };  // end( class Tree )
 
@@ -369,10 +369,12 @@ Tree< T > * tree_from_list( std::string_view s );
 // the nodes of a tree as ranges, forward, by the links to the parents and
 // the siblings, with no stack; *it is a node
 
-namespace detail {
+namespace detail
+{
 
 /// the walk of the children of a node
-struct TreeChildren {
+struct TreeChildren
+{
  static constexpr std::nullptr_t none = nullptr;
  template< class N >
  static N * next( const void * , N * n , N * ) {
@@ -381,13 +383,16 @@ struct TreeChildren {
  };
 
 /// the preorder below a root
-struct TreePreorder {
+struct TreePreorder
+{
  static constexpr std::nullptr_t none = nullptr;
  template< class N >
  static N * next( const void * , N * n , N * root ) {
-  if( n->leftmostChild() ) return( n->leftmostChild() );
-  for( ; n != root ; n = n->parent() )      // up to a right sibling
-   if( n->rightSibling() ) return( n->rightSibling() );
+  if( n->leftmostChild() )
+   return( n->leftmostChild() );
+  for( ; n != root ; n = n->parent() )  // up to a right sibling
+   if( n->rightSibling() )
+    return( n->rightSibling() );
   return( nullptr );
   }
  };
@@ -399,8 +404,8 @@ template< class T >
 auto children( Tree< T > * t )
 {
  using It = WalkIterator< void , Tree< T > * , detail::TreeChildren >;
- return( std::ranges::subrange( It( nullptr , t->leftmostChild() , t ) ,
-                                It() ) );
+ return(
+   std::ranges::subrange( It( nullptr , t->leftmostChild() , t ) , It() ) );
  }
 
 /// the nodes of the subtree of \f$ t \f$ in preorder, \f$ t \f$ first, as a
@@ -438,7 +443,7 @@ auto preorder( Tree< T > * t )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Tree.h included */
+#endif /* Tree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File Tree.h -----------------------------*/

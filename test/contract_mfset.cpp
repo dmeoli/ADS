@@ -37,7 +37,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -54,68 +55,70 @@ ADS_TEST( "mfset" )
  CHECK_THROWS( MFSet( -1 ) , contract_violation );
  CHECK_THROWS( ListMFSet( -1 ) , contract_violation );
  CHECK( MFSet( 0 ).count() == 0 && ListMFSet( 0 ).n() == 0 );
- MFSet Z( 0 );                           // n = 0: no element at all
+ MFSet Z( 0 );  // n = 0: no element at all
  ListMFSet LZ( 0 );
  CHECK_THROWS( Z.find( 0 ) , contract_violation );
- CHECK_THROWS( (void) LZ.find( 0 ) , contract_violation );
+ CHECK_THROWS( ( void )LZ.find( 0 ) , contract_violation );
  MFSet F( 5 );
  ListMFSet L( 5 );
- CHECK( F.find( 0 ) == 0 && F.find( 4 ) == 4 );   // just inside
+ CHECK( F.find( 0 ) == 0 && F.find( 4 ) == 4 );  // just inside
  CHECK( L.find( 0 ) == 0 && L.find( 4 ) == 4 );
  CHECK_THROWS( F.find( 5 ) , contract_violation );
  CHECK_THROWS( F.find( -1 ) , contract_violation );
  CHECK_THROWS( F.merge( 0 , -1 ) , contract_violation );
  CHECK_THROWS( F.merge( 5 , 0 ) , contract_violation );
  CHECK_THROWS( F.same( 0 , 5 ) , contract_violation );
- CHECK_THROWS( (void) F.parent( 7 ) , contract_violation );
- CHECK_THROWS( (void) F.parent( -1 ) , contract_violation );
- CHECK_THROWS( (void) F.rank( 5 ) , contract_violation );
- CHECK_THROWS( (void) F.rank( -1 ) , contract_violation );
- CHECK_THROWS( (void) F.size( 5 ) , contract_violation );
- CHECK_THROWS( (void) F.size( -1 ) , contract_violation );
- CHECK_THROWS( (void) L.find( 5 ) , contract_violation );
- CHECK_THROWS( (void) L.find( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )F.parent( 7 ) , contract_violation );
+ CHECK_THROWS( ( void )F.parent( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )F.rank( 5 ) , contract_violation );
+ CHECK_THROWS( ( void )F.rank( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )F.size( 5 ) , contract_violation );
+ CHECK_THROWS( ( void )F.size( -1 ) , contract_violation );
+ CHECK_THROWS( ( void )L.find( 5 ) , contract_violation );
+ CHECK_THROWS( ( void )L.find( -1 ) , contract_violation );
  CHECK_THROWS( L.merge( -1 , 0 ) , contract_violation );
  CHECK_THROWS( L.merge( 0 , 5 ) , contract_violation );
  CHECK( F.count() == 5 && L.n() == 5 );  // a failed merge changes nothing
  CHECK( ! F.merge( 3 , 3 ) && ! L.merge( 3 , 3 ) && F.count() == 5 );
  CHECK( F.merge( 0 , 4 ) && L.merge( 0 , 4 ) && F.count() == 4 );
  CHECK( ! F.merge( 4 , 0 ) && ! L.merge( 4 , 0 ) && F.same( 4 , 0 ) );
- {                                       // one element
+ {  // one element
   MFSet O( 1 , MFSet::Union::SIZE );
   CHECK( O.find( 0 ) == 0 && ! O.merge( 0 , 0 ) && O.size( 0 ) == 1 &&
-         O.count() == 1 && O.rank( 0 ) == 0 && O.parent( 0 ) == 0 );
+	 O.count() == 1 && O.rank( 0 ) == 0 && O.parent( 0 ) == 0 );
   }
- {                     // a chain of depth n - 1: find() is not recursive
+ {  // a chain of depth n - 1: find() is not recursive
   const int n = 3000;
   MFSet C( n , MFSet::Union::NONE , false );
   for( int i = 1 ; i < n ; ++i )
    CHECK( C.merge( i , i - 1 ) );
-  CHECK( C.find( 0 ) == n - 1 && C.count() == 1 &&
-         C.steps() >= n - 1 );
+  CHECK( C.find( 0 ) == n - 1 && C.count() == 1 && C.steps() >= n - 1 );
   }
  std::mt19937 g( 1 );
  for( auto u : { MFSet::Union::NONE , MFSet::Union::RANK ,
-                 MFSet::Union::SIZE } )
+		 MFSet::Union::SIZE } )
   for( bool compress : { false , true } ) {
    const int n = 60;
    MFSet M( n , u , compress );
    ListMFSet Q( n );
    std::vector< int > lab( n );
-   for( int i = 0 ; i < n ; ++i ) lab[ i ] = i;
+   for( int i = 0 ; i < n ; ++i )
+    lab[ i ] = i;
    for( int op = 0 ; op < 200 ; ++op ) {
     const int x = int( g() % n ) , y = int( g() % n );
     const bool apart = lab[ x ] != lab[ y ];
     CHECK( M.merge( x , y ) == apart && Q.merge( x , y ) == apart );
     if( apart ) {
      const int a = lab[ x ] , b = lab[ y ];
-     for( auto & l : lab ) if( l == b ) l = a;
+     for( auto & l : lab )
+      if( l == b )
+       l = a;
      }
     }
    for( int x = 0 ; x < n ; ++x )
     for( int y = 0 ; y < n ; ++y )
      CHECK( ( M.find( x ) == M.find( y ) ) == ( lab[ x ] == lab[ y ] ) &&
-            ( Q.find( x ) == Q.find( y ) ) == ( lab[ x ] == lab[ y ] ) );
+	    ( Q.find( x ) == Q.find( y ) ) == ( lab[ x ] == lab[ y ] ) );
    }
  }
 

@@ -52,10 +52,11 @@
  * `Augmentation` by the concepts of `Algebra.h`: `commutative`,
  * `inverse( a )` (a group), `selective` (the combination of two values is
  * one of them), as `SumAugmentation` (an abelian group when its values
- * have opposites) and `MaxAugmentation` (commutative and selective) do. `assign( k , v )` changes the value of a
- * key that is there and keeps the shape: when `G` is an abelian group of
- * exact values, it combines each augmented value of the path to \f$ k \f$
- * with the difference of the new and the old value, otherwise it
+ * have opposites) and `MaxAugmentation` (commutative and selective) do.
+ * `assign( k , v )` changes the value of a key that is there and keeps the
+ * shape: when `G` is an abelian group of exact values, it combines each
+ * augmented value of the path to \f$ k \f$ with the difference of the new
+ * and the old value, otherwise it
  * recomputes them from the children, from \f$ k \f$ up.
  *
  * The changes go to the observers of the subject policy `Policy` [see
@@ -112,7 +113,7 @@
 
 #ifndef __ADS_JoinTree
  #define __ADS_JoinTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -138,16 +139,21 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ SCHEMES AND AUGMENTATIONS -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-struct AVLBalance {};        ///< the AVL trees [see `AVLJoin`]
-struct RedBlackBalance {};   ///< the Red-Black trees [see `RedBlackJoin`]
-struct WeightBalance {};     ///< the weight-balanced trees
-struct TreapBalance {};      ///< the treaps [see `TreapJoin`]
+struct AVLBalance
+{ };  ///< the AVL trees [see `AVLJoin`]
+struct RedBlackBalance
+{ };  ///< the Red-Black trees [see `RedBlackJoin`]
+struct WeightBalance
+{ };  ///< the weight-balanced trees
+struct TreapBalance
+{ };  ///< the treaps [see `TreapJoin`]
 
 /// an augmentation of a map from `K` to `V`: a monoid on `G::Value`, of
 /// identity `G::identity()` and associative operation
@@ -155,15 +161,17 @@ struct TreapBalance {};      ///< the treaps [see `TreapJoin`]
 /// augmented value of a subtree is the combination of the values of its
 /// pairs by increasing keys
 template< class G , class K , class V >
-concept Augmentation = requires( const K & k , const V & v ,
-                                 const typename G::Value & a ) {
- { G::identity() } -> std::convertible_to< typename G::Value >;
- { G::from( k , v ) } -> std::convertible_to< typename G::Value >;
- { G::combine( a , a ) } -> std::convertible_to< typename G::Value >;
- };
+concept Augmentation =
+  requires( const K & k , const V & v , const typename G::Value & a )
+{
+   { G::identity() } -> std::convertible_to< typename G::Value >;
+   { G::from( k , v ) } -> std::convertible_to< typename G::Value >;
+   { G::combine( a , a ) } -> std::convertible_to< typename G::Value >;
+   };
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /// whether a tree of the subject policy `P` can be made with no observer
 /// (a copy, a move, the second tree of a split)
@@ -177,9 +185,11 @@ inline constexpr bool unbound_v< Dynamic< L > > = true;
 /// \endcond
 
 /// no augmentation: nothing is kept, nothing computed
-struct NoAugmentation {
+struct NoAugmentation
+{
  /// the empty value
- struct Value {
+ struct Value
+ {
   /// all equal
   bool operator==( const Value & ) const = default;
   };
@@ -187,27 +197,32 @@ struct NoAugmentation {
  static Value identity( void ) { return( Value() ); }
  /// the empty value
  template< class K , class V >
- static Value from( const K & , const V & ) { return( Value() ); }
+ static Value from( const K & , const V & ) {
+  return( Value() );
+  }
  /// the empty value
  static Value combine( const Value & , const Value & ) { return( Value() ); }
  };
 
 /// the sum of the values, an abelian group when `V` has the opposites
 template< class V >
-struct SumAugmentation {
- using Value = V;   ///< the sums, of the type of the values
- static constexpr bool commutative = true;   ///< \f$ a + b = b + a \f$
+struct SumAugmentation
+{
+ using Value = V;  ///< the sums, of the type of the values
+ static constexpr bool commutative = true;  ///< \f$ a + b = b + a \f$
  /// 0, the value made by `V()`
  static Value identity( void ) { return( V() ); }
  /// the value \f$ v \f$ of the pair
  template< class K >
- static Value from( const K & , const V & v ) { return( v ); }
- /// \f$ a + b \f$
- static Value combine( const Value & a , const Value & b ) {
-  return( a + b );
+ static Value from( const K & , const V & v ) {
+  return( v );
   }
+ /// \f$ a + b \f$
+ static Value combine( const Value & a , const Value & b ) { return( a + b ); }
  /// \f$ -a \f$
- static Value inverse( const Value & a ) requires requires { -a; } {
+ static Value inverse( const Value & a )
+  requires requires { -a; }
+ {
   return( -a );
   }
  };
@@ -216,10 +231,11 @@ struct SumAugmentation {
 /// has it, its smallest value otherwise: a commutative and selective
 /// monoid
 template< class V >
-struct MaxAugmentation {
- using Value = V;   ///< the maxima, of the type of the values
- static constexpr bool commutative = true;   ///< the order does not count
- static constexpr bool selective = true;     ///< the maximum is one of two
+struct MaxAugmentation
+{
+ using Value = V;  ///< the maxima, of the type of the values
+ static constexpr bool commutative = true;  ///< the order does not count
+ static constexpr bool selective = true;    ///< the maximum is one of two
  /// the smallest value of the type
  static Value identity( void ) {
   if constexpr( std::numeric_limits< V >::has_infinity )
@@ -229,7 +245,9 @@ struct MaxAugmentation {
   }
  /// the value \f$ v \f$ of the pair
  template< class K >
- static Value from( const K & , const V & v ) { return( v ); }
+ static Value from( const K & , const V & v ) {
+  return( v );
+  }
  /// \f$ \max( a , b ) \f$
  static Value combine( const Value & a , const Value & b ) {
   return( a < b ? b : a );
@@ -244,32 +262,30 @@ struct MaxAugmentation {
 /// augmented by `G`, whose changes go to the observers of the subject
 /// policy `Policy` [see `Modification.h`]
 template< std::totally_ordered K , class V , class B = AVLBalance ,
-          class G = NoAugmentation , class Policy = NoObservers >
+	  class G = NoAugmentation , class Policy = NoObservers >
  requires Augmentation< G , K , V >
 class JoinTree;
 
 /// the adaptor of the nodes of a `JoinTree` [see `JoinAdaptor`]
-template< std::totally_ordered K , class V , class B , class G ,
-          class Policy >
+template< std::totally_ordered K , class V , class B , class G , class Policy >
 struct JoinTreeNodes;
 
-template< std::totally_ordered K , class V , class B , class G ,
-          class Policy >
+template< std::totally_ordered K , class V , class B , class G , class Policy >
  requires Augmentation< G , K , V >
-class JoinTree
- : public Joinable< JoinTree< K , V , B , G , Policy > ,
-                    JoinTreeNodes< K , V , B , G , Policy > , K , V > {
+class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
+				  JoinTreeNodes< K , V , B , G , Policy > , K ,
+				  V >
+{
 
  friend struct JoinTreeNodes< K , V , B , G , Policy >;
  using Nodes = JoinTreeNodes< K , V , B , G , Policy >;
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
- using AugValue = typename G::Value;   ///< the type of the augmentation
- using Augmented = G;                  ///< the augmentation
+ using Key = K;                       ///< the type of the keys
+ using Value = V;                     ///< the type of the values
+ using AugValue = typename G::Value;  ///< the type of the augmentation
+ using Augmented = G;                 ///< the augmentation
 
  /// the insertion of a key, whose handle is the key itself
  using Inserted = mod::Inserted< K , K , V >;
@@ -279,22 +295,23 @@ class JoinTree
  using Assigned = mod::Assigned< K , V >;
  /// the events: `Cleared` by `clear()` and on the trees that a bulk
  /// operation consumes, `Rebuilt` on the tree that it leaves
- using modifications = mod::list< Inserted , Erased , Assigned ,
-                                  mod::Cleared , mod::Rebuilt >;
+ using modifications =
+   mod::list< Inserted , Erased , Assigned , mod::Cleared , mod::Rebuilt >;
  /// the subject [see `Modification.h`]
  using Subject = typename Policy::template bind< modifications , JoinTree >;
 
  /// a node: what the navigation below reads
- struct Node {
-  Node * left = nullptr;        ///< the left child
-  Node * right = nullptr;       ///< the right child
-  std::size_t size = 1;         ///< the nodes of the subtree
+ struct Node
+ {
+  Node * left = nullptr;   ///< the left child
+  Node * right = nullptr;  ///< the right child
+  std::size_t size = 1;    ///< the nodes of the subtree
   /// the height plus 1 (AVL), the black height times 2 plus 1 if red
   /// (Red-Black), the priority (treap)
   std::uint64_t meta = 0;
-  ADS_NO_UNIQUE_ADDRESS AugValue aug{};   ///< the augmented value
-  K key;                        ///< the key
-  V value;                      ///< the value
+  ADS_NO_UNIQUE_ADDRESS AugValue aug{};  ///< the augmented value
+  K key;                                 ///< the key
+  V value;                               ///< the value
   };
 
  /// an empty tree; the seed of the priorities, for a treap
@@ -303,9 +320,9 @@ class JoinTree
 
  /// an empty tree whose changes go to the static observers `o...` of the
  /// policy; the seed of the priorities, for a treap
- template< class ... O >
+ template< class... O >
   requires( sizeof...( O ) > 0 )
- JoinTree( std::uint64_t seed , O & ... o );
+ JoinTree( std::uint64_t seed , O &... o );
 
  /// a copy, node by node with the same shape, in \f$ O( n ) \f$ time,
  /// with no observer (none of a policy with static observers, by a static
@@ -314,7 +331,8 @@ class JoinTree
 
  /// the nodes of `o`, which is left empty (and tells `Cleared`), in
  /// \f$ O( 1 ) \f$ time, with no observer
- JoinTree( JoinTree && o ) noexcept requires detail::unbound_v< Policy >;
+ JoinTree( JoinTree && o ) noexcept
+  requires detail::unbound_v< Policy >;
 
  /// the nodes of `o`, by copy and swap
  JoinTree & operator=( JoinTree o ) noexcept
@@ -411,8 +429,8 @@ class JoinTree
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find( x )` of an SSet of Morin), in \f$ O( \log n ) \f$ time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( \log n ) \f$
  /// time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -566,7 +584,8 @@ class JoinTree
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  /// the shape of the tree, for `PathIterator`
- struct Shape {
+ struct Shape
+ {
   /// the root of the tree `o`
   static auto root( const auto & o ) { return( o.f_root ); }
   /// the left child of the node `n`
@@ -581,13 +600,13 @@ class JoinTree
 
  /// the pairs of references to a key and its value
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
  /// the constant iterator by increasing key, along the path from the root
  using const_iterator = PathIterator< JoinTree , Shape >;
- using iterator = const_iterator;          ///< the constant iterator
+ using iterator = const_iterator;  ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -604,7 +623,6 @@ class JoinTree
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the order, the sizes, the augmented values and the balance of the
  /// scheme, \f$ O( n ) \f$
  [[nodiscard]] bool valid( void ) const;
@@ -616,8 +634,7 @@ class JoinTree
  [[nodiscard]] Node * findNode( const K & k ) const;
 
  /// whether `G` updates the path of an assignment by a difference
- static constexpr bool kDelta = AbelianGroup< G > &&
-                                exact_v< G >;
+ static constexpr bool kDelta = AbelianGroup< G > && exact_v< G >;
 
 /*------------------------ THE CHANGES, UNOBSERVED -------------------------*/
 
@@ -653,9 +670,9 @@ class JoinTree
  /// `Rebuilt`, if someone listens: the nodes were put in the tree
  void tellRebuilt( void ) noexcept;
 
- Node * f_root = nullptr;   ///< the root
- SplitMix64 f_g;            ///< the priorities of a treap
- ADS_NO_UNIQUE_ADDRESS Subject f_sub;   ///< the observers
+ Node * f_root = nullptr;              ///< the root
+ SplitMix64 f_g;                       ///< the priorities of a treap
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class JoinTree )
 
@@ -663,27 +680,27 @@ class JoinTree
 
 /// the AVL tree whose balance is in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
+	  class Policy = NoObservers >
 using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
 
 /// the Red-Black tree whose balance is in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
+	  class Policy = NoObservers >
 using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy >;
 
 /// the tree balanced by weight, in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
+	  class Policy = NoObservers >
 using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy >;
 
 /// the treap whose balance is in join alone
 template< std::totally_ordered K , class V , class G = NoAugmentation ,
-          class Policy = NoObservers >
+	  class Policy = NoObservers >
 using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
 
 /// the map augmented by G, balanced by weight as in PAM
 template< std::totally_ordered K , class V , class G ,
-          class Policy = NoObservers >
+	  class Policy = NoObservers >
 using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
 
 /*--------------------------------------------------------------------------*/
@@ -698,7 +715,7 @@ using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* JoinTree.h included */
+#endif /* JoinTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File JoinTree.h --------------------------*/

@@ -39,7 +39,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TESTS -----------------------------------*/
@@ -51,14 +52,15 @@ namespace {
 // point twice; pseudoAngle() on the axes and at the extremes of long
 ADS_TEST( "hull" )
 {
- const std::vector< Point > P = { { 0 , 0 } , { 4 , 0 } , { 4 , 4 } ,
-                                  { 0 , 4 } , { 2 , 2 } };
+ const std::vector< Point > P = {
+  { 0 , 0 } , { 4 , 0 } , { 4 , 4 } , { 0 , 4 } , { 2 , 2 }
+  };
  CHECK( detail::isHullOf( { { 0 , 0 } , { 4 , 0 } , { 4 , 4 } , { 0 , 4 } } ,
-                          P ) );
+			  P ) );
  CHECK( ! detail::isHullOf( { { 0 , 0 } , { 4 , 0 } , { 4 , 4 } } , P ) );
  CHECK( ! detail::isHullOf( { { 0 , 0 } , { 4 , 4 } , { 4 , 0 } } , P ) );
- CHECK( ! detail::isHullOf( { { 0 , 0 } , { 4 , 0 } , { 2 , 2 } ,
-                              { 4 , 4 } , { 0 , 4 } } , P ) );
+ CHECK( ! detail::isHullOf(
+   { { 0 , 0 } , { 4 , 0 } , { 2 , 2 } , { 4 , 4 } , { 0 , 4 } } , P ) );
  std::mt19937 g( 10 );
  for( int t = 0 ; t < 300 ; ++t ) {
   std::vector< Point > Q( g() % 12 );
@@ -75,10 +77,10 @@ ADS_TEST( "hull" )
   }
  // the coordinates just inside and just outside [ -10^9 , 10^9 ]
  const long M = 1000000000L;
- CHECK( graham( { { M , M } , { -M , M } , { -M , -M } , { M , -M } } )
-        .size() == 4 );
- CHECK( convexHullBrute( { { -M , -M } , { M , -M } , { 0 , M } } )
-        .size() == 3 );
+ CHECK( graham( { { M , M } , { -M , M } , { -M , -M } ,
+		  { M , -M } } ).size() == 4 );
+ CHECK( convexHullBrute( { { -M , -M } , { M , -M } ,
+			   { 0 , M } } ).size() == 3 );
  CHECK_THROWS( graham( { { 0 , 0 } , { M + 1 , 0 } } ) , contract_violation );
  CHECK_THROWS( graham( { { 0 , -M - 1 } } ) , contract_violation );
  CHECK_THROWS( convexHullBrute( { { -M - 1 , 0 } } ) , contract_violation );
@@ -89,7 +91,7 @@ ADS_TEST( "hull" )
  CHECK( pseudoAngle( 0 , 0 ) == 0 && pseudoAngle( LONG_MAX , 0 ) == 0 );
  CHECK( pseudoAngle( 0 , LONG_MAX ) == 1 && pseudoAngle( LONG_MIN , 0 ) == 2 );
  CHECK( pseudoAngle( 0 , LONG_MIN ) == 3 );
- const double far = pseudoAngle( LONG_MAX , -1 );     // 4 - 1e-19
+ const double far = pseudoAngle( LONG_MAX , -1 );  // 4 - 1e-19
  CHECK( far < 4 && far > 3.9 && far >= pseudoAngle( 1 , -1 ) );
  const double low = pseudoAngle( LONG_MIN , LONG_MIN );
  CHECK( low > 2.4 && low < 2.6 );
@@ -109,14 +111,14 @@ ADS_TEST( "closest-pair" )
  CHECK( closestPair( two ).second == 8000000000000000000LL );
  CHECK( closestPairBrute( two ) == closestPair( two ) );
  for( const Point & p : { Point{ M + 1 , 0 } , Point{ -M - 1 , 0 } ,
-                          Point{ 0 , M + 1 } , Point{ 0 , -M - 1 } } ) {
+			  Point{ 0 , M + 1 } , Point{ 0 , -M - 1 } } ) {
   CHECK_THROWS( closestPair( { { 0 , 0 } , p } ) , contract_violation );
   CHECK_THROWS( closestPairBrute( { p , { 0 , 0 } } ) , contract_violation );
   }
  const std::vector< Point > same = { { 5 , 5 } , { 0 , 0 } , { 5 , 5 } };
  CHECK( closestPair( same ).second == 0 &&
-        closestPair( same ).first.first == 0 &&
-        closestPair( same ).first.second == 2 );
+	closestPair( same ).first.first == 0 &&
+	closestPair( same ).first.second == 2 );
  }
 
 }  // end( namespace )

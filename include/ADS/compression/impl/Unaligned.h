@@ -21,7 +21,7 @@
 
 #ifndef __ADS_Unaligned
  #define __ADS_Unaligned
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #include <algorithm>
 #include <array>
@@ -31,7 +31,8 @@
 #include <cstring>
 #include <span>
 
-namespace ADS::detail {
+namespace ADS::detail
+{
 
 /// x with its bytes turned around on a big-endian machine
 template< class T >
@@ -64,22 +65,23 @@ inline void storeLE( std::uint8_t * p , T x )
  }
 
 /// the number of each byte in s
-inline std::array< std::uint64_t , 256 > byteHistogram(
-                                           std::span< const std::uint8_t > s )
+inline std::array< std::uint64_t , 256 >
+byteHistogram( std::span< const std::uint8_t > s )
 {
  std::array< std::array< std::uint32_t , 256 > , 8 > c{};
  std::array< std::uint64_t , 256 > f{};
  // chunks of 2^30 bytes, so that no count of 32 bits overflows, 8 bytes
  // of a load at a time
  for( std::size_t a = 0 ; a < s.size() ; a += std::size_t( 1 ) << 30 ) {
-  const std::size_t b = std::min( s.size() ,
-                                  a + ( std::size_t( 1 ) << 30 ) );
+  const std::size_t b = std::min( s.size() , a + ( std::size_t( 1 ) << 30 ) );
   std::size_t i = a;
   for( ; i + 8 <= b ; i += 8 ) {
    const std::uint64_t x = loadLE< std::uint64_t >( s.data() + i );
-   for( unsigned k = 0 ; k < 8 ; ++k ) ++c[ k ][ ( x >> ( 8 * k ) ) & 0xFF ];
+   for( unsigned k = 0 ; k < 8 ; ++k )
+    ++c[ k ][ ( x >> ( 8 * k ) ) & 0xFF ];
    }
-  for( ; i < b ; ++i ) ++c[ 0 ][ s[ i ] ];
+  for( ; i < b ; ++i )
+   ++c[ 0 ][ s[ i ] ];
   for( auto & t : c )
    for( int v = 0 ; v < 256 ; ++v ) {
     f[ v ] += t[ v ];
@@ -91,7 +93,7 @@ inline std::array< std::uint64_t , 256 > byteHistogram(
 
 }  // end( namespace ADS::detail )
 
-#endif  /* Unaligned.h included */
+#endif /* Unaligned.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Unaligned.h --------------------------*/

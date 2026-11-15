@@ -216,7 +216,7 @@
 // makefile), which defines ADS_HAS_KLSM
 #if defined( ADS_HAS_KLSM ) && __has_include( <k_lsm/k_lsm.h> )
  #include <k_lsm/k_lsm.h>
- #undef V                                 // a macro of its counters
+ #undef V  // a macro of its counters
 #else
  #undef ADS_HAS_KLSM
 #endif
@@ -276,16 +276,20 @@ extern "C" void openblas_set_num_threads( int );
  #include <sliding_queue.h>
  #include <timer.h>
  #define main gapbsMain
-namespace gapbsBfs {
+namespace gapbsBfs
+{
  #include <bfs.cc>
 }
-namespace gapbsCc {
+namespace gapbsCc
+{
  #include <cc.cc>
 }
-namespace gapbsSv {
+namespace gapbsSv
+{
  #include <cc_sv.cc>
 }
-namespace gapbsSssp {
+namespace gapbsSssp
+{
  #include <sssp.cc>
 }
  #undef main
@@ -316,38 +320,54 @@ namespace gapbsSssp {
 /*------------------------------- INPUTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
-int threads = 1;                            ///< -t
+int threads = 1;  ///< -t
 
-const char * patterns[] = { "random" , "sorted" , "reversed" , "few" ,
-                            "organ" , "runs16" };
+const char * patterns[] = { "random" , "sorted" , "reversed" ,
+			    "few" ,    "organ" ,  "runs16" };
 
 /// the key of rank i of n in the pattern p, from the generator g, as in
 /// bench/sort.cpp
 std::uint64_t rank( int p , std::size_t i , std::size_t n ,
-                    std::mt19937_64 & g )
+		    std::mt19937_64 & g )
 {
  switch( p ) {
-  case( 0 ): return( g() );
-  case( 1 ): return( i );
-  case( 2 ): return( n - i );
-  case( 3 ): return( g() % 16 );
-  case( 4 ): return( std::min( i , n - 1 - i ) );
-  default: return( ( i % ( n / 16 + 1 ) ) * 16 + i / ( n / 16 + 1 ) );
+  case( 0 ):
+   return( g() );
+  case( 1 ):
+   return( i );
+  case( 2 ):
+   return( n - i );
+  case( 3 ):
+   return( g() % 16 );
+  case( 4 ):
+   return( std::min( i , n - 1 - i ) );
+  default:
+   return( ( i % ( n / 16 + 1 ) ) * 16 + i / ( n / 16 + 1 ) );
   }
  }
 
 template< class T >
 T make( std::uint64_t k );
 
-template<> std::uint64_t make( std::uint64_t k ) { return( k ); }
-template<> double make( std::uint64_t k ) {
+template<>
+std::uint64_t make( std::uint64_t k )
+{
+ return( k );
+ }
+template<>
+double make( std::uint64_t k )
+{
  return( double( std::int64_t( k ) ) / 1e3 );
  }
-template<> std::string make( std::uint64_t k ) {
+template<>
+std::string make( std::uint64_t k )
+{
  std::string s = "item";
- for( int d = 0 ; d < 12 ; ++d , k /= 26 ) s += char( 'a' + k % 26 );
+ for( int d = 0 ; d < 12 ; ++d , k /= 26 )
+  s += char( 'a' + k % 26 );
  return( s );
  }
 
@@ -366,7 +386,7 @@ double timeIt( const V & A , W && work , int r , K && ok )
  {
   V B = A;
   work( B );
- }
+  }
  std::vector< double > t;
  for( int i = 0 ; i < r ; ++i ) {
   V B = A;
@@ -375,8 +395,8 @@ double timeIt( const V & A , W && work , int r , K && ok )
   const auto b = std::chrono::steady_clock::now();
   if( ! ok( B ) )
    return( -1 );
-  t.push_back( std::chrono::duration< double , std::nano >( b - a ).count()
-               / double( std::max< std::size_t >( A.size() , 1 ) ) );
+  t.push_back( std::chrono::duration< double , std::nano >( b - a ).count() /
+	       double( std::max< std::size_t >( A.size() , 1 ) ) );
   }
  std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
  return( t[ t.size() / 2 ] );
@@ -401,8 +421,8 @@ bool runs( const char * f )
 /// workers spin between the calls; t - 1 workers, the caller waits
 ff::ParallelForReduce< std::uint64_t > & ffNative( void )
 {
- static ff::ParallelForReduce< std::uint64_t > f( std::max( threads - 1 ,
-                                                           1 ) , true );
+ static ff::ParallelForReduce< std::uint64_t > f( std::max( threads - 1 , 1 ) ,
+						  true );
  return( f );
  }
 #endif
@@ -417,60 +437,70 @@ ff::ParallelForReduce< std::uint64_t > & ffNative( void )
 template< class T , class C >
 void ffMergeSort( std::vector< T > & A , C less )
 {
- struct Part {
-  T * a;                                    // the items
-  T * b;                                    // room for as many
+ struct Part
+ {
+  T * a;  // the items
+  T * b;  // room for as many
   std::size_t n;
   };
- const std::size_t leaf = std::max< std::size_t >(
-                           A.size() / ( 4 * std::size_t( threads ) ) , 1024 );
+ const std::size_t leaf =
+   std::max< std::size_t >( A.size() / ( 4 * std::size_t( threads ) ) , 1024 );
  std::vector< T > room( A.size() );
  Part all{ A.data() , room.data() , A.size() } , out{};
  ff::ff_DC< Part , Part > dc(
-  []( const Part & p , std::vector< Part > & sub ) {
-   const std::size_t h = p.n / 2;
-   sub.push_back( Part{ p.a , p.b , h } );
-   sub.push_back( Part{ p.a + h , p.b + h , p.n - h } ); } ,
-  [ & ]( std::vector< Part > & r , Part & m ) {
-   std::merge( r[ 0 ].a , r[ 0 ].a + r[ 0 ].n , r[ 1 ].a ,
-               r[ 1 ].a + r[ 1 ].n , r[ 0 ].b , less );
-   std::copy( r[ 0 ].b , r[ 0 ].b + r[ 0 ].n + r[ 1 ].n , r[ 0 ].a );
-   m = Part{ r[ 0 ].a , r[ 0 ].b , r[ 0 ].n + r[ 1 ].n }; } ,
-  [ & ]( const Part & p , Part & m ) {
-   std::vector< T > v( p.a , p.a + p.n );
-   ADS::stableSort( v , less );
-   std::copy( v.begin() , v.end() , p.a );
-   m = p; } ,
-  [ & ]( const Part & p ) { return( p.n <= leaf ); } ,
-  all , out , std::max( threads - 1 , 1 ) );
+   []( const Part & p , std::vector< Part > & sub ) {
+    const std::size_t h = p.n / 2;
+    sub.push_back( Part{ p.a , p.b , h } );
+    sub.push_back( Part{ p.a + h , p.b + h , p.n - h } );
+    } ,
+   [ & ]( std::vector< Part > & r , Part & m ) {
+    std::merge( r[ 0 ].a , r[ 0 ].a + r[ 0 ].n , r[ 1 ].a ,
+		r[ 1 ].a + r[ 1 ].n ,
+		r[ 0 ].b , less );
+    std::copy( r[ 0 ].b , r[ 0 ].b + r[ 0 ].n + r[ 1 ].n , r[ 0 ].a );
+    m = Part{ r[ 0 ].a , r[ 0 ].b , r[ 0 ].n + r[ 1 ].n };
+    } ,
+   [ & ]( const Part & p , Part & m ) {
+    std::vector< T > v( p.a , p.a + p.n );
+    ADS::stableSort( v , less );
+    std::copy( v.begin() , v.end() , p.a );
+    m = p;
+    } ,
+   [ & ]( const Part & p ) { return( p.n <= leaf ); } , all , out ,
+   std::max( threads - 1 , 1 ) );
  dc.run_and_wait_end();
  }
 #endif
 
 /// the executors of ADS on the threads of the run, each built at its first
 /// use
-struct Executors {
+struct Executors
+{
  ADS::ThreadPool & pool( void ) {
-  if( ! f_pool ) f_pool = std::make_unique< ADS::ThreadPool >( threads );
+  if( ! f_pool )
+   f_pool = std::make_unique< ADS::ThreadPool >( threads );
   return( *f_pool );
   }
 #if defined( ADS_WITH_FASTFLOW )
  // the caller of FastFlow waits spinning: t - 1 workers on t cores
  ADS::FastFlowExecutor & ff( void ) {
-  if( ! f_ff ) f_ff = std::make_unique< ADS::FastFlowExecutor >(
-                                         std::max( threads - 1 , 1 ) );
+  if( ! f_ff )
+   f_ff =
+     std::make_unique< ADS::FastFlowExecutor >( std::max( threads - 1 , 1 ) );
   return( *f_ff );
   }
 #endif
 #if defined( _OPENMP )
  ADS::OpenMPExecutor & omp( void ) {
-  if( ! f_omp ) f_omp = std::make_unique< ADS::OpenMPExecutor >( threads );
+  if( ! f_omp )
+   f_omp = std::make_unique< ADS::OpenMPExecutor >( threads );
   return( *f_omp );
   }
 #endif
 #if defined( ADS_WITH_TBB )
  ADS::TBBExecutor & tbb( void ) {
-  if( ! f_tbb ) f_tbb = std::make_unique< ADS::TBBExecutor >( threads );
+  if( ! f_tbb )
+   f_tbb = std::make_unique< ADS::TBBExecutor >( threads );
   return( *f_tbb );
   }
 #endif
@@ -489,13 +519,13 @@ struct Executors {
 
 /// a structure of a battery and its work on a copy of the input
 template< class V >
-using Battery = std::vector< std::pair< std::string ,
-                                        std::function< void( V & ) > > >;
+using Battery =
+  std::vector< std::pair< std::string , std::function< void( V & ) > > >;
 
 /// adds the structure of the family f to the battery, if f runs
 template< class V , class W >
 void add( Battery< V > & S , const char * f , const std::string & name ,
-          W && work )
+	  W && work )
 {
  if( runs( f ) )
   S.emplace_back( name , std::forward< W >( work ) );
@@ -505,38 +535,37 @@ void add( Battery< V > & S , const char * f , const std::string & name ,
 /// "<name> FastFlow", "<name> OpenMP" and "<name> TBB"
 template< class V , class F >
 void onExecutors( Battery< V > & S , Executors & X , const std::string & name ,
-                  F && f )
+		  F && f )
 {
- add( S , "pool" , name + " pool" , [ & X , f ]( V & A ) {
-  f( X.pool() , A ); } );
+ add( S , "pool" , name + " pool" ,
+      [ &X , f ]( V & A ) { f( X.pool() , A ); } );
 #if defined( ADS_WITH_FASTFLOW )
- add( S , "fastflow" , name + " FastFlow" , [ & X , f ]( V & A ) {
-  f( X.ff() , A ); } );
+ add( S , "fastflow" , name + " FastFlow" ,
+      [ &X , f ]( V & A ) { f( X.ff() , A ); } );
 #endif
 #if defined( _OPENMP )
- add( S , "openmp" , name + " OpenMP" , [ & X , f ]( V & A ) {
-  f( X.omp() , A ); } );
+ add( S , "openmp" , name + " OpenMP" ,
+      [ &X , f ]( V & A ) { f( X.omp() , A ); } );
 #endif
 #if defined( ADS_WITH_TBB )
- add( S , "tbb" , name + " TBB" , [ & X , f ]( V & A ) {
-  f( X.tbb() , A ); } );
+ add( S , "tbb" , name + " TBB" , [ &X , f ]( V & A ) { f( X.tbb() , A ); } );
 #endif
  }
 
 /// runs a battery on A: its first structure twice, the second as "A/A"
 template< class V , class K >
-void runBattery( const std::string & b , const std::string & c ,
-                 const V & A , Battery< V > & S , int r , K && ok )
+void runBattery( const std::string & b , const std::string & c , const V & A ,
+		 Battery< V > & S , int r , K && ok )
 {
  if( S.empty() )
   return;
  for( std::size_t i = 0 ; i < S.size() ; ++i ) {
   if( ! ADS::bench::skip( S[ i ].first ) )
    ADS::bench::print( b.c_str() , c , A.size() , S[ i ].first ,
-                      timeIt( A , S[ i ].second , r , ok ) );
+		      timeIt( A , S[ i ].second , r , ok ) );
   if( ( i == 0 ) && ! ADS::bench::skip( S[ i ].first + " A/A" ) )
    ADS::bench::print( b.c_str() , c , A.size() , S[ i ].first + " A/A" ,
-                      timeIt( A , S[ i ].second , r , ok ) );
+		      timeIt( A , S[ i ].second , r , ok ) );
   }
  }
 
@@ -547,87 +576,98 @@ void runBattery( const std::string & b , const std::string & c ,
 /// the sorts of T, the stable ones apart
 template< class T >
 void sorts( const char * type , const std::vector< std::size_t > & sizes ,
-            int r , unsigned seed , Executors & X )
+	    int r ,
+	    unsigned seed , Executors & X )
 {
  using V = std::vector< T >;
  std::less<> less;
  auto sorted = [ & ]( const V & B ) {
-  return( std::is_sorted( B.begin() , B.end() , less ) ); };
+  return( std::is_sorted( B.begin() , B.end() , less ) );
+  };
  for( const bool stable : { false , true } ) {
   Battery< V > S;
 #if defined( ADS_HAS_TBB )
   if( ! stable )
-   add( S , "tbb" , "tbb::parallel_sort" , [ & ]( V & A ) {
-    tbb::parallel_sort( A.begin() , A.end() , less ); } );
+   add( S , "tbb" , "tbb::parallel_sort" ,
+	[ & ]( V & A ) { tbb::parallel_sort( A.begin() , A.end() , less ); } );
   else
    add( S , "tbb" , "std::stable_sort(par)" , [ & ]( V & A ) {
-    std::stable_sort( std::execution::par , A.begin() , A.end() ,
-                      less ); } );
+    std::stable_sort( std::execution::par , A.begin() , A.end() , less );
+    } );
 #endif
   if( ! stable )
-   onExecutors( S , X , "ADS::sort" , [ less ]( auto & ex , V & A ) {
-    ADS::sort( ex , A , less ); } );
+   onExecutors( S , X , "ADS::sort" ,
+		[ less ]( auto & ex ,
+			  V & A ) { ADS::sort( ex , A , less ); } );
   else
    onExecutors( S , X , "ADS::stableSort" , [ less ]( auto & ex , V & A ) {
-    ADS::stableSort( ex , A , less ); } );
+    ADS::stableSort( ex , A , less );
+    } );
   if constexpr( ADS::VectorKey< T > ) {
    if( ! stable )
-    add( S , "pool" , "ADS::learnedSort pool" , [ & X ]( V & A ) {
-     ADS::learnedSort( X.pool() , A ); } );
+    add( S , "pool" , "ADS::learnedSort pool" ,
+	 [ &X ]( V & A ) { ADS::learnedSort( X.pool() , A ); } );
    else
-    add( S , "pool" , "ADS::learnedStableSort pool" , [ & X ]( V & A ) {
-     ADS::learnedStableSort( X.pool() , A ); } );
+    add( S , "pool" , "ADS::learnedStableSort pool" ,
+	 [ &X ]( V & A ) { ADS::learnedStableSort( X.pool() , A ); } );
    }
   if( threads == 1 )
-   add( S , "seq" , stable ? "ADS::stableSort (sequential)" :
-                                 "ADS::sort (sequential)" ,
-                   [ & , stable ]( V & A ) {
-                    if( stable ) ADS::stableSort( A , less );
-                    else ADS::sort( A , less ); } );
+   add( S , "seq" ,
+	stable ? "ADS::stableSort (sequential)" : "ADS::sort (sequential)" ,
+	[ & , stable ]( V & A ) {
+	 if( stable )
+	  ADS::stableSort( A , less );
+	 else
+	  ADS::sort( A , less );
+	 } );
 #if defined( ADS_HAS_TBB )
   if( ! stable )
    add( S , "tbb" , "std::sort(par)" , [ & ]( V & A ) {
-    std::sort( std::execution::par , A.begin() , A.end() , less ); } );
+    std::sort( std::execution::par , A.begin() , A.end() , less );
+    } );
 #endif
 #if defined( _OPENMP )
   if( ! stable )
-   add( S , "openmp" , "__gnu_parallel::sort" , [ & ]( V & A ) {
-    __gnu_parallel::sort( A.begin() , A.end() , less ); } );
+   add( S , "openmp" , "__gnu_parallel::sort" ,
+	[ & ]( V & A ) { __gnu_parallel::sort( A.begin() , A.end() ,
+					       less ); } );
   else
    add( S , "openmp" , "__gnu_parallel::stable_sort" , [ & ]( V & A ) {
-    __gnu_parallel::stable_sort( A.begin() , A.end() , less ); } );
+    __gnu_parallel::stable_sort( A.begin() , A.end() , less );
+    } );
 #endif
 #if defined( ADS_HAS_IPS4O )
   if( ! stable )
    add( S , "ips" , "ips4o::parallel::sort" , [ & ]( V & A ) {
     static ips4o::DefaultThreadPool pool( threads );
-    ips4o::parallel::sort( A.begin() , A.end() , less , pool ); } );
+    ips4o::parallel::sort( A.begin() , A.end() , less , pool );
+    } );
 #endif
 #if defined( ADS_HAS_IPS2RA )
   if constexpr( std::is_integral_v< T > )
    if( ! stable )
     add( S , "ips" , "ips2ra::parallel::sort" , [ & ]( V & A ) {
-     ips2ra::parallel::sort( A.begin() , A.end() ,
-                             []( const T & x ) { return( x ); } ,
-                             threads ); } );
+     ips2ra::parallel::sort(
+       A.begin() , A.end() , []( const T & x ) { return( x ); } , threads );
+     } );
 #endif
 #if defined( ADS_WITH_FASTFLOW )
   // the divide and conquer of FastFlow: a merge sort whose halves go to
   // its workers down to n / 4t items, sorted by ADS::stableSort, and whose
   // merges (std::merge, on one thread each) climb back
-  add( S , "ff" , "ff_DC mergesort (ADS leaves)" , [ & ]( V & A ) {
-   ffMergeSort( A , less ); } );
+  add( S , "ff" , "ff_DC mergesort (ADS leaves)" ,
+       [ & ]( V & A ) { ffMergeSort( A , less ); } );
 #endif
 #if defined( ADS_HAS_PARLAY )
   if( ! stable )
-   add( S , "parlay" , "parlay::sort_inplace" , [ & ]( V & A ) {
-    parlay::sort_inplace( A , less ); } );
+   add( S , "parlay" , "parlay::sort_inplace" ,
+	[ & ]( V & A ) { parlay::sort_inplace( A , less ); } );
   else
-   add( S , "parlay" , "parlay::stable_sort_inplace" , [ & ]( V & A ) {
-    parlay::stable_sort_inplace( A , less ); } );
+   add( S , "parlay" , "parlay::stable_sort_inplace" ,
+	[ & ]( V & A ) { parlay::stable_sort_inplace( A , less ); } );
   if constexpr( std::is_integral_v< T > )
-   add( S , "parlay" , "parlay::integer_sort_inplace" , [ & ]( V & A ) {
-    parlay::integer_sort_inplace( A ); } );
+   add( S , "parlay" , "parlay::integer_sort_inplace" ,
+	[ & ]( V & A ) { parlay::integer_sort_inplace( A ); } );
 #endif
   for( std::size_t n : sizes )
    for( int p = 0 ; p < 6 ; ++p ) {
@@ -635,8 +675,9 @@ void sorts( const char * type , const std::vector< std::size_t > & sizes ,
     V A( n );
     for( std::size_t i = 0 ; i < n ; ++i )
      A[ i ] = make< T >( rank( p , i , n , g ) );
-    runBattery( bench( std::string( stable ? "stableSort " : "sort " ) +
-                       type ) , patterns[ p ] , A , S , r , sorted );
+    runBattery(
+      bench( std::string( stable ? "stableSort " : "sort " ) + type ) ,
+      patterns[ p ] , A , S , r , sorted );
     }
   }
  }
@@ -647,7 +688,7 @@ void sorts( const char * type , const std::vector< std::size_t > & sizes ,
 
 /// the reduction, the prefix sums and the loop on 64-bit integers
 void patternsOn( const std::vector< std::size_t > & sizes , int r ,
-                 unsigned seed , Executors & X )
+		 unsigned seed , Executors & X )
 {
  using V = std::vector< std::uint64_t >;
  for( std::size_t n : sizes ) {
@@ -656,59 +697,69 @@ void patternsOn( const std::vector< std::size_t > & sizes , int r ,
   for( auto & x : A )
    x = g() >> 20;
   // the sum, written into the first item so that the copy carries it
-  const std::uint64_t sum = std::accumulate( A.begin() , A.end() ,
-                                             std::uint64_t( 0 ) );
+  const std::uint64_t sum =
+    std::accumulate( A.begin() , A.end() , std::uint64_t( 0 ) );
   {
    Battery< V > S;
    auto body = []( const V & B , std::size_t lo , std::size_t hi ) {
     std::uint64_t s = 0;
-    for( std::size_t i = lo ; i < hi ; ++i ) s += B[ i ];
-    return( s ); };
+    for( std::size_t i = lo ; i < hi ; ++i )
+     s += B[ i ];
+    return( s );
+    };
 #if defined( ADS_HAS_TBB )
    add( S , "tbb" , "tbb::parallel_reduce" , [ & ]( V & B ) {
     B[ 0 ] = tbb::parallel_reduce(
-     tbb::blocked_range< std::size_t >( 0 , B.size() ) , std::uint64_t( 0 ) ,
-     [ & ]( const tbb::blocked_range< std::size_t > & q , std::uint64_t s ) {
-      return( s + body( B , q.begin() , q.end() ) ); } , std::plus<>() ); } );
+      tbb::blocked_range< std::size_t >( 0 , B.size() ) , std::uint64_t( 0 ) ,
+      [ & ]( const tbb::blocked_range< std::size_t > & q , std::uint64_t s ) {
+       return( s + body( B , q.begin() , q.end() ) );
+       } ,
+      std::plus<>() );
+    } );
 #endif
-   onExecutors( S , X , "ADS::parallelReduce" , [ body ]( auto & ex ,
-                                                          V & B ) {
-    B[ 0 ] = ADS::parallelReduce( ex , 0 , B.size() , std::uint64_t( 0 ) ,
-                                  [ & ]( std::size_t lo , std::size_t hi ) {
-                                   return( body( B , lo , hi ) ); } ,
-                                  std::plus<>() ); } );
+   onExecutors( S , X , "ADS::parallelReduce" , [ body ]( auto & ex , V & B ) {
+    B[ 0 ] = ADS::parallelReduce(
+      ex , 0 , B.size() , std::uint64_t( 0 ) ,
+      [ & ]( std::size_t lo , std::size_t hi ) {
+       return( body( B , lo , hi ) );
+       } ,
+      std::plus<>() );
+    } );
 #if defined( ADS_HAS_TBB )
    add( S , "tbb" , "std::reduce(par)" , [ & ]( V & B ) {
     B[ 0 ] = std::reduce( std::execution::par , B.begin() , B.end() ,
-                          std::uint64_t( 0 ) ); } );
+			  std::uint64_t( 0 ) );
+    } );
 #endif
 #if defined( _OPENMP )
    add( S , "openmp" , "omp reduction" , [ & ]( V & B ) {
     std::uint64_t s = 0;
     const long m = long( B.size() );
     #pragma omp parallel for reduction( + : s ) num_threads( threads )
-    for( long i = 0 ; i < m ; ++i ) s += B[ std::size_t( i ) ];
-    B[ 0 ] = s; } );
+    for( long i = 0 ; i < m ; ++i )
+     s += B[ std::size_t( i ) ];
+    B[ 0 ] = s;
+    } );
 #endif
 #if defined( ADS_HAS_PARLAY )
-   add( S , "parlay" , "parlay::reduce" , [ & ]( V & B ) {
-    B[ 0 ] = parlay::reduce( B ); } );
+   add( S , "parlay" , "parlay::reduce" ,
+	[ & ]( V & B ) { B[ 0 ] = parlay::reduce( B ); } );
 #endif
 #if defined( ADS_WITH_FASTFLOW )
    add( S , "ff" , "ff::ParallelForReduce" , [ & ]( V & B ) {
     std::uint64_t s = 0;
-    ffNative().parallel_reduce_static( s , std::uint64_t( 0 ) , 0 ,
-                                long( B.size() ) , 1 , 0 ,
-                                [ & ]( const long i , std::uint64_t & t ) {
-                                 t += B[ std::size_t( i ) ]; } ,
-                                []( std::uint64_t & t ,
-                                    const std::uint64_t e ) { t += e; } ,
-                                std::max( threads - 1 , 1 ) );
-    B[ 0 ] = s; } );
+    ffNative().parallel_reduce_static(
+      s , std::uint64_t( 0 ) , 0 , long( B.size() ) , 1 , 0 ,
+      [ & ]( const long i ,
+	     std::uint64_t & t ) { t += B[ std::size_t( i ) ]; } ,
+      []( std::uint64_t & t , const std::uint64_t e ) { t += e; } ,
+      std::max( threads - 1 , 1 ) );
+    B[ 0 ] = s;
+    } );
 #endif
    runBattery( bench( "reduce" ) , "uint64" , A , S , r ,
-               [ & ]( const V & B ) { return( B[ 0 ] == sum ); } );
-  }
+	       [ & ]( const V & B ) { return( B[ 0 ] == sum ); } );
+   }
   // the prefix sums, in place
   V P( n );
   std::inclusive_scan( A.begin() , A.end() , P.begin() );
@@ -716,24 +767,30 @@ void patternsOn( const std::vector< std::size_t > & sizes , int r ,
    Battery< V > S;
 #if defined( ADS_HAS_TBB )
    add( S , "tbb" , "tbb::parallel_scan" , [ & ]( V & B ) {
-    tbb::parallel_scan( tbb::blocked_range< std::size_t >( 0 , B.size() ) ,
-     std::uint64_t( 0 ) ,
-     [ & ]( const tbb::blocked_range< std::size_t > & q , std::uint64_t s ,
-            bool final ) {
-      for( std::size_t i = q.begin() ; i < q.end() ; ++i ) {
-       s += B[ i ];
-       if( final ) B[ i ] = s;
-       }
-      return( s ); } , std::plus<>() ); } );
+    tbb::parallel_scan(
+      tbb::blocked_range< std::size_t >( 0 , B.size() ) , std::uint64_t( 0 ) ,
+      [ & ]( const tbb::blocked_range< std::size_t > & q , std::uint64_t s ,
+	     bool final ) {
+       for( std::size_t i = q.begin() ; i < q.end() ; ++i ) {
+	s += B[ i ];
+	if( final )
+	 B[ i ] = s;
+        }
+       return( s );
+       } ,
+      std::plus<>() );
+    } );
 #endif
-   onExecutors( S , X , "ADS::parallelInclusiveScan" , []( auto & ex ,
-                                                           V & B ) {
+   onExecutors( S , X , "ADS::parallelInclusiveScan" ,
+		[]( auto & ex , V & B ) {
     ADS::parallelInclusiveScan( ex , B.begin() , B.size() , B.begin() ,
-                                std::uint64_t( 0 ) ); } );
+				std::uint64_t( 0 ) );
+    } );
 #if defined( ADS_HAS_TBB )
    add( S , "tbb" , "std::inclusive_scan(par)" , [ & ]( V & B ) {
     std::inclusive_scan( std::execution::par , B.begin() , B.end() ,
-                         B.begin() ); } );
+			 B.begin() );
+    } );
 #endif
 #if defined( _OPENMP )
    add( S , "openmp" , "omp scan" , [ & ]( V & B ) {
@@ -743,28 +800,36 @@ void patternsOn( const std::vector< std::size_t > & sizes , int r ,
     #pragma omp parallel num_threads( threads )
     {
      const std::size_t t = std::size_t( omp_get_thread_num() ) ,
-                       q = std::size_t( omp_get_num_threads() ) ,
-                       lo = m * t / q , hi = m * ( t + 1 ) / q;
+		       q = std::size_t( omp_get_num_threads() ) ,
+		       lo = m * t / q , hi = m * ( t + 1 ) / q;
      std::uint64_t s = 0;
-     for( std::size_t i = lo ; i < hi ; ++i ) s += B[ i ];
+     for( std::size_t i = lo ; i < hi ; ++i )
+      s += B[ i ];
      part[ t + 1 ] = s;
      #pragma omp barrier
      #pragma omp single
-     for( std::size_t i = 1 ; i <= q ; ++i ) part[ i ] += part[ i - 1 ];
+     for( std::size_t i = 1 ; i <= q ; ++i )
+      part[ i ] += part[ i - 1 ];
      s = part[ t ];
-     for( std::size_t i = lo ; i < hi ; ++i ) B[ i ] = s += B[ i ];
-     } } );
+     for( std::size_t i = lo ; i < hi ; ++i )
+      B[ i ] = s += B[ i ];
+     }
+    } );
 #endif
 #if defined( ADS_HAS_PARLAY )
-   add( S , "parlay" , "parlay::scan_inclusive_inplace" , [ & ]( V & B ) {
-    parlay::scan_inclusive_inplace( B ); } );
+   add( S , "parlay" , "parlay::scan_inclusive_inplace" ,
+	[ & ]( V & B ) { parlay::scan_inclusive_inplace( B ); } );
 #endif
    runBattery( bench( "scan" ) , "uint64" , A , S , r ,
-               [ & ]( const V & B ) { return( B == P ); } );
-  }
+	       [ & ]( const V & B ) { return( B == P ); } );
+   }
   // a map: x -> a hash of x, in place
   auto mix = []( std::uint64_t x ) {
-   x ^= x >> 33; x *= 0xFF51AFD7ED558CCDull; x ^= x >> 33; return( x ); };
+   x ^= x >> 33;
+   x *= 0xFF51AFD7ED558CCDull;
+   x ^= x >> 33;
+   return( x );
+   };
   V M( n );
   std::transform( A.begin() , A.end() , M.begin() , mix );
   {
@@ -772,44 +837,53 @@ void patternsOn( const std::vector< std::size_t > & sizes , int r ,
 #if defined( ADS_HAS_TBB )
    add( S , "tbb" , "tbb::parallel_for" , [ & ]( V & B ) {
     tbb::parallel_for( tbb::blocked_range< std::size_t >( 0 , B.size() ) ,
-     [ & ]( const tbb::blocked_range< std::size_t > & q ) {
-      for( std::size_t i = q.begin() ; i < q.end() ; ++i )
-       B[ i ] = mix( B[ i ] ); } ); } );
+		       [ & ]( const tbb::blocked_range< std::size_t > & q ) {
+			for( std::size_t i = q.begin() ; i < q.end() ; ++i )
+			 B[ i ] = mix( B[ i ] );
+		        } );
+    } );
 #endif
-   onExecutors( S , X , "ADS::parallelForBlocks" , [ mix ]( auto & ex ,
-                                                            V & B ) {
+   onExecutors( S , X , "ADS::parallelForBlocks" ,
+		[ mix ]( auto & ex , V & B ) {
     ADS::parallelForBlocks( ex , 0 , B.size() ,
-                            [ & ]( std::size_t lo , std::size_t hi ) {
-                             for( std::size_t i = lo ; i < hi ; ++i )
-                              B[ i ] = mix( B[ i ] ); } ); } );
+			    [ & ]( std::size_t lo , std::size_t hi ) {
+			     for( std::size_t i = lo ; i < hi ; ++i )
+			      B[ i ] = mix( B[ i ] );
+			     } );
+    } );
 #if defined( ADS_HAS_TBB )
    add( S , "tbb" , "std::for_each(par)" , [ & ]( V & B ) {
     std::for_each( std::execution::par , B.begin() , B.end() ,
-                   [ & ]( std::uint64_t & x ) { x = mix( x ); } ); } );
+		   [ & ]( std::uint64_t & x ) { x = mix( x ); } );
+    } );
 #endif
 #if defined( _OPENMP )
    add( S , "openmp" , "omp for" , [ & ]( V & B ) {
     const long m = long( B.size() );
     #pragma omp parallel for num_threads( threads )
     for( long i = 0 ; i < m ; ++i )
-     B[ std::size_t( i ) ] = mix( B[ std::size_t( i ) ] ); } );
+     B[ std::size_t( i ) ] = mix( B[ std::size_t( i ) ] );
+    } );
 #endif
 #if defined( ADS_HAS_PARLAY )
    add( S , "parlay" , "parlay::parallel_for" , [ & ]( V & B ) {
-    parlay::parallel_for( 0 , B.size() , [ & ]( std::size_t i ) {
-     B[ i ] = mix( B[ i ] ); } ); } );
+    parlay::parallel_for( 0 , B.size() ,
+			  [ & ]( std::size_t i ) { B[ i ] = mix( B[ i ] ); } );
+    } );
 #endif
 #if defined( ADS_WITH_FASTFLOW )
    add( S , "ff" , "ff::ParallelFor" , [ & ]( V & B ) {
-    ffNative().parallel_for_static( 0 , long( B.size() ) , 1 , 0 ,
-                              [ & ]( const long i ) {
-                               B[ std::size_t( i ) ] =
-                                mix( B[ std::size_t( i ) ] ); } ,
-                              std::max( threads - 1 , 1 ) ); } );
+    ffNative().parallel_for_static(
+      0 , long( B.size() ) , 1 , 0 ,
+      [ & ]( const long i ) {
+       B[ std::size_t( i ) ] = mix( B[ std::size_t( i ) ] );
+       } ,
+      std::max( threads - 1 , 1 ) );
+    } );
 #endif
    runBattery( bench( "map" ) , "uint64" , A , S , r ,
-               [ & ]( const V & B ) { return( B == M ); } );
-  }
+	       [ & ]( const V & B ) { return( B == M ); } );
+   }
   }
  }
 
@@ -833,19 +907,19 @@ double timeRuns( std::size_t n , P && prepare , W && work , int r , K && ok )
   const auto b = std::chrono::steady_clock::now();
   if( ! ok() )
    return( -1 );
-  t.push_back( std::chrono::duration< double , std::nano >( b - a ).count()
-               / double( std::max< std::size_t >( n , 1 ) ) );
+  t.push_back( std::chrono::duration< double , std::nano >( b - a ).count() /
+	       double( std::max< std::size_t >( n , 1 ) ) );
   }
  std::nth_element( t.begin() , t.begin() + t.size() / 2 , t.end() );
  return( t[ t.size() / 2 ] );
  }
 
 /// a battery of works on inputs that need no copy
-using Works = std::vector< std::pair< std::string ,
-                                      std::function< void( void ) > > >;
+using Works =
+  std::vector< std::pair< std::string , std::function< void( void ) > > >;
 
 void addW( Works & S , const char * f , const std::string & name ,
-           std::function< void( void ) > work )
+	   std::function< void( void ) > work )
 {
  if( runs( f ) )
   S.emplace_back( name , std::move( work ) );
@@ -854,32 +928,32 @@ void addW( Works & S , const char * f , const std::string & name ,
 /// the work of an algorithm of ADS on each executor, f( ex )
 template< class F >
 void onExecutorsW( Works & S , Executors & X , const std::string & name ,
-                   F && f )
+		   F && f )
 {
- addW( S , "pool" , name + " pool" , [ & X , f ] { f( X.pool() ); } );
+ addW( S , "pool" , name + " pool" , [ &X , f ] { f( X.pool() ); } );
 #if defined( ADS_WITH_FASTFLOW )
- addW( S , "fastflow" , name + " FastFlow" , [ & X , f ] { f( X.ff() ); } );
+ addW( S , "fastflow" , name + " FastFlow" , [ &X , f ] { f( X.ff() ); } );
 #endif
 #if defined( _OPENMP )
- addW( S , "openmp" , name + " OpenMP" , [ & X , f ] { f( X.omp() ); } );
+ addW( S , "openmp" , name + " OpenMP" , [ &X , f ] { f( X.omp() ); } );
 #endif
 #if defined( ADS_WITH_TBB )
- addW( S , "tbb" , name + " TBB" , [ & X , f ] { f( X.tbb() ); } );
+ addW( S , "tbb" , name + " TBB" , [ &X , f ] { f( X.tbb() ); } );
 #endif
  }
 
 /// runs a battery: its first structure twice, the second as "A/A"
 template< class P , class K >
 void runWorks( const std::string & b , const std::string & c , std::size_t n ,
-               Works & S , int r , P && prepare , K && ok )
+	       Works & S , int r , P && prepare , K && ok )
 {
  for( std::size_t i = 0 ; i < S.size() ; ++i ) {
   if( ! ADS::bench::skip( S[ i ].first ) )
    ADS::bench::print( b.c_str() , c , n , S[ i ].first ,
-                      timeRuns( n , prepare , S[ i ].second , r , ok ) );
+		      timeRuns( n , prepare , S[ i ].second , r , ok ) );
   if( ( i == 0 ) && ! ADS::bench::skip( S[ i ].first + " A/A" ) )
    ADS::bench::print( b.c_str() , c , n , S[ i ].first + " A/A" ,
-                      timeRuns( n , prepare , S[ i ].second , r , ok ) );
+		      timeRuns( n , prepare , S[ i ].second , r , ok ) );
   }
  }
 
@@ -888,8 +962,8 @@ void runWorks( const std::string & b , const std::string & c , std::size_t n ,
 /*--------------------------------------------------------------------------*/
 
 /// the stable merge of k sorted runs of 64-bit integers, k = 4 and 64
-void merges( const std::vector< std::size_t > & sizes , int r ,
-             unsigned seed , Executors & X )
+void merges( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
+	     Executors & X )
 {
  using U = std::uint64_t;
  using Range = std::pair< const U * , const U * >;
@@ -902,7 +976,8 @@ void merges( const std::vector< std::size_t > & sizes , int r ,
    std::vector< std::pair< U * , U * > > Qw;
    for( std::size_t i = 0 ; i < k ; ++i ) {
     R[ i ].resize( n / k + ( i < n % k ) );
-    for( auto & x : R[ i ] ) x = g() % ( n / 2 + 1 );   // with ties
+    for( auto & x : R[ i ] )
+     x = g() % ( n / 2 + 1 );  // with ties
     std::sort( R[ i ].begin() , R[ i ].end() );
     Q.emplace_back( R[ i ].data() , R[ i ].data() + R[ i ].size() );
     Qw.emplace_back( R[ i ].data() , R[ i ].data() + R[ i ].size() );
@@ -913,28 +988,31 @@ void merges( const std::vector< std::size_t > & sizes , int r ,
 #if defined( _OPENMP )
    addW( S , "openmp" , "__gnu_parallel::stable_multiway_merge" , [ & ] {
     auto C = Qw;
-    __gnu_parallel::stable_multiway_merge( C.begin() , C.end() ,
-                                           out.begin() , n , std::less<>() ,
-                                           __gnu_parallel::exact_tag() ); } );
+    __gnu_parallel::stable_multiway_merge( C.begin() , C.end() , out.begin() ,
+					   n ,
+					   std::less<>() ,
+					   __gnu_parallel::exact_tag() );
+    } );
 #endif
    onExecutorsW( S , X , "ADS::multiwayMerge" , [ & ]( auto & ex ) {
-    ADS::multiwayMerge( ex , Q , out.begin() ); } );
+    ADS::multiwayMerge( ex , Q , out.begin() );
+    } );
    if( threads == 1 )
-    addW( S , "seq" , "ADS::multiwayMerge (sequential)" , [ & ] {
-     ADS::multiwayMerge( Q , out.begin() ); } );
+    addW( S , "seq" , "ADS::multiwayMerge (sequential)" ,
+	  [ & ] { ADS::multiwayMerge( Q , out.begin() ); } );
 #if defined( ADS_HAS_TLX )
    addW( S , "openmp" , "tlx::stable_parallel_multiway_merge" , [ & ] {
     auto C = Qw;
-    tlx::stable_parallel_multiway_merge( C.begin() , C.end() , out.begin() ,
-                                         std::ptrdiff_t( n ) ,
-                                         std::less<>() ,
-                                         tlx::MWMA_ALGORITHM_DEFAULT ,
-                                         tlx::MWMSA_DEFAULT ,
-                                         std::size_t( threads ) ); } );
+    tlx::stable_parallel_multiway_merge(
+      C.begin() , C.end() , out.begin() , std::ptrdiff_t( n ) , std::less<>() ,
+      tlx::MWMA_ALGORITHM_DEFAULT , tlx::MWMSA_DEFAULT ,
+      std::size_t( threads ) );
+    } );
 #endif
-   runWorks( bench( "merge" ) , "k" + std::to_string( k ) , n , S , r ,
-             [ & ] { std::fill( out.begin() , out.end() , 0 ); } ,
-             [ & ] { return( out == ref ); } );
+   runWorks(
+     bench( "merge" ) , "k" + std::to_string( k ) , n , S , r ,
+     [ & ] { std::fill( out.begin() , out.end() , 0 ); } ,
+     [ & ] { return( out == ref ); } );
    }
  }
 
@@ -946,8 +1024,8 @@ void merges( const std::vector< std::size_t > & sizes , int r ,
 /// at random columns ("uniform") or rows of lengths from a power law
 /// ("powerlaw", a Pareto law of exponent 1.5, 4 nonzeros at least), in
 /// nanoseconds per nonzero
-void sparse( const std::vector< std::size_t > & sizes , int r ,
-             unsigned seed , Executors & X )
+void sparse( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
+	     Executors & X )
 {
  for( std::size_t n : sizes )
   for( int shape = 0 ; shape < 2 ; ++shape ) {
@@ -957,51 +1035,57 @@ void sparse( const std::vector< std::size_t > & sizes , int r ,
    for( std::size_t i = 0 ; i < n ; ++i ) {
     std::size_t d = 8;
     if( shape == 1 )
-     d = std::min< std::size_t >( n / 4 , std::size_t(
-                                  4 * std::pow( 1 - u( g ) , -2.0 / 3 ) ) );
+     d = std::min< std::size_t >(
+       n / 4 , std::size_t( 4 * std::pow( 1 - u( g ) , -2.0 / 3 ) ) );
     for( std::size_t e = 0 ; e < d ; ++e )
      T.emplace_back( i , g() % n , u( g ) - 0.5 );
     }
    const ADS::CsrMatrix A( n , n , T );
    const ADS::SellMatrix<> L( A );
    std::vector< double > x( n ) , y( n ) , ref;
-   for( auto & v : x ) v = u( g );
+   for( auto & v : x )
+    v = u( g );
    ref = A.multiply( x );
    const std::size_t nnz = A.nonzeros();
    Works S;
 #if defined( ADS_HAS_TBB )
    addW( S , "tbb" , "tbb::parallel_for rows" , [ & ] {
     tbb::parallel_for( tbb::blocked_range< std::size_t >( 0 , n ) ,
-     [ & ]( const tbb::blocked_range< std::size_t > & q ) {
-      const std::size_t * st = A.rowStart();
-      for( std::size_t i = q.begin() ; i < q.end() ; ++i ) {
-       double s = 0;
-       for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
-        s += A.values()[ k ] * x[ A.columns()[ k ] ];
-       y[ i ] = s;
-       } } ); } );
+		       [ & ]( const tbb::blocked_range< std::size_t > & q ) {
+			const std::size_t * st = A.rowStart();
+			for( std::size_t i = q.begin() ; i < q.end() ; ++i ) {
+			 double s = 0;
+			 for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
+			  s += A.values()[ k ] * x[ A.columns()[ k ] ];
+			 y[ i ] = s;
+			 }
+		        } );
+    } );
 #endif
    onExecutorsW( S , X , "ADS::CsrMatrix" , [ & ]( auto & ex ) {
-    ADS::multiply( ex , A , x.data() , y.data() ); } );
+    ADS::multiply( ex , A , x.data() , y.data() );
+    } );
    onExecutorsW( S , X , "ADS::SellMatrix" , [ & ]( auto & ex ) {
-    ADS::multiply( ex , L , x.data() , y.data() ); } );
+    ADS::multiply( ex , L , x.data() , y.data() );
+    } );
    if( threads == 1 ) {
-    addW( S , "seq" , "ADS::CsrMatrix (sequential)" , [ & ] {
-     A.multiply( x.data() , y.data() ); } );
-    addW( S , "seq" , "ADS::SellMatrix (sequential)" , [ & ] {
-     L.multiply( x.data() , y.data() ); } );
+    addW( S , "seq" , "ADS::CsrMatrix (sequential)" ,
+	  [ & ] { A.multiply( x.data() , y.data() ); } );
+    addW( S , "seq" , "ADS::SellMatrix (sequential)" ,
+	  [ & ] { L.multiply( x.data() , y.data() ); } );
     }
 #if defined( _OPENMP )
    addW( S , "openmp" , "omp for rows" , [ & ] {
     const std::size_t * st = A.rowStart();
     const long m = long( n );
-    #pragma omp parallel for schedule( dynamic , 256 ) num_threads( threads )
+    #pragma omp parallel for schedule( dynamic, 256 ) num_threads( threads )
     for( long i = 0 ; i < m ; ++i ) {
      double s = 0;
      for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
       s += A.values()[ k ] * x[ A.columns()[ k ] ];
      y[ std::size_t( i ) ] = s;
-     } } );
+     }
+    } );
 #endif
 #if defined( ADS_HAS_EIGEN )
    using ES = Eigen::SparseMatrix< double , Eigen::RowMajor , std::int64_t >;
@@ -1018,7 +1102,8 @@ void sparse( const std::vector< std::size_t > & sizes , int r ,
     Eigen::setNbThreads( threads );
     Eigen::Map< const Eigen::VectorXd > xv( x.data() , long( n ) );
     Eigen::Map< Eigen::VectorXd > yv( y.data() , long( n ) );
-    yv.noalias() = *E * xv; } );
+    yv.noalias() = *E * xv;
+    } );
 #endif
 #if defined( ADS_HAS_PARLAY )
    addW( S , "parlay" , "parlay::parallel_for rows" , [ & ] {
@@ -1027,16 +1112,21 @@ void sparse( const std::vector< std::size_t > & sizes , int r ,
      double s = 0;
      for( std::size_t k = st[ i ] ; k < st[ i + 1 ] ; ++k )
       s += A.values()[ k ] * x[ A.columns()[ k ] ];
-     y[ i ] = s; } ); } );
+     y[ i ] = s;
+     } );
+    } );
 #endif
    // the products by rows sum in the same order; Eigen and the SELL
    // format may differ in the last bits
-   runWorks( bench( "spmv" ) , shape ? "powerlaw" : "uniform" , nnz , S , r ,
-             [ & ] { std::fill( y.begin() , y.end() , 0.0 ); } ,
-             [ & ] {
-              for( std::size_t i = 0 ; i < n ; ++i )
-               if( std::abs( y[ i ] - ref[ i ] ) > 1e-9 ) return( false );
-              return( true ); } );
+   runWorks(
+     bench( "spmv" ) , shape ? "powerlaw" : "uniform" , nnz , S , r ,
+     [ & ] { std::fill( y.begin() , y.end() , 0.0 ); } ,
+     [ & ] {
+      for( std::size_t i = 0 ; i < n ; ++i )
+       if( std::abs( y[ i ] - ref[ i ] ) > 1e-9 )
+	return( false );
+      return( true );
+      } );
    }
  }
 
@@ -1047,7 +1137,7 @@ void dense( int r , unsigned seed , Executors & X )
  for( std::size_t n : { 1024 , 2048 } ) {
   std::mt19937_64 g( seed );
   std::uniform_real_distribution< double > u( -1 , 1 );
-  ADS::DenseMatrix< double > A( n , n ) , B( n , n ) , C( n , n ) ;
+  ADS::DenseMatrix< double > A( n , n ) , B( n , n ) , C( n , n );
   for( std::size_t i = 0 ; i < n * n ; ++i ) {
    A.data()[ i ] = u( g );
    B.data()[ i ] = u( g );
@@ -1058,33 +1148,42 @@ void dense( int r , unsigned seed , Executors & X )
   addW( S , "blas" , "OpenBLAS dgemm" , [ & ] {
    openblas_set_num_threads( threads );
    cblas_dgemm( CblasRowMajor , CblasNoTrans , CblasNoTrans , int( n ) ,
-                int( n ) , int( n ) , 1.0 , A.data() , int( n ) , B.data() ,
-                int( n ) , 0.0 , C.data() , int( n ) ); } );
+		int( n ) ,
+		int( n ) , 1.0 , A.data() , int( n ) , B.data() , int( n ) ,
+		0.0 ,
+		C.data() , int( n ) );
+   } );
 #endif
   onExecutorsW( S , X , "ADS::gemm" , [ & ]( auto & ex ) {
    ADS::gemm( ex , n , n , n , 1.0 , A.data() , n , B.data() , n , 0.0 ,
-              C.data() , n ); } );
+	      C.data() , n );
+   } );
   if( threads == 1 )
    addW( S , "seq" , "ADS::gemm (sequential)" , [ & ] {
-    ADS::gemm( n , n , n , 1.0 , A.data() , n , B.data() , n , 0.0 ,
-               C.data() , n ); } );
+    ADS::gemm( n , n , n , 1.0 , A.data() , n , B.data() , n , 0.0 , C.data() ,
+	       n );
+    } );
 #if defined( ADS_HAS_EIGEN )
   addW( S , "openmp" , "Eigen::Matrix" , [ & ] {
-   using M = Eigen::Matrix< double , Eigen::Dynamic , Eigen::Dynamic ,
-                            Eigen::RowMajor >;
+   using M =
+     Eigen::Matrix< double , Eigen::Dynamic , Eigen::Dynamic ,
+		    Eigen::RowMajor >;
    Eigen::setNbThreads( threads );
    Eigen::Map< const M > a( A.data() , long( n ) , long( n ) ) ,
-                         b( B.data() , long( n ) , long( n ) );
+     b( B.data() , long( n ) , long( n ) );
    Eigen::Map< M > c( C.data() , long( n ) , long( n ) );
-   c.noalias() = a * b; } );
+   c.noalias() = a * b;
+   } );
 #endif
-  runWorks( bench( "gemm" ) , "double" , n * n * n , S , r ,
-            [ & ] { std::fill( C.data() , C.data() + n * n , 0.0 ); } ,
-            [ & ] {
-             for( std::size_t i = 0 ; i < n * n ; ++i )
-              if( std::abs( C.data()[ i ] - ref.data()[ i ] ) > 1e-9 )
-               return( false );
-             return( true ); } );
+  runWorks(
+    bench( "gemm" ) , "double" , n * n * n , S , r ,
+    [ & ] { std::fill( C.data() , C.data() + n * n , 0.0 ); } ,
+    [ & ] {
+     for( std::size_t i = 0 ; i < n * n ; ++i )
+      if( std::abs( C.data()[ i ] - ref.data()[ i ] ) > 1e-9 )
+       return( false );
+     return( true );
+     } );
   }
  }
 
@@ -1097,7 +1196,7 @@ void dense( int r , unsigned seed , Executors & X )
 /// parameters of the Graph 500, a = 0.57 , b = c = 0.19 ("kronecker"), the
 /// names of the nodes shuffled; no loop
 std::vector< std::pair< int , int > > edges( int scale , bool kron ,
-                                             unsigned seed )
+					    unsigned seed )
 {
  std::mt19937_64 g( seed );
  const int n = 1 << scale;
@@ -1129,7 +1228,7 @@ std::vector< std::pair< int , int > > edges( int scale , bool kron ,
 /// connected components, on graphs of 2^scale nodes, in nanoseconds per
 /// arc
 void graphs( const std::vector< int > & scales , int r , unsigned seed ,
-             Executors & X )
+	     Executors & X )
 {
  using G = ADS::StaticGraph<>;
  for( int scale : scales )
@@ -1141,7 +1240,8 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
    // the source: the node of largest degree
    int src = 0;
    for( int v = 0 ; v < n ; ++v )
-    if( g.degree( v ) > g.degree( src ) ) src = v;
+    if( g.degree( v ) > g.degree( src ) )
+     src = v;
    ADS::Sequential seq;
    const auto ref = ADS::bfsDistances( seq , g , src );
    const auto lab = ADS::connectedComponents( seq , g );
@@ -1156,74 +1256,88 @@ void graphs( const std::vector< int > & scales , int r , unsigned seed ,
 #if defined( ADS_HAS_GAPBS )
    std::unique_ptr< Graph > gg;
    const bool gap = ! ADS::bench::skip( "gapbs DOBFS" ) |
-                    ! ADS::bench::skip( "gapbs DOBFS A/A" ) |
-                    ! ADS::bench::skip( "gapbs Afforest" ) |
-                    ! ADS::bench::skip( "gapbs Afforest A/A" ) |
-                    ! ADS::bench::skip( "gapbs ShiloachVishkin" );
+		    ! ADS::bench::skip( "gapbs DOBFS A/A" ) |
+		    ! ADS::bench::skip( "gapbs Afforest" ) |
+		    ! ADS::bench::skip( "gapbs Afforest A/A" ) |
+		    ! ADS::bench::skip( "gapbs ShiloachVishkin" );
    if( runs( "openmp" ) && gap ) {
     NodeID * neighs = new NodeID[ arcs ];
     pvector< SGOffset > off( std::size_t( n ) + 1 );
-    for( int v = 0 ; v <= n ; ++v ) off[ std::size_t( v ) ] = g.offsets()[ v ];
+    for( int v = 0 ; v <= n ; ++v )
+     off[ std::size_t( v ) ] = g.offsets()[ v ];
     std::copy( g.arcData() , g.arcData() + arcs , neighs );
-    gg = std::make_unique< Graph >( n , Graph::GenIndex( off , neighs ) ,
-                                    neighs );
+    gg =
+      std::make_unique< Graph >( n , Graph::GenIndex( off , neighs ) ,
+				 neighs );
     }
 #endif
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
    parlay::sequence< parlay::sequence< int > > pg;
    if( runs( "parlay" ) && ! ADS::bench::skip( "parlay BFS_ligra" ) )
     pg = parlay::tabulate( std::size_t( n ) , [ & ]( std::size_t v ) {
-     return( parlay::to_sequence( g.out( int( v ) ) ) ); } );
+     return( parlay::to_sequence( g.out( int( v ) ) ) );
+     } );
 #endif
    {
     Works S;
 #if defined( ADS_HAS_GAPBS )
     addW( S , "openmp" , "gapbs DOBFS" , [ & ] {
      const auto p = gapbsBfs::DOBFS( *gg , src );
-     count = std::size_t( std::count_if( p.begin() , p.end() , []( auto x ) {
-      return( x >= 0 ); } ) ); } );
+     count = std::size_t( std::count_if(
+       p.begin() , p.end() , []( auto x ) { return( x >= 0 ); } ) );
+     } );
 #endif
     onExecutorsW( S , X , "ADS::bfsDistances" , [ & ]( auto & ex ) {
-     dist = ADS::bfsDistances( ex , g , src ); } );
+     dist = ADS::bfsDistances( ex , g , src );
+     } );
     if( threads == 1 )
-     addW( S , "seq" , "ADS::bfsDistances (sequential)" , [ & ] {
-      dist = ADS::bfsDistances( seq , g , src ); } );
+     addW( S , "seq" , "ADS::bfsDistances (sequential)" ,
+	   [ & ] { dist = ADS::bfsDistances( seq , g , src ); } );
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
     addW( S , "parlay" , "parlay BFS_ligra" , [ & ] {
      const auto F = BFS( src , pg , pg );
      count = 0;
-     for( const auto & f : F ) count += f.size(); } );
+     for( const auto & f : F )
+      count += f.size();
+     } );
 #endif
-    runWorks( bench( "bfs" ) , c , arcs , S , r ,
-              [ & ] { dist.clear(); count = 0; } ,
-              [ & ] { return( dist.empty() ? count == reached
-                                           : dist == ref ); } );
-   }
+    runWorks(
+      bench( "bfs" ) , c , arcs , S , r ,
+      [ & ] {
+       dist.clear();
+       count = 0;
+       } ,
+      [ & ] { return( dist.empty() ? count == reached : dist == ref ); } );
+    }
    {
     Works S;
 #if defined( ADS_HAS_GAPBS )
     auto distinct = [ & ]( const auto & p ) {
      std::vector< int > q( p.begin() , p.end() );
      std::sort( q.begin() , q.end() );
-     return( std::size_t( std::unique( q.begin() , q.end() ) -
-                          q.begin() ) ); };
-    addW( S , "openmp" , "gapbs Afforest" , [ & ] {
-     count = distinct( gapbsCc::Afforest( *gg ) ); } );
+     return( std::size_t( std::unique( q.begin() , q.end() ) - q.begin() ) );
+     };
+    addW( S , "openmp" , "gapbs Afforest" ,
+	  [ & ] { count = distinct( gapbsCc::Afforest( *gg ) ); } );
 #endif
     onExecutorsW( S , X , "ADS::connectedComponents" , [ & ]( auto & ex ) {
-     comp = ADS::connectedComponents( ex , g ); } );
+     comp = ADS::connectedComponents( ex , g );
+     } );
     if( threads == 1 )
-     addW( S , "seq" , "ADS::connectedComponents (sequential)" , [ & ] {
-      comp = ADS::connectedComponents( seq , g ); } );
+     addW( S , "seq" , "ADS::connectedComponents (sequential)" ,
+	   [ & ] { comp = ADS::connectedComponents( seq , g ); } );
 #if defined( ADS_HAS_GAPBS )
-    addW( S , "openmp" , "gapbs ShiloachVishkin" , [ & ] {
-     count = distinct( gapbsSv::ShiloachVishkin( *gg ) ); } );
+    addW( S , "openmp" , "gapbs ShiloachVishkin" ,
+	  [ & ] { count = distinct( gapbsSv::ShiloachVishkin( *gg ) ); } );
 #endif
-    runWorks( bench( "cc" ) , c , arcs , S , r ,
-              [ & ] { comp.clear(); count = 0; } ,
-              [ & ] { return( comp.empty() ? count == comps
-                                           : comp == lab ); } );
-   }
+    runWorks(
+      bench( "cc" ) , c , arcs , S , r ,
+      [ & ] {
+       comp.clear();
+       count = 0;
+       } ,
+      [ & ] { return( comp.empty() ? count == comps : comp == lab ); } );
+    }
    }
  }
 
@@ -1242,9 +1356,10 @@ std::vector< std::pair< int , int > > grid( int side , unsigned seed )
  std::vector< std::pair< int , int > > E;
  for( int i = 0 ; i < side ; ++i )
   for( int j = 0 ; j < side ; ++j ) {
-   const std::size_t v = std::size_t( i ) * std::size_t( side ) +
-                         std::size_t( j );
-   if( j + 1 < side ) E.emplace_back( name[ v ] , name[ v + 1 ] );
+   const std::size_t v =
+     std::size_t( i ) * std::size_t( side ) + std::size_t( j );
+   if( j + 1 < side )
+    E.emplace_back( name[ v ] , name[ v + 1 ] );
    if( i + 1 < side )
     E.emplace_back( name[ v ] , name[ v + std::size_t( side ) ] );
    }
@@ -1257,20 +1372,22 @@ std::vector< std::pair< int , int > > grid( int side , unsigned seed )
 /// set the parameters (default 32 and 2^20, 256 and 2^12 on the grid), and
 /// ADS_SSSP_CASE one graph alone (e.g., kronecker20)
 void sssp( const std::vector< int > & scales , int r , unsigned seed ,
-           Executors & X )
+	   Executors & X )
 {
  using G = ADS::StaticGraph< int >;
  const char * ed = std::getenv( "ADS_SSSP_DELTA" );
  const char * er = std::getenv( "ADS_SSSP_RHO" );
  for( int scale : scales )
   for( int kind = 0 ; kind < 3 ; ++kind ) {
-   const std::string name = std::string( kind == 0 ? "uniform" : kind == 1
-                                         ? "kronecker" : "grid" ) +
-                            std::to_string( scale );
+   const std::string name = std::string( kind == 0   ? "uniform"
+					 : kind == 1 ? "kronecker"
+						     : "grid" ) +
+			    std::to_string( scale );
    if( const char * only = std::getenv( "ADS_SSSP_CASE" ) )
-    if( name != only ) continue;
+    if( name != only )
+     continue;
    const auto U = kind == 2 ? grid( 1 << ( scale / 2 ) , seed )
-                            : edges( scale , kind == 1 , seed );
+			    : edges( scale , kind == 1 , seed );
    const int n = kind == 2 ? 1 << ( 2 * ( scale / 2 ) ) : 1 << scale;
    std::mt19937_64 gw( seed + 1 );
    std::vector< std::tuple< int , int , int > > E;
@@ -1281,18 +1398,20 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
    const std::size_t arcs = std::size_t( g.arcs() );
    int src = 0;
    for( int v = 0 ; v < n ; ++v )
-    if( g.degree( v ) > g.degree( src ) ) src = v;
+    if( g.degree( v ) > g.degree( src ) )
+     src = v;
    const int delta = ed ? std::atoi( ed ) : kind == 2 ? 256 : 32;
    const std::size_t rho = er ? std::size_t( std::atoll( er ) )
-                              : std::size_t( 1 ) << ( kind == 2 ? 12 : 20 );
+			      : std::size_t( 1 ) << ( kind == 2 ? 12 : 20 );
    const auto ref = ADS::johnson( g , src ).d;
    // the graph in the format of the weighted adjacency graphs of GBBS, for
    // its programs, if ADS_SSSP_DUMP names a directory
    if( const char * dump = std::getenv( "ADS_SSSP_DUMP" ) ) {
     const std::string f = std::string( dump ) + "/" +
-                          ( kind == 0 ? "uniform" : kind == 1 ? "kronecker"
-                                                              : "grid" ) +
-                          std::to_string( scale ) + ".adj";
+			  ( kind == 0   ? "uniform"
+			    : kind == 1 ? "kronecker"
+					: "grid" ) +
+			  std::to_string( scale ) + ".adj";
     if( std::FILE * o = std::fopen( f.c_str() , "w" ) ) {
      std::fprintf( o , "WeightedAdjacencyGraph\n%d\n%zu\n" , n , arcs );
      for( int v = 0 ; v < n ; ++v )
@@ -1310,14 +1429,16 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
 #if defined( ADS_HAS_GAPBS )
    std::unique_ptr< WGraph > gg;
    if( runs( "openmp" ) && ( ! ADS::bench::skip( "gapbs DeltaStep" ) ||
-                             ! ADS::bench::skip( "gapbs DeltaStep A/A" ) ) ) {
+			     ! ADS::bench::skip( "gapbs DeltaStep A/A" ) ) ) {
     WNode * neighs = new WNode[ arcs ];
     pvector< SGOffset > off( std::size_t( n ) + 1 );
-    for( int v = 0 ; v <= n ; ++v ) off[ std::size_t( v ) ] = g.offsets()[ v ];
+    for( int v = 0 ; v <= n ; ++v )
+     off[ std::size_t( v ) ] = g.offsets()[ v ];
     for( std::size_t k = 0 ; k < arcs ; ++k )
      neighs[ k ] = WNode( g.arcData()[ k ].to , g.arcData()[ k ].w );
-    gg = std::make_unique< WGraph >( n , WGraph::GenIndex( off , neighs ) ,
-                                     neighs );
+    gg =
+      std::make_unique< WGraph >( n , WGraph::GenIndex( off , neighs ) ,
+				  neighs );
     }
 #endif
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
@@ -1325,32 +1446,41 @@ void sssp( const std::vector< int > & scales , int r , unsigned seed ,
    if( runs( "parlay" ) && ! ADS::bench::skip( "parlay bucketed_dijkstra" ) )
     pg = parlay::tabulate( std::size_t( n ) , [ & ]( std::size_t v ) {
      return( parlay::map( g.out( int( v ) ) , []( const auto & a ) {
-      return( std::pair< int , int >( a.to , a.w ) ); } ) ); } );
+      return( std::pair< int , int >( a.to , a.w ) );
+      } ) );
+     } );
 #endif
    Works S;
    onExecutorsW( S , X , "ADS::deltaStepping" , [ & ]( auto & ex ) {
-    dist = ADS::deltaStepping( ex , g , src , delta ); } );
+    dist = ADS::deltaStepping( ex , g , src , delta );
+    } );
    onExecutorsW( S , X , "ADS::rhoStepping" , [ & ]( auto & ex ) {
-    dist = ADS::rhoStepping( ex , g , src , rho ); } );
+    dist = ADS::rhoStepping( ex , g , src , rho );
+    } );
 #if defined( ADS_HAS_GAPBS )
    addW( S , "openmp" , "gapbs DeltaStep" , [ & ] {
     const auto p = gapbsSssp::DeltaStep( *gg , src , delta );
     dist.assign( p.begin() , p.end() );
     for( auto & x : dist )
-     if( x == gapbsSssp::kDistInf ) x = ADS::infinity< int >(); } );
+     if( x == gapbsSssp::kDistInf )
+      x = ADS::infinity< int >();
+    } );
 #endif
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
    addW( S , "parlay" , "parlay bucketed_dijkstra" , [ & ] {
     const auto F = bucketed_dijkstra( src , pg );
     dist.assign( std::size_t( n ) , ADS::infinity< int >() );
     for( std::size_t d = 0 ; d < F.size() ; ++d )
-     for( const int v : F[ d ] ) dist[ std::size_t( v ) ] = int( d ); } );
+     for( const int v : F[ d ] )
+      dist[ std::size_t( v ) ] = int( d );
+    } );
 #endif
    if( threads == 1 )
-    addW( S , "seq" , "ADS::johnson (sequential)" , [ & ] {
-     dist = ADS::johnson( g , src ).d; } );
-   runWorks( bench( "sssp" ) , c , arcs , S , r , [ & ] { dist.clear(); } ,
-             [ & ] { return( dist == ref ); } );
+    addW( S , "seq" , "ADS::johnson (sequential)" ,
+	  [ & ] { dist = ADS::johnson( g , src ).d; } );
+   runWorks(
+     bench( "sssp" ) , c , arcs , S , r , [ & ] { dist.clear(); } ,
+     [ & ] { return( dist == ref ); } );
    }
  }
 
@@ -1364,12 +1494,13 @@ template< class V >
 void dumpItems( const V & x , int b , const std::string & name )
 {
  const char * dir = std::getenv( "ADS_WAVELET_DUMP" );
- if( ! dir ) return;
+ if( ! dir )
+  return;
  const std::string f = std::string( dir ) + "/" + name;
  if( std::FILE * o = std::fopen( f.c_str() , "wb" ) ) {
   for( const auto v : x ) {
    const std::uint64_t u = std::uint64_t( v );
-   std::fwrite( &u , std::size_t( b ) , 1 , o );   // little endian
+   std::fwrite( &u , std::size_t( b ) , 1 , o );  // little endian
    }
   std::fclose( o );
   std::printf( "# dump\t%s\n" , f.c_str() );
@@ -1380,7 +1511,8 @@ void dumpItems( const V & x , int b , const std::string & name )
 /// per bit, of the wavelet matrices of n integers and of the wavelet trees
 /// of Huffman of n symbols, per item
 void succinct( const std::vector< std::size_t > & sizes , int r ,
-               unsigned seed , Executors & X )
+	       unsigned seed ,
+	       Executors & X )
 {
  for( std::size_t n : sizes ) {
   std::mt19937_64 g( seed );
@@ -1388,29 +1520,34 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
    const std::size_t m = 64 * n;
    ADS::BitVector b( m );
    std::vector< ADS::Word > W( n );
-   for( auto & w : W ) w = g();
+   for( auto & w : W )
+    w = g();
    for( std::size_t i = 0 ; i < m ; ++i )
-    if( ( W[ i / 64 ] >> ( i % 64 ) ) & 1 ) b.set( i );
+    if( ( W[ i / 64 ] >> ( i % 64 ) ) & 1 )
+     b.set( i );
    const ADS::RankSelect ref( b );
    std::size_t ones = 0 , check = 0;
    auto probe = [ & ]( const auto & s ) {
     ones = s.ones();
     check = s.select1( ones / 2 + 1 ) + s.select0( s.zeros() / 3 + 1 ) +
-            s.rank1( m / 3 ); };
+	    s.rank1( m / 3 );
+    };
    const std::size_t want = ref.select1( ref.ones() / 2 + 1 ) +
-                            ref.select0( ref.zeros() / 3 + 1 ) +
-                            ref.rank1( m / 3 );
+			    ref.select0( ref.zeros() / 3 + 1 ) +
+			    ref.rank1( m / 3 );
    const std::span< const ADS::Word > ws( W );
    Works S;
    onExecutorsW( S , X , "ADS::RankSelect" , [ & ]( auto & ex ) {
-    probe( ADS::RankSelect( ex , ws , m ) ); } );
+    probe( ADS::RankSelect( ex , ws , m ) );
+    } );
    onExecutorsW( S , X , "ADS::CompactRankSelect" , [ & ]( auto & ex ) {
-    probe( ADS::CompactRankSelect( ex , ws , m ) ); } );
+    probe( ADS::CompactRankSelect( ex , ws , m ) );
+    } );
    if( threads == 1 ) {
-    addW( S , "seq" , "ADS::RankSelect (sequential)" , [ & ] {
-     probe( ADS::RankSelect( ws , m ) ); } );
-    addW( S , "seq" , "ADS::CompactRankSelect (sequential)" , [ & ] {
-     probe( ADS::CompactRankSelect( ws , m ) ); } );
+    addW( S , "seq" , "ADS::RankSelect (sequential)" ,
+	  [ & ] { probe( ADS::RankSelect( ws , m ) ); } );
+    addW( S , "seq" , "ADS::CompactRankSelect (sequential)" ,
+	  [ & ] { probe( ADS::CompactRankSelect( ws , m ) ); } );
     }
 #if defined( ADS_HAS_SDSL )
    sdsl::bit_vector sb( m );
@@ -1424,14 +1561,15 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
     check = s1( ones / 2 + 1 ) + s0( ( m - ones ) / 3 + 1 ) + rk( m / 3 );
     } );
 #endif
-   runWorks( bench( "build rank/select" ) , "50%" , m , S , r ,
-             [ & ] { ones = check = 0; } ,
-             [ & ] { return( ( ones == ref.ones() ) &&
-                             ( check == want ) ); } );
-  }
+   runWorks(
+     bench( "build rank/select" ) , "50%" , m , S , r ,
+     [ & ] { ones = check = 0; } ,
+     [ & ] { return( ( ones == ref.ones() ) && ( check == want ) ); } );
+   }
   for( int w : { 8 , 16 , 32 } ) {
    std::vector< std::uint64_t > x( n );
-   for( auto & v : x ) v = g() >> ( 64 - w );
+   for( auto & v : x )
+    v = g() >> ( 64 - w );
    dumpItems( x , w / 8 , "wm" + std::to_string( w ) + ".bin" );
    const ADS::WaveletMatrix ref( x , w );
    std::size_t bits = 0;
@@ -1442,48 +1580,57 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
    const std::vector< std::uint16_t > x16( x.begin() , x.end() );
    const std::vector< std::uint32_t > x32( x.begin() , x.end() );
    auto narrow = [ & ]( auto && make ) {
-    return( w == 8 ? make( std::span< const std::uint8_t >( x8 ) )
-            : w == 16 ? make( std::span< const std::uint16_t >( x16 ) )
-                      : make( std::span< const std::uint32_t >( x32 ) ) );
+    return( w == 8    ? make( std::span< const std::uint8_t >( x8 ) )
+	     : w == 16 ? make( std::span< const std::uint16_t >( x16 ) )
+		       : make( std::span< const std::uint32_t >( x32 ) ) );
     };
    Works S;
    onExecutorsW( S , X , "ADS::WaveletMatrix" , [ & ]( auto & ex ) {
     const ADS::WaveletMatrix M( ex , x , w );
     bits = M.sizeInBits();
-    probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+    probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 );
+    } );
    onExecutorsW( S , X , "ADS::WaveletMatrix narrow" , [ & ]( auto & ex ) {
     narrow( [ & ]( auto y ) {
      const ADS::WaveletMatrix M( ex , y , w );
      bits = M.sizeInBits();
      probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 );
-     return( 0 ); } ); } );
+     return( 0 );
+     } );
+    } );
    if( threads == 1 )
     addW( S , "seq" , "ADS::WaveletMatrix (sequential)" , [ & ] {
      const ADS::WaveletMatrix M( x , w );
      bits = M.sizeInBits();
-     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 );
+     } );
 #if defined( ADS_HAS_SDSL )
    sdsl::int_vector<> iv( n , 0 , std::uint8_t( w ) );
-   for( std::size_t i = 0 ; i < n ; ++i ) iv[ i ] = x[ i ];
+   for( std::size_t i = 0 ; i < n ; ++i )
+    iv[ i ] = x[ i ];
    addW( S , "sdsl" , "sdsl::wm_int" , [ & ] {
     sdsl::wm_int<> M;
     sdsl::construct_im( M , iv );
     bits = ref.sizeInBits();
-    probe = M[ n / 3 ] + M.rank( n / 2 , x[ 7 ] ); } );
+    probe = M[ n / 3 ] + M.rank( n / 2 , x[ 7 ] );
+    } );
 #endif
-   runWorks( bench( "build wavelet matrix" ) , std::to_string( w ) + " bits" ,
-             n , S , r , [ & ] { bits = 0; probe = 0; } ,
-             [ & ] { return( ( bits == ref.sizeInBits() ) &&
-                             ( probe == want ) ); } );
+   runWorks(
+     bench( "build wavelet matrix" ) , std::to_string( w ) + " bits" , n , S ,
+     r ,
+     [ & ] {
+      bits = 0;
+      probe = 0;
+      } ,
+     [ & ] { return( ( bits == ref.sizeInBits() ) && ( probe == want ) ); } );
    }
   for( int kind = 0 ; kind < 2 ; ++kind ) {
    std::vector< std::uint32_t > x( n );
    std::geometric_distribution< std::uint32_t > geo( 0.2 );
    for( auto & v : x )
     v = kind == 0 ? std::min< std::uint32_t >( geo( g ) , 255 )
-                  : std::uint32_t( g() >> 48 );
-   dumpItems( x , kind == 0 ? 1 : 2 , kind == 0 ? "huff8.bin"
-                                                 : "huff16.bin" );
+		  : std::uint32_t( g() >> 48 );
+   dumpItems( x , kind == 0 ? 1 : 2 , kind == 0 ? "huff8.bin" : "huff16.bin" );
    using T = ADS::HuffmanWaveletTree<>;
    const T ref( x );
    std::size_t bits = 0 , probe = 0;
@@ -1492,26 +1639,33 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
    onExecutorsW( S , X , "ADS::HuffmanWaveletTree" , [ & ]( auto & ex ) {
     const T M( ex , x );
     bits = M.sizeInBits();
-    probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+    probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 );
+    } );
    if( threads == 1 )
     addW( S , "seq" , "ADS::HuffmanWaveletTree (sequential)" , [ & ] {
      const T M( x );
      bits = M.sizeInBits();
-     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 ); } );
+     probe = M.access( n / 3 ) + M.rank( x[ 7 ] , n / 2 );
+     } );
 #if defined( ADS_HAS_SDSL )
    sdsl::int_vector<> iv( n , 0 , std::uint8_t( kind == 0 ? 8 : 16 ) );
-   for( std::size_t i = 0 ; i < n ; ++i ) iv[ i ] = x[ i ];
+   for( std::size_t i = 0 ; i < n ; ++i )
+    iv[ i ] = x[ i ];
    addW( S , "sdsl" , "sdsl::wt_huff_int" , [ & ] {
     sdsl::wt_huff_int<> M;
     sdsl::construct_im( M , iv );
     bits = ref.sizeInBits();
-    probe = M[ n / 3 ] + M.rank( n / 2 , x[ 7 ] ); } );
+    probe = M[ n / 3 ] + M.rank( n / 2 , x[ 7 ] );
+    } );
 #endif
-   runWorks( bench( "build huffman wavelet tree" ) ,
-             kind == 0 ? "8 bits skewed" : "16 bits" , n , S , r ,
-             [ & ] { bits = 0; probe = 0; } ,
-             [ & ] { return( ( bits == ref.sizeInBits() ) &&
-                             ( probe == want ) ); } );
+   runWorks(
+     bench( "build huffman wavelet tree" ) ,
+     kind == 0 ? "8 bits skewed" : "16 bits" , n , S , r ,
+     [ & ] {
+      bits = 0;
+      probe = 0;
+      } ,
+     [ & ] { return( ( bits == ref.sizeInBits() ) && ( probe == want ) ); } );
    }
   }
  }
@@ -1523,15 +1677,16 @@ void succinct( const std::vector< std::size_t > & sizes , int r ,
 /// the LCP array from the suffix array of n random symbols of 4 letters
 /// ("dna") and of a text of words of a Zipf law ("words"), in nanoseconds
 /// per symbol
-void texts( const std::vector< std::size_t > & sizes , int r ,
-            unsigned seed , Executors & X )
+void texts( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
+	    Executors & X )
 {
  for( std::size_t n : sizes )
   for( int kind = 0 ; kind < 2 ; ++kind ) {
    std::mt19937_64 g( seed );
    std::string T;
    if( kind == 0 )
-    for( std::size_t i = 0 ; i < n ; ++i ) T += "acgt"[ g() % 4 ];
+    for( std::size_t i = 0 ; i < n ; ++i )
+     T += "acgt"[ g() % 4 ];
    else {
     std::vector< std::string > W;
     for( int w = 0 ; w < 5000 ; ++w ) {
@@ -1542,8 +1697,8 @@ void texts( const std::vector< std::size_t > & sizes , int r ,
      }
     while( T.size() < n ) {
      const double x = std::uniform_real_distribution<>( 0 , 1 )( g );
-     T += W[ std::min< std::size_t >( 4999 , std::size_t(
-                                       std::pow( 5000.0 , x ) ) - 1 ) ];
+     T += W[ std::min< std::size_t >(
+       4999 , std::size_t( std::pow( 5000.0 , x ) ) - 1 ) ];
      T += ' ';
      }
     T.resize( n );
@@ -1552,18 +1707,21 @@ void texts( const std::vector< std::size_t > & sizes , int r ,
    const auto ref = ADS::lcpArrayPhi( T , SA );
    std::vector< std::uint32_t > L;
    Works S;
-   onExecutorsW( S , X , "ADS::lcpArrayPhi" , [ & ]( auto & ex ) {
-    L = ADS::lcpArrayPhi( ex , T , SA ); } );
+   onExecutorsW( S , X , "ADS::lcpArrayPhi" ,
+		 [ & ]( auto & ex ) { L = ADS::lcpArrayPhi( ex , T , SA ); } );
    if( threads == 1 )
-    addW( S , "seq" , "ADS::lcpArrayPhi (sequential)" , [ & ] {
-     L = ADS::lcpArrayPhi( T , SA ); } );
+    addW( S , "seq" , "ADS::lcpArrayPhi (sequential)" ,
+	  [ & ] { L = ADS::lcpArrayPhi( T , SA ); } );
 #if defined( ADS_HAS_PARLAY_EXAMPLES )
    addW( S , "parlay" , "parlay lcp" , [ & ] {
     const auto P = lcp( T , SA );
-    L.assign( P.begin() , P.end() ); } );
+    L.assign( P.begin() , P.end() );
+    } );
 #endif
-   runWorks( bench( "lcp" ) , kind ? "words" : "dna" , n , S , r ,
-             [ & ] { L.clear(); } , [ & ] { return( L == ref ); } );
+   runWorks(
+     bench( "lcp" ) , kind ? "words" : "dna" , n , S , r ,
+     [ & ] { L.clear(); } ,
+     [ & ] { return( L == ref ); } );
    }
  }
 
@@ -1573,7 +1731,8 @@ void texts( const std::vector< std::size_t > & sizes , int r ,
 
 /// a counter on lines of its own, so that the lookups of the threads read
 /// nothing from the line it is on
-struct alignas( 128 ) Tally {
+struct alignas( 128 ) Tally
+{
  std::atomic< std::size_t > n{ 0 };
  };
 
@@ -1584,12 +1743,14 @@ template< class F >
 void blocks( ADS::ThreadPool & pool , std::size_t n , Tally & t , F f )
 {
  t.n.store( 0 , std::memory_order_relaxed );
- ADS::parallelForBlocks( pool , 0 , n , [ & t , f ]( std::size_t lo ,
-                                                     std::size_t hi ) {
-  F g = f;
-  std::size_t s = 0;
-  for( std::size_t i = lo ; i < hi ; ++i ) s += g( i );
-  t.n.fetch_add( s , std::memory_order_relaxed ); } );
+ ADS::parallelForBlocks( pool , 0 , n ,
+			 [ &t , f ]( std::size_t lo , std::size_t hi ) {
+			  F g = f;
+			  std::size_t s = 0;
+			  for( std::size_t i = lo ; i < hi ; ++i )
+			   s += g( i );
+			  t.n.fetch_add( s , std::memory_order_relaxed );
+			  } );
  }
 
 /// a concurrent table of the benchmark of the hash tables: make( c ) with
@@ -1598,101 +1759,141 @@ void blocks( ADS::ThreadPool & pool , std::size_t n , Tally & t , F f )
 /// whether it grows from empty while threads insert
 using HK = std::uint64_t;
 
-struct AdsCuckoo {
+struct AdsCuckoo
+{
  static constexpr bool grows = true;
  ADS::ConcurrentCuckooTable< HK , HK > * t = nullptr;
- void make( std::size_t c ) { t = new ADS::ConcurrentCuckooTable< HK , HK >(
-                               c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void make( std::size_t c ) {
+  t = new ADS::ConcurrentCuckooTable< HK , HK >( c );
+  }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
  bool has( HK k ) const { return( t->contains( k ) ); }
  HK foi( HK k , HK v ) const {
-  return( t->insert( k , v ) ? v : *t->find( k ) ); }
+  return( t->insert( k , v ) ? v : *t->find( k ) );
+  }
  };
 
-struct AdsFlat {
+struct AdsFlat
+{
  static constexpr bool grows = true;
  ADS::ConcurrentFlatTable< HK , HK > * t = nullptr;
- void make( std::size_t c ) { t = new ADS::ConcurrentFlatTable< HK , HK >(
-                               c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void make( std::size_t c ) {
+  t = new ADS::ConcurrentFlatTable< HK , HK >( c );
+  }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
  bool has( HK k ) const { return( t->contains( k ) ); }
  // the value held, a copy (inlined) or in the pair of a node
  template< class R >
  static HK held( const R & r ) {
-  if constexpr( std::is_same_v< R , HK > ) return( r );
-  else return( r.value ); }
+  if constexpr( std::is_same_v< R , HK > )
+   return( r );
+  else
+   return( r.value );
+  }
  HK foi( HK k , HK v ) const {
-  return( held( t->findOrInsert( k , v ).first ) ); }
+  return( held( t->findOrInsert( k , v ).first ) );
+  }
  };
 
 /// the set of keys of 64 bits, the pairs in the words
-struct AdsFlatSet {
+struct AdsFlatSet
+{
  static constexpr bool grows = true;
  ADS::ConcurrentFlatTable< HK , std::monostate > * t = nullptr;
  void make( std::size_t c ) {
-  t = new ADS::ConcurrentFlatTable< HK , std::monostate >( c ); }
- void drop( void ) { delete t; t = nullptr; }
+  t = new ADS::ConcurrentFlatTable< HK , std::monostate >( c );
+  }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK ) const { return( t->insert( k , {} ) ); }
  bool has( HK k ) const { return( t->contains( k ) ); }
  HK foi( HK k , HK v ) const {
-  return( t->findOrInsert( k , {} ).second ? v : k ); }
+  return( t->findOrInsert( k , {} ).second ? v : k );
+  }
  };
 
 #if defined( ADS_HAS_TBB )
-struct TbbHash {
+struct TbbHash
+{
  static constexpr bool grows = true;
  using M = tbb::concurrent_hash_map< HK , HK >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK v ) const { return( t->insert( { k , v } ) ); }
- bool has( HK k ) const { M::const_accessor a; return( t->find( a , k ) ); }
+ bool has( HK k ) const {
+  M::const_accessor a;
+  return( t->find( a , k ) );
+  }
  HK foi( HK k , HK v ) const {
   M::const_accessor a;
   t->insert( a , { k , v } );
-  return( a->second ); }
+  return( a->second );
+  }
  };
 
-struct TbbUnordered {
+struct TbbUnordered
+{
  static constexpr bool grows = true;
  using M = tbb::concurrent_unordered_map< HK , HK >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK v ) const { return( t->insert( { k , v } ).second ); }
  bool has( HK k ) const { return( t->find( k ) != t->end() ); }
- HK foi( HK k , HK v ) const { return( t->insert( { k , v } ).first->second );
-  }
+ HK foi( HK k ,
+	 HK v ) const { return( t->insert( { k , v } ).first->second ); }
  };
 #endif
 
 #if defined( ADS_HAS_LIBCUCKOO )
-struct LibCuckoo {
+struct LibCuckoo
+{
  static constexpr bool grows = true;
  using M = libcuckoo::cuckoohash_map< HK , HK >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK v ) const { return( t->insert( k , v ) ); }
  bool has( HK k ) const { return( t->contains( k ) ); }
  HK foi( HK k , HK v ) const {
   HK r = v;
-  t->upsert( k , [ & r ]( HK & x ) { r = x; } , v );
-  return( r ); }
+  t->upsert( k , [ &r ]( HK & x ) { r = x; } , v );
+  return( r );
+  }
  };
 #endif
 
 #if defined( ADS_HAS_PARLAY )
 /// the keys alone, by linear probing; it does not grow
-struct ParlayHashing {
+struct ParlayHashing
+{
  using eType = HK;
  using kType = HK;
  eType empty( void ) { return( ~HK( 0 ) ); }
  kType getKey( eType v ) { return( v ); }
  std::size_t hash( kType v ) {
-  return( std::size_t( ( v * 0x9E3779B97F4A7C15ull ) >> 3 ) ); }
+  return( std::size_t( ( v * 0x9E3779B97F4A7C15ull ) >> 3 ) );
+  }
  int cmp( kType v , kType w ) { return( v > w ? 1 : ( v == w ? 0 : -1 ) ); }
  bool replaceQ( eType , eType ) { return( false ); }
  eType update( eType v , eType ) { return( v ); }
@@ -1701,12 +1902,16 @@ struct ParlayHashing {
   }
  };
 
-struct ParlaySet {
+struct ParlaySet
+{
  static constexpr bool grows = false;
  using M = parlay::hashtable< ParlayHashing >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c , ParlayHashing() ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool ins( HK k , HK ) const { return( t->insert( k ) ); }
  bool has( HK k ) const { return( t->find( k ) != ~HK( 0 ) ); }
  HK foi( HK k , HK v ) const { return( t->insert( k ) ? v : k ); }
@@ -1716,7 +1921,8 @@ struct ParlaySet {
 #if defined( ADS_HAS_GROWT )
 /// the tables of growt made so far, so that a handle of a thread is never
 /// taken for one of another table
-inline std::atomic< std::uint64_t > growtTables{ 0 };
+inline std::atomic< std::uint64_t > growtTables
+{ 0 };
 
 /// the handle of growt of this thread for the table t, the g-th made,
 /// made at its first use; never destroyed, since the benchmark destroys
@@ -1736,29 +1942,36 @@ typename T::handle_type & growtHandle( T * t , std::uint64_t g )
 /// a table of growt (Maier, Sanders and Dementiev) with the modifiers
 /// Mods: growable alone is uaGrow, which marks the cells it migrates, and
 /// with sync usGrow, whose growth excludes the updates
-template< hmod ... Mods >
-struct Growt {
+template< hmod... Mods >
+struct Growt
+{
  static constexpr bool grows = true;
- using M = typename growt::table_config< HK , HK ,
-                                         utils_tm::hash_tm::murmur2_hash ,
-                                         growt::AlignedAllocator<> ,
-                                         Mods ... >::table_type;
+ using M =
+   typename growt::table_config< HK , HK , utils_tm::hash_tm::murmur2_hash ,
+				 growt::AlignedAllocator<> ,
+				 Mods... >::table_type;
  M * t = nullptr;
  std::uint64_t g = 0;
  void make( std::size_t c ) {
   t = new M( std::max< std::size_t >( c , 64 ) );
-  g = growtTables.fetch_add( 1 ) + 1; }
- void drop( void ) { delete t; t = nullptr; }
+  g = growtTables.fetch_add( 1 ) + 1;
+  }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  typename M::handle_type & h( void ) const { return( growtHandle( t , g ) ); }
  bool ins( HK k , HK v ) const { return( h().insert( k , v ).second ); }
  bool has( HK k ) const {
   auto & x = h();
-  return( x.find( k ) != x.end() ); }
+  return( x.find( k ) != x.end() );
+  }
  // the iterator of a successful insertion holds the place as it was
  // before it, the value of the pair inserted is v
  HK foi( HK k , HK v ) const {
   auto r = h().insert( k , v );
-  return( r.second ? v : HK( ( *r.first ).second ) ); }
+  return( r.second ? v : HK( ( *r.first ).second ) );
+  }
  };
 #endif
 
@@ -1770,10 +1983,10 @@ struct Growt {
 /// present keys) and 10% insertions into a table of n / 2 keys
 template< class A >
 void hashTable( const std::string & who , std::size_t n , int r ,
-                ADS::ThreadPool & pool , const std::vector< HK > & keys ,
-                const std::vector< HK > & absent ,
-                const std::vector< HK > & twice ,
-                const std::vector< HK > & mixed )
+		ADS::ThreadPool & pool , const std::vector< HK > & keys ,
+		const std::vector< HK > & absent ,
+		const std::vector< HK > & twice ,
+		const std::vector< HK > & mixed )
 {
  if( ADS::bench::skip( who ) )
   return;
@@ -1784,45 +1997,81 @@ void hashTable( const std::string & who , std::size_t n , int r ,
  const HK * D = twice.data();
  const HK * M = mixed.data();
  auto cell = [ & ]( const char * what , std::size_t ops , auto && prepare ,
-                    auto && work , auto && ok ) {
+		    auto && work , auto && ok ) {
   ADS::bench::print( bench( what ).c_str() , "uint64" , n , who ,
-                     timeRuns( ops , prepare , work , r , ok ) ); };
+		     timeRuns( ops , prepare , work , r , ok ) );
+  };
  auto fill = [ & ]( std::size_t c , std::size_t m ) {
   a.drop();
   a.make( c );
-  blocks( pool , m , t , [ a , K ]( std::size_t i ) {
-   return( a.ins( K[ i ] , HK( i ) ) ); } ); };
- cell( "hash insert" , n , [ & ] { a.drop(); a.make( n ); } , [ & ] {
-  blocks( pool , n , t , [ a , K ]( std::size_t i ) {
-   return( a.ins( K[ i ] , HK( i ) ) ); } ); } ,
-  [ & ] { return( t.n.load() == n ); } );
- cell( "hash find" , n , [] {} , [ & ] {
-  blocks( pool , n , t , [ a , K ]( std::size_t i ) {
-   return( a.has( K[ i ] ) ); } ); } ,
-  [ & ] { return( t.n.load() == n ); } );
- cell( "hash find absent" , n , [] {} , [ & ] {
-  blocks( pool , n , t , [ a , X ]( std::size_t i ) {
-   return( a.has( X[ i ] ) ); } ); } ,
-  [ & ] { return( t.n.load() == 0 ); } );
- if constexpr( A::grows )
-  cell( "hash insert grow" , n , [ & ] { a.drop(); a.make( 0 ); } , [ & ] {
-   blocks( pool , n , t , [ a , K ]( std::size_t i ) {
-    return( a.ins( K[ i ] , HK( i ) ) ); } ); } ,
+  blocks( pool , m , t ,
+	  [ a ,
+	    K ]( std::size_t i ) { return( a.ins( K[ i ] , HK( i ) ) ); } );
+  };
+ cell(
+   "hash insert" , n ,
+   [ & ] {
+    a.drop();
+    a.make( n );
+    } ,
+   [ & ] {
+    blocks( pool , n , t , [ a , K ]( std::size_t i ) {
+     return( a.ins( K[ i ] , HK( i ) ) );
+     } );
+    } ,
    [ & ] { return( t.n.load() == n ); } );
+ cell(
+   "hash find" , n , [] { } ,
+   [ & ] {
+    blocks( pool , n , t ,
+	    [ a , K ]( std::size_t i ) { return( a.has( K[ i ] ) ); } );
+    } ,
+   [ & ] { return( t.n.load() == n ); } );
+ cell(
+   "hash find absent" , n , [] { } ,
+   [ & ] {
+    blocks( pool , n , t ,
+	    [ a , X ]( std::size_t i ) { return( a.has( X[ i ] ) ); } );
+    } ,
+   [ & ] { return( t.n.load() == 0 ); } );
+ if constexpr( A::grows )
+  cell(
+    "hash insert grow" , n ,
+    [ & ] {
+     a.drop();
+     a.make( 0 );
+     } ,
+    [ & ] {
+     blocks( pool , n , t , [ a , K ]( std::size_t i ) {
+      return( a.ins( K[ i ] , HK( i ) ) );
+      } );
+     } ,
+    [ & ] { return( t.n.load() == n ); } );
  // the value held for each key, the first inserted: the sum of the keys
  // of the first insertions, whichever thread did them
- cell( "hash find-or-insert" , 2 * n , [ & ] { a.drop(); a.make( n ); } ,
-  [ & ] {
-   blocks( pool , 2 * n , t , [ a , D ]( std::size_t i ) {
-    return( std::size_t( a.foi( D[ i ] , D[ i ] ) == D[ i ] ) ); } ); } ,
-  [ & ] { return( t.n.load() == 2 * n ); } );
+ cell(
+   "hash find-or-insert" , 2 * n ,
+   [ & ] {
+    a.drop();
+    a.make( n );
+    } ,
+   [ & ] {
+    blocks( pool , 2 * n , t , [ a , D ]( std::size_t i ) {
+     return( std::size_t( a.foi( D[ i ] , D[ i ] ) == D[ i ] ) );
+     } );
+    } ,
+   [ & ] { return( t.n.load() == 2 * n ); } );
  // M[ i ]: a key to look up, or to insert if its top bit is set
- cell( "hash mixed 90/10" , n , [ & ] { fill( n , n / 2 ); } , [ & ] {
-  blocks( pool , n , t , [ a , M ]( std::size_t i ) {
-   const HK k = M[ i ];
-   return( std::size_t( k >> 63 ? a.ins( k & ~( HK( 1 ) << 63 ) , k ) :
-                                  a.has( k ) ) ); } ); } ,
-  [] { return( true ); } );
+ cell(
+   "hash mixed 90/10" , n , [ & ] { fill( n , n / 2 ); } ,
+   [ & ] {
+    blocks( pool , n , t , [ a , M ]( std::size_t i ) {
+     const HK k = M[ i ];
+     return( std::size_t( k >> 63 ? a.ins( k & ~( HK( 1 ) << 63 ) , k )
+				   : a.has( k ) ) );
+     } );
+    } ,
+   [] { return( true ); } );
  a.drop();
  }
 
@@ -1833,14 +2082,15 @@ void hashTable( const std::string & who , std::size_t n , int r ,
 /// tables of oneTBB and libcuckoo, and the set of ParlayLib, which does
 /// not grow
 void hashing( const std::vector< std::size_t > & sizes , int r ,
-              unsigned seed , Executors & X )
+	      unsigned seed ,
+	      Executors & X )
 {
  if( ! runs( "pool" ) )
   return;
  for( std::size_t n : sizes ) {
   auto all = ADS::bench::keys( 2 * n , seed );
   const std::vector< HK > keys( all.begin() , all.begin() + n ) ,
-                          absent( all.begin() + n , all.end() );
+    absent( all.begin() + n , all.end() );
   std::mt19937_64 g( seed + 1 );
   std::vector< HK > twice( keys );
   twice.insert( twice.end() , keys.begin() , keys.end() );
@@ -1853,33 +2103,37 @@ void hashing( const std::vector< std::size_t > & sizes , int r ,
     mixed[ i ] = ( g() & 1 ) ? keys[ g() % ( n / 2 ) ] : absent[ g() % n ];
   auto & pool = X.pool();
   hashTable< AdsFlat >( "ADS::ConcurrentFlatTable" , n , r , pool , keys ,
-                        absent , twice , mixed );
-  hashTable< AdsFlat >( "ADS::ConcurrentFlatTable A/A" , n , r , pool ,
-                        keys , absent , twice , mixed );
+			absent ,
+			twice , mixed );
+  hashTable< AdsFlat >( "ADS::ConcurrentFlatTable A/A" , n , r , pool , keys ,
+			absent , twice , mixed );
   hashTable< AdsFlatSet >( "ADS::ConcurrentFlatTable (keys only)" , n , r ,
-                           pool , keys , absent , twice , mixed );
-  hashTable< AdsCuckoo >( "ADS::ConcurrentCuckooTable" , n , r , pool ,
-                          keys , absent , twice , mixed );
+			   pool ,
+			   keys , absent , twice , mixed );
+  hashTable< AdsCuckoo >( "ADS::ConcurrentCuckooTable" , n , r , pool , keys ,
+			  absent , twice , mixed );
 #if defined( ADS_HAS_TBB )
   hashTable< TbbHash >( "tbb::concurrent_hash_map" , n , r , pool , keys ,
-                        absent , twice , mixed );
+			absent ,
+			twice , mixed );
   hashTable< TbbUnordered >( "tbb::concurrent_unordered_map" , n , r , pool ,
-                             keys , absent , twice , mixed );
+			     keys ,
+			     absent , twice , mixed );
 #endif
 #if defined( ADS_HAS_LIBCUCKOO )
   hashTable< LibCuckoo >( "libcuckoo::cuckoohash_map" , n , r , pool , keys ,
-                          absent , twice , mixed );
+			  absent , twice , mixed );
 #endif
 #if defined( ADS_HAS_PARLAY )
   hashTable< ParlaySet >( "parlay::hashtable (keys only)" , n , r , pool ,
-                          keys , absent , twice , mixed );
+			  keys ,
+			  absent , twice , mixed );
 #endif
 #if defined( ADS_HAS_GROWT )
-  hashTable< Growt< hmod::growable > >( "growt uaGrow" , n , r , pool ,
-                                        keys , absent , twice , mixed );
-  hashTable< Growt< hmod::growable , hmod::sync > >( "growt usGrow" , n , r ,
-                                                     pool , keys , absent ,
-                                                     twice , mixed );
+  hashTable< Growt< hmod::growable > >( "growt uaGrow" , n , r , pool , keys ,
+					absent , twice , mixed );
+  hashTable< Growt< hmod::growable , hmod::sync > >(
+    "growt usGrow" , n , r , pool , keys , absent , twice , mixed );
 #endif
   }
  }
@@ -1888,12 +2142,15 @@ void hashing( const std::vector< std::size_t > & sizes , int r ,
 using State = std::array< std::uint64_t , 4 >;
 
 /// the hash of a state, its words folded by hashWord()
-struct StateHash {
+struct StateHash
+{
  using is_avalanching = void;
  std::size_t operator()( const State & s ) const {
   std::uint64_t h = 0;
-  for( std::uint64_t w : s ) h = ADS::hashWord( h ^ w );
-  return( std::size_t( h ) ); }
+  for( std::uint64_t w : s )
+   h = ADS::hashWord( h ^ w );
+  return( std::size_t( h ) );
+  }
  };
 
 /// the works of the CLOSED set of a search on the table A of states: the
@@ -1901,8 +2158,8 @@ struct StateHash {
 /// empty table made for n, then the lookups of the n states
 template< class A >
 void closedTable( const std::string & who , std::size_t n , int r ,
-                  ADS::ThreadPool & pool , const std::vector< State > & S ,
-                  const std::vector< std::uint32_t > & twice )
+		  ADS::ThreadPool & pool , const std::vector< State > & S ,
+		  const std::vector< std::uint32_t > & twice )
 {
  if( ADS::bench::skip( who ) )
   return;
@@ -1910,101 +2167,142 @@ void closedTable( const std::string & who , std::size_t n , int r ,
  Tally t;
  const State * s = S.data();
  const std::uint32_t * D = twice.data();
- ADS::bench::print( bench( "closed find-or-insert" ).c_str() , "state32" ,
-                    n , who , timeRuns( 2 * n , [ & ] {
-  a.drop(); a.make( n ); } , [ & ] {
-  blocks( pool , 2 * n , t , [ a , s , D ]( std::size_t i ) {
-   return( std::size_t( a.foi( s[ D[ i ] ] , D[ i ] ) == D[ i ] ) ); } );
-  } , r , [ & ] { return( t.n.load() == 2 * n ); } ) );
+ ADS::bench::print(
+   bench( "closed find-or-insert" ).c_str() , "state32" , n , who ,
+   timeRuns(
+     2 * n ,
+     [ & ] {
+      a.drop();
+      a.make( n );
+      } ,
+     [ & ] {
+      blocks( pool , 2 * n , t , [ a , s , D ]( std::size_t i ) {
+       return( std::size_t( a.foi( s[ D[ i ] ] , D[ i ] ) == D[ i ] ) );
+       } );
+      } ,
+     r , [ & ] { return( t.n.load() == 2 * n ); } ) );
  ADS::bench::print( bench( "closed find" ).c_str() , "state32" , n , who ,
-                    timeRuns( n , [] {} , [ & ] {
-  blocks( pool , n , t , [ a , s ]( std::size_t i ) {
-   return( a.has( s[ i ] ) ); } ); } , r ,
-  [ & ] { return( t.n.load() == n ); } ) );
+		    timeRuns(
+		      n , [] { } ,
+		      [ & ] {
+		       blocks( pool , n , t , [ a , s ]( std::size_t i ) {
+			return( a.has( s[ i ] ) );
+		        } );
+		       } ,
+		      r , [ & ] { return( t.n.load() == n ); } ) );
  a.drop();
  }
 
-struct ClosedFlat {
+struct ClosedFlat
+{
  using M = ADS::ConcurrentFlatTable< State , std::uint64_t , StateHash >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool has( const State & k ) const { return( t->contains( k ) ); }
  std::uint64_t foi( const State & k , std::uint64_t v ) const {
-  return( t->findOrInsert( k , v ).first.value ); }
+  return( t->findOrInsert( k , v ).first.value );
+  }
  };
 
-struct ClosedCuckoo {
+struct ClosedCuckoo
+{
  using M = ADS::ConcurrentCuckooTable< State , std::uint64_t , StateHash >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool has( const State & k ) const { return( t->contains( k ) ); }
  std::uint64_t foi( const State & k , std::uint64_t v ) const {
-  return( t->insert( k , v ) ? v : *t->find( k ) ); }
+  return( t->insert( k , v ) ? v : *t->find( k ) );
+  }
  };
 
 #if defined( ADS_HAS_TBB )
-struct ClosedTbb {
- struct HC {
+struct ClosedTbb
+{
+ struct HC
+ {
   std::size_t hash( const State & s ) const { return( StateHash()( s ) ); }
-  bool equal( const State & a , const State & b ) const {
-   return( a == b ); }
+  bool equal( const State & a , const State & b ) const { return( a == b ); }
   };
  using M = tbb::concurrent_hash_map< State , std::uint64_t , HC >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool has( const State & k ) const {
-  M::const_accessor x; return( t->find( x , k ) ); }
+  M::const_accessor x;
+  return( t->find( x , k ) );
+  }
  std::uint64_t foi( const State & k , std::uint64_t v ) const {
   M::const_accessor x;
   t->insert( x , { k , v } );
-  return( x->second ); }
+  return( x->second );
+  }
  };
 #endif
 
 #if defined( ADS_HAS_LIBCUCKOO )
-struct ClosedLibCuckoo {
+struct ClosedLibCuckoo
+{
  using M = libcuckoo::cuckoohash_map< State , std::uint64_t , StateHash >;
  M * t = nullptr;
  void make( std::size_t c ) { t = new M( c ); }
- void drop( void ) { delete t; t = nullptr; }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  bool has( const State & k ) const { return( t->contains( k ) ); }
  std::uint64_t foi( const State & k , std::uint64_t v ) const {
   std::uint64_t r = v;
-  t->upsert( k , [ & r ]( std::uint64_t & x ) { r = x; } , v );
-  return( r ); }
+  t->upsert( k , [ &r ]( std::uint64_t & x ) { r = x; } , v );
+  return( r );
+  }
  };
 #endif
 
 #if defined( ADS_HAS_GROWT )
 /// the table of growt of states, of arbitrary keys in nodes on the heap
-struct ClosedGrowt {
+struct ClosedGrowt
+{
  using M = typename growt::table_config< State , std::uint64_t , StateHash ,
-                                         growt::AlignedAllocator<> ,
-                                         hmod::growable >::table_type;
+					 growt::AlignedAllocator<> ,
+					 hmod::growable >::table_type;
  M * t = nullptr;
  std::uint64_t g = 0;
  void make( std::size_t c ) {
   t = new M( std::max< std::size_t >( c , 64 ) );
-  g = growtTables.fetch_add( 1 ) + 1; }
- void drop( void ) { delete t; t = nullptr; }
+  g = growtTables.fetch_add( 1 ) + 1;
+  }
+ void drop( void ) {
+  delete t;
+  t = nullptr;
+  }
  typename M::handle_type & h( void ) const { return( growtHandle( t , g ) ); }
  bool has( const State & k ) const {
   auto & x = h();
-  return( x.find( k ) != x.end() ); }
+  return( x.find( k ) != x.end() );
+  }
  std::uint64_t foi( const State & k , std::uint64_t v ) const {
   auto r = h().insert( k , v );
-  return( r.second ? v : std::uint64_t( ( *r.first ).second ) ); }
+  return( r.second ? v : std::uint64_t( ( *r.first ).second ) );
+  }
  };
 #endif
 
 /// the CLOSED set of a search, states of 32 bytes: ConcurrentFlatTable
 /// against ConcurrentCuckooTable (which reads them under its locks) and
 /// the tables of oneTBB and libcuckoo
-void closed( const std::vector< std::size_t > & sizes , int r ,
-             unsigned seed , Executors & X )
+void closed( const std::vector< std::size_t > & sizes , int r , unsigned seed ,
+	     Executors & X )
 {
  if( ! runs( "pool" ) )
   return;
@@ -2020,18 +2318,21 @@ void closed( const std::vector< std::size_t > & sizes , int r ,
   std::shuffle( twice.begin() , twice.end() , g );
   auto & pool = X.pool();
   closedTable< ClosedFlat >( "ADS::ConcurrentFlatTable" , n , r , pool , S ,
-                             twice );
+			     twice );
   closedTable< ClosedFlat >( "ADS::ConcurrentFlatTable A/A" , n , r , pool ,
-                             S , twice );
+			     S ,
+			     twice );
   closedTable< ClosedCuckoo >( "ADS::ConcurrentCuckooTable" , n , r , pool ,
-                               S , twice );
+			       S ,
+			       twice );
 #if defined( ADS_HAS_TBB )
   closedTable< ClosedTbb >( "tbb::concurrent_hash_map" , n , r , pool , S ,
-                            twice );
+			    twice );
 #endif
 #if defined( ADS_HAS_LIBCUCKOO )
-  closedTable< ClosedLibCuckoo >( "libcuckoo::cuckoohash_map" , n , r ,
-                                  pool , S , twice );
+  closedTable< ClosedLibCuckoo >( "libcuckoo::cuckoohash_map" , n , r , pool ,
+				  S ,
+				  twice );
 #endif
 #if defined( ADS_HAS_GROWT )
   closedTable< ClosedGrowt >( "growt uaGrow" , n , r , pool , S , twice );
@@ -2050,44 +2351,61 @@ using PQK = std::uint64_t;
 
 /// the MultiQueue of ADS with q queues per thread and the stickiness s
 template< std::size_t Q , unsigned S >
-struct AdsMQ {
+struct AdsMQ
+{
  using M = ADS::MultiQueue< PQK , std::uint64_t >;
  using Hd = M::Handle;
  M * m = nullptr;
  void make( std::size_t p ) { m = new M( Q ? Q * p : 1 , S ); }
- void drop( void ) { delete m; m = nullptr; }
+ void drop( void ) {
+  delete m;
+  m = nullptr;
+  }
  Hd handle( void ) const { return( m->handle() ); }
  static void push( Hd & h , PQK k , std::uint64_t x ) { h.push( k , x ); }
  static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
   const auto e = h.tryPop();
-  if( ! e ) return( false );
+  if( ! e )
+   return( false );
   k = e->key;
   x = e->item;
-  return( true ); }
+  return( true );
+  }
  };
 
 #if defined( ADS_HAS_TBB )
 /// the queue of oneTBB, exact, its operations combined by one thread
-struct TbbPQ {
+struct TbbPQ
+{
  using E = std::pair< PQK , std::uint64_t >;
- struct Later {
+ struct Later
+ {
   bool operator()( const E & a , const E & b ) const {
-   return( a.first > b.first ); }
+   return( a.first > b.first );
+   }
   };
  using M = tbb::concurrent_priority_queue< E , Later >;
- struct Hd { M * m; };
+ struct Hd
+ {
+  M * m;
+  };
  M * m = nullptr;
  void make( std::size_t ) { m = new M(); }
- void drop( void ) { delete m; m = nullptr; }
+ void drop( void ) {
+  delete m;
+  m = nullptr;
+  }
  Hd handle( void ) const { return( Hd{ m } ); }
- static void push( Hd & h , PQK k , std::uint64_t x ) {
-  h.m->push( E( k , x ) ); }
+ static void push( Hd & h , PQK k ,
+		   std::uint64_t x ) { h.m->push( E( k , x ) ); }
  static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
   E e;
-  if( ! h.m->try_pop( e ) ) return( false );
+  if( ! h.m->try_pop( e ) )
+   return( false );
   k = e.first;
   x = e.second;
-  return( true ); }
+  return( true );
+  }
  };
 #endif
 
@@ -2096,33 +2414,41 @@ struct TbbPQ {
 /// per thread, the better of two random queues, with the stickiness S of
 /// its mode StickRandom (S = 0: its mode Random, no stickiness)
 template< int S >
-struct RefMQ {
- struct Policy {
-  using mode_type = std::conditional_t< S == 0 ,
-                                        multiqueue::mode::Random<> ,
-                                        multiqueue::mode::StickRandom<> >;
+struct RefMQ
+{
+ struct Policy
+ {
+  using mode_type = std::conditional_t< S == 0 , multiqueue::mode::Random<> ,
+					multiqueue::mode::StickRandom<> >;
   static constexpr int pop_tries = 1;
   static constexpr bool scan = true;
   };
  // the least first under std::greater, as in std::priority_queue
  using M = multiqueue::KeyValueMultiQueue< PQK , std::uint64_t ,
-                                           std::greater<> , Policy >;
+					   std::greater<> ,
+					   Policy >;
  using Hd = typename M::handle_type;
  M * m = nullptr;
  void make( std::size_t p ) {
   typename M::config_type c{};
-  if constexpr( S > 0 ) c.stickiness = S;
-  m = new M( 2 * p , c ); }
- void drop( void ) { delete m; m = nullptr; }
- Hd handle( void ) const { return( m->get_handle() ); }
- static void push( Hd & h , PQK k , std::uint64_t x ) { h.push( { k , x } );
+  if constexpr( S > 0 )
+   c.stickiness = S;
+  m = new M( 2 * p , c );
   }
+ void drop( void ) {
+  delete m;
+  m = nullptr;
+  }
+ Hd handle( void ) const { return( m->get_handle() ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) { h.push( { k , x } ); }
  static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
   const auto e = h.try_pop();
-  if( ! e ) return( false );
+  if( ! e )
+   return( false );
   k = e->first;
   x = e->second;
-  return( true ); }
+  return( true );
+  }
  };
 #endif
 
@@ -2130,21 +2456,29 @@ struct RefMQ {
 /// the lock-free k-LSM of Wimmer, Gruber, Traff and Tsigas, relaxed by
 /// R items per thread
 template< int R >
-struct KLsm {
+struct KLsm
+{
  using M = kpq::k_lsm< PQK , std::uint64_t , R >;
- struct Hd { M * m; };
+ struct Hd
+ {
+  M * m;
+  };
  M * m = nullptr;
  void make( std::size_t ) { m = new M(); }
- void drop( void ) { delete m; m = nullptr; }
- Hd handle( void ) const { return( Hd{ m } ); }
- static void push( Hd & h , PQK k , std::uint64_t x ) { h.m->insert( k , x );
+ void drop( void ) {
+  delete m;
+  m = nullptr;
   }
+ Hd handle( void ) const { return( Hd{ m } ); }
+ static void push( Hd & h , PQK k , std::uint64_t x ) { h.m->insert( k , x ); }
  // a pop of the k-LSM may fail with items in the local parts of other
  // threads, which it then spies: 64 tries before an empty answer
  static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
   for( int i = 0 ; i < 64 ; ++i )
-   if( h.m->delete_min( k , x ) ) return( true );
-  return( false ); }
+   if( h.m->delete_min( k , x ) )
+    return( true );
+  return( false );
+  }
  };
 #endif
 
@@ -2156,27 +2490,36 @@ struct KLsm {
 /// never freed, as a share of 10 GB per thread count: a count of 1 gives
 /// each thread the whole 10 GB (of virtual memory), and the second call
 /// sets the true count of the threads, which the sprays use
-struct Spray {
+struct Spray
+{
  using M = kpqbench::spraylist;
- struct Hd { M * m; };
+ struct Hd
+ {
+  M * m;
+  };
  M * m = nullptr;
  void make( std::size_t ) {
   m = new M( 1 );
-  m->init_thread( std::size_t( threads ) ); }
+  m->init_thread( std::size_t( threads ) );
+  }
  void drop( void ) { m = nullptr; }
  Hd handle( void ) const {
   m->init_thread( 1 );
   m->init_thread( std::size_t( threads ) );
-  return( Hd{ m } ); }
+  return( Hd{ m } );
+  }
  static void push( Hd & h , PQK k , std::uint64_t x ) {
   const std::size_t a = k , b = x;
-  h.m->insert( a , b ); }
+  h.m->insert( a , b );
+  }
  static bool pop( Hd & h , PQK & k , std::uint64_t & x ) {
   std::size_t a , b;
-  if( ! h.m->delete_min( a , b ) ) return( false );
+  if( ! h.m->delete_min( a , b ) )
+   return( false );
   k = a;
   x = b;
-  return( true ); }
+  return( true );
+  }
  };
 #endif
 
@@ -2189,84 +2532,104 @@ struct Spray {
 /// Sanders and Dementiev); the mean and the maximum over the pops
 template< class A >
 void rankErrors( const std::string & who , std::size_t n ,
-                 ADS::ThreadPool & pool , const std::vector< PQK > & K )
+		 ADS::ThreadPool & pool , const std::vector< PQK > & K )
 {
  if( ADS::bench::skip( who ) )
   return;
- struct Event {
-  std::int64_t t;   // the time of the return
+ struct Event
+ {
+  std::int64_t t;  // the time of the return
   PQK key;
   bool pop;
   };
  A a;
  a.make( std::size_t( threads ) );
  const PQK * k = K.data();
- ADS::parallelForBlocks( pool , 0 , n , [ a , k ]( std::size_t lo ,
-                                                   std::size_t hi ) {
-  auto h = a.handle();
-  for( std::size_t i = lo ; i < hi ; ++i ) A::push( h , k[ i ] , i ); } );
+ ADS::parallelForBlocks( pool , 0 , n ,
+			 [ a , k ]( std::size_t lo , std::size_t hi ) {
+			  auto h = a.handle();
+			  for( std::size_t i = lo ; i < hi ; ++i )
+			   A::push( h , k[ i ] , i );
+			  } );
  const std::size_t blocks = ( n + ADS::kGrain - 1 ) / ADS::kGrain;
  std::vector< std::vector< Event > > log( blocks );
  auto now = [] {
-  return( std::chrono::steady_clock::now().time_since_epoch().count() ); };
- ADS::parallelForBlocks( pool , 0 , n , [ a , k , &log , now ](
-                                         std::size_t lo , std::size_t hi ) {
-  auto h = a.handle();
-  auto & L = log[ lo / ADS::kGrain ];
-  L.reserve( 2 * ( hi - lo ) );
-  PQK key;
-  std::uint64_t x;
-  for( std::size_t i = lo ; i < hi ; ++i )
-   if( A::pop( h , key , x ) ) {
-    L.push_back( { now() , key , true } );
-    const PQK y = key + 1 + ( k[ i ] & 1023 );
-    A::push( h , y , x );
-    L.push_back( { now() , y , false } );
-    } } );
+  return( std::chrono::steady_clock::now().time_since_epoch().count() );
+  };
+ ADS::parallelForBlocks(
+   pool , 0 , n , [ a , k , &log , now ]( std::size_t lo , std::size_t hi ) {
+    auto h = a.handle();
+    auto & L = log[ lo / ADS::kGrain ];
+    L.reserve( 2 * ( hi - lo ) );
+    PQK key;
+    std::uint64_t x;
+    for( std::size_t i = lo ; i < hi ; ++i )
+     if( A::pop( h , key , x ) ) {
+      L.push_back( { now() , key , true } );
+      const PQK y = key + 1 + ( k[ i ] & 1023 );
+      A::push( h , y , x );
+      L.push_back( { now() , y , false } );
+      }
+    } );
  a.drop();
  std::vector< Event > E;
- for( auto & L : log ) E.insert( E.end() , L.begin() , L.end() );
- std::stable_sort( E.begin() , E.end() , []( const Event & u ,
-                                             const Event & v ) {
-  return( u.t < v.t ); } );
- std::vector< PQK > U( K.begin() , K.end() );   // the keys, sorted
- for( const Event & e : E ) if( ! e.pop ) U.push_back( e.key );
+ for( auto & L : log )
+  E.insert( E.end() , L.begin() , L.end() );
+ std::stable_sort( E.begin() , E.end() ,
+		   []( const Event & u , const Event & v ) {
+  return( u.t < v.t );
+  } );
+ std::vector< PQK > U( K.begin() , K.end() );  // the keys, sorted
+ for( const Event & e : E )
+  if( ! e.pop )
+   U.push_back( e.key );
  std::sort( U.begin() , U.end() );
  U.erase( std::unique( U.begin() , U.end() ) , U.end() );
  const std::size_t m = U.size();
  std::vector< std::int64_t > F( m + 1 , 0 ) , C( m , 0 ) , debt( m , 0 );
  auto at = [ & ]( PQK x ) {
-  return( std::size_t( std::lower_bound( U.begin() , U.end() , x ) -
-                       U.begin() ) ); };
+  return(
+    std::size_t( std::lower_bound( U.begin() , U.end() , x ) - U.begin() ) );
+  };
  auto add = [ & ]( std::size_t i , std::int64_t d ) {
   C[ i ] += d;
-  for( ++i ; i <= m ; i += i & ( 0 - i ) ) F[ i ] += d; };
+  for( ++i ; i <= m ; i += i & ( 0 - i ) )
+   F[ i ] += d;
+  };
  auto below = [ & ]( std::size_t i ) {
   std::int64_t s = 0;
-  for( ; i > 0 ; i -= i & ( 0 - i ) ) s += F[ i ];
-  return( s ); };
- for( PQK x : K ) add( at( x ) , 1 );
+  for( ; i > 0 ; i -= i & ( 0 - i ) )
+   s += F[ i ];
+  return( s );
+  };
+ for( PQK x : K )
+  add( at( x ) , 1 );
  double sum = 0;
  std::int64_t worst = 0;
  std::size_t pops = 0;
  for( const Event & e : E ) {
   const std::size_t i = at( e.key );
   if( ! e.pop ) {
-   if( debt[ i ] > 0 ) --debt[ i ];       // popped before its push returned
-   else add( i , 1 );
+   if( debt[ i ] > 0 )
+    --debt[ i ];  // popped before its push returned
+   else
+    add( i , 1 );
    continue;
    }
   const std::int64_t r = below( i );
   sum += double( r );
   worst = std::max( worst , r );
   ++pops;
-  if( C[ i ] > 0 ) add( i , -1 );
-  else ++debt[ i ];
+  if( C[ i ] > 0 )
+   add( i , -1 );
+  else
+   ++debt[ i ];
   }
  ADS::bench::print( bench( "pq rank error mean" ).c_str() , "uint64" , n ,
-                    who , pops ? sum / double( pops ) : -1 );
- ADS::bench::print( bench( "pq rank error max" ).c_str() , "uint64" , n ,
-                    who , double( worst ) );
+		    who ,
+		    pops ? sum / double( pops ) : -1 );
+ ADS::bench::print( bench( "pq rank error max" ).c_str() , "uint64" , n , who ,
+		    double( worst ) );
  }
 
 /// the works of the priority queue A on the threads of the pool, n pairs:
@@ -2277,7 +2640,7 @@ void rankErrors( const std::string & who , std::size_t n ,
 /// to 2^10, n pops and pushes in all, per pair of operations
 template< class A >
 void priorityQueue( const std::string & who , std::size_t n , int r ,
-                    ADS::ThreadPool & pool , const std::vector< PQK > & K )
+		    ADS::ThreadPool & pool , const std::vector< PQK > & K )
 {
  if( ADS::bench::skip( who ) )
   return;
@@ -2285,80 +2648,104 @@ void priorityQueue( const std::string & who , std::size_t n , int r ,
  Tally t;
  const PQK * k = K.data();
  auto cell = [ & ]( const char * what , auto && prepare , auto && work ,
-                    auto && ok ) {
+		    auto && ok ) {
   ADS::bench::print( bench( what ).c_str() , "uint64" , n , who ,
-                     timeRuns( n , prepare , work , r , ok ) ); };
+		     timeRuns( n , prepare , work , r , ok ) );
+  };
  auto pushAll = [ & ] {
   t.n.store( 0 , std::memory_order_relaxed );
-  ADS::parallelForBlocks( pool , 0 , n , [ a , k ]( std::size_t lo ,
-                                                    std::size_t hi ) {
-   auto h = a.handle();
-   for( std::size_t i = lo ; i < hi ; ++i ) A::push( h , k[ i ] , i ); } );
+  ADS::parallelForBlocks( pool , 0 , n ,
+			  [ a , k ]( std::size_t lo , std::size_t hi ) {
+			   auto h = a.handle();
+			   for( std::size_t i = lo ; i < hi ; ++i )
+			    A::push( h , k[ i ] , i );
+			   } );
   };
  auto popAll = [ & ] {
   t.n.store( 0 , std::memory_order_relaxed );
-  ADS::parallelForBlocks( pool , 0 , std::size_t( threads ) ,
-                          [ a , &t ]( std::size_t lo , std::size_t hi ) {
-   auto h = a.handle();
-   std::size_t c = 0;
-   PQK key;
-   std::uint64_t x;
-   for( std::size_t j = lo ; j < hi ; ++j )
-    while( A::pop( h , key , x ) ) ++c;
-   t.n.fetch_add( c , std::memory_order_relaxed ); } , 1 );
+  ADS::parallelForBlocks(
+    pool , 0 , std::size_t( threads ) ,
+    [ a , &t ]( std::size_t lo , std::size_t hi ) {
+     auto h = a.handle();
+     std::size_t c = 0;
+     PQK key;
+     std::uint64_t x;
+     for( std::size_t j = lo ; j < hi ; ++j )
+      while( A::pop( h , key , x ) )
+       ++c;
+     t.n.fetch_add( c , std::memory_order_relaxed );
+     } ,
+    1 );
   };
- cell( "pq fill-drain" , [ & ] { a.drop(); a.make( std::size_t( threads ) );
-                                 } , [ & ] { pushAll(); popAll(); } ,
-       [ & ] { return( t.n.load() == n ); } );
- cell( "pq hold" , [ & ] { a.drop(); a.make( std::size_t( threads ) );
-                           pushAll(); } , [ & ] {
-  t.n.store( 0 , std::memory_order_relaxed );
-  ADS::parallelForBlocks( pool , 0 , n , [ a , k , &t ]( std::size_t lo ,
-                                                         std::size_t hi ) {
-   auto h = a.handle();
-   std::size_t c = 0;
-   PQK key;
-   std::uint64_t x;
-   for( std::size_t i = lo ; i < hi ; ++i )
-    if( A::pop( h , key , x ) ) {
-     A::push( h , key + 1 + ( k[ i ] & 1023 ) , x );
-     ++c;
-     }
-   t.n.fetch_add( c , std::memory_order_relaxed ); } ); } ,
-  [ & ] { return( t.n.load() == n ); } );
+ cell(
+   "pq fill-drain" ,
+   [ & ] {
+    a.drop();
+    a.make( std::size_t( threads ) );
+    } ,
+   [ & ] {
+    pushAll();
+    popAll();
+    } ,
+   [ & ] { return( t.n.load() == n ); } );
+ cell(
+   "pq hold" ,
+   [ & ] {
+    a.drop();
+    a.make( std::size_t( threads ) );
+    pushAll();
+    } ,
+   [ & ] {
+    t.n.store( 0 , std::memory_order_relaxed );
+    ADS::parallelForBlocks( pool , 0 , n ,
+			    [ a , k , &t ]( std::size_t lo , std::size_t hi ) {
+			     auto h = a.handle();
+			     std::size_t c = 0;
+			     PQK key;
+			     std::uint64_t x;
+			     for( std::size_t i = lo ; i < hi ; ++i )
+			      if( A::pop( h , key , x ) ) {
+			       A::push( h , key + 1 + ( k[ i ] & 1023 ) , x );
+			       ++c;
+			       }
+			     t.n.fetch_add( c , std::memory_order_relaxed );
+			     } );
+    } ,
+   [ & ] { return( t.n.load() == n ); } );
  a.drop();
  }
 
 /// the relaxed MultiQueue of ADS (2 queues per thread, stickiness 16 and
 /// 1, and exact with one queue) against the exact queue of oneTBB
 void priority( const std::vector< std::size_t > & sizes , int r ,
-               unsigned seed , Executors & X )
+	       unsigned seed ,
+	       Executors & X )
 {
  if( ! runs( "pool" ) )
   return;
  for( std::size_t n : sizes ) {
   std::mt19937_64 g( seed );
   std::vector< PQK > K( n );
-  for( auto & x : K ) x = g() >> 24;
+  for( auto & x : K )
+   x = g() >> 24;
   auto & pool = X.pool();
   priorityQueue< AdsMQ< 2 , 16 > >( "ADS::MultiQueue" , n , r , pool , K );
-  priorityQueue< AdsMQ< 2 , 16 > >( "ADS::MultiQueue A/A" , n , r , pool ,
-                                    K );
-  priorityQueue< AdsMQ< 2 , 1 > >( "ADS::MultiQueue s=1" , n , r , pool ,
-                                   K );
-  priorityQueue< AdsMQ< 4 , 64 > >( "ADS::MultiQueue c=4 s=64" , n , r ,
-                                    pool , K );
+  priorityQueue< AdsMQ< 2 , 16 > >( "ADS::MultiQueue A/A" , n , r , pool , K );
+  priorityQueue< AdsMQ< 2 , 1 > >( "ADS::MultiQueue s=1" , n , r , pool , K );
+  priorityQueue< AdsMQ< 4 , 64 > >( "ADS::MultiQueue c=4 s=64" , n , r , pool ,
+				    K );
   priorityQueue< AdsMQ< 0 , 1 > >( "ADS::MultiQueue exact" , n , r , pool ,
-                                   K );
+				   K );
 #if defined( ADS_HAS_TBB )
   priorityQueue< TbbPQ >( "tbb::concurrent_priority_queue" , n , r , pool ,
-                          K );
+			  K );
 #endif
 #if defined( ADS_HAS_MULTIQUEUE )
-  priorityQueue< RefMQ< 16 > >( "multiqueue (Williams et al.)" , n , r ,
-                                pool , K );
+  priorityQueue< RefMQ< 16 > >( "multiqueue (Williams et al.)" , n , r , pool ,
+				K );
   priorityQueue< RefMQ< 0 > >( "multiqueue (Williams et al.) s=1" , n , r ,
-                               pool , K );
+			       pool ,
+			       K );
 #endif
 #if defined( ADS_HAS_SPRAYLIST )
   priorityQueue< Spray >( "SprayList" , n , r , pool , K );
@@ -2372,14 +2759,15 @@ void priority( const std::vector< std::size_t > & sizes , int r ,
 
 /// the rank errors of the relaxed queues in the hold model, per pop
 void ranks( const std::vector< std::size_t > & sizes , unsigned seed ,
-            Executors & X )
+	    Executors & X )
 {
  if( ! runs( "pool" ) )
   return;
  for( std::size_t n : sizes ) {
   std::mt19937_64 g( seed );
   std::vector< PQK > K( n );
-  for( auto & x : K ) x = g() >> 24;
+  for( auto & x : K )
+   x = g() >> 24;
   auto & pool = X.pool();
   rankErrors< AdsMQ< 2 , 16 > >( "ADS::MultiQueue" , n , pool , K );
   rankErrors< AdsMQ< 2 , 16 > >( "ADS::MultiQueue A/A" , n , pool , K );
@@ -2389,7 +2777,7 @@ void ranks( const std::vector< std::size_t > & sizes , unsigned seed ,
 #if defined( ADS_HAS_MULTIQUEUE )
   rankErrors< RefMQ< 16 > >( "multiqueue (Williams et al.)" , n , pool , K );
   rankErrors< RefMQ< 0 > >( "multiqueue (Williams et al.) s=1" , n , pool ,
-                            K );
+			    K );
 #endif
 #if defined( ADS_HAS_SPRAYLIST )
   rankErrors< Spray >( "SprayList" , n , pool , K );
@@ -2407,7 +2795,8 @@ void ranks( const std::vector< std::size_t > & sizes , unsigned seed ,
 
 /// a node of the tree of a branch-and-bound: its bound, the least first,
 /// its index in the complete binary tree and its depth
-struct BnbNode {
+struct BnbNode
+{
  std::uint64_t id;
  std::uint32_t depth;
  };
@@ -2426,8 +2815,8 @@ inline std::uint64_t bnbMix( std::uint64_t x )
 /// dive, minus 1 or 2 (a search that dives, its frontier small)
 template< class F >
 inline std::uint64_t bnbExpand( std::uint64_t key , const BnbNode & v ,
-                                std::uint32_t D , unsigned w , bool dive ,
-                                F && push )
+				std::uint32_t D , unsigned w , bool dive ,
+				F && push )
 {
  std::uint64_t h = v.id;
  for( unsigned j = 0 ; j < w ; ++j )
@@ -2436,19 +2825,21 @@ inline std::uint64_t bnbExpand( std::uint64_t key , const BnbNode & v ,
   for( std::uint64_t j = 1 ; j <= 2 ; ++j ) {
    const std::uint64_t c = 2 * v.id + j;
    push( dive ? key - 1 - ( bnbMix( c ) & 1 )
-              : key + 1 + ( bnbMix( c ) & 1023 ) ,
-         BnbNode{ c , v.depth + 1 } );
+	      : key + 1 + ( bnbMix( c ) & 1023 ) ,
+	 BnbNode{ c , v.depth + 1 } );
    }
  return( h );
  }
 
 /// the counts of a run of the benchmark, on lines of their own
-struct alignas( 128 ) BnbTally {
+struct alignas( 128 ) BnbTally
+{
  std::atomic< std::uint64_t > nodes{ 0 } , ids{ 0 } , sink{ 0 };
  };
 
 /// the frontier of ADS, a stealable queue per worker
-struct BnbAds {
+struct BnbAds
+{
  using F = ADS::StealingFrontier< std::uint64_t , BnbNode >;
  std::unique_ptr< F > f;
  void make( std::size_t p , std::uint64_t k0 ) {
@@ -2460,13 +2851,15 @@ struct BnbAds {
   pool.run( p , [ & ]( std::size_t i ) {
    auto pop = [ & ]( std::uint64_t & k , BnbNode & v ) {
     auto e = f->pop( i );
-    if( ! e ) return( false );
+    if( ! e )
+     return( false );
     k = e->key;
     v = e->item;
-    return( true ); };
-   auto push = [ & ]( std::uint64_t k , BnbNode v ) { f->push( i , k , v );
+    return( true );
     };
-   work( pop , push ); } );
+   auto push = [ & ]( std::uint64_t k , BnbNode v ) { f->push( i , k , v ); };
+   work( pop , push );
+   } );
   }
  };
 
@@ -2475,16 +2868,16 @@ struct BnbAds {
 /// dive (the key a depth, the bound apart), and the least bound of the
 /// queue of the worker asked after each pop, as a branch-and-bound that
 /// dives or prunes by it does
-struct BnbAdsBound {
+struct BnbAdsBound
+{
  using F = ADS::StealingFrontier< std::uint64_t , BnbNode ,
-                                  std::less< std::uint64_t > ,
-                                  std::uint64_t >;
+				  std::less< std::uint64_t > , std::uint64_t >;
  std::unique_ptr< F > f;
  std::atomic< std::uint64_t > probe{ 0 };
  bool dive = false;
  void make( std::size_t p , std::uint64_t k0 ) {
   f = std::make_unique< F >( p , 5 );
-  dive = ( k0 != 0 );                       // the root of a dive
+  dive = ( k0 != 0 );  // the root of a dive
   f->push( 0 , k0 , 0 , BnbNode{ 0 , 0 } );
   }
  template< class W >
@@ -2493,17 +2886,20 @@ struct BnbAdsBound {
    std::uint64_t acc = 0;
    auto pop = [ & ]( std::uint64_t & k , BnbNode & v ) {
     auto e = f->pop( i );
-    if( ! e ) return( false );
+    if( ! e )
+     return( false );
     k = e->key;
     v = e->item;
     if( const auto m = f->minBound( i ) )
      acc += *m;
-    return( true ); };
+    return( true );
+    };
    auto push = [ & ]( std::uint64_t k , BnbNode v ) {
-    f->push( i , k , dive ? bnbMix( v.id ^ 0x5BD1E995u ) & 0xFFFFF : k ,
-             v ); };
+    f->push( i , k , dive ? bnbMix( v.id ^ 0x5BD1E995u ) & 0xFFFFF : k , v );
+    };
    work( pop , push );
-   probe.fetch_add( acc , std::memory_order_relaxed ); } );
+   probe.fetch_add( acc , std::memory_order_relaxed );
+   } );
   }
  };
 
@@ -2511,13 +2907,17 @@ struct BnbAdsBound {
 /// a thief that finds its queue empty locks a random victim of two pairs
 /// at least and moves the back half of its heap, itself a heap, into its
 /// own; the end by the counter of the workers at work, as in ADS
-struct BnbLocked {
+struct BnbLocked
+{
  using E = std::pair< std::uint64_t , BnbNode >;
- struct Later {
+ struct Later
+ {
   bool operator()( const E & a , const E & b ) const {
-   return( a.first > b.first ); }
+   return( a.first > b.first );
+   }
   };
- struct alignas( 128 ) Q {
+ struct alignas( 128 ) Q
+ {
   std::mutex m;
   std::vector< E > h;
   std::atomic< std::size_t > n{ 0 };
@@ -2590,13 +2990,16 @@ struct BnbLocked {
      active.fetch_sub( 1 , std::memory_order_acq_rel );
      if( ! steal( i ) )
       return( false );
-     } };
+     }
+    };
    auto push = [ & ]( std::uint64_t k , BnbNode v ) {
     std::lock_guard< std::mutex > l( Me.m );
     Me.h.emplace_back( k , v );
     std::push_heap( Me.h.begin() , Me.h.end() , Later() );
-    Me.n.store( Me.h.size() , std::memory_order_relaxed ); };
-   work( pop , push ); } );
+    Me.n.store( Me.h.size() , std::memory_order_relaxed );
+    };
+   work( pop , push );
+   } );
   }
  };
 
@@ -2605,7 +3008,8 @@ struct BnbLocked {
 /// knows from the counts of the others (the end known in advance, which
 /// favours the shared queues)
 template< class A >
-struct BnbShared {
+struct BnbShared
+{
  A a;
  std::uint64_t N = 0;
  alignas( 128 ) std::atomic< std::uint64_t > done{ 0 };
@@ -2641,10 +3045,12 @@ struct BnbShared {
      if( done.load( std::memory_order_relaxed ) == N )
       return( false );
      b.pause();
-     } };
-   auto push = [ & ]( std::uint64_t k , BnbNode v ) {
-    A::push( h , k , v.id ); };
-   work( pop , push ); } );
+     }
+    };
+   auto push = [ & ]( std::uint64_t k ,
+		      BnbNode v ) { A::push( h , k , v.id ); };
+   work( pop , push );
+   } );
   }
  };
 
@@ -2653,7 +3059,8 @@ struct BnbShared {
 /// per node
 template< class S >
 void bnbRun( const std::string & who , std::uint32_t D , unsigned w ,
-             bool dive , int r , ADS::ThreadPool & pool , S & s )
+	     bool dive ,
+	     int r , ADS::ThreadPool & pool , S & s )
 {
  if( ADS::bench::skip( who ) )
   return;
@@ -2674,17 +3081,22 @@ void bnbRun( const std::string & who , std::uint32_t D , unsigned w ,
   t.ids.fetch_add( ids , std::memory_order_relaxed );
   t.sink.fetch_add( sink , std::memory_order_relaxed );
   };
- ADS::bench::print( bench( std::string( dive ? "bnb-dive w" : "bnb w" ) +
-                           std::to_string( w ) ).c_str() ,
-                    "uint64" , std::size_t( N ) , who ,
-                    timeRuns( std::size_t( N ) , [ & ] {
-                     s.make( p , dive ? std::uint64_t( 1 ) << 62 : 0 );
-                     t.nodes = 0;
-                     t.ids = 0; } ,
-                     [ & ] { s.run( pool , p , work ); } , r ,
-                     [ & ] { return( ( t.nodes.load() == N ) &&
-                                     ( t.ids.load() == N * ( N - 1 ) / 2 ) );
-                      } ) );
+ ADS::bench::print(
+   bench( std::string( dive ? "bnb-dive w" : "bnb w" ) + std::to_string( w ) )
+     .c_str() ,
+   "uint64" , std::size_t( N ) , who ,
+   timeRuns(
+     std::size_t( N ) ,
+     [ & ] {
+      s.make( p , dive ? std::uint64_t( 1 ) << 62 : 0 );
+      t.nodes = 0;
+      t.ids = 0;
+      } ,
+     [ & ] { s.run( pool , p , work ); } , r ,
+     [ & ] {
+      return( ( t.nodes.load() == N ) &&
+	       ( t.ids.load() == N * ( N - 1 ) / 2 ) );
+      } ) );
  }
 
 /// the branch-and-bound of trees of 2^(D+1) - 1 nodes by best first with
@@ -2692,8 +3104,7 @@ void bnbRun( const std::string & who , std::uint32_t D , unsigned w ,
 /// with half stealing, the queue of oneTBB and the MultiQueue of ADS, both
 /// shared; with no evaluation and with 256 rounds of mixing per node, and
 /// with the bounds that grow or that dive
-void bnb( const std::vector< std::uint32_t > & depths , int r ,
-          Executors & X )
+void bnb( const std::vector< std::uint32_t > & depths , int r , Executors & X )
 {
  if( ! runs( "pool" ) )
   return;
@@ -2705,29 +3116,29 @@ void bnb( const std::vector< std::uint32_t > & depths , int r ,
      BnbAds s;
      bnbRun( "ADS::StealingFrontier" , D , w , dive , r , pool , s );
      bnbRun( "ADS::StealingFrontier A/A" , D , w , dive , r , pool , s );
-    }
+     }
     {
      BnbAdsBound s;
      bnbRun( "ADS::StealingFrontier bounds" , D , w , dive , r , pool , s );
      bnbRun( "ADS::StealingFrontier bounds A/A" , D , w , dive , r , pool ,
-             s );
-    }
+	     s );
+     }
     {
      BnbLocked s;
      bnbRun( "std::priority_queue locked, half stolen" , D , w , dive , r ,
-             pool , s );
-    }
+	     pool ,
+	     s );
+     }
 #if defined( ADS_HAS_TBB )
     {
      BnbShared< TbbPQ > s;
-     bnbRun( "tbb::concurrent_priority_queue" , D , w , dive , r , pool ,
-             s );
-    }
+     bnbRun( "tbb::concurrent_priority_queue" , D , w , dive , r , pool , s );
+     }
 #endif
     {
      BnbShared< AdsMQ< 2 , 16 > > s;
      bnbRun( "ADS::MultiQueue" , D , w , dive , r , pool , s );
-    }
+     }
     }
  }
 
@@ -2744,17 +3155,21 @@ int main( int argc , char ** argv )
  std::string only;
  for( int i = 1 ; i < argc ; ++i ) {
   const std::string a = argv[ i ];
-  if( ( a == "-t" ) && ( i + 1 < argc ) ) threads = std::atoi( argv[ ++i ] );
-  else if( ( a == "-w" ) && ( i + 1 < argc ) ) family = argv[ ++i ];
-  else if( ( a == "-b" ) && ( i + 1 < argc ) ) only = argv[ ++i ];
-  else rest.push_back( argv[ i ] );
+  if( ( a == "-t" ) && ( i + 1 < argc ) )
+   threads = std::atoi( argv[ ++i ] );
+  else if( ( a == "-w" ) && ( i + 1 < argc ) )
+   family = argv[ ++i ];
+  else if( ( a == "-b" ) && ( i + 1 < argc ) )
+   only = argv[ ++i ];
+  else
+   rest.push_back( argv[ i ] );
   }
  threads = std::max( threads , 1 );
  ADS::bench::Options o( int( rest.size() ) , rest.data() ,
-                        { 1000000 , 10000000 } );
+			{ 1000000 , 10000000 } );
 #if defined( ADS_HAS_TBB )
  tbb::global_control gc( tbb::global_control::max_allowed_parallelism ,
-                         std::size_t( threads ) );
+			 std::size_t( threads ) );
 #endif
 #if defined( _OPENMP )
  omp_set_num_threads( threads );
@@ -2766,7 +3181,7 @@ int main( int argc , char ** argv )
  if( only.empty() || ( only == "sort" ) ) {
   sorts< std::uint64_t >( "uint64" , o.sizes , o.runs , o.seed , X );
   sorts< double >( "double" , o.sizes , o.runs , o.seed , X );
-  std::vector< std::size_t > small;         // the strings, 10 times fewer
+  std::vector< std::size_t > small;  // the strings, 10 times fewer
   for( auto n : o.sizes )
    small.push_back( n / 10 );
   sorts< std::string >( "string" , small , o.runs , o.seed , X );

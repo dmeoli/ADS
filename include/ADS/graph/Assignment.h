@@ -70,7 +70,7 @@
 
 #ifndef __ADS_Assignment
  #define __ADS_Assignment
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -89,7 +89,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS Assignment -----------------------------*/
@@ -98,13 +99,13 @@ namespace ADS {
 /// an assignment of least cost of \f$ n \f$ rows to \f$ n \f$ columns, kept
 /// optimal after the changes of the costs
 template< class W = long long , ReoptPolicy P = RatioPolicy >
-requires std::is_arithmetic_v< W >
-class Assignment {
+ requires std::is_arithmetic_v< W >
+class Assignment
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the costs
+ using Weight = W;  ///< the type of the costs
 
  /// the assignment of the costs \f$ C \f$, the row \f$ i \f$ in
  /// \f$ C[ i n .. i n + n - 1 ] \f$, computed at the first query
@@ -212,17 +213,16 @@ class Assignment {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the reduced cost of \f$ ( i , j ) \f$, for a finite cost
  [[nodiscard]] W reduced( int i , int j ) const {
-  return( f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ]
-          - f_u[ i ] - f_v[ j ] );
+  return( f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ] -
+	   f_u[ i ] - f_v[ j ] );
   }
 
  /// whether the cost of \f$ ( i , j ) \f$ is finite
  [[nodiscard]] bool finite( int i , int j ) const {
-  return( f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ]
-          != infinity< W >() );
+  return( f_C[ std::size_t( i ) * std::size_t( f_n ) + std::size_t( j ) ] !=
+	   infinity< W >() );
   }
 
  /// the row \f$ i \f$ and its column freed
@@ -263,30 +263,30 @@ class Assignment {
  /// whether the duals are feasible and tight on the pairs (audit)
  [[nodiscard]] bool optimal( void ) const;
 
- int f_n;                                  ///< the rows
- std::vector< W > f_C;                     ///< the costs, by rows
- std::vector< W > f_u;                     ///< the potentials of the rows
- std::vector< W > f_v;                     ///< those of the columns
- std::vector< int > f_col;                 ///< the column of each row
- std::vector< int > f_row;                 ///< the row of each column
- std::vector< char > f_dirtyR;             ///< the rows changed
- std::vector< char > f_dirtyC;             ///< the columns changed
- std::vector< int > f_DR;                  ///< the rows changed, listed
- std::vector< int > f_DC;                  ///< the columns changed
- std::vector< std::pair< int , int > > f_cells;   ///< the single costs
-                                                 ///< changed
- std::vector< W > f_dist;                  ///< \f$ \delta \f$ of augment()
- std::vector< int > f_pred;                ///< \f$ \pi \f$ of augment()
- std::vector< char > f_scanned;            ///< \f$ S \f$ of augment()
- std::vector< int > f_order;               ///< the columns of \f$ S \f$
- bool f_ready = false;                     ///< whether there is one
- bool f_pending = false;                   ///< whether changes wait
- int f_outcome = 0;                        ///< the last outcome
- int f_cause = Reopt::SCRATCH_BY_EVENT;    ///< the last cause
- long long f_count[ 3 ] = { 0 , 0 , 0 };   ///< the solves by outcome
- long long f_byCause[ Reopt::CAUSES ] = {};   ///< the solves by cause
- P f_policy{};                             ///< the recompute policy
- long long f_aug = 0;                      ///< the augmentations
+ int f_n;                                       ///< the rows
+ std::vector< W > f_C;                          ///< the costs, by rows
+ std::vector< W > f_u;                          ///< the potentials of the rows
+ std::vector< W > f_v;                          ///< those of the columns
+ std::vector< int > f_col;                      ///< the column of each row
+ std::vector< int > f_row;                      ///< the row of each column
+ std::vector< char > f_dirtyR;                  ///< the rows changed
+ std::vector< char > f_dirtyC;                  ///< the columns changed
+ std::vector< int > f_DR;                       ///< the rows changed, listed
+ std::vector< int > f_DC;                       ///< the columns changed
+ std::vector< std::pair< int , int > > f_cells;  ///< the single costs
+						///< changed
+ std::vector< W > f_dist;                    ///< \f$ \delta \f$ of augment()
+ std::vector< int > f_pred;                  ///< \f$ \pi \f$ of augment()
+ std::vector< char > f_scanned;              ///< \f$ S \f$ of augment()
+ std::vector< int > f_order;                 ///< the columns of \f$ S \f$
+ bool f_ready = false;                       ///< whether there is one
+ bool f_pending = false;                     ///< whether changes wait
+ int f_outcome = 0;                          ///< the last outcome
+ int f_cause = Reopt::SCRATCH_BY_EVENT;      ///< the last cause
+ long long f_count[ 3 ] = { 0 , 0 , 0 };       ///< the solves by outcome
+ long long f_byCause[ Reopt::CAUSES ] = {};  ///< the solves by cause
+ P f_policy{};                               ///< the recompute policy
+ long long f_aug = 0;                        ///< the augmentations
 
  };  // end( class Assignment )
 
@@ -302,7 +302,7 @@ class Assignment {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Assignment.h included */
+#endif /* Assignment.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File Assignment.h --------------------------*/

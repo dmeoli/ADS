@@ -115,7 +115,7 @@
 
 #ifndef __ADS_Modification
  #define __ADS_Modification
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -144,7 +144,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE ANSWERS -------------------------------*/
@@ -156,13 +157,15 @@ enum class Keep { Yes , Detach };
 
 /// a change refused by the `prepare()` of an observer, before anything
 /// changed
-class Refused : public std::runtime_error {
+class Refused : public std::runtime_error
+{
  public:
-  using std::runtime_error::runtime_error;
+ using std::runtime_error::runtime_error;
  };
 
 /// the promise of `quiet( s , no_rebuild )`: nobody needs to know
-struct no_rebuild_t {
+struct no_rebuild_t
+{
  explicit constexpr no_rebuild_t( void ) = default;
  };
 
@@ -176,19 +179,20 @@ inline constexpr no_rebuild_t no_rebuild{};
 /// how a query of an observer brought its solution up to date (the
 /// outcomes, \f$ 0 \f$ to \f$ 2 \f$), and why (the causes, which refine
 /// the outcome from scratch and the repair)
-struct Reopt {
+struct Reopt
+{
  static constexpr int SCRATCH = 0;           ///< from scratch
  static constexpr int WARM = 1;              ///< by a repair
  static constexpr int CERTIFIED = 2;         ///< by the certificate
  static constexpr int SCRATCH_BY_SIZE = 3;   ///< from scratch, too many
-                                             ///< events
+					     ///< events
  static constexpr int SCRATCH_BY_ABORT = 4;  ///< from scratch, a repair
-                                             ///< abandoned
+					     ///< abandoned
  static constexpr int SCRATCH_BY_EVENT = 5;  ///< from scratch, `Rebuilt`,
-                                             ///< a fatal event or no
-                                             ///< solution yet
+					     ///< a fatal event or no
+					     ///< solution yet
  static constexpr int PARTIAL = 6;           ///< a repair stopped by a
-                                             ///< budget, the rest queued
+					     ///< budget, the rest queued
  static constexpr int CAUSES = 7;            ///< the number of the causes
 
  /// the outcome of the cause \f$ c \f$
@@ -200,27 +204,29 @@ struct Reopt {
 /// what a recompute policy reads: the work is a count of elementary
 /// operations of the observer (nodes, edges, extractions), never a time,
 /// so that a policy decides the same on every machine
-struct ReoptStats {
+struct ReoptStats
+{
  std::size_t events = 0;        ///< the net events to apply
  std::size_t size = 0;          ///< the size of the instance
  double work = 0;               ///< the work of the repair so far
  double lastScratch = 0;        ///< the work of a computation from scratch
  std::size_t reinsertions = 0;  ///< the extractions of one element beyond
-                                ///< its first, in the repair
+				///< its first, in the repair
  bool closing = false;          ///< whether asked at the close of a batch,
-                                ///< before the events are queued
+				///< before the events are queued
  };
 
 /// a recompute policy: whether to compute from scratch before a repair,
 /// whether to abandon a repair while it runs (polled by the observer with
 /// its work \f$ w \f$ so far), and the record of the outcome after it
 template< class P >
-concept ReoptPolicy = requires( P & p , const ReoptStats & s , int outcome ,
-                                double w ) {
- { p.scratch( s ) } -> std::convertible_to< bool >;
- { p.abandon( s , w ) } -> std::convertible_to< bool >;
- p.record( outcome , w );
- };
+concept ReoptPolicy =
+  requires( P & p , const ReoptStats & s , int outcome , double w )
+{
+   { p.scratch( s ) } -> std::convertible_to< bool >;
+   { p.abandon( s , w ) } -> std::convertible_to< bool >;
+   p.record( outcome , w );
+   };
 
 /// the default recompute policy: from scratch when the net events exceed
 /// \f$ \rho \f$ times the size, a repair abandoned when its work exceeds
@@ -229,15 +235,16 @@ concept ReoptPolicy = requires( P & p , const ReoptStats & s , int outcome ,
 /// that are not exact (floating point) summed again after
 /// \f$ \mathit{period} \f$ times the size of changes, by the compensated
 /// sum of Neumaier when asked
-struct RatioPolicy {
- double rho = 0.25;          ///< the ratio of the events to the size
- double alpha = 0.5;         ///< the ratio of the work to a scratch
- int beta = 0;               ///< the reinsertions of one element, 0 off
- bool early = false;         ///< whether `scratch()` acts at the close of
-                             ///< a batch, which then sends `Rebuilt`
- double period = 1;          ///< the changes between two sums, in units
-                             ///< of the size, 0 never
- bool compensated = false;   ///< whether the sums are compensated
+struct RatioPolicy
+{
+ double rho = 0.25;         ///< the ratio of the events to the size
+ double alpha = 0.5;        ///< the ratio of the work to a scratch
+ int beta = 0;              ///< the reinsertions of one element, 0 off
+ bool early = false;        ///< whether `scratch()` acts at the close of
+			    ///< a batch, which then sends `Rebuilt`
+ double period = 1;         ///< the changes between two sums, in units
+			    ///< of the size, 0 never
+ bool compensated = false;  ///< whether the sums are compensated
 
  /// whether to compute from scratch: \f$ e > \rho \max( n , 1 ) \f$, with
  /// \f$ e \f$ and \f$ n \f$ the events and the size of \f$ s \f$, and at
@@ -254,11 +261,11 @@ struct RatioPolicy {
  /// \f$ \beta > 0 \f$ reinsertions of one element
  [[nodiscard]] bool abandon( const ReoptStats & s , double w ) const {
   return( ( w > alpha * s.lastScratch ) ||
-          ( ( beta > 0 ) && ( s.reinsertions > std::size_t( beta ) ) ) );
+	   ( ( beta > 0 ) && ( s.reinsertions > std::size_t( beta ) ) ) );
   }
 
  /// nothing: this policy keeps no history
- void record( int , double ) const {}
+ void record( int , double ) const { }
 
  /// whether the values that are not exact are to be summed again after
  /// \f$ c \f$ changes of an instance of size \f$ n \f$:
@@ -287,11 +294,11 @@ struct RatioPolicy {
 /// \end{array}}
 /// \f]
 template< class T >
-class NeumaierSum {
+class NeumaierSum
+{
  public:
-
  /// the sum \f$ 0 \f$, compensated if `compensated`
- explicit NeumaierSum( bool compensated = false ) : f_on( compensated ) {}
+ explicit NeumaierSum( bool compensated = false ) : f_on( compensated ) { }
 
  /// adds \f$ x \f$
  void add( const T & x ) {
@@ -338,32 +345,44 @@ class NeumaierSum {
  [[nodiscard]] bool compensated( void ) const { return( f_on ); }
 
  private:
-
- T f_s = T();                  ///< the sum
- T f_c = T();                  ///< the compensation
- bool f_on;                    ///< whether compensated
+ T f_s = T();  ///< the sum
+ T f_c = T();  ///< the compensation
+ bool f_on;    ///< whether compensated
 
  };  // end( class NeumaierSum )
 
-namespace mod {
+namespace mod
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE EFFECTS ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the effects of an event, as bits: a bit not set is a guarantee
-struct effect {
- static constexpr unsigned grows = 1u;     ///< the structure may grow
- static constexpr unsigned shrinks = 2u;   ///< it may shrink
- static constexpr unsigned up = 4u;        ///< a value may increase
- static constexpr unsigned down = 8u;      ///< a value may decrease
- static constexpr unsigned all = 15u;      ///< all of them
+struct effect
+{
+ static constexpr unsigned grows = 1u;    ///< the structure may grow
+ static constexpr unsigned shrinks = 2u;  ///< it may shrink
+ static constexpr unsigned up = 4u;       ///< a value may increase
+ static constexpr unsigned down = 8u;     ///< a value may decrease
+ static constexpr unsigned all = 15u;     ///< all of them
  };
 
 /// the role of an event in the coalescing of a batch
-enum class Role { Insert , Erase , Change , Relocate , Permute ,
-                  BulkInsert , BulkErase , Shift , Replace , Clear ,
-                  Rebuild , Other };
+enum class Role {
+ Insert ,
+ Erase ,
+ Change ,
+ Relocate ,
+ Permute ,
+ BulkInsert ,
+ BulkErase ,
+ Shift ,
+ Replace ,
+ Clear ,
+ Rebuild ,
+ Other
+ };
 
 /// the role of the event `E`, `Role::Other` if it declares none
 template< class E >
@@ -388,59 +407,75 @@ inline constexpr unsigned effects_of = [] {
 /// left half updated could not be repaired
 template< class E >
 inline constexpr bool must_not_throw =
- ( role_of< E > == Role::Erase ) || ( role_of< E > == Role::BulkErase ) ||
- ( role_of< E > == Role::Clear ) || ( role_of< E > == Role::Rebuild ) ||
- ( role_of< E > == Role::Replace );
+  ( role_of< E > == Role::Erase ) || ( role_of< E > == Role::BulkErase ) ||
+  ( role_of< E > == Role::Clear ) || ( role_of< E > == Role::Rebuild ) ||
+  ( role_of< E > == Role::Replace );
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- THE ATTRIBUTES AND LISTS -----------------------*/
 /*--------------------------------------------------------------------------*/
 
-struct Value {};   ///< the attribute of the value of an item
-struct Key {};     ///< the attribute of a key that orders the items
-struct Cost {};    ///< the cost of an arc
-struct Upper {};   ///< the upper bound of an arc
-struct Lower {};   ///< the lower bound of an arc
-struct Supply {};  ///< the supply of a node
+struct Value
+{ };  ///< the attribute of the value of an item
+struct Key
+{ };  ///< the attribute of a key that orders the items
+struct Cost
+{ };  ///< the cost of an arc
+struct Upper
+{ };  ///< the upper bound of an arc
+struct Lower
+{ };  ///< the lower bound of an arc
+struct Supply
+{ };  ///< the supply of a node
 
 /// how two changes of one attribute of one item compose in a batch: the
 /// last value (`last`), the least or the largest of the two (`min`,
 /// `max`), or the sum of the differences (`sum`)
-namespace reduce {
-struct last {};   ///< the value after the second change
-struct min {};    ///< the least of the two values after
-struct max {};    ///< the largest of the two values after
-struct sum {};    ///< the first value after plus the second difference
+namespace reduce
+{
+struct last
+{ };  ///< the value after the second change
+struct min
+{ };  ///< the least of the two values after
+struct max
+{ };  ///< the largest of the two values after
+struct sum
+{ };  ///< the first value after plus the second difference
 }  // end( namespace reduce )
 
 /// the reduction of the attribute `A`: `A::reduction` if it has one,
 /// `reduce::last` otherwise
 template< class A >
-struct reduction_of {
- using type = reduce::last;   ///< the reduction
+struct reduction_of
+{
+ using type = reduce::last;  ///< the reduction
  };
 
 /// the reduction of an attribute that declares one
 template< class A >
  requires requires { typename A::reduction; }
-struct reduction_of< A > {
- using type = typename A::reduction;   ///< the reduction
+struct reduction_of< A >
+{
+ using type = typename A::reduction;  ///< the reduction
  };
 
 /// a list of types, the events of a structure
-template< class ... E >
-struct list {
- static constexpr std::size_t size = sizeof...( E );   ///< their number
+template< class... E >
+struct list
+{
+ static constexpr std::size_t size = sizeof...( E );  ///< their number
  };
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 template< class E , class L >
 struct index_in;
 
-template< class E , class ... T >
-struct index_in< E , list< T... > > {
+template< class E , class... T >
+struct index_in< E , list< T... > >
+{
  static constexpr std::size_t value = [] {
   constexpr bool same[] = { std::is_same_v< E , T >... , false };
   std::size_t i = 0;
@@ -453,8 +488,9 @@ struct index_in< E , list< T... > > {
 template< class L >
 struct variant_of;
 
-template< class ... T >
-struct variant_of< list< T... > > {
+template< class... T >
+struct variant_of< list< T... > >
+{
  using type = std::variant< T... >;
  };
 
@@ -479,29 +515,31 @@ using variant_t = typename detail::variant_of< L >::type;
 
 /// the item of handle \f$ h \f$, key \f$ k \f$ and value \f$ v \f$ inserted
 template< class H , class K , class V = void >
-struct Inserted {
- static constexpr unsigned effects = effect::grows;   ///< it grows
- static constexpr Role role = Role::Insert;           ///< an insertion
- using handle_type = H;                               ///< the handle
- using key_type = K;                                  ///< the key
- using value_type = V;                                ///< the value
- H h;                                                 ///< the handle
- K key;                                               ///< the key
- V value;                                             ///< the value
+struct Inserted
+{
+ static constexpr unsigned effects = effect::grows;  ///< it grows
+ static constexpr Role role = Role::Insert;          ///< an insertion
+ using handle_type = H;                              ///< the handle
+ using key_type = K;                                 ///< the key
+ using value_type = V;                               ///< the value
+ H h;                                                ///< the handle
+ K key;                                              ///< the key
+ V value;                                            ///< the value
  /// whether the two events are the same
  bool operator==( const Inserted & ) const = default;
  };
 
 /// the item of handle \f$ h \f$ and key \f$ k \f$ inserted, with no value
 template< class H , class K >
-struct Inserted< H , K , void > {
- static constexpr unsigned effects = effect::grows;   ///< it grows
- static constexpr Role role = Role::Insert;           ///< an insertion
- using handle_type = H;                               ///< the handle
- using key_type = K;                                  ///< the key
- using value_type = void;                             ///< no value
- H h;                                                 ///< the handle
- K key;                                               ///< the key
+struct Inserted< H , K , void >
+{
+ static constexpr unsigned effects = effect::grows;  ///< it grows
+ static constexpr Role role = Role::Insert;          ///< an insertion
+ using handle_type = H;                              ///< the handle
+ using key_type = K;                                 ///< the key
+ using value_type = void;                            ///< no value
+ H h;                                                ///< the handle
+ K key;                                              ///< the key
  /// whether the two events are the same
  bool operator==( const Inserted & ) const = default;
  };
@@ -509,7 +547,8 @@ struct Inserted< H , K , void > {
 /// the item of handle \f$ h \f$, key \f$ k \f$ and value \f$ v \f$ erased,
 /// told before the removal outside a batch
 template< class H , class K , class V = void >
-struct Erased {
+struct Erased
+{
  static constexpr unsigned effects = effect::shrinks;  ///< it shrinks
  static constexpr Role role = Role::Erase;             ///< an erasure
  using handle_type = H;                                ///< the handle
@@ -524,7 +563,8 @@ struct Erased {
 
 /// the item of handle \f$ h \f$ and key \f$ k \f$ erased, with no value
 template< class H , class K >
-struct Erased< H , K , void > {
+struct Erased< H , K , void >
+{
  static constexpr unsigned effects = effect::shrinks;  ///< it shrinks
  static constexpr Role role = Role::Erase;             ///< an erasure
  using handle_type = H;                                ///< the handle
@@ -539,15 +579,16 @@ struct Erased< H , K , void > {
 /// the attribute `A` of the item of handle \f$ h \f$ changed from `from`
 /// to `to`
 template< class A , class H , class V >
-struct Changed {
+struct Changed
+{
  static constexpr unsigned effects = effect::up | effect::down;  ///< both
- static constexpr Role role = Role::Change;   ///< a change
- using attribute = A;                         ///< the attribute
- using handle_type = H;                       ///< the handle
- using value_type = V;                        ///< the value
- H h;                                         ///< the handle
- V from;                                      ///< the value before
- V to;                                        ///< the value after
+ static constexpr Role role = Role::Change;                      ///< a change
+ using attribute = A;    ///< the attribute
+ using handle_type = H;  ///< the handle
+ using value_type = V;   ///< the value
+ H h;                    ///< the handle
+ V from;                 ///< the value before
+ V to;                   ///< the value after
  /// `effect::up` or `effect::down` by the order of `from` and `to`, 0 if
  /// they are equivalent, both if `V` has no order
  [[nodiscard]] constexpr unsigned direction( void ) const {
@@ -571,19 +612,21 @@ using KeyChanged = Changed< Key , H , K >;
 /// the item of handle `from` moved to the handle `to`, for the structures
 /// whose handles are not stable
 template< class H >
-struct Relocated {
- static constexpr unsigned effects = 0u;      ///< no value changes
- static constexpr Role role = Role::Relocate; ///< a relocation
- using handle_type = H;                       ///< the handle
- H from;                                      ///< the handle before
- H to;                                        ///< the handle after
+struct Relocated
+{
+ static constexpr unsigned effects = 0u;       ///< no value changes
+ static constexpr Role role = Role::Relocate;  ///< a relocation
+ using handle_type = H;                        ///< the handle
+ H from;                                       ///< the handle before
+ H to;                                         ///< the handle after
  /// whether the two events are the same
  bool operator==( const Relocated & ) const = default;
  };
 
 /// the items permuted: the handle before of each handle after
 template< class H >
-struct Permuted {
+struct Permuted
+{
  static constexpr unsigned effects = 0u;      ///< no value changes
  static constexpr Role role = Role::Permute;  ///< a permutation
  std::span< const H > old_of_new;             ///< the old handle of each
@@ -591,7 +634,8 @@ struct Permuted {
 
 /// the items of the handles `hs` inserted by one bulk operation
 template< class H >
-struct BulkInserted {
+struct BulkInserted
+{
  static constexpr unsigned effects = effect::grows;  ///< it grows
  static constexpr Role role = Role::BulkInsert;      ///< a bulk insertion
  std::span< const H > hs;                            ///< the handles
@@ -599,7 +643,8 @@ struct BulkInserted {
 
 /// the items of the handles `hs` erased by one bulk operation
 template< class H >
-struct BulkErased {
+struct BulkErased
+{
  static constexpr unsigned effects = effect::shrinks;  ///< it shrinks
  static constexpr Role role = Role::BulkErase;         ///< a bulk erasure
  std::span< const H > hs;                              ///< the handles
@@ -607,11 +652,12 @@ struct BulkErased {
 
 /// every value of the attribute `A` moved by `delta`
 template< class A , class D >
-struct Shifted {
+struct Shifted
+{
  static constexpr unsigned effects = effect::up | effect::down;  ///< both
- static constexpr Role role = Role::Shift;   ///< a shift of all
- using attribute = A;                        ///< the attribute
- D delta;                                    ///< the move
+ static constexpr Role role = Role::Shift;  ///< a shift of all
+ using attribute = A;                       ///< the attribute
+ D delta;                                   ///< the move
  /// `effect::up` or `effect::down` by the sign of `delta`
  [[nodiscard]] constexpr unsigned direction( void ) const {
   return( D() < delta ? effect::up : delta < D() ? effect::down : 0u );
@@ -622,7 +668,8 @@ struct Shifted {
 
 /// every value of the attribute `A` replaced
 template< class A >
-struct Replaced {
+struct Replaced
+{
  static constexpr unsigned effects = effect::all;  ///< anything
  static constexpr Role role = Role::Replace;       ///< a replacement
  using attribute = A;                              ///< the attribute
@@ -631,7 +678,8 @@ struct Replaced {
  };
 
 /// the structure emptied
-struct Cleared {
+struct Cleared
+{
  static constexpr unsigned effects = effect::all;  ///< anything
  static constexpr Role role = Role::Clear;         ///< a clearing
  /// whether the two events are the same
@@ -639,7 +687,8 @@ struct Cleared {
  };
 
 /// anything may have changed: forget and recompute
-struct Rebuilt {
+struct Rebuilt
+{
  static constexpr unsigned effects = effect::all;  ///< anything
  static constexpr Role role = Role::Rebuild;       ///< a rebuilding
  /// whether the two events are the same
@@ -652,8 +701,9 @@ struct Rebuilt {
 
 /// the erasure that undoes an insertion
 template< class H , class K , class V >
-[[nodiscard]] constexpr Erased< H , K , V > inverse(
-                                         const Inserted< H , K , V > & e ) {
+[[nodiscard]] constexpr Erased< H , K , V >
+inverse( const Inserted< H , K , V > & e )
+{
  if constexpr( std::is_void_v< V > )
   return( Erased< H , K , V >{ e.h , e.key } );
  else
@@ -662,8 +712,9 @@ template< class H , class K , class V >
 
 /// the insertion that undoes an erasure
 template< class H , class K , class V >
-[[nodiscard]] constexpr Inserted< H , K , V > inverse(
-                                           const Erased< H , K , V > & e ) {
+[[nodiscard]] constexpr Inserted< H , K , V >
+inverse( const Erased< H , K , V > & e )
+{
  if constexpr( std::is_void_v< V > )
   return( Inserted< H , K , V >{ e.h , e.key } );
  else
@@ -672,14 +723,16 @@ template< class H , class K , class V >
 
 /// the change back
 template< class A , class H , class V >
-[[nodiscard]] constexpr Changed< A , H , V > inverse(
-                                           const Changed< A , H , V > & e ) {
+[[nodiscard]] constexpr Changed< A , H , V >
+inverse( const Changed< A , H , V > & e )
+{
  return( Changed< A , H , V >{ e.h , e.to , e.from } );
  }
 
 /// the move back
 template< class H >
-[[nodiscard]] constexpr Relocated< H > inverse( const Relocated< H > & e ) {
+[[nodiscard]] constexpr Relocated< H > inverse( const Relocated< H > & e )
+{
  return( Relocated< H >{ e.to , e.from } );
  }
 
@@ -692,7 +745,8 @@ template< class A , class D >
 
 /// an event that has an inverse
 template< class E >
-concept invertible = requires( const E & e ) { inverse( e ); };
+concept invertible = requires( const E & e )
+{ inverse( e ); };
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE GROUPS -------------------------------*/
@@ -700,17 +754,19 @@ concept invertible = requires( const E & e ) { inverse( e ); };
 
 /// what a batch tells `group_begin()`: the versions of the subject before
 /// and after it, and the number of its events after the coalescing
-struct Group {
- std::uint64_t from = 0;   ///< the version before the batch
- std::uint64_t to = 0;     ///< the version after it
- std::size_t size = 0;     ///< its events
+struct Group
+{
+ std::uint64_t from = 0;  ///< the version before the batch
+ std::uint64_t to = 0;    ///< the version after it
+ std::size_t size = 0;    ///< its events
  };
 
 /// the counts of an observer kept by the subject at the level of the audits
-struct Counts {
- std::uint64_t events = 0;     ///< the events received
- std::uint64_t groups = 0;     ///< the batches received
- std::uint64_t rebuilds = 0;   ///< the `Rebuilt` received
+struct Counts
+{
+ std::uint64_t events = 0;    ///< the events received
+ std::uint64_t groups = 0;    ///< the batches received
+ std::uint64_t rebuilds = 0;  ///< the `Rebuilt` received
  };
 
 /*--------------------------------------------------------------------------*/
@@ -719,46 +775,58 @@ struct Counts {
 
 /// an observer of the event `E`
 template< class O , class E >
-concept observes = requires( O & o , const E & e ) { o.on( e ); };
+concept observes = requires( O & o , const E & e )
+{ o.on( e ); };
 
 /// an observer of the spans of `E`, an event or the variant of the events
 template< class O , class E >
-concept observes_span = requires( O & o , std::span< const E > s ) {
- o.on( s );
- };
+concept observes_span =
+  requires( O & o , std::span< const E > s )
+{ o.on( s ); };
 
 /// an observer told of the start and of the end of each batch
 template< class O >
-concept groups = requires( O & o , const Group & g ) {
-                  o.group_begin( g ); o.group_end(); } ||
-                 requires( O & o ) { o.group_begin(); o.group_end(); };
+concept groups = requires( O & o , const Group & g )
+{
+ o.group_begin( g );
+ o.group_end();
+ } || requires( O & o )
+{
+ o.group_begin();
+ o.group_end();
+ };
 
 /// an observer that may refuse the change `E` before it is made
 template< class O , class E >
-concept refuses = requires( const O & o , const E & e ) {
+concept refuses = requires( const O & o , const E & e )
+{
  { o.prepare( e ) } -> std::same_as< bool >;
  };
 
 /// an observer that can check itself against the structure \f$ s \f$
 template< class O , class S >
-concept auditable = requires( const O & o , const S & s ) {
+concept auditable = requires( const O & o , const S & s )
+{
  { o.audit( s ) } -> std::convertible_to< bool >;
  };
 
 /// an observer that queues the events and works at its next query
 template< class O >
-concept lazy = requires( O & o ) { o.flush(); };
+concept lazy = requires( O & o )
+{ o.flush(); };
 
 /// an observer that reports counts of its own
 template< class O >
-concept counted = requires( const O & o ) { o.counts(); };
+concept counted = requires( const O & o )
+{ o.counts(); };
 
 /// an observer with a recompute policy [see `ReoptPolicy`], and the
 /// statistics of a query after \f$ k \f$ more events: at the close of a
 /// batch the subject asks its `scratch()`, and sends `Rebuilt` instead of
 /// the events when it answers yes
 template< class O >
-concept with_policy = requires( O & o , std::size_t k ) {
+concept with_policy = requires( O & o , std::size_t k )
+{
  { o.policy() } -> ReoptPolicy;
  { o.reoptStats( k ) } -> std::convertible_to< ReoptStats >;
  };
@@ -766,18 +834,21 @@ concept with_policy = requires( O & o , std::size_t k ) {
 /// an observer with a filter of the kinds at run time: the bit \f$ i \f$
 /// of `mask()` for the \f$ i \f$-th event of the structure
 template< class O >
-concept masked = requires( const O & o ) {
+concept masked = requires( const O & o )
+{
  { o.mask() } -> std::convertible_to< std::uint64_t >;
  };
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 template< class O , class L >
 struct any_observed;
 
-template< class O , class ... E >
-struct any_observed< O , list< E... > > {
+template< class O , class... E >
+struct any_observed< O , list< E... > >
+{
  static constexpr bool value = ( observes< O , E > || ... );
  };
 
@@ -795,18 +866,21 @@ concept observer_of = detail::any_observed< O , L >::value;
 /// how a subject calls an observer: `Direct` calls `on()` and the optional
 /// parts by their names; an adapter with the same static functions lets an
 /// object with another interface be an observer [see `Via`]
-struct Direct {
+struct Direct
+{
  /// `o.on( e )`
  template< class O , class E >
   requires observes< O , E >
- static decltype( auto ) one( O & o , const E & e )
-  noexcept( noexcept( o.on( e ) ) ) {
+ static decltype( auto ) one( O & o ,
+			      const E & e ) noexcept( noexcept( o.on( e ) ) ) {
   return( o.on( e ) );
   }
  /// `o.on( s )`
  template< class O , class E >
   requires observes_span< O , E >
- static void many( O & o , std::span< const E > s ) { o.on( s ); }
+ static void many( O & o , std::span< const E > s ) {
+  o.on( s );
+  }
  /// `o.group_begin( g )`, or `o.group_begin()`
  template< class O >
   requires groups< O >
@@ -819,11 +893,15 @@ struct Direct {
  /// `o.group_end()`
  template< class O >
   requires groups< O >
- static void end( O & o ) { o.group_end(); }
+ static void end( O & o ) {
+  o.group_end();
+  }
  /// `o.prepare( e )`
  template< class O , class E >
   requires refuses< O , E >
- static bool prepare( const O & o , const E & e ) { return( o.prepare( e ) ); }
+ static bool prepare( const O & o , const E & e ) {
+  return( o.prepare( e ) );
+  }
  /// `o.audit( s )`
  template< class O , class S >
   requires auditable< O , S >
@@ -848,12 +926,15 @@ struct Direct {
  /// `o.on( Rebuilt{} )`
  template< class O >
   requires( with_policy< O > && observes< O , Rebuilt > )
- static void rebuilt( O & o ) noexcept { o.on( Rebuilt{} ); }
+ static void rebuilt( O & o ) noexcept {
+  o.on( Rebuilt{} );
+  }
  };
 
 /// the observer `O` called through the adapter `A`, an argument of `Static`
 template< class O , class A = Direct >
-struct Via {};
+struct Via
+{ };
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ THE COALESCING ----------------------------*/
@@ -866,11 +947,12 @@ struct Via {};
 /// everything before the last `Cleared` or `Rebuilt` is dropped, the
 /// shifts add up); a structure with a rule of its own specializes it
 template< class L >
-struct coalesce_traits {
+struct coalesce_traits
+{
  /// the net effect of the events \f$ B \f$, in \f$ O( |B| ) \f$ expected
  /// time
- static std::vector< variant_t< L > > coalesce(
-                                     std::span< const variant_t< L > > B );
+ static std::vector< variant_t< L > >
+ coalesce( std::span< const variant_t< L > > B );
  };
 
 /*--------------------------------------------------------------------------*/
@@ -878,34 +960,36 @@ struct coalesce_traits {
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 /// the object and the adapter of an argument of `Static`
 template< class X >
-struct held {
+struct held
+{
  using object = X;
  using adapter = Direct;
  };
 
 template< class O , class A >
-struct held< Via< O , A > > {
+struct held< Via< O , A > >
+{
  using object = O;
  using adapter = A;
  };
 
 /// whether the adapter `A` calls `on()` of `O` for `E`
 template< class A , class O , class E >
-concept calls = requires( O & o , const E & e ) {
- A::one( o , e );
- };
+concept calls = requires( O & o , const E & e )
+{ A::one( o , e ); };
 
 /// whether that call returns `Keep`
 template< class A , class O , class E >
 inline constexpr bool calls_keep = [] {
  if constexpr( calls< A , O , E > )
   return( std::same_as< decltype( A::one( std::declval< O & >() ,
-                                          std::declval< const E & >() ) ) ,
-                        Keep > );
+					   std::declval< const E & >() ) ) ,
+			 Keep > );
  else
   return( false );
  }();
@@ -914,55 +998,59 @@ inline constexpr bool calls_keep = [] {
 template< class A , class O , class E >
 inline constexpr bool calls_nothrow = [] {
  if constexpr( calls< A , O , E > )
-  return( noexcept( A::one( std::declval< O & >() ,
-                            std::declval< const E & >() ) ) );
+  return(
+    noexcept( A::one( std::declval< O & >() ,
+		      std::declval< const E & >() ) ) );
  else
   return( true );
  }();
 
 /// whether the adapter `A` gives `O` the spans of `E`
 template< class A , class O , class E >
-concept calls_span = requires( O & o ,
-                                             std::span< const E > s ) {
- A::many( o , s );
- };
+concept calls_span =
+  requires( O & o , std::span< const E > s )
+{ A::many( o , s ); };
 
 /// whether `O` has the group hooks through `A`
 template< class A , class O >
-concept calls_group = requires( O & o , const Group & g ) {
- A::begin( o , g ); A::end( o );
+concept calls_group = requires( O & o , const Group & g )
+{
+ A::begin( o , g );
+ A::end( o );
  };
 
 /// whether `O` may refuse `E` through `A`
 template< class A , class O , class E >
-concept calls_prepare = requires( const O & o ,
-                                                const E & e ) {
+concept calls_prepare = requires( const O & o , const E & e )
+{
  { A::prepare( o , e ) } -> std::same_as< bool >;
  };
 
 /// whether `O` audits itself against `S` through `A`
 template< class A , class O , class S >
-concept calls_audit = requires( const O & o , const S & s ) {
+concept calls_audit = requires( const O & o , const S & s )
+{
  { A::audit( o , s ) } -> std::convertible_to< bool >;
  };
 
 /// whether `O` has a mask through `A`
 template< class A , class O >
-concept calls_mask = requires( const O & o ) {
+concept calls_mask = requires( const O & o )
+{
  { A::mask( o ) } -> std::convertible_to< std::uint64_t >;
  };
 
 /// whether the adapter `A` asks the policy of `O` at the close of a batch
 template< class A , class O >
-concept calls_policy = requires( O & o , std::size_t k ) {
+concept calls_policy = requires( O & o , std::size_t k )
+{
  { A::early( o , k ) } -> std::same_as< bool >;
  A::rebuilt( o );
  };
 
 /// the events of \f$ C \f$ of the kinds \f$ m \f$, all if \f$ \mathit{all} \f$
 template< class Var >
-std::size_t eventsFor( std::span< const Var > C , std::uint64_t m ,
-                       bool all )
+std::size_t eventsFor( std::span< const Var > C , std::uint64_t m , bool all )
 {
  if( all )
   return( C.size() );
@@ -976,38 +1064,42 @@ std::size_t eventsFor( std::span< const Var > C , std::uint64_t m ,
 template< class A , class O , class L >
 struct kinds_of;
 
-template< class A , class O , class ... E >
-struct kinds_of< A , O , list< E... > > {
+template< class A , class O , class... E >
+struct kinds_of< A , O , list< E... > >
+{
  static constexpr std::uint64_t value = [] {
   std::uint64_t m = 0;
   std::size_t i = 0;
-  ( ( m |= ( calls< A , O , E > ? ( std::uint64_t( 1 ) << i ) : 0 ) ,
-      ++i ) , ... );
+  ( ( m |= ( calls< A , O , E > ? ( std::uint64_t( 1 ) << i ) : 0 ) , ++i ) ,
+    ... );
   return( m );
   }();
  static constexpr bool keep = ( calls_keep< A , O , E > || ... );
  static constexpr bool nothrow_ok =
-  ( ( ! must_not_throw< E > || calls_nothrow< A , O , E > ) && ... );
+   ( ( ! must_not_throw< E > || calls_nothrow< A , O , E > ) && ... );
  };
 
 /// whether every type of the list `R` is in the list `L`
 template< class R , class L >
 struct all_in;
 
-template< class ... R , class L >
-struct all_in< list< R... > , L > {
+template< class... R , class L >
+struct all_in< list< R... > , L >
+{
  static constexpr bool value = ( contains_v< R , L > && ... );
  };
 
 /// the events `O` requires, `list<>` if none
 template< class O >
-struct required {
+struct required
+{
  using type = list<>;
  };
 
 template< class O >
  requires requires { typename O::requires_modifications; }
-struct required< O > {
+struct required< O >
+{
  using type = typename O::requires_modifications;
  };
 
@@ -1017,14 +1109,14 @@ template< class A , class O , class L >
 constexpr void check( void )
 {
  static_assert( kinds_of< A , O , L >::value != 0 ,
-                "ADS: the observer has an on() for none of the events of "
-                "the structure" );
+		"ADS: the observer has an on() for none of the events of "
+		"the structure" );
  static_assert( all_in< typename required< O >::type , L >::value ,
-                "ADS: the observer requires an event that the structure "
-                "never emits" );
+		"ADS: the observer requires an event that the structure "
+		"never emits" );
  static_assert( kinds_of< A , O , L >::nothrow_ok ,
-                "ADS: on() of Erased, BulkErased, Cleared, Rebuilt and "
-                "Replaced must be noexcept" );
+		"ADS: on() of Erased, BulkErased, Cleared, Rebuilt and "
+		"Replaced must be noexcept" );
  }
 
 /// calls f.template operator()< E >() for the event E of index k of L
@@ -1038,13 +1130,15 @@ bool giveRun( O & o , std::span< const Var > R );
 
 /// the detached static observers, as bits, kept only if one may leave
 template< bool B >
-struct OffBits {
+struct OffBits
+{
  [[nodiscard]] constexpr bool off( std::size_t ) const { return( false ); }
- constexpr void set( std::size_t ) {}
+ constexpr void set( std::size_t ) { }
  };
 
 template<>
-struct OffBits< true > {
+struct OffBits< true >
+{
  std::uint64_t bits = 0;
  [[nodiscard]] bool off( std::size_t i ) const {
   return( ( bits >> i ) & 1u );
@@ -1055,15 +1149,17 @@ struct OffBits< true > {
 /// the counts of the static observers, kept only at the level of the
 /// audits
 template< std::size_t N , bool B = ( ADS_CONTRACTS >= 3 ) >
-struct StaticCounts {
+struct StaticCounts
+{
  [[nodiscard]] static Counts at( std::size_t ) { return( Counts() ); }
- static void event( std::size_t ) {}
- static void group( std::size_t ) {}
- static void rebuild( std::size_t ) {}
+ static void event( std::size_t ) { }
+ static void group( std::size_t ) { }
+ static void rebuild( std::size_t ) { }
  };
 
 template< std::size_t N >
-struct StaticCounts< N , true > {
+struct StaticCounts< N , true >
+{
  std::array< Counts , N > c{};
  [[nodiscard]] Counts at( std::size_t i ) const { return( c[ i ] ); }
  void event( std::size_t i ) { ++c[ i ].events; }
@@ -1073,44 +1169,53 @@ struct StaticCounts< N , true > {
 
 /// where an event outside a batch got to: the static observers told, as
 /// bits, and the dynamic slot that threw (the size if none)
-struct Trail {
+struct Trail
+{
  std::uint64_t st = 0;
  std::size_t dy = 0;
  };
 
 /// the part of a subject with no static observers
 template< class L >
-struct NoStatic {
+struct NoStatic
+{
  template< class E >
  static constexpr bool listened = false;
- template< class ... A >
- constexpr explicit NoStatic( A & ... ) {
+ template< class... A >
+ constexpr explicit NoStatic( A &... ) {
   static_assert( sizeof...( A ) == 0 ,
-                 "ADS: observers given to a subject with no static part" );
+		 "ADS: observers given to a subject with no static part" );
   }
  template< class E >
- [[nodiscard]] constexpr bool live( void ) const { return( false ); }
+ [[nodiscard]] constexpr bool live( void ) const {
+  return( false );
+  }
  [[nodiscard]] constexpr std::uint64_t wanted( void ) const { return( 0 ); }
  template< class E , bool T >
- constexpr void deliver( const E & , Trail & ) {}
+ constexpr void deliver( const E & , Trail & ) { }
  template< class E , class Inv >
- constexpr void undo( const Inv & , const Trail & ) noexcept {}
+ constexpr void undo( const Inv & , const Trail & ) noexcept { }
  template< class E >
- [[nodiscard]] constexpr bool prepare( const E & ) const { return( true ); }
+ [[nodiscard]] constexpr bool prepare( const E & ) const {
+  return( true );
+  }
  template< class S >
- [[nodiscard]] constexpr bool audit( const S & ) const { return( true ); }
+ [[nodiscard]] constexpr bool audit( const S & ) const {
+  return( true );
+  }
  template< class Var >
  constexpr void deliverGroup( std::span< const Var > , std::uint64_t ,
-                              const Group & , std::vector< Var > & ) {}
+			      const Group & , std::vector< Var > & ) { }
  };
 
 /// the static observers `X...` of a structure of the events `L` and of
 /// the observed object `Obs`
-template< class L , class Obs , class ... X >
-class StaticSet {
+template< class L , class Obs , class... X >
+class StaticSet
+{
 
  static constexpr std::size_t N = sizeof...( X );
- using Objects = std::tuple< typename held< X >::object & ... >;
+ using Objects = std::tuple< typename held< X >::object &... >;
  template< std::size_t I >
  using Xi = std::tuple_element_t< I , std::tuple< X... > >;
  template< std::size_t I >
@@ -1119,21 +1224,21 @@ class StaticSet {
  using Ai = typename held< Xi< I > >::adapter;
 
  static constexpr bool may_leave =
-  ( kinds_of< typename held< X >::adapter , typename held< X >::object ,
-              L >::keep || ... );
+   ( kinds_of< typename held< X >::adapter , typename held< X >::object ,
+	       L >::keep ||
+     ... );
 
  public:
-
  template< class E >
  static constexpr bool listened =
-  ( calls< typename held< X >::adapter , typename held< X >::object , E >
-    || ... );
+   ( calls< typename held< X >::adapter , typename held< X >::object , E > ||
+     ... );
 
- template< class ... A >
- explicit StaticSet( A & ... a ) : f_o( a... ) {
+ template< class... A >
+ explicit StaticSet( A &... a ) : f_o( a... ) {
   static_assert( N <= 64 , "ADS: at most 64 static observers" );
-  ( check< typename held< X >::adapter , typename held< X >::object ,
-           L >() , ... );
+  ( check< typename held< X >::adapter , typename held< X >::object , L >() ,
+    ... );
   checkOrder( std::make_index_sequence< N >() );
   }
 
@@ -1145,7 +1250,7 @@ class StaticSet {
   else {
    bool w = true;
    if constexpr( calls_mask< Ai< I > , Oi< I > > )
-    w = ( Ai< I >::mask( std::get< I >( f_o ) ) >> index_v< E , L > ) & 1u;
+    w = ( Ai< I >::mask( std::get< I >( f_o ) ) >> index_v< E , L > )&1u;
    if constexpr( may_leave )
     w = w && ! f_off.off( I );
    return( w );
@@ -1154,30 +1259,31 @@ class StaticSet {
 
  template< class E >
  [[nodiscard]] bool live( void ) const {
-  return( [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   return( ( wants< I , E >() || ... ) ); }(
-           std::make_index_sequence< N >() ) );
+  return( [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   return( ( wants< I , E >() || ... ) );
+   }( std::make_index_sequence< N >() ) );
   }
 
  /// the kinds wanted now by someone, as bits
  [[nodiscard]] std::uint64_t wanted( void ) const {
-  return( [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   return( ( wantedBy< I >() | ... | std::uint64_t( 0 ) ) ); }(
-           std::make_index_sequence< N >() ) );
+  return( [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   return( ( wantedBy< I >() | ... | std::uint64_t( 0 ) ) );
+   }( std::make_index_sequence< N >() ) );
   }
 
  template< class E , bool T >
  void deliver( const E & e , Trail & t ) {
-  [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   ( step< I , T >( e , t ) , ... ); }( std::make_index_sequence< N >() );
+  [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   ( step< I , T >( e , t ) , ... );
+   }( std::make_index_sequence< N >() );
   }
 
  template< class E , class Inv >
  void undo( const Inv & e , const Trail & t ) noexcept {
   std::uint64_t leave = 0;
-  [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   ( back< N - 1 - I , E >( e , t , leave ) , ... ); }(
-     std::make_index_sequence< N >() );
+  [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   ( back< N - 1 - I , E >( e , t , leave ) , ... );
+   }( std::make_index_sequence< N >() );
   if constexpr( may_leave )
    for( std::size_t i = 0 ; i < N ; ++i )
     if( ( leave >> i ) & 1u )
@@ -1186,24 +1292,24 @@ class StaticSet {
 
  template< class E >
  [[nodiscard]] bool prepare( const E & e ) const {
-  return( [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   return( ( prepareOne< I >( e ) && ... ) ); }(
-           std::make_index_sequence< N >() ) );
+  return( [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   return( ( prepareOne< I >( e ) && ... ) );
+   }( std::make_index_sequence< N >() ) );
   }
 
  template< class S >
  [[nodiscard]] bool audit( const S & s ) const {
-  return( [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   return( ( auditOne< I >( s ) && ... ) ); }(
-           std::make_index_sequence< N >() ) );
+  return( [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   return( ( auditOne< I >( s ) && ... ) );
+   }( std::make_index_sequence< N >() ) );
   }
 
  template< class Var >
  void deliverGroup( std::span< const Var > C , std::uint64_t kinds ,
-                    const Group & g , std::vector< Var > & tmp ) {
-  [ & ]< std::size_t ... I >( std::index_sequence< I... > ) {
-   ( groupOne< I >( C , kinds , g , tmp ) , ... ); }(
-     std::make_index_sequence< N >() );
+		    const Group & g , std::vector< Var > & tmp ) {
+  [ & ]< std::size_t... I >( std::index_sequence< I... > ) {
+   ( groupOne< I >( C , kinds , g , tmp ) , ... );
+   }( std::make_index_sequence< N >() );
   }
 
  [[nodiscard]] Counts counts( std::size_t i ) const {
@@ -1211,7 +1317,6 @@ class StaticSet {
   }
 
  private:
-
  template< std::size_t I >
  [[nodiscard]] std::uint64_t wantedBy( void ) const {
   std::uint64_t m = kinds_of< Ai< I > , Oi< I > , L >::value;
@@ -1244,7 +1349,7 @@ class StaticSet {
 
  template< std::size_t I , class E , class Inv >
  void back( const Inv & e , const Trail & t ,
-            std::uint64_t & leave ) noexcept {
+	    std::uint64_t & leave ) noexcept {
   if constexpr( calls< Ai< I > , Oi< I > , Inv > ) {
    if( ( ( t.st >> I ) & 1u ) == 0 )
     return;
@@ -1256,7 +1361,8 @@ class StaticSet {
     else
      Ai< I >::one( std::get< I >( f_o ) , e );
     }
-   catch( ... ) {}                      // the first exception wins
+   catch( ... ) {
+    }  // the first exception wins
    }
   }
 
@@ -1281,7 +1387,8 @@ class StaticSet {
 
  template< std::size_t I , class Var >
  void groupOne( std::span< const Var > C , std::uint64_t kinds ,
-                const Group & g , std::vector< Var > & tmp ) {
+		const Group & g ,
+		std::vector< Var > & tmp ) {
   const std::uint64_t m = wantedBy< I >();
   if( ( m & kinds ) == 0 )
    return;
@@ -1289,7 +1396,7 @@ class StaticSet {
   f_counts.group( I );
   if constexpr( calls_policy< Ai< I > , Oi< I > > )
    if( Ai< I >::early( o , eventsFor( C , m , ( kinds & ~m ) == 0 ) ) ) {
-    rebuiltOne< I >( g );                // Rebuilt instead of the events
+    rebuiltOne< I >( g );  // Rebuilt instead of the events
     return;
     }
   if constexpr( calls_group< Ai< I > , Oi< I > > )
@@ -1316,9 +1423,10 @@ class StaticSet {
     if( ( m >> k ) & 1u )
      visitKind< L >( k , [ & ]< class E >() {
       if constexpr( calls< Ai< I > , Oi< I > , E > )
-       leave = giveRun< Ai< I > , Oi< I > , E >( o , C.subspan( i ,
-                                                                j - i ) ) ||
-               leave; } );
+       leave =
+	 giveRun< Ai< I > , Oi< I > , E >( o ,
+					   C.subspan( i , j - i ) ) || leave;
+      } );
     i = j;
     }
    }
@@ -1340,7 +1448,7 @@ class StaticSet {
    Ai< I >::end( o );
   }
 
- template< std::size_t ... I >
+ template< std::size_t... I >
  static constexpr void checkOrder( std::index_sequence< I... > ) {
   ( checkDeps< I >() , ... );
   }
@@ -1349,19 +1457,19 @@ class StaticSet {
  static constexpr void checkDeps( void ) {
   if constexpr( requires { typename Oi< I >::depends_on; } )
    static_assert( precede< I >( typename Oi< I >::depends_on() ) ,
-                  "ADS: a static observer precedes one it depends on" );
+		  "ADS: a static observer precedes one it depends on" );
   }
 
- template< std::size_t I , class ... D >
+ template< std::size_t I , class... D >
  static constexpr bool precede( list< D... > ) {
   return( ( before< I , D >() && ... ) );
   }
 
  template< std::size_t I , class D >
  static constexpr bool before( void ) {
-  return( [] < std::size_t ... J >( std::index_sequence< J... > ) {
-   return( ( std::is_same_v< Oi< J > , D > || ... ) ); }(
-           std::make_index_sequence< I >() ) );
+  return( []< std::size_t... J >( std::index_sequence< J... > ) {
+   return( ( std::is_same_v< Oi< J > , D > || ... ) );
+   }( std::make_index_sequence< I >() ) );
   }
 
  Objects f_o;
@@ -1372,39 +1480,48 @@ class StaticSet {
 
 /// the part of a subject with no dynamic observers
 template< class L >
-struct NoSlots {
+struct NoSlots
+{
  static constexpr bool slots = false;
  template< class E >
  static constexpr bool listened = false;
  template< class E >
- [[nodiscard]] constexpr bool live( void ) const { return( false ); }
+ [[nodiscard]] constexpr bool live( void ) const {
+  return( false );
+  }
  [[nodiscard]] constexpr std::uint64_t wanted( void ) const { return( 0 ); }
  template< class E , bool T >
- constexpr void deliver( const E & , Trail & ) {}
+ constexpr void deliver( const E & , Trail & ) { }
  template< class E , class Inv >
- constexpr void undo( const Inv & , const Trail & ) noexcept {}
+ constexpr void undo( const Inv & , const Trail & ) noexcept { }
  template< class E >
- [[nodiscard]] constexpr bool prepare( const E & ) const { return( true ); }
+ [[nodiscard]] constexpr bool prepare( const E & ) const {
+  return( true );
+  }
  template< class S >
- [[nodiscard]] constexpr bool audit( const S & ) const { return( true ); }
+ [[nodiscard]] constexpr bool audit( const S & ) const {
+  return( true );
+  }
  template< class Var >
  constexpr void deliverGroup( std::span< const Var > , std::uint64_t ,
-                              const Group & , std::vector< Var > & ) {}
+			      const Group & , std::vector< Var > & ) { }
  };
 
 /// the dynamic observers of a structure of the events `L` and of the
 /// observed object `Obs`, each in a slot of erased type, in the order of
 /// their attachment
 template< class L , class Obs >
-class Slots {
+class Slots
+{
 
  static constexpr std::size_t K = L::size;
  using Var = variant_t< L >;
 
  /// an observer, its type erased: one function per kind of event
- struct Slot {
-  void * o = nullptr;                  ///< the observer, null if gone
-  std::uint64_t mask = 0;              ///< the kinds it wants
+ struct Slot
+ {
+  void * o = nullptr;      ///< the observer, null if gone
+  std::uint64_t mask = 0;  ///< the kinds it wants
   /// its `on( e )` of each kind
   std::array< Keep ( * )( void * , const void * ) , K > one{};
   /// its `prepare( e )` of each kind
@@ -1412,20 +1529,19 @@ class Slots {
   /// a run of events of each kind
   std::array< bool ( * )( void * , std::span< const Var > ) , K > run{};
   /// its `on( s )` of the variant
-  void ( * all )( void * , std::span< const Var > ) = nullptr;
+  void ( *all )( void * , std::span< const Var > ) = nullptr;
   /// its group hooks
-  void ( * begin )( void * , const Group & ) = nullptr;
-  void ( * end )( void * ) = nullptr;   ///< its `group_end()`
+  void ( *begin )( void * , const Group & ) = nullptr;
+  void ( *end )( void * ) = nullptr;  ///< its `group_end()`
   /// its `audit( s )`
-  bool ( * audit )( const void * , const void * ) = nullptr;
+  bool ( *audit )( const void * , const void * ) = nullptr;
   /// whether its policy wants `Rebuilt` instead of \f$ k \f$ events
-  bool ( * early )( void * , std::size_t ) = nullptr;
-  void ( * rebuilt )( void * ) = nullptr;   ///< its `Rebuilt`
-  Counts counts;                       ///< its counts
+  bool ( *early )( void * , std::size_t ) = nullptr;
+  void ( *rebuilt )( void * ) = nullptr;  ///< its `Rebuilt`
+  Counts counts;                          ///< its counts
   };
 
  public:
-
  static constexpr bool slots = true;
 
  template< class E >
@@ -1433,7 +1549,7 @@ class Slots {
 
  template< class E >
  [[nodiscard]] bool live( void ) const {
-  return( ( f_mask >> index_v< E , L > ) & 1u );
+  return( ( f_mask >> index_v< E , L > )&1u );
   }
 
  [[nodiscard]] std::uint64_t wanted( void ) const { return( f_mask ); }
@@ -1445,7 +1561,7 @@ class Slots {
 
  [[nodiscard]] bool attached( int id ) const {
   return( ( id >= 0 ) && ( id < int( f_s.size() ) ) &&
-          ( f_s[ std::size_t( id ) ].o != nullptr ) );
+	   ( f_s[ std::size_t( id ) ].o != nullptr ) );
   }
 
  template< class E , bool T >
@@ -1461,7 +1577,7 @@ class Slots {
  [[nodiscard]] bool audit( const S & s ) const;
 
  void deliverGroup( std::span< const Var > C , std::uint64_t kinds ,
-                    const Group & g , std::vector< Var > & tmp );
+		    const Group & g , std::vector< Var > & tmp );
 
  [[nodiscard]] Counts counts( int id ) const {
   return( f_s[ std::size_t( id ) ].counts );
@@ -1472,7 +1588,6 @@ class Slots {
  bool f_busy = false;
 
  private:
-
  /// the functions of the kind I of the observer D called through A
  template< class A , class D , std::size_t I >
  static void fill( Slot & s );
@@ -1480,8 +1595,8 @@ class Slots {
  /// the union of the masks
  void remask( void );
 
- std::vector< Slot > f_s;          ///< the slots
- std::uint64_t f_mask = 0;         ///< the union of their masks
+ std::vector< Slot > f_s;   ///< the slots
+ std::uint64_t f_mask = 0;  ///< the union of their masks
 
  };  // end( class Slots )
 
@@ -1491,7 +1606,8 @@ class Slots {
 
 /// the subject of `NoObservers`: no member and no code
 template< class L >
-struct NoSubject {
+struct NoSubject
+{
  static constexpr bool none = true;      ///< nobody may listen
  static constexpr bool dynamic = false;  ///< no attachment
  using modifications = L;                ///< the events
@@ -1499,30 +1615,34 @@ struct NoSubject {
  static constexpr bool listened = false;
  constexpr NoSubject( void ) = default;
  template< class E >
- [[nodiscard]] constexpr bool live( void ) const { return( false ); }
+ [[nodiscard]] constexpr bool live( void ) const {
+  return( false );
+  }
  template< class E >
- constexpr void emit( const E & ) {}
+ constexpr void emit( const E & ) { }
  template< class E , class U >
- constexpr void emit( const E & , U && ) {}
+ constexpr void emit( const E & , U && ) { }
  template< class E >
- constexpr void prepare( const E & ) const {}
+ constexpr void prepare( const E & ) const { }
  template< class S >
- constexpr void audit( const S & ) const {}
- constexpr void open( void ) {}
+ constexpr void audit( const S & ) const { }
+ constexpr void open( void ) { }
  template< class S >
- constexpr void close( const S & ) {}
+ constexpr void close( const S & ) { }
  [[nodiscard]] constexpr std::size_t buffered( void ) const { return( 0 ); }
- constexpr void discard( std::size_t ) {}
- constexpr void spoil( void ) {}
- constexpr void mute( bool ) {}
+ constexpr void discard( std::size_t ) { }
+ constexpr void spoil( void ) { }
+ constexpr void mute( bool ) { }
  template< class S >
- constexpr void unmute( const S & ) {}
+ constexpr void unmute( const S & ) { }
  [[nodiscard]] constexpr int depth( void ) const { return( 0 ); }
  [[nodiscard]] constexpr bool muted( void ) const { return( false ); }
  [[nodiscard]] constexpr std::size_t built( void ) const { return( 0 ); }
  [[nodiscard]] constexpr std::uint64_t mask( void ) const { return( 0 ); }
  template< class E >
- [[nodiscard]] constexpr std::uint64_t revision( void ) const { return( 0 ); }
+ [[nodiscard]] constexpr std::uint64_t revision( void ) const {
+  return( 0 );
+  }
  [[nodiscard]] constexpr std::uint64_t version( void ) const { return( 0 ); }
  };
 
@@ -1530,26 +1650,26 @@ struct NoSubject {
 /// static part `St` and the dynamic part `Dy` [see `Static`, `Dynamic`,
 /// `Both`]
 template< class L , class Obs , class St , class Dy >
-class Subject {
+class Subject
+{
 
  static constexpr std::size_t K = L::size;
  static_assert( K <= 64 , "ADS: at most 64 kinds of event" );
 
  public:
-
- static constexpr bool none = false;            ///< someone may listen
- static constexpr bool dynamic = Dy::slots;     ///< attachment allowed
- using modifications = L;                       ///< the events
- using Event = variant_t< L >;                  ///< one of them
+ static constexpr bool none = false;         ///< someone may listen
+ static constexpr bool dynamic = Dy::slots;  ///< attachment allowed
+ using modifications = L;                    ///< the events
+ using Event = variant_t< L >;               ///< one of them
 
  /// whether someone may want `E`, at compile time
  template< class E >
- static constexpr bool listened = St::template listened< E > ||
-                                  Dy::template listened< E >;
+ static constexpr bool listened =
+   St::template listened< E > || Dy::template listened< E >;
 
  /// the subject of the static observers `o...`
- template< class ... A >
- explicit Subject( A & ... a ) : f_st( a... ) {}
+ template< class... A >
+ explicit Subject( A &... a ) : f_st( a... ) { }
 
  /// not copied
  Subject( const Subject & ) = delete;
@@ -1566,7 +1686,7 @@ class Subject {
  template< class E >
  void emit( const E & e ) {
   static_assert( contains_v< E , L > ,
-                 "ADS: an event that the structure does not declare" );
+		 "ADS: an event that the structure does not declare" );
   ++f_built;
   if( ( f_depth | f_quiet ) != 0 ) [[unlikely]] {
    defer( e );
@@ -1579,7 +1699,8 @@ class Subject {
   if constexpr( dynamic ) {
    f_st.template deliver< E , false >( e , t );
    f_dy.f_busy = true;
-   struct Done {
+   struct Done
+   {
     bool & b;
     ~Done() { b = false; }
     } done{ f_dy.f_busy };
@@ -1696,7 +1817,8 @@ class Subject {
  /// the counts of the static observer \f$ i \f$ (zero below the level of
  /// the audits)
  [[nodiscard]] Counts staticCounts( std::size_t i ) const
-  requires( ! std::is_same_v< St , NoStatic< L > > ) {
+  requires( ! std::is_same_v< St , NoStatic< L > > )
+ {
   return( f_st.counts( i ) );
   }
 
@@ -1705,38 +1827,47 @@ class Subject {
  /// attaches the observer \f$ o \f$ and gives its number
  /// \pre no batch is open, no observer is being told
  template< class D >
- int attach( D & o ) requires dynamic {
+ int attach( D & o )
+  requires dynamic
+ {
   ADS_PRE( ( f_depth == 0 ) && ! f_dy.f_busy );
   return( f_dy.template attach< Direct >( o ) );
   }
 
  /// attaches the observer \f$ o \f$ called through the adapter `A`
  template< class A , class D >
- int attachVia( D & o ) requires dynamic {
+ int attachVia( D & o )
+  requires dynamic
+ {
   ADS_PRE( ( f_depth == 0 ) && ! f_dy.f_busy );
   return( f_dy.template attach< A >( o ) );
   }
 
  /// detaches the observer number \f$ \mathit{id} \f$
  /// \pre it is attached, no batch is open, no observer is being told
- void detach( int id ) requires dynamic {
+ void detach( int id )
+  requires dynamic
+ {
   ADS_PRE( ( f_depth == 0 ) && ! f_dy.f_busy && f_dy.attached( id ) );
   f_dy.detach( id );
   }
 
  /// whether the observer number \f$ \mathit{id} \f$ is attached
- [[nodiscard]] bool attached( int id ) const requires dynamic {
+ [[nodiscard]] bool attached( int id ) const
+  requires dynamic
+ {
   return( f_dy.attached( id ) );
   }
 
  /// the counts of the dynamic observer \f$ \mathit{id} \f$
- [[nodiscard]] Counts slotCounts( int id ) const requires dynamic {
+ [[nodiscard]] Counts slotCounts( int id ) const
+  requires dynamic
+ {
   return( f_dy.counts( id ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// collects \f$ e \f$ in the batch, unless muted, out of the hot code
  template< class E >
  ADS_COLD_PATH void defer( const E & e );
@@ -1747,37 +1878,40 @@ class Subject {
  /// sends `Rebuilt` to everyone who wants it
  void rebuilt( void );
 
- ADS_NO_UNIQUE_ADDRESS St f_st;          ///< the static observers
- ADS_NO_UNIQUE_ADDRESS Dy f_dy;          ///< the dynamic ones
- int f_depth = 0;                        ///< the batches open
- int f_quiet = 0;                        ///< the mutes open
- bool f_rebuild = false;                 ///< whether a mute asked Rebuilt
- std::size_t f_built = 0;                ///< the events built
- std::vector< Event > f_buf;             ///< the events collected
+ ADS_NO_UNIQUE_ADDRESS St f_st;  ///< the static observers
+ ADS_NO_UNIQUE_ADDRESS Dy f_dy;  ///< the dynamic ones
+ int f_depth = 0;                ///< the batches open
+ int f_quiet = 0;                ///< the mutes open
+ bool f_rebuild = false;         ///< whether a mute asked Rebuilt
+ std::size_t f_built = 0;        ///< the events built
+ std::vector< Event > f_buf;     ///< the events collected
  /// the copies of the handles of the bulk events collected
  std::vector< std::shared_ptr< const void > > f_keep;
- std::array< std::uint64_t , K > f_rev{};   ///< the revisions
+ std::array< std::uint64_t , K > f_rev{};  ///< the revisions
 
  };  // end( class Subject )
 
 /// the events `M` of a structure, checked against the list `L` given to
 /// `Dynamic`, if any
 template< class L , class M >
-struct events_of {
+struct events_of
+{
  static_assert( std::is_void_v< L > || std::is_same_v< L , M > ,
-                "ADS: Dynamic< L > on a structure whose events are not L" );
+		"ADS: Dynamic< L > on a structure whose events are not L" );
  using type = M;
  };
 
 /// the type of the checkpoints of \f$ s \f$, `int` if it has none
 template< class S >
-struct checkpoint_of {
+struct checkpoint_of
+{
  using type = int;
  };
 
 template< class S >
  requires ADS::undoable< S >
-struct checkpoint_of< S > {
+struct checkpoint_of< S >
+{
  using type = decltype( std::declval< S & >().checkpoint() );
  };
 
@@ -1803,7 +1937,8 @@ decltype( auto ) observed( S & s )
 
 /// nobody listens: the subject is empty and every test is false at compile
 /// time, so that the structure compiles to its plain code
-struct NoObservers {
+struct NoObservers
+{
  /// the subject of a structure of the events `L`
  template< class L , class Obs = void >
  using bind = mod::detail::NoSubject< L >;
@@ -1811,24 +1946,27 @@ struct NoObservers {
 
 /// the static observers `O...` (or `mod::Via< O , A >`), references called
 /// directly in the order of the arguments
-template< class ... O >
-struct Static {
+template< class... O >
+struct Static
+{
  /// the subject of a structure of the events `L`
  template< class L , class Obs = void >
- using bind = mod::detail::Subject< L , Obs ,
-                                    mod::detail::StaticSet< L , Obs , O... > ,
-                                    mod::detail::NoSlots< L > >;
+ using bind =
+   mod::detail::Subject< L , Obs , mod::detail::StaticSet< L , Obs , O... > ,
+			 mod::detail::NoSlots< L > >;
  };
 
 /// observers attached at run time, the events those of the structure (or
 /// the list `L`, which must be them)
 template< class L = void >
-struct Dynamic {
+struct Dynamic
+{
  /// the subject of a structure of the events `M`
  template< class M , class Obs = void >
- using bind = mod::detail::Subject<
-               typename mod::detail::events_of< L , M >::type , Obs ,
-               mod::detail::NoStatic< M > , mod::detail::Slots< M , Obs > >;
+ using bind =
+   mod::detail::Subject< typename mod::detail::events_of< L , M >::type , Obs ,
+			 mod::detail::NoStatic< M > ,
+			 mod::detail::Slots< M , Obs > >;
  };
 
 /// the static observers of `St`, then those attached at run time
@@ -1836,14 +1974,15 @@ template< class St , class Dy = Dynamic<> >
 struct Both;
 
 /// the static observers `O...`, then those attached at run time
-template< class ... O , class L >
-struct Both< Static< O... > , Dynamic< L > > {
+template< class... O , class L >
+struct Both< Static< O... > , Dynamic< L > >
+{
  /// the subject of a structure of the events `M`
  template< class M , class Obs = void >
- using bind = mod::detail::Subject<
-               typename mod::detail::events_of< L , M >::type , Obs ,
-                                    mod::detail::StaticSet< M , Obs , O... > ,
-                                    mod::detail::Slots< M , Obs > >;
+ using bind =
+   mod::detail::Subject< typename mod::detail::events_of< L , M >::type , Obs ,
+			 mod::detail::StaticSet< M , Obs , O... > ,
+			 mod::detail::Slots< M , Obs > >;
  };
 
 /*--------------------------------------------------------------------------*/
@@ -1852,16 +1991,16 @@ struct Both< Static< O... > , Dynamic< L > > {
 
 /// a batch of RAII on the structure \f$ s \f$ [see batch()]
 template< class S >
-class Batch {
+class Batch
+{
 
  using T = typename mod::detail::checkpoint_of< S >::type;
 
  public:
-
  /// opens a batch on \f$ s \f$
  explicit Batch( S & s )
-  : f_s( & s ) , f_ex( std::uncaught_exceptions() ) ,
-    f_mark( s.subject().buffered() ) {
+     : f_s( &s ) , f_ex( std::uncaught_exceptions() ) ,
+       f_mark( s.subject().buffered() ) {
   if constexpr( undoable< S > )
    f_t = s.checkpoint();
   s.subject().open();
@@ -1869,8 +2008,8 @@ class Batch {
 
  /// the batch of \f$ b \f$, which no longer has it
  Batch( Batch && b ) noexcept
-  : f_s( std::exchange( b.f_s , nullptr ) ) , f_ex( b.f_ex ) ,
-    f_mark( b.f_mark ) , f_t( b.f_t ) {}
+     : f_s( std::exchange( b.f_s , nullptr ) ) , f_ex( b.f_ex ) ,
+       f_mark( b.f_mark ) , f_t( b.f_t ) { }
 
  /// not copied
  Batch( const Batch & ) = delete;
@@ -1928,7 +2067,9 @@ class Batch {
  /// drops its events: the observers see nothing
  /// \pre the structure can go back to the checkpoint (`revertible()`,
  ///      when it has it)
- void rollback( void ) requires undoable< S > {
+ void rollback( void )
+  requires undoable< S >
+ {
   if( f_s ) {
    ADS_PRE( revertible( *f_s ) );
    undo( *std::exchange( f_s , nullptr ) );
@@ -1936,7 +2077,6 @@ class Batch {
   }
 
  private:
-
  /// whether \f$ s \f$ can go back to the checkpoint of the batch: always,
  /// unless it tells otherwise by `revertible( t )`
  bool revertible( const S & s ) const {
@@ -1948,8 +2088,8 @@ class Batch {
 
  void abandon( void ) noexcept {
   S * s = std::exchange( f_s , nullptr );
-  using L = typename std::remove_cvref_t<
-                     decltype( s->subject() ) >::modifications;
+  using L =
+    typename std::remove_cvref_t< decltype( s->subject() ) >::modifications;
   if constexpr( undoable< S > )
    if( revertible( *s ) ) {
     undo( *s );
@@ -1960,27 +2100,30 @@ class Batch {
   try {
    s->subject().close( mod::detail::observed( *s ) );
    }
-  catch( ... ) {}                       // the first exception wins
+  catch( ... ) {
+   }  // the first exception wins
   }
 
  void undo( S & s ) noexcept {
   auto & sub = s.subject();
-  sub.mute( false );                    // the undo tells nobody
+  sub.mute( false );  // the undo tells nobody
   try {
    s.rollback( f_t );
    }
-  catch( ... ) {}
-  try {
-   sub.unmute( mod::detail::observed( s ) );   // in the batch: silent
+  catch( ... ) {
    }
-  catch( ... ) {}
+  try {
+   sub.unmute( mod::detail::observed( s ) );  // in the batch: silent
+   }
+  catch( ... ) {
+   }
   sub.discard( f_mark );
   }
 
- S * f_s;                       ///< the structure, if open
- int f_ex;                      ///< the exceptions in flight at the open
- std::size_t f_mark;            ///< the events collected before the open
- T f_t{};                       ///< the checkpoint, if undoable
+ S * f_s;             ///< the structure, if open
+ int f_ex;            ///< the exceptions in flight at the open
+ std::size_t f_mark;  ///< the events collected before the open
+ T f_t{};             ///< the checkpoint, if undoable
 
  };  // end( class Batch )
 
@@ -1994,11 +2137,11 @@ template< class S >
 
 /// a mute of RAII on the structure \f$ s \f$ [see quiet()]
 template< class S >
-class Quiet {
+class Quiet
+{
  public:
-
  /// suspends the events of \f$ s \f$
- Quiet( S & s , bool rebuild ) : f_s( & s ) { s.subject().mute( rebuild ); }
+ Quiet( S & s , bool rebuild ) : f_s( &s ) { s.subject().mute( rebuild ); }
 
  /// not copied
  Quiet( const Quiet & ) = delete;
@@ -2017,8 +2160,7 @@ class Quiet {
   }
 
  private:
-
- S * f_s;                       ///< the structure, if muted
+ S * f_s;  ///< the structure, if muted
 
  };  // end( class Quiet )
 
@@ -2029,12 +2171,12 @@ class Quiet {
 template< class S >
 [[nodiscard]] Quiet< S > quiet( S & s )
 {
- using L = typename std::remove_cvref_t<
-                    decltype( s.subject() ) >::modifications;
+ using L =
+   typename std::remove_cvref_t< decltype( s.subject() ) >::modifications;
  static_assert( mod::contains_v< mod::Rebuilt , L > ,
-                "ADS: quiet( s ) sends Rebuilt, which the structure does not "
-                "emit; quiet( s , no_rebuild ) promises that nobody needs to "
-                "know" );
+		"ADS: quiet( s ) sends Rebuilt, which the structure does not "
+		"emit; quiet( s , no_rebuild ) promises that nobody needs to "
+		"know" );
  return( Quiet< S >( s , true ) );
  }
 
@@ -2067,10 +2209,10 @@ template< class S >
 /// \end{array}}
 /// \f]
 template< class L >
-class UndoLog {
+class UndoLog
+{
  public:
-
- using Event = mod::variant_t< L >;   ///< an event recorded
+ using Event = mod::variant_t< L >;  ///< an event recorded
 
  /// records \f$ e \f$
  template< class E >
@@ -2082,7 +2224,7 @@ class UndoLog {
    try {
     f_log.push_back( Event( e ) );
     }
-   catch( ... ) {                       // a hole: no rollback before it
+   catch( ... ) {  // a hole: no rollback before it
     forget();
     ++f_base;
     f_floor = f_base;
@@ -2107,7 +2249,9 @@ class UndoLog {
  void on( const mod::Rebuilt & ) noexcept { forget(); }
  /// forgets the events recorded
  template< class A >
- void on( const mod::Replaced< A > & ) noexcept { forget(); }
+ void on( const mod::Replaced< A > & ) noexcept {
+  forget();
+  }
 
  /// the checkpoint of now
  [[nodiscard]] std::size_t checkpoint( void ) const {
@@ -2126,17 +2270,16 @@ class UndoLog {
  void rollback( S & s , std::size_t t );
 
  private:
-
  void forget( void ) noexcept {
   f_base += f_log.size();
   f_log.clear();
   f_floor = f_base;
   }
 
- std::vector< Event > f_log;    ///< the events recorded
- std::size_t f_base = 0;        ///< the checkpoint of the first of them
- std::size_t f_floor = 0;       ///< the oldest checkpoint valid
- bool f_replay = false;         ///< whether a rollback is replaying
+ std::vector< Event > f_log;  ///< the events recorded
+ std::size_t f_base = 0;      ///< the checkpoint of the first of them
+ std::size_t f_floor = 0;     ///< the oldest checkpoint valid
+ bool f_replay = false;       ///< whether a rollback is replaying
 
  };  // end( class UndoLog )
 
@@ -2149,32 +2292,33 @@ class UndoLog {
 /// query by `Eq`: an audit of the incremental one by recomputation, at a
 /// cost of about twice the work
 template< class Inc , class Scratch , class Eq = std::equal_to<> >
-class Shadow {
+class Shadow
+{
 
  template< class E >
  static constexpr bool forwarded =
-  mod::observes< Inc , E > || mod::observes< Scratch , E >;
+   mod::observes< Inc , E > || mod::observes< Scratch , E >;
 
  template< class E >
  static constexpr bool nothrow_for =
-  ( ! mod::observes< Inc , E > ||
-    noexcept( std::declval< Inc & >().on( std::declval< const E & >() ) ) ) &&
-  ( ! mod::observes< Scratch , E > ||
-    noexcept( std::declval< Scratch & >().on(
-                                       std::declval< const E & >() ) ) );
+   ( ! mod::observes< Inc , E > ||
+     noexcept( std::declval< Inc & >().on( std::declval< const E & >() ) ) ) &&
+   ( ! mod::observes< Scratch ,
+		      E > || noexcept( std::declval< Scratch & >().on(
+					std::declval< const E & >() ) ) );
 
  public:
-
  /// what a shadow counts
- struct Counts {
-  std::uint64_t events = 0;       ///< the events forwarded
-  std::uint64_t queries = 0;      ///< the queries compared
-  std::uint64_t mismatches = 0;   ///< the queries whose answers differ
+ struct Counts
+ {
+  std::uint64_t events = 0;      ///< the events forwarded
+  std::uint64_t queries = 0;     ///< the queries compared
+  std::uint64_t mismatches = 0;  ///< the queries whose answers differ
   };
 
  /// the shadow of \f$ i \f$ by \f$ s \f$, compared by \f$ \mathit{eq} \f$
  Shadow( Inc & i , Scratch & s , Eq eq = Eq() )
-  : f_inc( i ) , f_scr( s ) , f_eq( std::move( eq ) ) {}
+     : f_inc( i ) , f_scr( s ) , f_eq( std::move( eq ) ) { }
 
  /// forwards \f$ e \f$ to both, to those that want it
  template< class E >
@@ -2254,7 +2398,6 @@ class Shadow {
  [[nodiscard]] Scratch & scratch( void ) { return( f_scr ); }
 
  private:
-
  template< class O >
  static void begin( O & o , const mod::Group & g ) {
   if constexpr( mod::groups< O > )
@@ -2270,10 +2413,10 @@ class Shadow {
   return( same );
   }
 
- Inc & f_inc;                   ///< the incremental observer
- Scratch & f_scr;               ///< the observer from scratch
- Eq f_eq;                       ///< the equality of the answers
- Counts f_counts;               ///< the counts
+ Inc & f_inc;      ///< the incremental observer
+ Scratch & f_scr;  ///< the observer from scratch
+ Eq f_eq;          ///< the equality of the answers
+ Counts f_counts;  ///< the counts
 
  };  // end( class Shadow )
 
@@ -2289,7 +2432,7 @@ class Shadow {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Modification.h included */
+#endif /* Modification.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File Modification.h -------------------------*/

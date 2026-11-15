@@ -38,7 +38,7 @@
 
 #ifndef __ADS_Minimum
  #define __ADS_Minimum
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -57,7 +57,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the place of the first minimum of the range
 /// \f$ A[ \mathit{start} .. \mathit{end} ] \f$
@@ -80,7 +81,7 @@ namespace ADS {
 ///       than \f$ A[ \mathit{pos} ] \f$ (audit)
 template< class T , class C = std::less<> >
 std::size_t argmin( const std::vector< T > & A , std::size_t start ,
-                    std::size_t end , C less = C() );
+		    std::size_t end , C less = C() );
 
 /// the minimum of a vector that is not empty, \f$ n - 1 \f$ comparisons
 ///
@@ -163,7 +164,7 @@ std::pair< T , T > minMaxDivide( const std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Minimum.h included */
+#endif /* Minimum.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Minimum.h ---------------------------*/

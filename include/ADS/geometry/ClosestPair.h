@@ -87,7 +87,7 @@
 
 #ifndef __ADS_ClosestPair
  #define __ADS_ClosestPair
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -114,7 +114,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the square \f$ ( x_p - x_q )^2 + ( y_p - y_q )^2 \f$ of the distance of
 /// \f$ p \f$ and \f$ q \f$
@@ -250,7 +251,7 @@ closestPairBrute( const std::vector< Point > & P );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ClosestPair.h included */
+#endif /* ClosestPair.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File ClosestPair.h -------------------------*/

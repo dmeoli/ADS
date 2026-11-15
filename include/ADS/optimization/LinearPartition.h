@@ -58,7 +58,7 @@
 
 #ifndef __ADS_LinearPartition
  #define __ADS_LinearPartition
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the least largest sum of a part over the splits of \f$ A \f$ in \f$ k \f$
 /// nonempty contiguous parts, and the starts of the parts after the first one
@@ -106,8 +107,8 @@ namespace ADS {
 /// \post \f$ k - 1 \f$ increasing starts in \f$ [ 1 , n ) \f$ of the cost
 ///       found (audit)
 template< class T >
-std::pair< T , std::vector< std::size_t > > linearPartition(
-                                  const std::vector< T > & A , std::size_t k );
+std::pair< T , std::vector< std::size_t > >
+linearPartition( const std::vector< T > & A , std::size_t k );
 
 /// the least largest sum of a part over the splits of \f$ A \f$ in at most
 /// \f$ k \f$ contiguous parts; 0 for \f$ A \f$ empty
@@ -149,7 +150,7 @@ T painterPartition( const std::vector< T > & A , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* LinearPartition.h included */
+#endif /* LinearPartition.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File LinearPartition.h -----------------------*/

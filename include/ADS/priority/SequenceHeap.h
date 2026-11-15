@@ -104,7 +104,7 @@
 
 #ifndef __ADS_SequenceHeap
  #define __ADS_SequenceHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -126,7 +126,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SequenceHeap ----------------------------*/
@@ -134,12 +135,12 @@ namespace ADS {
 
 /// the sequence heap of plain items, the best one by `better()` on top
 template< class T , class Better = std::less< T > >
-class SequenceHeap {
+class SequenceHeap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the items of the insertion heap and of a buffer, \f$ m \f$
  static constexpr std::size_t M = 4096;
@@ -149,7 +150,7 @@ class SequenceHeap {
 
  /// the empty heap of the order `better`
  explicit SequenceHeap( Better better = Better() )
-  : f_better( std::move( better ) ) {}
+     : f_better( std::move( better ) ) { }
 
  /// pushes \f$ x \f$, in \f$ O( \log n ) \f$ amortized time
  ///
@@ -249,11 +250,11 @@ class SequenceHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a sorted run of items, read from `at` on
- struct Run {
-  std::vector< T > a;     ///< the items
-  std::size_t at = 0;     ///< the first item not yet read
+ struct Run
+ {
+  std::vector< T > a;  ///< the items
+  std::size_t at = 0;  ///< the first item not yet read
 
   /// whether all the items have been read
   [[nodiscard]] bool done( void ) const { return( at == a.size() ); }
@@ -263,9 +264,10 @@ class SequenceHeap {
   };
 
  /// a group: its sequences and its buffer
- struct Group {
-  std::vector< Run > seqs;   ///< the sequences
-  Run buf;                   ///< the buffer of its best items
+ struct Group
+ {
+  std::vector< Run > seqs;  ///< the sequences
+  Run buf;                  ///< the buffer of its best items
   };
 
  /// the insertion heap made a sequence, merged with the deletion buffer
@@ -314,19 +316,19 @@ class SequenceHeap {
  /// the remaining items of the runs R merged into out, up to n of them
  /// (all if n is 0); the runs keep what is not taken
  void merge( std::vector< Run * > & R , std::vector< T > & out ,
-             std::size_t n );
+	     std::size_t n );
 
  /// the sorted a[ 0 .. na ) and b[ 0 .. nb ) merged at the end of out, a
  /// first on equal items
  void merge2( const T * a , std::size_t na , const T * b , std::size_t nb ,
-              std::vector< T > & out ) const;
+	      std::vector< T > & out ) const;
 
  /// a is better than b: by their keys, for the numbers and the pairs of
  /// numbers in the order of std::less or std::greater, or by better()
  [[nodiscard]] bool bt( const T & a , const T & b ) const {
   if constexpr( detail::kKeyed< T , Better > )
    return( detail::orderKeyBy< Better >( a ) <
-           detail::orderKeyBy< Better >( b ) );
+	    detail::orderKeyBy< Better >( b ) );
   else
    return( f_better( a , b ) );
   }
@@ -339,28 +341,28 @@ class SequenceHeap {
  /// the invariants, on at most 4096 items
  [[nodiscard]] bool ordered( void ) const;
 
- std::vector< T > f_ins;          ///< the insertion heap
- Run f_del;                       ///< the deletion buffer
- std::vector< Group > f_groups;   ///< the groups
- std::vector< T > f_scratch;      ///< room for the merges
- bool f_heaped = true;            ///< the insertion buffer is a heap
- bool f_open = false;             ///< the pushes go to the bulk
- int f_scans = 0;                 ///< the scans of the bulk while open
- bool f_minLast = false;          ///< the best of the open bulk is last
+ std::vector< T > f_ins;         ///< the insertion heap
+ Run f_del;                      ///< the deletion buffer
+ std::vector< Group > f_groups;  ///< the groups
+ std::vector< T > f_scratch;     ///< room for the merges
+ bool f_heaped = true;           ///< the insertion buffer is a heap
+ bool f_open = false;            ///< the pushes go to the bulk
+ int f_scans = 0;                ///< the scans of the bulk while open
+ bool f_minLast = false;         ///< the best of the open bulk is last
  /// the bulk, by incremental quicksort, on huge pages when large
  std::vector< T , HugePageAllocator< T > > f_bulk;
- std::size_t f_lo = 0;            ///< the items of the bulk taken
+ std::size_t f_lo = 0;  ///< the items of the bulk taken
  /// the blocks [ q , r ) of the bulk in their place, equal and not better
  /// than A[ r .. ), the next one on top
  std::vector< std::pair< std::size_t , std::size_t > > f_piv;
- Run f_bbuf;                      ///< the best items of the bulk
- std::vector< T > f_key;          ///< the first keys of the runs merged
- std::vector< unsigned char > f_dead;      ///< the runs done
- std::vector< std::size_t > f_lose;        ///< the tree of losers
- std::vector< std::size_t > f_lose2;       ///< and of the winners
- std::vector< T * > f_cur , f_end;         ///< the runs merged
- std::size_t f_n = 0;             ///< the number of items
- Better f_better;                 ///< the order
+ Run f_bbuf;                           ///< the best items of the bulk
+ std::vector< T > f_key;               ///< the first keys of the runs merged
+ std::vector< unsigned char > f_dead;  ///< the runs done
+ std::vector< std::size_t > f_lose;    ///< the tree of losers
+ std::vector< std::size_t > f_lose2;   ///< and of the winners
+ std::vector< T * > f_cur , f_end;      ///< the runs merged
+ std::size_t f_n = 0;                  ///< the number of items
+ Better f_better;                      ///< the order
 
  };  // end( class SequenceHeap )
 
@@ -376,7 +378,7 @@ class SequenceHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SequenceHeap.h included */
+#endif /* SequenceHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SequenceHeap.h ------------------------*/

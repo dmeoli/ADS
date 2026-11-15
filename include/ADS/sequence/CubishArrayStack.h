@@ -61,7 +61,7 @@
 
 #ifndef __ADS_CubishArrayStack
  #define __ADS_CubishArrayStack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS CubishArrayStack -------------------------*/
@@ -91,16 +92,16 @@ namespace ADS {
 /// a LIST by rank in three levels, \f$ O( 1 ) \f$ access and
 /// \f$ O( n^{1/3} ) \f$ amortized insertions and removals
 template< class T >
-class CubishArrayStack {
+class CubishArrayStack
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
  /// the iterator on the items
  using iterator = RankIterator< CubishArrayStack , T , false >;
  /// the iterator on the constant items
@@ -223,20 +224,21 @@ class CubishArrayStack {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a leaf: \f$ b \f$ places, the first item at `off`
- struct Leaf {
-  std::unique_ptr< T[] > a;   ///< the places
-  std::size_t off = 0;        ///< the place of the first item
+ struct Leaf
+ {
+  std::unique_ptr< T[] > a;  ///< the places
+  std::size_t off = 0;       ///< the place of the first item
   };
 
  /// a middle block: a circular buffer of \f$ 2 b \f$ leaves
- struct Mid {
-  std::unique_ptr< Leaf[] > L;   ///< the leaves, from `head`
-  std::size_t head = 0;          ///< the place of the first leaf
-  std::size_t nl = 0;            ///< the number of leaves
-  std::size_t g = 0;             ///< the places free in the first leaf
-  std::size_t n = 0;             ///< the number of items
+ struct Mid
+ {
+  std::unique_ptr< Leaf[] > L;  ///< the leaves, from `head`
+  std::size_t head = 0;         ///< the place of the first leaf
+  std::size_t nl = 0;           ///< the number of leaves
+  std::size_t g = 0;            ///< the places free in the first leaf
+  std::size_t n = 0;            ///< the number of items
   };
 
  /// the leaf \f$ j \f$ of \f$ M \f$
@@ -290,11 +292,11 @@ class CubishArrayStack {
  /// the middle blocks but the last full, and size() items in them
  [[nodiscard]] bool full( void ) const;
 
- std::vector< Mid > f_mids;                    ///< the middle blocks
- std::vector< std::unique_ptr< T[] > > f_spare;   ///< leaves kept
- std::size_t f_n = 0;                          ///< the number of items
- std::size_t f_b = 16;                         ///< the places of a leaf
- unsigned f_lg = 4;                            ///< \f$ \log_2 b \f$
+ std::vector< Mid > f_mids;                      ///< the middle blocks
+ std::vector< std::unique_ptr< T[] > > f_spare;  ///< leaves kept
+ std::size_t f_n = 0;                            ///< the number of items
+ std::size_t f_b = 16;                           ///< the places of a leaf
+ unsigned f_lg = 4;                              ///< \f$ \log_2 b \f$
 
  };  // end( class CubishArrayStack )
 
@@ -310,7 +312,7 @@ class CubishArrayStack {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CubishArrayStack.h included */
+#endif /* CubishArrayStack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File CubishArrayStack.h -----------------------*/

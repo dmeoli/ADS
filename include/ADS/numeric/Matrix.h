@@ -52,7 +52,7 @@
 
 #ifndef __ADS_Matrix
  #define __ADS_Matrix
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -67,10 +67,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T >
-using Matrix = std::vector< std::vector< T > >;   ///< by rows
+using Matrix = std::vector< std::vector< T > >;  ///< by rows
 
 /// the product \f$ A B \f$ of two \f$ n \times n \f$ matrices by the
 /// definition, \f$ \Theta( n^3 ) \f$ (the moltiplicaMatrici() of the book);
@@ -92,7 +93,7 @@ using Matrix = std::vector< std::vector< T > >;   ///< by rows
 /// \pre \f$ A \f$ and \f$ B \f$ are \f$ n \times n \f$
 template< class T >
 Matrix< T > multiplyNaive( const Matrix< T > & A , const Matrix< T > & B ,
-                           long * mults = nullptr );
+			   long * mults = nullptr );
 
 /// the product of \f$ A \f$, \f$ p \times q \f$, and \f$ B \f$,
 /// \f$ q \times r \f$, \f$ \Theta( p q r ) \f$; with \f$ q = 0 \f$ the vector
@@ -122,7 +123,8 @@ Matrix< T > transpose( const Matrix< T > & A );
 template< class T >
 Matrix< T > scale( Matrix< T > A , const T & s );
 
-namespace detail {
+namespace detail
+{
 
 /// true if \f$ A \f$ has \f$ r \f$ rows of \f$ c \f$ columns each
 template< class T >
@@ -132,7 +134,7 @@ bool hasShape( const Matrix< T > & A , std::size_t r , std::size_t c );
 /// \f$ ( r , c ) \f$
 template< class T >
 Matrix< T > block( const Matrix< T > & A , std::size_t r , std::size_t c ,
-                   std::size_t h );
+		   std::size_t h );
 
 /// the matrix \f$ A + s B \f$
 template< class T >
@@ -141,7 +143,7 @@ Matrix< T > plus( const Matrix< T > & A , const Matrix< T > & B , T s = 1 );
 /// the product of two matrices of the same power of 2 by the seven products
 template< class T >
 Matrix< T > strassenRec( const Matrix< T > & A , const Matrix< T > & B ,
-                         std::size_t cutoff , long * mults );
+			 std::size_t cutoff , long * mults );
 
 }  // end( namespace detail )
 
@@ -171,7 +173,7 @@ Matrix< T > strassenRec( const Matrix< T > & A , const Matrix< T > & B ,
 /// \post the result is \f$ A B \f$ (audit)
 template< class T >
 Matrix< T > strassen( const Matrix< T > & A , const Matrix< T > & B ,
-                      std::size_t cutoff = 1 , long * mults = nullptr );
+		      std::size_t cutoff = 1 , long * mults = nullptr );
 
 /*--------------------------------------------------------------------------*/
 
@@ -185,7 +187,7 @@ Matrix< T > strassen( const Matrix< T > & A , const Matrix< T > & B ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Matrix.h included */
+#endif /* Matrix.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Matrix.h ----------------------------*/

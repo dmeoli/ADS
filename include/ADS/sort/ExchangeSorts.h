@@ -50,7 +50,7 @@
 
 #ifndef __ADS_ExchangeSorts
  #define __ADS_ExchangeSorts
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,7 +69,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the bubble sort, each pass ending at the last swap of the previous one
 ///
@@ -132,7 +133,7 @@ void cocktailShakerSort( std::vector< T > & A , C less = C() );
 /// \post \f$ A \f$ is sorted, with the same items (audit)
 template< class T , class C = std::less<> >
 void oddEvenSort( std::vector< T > & A , C less = C() ,
-                  std::size_t * rounds = nullptr );
+		  std::size_t * rounds = nullptr );
 
 /// the comb sort, the gap shrinking by 1.3
 ///
@@ -183,7 +184,7 @@ void gnomeSort( std::vector< T > & A , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ExchangeSorts.h included */
+#endif /* ExchangeSorts.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ExchangeSorts.h ------------------------*/

@@ -18,9 +18,11 @@
 #include <cstdint>
 #include <optional>
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// sorts [ first , last ) by insertion
 template< class It , class C >
@@ -44,7 +46,7 @@ template< bool Equal , class It , class C >
 It selectLomuto( It first , It last , C & less )
 {
  const auto p = *first;
- auto left = [ & ]( const auto & x ) {      // x belongs on the left
+ auto left = [ & ]( const auto & x ) {  // x belongs on the left
   if constexpr( Equal )
    return( ! less( p , x ) );
   else
@@ -57,9 +59,9 @@ It selectLomuto( It first , It last , C & less )
   *lt = std::move( x );
   lt += c;
   };
- It lt = first + 1;                         // the end of the small ones
+ It lt = first + 1;  // the end of the small ones
  It i = first + 1;
- for( ; last - i >= 4 ; i += 4 ) {          // 4 at a time, fewer jumps
+ for( ; last - i >= 4 ; i += 4 ) {  // 4 at a time, fewer jumps
   step( i , lt );
   step( i + 1 , lt );
   step( i + 2 , lt );
@@ -79,7 +81,7 @@ template< bool Equal , class It , class C >
 It selectHoare( It first , It last , C & less )
 {
  const auto p = *first;
- auto left = [ & ]( const auto & x ) {      // x belongs on the left
+ auto left = [ & ]( const auto & x ) {  // x belongs on the left
   if constexpr( Equal )
    return( ! less( p , x ) );
   else
@@ -107,7 +109,7 @@ template< bool Equal , class It , class C >
 It selectPartition( It first , It last , C & less , bool ordered )
 {
  return( ordered ? selectHoare< Equal >( first , last , less )
-                 : selectLomuto< Equal >( first , last , less ) );
+		  : selectLomuto< Equal >( first , last , less ) );
  }
 
 /// the direction of the 64 items taken at a stride, if all of them rise
@@ -133,7 +135,7 @@ bool selectSorted( It first , It last , C & less )
 {
  const std::ptrdiff_t n = last - first;
  std::ptrdiff_t i = 0;
- auto block = [ & ]( auto a ) {             // a block of 64 pairs from a
+ auto block = [ & ]( auto a ) {  // a block of 64 pairs from a
   int bad = 0;
   for( std::ptrdiff_t j = 0 ; j < 64 ; ++j )
    bad |= int( less( a[ j + 1 ] , a[ j ] ) );
@@ -142,7 +144,7 @@ bool selectSorted( It first , It last , C & less )
  for( ; i + 65 <= n ; i += 64 ) {
   int bad;
   if constexpr( std::contiguous_iterator< It > )
-   bad = block( std::to_address( first ) + i );   // a pointer, vectorized
+   bad = block( std::to_address( first ) + i );  // a pointer, vectorized
   else
    bad = block( first + i );
   if( bad )
@@ -165,9 +167,9 @@ bool selectReversed( It first , It last , C & less )
  int bad = 0;
  for( std::ptrdiff_t i = 0 ; i < h ; i += 64 ) {
   const std::ptrdiff_t e = std::min( h , i + 64 );
-  for( std::ptrdiff_t j = i ; j < e ; ++j )   // neighbours not yet swapped
+  for( std::ptrdiff_t j = i ; j < e ; ++j )  // neighbours not yet swapped
    bad |= int( less( first[ j ] , first[ j + 1 ] ) ) |
-          int( less( first[ n - 2 - j ] , first[ n - 1 - j ] ) );
+	  int( less( first[ n - 2 - j ] , first[ n - 1 - j ] ) );
   if( bad )
    return( false );
   for( std::ptrdiff_t j = i ; j < e ; ++j )
@@ -230,30 +232,31 @@ void select( It first , It nth , It last , C & less )
  // range; a round whose part the rest of the budget does not cover takes
  // the median of the medians, so that the worst case stays linear
  std::ptrdiff_t budget = 4 * ( last - first );
- std::optional< std::iter_value_t< It > > floor;   // see below
+ std::optional< std::iter_value_t< It > > floor;  // see below
  while( last - first > 24 ) {
   const std::ptrdiff_t n = last - first;
   It p;
   bool ordered = false;
-  const bool mom = budget < n;              // a round not charged
+  const bool mom = budget < n;  // a round not charged
   if( mom )
    p = selectMedianOfMedians( first , last , less );
-  else if( budget -= n ; n > 600 ) {        // charged, and the sample of
-                                            // Floyd and Rivest
+  else if( budget -= n; n > 600 ) {  // charged, and the sample of
+				     // Floyd and Rivest
    const std::ptrdiff_t k = nth - first;
    const double z = std::log( double( n ) );
    const double s = 0.5 * std::exp( 2 * z / 3 );
-   const double d = 0.5 * std::sqrt( z * s * ( double( n ) - s ) /
-                                     double( n ) ) *
-                    ( 2 * k < n ? -1 : 1 );
-   const auto lo = std::max< std::ptrdiff_t >( 0 , std::min( k ,
-                    std::ptrdiff_t( double( k ) - double( k ) * s /
-                                    double( n ) + d ) ) );
-   const auto hi = std::min< std::ptrdiff_t >( n - 1 , std::max( k ,
-                    std::ptrdiff_t( double( k ) + double( n - k ) * s /
-                                    double( n ) + d ) ) );
+   const double d = 0.5 *
+		    std::sqrt( z * s * ( double( n ) - s ) / double( n ) ) *
+		    ( 2 * k < n ? -1 : 1 );
+   const auto lo = std::max< std::ptrdiff_t >(
+     0 , std::min( k , std::ptrdiff_t( double( k ) -
+				     double( k ) * s / double( n ) + d ) ) );
+   const auto hi = std::min< std::ptrdiff_t >(
+     n - 1 ,
+     std::max( k , std::ptrdiff_t( double( k ) +
+				  double( n - k ) * s / double( n ) + d ) ) );
    ordered = selectOrdered( first , n , less );
-   if( ordered ) {                          // a sample from all the range
+   if( ordered ) {  // a sample from all the range
     const std::ptrdiff_t w = hi - lo + 1;
     for( std::ptrdiff_t i = 0 ; i < w ; ++i )
      std::iter_swap( first + lo + i , first + i * ( n / w ) );
@@ -268,9 +271,10 @@ void select( It first , It nth , It last , C & less )
   // it on the left: a pivot equal to it is the smallest, and its equals go
   // left at once
   const bool smallest = floor && ! less( *floor , *first );
-  It m = smallest ? first :
-                    selectPartition< false >( first , last , less , ordered );
-  if( m == first ) {                        // the smallest: its equals too
+  It m =
+    smallest ? first : selectPartition< false >( first , last , less ,
+						 ordered );
+  if( m == first ) {  // the smallest: its equals too
    m = selectPartition< true >( first , last , less , ordered );
    if( nth <= m )
     return;
@@ -305,7 +309,7 @@ void nthElement( It first , It nth , It last , C less )
  if( first == last )
   return;
  const std::ptrdiff_t n = last - first;
- if( n > 600 ) {                            // a range in order costs a scan
+ if( n > 600 ) {  // a range in order costs a scan
   const int m = detail::selectMonotone( first , n , less );
   if( ( m > 0 ) && detail::selectSorted( first , last , less ) )
    return;
@@ -313,18 +317,18 @@ void nthElement( It first , It nth , It last , C less )
    return;
   }
  detail::select( first , nth , last , less );
- ADS_AUDIT( std::none_of( first , nth , [ & ]( const auto & x ) {
-                           return( less( *nth , x ) ); } ) &&
-            std::none_of( nth + 1 , last , [ & ]( const auto & x ) {
-                           return( less( x , *nth ) ); } ) );
+ ADS_AUDIT(
+   std::none_of( first , nth ,
+		 [ & ]( const auto & x ) { return( less( *nth , x ) ); } ) &&
+   std::none_of( nth + 1 , last ,
+		 [ & ]( const auto & x ) { return( less( x , *nth ) ); } ) );
  }
 
 template< class T , class C >
 T nthElement( std::vector< T > & A , std::size_t k , C less )
 {
  ADS_PRE( k < A.size() );
- nthElement( A.begin() , A.begin() + std::ptrdiff_t( k ) , A.end() ,
-             less );
+ nthElement( A.begin() , A.begin() + std::ptrdiff_t( k ) , A.end() , less );
  return( A[ k ] );
  }
 

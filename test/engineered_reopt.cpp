@@ -52,7 +52,8 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using LG = ListGraph< long long >;
 using Ev = GraphEvent< long long >;
@@ -69,7 +70,8 @@ static_assert( Reopt::outcomeOf( Reopt::SCRATCH_BY_ABORT ) == Reopt::SCRATCH );
 static_assert( Reopt::outcomeOf( Reopt::PARTIAL ) == Reopt::WARM );
 
 /// an observer that records what it gets, with a mask
-struct Recorder {
+struct Recorder
+{
  unsigned m = GraphEvents::ALL;
  std::vector< Ev > one;
  std::vector< std::vector< Ev > > batches;
@@ -81,7 +83,8 @@ struct Recorder {
  };
 
 /// a policy that always computes from scratch, and counts what it is told
-struct Always {
+struct Always
+{
  int records = 0;
  int last = -1;
  [[nodiscard]] bool scratch( const ReoptStats & s ) const {
@@ -97,27 +100,31 @@ struct Always {
  };
 
 /// a policy that never computes from scratch nor abandons
-struct Never {
+struct Never
+{
  [[nodiscard]] bool scratch( const ReoptStats & ) const { return( false ); }
  [[nodiscard]] bool abandon( const ReoptStats & , double ) const {
   return( false );
   }
- void record( int , double ) const {}
+ void record( int , double ) const { }
  };
 
 /// a policy that abandons the repairs at random, and asks `Rebuilt` at
 /// random at the close of the batches
-struct Coin {
+struct Coin
+{
  std::mt19937 rng{ 3 };
- [[nodiscard]] bool scratch( const ReoptStats & ) { return( rng() % 5 == 0 ); }
+ [[nodiscard]] bool scratch( const ReoptStats & ) {
+  return( rng() % 5 == 0 );
+  }
  [[nodiscard]] bool abandon( const ReoptStats & , double ) {
   return( rng() % 3 == 0 );
   }
- void record( int , double ) const {}
+ void record( int , double ) const { }
  };
 
 static_assert( ReoptPolicy< Always > && ReoptPolicy< Never > &&
-               ReoptPolicy< Coin > );
+	       ReoptPolicy< Coin > );
 
 /// the total weight of a forest
 template< class W >
@@ -139,7 +146,8 @@ long long freshFlow( const LG & g , int s , int t )
     N.addEdge( u , v , w );
     if( ! g.directed() )
      N.addEdge( v , u , w );
-    } } );
+    }
+   } );
  return( N.maxFlow( s , t ) );
  }
 
@@ -150,7 +158,8 @@ std::vector< std::tuple< int , int , long long > > edgesOf( const LG & g )
  for( int u : g.V() )
   g.forEachEdge( u , [ & ]( int v , long long w ) {
    if( g.directed() || ( u < v ) )
-    E.emplace_back( u , v , w ); } );
+    E.emplace_back( u , v , w );
+   } );
  std::sort( E.begin() , E.end() );
  return( E );
  }
@@ -159,13 +168,13 @@ std::vector< std::tuple< int , int , long long > > edgesOf( const LG & g )
 template< class O >
 bool causesAddUp( const O & o )
 {
- return( ( o.count( Reopt::SCRATCH ) ==
-           o.byCause( Reopt::SCRATCH_BY_SIZE ) +
-           o.byCause( Reopt::SCRATCH_BY_ABORT ) +
-           o.byCause( Reopt::SCRATCH_BY_EVENT ) ) &&
-         ( o.count( Reopt::WARM ) ==
-           o.byCause( Reopt::WARM ) + o.byCause( Reopt::PARTIAL ) ) &&
-         ( o.count( Reopt::CERTIFIED ) == o.byCause( Reopt::CERTIFIED ) ) );
+ return(
+   ( o.count( Reopt::SCRATCH ) == o.byCause( Reopt::SCRATCH_BY_SIZE ) +
+				    o.byCause( Reopt::SCRATCH_BY_ABORT ) +
+				    o.byCause( Reopt::SCRATCH_BY_EVENT ) ) &&
+   ( o.count( Reopt::WARM ) ==
+     o.byCause( Reopt::WARM ) + o.byCause( Reopt::PARTIAL ) ) &&
+   ( o.count( Reopt::CERTIFIED ) == o.byCause( Reopt::CERTIFIED ) ) );
  }
 
 /// a random unoriented graph of n nodes and about 3 n edges
@@ -190,7 +199,7 @@ ADS_TEST( "reopt-causes" )
 {
  // the shortest paths: each cause in turn
  {
-  LG g( 5 );                               // oriented
+  LG g( 5 );  // oriented
   for( int u = 0 ; u + 1 < 5 ; ++u )
    g.insertEdge( u , u + 1 , 1 );
   g.insertEdge( 0 , 4 , 9 );
@@ -198,32 +207,32 @@ ADS_TEST( "reopt-causes" )
   sp.setRecomputeRatio( 10 );
   Observable< LG , ShortestPathsObserver< LG > > og( g , sp );
   CHECK( ( sp.distance( 4 ) == 4 ) &&
-         ( sp.cause() == Reopt::SCRATCH_BY_EVENT ) );
-  og.setWeight( 0 , 4 , 8 );               // off the tree, harmless
+	 ( sp.cause() == Reopt::SCRATCH_BY_EVENT ) );
+  og.setWeight( 0 , 4 , 8 );  // off the tree, harmless
   CHECK( ( sp.distance( 4 ) == 4 ) && ( sp.cause() == Reopt::CERTIFIED ) );
-  og.setWeight( 3 , 4 , 0 );               // a decrease
+  og.setWeight( 3 , 4 , 0 );  // a decrease
   CHECK( ( sp.distance( 4 ) == 3 ) && ( sp.cause() == Reopt::WARM ) );
-  og.setWeight( 0 , 1 , 100 );             // 4 of the 5 nodes lost
+  og.setWeight( 0 , 1 , 100 );  // 4 of the 5 nodes lost
   CHECK( ( sp.distance( 4 ) == 8 ) &&
-         ( sp.cause() == Reopt::SCRATCH_BY_ABORT ) &&
-         ( sp.outcome() == Reopt::SCRATCH ) );
-  og.setWeight( 2 , 3 , 5 );               // 1 of 5 lost: a repair
+	 ( sp.cause() == Reopt::SCRATCH_BY_ABORT ) &&
+	 ( sp.outcome() == Reopt::SCRATCH ) );
+  og.setWeight( 2 , 3 , 5 );  // 1 of 5 lost: a repair
   CHECK( ( sp.distance( 3 ) == 106 ) && ( sp.cause() == Reopt::WARM ) );
   sp.setRecomputeRatio( 0 );
   og.setWeight( 0 , 4 , 7 );
   CHECK( ( sp.distance( 4 ) == 7 ) &&
-         ( sp.cause() == Reopt::SCRATCH_BY_SIZE ) );
+	 ( sp.cause() == Reopt::SCRATCH_BY_SIZE ) );
   sp.setRecomputeRatio( 10 );
-  og.insertEdge( 2 , 1 , -200 );           // a negative cycle: fatal
+  og.insertEdge( 2 , 1 , -200 );  // a negative cycle: fatal
   CHECK( sp.tree().negativeCycle &&
-         ( sp.cause() == Reopt::SCRATCH_BY_EVENT ) );
-  og.setWeight( 2 , 1 , 5 );               // fatal while there is one
+	 ( sp.cause() == Reopt::SCRATCH_BY_EVENT ) );
+  og.setWeight( 2 , 1 , 5 );  // fatal while there is one
   CHECK( ! sp.tree().negativeCycle &&
-         ( sp.cause() == Reopt::SCRATCH_BY_EVENT ) );
+	 ( sp.cause() == Reopt::SCRATCH_BY_EVENT ) );
   CHECK( causesAddUp( sp ) && ( sp.byCause( Reopt::PARTIAL ) == 0 ) );
   CHECK( sp.byCause( Reopt::SCRATCH_BY_EVENT ) == 3 );
-  CHECK_THROWS( (void)sp.byCause( 0 ) , contract_violation );
-  CHECK_THROWS( (void)sp.byCause( Reopt::CAUSES ) , contract_violation );
+  CHECK_THROWS( ( void )sp.byCause( 0 ) , contract_violation );
+  CHECK_THROWS( ( void )sp.byCause( Reopt::CAUSES ) , contract_violation );
   }
  // the forest, the flow and the assignment
  {
@@ -236,14 +245,14 @@ ADS_TEST( "reopt-causes" )
   MaxFlowObserver< LG > mf( g , 0 , 3 );
   sf.setRecomputeRatio( 10 );
   mf.setRecomputeRatio( 10 );
-  Observable< LG , SpanningForestObserver< LG > ,
-              MaxFlowObserver< LG > > og( g , sf , mf );
+  Observable< LG , SpanningForestObserver< LG > , MaxFlowObserver< LG > > og(
+    g , sf , mf );
   CHECK( ( sf.weight() == 6 ) && ( sf.cause() == Reopt::SCRATCH_BY_EVENT ) );
   CHECK( ( mf.value() == 5 ) && ( mf.cause() == Reopt::SCRATCH_BY_EVENT ) );
-  og.setWeight( 0 , 3 , 9 );               // off F; on the cut, up
+  og.setWeight( 0 , 3 , 9 );  // off F; on the cut, up
   CHECK( ( sf.weight() == 6 ) && ( sf.cause() == Reopt::CERTIFIED ) );
   CHECK( ( mf.value() == 10 ) && ( mf.cause() == Reopt::WARM ) );
-  og.setWeight( 1 , 2 , 20 );              // out of F, a swap; off the cut
+  og.setWeight( 1 , 2 , 20 );  // out of F, a swap; off the cut
   CHECK( ( sf.weight() == 13 ) && ( sf.cause() == Reopt::WARM ) );
   CHECK( ( mf.value() == 10 ) && ( mf.cause() == Reopt::CERTIFIED ) );
   sf.setRecomputeRatio( 0 );
@@ -262,13 +271,13 @@ ADS_TEST( "reopt-causes" )
   AssignmentObserver< LG > ao( g , k );
   Observable< LG , AssignmentObserver< LG > > og( g , ao );
   CHECK( ( ao.total() == 4 ) && ( ao.cause() == Reopt::SCRATCH_BY_EVENT ) );
-  og.setWeight( 0 , k + 1 , 20 );          // off the pairs, up
+  og.setWeight( 0 , k + 1 , 20 );  // off the pairs, up
   CHECK( ( ao.total() == 4 ) && ( ao.cause() == Reopt::CERTIFIED ) );
-  og.setWeight( 0 , k , 30 );              // one row of the four
+  og.setWeight( 0 , k , 30 );  // one row of the four
   CHECK( ( ao.total() == 22 ) && ( ao.cause() == Reopt::WARM ) );
   {
-   auto b = og.batch();                    // the pairs of three rows up:
-   for( int i = 1 ; i < k ; ++i )          // more than half
+   auto b = og.batch();          // the pairs of three rows up:
+   for( int i = 1 ; i < k ; ++i )  // more than half
     og.setWeight( i , ao.partner( i ) , 40 );
    }
   std::vector< long long > C( std::size_t( k * k ) );
@@ -277,7 +286,7 @@ ADS_TEST( "reopt-causes" )
     C[ std::size_t( i * k + j ) ] = *g.weight( i , k + j );
   Assignment<> fresh( k , C );
   CHECK( ( ao.total() == fresh.total() ) &&
-         ( ao.cause() == Reopt::SCRATCH_BY_ABORT ) );
+	 ( ao.cause() == Reopt::SCRATCH_BY_ABORT ) );
   CHECK( ao.assignment().cause() == Reopt::SCRATCH_BY_ABORT );
   CHECK( causesAddUp( ao ) && causesAddUp( ao.assignment() ) );
   }
@@ -295,12 +304,12 @@ ADS_TEST( "reopt-early" )
  SpanningForestObserver< LG > sf( g );
  Observable< LG , ShortestPathsObserver< LG > > og( g , sp );
  const int id = og.attach( sf );
- (void)sp.distance( 1 );
- (void)sf.weight();
+ ( void )sp.distance( 1 );
+ ( void )sf.weight();
  // by default the policy does not act at the close: the events queued
  sp.policy().rho = 0.01;
  sf.policy().rho = 0.01;
- auto changes = [ & ]( int k ) {          // on k distinct edges
+ auto changes = [ & ]( int k ) {  // on k distinct edges
   const auto E = edgesOf( g );
   const std::size_t at = rng() % E.size();
   auto b = og.batch();
@@ -312,10 +321,10 @@ ADS_TEST( "reopt-early" )
  changes( 5 );
  CHECK( ( sp.pending() == 5 ) && ( sf.pending() == 5 ) );
  CHECK( og.subject().staticCounts( 0 ).rebuilds == 0 );
- (void)sp.distance( 1 );
- (void)sf.weight();
+ ( void )sp.distance( 1 );
+ ( void )sf.weight();
  CHECK( ( sp.cause() == Reopt::SCRATCH_BY_SIZE ) &&
-        ( sf.cause() == Reopt::SCRATCH_BY_SIZE ) );
+	( sf.cause() == Reopt::SCRATCH_BY_SIZE ) );
  // early: Rebuilt instead of the events, and nothing queued after it
  sp.policy().early = true;
  sf.policy().early = true;
@@ -323,7 +332,7 @@ ADS_TEST( "reopt-early" )
  CHECK( ( sp.pending() == 0 ) && ( sf.pending() == 0 ) );
  CHECK( og.subject().staticCounts( 0 ).rebuilds == 1 );
  CHECK( og.subject().slotCounts( id ).rebuilds == 1 );
- og.setWeight( 0 , 1 , 3 );               // ignored until the query
+ og.setWeight( 0 , 1 , 3 );  // ignored until the query
  og.insertEdge( 0 , 1 , 2 );
  CHECK( ( sp.pending() == 0 ) && ( sf.pending() == 0 ) );
  const auto R = shortestPaths( g , 0 , Frontier::HEAP );
@@ -331,7 +340,7 @@ ADS_TEST( "reopt-early" )
   CHECK( sp.distance( x ) == R.d[ x ] );
  CHECK( sp.cause() == Reopt::SCRATCH_BY_EVENT );
  CHECK( ( sf.weight() == total( kruskal( g ) ) ) &&
-        ( sf.cause() == Reopt::SCRATCH_BY_EVENT ) );
+	( sf.cause() == Reopt::SCRATCH_BY_EVENT ) );
  // a batch below the ratio: the events queued
  sp.policy().rho = 10;
  sf.policy().rho = 10;
@@ -349,9 +358,9 @@ ADS_TEST( "reopt-early" )
     a.insertEdge( i , k + j , static_cast< long long >( rng() % 50 ) );
   AssignmentObserver< LG > ao( a , k );
   Observable< LG , AssignmentObserver< LG > > oa( a , ao );
-  (void)ao.total();
+  ( void )ao.total();
   ao.policy().early = true;
-  ao.policy().rho = 0.1;                  // of the k^2 costs
+  ao.policy().rho = 0.1;  // of the k^2 costs
   {
    auto b = oa.batch();
    for( int i = 0 ; i < k ; ++i )
@@ -375,7 +384,7 @@ ADS_TEST( "reopt-custom-policy" )
   LG g = randomGraph( 30 , rng , true );
   ShortestPathsObserver< LG , Always > sp( g , 0 );
   Observable< LG , ShortestPathsObserver< LG , Always > > og( g , sp );
-  (void)sp.distance( 0 );
+  ( void )sp.distance( 0 );
   for( int s = 0 ; s < 50 ; ++s ) {
    const auto E = edgesOf( g );
    const auto & [ u , v , w ] = E[ rng() % E.size() ];
@@ -385,7 +394,7 @@ ADS_TEST( "reopt-custom-policy" )
    }
   CHECK( sp.byCause( Reopt::SCRATCH_BY_SIZE ) == 50 );
   CHECK( ( sp.policy().records == 51 ) &&
-         ( sp.policy().last == Reopt::SCRATCH_BY_SIZE ) );
+	 ( sp.policy().last == Reopt::SCRATCH_BY_SIZE ) );
   }
  // never: the repairs alone, however large, and at random: the scratch
  // as a fallback, at any point; against the book from scratch
@@ -398,10 +407,11 @@ ADS_TEST( "reopt-custom-policy" )
   SpanningForestObserver< LG , Coin > d( g );
   MaxFlowObserver< LG , Coin > e( g , 0 , 1 );
   Observable< LG , ShortestPathsObserver< LG , Never > ,
-              ShortestPathsObserver< LG , Coin > ,
-              SpanningForestObserver< LG , Never > ,
-              SpanningForestObserver< LG , Coin > ,
-              MaxFlowObserver< LG , Coin > > og( g , a , b , c , d , e );
+	      ShortestPathsObserver< LG , Coin > ,
+	      SpanningForestObserver< LG , Never > ,
+	      SpanningForestObserver< LG , Coin > ,
+	      MaxFlowObserver< LG , Coin > >
+    og( g , a , b , c , d , e );
   for( int s = 0 ; s < ADS::test::scaled( 400 , 100 ) ; ++s ) {
    {
     auto bt = og.batch();
@@ -423,17 +433,18 @@ ADS_TEST( "reopt-custom-policy" )
    CHECK( e.value() == freshFlow( g , 0 , 1 ) );
    }
   CHECK( a.byCause( Reopt::SCRATCH_BY_SIZE ) +
-         a.byCause( Reopt::SCRATCH_BY_ABORT ) == 0 );
+	   a.byCause( Reopt::SCRATCH_BY_ABORT ) ==
+	 0 );
   CHECK( ( b.byCause( Reopt::SCRATCH_BY_ABORT ) > 0 ) &&
-         ( b.byCause( Reopt::SCRATCH_BY_EVENT ) > 1 ) );
+	 ( b.byCause( Reopt::SCRATCH_BY_EVENT ) > 1 ) );
   CHECK( causesAddUp( a ) && causesAddUp( b ) && causesAddUp( c ) &&
-         causesAddUp( d ) && causesAddUp( e ) );
+	 causesAddUp( d ) && causesAddUp( e ) );
   }
  // the reinsertions of the shortest paths, on negative weights with no
  // negative cycle: beta = 1 abandons the repair that extracts t a third
  // time, from 0, then from a, then from b
  {
-  LG g( 4 );                               // 0 , t = 1 , a = 2 , b = 3
+  LG g( 4 );  // 0 , t = 1 , a = 2 , b = 3
   g.insertEdge( 0 , 1 , 5 );
   g.insertEdge( 0 , 2 , 1 );
   g.insertEdge( 0 , 3 , 2 );
@@ -449,8 +460,8 @@ ADS_TEST( "reopt-custom-policy" )
    og.insertEdge( 3 , 1 , -4 );
    }
   CHECK( ( sp.distance( 1 ) == -2 ) &&
-         ( sp.cause() == Reopt::SCRATCH_BY_ABORT ) );
-  {                                        // t once, through b: repaired
+	 ( sp.cause() == Reopt::SCRATCH_BY_ABORT ) );
+  {  // t once, through b: repaired
    auto b = og.batch();
    og.setWeight( 0 , 1 , 7 );
    og.setWeight( 0 , 1 , 0 );
@@ -506,18 +517,18 @@ ADS_TEST( "reopt-drift" )
   Observable< DG , SpanningForestObserver< DG > > og( g , f );
   CHECK( f.weight() == 3 );
   og.setWeight( 0 , 1 , 1e17 );
-  (void)f.weight();
+  ( void )f.weight();
   og.setWeight( 0 , 1 , 1 );
   return( f.weight() );
   };
  RatioPolicy plain;
  plain.period = 0;
- CHECK_THROWS( (void)run( plain ) , contract_violation );
+ CHECK_THROWS( ( void )run( plain ) , contract_violation );
  RatioPolicy comp = plain;
  comp.compensated = true;
  CHECK( run( comp ) == 3 );
  RatioPolicy each = plain;
- each.period = 1e-9;                       // summed again at each change
+ each.period = 1e-9;  // summed again at each change
  CHECK( run( each ) == 3 );
  // the default on random weights, against Kruskal
  {
@@ -547,14 +558,15 @@ ADS_TEST( "reopt-drift" )
 /*------------------------------ THE ROLLBACK ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 /// what an observer holds that a rollback must leave as it was
 template< class O >
 std::vector< long long > stateOf( const O & o )
 {
- std::vector< long long > s{ (long long)o.pending() , o.outcome() ,
-                             o.cause() };
+ std::vector< long long > s{ ( long long )o.pending() , o.outcome() ,
+			     o.cause() };
  for( int c = 0 ; c < 3 ; ++c )
   s.push_back( o.count( c ) );
  for( int c = 1 ; c < Reopt::CAUSES ; ++c )
@@ -572,7 +584,8 @@ ADS_TEST( "reopt-undo-batch" )
  SpanningForestObserver< LG > sf( g );
  MaxFlowObserver< LG > mf( g , 0 , 1 );
  Observable< LG , ShortestPathsObserver< LG > , SpanningForestObserver< LG > ,
-             MaxFlowObserver< LG > > og( g , sp , sf , mf );
+	     MaxFlowObserver< LG > >
+   og( g , sp , sf , mf );
  auto query = [ & ]( void ) {
   std::vector< long long > a;
   for( int x : g.V() )
@@ -583,7 +596,7 @@ ADS_TEST( "reopt-undo-batch" )
   };
  auto states = [ & ]( void ) {
   return( std::make_tuple( stateOf( sp ) , stateOf( sf ) , stateOf( mf ) ,
-                           og.subject().staticCounts( 0 ).groups ) );
+			    og.subject().staticCounts( 0 ).groups ) );
   };
  const auto A0 = query();
  const auto G0 = edgesOf( g );
@@ -607,7 +620,8 @@ ADS_TEST( "reopt-undo-batch" )
      og.setWeight( u , v , static_cast< long long >( rng() % 20 ) );
     }
    }
-  catch( const std::runtime_error & ) {}
+  catch( const std::runtime_error & ) {
+   }
   CHECK( ( edgesOf( g ) == G0 ) && ( states() == S0 ) );
   CHECK( og.depth() == 0 );
   }
@@ -631,7 +645,7 @@ ADS_TEST( "reopt-undo-batch" )
   }
  CHECK( ( sp.pending() == 1 ) && ( sf.pending() == 1 ) );
  CHECK( g.weight( std::get< 0 >( G0[ 1 ] ) , std::get< 1 >( G0[ 1 ] ) ) ==
-        std::get< 2 >( G0[ 1 ] ) );
+	std::get< 2 >( G0[ 1 ] ) );
  // a node in the batch has no inverse: the events go to the observers,
  // as on a structure that cannot be undone
  const int n0 = g.n();
@@ -641,7 +655,8 @@ ADS_TEST( "reopt-undo-batch" )
   og.insertEdge( 0 , n0 , 3 );
   throw( std::runtime_error( "abort" ) );
   }
- catch( const std::runtime_error & ) {}
+ catch( const std::runtime_error & ) {
+  }
  CHECK( ( g.n() == n0 + 1 ) && g.hasEdge( 0 , n0 ) );
  CHECK( sp.pending() == 3 );
  {
@@ -665,7 +680,8 @@ ADS_TEST( "reopt-undo-batch" )
    oh.insertEdge( 0 , 1 , 1 );
    throw( std::runtime_error( "abort" ) );
    }
-  catch( const std::runtime_error & ) {}
+  catch( const std::runtime_error & ) {
+   }
   CHECK( h.hasEdge( 0 , 1 ) && r.batches.empty() );
   }
  }
@@ -678,7 +694,8 @@ ADS_TEST( "reopt-undo-log" )
  SpanningForestObserver< LG > sf( g );
  MaxFlowObserver< LG > mf( g , 0 , 1 );
  Observable< LG , ShortestPathsObserver< LG > , SpanningForestObserver< LG > ,
-             MaxFlowObserver< LG > > og( g , sp , sf , mf );
+	     MaxFlowObserver< LG > >
+   og( g , sp , sf , mf );
  UndoLog< GM > log;
  og.attach( log );
  auto query = [ & ]( void ) {
@@ -710,7 +727,7 @@ ADS_TEST( "reopt-undo-log" )
     CHECK( sf.weight() == total( kruskal( g ) ) );
     }
    }
-  if( round % 2 ) {                        // in a batch, too
+  if( round % 2 ) {  // in a batch, too
    auto b = og.batch();
    og.setWeight( std::get< 0 >( G0[ 0 ] ) , std::get< 1 >( G0[ 0 ] ) , 7 );
    }
@@ -722,7 +739,7 @@ ADS_TEST( "reopt-undo-log" )
  // a node has no inverse: a hole, no rollback before it
  const std::size_t t = log.checkpoint();
  og.setWeight( std::get< 0 >( edgesOf( g )[ 0 ] ) ,
-               std::get< 1 >( edgesOf( g )[ 0 ] ) , 5 );
+	       std::get< 1 >( edgesOf( g )[ 0 ] ) , 5 );
  og.insertNode();
  CHECK( log.size() == 0 );
  CHECK_THROWS( log.rollback( og , t ) , contract_violation );

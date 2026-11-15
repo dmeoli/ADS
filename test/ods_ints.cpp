@@ -83,7 +83,8 @@ static_assert( ADS::SSet< ADS::BitmapTrie<> > );
 /*-------------------------------- TESTS -----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace {
+namespace
+{
 
 /// the item that a pointer gives, or nothing for nil
 template< class T >
@@ -125,13 +126,12 @@ void againstSet( T & t , int b , int ops , std::uint64_t seed )
  std::mt19937_64 g( seed );
  const int shift = W - b;
  const U mask = topKey< U , W >();
- auto key = [ & ]( void ) {
-  return( U( ( U( g() ) << shift ) & mask ) );
-  };
+ auto key = [ & ]( void ) { return( U( ( U( g() ) << shift ) & mask ) ); };
  for( int i = 0 ; i < ops ; ++i ) {
   const U x = key();
   switch( g() % 4 ) {
-   case 0: case 1:
+   case 0:
+   case 1:
     CHECK( t.insert( x ) == s.insert( x ).second );
     break;
    case 2:
@@ -201,23 +201,28 @@ void trieTests( std::uint64_t seed )
  }
 
 /// the tries as template aliases
-struct MakeBinary {
+struct MakeBinary
+{
  template< class U , class V , int W >
  using type = ADS::BinaryTrie< U , V , W >;
  };
-struct MakeSimple {
+struct MakeSimple
+{
  template< class U , class V , int W >
  using type = ADS::SimpleBinaryTrie< U , V , W >;
  };
-struct MakeXFast {
+struct MakeXFast
+{
  template< class U , class V , int W >
  using type = ADS::XFastTrie< U , V , W >;
  };
-struct MakeListXFast {
+struct MakeListXFast
+{
  template< class U , class V , int W >
  using type = ADS::ListXFastTrie< U , V , W >;
  };
-struct MakeYFast {
+struct MakeYFast
+{
  template< class U , class V , int W >
  using type = ADS::YFastTrie< U , V , W >;
  };
@@ -362,8 +367,8 @@ ADS_TEST( "ods.ex13.4.find-near" )
   K.push_back( k );
   }
  for( const std::uint64_t k : K )
-  for( std::uint64_t d : { 0ULL , 1ULL , 2ULL , 3ULL , 100ULL , 1ULL << 20 ,
-                           1ULL << 40 } ) {
+  for( std::uint64_t d :
+       { 0ULL , 1ULL , 2ULL , 3ULL , 100ULL , 1ULL << 20 , 1ULL << 40 } ) {
    const std::uint64_t y = k - d;
    const auto e = opt( x.lowerBound( y ) );
    CHECK( opt( x.findNear( y ) ) == e && opt( l.findNear( y ) ) == e );
@@ -437,7 +442,8 @@ ADS_TEST( "ods.ex13.3.bitmap-trie" )
  for( int i = 0 ; i < 6000 ; ++i ) {
   const std::string w = word();
   switch( g() % 3 ) {
-   case 0: case 1:
+   case 0:
+   case 1:
     CHECK( t.insert( w , i ) == ( s.count( w ) == 0 ) );
     s[ w ] = i;
     break;
@@ -456,9 +462,10 @@ ADS_TEST( "ods.ex13.3.bitmap-trie" )
  for( const auto & [ w , v ] : t )
   K.push_back( w );
  CHECK( K.size() == s.size() &&
-        std::equal( K.begin() , K.end() , s.begin() ,
-                    []( const std::string & a , const auto & b ) {
-                     return( a == b.first ); } ) );
+	std::equal( K.begin() , K.end() , s.begin() ,
+		    []( const std::string & a , const auto & b ) {
+		     return( a == b.first );
+		     } ) );
  // a long string, and all removed
  const std::string L( 100000 , 'z' );
  CHECK( t.insert( L ) && *t.lowerBound( "z" ) == L );
@@ -499,27 +506,30 @@ ADS_TEST( "ods10.1.binary-heap" )
 {
  auto h = figureHeap();
  h.push( 6 );
- CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 ,
-                                              16 , 19 , 69 , 32 , 93 , 55 ,
-                                              50 } ) );
+ CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 , 16 ,
+					      19 , 69 ,
+					      32 , 93 , 55 , 50 } ) );
  auto r = h;
  h.push( 7 );
  CHECK( arrayOf( h ) == ( std::vector< int >{ 4 , 9 , 6 , 17 , 26 , 8 , 7 ,
-                                              19 , 69 , 32 , 93 , 55 , 50 ,
-                                              16 } ) );
+					      19 , 69 ,
+					      32 , 93 , 55 , 50 , 16 } ) );
  h.push( 3 );
  CHECK( arrayOf( h ) == ( std::vector< int >{ 3 , 9 , 4 , 17 , 26 , 8 , 6 ,
-                                              19 , 69 , 32 , 93 , 55 , 50 ,
-                                              16 , 7 } ) );
+					      19 , 69 ,
+					      32 , 93 , 55 , 50 , 16 , 7 } ) );
  CHECK( r.pop() == 4 );
  CHECK( arrayOf( r ) == ( std::vector< int >{ 6 , 9 , 8 , 17 , 26 , 50 , 16 ,
-                                              19 , 69 , 32 , 93 , 55 } ) );
+					      19 , 69 ,
+					      32 , 93 , 55 } ) );
  CHECK( r.pop() == 6 );
- CHECK( arrayOf( r ) == ( std::vector< int >{ 8 , 9 , 16 , 17 , 26 , 50 , 55 ,
-                                              19 , 69 , 32 , 93 } ) );
+ CHECK( arrayOf( r ) ==
+	( std::vector< int >{ 8 , 9 , 16 , 17 , 26 , 50 , 55 , 19 , 69 , 32 ,
+			      93 } ) );
  CHECK( r.pop() == 8 );
- CHECK( arrayOf( r ) == ( std::vector< int >{ 9 , 17 , 16 , 19 , 26 , 50 , 55 ,
-                                              93 , 69 , 32 } ) );
+ CHECK( arrayOf( r ) ==
+	( std::vector< int >{ 9 , 17 , 16 , 19 , 26 , 50 , 55 , 93 , 69 ,
+			      32 } ) );
  }
 
 /// a differential test of a heap against a std::multiset, `erase( i )` of
@@ -572,7 +582,7 @@ ADS_TEST( "ods.ex10.3.remove-place" )
  for( std::size_t i = 0 ; i < 1000 ; ++i )
   for( std::size_t j = 0 ; j < 5 ; ++j )
    CHECK( H5::parent( H5::child( i , j ) ) == i &&
-          H5::child( i , j ) == 5 * i + j + 1 );
+	  H5::child( i , j ) == 5 * i + j + 1 );
  }
 
 // ods ex 10.4 and ex 10.5: the d-ary heap sorts as the binary one for
@@ -594,7 +604,7 @@ void dary( void )
  std::size_t n = 0 , level = 1 , k = 0;
  for( ; n + level <= 5000 ; n += level , level *= D )
   ++k;
- std::size_t last = n - 1;   // the last place, at depth k - 1
+ std::size_t last = n - 1;  // the last place, at depth k - 1
  std::size_t d = 0;
  for( ; last > 0 ; last = h.parent( last ) )
   ++d;
@@ -628,7 +638,7 @@ void meldableAgainstMultiset( H & h , H & o , int ops , std::uint64_t seed )
   else if( c < 6 ) {
    CHECK( h.pop() == *s.begin() );
    s.erase( s.begin() );
-   handles.clear();   // the handles may be stale
+   handles.clear();  // the handles may be stale
    }
   else if( c < 8 ) {
    if( ! handles.empty() ) {
@@ -671,16 +681,17 @@ ADS_TEST( "ods10.2.meldable-heap" )
   ADS::PoolResource<> R;
   using PA = ADS::PoolAllocator< int >;
   ADS::MeldableHeap< int , std::less< int > , PA > h( {} , 1 , PA( R ) ) ,
-                                                    o( {} , 2 , PA( R ) );
+    o( {} , 2 , PA( R ) );
   meldableAgainstMultiset( h , o , 30000 , 2 );
   }
  ADS::MeldableHeap< int > h;
- for( int x : { 19 , 17 , 9 , 26 , 4 , 55 , 16 , 25 , 32 , 28 , 93 , 19 , 99 ,
-                89 , 20 , 50 , 8 } )
+ for( int x :
+      { 19 , 17 , 9 , 26 , 4 , 55 , 16 , 25 , 32 , 28 , 93 , 19 , 99 , 89 ,
+	20 , 50 , 8 } )
   h.push( x );
- h.push( 17 );   // exercise 10.6
+ h.push( 17 );  // exercise 10.6
  h.push( 82 );
- CHECK( h.pop() == 4 && h.pop() == 8 );   // exercise 10.7
+ CHECK( h.pop() == 4 && h.pop() == 8 );  // exercise 10.7
  CHECK( h.top() == 9 && *h.secondTop() == 16 && h.size() == 17 );
  // a heap of 10^6 items in increasing order: the expected depth stays
  // logarithmic, the destructor and clear() with no recursion
@@ -711,13 +722,12 @@ ADS_TEST( "ods.ex10.10.k-smallest" )
  std::vector< int > w = v;
  std::sort( w.begin() , w.end() );
  for( std::size_t k : { 0 , 1 , 2 , 7 , 100 , 2999 , 3000 , 5000 } ) {
-  const std::vector< int > e( w.begin() ,
-                              w.begin() + std::ptrdiff_t( std::min( k ,
-                                                          w.size() ) ) );
+  const std::vector< int > e(
+    w.begin() , w.begin() + std::ptrdiff_t( std::min( k , w.size() ) ) );
   CHECK( b.smallest( k ) == e && d.smallest( k ) == e &&
-         m.smallest( k ) == e );
+	 m.smallest( k ) == e );
   }
- CHECK( b.size() == 3000 );   // unchanged
+ CHECK( b.size() == 3000 );  // unchanged
  }
 
 // ods ex 10.11: k sorted lists merged by a heap of their heads, the head of
@@ -738,7 +748,8 @@ ADS_TEST( "ods.ex10.11.k-way-merge" )
   }
  // the heap of the pairs ( head , list ), the smallest head on top
  ADS::DaryHeap< std::pair< int , std::size_t > ,
-                std::less< std::pair< int , std::size_t > > , 2 > h;
+		std::less< std::pair< int , std::size_t > > , 2 >
+   h;
  std::vector< std::size_t > next( k , 0 );
  for( std::size_t i = 0 ; i < k ; ++i )
   if( ! L[ i ].empty() )
@@ -767,7 +778,7 @@ ADS_TEST( "ods.ex10.11.k-way-merge" )
 /// of the table checked after each operation by `check( t )`
 template< class T , class F >
 void tableAgainstMap( T & t , int ops , std::uint64_t universe ,
-                      std::uint64_t seed , F && check )
+		      std::uint64_t seed , F && check )
 {
  std::map< std::uint64_t , int > m;
  std::mt19937_64 g( seed );
@@ -799,8 +810,8 @@ void tableAgainstMap( T & t , int ops , std::uint64_t universe ,
 ADS_TEST( "ods5.1.chained-hash-table" )
 {
  using H = ADS::MultiplicativeHash< std::uint64_t >;
- ADS::ChainedHashTable< std::uint64_t , int , ADS::Chain::FRONT , H >
-  t( 4 , 1.0 , 1.0 / 3 , H( 7 ) );
+ ADS::ChainedHashTable< std::uint64_t , int , ADS::Chain::FRONT , H > t(
+   4 , 1.0 , 1.0 / 3 , H( 7 ) );
  tableAgainstMap( t , 60000 , 1u << 14 , 1 , [ & ]( const auto & T ) {
   CHECK( ADS::is_pow2( T.capacity() ) && T.size() <= T.capacity() );
   CHECK( T.capacity() == 4 || 3 * T.size() >= T.capacity() - 3 );
@@ -808,8 +819,8 @@ ADS_TEST( "ods5.1.chained-hash-table" )
  CHECK( t.restructures() > 10 );
  // the keys that differ in their low bits only spread over the table,
  // while h( k ) mod m would put them in one list
- ADS::ChainedHashTable< std::uint64_t , int , ADS::Chain::FRONT , H >
-  u( 1024 , false , H( 3 ) );
+ ADS::ChainedHashTable< std::uint64_t , int , ADS::Chain::FRONT , H > u(
+   1024 , false , H( 3 ) );
  for( std::uint64_t k = 0 ; k < 1024 ; ++k )
   u.insert( k << 20 , 0 );
  std::size_t longest = 0;
@@ -819,15 +830,17 @@ ADS_TEST( "ods5.1.chained-hash-table" )
  const H h( 5 );
  for( std::uint64_t k = 1 ; k < 1000 ; k += 7 )
   for( std::size_t m = 1 ; m <= ( std::size_t( 1 ) << 20 ) ; m <<= 1 )
-   CHECK( h.place( k , m ) == ( m == 1 ? 0 : h( k ) >> ( 64 -
-                                std::countr_zero( std::uint64_t( m ) ) ) ) );
+   CHECK( h.place( k , m ) ==
+	  ( m == 1
+	      ? 0
+	      : h( k ) >> ( 64 - std::countr_zero( std::uint64_t( m ) ) ) ) );
  }
 
 /// the modular inverse of an odd \f$ z \f$ modulo \f$ 2^{64} \f$, by the
 /// iteration of Newton, each step doubling the bits that are right
 std::uint64_t inverse64( std::uint64_t z )
 {
- std::uint64_t y = z;   // right on 3 bits, z z = 1 mod 8
+ std::uint64_t y = z;  // right on 3 bits, z z = 1 mod 8
  for( int i = 0 ; i < 5 ; ++i )
   y *= 2 - z * y;
  return( y );
@@ -860,7 +873,7 @@ ADS_TEST( "ods5.1.multiplicative-hash" )
   const auto h = ADS::MultiplicativeHash<>::ofMultiplier( z );
   const std::uint64_t zi = inverse64( z );
   CHECK( z * zi == 1 );
-  const std::size_t n = std::size_t( 1 ) << 20;   // d = 20 <= w / 2
+  const std::size_t n = std::size_t( 1 ) << 20;  // d = 20 <= w / 2
   for( std::uint64_t j = 0 ; j < n ; j += 997 )
    CHECK( h.place( zi * j , n ) == 0 );
   }
@@ -873,14 +886,14 @@ ADS_TEST( "ods5.1.multiplicative-hash" )
 // is rebuilt at its size instead of doubling for ever
 ADS_TEST( "ods5.2.linear-hash-table" )
 {
- ADS::OpenHashTable< std::uint64_t , int , ADS::TabulationHash >
-  t( 8 , ADS::Probing::linear( 1 ) , true , ADS::TabulationHash( 3 ) );
+ ADS::OpenHashTable< std::uint64_t , int , ADS::TabulationHash > t(
+   8 , ADS::Probing::linear( 1 ) , true , ADS::TabulationHash( 3 ) );
  tableAgainstMap( t , 60000 , 1u << 13 , 2 , [ & ]( const auto & T ) {
   CHECK( ADS::is_pow2( T.capacity() ) );
   CHECK( 2 * T.size() <= T.capacity() );
   } );
- ADS::OpenHashTable< std::uint64_t , int , ADS::TabulationHash >
-  u( 8 , ADS::Probing::linear( 1 ) , true , ADS::TabulationHash( 4 ) );
+ ADS::OpenHashTable< std::uint64_t , int , ADS::TabulationHash > u(
+   8 , ADS::Probing::linear( 1 ) , true , ADS::TabulationHash( 4 ) );
  std::uint64_t next = 0;
  for( int round = 0 ; round < 200 ; ++round ) {
   for( int i = 0 ; i < 100 ; ++i )
@@ -925,7 +938,7 @@ ADS_TEST( "ods5.3.hash-codes" )
   H.insert( c( a ) );
   H.insert( c( b ) );
   }
- CHECK( H.size() >= 39999 );   // ( 6172 , 6173 ) is in both sets
+ CHECK( H.size() >= 39999 );  // ( 6172 , 6173 ) is in both sets
  const ADS::CompoundHash c3( 3 , 6 );
  const std::uint64_t p[ 3 ] = { 1 , 2 , 3 } , q[ 3 ] = { 1 , 2 , 4 };
  CHECK( c3( p ) != c3( q ) );
@@ -971,7 +984,7 @@ ADS_TEST( "ods5.3.hash-codes" )
  for( int w : { 7 , 31 , 32 , 61 } ) {
   const std::uint64_t M = ( std::uint64_t( 1 ) << w ) - 1;
   for( int i = 0 ; i < 10000 ; ++i ) {
-   std::uint64_t x = g() >> 1;   // so that the sums do not overflow
+   std::uint64_t x = g() >> 1;  // so that the sums do not overflow
    const std::uint64_t r = x % M;
    while( x > M )
     x = ( x & M ) + ( x >> w );
@@ -1031,15 +1044,16 @@ ADS_TEST( "ods.ex11.2.list-merge-sort" )
  std::set< const std::pair< int , int > * > before;
  for( const auto & x : L )
   before.insert( &x );
- ADS::listSort( L , []( const auto & a , const auto & b ) {
-  return( a.first < b.first ); } );
+ ADS::listSort(
+   L ,
+   []( const auto & a , const auto & b ) { return( a.first < b.first ); } );
  std::set< const std::pair< int , int > * > after;
  const std::pair< int , int > * prev = nullptr;
  for( const auto & x : L ) {
   after.insert( &x );
   if( prev )
    CHECK( prev->first < x.first ||
-          ( prev->first == x.first && prev->second < x.second ) );
+	  ( prev->first == x.first && prev->second < x.second ) );
   prev = &x;
   }
  CHECK( before == after );
@@ -1050,11 +1064,12 @@ ADS_TEST( "ods.ex11.2.list-merge-sort" )
 /// compared with the other \f$ n - 1 \f$ items, the rule of exercise 11.4
 template< class T , class C >
 void middlePivotQuickSort( std::vector< T > & A , std::size_t i ,
-                           std::size_t n , C less )
+			   std::size_t n ,
+			   C less )
 {
  while( n > 1 ) {
   std::swap( A[ i ] , A[ i + n / 2 ] );
-  std::size_t p = i;   // A[ i + 1 .. p ] < pivot
+  std::size_t p = i;  // A[ i + 1 .. p ] < pivot
   for( std::size_t j = i + 1 ; j < i + n ; ++j )
    if( less( A[ j ] , A[ i ] ) )
     std::swap( A[ ++p ] , A[ j ] );
@@ -1076,7 +1091,8 @@ void middlePivotQuickSort( std::vector< T > & A , std::size_t i ,
 ADS_TEST( "ods.ex11.6.quicksort-adversary" )
 {
  const std::size_t n = 2000 , all = n * ( n - 1 ) / 2;
- struct Counting {
+ struct Counting
+ {
   std::size_t * c;
   bool operator()( std::size_t a , std::size_t b ) const {
    ++*c;
@@ -1142,13 +1158,13 @@ ADS_TEST( "ods.ex11.6.quicksort-adversary" )
 ADS_TEST( "ods.ex11.7.quicksort-expectation" )
 {
  std::vector< double > T( 2001 , 0.0 );
- double sum = 0 , H = 1;   // sum of T( 0 .. n - 1 ), H_n
+ double sum = 0 , H = 1;  // sum of T( 0 .. n - 1 ), H_n
  for( std::size_t n = 2 ; n <= 2000 ; ++n ) {
   sum += T[ n - 1 ];
   H += 1.0 / double( n );
   T[ n ] = double( n ) + 2.0 * sum / double( n );
   const double closed = 2.0 * double( n + 1 ) * H - 4.0 * double( n ) +
-                        ( 2.0 * double( n ) - 1.0 ) / 3.0;
+			( 2.0 * double( n ) - 1.0 ) / 3.0;
   CHECK( std::abs( T[ n ] - closed ) < 1e-9 * T[ n ] );
   const double exercise = 2.0 * double( n ) * H - double( n ) + H;
   CHECK( std::abs( T[ n ] - exercise ) > 1.0 );
@@ -1238,9 +1254,9 @@ std::size_t bookHeapSort( std::vector< std::size_t > & A )
 ADS_TEST( "ods.ex11.8.heapsort-worst" )
 {
  for( std::size_t n : { std::size_t( 1 ) << 10 , std::size_t( 1 ) << 14 ,
-                        std::size_t( 100000 ) } ) {
-  const double bound = 2.0 * double( n ) * std::log2( double( n ) ) -
-                       4.0 * double( n );
+			std::size_t( 100000 ) } ) {
+  const double bound =
+    2.0 * double( n ) * std::log2( double( n ) ) - 4.0 * double( n );
   std::vector< std::size_t > A( n );
   for( std::size_t i = 0 ; i < n ; ++i )
    A[ i ] = i;
@@ -1252,7 +1268,8 @@ ADS_TEST( "ods.ex11.8.heapsort-worst" )
   std::size_t d = 0;
   ADS::heapsort( A , [ & ]( std::size_t a , std::size_t b ) {
    ++d;
-   return( a < b ); } );
+   return( a < b );
+   } );
   CHECK( std::is_sorted( A.begin() , A.end() ) && double( d ) >= bound );
   }
  }
@@ -1279,11 +1296,12 @@ ADS_TEST( "ods.ex11.9.comparison-tree" )
  std::vector< std::array< int , 3 > > wrong;
  do {
   const auto o = order( p );
-  if( !( p[ o[ 0 ] ] < p[ o[ 1 ] ] && p[ o[ 1 ] ] < p[ o[ 2 ] ] ) )
+  if( ! ( p[ o[ 0 ] ] < p[ o[ 1 ] ] && p[ o[ 1 ] ] < p[ o[ 2 ] ] ) )
    wrong.push_back( p );
   } while( std::next_permutation( p.begin() , p.end() ) );
- CHECK( ( wrong == std::vector< std::array< int , 3 > >{ { 2 , 3 , 1 } ,
-                                                          { 3 , 2 , 1 } } ) );
+ CHECK( ( wrong ==
+	  std::vector< std::array< int , 3 > >{ { 2 , 3 , 1 } ,
+						{ 3 , 2 , 1 } } ) );
  CHECK( std::ceil( std::log2( 6.0 ) ) == 3.0 );
  }
 
@@ -1348,8 +1366,10 @@ void graphAgainstSet( G & g , int n , int ops , std::uint64_t seed )
  for( int i = 0 ; i < n ; ++i ) {
   std::vector< int > out , in;
   for( const auto & [ a , b ] : E ) {
-   if( a == i ) out.push_back( b );
-   if( b == i ) in.push_back( a );
+   if( a == i )
+    out.push_back( b );
+   if( b == i )
+    in.push_back( a );
    }
   auto A = g.adj( i ) , I = g.inAdj( i );
   std::sort( A.begin() , A.end() );
@@ -1399,7 +1419,7 @@ ADS_TEST( "ods.ex12.2.incidence-matrix" )
 /// the order of the recursive visit in depth of Morin's book, dfs( g , r )
 template< class G >
 void recursiveDfs( const G & g , int u , std::vector< bool > & seen ,
-                   std::vector< int > & order )
+		   std::vector< int > & order )
 {
  seen[ std::size_t( u ) ] = true;
  order.push_back( u );
@@ -1456,8 +1476,9 @@ ADS_TEST( "ods12.3.visits" )
   std::vector< bool > s1( n , false ) , s2( n , false );
   std::vector< int > r1 , r2;
   recursiveDfs( g , 0 , s1 , r1 );
-  ADS::dfs( g , 0 , s2 , [ & ]( int u ) { r2.push_back( u ); } ,
-            []( int , int ) {} , []( int ) {} );
+  ADS::dfs(
+    g , 0 , s2 , [ & ]( int u ) { r2.push_back( u ); } , []( int , int ) { } ,
+    []( int ) { } );
   CHECK( r1 == r2 );
   // the distances of bfs against the iterated relaxations of Bellman
   std::vector< int > d( n , ADS::INF );
@@ -1466,9 +1487,9 @@ ADS_TEST( "ods12.3.visits" )
    for( int u = 0 ; u < n ; ++u )
     if( d[ std::size_t( u ) ] != ADS::INF )
      for( int v : g.adj( u ) )
-      d[ std::size_t( v ) ] = std::min( d[ std::size_t( v ) ] ,
-                                        d[ std::size_t( u ) ] + 1 );
-  CHECK( ADS::distance( g , 0 ).first == d );   // exercise 12.8
+      d[ std::size_t( v ) ] =
+	std::min( d[ std::size_t( v ) ] , d[ std::size_t( u ) ] + 1 );
+  CHECK( ADS::distance( g , 0 ).first == d );  // exercise 12.8
   }
  }
 
@@ -1504,16 +1525,16 @@ ADS_TEST( "ods.ex12.4.components" )
      if( R[ i ][ k ] )
       for( int j = 0 ; j < n ; ++j )
        if( R[ k ][ j ] )
-        R[ i ][ j ] = true;
+	R[ i ][ j ] = true;
    return( R );
    };
   const auto RU = closure( u ) , RO = closure( o );
-  const auto id = ADS::cc( u );   // exercise 12.5
+  const auto id = ADS::cc( u );  // exercise 12.5
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j )
     CHECK( ( id[ i ] == id[ j ] ) == RU[ i ][ j ] );
   const int c = *std::max_element( id.begin() , id.end() );
-  bool connected = true;   // exercise 12.4
+  bool connected = true;  // exercise 12.4
   for( int j = 0 ; j < n ; ++j )
    connected = connected && RU[ 0 ][ j ];
   CHECK( connected == ( c == 1 ) );
@@ -1564,8 +1585,8 @@ ADS_TEST( "ods.ex12.10.universal-sink" )
   const int s = int( rng() % unsigned( n ) );
   for( int i = 0 ; i < n ; ++i )
    for( int j = 0 ; j < n ; ++j )
-    if( i != j && ( ( round % 3 < 2 && j == s ) ||
-                    ( i != s && rng() % 4 == 0 ) ) )
+    if( i != j &&
+	( ( round % 3 < 2 && j == s ) || ( i != s && rng() % 4 == 0 ) ) )
      g.insertEdge( i , j );
   if( round % 3 == 1 && n > 1 )
    g.deleteEdge( ( s + 1 ) % n , s );
@@ -1595,21 +1616,21 @@ ADS_TEST( "ods14.1.block-store" )
  const auto b = S.placeBlock( { 3 } );
  CHECK( a != b && S.blocks() == 2 && S.writes() == 2 && S.reads() == 0 );
  auto x = S.readBlock( a );
- x.push_back( 9 );   // a copy: the disk changes only by a write
+ x.push_back( 9 );  // a copy: the disk changes only by a write
  CHECK( S.peek( a ).size() == 2 && S.reads() == 1 );
  S.writeBlock( a , x );
  CHECK( S.peek( a ).size() == 3 && S.writes() == 3 );
  S.freeBlock( b );
  CHECK( S.blocks() == 1 && S.placeBlock( { 7 } ) == b );
  CHECK( mem.reads() == 1 && mem.writes() == 4 );
- CHECK_THROWS( ( void ) S.readBlock( 5 ) , ADS::contract_violation );
+ CHECK_THROWS( ( void )S.readBlock( 5 ) , ADS::contract_violation );
  }
 
 /// a differential test of the B-tree of a policy against a std::set, the
 /// invariant checked at each operation while there are at most 1024 keys,
 /// and the I/Os of each operation within a constant times the height
 void btreeAgainstSet( int B , ADS::BTreePolicy pol , int ops ,
-                      std::uint64_t seed )
+		      std::uint64_t seed )
 {
  ADS::BlockBTree< int > t( B , pol );
  std::set< int > s;
@@ -1623,8 +1644,7 @@ void btreeAgainstSet( int B , ADS::BTreePolicy pol , int ops ,
    CHECK( t.remove( k ) == ( s.erase( k ) == 1 ) );
   CHECK( t.size() == s.size() );
   // a walk down and back up, four blocks per level at most
-  CHECK( t.reads() + t.writes() - io <=
-         std::uint64_t( 8 * t.height() + 8 ) );
+  CHECK( t.reads() + t.writes() - io <= std::uint64_t( 8 * t.height() + 8 ) );
   const int y = int( g() % 3100 );
   const auto it = s.lower_bound( y );
   const auto lb = t.lowerBound( y );
@@ -1645,7 +1665,7 @@ ADS_TEST( "ods14.2.b-tree" )
 {
  for( int B : { 2 , 3 , 8 , 64 } )
   for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
-                    ADS::BTreePolicy::THREE } )
+		    ADS::BTreePolicy::THREE } )
    btreeAgainstSet( B , pol , 6000 , std::uint64_t( B ) * 7 + int( pol ) );
  }
 
@@ -1655,10 +1675,14 @@ ADS::BlockBTree< int > figureBTree( void )
 {
  ADS::BlockBTree< int > t( 2 );
  t.assign( { { { 20 } } ,
-             { { 6 , 12 } , { 28 , 34 , 42 } } ,
-             { { 0 , 2 , 4 } , { 8 , 10 } , { 14 , 16 , 18 } ,
-               { 22 , 24 , 26 } , { 30 , 32 } , { 36 , 38 , 40 } ,
-               { 44 , 46 } } } );
+	     { { 6 , 12 } , { 28 , 34 , 42 } } ,
+	     { { 0 , 2 , 4 } ,
+	       { 8 , 10 } ,
+	       { 14 , 16 , 18 } ,
+	       { 22 , 24 , 26 } ,
+	       { 30 , 32 } ,
+	       { 36 , 38 , 40 } ,
+	       { 44 , 46 } } } );
  return( t );
  }
 
@@ -1674,24 +1698,38 @@ ADS_TEST( "ods.ex14.1.figure" )
  CHECK( t.size() == 24 && t.height() == 3 );
  CHECK( t.insert( 3 ) && t.insert( 15 ) );
  CHECK( ( t.levels() == L{ { { 12 , 20 } } ,
-                         { { 3 , 6 } , { 16 } , { 28 , 34 , 42 } } ,
-                         { { 0 , 2 } , { 4 } , { 8 , 10 } , { 14 , 15 } ,
-                           { 18 } , { 22 , 24 , 26 } , { 30 , 32 } ,
-                           { 36 , 38 , 40 } , { 44 , 46 } } } ) );
+			   { { 3 , 6 } , { 16 } , { 28 , 34 , 42 } } ,
+			   { { 0 , 2 } ,
+			     { 4 } ,
+			     { 8 , 10 } ,
+			     { 14 , 15 } ,
+			     { 18 } ,
+			     { 22 , 24 , 26 } ,
+			     { 30 , 32 } ,
+			     { 36 , 38 , 40 } ,
+			     { 44 , 46 } } } ) );
  CHECK( t.splits() == 3 );
  auto u = figureBTree();
  CHECK( u.remove( 6 ) );
  CHECK( ( u.levels() == L{ { { 20 } } ,
-                         { { 8 , 12 } , { 28 , 34 , 42 } } ,
-                         { { 0 , 2 , 4 } , { 10 } , { 14 , 16 , 18 } ,
-                           { 22 , 24 , 26 } , { 30 , 32 } , { 36 , 38 , 40 } ,
-                           { 44 , 46 } } } ) );
+			   { { 8 , 12 } , { 28 , 34 , 42 } } ,
+			   { { 0 , 2 , 4 } ,
+			     { 10 } ,
+			     { 14 , 16 , 18 } ,
+			     { 22 , 24 , 26 } ,
+			     { 30 , 32 } ,
+			     { 36 , 38 , 40 } ,
+			     { 44 , 46 } } } ) );
  CHECK( u.remove( 8 ) );
  CHECK( ( u.levels() == L{ { { 20 } } ,
-                         { { 4 , 12 } , { 28 , 34 , 42 } } ,
-                         { { 0 , 2 } , { 10 } , { 14 , 16 , 18 } ,
-                           { 22 , 24 , 26 } , { 30 , 32 } , { 36 , 38 , 40 } ,
-                           { 44 , 46 } } } ) );
+			   { { 4 , 12 } , { 28 , 34 , 42 } } ,
+			   { { 0 , 2 } ,
+			     { 10 } ,
+			     { 14 , 16 , 18 } ,
+			     { 22 , 24 , 26 } ,
+			     { 30 , 32 } ,
+			     { 36 , 38 , 40 } ,
+			     { 44 , 46 } } } ) );
  CHECK( u.borrows() == 1 && u.merges() == 0 );
  }
 
@@ -1713,8 +1751,8 @@ ADS_TEST( "ods.ex14.3.internal-nodes" )
    // the bound for a root that is not a leaf
    const double n = double( t.size() );
    CHECK( ( t.height() == 1 ) ||
-          ( double( t.internalNodes() ) <=
-            ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) + 1e-9 ) );
+	  ( double( t.internalNodes() ) <=
+	    ( ( n + 1 ) / B + B - 3 ) / ( B - 1 ) + 1e-9 ) );
    }
   }
  }
@@ -1725,7 +1763,7 @@ ADS_TEST( "ods.ex14.3.internal-nodes" )
 ADS_TEST( "ods.ex14.4.memory" )
 {
  for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
-                   ADS::BTreePolicy::THREE } ) {
+		   ADS::BTreePolicy::THREE } ) {
   ADS::BlockBTree< int > t( 2 , pol );
   std::mt19937 g( 22 );
   for( int i = 0 ; i < 30000 ; ++i )
@@ -1747,7 +1785,7 @@ ADS_TEST( "ods.ex14.6.restructures" )
 {
  const int B = 16 , cycles = 1000;
  for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::WIDE ,
-                   ADS::BTreePolicy::THREE } ) {
+		   ADS::BTreePolicy::THREE } ) {
   ADS::BlockBTree< int > t( B , pol );
   std::vector< int > left , right;
   for( int k = 0 ; k < 2 * B - 2 ; ++k )
@@ -1780,7 +1818,8 @@ ADS_TEST( "ods.ex14.7.small-trees" )
 {
  const int B = 16 , cycles = 1000;
  std::vector< int > leaf;
- for( int k = 0 ; k < 2 * B - 2 ; ++k ) leaf.push_back( k );
+ for( int k = 0 ; k < 2 * B - 2 ; ++k )
+  leaf.push_back( k );
  for( auto pol : { ADS::BTreePolicy::STANDARD , ADS::BTreePolicy::THREE } ) {
   ADS::BlockBTree< int > t( B , pol );
   t.assign( { { leaf } } );
@@ -1801,21 +1840,23 @@ ADS_TEST( "ods.ex14.7.small-trees" )
    right.push_back( 100 + k );
    }
   t.assign( { { { 50 } } , { left , right } } );
-  for( int k = 0 ; k < B - 1 - B / 2 ; ++k )   // down to floor( B / 2 )
+  for( int k = 0 ; k < B - 1 - B / 2 ; ++k )  // down to floor( B / 2 )
    CHECK( t.remove( k ) );
   CHECK( t.restructures() == 0 && t.height() == 2 );
-  CHECK( t.remove( B - 1 - B / 2 ) );          // merged into a root leaf
+  CHECK( t.remove( B - 1 - B / 2 ) );  // merged into a root leaf
   CHECK( t.merges() == 1 && t.height() == 1 &&
-         t.size() == std::size_t( B / 2 - 1 + 1 + B - 1 ) );
+	 t.size() == std::size_t( B / 2 - 1 + 1 + B - 1 ) );
   ADS::BlockBTree< int > u( B , ADS::BTreePolicy::THREE );
   std::vector< int > full;
-  for( int k = 0 ; k < 2 * B - 1 ; ++k ) full.push_back( 100 + k );
+  for( int k = 0 ; k < 2 * B - 1 ; ++k )
+   full.push_back( 100 + k );
   u.assign( { { { 50 } } , { left , full } } );
-  for( int k = 0 ; k <= B - 1 - B / 2 ; ++k ) CHECK( u.remove( k ) );
-  CHECK( u.borrows() == 1 && u.height() == 2 );   // the keys shared
+  for( int k = 0 ; k <= B - 1 - B / 2 ; ++k )
+   CHECK( u.remove( k ) );
+  CHECK( u.borrows() == 1 && u.height() == 2 );  // the keys shared
   const auto L = u.levels();
   CHECK( L[ 1 ].size() == 2 && L[ 1 ][ 0 ].size() + 1 >= std::size_t( B ) &&
-         L[ 1 ][ 1 ].size() + 1 >= std::size_t( B ) );
+	 L[ 1 ][ 1 ].size() + 1 >= std::size_t( B ) );
   }
  for( int b : { 2 , 3 , 4 , 8 , 16 } ) {
   ADS::BlockBTree< int > t( b , ADS::BTreePolicy::THREE );
@@ -1823,8 +1864,10 @@ ADS_TEST( "ods.ex14.7.small-trees" )
   std::mt19937 g( static_cast< std::uint32_t >( b ) );
   for( int i = 0 ; i < 20000 ; ++i ) {
    const int x = int( g() % std::uint32_t( 3 * b ) );
-   if( g() % 2 ) CHECK( t.insert( x ) == s.insert( x ).second );
-   else CHECK( t.remove( x ) == ( s.erase( x ) == 1 ) );
+   if( g() % 2 )
+    CHECK( t.insert( x ) == s.insert( x ).second );
+   else
+    CHECK( t.remove( x ) == ( s.erase( x ) == 1 ) );
    }
   std::vector< int > K;
   t.forEach( [ & ]( int k ) { K.push_back( k ); } );

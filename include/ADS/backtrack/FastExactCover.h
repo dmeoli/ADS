@@ -71,7 +71,7 @@
 
 #ifndef __ADS_FastExactCover
  #define __ADS_FastExactCover
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -88,18 +88,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS FastExactCover ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the exact cover with colors on sparse sets, the dancing cells
-class FastExactCover {
+class FastExactCover
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the items \f$ 0 , \ldots , \mathit{primary} - 1 \f$ primary, the next
  /// \f$ \mathit{secondary} \f$ ones secondary, and no option
  /// \pre \f$ \mathit{primary} \ge 0 \f$ and \f$ \mathit{secondary} \ge 0 \f$
@@ -112,7 +113,7 @@ class FastExactCover {
  ///      primary; `colors` empty or of the size of `items`, not negative, 0 on
  ///      the primary items
  int addOption( const std::vector< int > & items ,
-                const std::vector< int > & colors = {} );
+		const std::vector< int > & colors = {} );
 
  /// calls `visit( options )` on each solution, the indices of its options in
  /// the order chosen, until it returns true (if it returns `bool`); the
@@ -177,22 +178,23 @@ class FastExactCover {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node of an option, or the spacer after its nodes
- struct Node {
-  int item;                                 ///< the item, -size a spacer
-  int loc;                                  ///< its place in set, the
-                                            ///< option of a spacer
-  int color;                                ///< its color, 0 if none
-  int pad;                                  ///< 16 bytes per node
+ struct Node
+ {
+  int item;   ///< the item, -size a spacer
+  int loc;    ///< its place in set, the
+	      ///< option of a spacer
+  int color;  ///< its color, 0 if none
+  int pad;    ///< 16 bytes per node
   };
 
  /// the sparse set of the active options of an item
- struct Item {
-  int start ,                               ///< its segment of set
-      size ,                                ///< the active options
-      pos ,                                 ///< its place in active
-      pad;                                  ///< 16 bytes per item
+ struct Item
+ {
+  int start ,  ///< its segment of set
+    size ,     ///< the active options
+    pos ,      ///< its place in active
+    pad;      ///< 16 bytes per item
   };
 
  void build( void );
@@ -204,7 +206,7 @@ class FastExactCover {
  int f_primary , f_items;
  std::vector< std::vector< int > > f_options , f_colors;
 
- std::vector< Node > f_node;                ///< the search state
+ std::vector< Node > f_node;  ///< the search state
  std::vector< Item > f_item;
  std::vector< int > f_set , f_active , f_force;
  int f_nActive = 0 , f_oActive = 0;
@@ -224,7 +226,7 @@ class FastExactCover {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FastExactCover.h included */
+#endif /* FastExactCover.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File FastExactCover.h -----------------------*/

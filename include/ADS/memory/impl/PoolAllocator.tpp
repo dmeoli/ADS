@@ -15,9 +15,11 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 inline void * poolNew( std::size_t b , std::size_t a )
 {
@@ -42,9 +44,8 @@ inline void poolDelete( void * p , std::size_t , std::size_t a ) noexcept
 
 template< std::size_t M >
 PoolResource< M >::PoolResource( void )
- : f_heap( std::make_unique< detail::PageHeap< CLASSES > >( this ) )
-{
- }
+    : f_heap( std::make_unique< detail::PageHeap< CLASSES > >( this ) )
+{ }
 
 template< std::size_t M >
 template< std::size_t b , std::size_t a >
@@ -63,7 +64,7 @@ inline void PoolResource< M >::deallocate( void * p )
  if constexpr( pooled( b , a ) ) {
   auto * const g = detail::PageHeap< CLASSES >::pageOf( p );
   ADS_PRE( ( p != nullptr ) && ( g->owner == this ) &&
-           ( g->c == classOf( b , a ) ) );
+	   ( g->c == classOf( b , a ) ) );
   f_heap->give( g , p );
   }
  else
@@ -79,8 +80,7 @@ void * PoolResource< M >::allocate( std::size_t b , std::size_t a )
  }
 
 template< std::size_t M >
-void PoolResource< M >::deallocate( void * p , std::size_t b ,
-                                    std::size_t a )
+void PoolResource< M >::deallocate( void * p , std::size_t b , std::size_t a )
 {
  ADS_PRE( p != nullptr );
  if( pooled( b , a ) ) {
@@ -113,11 +113,11 @@ inline T * PoolAllocator< T , R >::allocate( std::size_t n )
 {
  if( n == 1 )
   return( static_cast< T * >(
-           f_r->template allocate< sizeof( T ) , alignof( T ) >() ) );
+    f_r->template allocate< sizeof( T ) , alignof( T ) >() ) );
  if( n > std::numeric_limits< std::size_t >::max() / sizeof( T ) )
   throw( std::bad_array_new_length() );
- return( static_cast< T * >( f_r->allocate( n * sizeof( T ) ,
-                                            alignof( T ) ) ) );
+ return(
+   static_cast< T * >( f_r->allocate( n * sizeof( T ) , alignof( T ) ) ) );
  }
 
 template< class T , class R >

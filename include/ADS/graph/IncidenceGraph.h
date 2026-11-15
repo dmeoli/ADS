@@ -55,7 +55,7 @@
 
 #ifndef __ADS_IncidenceGraph
  #define __ADS_IncidenceGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -72,18 +72,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS IncidenceGraph ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// an oriented graph on its matrix of incidence, kept by columns
-class IncidenceGraph {
+class IncidenceGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the graph of \f$ n \f$ nodes and no edge
  /// \pre \f$ n \ge 0 \f$
  explicit IncidenceGraph( int n = 0 );
@@ -182,7 +183,6 @@ class IncidenceGraph {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the column of \f$ ( i , j ) \f$, or \f$ m \f$
  [[nodiscard]] int column( int i , int j ) const;
 
@@ -210,7 +210,7 @@ class IncidenceGraph {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* IncidenceGraph.h included */
+#endif /* IncidenceGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File IncidenceGraph.h -----------------------*/

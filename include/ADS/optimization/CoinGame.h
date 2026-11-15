@@ -46,7 +46,7 @@
 
 #ifndef __ADS_CoinGame
  #define __ADS_CoinGame
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -62,7 +62,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the most the first player can be sure of in the game of the coins in a
 /// line \f$ V \f$, both players taking in turn the first or the last coin
@@ -96,7 +97,7 @@ T coinsInALine( const std::vector< T > & V );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CoinGame.h included */
+#endif /* CoinGame.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File CoinGame.h ---------------------------*/

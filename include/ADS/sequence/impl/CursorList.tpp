@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- THE SPACE --------------------------------*/
@@ -26,7 +27,7 @@ CursorSpace< T >::CursorSpace( long dim ) : f_free( 1 )
 {
  ADS_PRE( dim >= 1 );
  f_A.resize( dim + 1 );
- for( long c = 1 ; c < dim ; ++c )         // the free list 1 , ... , dim
+ for( long c = 1 ; c < dim ; ++c )  // the free list 1 , ... , dim
   f_A[ c ].next = c + 1;
  f_A[ dim ].next = 0;
  f_A[ 0 ].next = 0;
@@ -50,7 +51,7 @@ CursorSpace< T >::operator[]( long c ) const
 template< class T >
 long CursorSpace< T >::take( void )
 {
- if( f_free == 0 ) {                       // no free cell: twice the places
+ if( f_free == 0 ) {  // no free cell: twice the places
   const long n = capacity();
   f_A.resize( 2 * n + 1 );
   for( long c = n + 1 ; c < 2 * n ; ++c )
@@ -95,7 +96,7 @@ bool CursorSpace< T >::partition( void ) const
  long free = 0;
  for( long c = f_free ; c != 0 ; c = f_A[ c ].next )
   if( ( c < 1 ) || ( c > capacity() ) || ( ++free > capacity() ) )
-   return( false );                        // out of the vector, or a cycle
+   return( false );  // out of the vector, or a cycle
  return( free + f_used == capacity() );
  }
 
@@ -105,20 +106,19 @@ bool CursorSpace< T >::partition( void ) const
 
 template< class T >
 CursorList< T >::CursorList( void )
- : f_S( std::make_shared< CursorSpace< T > >() )
-{
- }
+    : f_S( std::make_shared< CursorSpace< T > >() )
+{ }
 
 template< class T >
 CursorList< T >::CursorList( std::shared_ptr< CursorSpace< T > > S )
- : f_S( std::move( S ) )
+    : f_S( std::move( S ) )
 {
  ADS_PRE( f_S != nullptr );
  }
 
 template< class T >
 CursorList< T >::CursorList( std::initializer_list< T > items )
- : CursorList()
+    : CursorList()
 {
  Pos p = 0;
  for( const auto & v : items ) {
@@ -139,9 +139,8 @@ CursorList< T >::CursorList( const CursorList & other ) : f_S( other.f_S )
 
 template< class T >
 CursorList< T >::CursorList( CursorList && other ) noexcept
- : f_S( other.f_S ) , f_first( std::exchange( other.f_first , 0 ) )
-{
- }
+    : f_S( other.f_S ) , f_first( std::exchange( other.f_first , 0 ) )
+{ }
 
 template< class T >
 CursorList< T > & CursorList< T >::operator=( CursorList other ) noexcept
@@ -216,7 +215,7 @@ typename CursorList< T >::Pos CursorList< T >::prev( Pos p ) const
   return( -1 );
  if( p == f_first )
   return( 0 );
- long q = f_first;                         // a scan for the cell before p
+ long q = f_first;  // a scan for the cell before p
  while( ( *f_S )[ q ].next != p )
   q = ( *f_S )[ q ].next;
  return( q );
@@ -226,9 +225,9 @@ template< class T >
 typename CursorList< T >::Pos CursorList< T >::insert( Pos p , const T & v )
 {
  ADS_PRE( p != -1 );
- const T x = v;                            // v may be in the space, which
- const long c = f_S->take();               // take() may move: no reference
- ( *f_S )[ c ].value = x;                  // into it is held across it
+ const T x = v;               // v may be in the space, which
+ const long c = f_S->take();  // take() may move: no reference
+ ( *f_S )[ c ].value = x;     // into it is held across it
  long & l = link( p );
  ( *f_S )[ c ].next = l;
  l = c;
@@ -270,7 +269,7 @@ template< class T >
 template< std::input_iterator I , std::sentinel_for< I > S >
 CursorList< T >::CursorList( I first , S last ) : CursorList()
 {
- Pos p = head();                            // the place after the last
+ Pos p = head();  // the place after the last
  for( ; first != last ; ++first )
   p = next( insert( p , *first ) );
  }
@@ -286,7 +285,7 @@ bool CursorList< T >::operator==( const CursorList & o ) const
 {
  long a = f_first , b = o.f_first;
  for( ; a && b ; a = ( *f_S )[ a ].next , b = ( *o.f_S )[ b ].next )
-  if( !( ( *f_S )[ a ].value == ( *o.f_S )[ b ].value ) )
+  if( ! ( ( *f_S )[ a ].value == ( *o.f_S )[ b ].value ) )
    return( false );
  return( ! a && ! b );
  }

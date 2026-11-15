@@ -78,7 +78,7 @@
 
 #ifndef __ADS_ArraySequence
  #define __ADS_ArraySequence
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -97,7 +97,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS ArraySequence ----------------------------*/
@@ -105,13 +106,13 @@ namespace ADS {
 
 /// a SEQUENCE realized with a vector that doubles when it is full
 template< class T >
-class ArraySequence {
+class ArraySequence
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
- using Pos = long; ///< a position is an index, from -1 to \f$ n \f$
+ using Item = T;    ///< the type of the items
+ using Pos = long;  ///< a position is an index, from -1 to \f$ n \f$
 
  /// the empty sequence, with no vector
  ArraySequence( void );
@@ -325,21 +326,20 @@ class ArraySequence {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the items fit in the vector
  [[nodiscard]] bool fits( void ) const;
 
  /// the \f$ k \f$ items of `o` from the index \f$ i \f$ are those of this
  /// sequence from the index \f$ j \f$
  [[nodiscard]] bool same( const ArraySequence & o , Pos i , Pos j ,
-                          Pos k ) const;
+			  Pos k ) const;
 
  /// replaces the vector with one of \f$ c \f$ places
  void resize( Pos c );
 
- std::unique_ptr< T[] > f_A;   ///< the vector
- Pos f_size;                   ///< the number of items
- Pos f_capacity;               ///< the size of the vector
+ std::unique_ptr< T[] > f_A;  ///< the vector
+ Pos f_size;                  ///< the number of items
+ Pos f_capacity;              ///< the size of the vector
 
  };  // end( class ArraySequence )
 
@@ -355,7 +355,7 @@ class ArraySequence {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ArraySequence.h included */
+#endif /* ArraySequence.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File ArraySequence.h ------------------------*/

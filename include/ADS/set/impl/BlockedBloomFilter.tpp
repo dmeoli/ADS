@@ -15,31 +15,39 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the 8 odd constants of the bits of a block: the high halves of the
 /// first 8 words of SplitMix64 from 0, made odd
 alignas( 32 ) inline constexpr std::uint32_t kBlockSalt[ 8 ] = {
  0xE220A839U , 0x6E789E6BU , 0x06C45D19U , 0xF88BB8A9U ,
- 0x1B39896BU , 0x53CB9F0DU , 0x2C829ABFU , 0xC584133BU };
+ 0x1B39896BU , 0x53CB9F0DU , 0x2C829ABFU , 0xC584133BU
+ };
 
 /// the 8 words of the bits of the low half h of a hash, one bit per word
-struct BlockMask {
+struct BlockMask
+{
 #if defined( __AVX2__ )
  __m256i m;
 
  explicit BlockMask( std::uint32_t h )
-  : m( _mm256_sllv_epi32( _mm256_set1_epi32( 1 ) , _mm256_srli_epi32(
-        _mm256_mullo_epi32( _mm256_set1_epi32( int( h ) ) ,
-                            _mm256_load_si256( reinterpret_cast<
-                             const __m256i * >( kBlockSalt ) ) ) , 27 ) ) ) {}
+     : m( _mm256_sllv_epi32(
+	 _mm256_set1_epi32( 1 ) ,
+	 _mm256_srli_epi32(
+	   _mm256_mullo_epi32(
+	     _mm256_set1_epi32( int( h ) ) ,
+	     _mm256_load_si256(
+	       reinterpret_cast< const __m256i * >( kBlockSalt ) ) ) ,
+	   27 ) ) ) { }
 
  /// true if all the bits are in the 8 words from w
  bool in( const std::uint32_t * w ) const {
-  return( _mm256_testc_si256( _mm256_load_si256(
-           reinterpret_cast< const __m256i * >( w ) ) , m ) );
+  return( _mm256_testc_si256(
+    _mm256_load_si256( reinterpret_cast< const __m256i * >( w ) ) , m ) );
   }
 
  /// sets the bits in the 8 words from w
@@ -75,8 +83,8 @@ struct BlockMask {
 
 template< class T , class H >
 BlockedBloomFilter< T , H >::BlockedBloomFilter( std::size_t n ,
-                                                 double bitsPerItem , H h )
- : f_h( h )
+						double bitsPerItem , H h )
+    : f_h( h )
 {
  ADS_PRE( bitsPerItem > 0 );
  const double b = std::ceil( double( n ) * bitsPerItem / 256 );
@@ -174,10 +182,11 @@ double BlockedBloomFilter< T , H >::falsePositiveRate( void ) const
  if( lambda == 0 )
   return( 0 );
  auto term = []( double j ) {
-  return( std::pow( 1 - std::pow( 31.0 / 32 , j ) , 8 ) ); };
+  return( std::pow( 1 - std::pow( 31.0 / 32 , j ) , 8 ) );
+  };
  const double j0 = std::floor( lambda );
- const double p0 = std::exp( j0 * std::log( lambda ) - lambda -
-                             std::lgamma( j0 + 1 ) );
+ const double p0 =
+   std::exp( j0 * std::log( lambda ) - lambda - std::lgamma( j0 + 1 ) );
  double f = p0 * term( j0 );
  double p = p0;
  for( double j = j0 + 1 ; p > 1e-18 * p0 || j < j0 + 8 ; ++j ) {

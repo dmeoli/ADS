@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::equality_comparable T , Duplicate D >
 bool UniqueQueue< T , D >::empty( void ) const
@@ -26,18 +27,18 @@ template< std::equality_comparable T , Duplicate D >
 void UniqueQueue< T , D >::enqueue( const T & v )
 {
  const auto p = find( v );
- if( f_L.finished( p ) ) {                  // a new item
+ if( f_L.finished( p ) ) {  // a new item
   f_L.insert( f_L.next( f_L.tail() ) , v );
   ++f_size;
   ADS_POST( contains( v ) &&
-            ( D == Duplicate::IGNORE_NEW || f_L.read( f_L.tail() ) == v ) );
+	    ( D == Duplicate::IGNORE_NEW || f_L.read( f_L.tail() ) == v ) );
   }
  else if constexpr( D == Duplicate::FORGET_OLD ) {
   const T w = v;                            // v may be the copy that
   f_L.remove( p );                          // remove() destroys, as in
-  f_L.insert( f_L.next( f_L.tail() ) , w ); // enqueue( top() ); w the only
+  f_L.insert( f_L.next( f_L.tail() ) , w );  // enqueue( top() ); w the only
   ADS_POST( contains( w ) &&                // copy left: no second scan
-            ( f_L.read( f_L.tail() ) == w ) );
+	    ( f_L.read( f_L.tail() ) == w ) );
   }
  ADS_INVARIANT( unique() );
  }
@@ -75,7 +76,7 @@ template< std::equality_comparable T , Duplicate D >
 typename List< T >::Pos UniqueQueue< T , D >::find( const T & v ) const
 {
  auto p = f_L.head();
- while( ! f_L.finished( p ) && !( f_L.read( p ) == v ) )
+ while( ! f_L.finished( p ) && ! ( f_L.read( p ) == v ) )
   p = f_L.next( p );
  return( p );
  }

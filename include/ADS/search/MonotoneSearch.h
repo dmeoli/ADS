@@ -59,7 +59,7 @@
 
 #ifndef __ADS_MonotoneSearch
  #define __ADS_MonotoneSearch
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -77,7 +77,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the least \f$ i \ge \mathit{lo} \f$ with \f$ p( i ) \f$, \f$ p \f$ false
 /// and then true from \f$ \mathit{lo} \f$;
@@ -165,7 +166,7 @@ bool isPerfectSquare( U n );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MonotoneSearch.h included */
+#endif /* MonotoneSearch.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File MonotoneSearch.h ------------------------*/

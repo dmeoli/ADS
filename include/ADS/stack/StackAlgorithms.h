@@ -59,7 +59,7 @@
 
 #ifndef __ADS_StackAlgorithms
  #define __ADS_StackAlgorithms
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,7 +82,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// whether \f$ s \f$ reads the same from both ends
 ///
@@ -232,7 +233,7 @@ void reverseWithQueue( S & s );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* StackAlgorithms.h included */
+#endif /* StackAlgorithms.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File StackAlgorithms.h -----------------------*/

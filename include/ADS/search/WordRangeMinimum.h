@@ -91,7 +91,7 @@
 
 #ifndef __ADS_WordRangeMinimum
  #define __ADS_WordRangeMinimum
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -112,7 +112,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS WordRangeMinimum --------------------------*/
@@ -120,11 +121,11 @@ namespace ADS {
 
 /// the leftmost minima of the ranges of an array, by the order `less()`
 template< class T , class Compare = std::less< T > >
-class WordRangeMinimum {
+class WordRangeMinimum
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// an empty structure
  WordRangeMinimum( void ) = default;
 
@@ -187,14 +188,14 @@ class WordRangeMinimum {
 
  // a constant view of the array, random access
 
- using value_type = T;                   ///< the type of the items
- using size_type = std::size_t;          ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using const_reference = const T &;      ///< a reference to an item
- using reference = const_reference;      ///< the same, constant
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using const_reference = const T &;       ///< a reference to an item
+ using reference = const_reference;       ///< the same, constant
  using const_iterator = typename std::vector< T >::const_iterator;
-                                         ///< an iterator on the items
- using iterator = const_iterator;        ///< the same, constant
+ ///< an iterator on the items
+ using iterator = const_iterator;  ///< the same, constant
 
  /// the first item
  [[nodiscard]] const_iterator begin( void ) const { return( f_A.begin() ); }
@@ -207,21 +208,22 @@ class WordRangeMinimum {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// what is kept of a place besides its stack: the minima of the suffix
  /// and of the prefix of the block that end at it, with their offsets in
  /// the block
- struct Place {
-  T suf;             ///< the minimum of the suffix
-  T pre;             ///< the minimum of the prefix
-  std::uint8_t si;   ///< the offset of the minimum of the suffix
-  std::uint8_t pi;   ///< the offset of the minimum of the prefix
+ struct Place
+ {
+  T suf;            ///< the minimum of the suffix
+  T pre;            ///< the minimum of the prefix
+  std::uint8_t si;  ///< the offset of the minimum of the suffix
+  std::uint8_t pi;  ///< the offset of the minimum of the prefix
   };
 
  /// a minimum and its place
- struct Min {
-  T v;               ///< the minimum
-  std::uint32_t i;   ///< its place
+ struct Min
+ {
+  T v;              ///< the minimum
+  std::uint32_t i;  ///< its place
   };
 
  /// of the minima \f$ a \f$, then \f$ b \f$, the one of the smaller item,
@@ -236,13 +238,13 @@ class WordRangeMinimum {
  /// the stacks of the block of \f$ n \f$ items from \f$ b \f$
  void stacks( std::size_t b , std::size_t n );
 
- std::vector< T > f_A;                   ///< the items
+ std::vector< T > f_A;  ///< the items
  std::vector< std::uint64_t , HugePageAllocator< std::uint64_t > > f_M;
-                                         ///< the stack of each place
- std::vector< Place , HugePageAllocator< Place > > f_P;   ///< the places
- std::vector< Min , HugePageAllocator< Min > > f_S;       ///< the table
- std::size_t f_blocks = 0;               ///< the blocks, a row of `f_S`
- ADS_NO_UNIQUE_ADDRESS Compare f_less;   ///< the order
+ ///< the stack of each place
+ std::vector< Place , HugePageAllocator< Place > > f_P;  ///< the places
+ std::vector< Min , HugePageAllocator< Min > > f_S;      ///< the table
+ std::size_t f_blocks = 0;              ///< the blocks, a row of `f_S`
+ ADS_NO_UNIQUE_ADDRESS Compare f_less;  ///< the order
 
  };  // end( class WordRangeMinimum )
 
@@ -258,7 +260,7 @@ class WordRangeMinimum {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* WordRangeMinimum.h included */
+#endif /* WordRangeMinimum.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File WordRangeMinimum.h -----------------------*/

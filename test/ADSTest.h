@@ -19,7 +19,7 @@
 
 #ifndef __ADS_ADSTest
  #define __ADS_ADSTest
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -36,10 +36,12 @@
 /*------------------------------ FRAMEWORK ---------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS::test {
+namespace ADS::test
+{
 
 /// the failure of a check
-struct Failure : std::runtime_error {
+struct Failure : std::runtime_error
+{
  using std::runtime_error::runtime_error;
  };
 
@@ -51,7 +53,8 @@ inline std::map< std::string , std::function< void( void ) > > & registry()
  }
 
 /// registers a test
-struct Register {
+struct Register
+{
  Register( const char * name , std::function< void( void ) > f ) {
   registry()[ name ] = std::move( f );
   }
@@ -84,7 +87,7 @@ inline int main( int argc , char ** argv )
 
  int failed = 0;
  auto run = [ & ]( const std::string & name ,
-                   const std::function< void( void ) > & f ) {
+		   const std::function< void( void ) > & f ) {
   try {
    f();
    std::cout << "PASSED " << name << std::endl;
@@ -113,41 +116,46 @@ inline int main( int argc , char ** argv )
 }  // end( namespace ADS::test )
 
 /// checks a condition, failing the test with its file and line
-#define CHECK( c )                                                         \
- do {                                                                      \
-  if( ! ( c ) ) {                                                          \
-   std::ostringstream os;                                                  \
-   os << __FILE__ << ":" << __LINE__ << ": " << #c;                        \
-   throw( ADS::test::Failure( os.str() ) );                                \
-   }                                                                       \
-  } while( 0 )
+#define CHECK( c )                                                            \
+ do {                                                                         \
+  if( ! ( c ) ) {                                                             \
+   std::ostringstream os;                                                     \
+   os << __FILE__ << ":" << __LINE__ << ": " << #c;                           \
+   throw( ADS::test::Failure( os.str() ) );                                   \
+  }                                                                           \
+ } while( 0 )
 
 /// checks that an expression throws an exception of type E
-#define CHECK_THROWS( expr , E )                                           \
- do {                                                                      \
-  bool thrown = false;                                                     \
-  try { ( void )( expr ); } catch( const E & ) { thrown = true; }          \
-  if( ! thrown ) {                                                         \
-   std::ostringstream os;                                                  \
-   os << __FILE__ << ":" << __LINE__ << ": " << #expr                      \
-      << " does not throw " << #E;                                         \
-   throw( ADS::test::Failure( os.str() ) );                                \
-   }                                                                       \
-  } while( 0 )
+#define CHECK_THROWS( expr, E )                                               \
+ do {                                                                         \
+  bool thrown = false;                                                        \
+  try {                                                                       \
+   ( void )( expr );                                                          \
+  }                                                                           \
+  catch( const E & ) {                                                        \
+   thrown = true;                                                             \
+  }                                                                           \
+  if( ! thrown ) {                                                            \
+   std::ostringstream os;                                                     \
+   os << __FILE__ << ":" << __LINE__ << ": " << #expr << " does not throw "   \
+      << #E;                                                                  \
+   throw( ADS::test::Failure( os.str() ) );                                   \
+  }                                                                           \
+ } while( 0 )
 
-#define ADS_CAT2( a , b ) a##b
-#define ADS_CAT( a , b ) ADS_CAT2( a , b )
+#define ADS_CAT2( a, b ) a##b
+#define ADS_CAT( a, b ) ADS_CAT2( a, b )
 
 /// defines and registers the test of the given name
-#define ADS_TEST( name )                                                   \
- static void ADS_CAT( ads_test_ , __LINE__ )( void );                      \
- static ADS::test::Register ADS_CAT( ads_reg_ , __LINE__ )(                \
-                                 name , ADS_CAT( ads_test_ , __LINE__ ) ); \
- static void ADS_CAT( ads_test_ , __LINE__ )( void )
+#define ADS_TEST( name )                                                      \
+ static void ADS_CAT( ads_test_, __LINE__ )( void );                          \
+ static ADS::test::Register ADS_CAT( ads_reg_, __LINE__ )(                    \
+   name, ADS_CAT( ads_test_, __LINE__ ) );                                    \
+ static void ADS_CAT( ads_test_, __LINE__ )( void )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ADSTest.h included */
+#endif /* ADSTest.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File ADSTest.h ---------------------------*/

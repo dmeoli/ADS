@@ -65,7 +65,7 @@
 
 #ifndef __ADS_RollbackUnionFind
  #define __ADS_RollbackUnionFind
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -80,7 +80,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS RollbackUnionFind -------------------------*/
@@ -88,11 +89,11 @@ namespace ADS {
 
 /// the union of disjoint sets of \f$ [ 0 , n ) \f$ by rank, with no
 /// compression, whose merges can be undone
-class RollbackUnionFind {
+class RollbackUnionFind
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the \f$ n \f$ components \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$, no
  /// merge done
  /// \pre \f$ n \ge 0 \f$
@@ -189,24 +190,24 @@ class RollbackUnionFind {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a merge: the root hung (\f$ -1 \f$ if nothing was joined) and whether
  /// the rank of the other grew
- struct Record {
-  int child;                                     ///< the root hung
-  int parent;                                    ///< the other root
-  bool grew;                                     ///< whether its rank grew
+ struct Record
+ {
+  int child;   ///< the root hung
+  int parent;  ///< the other root
+  bool grew;   ///< whether its rank grew
   };
 
  /// a forest of `count()` trees, each of height at most the rank of its
  /// root and of the size it holds
  [[nodiscard]] bool forest( void ) const;
 
- std::vector< int > f_p;          ///< the parents, \f$ x \f$ itself at a root
- std::vector< int > f_rank;       ///< the ranks of the roots
- std::vector< int > f_size;       ///< the sizes of the roots
- std::vector< Record > f_stack;   ///< the merges, to undo
- int f_count = 0;                 ///< the number of components
+ std::vector< int > f_p;         ///< the parents, \f$ x \f$ itself at a root
+ std::vector< int > f_rank;      ///< the ranks of the roots
+ std::vector< int > f_size;      ///< the sizes of the roots
+ std::vector< Record > f_stack;  ///< the merges, to undo
+ int f_count = 0;                ///< the number of components
 
  };  // end( class RollbackUnionFind )
 
@@ -215,17 +216,18 @@ class RollbackUnionFind {
 /*--------------------------------------------------------------------------*/
 
 /// an operation on a graph whose edges come and go
-struct ConnectivityOp {
+struct ConnectivityOp
+{
  /// the kinds of operation
  enum Kind {
-  INSERT ,       ///< the insertion of the edge \f$ [ u , v ] \f$
-  DELETE ,       ///< the deletion of the edge \f$ [ u , v ] \f$
-  CONNECTED ,    ///< whether \f$ u \f$ and \f$ v \f$ are connected
-  COMPONENTS     ///< how many components there are
+  INSERT ,     ///< the insertion of the edge \f$ [ u , v ] \f$
+  DELETE ,     ///< the deletion of the edge \f$ [ u , v ] \f$
+  CONNECTED ,  ///< whether \f$ u \f$ and \f$ v \f$ are connected
+  COMPONENTS  ///< how many components there are
   };
- Kind kind;                                      ///< the kind
- int u = 0;                                      ///< the first node
- int v = 0;                                      ///< the second node
+ Kind kind;  ///< the kind
+ int u = 0;  ///< the first node
+ int v = 0;  ///< the second node
  };
 
 /// the answers to the questions of `ops` on \f$ n \f$ nodes, in their
@@ -268,8 +270,8 @@ struct ConnectivityOp {
 /// \f]
 /// \pre \f$ n \ge 0 \f$, the nodes of every operation but `COMPONENTS` in
 ///      \f$ [ 0 , n ) \f$, each `DELETE` of an edge alive
-[[nodiscard]] inline std::vector< int > offlineConnectivity(
-                          int n , const std::vector< ConnectivityOp > & ops );
+[[nodiscard]] inline std::vector< int >
+offlineConnectivity( int n , const std::vector< ConnectivityOp > & ops );
 
 /*--------------------------------------------------------------------------*/
 
@@ -283,7 +285,7 @@ struct ConnectivityOp {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RollbackUnionFind.h included */
+#endif /* RollbackUnionFind.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File RollbackUnionFind.h ----------------------*/

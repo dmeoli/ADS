@@ -46,7 +46,7 @@
 
 #ifndef __ADS_CursorList
  #define __ADS_CursorList
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS CursorSpace -----------------------------*/
@@ -74,13 +75,14 @@ namespace ADS {
 
 /// the vector of the cells of some `CursorList`, with its free list
 template< class T >
-class CursorSpace {
+class CursorSpace
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a cell: the item and the cursor of the next cell, 0 for nil
- struct Cell {
+ struct Cell
+ {
   T value;    ///< the item
   long next;  ///< the cursor of the next cell, 0 for nil
   };
@@ -141,14 +143,13 @@ class CursorSpace {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the free list has no cycle, and with the cells in use it makes all the
  /// places, \f$ O( \mathit{capacity} ) \f$
  [[nodiscard]] bool partition( void ) const;
 
- std::vector< Cell > f_A;   ///< the cells, `f_A[ 0 ]` never used
- long f_free;               ///< the first free cell, 0 if none
- long f_used = 0;           ///< the number of cells in use
+ std::vector< Cell > f_A;  ///< the cells, `f_A[ 0 ]` never used
+ long f_free;              ///< the first free cell, 0 if none
+ long f_used = 0;          ///< the number of cells in use
 
  };  // end( class CursorSpace )
 
@@ -158,13 +159,13 @@ class CursorSpace {
 
 /// a SEQUENCE realized with cursors in a CursorSpace
 template< class T >
-class CursorList {
+class CursorList
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;     ///< the type of the items
- using Pos = long;   ///< the cursor of the cell before the item
+ using Item = T;    ///< the type of the items
+ using Pos = long;  ///< the cursor of the cell before the item
 
  /// the empty list, in a space of its own
  CursorList( void );
@@ -280,15 +281,16 @@ class CursorList {
 
  /// the iterator, on items const if `Const`
  template< bool Const >
- class Iterator {
-  using Space = std::conditional_t< Const , const CursorSpace< T > ,
-                                    CursorSpace< T > >;
+ class Iterator
+ {
+  using Space =
+    std::conditional_t< Const , const CursorSpace< T > , CursorSpace< T > >;
 
   public:
   /// the category of the iterator, forward
   using iterator_category = std::forward_iterator_tag;
-  using value_type = T;                     ///< the type of the items
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using value_type = T;                    ///< the type of the items
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// a reference to an item, constant if `Const`
   using reference = std::conditional_t< Const , const T & , T & >;
   /// a pointer to an item, constant if `Const`
@@ -299,11 +301,12 @@ class CursorList {
 
   /// on the item of the cell \f$ c \f$ of the space \f$ S \f$, the end
   /// if \f$ c = 0 \f$
-  Iterator( Space * S , long c ) : f_S( S ) , f_c( c ) {}
+  Iterator( Space * S , long c ) : f_S( S ) , f_c( c ) { }
 
   /// the const iterator from the other one
-  template< bool C > requires ( Const && ! C )
-  Iterator( const Iterator< C > & o ) : f_S( o.f_S ) , f_c( o.f_c ) {}
+  template< bool C >
+   requires( Const && ! C )
+  Iterator( const Iterator< C > & o ) : f_S( o.f_S ) , f_c( o.f_c ) { }
 
   /// the item
   reference operator*( void ) const { return( ( *f_S )[ f_c ].value ); }
@@ -315,15 +318,20 @@ class CursorList {
    return( *this );
    }
   /// to the next cell, returning the iterator before the step
-  Iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  Iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
   /// equal on the same cell of the same space
   bool operator==( const Iterator & o ) const = default;
 
   private:
-  Space * f_S = nullptr;   ///< the space of the cells
-  long f_c = 0;            ///< the cell of the item, 0 at the end
+  Space * f_S = nullptr;  ///< the space of the cells
+  long f_c = 0;           ///< the cell of the item, 0 at the end
 
-  template< bool > friend class Iterator;
+  template< bool >
+  friend class Iterator;
   };
 
  /// the type of the items
@@ -369,15 +377,14 @@ class CursorList {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the link that leads to the cell of the item in the position \f$ p \f$
  [[nodiscard]] long & link( Pos p );
 
  /// the cursor of the cell of the item in the position \f$ p \f$
  [[nodiscard]] long cell( Pos p ) const;
 
- std::shared_ptr< CursorSpace< T > > f_S;   ///< the space
- long f_first = 0;                          ///< the first cell, 0 if none
+ std::shared_ptr< CursorSpace< T > > f_S;  ///< the space
+ long f_first = 0;                         ///< the first cell, 0 if none
 
  };  // end( class CursorList )
 
@@ -393,7 +400,7 @@ class CursorList {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* CursorList.h included */
+#endif /* CursorList.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File CursorList.h --------------------------*/

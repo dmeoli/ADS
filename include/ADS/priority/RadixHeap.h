@@ -72,7 +72,7 @@
 
 #ifndef __ADS_RadixHeap
  #define __ADS_RadixHeap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -94,7 +94,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RadixHeap ------------------------------*/
@@ -103,15 +104,15 @@ namespace ADS {
 /// a monotone queue of items with integer keys of the type `K`, the least
 /// key first, in buckets by digits of \f$ B \f$ bits
 template< class T , std::integral K = std::uint32_t , unsigned B = 4 >
-class RadixHeap {
+class RadixHeap
+{
 
  static_assert( ( B >= 1 ) && ( B <= 8 ) , "a digit of 1 to 8 bits" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
- using Key = K;    ///< the type of the keys
+ using Item = T;  ///< the type of the items
+ using Key = K;   ///< the type of the keys
 
  /// pushes \f$ x \f$ with the key \f$ k \f$, in \f$ O( 1 ) \f$ time
  ///
@@ -225,7 +226,6 @@ class RadixHeap {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  using U = std::make_unsigned_t< K >;
 
  static constexpr unsigned W = std::numeric_limits< U >::digits;
@@ -235,9 +235,10 @@ class RadixHeap {
  static constexpr unsigned NW = ( NB + 63 ) / 64;  ///< words of the mask
 
  /// an item with its encoded key
- struct Entry {
-  U key;    ///< the key, encoded
-  T item;   ///< the item
+ struct Entry
+ {
+  U key;   ///< the key, encoded
+  T item;  ///< the item
   };
 
  /// the key as an unsigned word of the same order
@@ -264,7 +265,8 @@ class RadixHeap {
 
  /// puts e in the bucket i
  void place( unsigned i , Entry && e ) {
-  if( e.key < f_min[ i ] ) f_min[ i ] = e.key;
+  if( e.key < f_min[ i ] )
+   f_min[ i ] = e.key;
   f_mask[ i >> 6 ] |= std::uint64_t( 1 ) << ( i & 63 );
   f_B[ i ].push_back( std::move( e ) );
   }
@@ -293,10 +295,10 @@ class RadixHeap {
  std::array< std::vector< Entry > , NB > f_B;   ///< the buckets
  std::array< U , NB > f_min = fill_max();       ///< their least keys
  std::array< std::uint64_t , NW > f_mask = {};  ///< the buckets in use
- U f_last = 0;                ///< the base of the buckets, see bucket()
- U f_floor = 0;               ///< the largest key extracted or read
- unsigned f_cur = 0;          ///< the bucket of the top, if pulled
- std::size_t f_size = 0;      ///< the number of items
+ U f_last = 0;            ///< the base of the buckets, see bucket()
+ U f_floor = 0;           ///< the largest key extracted or read
+ unsigned f_cur = 0;      ///< the bucket of the top, if pulled
+ std::size_t f_size = 0;  ///< the number of items
 
  static std::array< U , NB > fill_max( void ) {
   std::array< U , NB > a;
@@ -318,7 +320,7 @@ class RadixHeap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RadixHeap.h included */
+#endif /* RadixHeap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File RadixHeap.h --------------------------*/

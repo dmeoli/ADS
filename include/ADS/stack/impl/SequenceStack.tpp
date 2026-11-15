@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< Sequence S >
 bool SequenceStack< S >::empty( void ) const
@@ -24,7 +25,8 @@ bool SequenceStack< S >::empty( void ) const
  }
 
 template< Sequence S >
-const typename SequenceStack< S >::Item & SequenceStack< S >::top( void ) const
+const typename SequenceStack< S >::Item &
+SequenceStack< S >::top( void ) const
 {
  ADS_PRE( ! f_s.empty() );
  return( f_s.read( f_s.head() ) );

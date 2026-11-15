@@ -14,14 +14,15 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline unsigned bin_bit( std::string_view k , std::size_t j )
 {
  if( j >= 8 * k.size() )
   return( 0 );
  return( ( static_cast< unsigned char >( k[ j / 8 ] ) >> ( 7 - j % 8 ) ) &
-         1u );
+	  1u );
  }
 
 inline std::uint64_t int_bin( std::string_view k )
@@ -34,7 +35,7 @@ inline std::uint64_t int_bin( std::string_view k )
  }
 
 inline std::uint64_t hash_extraction( std::string_view k , int p ,
-                                      std::size_t s )
+				      std::size_t s )
 {
  ADS_PRE( ( p >= 1 ) && ( p <= 63 ) );
  std::uint64_t b = 0;
@@ -55,11 +56,11 @@ inline std::uint64_t hash_xor( std::string_view k , int p )
  }
 
 inline std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
-                                    std::uint64_t base , std::uint64_t seed )
+				    std::uint64_t base , std::uint64_t seed )
 {
- ADS_PRE( ( m > 0 ) && ( base > 0 ) &&
-          ( m - 1 <= ( std::numeric_limits< std::uint64_t >::max() - 255 ) /
-                     base ) );
+ ADS_PRE(
+   ( m > 0 ) && ( base > 0 ) &&
+   ( m - 1 <= ( std::numeric_limits< std::uint64_t >::max() - 255 ) / base ) );
  std::uint64_t b = seed % m;
  for( unsigned char c : k )
   b = ( b * base + c ) % m;
@@ -68,7 +69,7 @@ inline std::uint64_t hash_division( std::string_view k , std::uint64_t m ,
  }
 
 inline std::uint64_t hash_multiplication( std::uint64_t i , std::uint64_t m ,
-                                          long double C )
+					  long double C )
 {
  ADS_PRE( ( C >= 0 ) && ( C < 1 ) );
  long double ip;
@@ -81,7 +82,7 @@ inline std::uint64_t hash_multiplication( std::uint64_t i , std::uint64_t m ,
 inline std::uint64_t hash_fibonacci( std::uint64_t i , int p )
 {
  ADS_PRE( ( p >= 1 ) && ( p <= 63 ) );
- constexpr std::uint64_t s = 0x9E3779B97F4A7C15ull;   // floor( C 2^64 )
+ constexpr std::uint64_t s = 0x9E3779B97F4A7C15ull;  // floor( C 2^64 )
  const std::uint64_t h = ( i * s ) >> ( 64 - p );
  ADS_POST( h < ( 1ull << p ) );
  return( h );
@@ -90,8 +91,8 @@ inline std::uint64_t hash_fibonacci( std::uint64_t i , int p )
 inline std::uint64_t hash_midsquare( std::uint64_t i , int p )
 {
  ADS_PRE( ( p >= 1 ) && ( p <= 32 ) );
- const std::uint64_t h = ( ( i * i ) >> ( 32 - p / 2 ) ) &
-                         ( ( 1ull << p ) - 1 );
+ const std::uint64_t h =
+   ( ( i * i ) >> ( 32 - p / 2 ) ) & ( ( 1ull << p ) - 1 );
  ADS_POST( h < ( 1ull << p ) );
  return( h );
  }

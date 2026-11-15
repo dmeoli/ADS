@@ -43,7 +43,7 @@
 
 #ifndef __ADS_MPIExecutor
  #define __ADS_MPIExecutor
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 #if defined( ADS_WITH_MPI )
 
@@ -74,9 +74,11 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// throws if the call of MPI named failed
 inline void mpiCheck( int code , const char * what )
@@ -127,19 +129,19 @@ MPI_Datatype mpiType( void )
 /*--------------------------------------------------------------------------*/
 
 /// MPI started for the life of the object, and ended with it
-class MPIEnvironment {
+class MPIEnvironment
+{
  public:
-
  /// MPI started by `MPI_Init_thread()` at the level `level` (funneled by
  /// default), unless it already was
- MPIEnvironment( int & argc , char ** & argv ,
-                 int level = MPI_THREAD_FUNNELED ) {
+ MPIEnvironment( int & argc , char **& argv ,
+		 int level = MPI_THREAD_FUNNELED ) {
   int done = 0;
   MPI_Initialized( &done );
   if( done )
    return;
   detail::mpiCheck( MPI_Init_thread( &argc , &argv , level , &f_level ) ,
-                    "MPI_Init_thread" );
+		    "MPI_Init_thread" );
   f_owner = true;
   }
  /// no copy, since MPI ends once
@@ -156,9 +158,8 @@ class MPIEnvironment {
  [[nodiscard]] int level( void ) const { return( f_level ); }
 
  private:
-
- bool f_owner = false;                     ///< started MPI
- int f_level = MPI_THREAD_SINGLE;          ///< the level provided
+ bool f_owner = false;             ///< started MPI
+ int f_level = MPI_THREAD_SINGLE;  ///< the level provided
  };  // end( class MPIEnvironment )
 
 /*--------------------------------------------------------------------------*/
@@ -166,9 +167,9 @@ class MPIEnvironment {
 /*--------------------------------------------------------------------------*/
 
 /// the processes of a communicator, one worker each
-class MPIExecutor {
+class MPIExecutor
+{
  public:
-
  /// the executor of the processes of `comm`
  /// \pre MPI is initialized
  explicit MPIExecutor( MPI_Comm comm = MPI_COMM_WORLD ) : f_comm( comm ) {
@@ -195,7 +196,9 @@ class MPIExecutor {
  /// the call `f( rank )`, the worker of this process; every process calls
  /// it
  template< class F >
- void run( F && f ) const { f( rank() ); }
+ void run( F && f ) const {
+  f( rank() );
+  }
 
  /// returns when all the processes have called it
  void barrier( void ) const {
@@ -203,10 +206,9 @@ class MPIExecutor {
   }
 
  private:
-
- MPI_Comm f_comm;                          ///< the processes
- int f_rank = 0;                           ///< this one
- int f_size = 1;                           ///< how many
+ MPI_Comm f_comm;  ///< the processes
+ int f_rank = 0;   ///< this one
+ int f_size = 1;   ///< how many
  };  // end( class MPIExecutor )
 
 /*--------------------------------------------------------------------------*/
@@ -216,12 +218,11 @@ class MPIExecutor {
 /// the minimum over the processes of a value of each, by reductions that
 /// do not block
 template< class T >
-class DistributedMin {
+class DistributedMin
+{
  public:
-
  /// the minima over the processes of `comm`
- explicit DistributedMin( MPI_Comm comm = MPI_COMM_WORLD )
-  : f_comm( comm ) {}
+ explicit DistributedMin( MPI_Comm comm = MPI_COMM_WORLD ) : f_comm( comm ) { }
  /// no copy, since MPI writes into the object
  DistributedMin( const DistributedMin & ) = delete;
  /// no copy, since MPI writes into the object
@@ -250,8 +251,9 @@ class DistributedMin {
    return( false );
   f_in = v;
   detail::mpiCheck( MPI_Iallreduce( &f_in , &f_out , 1 ,
-                                    detail::mpiType< T >() , MPI_MIN ,
-                                    f_comm , &f_req ) , "MPI_Iallreduce" );
+				    detail::mpiType< T >() ,
+				    MPI_MIN , f_comm , &f_req ) ,
+		    "MPI_Iallreduce" );
   f_flight = true;
   return( true );
   }
@@ -263,7 +265,7 @@ class DistributedMin {
    return( std::nullopt );
   int flag = 0;
   detail::mpiCheck( MPI_Test( &f_req , &flag , MPI_STATUS_IGNORE ) ,
-                    "MPI_Test" );
+		    "MPI_Test" );
   if( ! flag )
    return( std::nullopt );
   f_flight = false;
@@ -283,23 +285,22 @@ class DistributedMin {
  [[nodiscard]] bool inFlight( void ) const { return( f_flight ); }
 
  private:
-
- MPI_Comm f_comm;                          ///< the processes
- MPI_Request f_req = MPI_REQUEST_NULL;     ///< the reduction in flight
- T f_in{};                                 ///< its value here
- T f_out{};                                ///< its minimum
- bool f_flight = false;                    ///< whether one is in flight
+ MPI_Comm f_comm;                       ///< the processes
+ MPI_Request f_req = MPI_REQUEST_NULL;  ///< the reduction in flight
+ T f_in{};                              ///< its value here
+ T f_out{};                             ///< its minimum
+ bool f_flight = false;                 ///< whether one is in flight
  };  // end( class DistributedMin )
 
 /*--------------------------------------------------------------------------*/
 
 }  // end( namespace ADS )
 
-#endif  /* ADS_WITH_MPI */
+#endif /* ADS_WITH_MPI */
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MPIExecutor.h included */
+#endif /* MPIExecutor.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File MPIExecutor.h --------------------------*/

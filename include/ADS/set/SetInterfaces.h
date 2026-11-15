@@ -56,7 +56,7 @@
 
 #ifndef __ADS_SetInterfaces
  #define __ADS_SetInterfaces
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- CONCEPTS --------------------------------*/
@@ -85,7 +86,8 @@ namespace ADS {
 /// the unordered set of Morin, whose `find()` gives the item equal to the
 /// one asked
 template< class S >
-concept USet = requires( S s , const S cs , const typename S::Item & x ) {
+concept USet = requires( S s , const S cs , const typename S::Item & x )
+{
  typename S::Item;
  { cs.size() } -> std::convertible_to< std::size_t >;
  { s.insert( x ) } -> std::same_as< bool >;
@@ -95,31 +97,34 @@ concept USet = requires( S s , const S cs , const typename S::Item & x ) {
 
 /// the sorted set of Morin, a `USet` with the successor search
 template< class S >
-concept SSet = USet< S > &&
- requires( const S cs , const typename S::Item & x ) {
- { cs.lowerBound( x ) } -> std::convertible_to< const typename S::Item * >;
- };
+concept SSet =
+  USet< S > && requires( const S cs , const typename S::Item & x )
+{
+   { cs.lowerBound( x ) } -> std::convertible_to< const typename S::Item * >;
+   };
 
 /// a dictionary that gives the address of the key equal to the one asked,
 /// on which `DictionarySet` is a `USet`; the search may change the
 /// dictionary (a splay tree), not the set of its keys
 template< class D >
-concept KeyedDictionary = requires( D d , const typename D::Key & k ,
-                                    const typename D::Value & v ) {
- typename D::Key;
- typename D::Value;
- { d.findKey( k ) } -> std::convertible_to< const typename D::Key * >;
- d.insert( k , v );
- d.remove( k );
- };
+concept KeyedDictionary =
+  requires( D d , const typename D::Key & k , const typename D::Value & v )
+{
+   typename D::Key;
+   typename D::Value;
+   { d.findKey( k ) } -> std::convertible_to< const typename D::Key * >;
+   d.insert( k , v );
+   d.remove( k );
+   };
 
 /// a `KeyedDictionary` that gives the address of the smallest key not
 /// smaller than the one asked, on which `DictionarySet` is an `SSet`
 template< class D >
-concept OrderedDictionary = KeyedDictionary< D > &&
- requires( D d , const typename D::Key & k ) {
- { d.lowerBoundKey( k ) } -> std::convertible_to< const typename D::Key * >;
- };
+concept OrderedDictionary =
+  KeyedDictionary< D > && requires( D d , const typename D::Key & k )
+{
+   { d.lowerBoundKey( k ) } -> std::convertible_to< const typename D::Key * >;
+   };
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS ArrayUSet -----------------------------*/
@@ -127,15 +132,15 @@ concept OrderedDictionary = KeyedDictionary< D > &&
 
 /// a `USet` on a vector in no order, the items equal by `Eq`
 template< class T , class Eq = std::equal_to<> >
-class ArrayUSet {
+class ArrayUSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty set
- explicit ArrayUSet( Eq eq = Eq() ) : f_eq( std::move( eq ) ) {}
+ explicit ArrayUSet( Eq eq = Eq() ) : f_eq( std::move( eq ) ) { }
 
  /// the number \f$ n \f$ of items
  [[nodiscard]] std::size_t size( void ) const { return( f_A.size() ); }
@@ -171,9 +176,8 @@ class ArrayUSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::vector< T > f_A;            ///< the items
- ADS_NO_UNIQUE_ADDRESS Eq f_eq;   ///< the equality
+ std::vector< T > f_A;           ///< the items
+ ADS_NO_UNIQUE_ADDRESS Eq f_eq;  ///< the equality
 
  };  // end( class ArrayUSet )
 
@@ -183,15 +187,15 @@ class ArrayUSet {
 
 /// an `SSet` on a sorted vector, ordered by `C`
 template< class T , class C = std::less<> >
-class ArraySSet {
+class ArraySSet
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty set
- explicit ArraySSet( C less = C() ) : f_less( std::move( less ) ) {}
+ explicit ArraySSet( C less = C() ) : f_less( std::move( less ) ) { }
 
  /// the number \f$ n \f$ of items
  [[nodiscard]] std::size_t size( void ) const { return( f_A.size() ); }
@@ -233,7 +237,6 @@ class ArraySSet {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the items increase strictly
  [[nodiscard]] bool sorted( void ) const;
 
@@ -254,7 +257,7 @@ class ArraySSet {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SetInterfaces.h included */
+#endif /* SetInterfaces.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File SetInterfaces.h ------------------------*/

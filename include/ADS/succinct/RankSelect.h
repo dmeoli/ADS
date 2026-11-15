@@ -129,7 +129,7 @@
 
 #ifndef __ADS_RankSelect
  #define __ADS_RankSelect
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -157,7 +157,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS BasicRankSelect --------------------------*/
@@ -165,13 +166,14 @@ namespace ADS {
 
 /// the values whose select a directory answers: a structure that needs
 /// only rank, or one of the selects, spares the inventories of the others
-struct RankSelectOptions {
+struct RankSelectOptions
+{
  /// the selects that a directory answers
  enum class Selects {
-  NONE ,    ///< no select, the rank only
-  ONES ,    ///< `select1()`
-  ZEROS ,   ///< `select0()`
-  BOTH      ///< `select1()` and `select0()`
+  NONE ,   ///< no select, the rank only
+  ONES ,   ///< `select1()`
+  ZEROS ,  ///< `select0()`
+  BOTH    ///< `select1()` and `select0()`
   };
  };
 
@@ -179,11 +181,11 @@ struct RankSelectOptions {
 /// inventories of select built in the constructor if not `Lazy`, and at the
 /// first select of each value if `Lazy`
 template< bool Lazy >
-class BasicRankSelect : public RankSelectOptions {
+class BasicRankSelect : public RankSelectOptions
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the directory of no bit
  BasicRankSelect( void );
 
@@ -217,7 +219,7 @@ class BasicRankSelect : public RankSelectOptions {
  /// they are counted, with the selects \f$ s \f$
  /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
  BasicRankSelect( std::span< const Word > w , std::size_t n ,
-                  Selects s = Selects::BOTH );
+		  Selects s = Selects::BOTH );
 
  /// the directory of `BasicRankSelect( b , s )` above, the same entries
  /// and inventories, built on the threads of the executor `ex` (see
@@ -254,7 +256,7 @@ class BasicRankSelect : public RankSelectOptions {
  /// \pre `w.size()` \f$ \ge \lceil n / 64 \rceil \f$
  template< Executor E >
  BasicRankSelect( E & ex , std::span< const Word > w , std::size_t n ,
-                  Selects s = Selects::BOTH );
+		  Selects s = Selects::BOTH );
 
  /// a copy, with the inventories that \f$ o \f$ has built
  BasicRankSelect( const BasicRankSelect & o );
@@ -388,7 +390,6 @@ class BasicRankSelect : public RankSelectOptions {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the bits of a block of the directory, and of a quarter (a word)
  static constexpr std::size_t kBlock = 256;
  static constexpr int kRel = 8;
@@ -399,21 +400,21 @@ class BasicRankSelect : public RankSelectOptions {
 #ifndef ADS_RANKSELECT_TOP
  static constexpr int kTop = 64 - 3 * kRel;
 #else
- static constexpr int kTop = ADS_RANKSELECT_TOP;   // a test of the top level
+ static constexpr int kTop = ADS_RANKSELECT_TOP;  // a test of the top level
 #endif
  /// the bits from which the words are copied as they are counted, where
  /// reading them twice costs more than a copy in the caches
 #ifndef ADS_RANKSELECT_FUSE
  static constexpr std::size_t kFuse = std::size_t( 1 ) << 23;
 #else
- static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;   // a test
+ static constexpr std::size_t kFuse = ADS_RANKSELECT_FUSE;  // a test
 #endif
 
  /// the fewest blocks of a chunk of the parallel construction
 #ifndef ADS_RANKSELECT_CHUNK
  static constexpr std::size_t kChunk = 4096;
 #else
- static constexpr std::size_t kChunk = ADS_RANKSELECT_CHUNK;   // a test
+ static constexpr std::size_t kChunk = ADS_RANKSELECT_CHUNK;  // a test
 #endif
 
  /// the bits of the vector spanned by a group of select, on average,
@@ -427,11 +428,12 @@ class BasicRankSelect : public RankSelectOptions {
  /// bits b at each multiple of 2^g in it are at 16 bits offsets from that
  /// place, 2^s = 2^( l - g ) <= 32 of them a group; the last place is the
  /// size of the vector
- struct Inventory {
-  int l = 0 ,   ///< \f$ l \f$, a group has \f$ 2^l \f$ bits \f$ b \f$
-      g = 0 ,   ///< \f$ g \f$, an offset every \f$ 2^g \f$ of them
-      s = 0;    ///< \f$ s = l - g \f$
-  std::vector< std::uint64_t > pos;   ///< the place where each group starts
+ struct Inventory
+ {
+  int l = 0 ,  ///< \f$ l \f$, a group has \f$ 2^l \f$ bits \f$ b \f$
+    g = 0 ,    ///< \f$ g \f$, an offset every \f$ 2^g \f$ of them
+    s = 0;    ///< \f$ s = l - g \f$
+  std::vector< std::uint64_t > pos;  ///< the place where each group starts
   /// the offsets of the bits \f$ b \f$ of each group from its place
   std::vector< std::uint16_t , detail::LineAllocator< std::uint16_t > > off;
   };
@@ -467,7 +469,7 @@ class BasicRankSelect : public RankSelectOptions {
  /// (from 0) is a multiple of 2^e, p its place, c below total
  template< class F >
  void samples( bool b , std::size_t t0 , std::size_t t1 , int e ,
-               std::size_t total , F && f ) const;
+	       std::size_t total , F && f ) const;
 
  /// the first call of inventory( b ) if Lazy, out of the line of select
  void first( bool b ) const;
@@ -481,8 +483,8 @@ class BasicRankSelect : public RankSelectOptions {
  /// the place of the k-th bit b, in the sparse group from the place p to
  /// the place q, by a search of the directory
  [[nodiscard]] std::size_t selectSparse( std::size_t k , bool b ,
-                                         std::size_t p ,
-                                         std::size_t q ) const;
+					 std::size_t p ,
+					 std::size_t q ) const;
 
  /// the directory agrees with a scan of the bits
  [[nodiscard]] bool consistent( void ) const;
@@ -491,22 +493,23 @@ class BasicRankSelect : public RankSelectOptions {
  /// for each block and one more, the 1s before it since its top block in
  /// the high bits, and those before its words 1, 2 and 3 since the block
  /// in kRel bits each, the word 1 in the lowest
- std::vector< std::uint64_t , detail::LineAllocator< std::uint64_t > >
-                                                                     f_dir;
+ std::vector< std::uint64_t , detail::LineAllocator< std::uint64_t > > f_dir;
  /// the 1s before each 2^kTop bits, when there are more (f_big)
  std::vector< std::uint64_t > f_top;
- bool f_big = false;                    ///< more than 2^kTop bits
- mutable Inventory f_inv[ 2 ];          ///< of the 0s and of the 1s
- bool f_has[ 2 ] = { true , true };     ///< whether each one is built
+ bool f_big = false;                ///< more than 2^kTop bits
+ mutable Inventory f_inv[ 2 ];      ///< of the 0s and of the 1s
+ bool f_has[ 2 ] = { true , true };  ///< whether each one is built
  std::size_t f_ones = 0;
  /// if Lazy, the flags that build each inventory once, and whether it is
  /// built; nothing if not
- struct Once {
-  mutable std::once_flag flag[ 2 ];   ///< the flag of each inventory
+ struct Once
+ {
+  mutable std::once_flag flag[ 2 ];  ///< the flag of each inventory
   /// whether each inventory is built
   mutable std::atomic< bool > ready[ 2 ] = { false , false };
   };
- struct None {};
+ struct None
+ { };
  ADS_NO_UNIQUE_ADDRESS std::conditional_t< Lazy , Once , None > f_once;
 
  };  // end( class BasicRankSelect )
@@ -532,7 +535,7 @@ using LazyRankSelect = BasicRankSelect< true >;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RankSelect.h included */
+#endif /* RankSelect.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File RankSelect.h --------------------------*/

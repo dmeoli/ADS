@@ -19,7 +19,7 @@
 
 #ifndef __ADS_exam_tree
  #define __ADS_exam_tree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -52,7 +52,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS::examtree {
+namespace ADS::examtree
+{
 
 using BT = BinaryTree< int >;
 using PT = std::unique_ptr< BT >;
@@ -73,12 +74,14 @@ constexpr int IINF = std::numeric_limits< int >::max();
 inline std::string catList( std::string_view s , std::size_t & i )
 {
  auto skip = [ & ]( void ) {
-  while( ( i < s.size() ) && ( s[ i ] == ' ' ) ) ++i;
+  while( ( i < s.size() ) && ( s[ i ] == ' ' ) )
+   ++i;
   };
  skip();
- if( s[ i ] == '-' ) {                      // an empty subtree, or not
+ if( s[ i ] == '-' ) {  // an empty subtree, or not
   std::size_t j = i + 1;
-  while( ( j < s.size() ) && ( s[ j ] == ' ' ) ) ++j;
+  while( ( j < s.size() ) && ( s[ j ] == ' ' ) )
+   ++j;
   if( ( j == s.size() ) || ( s[ j ] == ',' ) || ( s[ j ] == ')' ) ) {
    i = j;
    return( "()" );
@@ -86,7 +89,7 @@ inline std::string catList( std::string_view s , std::size_t & i )
   }
  const std::size_t b = i++;
  while( ( i < s.size() ) && ( s[ i ] != '(' ) && ( s[ i ] != ',' ) &&
-        ( s[ i ] != ')' ) && ( s[ i ] != ' ' ) )
+	( s[ i ] != ')' ) && ( s[ i ] != ' ' ) )
   ++i;
  std::string out = "( " + std::string( s.substr( b , i - b ) );
  skip();
@@ -94,10 +97,10 @@ inline std::string catList( std::string_view s , std::size_t & i )
   ++i;
   out += " " + catList( s , i );
   skip();
-  ++i;                                      // the comma
+  ++i;  // the comma
   out += " " + catList( s , i );
   skip();
-  ++i;                                      // the closing parenthesis
+  ++i;  // the closing parenthesis
   }
  else
   out += " () ()";
@@ -109,8 +112,8 @@ template< class T = int >
 std::unique_ptr< BinaryTree< T > > cat( std::string_view s )
 {
  std::size_t i = 0;
- return( std::unique_ptr< BinaryTree< T > >(
-          from_list< T >( catList( s , i ) ) ) );
+ return(
+   std::unique_ptr< BinaryTree< T > >( from_list< T >( catList( s , i ) ) ) );
  }
 
 /// the nodes of t in preorder, none if t is nil
@@ -152,8 +155,8 @@ BinaryTree< T > * randomTree( std::mt19937 & g , int n , F && value )
 inline PT randomInts( std::mt19937 & g , int n , int lo , int hi )
 {
  std::uniform_int_distribution< int > V( lo , hi );
- return( PT( randomTree< int >( g , n , [ & ]( void ) {
-  return( V( g ) ); } ) ) );
+ return(
+   PT( randomTree< int >( g , n , [ & ]( void ) { return( V( g ) ); } ) ) );
  }
 
 /// a random binary tree of n nodes with the distinct values lo , ... ,
@@ -187,7 +190,7 @@ BinaryTree< T > * randomFull( std::mt19937 & g , int k , const T & v )
 /// the binary tree of a complete tree stored by levels in A, from place i
 template< class T >
 BinaryTree< T > * completeTree( const std::vector< T > & A ,
-                                std::size_t i = 0 )
+				std::size_t i = 0 )
 {
  if( i >= A.size() )
   return( nullptr );
@@ -276,7 +279,7 @@ std::string mirrorShapeOf( const BinaryTree< T > * t )
  if( ! t )
   return( "." );
  return( "(" + mirrorShapeOf( t->right() ) + mirrorShapeOf( t->left() ) +
-         ")" );
+	  ")" );
  }
 
 /// true if a is an ancestor of u, u included
@@ -329,7 +332,7 @@ inline long long leafPathsBrute( BT * t , bool same )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* exam_tree.h included */
+#endif /* exam_tree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File exam_tree.h ---------------------------*/

@@ -63,10 +63,12 @@ static_assert( ADS_CONTRACTS == 3 , "the tests check all the contracts" );
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 /// an item that counts the live ones, to find leaks and double frees
-struct Counted {
+struct Counted
+{
  static inline long alive = 0;
  std::string s;
  explicit Counted( std::string v = "" ) : s( std::move( v ) ) { ++alive; }
@@ -95,22 +97,22 @@ bool same( const A & a , const B & b )
 // its contracts
 ADS_TEST( "ring-deque" )
 {
- static_assert( std::random_access_iterator< RingDeque< int >::iterator > &&
-                std::random_access_iterator<
-                 RingDeque< int >::const_iterator > &&
-                std::ranges::random_access_range< const RingDeque< int > > );
+ static_assert(
+   std::random_access_iterator< RingDeque< int >::iterator > &&
+   std::random_access_iterator< RingDeque< int >::const_iterator > &&
+   std::ranges::random_access_range< const RingDeque< int > > );
  RingDeque< int > E;
  CHECK( E.empty() && E.size() == 0 && E.capacity() == 0 &&
-        E.begin() == E.end() );
- CHECK_THROWS( (void) E.front() , contract_violation );
- CHECK_THROWS( (void) E.back() , contract_violation );
+	E.begin() == E.end() );
+ CHECK_THROWS( ( void )E.front() , contract_violation );
+ CHECK_THROWS( ( void )E.back() , contract_violation );
  CHECK_THROWS( E.pop_front() , contract_violation );
  CHECK_THROWS( E.pop_back() , contract_violation );
- CHECK_THROWS( (void) E[ 0 ] , contract_violation );
- RingDeque< int > F;                        // the first insertion at the
- F.push_front( 1 );                         // front, with no vector yet
+ CHECK_THROWS( ( void )E[ 0 ] , contract_violation );
+ RingDeque< int > F;  // the first insertion at the
+ F.push_front( 1 );   // front, with no vector yet
  CHECK( F.size() == 1 && F.front() == 1 && F.back() == 1 &&
-        F.capacity() == 8 );
+	F.capacity() == 8 );
  std::mt19937_64 g( 1 );
  for( int round = 0 ; round < 4 ; ++round ) {
   RingDeque< std::uint64_t > R;
@@ -118,9 +120,16 @@ ADS_TEST( "ring-deque" )
   for( int t = 0 ; t < 200000 ; ++t ) {
    const unsigned c = unsigned( g() % ( round == 3 ? 4 : 7 ) );
    const std::uint64_t v = g();
-   if( c == 0 || c == 4 ) { R.push_back( v ); D.push_back( v ); }
-   else if( c == 1 || c == 5 ) { R.push_front( v ); D.push_front( v ); }
-   else if( D.empty() ) CHECK( R.empty() );
+   if( c == 0 || c == 4 ) {
+    R.push_back( v );
+    D.push_back( v );
+    }
+   else if( c == 1 || c == 5 ) {
+    R.push_front( v );
+    D.push_front( v );
+    }
+   else if( D.empty() )
+    CHECK( R.empty() );
    else if( c == 2 || c == 6 ) {
     CHECK( R.back() == D.back() );
     R.pop_back();
@@ -134,19 +143,20 @@ ADS_TEST( "ring-deque" )
    CHECK( R.size() == D.size() && R.capacity() >= R.size() );
    if( t % 9973 == 0 ) {
     CHECK( same( R , D ) );
-    CHECK( std::ranges::equal( R | std::views::reverse ,
-                               D | std::views::reverse ) );
+    CHECK(
+      std::ranges::equal( R | std::views::reverse ,
+			  D | std::views::reverse ) );
     for( std::size_t i = 0 ; i < D.size() ; i += 101 )
      CHECK( R[ i ] == D[ i ] && R.begin()[ std::ptrdiff_t( i ) ] == D[ i ] );
     }
    }
   CHECK( same( R , D ) );
-  std::sort( R.begin() , R.end() );         // through the wrap
+  std::sort( R.begin() , R.end() );  // through the wrap
   std::sort( D.begin() , D.end() );
   CHECK( same( R , D ) );
   RingDeque< std::uint64_t > C = R , M = std::move( C );
   CHECK( C.empty() && C.capacity() == 0 && M == R );
-  C.push_back( 5 );                         // a moved-from deque works
+  C.push_back( 5 );  // a moved-from deque works
   CHECK( C.size() == 1 && C.front() == 5 );
   M.swap( C );
   CHECK( C == R && M.size() == 1 );
@@ -156,7 +166,8 @@ ADS_TEST( "ring-deque" )
  // a FIFO in a steady state never grows: the places freed at the front
  // serve the back
  RingDeque< int > Q;
- for( int i = 0 ; i < 100 ; ++i ) Q.push_back( i );
+ for( int i = 0 ; i < 100 ; ++i )
+  Q.push_back( i );
  const std::size_t cap = Q.capacity();
  for( int i = 100 ; i < 100000 ; ++i ) {
   CHECK( Q.front() == i - 100 );
@@ -166,10 +177,10 @@ ADS_TEST( "ring-deque" )
  CHECK( Q.capacity() == cap && Q.size() == 100 );
  Q.reserve( 1000 );
  CHECK( Q.capacity() == 1024 && Q.size() == 100 && Q.front() == 99900 &&
-        Q.back() == 99999 );
+	Q.back() == 99999 );
  RingDeque< int > L = { 1 , 2 , 3 };
  CHECK( L.size() == 3 && L[ 0 ] == 1 && L[ 2 ] == 3 &&
-        L.end() - L.begin() == 3 );
+	L.end() - L.begin() == 3 );
  *L.begin() = 7;
  CHECK( L.front() == 7 );
  }
@@ -186,10 +197,16 @@ ADS_TEST( "ring-deque-items" )
   std::mt19937_64 g( 2 );
   for( int t = 0 ; t < 50000 ; ++t ) {
    const unsigned c = unsigned( g() % 5 );
-   const std::string v = std::to_string( g() % 1000000 ) +
-                         std::string( 20 , 'x' );   // on the heap
-   if( c < 2 ) { R.emplace_back( v ); D.push_back( v ); }
-   else if( c == 2 ) { R.push_front( Counted( v ) ); D.push_front( v ); }
+   const std::string v =
+     std::to_string( g() % 1000000 ) + std::string( 20 , 'x' );  // on the heap
+   if( c < 2 ) {
+    R.emplace_back( v );
+    D.push_back( v );
+    }
+   else if( c == 2 ) {
+    R.push_front( Counted( v ) );
+    D.push_front( v );
+    }
    else if( ! D.empty() && c == 3 ) {
     CHECK( R.back().s == D.back() );
     R.pop_back();
@@ -209,13 +226,15 @@ ADS_TEST( "ring-deque-items" )
   // the front of a full deque inserted again, at both ends
   RingDeque< Counted > S;
   S.push_back( Counted( "a" ) );
-  while( S.size() < S.capacity() ) S.push_back( Counted( "b" ) );
+  while( S.size() < S.capacity() )
+   S.push_back( Counted( "b" ) );
   S.push_back( S.front() );
   CHECK( S.back().s == "a" && S.front().s == "a" );
-  while( S.size() < S.capacity() ) S.push_back( Counted( "c" ) );
+  while( S.size() < S.capacity() )
+   S.push_back( Counted( "c" ) );
   S.push_front( S.back() );
   CHECK( S.front().s == "c" && S[ 1 ].s == "a" );
-  RingDeque< std::unique_ptr< int > > U;    // items that only move
+  RingDeque< std::unique_ptr< int > > U;  // items that only move
   for( int i = 0 ; i < 100 ; ++i )
    U.push_front( std::make_unique< int >( i ) );
   CHECK( *U.front() == 99 && *U.back() == 0 );
@@ -243,10 +262,12 @@ ADS_TEST( "book-queues-engineered" )
     D.pop_front();
     }
    CHECK( A.size() == D.size() && std::ranges::equal( A , D ) );
-   if( ! D.empty() ) CHECK( A.contains( D.back() ) );
+   if( ! D.empty() )
+    CHECK( A.contains( D.back() ) );
    CHECK( ! A.contains( 1000 ) );
    }
-  if( A.size() == m ) CHECK_THROWS( A.enqueue( 1 ) , contract_violation );
+  if( A.size() == m )
+   CHECK_THROWS( A.enqueue( 1 ) , contract_violation );
   }
  LinkedQueue< int > L;
  std::deque< int > D;
@@ -264,7 +285,7 @@ ADS_TEST( "book-queues-engineered" )
  CHECK( std::ranges::equal( L , D ) && L.size() == D.size() );
  LinkedQueue< int > C = L , M = std::move( C );
  CHECK( M == L && C.size() == 0 && C.begin() == C.end() );
- C.enqueue( 1 );                            // a moved-from queue works
+ C.enqueue( 1 );  // a moved-from queue works
  CHECK( C.top() == 1 && C.size() == 1 );
  }
 
@@ -281,11 +302,11 @@ ADS_TEST( "spsc-queue-items" )
   CHECK( Q.emplace( "a" ) && Q.push( Counted( "b" ) ) );
   const Counted c( "c" );
   CHECK( Q.push( c ) && Q.emplace( std::string( 30 , 'd' ) ) );
-  CHECK( ! Q.emplace( "e" ) && ( Counted::alive == 5 ) );   // full: none
-  Counted x;                                // built for nothing
+  CHECK( ! Q.emplace( "e" ) && ( Counted::alive == 5 ) );  // full: none
+  Counted x;                                               // built for nothing
   CHECK( Q.tryPop( x ) && ( x.s == "a" ) && ( Q.size() == 3 ) );
   CHECK( Q.pop()->s == "b" );
-  }                                         // two left, destroyed
+  }  // two left, destroyed
  CHECK( Counted::alive == 0 );
  SPSCQueue< std::unique_ptr< int > > U( 2 );
  CHECK( U.push( std::make_unique< int >( 7 ) ) );
@@ -295,14 +316,15 @@ ADS_TEST( "spsc-queue-items" )
  const int n = 100000;
  std::thread producer( [ & ] {
   for( int i = 0 ; i < n ; )
-   if( S.emplace( std::to_string( i ) + std::string( 20 , 'x' ) ) ) ++i;
+   if( S.emplace( std::to_string( i ) + std::string( 20 , 'x' ) ) )
+    ++i;
   } );
  bool ordered = true;
  std::string v;
  for( int next = 0 ; next < n ; )
   if( S.tryPop( v ) ) {
-   ordered = ordered && ( v == std::to_string( next ) +
-                               std::string( 20 , 'x' ) );
+   ordered =
+     ordered && ( v == std::to_string( next ) + std::string( 20 , 'x' ) );
    ++next;
    }
  producer.join();
@@ -328,28 +350,30 @@ ADS_TEST( "mpsc-queue" )
   MPSCQueue< int >::Producer none;
   CHECK_THROWS( none.push( 1 ) , contract_violation );
   }
- auto run = [ & ]< std::size_t B >( std::integral_constant< std::size_t ,
-                                                            B > , bool bulk ) {
+ auto run = [ & ]< std::size_t B >( std::integral_constant< std::size_t , B > ,
+				    bool bulk ) {
   MPSCQueue< std::pair< int , int > , B > Q;
   const int P = 4 , n = 50000;
   std::vector< std::thread > T;
   for( int p = 0 ; p < P ; ++p )
    T.emplace_back( [ & , p ] {
     auto h = Q.producer();
-    for( int i = 0 ; i < n ; ++i ) h.push( std::pair( p , i ) );
+    for( int i = 0 ; i < n ; ++i )
+     h.push( std::pair( p , i ) );
     } );
   std::vector< int > next( P , 0 );
   bool ordered = true;
   std::vector< std::pair< int , int > > buf( 64 );
   for( int got = 0 ; got < P * n ; ) {
-   std::size_t k = bulk ? Q.popInto( buf.data() , buf.size() )
-                        : Q.tryPop( buf[ 0 ] );
+   std::size_t k =
+     bulk ? Q.popInto( buf.data() , buf.size() ) : Q.tryPop( buf[ 0 ] );
    for( std::size_t i = 0 ; i < k ; ++i ) {
     ordered = ordered && ( buf[ i ].second == next[ buf[ i ].first ]++ );
     ++got;
     }
    }
-  for( auto & t : T ) t.join();
+  for( auto & t : T )
+   t.join();
   std::pair< int , int > z;
   return( ordered && ! Q.tryPop( z ) && Q.empty() );
   };
@@ -361,10 +385,12 @@ ADS_TEST( "mpsc-queue" )
   auto p = R.producer();
   bool same = true;
   for( int round = 0 , next = 0 , sent = 0 ; round < 1000 ; ++round ) {
-   for( int i = 0 ; i < round % 13 ; ++i ) p.push( sent++ );
+   for( int i = 0 ; i < round % 13 ; ++i )
+    p.push( sent++ );
    int x;
    for( int i = 0 ; i < round % 11 ; ++i )
-    if( R.tryPop( x ) ) same = same && ( x == next++ );
+    if( R.tryPop( x ) )
+     same = same && ( x == next++ );
    }
   CHECK( same );
   }
@@ -377,14 +403,16 @@ ADS_TEST( "mpsc-queue" )
    b.push( Counted( std::to_string( i ) ) );
    }
   Counted c;
-  CHECK( Q.tryPop( c ) && Counted::alive == 20 );   // 19 and c
-  }                                         // 19 left, destroyed
+  CHECK( Q.tryPop( c ) && Counted::alive == 20 );  // 19 and c
+  }  // 19 left, destroyed
  CHECK( Counted::alive == 0 );
  MPSCQueue< std::unique_ptr< int > , 2 > U;
  auto u = U.producer();
- for( int i = 0 ; i < 5 ; ++i ) u.push( std::make_unique< int >( i ) );
+ for( int i = 0 ; i < 5 ; ++i )
+  u.push( std::make_unique< int >( i ) );
  std::unique_ptr< int > v;
- for( int i = 0 ; i < 5 ; ++i ) CHECK( U.tryPop( v ) && *v == i );
+ for( int i = 0 ; i < 5 ; ++i )
+  CHECK( U.tryPop( v ) && *v == i );
  CHECK( ! U.tryPop( v ) );
  }
 
@@ -412,21 +440,22 @@ ADS_TEST( "event-count" )
    b.await( [ & ] { return( turn.load() == 2 * i + 2 ); } );
    }
   t.join();
-  CHECK( turn.load() == 2 * rounds && a.waiters() == 0 &&
-         b.waiters() == 0 );
+  CHECK( turn.load() == 2 * rounds && a.waiters() == 0 && b.waiters() == 0 );
   int calls = 0;
   a.await( [ & ] { return( ++calls > 0 ); } );
   CHECK( calls == 1 && a.waiters() == 0 );
   }
  const int n = 20000;
  auto pause = []( int i ) {
-  if( i % 1000 == 0 ) std::this_thread::sleep_for(
-                       std::chrono::microseconds( 200 ) ); };
+  if( i % 1000 == 0 )
+   std::this_thread::sleep_for( std::chrono::microseconds( 200 ) );
+  };
  {
   SPSCQueue< int > Q( 64 );
   std::thread t( [ & ] {
    for( int i = 0 ; i < n ; ++i ) {
-    while( ! Q.push( i ) ) {}
+    while( ! Q.push( i ) ) {
+     }
     Q.notify();
     pause( i );
     }
@@ -457,14 +486,15 @@ ADS_TEST( "event-count" )
   bool ordered = true;
   std::pair< int , int > buf[ 16 ];
   for( int got = 0 ; got < P * n ; ) {
-   const std::size_t k = got % 2 ? Q.waitPopInto( buf , 16 )
-                                 : ( Q.waitPop( buf[ 0 ] ) , 1 );
+   const std::size_t k =
+     got % 2 ? Q.waitPopInto( buf , 16 ) : ( Q.waitPop( buf[ 0 ] ) , 1 );
    for( std::size_t i = 0 ; i < k ; ++i , ++got )
     ordered = ordered && ( buf[ i ].second == next[ buf[ i ].first ]++ );
    }
-  for( auto & t : T ) t.join();
+  for( auto & t : T )
+   t.join();
   CHECK( ordered && Q.empty() );
-  CHECK_THROWS( (void) Q.waitPopInto( buf , 0 ) , contract_violation );
+  CHECK_THROWS( ( void )Q.waitPopInto( buf , 0 ) , contract_violation );
   MPSCQueue< int >::Producer none;
   CHECK_THROWS( none.notify() , contract_violation );
   }
@@ -478,7 +508,8 @@ ADS_TEST( "event-count" )
    } );
   bool ordered = true;
   for( int got = 0 ; got < n ; )
-   for( const int x : I.waitTake() ) ordered = ordered && ( x == got++ );
+   for( const int x : I.waitTake() )
+    ordered = ordered && ( x == got++ );
   t.join();
   CHECK( ordered && I.empty() );
   }
@@ -525,16 +556,18 @@ ADS_TEST( "event-count-notifiers" )
    before = now;
    last = Clock::now();
    }
-  else lost = Clock::now() - last > std::chrono::seconds( 1 );
+  else
+   lost = Clock::now() - last > std::chrono::seconds( 1 );
   }
  stop.store( true );
- for( auto & t : T ) t.join();
- const auto quiet = Clock::now();           // asleep, it must be counted
+ for( auto & t : T )
+  t.join();
+ const auto quiet = Clock::now();  // asleep, it must be counted
  while( ! lost && ! out.load() && ( E.waiters() == 0 ) )
   lost = Clock::now() - quiet > std::chrono::seconds( 1 );
- while( ! out.load() ) {                    // a waiter of the test, which
-  const auto k = E.prepareWait();           // the notification withdraws,
-  E.notify();                               // advances the epoch
+ while( ! out.load() ) {           // a waiter of the test, which
+  const auto k = E.prepareWait();  // the notification withdraws,
+  E.notify();                      // advances the epoch
   E.cancelWait( k );
   std::this_thread::sleep_for( std::chrono::milliseconds( 1 ) );
   }
@@ -555,11 +588,14 @@ ADS_TEST( "work-stealing-deque" )
   WorkStealingDeque< int > D( 2 );
   int x;
   CHECK( D.empty() && ! D.take() && ! D.steal( x ) );
-  for( int i = 0 ; i < 100 ; ++i ) D.push( i );
+  for( int i = 0 ; i < 100 ; ++i )
+   D.push( i );
   CHECK( D.size() == 100 && D.capacity() == 128 );
   bool lifo = true , fifo = true;
-  for( int i = 99 ; i >= 50 ; --i ) lifo = lifo && ( D.take() == i );
-  for( int i = 0 ; i < 50 ; ++i ) fifo = fifo && D.steal( x ) && x == i;
+  for( int i = 99 ; i >= 50 ; --i )
+   lifo = lifo && ( D.take() == i );
+  for( int i = 0 ; i < 50 ; ++i )
+   fifo = fifo && D.steal( x ) && x == i;
   CHECK( lifo && fifo && D.empty() && ! D.take() && ! D.steal( x ) );
   D.push( 7 );
   CHECK( D.steal( x ) && x == 7 && ! D.take() );
@@ -574,18 +610,23 @@ ADS_TEST( "work-stealing-deque" )
    T.emplace_back( [ & ] {
     int x;
     while( ! done.load() || ! D.empty() )
-     if( D.steal( x ) ) got[ x ].fetch_add( 1 );
+     if( D.steal( x ) )
+      got[ x ].fetch_add( 1 );
     } );
   for( int i = 0 ; i < n ; ++i ) {
    D.push( i );
    if( i % 3 == 0 )
-    if( auto y = D.take() ) got[ *y ].fetch_add( 1 );
+    if( auto y = D.take() )
+     got[ *y ].fetch_add( 1 );
    }
-  while( auto y = D.take() ) got[ *y ].fetch_add( 1 );
+  while( auto y = D.take() )
+   got[ *y ].fetch_add( 1 );
   done.store( true );
-  for( auto & t : T ) t.join();
+  for( auto & t : T )
+   t.join();
   bool once = true;
-  for( auto & g : got ) once = once && ( g.load() == 1 );
+  for( auto & g : got )
+   once = once && ( g.load() == 1 );
   CHECK( once && D.empty() );
   }
  {
@@ -595,8 +636,10 @@ ADS_TEST( "work-stealing-deque" )
   std::thread t( [ & ] {
    int x;
    for( int r = 0 ; r < rounds ; ++r ) {
-    while( round.load() < r ) {}
-    if( D.steal( x ) ) stolen.fetch_add( 1 );
+    while( round.load() < r ) {
+     }
+    if( D.steal( x ) )
+     stolen.fetch_add( 1 );
     acked.store( r );
     }
    } );
@@ -604,8 +647,10 @@ ADS_TEST( "work-stealing-deque" )
   for( int r = 0 ; r < rounds ; ++r ) {
    D.push( r );
    round.store( r );
-   if( D.take() ) ++taken;
-   while( acked.load() < r ) {}
+   if( D.take() )
+    ++taken;
+   while( acked.load() < r ) {
+    }
    int x;
    CHECK( ! D.steal( x ) );
    }
@@ -629,16 +674,17 @@ ADS_TEST( "mpmc-queue" )
   CHECK( Q.empty() && ! Q.tryPop( x ) );
   for( int i = 0 ; i < 1000 ; ++i ) {
    laps = laps && Q.push( 2 * i ) && Q.push( 2 * i + 1 ) && ! Q.push( -1 ) &&
-          Q.size() == 2;
+	  Q.size() == 2;
    laps = laps && Q.tryPop( x ) && x == 2 * i && Q.tryPop( x ) &&
-          x == 2 * i + 1 && ! Q.tryPop( x );
+	  x == 2 * i + 1 && ! Q.tryPop( x );
    }
   CHECK( laps && Q.empty() && Q.capacity() == 2 );
   }
  Counted::alive = 0;
  {
   MPMCQueue< Counted > Q( 8 );
-  for( int i = 0 ; i < 5 ; ++i ) Q.emplace( std::string( 30 , 'a' + i ) );
+  for( int i = 0 ; i < 5 ; ++i )
+   Q.emplace( std::string( 30 , 'a' + i ) );
   Counted c;
   CHECK( Q.tryPop( c ) && Counted::alive == 5 );
   }
@@ -659,7 +705,8 @@ ADS_TEST( "mpmc-queue" )
   for( int p = 0 ; p < P ; ++p )
    T.emplace_back( [ & , p ] {
     for( int i = 0 ; i < n ; ++i )
-     while( ! Q.push( std::pair( p , i ) ) ) {}
+     while( ! Q.push( std::pair( p , i ) ) ) {
+      }
     } );
   for( int c = 0 ; c < C ; ++c )
    T.emplace_back( [ & ] {
@@ -667,15 +714,18 @@ ADS_TEST( "mpmc-queue" )
     std::pair< int , int > x;
     while( taken.load() < P * n )
      if( Q.tryPop( x ) ) {
-      if( x.second <= last[ x.first ] ) ordered.store( false );
+      if( x.second <= last[ x.first ] )
+       ordered.store( false );
       last[ x.first ] = x.second;
       got[ x.first * n + x.second ].fetch_add( 1 );
       taken.fetch_add( 1 );
       }
     } );
-  for( auto & t : T ) t.join();
+  for( auto & t : T )
+   t.join();
   bool once = true;
-  for( auto & g : got ) once = once && ( g.load() == 1 );
+  for( auto & g : got )
+   once = once && ( g.load() == 1 );
   CHECK( once && ordered.load() && Q.empty() );
   }
  }
@@ -699,7 +749,7 @@ ADS_TEST( "multi-queue" )
   std::mt19937_64 g( 61 );
   for( int s = 0 ; s < 20000 ; ++s )
    if( ( g() % 3 ) || R.empty() ) {
-    const std::uint64_t k = g() % 64;      // many equal keys
+    const std::uint64_t k = g() % 64;  // many equal keys
     h.push( k , s );
     R.insert( { k , s } );
     }
@@ -758,9 +808,9 @@ ADS_TEST( "multi-queue" )
   std::vector< int > out;
   for( auto e = h.tryPop() ; e ; e = h.tryPop() )
    out.push_back( e->key );
-  CHECK( ( out == std::vector< int >{ 9 , 3 , 0 , -5 ,
-                                      std::numeric_limits< int >::lowest()
-                                      } ) );
+  CHECK( ( out == std::vector< int >{
+		    9 , 3 , 0 , -5 ,
+		    std::numeric_limits< int >::lowest() } ) );
   }
  {
   MultiQueue< std::uint64_t , std::uint64_t > Q( 8 , 4 , 62 );
@@ -775,7 +825,7 @@ ADS_TEST( "multi-queue" )
   for( auto e = h.tryPop() ; e ; e = h.tryPop() , ++c )
    ++got[ e->item ];
   CHECK( c == n && std::all_of( got.begin() , got.end() ,
-                                []( int x ) { return( x == 1 ); } ) );
+				[]( int x ) { return( x == 1 ); } ) );
   CHECK( Q.empty() && Q.consistent() );
   }
  {  // pushAll(): batches across the size of the buffers, exact on 1 queue
@@ -832,7 +882,8 @@ ADS_TEST( "multi-queue" )
   for( auto e = h.tryPop() ; e ; e = h.tryPop() )
    ++got[ e->item ];
   CHECK( std::all_of( got.begin() , got.end() ,
-                      []( int x ) { return( x == 1 ); } ) && Q.empty() );
+		      []( int x ) { return( x == 1 ); } ) &&
+	 Q.empty() );
   }
  CHECK_THROWS( ( MultiQueue< int , int >( 0 ) ) , contract_violation );
  CHECK_THROWS( ( MultiQueue< int , int >( 4 , 0 ) ) , contract_violation );
@@ -848,8 +899,7 @@ ADS_TEST( "multi-queue" )
 ADS_TEST( "multi-queue-rank" )
 {
  auto mean = []( std::size_t nq , unsigned s ) {
-  const std::size_t N = ADS::test::scaled< std::size_t >( 200000 ,
-                                                          40000 );
+  const std::size_t N = ADS::test::scaled< std::size_t >( 200000 , 40000 );
   MultiQueue< std::uint64_t , std::uint32_t > Q( nq , s , 64 );
   auto h = Q.handle();
   std::mt19937_64 g( 65 );
@@ -860,13 +910,17 @@ ADS_TEST( "multi-queue-rank" )
   std::sort( S.begin() , S.end() );
   for( std::size_t i = 0 ; i < N ; ++i )
    h.push( K[ i ] , std::uint32_t( i ) );
-  std::vector< int > F( N + 1 , 0 );      // a Fenwick tree of the present
+  std::vector< int > F( N + 1 , 0 );  // a Fenwick tree of the present
   auto add = [ & ]( std::size_t i , int d ) {
-   for( ++i ; i <= N ; i += i & ( 0 - i ) ) F[ i ] += d; };
+   for( ++i ; i <= N ; i += i & ( 0 - i ) )
+    F[ i ] += d;
+   };
   auto below = [ & ]( std::size_t i ) {
    int r = 0;
-   for( ; i > 0 ; i -= i & ( 0 - i ) ) r += F[ i ];
-   return( r ); };
+   for( ; i > 0 ; i -= i & ( 0 - i ) )
+    r += F[ i ];
+   return( r );
+   };
   for( std::size_t i = 0 ; i < N ; ++i )
    add( i , 1 );
   double sum = 0;
@@ -874,10 +928,10 @@ ADS_TEST( "multi-queue-rank" )
   for( std::size_t t = 0 ; t < N / 2 ; ++t ) {
    const auto e = h.tryPop();
    CHECK( e );
-   const std::size_t r = std::size_t( std::lower_bound( S.begin() , S.end() ,
-                                                        e->key ) -
-                                      S.begin() );
-   if( t >= N / 10 ) {                    // past the first pops
+   const std::size_t r =
+     std::size_t( std::lower_bound( S.begin() , S.end() ,
+				    e->key ) - S.begin() );
+   if( t >= N / 10 ) {  // past the first pops
     sum += below( r );
     ++c;
     }
@@ -937,9 +991,11 @@ ADS_TEST( "multi-queue-threads" )
     t.join();
    T.clear();
    CHECK( taken == n * std::uint64_t( p ) && Q.empty() );
-   CHECK( std::all_of( got.begin() , got.end() ,
-                       []( const std::atomic< int > & x ) {
-                        return( x.load() == 1 ); } ) );
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
    for( auto & x : got )
     x = 0;
    for( int t = 0 ; t < p ; ++t )
@@ -961,18 +1017,21 @@ ADS_TEST( "multi-queue-threads" )
    for( auto e = h.tryPop() ; e ; e = h.tryPop() )
     got[ e->item ].fetch_add( 1 );
    CHECK( Q.empty() && Q.consistent() );
-   CHECK( std::all_of( got.begin() , got.end() ,
-                       []( const std::atomic< int > & x ) {
-                        return( x.load() == 1 ); } ) );
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
    }
  }
 
 /// an item whose copies throw once the fuse, if lit, burns down
-struct Fused {
- static inline int fuse = -1;               // copies left, -1 never
+struct Fused
+{
+ static inline int fuse = -1;  // copies left, -1 never
  std::uint64_t v = 0;
  Fused( void ) = default;
- explicit Fused( std::uint64_t x ) : v( x ) {}
+ explicit Fused( std::uint64_t x ) : v( x ) { }
  Fused( Fused && ) noexcept = default;
  Fused & operator=( Fused && ) noexcept = default;
  Fused( const Fused & o ) : v( o.v ) { burn(); }
@@ -1038,13 +1097,13 @@ ADS_TEST( "stealable-pq" )
     }
    else {
     const std::size_t m = a.size();
-    if( b.steal( a ) == 0 ) {              // an old offer, or a request
+    if( b.steal( a ) == 0 ) {  // an old offer, or a request
      a.serve();
      const std::size_t s = ( g() & 1 ) ? b.steal( a ) : 0;
      stolen += ( s > 0 );
-     if( s > 0 )                           // claimed, or taken back later
-      half = half && ( 5 * s >= m ) && ( 5 * s <= 4 * m ) &&
-             ( s + a.size() == m );
+     if( s > 0 )  // claimed, or taken back later
+      half =
+	half && ( 5 * s >= m ) && ( 5 * s <= 4 * m ) && ( s + a.size() == m );
      }
     std::uint64_t last = 0;
     b.drain( [ & ]( Q::Entry && e ) {
@@ -1065,19 +1124,19 @@ ADS_TEST( "stealable-pq" )
   Q a , b;
   for( std::uint64_t k = 0 ; k < 1000 ; ++k )
    a.push( k , k );
-  CHECK( a.halves() == std::make_pair( std::size_t( 500 ) ,
-                                       std::size_t( 500 ) ) );
+  CHECK( a.halves() ==
+	 std::make_pair( std::size_t( 500 ) , std::size_t( 500 ) ) );
   CHECK( a.stealable() && ( b.steal( a ) == 0 ) );
   a.serve();
   CHECK( a.offering() && ( a.size() == 1000 ) && a.stealable() );
-  CHECK( a.top().key == 0 );               // the least pair stays
+  CHECK( a.top().key == 0 );  // the least pair stays
   CHECK( b.steal( a ) == 500 );
   CHECK( ( a.size() == 500 ) && ( b.size() == 500 ) && ! a.offering() );
-  std::size_t low = 0;                     // the least 100 keys, shared
+  std::size_t low = 0;  // the least 100 keys, shared
   for( std::uint64_t k = 0 ; k < 100 ; ++k )
    low += ( b.top().key == k ) ? ( b.pop() , 1 ) : 0;
   CHECK( ( low >= 30 ) && ( low <= 70 ) && b.consistent() );
-  Q c;                                     // a holds one heap: dealt again
+  Q c;  // a holds one heap: dealt again
   CHECK( a.halves().second == 0 || a.halves().first == 0 );
   CHECK( c.steal( a ) == 0 );
   a.serve();
@@ -1086,11 +1145,11 @@ ADS_TEST( "stealable-pq" )
   while( auto e = a.pop() )
    keys.push_back( e->key );
   CHECK( std::adjacent_find( keys.begin() , keys.end() ,
-                             std::greater_equal<>() ) == keys.end() );
+			     std::greater_equal<>() ) == keys.end() );
   CHECK( ( keys.size() == 250 ) && a.empty() && ! a.stealable() );
   }
  {
-  Q a , b;                                 // the offer taken back
+  Q a , b;  // the offer taken back
   for( std::uint64_t k = 0 ; k < 10 ; ++k )
    a.push( 9 - k , k );
   CHECK( b.steal( a ) == 0 );
@@ -1113,7 +1172,7 @@ ADS_TEST( "stealable-pq" )
   CHECK( a.offering() && ( a.size() == 64 ) );
   bool threw = false;
   std::uint64_t sum = 0 , n = 0;
-  Fused::fuse = 3;                         // a copy of the take-back throws
+  Fused::fuse = 3;  // a copy of the take-back throws
   try {
    for( ; ; ) {
     auto e = a.pop();
@@ -1131,12 +1190,12 @@ ADS_TEST( "stealable-pq" )
   CHECK( a.consistent() );
   for( std::uint64_t k = 0 ; k < 64 ; ++k )
    a.push( 64 + k , Fused( 64 + k ) );
-  CHECK( b.steal( a ) > 0 );               // the offer still there
+  CHECK( b.steal( a ) > 0 );  // the offer still there
   const std::size_t s = b.size();
   F c;
-  b.serve();                               // nothing asked: no offer
+  b.serve();  // nothing asked: no offer
   CHECK( ! b.offering() && ( c.steal( b ) == 0 ) );
-  Fused::fuse = 1;                         // the deal of the steal throws
+  Fused::fuse = 1;  // the deal of the steal throws
   b.serve();
   bool dealt = true;
   try {
@@ -1196,7 +1255,8 @@ ADS_TEST( "stealable-pq-threads" )
        sorted = false;
       first = false;
       last = e.key;
-      got[ e.item ].fetch_add( 1 ); } );
+      got[ e.item ].fetch_add( 1 );
+      } );
      }
     } );
   bool up = true;
@@ -1212,12 +1272,13 @@ ADS_TEST( "stealable-pq-threads" )
   for( auto & t : T )
    t.join();
   CHECK( up && sorted.load() && a.empty() );
-  CHECK( std::all_of( got.begin() , got.end() ,
-                      []( const std::atomic< int > & x ) {
-                       return( x.load() == 1 ); } ) );
+  CHECK(
+    std::all_of( got.begin() , got.end() , []( const std::atomic< int > & x ) {
+     return( x.load() == 1 );
+     } ) );
   }
  for( int P : { 1 , 3 , 7 } ) {
-  const std::uint64_t n = 60000;           // pairs pushed in all
+  const std::uint64_t n = 60000;  // pairs pushed in all
   Q a;
   std::vector< std::atomic< int > > got( n );
   for( auto & x : got )
@@ -1229,8 +1290,7 @@ ADS_TEST( "stealable-pq-threads" )
     Q mine;
     while( ! done.load() )
      if( mine.steal( a ) > 0 )
-      mine.drain( [ & ]( Q::Entry && e ) {
-       got[ e.item ].fetch_add( 1 ); } );
+      mine.drain( [ & ]( Q::Entry && e ) { got[ e.item ].fetch_add( 1 ); } );
      else
       std::this_thread::yield();
     } );
@@ -1240,7 +1300,7 @@ ADS_TEST( "stealable-pq-threads" )
   a.push( 0 , pushed++ );
   while( pushed < n ) {
    const auto e = a.pop();
-   if( ! e ) {                             // all stolen: a new root
+   if( ! e ) {  // all stolen: a new root
     a.push( last , pushed++ );
     continue;
     }
@@ -1259,9 +1319,10 @@ ADS_TEST( "stealable-pq-threads" )
   for( auto & t : T )
    t.join();
   CHECK( up && a.empty() );
-  CHECK( std::all_of( got.begin() , got.end() ,
-                      []( const std::atomic< int > & x ) {
-                       return( x.load() == 1 ); } ) );
+  CHECK(
+    std::all_of( got.begin() , got.end() , []( const std::atomic< int > & x ) {
+     return( x.load() == 1 );
+     } ) );
   }
  {
   Q a;
@@ -1270,12 +1331,13 @@ ADS_TEST( "stealable-pq-threads" )
   std::thread t( [ & ] {
    Q mine;
    for( int r = 0 ; r < rounds ; ++r ) {
-    while( round.load() < r ) {}
+    while( round.load() < r ) {
+     }
     std::size_t s = 0;
     for( int i = 0 ; ( i < 64 ) && ( s == 0 ) && a.stealable() ; ++i )
      s = mine.steal( a );
     stolen.fetch_add( int( s ) );
-    mine.drain( []( Q::Entry && ) {} );
+    mine.drain( []( Q::Entry && ) { } );
     acked.store( r );
     }
    } );
@@ -1286,8 +1348,9 @@ ADS_TEST( "stealable-pq-threads" )
    round.store( r );
    while( a.pop() )
     ++taken;
-   while( acked.load() < r ) {}
-   while( a.pop() )                        // an offer made after the pops
+   while( acked.load() < r ) {
+    }
+   while( a.pop() )  // an offer made after the pops
     ++taken;
    }
   t.join();
@@ -1307,9 +1370,10 @@ ADS_TEST( "stealable-pq-threads" )
 ADS_TEST( "stealable-pq-bound" )
 {
  using Key = std::pair< std::uint64_t , std::uint64_t >;
- using Q = StealablePriorityQueue< Key , std::uint64_t , std::less< Key > ,
-                                   double >;
- struct Ref {
+ using Q =
+   StealablePriorityQueue< Key , std::uint64_t , std::less< Key > , double >;
+ struct Ref
+ {
   Key key;
   double bound;
   std::uint64_t item;
@@ -1354,16 +1418,16 @@ ADS_TEST( "stealable-pq-bound" )
    if( e ) {
     const auto it = R.find( Ref{ e->key , 0 , 0 } );
     exact = exact && ( it != R.end() ) && ( it->bound == e->bound ) &&
-            ( it->item == e->item );
+	    ( it->item == e->item );
     if( it != R.end() )
      R.erase( it );
     }
    }
   else if( c < 31 ) {
-   if( b.steal( a ) == 0 ) {               // a request, or an old offer
+   if( b.steal( a ) == 0 ) {  // a request, or an old offer
     a.serve();
     pending += a.offering();
-    if( ! R.empty() )                      // the offer still counted
+    if( ! R.empty() )  // the offer still counted
      bounds = bounds && ( a.minBound() == least() );
     if( g() & 1 )
      b.steal( a );
@@ -1371,13 +1435,13 @@ ADS_TEST( "stealable-pq-bound" )
    b.drain( [ & ]( Q::Entry && e ) {
     const auto it = R.find( Ref{ e.key , 0 , 0 } );
     kept = kept && ( it != R.end() ) && ( it->bound == e.bound ) &&
-           ( it->item == e.item );
+	   ( it->item == e.item );
     if( it != R.end() )
      R.erase( it );
     ++stolen;
     } );
    }
-  else if( g() % 8 == 0 ) {                // the whole queue pruned
+  else if( g() % 8 == 0 ) {  // the whole queue pruned
    Key last( 0 , 0 );
    bool first = true;
    drained += a.drain( [ & ]( Q::Entry && e ) {
@@ -1398,7 +1462,7 @@ ADS_TEST( "stealable-pq-bound" )
  CHECK( a.consistent() );
  CHECK( ( stolen > 1000 ) && ( drained > 0 ) && ( pending > 100 ) );
  {
-  Q c , d;                                 // a least bound that stays
+  Q c , d;  // a least bound that stays
   c.push( Key( 1u << 30 , 0 ) , -1.0 , 0 );
   bool stays = true;
   for( std::uint64_t i = 1 ; i <= 20000 ; ++i ) {
@@ -1409,7 +1473,7 @@ ADS_TEST( "stealable-pq-bound" )
    }
   CHECK( stays && c.consistent() );
   CHECK( d.steal( c ) == 0 );
-  c.serve();                               // the offer keeps its bound
+  c.serve();  // the offer keeps its bound
   CHECK( c.offering() && ( c.minBound() == -1.0 ) );
   const std::size_t m = c.size() , s = d.steal( c );
   CHECK( ( s > 0 ) && ( s + c.size() == m ) && d.consistent() );
@@ -1420,17 +1484,20 @@ ADS_TEST( "stealable-pq-bound" )
   // a heap whose bounds go with its keys: each pop takes the least bound,
   // the scans grow, and the heap moves to the least bounds of the
   // subtrees; against a multiset, with assign() and clear() after it
-  struct E {
+  struct E
+  {
    std::uint64_t key;
    std::uint64_t bound;
    std::uint64_t item;
    };
-  struct By {
+  struct By
+  {
    bool operator()( const E & a , const E & b ) const {
-    return( a.key < b.key ); }
+    return( a.key < b.key );
+    }
    };
   detail::SpqHalf< E , By , std::uint64_t , std::less<> > h( By{} ,
-                                                         std::less<>{} );
+							  std::less<>{} );
   std::multiset< std::uint64_t > B;
   std::mt19937_64 gg( 97 );
   bool right = true;
@@ -1473,12 +1540,13 @@ ADS_TEST( "stealable-pq-bound" )
 ADS_TEST( "stealable-pq-bound-threads" )
 {
  using Q = StealablePriorityQueue< std::uint64_t , std::uint64_t ,
-                                   std::less<> , std::uint64_t >;
+				   std::less<> ,
+				   std::uint64_t >;
  const std::uint64_t n = 60000;
  Q a;
  std::mt19937_64 g( 89 );
  for( std::uint64_t i = 0 ; i < n ; ++i )
-  a.push( g() , i * 7 % n , i );           // the bound of i, 7 i mod n
+  a.push( g() , i * 7 % n , i );  // the bound of i, 7 i mod n
  std::vector< std::atomic< int > > got( n );
  for( auto & x : got )
   x = 0;
@@ -1494,7 +1562,8 @@ ADS_TEST( "stealable-pq-bound-threads" )
      mine.drain( [ & ]( Q::Entry && e ) {
       if( e.bound != e.item * 7 % n )
        right = false;
-      got[ e.item ].fetch_add( 1 ); } );
+      got[ e.item ].fetch_add( 1 );
+      } );
      }
     else
      std::this_thread::yield();
@@ -1505,17 +1574,17 @@ ADS_TEST( "stealable-pq-bound-threads" )
   const auto e = a.pop();
   if( ! e )
    break;
-  below = below && m && ( *m <= e->bound ) &&
-          ( e->bound == e->item * 7 % n );
+  below = below && m && ( *m <= e->bound ) && ( e->bound == e->item * 7 % n );
   got[ e->item ].fetch_add( 1 );
   }
  done = true;
  for( auto & t : T )
   t.join();
  CHECK( below && right.load() && a.empty() && a.consistent() );
- CHECK( std::all_of( got.begin() , got.end() ,
-                     []( const std::atomic< int > & x ) {
-                      return( x.load() == 1 ); } ) );
+ CHECK(
+   std::all_of( got.begin() , got.end() , []( const std::atomic< int > & x ) {
+    return( x.load() == 1 );
+    } ) );
  }
 
 /// the same pairs as an ordered set by ( key , insertion ), the order of a
@@ -1523,19 +1592,19 @@ ADS_TEST( "stealable-pq-bound-threads" )
 ADS_TEST( "lockfree-pq" )
 {
  static_assert( decrease_key_of< LockFreePriorityQueue< int , int > >() ==
-                decrease_key_kind::lazy );
+		decrease_key_kind::lazy );
  const long alive = Counted::alive;
  for( unsigned b : { 1u , 2u , 4u , 32u } ) {
   LockFreePriorityQueue< std::uint64_t , Counted > Q( b , 71 );
   auto h = Q.handle();
   CHECK( Q.offset() == b && Q.empty() && h.empty() && ! h.tryDeleteMin() &&
-         ! h.tryMinKey() && Q.consistent() );
+	 ! h.tryMinKey() && Q.consistent() );
   std::set< std::pair< std::uint64_t , int > > R;
   std::mt19937_64 g( 72 + b );
   bool right = true;
   for( int s = 0 ; s < 30000 ; ++s ) {
    if( ( g() % 3 ) || R.empty() ) {
-    const std::uint64_t k = g() % 64;      // many equal keys
+    const std::uint64_t k = g() % 64;  // many equal keys
     h.insert( k , Counted( std::to_string( s ) ) );
     R.insert( { k , s } );
     }
@@ -1543,8 +1612,8 @@ ADS_TEST( "lockfree-pq" )
     const auto m = h.tryMinKey();
     const auto e = h.tryDeleteMin();
     right = right && m && e && ( *m == R.begin()->first ) &&
-            ( e->key == R.begin()->first ) &&
-            ( e->item.s == std::to_string( R.begin()->second ) );
+	    ( e->key == R.begin()->first ) &&
+	    ( e->item.s == std::to_string( R.begin()->second ) );
     R.erase( R.begin() );
     }
    right = right && ( Q.prefix() <= b );
@@ -1555,12 +1624,12 @@ ADS_TEST( "lockfree-pq" )
   while( ! R.empty() ) {
    const auto e = h.tryDeleteMin();
    right = right && e && ( e->key == R.begin()->first ) &&
-           ( e->item.s == std::to_string( R.begin()->second ) ) &&
-           ( Q.prefix() <= b );
+	   ( e->item.s == std::to_string( R.begin()->second ) ) &&
+	   ( Q.prefix() <= b );
    R.erase( R.begin() );
    }
   CHECK( right && ! h.tryDeleteMin() && Q.empty() && h.empty() &&
-         Q.consistent() );
+	 Q.consistent() );
   // one thread: no read-modify-write fails, and a cut once per b + 1
   // DeleteMin at least
   CHECK( h.counts().failed == 0 && h.counts().cuts > 0 );
@@ -1590,11 +1659,12 @@ ADS_TEST( "lockfree-pq" )
   std::vector< int > order;
   for( e = b.tryDeleteMin() ; e && e->key == 5 ; e = b.tryDeleteMin() )
    order.push_back( e->item );
-  CHECK( order == std::vector< int >( { 0 , 10 , 1 , 12 , 2 , 14 , 3 , 16 ,
-                                         4 , 18 , 5 , 6 , 7 , 8 , 9 , 11 ,
-                                         13 , 15 , 17 , 19 } ) );
-  CHECK( e && e->key == 1 &&
-         ! b.tryDeleteMin() && Q.empty() && Q.consistent() );
+  CHECK( order ==
+	 std::vector< int >( { 0 , 10 , 1 , 12 , 2 , 14 , 3 ,  16 , 4 ,  18 ,
+			       5 , 6 ,  7 , 8 ,  9 , 11 , 13 , 15 , 17 ,
+			       19 } ) );
+  CHECK( e && e->key == 1 && ! b.tryDeleteMin() && Q.empty() &&
+	 Q.consistent() );
   }
  }
 
@@ -1629,7 +1699,7 @@ ADS_TEST( "lockfree-pq-threads" )
      std::uint64_t last = 0;
      for( auto e = h.tryDeleteMin() ; e ; e = h.tryDeleteMin() ) {
       if( e->key < last )
-       ordered = false;              // linearizable: in order
+       ordered = false;  // linearizable: in order
       last = e->key;
       got[ e->item ].fetch_add( 1 );
       }
@@ -1638,9 +1708,11 @@ ADS_TEST( "lockfree-pq-threads" )
     t.join();
    T.clear();
    CHECK( ordered.load() && Q.empty() && Q.consistent() );
-   CHECK( std::all_of( got.begin() , got.end() ,
-                       []( const std::atomic< int > & x ) {
-                        return( x.load() == 1 ); } ) );
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
    for( auto & x : got )
     x = 0;
    for( int t = 0 ; t < p ; ++t )
@@ -1668,18 +1740,22 @@ ADS_TEST( "lockfree-pq-threads" )
     got[ e->item ].fetch_add( 1 );
     }
    CHECK( ordered.load() && Q.empty() && Q.consistent() );
-   CHECK( std::all_of( got.begin() , got.end() ,
-                       []( const std::atomic< int > & x ) {
-                        return( x.load() == 1 ); } ) );
+   CHECK(
+     std::all_of( got.begin() , got.end() ,
+		  []( const std::atomic< int > & x ) {
+      return( x.load() == 1 );
+      } ) );
    }
  }
 
-namespace {
+namespace
+{
 
 /// an operation of a history: an insertion of ( k , id ), or a DeleteMin
 /// that returned ( k , id ) or nothing ( id < 0 ), between the ticks of its
 /// invocation and of its response
-struct PqOp {
+struct PqOp
+{
  bool insert;
  std::uint64_t k;
  int id;
@@ -1692,7 +1768,7 @@ struct PqOp {
 /// set of the pairs inserted and not deleted by the operations in done,
 /// the failures memoized by done
 bool linearizable( const std::vector< PqOp > & h , std::uint32_t done ,
-                   std::vector< char > & failed )
+		   std::vector< char > & failed )
 {
  const std::uint32_t all = ( std::uint32_t( 1 ) << h.size() ) - 1;
  if( done == all )
@@ -1700,9 +1776,9 @@ bool linearizable( const std::vector< PqOp > & h , std::uint32_t done ,
  if( failed[ done ] )
   return( false );
  std::set< std::pair< std::uint64_t , int > > S;
- for( std::size_t i = 0 ; i < h.size() ; ++i )     // the insertions first,
-  if( ( ( done >> i ) & 1 ) && h[ i ].insert )      // since the pairs are
-   S.insert( { h[ i ].k , h[ i ].id } );            // distinct
+ for( std::size_t i = 0 ; i < h.size() ; ++i )    // the insertions first,
+  if( ( ( done >> i ) & 1 ) && h[ i ].insert )  // since the pairs are
+   S.insert( { h[ i ].k , h[ i ].id } );         // distinct
  for( std::size_t i = 0 ; i < h.size() ; ++i )
   if( ( ( done >> i ) & 1 ) && ( ! h[ i ].insert ) && ( h[ i ].id >= 0 ) )
    S.erase( { h[ i ].k , h[ i ].id } );
@@ -1714,12 +1790,13 @@ bool linearizable( const std::vector< PqOp > & h , std::uint32_t done ,
   if( ( ( done >> i ) & 1 ) || ( h[ i ].inv > first ) )
    continue;
   const PqOp & o = h[ i ];
-  const bool legal = o.insert ||
-   ( ( o.id < 0 ) ? S.empty() :
-     ( ! S.empty() && ( S.begin()->first == o.k ) &&
-       S.count( { o.k , o.id } ) ) );
+  const bool legal =
+    o.insert ||
+    ( ( o.id < 0 ) ? S.empty()
+		   : ( ! S.empty() && ( S.begin()->first == o.k ) &&
+		       S.count( { o.k , o.id } ) ) );
   if( legal && linearizable( h , done | ( std::uint32_t( 1 ) << i ) ,
-                             failed ) )
+			     failed ) )
    return( true );
   }
  failed[ done ] = 1;
@@ -1734,7 +1811,7 @@ ADS_TEST( "lockfree-pq-linearizable" )
 {
  for( int p : { 2 , 3 , 4 } )
   for( int round = 0 ; round < 400 ; ++round ) {
-   const int m = 16 / p;                    // operations per thread
+   const int m = 16 / p;  // operations per thread
    LockFreePriorityQueue< std::uint64_t , int > Q( unsigned( 1 + round % 3 ) );
    std::atomic< std::uint64_t > clock{ 0 };
    std::atomic< int > ready{ 0 };
@@ -1745,13 +1822,14 @@ ADS_TEST( "lockfree-pq-linearizable" )
      auto h = Q.handle();
      std::mt19937_64 g( 76 + std::uint64_t( round * 8 + t ) );
      ready.fetch_add( 1 );
-     while( ready.load() < p ) {}
+     while( ready.load() < p ) {
+      }
      for( int i = 0 ; i < m ; ++i ) {
       PqOp o{};
       o.insert = ( g() % 2 ) == 0;
       o.inv = clock.fetch_add( 1 );
       if( o.insert ) {
-       o.k = g() % 4;                       // equal keys too
+       o.k = g() % 4;  // equal keys too
        o.id = t * 100 + i;
        h.insert( o.k , o.id );
        }

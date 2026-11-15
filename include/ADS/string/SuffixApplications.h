@@ -98,7 +98,7 @@
 
 #ifndef __ADS_SuffixApplications
  #define __ADS_SuffixApplications
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -121,11 +121,13 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a phrase of the parsing of Ziv and Lempel: copy `length` symbols from
 /// `distance` places back, then append `next`, if any
-struct CopyPhrase {
+struct CopyPhrase
+{
  std::size_t distance = 0;    ///< how far back the copy starts
  std::size_t length = 0;      ///< the symbols copied
  std::optional< char > next;  ///< the symbol after the copy, none at the end
@@ -148,7 +150,7 @@ struct CopyPhrase {
 /// \end{array}}
 /// \f]
 [[nodiscard]] inline std::pair< std::size_t , std::size_t >
-                         longestRepeatedSubstring( const SuffixArray & SA );
+longestRepeatedSubstring( const SuffixArray & SA );
 
 /// the place of a substring of length \f$ L \f$ that occurs at least
 /// \f$ C \f$ times, if any
@@ -172,13 +174,13 @@ struct CopyPhrase {
 /// \end{array}}
 /// \f]
 /// \pre \f$ C \ge 1 \f$
-[[nodiscard]] inline std::optional< std::size_t > repeatedSubstring(
-                  const SuffixArray & SA , std::size_t L , std::size_t C );
+[[nodiscard]] inline std::optional< std::size_t >
+repeatedSubstring( const SuffixArray & SA , std::size_t L , std::size_t C );
 
 /// the number of distinct nonempty substrings,
 /// \f$ n ( n + 1 ) / 2 - \sum_r \mathit{LCP}[ r ] \f$
-[[nodiscard]] inline std::uint64_t distinctSubstrings(
-                                                   const SuffixArray & SA );
+[[nodiscard]] inline std::uint64_t
+distinctSubstrings( const SuffixArray & SA );
 
 /// a longest substring common to at least \f$ k \f$ of the strings
 /// \f$ S \f$
@@ -213,8 +215,8 @@ struct CopyPhrase {
 /// \f]
 /// \pre \f$ 1 \le k \le |S| \f$
 /// \post a substring of at least \f$ k \f$ of the strings (an audit)
-[[nodiscard]] inline std::string longestCommonSubstring(
-                       const std::vector< std::string > & S , std::size_t k );
+[[nodiscard]] inline std::string
+longestCommonSubstring( const std::vector< std::string > & S , std::size_t k );
 
 /// the maximal repeats, as the place of an occurrence and the length
 ///
@@ -238,7 +240,7 @@ struct CopyPhrase {
 /// \end{array}}
 /// \f]
 [[nodiscard]] inline std::vector< std::pair< std::size_t , std::size_t > >
-                                      maximalRepeats( const SuffixTree & ST );
+maximalRepeats( const SuffixTree & ST );
 
 /// whether an occurrence of \f$ P \f$ and one of \f$ Q \f$ start at most
 /// \f$ k \f$ places apart
@@ -254,8 +256,8 @@ struct CopyPhrase {
 /// \end{array}}
 /// \f]
 [[nodiscard]] inline bool proximity( const SuffixArray & SA ,
-                                     std::string_view P , std::string_view Q ,
-                                     std::size_t k );
+				     std::string_view P , std::string_view Q ,
+				     std::size_t k );
 
 /// the places where \f$ P \f$ occurs in \f$ T \f$ with at most \f$ k \f$
 /// mismatches
@@ -274,9 +276,8 @@ struct CopyPhrase {
 /// 7 & \qquad \textbf{if}\ e \le k\ \textbf{then}\ \text{report } i
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::vector< std::size_t > kMismatches(
-                                        std::string_view T ,
-                                        std::string_view P , std::size_t k );
+[[nodiscard]] inline std::vector< std::size_t >
+kMismatches( std::string_view T , std::string_view P , std::size_t k );
 
 /// the parsing of Ziv and Lempel of \f$ T \f$, the copies from the
 /// farthest occurrence, by the suffix tree
@@ -302,15 +303,15 @@ struct CopyPhrase {
 /// \end{array}}
 /// \f]
 /// \post `decodeCopyPhrases()` gives \f$ T \f$ back (an audit)
-[[nodiscard]] inline std::vector< CopyPhrase > lz77ByTree(
-                                                        std::string_view T );
+[[nodiscard]] inline std::vector< CopyPhrase >
+lz77ByTree( std::string_view T );
 
 /// the text of a parsing, each phrase copying its symbols one at a time,
 /// so that a copy may overlap the symbols it writes
 /// \pre each distance is at most the length decoded before it, and
 ///      positive if its length is
-[[nodiscard]] inline std::string decodeCopyPhrases(
-                                     const std::vector< CopyPhrase > & Z );
+[[nodiscard]] inline std::string
+decodeCopyPhrases( const std::vector< CopyPhrase > & Z );
 
 /*--------------------------------------------------------------------------*/
 
@@ -324,7 +325,7 @@ struct CopyPhrase {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SuffixApplications.h included */
+#endif /* SuffixApplications.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File SuffixApplications.h ----------------------*/

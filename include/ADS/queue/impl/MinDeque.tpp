@@ -14,20 +14,21 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class C >
 void MinDeque< T , C >::deal( MinStack< T , C > & s , MinStack< T , C > & t )
 {
- std::vector< T > a;                        // s from the bottom
+ std::vector< T > a;  // s from the bottom
  a.reserve( s.size() );
  while( ! s.empty() )
   a.push_back( s.pop() );
  // a holds s from the top: s_{k-1} , ... , s_0
  const std::size_t k = a.size() , h = ( k + 1 ) / 2;
- for( std::size_t i = 0 ; i < h ; ++i )     // s_{h-1} .. s_0, s_0 on top
+ for( std::size_t i = 0 ; i < h ; ++i )  // s_{h-1} .. s_0, s_0 on top
   t.push( std::move( a[ k - h + i ] ) );
- for( std::size_t i = k - h ; i > 0 ; --i )   // s_h .. s_{k-1} on s
+ for( std::size_t i = k - h ; i > 0 ; --i )  // s_h .. s_{k-1} on s
   s.push( std::move( a[ i - 1 ] ) );
  }
 
@@ -73,8 +74,10 @@ template< class T , class C >
 const T & MinDeque< T , C >::min( void ) const
 {
  ADS_PRE( ! empty() );
- if( f_F.empty() ) return( f_B.min() );
- if( f_B.empty() ) return( f_F.min() );
+ if( f_F.empty() )
+  return( f_B.min() );
+ if( f_B.empty() )
+  return( f_F.min() );
  return( f_less( f_F.min() , f_B.min() ) ? f_F.min() : f_B.min() );
  }
 

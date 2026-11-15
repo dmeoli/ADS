@@ -31,7 +31,7 @@
 
 #ifndef __ADS_TableSize
  #define __ADS_TableSize
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -47,7 +47,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- HELPERS ---------------------------------*/
@@ -92,7 +93,8 @@ std::size_t resized( std::size_t m , bool grow , std::size_t m0 );
 /// of \f$ h( k ) \bmod m \f$, whose low bits are the worst ones of a
 /// product
 template< class H , class K >
-concept PlaceHash = requires( const H & h , const K & k , std::size_t m ) {
+concept PlaceHash = requires( const H & h , const K & k , std::size_t m )
+{
  { h.place( k , m ) } -> std::convertible_to< std::size_t >;
  };
 
@@ -108,7 +110,7 @@ concept PlaceHash = requires( const H & h , const K & k , std::size_t m ) {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* TableSize.h included */
+#endif /* TableSize.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File TableSize.h --------------------------*/

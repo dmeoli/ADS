@@ -58,7 +58,7 @@
 
 #ifndef __ADS_ConcurrentUnionFind
  #define __ADS_ConcurrentUnionFind
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS ConcurrentUnionFind -----------------------*/
@@ -84,15 +85,15 @@ namespace ADS {
 
 /// the union-find of the elements \f$ [ 0 , n ) \f$ that threads change at
 /// once
-class ConcurrentUnionFind {
+class ConcurrentUnionFind
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the \f$ n \f$ singletons \f$ \{ 0 \} , \ldots , \{ n - 1 \} \f$
  /// \pre \f$ n < 2^{31} \f$
  explicit ConcurrentUnionFind( std::size_t n )
-  : f_n( n ) , f_p( new std::atomic< std::int32_t >[ n ] ) {
+     : f_n( n ) , f_p( new std::atomic< std::int32_t >[ n ] ) {
   ADS_PRE( n < ( std::size_t( 1 ) << 31 ) );
   for( std::size_t x = 0 ; x < n ; ++x )
    f_p[ x ].store( std::int32_t( x ) , std::memory_order_relaxed );
@@ -132,7 +133,7 @@ class ConcurrentUnionFind {
    if( p == g )
     return( p );
    f_p[ x ].compare_exchange_weak( p , g , std::memory_order_release ,
-                                   std::memory_order_relaxed );
+				   std::memory_order_relaxed );
    x = p;
    }
   }
@@ -164,7 +165,7 @@ class ConcurrentUnionFind {
   const std::int32_t r = find( p );
   if( r != p )
    f_p[ x ].compare_exchange_strong( p , r , std::memory_order_release ,
-                                     std::memory_order_relaxed );
+				     std::memory_order_relaxed );
   }
 
  /// the union of the sets of \f$ x \f$ and \f$ y \f$; false if they were
@@ -193,10 +194,10 @@ class ConcurrentUnionFind {
    if( x == y )
     return( false );
    if( x < y )
-    std::swap( x , y );                     // hook x, the larger root
+    std::swap( x , y );  // hook x, the larger root
    std::int32_t r = x;
    if( f_p[ x ].compare_exchange_strong( r , y , std::memory_order_acq_rel ,
-                                         std::memory_order_relaxed ) )
+					 std::memory_order_relaxed ) )
     return( true );
    }
   }
@@ -222,15 +223,14 @@ class ConcurrentUnionFind {
    if( x == y )
     return( true );
    if( f_p[ x ].load( std::memory_order_acquire ) == x )
-    return( false );                        // x was a root after y found
+    return( false );  // x was a root after y found
    }
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
- std::size_t f_n;                          ///< the elements
- std::unique_ptr< std::atomic< std::int32_t >[] > f_p;   ///< the parents
+ std::size_t f_n;                                       ///< the elements
+ std::unique_ptr< std::atomic< std::int32_t >[] > f_p;  ///< the parents
  };  // end( class ConcurrentUnionFind )
 
 /*--------------------------------------------------------------------------*/
@@ -239,7 +239,7 @@ class ConcurrentUnionFind {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ConcurrentUnionFind.h included */
+#endif /* ConcurrentUnionFind.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- End File ConcurrentUnionFind.h ---------------------*/

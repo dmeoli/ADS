@@ -15,23 +15,24 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline LoudsTree::LoudsTree( void ) : f_b( BitVector( 1 , true ) )
-{
- }
+{ }
 
 inline LoudsTree::LoudsTree(
-                       const std::vector< std::vector< std::size_t > > & c )
+  const std::vector< std::vector< std::size_t > > & c )
 {
  const std::size_t n = c.size();
  BitVector B;
  B.reserve( 2 * n + 1 );
- if( n > 0 ) B.push_back( false );          // the dummy root, of degree 1
+ if( n > 0 )
+  B.push_back( false );  // the dummy root, of degree 1
  B.push_back( true );
- std::vector< std::size_t > Q;              // the visit by levels
+ std::vector< std::size_t > Q;  // the visit by levels
  Q.reserve( n );
- std::vector< bool > in( n , false );       // the nodes reached
+ std::vector< bool > in( n , false );  // the nodes reached
  if( n > 0 ) {
   Q.push_back( 0 );
   in[ 0 ] = true;
@@ -45,7 +46,7 @@ inline LoudsTree::LoudsTree(
    }
   B.push_back( true );
   }
- ADS_PRE( Q.size() == n );                  // each node reached once
+ ADS_PRE( Q.size() == n );  // each node reached once
  f_b = RankSelect( std::move( B ) );
  }
 
@@ -79,7 +80,7 @@ inline std::size_t LoudsTree::parent( std::size_t v ) const
 inline std::size_t LoudsTree::leftmostChild( std::size_t v ) const
 {
  ADS_PRE( v < size() );
- const std::size_t p = f_b.select1( v + 1 );   // the 1 before the children
+ const std::size_t p = f_b.select1( v + 1 );  // the 1 before the children
  return( f_b[ p + 1 ] ? nil : p - v );
  }
 
@@ -110,10 +111,12 @@ inline const BitVector & LoudsTree::bits( void ) const
 inline bool LoudsTree::valid( void ) const
 {
  const std::size_t n = f_b.zeros();
- if( ( f_b.size() != 2 * n + 1 ) || ! f_b[ f_b.size() - 1 ] ) return( false );
+ if( ( f_b.size() != 2 * n + 1 ) || ! f_b[ f_b.size() - 1 ] )
+  return( false );
  for( std::size_t k = 1 ; k <= n ; ++k ) {  // the parent of the k-th node
-  const std::size_t p = f_b.select0( k ) + 1 - k;   // in the notes
-  if( k == 1 ? p != 0 : ( p == 0 ) || ( p >= k ) ) return( false );
+  const std::size_t p = f_b.select0( k ) + 1 - k;  // in the notes
+  if( k == 1 ? p != 0 : ( p == 0 ) || ( p >= k ) )
+   return( false );
   }
  return( true );
  }

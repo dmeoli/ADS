@@ -118,7 +118,7 @@
 
 #ifndef __ADS_GridGraph
  #define __ADS_GridGraph
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -141,7 +141,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------------- TYPES -----------------------------------*/
@@ -149,21 +150,21 @@ namespace ADS {
 
 /// the moves of a `GridGraph`
 enum class GridMoves {
- FOUR ,     ///< to the four sides of a cell
- EIGHT      ///< to the sides and to the four corners
+ FOUR ,  ///< to the four sides of a cell
+ EIGHT  ///< to the sides and to the four corners
  };
 
 /// when a move to a corner of a cell is allowed, the corner free
 enum class Corners {
- CUT ,          ///< always, even between two blocked sides
- NO_SQUEEZE ,   ///< if at least one of the two sides is free
- NO_CUT         ///< if both sides are free
+ CUT ,         ///< always, even between two blocked sides
+ NO_SQUEEZE ,  ///< if at least one of the two sides is free
+ NO_CUT       ///< if both sides are free
  };
 
 /// which cell of a move of a `GridGraph` weighs it
 enum class MoveCost {
- ENTERED ,   ///< the cell entered: \f$ ( u , v ) \f$ weighed by \f$ v \f$
- LEFT        ///< the cell left: \f$ ( u , v ) \f$ weighed by \f$ u \f$
+ ENTERED ,  ///< the cell entered: \f$ ( u , v ) \f$ weighed by \f$ v \f$
+ LEFT      ///< the cell left: \f$ ( u , v ) \f$ weighed by \f$ u \f$
  };
 
 /*--------------------------------------------------------------------------*/
@@ -174,13 +175,13 @@ enum class MoveCost {
 /// weights of the moves of type \f$ W \f$, whose changes of the costs are
 /// told through the subject policy `Policy` [see Modification.h]
 template< class W = int , class C = W , class Policy = NoObservers >
-class GridGraph {
+class GridGraph
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Weight = W;   ///< the type of the weights
- using Cost = C;     ///< the type of the costs of the cells
+ using Weight = W;  ///< the type of the weights
+ using Cost = C;    ///< the type of the costs of the cells
  /// the event of a change of the cost of a cell, the cell its handle
  using CellChanged = mod::Changed< mod::Value , int , C >;
  /// the events
@@ -197,9 +198,9 @@ class GridGraph {
  ///      \f$ 2^{31} - 1 \f$ cells, positive costs of the moves, the diagonal
  ///      one given if \f$ W \f$ is integral and the moves are eight
  GridGraph( int rows , int cols , GridMoves moves = GridMoves::FOUR ,
-            Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
-            std::optional< W > diagonal = std::nullopt ,
-            MoveCost model = MoveCost::ENTERED );
+	    Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
+	    std::optional< W > diagonal = std::nullopt ,
+	    MoveCost model = MoveCost::ENTERED );
 
  /// the grid of \f$ \mathit{rows} \times \mathit{cols} \f$ cells of the
  /// given costs, \f$ \mathit{cost}[ r \cdot \mathit{cols} + c ] \f$ that of
@@ -209,18 +210,19 @@ class GridGraph {
  /// \pre as above, and \f$ \mathit{cost} \f$ has
  ///      \f$ \mathit{rows} \cdot \mathit{cols} \f$ places
  GridGraph( int rows , int cols , std::vector< C > cost ,
-            GridMoves moves = GridMoves::FOUR ,
-            Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
-            std::optional< W > diagonal = std::nullopt ,
-            MoveCost model = MoveCost::ENTERED );
+	    GridMoves moves = GridMoves::FOUR ,
+	    Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
+	    std::optional< W > diagonal = std::nullopt ,
+	    MoveCost model = MoveCost::ENTERED );
 
  /// the grid of the given costs as above, every parameter given, and the
  /// static observers `o...` of `Policy`, which must outlive it
  /// \pre as above
- template< class ... O > requires( sizeof...( O ) > 0 )
+ template< class... O >
+  requires( sizeof...( O ) > 0 )
  GridGraph( int rows , int cols , std::vector< C > cost , GridMoves moves ,
-            Corners corners , W straight , std::optional< W > diagonal ,
-            MoveCost model , O & ... o );
+	    Corners corners , W straight , std::optional< W > diagonal ,
+	    MoveCost model , O &... o );
 
  /// the number of rows
  [[nodiscard]] int rows( void ) const { return( f_rows ); }
@@ -338,8 +340,7 @@ class GridGraph {
  /// \f]
  /// \pre \f$ 0 \le u < \mathrm{bound}() \f$
  template< class F >
- void forEachAffected( int u , const C & from , const C & to ,
-                       F && f ) const;
+ void forEachAffected( int u , const C & from , const C & to , F && f ) const;
 
  /// the set of the nodes, in increasing order
  [[nodiscard]] std::vector< int > V( void ) const;
@@ -374,14 +375,20 @@ class GridGraph {
  /// attaches the observer \f$ o \f$ and gives its number
  /// \pre no batch is open
  template< class D >
- int attach( D & o ) requires( Subject::dynamic ) {
+ int attach( D & o )
+  requires( Subject::dynamic )
+ {
   return( f_sub.attach( o ) );
   }
 
  /// detaches the observer number \f$ \mathit{id} \f$
  /// \pre \f$ \mathit{id} \f$ was given by `attach()` and not yet
  ///      detached, no batch is open
- void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
+ void detach( int id )
+  requires( Subject::dynamic )
+ {
+  f_sub.detach( id );
+  }
 
  /// opens a batch: the events are collected until it is closed, and sent
  /// coalesced
@@ -398,12 +405,11 @@ class GridGraph {
  /// blocked cells
  [[nodiscard]] auto nodes( void ) const {
   return( std::views::iota( 0 , bound() ) |
-          std::views::filter( [ this ]( int u ) { return( open( u ) ); } ) );
+	   std::views::filter( [ this ]( int u ) { return( open( u ) ); } ) );
   }
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the checks of the constructors and the counts of the free cells
  void init( std::optional< W > diagonal );
 
@@ -416,7 +422,7 @@ class GridGraph {
  /// or not as \f$ a \f$ and \f$ b \f$
  [[nodiscard]] bool corner( bool a , bool b ) const {
   return( ( f_corners == Corners::CUT ) ||
-          ( f_corners == Corners::NO_SQUEEZE ? ( a || b ) : ( a && b ) ) );
+	   ( f_corners == Corners::NO_SQUEEZE ? ( a || b ) : ( a && b ) ) );
   }
 
  /// `forEachMove()` with no check of \f$ u \f$, for the other scans
@@ -435,19 +441,19 @@ class GridGraph {
   f_sub.audit( *this );
   }
 
- int f_rows;                ///< the number of rows
- int f_cols;                ///< the number of columns
- GridMoves f_moves;         ///< the moves
- Corners f_corners;         ///< the rule on the corners
- MoveCost f_model;          ///< the cell whose cost weighs a move
- W f_straight;              ///< the cost of a move to a side
- W f_diagonal;              ///< the cost of a move to a corner
- std::vector< C > f_cost;   ///< the costs of the cells, or none
- int f_n = 0;               ///< the number of free cells
- int f_atmin = 0;           ///< the number of free cells of cost f_min
- C f_min = C( 1 );          ///< the least cost of a free cell
- bool f_directed = false;   ///< whether two free cells cost differently
- ADS_NO_UNIQUE_ADDRESS Subject f_sub;   ///< the observers
+ int f_rows;               ///< the number of rows
+ int f_cols;               ///< the number of columns
+ GridMoves f_moves;        ///< the moves
+ Corners f_corners;        ///< the rule on the corners
+ MoveCost f_model;         ///< the cell whose cost weighs a move
+ W f_straight;             ///< the cost of a move to a side
+ W f_diagonal;             ///< the cost of a move to a corner
+ std::vector< C > f_cost;  ///< the costs of the cells, or none
+ int f_n = 0;              ///< the number of free cells
+ int f_atmin = 0;          ///< the number of free cells of cost f_min
+ C f_min = C( 1 );         ///< the least cost of a free cell
+ bool f_directed = false;  ///< whether two free cells cost differently
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;  ///< the observers
 
  };  // end( class GridGraph )
 
@@ -482,7 +488,7 @@ class GridGraph {
 ///       than a neighbour from which it is reached (audit)
 template< class W , class C , class P >
 std::vector< int > gridDistances( const GridGraph< W , C , P > & g ,
-                                  const std::vector< int > & S );
+				  const std::vector< int > & S );
 
 /// the distance of Manhattan between the cells \f$ a \f$ and \f$ b \f$,
 /// \f$ \mathit{straight} \cdot ( | \Delta r | + | \Delta c | ) \f$, the
@@ -557,8 +563,8 @@ W gridHeuristic( const GridGraph< W , C , P > & g , int u , int t );
 /// \pre the stream holds a map of that format
 template< class W = double , class C = unsigned char >
 GridGraph< W , C > readGridMap( std::istream & in ,
-                                GridMoves moves = GridMoves::EIGHT ,
-                                Corners corners = Corners::NO_CUT );
+			       GridMoves moves = GridMoves::EIGHT ,
+			       Corners corners = Corners::NO_CUT );
 
 /*--------------------------------------------------------------------------*/
 
@@ -572,7 +578,7 @@ GridGraph< W , C > readGridMap( std::istream & in ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* GridGraph.h included */
+#endif /* GridGraph.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File GridGraph.h ---------------------------*/

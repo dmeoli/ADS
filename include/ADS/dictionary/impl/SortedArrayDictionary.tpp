@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K , class V >
 std::optional< V > SortedArrayDictionary< K , V >::lookup( const K & k ) const
@@ -31,7 +32,7 @@ void SortedArrayDictionary< K , V >::insert( const K & k , const V & v )
 {
  const std::size_t i = place( k );
  if( ( i < f_A.size() ) && ( f_A[ i ].first == k ) )
-  f_A[ i ].second = v;                       // the new value replaces it
+  f_A[ i ].second = v;  // the new value replaces it
  else
   f_A.insert( f_A.begin() + i , { k , v } );
  ADS_POST( lookup( k ).has_value() );
@@ -70,7 +71,7 @@ SortedArrayDictionary< K , V >::pairs( void ) const
 template< std::totally_ordered K , class V >
 std::size_t SortedArrayDictionary< K , V >::place( const K & k ) const
 {
- std::size_t lo = 0 , hi = f_A.size();      // the answer is in [ lo , hi ]
+ std::size_t lo = 0 , hi = f_A.size();  // the answer is in [ lo , hi ]
  while( lo < hi ) {
   const std::size_t m = lo + ( hi - lo ) / 2;
   if( f_A[ m ].first < k )
@@ -85,7 +86,7 @@ template< std::totally_ordered K , class V >
 bool SortedArrayDictionary< K , V >::sorted( void ) const
 {
  for( std::size_t i = 1 ; i < f_A.size() ; ++i )
-  if( !( f_A[ i - 1 ].first < f_A[ i ].first ) )
+  if( ! ( f_A[ i - 1 ].first < f_A[ i ].first ) )
    return( false );
  return( true );
  }
@@ -98,19 +99,19 @@ bool SortedArrayDictionary< K , V >::contains( const K & k ) const
 
 template< std::totally_ordered K , class V >
 auto SortedArrayDictionary< K , V >::lowerBound( const K & k ) const
- -> std::optional< std::pair< K , V > >
+  -> std::optional< std::pair< K , V > >
 {
  const std::size_t i = place( k );
  return( i < f_A.size() ? std::optional< std::pair< K , V > >( f_A[ i ] )
-                        : std::nullopt );
+			 : std::nullopt );
  }
 
 template< std::totally_ordered K , class V >
 const K * SortedArrayDictionary< K , V >::findKey( const K & k ) const
 {
  const std::size_t i = place( k );
- return( ( i < f_A.size() ) && !( k < f_A[ i ].first ) ? &f_A[ i ].first
-                                                       : nullptr );
+ return( ( i < f_A.size() ) && ! ( k < f_A[ i ].first ) ? &f_A[ i ].first
+							 : nullptr );
  }
 
 template< std::totally_ordered K , class V >

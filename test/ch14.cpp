@@ -51,21 +51,23 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Ints = std::vector< int >;
 using Longs = std::vector< long >;
 using Edge = WeightedEdge< long >;
 
 const Frontier fronts[] = { Frontier::LIST , Frontier::HEAP ,
-                            Frontier::FIBONACCI };
+			    Frontier::FIBONACCI };
 
 /// Figure 14.1, the nodes from 1 (node 0 alone): the edges in the order of
 /// the example of Kruskal, by increasing weight
-const std::vector< Edge > fig141 = { { 2 , 4 , 1 } , { 3 , 4 , 2 } ,
- { 5 , 7 , 3 } , { 1 , 3 , 6 } , { 1 , 2 , 9 } , { 2 , 3 , 11 } ,
- { 4 , 5 , 13 } , { 4 , 7 , 15 } , { 3 , 6 , 18 } , { 2 , 5 , 20 } ,
- { 6 , 7 , 25 } , { 4 , 6 , 28 } };
+const std::vector< Edge > fig141 = {
+ { 2 , 4 , 1 } ,  { 3 , 4 , 2 } ,  { 5 , 7 , 3 } ,  { 1 , 3 , 6 } ,
+ { 1 , 2 , 9 } ,  { 2 , 3 , 11 } , { 4 , 5 , 13 } , { 4 , 7 , 15 } ,
+ { 3 , 6 , 18 } , { 2 , 5 , 20 } , { 6 , 7 , 25 } , { 4 , 6 , 28 }
+ };
 
 ListGraph< long > graph( int n , const std::vector< Edge > & E )
 {
@@ -78,7 +80,8 @@ ListGraph< long > graph( int n , const std::vector< Edge > & E )
 long weight( const std::vector< Edge > & T )
 {
  long w = 0;
- for( const auto & e : T ) w += e.w;
+ for( const auto & e : T )
+  w += e.w;
  return( w );
  }
 
@@ -89,7 +92,8 @@ long brute_mst( int n , const std::vector< Edge > & E )
  long best = infinity< long >();
  const int m = int( E.size() );
  for( int mask = 0 ; mask < ( 1 << m ) ; ++mask ) {
-  if( std::popcount( unsigned( mask ) ) != n - 1 ) continue;
+  if( std::popcount( unsigned( mask ) ) != n - 1 )
+   continue;
   MFSet M( n );
   long w = 0;
   bool ok = true;
@@ -98,24 +102,28 @@ long brute_mst( int n , const std::vector< Edge > & E )
     ok = M.merge( E[ i ].u , E[ i ].v );
     w += E[ i ].w;
     }
-  if( ok ) best = std::min( best , w );
+  if( ok )
+   best = std::min( best , w );
   }
  return( best );
  }
 
 /// a random connected graph of n nodes: a random tree plus more edges
 std::vector< Edge > random_edges( int n , int extra , int maxw ,
-                                  std::mt19937 & g )
+				  std::mt19937 & g )
 {
  std::vector< Edge > E;
  std::map< std::pair< int , int > , bool > seen;
  auto add = [ & ]( int u , int v ) {
-  if( u == v || seen[ { std::min( u , v ) , std::max( u , v ) } ] ) return;
+  if( u == v || seen[ { std::min( u , v ) , std::max( u , v ) } ] )
+   return;
   seen[ { std::min( u , v ) , std::max( u , v ) } ] = true;
   E.push_back( { u , v , long( g() % maxw ) } );
   };
- for( int v = 1 ; v < n ; ++v ) add( int( g() % v ) , v );
- for( int k = 0 ; k < extra ; ++k ) add( int( g() % n ) , int( g() % n ) );
+ for( int v = 1 ; v < n ; ++v )
+  add( int( g() % v ) , v );
+ for( int k = 0 ; k < extra ; ++k )
+  add( int( g() % n ) , int( g() % n ) );
  return( E );
  }
 
@@ -130,10 +138,10 @@ std::vector< Edge > random_edges( int n , int extra , int maxw ,
 ADS_TEST( "sec14.change" )
 {
  CHECK( *greedyChange( { 50 , 10 , 5 , 1 } , 72 ) ==
-        Longs( { 50 , 10 , 10 , 1 , 1 } ) );
+	Longs( { 50 , 10 , 10 , 1 , 1 } ) );
  for( long c = 0 ; c <= 300 ; ++c )
   CHECK( long( greedyChange( { 1 , 5 , 10 , 50 } , c )->size() ) ==
-         *optimalChange( { 1 , 5 , 10 , 50 } , c ) );
+	 *optimalChange( { 1 , 5 , 10 , 50 } , c ) );
  CHECK( greedyChange( { 11 , 5 , 1 } , 15 )->size() == 5 );
  CHECK( *optimalChange( { 11 , 5 , 1 } , 15 ) == 3 );
  CHECK( ! greedyChange( { 5 , 3 } , 7 ) && ! optimalChange( { 5 , 3 } , 7 ) );
@@ -141,19 +149,19 @@ ADS_TEST( "sec14.change" )
  // coin nothing else is paid; the coins in any order and repeated; a coin
  // larger than c is skipped; the coin 1 alone pays c with c coins
  CHECK( greedyChange( { 50 , 10 } , 0 )->empty() &&
-        *optimalChange( { 50 , 10 } , 0 ) == 0 );
+	*optimalChange( { 50 , 10 } , 0 ) == 0 );
  CHECK( greedyChange( {} , 0 )->empty() && *optimalChange( {} , 0 ) == 0 );
  CHECK( ! greedyChange( {} , 3 ) && ! optimalChange( {} , 3 ) );
  CHECK( *greedyChange( { 1 , 10 , 5 , 10 } , 27 ) ==
-        Longs( { 10 , 10 , 5 , 1 , 1 } ) );
+	Longs( { 10 , 10 , 5 , 1 , 1 } ) );
  CHECK( *optimalChange( { 1 , 10 , 5 , 10 } , 27 ) == 5 );
  CHECK( *greedyChange( { 100 , 3 } , 9 ) == Longs( { 3 , 3 , 3 } ) );
  CHECK( ! greedyChange( { 100 } , 99 ) && ! optimalChange( { 100 } , 99 ) );
  CHECK( greedyChange( { 1 } , 1000 )->size() == 1000 &&
-        *optimalChange( { 1 } , 1000 ) == 1000 );
+	*optimalChange( { 1 } , 1000 ) == 1000 );
  // the greedy choice may fail where the optimum pays: 6 with 4 , 3
- CHECK( ! greedyChange( { 4 , 3 } , 6 ) && *optimalChange( { 4 , 3 } , 6 ) ==
-        2 );
+ CHECK( ! greedyChange( { 4 , 3 } , 6 ) && *optimalChange( { 4 , 3 } ,
+							   6 ) == 2 );
  CHECK_THROWS( greedyChange( { 5 , 1 } , -1 ) , contract_violation );
  CHECK_THROWS( greedyChange( { 5 , 0 } , 3 ) , contract_violation );
  CHECK_THROWS( optimalChange( { 5 , 1 } , -1 ) , contract_violation );
@@ -168,7 +176,7 @@ ADS_TEST( "sec14.change" )
 ADS_TEST( "sec14.1.real-knapsack" )
 {
  auto profit = []( const std::vector< double > & p ,
-                   const std::vector< double > & x ) {
+		   const std::vector< double > & x ) {
   return( std::inner_product( p.begin() , p.end() , x.begin() , 0.0 ) );
   };
  const std::vector< double > p1 = { 3 , 2 , 2 } , v1 = { 2 , 1 , 1 };
@@ -202,12 +210,13 @@ ADS_TEST( "sec14.1.real-knapsack" )
      pp += p[ i ];
      vv += v[ i ];
      }
-   if( vv > C ) continue;
+   if( vv > C )
+    continue;
    best = std::max( best , pp );
    for( int j = 0 ; j < n ; ++j )
     if( ! ( m >> j & 1 ) )
-     best = std::max( best ,
-                      pp + p[ j ] * std::min( 1.0 , ( C - vv ) / v[ j ] ) );
+     best =
+       std::max( best , pp + p[ j ] * std::min( 1.0 , ( C - vv ) / v[ j ] ) );
    }
   CHECK( std::abs( profit( p , x ) - best ) < 1e-6 );
   }
@@ -217,17 +226,17 @@ ADS_TEST( "sec14.1.real-knapsack" )
  // profit 0 is taken last
  CHECK( fractionalKnapsack( {} , {} , 5 ).empty() );
  CHECK( fractionalKnapsack( { 3 , 2 } , { 1 , 1 } , 0 ) ==
-        std::vector< double >( { 0 , 0 } ) );
+	std::vector< double >( { 0 , 0 } ) );
  CHECK( fractionalKnapsack( { 3 , 2 , 1 } , { 1 , 2 , 3 } , 1e9 ) ==
-        std::vector< double >( { 1 , 1 , 1 } ) );
+	std::vector< double >( { 1 , 1 , 1 } ) );
  CHECK( fractionalKnapsack( { 4 , 3 } , { 2 , 3 } , 5 ) ==
-        std::vector< double >( { 1 , 1 } ) );
+	std::vector< double >( { 1 , 1 } ) );
  CHECK( fractionalKnapsack( { 2 , 4 , 6 } , { 1 , 2 , 3 } , 2 ) ==
-        std::vector< double >( { 1 , 0.5 , 0 } ) );
+	std::vector< double >( { 1 , 0.5 , 0 } ) );
  CHECK( fractionalKnapsack( { 0 , 1 } , { 1 , 1 } , 1.5 ) ==
-        std::vector< double >( { 0.5 , 1 } ) );
+	std::vector< double >( { 0.5 , 1 } ) );
  CHECK_THROWS( fractionalKnapsack( { 1 } , { 1 , 2 } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( fractionalKnapsack( { 1 } , { 0 } , 1 ) , contract_violation );
  CHECK_THROWS( fractionalKnapsack( { -1 } , { 1 } , 1 ) , contract_violation );
  CHECK_THROWS( fractionalKnapsack( { 1 } , { 1 } , -1 ) , contract_violation );
@@ -253,7 +262,7 @@ ADS_TEST( "sec14.2.intervals" )
   for( std::size_t x = 0 ; x < S.size() ; ++x )
    for( std::size_t y = x + 1 ; y < S.size() ; ++y )
     CHECK( I[ S[ x ] ].second <= I[ S[ y ] ].first ||
-           I[ S[ y ] ].second <= I[ S[ x ] ].first );
+	   I[ S[ y ] ].second <= I[ S[ x ] ].first );
   }
  // the edges: no interval; one; all equal, one of them, the first; the
  // intervals [ a , b ) that touch are disjoint; nested ones, the inner;
@@ -264,15 +273,15 @@ ADS_TEST( "sec14.2.intervals" )
  CHECK( independentSet( I2( { { 3 , 4 } } ) ) == Places( { 0 } ) );
  CHECK( independentSet( I2( 5 , { 1 , 9 } ) ) == Places( { 0 } ) );
  CHECK( independentSet( I2( { { 2 , 3 } , { 0 , 1 } , { 1 , 2 } } ) ) ==
-        Places( { 0 , 1 , 2 } ) );
- CHECK( independentSet( I2( { { 0 , 10 } , { 4 , 5 } } ) ) ==
-        Places( { 1 } ) );
+	Places( { 0 , 1 , 2 } ) );
+ CHECK( independentSet( I2( { { 0 , 10 } ,
+			      { 4 , 5 } } ) ) == Places( { 1 } ) );
  const long lo = std::numeric_limits< long >::min() ,
-            hi = std::numeric_limits< long >::max();
+	    hi = std::numeric_limits< long >::max();
  CHECK( independentSet( I2( { { lo , 0 } , { 0 , hi } , { lo , hi } } ) ) ==
-        Places( { 0 , 1 } ) );
+	Places( { 0 , 1 } ) );
  CHECK_THROWS( independentSet( I2( { { 1 , 2 } , { 3 , 3 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( independentSet( I2( { { 4 , 3 } } ) ) , contract_violation );
  }
 
@@ -285,9 +294,12 @@ ADS_TEST( "sec14.2.intervals" )
 ADS_TEST( "sec14.3.mst" )
 {
  const std::vector< Edge > T = kruskal( 8 , fig141 );
- CHECK( T == std::vector< Edge >( { { 2 , 4 , 1 } , { 3 , 4 , 2 } ,
-                                    { 5 , 7 , 3 } , { 1 , 3 , 6 } ,
-                                    { 4 , 5 , 13 } , { 3 , 6 , 18 } } ) );
+ CHECK( T == std::vector< Edge >( { { 2 , 4 , 1 } ,
+				    { 3 , 4 , 2 } ,
+				    { 5 , 7 , 3 } ,
+				    { 1 , 3 , 6 } ,
+				    { 4 , 5 , 13 } ,
+				    { 3 , 6 , 18 } } ) );
  CHECK( weight( T ) == 43 );
  const auto g = graph( 8 , fig141 );
  for( Frontier f : fronts ) {
@@ -304,7 +316,8 @@ ADS_TEST( "sec14.3.mst" )
   for( Frontier f : fronts ) {
    const auto p = prim( h , 0 , f );
    long w = 0;
-   for( int v = 1 ; v < n ; ++v ) w += *h.weight( p[ v ] , v );
+   for( int v = 1 ; v < n ; ++v )
+    w += *h.weight( p[ v ] , v );
    CHECK( w == best );
    }
   }
@@ -315,19 +328,24 @@ ADS_TEST( "sec14.3.mst" )
  using Es = std::vector< Edge >;
  CHECK( kruskal( 0 , Es() ).empty() && kruskal( 1 , Es() ).empty() );
  CHECK( kruskal( 1 , Es( { { 0 , 0 , -5 } } ) ).empty() );
- CHECK( kruskal( 2 , Es( { { 0 , 0 , -9 } , { 0 , 1 , 7 } , { 1 , 0 , 3 } ,
-                           { 1 , 1 , -9 } } ) ) == Es( { { 1 , 0 , 3 } } ) );
- const Es forest = { { 0 , 1 , 4 } , { 1 , 2 , -3 } , { 0 , 2 , 1 } ,
-                     { 3 , 4 , 2 } , { 3 , 4 , 2 } };
- const auto F = kruskal( 6 , forest );                // 5 isolated
+ CHECK(
+   kruskal( 2 ,
+	    Es( { { 0 , 0 , -9 } , { 0 , 1 , 7 } , { 1 , 0 , 3 } ,
+		  { 1 , 1 , -9 } } ) ) ==
+   Es( { { 1 , 0 , 3 } } ) );
+ const Es forest = {
+  { 0 , 1 , 4 } , { 1 , 2 , -3 } , { 0 , 2 , 1 } , { 3 , 4 , 2 } ,
+  { 3 , 4 , 2 }
+  };
+ const auto F = kruskal( 6 , forest );  // 5 isolated
  CHECK( F.size() == 3 && weight( F ) == 0 &&
-        isMinimumSpanningForest( 6 , forest , F ) );
- CHECK( ! isMinimumSpanningForest( 6 , forest , Es( { { 0 , 1 , 4 } ,
-                                   { 1 , 2 , -3 } , { 3 , 4 , 2 } } ) ) );
+	isMinimumSpanningForest( 6 , forest , F ) );
+ CHECK( ! isMinimumSpanningForest(
+   6 , forest , Es( { { 0 , 1 , 4 } , { 1 , 2 , -3 } , { 3 , 4 , 2 } } ) ) );
  const Es equal = { { 0 , 1 , 5 } , { 1 , 2 , 5 } , { 2 , 0 , 5 } ,
-                    { 2 , 3 , 5 } };
- CHECK( kruskal( 4 , equal ) == Es( { { 0 , 1 , 5 } , { 1 , 2 , 5 } ,
-                                      { 2 , 3 , 5 } } ) );
+		    { 2 , 3 , 5 } };
+ CHECK( kruskal( 4 , equal ) ==
+	Es( { { 0 , 1 , 5 } , { 1 , 2 , 5 } , { 2 , 3 , 5 } } ) );
  const auto gf = graph( 6 , forest );
  for( Frontier f : fronts ) {
   CHECK( prim( graph( 1 , Es() ) , 0 , f ) == Ints( { NIL } ) );
@@ -354,17 +372,18 @@ ADS_TEST( "sec14.3.3.cut" )
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 3 + int( g() % 5 );
   auto E = random_edges( n , int( g() % 8 ) , 20 , g );
-  const unsigned S = 1 + g() % ( ( 1u << n ) - 2 );         // a cut
+  const unsigned S = 1 + g() % ( ( 1u << n ) - 2 );  // a cut
   int best = -1;
   for( int i = 0 ; i < int( E.size() ) ; ++i )
    if( ( S >> E[ i ].u & 1 ) != ( S >> E[ i ].v & 1 ) &&
        ( best < 0 || E[ i ].w < E[ best ].w ) )
     best = i;
-  if( best < 0 ) continue;
+  if( best < 0 )
+   continue;
   auto F = E;
-  F[ best ].w = -1000;                    // forced into every best tree
+  F[ best ].w = -1000;  // forced into every best tree
   CHECK( weight( kruskal( n , F ) ) + 1000 + E[ best ].w ==
-         weight( kruskal( n , E ) ) );
+	 weight( kruskal( n , E ) ) );
   }
  }
 
@@ -375,23 +394,27 @@ ADS_TEST( "sec14.3.3.cut" )
 ADS_TEST( "sec14.4.huffman" )
 {
  const std::map< char , int > f = { { 'a' , 45 } , { 'b' , 13 } ,
-  { 'c' , 12 } , { 'd' , 16 } , { 'e' , 9 } , { 'f' , 5 } };
+				    { 'c' , 12 } ,
+				   { 'd' , 16 } , { 'e' , 9 } ,  { 'f' , 5 } };
  const auto code = huffman( f );
  int bits = 0;
- for( const auto & [ c , s ] : code ) bits += f.at( c ) * int( s.size() );
+ for( const auto & [ c , s ] : code )
+  bits += f.at( c ) * int( s.size() );
  CHECK( bits == 224 );
  CHECK( code.at( 'a' ).size() == 1 && code.at( 'e' ).size() == 4 &&
-        code.at( 'f' ).size() == 4 );
- for( const auto & [ c , s ] : code )                 // a prefix code
+	code.at( 'f' ).size() == 4 );
+ for( const auto & [ c , s ] : code )  // a prefix code
   for( const auto & [ d , t ] : code )
-   if( c != d ) CHECK( t.compare( 0 , s.size() , s ) != 0 );
+   if( c != d )
+    CHECK( t.compare( 0 , s.size() , s ) != 0 );
  std::mt19937 g( 5 );
  for( int t = 0 ; t < 50 ; ++t ) {
   std::string text;
-  for( int i = 0 ; i < 200 ; ++i )                   // skewed
+  for( int i = 0 ; i < 200 ; ++i )  // skewed
    text += char( 'a' + std::min( g() % 30 , g() % 12 ) );
   std::map< char , int > fr;
-  for( char c : text ) ++fr[ c ];
+  for( char c : text )
+   ++fr[ c ];
   const auto C = huffman( fr );
   const auto enc = encode( text , C );
   CHECK( decode( enc , C ) == text );
@@ -408,14 +431,16 @@ ADS_TEST( "sec14.4.huffman" )
  const std::map< char , int > zero = { { 'q' , 0 } };
  CHECK( huffman( zero ).at( 'q' ) == "0" );
  CHECK( decode( encode( std::string( "qqq" ) , huffman( zero ) ) ,
-                huffman( zero ) ) == "qqq" );
- const auto two = huffman( std::map< char , int >( { { 'a' , 1 } ,
-                                                     { 'b' , 100 } } ) );
+		huffman( zero ) ) == "qqq" );
+ const auto two =
+   huffman( std::map< char , int >( { { 'a' , 1 } , { 'b' , 100 } } ) );
  CHECK( two.at( 'a' ).size() == 1 && two.at( 'b' ).size() == 1 &&
-        two.at( 'a' ) != two.at( 'b' ) );
+	two.at( 'a' ) != two.at( 'b' ) );
  std::map< char , int > flat;
- for( char c = 'a' ; c < 'a' + 16 ; ++c ) flat[ c ] = 7;
- for( const auto & [ c , s ] : huffman( flat ) ) CHECK( s.size() == 4 );
+ for( char c = 'a' ; c < 'a' + 16 ; ++c )
+  flat[ c ] = 7;
+ for( const auto & [ c , s ] : huffman( flat ) )
+  CHECK( s.size() == 4 );
  std::map< int , long > fib;
  long f0 = 1 , f1 = 1;
  for( int i = 0 ; i < 40 ; ++i ) {
@@ -425,22 +450,24 @@ ADS_TEST( "sec14.4.huffman" )
   }
  const auto deep = huffman( fib );
  std::vector< std::size_t > lengths;
- for( const auto & [ c , s ] : deep ) lengths.push_back( s.size() );
+ for( const auto & [ c , s ] : deep )
+  lengths.push_back( s.size() );
  std::sort( lengths.begin() , lengths.end() );
  for( std::size_t i = 0 ; i + 1 < lengths.size() ; ++i )
   CHECK( lengths[ i ] == i + 1 );
  CHECK( lengths.back() == 39 );
- const auto withzero = huffman( std::map< char , int >( { { 'a' , 0 } ,
-                                { 'b' , 0 } , { 'c' , 5 } } ) );
+ const auto withzero =
+   huffman( std::map< char ,
+		      int >( { { 'a' , 0 } , { 'b' , 0 } , { 'c' , 5 } } ) );
  CHECK( withzero.size() == 3 && withzero.at( 'c' ).size() == 1 );
  CHECK( encode( std::string() , code ).empty() &&
-        decode( std::string() , code ).empty() );
+	decode( std::string() , code ).empty() );
  CHECK_THROWS( huffman( std::map< char , int >() ) , contract_violation );
  CHECK_THROWS( huffman( std::map< char , int >( { { 'a' , -1 } } ) ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( encode( std::string( "ax" ) , code ) , contract_violation );
  CHECK_THROWS( decode( code.at( 'e' ).substr( 0 , 3 ) , code ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -455,9 +482,14 @@ ADS_TEST( "ex14.1" )
  const Longs p = { 3 , 3 , 5 } , v = { 3 , 3 , 4 };
  std::vector< std::size_t > by = { 0 , 1 , 2 };
  std::stable_sort( by.begin() , by.end() , [ & ]( auto a , auto b ) {
-  return( p[ a ] * v[ b ] > p[ b ] * v[ a ] ); } );
+  return( p[ a ] * v[ b ] > p[ b ] * v[ a ] );
+  } );
  long c = 6 , greedy = 0;
- for( auto i : by ) if( v[ i ] <= c ) { c -= v[ i ]; greedy += p[ i ]; }
+ for( auto i : by )
+  if( v[ i ] <= c ) {
+   c -= v[ i ];
+   greedy += p[ i ];
+   }
  CHECK( greedy == 5 && knapsack( p , v , 6 ).first == 6 );
  // the edges: no object; capacity 0 still takes the objects of volume 0;
  // every object fitting takes all of them
@@ -484,16 +516,18 @@ ADS_TEST( "ex14.2" )
  // equal weights kept as by the stable sort; a weight k, or negative, out
  // of the range
  const std::vector< Edge > E = { { 0 , 1 , 0 } , { 1 , 2 , 0 } ,
-                                 { 0 , 2 , 0 } };
- CHECK( kruskal( 3 , E , 1 ) == kruskal( 3 , E ) && kruskal( 3 , E , 1 ) ==
-        std::vector< Edge >( { { 0 , 1 , 0 } , { 1 , 2 , 0 } } ) );
- const std::vector< Edge > H = { { 0 , 1 , 4 } , { 1 , 2 , 2 } ,
-                                 { 0 , 2 , 2 } , { 2 , 3 , 4 } };
+				 { 0 , 2 , 0 } };
+ CHECK( kruskal( 3 , E , 1 ) == kruskal( 3 , E ) &&
+	kruskal( 3 , E , 1 ) ==
+	  std::vector< Edge >( { { 0 , 1 , 0 } , { 1 , 2 , 0 } } ) );
+ const std::vector< Edge > H = {
+  { 0 , 1 , 4 } , { 1 , 2 , 2 } , { 0 , 2 , 2 } , { 2 , 3 , 4 }
+  };
  CHECK( kruskal( 4 , H , 5 ) == kruskal( 4 , H ) );
  CHECK( kruskal( 0 , std::vector< Edge >() , 3 ).empty() );
  CHECK_THROWS( kruskal( 4 , H , 4 ) , contract_violation );
  CHECK_THROWS( kruskal( 2 , std::vector< Edge >( { { 0 , 1 , -1 } } ) , 3 ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the spanning tree with the fewest red edges: weight 1 to the red ones, 0
@@ -503,10 +537,11 @@ ADS_TEST( "ex14.3" )
  std::mt19937 g( 7 );
  for( int t = 0 ; t < 60 ; ++t ) {
   const int n = 2 + int( g() % 6 );
-  const auto E = random_edges( n , int( g() % 8 ) , 2 , g );   // 1 = red
+  const auto E = random_edges( n , int( g() % 8 ) , 2 , g );  // 1 = red
   long fewest = n;
   for( int mask = 0 ; mask < ( 1 << E.size() ) ; ++mask ) {
-   if( std::popcount( unsigned( mask ) ) != n - 1 ) continue;
+   if( std::popcount( unsigned( mask ) ) != n - 1 )
+    continue;
    MFSet M( n );
    long red = 0;
    bool ok = true;
@@ -515,7 +550,8 @@ ADS_TEST( "ex14.3" )
      ok = M.merge( E[ i ].u , E[ i ].v );
      red += E[ i ].w;
      }
-   if( ok ) fewest = std::min( fewest , red );
+   if( ok )
+    fewest = std::min( fewest , red );
    }
   CHECK( weight( kruskal( n , E ) ) == fewest );
   }
@@ -530,27 +566,30 @@ ADS_TEST( "ex14.4" )
  std::vector< Edge > E;
  for( int u = 0 ; u < n ; ++u )
   for( int v = u + 1 ; v < n ; ++v )
-   E.push_back( { u , v , long( g() % 1000000 ) } );       // distinct, a.s.
+   E.push_back( { u , v , long( g() % 1000000 ) } );  // distinct, a.s.
  const auto h = graph( n , E );
  const auto a = prim( h , 0 , Frontier::FIBONACCI ) ,
-            b = prim( h , 0 , Frontier::HEAP ) ,
-            c = prim( h , 0 , Frontier::LIST );
+	    b = prim( h , 0 , Frontier::HEAP ) ,
+	    c = prim( h , 0 , Frontier::LIST );
  CHECK( a == b && b == c );
  long w = 0;
- for( int v = 1 ; v < n ; ++v ) w += *h.weight( a[ v ] , v );
+ for( int v = 1 ; v < n ; ++v )
+  w += *h.weight( a[ v ] , v );
  CHECK( w == weight( kruskal( n , E ) ) );
  // the edges: a chain of 2000 nodes, the deepest tree, from an end and
  // from the middle; two nodes and one edge
  const int L = 2000;
  std::vector< Edge > P;
- for( int v = 1 ; v < L ; ++v ) P.push_back( { v - 1 , v , long( v % 7 ) } );
+ for( int v = 1 ; v < L ; ++v )
+  P.push_back( { v - 1 , v , long( v % 7 ) } );
  const auto chain = graph( L , P );
  for( Frontier f : fronts ) {
   const auto q = prim( chain , 0 , f ) , m = prim( chain , L / 2 , f );
-  for( int v = 1 ; v < L ; ++v ) CHECK( q[ v ] == v - 1 );
+  for( int v = 1 ; v < L ; ++v )
+   CHECK( q[ v ] == v - 1 );
   CHECK( m[ L / 2 ] == NIL && m[ 0 ] == 1 && m[ L - 1 ] == L - 2 );
-  CHECK( prim( graph( 2 , { { 0 , 1 , 3 } } ) , 1 , f ) ==
-         Ints( { 1 , NIL } ) );
+  CHECK( prim( graph( 2 , { { 0 , 1 , 3 } } ) , 1 ,
+	       f ) == Ints( { 1 , NIL } ) );
   }
  CHECK( kruskal( L , P ).size() == std::size_t( L - 1 ) );
  }
@@ -562,11 +601,13 @@ ADS_TEST( "ex14.5" )
  std::mt19937 g( 9 );
  for( int t = 0 ; t < 50 ; ++t ) {
   Longs d( 1 + g() % 7 );
-  for( auto & x : d ) x = 1 + long( g() % 20 );
+  for( auto & x : d )
+   x = 1 + long( g() % 20 );
   std::vector< std::size_t > A( d.size() );
   std::iota( A.begin() , A.end() , 0 );
   long best = infinity< long >();
-  do best = std::min( best , totalCompletion( d , A ) );
+  do
+   best = std::min( best , totalCompletion( d , A ) );
   while( std::next_permutation( A.begin() , A.end() ) );
   CHECK( totalCompletion( d , shortestJobFirst( d ) ) == best );
   }
@@ -575,14 +616,14 @@ ADS_TEST( "ex14.5" )
  // negative, a place out of range
  using Places = std::vector< std::size_t >;
  CHECK( shortestJobFirst( Longs() ).empty() &&
-        totalCompletion( Longs() , Places() ) == 0 );
+	totalCompletion( Longs() , Places() ) == 0 );
  CHECK( shortestJobFirst( Longs( { 9 } ) ) == Places( { 0 } ) &&
-        totalCompletion( Longs( { 9 } ) , Places( { 0 } ) ) == 9 );
+	totalCompletion( Longs( { 9 } ) , Places( { 0 } ) ) == 9 );
  CHECK( shortestJobFirst( Longs( { 3 , 1 , 3 , 1 } ) ) ==
-        Places( { 1 , 3 , 0 , 2 } ) );
+	Places( { 1 , 3 , 0 , 2 } ) );
  const Longs z = { 5 , 0 , 2 , 0 };
  CHECK( shortestJobFirst( z ) == Places( { 1 , 3 , 2 , 0 } ) &&
-        totalCompletion( z , shortestJobFirst( z ) ) == 9 );
+	totalCompletion( z , shortestJobFirst( z ) ) == 9 );
  CHECK( totalCompletion( z , Places( { 2 } ) ) == 2 );
  CHECK_THROWS( shortestJobFirst( Longs( { 1 , -1 } ) ) , contract_violation );
  CHECK_THROWS( totalCompletion( z , Places( { 4 } ) ) , contract_violation );
@@ -603,10 +644,12 @@ ADS_TEST( "ex14.6" )
    }
   const auto c = intervalColoring( I );
   int colors = 0 , depth = 0;
-  for( int x : c ) colors = std::max( colors , x + 1 );
+  for( int x : c )
+   colors = std::max( colors , x + 1 );
   for( long x = 0 ; x < 50 ; ++x ) {
    int k = 0;
-   for( auto [ a , b ] : I ) k += a <= x && x < b;
+   for( auto [ a , b ] : I )
+    k += a <= x && x < b;
    depth = std::max( depth , k );
    }
   CHECK( colors == depth );
@@ -620,14 +663,14 @@ ADS_TEST( "ex14.6" )
  using I2 = std::vector< std::pair< long , long > >;
  CHECK( intervalColoring( I2() ).empty() );
  CHECK( intervalColoring( I2( { { 0 , 1 } , { 1 , 2 } , { 2 , 3 } } ) ) ==
-        Ints( { 0 , 0 , 0 } ) );
+	Ints( { 0 , 0 , 0 } ) );
  auto same = intervalColoring( I2( 6 , { -4 , 4 } ) );
  std::sort( same.begin() , same.end() );
  CHECK( same == Ints( { 0 , 1 , 2 , 3 , 4 , 5 } ) );
- const auto nest = intervalColoring( I2( { { 0 , 9 } , { 1 , 8 } ,
-                                          { 2 , 3 } , { 4 , 5 } } ) );
+ const auto nest =
+   intervalColoring( I2( { { 0 , 9 } , { 1 , 8 } , { 2 , 3 } , { 4 , 5 } } ) );
  CHECK( nest[ 0 ] != nest[ 1 ] && nest[ 2 ] == nest[ 3 ] &&
-        *std::max_element( nest.begin() , nest.end() ) == 2 );
+	*std::max_element( nest.begin() , nest.end() ) == 2 );
  CHECK_THROWS( intervalColoring( I2( { { 2 , 2 } } ) ) , contract_violation );
  }
 
@@ -639,12 +682,14 @@ ADS_TEST( "ex14.7" )
  std::mt19937 g( 11 );
  for( int t = 0 ; t < 100 ; ++t ) {
   std::vector< double > k( 1 + g() % 20 );
-  for( auto & x : k ) x = double( g() % 100 );
+  for( auto & x : k )
+   x = double( g() % 100 );
   const double d = 1 + double( g() % 10 );
   const auto T = towers( k , d );
   for( double x : k ) {
    bool near = false;
-   for( double y : T ) near = near || std::abs( x - y ) <= d;
+   for( double y : T )
+    near = near || std::abs( x - y ) <= d;
    CHECK( near );
    }
   // a lower bound: houses more than 2 d apart need different towers
@@ -652,7 +697,11 @@ ADS_TEST( "ex14.7" )
   std::sort( s.begin() , s.end() );
   int apart = 0;
   double last = -1e18;
-  for( double x : s ) if( x > last + 2 * d ) { ++apart; last = x; }
+  for( double x : s )
+   if( x > last + 2 * d ) {
+    ++apart;
+    last = x;
+    }
   CHECK( int( T.size() ) == apart );
   }
  // the edges: no house, no tower; all the houses in one place; d = 0, a
@@ -660,8 +709,8 @@ ADS_TEST( "ex14.7" )
  // d negative
  CHECK( towers( {} , 3 ).empty() );
  CHECK( towers( { 5 , 5 , 5 } , 0 ) == std::vector< double >( { 5 } ) );
- CHECK( towers( { 4 , 1 , 4 , 9 } , 0 ) ==
-        std::vector< double >( { 1 , 4 , 9 } ) );
+ CHECK( towers( { 4 , 1 , 4 , 9 } ,
+		0 ) == std::vector< double >( { 1 , 4 , 9 } ) );
  CHECK( towers( { 0 , 10 } , 5 ) == std::vector< double >( { 5 } ) );
  CHECK( towers( { 0 , 10.5 } , 5 ).size() == 2 );
  CHECK_THROWS( towers( { 1 } , -1 ) , contract_violation );
@@ -703,10 +752,12 @@ ADS_TEST( "ex14.8" )
  CHECK( greedy( { 7 } , { 3 } ) == 4 && sorted( { 7 } , { 3 } ) == 4 );
  CHECK( sorted( { 4 , 4 , 4 } , { 4 , 4 , 4 } ) == 0 );
  std::mt19937 g( 12 );
- for( int t = 0 ; t < 50 ; ++t ) {               // sorting is optimal
+ for( int t = 0 ; t < 50 ; ++t ) {  // sorting is optimal
   Longs p( 1 + g() % 6 ) , s( p.size() );
-  for( auto & x : p ) x = long( g() % 30 );
-  for( auto & x : s ) x = long( g() % 30 );
+  for( auto & x : p )
+   x = long( g() % 30 );
+  for( auto & x : s )
+   x = long( g() % 30 );
   std::vector< std::size_t > h( p.size() );
   std::iota( h.begin() , h.end() , 0 );
   long best = infinity< long >();
@@ -732,17 +783,18 @@ ADS_TEST( "ex14.9" )
   std::vector< long > w( E.size() );
   std::iota( w.begin() , w.end() , 1 );
   std::shuffle( w.begin() , w.end() , g );
-  for( std::size_t i = 0 ; i < E.size() ; ++i ) E[ i ].w = w[ i ];
+  for( std::size_t i = 0 ; i < E.size() ; ++i )
+   E[ i ].w = w[ i ];
   auto T = kruskal( n , E );
   auto has = [ & ]( long x ) {
    return( std::any_of( T.begin() , T.end() ,
-                        [ & ]( auto & e ) { return( e.w == x ); } ) );
+			 [ & ]( auto & e ) { return( e.w == x ); } ) );
    };
   CHECK( has( 1 ) && ( E.size() < 2 || has( 2 ) ) );
   }
- const auto T = kruskal( 3 , std::vector< Edge >( { { 0 , 1 , 1 } ,
-                                                    { 1 , 2 , 2 } ,
-                                                    { 0 , 2 , 3 } } ) );
+ const auto T = kruskal(
+   3 ,
+   std::vector< Edge >( { { 0 , 1 , 1 } , { 1 , 2 , 2 } , { 0 , 2 , 3 } } ) );
  CHECK( weight( T ) == 3 && T.size() == 2 );
  }
 
@@ -758,15 +810,21 @@ ADS_TEST( "ex14.10" )
   auto E = random_edges( n , int( g() % 8 ) , 20 , g );
   long best = -infinity< long >();
   for( int mask = 0 ; mask < ( 1 << E.size() ) ; ++mask ) {
-   if( std::popcount( unsigned( mask ) ) != n - 1 ) continue;
+   if( std::popcount( unsigned( mask ) ) != n - 1 )
+    continue;
    MFSet M( n );
    long w = 0;
    bool ok = true;
    for( std::size_t i = 0 ; i < E.size() && ok ; ++i )
-    if( mask >> i & 1 ) { ok = M.merge( E[ i ].u , E[ i ].v ); w += E[ i ].w; }
-   if( ok ) best = std::max( best , w );
+    if( mask >> i & 1 ) {
+     ok = M.merge( E[ i ].u , E[ i ].v );
+     w += E[ i ].w;
+     }
+   if( ok )
+    best = std::max( best , w );
    }
-  for( auto & e : E ) e.w = -e.w;
+  for( auto & e : E )
+   e.w = -e.w;
   CHECK( -weight( kruskal( n , E ) ) == best );
   }
  ListGraph< long > c( 3 , true );

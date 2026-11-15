@@ -32,7 +32,7 @@
 
 #ifndef __ADS_KnightTour
  #define __ADS_KnightTour
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -51,7 +51,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// a tour of the knight from \f$ ( x , y ) \f$ on an \f$ n \times n \f$
 /// board, by backtrack, the moves in the order of the book or by the rule of
@@ -83,9 +84,8 @@ namespace ADS {
 /// \f]
 /// \pre \f$ ( x , y ) \f$ is on the board if \f$ n \ge 1 \f$
 /// \post a tour of moves of the knight from \f$ ( x , y ) \f$ (audit)
-inline std::optional< std::vector< std::vector< int > > > knightTour(
-                                    int n , int x , int y ,
-                                    bool warnsdorff = true );
+inline std::optional< std::vector< std::vector< int > > >
+knightTour( int n , int x , int y , bool warnsdorff = true );
 
 /*--------------------------------------------------------------------------*/
 
@@ -99,7 +99,7 @@ inline std::optional< std::vector< std::vector< int > > > knightTour(
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* KnightTour.h included */
+#endif /* KnightTour.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File KnightTour.h --------------------------*/

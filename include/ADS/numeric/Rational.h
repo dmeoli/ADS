@@ -49,7 +49,7 @@
 
 #ifndef __ADS_Rational
  #define __ADS_Rational
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -73,18 +73,19 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS Rational ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// a fraction in lowest terms, the denominator positive
-class Rational {
+class Rational
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the fraction \f$ \mathit{num} / \mathit{den} \f$, brought to lowest
  /// terms with a positive denominator by one gcd
  /// \pre \f$ \mathit{den} \ne 0 \f$
@@ -146,12 +147,12 @@ class Rational {
  /// the order of \f$ a \f$ and \f$ b \f$, by the signs and then by
  /// \f$ u v' \f$ against \f$ v u' \f$
  friend std::strong_ordering operator<=>( const Rational & a ,
-                                          const Rational & b );
+					  const Rational & b );
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Reduced {};         ///< the fraction is already in lowest terms
+ struct Reduced
+ { };  ///< the fraction is already in lowest terms
 
  /// the fraction \f$ \mathit{num} / \mathit{den} \f$, already in lowest
  /// terms
@@ -167,15 +168,14 @@ class Rational {
  /// \f$ \mathit{op}( a , b ) \f$, a function of the mpq layer of GMP,
  /// on the terms in place
  static Rational gmpApply( const Rational & a , const Rational & b ,
-                           void ( *op )( mpq_ptr , mpq_srcptr ,
-                                         mpq_srcptr ) );
+			   void ( *op )( mpq_ptr , mpq_srcptr , mpq_srcptr ) );
 
  /// the comparison of \f$ a \f$ and \f$ b \f$ by `mpq_cmp()`, in place
  static int gmpCompare( const Rational & a , const Rational & b );
 #endif
 
- BigInteger f_num ,   ///< the numerator
-            f_den;    ///< the denominator
+ BigInteger f_num ,  ///< the numerator
+   f_den;           ///< the denominator
 
  };  // end( class Rational )
 
@@ -191,7 +191,7 @@ class Rational {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Rational.h included */
+#endif /* Rational.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Rational.h ---------------------------*/

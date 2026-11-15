@@ -52,7 +52,7 @@
 
 #ifndef __ADS_Bitwise
  #define __ADS_Bitwise
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -67,9 +67,10 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-using Word = std::uint64_t;   ///< a word of 64 bits
+using Word = std::uint64_t;  ///< a word of 64 bits
 
 /// the number of 1 bits of \f$ x \f$, \f$ \nu( x ) \f$
 ///
@@ -279,7 +280,7 @@ deinterleave( Word z );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Bitwise.h included */
+#endif /* Bitwise.h included */
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- End File Bitwise.h ---------------------------*/

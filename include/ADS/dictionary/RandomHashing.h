@@ -55,7 +55,7 @@
 
 #ifndef __ADS_RandomHashing
  #define __ADS_RandomHashing
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the mix of SplitMix64: a bijection of the words of 64 bits
 ///
@@ -110,19 +111,20 @@ namespace ADS {
 /// \f]
 /// \pre \f$ 1 \le b \le 64 \f$
 [[nodiscard]] constexpr std::uint64_t fibonacciPlace( std::uint64_t h ,
-                                                      int b );
+						      int b );
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SplitMix64 ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the generator SplitMix64, a `UniformRandomBitGenerator`
-class SplitMix64 {
+class SplitMix64
+{
  public:
- using result_type = std::uint64_t;   ///< the words generated
+ using result_type = std::uint64_t;  ///< the words generated
 
  /// the generator from the state `seed`
- explicit constexpr SplitMix64( std::uint64_t seed = 0 ) : f_s( seed ) {}
+ explicit constexpr SplitMix64( std::uint64_t seed = 0 ) : f_s( seed ) { }
 
  /// the next word, `splitmix64()` of the state, which then grows by
  /// \f$ \lfloor 2^{64} / \phi \rfloor \f$
@@ -141,10 +143,11 @@ class SplitMix64 {
   }
 
  private:
- std::uint64_t f_s;   ///< the state
+ std::uint64_t f_s;  ///< the state
  };
 
-namespace detail {
+namespace detail
+{
 
 /// a seed for each call, \f$ \mathrm{splitmix64}( c ) \f$ of the number
 /// \f$ c \f$ of the calls before it: the default seed of the sequences that
@@ -165,7 +168,8 @@ inline std::uint64_t instanceSeed( void )
 /*--------------------------------------------------------------------------*/
 
 /// a random word for each pair \f$ ( f , v ) \f$ of a feature and a value
-class ZobristTable {
+class ZobristTable
+{
  public:
  /// the words of \f$ n \f$ features with \f$ m \f$ values each, from the seed
  /// \pre \f$ n \ge 1 \f$ and \f$ m \ge 1 \f$
@@ -174,8 +178,7 @@ class ZobristTable {
  /// the word \f$ R[ f ][ v ] \f$ of the feature \f$ f \f$ with the value
  /// \f$ v \f$
  /// \pre \f$ f < n \f$ and \f$ v < m \f$
- [[nodiscard]] std::uint64_t operator()( std::size_t f ,
-                                         std::size_t v ) const;
+ [[nodiscard]] std::uint64_t operator()( std::size_t f , std::size_t v ) const;
 
  /// the hash of a state, the value of each feature by its place in
  /// \f$ S \f$, any range with a size and access by index (a vector, an
@@ -201,10 +204,10 @@ class ZobristTable {
  /// since \f$ x \oplus x = 0 \f$ takes the old word away
  /// \pre \f$ f < n \f$, \f$ a < m \f$ and \f$ b < m \f$
  [[nodiscard]] std::uint64_t update( std::uint64_t h , std::size_t f ,
-                                     std::size_t a , std::size_t b ) const;
+				     std::size_t a , std::size_t b ) const;
 
  private:
- std::size_t f_n , f_m;             ///< the features and the values
+ std::size_t f_n , f_m;              ///< the features and the values
  std::vector< std::uint64_t > f_R;  ///< \f$ R[ f m + v ] \f$
  };
 
@@ -213,7 +216,8 @@ class ZobristTable {
 /*--------------------------------------------------------------------------*/
 
 /// the simple tabulation hashing of the keys of 64 bits
-class TabulationHash {
+class TabulationHash
+{
  public:
  /// the 8 tables of 256 random words, from the seed
  explicit TabulationHash( std::uint64_t seed = 1 );
@@ -240,7 +244,7 @@ class TabulationHash {
  [[nodiscard]] std::size_t place( std::uint64_t x , std::size_t m ) const;
 
  private:
- std::array< std::array< std::uint64_t , 256 > , 8 > f_T;   ///< the tables
+ std::array< std::array< std::uint64_t , 256 > , 8 > f_T;  ///< the tables
  };
 
 /*--------------------------------------------------------------------------*/
@@ -255,7 +259,7 @@ class TabulationHash {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RandomHashing.h included */
+#endif /* RandomHashing.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File RandomHashing.h ------------------------*/

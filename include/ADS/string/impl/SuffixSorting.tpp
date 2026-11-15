@@ -31,9 +31,11 @@
  #include <sys/mman.h>
 #endif
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// a pointer whose array no other pointer of the function reaches; not on
 /// MSVC, whose optimizer fails on these loops with it
@@ -104,31 +106,33 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
   std::uint64_t g[ 2 ] , p[ 2 ];
   for( int h = 0 ; h < 2 ; ++h ) {
    const __m256i a = _mm256_loadu_si256(
-                      reinterpret_cast< const __m256i * >( T + 32 * h ) ) ,
-                 b = _mm256_loadu_si256(
-                      reinterpret_cast< const __m256i * >( T + 32 * h + 1 ) );
+		   reinterpret_cast< const __m256i * >( T + 32 * h ) ) ,
+		 b = _mm256_loadu_si256(
+		   reinterpret_cast< const __m256i * >( T + 32 * h + 1 ) );
    const __m256i sa = _mm256_xor_si256( a , flip ) ,
-                 sb = _mm256_xor_si256( b , flip );
-   g[ h ] = std::uint32_t( _mm256_movemask_epi8(
-                            _mm256_cmpgt_epi8( sb , sa ) ) );
-   p[ h ] = std::uint32_t( _mm256_movemask_epi8(
-                            _mm256_cmpeq_epi8( a , b ) ) );
+		 sb = _mm256_xor_si256( b , flip );
+   g[ h ] =
+     std::uint32_t( _mm256_movemask_epi8( _mm256_cmpgt_epi8( sb , sa ) ) );
+   p[ h ] = std::uint32_t( _mm256_movemask_epi8( _mm256_cmpeq_epi8( a ,
+								    b ) ) );
    }
   *G = g[ 0 ] | ( g[ 1 ] << 32 );
   *P = p[ 0 ] | ( p[ 1 ] << 32 );
   return;
   }
  else if constexpr( ( sizeof( C ) == 4 ) && std::is_signed_v< C > ) {
-  std::uint64_t g = 0 , p = 0;        // the names, never negative
+  std::uint64_t g = 0 , p = 0;  // the names, never negative
   for( int h = 0 ; h < 8 ; ++h ) {
    const __m256i a = _mm256_loadu_si256(
-                      reinterpret_cast< const __m256i * >( T + 8 * h ) ) ,
-                 b = _mm256_loadu_si256(
-                      reinterpret_cast< const __m256i * >( T + 8 * h + 1 ) );
-   g |= std::uint64_t( unsigned( _mm256_movemask_ps( _mm256_castsi256_ps(
-         _mm256_cmpgt_epi32( b , a ) ) ) ) ) << ( 8 * h );
-   p |= std::uint64_t( unsigned( _mm256_movemask_ps( _mm256_castsi256_ps(
-         _mm256_cmpeq_epi32( a , b ) ) ) ) ) << ( 8 * h );
+		   reinterpret_cast< const __m256i * >( T + 8 * h ) ) ,
+		 b = _mm256_loadu_si256(
+		   reinterpret_cast< const __m256i * >( T + 8 * h + 1 ) );
+   g |= std::uint64_t( unsigned( _mm256_movemask_ps(
+	  _mm256_castsi256_ps( _mm256_cmpgt_epi32( b , a ) ) ) ) )
+	<< ( 8 * h );
+   p |= std::uint64_t( unsigned( _mm256_movemask_ps(
+	  _mm256_castsi256_ps( _mm256_cmpeq_epi32( a , b ) ) ) ) )
+	<< ( 8 * h );
    }
   *G = g;
   *P = p;
@@ -147,44 +151,46 @@ inline void saisCompare( const C * T , std::uint64_t * G , std::uint64_t * P )
 /// idx[ j ] = 4 x[ j ] + 2 t_j + b_j for j in [ 0 , 64 ), with t_j and b_j
 /// the bits j of t and b: the counters of the kinds of 64 places
 inline void saisKinds( const unsigned char * x , std::uint64_t t ,
-                       std::uint64_t b , std::uint16_t * idx )
+		       std::uint64_t b , std::uint16_t * idx )
 {
 #if defined( __AVX2__ )
  // each bit of a 32-bit mask to a byte of all ones or zeros
  const __m256i spread = _mm256_setr_epi8( 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 1 ,
-                         1 , 1 , 1 , 1 , 1 , 1 , 1 , 2 , 2 , 2 , 2 , 2 , 2 ,
-                         2 , 2 , 3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 ) ,
-               bit = _mm256_set1_epi64x(
-                      std::int64_t( 0x8040201008040201ull ) );
+					  1 , 1 , 1 ,
+					  1 , 1 , 1 , 1 , 2 , 2 , 2 , 2 , 2 ,
+					  2 , 2 , 2 ,
+					  3 , 3 , 3 , 3 , 3 , 3 , 3 , 3 ) ,
+	       bit =
+		 _mm256_set1_epi64x( std::int64_t( 0x8040201008040201ull ) );
  auto bytes = [ & ]( std::uint32_t v ) {
-  const __m256i a = _mm256_and_si256( _mm256_shuffle_epi8(
-                     _mm256_set1_epi32( int( v ) ) , spread ) , bit );
+  const __m256i a = _mm256_and_si256(
+    _mm256_shuffle_epi8( _mm256_set1_epi32( int( v ) ) , spread ) , bit );
   return( _mm256_cmpeq_epi8( a , bit ) );
   };
  for( int h = 0 ; h < 2 ; ++h ) {
-  const __m256i k = _mm256_or_si256(
-                     _mm256_and_si256( bytes( std::uint32_t( t >> 32 * h ) ) ,
-                                       _mm256_set1_epi8( 2 ) ) ,
-                     _mm256_and_si256( bytes( std::uint32_t( b >> 32 * h ) ) ,
-                                       _mm256_set1_epi8( 1 ) ) );
-  const __m256i v = _mm256_loadu_si256(
-                     reinterpret_cast< const __m256i * >( x + 32 * h ) );
+  const __m256i k =
+    _mm256_or_si256( _mm256_and_si256( bytes( std::uint32_t( t >> 32 * h ) ) ,
+				       _mm256_set1_epi8( 2 ) ) ,
+		     _mm256_and_si256( bytes( std::uint32_t( b >> 32 * h ) ) ,
+				       _mm256_set1_epi8( 1 ) ) );
+  const __m256i v =
+    _mm256_loadu_si256( reinterpret_cast< const __m256i * >( x + 32 * h ) );
   for( int g = 0 ; g < 2 ; ++g ) {
-   const __m128i vg = g ? _mm256_extracti128_si256( v , 1 ) :
-                          _mm256_castsi256_si128( v ) ,
-                 kg = g ? _mm256_extracti128_si256( k , 1 ) :
-                          _mm256_castsi256_si128( k );
-   const __m256i r = _mm256_or_si256(
-                      _mm256_slli_epi16( _mm256_cvtepu8_epi16( vg ) , 2 ) ,
-                      _mm256_cvtepu8_epi16( kg ) );
-   _mm256_storeu_si256( reinterpret_cast< __m256i * >( idx + 32 * h +
-                                                       16 * g ) , r );
+   const __m128i vg = g ? _mm256_extracti128_si256( v , 1 )
+			: _mm256_castsi256_si128( v ) ,
+		 kg = g ? _mm256_extracti128_si256( k , 1 )
+			: _mm256_castsi256_si128( k );
+   const __m256i r =
+     _mm256_or_si256( _mm256_slli_epi16( _mm256_cvtepu8_epi16( vg ) , 2 ) ,
+		      _mm256_cvtepu8_epi16( kg ) );
+   _mm256_storeu_si256( reinterpret_cast< __m256i * >( idx + 32 * h + 16 * g ) ,
+			r );
    }
   }
 #else
  for( unsigned j = 0 ; j < 64 ; ++j )
-  idx[ j ] = std::uint16_t( 4 * x[ j ] + 2 * ( ( t >> j ) & 1 ) +
-                            ( ( b >> j ) & 1 ) );
+  idx[ j ] =
+    std::uint16_t( 4 * x[ j ] + 2 * ( ( t >> j ) & 1 ) + ( ( b >> j ) & 1 ) );
 #endif
  }
 
@@ -194,14 +200,14 @@ inline void saisHuge( void * p , std::size_t b )
 {
 #if defined( __linux__ ) && defined( MADV_HUGEPAGE )
  constexpr std::uintptr_t page = std::uintptr_t( 1 ) << 21;
- const std::uintptr_t from = ( std::uintptr_t( p ) + page - 1 ) &
-                             ~( page - 1 ) ,
-                      to = ( std::uintptr_t( p ) + b ) & ~( page - 1 );
+ const std::uintptr_t from =
+			( std::uintptr_t( p ) + page - 1 ) & ~( page - 1 ) ,
+		      to = ( std::uintptr_t( p ) + b ) & ~( page - 1 );
  if( to > from )
   madvise( reinterpret_cast< void * >( from ) , to - from , MADV_HUGEPAGE );
 #else
- (void) p;
- (void) b;
+ ( void )p;
+ ( void )b;
 #endif
  }
 
@@ -212,7 +218,7 @@ std::vector< I > saisVector( std::size_t n )
  std::vector< I > V;
  V.reserve( n );
  saisHuge( V.data() , n * sizeof( I ) );
- V.assign( n , I( 0 ) );              // a fill of zeros: one memset
+ V.assign( n , I( 0 ) );  // a fill of zeros: one memset
  return( V );
  }
 
@@ -222,7 +228,7 @@ inline void saisPrefetch( const void * p )
 #if defined( __GNUC__ ) || defined( __clang__ )
  __builtin_prefetch( p , 0 , 3 );
 #else
- (void) p;
+ ( void )p;
 #endif
  }
 
@@ -242,7 +248,7 @@ inline void saisPrefetchW( const void * p )
 #if defined( __GNUC__ ) || defined( __clang__ )
  __builtin_prefetch( p , 1 , 3 );
 #else
- (void) p;
+ ( void )p;
 #endif
  }
 
@@ -269,8 +275,8 @@ inline S saisTop( bool b )
 /// the move of the entry h by the scan from left to right
 template< class C , class S >
 inline void saisMoveL( const C * ADS_SAIS_RESTRICT T ,
-                       S * ADS_SAIS_RESTRICT SA , S * ADS_SAIS_RESTRICT B ,
-                       S h )
+		       S * ADS_SAIS_RESTRICT SA ,
+		       S * ADS_SAIS_RESTRICT B , S h )
 {
  constexpr S top = std::numeric_limits< S >::min();
  const S q = SA[ h ];
@@ -285,8 +291,8 @@ inline void saisMoveL( const C * ADS_SAIS_RESTRICT T ,
 /// the move of the entry h by the scan from right to left
 template< class C , class S >
 inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
-                       S * ADS_SAIS_RESTRICT SA , S * ADS_SAIS_RESTRICT B ,
-                       S h )
+		       S * ADS_SAIS_RESTRICT SA ,
+		       S * ADS_SAIS_RESTRICT B , S h )
 {
  constexpr S low = std::numeric_limits< S >::max();
  const S q = SA[ h ];
@@ -308,17 +314,18 @@ inline void saisMoveS( const C * ADS_SAIS_RESTRICT T ,
 /// entries need not wait for the stores of the moves
 template< bool small , class C , class S >
 void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-                  S n , const S * size , S * ADS_SAIS_RESTRICT B , S K )
+		  S n ,
+		  const S * size , S * ADS_SAIS_RESTRICT B , S K )
 {
  constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  saisBuckets( size , B , K , false );
  {
   const S j = n - 1;
-  SA[ B[ T[ j ] ]++ ] = j | saisTop< S >( ( j > 0 ) &&
-                                           ( T[ j - 1 ] < T[ j ] ) );
+  SA[ B[ T[ j ] ]++ ] =
+    j | saisTop< S >( ( j > 0 ) && ( T[ j - 1 ] < T[ j ] ) );
   }
  S i = 0;
- for( ; i + 2 * D + 1 < n ; i += 2 ) { // two at a time, no checks
+ for( ; i + 2 * D + 1 < n ; i += 2 ) {  // two at a time, no checks
   saisPrefetchW( SA + i + 2 * D );
   const S a = SA[ i + D ] , b = SA[ i + D + 1 ];
   saisPrefetch2( T , a );
@@ -331,7 +338,8 @@ void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
   saisMoveL( T , SA , B , i );
   saisMoveL( T , SA , B , i + 1 );
   }
- for( ; i < n ; ++i ) saisMoveL( T , SA , B , i );
+ for( ; i < n ; ++i )
+  saisMoveL( T , SA , B , i );
  }
 
 /// the scan from right to left: the S-suffixes, each stored with its top
@@ -340,12 +348,13 @@ void saisInduceL( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
 /// saisInduceL()
 template< bool small , class C , class S >
 void saisInduceS( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-                  S n , const S * size , S * ADS_SAIS_RESTRICT B , S K )
+		  S n ,
+		  const S * size , S * ADS_SAIS_RESTRICT B , S K )
 {
  constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  saisBuckets( size , B , K , true );
  S i = n - 1;
- for( ; i >= 2 * D + 1 ; i -= 2 ) {    // two at a time, no checks
+ for( ; i >= 2 * D + 1 ; i -= 2 ) {  // two at a time, no checks
   saisPrefetchW( SA + i - 2 * D );
   const S a = SA[ i - D ] , b = SA[ i - D - 1 ];
   saisPrefetch2( T , a );
@@ -358,13 +367,13 @@ void saisInduceS( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
   saisMoveS( T , SA , B , i );
   saisMoveS( T , SA , B , i - 1 );
   }
- for( ; i >= 0 ; --i ) saisMoveS( T , SA , B , i );
+ for( ; i >= 0 ; --i )
+  saisMoveS( T , SA , B , i );
  }
 
 /// the two scans of the induction
 template< class C , class S >
-void saisInduce( const C * T , S * SA , S n , const S * size , S * B ,
-                 S K )
+void saisInduce( const C * T , S * SA , S n , const S * size , S * B , S K )
 {
  if( K <= S( saisCached ) ) {
   saisInduceL< true >( T , SA , n , size , B , K );
@@ -390,17 +399,19 @@ void saisInduce( const C * T , S * SA , S n , const S * size , S * B ,
 /// recursion
 template< class S >
 bool saisDoubling( const S * R , S * SA , S m ,
-                   const std::vector< S > & count , S limit )
+		   const std::vector< S > & count ,
+		   S limit )
 {
  const std::size_t K = count.size();
- S tied = 0 , groups = 0;             // in the groups of a repeated name
+ S tied = 0 , groups = 0;  // in the groups of a repeated name
  for( std::size_t c = 0 ; c < K ; ++c )
   if( count[ c ] > 1 ) {
    tied += count[ c ];
    ++groups;
    }
  if( tied > limit ) {
-  if( tied > 16 * groups ) return( false );
+  if( tied > 16 * groups )
+   return( false );
   limit = m;
   }
  std::vector< S > V( std::size_t( m ) , 0 ) , start( K , 0 );
@@ -411,32 +422,38 @@ bool saisDoubling( const S * R , S * SA , S m ,
  // the counting sort, the group of each name prefetched, then its place
  constexpr S D = S( saisAhead );
  for( S k = 0 ; k < m ; ++k ) {
-  if( k + 2 * D < m ) saisPrefetch( start.data() + R[ k + 2 * D ] );
-  if( k + D < m ) saisPrefetchW( SA + start[ std::size_t( R[ k + D ] ) ] );
+  if( k + 2 * D < m )
+   saisPrefetch( start.data() + R[ k + 2 * D ] );
+  if( k + D < m )
+   saisPrefetchW( SA + start[ std::size_t( R[ k + D ] ) ] );
   SA[ start[ std::size_t( R[ k ] ) ]++ ] = k;
   }
  // the rank of a suffix, the last place of its group: start[ c ] is now
  // one past it
  for( S k = 0 ; k < m ; ++k ) {
-  if( k + D < m ) saisPrefetch( start.data() + R[ k + D ] );
+  if( k + D < m )
+   saisPrefetch( start.data() + R[ k + D ] );
   V[ std::size_t( k ) ] = start[ std::size_t( R[ k ] ) ] - 1;
   }
  // the groups of more than one suffix, as ( first place , size )
  std::vector< std::pair< S , S > > G , H;
  for( std::size_t c = 0 ; c < K ; ++c )
-  if( count[ c ] > 1 ) G.emplace_back( start[ c ] - count[ c ] , count[ c ] );
- std::vector< std::pair< S , S > > key;    // ( rank ahead , suffix )
+  if( count[ c ] > 1 )
+   G.emplace_back( start[ c ] - count[ c ] , count[ c ] );
+ std::vector< std::pair< S , S > > key;  // ( rank ahead , suffix )
  for( S h = 1 ; ! G.empty() ; h *= 2 ) {
   tied = 0;
-  for( const auto & [ f , g ] : G ) tied += g;
-  if( ( tied > limit ) || ( h > ( S( 1 ) << 16 ) ) ) return( false );
+  for( const auto & [ f , g ] : G )
+   tied += g;
+  if( ( tied > limit ) || ( h > ( S( 1 ) << 16 ) ) )
+   return( false );
   // the keys of all the groups first, then the new ranks
   key.resize( std::size_t( tied ) );
   auto * kz = key.data();
   for( const auto & [ f , g ] : G )
    for( S i = f ; i < f + g ; ++i ) {
-    if( i + D < m ) saisPrefetch( V.data() + std::min( SA[ i + D ] + h ,
-                                                        m - 1 ) );
+    if( i + D < m )
+     saisPrefetch( V.data() + std::min( SA[ i + D ] + h , m - 1 ) );
     const S k = SA[ i ];
     *kz++ = { k + h < m ? V[ std::size_t( k + h ) ] : S( -1 ) , k };
     }
@@ -444,19 +461,22 @@ bool saisDoubling( const S * R , S * SA , S m ,
   std::size_t at = 0;
   for( const auto & [ f , g ] : G ) {
    auto * a = key.data() + at;
-   if( g <= 16 )                      // most groups: few suffixes
+   if( g <= 16 )  // most groups: few suffixes
     for( S i = 1 ; i < g ; ++i ) {
      const auto x = a[ i ];
      S j = i;
-     for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j ) a[ j ] = a[ j - 1 ];
+     for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j )
+      a[ j ] = a[ j - 1 ];
      a[ j ] = x;
      }
    else
     std::sort( a , a + g );
    for( S i = 0 ; i < g ; ) {
     S j = i + 1;
-    while( ( j < g ) && ( a[ j ].first == a[ i ].first ) ) ++j;
-    if( j - i > 1 ) H.emplace_back( f + i , j - i );
+    while( ( j < g ) && ( a[ j ].first == a[ i ].first ) )
+     ++j;
+    if( j - i > 1 )
+     H.emplace_back( f + i , j - i );
     i = j;
     }
    at += std::size_t( g );
@@ -466,7 +486,8 @@ bool saisDoubling( const S * R , S * SA , S m ,
    const auto * a = key.data() + at;
    for( S i = 0 ; i < g ; ) {
     S j = i + 1;
-    while( ( j < g ) && ( a[ j ].first == a[ i ].first ) ) ++j;
+    while( ( j < g ) && ( a[ j ].first == a[ i ].first ) )
+     ++j;
     for( S q = i ; q < j ; ++q ) {
      if( at + std::size_t( q + D ) < key.size() )
       saisPrefetchW( V.data() + a[ q + D ].second );
@@ -486,13 +507,14 @@ bool saisDoubling( const S * R , S * SA , S m ,
 /// ends its group), each f( start , size ) in order
 template< class S , class F >
 inline void saisForGroups( const std::vector< std::uint64_t > & ends , S m ,
-                           F && f )
+			   F && f )
 {
  S start = 0;
  for( std::size_t w = 0 ; w < ends.size() ; ++w )
   for( std::uint64_t v = ends[ w ] ; v ; v &= v - 1 ) {
    const S e = S( w * 64 + std::size_t( std::countr_zero( v ) ) ) + 1;
-   if( e > m ) return;
+   if( e > m )
+    return;
    f( start , e - start );
    start = e;
    }
@@ -514,7 +536,8 @@ inline S saisNextLms( const std::vector< std::uint64_t > & lms , S n , S p )
  std::size_t w = std::size_t( p + 1 ) >> 6;
  std::uint64_t v = lms[ w ] & ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) );
  while( ! v ) {
-  if( ++w == lms.size() ) return( n );
+  if( ++w == lms.size() )
+   return( n );
   v = lms[ w ];
   }
  return( S( w * 64 + std::size_t( std::countr_zero( v ) ) ) );
@@ -533,21 +556,25 @@ inline S saisNextLms( const std::vector< std::uint64_t > & lms , S n , S p )
 /// on the first groups stay tied
 template< class C , class S >
 bool saisTextTies( const C * T , S n , S * SA , S m ,
-                   const std::vector< std::uint64_t > & ends ,
-                   const std::vector< std::uint64_t > & lms ,
-                   std::vector< std::uint64_t > & rest , std::size_t budget ,
-                   unsigned rounds )
+		   const std::vector< std::uint64_t > & ends ,
+		   const std::vector< std::uint64_t > & lms ,
+		   std::vector< std::uint64_t > & rest , std::size_t budget ,
+		   unsigned rounds )
 {
  static_assert( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > );
  constexpr S D = S( saisAhead );
- struct Key {
+ struct Key
+ {
   std::uint64_t key;
-  S left , p;                         // the symbols in the key (<= 8)
+  S left , p;  // the symbols in the key (<= 8)
   bool operator<( const Key & o ) const {
    return( ( key < o.key ) || ( ( key == o.key ) && ( left < o.left ) ) );
    }
   };
- struct Group { S f , g , at; };      // SA[ f .. f + g ), offset at
+ struct Group
+ {
+  S f , g , at;
+  };  // SA[ f .. f + g ), offset at
  std::vector< Group > G , H;
  std::size_t tied = 0;
  saisForGroups( ends , m , [ & ]( S f , S g ) {
@@ -575,7 +602,8 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
    for( S i = 1 ; i < g ; ++i ) {
     const Key x = a[ i ];
     S j = i;
-    for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j ) a[ j ] = a[ j - 1 ];
+    for( ; ( j > 0 ) && ( x < a[ j - 1 ] ) ; --j )
+     a[ j ] = a[ j - 1 ];
     a[ j ] = x;
     }
    return;
@@ -591,21 +619,24 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
   const std::uint64_t mask = one ^ any;
   const int b = std::popcount( mask );
   if( ( full == 8 ) && ( b <= 32 ) ) {
-   if( b == 0 ) return;               // all equal
+   if( b == 0 )
+    return;  // all equal
    u.resize( std::size_t( g ) );
    w.resize( std::size_t( g ) );
    for( S i = 0 ; i < g ; ++i )
-    u[ i ] = ( _pext_u64( a[ i ].key , mask ) << 32 ) |
-             std::uint32_t( a[ i ].p );
+    u[ i ] =
+      ( _pext_u64( a[ i ].key , mask ) << 32 ) | std::uint32_t( a[ i ].p );
    for( int shift = 32 ; shift < 32 + b ; shift += 8 ) {
     S count[ 257 ] = {};
-    for( S i = 0 ; i < g ; ++i ) ++count[ ( ( u[ i ] >> shift ) & 255 ) + 1 ];
-    for( int c = 0 ; c < 256 ; ++c ) count[ c + 1 ] += count[ c ];
+    for( S i = 0 ; i < g ; ++i )
+     ++count[ ( ( u[ i ] >> shift ) & 255 ) + 1 ];
+    for( int c = 0 ; c < 256 ; ++c )
+     count[ c + 1 ] += count[ c ];
     for( S i = 0 ; i < g ; ++i )
      w[ std::size_t( count[ ( u[ i ] >> shift ) & 255 ]++ ) ] = u[ i ];
     u.swap( w );
     }
-   for( S i = 0 ; i < g ; ++i )       // the key only for its equalities
+   for( S i = 0 ; i < g ; ++i )  // the key only for its equalities
     a[ i ] = { u[ i ] >> 32 , 8 , S( std::uint32_t( u[ i ] ) ) };
    return;
    }
@@ -616,13 +647,15 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
  // the number of places in them
  auto round = [ & ]( std::size_t from , std::size_t to ) {
   std::size_t total = 0 , left = 0;
-  for( std::size_t z = from ; z < to ; ++z ) total += std::size_t( G[ z ].g );
+  for( std::size_t z = from ; z < to ; ++z )
+   total += std::size_t( G[ z ].g );
   key.resize( total );
   // the places of the keys first (key holds them), the groups ahead
   // prefetched; then the keys, the text D keys ahead prefetched
   std::size_t at = 0;
   for( std::size_t z = from ; z < to ; ++z ) {
-   if( z + 8 < to ) saisPrefetch( SA + G[ z + 8 ].f );
+   if( z + 8 < to )
+    saisPrefetch( SA + G[ z + 8 ].f );
    const Group & q = G[ z ];
    for( S i = q.f ; i < q.f + q.g ; ++i , ++at )
     key[ at ] = { std::uint64_t( SA[ i ] + q.at ) , 8 , SA[ i ] };
@@ -655,13 +688,14 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
    for( S i = 0 ; i < q.g ; ) {
     S j = i + 1;
     while( ( j < q.g ) && ( a[ j ].key == a[ i ].key ) &&
-           ( a[ j ].left == a[ i ].left ) )
+	   ( a[ j ].left == a[ i ].left ) )
      ++j;
     if( ( j - i > 1 ) && ( a[ i ].left == 8 ) ) {
      H.push_back( { q.f + i , j - i , q.at + 8 } );
      left += std::size_t( j - i );
      }
-    for( S y = i ; y < j ; ++y ) SA[ q.f + y ] = a[ y ].p;
+    for( S y = i ; y < j ; ++y )
+     SA[ q.f + y ] = a[ y ].p;
     i = j;
     }
    at += std::size_t( q.g );
@@ -691,14 +725,17 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
   G.swap( H );
   for( unsigned r = 1 ; ( r < rounds ) && ! G.empty() ; ++r ) {
    std::size_t next = 0;
-   for( const Group & q : G ) next += std::size_t( q.g );
-   if( spent + next > budget ) break;
+   for( const Group & q : G )
+    next += std::size_t( q.g );
+   if( spent + next > budget )
+    break;
    H.clear();
    round( 0 , G.size() );
    G.swap( H );
    }
   }
- if( G.empty() ) return( true );
+ if( G.empty() )
+  return( true );
  // every place a group of its own, but those of the groups left
  rest.assign( ends.size() , ~std::uint64_t( 0 ) );
  for( const Group & q : G )
@@ -709,9 +746,9 @@ bool saisTextTies( const C * T , S n , S * SA , S m ,
 
 template< class S >
 bool saisResolveTies( S * SA , S n , S m ,
-                      const std::vector< std::uint64_t > & ends ,
-                      const std::vector< std::uint64_t > & lms ,
-                      std::size_t budget )
+		      const std::vector< std::uint64_t > & ends ,
+		      const std::vector< std::uint64_t > & lms ,
+		      std::size_t budget )
 {
  const S * name = SA + m;
  auto next = [ & ]( S p ) { return( saisNextLms( lms , n , p ) ); };
@@ -719,25 +756,32 @@ bool saisResolveTies( S * SA , S n , S m ,
  // the doubling or the recursion do better
  std::size_t tied = 0 , spent = 0;
  saisForGroups( ends , m , [ & ]( S , S g ) {
-  if( g > 1 ) tied += std::size_t( g ); } );
- if( tied > std::size_t( m ) / 4 ) return( false );
+  if( g > 1 )
+   tied += std::size_t( g );
+  } );
+ if( tied > std::size_t( m ) / 4 )
+  return( false );
  // a before b, of equal names: their next names, until they differ; past
  // the budget every pair is equal, which ends any sort at once
  auto less = [ & ]( S a , S b ) {
   while( spent <= budget ) {
    a = next( a );
    b = next( b );
-   if( ( a == n ) || ( b == n ) ) return( a == n );   // an end first
+   if( ( a == n ) || ( b == n ) )
+    return( a == n );  // an end first
    const S x = name[ a >> 1 ] , y = name[ b >> 1 ];
-   if( x != y ) return( x < y );
+   if( x != y )
+    return( x < y );
    ++spent;
    }
   return( false );
   };
  saisForGroups( ends , m , [ & ]( S f , S g ) {
-  if( spent > budget ) return;
+  if( spent > budget )
+   return;
   if( g == 2 ) {
-   if( less( SA[ f + 1 ] , SA[ f ] ) ) std::swap( SA[ f ] , SA[ f + 1 ] );
+   if( less( SA[ f + 1 ] , SA[ f ] ) )
+    std::swap( SA[ f ] , SA[ f + 1 ] );
    }
   else if( g > 2 )
    std::sort( SA + f , SA + f + g , less );
@@ -753,13 +797,13 @@ void saisCompact( S * a , S from , S to )
 {
  S i = from , j = from;
 #if defined( __AVX512F__ )
- if constexpr( sizeof( S ) == 4 ) {   // 16 at a time: the place j + 16 is
-  const __m512i one = _mm512_set1_epi32( 1 );       // past no slot unread
+ if constexpr( sizeof( S ) == 4 ) {  // 16 at a time: the place j + 16 is
+  const __m512i one = _mm512_set1_epi32( 1 );  // past no slot unread
   for( ; i + 16 <= to ; i += 16 ) {
    const __m512i v = _mm512_loadu_si512( a + i );
    const __mmask16 k = _mm512_test_epi32_mask( v , v );
-   _mm512_storeu_si512( a + j , _mm512_maskz_compress_epi32( k ,
-                                 _mm512_sub_epi32( v , one ) ) );
+   _mm512_storeu_si512(
+     a + j , _mm512_maskz_compress_epi32( k , _mm512_sub_epi32( v , one ) ) );
    j += S( std::popcount( unsigned( k ) ) );
    }
   }
@@ -774,7 +818,8 @@ void saisCompact( S * a , S from , S to )
 /// a part of a bucket in the partial induction: where the next entry
 /// goes, and the name (the count of the marks met) of the last one moved in
 template< class S >
-struct SaisPart {
+struct SaisPart
+{
  S to , last;
  };
 
@@ -783,21 +828,21 @@ struct SaisPart {
 /// of its symbol by the type of p - 2 , at its start) or from right to left
 /// (forS true: of type S, at its end); the suffix 0 moves nothing
 template< bool forS , class C , class S >
-inline void saisPartialMove( const C * ADS_SAIS_RESTRICT T ,
-                             S * ADS_SAIS_RESTRICT SA ,
-                             SaisPart< S > * ADS_SAIS_RESTRICT P , S i ,
-                             S & d )
+inline void
+saisPartialMove( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
+		 SaisPart< S > * ADS_SAIS_RESTRICT P , S i , S & d )
 {
  constexpr S top = std::numeric_limits< S >::min() ,
-             low = std::numeric_limits< S >::max();
+	     low = std::numeric_limits< S >::max();
  S p = SA[ i ];
  d += S( p < 0 );
  p &= low;
  const S j = p - 1;
- if( j == 0 ) return;
+ if( j == 0 )
+  return;
  const S c = S( T[ j ] ) , b = S( T[ j - 1 ] );
- SaisPart< S > & q = P[ 2 * std::size_t( c ) +
-                        std::size_t( forS ? b > c : b < c ) ];
+ SaisPart< S > & q =
+   P[ 2 * std::size_t( c ) + std::size_t( forS ? b > c : b < c ) ];
  const S at = forS ? --q.to : q.to++;
  SA[ at ] = j | ( top & -S( q.last != d ) );
  q.last = d;
@@ -807,8 +852,7 @@ inline void saisPartialMove( const C * ADS_SAIS_RESTRICT T ,
 /// step, with the prefetches of the final scans; returns d
 template< bool forS , bool large , class C , class S >
 S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
-                   SaisPart< S > * ADS_SAIS_RESTRICT P , S from , S to ,
-                   S d )
+		   SaisPart< S > * ADS_SAIS_RESTRICT P , S from , S to , S d )
 {
  constexpr S D = S( saisAhead ) , low = std::numeric_limits< S >::max();
  // the part of an entry p, with no check (p > 1 , or 0 for an entry not
@@ -823,12 +867,12 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
   y &= low;
   saisPrefetch( T + ( x > 1 ? x : S( 2 ) ) - 2 );
   saisPrefetch( T + ( y > 1 ? y : S( 2 ) ) - 2 );
-  if constexpr( large ) {             // the part, and where it writes
+  if constexpr( large ) {  // the part, and where it writes
    saisPrefetchW( P + part( e & low ) );
    saisPrefetchW( SA + ( P[ part( f & low ) ].to - S( forS ) ) );
    }
   };
- auto ahead2 = [ & ]( S e , S f ) {   // the second entry of a step
+ auto ahead2 = [ & ]( S e , S f ) {  // the second entry of a step
   if constexpr( large ) {
    saisPrefetchW( P + part( e & low ) );
    saisPrefetchW( SA + ( P[ part( f & low ) ].to - S( forS ) ) );
@@ -838,25 +882,25 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
   S i = from;
   for( ; i + 2 * D + 1 < to ; i += 2 ) {
    saisPrefetch( SA + i + 2 * D );
-   ahead( SA[ i + D ] , SA[ i + D + 1 ] , SA[ i + D / 2 ] ,
-          SA[ i + D / 4 ] );
+   ahead( SA[ i + D ] , SA[ i + D + 1 ] , SA[ i + D / 2 ] , SA[ i + D / 4 ] );
    ahead2( SA[ i + D / 2 + 1 ] , SA[ i + D / 4 + 1 ] );
    saisPartialMove< false >( T , SA , P , i , d );
    saisPartialMove< false >( T , SA , P , i + 1 , d );
    }
-  for( ; i < to ; ++i ) saisPartialMove< false >( T , SA , P , i , d );
+  for( ; i < to ; ++i )
+   saisPartialMove< false >( T , SA , P , i , d );
   }
  else {
   S i = to - 1;
   for( ; i - 2 * D - 1 >= from ; i -= 2 ) {
    saisPrefetch( SA + i - 2 * D );
-   ahead( SA[ i - D ] , SA[ i - D - 1 ] , SA[ i - D / 2 ] ,
-          SA[ i - D / 4 ] );
+   ahead( SA[ i - D ] , SA[ i - D - 1 ] , SA[ i - D / 2 ] , SA[ i - D / 4 ] );
    ahead2( SA[ i - D / 2 - 1 ] , SA[ i - D / 4 - 1 ] );
    saisPartialMove< true >( T , SA , P , i , d );
    saisPartialMove< true >( T , SA , P , i - 1 , d );
    }
-  for( ; i >= from ; --i ) saisPartialMove< true >( T , SA , P , i , d );
+  for( ; i >= from ; --i )
+   saisPartialMove< true >( T , SA , P , i , d );
   }
  return( d );
  }
@@ -869,7 +913,7 @@ S saisPartialScan( const C * ADS_SAIS_RESTRICT T , S * ADS_SAIS_RESTRICT SA ,
 /// places is returned
 template< class C , class S >
 S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
-                std::vector< std::uint64_t > & lms , S * first )
+		std::vector< std::uint64_t > & lms , S * first )
 {
  constexpr S D = S( saisAhead );
  const std::size_t k = std::size_t( K );
@@ -881,11 +925,11 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
  // n - 1 is of type L, as if T[ n ] were smaller than every symbol)
  const std::size_t words = std::size_t( n ) / 64 + 1;
  std::vector< std::uint64_t > type( words , 0 );
- std::uint64_t above = 0;             // the type of the place above
+ std::uint64_t above = 0;  // the type of the place above
  for( std::size_t w = words ; w-- > 0 ; ) {
-  std::uint64_t Ga = 0 , Pa = 0;      // bit j: the place 64 w + j
+  std::uint64_t Ga = 0 , Pa = 0;  // bit j: the place 64 w + j
   const S base = S( 64 * w );
-  if( base + 64 < n )                 // T[ base + 64 ] is there
+  if( base + 64 < n )  // T[ base + 64 ] is there
    saisCompare( T + base , &Ga , &Pa );
   else
    for( S i = base ; i < n - 1 ; ++i ) {
@@ -898,7 +942,7 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
   const std::uint64_t B2 = G | P , s1 = G + B2 , s2 = s1 + above;
   const std::uint64_t out = std::uint64_t( s1 < G ) | std::uint64_t( s2 < s1 );
   const std::uint64_t X = ( ( s2 ^ G ^ B2 ) >> 1 ) | ( out << 63 );
-  type[ w ] = saisReverse( X );       // bit j: the place 64 w + j
+  type[ w ] = saisReverse( X );  // bit j: the place 64 w + j
   above = X >> 63;
   }
  *first = S( type[ 0 ] & 1 );
@@ -908,17 +952,17 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
  // other
  size4.assign( 4 * k , 0 );
  lms.assign( words , 0 );
- const bool smallK = K <= S( saisSmall ) ,
-            hugeK = K > S( saisCached );
+ const bool smallK = K <= S( saisSmall ) , hugeK = K > S( saisCached );
  std::vector< S > odd( smallK ? 4 * k : 0 , 0 );
  S m = 0;
  // the place 0 is counted too, as if the place before were of type L,
  // and taken back after
  for( std::size_t w = 0 ; w < words ; ++w ) {
   const std::uint64_t t = type[ w ] ,
-                      before = ( t << 1 ) | ( w ? type[ w - 1 ] >> 63 : 0 );
-  std::uint64_t l = t & ~before;      // LMS: S after L
-  if( w == 0 ) l &= ~std::uint64_t( 1 );
+		      before = ( t << 1 ) | ( w ? type[ w - 1 ] >> 63 : 0 );
+  std::uint64_t l = t & ~before;  // LMS: S after L
+  if( w == 0 )
+   l &= ~std::uint64_t( 1 );
   lms[ w ] = l;
   m += S( std::popcount( l ) );
   const S base = S( 64 * w );
@@ -942,8 +986,8 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
    S * ADS_SAIS_RESTRICT o = odd.data();
    for( unsigned j = 0 ; j < 64 ; j += 2 ) {
     const std::size_t k0 = 2 * ( ( t >> j ) & 1 ) + ( ( before >> j ) & 1 ) ,
-                      k1 = 2 * ( ( t >> ( j + 1 ) ) & 1 ) +
-                           ( ( before >> ( j + 1 ) ) & 1 );
+		      k1 = 2 * ( ( t >> ( j + 1 ) ) & 1 ) +
+			   ( ( before >> ( j + 1 ) ) & 1 );
     ++even[ 4 * std::size_t( x[ j ] ) + k0 ];
     ++o[ 4 * std::size_t( x[ j + 1 ] ) + k1 ];
     }
@@ -960,7 +1004,8 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
    }
   }
  --size4[ 4 * std::size_t( T[ 0 ] ) + 2 * std::size_t( type[ 0 ] & 1 ) ];
- for( std::size_t c = 0 ; c < odd.size() ; ++c ) size4[ c ] += odd[ c ];
+ for( std::size_t c = 0 ; c < odd.size() ; ++c )
+  size4[ c ] += odd[ c ];
  return( m );
  }
 
@@ -980,12 +1025,12 @@ S saisClassify( const C * T , S n , S K , std::vector< S > & size4 ,
 /// the names
 template< class C , class S >
 void saisPartial( const C * T , S * SA , S n , S K ,
-                  const std::vector< S > & size4 ,
-                  const std::vector< std::uint64_t > & lms , S m ,
-                  S * names , std::vector< std::uint64_t > & ends )
+		  const std::vector< S > & size4 ,
+		  const std::vector< std::uint64_t > & lms , S m , S * names ,
+		  std::vector< std::uint64_t > & ends )
 {
  constexpr S top = std::numeric_limits< S >::min() ,
-             low = std::numeric_limits< S >::max();
+	     low = std::numeric_limits< S >::max();
  const std::size_t k = std::size_t( K );
 
  // the parts: A = LL , LMS per symbol; C = LS , SS per symbol; the LMS
@@ -997,55 +1042,60 @@ void saisPartial( const C * T , S * SA , S n , S K ,
  std::vector< S > seed( k );
  S sum = 0;
  for( std::size_t c = 0 ; c < k ; ++c ) {
-  L[ 2 * c ].to = sum;               // LL: the moves of the L-scan into A
+  L[ 2 * c ].to = sum;  // LL: the moves of the L-scan into A
   sum += size4[ 4 * c ];
   seed[ c ] = sum;
   sum += size4[ 4 * c + 2 ];
   }
  const S endA = sum;
  for( std::size_t c = 0 , o = 0 ; c < k ; ++c ) {
-  L[ 2 * c + 1 ].to = sum;           // LS: the moves of the L-scan into C
+  L[ 2 * c + 1 ].to = sum;  // LS: the moves of the L-scan into C
   sum += size4[ 4 * c + 1 ] + size4[ 4 * c + 3 ];
-  R[ 2 * c ].to = sum;               // SS: the moves of the S-scan
+  R[ 2 * c ].to = sum;  // SS: the moves of the S-scan
   o += std::size_t( size4[ 4 * c + 2 ] );
-  R[ 2 * c + 1 ].to = S( o );        // the LMS places, from the end
+  R[ 2 * c + 1 ].to = S( o );  // the LMS places, from the end
   }
- const S endC = sum;                 // n - 1: the suffix 0 is in none
+ const S endC = sum;  // n - 1: the suffix 0 is in none
  const bool large = K > S( saisSmall ) , huge = K > S( saisCached );
  // the prefetches of the huge alphabets read the symbols of entries not
  // written yet, which must then be 0
- if( huge ) std::fill( SA , SA + n , S( 0 ) );
+ if( huge )
+  std::fill( SA , SA + n , S( 0 ) );
 
  // the seeds, the LMS places by their first symbol, the first one of each
  // symbol marked
  for( std::size_t w = 0 ; w < lms.size() ; ++w ) {
   if( large && ( w + 1 < lms.size() ) )
    for( std::uint64_t v = lms[ w + 1 ] ; v ; v &= v - 1 )
-    saisPrefetchW( seed.data() + T[ ( w + 1 ) * 64 +
-                                    std::size_t( std::countr_zero( v ) ) ] );
+    saisPrefetchW(
+      seed.data() +
+      T[ ( w + 1 ) * 64 + std::size_t( std::countr_zero( v ) ) ] );
   for( std::uint64_t v = lms[ w ] ; v ; v &= v - 1 ) {
    const S p = S( w * 64 + std::size_t( std::countr_zero( v ) ) );
    SA[ seed[ std::size_t( T[ p ] ) ]++ ] = p;
    }
   }
  for( std::size_t c = 0 ; c < k ; ++c )
-  if( size4[ 4 * c + 2 ] ) SA[ seed[ c ] - size4[ 4 * c + 2 ] ] |= top;
+  if( size4[ 4 * c + 2 ] )
+   SA[ seed[ c ] - size4[ 4 * c + 2 ] ] |= top;
 
  // the scan of A from left to right: the suffix p - 1, of type L, to the
  // LL part of its symbol if p - 2 is of type L, to its LS part otherwise
  S d = 1;
  {
   const S j = n - 1;
-  const std::size_t v = 2 * std::size_t( T[ j ] ) +
-                        std::size_t( T[ j - 1 ] < T[ j ] );
+  const std::size_t v =
+    2 * std::size_t( T[ j ] ) + std::size_t( T[ j - 1 ] < T[ j ] );
   SA[ L[ v ].to++ ] = j | top;
   L[ v ].last = d;
   }
  // the parts and the places they point to prefetched only on the
  // alphabets whose parts do not fit in the cache
- d = huge ?
-     saisPartialScan< false , true >( T , SA , L.data() , S( 0 ) , endA , d ) :
-     saisPartialScan< false , false >( T , SA , L.data() , S( 0 ) , endA , d );
+ d = huge
+       ? saisPartialScan< false , true >( T , SA , L.data() , S( 0 ) , endA ,
+					  d )
+       : saisPartialScan< false , false >( T , SA , L.data() , S( 0 ) , endA ,
+					   d );
 
  // the marks of the LS parts moved one place left, so that a mark tells
  // that an entry differs from the one after it, as the scan from right to
@@ -1062,9 +1112,10 @@ void saisPartial( const C * T , S * SA , S n , S K ,
  // the scan of C from right to left: the suffix p - 1, of type S, to the
  // SS part of its symbol if p - 2 is of type S, among the sorted LMS
  // places otherwise
- d = huge ?
-     saisPartialScan< true , true >( T , SA , R.data() , endA , endC , d ) :
-     saisPartialScan< true , false >( T , SA , R.data() , endA , endC , d );
+ d = huge ? saisPartialScan< true , true >( T , SA , R.data() , endA , endC ,
+					    d )
+	  : saisPartialScan< true , false >( T , SA , R.data() , endA , endC ,
+					     d );
 
  // the names: SA[ i ] marked if it differs from SA[ i + 1 ]; here only
  // their groups, the names themselves written when needed
@@ -1075,13 +1126,14 @@ void saisPartial( const C * T , S * SA , S n , S K ,
   std::uint64_t word = 0;
 #if defined( __AVX2__ )
   if constexpr( sizeof( S ) == 4 )
-   if( to - from == 64 ) {            // the signs by 8 at a time
+   if( to - from == 64 ) {  // the signs by 8 at a time
     const __m256i keep = _mm256_set1_epi32( int( low ) );
     for( int h = 0 ; h < 8 ; ++h ) {
      auto * a = reinterpret_cast< __m256i * >( SA + from + 8 * h );
      const __m256i v = _mm256_loadu_si256( a );
-     word |= std::uint64_t( unsigned( _mm256_movemask_ps(
-              _mm256_castsi256_ps( v ) ) ) ) << ( 8 * h );
+     word |= std::uint64_t(
+	       unsigned( _mm256_movemask_ps( _mm256_castsi256_ps( v ) ) ) )
+	     << ( 8 * h );
      _mm256_storeu_si256( a , _mm256_and_si256( v , keep ) );
      }
     ends[ w ] = word;
@@ -1097,7 +1149,7 @@ void saisPartial( const C * T , S * SA , S n , S K ,
   ends[ w ] = word;
   name += S( std::popcount( word ) );
   }
- {                                    // the last place ends its group
+ {  // the last place ends its group
   const std::size_t i = std::size_t( m - 1 );
   name += S( ( ( ends[ i >> 6 ] >> ( i & 63 ) ) & 1 ) == 0 );
   ends[ i >> 6 ] |= std::uint64_t( 1 ) << ( i & 63 );
@@ -1109,11 +1161,12 @@ void saisPartial( const C * T , S * SA , S n , S K ,
 /// ranks of the symbols that occur when they fit in 6 bits (b < 8), the
 /// bytes themselves otherwise (b = 8); the windows of 64 bits at any bit
 /// read past its end as zeros
-struct SaisPacked {
- const unsigned char * t;             // the bytes, 8 bits a symbol
- std::size_t len;                     // the bytes in t
- std::vector< unsigned char > own;    // the packed text, padded
- unsigned b;                          // the bits of a symbol
+struct SaisPacked
+{
+ const unsigned char * t;           // the bytes, 8 bits a symbol
+ std::size_t len;                   // the bytes in t
+ std::vector< unsigned char > own;  // the packed text, padded
+ unsigned b;                        // the bits of a symbol
 
  /// the bits [ o , o + 64 ) of the text
  std::uint64_t window( std::uint64_t o ) const {
@@ -1129,8 +1182,10 @@ struct SaisPacked {
   else
    for( std::size_t j = 0 ; j < 9 ; ++j ) {
     const std::uint64_t v = at + j < len ? t[ at + j ] : 0;
-    if( j < 8 ) hi |= v << ( 56 - 8 * j );
-    else lo = v;
+    if( j < 8 )
+     hi |= v << ( 56 - 8 * j );
+    else
+     lo = v;
     }
   return( ( hi << s ) | ( lo >> ( 8 - s ) ) );
   }
@@ -1146,7 +1201,8 @@ inline unsigned saisCodes( const bool * occurs , unsigned char * code )
   sigma += occurs[ c ];
   }
  const unsigned b = unsigned( std::bit_width( std::max( sigma , 2u ) - 1 ) );
- if( b <= 6 ) return( b );
+ if( b <= 6 )
+  return( b );
  for( unsigned c = 0 ; c < 256 ; ++c )
   code[ c ] = static_cast< unsigned char >( c );
  return( 8 );
@@ -1156,28 +1212,28 @@ inline unsigned saisCodes( const bool * occurs , unsigned char * code )
 /// one symbol at a time, or only the symbols that cover its first limit
 /// bits, the others zero
 inline std::uint64_t saisSlowWindow( const unsigned char * T , std::size_t n ,
-                                     const unsigned char * code , unsigned b ,
-                                     std::size_t p , unsigned limit = 64 )
+				     const unsigned char * code , unsigned b ,
+				     std::size_t p , unsigned limit = 64 )
 {
  std::uint64_t w = 0;
  unsigned have = 0;
- for( ; ( have < limit ) && ( have + b <= 64 ) && ( p < n ) ;
-      have += b , ++p )
+ for( ; ( have < limit ) && ( have + b <= 64 ) && ( p < n ) ; have += b , ++p )
   w = ( w << b ) | code[ T[ p ] ];
- if( ( have >= limit ) || ( have + b <= 64 ) )        // or the text ended
+ if( ( have >= limit ) || ( have + b <= 64 ) )  // or the text ended
   return( w << ( 64 - have ) );
- if( have == 64 ) return( w );
- const unsigned r = 64 - have;        // a part of the next symbol
+ if( have == 64 )
+  return( w );
+ const unsigned r = 64 - have;  // a part of the next symbol
  const std::uint64_t c = p < n ? code[ T[ p ] ] : 0;
  return( ( w << r ) | ( c >> ( b - r ) ) );
  }
 
 /// the packed text of T, its codes of b bits [ see saisCodes() ]
 inline void saisPack( const unsigned char * T , std::size_t n ,
-                      const unsigned char * code , unsigned b ,
-                      SaisPacked & P )
+		      const unsigned char * code , unsigned b ,
+		      SaisPacked & P )
 {
- if( b == 8 ) {                       // the bytes themselves
+ if( b == 8 ) {  // the bytes themselves
   P.t = T;
   P.len = n;
   P.b = 8;
@@ -1186,15 +1242,15 @@ inline void saisPack( const unsigned char * T , std::size_t n ,
  P.b = b;
  P.own.assign( ( n * b + 7 ) / 8 + 16 , 0 );
  unsigned char * out = P.own.data();
- std::uint64_t acc = 0;               // the low have bits pending
+ std::uint64_t acc = 0;  // the low have bits pending
  unsigned have = 0;
- auto put = [ & ]( std::uint64_t v , unsigned w ) {    // w <= 56 bits
+ auto put = [ & ]( std::uint64_t v , unsigned w ) {  // w <= 56 bits
   if( have + w < 64 ) {
    acc = ( acc << w ) | v;
    have += w;
    return;
    }
-  const unsigned r = 64 - have;       // have >= 8, so r <= 56
+  const unsigned r = 64 - have;  // have >= 8, so r <= 56
   std::uint64_t word = ( acc << r ) | ( v >> ( w - r ) );
   if constexpr( std::endian::native == std::endian::little )
    word = saisSwap( word );
@@ -1205,8 +1261,8 @@ inline void saisPack( const unsigned char * T , std::size_t n ,
   };
  std::size_t i = 0;
 #if defined( __BMI2__ )
- const std::uint64_t mask = 0x0101010101010101ull *
-                            ( ( std::uint64_t( 1 ) << b ) - 1 );
+ const std::uint64_t mask =
+   0x0101010101010101ull * ( ( std::uint64_t( 1 ) << b ) - 1 );
  for( ; i + 8 <= n ; i += 8 ) {
   std::uint64_t x = 0;
   for( unsigned j = 0 ; j < 8 ; ++j )
@@ -1214,7 +1270,8 @@ inline void saisPack( const unsigned char * T , std::size_t n ,
   put( _pext_u64( x , mask ) , 8 * b );
   }
 #endif
- for( ; i < n ; ++i ) put( code[ T[ i ] ] , b );
+ for( ; i < n ; ++i )
+  put( code[ T[ i ] ] , b );
  if( have ) {
   std::uint64_t word = acc << ( 64 - have );
   if constexpr( std::endian::native == std::endian::little )
@@ -1231,8 +1288,9 @@ inline void saisPack( const unsigned char * T , std::size_t n ,
 /// and forth between e and t; count holds P << bits counters
 template< unsigned P , class E , class F , class S >
 void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
-              F keyOf , const unsigned * sh , unsigned bits ,
-              S * ADS_SAIS_RESTRICT count )
+	      F keyOf ,
+	      const unsigned * sh , unsigned bits ,
+	      S * ADS_SAIS_RESTRICT count )
 {
  const std::size_t width = std::size_t( 1 ) << bits , mask = width - 1;
  std::fill( count , count + P * width , S( 0 ) );
@@ -1241,7 +1299,7 @@ void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
   for( unsigned d = 0 ; d < P ; ++d )
    ++count[ d * width + ( std::size_t( x >> sh[ d ] ) & mask ) ];
   }
- for( unsigned d = 0 ; d < P ; ++d ) {   // the starts, exclusive
+ for( unsigned d = 0 ; d < P ; ++d ) {  // the starts, exclusive
   S sum = 0;
   for( std::size_t z = 0 ; z < width ; ++z ) {
    const S c = count[ d * width + z ];
@@ -1249,7 +1307,7 @@ void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
    sum += c;
    }
   }
- E * from = e , * to = t;
+ E *from = e , *to = t;
  for( unsigned d = 0 ; d < P ; ++d ) {
   S * const c = count + d * width;
   const unsigned s = sh[ d ];
@@ -1259,7 +1317,8 @@ void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
    }
   std::swap( from , to );
   }
- if( from != e ) std::copy( from , from + g , e );
+ if( from != e )
+  std::copy( from , from + g , e );
  }
 
 /// the LMS-suffixes of T (n bytes, m LMS places in the bit vector lms,
@@ -1274,16 +1333,16 @@ void saisLsd( E * ADS_SAIS_RESTRICT e , E * ADS_SAIS_RESTRICT t , S g ,
 /// induction does better) or the ties read more than m windows
 template< class S >
 bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
-                 const std::vector< S > & size4 ,
-                 const std::vector< std::uint64_t > & lms )
+		 const std::vector< S > & size4 ,
+		 const std::vector< std::uint64_t > & lms )
 {
  using U = std::make_unsigned_t< S >;
- constexpr unsigned kb = 8 * sizeof( S );   // the bits of a key
+ constexpr unsigned kb = 8 * sizeof( S );  // the bits of a key
  constexpr S D = S( saisAhead );
  bool occurs[ 256 ];
  for( unsigned c = 0 ; c < 256 ; ++c )
   occurs[ c ] = ( size4[ 4 * c ] | size4[ 4 * c + 1 ] | size4[ 4 * c + 2 ] |
-                  size4[ 4 * c + 3 ] ) != 0;
+		  size4[ 4 * c + 3 ] ) != 0;
  occurs[ T[ 0 ] ] = true;
  unsigned char code[ 256 ];
  const std::uint64_t b = saisCodes( occurs , code );
@@ -1296,13 +1355,15 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
   const std::size_t words = lms.size() , step = ( words + 1023 ) / 1024;
   for( std::size_t x = 0 ; x < words ; x += step )
    if( lms[ x ] )
-    w.push_back( saisSlowWindow( T , std::size_t( n ) , code , unsigned( b ) ,
-                  64 * x + std::size_t( std::countr_zero( lms[ x ] ) ) ,
-                  32 ) );
+    w.push_back( saisSlowWindow(
+      T , std::size_t( n ) , code , unsigned( b ) ,
+      64 * x + std::size_t( std::countr_zero( lms[ x ] ) ) , 32 ) );
   std::sort( w.begin() , w.end() );
   std::size_t twins = 0;
-  for( std::size_t i = 1 ; i < w.size() ; ++i ) twins += w[ i ] == w[ i - 1 ];
-  if( 256 * twins > w.size() ) return( false );
+  for( std::size_t i = 1 ; i < w.size() ; ++i )
+   twins += w[ i ] == w[ i - 1 ];
+  if( 256 * twins > w.size() )
+   return( false );
   }
  SaisPacked P;
  saisPack( T , std::size_t( n ) , code , unsigned( b ) , P );
@@ -1312,7 +1373,8 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
  // an item: the top bits of the window of a place (all 64 if S has 64
  // bits, else the top 32) and the place; on 32 bits one word, the key in
  // its high half, so that the items compare as their keys
- struct Wide {
+ struct Wide
+ {
   U k;
   S p;
   bool operator<( const Wide & o ) const { return( k < o.k ); }
@@ -1325,12 +1387,16 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
    return( E{ U( w ) , p } );
   };
  auto keyOf = [ & ]( const E & e ) {
-  if constexpr( kb == 32 ) return( U( e >> 32 ) );
-  else return( e.k );
+  if constexpr( kb == 32 )
+   return( U( e >> 32 ) );
+  else
+   return( e.k );
   };
  auto placeOf = [ & ]( const E & e ) {
-  if constexpr( kb == 32 ) return( S( std::uint32_t( e ) ) );
-  else return( e.p );
+  if constexpr( kb == 32 )
+   return( S( std::uint32_t( e ) ) );
+  else
+   return( e.p );
   };
  // the items in SA[ 0 .. 2 m ). A radix sort on the top N bits of the
  // keys, N six more than the logarithm of m, so that few keys are equal
@@ -1339,11 +1405,12 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
  // top 8 bits (on the bytes themselves the first symbols, whose LMS
  // places are counted), which then fit in the cache, and each bucket by
  // passes on the rest
- if( reinterpret_cast< std::uintptr_t >( SA ) % alignof( E ) ) return( false );
+ if( reinterpret_cast< std::uintptr_t >( SA ) % alignof( E ) )
+  return( false );
  E * const A = reinterpret_cast< E * >( SA );
- const unsigned N = std::min( kb ,
-                     unsigned( std::bit_width( std::size_t( m ) ) ) + 6 ) ,
-                B1 = m < ( S( 1 ) << 16 ) ? 0 : 8;
+ const unsigned N = std::min(
+		  kb , unsigned( std::bit_width( std::size_t( m ) ) ) + 6 ) ,
+		B1 = m < ( S( 1 ) << 16 ) ? 0 : 8;
  std::vector< S > start( ( std::size_t( 1 ) << B1 ) + 1 , 0 );
  auto forLms = [ & ]( auto && f ) {
   for( std::size_t x = 0 ; x < lms.size() ; ++x )
@@ -1357,7 +1424,8 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
   }
  else {
   if( b == 8 )
-   for( unsigned c = 0 ; c < 256 ; ++c ) start[ c + 1 ] = size4[ 4 * c + 2 ];
+   for( unsigned c = 0 ; c < 256 ; ++c )
+    start[ c + 1 ] = size4[ 4 * c + 2 ];
   else
    forLms( [ & ]( S p ) { ++start[ ( window( p , 0 ) >> 56 ) + 1 ]; } );
   for( std::size_t c = 0 ; c + 1 < start.size() ; ++c )
@@ -1374,57 +1442,67 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
  // equal on the N bits (few) by insertion if short, else by a comparison
  // sort, and the runs of equal keys kept
  std::vector< E > A2;
- std::vector< std::pair< S , S > > G;      // ( first place , size )
+ std::vector< std::pair< S , S > > G;  // ( first place , size )
  std::vector< S > count;
  auto insertion = [ & ]( E * e , S g ) {
   for( S i = 1 ; i < g ; ++i ) {
    const E x = e[ i ];
    S j = i;
-   for( ; ( j > 0 ) && ( x < e[ j - 1 ] ) ; --j ) e[ j ] = e[ j - 1 ];
+   for( ; ( j > 0 ) && ( x < e[ j - 1 ] ) ; --j )
+    e[ j ] = e[ j - 1 ];
    e[ j ] = x;
    }
   };
- const unsigned low = kb - N;         // the bits of a key not sorted
+ const unsigned low = kb - N;  // the bits of a key not sorted
  for( std::size_t c = 0 ; c + 1 < start.size() ; ++c ) {
   const S f = start[ c ] , g = start[ c + 1 ] - f;
-  if( g < 2 ) continue;
+  if( g < 2 )
+   continue;
   E * const e = A + f;
   if( g <= 16 )
    insertion( e , g );
   else {
    const unsigned R = N - B1 ,
-                  most = std::min( 11u , unsigned( std::bit_width(
-                                                  std::size_t( g ) ) ) + 1 ) ,
-                  passes = std::min( ( R + most - 1 ) / most , 3u ) ,
-                  bits = ( R + passes - 1 ) / passes;
-   if( A2.size() < std::size_t( g ) ) A2.resize( std::size_t( g ) );
+		  most = std::min(
+		    11u ,
+		    unsigned( std::bit_width( std::size_t( g ) ) ) + 1 ) ,
+		  passes = std::min( ( R + most - 1 ) / most , 3u ) ,
+		  bits = ( R + passes - 1 ) / passes;
+   if( A2.size() < std::size_t( g ) )
+    A2.resize( std::size_t( g ) );
    std::array< unsigned , 3 > sh{};
    for( unsigned d = 0 ; d < passes ; ++d )
-    sh[ d ] = unsigned( std::max( int( kb - B1 ) -
-                                  int( bits * ( passes - d ) ) ,
-                                  int( low ) ) );
+    sh[ d ] = unsigned(
+      std::max( int( kb - B1 ) - int( bits * ( passes - d ) ) , int( low ) ) );
    count.resize( std::size_t( 3 ) << bits );
    auto lsd = [ & ]< unsigned P >() {
     saisLsd< P >( e , A2.data() , g , keyOf , sh.data() , bits ,
-                  count.data() );
+		  count.data() );
     };
-   if( passes == 1 ) lsd.template operator()< 1 >();
-   else if( passes == 2 ) lsd.template operator()< 2 >();
-   else lsd.template operator()< 3 >();
-   for( S i = 1 ; i < g ; ++i )       // the runs equal on the N bits
+   if( passes == 1 )
+    lsd.template operator()< 1 >();
+   else if( passes == 2 )
+    lsd.template operator()< 2 >();
+   else
+    lsd.template operator()< 3 >();
+   for( S i = 1 ; i < g ; ++i )  // the runs equal on the N bits
     if( ( keyOf( e[ i ] ) >> low ) == ( keyOf( e[ i - 1 ] ) >> low ) ) {
      const U r = keyOf( e[ i ] ) >> low;
      S j = i + 1;
-     while( ( j < g ) && ( ( keyOf( e[ j ] ) >> low ) == r ) ) ++j;
-     if( j - i < 16 ) insertion( e + i - 1 , j - i + 1 );
-     else std::sort( e + i - 1 , e + j );
+     while( ( j < g ) && ( ( keyOf( e[ j ] ) >> low ) == r ) )
+      ++j;
+     if( j - i < 16 )
+      insertion( e + i - 1 , j - i + 1 );
+     else
+      std::sort( e + i - 1 , e + j );
      i = j;
      }
    }
-  for( S i = 1 ; i < g ; ++i )        // the runs of equal keys
+  for( S i = 1 ; i < g ; ++i )  // the runs of equal keys
    if( keyOf( e[ i ] ) == keyOf( e[ i - 1 ] ) ) {
     S j = i + 1;
-    while( ( j < g ) && ( keyOf( e[ j ] ) == keyOf( e[ i ] ) ) ) ++j;
+    while( ( j < g ) && ( keyOf( e[ j ] ) == keyOf( e[ i ] ) ) )
+     ++j;
     G.emplace_back( f + i - 1 , j - i + 1 );
     i = j;
     }
@@ -1432,13 +1510,15 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
  // the places alone in SA[ 0 .. m ), forward: the place i is written
  // after the item i (at or past it) is read
  S * const Q = SA;
- for( S i = 0 ; i < m ; ++i ) Q[ i ] = placeOf( A[ i ] );
+ for( S i = 0 ; i < m ; ++i )
+  Q[ i ] = placeOf( A[ i ] );
  // the ties, by the windows from the bit off on (the first kb bits are
  // equal): with r the bits of the text from that bit on, a suffix that
  // ends in the window (r < 64) goes before those that go on (the shorter
  // first), and those that go on with equal windows carry on to the next
  // window; at most m windows read
- struct Key {
+ struct Key
+ {
   std::uint64_t w;
   std::int64_t left;
   S p;
@@ -1454,29 +1534,31 @@ bool saisDirect( const unsigned char * T , S * SA , S n , S m ,
   H.clear();
   for( const auto & [ f , g ] : G ) {
    spent += std::size_t( g );
-   if( spent > std::size_t( m ) ) return( false );
+   if( spent > std::size_t( m ) )
+    return( false );
    key.resize( std::size_t( g ) );
    for( S i = 0 ; i < g ; ++i ) {
     const S p = Q[ f + i ];
-    if( i + D < g ) saisPrefetch( P.t + std::min< std::uint64_t >(
-                      ( b * std::uint64_t( Q[ f + i + D ] ) + off ) >> 3 ,
-                      P.len ) );
-    const std::int64_t r = bits - std::int64_t( b * std::uint64_t( p ) +
-                                                off );
+    if( i + D < g )
+     saisPrefetch(
+       P.t + std::min< std::uint64_t >(
+	       ( b * std::uint64_t( Q[ f + i + D ] ) + off ) >> 3 , P.len ) );
+    const std::int64_t r = bits - std::int64_t( b * std::uint64_t( p ) + off );
     key[ std::size_t( i ) ] = { window( p , off ) ,
-                                std::min< std::int64_t >( r , 64 ) , p };
+				std::min< std::int64_t >( r , 64 ) , p };
     }
    std::sort( key.begin() , key.end() );
    for( S i = 0 ; i < g ; ) {
     S j = i + 1;
     while( ( j < g ) && ( key[ j ].w == key[ i ].w ) &&
-           ( key[ j ].left == key[ i ].left ) )
+	   ( key[ j ].left == key[ i ].left ) )
      ++j;
     if( ( j - i > 1 ) && ( key[ i ].left == 64 ) )
      H.emplace_back( f + i , j - i );
     i = j;
     }
-   for( S i = 0 ; i < g ; ++i ) Q[ f + i ] = key[ std::size_t( i ) ].p;
+   for( S i = 0 ; i < g ; ++i )
+    Q[ f + i ] = key[ std::size_t( i ) ].p;
    }
   G.swap( H );
   }
@@ -1488,7 +1570,8 @@ template< class C , class S >
 void sais( const C * T , S * SA , S n , S K )
 {
  if( n <= 1 ) {
-  if( n == 1 ) SA[ 0 ] = 0;
+  if( n == 1 )
+   SA[ 0 ] = 0;
   return;
   }
  constexpr S D = S( saisAhead );
@@ -1500,7 +1583,7 @@ void sais( const C * T , S * SA , S n , S K )
  std::vector< S > size( std::size_t( K ) , 0 ) , B( std::size_t( K ) , 0 );
  for( std::size_t c = 0 ; c < std::size_t( K ) ; ++c )
   size[ c ] = size4[ 4 * c ] + size4[ 4 * c + 1 ] + size4[ 4 * c + 2 ] +
-              size4[ 4 * c + 3 ];
+	      size4[ 4 * c + 3 ];
  ++size[ std::size_t( T[ 0 ] ) ];
 
  // no LMS place: the suffixes of type S, if any, are a prefix of T; with
@@ -1508,7 +1591,8 @@ void sais( const C * T , S * SA , S n , S K )
  // than the next one and SA is n - 1 , ... , 0
  if( m == 0 ) {
   if( first == 0 )
-   for( S r = 0 ; r < n ; ++r ) SA[ r ] = n - 1 - r;
+   for( S r = 0 ; r < n ; ++r )
+    SA[ r ] = n - 1 - r;
   else {
    std::fill( SA , SA + n , S( 0 ) );
    saisInduce( T , SA , n , size.data() , B.data() , K );
@@ -1535,7 +1619,8 @@ void sais( const C * T , S * SA , S n , S K )
     saisPrefetchW( SA + m + ( SA[ i + D ] >> 1 ) );
     SA[ m + ( SA[ i ] >> 1 ) ] = name;
     }
-   for( ; i < f + g ; ++i ) SA[ m + ( SA[ i ] >> 1 ) ] = name;
+   for( ; i < f + g ; ++i )
+    SA[ m + ( SA[ i ] >> 1 ) ] = name;
    ++name;
    } );
   };
@@ -1552,29 +1637,31 @@ void sais( const C * T , S * SA , S n , S K )
   tied = &ends;
   if constexpr( ( sizeof( C ) == 1 ) && std::is_unsigned_v< C > ) {
    if( saisTextTies( T , n , SA , m , ends , lms , rest ,
-                     2 * std::size_t( m ) , 8 ) )
+		     2 * std::size_t( m ) , 8 ) )
     tied = nullptr;
    else
     tied = &rest;
    }
-  if( tied ) write( *tied );
+  if( tied )
+   write( *tied );
   }
  if( tied && ! saisResolveTies( SA , n , m , *tied , lms ,
-                                std::size_t( m ) ) ) {
-  saisCompact( SA , m , n );          // the names, in R = SA[ m .. 2 m )
+				std::size_t( m ) ) ) {
+  saisCompact( SA , m , n );  // the names, in R = SA[ m .. 2 m )
   S * R = SA + m;
-  std::vector< S > count;              // of each name, in their order
+  std::vector< S > count;  // of each name, in their order
   count.reserve( std::size_t( names ) );
   saisForGroups( *tied , m , [ & ]( S , S g ) { count.push_back( g ); } );
   if( ! saisDoubling( static_cast< const S * >( R ) , SA , m , count ,
-                      m / 4 ) )
+		      m / 4 ) )
    sais( static_cast< const S * >( R ) , SA , m , S( count.size() ) );
-  S j = 0;                            // the LMS places, in order
+  S j = 0;  // the LMS places, in order
   for( std::size_t w = 0 ; w < lms.size() ; ++w )
    for( std::uint64_t v = lms[ w ] ; v ; v &= v - 1 )
     R[ j++ ] = S( w * 64 + std::size_t( std::countr_zero( v ) ) );
   for( S i = 0 ; i < m ; ++i ) {
-   if( i + D < m ) saisPrefetch( R + SA[ i + D ] );
+   if( i + D < m )
+    saisPrefetch( R + SA[ i + D ] );
    SA[ i ] = R[ SA[ i ] ];
    }
   }
@@ -1583,10 +1670,11 @@ void sais( const C * T , S * SA , S n , S K )
  // the sorted LMS places come grouped by their first symbol, so that
  // each group moves at once to the end of its bucket, from the last one
  saisBuckets( size.data() , B.data() , K , true );
- S j = n , at = m;                   // [ j , n ) placed, SA[ 0 .. at ) to go
+ S j = n , at = m;  // [ j , n ) placed, SA[ 0 .. at ) to go
  for( S c = K - 1 ; ( c >= 0 ) && ( at > 0 ) ; --c ) {
   const S l = size4[ 4 * std::size_t( c ) + 2 ] , e = B[ std::size_t( c ) ];
-  if( l == 0 ) continue;
+  if( l == 0 )
+   continue;
   std::fill( SA + e , SA + j , S( 0 ) );
   std::memmove( SA + e - l , SA + at - l , std::size_t( l ) * sizeof( S ) );
   j = e - l;
@@ -1602,15 +1690,18 @@ bool isSuffixArrayOf( const C * T , std::size_t n , const I * SA )
 {
  std::vector< std::size_t > R( n + 1 , 0 );
  for( std::size_t r = 0 ; r < n ; ++r ) {
-  if( ( SA[ r ] >= n ) || R[ SA[ r ] ] ) return( false );
-  R[ SA[ r ] ] = r + 1;              // 0 for the end
+  if( ( SA[ r ] >= n ) || R[ SA[ r ] ] )
+   return( false );
+  R[ SA[ r ] ] = r + 1;  // 0 for the end
   }
  for( std::size_t r = 1 ; r < n ; ++r ) {
   const std::size_t a = SA[ r - 1 ] , b = SA[ r ];
   if( T[ a ] != T[ b ] ) {
-   if( T[ a ] > T[ b ] ) return( false );
+   if( T[ a ] > T[ b ] )
+    return( false );
    }
-  else if( R[ a + 1 ] >= R[ b + 1 ] ) return( false );
+  else if( R[ a + 1 ] >= R[ b + 1 ] )
+   return( false );
   }
  return( true );
  }
@@ -1618,10 +1709,11 @@ bool isSuffixArrayOf( const C * T , std::size_t n , const I * SA )
 /// LCP[ r ] is the lcp of the suffixes SA[ r ] and SA[ r + 1 ] of T
 template< class I >
 bool isLcpArrayOf( std::string_view T , const std::vector< I > & SA ,
-                   const std::vector< I > & LCP )
+		   const std::vector< I > & LCP )
 {
  const std::size_t n = T.size();
- if( LCP.size() != ( n < 2 ? 0 : n - 1 ) ) return( false );
+ if( LCP.size() != ( n < 2 ? 0 : n - 1 ) )
+  return( false );
  for( std::size_t r = 0 ; r + 1 < n ; ++r ) {
   const std::size_t a = SA[ r ] , b = SA[ r + 1 ] , h = LCP[ r ];
   if( ( a + h > n ) || ( b + h > n ) ||
@@ -1639,17 +1731,19 @@ bool isLcpArrayOf( std::string_view T , const std::vector< I > & SA ,
 /// into P do not reload SA and the text)
 template< bool bytes , class I >
 bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
-           const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P ,
-           unsigned char * ADS_SAIS_RESTRICT Y = nullptr )
+	   const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT P ,
+	   unsigned char * ADS_SAIS_RESTRICT Y = nullptr )
 {
- if( n == 0 ) return( bytes );
+ if( n == 0 )
+  return( bytes );
  // Phi in P, n for the first suffix of SA, the last suffix of SA kept
  constexpr std::size_t D = saisAhead;
  I prev = I( n );
  std::size_t r = 0;
- for( ; r + 2 * D + 4 <= n ; r += 4 ) {         // 4 at a time, no checks
+ for( ; r + 2 * D + 4 <= n ; r += 4 ) {  // 4 at a time, no checks
   saisPrefetch( SA + r + 2 * D );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetchW( P + SA[ r + D + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q )
+   saisPrefetchW( P + SA[ r + D + q ] );
   for( std::size_t q = 0 ; q < 4 ; ++q ) {
    P[ SA[ r + q ] ] = prev;
    prev = SA[ r + q ];
@@ -1667,22 +1761,26 @@ bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
  // short lcps of the texts with few repeats
  auto lcp = [ & ]( std::size_t i , std::size_t h ) {
   const std::size_t j = P[ i ] , far = n - std::max( i , j );
-  while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) ) ++h;
+  while( ( h < far ) && ( t[ i + h ] == t[ j + h ] ) )
+   ++h;
   return( h );
   };
  std::size_t h = 0 , i = 0 , big = 0;
  auto put = [ & ]( std::size_t x ) {
   P[ x ] = I( h );
-  if constexpr( bytes ) if( Y ) {
-   Y[ x ] = static_cast< unsigned char >( std::min< std::size_t >( h , 255 ) );
-   big += h >= 255;
-   if( big > n / 64 ) Y = nullptr;
-   }
+  if constexpr( bytes )
+   if( Y ) {
+    Y[ x ] = static_cast< unsigned char >( std::min< std::size_t >( h ,
+								    255 ) );
+    big += h >= 255;
+    if( big > n / 64 )
+     Y = nullptr;
+    }
   };
- for( ; i + 2 * D < n ; ++i ) {                 // no checks
+ for( ; i + 2 * D < n ; ++i ) {  // no checks
   saisPrefetchW( P + i + 2 * D );
   saisPrefetch( reinterpret_cast< const void * >(
-                 reinterpret_cast< std::uintptr_t >( t ) + P[ i + D ] + h ) );
+    reinterpret_cast< std::uintptr_t >( t ) + P[ i + D ] + h ) );
   h = lcp( i , h );
   put( i );
   h -= ( h != 0 );
@@ -1701,18 +1799,21 @@ bool plcp( const unsigned char * ADS_SAIS_RESTRICT t , std::size_t n ,
 /// overlap and P prefetched D entries ahead
 template< class I >
 void plcpToLcp( const I * ADS_SAIS_RESTRICT P ,
-                const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT LCP ,
-                std::size_t n )
+		const I * ADS_SAIS_RESTRICT SA ,
+		I * ADS_SAIS_RESTRICT LCP , std::size_t n )
 {
  constexpr std::size_t D = saisAhead;
  std::size_t r = 0;
- for( ; r + 2 * D + 4 <= n ; r += 4 ) {         // 4 at a time, no checks
+ for( ; r + 2 * D + 4 <= n ; r += 4 ) {  // 4 at a time, no checks
   saisPrefetch( SA + r + 2 * D );
   saisPrefetchW( LCP + r + D );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetch( P + SA[ r + D + q ] );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) LCP[ r + q ] = P[ SA[ r + q ] ];
+  for( std::size_t q = 0 ; q < 4 ; ++q )
+   saisPrefetch( P + SA[ r + D + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q )
+   LCP[ r + q ] = P[ SA[ r + q ] ];
   }
- for( ; r < n ; ++r ) LCP[ r ] = P[ SA[ r ] ];
+ for( ; r < n ; ++r )
+  LCP[ r ] = P[ SA[ r ] ];
  }
 
 /// LCP[ r ] = P[ SA[ r ] ] for r in [ 0 , n ) by the bytes Y of P [ see
@@ -1721,9 +1822,9 @@ void plcpToLcp( const I * ADS_SAIS_RESTRICT P ,
 /// cache four times longer
 template< class I >
 void plcpToLcp( const unsigned char * ADS_SAIS_RESTRICT Y ,
-                const I * ADS_SAIS_RESTRICT P ,
-                const I * ADS_SAIS_RESTRICT SA , I * ADS_SAIS_RESTRICT LCP ,
-                std::size_t n )
+		const I * ADS_SAIS_RESTRICT P ,
+		const I * ADS_SAIS_RESTRICT SA ,
+		I * ADS_SAIS_RESTRICT LCP , std::size_t n )
 {
  constexpr std::size_t D = saisAhead;
  std::size_t r = 0;
@@ -1731,13 +1832,16 @@ void plcpToLcp( const unsigned char * ADS_SAIS_RESTRICT Y ,
   const I y = Y[ x ];
   return( y == 255 ? P[ x ] : y );
   };
- for( ; r + 2 * D + 4 <= n ; r += 4 ) {         // 4 at a time, no checks
+ for( ; r + 2 * D + 4 <= n ; r += 4 ) {  // 4 at a time, no checks
   saisPrefetch( SA + r + 2 * D );
   saisPrefetchW( LCP + r + D );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) saisPrefetch( Y + SA[ r + D + q ] );
-  for( std::size_t q = 0 ; q < 4 ; ++q ) LCP[ r + q ] = get( SA[ r + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q )
+   saisPrefetch( Y + SA[ r + D + q ] );
+  for( std::size_t q = 0 ; q < 4 ; ++q )
+   LCP[ r + q ] = get( SA[ r + q ] );
   }
- for( ; r < n ; ++r ) LCP[ r ] = get( SA[ r ] );
+ for( ; r < n ; ++r )
+  LCP[ r ] = get( SA[ r ] );
  }
 
 /// the texts from which the LCP array reads the permuted LCP by its bytes
@@ -1750,35 +1854,35 @@ inline constexpr std::size_t lcpBytesFrom = std::size_t( 1 ) << 18;
 
 template< class I >
  requires( std::same_as< I , std::uint32_t > ||
-           std::same_as< I , std::uint64_t > )
+	   std::same_as< I , std::uint64_t > )
 std::vector< I > suffixArray( std::string_view T )
 {
  using S = std::make_signed_t< I >;
  ADS_PRE( T.size() < std::size_t( std::numeric_limits< S >::max() ) );
  auto SA = detail::saisVector< I >( T.size() );
  detail::sais( reinterpret_cast< const unsigned char * >( T.data() ) ,
-               reinterpret_cast< S * >( SA.data() ) , S( T.size() ) ,
-               S( 256 ) );
+	       reinterpret_cast< S * >( SA.data() ) , S( T.size() ) ,
+	       S( 256 ) );
  ADS_AUDIT( detail::isSuffixArrayOf(
-             reinterpret_cast< const unsigned char * >( T.data() ) ,
-             T.size() , SA.data() ) );
+   reinterpret_cast< const unsigned char * >( T.data() ) , T.size() ,
+   SA.data() ) );
  return( SA );
  }
 
 template< class I >
  requires( std::same_as< I , std::uint32_t > ||
-           std::same_as< I , std::uint64_t > )
+	   std::same_as< I , std::uint64_t > )
 std::vector< I > suffixArray( const std::vector< I > & T , std::size_t K )
 {
  using S = std::make_signed_t< I >;
  ADS_PRE( T.size() < std::size_t( std::numeric_limits< S >::max() ) );
  ADS_PRE( K <= std::size_t( std::numeric_limits< S >::max() ) );
- ADS_PRE( std::all_of( T.begin() , T.end() , [ K ]( I c ) {
-  return( c < K ); } ) );
+ ADS_PRE(
+   std::all_of( T.begin() , T.end() , [ K ]( I c ) { return( c < K ); } ) );
  auto SA = detail::saisVector< I >( T.size() );
  detail::sais( reinterpret_cast< const S * >( T.data() ) ,
-               reinterpret_cast< S * >( SA.data() ) , S( T.size() ) ,
-               S( std::max< std::size_t >( K , 1 ) ) );
+	       reinterpret_cast< S * >( SA.data() ) , S( T.size() ) ,
+	       S( std::max< std::size_t >( K , 1 ) ) );
  ADS_AUDIT( detail::isSuffixArrayOf( T.data() , T.size() , SA.data() ) );
  return( SA );
  }
@@ -1787,23 +1891,25 @@ template< class I >
 std::vector< I > plcpArray( std::string_view T , const std::vector< I > & SA )
 {
  const std::size_t n = T.size();
- ADS_AUDIT( ( SA.size() == n ) && detail::isSuffixArrayOf(
-             reinterpret_cast< const unsigned char * >( T.data() ) , n ,
-             SA.data() ) );
+ ADS_AUDIT(
+   ( SA.size() == n ) &&
+   detail::isSuffixArrayOf(
+     reinterpret_cast< const unsigned char * >( T.data() ) , n , SA.data() ) );
  auto P = detail::saisVector< I >( n );
- detail::plcp< false >( reinterpret_cast< const unsigned char * >(
-                         T.data() ) , n , SA.data() , P.data() );
+ detail::plcp< false >( reinterpret_cast< const unsigned char * >( T.data() ) ,
+			n , SA.data() , P.data() );
  return( P );
  }
 
 template< class I >
 std::vector< I > lcpArrayPhi( std::string_view T ,
-                              const std::vector< I > & SA )
+			      const std::vector< I > & SA )
 {
  const std::size_t n = T.size();
- ADS_AUDIT( ( SA.size() == n ) && detail::isSuffixArrayOf(
-             reinterpret_cast< const unsigned char * >( T.data() ) , n ,
-             SA.data() ) );
+ ADS_AUDIT(
+   ( SA.size() == n ) &&
+   detail::isSuffixArrayOf(
+     reinterpret_cast< const unsigned char * >( T.data() ) , n , SA.data() ) );
  const auto P = std::make_unique_for_overwrite< I[] >( n );
  detail::saisHuge( P.get() , n * sizeof( I ) );
  const auto * t = reinterpret_cast< const unsigned char * >( T.data() );
@@ -1813,8 +1919,7 @@ std::vector< I > lcpArrayPhi( std::string_view T ,
   const auto Y = std::make_unique_for_overwrite< unsigned char[] >( n );
   detail::saisHuge( Y.get() , n );
   if( detail::plcp< true >( t , n , SA.data() , P.get() , Y.get() ) )
-   detail::plcpToLcp( Y.get() , P.get() , SA.data() + 1 , LCP.data() ,
-                      n - 1 );
+   detail::plcpToLcp( Y.get() , P.get() , SA.data() + 1 , LCP.data() , n - 1 );
   else
    detail::plcpToLcp( P.get() , SA.data() + 1 , LCP.data() , n - 1 );
   }

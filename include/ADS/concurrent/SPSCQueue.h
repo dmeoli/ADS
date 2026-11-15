@@ -61,7 +61,7 @@
 
 #ifndef __ADS_SPSCQueue
  #define __ADS_SPSCQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -83,7 +83,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS SPSCQueue -----------------------------*/
@@ -91,12 +92,12 @@ namespace ADS {
 
 /// a bounded queue from one producer to one consumer, lock-free
 template< class T >
-class SPSCQueue {
+class SPSCQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue of capacity \f$ c \f$
  /// \pre \f$ c \ge 2 \f$ is a power of 2
@@ -141,8 +142,8 @@ class SPSCQueue {
  /// 8 & \quad \textbf{return true}
  /// \end{array}}
  /// \f]
- template< class ... Args >
- bool emplace( Args && ... args );
+ template< class... Args >
+ bool emplace( Args &&... args );
 
  /// dequeues an item, nothing if the queue is empty; only the consumer
  /// calls it
@@ -229,8 +230,7 @@ class SPSCQueue {
  /// \f]
  /// If a call throws, the items before it and its own are dequeued.
  template< class F >
- std::size_t consume( F && f ,
-                      std::size_t n = std::size_t( -1 ) );
+ std::size_t consume( F && f , std::size_t n = std::size_t( -1 ) );
 
  /// wakes the consumer if it sleeps in `waitPop()`, after pushes: a fence
  /// and the read of a line when it does not; only the producer calls it
@@ -247,7 +247,9 @@ class SPSCQueue {
  /// 2 & \quad \mathrm{await}( \mathrm{tryPop}( x ) )
  /// \end{array}}
  /// \f]
- void waitPop( T & x ) { f_wait.await( [ & ] { return( tryPop( x ) ); } ); }
+ void waitPop( T & x ) {
+  f_wait.await( [ & ] { return( tryPop( x ) ); } );
+  }
 
  /// the number of items at some moment of the call, \f$ t - h \f$
  [[nodiscard]] std::size_t size( void ) const;
@@ -256,7 +258,7 @@ class SPSCQueue {
  [[nodiscard]] std::size_t capacity( void ) const { return( f_mask + 1 ); }
 
  private:
- static constexpr std::size_t line = 64;   ///< a line of cache
+ static constexpr std::size_t line = 64;  ///< a line of cache
  static constexpr std::size_t pad = ( line + sizeof( T ) - 1 ) / sizeof( T );
 
  /// the place of the index i
@@ -286,7 +288,7 @@ class SPSCQueue {
 #if defined( __GNUC__ ) || defined( __clang__ )
   __builtin_prefetch( p );
 #else
-  (void) p;
+  ( void )p;
 #endif
   }
 
@@ -295,15 +297,15 @@ class SPSCQueue {
  // holds the line of the places and the tail, the copy of the head and
  // the head, the copy of the tail and nothing: the copy that a thread
  // rewrites while it spins shares no pair with the index of the other
- alignas( 2 * line ) T * f_A;              ///< the places, padded
- std::size_t f_mask;                       ///< capacity - 1
- alignas( line ) std::atomic< std::size_t > f_tail{ 0 };   ///< producer
- alignas( line ) std::size_t f_headSeen = 0;   ///< the head it saw
- alignas( line ) std::atomic< std::size_t > f_head{ 0 };   ///< consumer
- alignas( line ) std::size_t f_tailSeen = 0;   ///< the tail it saw
- bool f_streaming = false;                 ///< its last pop took one
- alignas( line ) char f_end = 0;           ///< no other data on that line
- EventCount f_wait;                        ///< the sleep of the consumer
+ alignas( 2 * line ) T * f_A;  ///< the places, padded
+ std::size_t f_mask;           ///< capacity - 1
+ alignas( line ) std::atomic< std::size_t > f_tail{ 0 };  ///< producer
+ alignas( line ) std::size_t f_headSeen = 0;              ///< the head it saw
+ alignas( line ) std::atomic< std::size_t > f_head{ 0 };  ///< consumer
+ alignas( line ) std::size_t f_tailSeen = 0;              ///< the tail it saw
+ bool f_streaming = false;        ///< its last pop took one
+ alignas( line ) char f_end = 0;  ///< no other data on that line
+ EventCount f_wait;               ///< the sleep of the consumer
  };  // end( class SPSCQueue )
 
 /*--------------------------------------------------------------------------*/
@@ -318,7 +320,7 @@ class SPSCQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SPSCQueue.h included */
+#endif /* SPSCQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File SPSCQueue.h --------------------------*/

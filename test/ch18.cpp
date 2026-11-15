@@ -48,7 +48,8 @@
 
 using namespace ADS;
 
-namespace {
+namespace
+{
 
 using Longs = std::vector< long >;
 
@@ -61,7 +62,8 @@ Adjacency random_graph( int n , int p , bool oriented , std::mt19937 & g )
   for( int v = oriented ? 0 : u + 1 ; v < n ; ++v )
    if( u != v && int( g() % 100 ) < p ) {
     G[ u ][ v ] = true;
-    if( ! oriented ) G[ v ][ u ] = true;
+    if( ! oriented )
+     G[ v ][ u ] = true;
     }
  return( G );
  }
@@ -94,96 +96,113 @@ std::vector< Tile > random_tiles( int m , int c , std::mt19937 & g )
 ADS_TEST( "sec18.examples" )
 {
  // A x <= b: the >= rows negated
- const std::vector< Longs > A = { { -1 , -1 , -1 , -1 } , { -1 , 1 , 1 , -1 } ,
-                                  { 1 , 0 , 1 , 1 } };
+ const std::vector< Longs > A = { { -1 , -1 , -1 , -1 } ,
+				  { -1 , 1 , 1 , -1 } ,
+				  { 1 , 0 , 1 , 1 } };
  const Longs b = { -2 , 0 , 1 };
  const std::vector< int > book = { 1 , 1 , 0 , 0 };
  for( auto x : { book , *lp01( A , b , 4 ) } )
   for( std::size_t r = 0 ; r < A.size() ; ++r ) {
    long s = 0;
-   for( int j = 0 ; j < 4 ; ++j ) s += A[ r ][ j ] * x[ j ];
+   for( int j = 0 ; j < 4 ; ++j )
+    s += A[ r ][ j ] * x[ j ];
    CHECK( s <= b[ r ] );
    }
  const Cnf F = { { -1 , -2 , -3 } , { 2 , -3 } , { 1 , -2 , 3 } };
  CHECK( satCertificate( F , { false , true , true } ) );
  CHECK( satisfiable( F , 3 ) );
  const std::vector< std::string > P = { "MS" , "LU" , "PT" , "PO" , "FI" ,
-                                        "AR" , "SI" , "GR" , "LI" , "PI" };
+					"AR" , "SI" , "GR" , "LI" , "PI" };
  auto I = [ & ]( const char * p ) {
-  return( int( std::find( P.begin() , P.end() , p ) - P.begin() ) ); };
+  return( int( std::find( P.begin() , P.end() , p ) - P.begin() ) );
+  };
  Adjacency T( 10 , std::vector< bool >( 10 , false ) );
  for( auto [ a , c ] : std::vector< std::pair< const char * , const char * > >(
-       { { "MS" , "LU" } , { "LU" , "PT" } , { "LU" , "PI" } ,
-         { "PT" , "PO" } , { "PT" , "FI" } , { "PT" , "PI" } ,
-         { "PO" , "FI" } , { "FI" , "AR" } , { "FI" , "SI" } ,
-         { "FI" , "PI" } , { "AR" , "SI" } , { "SI" , "GR" } ,
-         { "SI" , "PI" } , { "GR" , "PI" } , { "GR" , "LI" } ,
-         { "LI" , "PI" } } ) )
+	{ { "MS" , "LU" } ,
+	  { "LU" , "PT" } ,
+	  { "LU" , "PI" } ,
+	  { "PT" , "PO" } ,
+	  { "PT" , "FI" } ,
+	  { "PT" , "PI" } ,
+	  { "PO" , "FI" } ,
+	  { "FI" , "AR" } ,
+	  { "FI" , "SI" } ,
+	  { "FI" , "PI" } ,
+	  { "AR" , "SI" } ,
+	  { "SI" , "GR" } ,
+	  { "SI" , "PI" } ,
+	  { "GR" , "PI" } ,
+	  { "GR" , "LI" } ,
+	  { "LI" , "PI" } } ) )
   T[ I( a ) ][ I( c ) ] = T[ I( c ) ][ I( a ) ] = true;
  CHECK( coloring( T , 3 ) && ! coloring( T , 2 ) );
  CHECK( cliqueCertificate( T , { I( "FI" ) , I( "PT" ) , I( "PO" ) } , 3 ) );
  CHECK( cliqueCertificate( T , { I( "PI" ) , I( "GR" ) , I( "SI" ) } , 3 ) );
  CHECK( clique( T , 3 ) && ! clique( T , 4 ) );
- const std::vector< Longs > Dist = { { 0 , 68 , 42 , 89 , 44 , 37 , 85 } ,
-  { 68 , 0 , 29 , 30 , 75 , 28 , 19 } , { 42 , 29 , 0 , 42 , 41 , 14 , 54 } ,
-  { 89 , 30 , 42 , 0 , 80 , 52 , 36 } , { 44 , 75 , 41 , 80 , 0 , 50 , 94 } ,
-  { 37 , 28 , 14 , 52 , 50 , 0 , 49 } , { 85 , 19 , 54 , 36 , 94 , 49 , 0 } };
+ const std::vector< Longs > Dist = {
+  { 0 , 68 , 42 , 89 , 44 , 37 , 85 } , { 68 , 0 , 29 , 30 , 75 , 28 , 19 } ,
+  { 42 , 29 , 0 , 42 , 41 , 14 , 54 } , { 89 , 30 , 42 , 0 , 80 , 52 , 36 } ,
+  { 44 , 75 , 41 , 80 , 0 , 50 , 94 } , { 37 , 28 , 14 , 52 , 50 , 0 , 49 } ,
+  { 85 , 19 , 54 , 36 , 94 , 49 , 0 }
+  };
  long best = 0;
- while( ! tsp( Dist , best ) ) ++best;     // the least k with a YES
+ while( ! tsp( Dist , best ) )
+  ++best;  // the least k with a YES
  const auto tour = tsp( Dist , best );
  CHECK( tspCertificate( Dist , best , *tour ) &&
-        ! tspCertificate( Dist , best - 1 , *tour ) );
- CHECK( best == 247 );          // Pisa, Castelnuovo, Serravalle, ...
+	! tspCertificate( Dist , best - 1 , *tour ) );
+ CHECK( best == 247 );  // Pisa, Castelnuovo, Serravalle, ...
  CHECK( *tour == Nodes( { 0 , 4 , 2 , 3 , 6 , 1 , 5 } ) );
  // the formulas and the systems
  CHECK( satCertificate( {} , {} ) && ! satCertificate( { {} } , { true } ) );
  CHECK( satisfiable( {} , 0 ) && ! satisfiable( { {} } , 2 ) );
  CHECK( ! satisfiable( { { 1 } , { -1 } } , 1 ) );
  CHECK( *satisfiable( { { -1 } , { 2 } } , 2 ) ==
-        std::vector< bool >( { false , true } ) );
- CHECK( lp01( {} , {} , 0 ) && ( *lp01( {} , {} , 3 ) ==
-                                 std::vector< int >( 3 , 0 ) ) );
+	std::vector< bool >( { false , true } ) );
+ CHECK( lp01( {} , {} , 0 ) &&
+	( *lp01( {} , {} , 3 ) == std::vector< int >( 3 , 0 ) ) );
  CHECK( lp01( { {} } , { 0 } , 0 ) && ! lp01( { {} } , { -1 } , 0 ) );
  CHECK( ! lp01( { { 1 , 1 } , { -1 , -1 } } , { 1 , -2 } , 2 ) );
  CHECK_THROWS( satisfiable( { { 0 } } , 1 ) , contract_violation );
  CHECK_THROWS( satisfiable( { { 2 } } , 1 ) , contract_violation );
  CHECK_THROWS( satisfiable( {} , -1 ) , contract_violation );
  CHECK_THROWS( satCertificate( { { -3 } } , { true , true } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( lp01( { { 1 } } , {} , 1 ) , contract_violation );
  CHECK_THROWS( lp01( { { 1 , 2 } } , { 0 } , 1 ) , contract_violation );
  // the graphs
  const Adjacency E0 , L1 = { { true } } ,
-                 K2 = { { false , true } , { true , false } };
+		     K2 = { { false , true } , { true , false } };
  CHECK( clique( E0 , 0 ) && ! clique( E0 , 1 ) && clique( K2 , -1 )->empty() );
  CHECK( *clique( K2 , 2 ) == Nodes( { 0 , 1 } ) && ! clique( K2 , 3 ) );
  CHECK( *clique( L1 , 1 ) == Nodes( { 0 } ) );
  CHECK( cliqueCertificate( K2 , {} , 0 ) &&
-        ! cliqueCertificate( K2 , { 0 } , 2 ) );
+	! cliqueCertificate( K2 , { 0 } , 2 ) );
  CHECK( ! cliqueCertificate( K2 , { 0 , 0 } , 2 ) );
  CHECK( coloring( E0 , 0 ) && ! coloring( L1 , 0 ) && coloring( L1 , 1 ) );
  CHECK( ! coloring( K2 , 1 ) &&
-        *coloring( K2 , 2 ) == std::vector< int >( { 0 , 1 } ) );
+	*coloring( K2 , 2 ) == std::vector< int >( { 0 , 1 } ) );
  CHECK_THROWS( coloring( K2 , -1 ) , contract_violation );
  CHECK_THROWS( clique( { { false , true } , { false , false } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( cliqueCertificate( { { false , true } } , {} , 0 ) ,
-               contract_violation );
+	       contract_violation );
  // the tours
  using LM = std::vector< Longs >;
  CHECK( tsp( LM() , 0L ) && tsp( LM() , 0L )->empty() && ! tsp( LM() , -1L ) );
- CHECK( tspCertificate( LM() , 0L , {} ) &&
-        ! tspCertificate( LM() , -1L , {} ) );
+ CHECK( tspCertificate( LM() , 0L , {} ) && ! tspCertificate( LM() , -1L ,
+							      {} ) );
  CHECK( *tsp( LM( { { 5 } } ) , 5L ) == Nodes( { 0 } ) );
  CHECK( ! tsp( LM( { { 5 } } ) , 4L ) );
  const LM D2 = { { 0 , 3 } , { 4 , 0 } };
  CHECK( tsp( D2 , 7L ) && ! tsp( D2 , 6L ) );
  for( const Nodes & P : { Nodes( { 0 } ) , Nodes( { 0 , 0 } ) ,
-                          Nodes( { 0 , 2 } ) , Nodes( { 0 , -1 } ) } )
+			  Nodes( { 0 , 2 } ) ,
+			  Nodes( { 0 , -1 } ) } )
   CHECK( ! tspCertificate( D2 , 9L , P ) );
  CHECK_THROWS( tsp( LM( { { 0 , 1 } } ) , 0L ) , contract_violation );
  CHECK_THROWS( tspCertificate( LM( { { 0 , 1 } } ) , 0L , {} ) ,
-               contract_violation );
+	       contract_violation );
  }
 
 // the nondeterministic algorithms ndCricca() and ndTsp(), simulated by the
@@ -200,28 +219,39 @@ ADS_TEST( "sec18.2.nondeterminism" )
  r0 = 0;
  CHECK( ! c0.run( []( Chooser & ) { return( false ); } , &r0 ) && r0 == 1 );
  r0 = 0;
- CHECK( ! c0.run( []( Chooser & ch ) { return( ch.choice( 1 ) != 0 ); } ,
-                  &r0 ) && ( r0 == 1 ) );
+ CHECK(
+   ! c0.run( []( Chooser & ch ) { return( ch.choice( 1 ) != 0 ); } , &r0 ) &&
+   ( r0 == 1 ) );
  r0 = 0;
  std::vector< std::vector< int > > seen;
- CHECK( c0.run( [ & ]( Chooser & ch ) {
-         const int a = ch.choice( 3 ) , b = ch.choice( 2 );
-         seen.push_back( { a , b } );
-         return( ( a == 2 ) && ( b == 1 ) ); } , &r0 ) && ( r0 == 6 ) );
+ CHECK( c0.run(
+	  [ & ]( Chooser & ch ) {
+	   const int a = ch.choice( 3 ) , b = ch.choice( 2 );
+	   seen.push_back( { a , b } );
+	   return( ( a == 2 ) && ( b == 1 ) );
+	   } ,
+	  &r0 ) &&
+	( r0 == 6 ) );
  CHECK( c0.choices() == std::vector< int >( { 2 , 1 } ) );
  CHECK( std::is_sorted( seen.begin() , seen.end() ) && seen.size() == 6 );
- CHECK_THROWS( c0.run( []( Chooser & ch ) {
-                return( ch.choice( 0 ) == 0 ); } ) , contract_violation );
+ CHECK_THROWS(
+   c0.run( []( Chooser & ch ) { return( ch.choice( 0 ) == 0 ); } ) ,
+   contract_violation );
  std::mt19937 g( 1 );
  for( int t = 0 ; t < 50 ; ++t ) {
   const int n = 2 + int( g() % 7 ) , k = 1 + int( g() % 4 );
   const auto G = random_graph( n , 50 , false , g );
   Chooser c;
   long runs = 0;
-  const bool yes = c.run( [ & ]( Chooser & ch ) {
-   Nodes S;
-   for( int i = 0 ; i < n ; ++i ) if( ch.choice( 2 ) ) S.push_back( i );
-   return( cliqueCertificate( G , S , k ) ); } , &runs );
+  const bool yes = c.run(
+    [ & ]( Chooser & ch ) {
+     Nodes S;
+     for( int i = 0 ; i < n ; ++i )
+      if( ch.choice( 2 ) )
+       S.push_back( i );
+     return( cliqueCertificate( G , S , k ) );
+     } ,
+    &runs );
   CHECK( yes == clique( G , k ).has_value() );
   CHECK( runs <= ( 1L << n ) );
   // ndTsp(): S[ i ] = choice( C ), C the cities not chosen yet
@@ -239,7 +269,8 @@ ADS_TEST( "sec18.2.nondeterminism" )
     S.push_back( C[ j ] );
     C.erase( C.begin() + j );
     }
-   return( tspCertificate( Dist , kt , S ) ); } );
+   return( tspCertificate( Dist , kt , S ) );
+   } );
   CHECK( tyes == tsp( Dist , kt ).has_value() );
   }
  }
@@ -252,14 +283,14 @@ ADS_TEST( "sec18.2.nondeterminism" )
 ADS_TEST( "sec18.5.linear-tiling" )
 {
  const std::vector< Tile > self = { { 0 , 1 , 0 , 1 } } ,
-                           alone = { { 0 , 1 , 0 , 2 } } ,
-                           two = { { 0 , 1 , 0 , 2 } , { 0 , 2 , 0 , 1 } };
+			   alone = { { 0 , 1 , 0 , 2 } } ,
+			   two = { { 0 , 1 , 0 , 2 } , { 0 , 2 , 0 , 1 } };
  CHECK( ! linearTiling( self , 0 ) && ! linearTiling( self , -5 ) );
  CHECK( ! linearTiling( {} , 3 ) );
  CHECK( linearTiling( alone , 1 ) && ! linearTiling( alone , 2 ) );
  CHECK( linearTiling( self , std::numeric_limits< long >::max() ) );
  CHECK( linearTiling( two , std::numeric_limits< long >::max() ) );
- std::vector< Tile > chain;                     // left i , right i + 1
+ std::vector< Tile > chain;  // left i , right i + 1
  for( int i = 0 ; i < 2000 ; ++i )
   chain.push_back( Tile{ 0 , i + 1 , 0 , i } );
  CHECK( linearTiling( chain , 2000 ) && ! linearTiling( chain , 2001 ) );
@@ -278,8 +309,10 @@ ADS_TEST( "sec18.5.linear-tiling" )
     ok = D[ s[ i ] ].right == D[ s[ i + 1 ] ].left;
    ref = ok;
    int i = 1;
-   while( i < n && s[ i ] == int( D.size() ) - 1 ) s[ i++ ] = 0;
-   if( i >= n ) break;
+   while( i < n && s[ i ] == int( D.size() ) - 1 )
+    s[ i++ ] = 0;
+   if( i >= n )
+    break;
    ++s[ i ];
    }
   CHECK( linearTiling( D , n ) == ref );
@@ -297,23 +330,24 @@ ADS_TEST( "sec18.5.hull-sort" )
  const long R = detail::kLongRoot;
  const auto E = sortToHull( { -R , 0 , R } );
  CHECK( E[ 0 ].x == -R && E[ 0 ].y == R * R && E[ 1 ].y == 0 &&
-        E[ 2 ].y == R * R );
+	E[ 2 ].y == R * R );
  CHECK( R * R > std::numeric_limits< long >::max() - 2 * R - 1 );
  CHECK_THROWS( sortToHull( { R + 1 } ) , contract_violation );
  CHECK_THROWS( sortToHull( { -R - 1 } ) , contract_violation );
  std::mt19937 g( 3 );
  for( int t = 0 ; t < 100 ; ++t ) {
   std::set< long > s;
-  while( s.size() < 1 + g() % 30 ) s.insert( long( g() % 1000 ) - 500 );
+  while( s.size() < 1 + g() % 30 )
+   s.insert( long( g() % 1000 ) - 500 );
   Longs a( s.begin() , s.end() );
   std::shuffle( a.begin() , a.end() , g );
   const auto H = graham( sortToHull( a ) );
   Longs x;
-  for( const auto & p : H ) x.push_back( p.x );
+  for( const auto & p : H )
+   x.push_back( p.x );
   // the hull starts at its lowest point, a = min | a |: read it from the
   // leftmost one
-  std::rotate( x.begin() , std::min_element( x.begin() , x.end() ) ,
-               x.end() );
+  std::rotate( x.begin() , std::min_element( x.begin() , x.end() ) , x.end() );
   CHECK( x == Longs( s.begin() , s.end() ) );
   }
  }
@@ -348,29 +382,34 @@ ADS_TEST( "sec18.7.domino" )
  CHECK_THROWS( tileVar( 0 , 0 , 1 , 1 ) , contract_violation );
  CHECK_THROWS( tileVar( 0 , 0 , 0 , 0 ) , contract_violation );
  const int n = 2;
- const Tiling T = { { 0 , 1 } , { 1 , 0 } };      // T[ i ][ j ]
+ const Tiling T = { { 0 , 1 } , { 1 , 0 } };  // T[ i ][ j ]
  CHECK( legalTiling( fig188 , n , T ) );
  CHECK( squareTiling( fig188 , n ) );
  const Cnf F = dominoToSat( fig188 , n );
  CHECK( F.size() == 17 );
  std::vector< bool > u( 8 , false );
- for( auto [ h , i , j ] : { std::array< int , 3 >{ 0 , 0 , 0 } ,
-                             std::array< int , 3 >{ 0 , 1 , 1 } ,
-                             std::array< int , 3 >{ 1 , 0 , 1 } ,
-                             std::array< int , 3 >{ 1 , 1 , 0 } } )
+ for( auto [ h , i , j ] :
+      { std::array< int , 3 >{ 0 , 0 , 0 } ,
+	std::array< int , 3 >{ 0 , 1 , 1 } ,
+	std::array< int , 3 >{ 1 , 0 , 1 } ,
+	std::array< int , 3 >{ 1 , 1 , 0 } } )
   u[ tileVar( h , i , j , n ) ] = true;
  CHECK( satCertificate( F , u ) );
  const auto [ A , b ] = dominoToLp01( fig188 , n );
  std::vector< int > x( 8 );
- for( int v = 0 ; v < 8 ; ++v ) x[ v ] = u[ v ];
+ for( int v = 0 ; v < 8 ; ++v )
+  x[ v ] = u[ v ];
  for( std::size_t r = 0 ; r < A.size() ; ++r ) {
   long s = 0;
-  for( int v = 0 ; v < 8 ; ++v ) s += A[ r ][ v ] * x[ v ];
+  for( int v = 0 ; v < 8 ; ++v )
+   s += A[ r ][ v ] * x[ v ];
   CHECK( s <= b[ r ] );
   }
  const auto [ G , k ] = dominoToClique( fig188 , n );
  Nodes S;
- for( int v = 0 ; v < 8 ; ++v ) if( u[ v ] ) S.push_back( v );
+ for( int v = 0 ; v < 8 ; ++v )
+  if( u[ v ] )
+   S.push_back( v );
  CHECK( k == 4 && cliqueCertificate( G , S , k ) );
  std::mt19937 g( 4 );
  int yes = 0;
@@ -387,8 +426,8 @@ ADS_TEST( "sec18.7.domino" )
   }
  CHECK( yes > 5 && yes < 55 );
  for( int t = 0 ; t < 20 ; ++t )
-  for( auto [ m , n1 ] : { std::pair( 1 + int( g() % 3 ) , 1 ) ,
-                           std::pair( 1 , 3 ) } ) {
+  for( auto [ m , n1 ] :
+       { std::pair( 1 + int( g() % 3 ) , 1 ) , std::pair( 1 , 3 ) } ) {
    const auto D = random_tiles( m , 2 , g );
    const bool tiling = squareTiling( D , n1 ).has_value();
    CHECK( tiling || ( n1 > 1 ) );
@@ -413,31 +452,32 @@ ADS_TEST( "sec18.7.reductions" )
  CHECK( halfSum( { 1 } ) == -1 && halfSum( { 3 , 5 } ) == 4 );
  CHECK( ! subsetSumExists( { 1 } , -1 ) );
  CHECK( ! multiprocessorScheduling( { 1 } , 2 , -1 ) );
- CHECK( ! multiprocessorScheduling( {} , 2 , -1 ) );     // threw before
+ CHECK( ! multiprocessorScheduling( {} , 2 , -1 ) );  // threw before
  CHECK( multiprocessorScheduling( {} , 2 , 0 )->empty() );
  CHECK( ! knapsackDecision( { 1 } , { 1 } , -1 , -1 ) );
  CHECK_THROWS( halfSum( { -1 } ) , contract_violation );
  CHECK_THROWS( complement( { { false , true } } ) , contract_violation );
  CHECK_THROWS( hamiltonToTsp( { { false , true } , { false , false } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 5 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 1 + int( g() % 7 ) , k = int( g() % ( n + 1 ) );
   const auto G = random_graph( n , int( g() % 100 ) , false , g );
   CHECK( clique( G , k ).has_value() ==
-         independentSet( complement( G ) , k ).has_value() );   // 18.5
-  CHECK( ! clique( G , n + 1 ) &&
-         ! independentSet( complement( G ) , n + 1 ) );
+	 independentSet( complement( G ) , k ).has_value() );  // 18.5
+  CHECK( ! clique( G , n + 1 ) && ! independentSet( complement( G ) ,
+						    n + 1 ) );
   if( n >= 3 )
-   CHECK( hamiltonianCircuit( G ).has_value() ==               // 18.6
-          tsp( hamiltonToTsp( G ) , long( n ) ).has_value() );
+   CHECK( hamiltonianCircuit( G ).has_value() ==  // 18.6
+	  tsp( hamiltonToTsp( G ) , long( n ) ).has_value() );
   Longs a( g() % 8 );
-  for( auto & x : a ) x = long( g() % 11 );
+  for( auto & x : a )
+   x = long( g() % 11 );
   const bool part = partition( a ).has_value();
   const long h = halfSum( a );
   CHECK( multiprocessorScheduling( a , 2 , h ).has_value() == part );  // 18.7
   CHECK( subsetSumExists( a , h ).has_value() == part );              // 18.8
-  CHECK( knapsackDecision( a , a , h , h ).has_value() == part );     // 18.9
+  CHECK( knapsackDecision( a , a , h , h ).has_value() == part );       // 18.9
   }
  }
 
@@ -454,17 +494,21 @@ ADS_TEST( "ex18.1" )
  for( int t = 0 ; t < 50 ; ++t ) {
   const int n = int( g() % 6 );
   Longs M( n );
-  for( auto & m : M ) m = 1 + long( g() % 6 );
+  for( auto & m : M )
+   m = 1 + long( g() % 6 );
   std::vector< bool > ps( n );
-  for( int i = 0 ; i < n ; ++i ) ps[ i ] = g() % 2;
+  for( int i = 0 ; i < n ; ++i )
+   ps[ i ] = g() % 2;
   Chooser c;
   const bool yes = c.run( [ & ]( Chooser & ch ) {
    Longs S = M;
    for( int i = 0 ; i < n ; ++i )
-    std::swap( S[ i ] , S[ i + ch.choice( n - i ) ] );   // j in { i .. n-1 }
+    std::swap( S[ i ] , S[ i + ch.choice( n - i ) ] );  // j in { i .. n-1 }
    long a = 0 , b = 0;
-   for( int i = 0 ; i < n ; ++i ) ( ps[ i ] ? a : b ) += S[ i ];
-   return( a == 2 * b ); } );
+   for( int i = 0 ; i < n ; ++i )
+    ( ps[ i ] ? a : b ) += S[ i ];
+   return( a == 2 * b );
+   } );
   CHECK( yes == bribes( M , ps ).has_value() );
   }
  }
@@ -490,7 +534,8 @@ ADS_TEST( "ex18.2" )
      tp += p[ i ];
      tv += v[ i ];
      }
-   return( tp >= k && tv <= C ); } );
+   return( tp >= k && tv <= C );
+   } );
   CHECK( yes == ( knapsack( p , v , C ).first >= k ) );
   }
  }
@@ -506,11 +551,14 @@ ADS_TEST( "ex18.3" )
   Chooser c;
   const bool yes = c.run( [ & ]( Chooser & ch ) {
    std::vector< int > col( n );
-   for( auto & x : col ) x = ch.choice( k );
+   for( auto & x : col )
+    x = ch.choice( k );
    for( int u = 0 ; u < n ; ++u )
     for( int v = 0 ; v < n ; ++v )
-     if( G[ u ][ v ] && col[ u ] == col[ v ] ) return( false );
-   return( true ); } );
+     if( G[ u ][ v ] && col[ u ] == col[ v ] )
+      return( false );
+   return( true );
+   } );
   CHECK( yes == coloring( G , k ).has_value() );
   }
  }
@@ -522,15 +570,18 @@ ADS_TEST( "ex18.3" )
 ADS_TEST( "ex18.4" )
 {
  auto fair = []( const std::vector< long > & M ,
-                 const std::vector< bool > & ps ) {
+		 const std::vector< bool > & ps ) {
   long a = 0 , b = 0;
-  for( std::size_t i = 0 ; i < M.size() ; ++i ) ( ps[ i ] ? a : b ) += M[ i ];
-  return( a == 2 * b ); };
+  for( std::size_t i = 0 ; i < M.size() ; ++i )
+   ( ps[ i ] ? a : b ) += M[ i ];
+  return( a == 2 * b );
+  };
  const std::vector< bool > ps = { true , true , false };
- const auto B = bribes( { 1 , 2 , 3 } , ps );                 // 1 + 3 = 2 2
- CHECK( B && fair( *B , ps ) &&
-        std::is_permutation( B->begin() , B->end() , Longs( { 1 , 2 , 3 } )
-                             .begin() ) );
+ const auto B = bribes( { 1 , 2 , 3 } , ps );  // 1 + 3 = 2 2
+ CHECK(
+   B && fair( *B , ps ) &&
+   std::is_permutation( B->begin() , B->end() ,
+			Longs( { 1 , 2 , 3 } ).begin() ) );
  CHECK( ! bribes( { 1 , 1 } , { true , false } ) );
  CHECK( bribes( {} , {} ) && bribes( {} , {} )->empty() );
  CHECK( bribes( { 0 } , { true } ) && ! bribes( { 1 } , { true } ) );
@@ -549,12 +600,12 @@ ADS_TEST( "ex18.5" )
  CHECK( knapsackDecision( {} , {} , 0 , -5 )->empty() );
  CHECK( ! knapsackDecision( { 5 } , { 0 } , -1 , 0 ) );
  CHECK( *knapsackDecision( { 5 } , { 0 } , 0 , 5 ) == Nodes( { 0 } ) );
- CHECK( *knapsackDecision( { -3 , 4 } , { 1 , 1 } , 2 , 4 ) ==
-        Nodes( { 1 } ) );
+ CHECK( *knapsackDecision( { -3 , 4 } , { 1 , 1 } , 2 ,
+			   4 ) == Nodes( { 1 } ) );
  CHECK( ! knapsackDecision( { -3 , 4 } , { 1 , 1 } , 2 , 5 ) );
  CHECK_THROWS( knapsackDecision( { 1 } , {} , 1 , 1 ) , contract_violation );
  CHECK_THROWS( knapsackDecision( { 1 } , { -1 } , 1 , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 9 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = int( g() % 10 );
@@ -568,7 +619,10 @@ ADS_TEST( "ex18.5" )
   CHECK( S.has_value() == ( knapsack( p , v , C ).first >= k ) );
   if( S ) {
    long tp = 0 , tv = 0;
-   for( int i : *S ) { tp += p[ i ]; tv += v[ i ]; }
+   for( int i : *S ) {
+    tp += p[ i ];
+    tv += v[ i ];
+    }
    CHECK( tp >= k && tv <= C );
    }
   }
@@ -590,8 +644,10 @@ ADS_TEST( "ex18.6" )
      ok = ! ( G[ u ][ v ] && col[ u ] == col[ v ] );
    ref = ok;
    int i = 0;
-   while( i < n && col[ i ] == k - 1 ) col[ i++ ] = 0;
-   if( i == n ) break;
+   while( i < n && col[ i ] == k - 1 )
+    col[ i++ ] = 0;
+   if( i == n )
+    break;
    ++col[ i ];
    }
   const auto c = coloring( G , k );
@@ -609,12 +665,12 @@ ADS_TEST( "ex18.7" )
  CHECK( ! exactCover3( {} , 3 ) );
  CHECK( ! exactCover3( Y3( { { 0 , 1 , 2 } , { 2 , 3 , 1 } } ) , 4 ) );
  CHECK( *exactCover3( Y3( { { 0 , 1 , 2 } , { 0 , 1 , 2 } } ) , 3 ) ==
-        Nodes( { 0 } ) );
+	Nodes( { 0 } ) );
  CHECK( ! exactCover3( Y3( { { 0 , 1 , 2 } , { 2 , 3 , 4 } } ) , 6 ) );
  CHECK_THROWS( exactCover3( Y3( { { 0 , 0 , 1 } } ) , 3 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( exactCover3( Y3( { { 0 , 1 , 3 } } ) , 3 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 11 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int m = 3 * ( 1 + int( g() % 3 ) ) , n = 1 + int( g() % 9 );
@@ -629,9 +685,11 @@ ADS_TEST( "ex18.7" )
   for( unsigned S = 0 ; S < ( 1u << n ) && ! ref ; ++S ) {
    std::vector< int > c( m , 0 );
    for( int j = 0 ; j < n ; ++j )
-    if( S >> j & 1 ) for( int e : Y[ j ] ) ++c[ e ];
+    if( S >> j & 1 )
+     for( int e : Y[ j ] )
+      ++c[ e ];
    ref = std::all_of( c.begin() , c.end() ,
-                      []( int x ) { return( x == 1 ); } );
+		      []( int x ) { return( x == 1 ); } );
    }
   CHECK( exactCover3( Y , m ).has_value() == ref );
   }
@@ -647,9 +705,12 @@ ADS_TEST( "ex18.8" )
  for( int d = 0 ; d < 30 ; ++d ) {
   const long n = 1L << d;
   long halving = 0 , counting = 0 , top = 0;
-  for( long x = n ; x > 1 ; x /= 2 ) ++halving;             // Pippo()
-  for( long x = 0 ; x < n ; ++x ) ++counting;               // Follia()
-  for( long x = 2 * n - 1 ; x > 1 ; x /= 2 ) ++top;
+  for( long x = n ; x > 1 ; x /= 2 )
+   ++halving;  // Pippo()
+  for( long x = 0 ; x < n ; ++x )
+   ++counting;  // Follia()
+  for( long x = 2 * n - 1 ; x > 1 ; x /= 2 )
+   ++top;
   CHECK( halving == d && counting == ( 1L << d ) && top == d );
   }
  }
@@ -665,7 +726,8 @@ ADS_TEST( "ex18.9" )
   long steps = 0;
   for( long i = 0 ; i < k ; ++i ) {
    ++steps;
-   for( long c = B[ i ] ; c > 0 ; --c ) ++steps;
+   for( long c = B[ i ] ; c > 0 ; --c )
+    ++steps;
    }
   CHECK( steps == k + 1 );
   }
@@ -693,21 +755,22 @@ ADS_TEST( "ex18.11" )
  CHECK( independentSet( {} , 0 ) && ! independentSet( {} , 1 ) );
  CHECK( vertexCover( {} , 0 ) && ! vertexCover( {} , -1 ) );
  CHECK_THROWS( independentSet( { { false , true } , { false , false } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( vertexCover( { { false , true } , { false , false } } , 1 ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 12 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 1 + int( g() % 8 ) , k = int( g() % ( n + 1 ) );
   const auto G = random_graph( n , int( g() % 80 ) , false , g );
   CHECK( independentSet( G , k ).has_value() ==
-         vertexCover( G , n - k ).has_value() );
-  auto L = G;                                   // loops, ignored by both
-  for( int u = 0 ; u < n ; ++u ) L[ u ][ u ] = g() % 2;
+	 vertexCover( G , n - k ).has_value() );
+  auto L = G;  // loops, ignored by both
+  for( int u = 0 ; u < n ; ++u )
+   L[ u ][ u ] = g() % 2;
   CHECK( independentSet( L , k ).has_value() ==
-         independentSet( G , k ).has_value() );
+	 independentSet( G , k ).has_value() );
   CHECK( vertexCover( L , n - k ).has_value() ==
-         vertexCover( G , n - k ).has_value() );
+	 vertexCover( G , n - k ).has_value() );
   CHECK( ! independentSet( G , n + 1 ) && ! vertexCover( G , -1 ) );
   CHECK( vertexCover( G , n ) && independentSet( G , 0 )->empty() );
   }
@@ -726,14 +789,14 @@ ADS_TEST( "ex18.12" )
  const Adjacency K7( 7 , std::vector< bool >( 7 , true ) );
  CHECK( hamiltonianCircuit( K7 ) && hamiltonianCycle( K7 ) );
  CHECK_THROWS( hamiltonianCircuit( { { false , true } , { false , false } } ) ,
-               contract_violation );
+	       contract_violation );
  CHECK_THROWS( hamiltonianCycle( { { false , true } } ) , contract_violation );
  std::mt19937 g( 13 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 3 + int( g() % 5 );
   const auto G = random_graph( n , 50 , false , g );
   CHECK( hamiltonianCircuit( G ).has_value() ==
-         hamiltonianCycle( G ).has_value() );          // G is symmetric
+	 hamiltonianCycle( G ).has_value() );  // G is symmetric
   }
  }
 
@@ -759,10 +822,11 @@ ADS_TEST( "ex18.13" )
   const int n = 1 + int( g() % 7 );
   auto G = random_graph( n , 45 , true , g );
   if( t % 2 )
-   for( int u = 0 ; u < n ; ++u ) G[ u ][ u ] = g() % 2;
+   for( int u = 0 ; u < n ; ++u )
+    G[ u ][ u ] = g() % 2;
   const auto H = cycleToPath( G );
   CHECK( hamiltonianCycle( G ).has_value() ==
-         hamiltonianPath( H , n , 0 ).has_value() );
+	 hamiltonianPath( H , n , 0 ).has_value() );
   }
  }
 
@@ -779,15 +843,16 @@ ADS_TEST( "ex18.14" )
  CHECK( ! hamiltonianChain( { { false , false } , { false , false } } ) );
  CHECK_THROWS( cycleToChain( {} ) , contract_violation );
  CHECK_THROWS( hamiltonianChain( { { false , true } , { false , false } } ) ,
-               contract_violation );
+	       contract_violation );
  std::mt19937 g( 15 );
  for( int t = 0 ; t < 60 ; ++t ) {
   const int n = 1 + int( g() % 5 );
   auto G = random_graph( n , 50 , true , g );
   if( t % 2 )
-   for( int u = 0 ; u < n ; ++u ) G[ u ][ u ] = g() % 2;
+   for( int u = 0 ; u < n ; ++u )
+    G[ u ][ u ] = g() % 2;
   CHECK( hamiltonianCycle( G ).has_value() ==
-         hamiltonianChain( cycleToChain( G ) ).has_value() );
+	 hamiltonianChain( cycleToChain( G ) ).has_value() );
   }
  }
 
@@ -797,21 +862,24 @@ ADS_TEST( "ex18.14" )
 // recursion trouble), and the preconditions, a cycle among them
 ADS_TEST( "ex18.15" )
 {
- const Adjacency P3 = { { false , true , false } , { false , false , true } ,
-                        { false , false , false } };
+ const Adjacency P3 = { { false , true , false } ,
+			{ false , false , true } ,
+			{ false , false , false } };
  CHECK( *longestPath( P3 , 1 , 1 , 0 ) == Nodes( { 1 } ) );
  CHECK( ! longestPath( P3 , 1 , 1 , 1 ) && longestPath( P3 , 0 , 2 , -3 ) );
  CHECK( ! longestPath( P3 , 0 , 2 , 3 ) && ! longestPath( P3 , 2 , 0 , 0 ) );
- CHECK( longestPathDag( P3 , 0 , 2 ) == 2 &&
-        longestPathDag( P3 , 1 , 1 ) == 0 );
+ CHECK( longestPathDag( P3 , 0 , 2 ) == 2 && longestPathDag( P3 , 1 ,
+							     1 ) == 0 );
  CHECK( longestPathDag( P3 , 2 , 0 ) == -1 );
  Adjacency Ch( 3000 , std::vector< bool >( 3000 , false ) );
- for( int u = 0 ; u + 1 < 3000 ; ++u ) Ch[ u ][ u + 1 ] = true;
+ for( int u = 0 ; u + 1 < 3000 ; ++u )
+  Ch[ u ][ u + 1 ] = true;
  CHECK( longestPathDag( Ch , 0 , 2999 ) == 2999 );
  CHECK_THROWS( longestPath( P3 , 3 , 0 , 0 ) , contract_violation );
  CHECK_THROWS( longestPath( P3 , 0 , -1 , 0 ) , contract_violation );
  CHECK_THROWS( longestPathDag( { { false , true } , { true , false } } , 0 ,
-                               1 ) , contract_violation );
+			       1 ) ,
+	       contract_violation );
  CHECK_THROWS( longestPathDag( { { true } } , 0 , 0 ) , contract_violation );
  CHECK_THROWS( longestPathDag( P3 , 0 , 3 ) , contract_violation );
  std::mt19937 g( 16 );
@@ -819,13 +887,15 @@ ADS_TEST( "ex18.15" )
   const int n = 2 + int( g() % 6 );
   const auto G = random_graph( n , 45 , true , g );
   CHECK( hamiltonianPath( G , 0 , n - 1 ).has_value() ==
-         longestPath( G , 0 , n - 1 , n - 1 ).has_value() );
-  Adjacency A( n , std::vector< bool >( n , false ) );       // acyclic
+	 longestPath( G , 0 , n - 1 , n - 1 ).has_value() );
+  Adjacency A( n , std::vector< bool >( n , false ) );  // acyclic
   for( int u = 0 ; u < n ; ++u )
-   for( int v = u + 1 ; v < n ; ++v ) A[ u ][ v ] = g() % 2;
+   for( int v = u + 1 ; v < n ; ++v )
+    A[ u ][ v ] = g() % 2;
   int best = -1;
   for( int k = n - 1 ; k >= 0 && best < 0 ; --k )
-   if( longestPath( A , 0 , n - 1 , k ) ) best = k;
+   if( longestPath( A , 0 , n - 1 , k ) )
+    best = k;
   CHECK( longestPathDag( A , 0 , n - 1 ) == best );
   }
  }
@@ -842,18 +912,20 @@ ADS_TEST( "ex18.16" )
  CHECK( ! boundedSpanningTree( K2 , 0 ) );
  CHECK( boundedSpanningTree( K2 , 1 )->size() == 1 );
  CHECK( ! boundedSpanningTree( { { false , false } , { false , false } } ,
-                               5 ) );
+			       5 ) );
  Adjacency S5( 5 , std::vector< bool >( 5 , false ) );
- for( int v = 1 ; v < 5 ; ++v ) S5[ 0 ][ v ] = S5[ v ][ 0 ] = true;
+ for( int v = 1 ; v < 5 ; ++v )
+  S5[ 0 ][ v ] = S5[ v ][ 0 ] = true;
  CHECK( boundedSpanningTree( S5 , 4 ) && ! boundedSpanningTree( S5 , 3 ) );
  CHECK_THROWS( boundedSpanningTree( { { false , true } , { false , false } } ,
-                                    2 ) , contract_violation );
+				    2 ) ,
+	       contract_violation );
  std::mt19937 g( 17 );
  for( int t = 0 ; t < 100 ; ++t ) {
   const int n = 1 + int( g() % 7 );
   const auto G = random_graph( n , 50 , false , g );
   CHECK( hamiltonianChain( G ).has_value() ==
-         boundedSpanningTree( G , 2 ).has_value() );
+	 boundedSpanningTree( G , 2 ).has_value() );
   }
  }
 

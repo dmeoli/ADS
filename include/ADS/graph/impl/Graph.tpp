@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS GraphNodes ----------------------------*/
@@ -88,9 +89,10 @@ template< class T >
 bool GraphNodes< T >::nodesCounted( void ) const
 {
  int k = 0;
- for( bool a : f_alive ) k += a;
+ for( bool a : f_alive )
+  k += a;
  return( ( k == f_n ) && ( f_label.size() == f_alive.size() ) &&
-         ( f_m >= 0 ) );
+	  ( f_m >= 0 ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -107,7 +109,7 @@ std::vector< std::vector< int > > incidence( const G & g )
     E.emplace_back( u , v );
    } );
  std::vector< std::vector< int > > B( g.bound() ,
-                                      std::vector< int >( E.size() ) );
+				      std::vector< int >( E.size() ) );
  for( std::size_t k = 0 ; k < E.size() ; ++k ) {
   B[ E[ k ].first ][ k ] = g.directed() ? -1 : 1;
   B[ E[ k ].second ][ k ] = 1;
@@ -116,9 +118,9 @@ std::vector< std::vector< int > > incidence( const G & g )
  return( B );
  }
 
-inline std::vector< int > adjFromIncidence(
-                          const std::vector< std::vector< int > > & B ,
-                          int u , bool directed )
+inline std::vector< int >
+adjFromIncidence( const std::vector< std::vector< int > > & B , int u ,
+		  bool directed )
 {
  ADS_PRE( ( u >= 0 ) && ( u < int( B.size() ) ) );
  std::vector< int > A;
@@ -126,7 +128,7 @@ inline std::vector< int > adjFromIncidence(
  for( std::size_t k = 0 ; k < B[ u ].size() ; ++k ) {
   if( B[ u ][ k ] != from )
    continue;
-  for( int i = 0 ; i < int( B.size() ) ; ++i )   // the other end
+  for( int i = 0 ; i < int( B.size() ) ; ++i )  // the other end
    if( ( i != u ) && ( B[ i ][ k ] == to ) )
     A.push_back( i );
   }

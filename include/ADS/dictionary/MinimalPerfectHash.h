@@ -87,7 +87,7 @@
 
 #ifndef __ADS_MinimalPerfectHash
  #define __ADS_MinimalPerfectHash
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -110,7 +110,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS MinimalPerfectHash ------------------------*/
@@ -118,12 +119,12 @@ namespace ADS {
 
 /// a minimal perfect hash function of a static set of keys by pilots
 template< class T , class H = DefaultHash< T > >
-class MinimalPerfectHash {
+class MinimalPerfectHash
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = T;   ///< the type of the keys
+ using Key = T;  ///< the type of the keys
 
  /// the function of the distinct keys, with \f$ \lambda \f$ keys per bucket
  /// on average and the load \f$ \alpha \f$ of the table
@@ -152,8 +153,9 @@ class MinimalPerfectHash {
  /// \post the keys are mapped onto \f$ \{ 0 , \ldots , n - 1 \} \f$ (an
  ///       audit)
  explicit MinimalPerfectHash( const std::vector< T > & keys ,
-                              double lambda = 5 , double alpha = 0.99 ,
-                              std::uint64_t seed = 1 , H h = H() );
+			      double lambda = 5 ,
+			      double alpha = 0.99 , std::uint64_t seed = 1 ,
+			      H h = H() );
 
  /// the value of \f$ k \f$, in \f$ [ 0 , n ) \f$; some value in it for a key
  /// out of \f$ S \f$
@@ -190,7 +192,6 @@ class MinimalPerfectHash {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr std::size_t kMaxTrials = 100;
  static constexpr std::uint64_t kMaxPilot = std::uint64_t( 1 ) << 24;
 
@@ -212,12 +213,12 @@ class MinimalPerfectHash {
 
  std::uint64_t f_seed;
  std::size_t f_n = 0;
- std::size_t f_m = 0;              ///< the places, \f$ n / \alpha \f$
- std::size_t f_dense = 0;          ///< the buckets of 60 % of the keys
- std::size_t f_sparse = 0;         ///< the other buckets
- int f_w = 0;                      ///< the bits of a pilot
- std::vector< std::uint64_t > f_P; ///< the pilots, `f_w` bits each
- std::vector< std::uint32_t > f_free;   ///< the place of \f$ p \ge n \f$
+ std::size_t f_m = 0;                  ///< the places, \f$ n / \alpha \f$
+ std::size_t f_dense = 0;              ///< the buckets of 60 % of the keys
+ std::size_t f_sparse = 0;             ///< the other buckets
+ int f_w = 0;                          ///< the bits of a pilot
+ std::vector< std::uint64_t > f_P;     ///< the pilots, `f_w` bits each
+ std::vector< std::uint32_t > f_free;  ///< the place of \f$ p \ge n \f$
  std::size_t f_trials = 0;
  H f_h;
 
@@ -235,7 +236,7 @@ class MinimalPerfectHash {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* MinimalPerfectHash.h included */
+#endif /* MinimalPerfectHash.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File MinimalPerfectHash.h ---------------------*/

@@ -121,7 +121,7 @@
 
 #ifndef __ADS_BTreeMap
  #define __ADS_BTreeMap
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -151,7 +151,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS BTreeMap ------------------------------*/
@@ -161,25 +162,25 @@ namespace ADS {
 /// `less()`, with the counts of the pairs below each child if `R` (the
 /// ranks)
 template< class K , class V , class Less = std::less< K > ,
-          std::size_t B = 512 , bool R = false >
- requires std::default_initializable< K > &&
-          std::default_initializable< V >
-class BTreeMap {
+	  std::size_t B = 512 ,
+	  bool R = false >
+ requires std::default_initializable< K > && std::default_initializable< V >
+class BTreeMap
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the pairs of a leaf
  static constexpr std::size_t L =
-  std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( V ) ) , 4 , 255 );
+   std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( V ) ) , 4 , 255 );
 
  /// the keys of an internal node
  static constexpr std::size_t I =
-  std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( void * ) ) , 4 ,
-                             255 );
+   std::clamp< std::size_t >( B / ( sizeof( K ) + sizeof( void * ) ) , 4 ,
+			      255 );
 
  /// the empty map, by the order `less`
  explicit BTreeMap( Less less = Less() );
@@ -397,11 +398,11 @@ class BTreeMap {
 
  /// the pairs of constant references ( key , value )
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
- using iterator = const_iterator;          ///< the constant iterator
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
+ using iterator = const_iterator;         ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const;
@@ -453,7 +454,8 @@ class BTreeMap {
  /// 5 & \quad \textbf{return}\ r + \mathrm{place}( u , k )
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::size_t rank( const K & k ) const requires R;
+ [[nodiscard]] std::size_t rank( const K & k ) const
+  requires R;
 
  /// the pair of rank \f$ i \f$ (from 0), `end()` if \f$ i \ge n \f$
  ///
@@ -473,15 +475,15 @@ class BTreeMap {
  /// 8 & \quad \textbf{return}\ \text{the place } i \text{ of the leaf } u
  /// \end{array}}
  /// \f]
- [[nodiscard]] const_iterator select( std::size_t i ) const requires R;
+ [[nodiscard]] const_iterator select( std::size_t i ) const
+  requires R;
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the keys are counted on all the places of a node, padded
- static constexpr bool FAST = std::is_arithmetic_v< K > &&
-  ( std::is_same_v< Less , std::less< K > > ||
-    std::is_same_v< Less , std::less<> > );
+ static constexpr bool FAST =
+   std::is_arithmetic_v< K > && ( std::is_same_v< Less , std::less< K > > ||
+				  std::is_same_v< Less , std::less<> > );
 
  /// the key of the unused places, larger than every key
  [[nodiscard]] static constexpr K pad( void ) {
@@ -492,27 +494,30 @@ class BTreeMap {
   }
 
  /// a leaf: the keys, the values and the links to its neighbors
- struct alignas( 64 ) Leaf {
-  K k[ L ];                        ///< the keys
-  V v[ L ];                        ///< the values
-  Leaf * prev = nullptr;           ///< the leaf before
-  Leaf * next = nullptr;           ///< the leaf after
-  std::uint32_t n = 0;             ///< the pairs
+ struct alignas( 64 ) Leaf
+ {
+  K k[ L ];               ///< the keys
+  V v[ L ];               ///< the values
+  Leaf * prev = nullptr;  ///< the leaf before
+  Leaf * next = nullptr;  ///< the leaf after
+  std::uint32_t n = 0;    ///< the pairs
   };
 
  /// nothing, in the place of the counts with no `R`
- struct None {};
+ struct None
+ { };
 
  /// an internal node: the bounds, the children and the links on its level
- struct alignas( 64 ) Inner {
-  K k[ I ];                        ///< the bounds of the children
-  void * c[ I + 1 ];               ///< the children
-  Inner * prev = nullptr;          ///< the node before, on its level
-  Inner * next = nullptr;          ///< the node after, on its level
-  std::uint32_t n = 0;             ///< the keys, the children - 1
+ struct alignas( 64 ) Inner
+ {
+  K k[ I ];                ///< the bounds of the children
+  void * c[ I + 1 ];       ///< the children
+  Inner * prev = nullptr;  ///< the node before, on its level
+  Inner * next = nullptr;  ///< the node after, on its level
+  std::uint32_t n = 0;     ///< the keys, the children - 1
   /// the pairs below each child, if R
-  ADS_NO_UNIQUE_ADDRESS std::conditional_t< R ,
-                         std::array< std::size_t , I + 1 > , None > cnt;
+  ADS_NO_UNIQUE_ADDRESS
+  std::conditional_t< R , std::array< std::size_t , I + 1 > , None > cnt;
   };
 
  /// the pairs below the node \f$ x \f$ of height \f$ h \f$
@@ -523,12 +528,13 @@ class BTreeMap {
  /// default), from the children: \f$ O( I ) \f$ time per child, \f$ O( 1 )
  /// \f$ if the children are leaves
  static void recount( Inner * u , int h , std::uint32_t from = 0 ,
-                      std::uint32_t to = I + 1 );
+		      std::uint32_t to = I + 1 );
 
  /// the place of an internal node on a path, and the child taken
- struct Step {
-  Inner * u;         ///< the node
-  std::uint32_t i;   ///< the child taken
+ struct Step
+ {
+  Inner * u;        ///< the node
+  std::uint32_t i;  ///< the child taken
   };
 
  static constexpr int DEPTH = 64;  ///< the largest height
@@ -555,15 +561,15 @@ class BTreeMap {
  /// places, padded) smaller than \f$ x \f$
  template< std::size_t C >
  [[nodiscard]] std::size_t place( const K * a , std::uint32_t n ,
-                                  const K & x ) const;
+				  const K & x ) const;
 
  /// the leaf where \f$ x \f$ is, or would be, prefetching the values of
  /// the leaf if `Values`; the parent of the leaf and its child taken in
  /// `*up` and `*at`, if given
  template< bool Values >
  [[nodiscard]] const Leaf * descend( const K & x ,
-                                     const Inner * * up = nullptr ,
-                                     std::uint32_t * at = nullptr ) const;
+				     const Inner ** up = nullptr ,
+				     std::uint32_t * at = nullptr ) const;
 
  /// the parent of the leftmost leaf, or of the rightmost one
  [[nodiscard]] const Inner * edge( bool right ) const;
@@ -578,7 +584,8 @@ class BTreeMap {
  /// \f$ ( k , v ) \f$ at the place \f$ p \f$ of the full leaf \f$ x \f$,
  /// which splits, the parents along `path` from the depth \f$ d \f$ up
  void split( Leaf * x , std::uint32_t p , const K & k , const V & v ,
-             Step * path , int d );
+	     Step * path ,
+	     int d );
 
  /// the bound \f$ s \f$ and the new node \f$ r \f$ into the parent at the
  /// depth \f$ d \f$ of `path`, splitting it if full, on the right edge
@@ -602,30 +609,31 @@ class BTreeMap {
  /// the invariant of the subtree of \f$ x \f$, of height \f$ h \f$, its
  /// keys in \f$ ( \mathit{lo} , \mathit{hi} ] \f$
  [[nodiscard]] bool valid( const void * x , int h , const K * lo ,
-                           const K * hi , const Leaf * & last ,
-                           std::vector< const Inner * > & left ,
-                           std::size_t & count ) const;
+			   const K * hi ,
+			   const Leaf *& last ,
+			   std::vector< const Inner * > & left ,
+			   std::size_t & count ) const;
 
- void * f_root = nullptr;          ///< the root, a leaf if f_height is 1
- Leaf * f_first = nullptr;         ///< the leftmost leaf
- Leaf * f_last = nullptr;          ///< the rightmost leaf
- std::size_t f_size = 0;           ///< the pairs
- int f_height = 0;                 ///< the levels
- ADS_NO_UNIQUE_ADDRESS Less f_less;   ///< the order of the keys
- ObjectPool< Leaf > f_leaves;      ///< the slots of the leaves
- ObjectPool< Inner > f_inners;     ///< the slots of the internal nodes
+ void * f_root = nullptr;            ///< the root, a leaf if f_height is 1
+ Leaf * f_first = nullptr;           ///< the leftmost leaf
+ Leaf * f_last = nullptr;            ///< the rightmost leaf
+ std::size_t f_size = 0;             ///< the pairs
+ int f_height = 0;                   ///< the levels
+ ADS_NO_UNIQUE_ADDRESS Less f_less;  ///< the order of the keys
+ ObjectPool< Leaf > f_leaves;        ///< the slots of the leaves
+ ObjectPool< Inner > f_inners;       ///< the slots of the internal nodes
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the iterator on the pairs by increasing keys: a leaf, a place in it
  /// and the parent of the leaf
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a pair of constant references, the key and its value
   using value_type = std::pair< const K & , const V & >;
-  using reference = value_type;             ///< a pair, by value
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using reference = value_type;            ///< a pair, by value
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// the category of the iterator for the concepts of C++20, bidirectional
   using iterator_concept = std::bidirectional_iterator_tag;
   /// input for the older algorithms, since `*it` is a value
@@ -668,7 +676,7 @@ class BTreeMap {
   /// to the previous pair, from the end to the last pair, through the
   /// parent at the start of a leaf
   const_iterator & operator--( void ) {
-   if( ! f_l ) {                            // from the end
+   if( ! f_l ) {  // from the end
     f_l = f_t->f_last;
     f_p = f_t->edge( true );
     f_c = f_p ? f_p->n : 0;
@@ -693,10 +701,18 @@ class BTreeMap {
    }
 
   /// to the next pair, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// to the previous pair, returning the iterator before the step
-  const_iterator operator--( int ) { auto t = *this; --*this; return( t ); }
+  const_iterator operator--( int ) {
+   auto t = *this;
+   --*this;
+   return( t );
+   }
 
   /// equal on the same place of the same leaf
   bool operator==( const const_iterator & o ) const {
@@ -712,10 +728,10 @@ class BTreeMap {
   /// on the place \f$ i \f$ of the leaf \f$ l \f$ of the tree \f$ t \f$,
   /// \f$ l \f$ the child \f$ c \f$ of \f$ p \f$; past a leaf, the next one
   const_iterator( const BTreeMap * t , const Leaf * l , std::uint32_t i ,
-                  const Inner * p , std::uint32_t c )
-   : f_t( t ) , f_l( l ) , f_p( p ) , f_i( i ) , f_n( l ? l->n : 0 ) ,
-     f_c( c ) {
-   if( f_l && ( f_i == f_n ) )              // past a leaf: the next one
+		  const Inner * p , std::uint32_t c )
+      : f_t( t ) , f_l( l ) , f_p( p ) , f_i( i ) , f_n( l ? l->n : 0 ) ,
+	f_c( c ) {
+   if( f_l && ( f_i == f_n ) )  // past a leaf: the next one
     step();
    }
 
@@ -752,14 +768,14 @@ class BTreeMap {
    f_n = f_l ? f_l->n : 0;
    }
 
-  const BTreeMap * f_t = nullptr;   ///< the tree
-  const Leaf * f_l = nullptr;       ///< the leaf, nullptr at the end
-  const Inner * f_p = nullptr;      ///< its parent, nullptr if the root
-  std::uint32_t f_i = 0;            ///< the place in the leaf
-  std::uint32_t f_n = 0;            ///< the pairs of the leaf
-  std::uint32_t f_c = 0;            ///< the child of the parent
+  const BTreeMap * f_t = nullptr;  ///< the tree
+  const Leaf * f_l = nullptr;      ///< the leaf, nullptr at the end
+  const Inner * f_p = nullptr;     ///< its parent, nullptr if the root
+  std::uint32_t f_i = 0;           ///< the place in the leaf
+  std::uint32_t f_n = 0;           ///< the pairs of the leaf
+  std::uint32_t f_c = 0;           ///< the child of the parent
 
- };  // end( class const_iterator )
+  };  // end( class const_iterator )
 
  };  // end( class BTreeMap )
 
@@ -775,7 +791,7 @@ class BTreeMap {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BTreeMap.h included */
+#endif /* BTreeMap.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File BTreeMap.h ----------------------------*/

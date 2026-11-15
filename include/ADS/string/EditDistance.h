@@ -156,7 +156,7 @@
 
 #ifndef __ADS_EditDistance
  #define __ADS_EditDistance
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -174,7 +174,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the edit distance of Levenshtein of \f$ a \f$ and \f$ b \f$
 ///
@@ -214,7 +215,7 @@ namespace ADS {
 /// \f]
 /// \post `editDistance( a , b )` (an audit)
 [[nodiscard]] inline std::size_t levenshtein( std::string_view a ,
-                                              std::string_view b );
+					      std::string_view b );
 
 /// the edit distance of \f$ a \f$ and \f$ b \f$ if at most \f$ k \f$,
 /// \f$ k + 1 \f$ otherwise
@@ -239,9 +240,8 @@ namespace ADS {
 /// \f]
 /// \post \f$ \min\{ \mathrm{editDistance}( a , b ) , k + 1 \} \f$ (an
 ///       audit)
-[[nodiscard]] inline std::size_t levenshtein( std::string_view a ,
-                                              std::string_view b ,
-                                              std::size_t k );
+[[nodiscard]] inline std::size_t
+levenshtein( std::string_view a , std::string_view b , std::size_t k );
 
 /// the length of a longest common subsequence of \f$ a \f$ and \f$ b \f$
 ///
@@ -263,7 +263,7 @@ namespace ADS {
 /// \f]
 /// \post the length of `lcs( a , b )` (an audit)
 [[nodiscard]] inline std::size_t lcsLength( std::string_view a ,
-                                            std::string_view b );
+					    std::string_view b );
 
 /// the ends \f$ j \f$, from 1 to \f$ n \f$, of the substrings of \f$ T \f$
 /// at edit distance at most \f$ k \f$ from \f$ P \f$, in increasing order,
@@ -296,8 +296,7 @@ namespace ADS {
 /// \post the \f$ j \f$ with
 ///       \f$ \mathrm{matchingTable}( P , T )[ m ][ j ] \le k \f$ (an audit)
 [[nodiscard]] inline std::vector< std::pair< std::size_t , std::size_t > >
- approximateMatches( std::string_view T , std::string_view P ,
-                     std::size_t k );
+approximateMatches( std::string_view T , std::string_view P , std::size_t k );
 
 /*--------------------------------------------------------------------------*/
 
@@ -311,7 +310,7 @@ namespace ADS {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* EditDistance.h included */
+#endif /* EditDistance.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File EditDistance.h -------------------------*/

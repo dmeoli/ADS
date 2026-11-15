@@ -104,7 +104,7 @@
 
 #ifndef __ADS_NthElement
  #define __ADS_NthElement
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -124,7 +124,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the item of its rank put in `nth`, in
 /// \f$ [ \mathit{first} , \mathit{last} ) \f$ by `less()`, the items before
@@ -210,7 +211,7 @@ T nthElement( std::vector< T > & A , std::size_t k , C less = C() );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* NthElement.h included */
+#endif /* NthElement.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File NthElement.h --------------------------*/

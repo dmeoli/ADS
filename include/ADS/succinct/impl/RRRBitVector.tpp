@@ -14,13 +14,14 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 inline const RRRBitVector::Tables & RRRBitVector::tables( void )
 {
  static const Tables T = [] {
   Tables t;
-  for( int p = 0 ; p < 64 ; ++p ) {        // Pascal's triangle
+  for( int p = 0 ; p < 64 ; ++p ) {  // Pascal's triangle
    t.C[ p ][ 0 ] = 1;
    for( int k = 1 ; k <= p ; ++k )
     t.C[ p ][ k ] = t.C[ p - 1 ][ k - 1 ] + ( k < p ? t.C[ p - 1 ][ k ] : 0 );
@@ -36,7 +37,7 @@ inline std::uint64_t RRRBitVector::offset( std::uint64_t x , int c )
 {
  const auto & T = tables();
  std::uint64_t o = 0;
- for( int t = 1 ; t <= c ; ++t , x &= x - 1 )   // the 1s, from the lowest
+ for( int t = 1 ; t <= c ; ++t , x &= x - 1 )  // the 1s, from the lowest
   o += T.C[ std::countr_zero( x ) ][ t ];
  return( o );
  }
@@ -60,7 +61,7 @@ inline RRRBitVector::RRRBitVector( const BitVector & b ) : f_m( b.size() )
   f_off.append( offset( x , c ) , T.len[ c ] );
   ones += std::uint64_t( c );
   }
- rank.push_back( ones );                   // the end closes
+ rank.push_back( ones );  // the end closes
  ptr.push_back( f_off.size() );
  f_ones = std::size_t( ones );
  f_wr = std::max( 1 , int( std::bit_width( ones ) ) );
@@ -70,15 +71,15 @@ inline RRRBitVector::RRRBitVector( const BitVector & b ) : f_m( b.size() )
   f_ptr.append( ptr[ s ] , f_wp );
   }
  ADS_AUDIT( std::equal( b.begin() , b.end() ,
-                        SubscriptIterator< RRRBitVector , bool >( this ,
-                                                                  0 ) ) );
+			SubscriptIterator< RRRBitVector , bool >( this ,
+								  0 ) ) );
  }
 
 inline int RRRBitVector::below( std::uint64_t o , int c , int q )
 {
  const auto & T = tables();
  int t = c;
- for( int p = kB - 1 ; ( p >= q ) && ( t > 0 ) ; --p ) {   // C( p , 0 ) = 1
+ for( int p = kB - 1 ; ( p >= q ) && ( t > 0 ) ; --p ) {  // C( p , 0 ) = 1
   const std::uint64_t v = T.C[ p ][ t ];
   const bool one = o >= v;
   o -= one ? v : 0;
@@ -88,7 +89,7 @@ inline int RRRBitVector::below( std::uint64_t o , int c , int q )
  }
 
 inline std::uint64_t RRRBitVector::locate( std::size_t j , int & c ,
-                                           std::size_t & ones ) const
+					   std::size_t & ones ) const
 {
  const auto & T = tables();
  const std::size_t s = j / kSuper;
@@ -122,7 +123,8 @@ inline bool RRRBitVector::operator[]( std::size_t i ) const
 inline std::size_t RRRBitVector::rank1( std::size_t i ) const
 {
  ADS_PRE( i <= f_m );
- if( i == f_m ) return( f_ones );
+ if( i == f_m )
+  return( f_ones );
  int c;
  std::size_t ones;
  const std::uint64_t o = locate( i / kB , c , ones );
@@ -132,21 +134,22 @@ inline std::size_t RRRBitVector::rank1( std::size_t i ) const
 inline std::size_t RRRBitVector::select( std::size_t k , bool b ) const
 {
  const auto & T = tables();
- constexpr std::size_t kBits = kB * kSuper;   // the bits of a superblock
- auto before = [ & ]( std::size_t s ) {     // the bits b before s
-  const std::size_t o = std::size_t( f_rank.get( s * std::size_t( f_wr ) ,
-                                                 f_wr ) );
+ constexpr std::size_t kBits = kB * kSuper;  // the bits of a superblock
+ auto before = [ & ]( std::size_t s ) {      // the bits b before s
+  const std::size_t o =
+    std::size_t( f_rank.get( s * std::size_t( f_wr ) , f_wr ) );
   return( b ? o : std::min( s * kBits , f_m ) - o );
   };
  std::size_t lo = 0 , hi = f_rank.size() / std::size_t( f_wr ) - 1;
- while( lo + 1 < hi ) {                     // before( lo ) < k <= ...
+ while( lo + 1 < hi ) {  // before( lo ) < k <= ...
   const std::size_t mid = ( lo + hi ) / 2;
-  if( before( mid ) < k ) lo = mid;
-  else hi = mid;
+  if( before( mid ) < k )
+   lo = mid;
+  else
+   hi = mid;
   }
- std::size_t r = k - before( lo );          // the r-th of the superblock
- std::size_t ptr = std::size_t( f_ptr.get( lo * std::size_t( f_wp ) ,
-                                           f_wp ) );
+ std::size_t r = k - before( lo );  // the r-th of the superblock
+ std::size_t ptr = std::size_t( f_ptr.get( lo * std::size_t( f_wp ) , f_wp ) );
  // the blocks, their classes 10 at a time from a load
  std::uint64_t w = 0;
  for( std::size_t j = lo * kSuper , h = 0 ; ; ++j , ++h , w >>= 6 ) {
@@ -166,7 +169,8 @@ inline std::size_t RRRBitVector::select( std::size_t k , bool b ) const
     for( int p = kB - 1 ; ; --p ) {
      const std::uint64_t v = T.C[ p ][ t ];
      if( o >= v ) {
-      if( std::size_t( t ) == r ) return( kB * j + std::size_t( p ) );
+      if( std::size_t( t ) == r )
+       return( kB * j + std::size_t( p ) );
       o -= v;
       --t;
       }
@@ -196,7 +200,7 @@ inline std::size_t RRRBitVector::select( std::size_t k , bool b ) const
      }
     }
    return( kB * j + std::size_t( selectInWord( ~x & detail::lowMask( len ) ,
-                                               int( r - 1 ) ) ) );
+						int( r - 1 ) ) ) );
    }
   r -= in;
   ptr += T.len[ c ];

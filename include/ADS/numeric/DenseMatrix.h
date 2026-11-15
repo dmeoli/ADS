@@ -102,7 +102,7 @@
 
 #ifndef __ADS_DenseMatrix
  #define __ADS_DenseMatrix
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -144,27 +144,33 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// the allocator that builds the items by default initialization: a number
 /// is not zeroed when it is written next
 template< class U >
-struct DefaultInitAllocator : std::allocator< U > {
+struct DefaultInitAllocator : std::allocator< U >
+{
  using value_type = U;
  template< class V >
- struct rebind { using other = DefaultInitAllocator< V >; };
+ struct rebind
+ {
+  using other = DefaultInitAllocator< V >;
+  };
  DefaultInitAllocator( void ) = default;
  template< class V >
- DefaultInitAllocator( const DefaultInitAllocator< V > & ) noexcept {}
+ DefaultInitAllocator( const DefaultInitAllocator< V > & ) noexcept { }
  template< class V >
- void construct( V * p ) noexcept( std::is_nothrow_default_constructible_v<
-                                    V > ) {
+ void construct( V * p ) noexcept(
+   std::is_nothrow_default_constructible_v< V > ) {
   ::new( static_cast< void * >( p ) ) V;
   }
- template< class V , class ... Args >
- void construct( V * p , Args && ... args ) {
+ template< class V , class... Args >
+ void construct( V * p , Args &&... args ) {
   ::new( static_cast< void * >( p ) ) V( std::forward< Args >( args )... );
   }
  };
@@ -177,16 +183,17 @@ struct DefaultInitAllocator : std::allocator< U > {
 
 /// an \f$ m \times n \f$ matrix by rows in one contiguous vector
 template< class T >
-class DenseMatrix {
+class DenseMatrix
+{
  public:
- using value_type = T;   ///< the type of the entries
+ using value_type = T;  ///< the type of the entries
 
  /// the empty \f$ 0 \times 0 \f$ matrix
  DenseMatrix( void ) = default;
 
  /// the \f$ m \times n \f$ matrix of entries \f$ v \f$
  DenseMatrix( std::size_t m , std::size_t n , const T & v = T( 0 ) )
-  : f_m( m ) , f_n( n ) , f_A( m * n ) {
+     : f_m( m ) , f_n( n ) , f_A( m * n ) {
   std::fill( f_A.begin() , f_A.end() , v );
   }
 
@@ -234,9 +241,9 @@ class DenseMatrix {
  bool operator==( const DenseMatrix & ) const = default;
 
  private:
- std::size_t f_m = 0 ,   ///< the rows
-             f_n = 0;    ///< the columns
- std::vector< T , detail::DefaultInitAllocator< T > > f_A;   ///< by rows
+ std::size_t f_m = 0 ,                                      ///< the rows
+   f_n = 0;                                                ///< the columns
+ std::vector< T , detail::DefaultInitAllocator< T > > f_A;  ///< by rows
  };  // end( class DenseMatrix )
 
 /*--------------------------------------------------------------------------*/
@@ -278,15 +285,16 @@ inline constexpr std::size_t kGemmBlock = 256;
 ///      \f$ \mathit{ldc} \ge n \f$
 template< class T >
 void gemm( std::size_t m , std::size_t n , std::size_t k , T alpha ,
-           const T * A , std::size_t lda , const T * B , std::size_t ldb ,
-           T beta , T * C , std::size_t ldc );
+	   const T * A ,
+	   std::size_t lda , const T * B , std::size_t ldb , T beta , T * C ,
+	   std::size_t ldc );
 
 /// the product \f$ A B \f$, a new matrix, by `gemm()` with
 /// \f$ \alpha = 1 \f$ and \f$ \beta = 0 \f$
 /// \pre `A.cols() == B.rows()`
 template< class T >
 DenseMatrix< T > multiply( const DenseMatrix< T > & A ,
-                           const DenseMatrix< T > & B );
+			   const DenseMatrix< T > & B );
 
 /// the transpose \f$ A^T \f$, by blocks of \f$ 32 \times 32 \f$
 ///
@@ -332,8 +340,8 @@ DenseMatrix< T > transpose( const DenseMatrix< T > & A );
 /// \pre `A.cols() == B.rows()` and \f$ \mathit{cutoff} \ge 2 \f$
 template< class T >
 DenseMatrix< T > multiplyStrassen( const DenseMatrix< T > & A ,
-                                   const DenseMatrix< T > & B ,
-                                   std::size_t cutoff = 3072 );
+				   const DenseMatrix< T > & B ,
+				   std::size_t cutoff = 3072 );
 
 /*--------------------------------------------------------------------------*/
 
@@ -347,7 +355,7 @@ DenseMatrix< T > multiplyStrassen( const DenseMatrix< T > & A ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DenseMatrix.h included */
+#endif /* DenseMatrix.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File DenseMatrix.h -------------------------*/

@@ -54,7 +54,7 @@
 
 #ifndef __ADS_PointerTable
  #define __ADS_PointerTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,10 +76,12 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the default equality of `PointerTable`: `p->state == key`
-struct StateEqual {
+struct StateEqual
+{
  /// whether the state of the object \f$ p \f$ is `key`
  template< class P , class K >
  bool operator()( const P * p , const K & key ) const {
@@ -93,15 +95,15 @@ struct StateEqual {
 
 /// a hash table of pointers to objects found by their keys
 template< class T , class Eq = StateEqual ,
-          class A = std::allocator< std::byte > >
-class PointerTable {
+	  class A = std::allocator< std::byte > >
+class PointerTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a table of at least `capacity` places, a power of 2, at least 16
  explicit PointerTable( std::size_t capacity = 16 , Eq eq = Eq() ,
-                        const A & alloc = A() );
+			const A & alloc = A() );
 
  /// a copy of the places, the objects shared
  PointerTable( const PointerTable & ) = default;
@@ -157,11 +159,11 @@ class PointerTable {
  /// \f]
  /// \post the result is not nil
  template< class K , class Make >
- std::pair< T * , bool > find_or_insert( const K & key ,
-                                         std::uint64_t hash , Make && make );
+ std::pair< T * , bool > find_or_insert( const K & key , std::uint64_t hash ,
+					Make && make );
 
  /// the object of the key, nil if there is none: the inspection of
-/// `find_or_insert()` up to the first empty place
+ /// `find_or_insert()` up to the first empty place
  template< class K >
  [[nodiscard]] T * find( const K & key , std::uint64_t hash ) const;
 
@@ -188,7 +190,8 @@ class PointerTable {
  // insertion that grows the table invalidates it
 
  /// the places of the table, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_S.size() ); }
   /// whether the place \f$ i \f$ holds an object
@@ -231,15 +234,14 @@ class PointerTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a place: the hash and the object, nil if the place is empty
- struct Slot {
-  std::uint64_t hash = 0;         ///< the hash of the key of the object
-  T * p = nullptr;                ///< the object, nil if empty
+ struct Slot
+ {
+  std::uint64_t hash = 0;  ///< the hash of the key of the object
+  T * p = nullptr;         ///< the object, nil if empty
   };
 
- using SA = typename std::allocator_traits< A >::template
-            rebind_alloc< Slot >;
+ using SA = typename std::allocator_traits< A >::template rebind_alloc< Slot >;
 
  /// the first place of a hash
  [[nodiscard]] std::size_t place( std::uint64_t hash ) const;
@@ -255,11 +257,11 @@ class PointerTable {
  template< class K >
  [[nodiscard]] bool reached( const K & key , std::uint64_t hash ) const;
 
- std::vector< Slot , SA > f_S;   ///< the places
- std::size_t f_mask = 0;         ///< places - 1
- int f_bits = 0;                 ///< log2 of the places
- std::size_t f_size = 0;         ///< the number of objects
- Eq f_eq;                        ///< the equality of a key and an object
+ std::vector< Slot , SA > f_S;  ///< the places
+ std::size_t f_mask = 0;       ///< places - 1
+ int f_bits = 0;               ///< log2 of the places
+ std::size_t f_size = 0;       ///< the number of objects
+ Eq f_eq;                      ///< the equality of a key and an object
 
  };  // end( class PointerTable )
 
@@ -275,7 +277,7 @@ class PointerTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* PointerTable.h included */
+#endif /* PointerTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File PointerTable.h -------------------------*/

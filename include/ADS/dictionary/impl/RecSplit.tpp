@@ -14,7 +14,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- THE SEQUENCES OF BUCKETS -----------------------*/
@@ -31,7 +32,7 @@ namespace ADS {
  }
 
 inline detail::RecSplitSequence::RecSplitSequence(
-                                   const std::vector< std::uint64_t > & x )
+  const std::vector< std::uint64_t > & x )
 {
  const std::size_t n = x.size();
  if( n == 0 )
@@ -64,7 +65,7 @@ inline std::uint64_t detail::RecSplitSequence::low( std::size_t i ) const
  const std::size_t at = i * std::size_t( f_l );
  const unsigned s = unsigned( at & 63 );
  const std::uint64_t lo = f_low[ at >> 6 ] >> s ,
-                     hi = ( f_low[ ( at >> 6 ) + 1 ] << 1 ) << ( 63 - s );
+		     hi = ( f_low[ ( at >> 6 ) + 1 ] << 1 ) << ( 63 - s );
  return( ( lo | hi ) & ( ( std::uint64_t( 1 ) << f_l ) - 1 ) );
  }
 
@@ -91,15 +92,16 @@ inline std::pair< std::uint64_t , std::uint64_t >
 detail::RecSplitSequence::pair( std::size_t i ) const
 {
  const std::size_t p = select( i );
- std::size_t w = ( p + 1 ) >> 6;            // the next 1 after p
- std::uint64_t bits = ( p + 1 ) & 63 ? f_high[ w ] &
-  ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) ) : f_high[ w ];
+ std::size_t w = ( p + 1 ) >> 6;  // the next 1 after p
+ std::uint64_t bits =
+   ( p + 1 ) & 63 ? f_high[ w ] & ( ~std::uint64_t( 0 ) << ( ( p + 1 ) & 63 ) )
+		  : f_high[ w ];
  while( bits == 0 )
   bits = f_high[ ++w ];
  const std::size_t q = 64 * w + std::size_t( std::countr_zero( bits ) );
  return( std::pair< std::uint64_t , std::uint64_t >(
-          ( std::uint64_t( p - i ) << f_l ) | low( i ) ,
-          ( std::uint64_t( q - i - 1 ) << f_l ) | low( i + 1 ) ) );
+   ( std::uint64_t( p - i ) << f_l ) | low( i ) ,
+   ( std::uint64_t( q - i - 1 ) << f_l ) | low( i + 1 ) ) );
  }
 
 inline std::size_t detail::RecSplitSequence::sizeInBits( void ) const
@@ -107,13 +109,15 @@ inline std::size_t detail::RecSplitSequence::sizeInBits( void ) const
  return( 64 * ( f_low.size() + f_high.size() + f_inv.size() ) );
  }
 
-namespace detail {
+namespace detail
+{
 
 /// the odd constants of the two hashes of a key and of the hashes of the
 /// nodes
-inline constexpr std::uint64_t kRecSplitK[ 4 ] = {
- 0x9E3779B97F4A7C15ULL , 0xC2B2AE3D27D4EB4FULL , 0xD6E8FEB86659FD93ULL ,
- 0xFF51AFD7ED558CCDULL };
+inline constexpr std::uint64_t kRecSplitK[ 4 ] = { 0x9E3779B97F4A7C15ULL ,
+						   0xC2B2AE3D27D4EB4FULL ,
+						   0xD6E8FEB86659FD93ULL ,
+						   0xFF51AFD7ED558CCDULL };
 
 /// the parameter of Golomb and Rice of a geometric source of parameter p,
 /// from ln p
@@ -122,16 +126,15 @@ inline std::uint8_t recSplitRice( double lnp )
  const double p = std::exp( lnp );
  if( p >= 1 )
   return( 0 );
- const double r = std::ceil( std::log2( std::log( ( 1 + std::sqrt( 5.0 ) )
-                                                  / 2 ) /
-                                        -std::log1p( -p ) ) );
+ const double r = std::ceil(
+   std::log2( std::log( ( 1 + std::sqrt( 5.0 ) ) / 2 ) / -std::log1p( -p ) ) );
  return( r <= 0 ? 0 : std::uint8_t( r ) );
  }
 
 /// the tables of the sizes below mmax for the leaves of l keys and the
 /// parts lower and upper
 inline RecSplitTables recSplitTables( std::size_t l , std::size_t lower ,
-                                      std::size_t upper , std::size_t mmax )
+				      std::size_t upper , std::size_t mmax )
 {
  RecSplitTables t;
  t.rice.assign( mmax , 0 );
@@ -144,11 +147,12 @@ inline RecSplitTables recSplitTables( std::size_t l , std::size_t lower ,
   std::uint16_t nodes = 1;
   auto part = [ & ]( std::size_t k ) {
    lnp += double( k ) * std::log( double( k ) / dm ) -
-          std::lgamma( double( k ) + 1 );
+	  std::lgamma( double( k ) + 1 );
    low += t.low[ k ];
-   nodes = std::uint16_t( nodes + t.nodes[ k ] ); };
+   nodes = std::uint16_t( nodes + t.nodes[ k ] );
+   };
   if( m <= l )
-   lnp -= dm * std::log( dm );           // a bijection, m! / m^m
+   lnp -= dm * std::log( dm );  // a bijection, m! / m^m
   else if( m > upper ) {
    const std::size_t u = ( ( m / 2 + upper - 1 ) / upper ) * upper;
    part( u );
@@ -156,7 +160,7 @@ inline RecSplitTables recSplitTables( std::size_t l , std::size_t lower ,
    }
   else
    for( std::size_t k = m , unit = m > lower ? lower : l ; k > 0 ;
-        k -= std::min( k , unit ) )
+	k -= std::min( k , unit ) )
     part( std::min( k , unit ) );
   t.rice[ m ] = recSplitRice( lnp );
   t.low[ m ] = low + t.rice[ m ];
@@ -167,7 +171,7 @@ inline RecSplitTables recSplitTables( std::size_t l , std::size_t lower ,
 
 /// the tables of the leaves of l keys, computed once
 template< std::size_t l , std::size_t lower , std::size_t upper ,
-          std::size_t mmax >
+	  std::size_t mmax >
 const RecSplitTables & recSplitTablesOf( void )
 {
  static const RecSplitTables t = recSplitTables( l , lower , upper , mmax );
@@ -180,11 +184,12 @@ const RecSplitTables & recSplitTablesOf( void )
 
 template< class T , unsigned L , class H >
 RecSplit< T , L , H >::RecSplit( const std::vector< T > & keys ,
-                                 std::size_t b , std::uint64_t seed , H h )
- : f_seed( seed ) , f_n( keys.size() ) , f_t( &tables() ) , f_h( h )
+				 std::size_t b ,
+			       std::uint64_t seed , H h )
+    : f_seed( seed ) , f_n( keys.size() ) , f_t( &tables() ) , f_h( h )
 {
  ADS_PRE( ( keys.size() < ( std::size_t( 1 ) << 32 ) ) && ( b >= 1 ) &&
-          ( b <= 2000 ) );
+	  ( b <= 2000 ) );
  ADS_AUDIT( [ & ]( void ) {
   std::vector< T > S( keys );
   std::sort( S.begin() , S.end() );
@@ -201,7 +206,7 @@ RecSplit< T , L , H >::RecSplit( const std::vector< T > & keys ,
    throw( std::runtime_error( "RecSplit: no seed separates the keys" ) );
   if( build( B , b ) )
    break;
-  f_seed = hashWord( f_seed , f_trials );   // a new seed
+  f_seed = hashWord( f_seed , f_trials );  // a new seed
   }
  ADS_AUDIT( [ & ]( void ) {
   std::vector< char > seen( f_n , 0 );
@@ -230,13 +235,13 @@ constexpr std::size_t RecSplit< T , L , H >::left( std::size_t m )
  }
 
 template< class T , unsigned L , class H >
-std::uint64_t RecSplit< T , L , H >::node( std::uint64_t h ,
-                                           std::uint64_t x , unsigned d )
+std::uint64_t RecSplit< T , L , H >::node( std::uint64_t h , std::uint64_t x ,
+					 unsigned d )
 {
  // the salt s is a bijection of ( x , d ), and the multiplier depends on
  // it too, so that two keys keep no fixed relation from seed to seed
- const std::uint64_t s = ( x ^ ( std::uint64_t( d ) << 56 ) ) *
-                         detail::kRecSplitK[ 2 ];
+ const std::uint64_t s =
+   ( x ^ ( std::uint64_t( d ) << 56 ) ) * detail::kRecSplitK[ 2 ];
  return( foldedProduct( h ^ s , s ^ detail::kRecSplitK[ 3 ] ) );
  }
 
@@ -249,9 +254,8 @@ std::size_t RecSplit< T , L , H >::remap( std::uint64_t g , std::size_t m )
 template< class T , unsigned L , class H >
 std::uint64_t RecSplit< T , L , H >::base( const T & k ) const
 {
- if constexpr( std::is_integral_v< T > &&
-               std::is_same_v< H , FastHash< T > > )
-  return( std::uint64_t( k ) );           // mixed by the two hashes
+ if constexpr( std::is_integral_v< T > && std::is_same_v< H , FastHash< T > > )
+  return( std::uint64_t( k ) );  // mixed by the two hashes
  else if constexpr( requires { typename H::is_avalanching; } )
   return( std::uint64_t( f_h( k ) ) );
  else
@@ -268,14 +272,14 @@ std::uint64_t RecSplit< T , L , H >::window( std::uint64_t at ) const
 
 template< class T , unsigned L , class H >
 std::uint64_t RecSplit< T , L , H >::skipOnes( std::uint64_t at ,
-                                               std::size_t c ) const
+					     std::size_t c ) const
 {
  while( c > 0 ) {
   const std::uint64_t w = window( at );
   const auto pc = std::size_t( std::popcount( w ) );
   if( pc >= c )
    return( at + std::uint64_t( detail::recSplitSelect( w , int( c - 1 ) ) ) +
-           1 );
+	    1 );
   c -= pc;
   at += 64;
   }
@@ -286,9 +290,9 @@ std::uint64_t RecSplit< T , L , H >::skipOnes( std::uint64_t at ,
 
 template< class T , unsigned L , class H >
 void RecSplit< T , L , H >::split( std::uint64_t * K , std::uint64_t * S ,
-                                   std::size_t m , unsigned d ,
-                                   std::vector< std::uint64_t > & seeds ,
-                                   std::vector< std::uint8_t > & rice )
+				 std::size_t m , unsigned d ,
+				 std::vector< std::uint64_t > & seeds ,
+				 std::vector< std::uint8_t > & rice )
 {
  if( m <= 1 )
   return;
@@ -301,8 +305,8 @@ void RecSplit< T , L , H >::split( std::uint64_t * K , std::uint64_t * S ,
    std::uint64_t a = 0 , b = 0;
    std::size_t i = 0;
    for( ; i < m ; ++i ) {
-    const std::uint64_t bit = std::uint64_t( 1 ) <<
-                              remap( node( K[ i ] , x , d ) , m );
+    const std::uint64_t bit = std::uint64_t( 1 )
+			      << remap( node( K[ i ] , x , d ) , m );
     std::uint64_t & set = ( K[ i ] >> 63 ) ? b : a;
     if( set & bit )
      break;
@@ -311,8 +315,8 @@ void RecSplit< T , L , H >::split( std::uint64_t * K , std::uint64_t * S ,
    if( i < m )
     continue;
    for( std::size_t r = 0 ; r < m ; ++r ) {
-    const std::uint64_t rb = r == 0 ? b :
-                             ( ( b << r ) | ( b >> ( m - r ) ) ) & full;
+    const std::uint64_t rb =
+      r == 0 ? b : ( ( b << r ) | ( b >> ( m - r ) ) ) & full;
     if( ( a & rb ) == 0 ) {
      seeds.push_back( x * m + r );
      rice.push_back( t.rice[ m ] );
@@ -324,16 +328,17 @@ void RecSplit< T , L , H >::split( std::uint64_t * K , std::uint64_t * S ,
  // the parts: two, of left( m ) and m - left( m ) keys, above kUpper; of
  // unit keys, the last one with the rest, below
  const std::size_t u = m > kUpper ? left( m ) : 0 ,
-                   unit = m > kLower ? kLower : L ,
-                   parts = m > kUpper ? 2 : ( m + unit - 1 ) / unit;
+		   unit = m > kLower ? kLower : L ,
+		   parts = m > kUpper ? 2 : ( m + unit - 1 ) / unit;
  auto partOf = [ & ]( std::size_t p ) -> std::size_t {
   if( m > kUpper )
    return( p < u ? 0 : 1 );
-  return( m > kLower ? p / kLower : p / L ); };
+  return( m > kLower ? p / kLower : p / L );
+  };
  std::array< std::size_t , 32 > c{} , size{};
  for( std::size_t j = 0 ; j < parts ; ++j )
-  size[ j ] = m > kUpper ? ( j == 0 ? u : m - u ) :
-                           std::min( unit , m - j * unit );
+  size[ j ] =
+    m > kUpper ? ( j == 0 ? u : m - u ) : std::min( unit , m - j * unit );
  std::uint64_t x = 0;
  for( ; ; ++x ) {
   std::fill( c.begin() , c.begin() + parts , 0 );
@@ -357,17 +362,17 @@ void RecSplit< T , L , H >::split( std::uint64_t * K , std::uint64_t * S ,
 
 template< class T , unsigned L , class H >
 bool RecSplit< T , L , H >::build( const std::vector< std::uint64_t > & B ,
-                                   std::size_t b )
+				 std::size_t b )
 {
  const std::size_t n = f_n;
- const std::size_t nb = f_nb = std::max< std::size_t >( 1 , ( n + b - 1 )
-                                                            / b );
+ const std::size_t nb = f_nb = std::max< std::size_t >( 1 ,
+							( n + b - 1 ) / b );
  // the second hashes grouped by bucket, by a counting sort
  std::vector< std::uint64_t > start( nb + 1 , 0 );
  auto b1 = std::make_unique_for_overwrite< std::uint32_t[] >( n );
  for( std::size_t i = 0 ; i < n ; ++i ) {
-  b1[ i ] = std::uint32_t( remap( foldedProduct( B[ i ] ^ f_seed ,
-                                   detail::kRecSplitK[ 0 ] ) , nb ) );
+  b1[ i ] = std::uint32_t(
+    remap( foldedProduct( B[ i ] ^ f_seed , detail::kRecSplitK[ 0 ] ) , nb ) );
   ++start[ b1[ i ] + 1 ];
   }
  std::size_t smax = 0;
@@ -381,8 +386,8 @@ bool RecSplit< T , L , H >::build( const std::vector< std::uint64_t > & B ,
  {
   std::vector< std::uint64_t > next( start.begin() , start.end() - 1 );
   for( std::size_t i = 0 ; i < n ; ++i )
-   h2[ next[ b1[ i ] ]++ ] = foldedProduct( B[ i ] ^ f_seed ,
-                                            detail::kRecSplitK[ 1 ] );
+   h2[ next[ b1[ i ] ]++ ] =
+     foldedProduct( B[ i ] ^ f_seed , detail::kRecSplitK[ 1 ] );
   }
  // the codes of the buckets: the low parts in preorder, then the unary
  // parts
@@ -395,11 +400,13 @@ bool RecSplit< T , L , H >::build( const std::vector< std::uint64_t > & B ,
   f_code.back() |= v << s;
   if( s + k >= 64 )
    f_code.push_back( s == 0 ? 0 : v >> ( 64 - s ) );
-  len += k; };
+  len += k;
+  };
  auto putOne = [ & ]( std::uint64_t zeros ) {
   for( ; zeros >= 32 ; zeros -= 32 )
    put( 0 , 32 );
-  put( std::uint64_t( 1 ) << zeros , unsigned( zeros + 1 ) ); };
+  put( std::uint64_t( 1 ) << zeros , unsigned( zeros + 1 ) );
+  };
  std::vector< std::uint64_t > place( nb + 1 ) , S( smax ) , seeds;
  std::vector< std::uint8_t > rice;
  for( std::size_t j = 0 ; j < nb ; ++j ) {
@@ -408,13 +415,12 @@ bool RecSplit< T , L , H >::build( const std::vector< std::uint64_t > & B ,
   std::uint64_t * K = h2.data() + start[ j ];
   std::sort( K , K + m );
   if( std::adjacent_find( K , K + m ) != K + m )
-   return( false );                       // equal hashes never separate
+   return( false );  // equal hashes never separate
   seeds.clear();
   rice.clear();
   split( K , S.data() , m , 0 , seeds , rice );
   for( std::size_t i = 0 ; i < seeds.size() ; ++i )
-   put( seeds[ i ] & ( ( std::uint64_t( 1 ) << rice[ i ] ) - 1 ) ,
-        rice[ i ] );
+   put( seeds[ i ] & ( ( std::uint64_t( 1 ) << rice[ i ] ) - 1 ) , rice[ i ] );
   for( std::size_t i = 0 ; i < seeds.size() ; ++i )
    putOne( seeds[ i ] >> rice[ i ] );
   }
@@ -428,8 +434,8 @@ bool RecSplit< T , L , H >::build( const std::vector< std::uint64_t > & B ,
   f_dk = std::min< std::uint64_t >( f_dk , start[ j + 1 ] - start[ j ] );
  std::vector< std::int64_t > z( nb + 1 );
  for( std::size_t j = 0 ; j <= nb ; ++j )
-  z[ j ] = std::int64_t( place[ j ] ) -
-           std::int64_t( ( start[ j ] * f_beta ) >> 16 );
+  z[ j ] =
+    std::int64_t( place[ j ] ) - std::int64_t( ( start[ j ] * f_beta ) >> 16 );
  f_dp = z[ 1 ] - z[ 0 ];
  for( std::size_t j = 1 ; j < nb ; ++j )
   f_dp = std::min( f_dp , z[ j + 1 ] - z[ j ] );
@@ -450,8 +456,8 @@ std::size_t RecSplit< T , L , H >::operator()( const T & k ) const
  ADS_PRE( f_n >= 1 );
  const std::uint64_t x = base( k ) ^ f_seed;
  const std::uint64_t h2 = foldedProduct( x , detail::kRecSplitK[ 1 ] );
- const std::size_t b = remap( foldedProduct( x , detail::kRecSplitK[ 0 ] ) ,
-                              f_nb );
+ const std::size_t b =
+   remap( foldedProduct( x , detail::kRecSplitK[ 0 ] ) , f_nb );
  const auto [ k0 , k1 ] = f_keys.pair( b );
  const std::uint64_t s0 = k0 + b * f_dk;
  std::size_t m = std::size_t( k1 + ( b + 1 ) * f_dk - s0 );
@@ -460,8 +466,8 @@ std::size_t RecSplit< T , L , H >::operator()( const T & k ) const
   return( out );
  const auto & t = *f_t;
  std::uint64_t fp = std::uint64_t( std::int64_t( f_place.access( b ) ) +
-                                   std::int64_t( b ) * f_dp ) +
-                    ( ( s0 * f_beta ) >> 16 );
+				   std::int64_t( b ) * f_dp ) +
+		    ( ( s0 * f_beta ) >> 16 );
  std::uint64_t up = fp + t.low[ m ];
  for( unsigned d = 0 ; ; ++d ) {
   // the seed of the node: its low part, then its unary part
@@ -469,13 +475,13 @@ std::size_t RecSplit< T , L , H >::operator()( const T & k ) const
   std::uint64_t v = window( fp ) & ( ( std::uint64_t( 1 ) << r ) - 1 );
   fp += r;
   for( std::uint64_t q = 0 ; ; q += 64 , up += 64 )
-   if( const std::uint64_t w = window( up ) ; w != 0 ) {
+   if( const std::uint64_t w = window( up ); w != 0 ) {
     const auto z = unsigned( std::countr_zero( w ) );
     v |= ( q + z ) << r;
     up += z + 1;
     break;
     }
-  if( m <= L ) {                          // a leaf, x m + r
+  if( m <= L ) {  // a leaf, x m + r
    const std::uint64_t xq = v / m , rot = v % m;
    std::size_t p = remap( node( h2 , xq , d ) , m );
    if( h2 >> 63 ) {
@@ -499,7 +505,7 @@ std::size_t RecSplit< T , L , H >::operator()( const T & k ) const
    }
   else {
    const std::size_t unit = m > kLower ? kLower : L ,
-                     j = m > kLower ? p / kLower : p / L;
+		     j = m > kLower ? p / kLower : p / L;
    fp += j * t.low[ unit ];
    up = skipOnes( up , j * t.nodes[ unit ] );
    out += j * unit;
@@ -526,7 +532,7 @@ template< class T , unsigned L , class H >
 std::size_t RecSplit< T , L , H >::bits( void ) const
 {
  return( 64 * f_code.size() + f_keys.sizeInBits() + f_place.sizeInBits() +
-         8 * sizeof( *this ) );
+	  8 * sizeof( *this ) );
  }
 
 template< class T , unsigned L , class H >

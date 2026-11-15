@@ -63,7 +63,7 @@
 
 #ifndef __ADS_RootishArrayStack
  #define __ADS_RootishArrayStack
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -85,7 +85,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS RootishArrayStack -------------------------*/
@@ -94,16 +95,16 @@ namespace ADS {
 /// a LIST by rank on blocks of \f$ 1 , 2 , \ldots , r \f$ places, with
 /// \f$ O( \sqrt{n} ) \f$ places wasted
 template< class T >
-class RootishArrayStack {
+class RootishArrayStack
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
  /// the iterator on the items
  using iterator = RankIterator< RootishArrayStack , T , false >;
  /// the iterator on the constant items
@@ -221,8 +222,8 @@ class RootishArrayStack {
  void push_back( T && x ) { emplace_back( std::move( x ) ); }
 
  /// the item built from `args` at the end, \f$ O( 1 ) \f$ amortized
- template< class ... Args >
- T & emplace_back( Args && ... args );
+ template< class... Args >
+ T & emplace_back( Args &&... args );
 
  /// removes the last item
  /// \pre the list is not empty
@@ -249,7 +250,6 @@ class RootishArrayStack {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the address of the place of rank \f$ i \f$, built or not
  [[nodiscard]] T * place( std::size_t i ) const;
 
@@ -264,7 +264,7 @@ class RootishArrayStack {
 
  /// the block \f$ b \f$ of \f$ b + 1 \f$ places, for each \f$ b \f$
  std::vector< T * > f_blocks;
- std::size_t f_n = 0;           ///< the number of items
+ std::size_t f_n = 0;  ///< the number of items
 
  };  // end( class RootishArrayStack )
 
@@ -280,7 +280,7 @@ class RootishArrayStack {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RootishArrayStack.h included */
+#endif /* RootishArrayStack.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File RootishArrayStack.h ----------------------*/

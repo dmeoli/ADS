@@ -39,7 +39,7 @@
 
 #ifndef __ADS_SmallVector
  #define __ADS_SmallVector
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,7 +60,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS SmallVector -----------------------------*/
@@ -68,13 +69,13 @@ namespace ADS {
 
 /// a vector with room for \f$ N \f$ items inside itself
 template< class T , std::size_t N = 8 >
-class SmallVector {
+class SmallVector
+{
 
  static_assert( N >= 1 , "room for one item at least" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the type of the items
  using value_type = T;
  /// the type of the sizes
@@ -99,7 +100,7 @@ class SmallVector {
  using const_reverse_iterator = std::reverse_iterator< const_iterator >;
 
  /// the empty vector, its items inside it
- SmallVector( void ) noexcept : f_A( inner() ) {}
+ SmallVector( void ) noexcept : f_A( inner() ) { }
 
  /// \f$ n \f$ items made from \f$ x \f$
  explicit SmallVector( std::size_t n , const T & x = T() );
@@ -115,15 +116,15 @@ class SmallVector {
  SmallVector( const SmallVector & other );
 
  /// the items of `other`, which is left empty
- SmallVector( SmallVector && other )
-  noexcept( std::is_nothrow_move_constructible_v< T > );
+ SmallVector( SmallVector && other ) noexcept(
+   std::is_nothrow_move_constructible_v< T > );
 
  /// a copy of `other`
  SmallVector & operator=( const SmallVector & other );
 
  /// the items of `other`, which is left empty
- SmallVector & operator=( SmallVector && other )
-  noexcept( std::is_nothrow_move_constructible_v< T > );
+ SmallVector & operator=( SmallVector && other ) noexcept(
+   std::is_nothrow_move_constructible_v< T > );
 
  /// destroys the items, and frees the memory of the allocator if any
  ~SmallVector();
@@ -192,7 +193,10 @@ class SmallVector {
 
  /// the first item
  /// \pre the vector is not empty
- [[nodiscard]] T & front( void ) { ADS_PRE( f_n > 0 ); return( f_A[ 0 ] ); }
+ [[nodiscard]] T & front( void ) {
+  ADS_PRE( f_n > 0 );
+  return( f_A[ 0 ] );
+  }
  /// the first item, constant
  /// \pre the vector is not empty
  [[nodiscard]] const T & front( void ) const {
@@ -261,7 +265,6 @@ class SmallVector {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  T * inner( void ) { return( reinterpret_cast< T * >( f_room ) ); }
  const T * inner( void ) const {
   return( reinterpret_cast< const T * >( f_room ) );
@@ -274,9 +277,9 @@ class SmallVector {
  /// the items of `o` moved here, `o` emptied; this is empty and small
  void take( SmallVector & o );
 
- T * f_A;                      ///< the items, inside or on the allocator
- std::size_t f_n = 0;          ///< the number of items
- std::size_t f_cap = N;        ///< the room
+ T * f_A;                ///< the items, inside or on the allocator
+ std::size_t f_n = 0;    ///< the number of items
+ std::size_t f_cap = N;  ///< the room
  /// the room for \f$ N \f$ items inside
  alignas( T ) unsigned char f_room[ N * sizeof( T ) ];
 
@@ -294,7 +297,7 @@ class SmallVector {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* SmallVector.h included */
+#endif /* SmallVector.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File SmallVector.h -------------------------*/

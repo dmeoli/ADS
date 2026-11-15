@@ -29,7 +29,7 @@
 
 #ifndef __ADS_DirectTable
  #define __ADS_DirectTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -48,7 +48,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS DirectTable ----------------------------*/
@@ -58,13 +59,13 @@ namespace ADS {
 /// \f$ H( k ) = k - a \f$: every operation in \f$ O( 1 ) \f$ time,
 /// \f$ b - a + 1 \f$ places of memory
 template< class V >
-class DirectTable {
+class DirectTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = long;   ///< the type of the keys
- using Value = V;    ///< the type of the values
+ using Key = long;  ///< the type of the keys
+ using Value = V;   ///< the type of the values
 
  /// the empty table of the keys in \f$ [ a , b ] \f$
  /// \pre \f$ a \le b \f$, and \f$ b - a + 1 \f$ places fit in a `std::size_t`
@@ -115,7 +116,8 @@ class DirectTable {
  // bidirectional, the key computed from the place
 
  /// the places of the table, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_A.size() ); }
   /// whether the place \f$ i \f$ holds a key
@@ -158,7 +160,6 @@ class DirectTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// \f$ H( k ) = k - a \f$
  [[nodiscard]] std::size_t H( long k ) const;
 
@@ -168,9 +169,9 @@ class DirectTable {
  /// size() counts the places that are not empty, \f$ O( m ) \f$
  [[nodiscard]] bool counted( void ) const;
 
- long f_a;                              ///< the smallest key
- std::vector< std::optional< V > > f_A; ///< the vector, nil if empty
- std::size_t f_size = 0;                ///< the number of keys
+ long f_a;                               ///< the smallest key
+ std::vector< std::optional< V > > f_A;  ///< the vector, nil if empty
+ std::size_t f_size = 0;                 ///< the number of keys
 
  };  // end( class DirectTable )
 
@@ -186,7 +187,7 @@ class DirectTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DirectTable.h included */
+#endif /* DirectTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File DirectTable.h -------------------------*/

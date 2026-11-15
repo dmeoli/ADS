@@ -30,7 +30,7 @@
 
 #ifndef __ADS_QueueAlgorithms
  #define __ADS_QueueAlgorithms
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -46,7 +46,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// moves the positive items of \f$ q \f$, in their order, to the back of
 /// `out`, leaving \f$ q \f$ empty
@@ -99,7 +100,7 @@ void copyPositive( Q & q , Q & out );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* QueueAlgorithms.h included */
+#endif /* QueueAlgorithms.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File QueueAlgorithms.h -----------------------*/

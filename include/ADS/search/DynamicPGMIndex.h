@@ -90,7 +90,7 @@
 
 #ifndef __ADS_DynamicPGMIndex
  #define __ADS_DynamicPGMIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -113,7 +113,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CLASS DynamicPGMIndex --------------------------*/
@@ -124,17 +125,17 @@ namespace ADS {
 /// the ratio \f$ B \f$ of the sizes of two levels and the least capacity
 /// \f$ I \f$ of a level with a PGM-index
 template< class K , class V , std::size_t E = 16 , std::size_t B = 8 ,
-          std::size_t I = ( std::size_t( 1 ) << 24 ) >
+	  std::size_t I = ( std::size_t( 1 ) << 24 ) >
  requires std::is_arithmetic_v< K >
-class DynamicPGMIndex {
+class DynamicPGMIndex
+{
 
  static_assert( B >= 2 , "the ratio of the levels is at least 2" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using key_type = K;      ///< the type of the keys
- using mapped_type = V;   ///< the type of the values
+ using key_type = K;     ///< the type of the keys
+ using mapped_type = V;  ///< the type of the values
 
  /// the pairs in the buffer, \f$ b_0 \f$
  static constexpr std::size_t kBuffer = 128;
@@ -229,8 +230,8 @@ class DynamicPGMIndex {
  ///     \kappa\ \textbf{do}\ r_i \gets r_i + 1
  /// \end{array}}
  /// \f]
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-                                                       const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// calls \f$ f( k , v ) \f$ on the pairs with \f$ lo \le k < hi \f$, by
  /// increasing key, by the merge of `lowerBound()`
@@ -246,19 +247,18 @@ class DynamicPGMIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
-
  /// a level: its keys, in the PGM-index if it has one, the values and the
  /// tombstones
- struct Level {
-  std::vector< K > key;        ///< the keys, without an index
-  PGMIndex< K , E , 4 > idx;   ///< the keys, with their index
-  bool indexed = false;        ///< whether the keys are in idx
-  std::vector< V > val;        ///< the values
-  std::vector< K > dead;       ///< the keys of the tombstones, sorted
-  BlockedBloomFilter< std::uint64_t > filter{ 1 };   ///< its keys, hashed
-  bool filtered = false;       ///< whether the filter is there
-  std::size_t room = 0;        ///< the keys the filter was made for
+ struct Level
+ {
+  std::vector< K > key;     ///< the keys, without an index
+  PGMIndex< K , E , 4 > idx;  ///< the keys, with their index
+  bool indexed = false;     ///< whether the keys are in idx
+  std::vector< V > val;     ///< the values
+  std::vector< K > dead;    ///< the keys of the tombstones, sorted
+  BlockedBloomFilter< std::uint64_t > filter{ 1 };  ///< its keys, hashed
+  bool filtered = false;  ///< whether the filter is there
+  std::size_t room = 0;   ///< the keys the filter was made for
 
   /// the number of pairs
   [[nodiscard]] std::size_t size( void ) const {
@@ -276,7 +276,7 @@ class DynamicPGMIndex {
   /// tombstone, by a binary search on the tombstones, if any
   [[nodiscard]] bool isDead( const K & k ) const {
    return( ! dead.empty() &&
-           std::binary_search( dead.begin() , dead.end() , k ) );
+	    std::binary_search( dead.begin() , dead.end() , k ) );
    }
   /// the place of the first key \f$ \ge k \f$, by the PGM-index or by
   /// the binary search with no branch that prefetches the two places the
@@ -286,10 +286,11 @@ class DynamicPGMIndex {
 
  /// the sorted run of a merge, or the buffer: a key at a place of each
  /// vector, and the tombstones apart, since they are few
- struct Run {
-  std::vector< K > key;        ///< the keys
-  std::vector< V > val;        ///< the values
-  std::vector< K > dead;       ///< the keys of the tombstones, sorted
+ struct Run
+ {
+  std::vector< K > key;   ///< the keys
+  std::vector< V > val;   ///< the values
+  std::vector< K > dead;  ///< the keys of the tombstones, sorted
   };
 
  /// the capacity of the level \f$ i + 1 \f$, \f$ b_0 B^{i+1} \f$
@@ -318,9 +319,9 @@ class DynamicPGMIndex {
  template< class F >
  void scan( const K & lo , F && f ) const;
 
- Run f_buf;                       ///< the buffer, sorted
- std::vector< Level > f_lev;      ///< the levels, the newest first
- Run f_run[ 2 ];                  ///< the runs of a merge, kept for reuse
+ Run f_buf;                   ///< the buffer, sorted
+ std::vector< Level > f_lev;  ///< the levels, the newest first
+ Run f_run[ 2 ];              ///< the runs of a merge, kept for reuse
 
  };  // end( class DynamicPGMIndex )
 
@@ -336,7 +337,7 @@ class DynamicPGMIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DynamicPGMIndex.h included */
+#endif /* DynamicPGMIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File DynamicPGMIndex.h -----------------------*/

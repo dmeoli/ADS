@@ -60,7 +60,7 @@
 
 #ifndef __ADS_DualArrayDeque
  #define __ADS_DualArrayDeque
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -79,7 +79,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS DualArrayDeque --------------------------*/
@@ -87,16 +88,16 @@ namespace ADS {
 
 /// a LIST by rank on two stacks `S` back to back, balanced
 template< class T , class S = std::vector< T > >
-class DualArrayDeque {
+class DualArrayDeque
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using value_type = T;                     ///< the type of the items
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = T &;                    ///< a reference to an item
- using const_reference = const T &;        ///< a constant reference
+ using value_type = T;                    ///< the type of the items
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = T &;                   ///< a reference to an item
+ using const_reference = const T &;       ///< a constant reference
  /// the iterator on the items
  using iterator = RankIterator< DualArrayDeque , T , false >;
  /// the iterator on the constant items
@@ -226,7 +227,6 @@ class DualArrayDeque {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// puts \f$ x \f$ at the place \f$ j \f$ of the stack \f$ s \f$
  static void put( S & s , std::size_t j , T && x );
 
@@ -269,8 +269,8 @@ class DualArrayDeque {
  /// the two stacks are balanced
  [[nodiscard]] bool balanced( void ) const;
 
- S f_F;   ///< the front stack, the item of rank 0 on top
- S f_B;   ///< the back stack, the last item on top
+ S f_F;  ///< the front stack, the item of rank 0 on top
+ S f_B;  ///< the back stack, the last item on top
 
  };  // end( class DualArrayDeque )
 
@@ -286,7 +286,7 @@ class DualArrayDeque {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* DualArrayDeque.h included */
+#endif /* DualArrayDeque.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File DualArrayDeque.h ------------------------*/

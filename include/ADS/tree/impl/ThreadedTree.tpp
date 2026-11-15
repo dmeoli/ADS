@@ -15,12 +15,13 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< std::totally_ordered K >
 ThreadedTree< K >::ThreadedTree( void )
 {
- f_head.left = &f_head;                     // the empty tree
+ f_head.left = &f_head;  // the empty tree
  f_head.right = &f_head;
  f_head.lthread = true;
  f_head.rthread = false;
@@ -33,7 +34,8 @@ ThreadedTree< K >::~ThreadedTree()
  for( const Node * x = successor( &f_head ) ; x != &f_head ;
       x = successor( x ) )
   all.push_back( const_cast< Node * >( x ) );
- for( Node * x : all ) delete x;
+ for( Node * x : all )
+  delete x;
  }
 
 template< std::totally_ordered K >
@@ -41,8 +43,9 @@ auto ThreadedTree< K >::successor( const Node * x ) const -> const Node *
 {
  if( x->rthread )
   return( x->right );
- const Node * y = x->right;                 // the leftmost of the right
- while( ! y->lthread ) y = y->left;         // subtree
+ const Node * y = x->right;  // the leftmost of the right
+ while( ! y->lthread )
+  y = y->left;  // subtree
  return( y );
  }
 
@@ -52,14 +55,15 @@ auto ThreadedTree< K >::predecessor( const Node * x ) const -> const Node *
  if( x->lthread )
   return( x->left );
  const Node * y = x->left;
- while( ! y->rthread ) y = y->right;
+ while( ! y->rthread )
+  y = y->right;
  return( y );
  }
 
 template< std::totally_ordered K >
 void ThreadedTree< K >::insert( const K & k )
 {
- if( f_head.lthread ) {                     // the first key: the root
+ if( f_head.lthread ) {  // the first key: the root
   Node * r = new Node{ k , &f_head , &f_head , true , true };
   f_head.left = r;
   f_head.lthread = false;
@@ -69,8 +73,8 @@ void ThreadedTree< K >::insert( const K & k )
   Node * x = f_head.left;
   for( ; ; ) {
    if( k < x->key ) {
-    if( x->lthread ) {                      // a new left child: it takes
-     Node * n = new Node{ k , x->left , x , true , true };   // the thread
+    if( x->lthread ) {  // a new left child: it takes
+     Node * n = new Node{ k , x->left , x , true , true };  // the thread
      x->left = n;
      x->lthread = false;
      ++f_size;
@@ -103,11 +107,13 @@ bool ThreadedTree< K >::contains( const K & k ) const
   return( false );
  for( const Node * x = f_head.left ; ; ) {
   if( k < x->key ) {
-   if( x->lthread ) return( false );
+   if( x->lthread )
+    return( false );
    x = x->left;
    }
   else if( x->key < k ) {
-   if( x->rthread ) return( false );
+   if( x->rthread )
+    return( false );
    x = x->right;
    }
   else
@@ -147,7 +153,7 @@ bool ThreadedTree< K >::threaded( void ) const
  const Node * prev = nullptr;
  for( const Node * x = successor( &f_head ) ; x != &f_head ;
       x = successor( x ) , ++n ) {
-  if( ( n > f_size ) || ( prev && !( prev->key < x->key ) ) )
+  if( ( n > f_size ) || ( prev && ! ( prev->key < x->key ) ) )
    return( false );
   prev = x;
   }

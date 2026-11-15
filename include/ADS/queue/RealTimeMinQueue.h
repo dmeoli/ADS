@@ -50,7 +50,7 @@
 
 #ifndef __ADS_RealTimeMinQueue
  #define __ADS_RealTimeMinQueue
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -69,23 +69,26 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
 /// an array of fixed capacity whose live cells are \f$ [ lo , hi ) \f$,
 /// each with the place of the least item among those from 0 to it, built
 /// and emptied one cell at a time
 template< class T , class C >
-class MinArray {
+class MinArray
+{
  public:
  /// no cell
  MinArray( void ) = default;
 
  /// room for \f$ c \f$ cells, none built
  explicit MinArray( std::size_t c )
-  : f_a( c ? std::allocator< Cell >().allocate( c ) : nullptr ) ,
-    f_cap( c ) {}
+     : f_a( c ? std::allocator< Cell >().allocate( c ) : nullptr ) ,
+       f_cap( c ) { }
 
  /// the cells of `o`, which is left with none
  MinArray( MinArray && o ) noexcept { swap( o ); }
@@ -100,7 +103,8 @@ class MinArray {
  ~MinArray() {
   for( std::size_t i = f_lo ; i < f_hi ; ++i )
    std::destroy_at( f_a + i );
-  if( f_a ) std::allocator< Cell >().deallocate( f_a , f_cap );
+  if( f_a )
+   std::allocator< Cell >().deallocate( f_a , f_cap );
   }
 
  /// exchanges the cells with `o`
@@ -159,10 +163,8 @@ class MinArray {
  template< class U >
  void push( U && x , const C & less ) {
   ADS_PRE( f_hi < f_cap );
-  std::construct_at( f_a + f_hi , Cell{ T( std::forward< U >( x ) ) ,
-                                        f_hi } );
-  if( ( f_hi > f_lo ) &&
-      ! less( f_a[ f_hi ].item , at( least( f_hi - 1 ) ) ) )
+  std::construct_at( f_a + f_hi , Cell{ T( std::forward< U >( x ) ) , f_hi } );
+  if( ( f_hi > f_lo ) && ! less( f_a[ f_hi ].item , at( least( f_hi - 1 ) ) ) )
    f_a[ f_hi ].m = least( f_hi - 1 );
   ++f_hi;
   }
@@ -181,15 +183,16 @@ class MinArray {
 
  private:
  /// a cell, an item and the least place up to it
- struct Cell {
-  T item;            ///< the item
-  std::size_t m;     ///< the place of the least item from 0 to here
+ struct Cell
+ {
+  T item;         ///< the item
+  std::size_t m;  ///< the place of the least item from 0 to here
   };
 
- Cell * f_a = nullptr;       ///< the room
- std::size_t f_cap = 0;      ///< its cells
- std::size_t f_lo = 0;       ///< the first live cell
- std::size_t f_hi = 0;       ///< after the last live cell
+ Cell * f_a = nullptr;   ///< the room
+ std::size_t f_cap = 0;  ///< its cells
+ std::size_t f_lo = 0;   ///< the first live cell
+ std::size_t f_hi = 0;   ///< after the last live cell
  };
 
 }  // end( namespace detail )
@@ -201,23 +204,25 @@ class MinArray {
 /// a QUEUE with its least item, every operation in \f$ O( 1 ) \f$
 /// worst-case time
 template< class T , class C = std::less<> >
-class RealTimeMinQueue {
+class RealTimeMinQueue
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Item = T;   ///< the type of the items
+ using Item = T;  ///< the type of the items
 
  /// the empty queue, ordered by `less`
  explicit RealTimeMinQueue( C less = C() )
-  : f_R( 1 ) , f_less( std::move( less ) ) {}
+     : f_R( 1 ) , f_less( std::move( less ) ) { }
 
  /// a copy, item by item, in \f$ O( n ) \f$ time
  RealTimeMinQueue( const RealTimeMinQueue & o );
 
  /// the items of `o`, which is left empty
  RealTimeMinQueue( RealTimeMinQueue && o ) noexcept
-  : f_R( 1 ) , f_less( o.f_less ) { swap( o ); }
+     : f_R( 1 ) , f_less( o.f_less ) {
+  swap( o );
+  }
 
  /// the items of `o`, by copy and swap
  RealTimeMinQueue & operator=( const RealTimeMinQueue & o );
@@ -308,8 +313,7 @@ class RealTimeMinQueue {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- using Array = detail::MinArray< T , C >;   ///< a stack with the minimum
+ using Array = detail::MinArray< T , C >;  ///< a stack with the minimum
 
  /// a rotation started if \f$ |R| > |F| \f$, while none is going on
  void startIfDue( void );
@@ -318,15 +322,15 @@ class RealTimeMinQueue {
  /// \f$ F \f$ meet its top
  void steps( int k );
 
- Array f_F;                  ///< the front, the first item on top
- Array f_R;                  ///< the back, the last item on top
- Array f_Rf;                 ///< the frozen back of a rotation
- Array f_N;                  ///< the new front of a rotation
- std::size_t f_r0 = 0;       ///< the items of the frozen back
- std::size_t f_i = 0;        ///< the places of \f$ F \f$ moved
- std::size_t f_n = 0;        ///< the items
- bool f_rot = false;         ///< a rotation is going on
- ADS_NO_UNIQUE_ADDRESS C f_less;   ///< the order
+ Array f_F;                       ///< the front, the first item on top
+ Array f_R;                       ///< the back, the last item on top
+ Array f_Rf;                      ///< the frozen back of a rotation
+ Array f_N;                       ///< the new front of a rotation
+ std::size_t f_r0 = 0;            ///< the items of the frozen back
+ std::size_t f_i = 0;             ///< the places of \f$ F \f$ moved
+ std::size_t f_n = 0;             ///< the items
+ bool f_rot = false;              ///< a rotation is going on
+ ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
 
  };  // end( class RealTimeMinQueue )
 
@@ -342,7 +346,7 @@ class RealTimeMinQueue {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RealTimeMinQueue.h included */
+#endif /* RealTimeMinQueue.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File RealTimeMinQueue.h -----------------------*/

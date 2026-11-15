@@ -15,7 +15,8 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- CONSTRUCTING AND COPYING -----------------------*/
@@ -23,13 +24,12 @@ namespace ADS {
 
 template< class T >
 ArraySequence< T >::ArraySequence( void )
- : f_A() , f_size( 0 ) , f_capacity( 0 )
-{
- }
+    : f_A() , f_size( 0 ) , f_capacity( 0 )
+{ }
 
 template< class T >
 ArraySequence< T >::ArraySequence( std::initializer_list< T > items )
- : ArraySequence()
+    : ArraySequence()
 {
  for( const auto & v : items )
   insert( f_size , v );
@@ -45,8 +45,8 @@ ArraySequence< T >::ArraySequence( I first , S last ) : ArraySequence()
 
 template< class T >
 ArraySequence< T >::ArraySequence( const ArraySequence & other )
- : f_A( other.f_capacity ? new T[ other.f_capacity ] : nullptr ) ,
-   f_size( other.f_size ) , f_capacity( other.f_capacity )
+    : f_A( other.f_capacity ? new T[ other.f_capacity ] : nullptr ) ,
+      f_size( other.f_size ) , f_capacity( other.f_capacity )
 {
  for( Pos i = 0 ; i < f_size ; ++i )
   f_A[ i ] = other.f_A[ i ];
@@ -54,11 +54,10 @@ ArraySequence< T >::ArraySequence( const ArraySequence & other )
 
 template< class T >
 ArraySequence< T >::ArraySequence( ArraySequence && other ) noexcept
- : f_A( std::move( other.f_A ) ) ,
-   f_size( std::exchange( other.f_size , 0 ) ) ,
-   f_capacity( std::exchange( other.f_capacity , 0 ) )
-{
- }
+    : f_A( std::move( other.f_A ) ) ,
+      f_size( std::exchange( other.f_size , 0 ) ) ,
+      f_capacity( std::exchange( other.f_capacity , 0 ) )
+{ }
 
 template< class T >
 ArraySequence< T > &
@@ -113,17 +112,17 @@ typename ArraySequence< T >::Pos ArraySequence< T >::prev( Pos p ) const
  }
 
 template< class T >
-typename ArraySequence< T >::Pos
-ArraySequence< T >::insert( Pos p , const T & v )
+typename ArraySequence< T >::Pos ArraySequence< T >::insert( Pos p ,
+							     const T & v )
 {
  ADS_PRE( ( p >= 0 ) && ( p <= f_size ) );
  const Pos n = f_size;
  const auto old = detail::snapshot( *this );
- const T x = v;                 // v may be an item, which resize() moves
- if( f_size == f_capacity )     // full: twice the size
+ const T x = v;              // v may be an item, which resize() moves
+ if( f_size == f_capacity )  // full: twice the size
   resize( f_capacity ? 2 * f_capacity : 1 );
- std::move_backward( f_A.get() + p , f_A.get() + f_size ,   // memmove
-                     f_A.get() + f_size + 1 );               // if trivial
+ std::move_backward( f_A.get() + p , f_A.get() + f_size ,  // memmove
+		     f_A.get() + f_size + 1 );           // if trivial
  f_A[ p ] = x;
  ++f_size;
  ADS_POST( ( f_size == n + 1 ) && detail::equal( f_A[ p ] , x ) );
@@ -134,29 +133,31 @@ ArraySequence< T >::insert( Pos p , const T & v )
 
 template< class T >
 template< std::input_iterator I , std::sentinel_for< I > S >
-typename ArraySequence< T >::Pos
-ArraySequence< T >::insert( Pos p , I first , S last )
+typename ArraySequence< T >::Pos ArraySequence< T >::insert( Pos p , I first ,
+							     S last )
 {
  ADS_PRE( ( p >= 0 ) && ( p <= f_size ) );
  const Pos n = f_size;
  const auto old = detail::snapshot( *this );
- ArraySequence c;                  // the items first, which may be ours
+ ArraySequence c;  // the items first, which may be ours
  if constexpr( std::forward_iterator< I > ) {
   const Pos k = Pos( std::ranges::distance( first , last ) );
-  if( k ) c.resize( k );
+  if( k )
+   c.resize( k );
   }
  for( ; first != last ; ++first )
   c.push_back( *first );
  const Pos k = c.f_size;
  if( k == 0 )
   return( p );
- if( f_size + k > f_capacity ) {   // one resize for the k items
+ if( f_size + k > f_capacity ) {  // one resize for the k items
   Pos m = f_capacity ? f_capacity : 1;
-  while( m < f_size + k ) m *= 2;
+  while( m < f_size + k )
+   m *= 2;
   resize( m );
   }
  std::move_backward( f_A.get() + p , f_A.get() + f_size ,
-                     f_A.get() + f_size + k );
+		     f_A.get() + f_size + k );
  std::move( c.f_A.get() , c.f_A.get() + k , f_A.get() + p );
  f_size += k;
  ADS_POST( f_size == n + k );
@@ -173,11 +174,10 @@ typename ArraySequence< T >::Pos ArraySequence< T >::remove( Pos p )
  const auto old = detail::snapshot( *this );
  std::move( f_A.get() + p + 1 , f_A.get() + f_size , f_A.get() + p );
  --f_size;
- if( f_size <= f_capacity / 4 )   // a quarter full: half the size, and
-  resize( f_size ? f_capacity / 2 : 0 );   // no vector when empty
+ if( f_size <= f_capacity / 4 )           // a quarter full: half the size, and
+  resize( f_size ? f_capacity / 2 : 0 );  // no vector when empty
  ADS_POST( f_size == n - 1 );
- ADS_AUDIT( same( *old , 0 , 0 , p ) &&
-            same( *old , p + 1 , p , n - p - 1 ) );
+ ADS_AUDIT( same( *old , 0 , 0 , p ) && same( *old , p + 1 , p , n - p - 1 ) );
  ADS_INVARIANT( fits() );
  return( p );
  }
@@ -197,7 +197,7 @@ void ArraySequence< T >::write( Pos p , const T & v )
  f_A[ p ] = v;
  ADS_POST( detail::equal( f_A[ p ] , v ) );
  ADS_AUDIT( same( *old , 0 , 0 , p ) &&
-            same( *old , p + 1 , p + 1 , f_size - p - 1 ) );
+	    same( *old , p + 1 , p + 1 , f_size - p - 1 ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -239,9 +239,11 @@ void ArraySequence< T >::push_back( const T & v )
 template< class T >
 bool ArraySequence< T >::operator==( const ArraySequence & o ) const
 {
- if( f_size != o.f_size ) return( false );
+ if( f_size != o.f_size )
+  return( false );
  for( Pos i = 0 ; i < f_size ; ++i )
-  if( !( f_A[ i ] == o.f_A[ i ] ) ) return( false );
+  if( ! ( f_A[ i ] == o.f_A[ i ] ) )
+   return( false );
  return( true );
  }
 
@@ -249,12 +251,12 @@ template< class T >
 bool ArraySequence< T >::fits( void ) const
 {
  return( ( bool( f_A ) == ( f_capacity > 0 ) ) && ( f_size >= 0 ) &&
-         ( f_size <= f_capacity ) );
+	  ( f_size <= f_capacity ) );
  }
 
 template< class T >
 bool ArraySequence< T >::same( const ArraySequence & o , Pos i , Pos j ,
-                               Pos k ) const
+			       Pos k ) const
 {
  for( Pos h = 0 ; h < k ; ++h )
   if( ! detail::equal( o.f_A[ i + h ] , f_A[ j + h ] ) )

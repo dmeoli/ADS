@@ -43,7 +43,7 @@
 
 #ifndef __ADS_BTree
  #define __ADS_BTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -65,7 +65,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- CLASS BTree --------------------------------*/
@@ -73,13 +74,13 @@ namespace ADS {
 
 /// a DICTIONARY on a B-tree of minimum degree \f$ t \f$
 template< std::totally_ordered K , class V >
-class BTree {
+class BTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
 
  /// the empty B-tree of minimum degree \f$ t \f$
  /// \pre \f$ t \ge 2 \f$
@@ -211,8 +212,8 @@ class BTree {
 
  /// the smallest key not smaller than \f$ k \f$ and its value, or nothing
  /// (the `find( x )` of an SSet of Morin), in \f$ O( t \log_t n ) \f$ time
- [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
-  const K & k ) const;
+ [[nodiscard]] std::optional< std::pair< K , V > >
+ lowerBound( const K & k ) const;
 
  /// the address of the key \f$ k \f$, nil if absent, in \f$ O( t \log_t n )
  /// \f$ time: the `find( x )` of a USet of Morin [see `DictionarySet`]; valid
@@ -236,8 +237,8 @@ class BTree {
  /// the keys of the nodes, level by level from the root, each level from
  /// left to right: the shape of the tree, as in the figures of the books,
  /// by a visit in breadth, no level if empty
- [[nodiscard]] std::vector< std::vector< std::vector< K > > > levels( void )
-  const;
+ [[nodiscard]] std::vector< std::vector< std::vector< K > > >
+ levels( void ) const;
 
  /// `f( k , v )` on the pairs by increasing keys
  ///
@@ -260,18 +261,17 @@ class BTree {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// a node: its keys, their values and its children
- struct Node {
-  std::vector< K > k;                         ///< the keys, increasing
-  std::vector< V > v;                         ///< the values of the keys
-  std::vector< std::unique_ptr< Node > > c;   ///< empty in a leaf
+ struct Node
+ {
+  std::vector< K > k;                        ///< the keys, increasing
+  std::vector< V > v;                        ///< the values of the keys
+  std::vector< std::unique_ptr< Node > > c;  ///< empty in a leaf
   /// true if the node has no child
   [[nodiscard]] bool leaf( void ) const { return( c.empty() ); }
   };
 
  public:
-
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
  // a constant view of the pairs ( key , value ) by increasing key,
@@ -281,12 +281,13 @@ class BTree {
 
  /// the iterator on the pairs by increasing keys, with the path from the
  /// root
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// a pair of constant references, the key and its value
   using reference = std::pair< const K & , const V & >;
-  using value_type = reference;             ///< the pairs
-  using difference_type = std::ptrdiff_t;   ///< the type of the distances
+  using value_type = reference;            ///< the pairs
+  using difference_type = std::ptrdiff_t;  ///< the type of the distances
   /// the category of the iterator for the concepts of C++20, forward
   using iterator_concept = std::forward_iterator_tag;
   /// input for the older algorithms, since `*it` is a value
@@ -298,7 +299,8 @@ class BTree {
   /// on the first key below \f$ x \f$, or at the end if \f$ x \f$ is nil
   /// or empty
   explicit const_iterator( const Node * x ) {
-   if( x && ! x->k.empty() ) leftmost( x );
+   if( x && ! x->k.empty() )
+    leftmost( x );
    }
 
   /// the pair of the key at the end of the path
@@ -326,33 +328,39 @@ class BTree {
   /// \f]
   const_iterator & operator++( void ) {
    auto & [ x , i ] = f_path.back();
-   if( ! x->c.empty() ) {                   // into the child after the key
+   if( ! x->c.empty() ) {  // into the child after the key
     ++i;
     leftmost( x->c[ i ].get() );
     return( *this );
     }
-   if( ++i < x->k.size() ) return( *this );
-   f_path.pop_back();                       // up to the first ancestor
-   while( ! f_path.empty() &&               // with a key left
-          ( f_path.back().second >= f_path.back().first->k.size() ) )
+   if( ++i < x->k.size() )
+    return( *this );
+   f_path.pop_back();          // up to the first ancestor
+   while( ! f_path.empty() &&  // with a key left
+	  ( f_path.back().second >= f_path.back().first->k.size() ) )
     f_path.pop_back();
    return( *this );
    }
 
   /// to the next key, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same place of the same node, or both at the end
   bool operator==( const const_iterator & o ) const {
    return( f_path.empty() ? o.f_path.empty()
-                          : ( ! o.f_path.empty() &&
-                              ( f_path.back() == o.f_path.back() ) ) );
+			   : ( ! o.f_path.empty() &&
+			       ( f_path.back() == o.f_path.back() ) ) );
    }
 
   private:
   /// down from \f$ x \f$ to its first key, the places appended to the path
   void leftmost( const Node * x ) {
-   for( ; ! x->c.empty() ; x = x->c[ 0 ].get() ) f_path.emplace_back( x , 0 );
+   for( ; ! x->c.empty() ; x = x->c[ 0 ].get() )
+    f_path.emplace_back( x , 0 );
    f_path.emplace_back( x , 0 );
    }
 
@@ -362,11 +370,11 @@ class BTree {
 
  /// the pairs of constant references ( key , value )
  using value_type = std::pair< const K & , const V & >;
- using size_type = std::size_t;            ///< the type of the sizes
- using difference_type = std::ptrdiff_t;   ///< the type of the distances
- using reference = value_type;             ///< a pair, by value
- using const_reference = value_type;       ///< a pair, by value
- using iterator = const_iterator;          ///< the constant iterator
+ using size_type = std::size_t;           ///< the type of the sizes
+ using difference_type = std::ptrdiff_t;  ///< the type of the distances
+ using reference = value_type;            ///< a pair, by value
+ using const_reference = value_type;      ///< a pair, by value
+ using iterator = const_iterator;         ///< the constant iterator
 
  /// the iterator on the smallest key
  [[nodiscard]] const_iterator begin( void ) const {
@@ -374,7 +382,9 @@ class BTree {
   }
 
  /// the iterator past the largest key
- [[nodiscard]] const_iterator end( void ) const { return( const_iterator() ); }
+ [[nodiscard]] const_iterator end( void ) const {
+  return( const_iterator() );
+  }
 
  /// as `begin()`
  [[nodiscard]] const_iterator cbegin( void ) const { return( begin() ); }
@@ -383,7 +393,6 @@ class BTree {
  [[nodiscard]] const_iterator cend( void ) const { return( end() ); }
 
  private:
-
  /// the first place in \f$ x \f$ of a key not smaller than `key`
  static std::size_t place( const Node * x , const K & key );
 
@@ -408,16 +417,16 @@ class BTree {
 
  /// the order, the sizes and the depth of the leaves, \f$ O( n ) \f$
  bool valid( const Node * x , const K * lo , const K * hi , int d ,
-             int & leafDepth , bool root ) const;
+	     int & leafDepth , bool root ) const;
 
  /// the node and the place of the smallest key not smaller than `key`,
  /// nil if none: the last place not past the end met on the descent
- [[nodiscard]] std::pair< const Node * , std::size_t > lowerBoundPlace(
-  const K & key ) const;
+ [[nodiscard]] std::pair< const Node * , std::size_t >
+ lowerBoundPlace( const K & key ) const;
 
- int f_t;                          ///< the minimum degree
- std::unique_ptr< Node > f_root;   ///< the root
- std::size_t f_size = 0;           ///< the number of keys
+ int f_t;                         ///< the minimum degree
+ std::unique_ptr< Node > f_root;  ///< the root
+ std::size_t f_size = 0;          ///< the number of keys
 
  };  // end( class BTree )
 
@@ -433,7 +442,7 @@ class BTree {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* BTree.h included */
+#endif /* BTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File BTree.h ----------------------------*/

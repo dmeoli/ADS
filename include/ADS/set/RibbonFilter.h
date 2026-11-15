@@ -136,7 +136,7 @@
 
 #ifndef __ADS_RibbonFilter
  #define __ADS_RibbonFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -161,7 +161,7 @@
 /// a function inlined even where the compiler would not
 #ifndef ADS_FILTER_INLINE
  #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_INLINE inline __attribute__(( always_inline ))
+  #define ADS_FILTER_INLINE inline __attribute__( ( always_inline ) )
  #elif defined( _MSC_VER )
   #define ADS_FILTER_INLINE __forceinline
  #else
@@ -172,10 +172,9 @@
 /// a hint to bring the line of p into the cache, or nothing
 #ifndef ADS_FILTER_PREFETCH
  #if defined( __GNUC__ ) || defined( __clang__ )
-  #define ADS_FILTER_PREFETCH( p ) \
-   __builtin_prefetch( ( const void * )( p ) )
+  #define ADS_FILTER_PREFETCH( p ) __builtin_prefetch( ( const void * )( p ) )
  #else
-  #define ADS_FILTER_PREFETCH( p ) ( ( void ) 0 )
+  #define ADS_FILTER_PREFETCH( p ) ( ( void )0 )
  #endif
 #endif
 
@@ -183,7 +182,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- CLASS RibbonFilter ---------------------------*/
@@ -192,14 +192,14 @@ namespace ADS {
 /// a static filter of the keys of type `T` with results of type `F`, one
 /// equation of 64 coefficients per key
 template< class T , class F = std::uint8_t , class H = DefaultHash< T > >
-class RibbonFilter {
+class RibbonFilter
+{
 
  static_assert( std::is_unsigned_v< F > && ( sizeof( F ) <= 4 ) ,
-                "the results have at most 32 bits" );
+		"the results have at most 32 bits" );
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the filter of the keys, which may repeat
  ///
  /// In pseudocode (Dillinger and Walzer), \f$ C[ i ] \f$ and \f$ R[ i ] \f$
@@ -233,7 +233,8 @@ class RibbonFilter {
  /// \pre fewer than \f$ 2^{32} \f$ keys
  /// \post every key is maybe there (an audit)
  explicit RibbonFilter( const std::vector< T > & keys ,
-                        std::uint64_t seed = 1 , H h = H() );
+			std::uint64_t seed = 1 ,
+			H h = H() );
 
  /// whether \f$ x \f$ may be in the set: true for every key of the set,
  /// and for any other with probability about \f$ 2^{-r} \f$, \f$ r \f$
@@ -271,14 +272,14 @@ class RibbonFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  static constexpr int kR = 8 * sizeof( F );       ///< the bits of a result
- static constexpr std::size_t kMaxTrials = 1000;   ///< seeds at most
- static constexpr std::size_t kAhead = 16;  ///< keys prefetched ahead
+ static constexpr std::size_t kMaxTrials = 1000;  ///< seeds at most
+ static constexpr std::size_t kAhead = 16;        ///< keys prefetched ahead
 
  /// a line of cache: the words of 8 columns of a block of 64 rows
- struct alignas( 64 ) Line {
-  std::uint64_t w[ 8 ];   ///< the words of the 8 columns
+ struct alignas( 64 ) Line
+ {
+  std::uint64_t w[ 8 ];  ///< the words of the 8 columns
   };
 
  /// the hash of \f$ x \f$ before the seed, mixed unless `H` avalanches
@@ -300,9 +301,8 @@ class RibbonFilter {
  /// \f$ ( u_j \wedge \mathit{lo} ) \oplus ( u_{r+j} \wedge \mathit{hi} ) \f$,
  /// the bit \f$ j \f$ of the result for the word \f$ j \f$, `u` aligned
  /// to 64 bytes
- [[nodiscard]] static std::uint32_t parities( const std::uint64_t * u ,
-                                              std::uint64_t lo ,
-                                              std::uint64_t hi );
+ [[nodiscard]] static std::uint32_t
+ parities( const std::uint64_t * u , std::uint64_t lo , std::uint64_t hi );
 
  /// the solution of the equations of the keys, false if there is none
  bool build( const std::vector< T > & keys );
@@ -310,14 +310,14 @@ class RibbonFilter {
  /// the solution \f$ Z \f$ of the banded rows \f$ C \f$ and their right
  /// sides \f$ R \f$
  void solve( const std::vector< std::uint64_t > & C ,
-             const std::vector< F > & R );
+	     const std::vector< F > & R );
 
- std::vector< Line > f_Z;            ///< kR / 8 lines per block of 64 rows
- std::size_t f_m = 0;                ///< the rows
- std::uint64_t f_seed;               ///< the seed of the last trial
- std::size_t f_n = 0;                ///< the keys, with their repetitions
- std::size_t f_trials = 0;           ///< the seeds drawn
- H f_h;                              ///< the hash of the keys
+ std::vector< Line > f_Z;   ///< kR / 8 lines per block of 64 rows
+ std::size_t f_m = 0;       ///< the rows
+ std::uint64_t f_seed;      ///< the seed of the last trial
+ std::size_t f_n = 0;       ///< the keys, with their repetitions
+ std::size_t f_trials = 0;  ///< the seeds drawn
+ H f_h;                     ///< the hash of the keys
 
  };  // end( class RibbonFilter )
 
@@ -333,7 +333,7 @@ class RibbonFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RibbonFilter.h included */
+#endif /* RibbonFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- End File RibbonFilter.h ------------------------*/

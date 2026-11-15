@@ -18,20 +18,22 @@
 
 #include <memory>
 
-namespace ADS {
+namespace ADS
+{
 
-namespace detail {
+namespace detail
+{
 
-inline constexpr int kRansScale = 12;                 ///< M = 2^12
-inline constexpr std::uint32_t kRansLow = 1u << 16;   ///< the least state
-inline constexpr std::size_t kRansWays = 4;           ///< the states
+inline constexpr int kRansScale = 12;                ///< M = 2^12
+inline constexpr std::uint32_t kRansLow = 1u << 16;  ///< the least state
+inline constexpr std::size_t kRansWays = 4;          ///< the states
 inline constexpr std::size_t kRansHead =
- 8 + 512 + 4 * kRansWays;                             ///< the header
+  8 + 512 + 4 * kRansWays;  ///< the header
 
 }  // end( namespace detail )
 
-inline std::array< std::uint32_t , 256 > scaleFrequencies(
-                       const std::array< std::uint64_t , 256 > & f , int b )
+inline std::array< std::uint32_t , 256 >
+scaleFrequencies( const std::array< std::uint64_t , 256 > & f , int b )
 {
  std::uint64_t total = 0;
  std::size_t used = 0;
@@ -45,8 +47,8 @@ inline std::array< std::uint32_t , 256 > scaleFrequencies(
  std::int64_t sum = 0;
  for( int s = 0 ; s < 256 ; ++s )
   if( f[ s ] > 0 ) {
-   g[ s ] = std::uint32_t( std::max< std::uint64_t >(
-             1 , ( f[ s ] * M + total / 2 ) / total ) );
+   g[ s ] = std::uint32_t(
+     std::max< std::uint64_t >( 1 , ( f[ s ] * M + total / 2 ) / total ) );
    sum += g[ s ];
    }
  // the difference to M, taken from or given to the largest ones
@@ -58,7 +60,7 @@ inline std::array< std::uint32_t , 256 > scaleFrequencies(
    }
   else {
    const auto d = std::min< std::int64_t >( sum - std::int64_t( M ) ,
-                                            std::int64_t( g[ s ] ) / 2 );
+					    std::int64_t( g[ s ] ) / 2 );
    g[ s ] -= std::uint32_t( std::max< std::int64_t >( d , 1 ) );
    sum -= std::max< std::int64_t >( d , 1 );
    }
@@ -66,8 +68,8 @@ inline std::array< std::uint32_t , 256 > scaleFrequencies(
  return( g );
  }
 
-inline std::vector< std::uint8_t > ransCompress(
-                                          std::span< const std::uint8_t > in )
+inline std::vector< std::uint8_t >
+ransCompress( std::span< const std::uint8_t > in )
 {
  using namespace detail;
  const std::size_t n = in.size();
@@ -79,7 +81,8 @@ inline std::vector< std::uint8_t > ransCompress(
   }
  const auto g = scaleFrequencies( byteHistogram( in ) , kRansScale );
  std::array< std::uint32_t , 256 > start{};
- for( int s = 1 ; s < 256 ; ++s ) start[ s ] = start[ s - 1 ] + g[ s - 1 ];
+ for( int s = 1 ; s < 256 ; ++s )
+  start[ s ] = start[ s - 1 ] + g[ s - 1 ];
  for( int s = 0 ; s < 256 ; ++s )
   storeLE< std::uint16_t >( out.data() + 8 + 2 * s , std::uint16_t( g[ s ] ) );
  // the division of the state by a frequency f as a multiplication by a
@@ -87,10 +90,13 @@ inline std::vector< std::uint8_t > ransCompress(
  // t = ceil( log2 f ) - 1 and r = ceil( 2^( 32 + t ) / f ) (exact for the
  // states below 2^32 and f < 2^12), and C( s , x ) = x + c + q ( M - f );
  // f = 1 has q = x, by r = 2^32 - 1, t = 0 and c + M - 1 in place of c
- struct Sym { std::uint32_t max , rcp , shift , bias , cmpl; };
+ struct Sym
+ {
+  std::uint32_t max , rcp , shift , bias , cmpl;
+  };
  std::array< Sym , 256 > Y{};
  for( int s = 0 ; s < 256 ; ++s )
-  if( const std::uint32_t fs = g[ s ] ; fs > 0 ) {
+  if( const std::uint32_t fs = g[ s ]; fs > 0 ) {
    Sym & y = Y[ s ];
    y.max = ( ( kRansLow >> kRansScale ) << 16 ) * fs - 1;
    y.cmpl = ( 1u << kRansScale ) - fs;
@@ -101,9 +107,10 @@ inline std::vector< std::uint8_t > ransCompress(
     }
    else {
     std::uint32_t t = 0;
-    while( fs > ( 1u << t ) ) ++t;
-    y.rcp = std::uint32_t( ( ( std::uint64_t( 1 ) << ( t + 31 ) ) + fs - 1 ) /
-                           fs );
+    while( fs > ( 1u << t ) )
+     ++t;
+    y.rcp =
+      std::uint32_t( ( ( std::uint64_t( 1 ) << ( t + 31 ) ) + fs - 1 ) / fs );
     y.shift = t - 1;
     y.bias = start[ s ];
     }
@@ -115,18 +122,18 @@ inline std::vector< std::uint8_t > ransCompress(
  std::array< std::uint32_t , kRansWays > x;
  x.fill( kRansLow );
  auto put = [ & ]( std::uint32_t & y , const Sym & z ) {
-  const bool emit = y > z.max;              // with no branch
+  const bool emit = y > z.max;  // with no branch
   words[ nw ] = std::uint16_t( y );
   nw += emit;
   y = emit ? y >> 16 : y;
-  const std::uint32_t q = std::uint32_t( ( std::uint64_t( y ) * z.rcp ) >>
-                                         32 ) >> z.shift;
+  const std::uint32_t q =
+    std::uint32_t( ( std::uint64_t( y ) * z.rcp ) >> 32 ) >> z.shift;
   y += z.bias + q * z.cmpl;
   };
  std::size_t i = n;
  for( ; i % kRansWays ; --i )
   put( x[ ( i - 1 ) % kRansWays ] , Y[ in[ i - 1 ] ] );
- for( ; i > 0 ; i -= kRansWays )            // the states in registers
+ for( ; i > 0 ; i -= kRansWays )  // the states in registers
   for( std::size_t k = kRansWays ; k-- > 0 ; )
    put( x[ k ] , Y[ in[ i - kRansWays + k ] ] );
  for( std::size_t k = 0 ; k < kRansWays ; ++k )
@@ -139,14 +146,15 @@ inline std::vector< std::uint8_t > ransCompress(
  return( out );
  }
 
-inline std::vector< std::uint8_t > ransDecompress(
-                                          std::span< const std::uint8_t > in )
+inline std::vector< std::uint8_t >
+ransDecompress( std::span< const std::uint8_t > in )
 {
  using namespace detail;
  ADS_PRE( in.size() >= kRansHead + 8 );
  const std::size_t n = std::size_t( loadLE< std::uint64_t >( in.data() ) );
  std::vector< std::uint8_t > out( n );
- if( n == 0 ) return( out );
+ if( n == 0 )
+  return( out );
  // the table of the slots: the frequency of the symbol in the low 16 bits
  // and the slot less its cumulative frequency in the high ones, and the
  // symbol apart
@@ -171,7 +179,7 @@ inline std::vector< std::uint8_t > ransDecompress(
  const std::uint8_t * p = in.data() + kRansHead;
  const std::uint8_t * const end = in.data() + in.size() - 8;
  constexpr std::uint32_t mask = ( 1u << kRansScale ) - 1;
- auto step = [ & ]( std::uint32_t & y ) {   // a symbol, and the 16 bits
+ auto step = [ & ]( std::uint32_t & y ) {  // a symbol, and the 16 bits
   const std::uint32_t slot = y & mask , e = T[ slot ];
   y = ( e & 0xFFFF ) * ( y >> kRansScale ) + ( e >> 16 );
   const bool r = y < kRansLow;
@@ -184,7 +192,8 @@ inline std::vector< std::uint8_t > ransDecompress(
  // padding: a malformed stream stops there, at one comparison a round
  std::size_t i = 0;
  for( ; ( i + kRansWays <= n ) && ( p <= end ) ; i += kRansWays )
-  for( std::size_t k = 0 ; k < kRansWays ; ++k ) out[ i + k ] = step( x[ k ] );
+  for( std::size_t k = 0 ; k < kRansWays ; ++k )
+   out[ i + k ] = step( x[ k ] );
  for( ; ( i < n ) && ( p <= end ) ; ++i )
   out[ i ] = step( x[ i % kRansWays ] );
  ADS_PRE( ( i == n ) && ( p <= end ) );

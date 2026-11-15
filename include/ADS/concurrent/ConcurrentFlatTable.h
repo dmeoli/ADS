@@ -171,7 +171,7 @@
 
 #ifndef __ADS_ConcurrentFlatTable
  #define __ADS_ConcurrentFlatTable
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -199,12 +199,12 @@
 // port of Homebrew), which gives its caspal a pair of registers that does
 // not start at an even one, and the assembler refuses it
 #ifndef ADS_FLAT_CAS16
- #if defined( __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 ) && \
-     ( defined( __x86_64__ ) || defined( __aarch64__ ) ) && \
-     defined( __BYTE_ORDER__ ) && \
-     ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ ) && \
-     ! ( defined( __APPLE__ ) && defined( __aarch64__ ) && \
-         ! defined( __clang__ ) )
+ #if defined( __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16 ) &&                        \
+   ( defined( __x86_64__ ) || defined( __aarch64__ ) ) &&                     \
+   defined( __BYTE_ORDER__ ) &&                                               \
+   ( __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__ ) &&                           \
+   ! ( defined( __APPLE__ ) && defined( __aarch64__ ) &&                      \
+       ! defined( __clang__ ) )
   #define ADS_FLAT_CAS16 1
  #else
   #define ADS_FLAT_CAS16 0
@@ -215,7 +215,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ THE POLICIES OF clear() -------------------------*/
@@ -223,30 +224,35 @@ namespace ADS {
 
 /// the `clear()` of `ConcurrentFlatTable` that writes 0 to every place, in
 /// time linear in its capacity; the default
-struct ZeroingClear {};
+struct ZeroingClear
+{ };
 
 /// the `clear()` of `ConcurrentFlatTable` in \f$ O( 1 ) \f$ by epochs: a
 /// stamp of the unsigned type \f$ S \f$ per group of 8 places, the group in
 /// use only if its stamp is the epoch that `clear()` raises
 template< std::unsigned_integral S = std::uint32_t >
  requires( ! std::same_as< S , bool > )
-struct EpochClear {
- using Stamp = S;   ///< the type of the stamps and of the epoch
+struct EpochClear
+{
+ using Stamp = S;  ///< the type of the stamps and of the epoch
  };
 
-namespace detail {
+namespace detail
+{
 
 /// the type of the stamps of the policy C of clear(), and whether it has
 /// epochs
 template< class C >
-struct ClearStamps {
+struct ClearStamps
+{
  using Stamp = std::uint8_t;
  static constexpr bool epochs = false;
  };
 
 template< class S >
  requires( ! std::same_as< S , bool > )
-struct ClearStamps< EpochClear< S > > {
+struct ClearStamps< EpochClear< S > >
+{
  using Stamp = S;
  static constexpr bool epochs = true;
  };
@@ -255,8 +261,8 @@ struct ClearStamps< EpochClear< S > > {
 
 /// a policy of `clear()` of `ConcurrentFlatTable`
 template< class C >
-concept FlatClear = std::same_as< C , ZeroingClear > ||
-                    detail::ClearStamps< C >::epochs;
+concept FlatClear =
+  std::same_as< C , ZeroingClear > || detail::ClearStamps< C >::epochs;
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- CLASS ConcurrentFlatTable ------------------------*/
@@ -266,11 +272,12 @@ concept FlatClear = std::same_as< C , ZeroingClear > ||
 /// grows while they work and never removes; cleared in \f$ O( 1 ) \f$ by
 /// the policy `EpochClear`
 template< class K , class V , class H = DefaultHash< K > ,
-          class Eq = std::equal_to< K > , class C = ZeroingClear >
-class ConcurrentFlatTable {
+	  class Eq = std::equal_to< K > , class C = ZeroingClear >
+class ConcurrentFlatTable
+{
 
  static_assert( FlatClear< C > ,
-                "the policy of clear() is ZeroingClear or EpochClear" );
+		"the policy of clear() is ZeroingClear or EpochClear" );
 
  /// the bytes of the value in a word, none if it is empty
  static constexpr std::size_t valueBytes( void ) {
@@ -280,45 +287,43 @@ class ConcurrentFlatTable {
  /// whether the bytes of the key say all of it
  static constexpr bool plainKey( void ) {
   return( std::has_unique_object_representations_v< K > ||
-          std::is_floating_point_v< K > );
+	   std::is_floating_point_v< K > );
   }
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = K;     ///< the type of the keys
- using Value = V;   ///< the type of the values
- using Clear = C;   ///< the policy of `clear()`
+ using Key = K;    ///< the type of the keys
+ using Value = V;  ///< the type of the values
+ using Clear = C;  ///< the policy of `clear()`
 
  /// true if `clear()` is \f$ O( 1 ) \f$, by the epochs of `EpochClear`
  static constexpr bool epochs = detail::ClearStamps< C >::epochs;
 
  static_assert( ! epochs || ( std::is_trivially_destructible_v< K > &&
-                              std::is_trivially_destructible_v< V > ) ,
-                "the epochs drop the pairs with no destructor" );
+			      std::is_trivially_destructible_v< V > ) ,
+		"the epochs drop the pairs with no destructor" );
 
  /// true if the pairs lie in the words: the key and the value trivially
  /// copyable, the bytes of the key all significant, 8 bytes at most
- static constexpr bool packed = std::is_trivially_copyable_v< K > &&
-                                std::is_trivially_copyable_v< V > &&
-                                plainKey() &&
-                                ( sizeof( K ) + valueBytes() <= 8 );
+ static constexpr bool packed =
+   std::is_trivially_copyable_v< K > && std::is_trivially_copyable_v< V > &&
+   plainKey() && ( sizeof( K ) + valueBytes() <= 8 );
 
  /// true if the pairs lie in places of two words written by one
  /// compare-and-swap of 16 bytes: not `packed`, the key and the value
  /// trivially copyable, 8 bytes at most each, the bytes of the key all
  /// significant, and the instruction there
- static constexpr bool inlined = ( ADS_FLAT_CAS16 != 0 ) && ! packed &&
-                                 std::is_trivially_copyable_v< K > &&
-                                 std::is_trivially_copyable_v< V > &&
-                                 plainKey() && ( sizeof( K ) <= 8 ) &&
-                                 ( sizeof( V ) <= 8 );
+ static constexpr bool inlined =
+   ( ADS_FLAT_CAS16 != 0 ) && ! packed && std::is_trivially_copyable_v< K > &&
+   std::is_trivially_copyable_v< V > && plainKey() && ( sizeof( K ) <= 8 ) &&
+   ( sizeof( V ) <= 8 );
 
  /// a pair of a table neither `packed` nor `inlined`, in a node that never
  /// moves
- struct Entry {
-  const K key;   ///< the key
-  V value;       ///< the value, the caller's to synchronize
+ struct Entry
+ {
+  const K key;  ///< the key
+  V value;      ///< the value, the caller's to synchronize
   };
 
  /// what an operation returns of the pair held: a copy of the value if
@@ -327,8 +332,7 @@ class ConcurrentFlatTable {
 
  /// the empty table, with room for \f$ n \f$ pairs (and their nodes)
  /// before it grows, the hash `h` and the equality `eq`
- explicit ConcurrentFlatTable( std::size_t n = 0 , H h = H() ,
-                               Eq eq = Eq() );
+ explicit ConcurrentFlatTable( std::size_t n = 0 , H h = H() , Eq eq = Eq() );
 
  /// no copy, since the threads share it by its address
  ConcurrentFlatTable( const ConcurrentFlatTable & ) = delete;
@@ -397,7 +401,7 @@ class ConcurrentFlatTable {
  /// by `grow()`, when the sum of the counters passes half the places.
  /// \pre `hash( k )` is \f$ h \f$ (audit)
  std::pair< Ref , bool > findOrInsert( const K & k , std::uint64_t h ,
-                                       const V & v );
+				      const V & v );
 
  /// `findOrInsert()` above, with the hash computed
  std::pair< Ref , bool > findOrInsert( const K & k , const V & v );
@@ -440,8 +444,7 @@ class ConcurrentFlatTable {
  /// \end{array}}
  /// \f]
  /// \pre `hash( k )` is \f$ h \f$ (audit)
- [[nodiscard]] std::optional< V > find( const K & k ,
-                                        std::uint64_t h ) const;
+ [[nodiscard]] std::optional< V > find( const K & k , std::uint64_t h ) const;
 
  /// `find()` above, with the hash computed
  [[nodiscard]] std::optional< V > find( const K & k ) const;
@@ -469,7 +472,8 @@ class ConcurrentFlatTable {
  /// compare-and-swap of its word (of its place), for a `packed` (an
  /// `inlined`) table; true if \f$ k \f$ is there
  template< class F >
- bool update( const K & k , F && f ) requires( packed || inlined );
+ bool update( const K & k , F && f )
+  requires( packed || inlined );
 
  /// the number of the pairs, the sum of the counters, exact when no
  /// operation runs
@@ -512,36 +516,40 @@ class ConcurrentFlatTable {
 
 /*--------------------------------------------------------------------------*/
  private:
+ static constexpr int kLeast = 6;     ///< log2 of the least vector
+ static constexpr int kStripes = 64;  ///< the counters of the threads
+ static constexpr int kProbe = 128;   ///< the words read before a
+				      ///< growth
+ static constexpr int kBlock = 4096;  ///< the words of a block copied
+ static constexpr int kSlab = 64;     ///< the nodes a thread reserves
+ static constexpr int kLgSeg = 12;    ///< log2 of the first segment
+ static constexpr int kSegs = 29;     ///< the segments, at most
+ static constexpr int kFp = 40;       ///< the bits of a node index
 
- static constexpr int kLeast = 6;         ///< log2 of the least vector
- static constexpr int kStripes = 64;      ///< the counters of the threads
- static constexpr int kProbe = 128;       ///< the words read before a
-                                          ///< growth
- static constexpr int kBlock = 4096;      ///< the words of a block copied
- static constexpr int kSlab = 64;         ///< the nodes a thread reserves
- static constexpr int kLgSeg = 12;        ///< log2 of the first segment
- static constexpr int kSegs = 29;         ///< the segments, at most
- static constexpr int kFp = 40;           ///< the bits of a node index
-
- using Stamp = typename detail::ClearStamps< C >::Stamp;   ///< of a group
+ using Stamp = typename detail::ClearStamps< C >::Stamp;  ///< of a group
 
  /// the stamp of a group being renewed, never an epoch
  static constexpr Stamp kBusy = std::numeric_limits< Stamp >::max();
 
  /// what takes the place of the stamps and of the epoch without EpochClear
- struct NoStamps {};
+ struct NoStamps
+ { };
 
  /// the stamps of the groups of a vector
  using Stamps = std::conditional_t< epochs , std::atomic< Stamp > * ,
-                                    NoStamps >;
+				    NoStamps >;
 
  /// the epoch now, 1 without EpochClear
  [[nodiscard]] Stamp now( void ) const {
-  if constexpr( epochs ) return( f_epoch ); else return( 1 );
+  if constexpr( epochs )
+   return( f_epoch );
+  else
+   return( 1 );
   }
 
  /// a node: the pair with its hash
- struct Node {
+ struct Node
+ {
   /// the hash of the key
   std::uint64_t h;
   /// the pair
@@ -550,13 +558,15 @@ class ConcurrentFlatTable {
 
  /// a counter of the threads: in the critical section in the low 16 bits,
  /// pairs inserted above them
- struct alignas( 64 ) Stripe {
+ struct alignas( 64 ) Stripe
+ {
   /// the two counters in one word
   std::atomic< std::uint64_t > w{ 0 };
   };
 
  /// a vector of 2^lg words, and its copy into the next one
- struct Table {
+ struct Table
+ {
   /// log2 of the places
   int lg;
   /// the words
@@ -589,7 +599,7 @@ class ConcurrentFlatTable {
   /// the tag of the place i
   [[nodiscard]] std::uint8_t tagAt( std::size_t i ) const {
    return( std::uint8_t( G[ i >> 3 ].load( std::memory_order_acquire ) >>
-                         ( 8 * ( i & 7 ) ) ) );
+			  ( 8 * ( i & 7 ) ) ) );
    }
   /// the number of the blocks copied by the growth
   [[nodiscard]] std::size_t blocks( void ) const {
@@ -598,7 +608,8 @@ class ConcurrentFlatTable {
   };
 
  /// the reservation of a thread: the nodes [ next , end ) of the table id
- struct Slab {
+ struct Slab
+ {
   /// the table
   std::uint64_t id = 0;
   /// the nodes reserved and not used
@@ -624,22 +635,21 @@ class ConcurrentFlatTable {
  /// compare-and-swap of 16 bytes; false and ( k0 , v0 ) the place found
  /// if it was not ( k0 , v0 )
  static bool cas16( std::atomic< std::uint64_t > * p , std::uint64_t & k0 ,
-                    std::uint64_t & v0 , std::uint64_t k1 ,
-                    std::uint64_t v1 );
+		    std::uint64_t & v0 , std::uint64_t k1 , std::uint64_t v1 );
 
  /// findOrInsert() of an inlined table
  // the insertion of findOrInsert() into a table not `inlined`: the word
  // that holds the key, and true if it was inserted
  std::pair< std::uint64_t , bool > placeWord( const K & k , std::uint64_t h ,
-                                              const V & v );
+					     const V & v );
 
  std::pair< Ref , bool > placeInline( const K & k , std::uint64_t h ,
-                                      const V & v );
+				     const V & v );
 
  /// the place of the key k of hash h in the vector in use, its first word,
  /// or nil
- [[nodiscard]] const std::atomic< std::uint64_t > * locate(
-                                   const K & k , std::uint64_t h ) const;
+ [[nodiscard]] const std::atomic< std::uint64_t > *
+ locate( const K & k , std::uint64_t h ) const;
 
  /// the word of the pair ( k , v ) of a packed table
  [[nodiscard]] static std::uint64_t pack( const K & k , const V & v );
@@ -674,7 +684,7 @@ class ConcurrentFlatTable {
 
  /// whether the word w holds the key k of hash h
  [[nodiscard]] bool holds( std::uint64_t w , const K & k ,
-                           std::uint64_t h ) const;
+			   std::uint64_t h ) const;
 
  /// the hash of the pair of the word w
  [[nodiscard]] std::uint64_t hashOf( std::uint64_t w ) const;
@@ -753,28 +763,27 @@ class ConcurrentFlatTable {
 
  /// the first word of the place i of T, read with acquire, 0 if its group
  /// is not in use
- [[nodiscard]] std::uint64_t wordAt( const Table & T ,
-                                     std::size_t i ) const;
+ [[nodiscard]] std::uint64_t wordAt( const Table & T , std::size_t i ) const;
 
  /// whether the word w is reached from its place in T without a free
  /// place in between
  [[nodiscard]] bool reached( const Table & T , std::size_t i ) const;
 
- std::unique_ptr< Stripe[] > f_S;         ///< the counters of the threads
- std::atomic< bool > f_grow{ false };     ///< the flag of a growth
- std::atomic< Table * > f_table{ nullptr };   ///< the vector in use
+ std::unique_ptr< Stripe[] > f_S;            ///< the counters of the threads
+ std::atomic< bool > f_grow{ false };        ///< the flag of a growth
+ std::atomic< Table * > f_table{ nullptr };  ///< the vector in use
  std::vector< std::unique_ptr< Table > > f_old;  ///< the vectors replaced
- std::unique_ptr< Table > f_cur;          ///< the vector in use, owned
+ std::unique_ptr< Table > f_cur;                 ///< the vector in use, owned
  /// the pair of the key of zero bytes: in the first word if packed, in
  /// both with 1 in the first if inlined
  alignas( 16 ) std::atomic< std::uint64_t > f_zero[ 2 ];
- std::atomic< Node * > f_seg[ kSegs ];    ///< the segments of the nodes
+ std::atomic< Node * > f_seg[ kSegs ];        ///< the segments of the nodes
  std::atomic< std::uint64_t > f_nodes{ 0 };   ///< the nodes reserved
- std::atomic< std::uint64_t > f_id;       ///< the identity of the nodes
+ std::atomic< std::uint64_t > f_id;           ///< the identity of the nodes
  std::atomic< std::size_t > f_rehashes{ 0 };  ///< the growths
  /// the epoch, with EpochClear
- ADS_NO_UNIQUE_ADDRESS std::conditional_t< epochs , Stamp , NoStamps >
-  f_epoch{};
+ ADS_NO_UNIQUE_ADDRESS std::conditional_t< epochs , Stamp ,
+					   NoStamps > f_epoch{};
  H f_h;
  Eq f_eq;
 
@@ -792,7 +801,7 @@ class ConcurrentFlatTable {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ConcurrentFlatTable.h included */
+#endif /* ConcurrentFlatTable.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File ConcurrentFlatTable.h --------------------*/

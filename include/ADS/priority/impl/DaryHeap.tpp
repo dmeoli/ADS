@@ -17,13 +17,13 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class Better , unsigned D , bool BottomUp >
 DaryHeap< T , Better , D , BottomUp >::DaryHeap( Better better )
- : f_better( std::move( better ) )
-{
- }
+    : f_better( std::move( better ) )
+{ }
 
 template< class T , class Better , unsigned D , bool BottomUp >
 inline void DaryHeap< T , Better , D , BottomUp >::push( const T & x )
@@ -31,10 +31,10 @@ inline void DaryHeap< T , Better , D , BottomUp >::push( const T & x )
  const std::size_t i = f_A.size();
  const std::size_t p = i > 0 ? ( i - 1 ) / D : 0;
  if( ( i == 0 ) || ! f_better( x , f_A[ p ] ) )
-  f_A.push_back( x );                       // x stays at the bottom
- else {                                     // the parent opens the place
-  T z = x;                                  // x may live in f_A, which
-  T y = std::move( f_A[ p ] );              // may move as it grows
+  f_A.push_back( x );           // x stays at the bottom
+ else {                         // the parent opens the place
+  T z = x;                      // x may live in f_A, which
+  T y = std::move( f_A[ p ] );  // may move as it grows
   f_A.push_back( std::move( y ) );
   up( p , std::move( z ) );
   }
@@ -70,9 +70,9 @@ inline void DaryHeap< T , Better , D , BottomUp >::bottomUp( T x )
 {
  const std::size_t n = f_A.size();
  std::size_t i = 0;
- for( ; ; ) {                               // the hole down to a leaf by
-  const std::size_t c = D * i + 1;          // the best children, with no
-  if( c >= n )                              // comparison with x
+ for( ; ; ) {                        // the hole down to a leaf by
+  const std::size_t c = D * i + 1;  // the best children, with no
+  if( c >= n )                      // comparison with x
    break;
   std::size_t b = c;
   const std::size_t last = c + D < n ? c + D : n;
@@ -82,7 +82,7 @@ inline void DaryHeap< T , Better , D , BottomUp >::bottomUp( T x )
   f_A[ i ] = std::move( f_A[ b ] );
   i = b;
   }
- up( i , std::move( x ) );                  // and x up from there
+ up( i , std::move( x ) );  // and x up from there
  }
 
 template< class T , class Better , unsigned D , bool BottomUp >
@@ -116,8 +116,8 @@ const T * DaryHeap< T , Better , D , BottomUp >::secondTop( void ) const
  }
 
 template< class T , class Better , unsigned D , bool BottomUp >
-std::vector< T > DaryHeap< T , Better , D , BottomUp >::smallest(
-                                                       std::size_t k ) const
+std::vector< T >
+DaryHeap< T , Better , D , BottomUp >::smallest( std::size_t k ) const
 {
  std::vector< T > S;
  const std::size_t n = f_A.size();
@@ -173,7 +173,7 @@ void DaryHeap< T , Better , D , BottomUp >::assign( I first , S last )
  std::vector< T , HugePageAllocator< T > > A( f_A.get_allocator() );
  for( ; first != last ; ++first )
   A.push_back( *first );
- f_A.swap( A );                             // nothing thrown from here on
+ f_A.swap( A );  // nothing thrown from here on
  const std::size_t n = f_A.size();
  if( n > 1 )
   for( std::size_t i = ( n - 2 ) / D + 1 ; i-- > 0 ; ) {
@@ -204,7 +204,7 @@ inline void DaryHeap< T , Better , D , BottomUp >::down( std::size_t i , T x )
   const std::size_t c = D * i + 1;
   if( c >= n )
    break;
-  std::size_t b = c;                        // the best child
+  std::size_t b = c;  // the best child
   const std::size_t last = c + D < n ? c + D : n;
   for( std::size_t k = c + 1 ; k < last ; ++k )
    if( f_better( f_A[ k ] , f_A[ b ] ) )
@@ -221,7 +221,7 @@ template< class T , class Better , unsigned D , bool BottomUp >
 bool DaryHeap< T , Better , D , BottomUp >::ordered( void ) const
 {
  const std::size_t n = f_A.size();
- if( n > 1024 ) {                           // the root and the last item
+ if( n > 1024 ) {  // the root and the last item
   for( std::size_t i = 1 ; ( i <= D ) && ( i < n ) ; ++i )
    if( f_better( f_A[ i ] , f_A[ 0 ] ) )
     return( false );

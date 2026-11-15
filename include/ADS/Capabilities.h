@@ -73,7 +73,7 @@
 
 #ifndef __ADS_Capabilities
  #define __ADS_Capabilities
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -95,12 +95,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
-namespace mod {
+namespace mod
+{
 
 /// a list of types, the events of a structure [see `Modification.h`]
-template< class ... E >
+template< class... E >
 struct list;
 
 }  // end( namespace mod )
@@ -110,7 +112,8 @@ struct list;
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 template< class S >
 constexpr auto key_of( void )
@@ -126,24 +129,28 @@ constexpr auto key_of( void )
  }
 
 template< class S >
-struct modifications_of {
+struct modifications_of
+{
  using type = mod::list<>;
  };
 
 template< class S >
  requires requires { typename S::modifications; }
-struct modifications_of< S > {
+struct modifications_of< S >
+{
  using type = typename S::modifications;
  };
 
 template< class Q >
-struct priority_of {
+struct priority_of
+{
  using type = queue_item_t< Q >;
  };
 
 template< class Q >
  requires requires { typename Q::Priority; }
-struct priority_of< Q > {
+struct priority_of< Q >
+{
  using type = typename Q::Priority;
  };
 
@@ -212,17 +219,19 @@ concept declares_monotone = requires {
 
 /// the base of the tags of the queries that a wrapper forwards to what it
 /// wraps
-struct forwarding_query {};
+struct forwarding_query
+{ };
 
 /// a tag of a forwarded query
 template< class T >
-concept forwarding_query_tag = std::derived_from< T , forwarding_query > &&
-                               std::is_empty_v< T >;
+concept forwarding_query_tag =
+  std::derived_from< T , forwarding_query > && std::is_empty_v< T >;
 
 /// the query of whether the items keep their addresses; by default
 /// `enable_stable_references< S >`, and both structures of a composition
 /// must have them
-struct stable_references_t : forwarding_query {
+struct stable_references_t : forwarding_query
+{
  /// the answer of a structure that does not give one
  template< class S >
  static constexpr bool fallback( void ) {
@@ -235,10 +244,13 @@ struct stable_references_t : forwarding_query {
 /// the query of whether reads may run with other reads and with writes
 /// from other threads; false by default, and both structures of a
 /// composition must allow them
-struct thread_safe_reads_t : forwarding_query {
+struct thread_safe_reads_t : forwarding_query
+{
  /// the answer of a structure that does not give one
  template< class S >
- static constexpr bool fallback( void ) { return( false ); }
+ static constexpr bool fallback( void ) {
+  return( false );
+  }
  /// the answer of the composition of two structures
  static constexpr bool meet( bool a , bool b ) { return( a && b ); }
  };
@@ -249,7 +261,8 @@ enum class complexity { constant , logarithmic , linear };
 /// the query of the time of `rank()`, so that an \f$ O( n ) \f$ rank is
 /// not taken for an \f$ O( 1 ) \f$ one; linear by default, the worse of
 /// the two in a composition
-struct rank_complexity_t : forwarding_query {
+struct rank_complexity_t : forwarding_query
+{
  /// the answer of a structure that does not give one
  template< class S >
  static constexpr complexity fallback( void ) {
@@ -264,7 +277,8 @@ struct rank_complexity_t : forwarding_query {
 /// the query of the events of a structure, as `std::type_identity` of a
 /// `mod::list`; by default `modifications_of< S >`, and with no meet: a
 /// composition emits the events it declares
-struct event_set_t : forwarding_query {
+struct event_set_t : forwarding_query
+{
  /// the answer of a structure that does not give one
  template< class S >
  static constexpr auto fallback( void ) {
@@ -279,7 +293,8 @@ inline constexpr rank_complexity_t rank_complexity{};
 inline constexpr event_set_t event_set{};
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 template< class S , class T >
 constexpr auto query_of( void )
@@ -296,8 +311,8 @@ constexpr auto query_of( void )
 /// the answer of `S` to the query `T`, at compile time: the static
 /// `S::query( T() )` if it has one, `T::fallback< S >()` otherwise
 template< class S , forwarding_query_tag T >
-inline constexpr auto query_v = detail::query_of< std::remove_cvref_t< S > ,
-                                                  T >();
+inline constexpr auto query_v =
+  detail::query_of< std::remove_cvref_t< S > , T >();
 
 /// whether the query `T` composes two answers
 template< class T >
@@ -307,13 +322,15 @@ concept meetable_query = forwarding_query_tag< T > && requires {
 
 /// the answer of the composition of `A` and `B` to the query `T`
 template< class A , class B , meetable_query T >
-inline constexpr auto query_meet_v = T::meet( query_v< A , T > ,
-                                              query_v< B , T > );
+inline constexpr auto query_meet_v =
+  T::meet( query_v< A , T > , query_v< B , T > );
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
-struct Query {
+struct Query
+{
  template< class S , forwarding_query_tag T >
  constexpr auto operator()( const S & , T ) const noexcept {
   return( query_v< S , T > );
@@ -332,13 +349,15 @@ inline constexpr detail::Query query{};
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
-void reserve( void ) = delete;          // the free ones, only by ADL
+void reserve( void ) = delete;  // the free ones, only by ADL
 void prefetch( void ) = delete;
 void insert_bulk( void ) = delete;
 
-struct Reserve {
+struct Reserve
+{
  template< class S >
  constexpr void operator()( S & s , std::size_t n ) const {
   if constexpr( requires { s.reserve( n ); } )
@@ -348,7 +367,8 @@ struct Reserve {
   }
  };
 
-struct Prefetch {
+struct Prefetch
+{
  template< class S , class K >
  constexpr void operator()( const S & s , const K & k ) const {
   if constexpr( requires { s.prefetch( k ); } )
@@ -359,21 +379,21 @@ struct Prefetch {
  };
 
 template< class S , class R >
-concept member_bulk = requires( S & s , R && r ) {
- s.insert_bulk( std::forward< R >( r ) );
- };
+concept member_bulk =
+  requires( S & s , R && r )
+{ s.insert_bulk( std::forward< R >( r ) ); };
 template< class S , class R >
-concept free_bulk = requires( S & s , R && r ) {
- insert_bulk( s , std::forward< R >( r ) );
- };
+concept free_bulk =
+  requires( S & s , R && r )
+{ insert_bulk( s , std::forward< R >( r ) ); };
 template< class S , class R >
-concept one_by_one = std::ranges::input_range< R > &&
-                     requires( S & s ,
-                               std::ranges::range_reference_t< R > x ) {
- s.insert( x );
- };
+concept one_by_one =
+  std::ranges::input_range< R > &&
+  requires( S & s , std::ranges::range_reference_t< R > x )
+{ s.insert( x ); };
 
-struct InsertBulk {
+struct InsertBulk
+{
  template< class S , class R >
   requires( member_bulk< S , R > || free_bulk< S , R > || one_by_one< S , R > )
  constexpr void operator()( S & s , R && r ) const {
@@ -410,37 +430,39 @@ inline constexpr detail::InsertBulk insert_bulk{};
 
 /// `insert_bulk( r )` of the range \f$ r \f$ of items as one operation (the
 /// generic insertion of a range, the event `BulkInserted`)
-template< class S ,
-          class R = std::span< const key_type_t< S > > >
-concept bulk_insertable = requires( S & s , R r ) { s.insert_bulk( r ); };
+template< class S , class R = std::span< const key_type_t< S > > >
+concept bulk_insertable = requires( S & s , R r )
+{ s.insert_bulk( r ); };
 
 /// `erase_bulk( r )` of the range \f$ r \f$ of keys as one operation (the
 /// event `BulkErased`)
-template< class S ,
-          class R = std::span< const key_type_t< S > > >
-concept bulk_erasable = requires( S & s , R r ) { s.erase_bulk( r ); };
+template< class S , class R = std::span< const key_type_t< S > > >
+concept bulk_erasable = requires( S & s , R r )
+{ s.erase_bulk( r ); };
 
 /// `std::move( s ).split( k )`, the keys before \f$ k \f$, its value and the
 /// keys after it (the set operations of Blelloch, Ferizovic and Sun, the
 /// cut of a batch)
 template< class S >
-concept splittable = requires( S && s , const key_type_t< S > & k ) {
- std::move( s ).split( k );
- };
+concept splittable =
+  requires( S && s , const key_type_t< S > & k )
+{ std::move( s ).split( k ); };
 
 /// `S::join2( l , r )`, the tree of the keys of \f$ l \f$ and of
 /// \f$ r \f$ when those of \f$ l \f$ are smaller (the union of Blelloch,
 /// Ferizovic and Sun in \f$ O( m \log( n / m + 1 ) ) \f$, the link of a
 /// batch)
 template< class S >
-concept joinable = requires( S && l , S && r ) {
+concept joinable = requires( S && l , S && r )
+{
  { S::join2( std::move( l ) , std::move( r ) ) } -> std::same_as< S >;
  };
 
 /// `rank( k )`, the number of keys smaller than \f$ k \f$ (the order
 /// statistics); its time is the query `rank_complexity_t`
 template< class S , class K = key_type_t< S > >
-concept rankable = requires( const S & s , const K & k ) {
+concept rankable = requires( const S & s , const K & k )
+{
  { s.rank( k ) } -> std::convertible_to< std::size_t >;
  };
 
@@ -449,41 +471,46 @@ concept rankable = requires( const S & s , const K & k ) {
 /// values of `G` satisfies the monotone predicate \f$ p \f$
 template< class S , class G = void >
 concept selectable =
- ( std::is_void_v< G > &&
-   requires( const S & s , std::size_t i ) { s.select( i ); } ) ||
- ( ! std::is_void_v< G > &&
-   requires( const S & s , bool ( *p )( const typename G::Value & ) ) {
-    s.augSelect( p );
-    } );
+  ( std::is_void_v< G > &&
+    requires( const S & s , std::size_t i )
+{ s.select( i ); } ) ||
+  ( ! std::is_void_v< G > &&
+    requires( const S & s , bool ( *p )( const typename G::Value & ) )
+{
+     s.augSelect( p );
+     } );
 
 /// `prefetch( k )`, a hint that \f$ k \f$ (a key or its hash) is looked up
 /// next (a batch of lookups by group prefetching)
 template< class S , class K = key_type_t< S > >
-concept prefetchable = requires( const S & s , const K & k ) {
- s.prefetch( k );
- };
+concept prefetchable =
+  requires( const S & s , const K & k )
+{ s.prefetch( k ); };
 
 /// `reserve( n )`, room for \f$ n \f$ items (the builders)
 template< class S >
-concept reservable = requires( S & s , std::size_t n ) { s.reserve( n ); };
+concept reservable = requires( S & s , std::size_t n )
+{ s.reserve( n ); };
 
 /// `augRange( lo , hi )`, the values of the augmentation `G` of the keys
 /// in \f$ [ \mathit{lo} , \mathit{hi} ] \f$ combined, kept by the
 /// structure as `S::Augmented` (the aggregates of a range without a scan)
 template< class S , class G >
 concept augmented_by = std::same_as< typename S::Augmented , G > &&
-                       requires( const S & s , const key_type_t< S > & k ) {
- { s.augRange( k , k ) } -> std::convertible_to< typename G::Value >;
- };
+		       requires( const S & s , const key_type_t< S > & k )
+{
+			{
+			 s.augRange( k , k )
+			 } -> std::convertible_to< typename G::Value >;
+		        };
 
 /// `applyRange( lo , hi , a )`, the action \f$ a \f$ applied to every value
 /// of the keys in \f$ [ \mathit{lo} , \mathit{hi} ] \f$ in
 /// \f$ O( \log n ) \f$ by a lazy tag (the lazy updates of a range)
 template< class S , class A >
-concept range_actionable = requires( S & s , const key_type_t< S > & k ,
-                                     const A & a ) {
- s.applyRange( k , k , a );
- };
+concept range_actionable = requires(
+  S & s , const key_type_t< S > & k , const A & a )
+{ s.applyRange( k , k , a ); };
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- THE CAPABILITIES OF QUEUES -----------------------*/
@@ -518,10 +545,11 @@ template< class Q >
 constexpr decrease_key_kind decrease_key_of( void )
 {
  if constexpr( requires { Q::decrease_key; } )
-  return( Q::decrease_key );                         // the opt-in wins
+  return( Q::decrease_key );  // the opt-in wins
  else if constexpr( requires( Q & q , typename Q::Handle h ,
-                              const typename Q::Priority & p ) {
-                     q.decrease( h , p ); } )
+			      const typename Q::Priority & p ) {
+		     q.decrease( h , p );
+		     } )
   return( decrease_key_kind::native );
  else if constexpr( PriorityQueue< Q > )
   return( decrease_key_kind::lazy );
@@ -533,49 +561,54 @@ constexpr decrease_key_kind decrease_key_of( void )
 /// `erase( h )` on its handles as well (the open lists whose priorities
 /// rise, the native decrease-key)
 template< class Q >
-concept addressable = AddressablePriorityQueue< Q > &&
-                      requires( Q & q , typename Q::Handle h ,
-                                const typename Q::Priority & p ) {
- q.increase( h , p );
- q.erase( h );
- };
+concept addressable =
+  AddressablePriorityQueue< Q > &&
+  requires( Q & q , typename Q::Handle h , const typename Q::Priority & p )
+{
+   q.increase( h , p );
+   q.erase( h );
+   };
 
 /// `update( id )`, the key of the item \f$ \mathit{id} \f$ read again from
 /// the table the queue observes (the queue of the open nodes as an observer
 /// of the node table, in the form of LaB-PQ)
 template< class Q >
-concept observes_values = requires( Q & q , int id ) { q.update( id ); };
+concept observes_values = requires( Q & q , int id )
+{ q.update( id ); };
 
 /// `extract( theta , out )`, every item of priority at most
 /// \f$ \theta \f$ moved to `out` at once (the stepping algorithms, the
 /// bulk-synchronous search)
 template< class Q >
 concept batch_extract = requires( Q & q , const priority_t< Q > & theta ,
-                                  std::vector< queue_item_t< Q > > & out ) {
+				  std::vector< queue_item_t< Q > > & out )
+{
  q.extract( theta , out );
  };
 
 /// `shift_all( delta )`, every key moved by \f$ \delta \f$ in
 /// \f$ O( 1 ) \f$ (D* Lite, Generalized Adaptive A*)
 template< class Q >
-concept shiftable_keys = requires( Q & q , const priority_t< Q > & d ) {
- q.shift_all( d );
- };
+concept shiftable_keys =
+  requires( Q & q , const priority_t< Q > & d )
+{ q.shift_all( d ); };
 
 /// a queue whose extractions never decrease, with `rebase()`, which lets
 /// the next episode start below the last key extracted (the radix and Dial
 /// queues between the episodes of a search)
 template< class Q >
-concept monotone_extract = PriorityQueue< Q > &&
-                           requires( Q & q , const priority_t< Q > & k ) {
- q.rebase( k );
- };
+concept monotone_extract =
+  PriorityQueue< Q > &&
+  requires( Q & q , const priority_t< Q > & k )
+{ q.rebase( k ); };
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
 template< class Q >
-struct same_key {
+struct same_key
+{
  const priority_t< Q > & operator()( const queue_item_t< Q > & ) const;
  };
 
@@ -585,7 +618,8 @@ struct same_key {
 /// `rekey( f )`, the key of each item recomputed by \f$ f \f$ and the
 /// order rebuilt in \f$ O( n ) \f$ (the change of the key function)
 template< class Q , class F = detail::same_key< Q > >
-concept rekeyable = requires( Q & q , F f ) { q.rekey( f ); };
+concept rekeyable = requires( Q & q , F f )
+{ q.rekey( f ); };
 
 /*--------------------------------------------------------------------------*/
 /*-------------------- THE CAPABILITIES OF NODE TABLES ---------------------*/
@@ -594,15 +628,16 @@ concept rekeyable = requires( Q & q , F f ) { q.rekey( f ); };
 /// `erase( k )` of a key (the node tables that reuse their places within an
 /// episode)
 template< class T >
-concept erasable = requires( T & t , const key_type_t< T > & k ) {
- t.erase( k );
- };
+concept erasable =
+  requires( T & t , const key_type_t< T > & k )
+{ t.erase( k ); };
 
 /// `clear()` in \f$ O( 1 ) \f$ by epochs: a policy of `clear()`, `T::Clear`,
 /// that stamps the places, and `epoch()` (the node tables of a sequence of
 /// searches)
 template< class T >
-concept epoch_clearable = requires( T & t , const T & ct ) {
+concept epoch_clearable = requires( T & t , const T & ct )
+{
  typename T::Clear::Stamp;
  t.clear();
  { ct.epoch() } -> std::convertible_to< std::uint64_t >;
@@ -615,23 +650,27 @@ concept epoch_clearable = requires( T & t , const T & ct ) {
 /// `checkpoint()` and `rollback( t )` back to a checkpoint (a speculative
 /// change, a batch that exits by an exception)
 template< class S >
-concept undoable = requires( S & s ) { s.rollback( s.checkpoint() ); };
+concept undoable = requires( S & s )
+{ s.rollback( s.checkpoint() ); };
 
 /// `snapshot()`, a view of the present state in \f$ O( 1 ) \f$ which later
 /// changes do not touch (the audits, a persistent structure)
 template< class S >
-concept snapshotable = requires( const S & s ) { s.snapshot(); };
+concept snapshotable = requires( const S & s )
+{ s.snapshot(); };
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- THE CAPABILITIES OF GRAPHS -----------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// \cond
-namespace detail {
+namespace detail
+{
 
-struct any_arc {
- template< class ... A >
- void operator()( A && ... ) const;
+struct any_arc
+{
+ template< class... A >
+ void operator()( A &&... ) const;
  };
 
 }  // end( namespace detail )
@@ -640,27 +679,29 @@ struct any_arc {
 /// `forEachIn( v , f )`, the arcs entering \f$ v \f$ (the observers that
 /// repair a tree from the heads of the arcs that changed)
 template< class G >
-concept in_arcs = requires( const G & g , int v , detail::any_arc f ) {
- g.forEachIn( v , f );
- };
+concept in_arcs =
+  requires( const G & g , int v , detail::any_arc f )
+{ g.forEachIn( v , f ); };
 
 /// `arcId( u , v )`, an id of the arc that does not change while the arc
 /// is in the graph (the observers that keep their data by arc)
 template< class G >
-concept stable_edge_ids = requires( const G & g , int u ) {
+concept stable_edge_ids = requires( const G & g , int u )
+{
  { g.arcId( u , u ) } -> std::convertible_to< std::size_t >;
  };
 
 /// `batch()`, a group of changes told as one (the observers of a batch of
 /// changes)
 template< class G >
-concept batch_updatable = requires( G & g ) { g.batch(); };
+concept batch_updatable = requires( G & g )
+{ g.batch(); };
 
 }  // end( namespace ADS )
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Capabilities.h included */
+#endif /* Capabilities.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File Capabilities.h -------------------------*/

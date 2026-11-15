@@ -54,7 +54,7 @@
 
 #ifndef __ADS_FastBitwise
  #define __ADS_FastBitwise
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -76,7 +76,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the 1 bits of the \f$ n \f$ words from \f$ w \f$
 ///
@@ -110,8 +111,7 @@ namespace ADS {
 ///      \nu( w_i ) \text{ on the words left}
 /// \end{array}}
 /// \f]
-[[nodiscard]] inline std::uint64_t popcount( const Word * w ,
-                                             std::size_t n );
+[[nodiscard]] inline std::uint64_t popcount( const Word * w , std::size_t n );
 
 /// the 1 bits of the \f$ n \f$ words of \f$ a \,\&\, b \f$
 ///
@@ -125,8 +125,8 @@ namespace ADS {
 /// \end{array}}
 /// \f]
 [[nodiscard]] inline std::uint64_t popcountAnd( const Word * a ,
-                                                const Word * b ,
-                                                std::size_t n );
+						const Word * b ,
+						std::size_t n );
 
 /// the low bits of \f$ x \f$ to the places of the 1 bits of `mask`, in order
 ///
@@ -229,7 +229,7 @@ mortonDecode( Word z );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FastBitwise.h included */
+#endif /* FastBitwise.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File FastBitwise.h --------------------------*/

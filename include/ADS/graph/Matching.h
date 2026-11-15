@@ -105,7 +105,7 @@
 
 #ifndef __ADS_Matching
  #define __ADS_Matching
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -127,7 +127,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------- FUNCTIONS --------------------------------*/
@@ -160,10 +161,10 @@ namespace ADS {
 ///      place per node on the left and `capR` \f$ \mathit{nr} \f$, all of them
 ///      \f$ \ge 0 \f$
 /// \post the pairs are edges, within the capacities of their ends (audit)
-inline std::vector< std::pair< int , int > > bipartiteBMatching(
-                      const std::vector< std::vector< int > > & A , int nr ,
-                      const std::vector< long long > & capL ,
-                      const std::vector< long long > & capR );
+inline std::vector< std::pair< int , int > >
+bipartiteBMatching( const std::vector< std::vector< int > > & A , int nr ,
+		    const std::vector< long long > & capL ,
+		    const std::vector< long long > & capR );
 
 /// the mate of each node in a matching of largest size of the unoriented
 /// graph \f$ g \f$, `NIL` for a node left unmatched and for a name that is
@@ -296,10 +297,11 @@ std::vector< int > maxCardinalityMatching( const G & g );
 ///       dual of a blossom nonnegative, the matched edges tight, the
 ///       blossoms of positive dual full and the free nodes of dual 0 (audit)
 template< class W >
-requires std::is_arithmetic_v< W > && std::is_signed_v< W >
-std::pair< W , std::vector< std::size_t > > maxWeightMatching( int n ,
-                     const std::vector< std::tuple< int , int , W > > & E ,
-                     bool maxCardinality = false );
+ requires std::is_arithmetic_v< W > && std::is_signed_v< W >
+std::pair< W , std::vector< std::size_t > >
+maxWeightMatching( int n ,
+		   const std::vector< std::tuple< int , int , W > > & E ,
+		   bool maxCardinality = false );
 
 /// the largest total weight of a matching of the graph of \f$ n \f$ nodes
 /// and of the edges \f$ E = ( u , v , w ) \f$ by a branch and bound, and
@@ -333,8 +335,9 @@ std::pair< W , std::vector< std::size_t > > maxWeightMatching( int n ,
 ///      \f$ [ 0 , n ) \f$
 /// \post no two edges given have an end in common (audit)
 template< class W >
-std::pair< W , std::vector< std::size_t > > branchAndBoundMatching( int n ,
-                     const std::vector< std::tuple< int , int , W > > & E );
+std::pair< W , std::vector< std::size_t > >
+branchAndBoundMatching( int n ,
+			const std::vector< std::tuple< int , int , W > > & E );
 
 /*--------------------------------------------------------------------------*/
 
@@ -348,7 +351,7 @@ std::pair< W , std::vector< std::size_t > > branchAndBoundMatching( int n ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* Matching.h included */
+#endif /* Matching.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File Matching.h ---------------------------*/

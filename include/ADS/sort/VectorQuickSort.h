@@ -154,7 +154,7 @@
 
 #ifndef __ADS_VectorQuickSort
  #define __ADS_VectorQuickSort
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -176,8 +176,7 @@
 #include <vector>
 
 #ifndef ADS_VECTOR_SORT
- #if defined( __GNUC__ ) && ( defined( __AVX512F__ ) || \
-                              defined( __AVX2__ ) )
+ #if defined( __GNUC__ ) && ( defined( __AVX512F__ ) || defined( __AVX2__ ) )
   /// 1 if the sort uses the vector registers (AVX-512 or AVX2, with GCC or
   /// Clang), 0 if the portable code; it may be set to 0 before the include
   #define ADS_VECTOR_SORT 1
@@ -196,7 +195,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// true if `vectorQuickSort()` runs in vector registers (AVX-512 or AVX2),
 /// false if in the arrays of the portable code
@@ -205,10 +205,10 @@ inline constexpr bool kVectorSort = ADS_VECTOR_SORT != 0;
 /// the types that `vectorQuickSort()` sorts: integers and floating point
 /// numbers of 32 or 64 bits
 template< class T >
-concept VectorKey = ( std::is_integral_v< T > ||
-                      std::is_floating_point_v< T > ) &&
-                    ( ( sizeof( T ) == 4 ) || ( sizeof( T ) == 8 ) ) &&
-                    ( ! std::is_same_v< T , bool > );
+concept VectorKey =
+  ( std::is_integral_v< T > || std::is_floating_point_v< T > ) &&
+  ( ( sizeof( T ) == 4 ) || ( sizeof( T ) == 8 ) ) &&
+  ( ! std::is_same_v< T , bool > );
 
 /// the quicksort of \f$ A \f$ in the lanes of the vector registers, by the
 /// natural order (the total order of IEEE 754 for floating point numbers)
@@ -267,7 +267,7 @@ void vectorQuickSort( T * a , std::size_t n );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* VectorQuickSort.h included */
+#endif /* VectorQuickSort.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File VectorQuickSort.h -----------------------*/

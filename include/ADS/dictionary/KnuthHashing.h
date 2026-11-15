@@ -47,7 +47,7 @@
 
 #ifndef __ADS_KnuthHashing
  #define __ADS_KnuthHashing
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -66,7 +66,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS CoalescedHashTable ------------------------*/
@@ -74,15 +75,15 @@ namespace ADS {
 
 /// a hash table with coalesced lists in the table and a cellar
 template< class K , class V , class H = std::hash< K > >
-class CoalescedHashTable {
+class CoalescedHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a table of \f$ m \f$ places addressed by the hash and of `cellar` more
  /// \pre \f$ m \ge 1 \f$
  explicit CoalescedHashTable( std::size_t m , std::size_t cellar = 0 ,
-                              H h = H() );
+			      H h = H() );
 
  /// the value of the key \f$ k \f$, or nothing, along the list of the
  /// place \f$ h( k ) \bmod m \f$
@@ -127,7 +128,8 @@ class CoalescedHashTable {
  // places (the cellar last), bidirectional
 
  /// the places of the table, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
   /// whether the place \f$ i \f$ holds a key
@@ -136,8 +138,8 @@ class CoalescedHashTable {
    }
   /// the pair of the place \f$ i \f$
   static auto read( const auto & o , std::size_t i ) {
-   return( std::pair< const K & , const V & >( o.f_T[ i ].key ,
-                                              o.f_T[ i ].value ) );
+   return(
+     std::pair< const K & , const V & >( o.f_T[ i ].key , o.f_T[ i ].value ) );
    }
   };
 
@@ -171,23 +173,23 @@ class CoalescedHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- struct Slot {
-  bool used = false;             ///< whether the place holds a key
-  K key{};                       ///< the key
-  V value{};                     ///< its value
-  long link = -1;                ///< the next place on the list, or -1
+ struct Slot
+ {
+  bool used = false;  ///< whether the place holds a key
+  K key{};            ///< the key
+  V value{};          ///< its value
+  long link = -1;     ///< the next place on the list, or -1
   };
 
  /// each key is on the list of its place, \f$ O( n^2 ) \f$
  [[nodiscard]] bool listed( void ) const;
 
- std::vector< Slot > f_T;        ///< the m places and the cellar
- std::size_t f_m;                ///< the places addressed by the hash
- long f_free;                    ///< the empty places are below it
- std::size_t f_size = 0;         ///< the number of keys
- mutable std::size_t f_probes = 0;   ///< the places of the last operation
- H f_h;                          ///< the hash function
+ std::vector< Slot > f_T;           ///< the m places and the cellar
+ std::size_t f_m;                   ///< the places addressed by the hash
+ long f_free;                       ///< the empty places are below it
+ std::size_t f_size = 0;            ///< the number of keys
+ mutable std::size_t f_probes = 0;  ///< the places of the last operation
+ H f_h;                             ///< the hash function
 
  };  // end( class CoalescedHashTable )
 
@@ -197,11 +199,11 @@ class CoalescedHashTable {
 
 /// a hash table with double hashing and the insertion of Brent
 template< class K , class V , class H = std::hash< K > >
-class BrentHashTable {
+class BrentHashTable
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// a table of \f$ m \f$ places
  /// \pre \f$ m \ge 2 \f$ is prime
  explicit BrentHashTable( std::size_t m , H h = H() );
@@ -252,7 +254,8 @@ class BrentHashTable {
  // places, bidirectional; an insertion may move the pairs
 
  /// the places of the table, for `SlotIterator`
- struct Places {
+ struct Places
+ {
   /// the number of places
   static std::size_t size( const auto & o ) { return( o.f_T.size() ); }
   /// whether the place \f$ i \f$ holds a key
@@ -260,7 +263,7 @@ class BrentHashTable {
    return( o.f_T[ i ].has_value() );
    }
   /// the pair of the place \f$ i \f$
- static const std::pair< K , V > & read( const auto & o , std::size_t i ) {
+  static const std::pair< K , V > & read( const auto & o , std::size_t i ) {
    return( *o.f_T[ i ] );
    }
   };
@@ -295,15 +298,14 @@ class BrentHashTable {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the place \f$ i \f$ of the inspection of \f$ k \f$, by double hashing
  [[nodiscard]] std::size_t at( const K & k , std::size_t i ) const;
 
  /// the places
-std::vector< std::optional< std::pair< K , V > > > f_T;
- std::size_t f_size = 0;         ///< the number of keys
- mutable std::size_t f_probes = 0;   ///< the places of the last operation
- H f_h;                          ///< the hash function
+ std::vector< std::optional< std::pair< K , V > > > f_T;
+ std::size_t f_size = 0;            ///< the number of keys
+ mutable std::size_t f_probes = 0;  ///< the places of the last operation
+ H f_h;                             ///< the hash function
 
  };  // end( class BrentHashTable )
 
@@ -319,7 +321,7 @@ std::vector< std::optional< std::pair< K , V > > > f_T;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* KnuthHashing.h included */
+#endif /* KnuthHashing.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File KnuthHashing.h -------------------------*/

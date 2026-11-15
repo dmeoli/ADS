@@ -155,7 +155,7 @@
 
 #ifndef __ADS_GrafiteFilter
  #define __ADS_GrafiteFilter
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -176,7 +176,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- CLASS GrafiteFilter ---------------------------*/
@@ -186,11 +187,11 @@ namespace ADS {
 /// false positive probability at most \f$ \ell / 2^{B-2} \f$ for a range of
 /// \f$ \ell \f$ keys, whatever the keys and the range
 template< RadixKey T = std::uint64_t >
-class GrafiteFilter {
+class GrafiteFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the filter of the keys, which may repeat, in \f$ B \f$ bits per key
  ///
  /// In pseudocode (Costa, Ferragina and Vinciguerra, beyond the book), the
@@ -209,7 +210,7 @@ class GrafiteFilter {
  /// \pre \f$ 2 \le B \le 40 \f$ and \f$ n \, 2^{B-2} < 2^{63} \f$
  /// \post every key may be there (an audit)
  explicit GrafiteFilter( const std::vector< T > & keys , int B = 16 ,
-                         std::uint64_t seed = 1 );
+			 std::uint64_t seed = 1 );
 
  /// true if \f$ [ a , b ] \f$ holds a key, and with probability at most
  /// \f$ ( b - a + 1 ) / 2^{B-2} \f$ otherwise
@@ -268,7 +269,6 @@ class GrafiteFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the code \f$ h( x ) \f$ of the word \f$ x \f$
  [[nodiscard]] std::uint64_t code( std::uint64_t x ) const;
 
@@ -276,13 +276,13 @@ class GrafiteFilter {
  /// \f$ [ 0 , r ) \f$
  [[nodiscard]] bool meets( std::uint64_t x , std::uint64_t y ) const;
 
- EliasFano f_codes;                       ///< the codes
- std::uint64_t f_r = 1;                   ///< the reduced universe
- std::uint64_t f_alo = 0 , f_ahi = 0;     ///< \f$ \alpha \f$
- std::uint64_t f_blo = 0 , f_bhi = 0;     ///< \f$ \beta \f$
- std::uint64_t f_first = 0;               ///< the smallest code
- std::size_t f_n = 0;                     ///< the distinct keys
- int f_B;                                 ///< the bits per key
+ EliasFano f_codes;                   ///< the codes
+ std::uint64_t f_r = 1;               ///< the reduced universe
+ std::uint64_t f_alo = 0 , f_ahi = 0;  ///< \f$ \alpha \f$
+ std::uint64_t f_blo = 0 , f_bhi = 0;  ///< \f$ \beta \f$
+ std::uint64_t f_first = 0;           ///< the smallest code
+ std::size_t f_n = 0;                 ///< the distinct keys
+ int f_B;                             ///< the bits per key
 
  };  // end( class GrafiteFilter )
 
@@ -294,11 +294,11 @@ class GrafiteFilter {
 /// buckets of \f$ 2^{64} / ( n \, 2^{B-2} ) \f$ keys that hold a key of the
 /// set, with no bound on the false positives of the queries near a key
 template< RadixKey T = std::uint64_t >
-class BucketingFilter {
+class BucketingFilter
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the filter of the keys, which may repeat, in at most \f$ B \f$ bits per
  /// key
  ///
@@ -346,9 +346,8 @@ class BucketingFilter {
 
 /*--------------------------------------------------------------------------*/
  private:
-
- EliasFano f_buckets;                     ///< the buckets that hold a key
- std::uint64_t f_s = 1;                   ///< the keys of a bucket
+ EliasFano f_buckets;    ///< the buckets that hold a key
+ std::uint64_t f_s = 1;  ///< the keys of a bucket
 
  };  // end( class BucketingFilter )
 
@@ -364,7 +363,7 @@ class BucketingFilter {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* GrafiteFilter.h included */
+#endif /* GrafiteFilter.h included */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File GrafiteFilter.h ------------------------*/

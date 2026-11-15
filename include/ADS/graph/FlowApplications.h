@@ -61,7 +61,7 @@
 
 #ifndef __ADS_FlowApplications
  #define __ADS_FlowApplications
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -82,13 +82,14 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// what `decreaseCapacity()` did
 enum class CapacityDecrease {
- SLACK ,   ///< the edge was not saturated, nothing changed
- CYCLE ,   ///< one unit of a cycle of flow cancelled, the value kept
- PATH      ///< one unit of a path cancelled, then one augmenting path
+ SLACK ,  ///< the edge was not saturated, nothing changed
+ CYCLE ,  ///< one unit of a cycle of flow cancelled, the value kept
+ PATH    ///< one unit of a path cancelled, then one augmenting path
  };
 
 /*--------------------------------------------------------------------------*/
@@ -125,9 +126,9 @@ enum class CapacityDecrease {
 /// \post at most \f$ k \f$ simple paths from \f$ s \f$ to \f$ t \f$ along the
 ///       edges of the graph, no edge used twice (audit)
 template< Graph G >
-std::vector< std::vector< int > > edgeDisjointPaths(
-                  const G & g , int s , int t ,
-                  long long k = std::numeric_limits< long long >::max() );
+std::vector< std::vector< int > >
+edgeDisjointPaths( const G & g , int s , int t ,
+		   long long k = std::numeric_limits< long long >::max() );
 
 /// \f$ c( u , v ) \f$ decreases by 1, and the maximum
 /// flow \f$ f \f$ from \f$ s \f$ to \f$ t \f$ within \f$ c \f$ becomes a
@@ -161,8 +162,9 @@ std::vector< std::vector< int > > edgeDisjointPaths(
 /// \post \f$ f \f$ a maximum flow within the new \f$ c \f$ (audit)
 template< class T >
 CapacityDecrease decreaseCapacity( std::vector< std::vector< T > > & c ,
-                                   std::vector< std::vector< T > > & f ,
-                                   int s , int t , int u , int v );
+				   std::vector< std::vector< T > > & f ,
+				   int s ,
+				   int t , int u , int v );
 
 /*--------------------------------------------------------------------------*/
 
@@ -176,7 +178,7 @@ CapacityDecrease decreaseCapacity( std::vector< std::vector< T > > & c ,
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FlowApplications.h included */
+#endif /* FlowApplications.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File FlowApplications.h -----------------------*/

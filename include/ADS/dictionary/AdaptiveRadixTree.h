@@ -103,7 +103,7 @@
 
 #ifndef __ADS_AdaptiveRadixTree
  #define __ADS_AdaptiveRadixTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -127,7 +127,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS AdaptiveRadixTree -------------------------*/
@@ -136,16 +137,16 @@ namespace ADS {
 /// an ordered map from strings to values of type `V` on an adaptive radix
 /// tree
 template< class V >
-class AdaptiveRadixTree {
+class AdaptiveRadixTree
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
- using Key = std::string;   ///< the type of the keys
- using Value = V;           ///< the type of the values
+ using Key = std::string;  ///< the type of the keys
+ using Value = V;          ///< the type of the values
 
  /// the empty tree
-AdaptiveRadixTree( void ) = default;
+ AdaptiveRadixTree( void ) = default;
 
  /// a copy of `other`
  AdaptiveRadixTree( const AdaptiveRadixTree & o );
@@ -243,72 +244,78 @@ AdaptiveRadixTree( void ) = default;
  void forPrefix( std::string_view p , F && f ) const;
 
  /// the keys that begin with \f$ p \f$, in increasing order
- [[nodiscard]] std::vector< std::string > keysWithPrefix(
-                                                  std::string_view p ) const;
+ [[nodiscard]] std::vector< std::string >
+ keysWithPrefix( std::string_view p ) const;
 
 /*--------------------------------------------------------------------------*/
  private:
-
- static constexpr unsigned MAXP = 8;   ///< the bytes of a prefix kept
+ static constexpr unsigned MAXP = 8;  ///< the bytes of a prefix kept
 
  /// the layout of a node
-enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
+ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
 
  /// a leaf: the value, and the key after it in the same allocation
- struct Leaf {
-  V value;                              ///< the value
-  std::uint32_t len;                    ///< the length of the key
+ struct Leaf
+ {
+  V value;            ///< the value
+  std::uint32_t len;  ///< the length of the key
   /// the key, after the leaf
   [[nodiscard]] const char * key( void ) const {
    return( reinterpret_cast< const char * >( this + 1 ) );
    }
   /// the key as a view
- [[nodiscard]] std::string_view view( void ) const {
+  [[nodiscard]] std::string_view view( void ) const {
    return( std::string_view( key() , len ) );
    }
   };
 
  /// what all the internal nodes begin with
- struct Node {
-  Type type;                            ///< the layout
-  std::uint16_t count = 0;              ///< the children
-  std::uint32_t plen = 0;               ///< the length of the prefix
-  unsigned char prefix[ MAXP ];         ///< its first `MAXP` bytes
-  Leaf * term = nullptr;                ///< the key that ends here
+ struct Node
+ {
+  Type type;                     ///< the layout
+  std::uint16_t count = 0;       ///< the children
+  std::uint32_t plen = 0;        ///< the length of the prefix
+  unsigned char prefix[ MAXP ];  ///< its first `MAXP` bytes
+  Leaf * term = nullptr;         ///< the key that ends here
   /// a node of the layout \f$ t \f$
- explicit Node( Type t ) : type( t ) {}
+  explicit Node( Type t ) : type( t ) { }
   };
 
  /// a node of up to 4 children, by sorted bytes
- struct Node4 : Node {
-  unsigned char key[ 4 ];               ///< the bytes, sorted
-  void * child[ 4 ];                    ///< the children of the bytes
+ struct Node4 : Node
+ {
+  unsigned char key[ 4 ];  ///< the bytes, sorted
+  void * child[ 4 ];       ///< the children of the bytes
   /// the empty node
-  Node4( void ) : Node( N4 ) {}
+  Node4( void ) : Node( N4 ) { }
   };
 
  /// a node of up to 16 children, by sorted bytes compared at once
- struct Node16 : Node {
-  alignas( 16 ) unsigned char key[ 16 ];   ///< the bytes, sorted
-  void * child[ 16 ];                   ///< the children of the bytes
+ struct Node16 : Node
+ {
+  alignas( 16 ) unsigned char key[ 16 ];  ///< the bytes, sorted
+  void * child[ 16 ];                     ///< the children of the bytes
   /// the empty node
-  Node16( void ) : Node( N16 ) {}
+  Node16( void ) : Node( N16 ) { }
   };
 
  /// a node of up to 48 children, by an index of the 256 bytes
- struct Node48 : Node {
-  unsigned char index[ 256 ];           ///< place + 1 of a byte, or 0
-  void * child[ 48 ];                   ///< the children
+ struct Node48 : Node
+ {
+  unsigned char index[ 256 ];  ///< place + 1 of a byte, or 0
+  void * child[ 48 ];          ///< the children
   /// the empty node
   Node48( void ) : Node( N48 ) { std::memset( index , 0 , 256 ); }
   };
 
  /// a node of up to 256 children, the byte being the place
- struct Node256 : Node {
-  void * child[ 256 ];                  ///< the child of each byte
+ struct Node256 : Node
+ {
+  void * child[ 256 ];  ///< the child of each byte
   /// the empty node
   Node256( void ) : Node( N256 ) {
-   for( auto & c : child ) c = nullptr;
+   for( auto & c : child )
+    c = nullptr;
    }
   };
 
@@ -317,21 +324,22 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
   return( reinterpret_cast< std::uintptr_t >( p ) & 1 );
   }
  /// the leaf of a tagged pointer
-[[nodiscard]] static Leaf * asLeaf( const void * p ) {
-  return( reinterpret_cast< Leaf * >( reinterpret_cast< std::uintptr_t >(
-                                       p ) - 1 ) );
+ [[nodiscard]] static Leaf * asLeaf( const void * p ) {
+  return( reinterpret_cast< Leaf * >(
+    reinterpret_cast< std::uintptr_t >( p ) - 1 ) );
   }
  /// the tagged pointer of a leaf, its lowest bit set
-[[nodiscard]] static void * tag( Leaf * l ) {
-  return( reinterpret_cast< void * >( reinterpret_cast< std::uintptr_t >(
-                                       l ) + 1 ) );
+ [[nodiscard]] static void * tag( Leaf * l ) {
+  return( reinterpret_cast< void * >(
+    reinterpret_cast< std::uintptr_t >( l ) + 1 ) );
   }
 
  /// the memory of the leaves: slots of 16 to 512 bytes in steps of 16, a
  /// list of the free slots for each size, cut from blocks that double up
  /// to 2 MB (on huge pages [see HugePageAllocator.h]); larger leaves come
  /// from the allocator
- class Slab {
+ class Slab
+ {
   public:
   /// no block
   Slab( void ) = default;
@@ -350,18 +358,20 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
   void release( void ) noexcept;
   /// exchanges the contents with `other` in \f$ O( 1 ) \f$
   void swap( Slab & o ) noexcept;
+
   private:
   /// the step of the sizes and their number
   static constexpr std::size_t STEP = 16 , CLASSES = 32;
   /// a free slot, linked to the next one of its size
-  struct Free {
-   Free * next;                         ///< the next free slot of its size
+  struct Free
+  {
+   Free * next;  ///< the next free slot of its size
    };
   /// the blocks and their sizes
   std::vector< std::pair< char * , std::size_t > > f_blocks;
-  char * f_cur = nullptr;               ///< the free part of the block
-  char * f_end = nullptr;               ///< the end of the block
-  Free * f_free[ CLASSES + 1 ] = {};    ///< the free slots of each size
+  char * f_cur = nullptr;             ///< the free part of the block
+  char * f_end = nullptr;             ///< the end of the block
+  Free * f_free[ CLASSES + 1 ] = {};  ///< the free slots of each size
   };
 
  [[nodiscard]] Leaf * newLeaf( std::string_view k , const V & v );
@@ -373,28 +383,24 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
 
  void freeNode( Node * n ) noexcept;
 
- [[nodiscard]] static void * const * child( const Node * n ,
-                                            unsigned char c );
+ [[nodiscard]] static void * const * child( const Node * n , unsigned char c );
 
- [[nodiscard]] static void * * child( Node * n , unsigned char c );
+ [[nodiscard]] static void ** child( Node * n , unsigned char c );
 
  [[nodiscard]] static const Leaf * minimum( const void * p );
 
- [[nodiscard]] static std::uint32_t mismatch( const Node * n ,
-                                              std::string_view k ,
-                                              std::size_t d );
+ [[nodiscard]] static std::uint32_t
+ mismatch( const Node * n , std::string_view k , std::size_t d );
 
- void addChild( void * * ref , Node * n , unsigned char c , void * x );
+ void addChild( void ** ref , Node * n , unsigned char c , void * x );
 
  /// the leaf at `*ref`, on the way of \f$ k \f$ down to depth \f$ d \f$, and
  /// a new leaf of \f$ k \f$ under a new node where their keys part
- void split( void * * ref , std::size_t d , std::string_view k ,
-             const V & v );
+ void split( void ** ref , std::size_t d , std::string_view k , const V & v );
 
- void removeChild( void * * ref , Node * n , unsigned char c ,
-                   void * * slot );
+ void removeChild( void ** ref , Node * n , unsigned char c , void ** slot );
 
- void shrink( void * * ref , Node * n );
+ void shrink( void ** ref , Node * n );
 
  [[nodiscard]] const Leaf * search( std::string_view k ) const;
 
@@ -404,7 +410,7 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
  static void ahead( const void * p , unsigned char c );
 
  /// prefetches the children of a `Node4` or of a `Node16`, which a visit
-/// reads
+ /// reads
  /// next
  static void children( const Node * n );
 
@@ -419,19 +425,18 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
  [[nodiscard]] bool valid( void ) const;
 
  [[nodiscard]] bool valid( const void * p , std::string & path ,
-                           std::size_t & leaves , bool root ) const;
+			   std::size_t & leaves , bool root ) const;
 
- void * f_root = nullptr;               ///< a node or a tagged leaf
- std::size_t f_size = 0;                ///< the keys
- ObjectPool< Node4 > f_n4;              ///< the slots of the nodes
+ void * f_root = nullptr;   ///< a node or a tagged leaf
+ std::size_t f_size = 0;    ///< the keys
+ ObjectPool< Node4 > f_n4;  ///< the slots of the nodes
  ObjectPool< Node16 > f_n16;
  ObjectPool< Node48 > f_n48;
  ObjectPool< Node256 > f_n256;
- Slab f_slab;                           ///< the memory of the leaves
+ Slab f_slab;  ///< the memory of the leaves
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
  public:
-
  // a constant view of the pairs ( key , value ) by increasing keys,
  // forward, a stack of the nodes on the way to a leaf
 
@@ -461,7 +466,8 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
 
  /// the iterator on the pairs by increasing keys, by a stack of the nodes
  /// on the way to a leaf
- class const_iterator {
+ class const_iterator
+ {
   public:
   /// the type of the items, for the standard library
   using value_type = std::pair< std::string_view , const V & >;
@@ -488,7 +494,11 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
    return( *this );
    }
   /// to the next leaf, returning the iterator before the step
-  const_iterator operator++( int ) { auto t = *this; ++*this; return( t ); }
+  const_iterator operator++( int ) {
+   auto t = *this;
+   ++*this;
+   return( t );
+   }
 
   /// equal on the same leaf
   bool operator==( const const_iterator & o ) const {
@@ -499,13 +509,14 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
   friend class AdaptiveRadixTree;
 
   /// a node on the way and the next place to look at, -1 for its term
-  struct Frame {
-   const Node * node;                   ///< the node
-   int next;                            ///< the next place
+  struct Frame
+  {
+   const Node * node;  ///< the node
+   int next;           ///< the next place
    };
 
   /// on the first leaf below `root`
- explicit const_iterator( const void * root ) {
+  explicit const_iterator( const void * root ) {
    if( ! root )
     return;
    if( isLeaf( root ) ) {
@@ -519,10 +530,10 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
   /// the next leaf of the walk of the stack \f$ S \f$, nil at its end
   static const Leaf * step( std::vector< Frame > & S );
 
-  std::vector< Frame > f_S;           ///< the nodes on the way
-  const Leaf * f_leaf = nullptr;      ///< the current leaf, or nil
+  std::vector< Frame > f_S;       ///< the nodes on the way
+  const Leaf * f_leaf = nullptr;  ///< the current leaf, or nil
 
- };  // end( class const_iterator )
+  };  // end( class const_iterator )
 
  };  // end( class AdaptiveRadixTree )
 
@@ -538,7 +549,7 @@ enum Type : std::uint8_t { N4 , N16 , N48 , N256 };
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* AdaptiveRadixTree.h included */
+#endif /* AdaptiveRadixTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------- End File AdaptiveRadixTree.h ----------------------*/

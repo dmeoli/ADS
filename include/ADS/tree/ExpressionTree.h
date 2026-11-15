@@ -39,7 +39,7 @@
 
 #ifndef __ADS_ExpressionTree
  #define __ADS_ExpressionTree
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -60,7 +60,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /// the expression tree of the postfix expression \f$ e \f$, whose tokens
 /// are separated by spaces; the caller owns it
@@ -102,7 +103,7 @@ BinaryTree< std::string > * expressionTree( std::string_view e );
 /// \pre \f$ t \f$ is not nil, `env` values each variable, no division by
 ///      0
 double evaluate( const BinaryTree< std::string > * t ,
-                 const std::map< std::string , double > & env = {} );
+		 const std::map< std::string , double > & env = {} );
 
 /// the prefix form of \f$ t \f$, each subtree in parentheses, by a
 /// previsit (section 5.6)
@@ -138,7 +139,7 @@ std::string infixForm( const BinaryTree< std::string > * t );
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* ExpressionTree.h included */
+#endif /* ExpressionTree.h included */
 
 /*--------------------------------------------------------------------------*/
 /*----------------------- End File ExpressionTree.h ------------------------*/

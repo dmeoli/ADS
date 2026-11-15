@@ -82,7 +82,7 @@
 
 #ifndef __ADS_FastHash
  #define __ADS_FastHash
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -105,32 +105,34 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- THE HASH FUNCTIONS ---------------------------*/
 /*--------------------------------------------------------------------------*/
 
 /// the product \f$ a b \f$ on 128 bits, its low and its high half
-struct Product128 {
- std::uint64_t lo ,   ///< the low half, \f$ a b \bmod 2^{64} \f$
-               hi;    ///< the high half, \f$ \lfloor a b / 2^{64} \rfloor \f$
+struct Product128
+{
+ std::uint64_t lo ,  ///< the low half, \f$ a b \bmod 2^{64} \f$
+   hi;              ///< the high half, \f$ \lfloor a b / 2^{64} \rfloor \f$
  };
 
 /// the product \f$ a b \f$ on 128 bits
 [[nodiscard]] constexpr Product128 product128( std::uint64_t a ,
-                                               std::uint64_t b );
+					       std::uint64_t b );
 
 /// the folded product: the low half of \f$ a b \f$ on 128 bits XOR its
 /// high half,
 /// \f$ ( a b \bmod 2^{64} ) \oplus \lfloor a b / 2^{64} \rfloor \f$
 [[nodiscard]] constexpr std::uint64_t foldedProduct( std::uint64_t a ,
-                                                     std::uint64_t b );
+						     std::uint64_t b );
 
 /// the hash of the word \f$ x \f$ under the seed, the folded product of
 /// \f$ x \f$ and of the seed XOR a constant
 [[nodiscard]] constexpr std::uint64_t hashWord( std::uint64_t x ,
-                                                std::uint64_t seed = 0 );
+						std::uint64_t seed = 0 );
 
 /// the hash of the \f$ n \f$ bytes from \f$ p \f$ under the seed
 ///
@@ -161,7 +163,7 @@ struct Product128 {
 /// \f]
 /// \pre \f$ p \f$ is not nil if \f$ n > 0 \f$
 [[nodiscard]] std::uint64_t hashBytes( const void * p , std::size_t n ,
-                                       std::uint64_t seed = 0 );
+				       std::uint64_t seed = 0 );
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- CLASS FastHash ------------------------------*/
@@ -179,24 +181,24 @@ struct FastHash;
 // with the primary template
 template< class T >
  requires( std::is_integral_v< T > || std::is_enum_v< T > ||
-           std::is_pointer_v< T > ||
-           ( std::is_floating_point_v< T > && ( sizeof( T ) <= 8 ) ) )
-struct FastHash< T > {
- using is_avalanching = void;   ///< the hash needs no further mixing
+	   std::is_pointer_v< T > ||
+	   ( std::is_floating_point_v< T > && ( sizeof( T ) <= 8 ) ) )
+struct FastHash< T >
+{
+ using is_avalanching = void;  ///< the hash needs no further mixing
 
  std::uint64_t seed = 0;
 
  [[nodiscard]] std::size_t operator()( T x ) const noexcept {
   if constexpr( std::is_pointer_v< T > )
-   return( std::size_t( hashWord( std::uint64_t(
-                         reinterpret_cast< std::uintptr_t >( x ) ) ,
-                         seed ) ) );
+   return( std::size_t( hashWord(
+     std::uint64_t( reinterpret_cast< std::uintptr_t >( x ) ) , seed ) ) );
   else if constexpr( std::is_enum_v< T > )
-   return( std::size_t( hashWord( std::uint64_t(
-                         std::underlying_type_t< T >( x ) ) , seed ) ) );
+   return( std::size_t(
+     hashWord( std::uint64_t( std::underlying_type_t< T >( x ) ) , seed ) ) );
   else if constexpr( std::is_floating_point_v< T > ) {
    if( x == T( 0 ) )
-    x = T( 0 );                     // -0 == +0
+    x = T( 0 );  // -0 == +0
    std::uint64_t w = 0;
    std::memcpy( &w , &x , sizeof( T ) );
    return( std::size_t( hashWord( w , seed ) ) );
@@ -211,44 +213,50 @@ struct FastHash< T > {
 /// the hash of a string, by its bytes; any `std::string_view`,
 /// `std::string` and C string with the same characters hash the same
 template<>
-struct FastHash< std::string_view > {
- using is_avalanching = void;   ///< the hash needs no further mixing
- using is_transparent = void;   ///< for the lookups by any string
- std::uint64_t seed = 0;        ///< the seed of `hashBytes()`
+struct FastHash< std::string_view >
+{
+ using is_avalanching = void;  ///< the hash needs no further mixing
+ using is_transparent = void;  ///< for the lookups by any string
+ std::uint64_t seed = 0;       ///< the seed of `hashBytes()`
 
  /// `hashBytes()` of the characters of \f$ s \f$
- [[nodiscard]] std::size_t operator()( std::string_view s ) const noexcept
- {
+ [[nodiscard]] std::size_t operator()( std::string_view s ) const noexcept {
   return( std::size_t( hashBytes( s.data() , s.size() , seed ) ) );
   }
  };
 
 /// the hash of a `std::string`, that of its characters
 template<>
-struct FastHash< std::string > : FastHash< std::string_view > {};
+struct FastHash< std::string > : FastHash< std::string_view >
+{ };
 
 /// the hash of a C string, that of its characters
 template<>
-struct FastHash< const char * > : FastHash< std::string_view > {};
+struct FastHash< const char * > : FastHash< std::string_view >
+{ };
 
-namespace detail {
+namespace detail
+{
 
 /// `std::hash< K >`, or `FastHash< K >` if it is defined
 template< class K >
-struct DefaultHashOf {
+struct DefaultHashOf
+{
  using type = std::hash< K >;
  };
 
 template< class K >
  requires requires { sizeof( FastHash< K > ); }
-struct DefaultHashOf< K > {
+struct DefaultHashOf< K >
+{
  using type = FastHash< K >;
  };
 
 /// true if the hash of a `K` reads memory that the `K` points to, as for the
 /// strings: a rebuild of a table then prefetches it some keys ahead
 template< class K >
-inline constexpr bool kIndirectKey = requires( const K & k ) {
+inline constexpr bool kIndirectKey = requires( const K & k )
+{
  { k.data() } -> std::convertible_to< const void * >;
  k.size();
  };
@@ -262,7 +270,7 @@ inline void prefetchKey( const K & k )
 #if defined( __GNUC__ ) || defined( __clang__ )
   __builtin_prefetch( static_cast< const void * >( k.data() ) );
 #else
-  ( void ) k;
+  ( void )k;
 #endif
   }
  }
@@ -287,7 +295,7 @@ using DefaultHash = typename detail::DefaultHashOf< K >::type;
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* FastHash.h included */
+#endif /* FastHash.h included */
 
 /*--------------------------------------------------------------------------*/
 /*-------------------------- End File FastHash.h ---------------------------*/

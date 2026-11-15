@@ -14,11 +14,12 @@
 /*-------------------------- IMPLEMENTATION --------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 template< class T , class Op >
 LinkCutTree< T , Op >::LinkCutTree( int n , const T & id , Op op )
- : f_id( id ) , f_op( std::move( op ) )
+    : f_id( id ) , f_op( std::move( op ) )
 {
  // the sizes after the check, with no clamp of n: g++ 16 at -O2 with LTO
  // takes an argument max( n , 0 ) as 0 in every call if one call has
@@ -56,8 +57,8 @@ void LinkCutTree< T , Op >::setValue( int v , const T & x )
   f_pv[ v ] = x;
   return;
   }
- access( v );                               // v the root of its splay tree:
- f_t[ v ].val = x;                          // no aggregate above it
+ access( v );       // v the root of its splay tree:
+ f_t[ v ].val = x;  // no aggregate above it
  pull( v );
  }
 
@@ -69,8 +70,8 @@ template< class T , class Op >
 bool LinkCutTree< T , Op >::isRoot( int x ) const
 {
  const int p = f_t[ x ].par;
- return( ( p == NONE ) || ( ( f_t[ p ].ch[ 0 ] != x ) &&
-                            ( f_t[ p ].ch[ 1 ] != x ) ) );
+ return( ( p == NONE ) ||
+	  ( ( f_t[ p ].ch[ 0 ] != x ) && ( f_t[ p ].ch[ 1 ] != x ) ) );
  }
 
 template< class T , class Op >
@@ -104,10 +105,10 @@ void LinkCutTree< T , Op >::rotate( int x )
 {
  Node * const t = f_t.data();
  const int p = t[ x ].par , g = t[ p ].par;
- const int dx = t[ p ].ch[ 1 ] == x;        // the side of x under p
- const int b = t[ x ].ch[ dx ^ 1 ];         // the subtree that moves
+ const int dx = t[ p ].ch[ 1 ] == x;  // the side of x under p
+ const int b = t[ x ].ch[ dx ^ 1 ];   // the subtree that moves
  if( ( g != NONE ) && ( ( t[ g ].ch[ 0 ] == p ) || ( t[ g ].ch[ 1 ] == p ) ) )
-  t[ g ].ch[ t[ g ].ch[ 1 ] == p ] = x;     // else g is a path-parent
+  t[ g ].ch[ t[ g ].ch[ 1 ] == p ] = x;  // else g is a path-parent
  t[ x ].par = g;
  t[ x ].ch[ dx ^ 1 ] = p;
  t[ p ].par = x;
@@ -135,9 +136,9 @@ void LinkCutTree< T , Op >::splay( int x )
   if( ! isRoot( p ) ) {
    const int g = f_t[ p ].par;
    if( ( f_t[ g ].ch[ 0 ] == p ) == ( f_t[ p ].ch[ 0 ] == x ) )
-    rotate( p );                            // zig-zig
+    rotate( p );  // zig-zig
    else
-    rotate( x );                            // zig-zag
+    rotate( x );  // zig-zag
    }
   rotate( x );
   }
@@ -185,10 +186,10 @@ bool LinkCutTree< T , Op >::wellFormed( void ) const
 template< class T , class Op >
 int LinkCutTree< T , Op >::rootOf( int v , bool keep )
 {
- const int * const p = f_p.data();         // the walk in registers
+ const int * const p = f_p.data();  // the walk in registers
  long long k = 0;
- if( keep ) {                              // the path kept for an evert
-  f_path.clear();                          // of v that may follow
+ if( keep ) {      // the path kept for an evert
+  f_path.clear();  // of v that may follow
   f_path.push_back( v );
   for( int u = p[ v ] ; u != NONE ; u = p[ u ] , ++k ) {
    f_path.push_back( u );
@@ -234,11 +235,13 @@ void LinkCutTree< T , Op >::reverseUp( int v )
 template< class T , class Op >
 bool LinkCutTree< T , Op >::joined( int u , int v )
 {
- if( f_splay )                             // no count on the splay trees
+ if( f_splay )  // no count on the splay trees
   return( connected( u , v ) );
  const int * const p = f_p.data();
- while( p[ u ] != NONE ) u = p[ u ];
- while( p[ v ] != NONE ) v = p[ v ];
+ while( p[ u ] != NONE )
+  u = p[ u ];
+ while( p[ v ] != NONE )
+  v = p[ v ];
  return( u == v );
  }
 
@@ -331,7 +334,7 @@ template< class T , class Op >
 void LinkCutTree< T , Op >::link( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          ! joined( u , v ) );
+	  ! joined( u , v ) );
  if( ! f_splay ) {
   reverseUp( u );
   f_p[ u ] = v;
@@ -348,8 +351,8 @@ template< class T , class Op >
 void LinkCutTree< T , Op >::cut( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          ( u != v ) );
- if( ! f_splay ) {                         // v a child of u, the root
+	  ( u != v ) );
+ if( ! f_splay ) {  // v a child of u, the root
   reverseUp( u );
   ADS_PRE( f_p[ v ] == u );
   if( f_p[ v ] == u )
@@ -363,9 +366,8 @@ void LinkCutTree< T , Op >::cut( int u , int v )
  // the path from u to v is u , v alone if the edge is there: u the left
  // child of v, with no child of its own
  push( v );
- const bool edge = ( f_t[ v ].ch[ 0 ] == u ) &&
-                   ( f_t[ u ].ch[ 0 ] == NONE ) &&
-                   ( f_t[ u ].ch[ 1 ] == NONE );
+ const bool edge = ( f_t[ v ].ch[ 0 ] == u ) && ( f_t[ u ].ch[ 0 ] == NONE ) &&
+		   ( f_t[ u ].ch[ 1 ] == NONE );
  ADS_PRE( edge );
  if( ! edge )
   return;
@@ -401,14 +403,18 @@ template< class T , class Op >
 int LinkCutTree< T , Op >::lca( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          joined( u , v ) );
- if( ! f_splay ) {                         // by the depths
+	  joined( u , v ) );
+ if( ! f_splay ) {  // by the depths
   int du = 0 , dv = 0;
-  for( int x = u ; f_p[ x ] != NONE ; x = f_p[ x ] ) ++du;
-  for( int x = v ; f_p[ x ] != NONE ; x = f_p[ x ] ) ++dv;
+  for( int x = u ; f_p[ x ] != NONE ; x = f_p[ x ] )
+   ++du;
+  for( int x = v ; f_p[ x ] != NONE ; x = f_p[ x ] )
+   ++dv;
   f_steps += du + dv;
-  for( ; du > dv ; --du ) u = f_p[ u ];
-  for( ; dv > du ; --dv ) v = f_p[ v ];
+  for( ; du > dv ; --du )
+   u = f_p[ u ];
+  for( ; dv > du ; --dv )
+   v = f_p[ v ];
   for( ; u != v ; f_steps += 2 ) {
    u = f_p[ u ];
    v = f_p[ v ];
@@ -424,8 +430,8 @@ template< class T , class Op >
 T LinkCutTree< T , Op >::aggregate( int u , int v )
 {
  ADS_PRE( ( u >= 0 ) && ( u < n() ) && ( v >= 0 ) && ( v < n() ) &&
-          joined( u , v ) );
- if( ! f_splay ) {                         // up from v to u, the root
+	  joined( u , v ) );
+ if( ! f_splay ) {  // up from v to u, the root
   reverseUp( u );
   const int * const p = f_p.data();
   const T * const val = f_pv.data();

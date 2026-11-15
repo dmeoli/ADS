@@ -86,7 +86,7 @@
 
 #ifndef __ADS_RIndex
  #define __ADS_RIndex
-                      /* self-identification: #endif constant */
+/* self-identification: #endif constant */
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ INCLUDES ----------------------------------*/
@@ -112,7 +112,8 @@
 /*--------------------------- NAMESPACE ------------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-namespace ADS {
+namespace ADS
+{
 
 /*--------------------------------------------------------------------------*/
 /*------------------------------ CLASS RIndex ------------------------------*/
@@ -120,13 +121,13 @@ namespace ADS {
 
 /// the r-index of a text: count and locate in space proportional to the
 /// runs of its transform
-class RIndex {
+class RIndex
+{
 
 /*--------------------------------------------------------------------------*/
  public:
-
  /// the index of the empty text
- RIndex( void ) : RIndex( std::string_view() ) {}
+ RIndex( void ) : RIndex( std::string_view() ) { }
 
  /// the index of \f$ s \f$
  ///
@@ -193,8 +194,8 @@ class RIndex {
  /// \end{array}}
  /// \f]
  /// \pre \f$ P \f$ is not empty
- [[nodiscard]] std::pair< std::size_t , std::size_t > range(
-                                                  std::string_view P ) const;
+ [[nodiscard]] std::pair< std::size_t , std::size_t >
+ range( std::string_view P ) const;
 
  /// the number of the occurrences of \f$ P \f$
  ///
@@ -249,7 +250,6 @@ class RIndex {
 
 /*--------------------------------------------------------------------------*/
  private:
-
  /// the occurrences of \f$ c \f$ in \f$ L[ 0 , i ) \f$
  [[nodiscard]] std::size_t rank( std::uint32_t c , std::size_t i ) const;
 
@@ -259,23 +259,23 @@ class RIndex {
 
  /// the item \f$ i \f$ of a sequence of fixed width \f$ w \f$
  [[nodiscard]] static std::size_t get( const BitVector & v , int w ,
-                                       std::size_t i ) {
+				       std::size_t i ) {
   return( std::size_t( v.get( i * std::size_t( w ) , w ) ) );
   }
 
  std::size_t f_n = 0;
- int f_w = 1;                            ///< the bits of a place or a row
- EliasFano f_start;                      ///< the start of each run
- HuffmanWaveletTree< CompactRankSelect > f_head;   ///< the head of each run
- EliasFano f_F;                          ///< the starts in \f$ F \f$
+ int f_w = 1;        ///< the bits of a place or a row
+ EliasFano f_start;  ///< the start of each run
+ HuffmanWaveletTree< CompactRankSelect > f_head;  ///< the head of each run
+ EliasFano f_F;                                   ///< the starts in \f$ F \f$
  std::array< std::size_t , 258 > f_R{};  ///< the runs of the symbols below
  std::array< std::size_t , 258 > f_C{};  ///< the symbols of L below each
- BitVector f_end;                        ///< the samples at the run ends
- EliasFano f_key;                        ///< \f$ \mathit{SA} \f$ at the starts
- BitVector f_phi;                        ///< the run of each of them
- int f_wr = 1;                           ///< the bits of a run
+ BitVector f_end;                       ///< the samples at the run ends
+ EliasFano f_key;                       ///< \f$ \mathit{SA} \f$ at the starts
+ BitVector f_phi;                       ///< the run of each of them
+ int f_wr = 1;                          ///< the bits of a run
 #if ADS_CONTRACTS >= 3
- std::string f_text;                     ///< the text, for the audits
+ std::string f_text;  ///< the text, for the audits
 #endif
 
  };  // end( class RIndex )
@@ -292,7 +292,7 @@ class RIndex {
 
 /*--------------------------------------------------------------------------*/
 
-#endif  /* RIndex.h included */
+#endif /* RIndex.h included */
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- End File RIndex.h ---------------------------*/
