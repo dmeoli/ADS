@@ -73,7 +73,7 @@ one ([Figure 18.1](18-combinatorial.md#fig-18-1)).
 ![Figure 18.1. The sums formed in place by `sidewaysSum()`, on a word of 16 bits for brevity (the places above the row of the word): the fields of 2, 4 and 8 bits, and the product by $\mathtt{0x0101}$, whose top byte (in colour) is the sum of the two bytes.](../figures/combinatorial-sideways.svg){#fig-18-1}
 
 <span id="lem-18-1"></span>**Lemma 18.1.** *For any word $x$,
-`sidewaysSum(x)` returns $\nu( x )$, with 12 operations on words and no
+`sidewaysSum( x )` returns $\nu( x )$, with 12 operations on words and no
 branch.*
 
 *Proof.* A field of 2 bits with the value $2 a + b$ has $a + b$ ones, and
@@ -1192,8 +1192,7 @@ constexpr bool hasZeroByte( Word x );
 ```cpp
 // declarations of <ADS/combinatorial/FastBitwise.h>
 std::uint64_t popcount( const Word * w , std::size_t n );
-std::uint64_t popcountAnd( const Word * a , const Word * b ,
-    std::size_t n );
+std::uint64_t popcountAnd( const Word * a , const Word * b , std::size_t n );
 Word pdep( Word x , Word mask );
 Word pext( Word x , Word mask );
 int select( Word x , int r );
@@ -1209,7 +1208,8 @@ template< class T , class F >
 long forEachPermutation( std::vector< T > & a , F && visit );
 template< class T , class F >
 long forEachPermutationLex( std::vector< T > & a , F && visit );
-template< class F > long forEachCombination( int n , int t , F && visit );
+template< class F >
+long forEachCombination( int n , int t , F && visit );
 constexpr Word nextCombination( Word x );
 template< class F >
 long forEachCombinationMask( int n , int t , F && visit );
@@ -1224,14 +1224,22 @@ template< class F >
 long mixedRadix( const std::vector< int > & m , F && visit );
 template< class F >
 long grayTuples( const std::vector< int > & m , F && visit );
-template< class F > long permutationsLex( Tuple a , F && visit );
-template< class F > long plainChanges( int n , F && visit );
-template< class F > long heapPermutations( int n , F && visit );
-template< class F > long combinationsLex( int n , int t , F && visit );
-template< class F > long revolvingDoor( int n , int t , F && visit );
-template< class F > long integerPartitions( int n , F && visit );
-template< class F > long setPartitions( int n , F && visit );
-template< class F > long nestedParentheses( int n , F && visit );
+template< class F >
+long permutationsLex( Tuple a , F && visit );
+template< class F >
+long plainChanges( int n , F && visit );
+template< class F >
+long heapPermutations( int n , F && visit );
+template< class F >
+long combinationsLex( int n , int t , F && visit );
+template< class F >
+long revolvingDoor( int n , int t , F && visit );
+template< class F >
+long integerPartitions( int n , F && visit );
+template< class F >
+long setPartitions( int n , F && visit );
+template< class F >
+long nestedParentheses( int n , F && visit );
 ```
 
 
@@ -1246,9 +1254,10 @@ int main( void )
  static_assert( ADS::sidewaysSum( 0xF0F0 ) == 8 );
  static_assert( ADS::nextSameWeight( 0b0101'1100 ) == 0b0110'0011 );
  long seen = ADS::combinationsLex( 5 , 3 , []( const ADS::Tuple & c ) {
-  assert( c[ 0 ] < c[ 1 ] && c[ 1 ] < c[ 2 ] ); } );    // C( 5 , 3 ) = 10
- long upTo = ADS::forEachCombinationMask( 10 , 3 , []( ADS::Word x ) {
-  return( x == 0b111'0000 ); } );                      // stops there
+  assert( c[ 0 ] < c[ 1 ] && c[ 1 ] < c[ 2 ] );
+  } );  // C( 5 , 3 ) = 10
+ long upTo = ADS::forEachCombinationMask(
+   10 , 3 , []( ADS::Word x ) { return( x == 0b111'0000 ); } );  // stops there
  assert( ( seen == 10 ) && ( upTo == 35 ) );
  }
 ```

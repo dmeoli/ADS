@@ -159,9 +159,10 @@ return 6:
 #include "ADS/backtrack/Enumeration.h"
 
 long c = ADS::subsets( 4 , 2 , []( const std::vector< bool > & S ) {
- for( bool b : S ) std::cout << b;          // 1100 , 1010 , ... , 0011
+ for( bool b : S )
+  std::cout << b;  // 1100 , 1010 , ... , 0011
  std::cout << '\n';
- return( false );                           // go on: all the subsets
+ return( false );  // go on: all the subsets
  } );
 ```
 
@@ -398,9 +399,10 @@ the indices of its options in the order in which they were chosen, until
 ```cpp
 // declarations of <ADS/backtrack/DancingLinks.h>
 ExactCover( int primary , int secondary = 0 );
-int addOption( const std::vector< int > & items );   // its index
-template< class F > long solve( F && visit );
-long updates( void ) const;                          // the links updated
+int addOption( const std::vector< int > & items );  // its index
+template< class F >
+long solve( F && visit );
+long updates( void ) const;  // the links updated
 ```
 
 For instance, on the three primary items $0 , 1 , 2$ and the options
@@ -410,12 +412,13 @@ two exact covers $( 0 , 1 )$ and $( 3 , 2 )$:
 
 ```cpp
 ADS::ExactCover X( 3 );
-for( auto o : std::vector< std::vector< int > >{ { 0 , 1 } , { 2 } ,
-                                               { 1 , 2 } , { 0 } } )
+for( auto o :
+     std::vector< std::vector< int > >{ { 0 , 1 } , { 2 } , { 1 , 2 } ,
+                                        { 0 } } )
  X.addOption( o );
 long s = X.solve( []( const std::vector< int > & o ) {
- return( false );                           // ( 0 , 1 ) , then ( 3 , 2 )
- } );                                       // s == 2
+ return( false );  // ( 0 , 1 ) , then ( 3 , 2 )
+ } );                // s == 2
 ```
 
 <span id="lem-19-6"></span>**Lemma 19.6.** *`ExactCover::solve()` visits
@@ -553,9 +556,10 @@ tree:
 FastExactCover( int primary , int secondary = 0 );
 int addOption( const std::vector< int > & items ,
                const std::vector< int > & colors = {} );
-template< class F > long solve( F && visit );
-long updates( void ) const;                          // the options moved
-long nodes( void ) const;                            // the nodes visited
+template< class F >
+long solve( F && visit );
+long updates( void ) const;  // the options moved
+long nodes( void ) const;    // the nodes visited
 ```
 
 The time is $O( 1 )$ per update of a set, and `updates()` and `nodes()`

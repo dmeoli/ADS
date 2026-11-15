@@ -1431,7 +1431,9 @@ headers as it stands, and its assertions hold.
 
 ```cpp
 // declarations of <ADS/succinct/BalancedParentheses.h>
-class BalancedParentheses { public:
+class BalancedParentheses
+{
+ public:
  static constexpr std::size_t nil = std::size_t( -1 );
  BalancedParentheses( void );
  explicit BalancedParentheses( BitVector b );
@@ -1451,7 +1453,9 @@ class BalancedParentheses { public:
 
 ```cpp
 // declarations of <ADS/succinct/BitStream.h>
-class BitWriter { public:
+class BitWriter
+{
+ public:
  BitWriter( void ) = default;
  std::size_t size( void ) const;
  void writeBit( bool b );
@@ -1461,7 +1465,9 @@ class BitWriter { public:
  const BitVector & bits( void ) const;
  BitVector release( void );
  };
-class BitReader { public:
+class BitReader
+{
+ public:
  explicit BitReader( const BitVector & b , std::size_t p = 0 );
  std::size_t position( void ) const;
  void seek( std::size_t p );
@@ -1480,8 +1486,10 @@ class BitReader { public:
 using Words = std::vector< Word , detail::LineAllocator< Word > >;
 constexpr int selectInWord( Word x , int k );
 template< class O , class T >
-class SubscriptIterator;   // random access, *it reads ( *o )[ i ]
-class BitVector { public:
+class SubscriptIterator;  // random access, *it reads ( *o )[ i ]
+class BitVector
+{
+ public:
  BitVector( void ) = default;
  explicit BitVector( std::size_t n , bool b = false );
  explicit BitVector( std::string_view s );
@@ -1509,7 +1517,9 @@ class BitVector { public:
 
 ```cpp
 // declarations of <ADS/succinct/BPTree.h>
-class BPTree { public:
+class BPTree
+{
+ public:
  static constexpr std::size_t nil = std::size_t( -1 );
  BPTree( void ) = default;
  explicit BPTree( const std::vector< std::vector< std::size_t > > & c );
@@ -1532,12 +1542,14 @@ class BPTree { public:
 
 ```cpp
 // declarations of <ADS/succinct/BVGraph.h>
-class BVGraph { public:
+class BVGraph
+{
+ public:
  using List = std::vector< std::size_t >;
  using Interval = std::pair< std::size_t , std::size_t >;
  BVGraph( void ) = default;
  explicit BVGraph( const std::vector< List > & a , std::size_t w = 7 ,
-     std::size_t r = 3 , std::size_t lmin = 4 );
+                   std::size_t r = 3 , std::size_t lmin = 4 );
  std::size_t order( void ) const;
  std::size_t edges( void ) const;
  std::size_t outdegree( std::size_t x ) const;
@@ -1546,12 +1558,12 @@ class BVGraph { public:
  std::size_t codeBits( void ) const;
  std::size_t sizeInBits( void ) const;
  static BitVector copyList( const List & s , const List & ref );
- static std::pair< bool ,
-     std::vector< std::size_t > > copyBlocks( const BitVector & c );
- static std::pair< std::vector< Interval > ,
-     List > intervals( const List & e , std::size_t lmin );
+ static std::pair< bool , std::vector< std::size_t > >
+ copyBlocks( const BitVector & c );
+ static std::pair< std::vector< Interval > , List >
+ intervals( const List & e , std::size_t lmin );
  static std::vector< std::uint64_t > residualGaps( const List & res ,
-     std::size_t x );
+                                                   std::size_t x );
  };
 ```
 
@@ -1559,11 +1571,14 @@ class BVGraph { public:
 
 ```cpp
 // declarations of <ADS/succinct/CompactRankSelect.h>
-class CompactRankSelect { public:
+class CompactRankSelect
+{
+ public:
  CompactRankSelect( void );
  explicit CompactRankSelect( BitVector b );
  CompactRankSelect( std::span< const Word > w , std::size_t n );
- template< Executor E > CompactRankSelect( E & ex , BitVector b );
+ template< Executor E >
+ CompactRankSelect( E & ex , BitVector b );
  template< Executor E >
  CompactRankSelect( E & ex , std::span< const Word > w , std::size_t n );
  const BitVector & bits( void ) const;
@@ -1586,10 +1601,12 @@ class CompactRankSelect { public:
 
 ```cpp
 // declarations of <ADS/succinct/EliasFanoGraph.h>
-class EliasFanoGraph { public:
+class EliasFanoGraph
+{
+ public:
  EliasFanoGraph( void ) = default;
- explicit EliasFanoGraph( const std::vector< std::vector< std::size_t > > &
-     a );
+ explicit EliasFanoGraph(
+   const std::vector< std::vector< std::size_t > > & a );
  std::size_t order( void ) const;
  std::size_t edges( void ) const;
  std::size_t outdegree( std::size_t u ) const;
@@ -1604,7 +1621,10 @@ class EliasFanoGraph { public:
 
 ```cpp
 // declarations of <ADS/succinct/EliasFano.h>
-template< bool Lazy > class BasicEliasFano { public:
+template< bool Lazy >
+class BasicEliasFano
+{
+ public:
  BasicEliasFano( void ) = default;
  explicit BasicEliasFano( const std::vector< std::uint64_t > & x );
  BasicEliasFano( const std::vector< std::uint64_t > & x , std::uint64_t u );
@@ -1633,13 +1653,16 @@ using LazyEliasFano = BasicEliasFano< true >;
 
 ```cpp
 // declarations of <ADS/succinct/HuffmanWaveletTree.h>
-template< class RS = RankSelect > class HuffmanWaveletTree { public:
+template< class RS = RankSelect >
+class HuffmanWaveletTree
+{
+ public:
  HuffmanWaveletTree( void ) = default;
  explicit HuffmanWaveletTree( std::span< const std::uint32_t > x ,
-     bool withSelect = true );
+                              bool withSelect = true );
  template< Executor E >
  HuffmanWaveletTree( E & ex , std::span< const std::uint32_t > x ,
-     bool withSelect = true );
+                     bool withSelect = true );
  std::size_t size( void ) const;
  bool empty( void ) const;
  std::size_t sigma( void ) const;
@@ -1647,8 +1670,8 @@ template< class RS = RankSelect > class HuffmanWaveletTree { public:
  std::uint32_t operator[]( std::size_t i ) const;
  std::pair< std::uint32_t , std::size_t > accessRank( std::size_t i ) const;
  std::size_t rank( std::uint32_t c , std::size_t i ) const;
- std::pair< std::size_t , std::size_t > rank( std::uint32_t c ,
-     std::size_t i , std::size_t j ) const;
+ std::pair< std::size_t , std::size_t > rank( std::uint32_t c , std::size_t i ,
+                                             std::size_t j ) const;
  std::size_t select( std::uint32_t c , std::size_t k ) const;
  int codeLength( std::uint32_t c ) const;
  std::size_t sizeInBits( void ) const;
@@ -1659,7 +1682,9 @@ template< class RS = RankSelect > class HuffmanWaveletTree { public:
 
 ```cpp
 // declarations of <ADS/succinct/InterleavedRankSelect.h>
-class InterleavedRankSelect { public:
+class InterleavedRankSelect
+{
+ public:
  InterleavedRankSelect( void );
  explicit InterleavedRankSelect( const BitVector & b );
  InterleavedRankSelect( std::span< const Word > w , std::size_t n );
@@ -1679,11 +1704,13 @@ class InterleavedRankSelect { public:
 
 ```cpp
 // declarations of <ADS/succinct/JacobsonTree.h>
-class JacobsonTree { public:
+class JacobsonTree
+{
+ public:
  static constexpr std::size_t nil = std::size_t( -1 );
  JacobsonTree( void );
- explicit JacobsonTree( const std::vector< std::pair< std::size_t ,
-     std::size_t > > & c );
+ explicit JacobsonTree(
+   const std::vector< std::pair< std::size_t , std::size_t > > & c );
  explicit JacobsonTree( BitVector b );
  std::size_t size( void ) const;
  std::size_t root( void ) const;
@@ -1699,11 +1726,12 @@ class JacobsonTree { public:
 
 ```cpp
 // declarations of <ADS/succinct/K2Tree.h>
-class K2Tree { public:
+class K2Tree
+{
+ public:
  using Edge = std::pair< std::size_t , std::size_t >;
  K2Tree( void ) = default;
- K2Tree( std::size_t n , const std::vector< Edge > & e ,
-     std::size_t k = 2 );
+ K2Tree( std::size_t n , const std::vector< Edge > & e , std::size_t k = 2 );
  std::size_t order( void ) const;
  std::size_t edges( void ) const;
  std::vector< std::size_t > neighbors( std::size_t u ) const;
@@ -1719,7 +1747,9 @@ class K2Tree { public:
 
 ```cpp
 // declarations of <ADS/succinct/LAVector.h>
-class LAVector { public:
+class LAVector
+{
+ public:
  LAVector( void ) = default;
  explicit LAVector( const std::vector< std::uint64_t > & x , int c = 7 );
  static LAVector tuned( const std::vector< std::uint64_t > & x );
@@ -1746,7 +1776,9 @@ class LAVector { public:
 
 ```cpp
 // declarations of <ADS/succinct/LoudsTree.h>
-class LoudsTree { public:
+class LoudsTree
+{
+ public:
  static constexpr std::size_t nil = std::size_t( -1 );
  LoudsTree( void );
  explicit LoudsTree( const std::vector< std::vector< std::size_t > > & c );
@@ -1767,17 +1799,19 @@ class LoudsTree { public:
 
 ```cpp
 // declarations of <ADS/succinct/MoveStructure.h>
-class MoveStructure { public:
+class MoveStructure
+{
+ public:
  MoveStructure( void ) = default;
  MoveStructure( std::span< const std::uint64_t > p ,
-     std::span< const std::uint64_t > q ,
-     std::span< const std::uint32_t > tag , std::uint64_t n );
+                std::span< const std::uint64_t > q ,
+                std::span< const std::uint32_t > tag , std::uint64_t n );
  std::size_t intervals( void ) const;
  std::uint64_t size( void ) const;
  std::uint64_t start( std::size_t i ) const;
  std::uint32_t tag( std::size_t i ) const;
  std::pair< std::uint64_t , std::size_t > move( std::uint64_t x ,
-     std::size_t i ) const;
+                                               std::size_t i ) const;
  std::size_t interval( std::uint64_t x ) const;
  std::size_t sizeInBits( void ) const;
  };
@@ -1787,7 +1821,10 @@ class MoveStructure { public:
 
 ```cpp
 // declarations of <ADS/succinct/PackedArray.h>
-template< unsigned B , bool Saturate = false > class PackedArray { public:
+template< unsigned B , bool Saturate = false >
+class PackedArray
+{
+ public:
  using Word = std::uint64_t;
  static constexpr std::size_t PER = 64 / B;
  static constexpr Word MAX = ( Word( 1 ) << B ) - 1;
@@ -1806,7 +1843,9 @@ template< unsigned B , bool Saturate = false > class PackedArray { public:
  std::size_t bytes( void ) const;
  friend bool operator==( const PackedArray & a , const PackedArray & b );
  };
-class TritArray { public:
+class TritArray
+{
+ public:
  TritArray( void ) = default;
  explicit TritArray( std::size_t n , unsigned v = 0 );
  template< Executor E , class F >
@@ -1827,11 +1866,12 @@ class TritArray { public:
 
 ```cpp
 // declarations of <ADS/succinct/PartitionedEliasFano.h>
-class PartitionedEliasFano { public:
+class PartitionedEliasFano
+{
+ public:
  PartitionedEliasFano( void ) = default;
  explicit PartitionedEliasFano( std::span< const std::uint64_t > x );
- PartitionedEliasFano( std::span< const std::uint64_t > x ,
-     std::uint64_t u );
+ PartitionedEliasFano( std::span< const std::uint64_t > x , std::uint64_t u );
  std::size_t size( void ) const;
  bool empty( void ) const;
  std::uint64_t universe( void ) const;
@@ -1841,8 +1881,8 @@ class PartitionedEliasFano { public:
  bool contains( std::uint64_t x ) const;
  std::array< std::size_t , 3 > kinds( void ) const;
  std::size_t sizeInBits( void ) const;
- using const_iterator = SubscriptIterator< PartitionedEliasFano ,
-     std::uint64_t >;
+ using const_iterator =
+   SubscriptIterator< PartitionedEliasFano , std::uint64_t >;
  const_iterator begin( void ) const;
  const_iterator end( void ) const;
  };
@@ -1852,20 +1892,23 @@ class PartitionedEliasFano { public:
 
 ```cpp
 // declarations of <ADS/succinct/RankSelect.h>
-struct RankSelectOptions {
+struct RankSelectOptions
+{
  enum class Selects { NONE , ONES , ZEROS , BOTH };
  };
 template< bool Lazy >
-class BasicRankSelect : public RankSelectOptions { public:
+class BasicRankSelect : public RankSelectOptions
+{
+ public:
  BasicRankSelect( void );
  explicit BasicRankSelect( BitVector b , Selects s = Selects::BOTH );
  BasicRankSelect( std::span< const Word > w , std::size_t n ,
-     Selects s = Selects::BOTH );
+                  Selects s = Selects::BOTH );
  template< Executor E >
  BasicRankSelect( E & ex , BitVector b , Selects s = Selects::BOTH );
  template< Executor E >
  BasicRankSelect( E & ex , std::span< const Word > w , std::size_t n ,
-     Selects s = Selects::BOTH );
+                  Selects s = Selects::BOTH );
  const BitVector & bits( void ) const;
  std::size_t size( void ) const;
  bool operator[]( std::size_t i ) const;
@@ -1888,7 +1931,9 @@ using LazyRankSelect = BasicRankSelect< true >;
 
 ```cpp
 // declarations of <ADS/succinct/RRRBitVector.h>
-class RRRBitVector { public:
+class RRRBitVector
+{
+ public:
  RRRBitVector( void );
  explicit RRRBitVector( const BitVector & b );
  std::size_t size( void ) const;
@@ -1907,20 +1952,22 @@ class RRRBitVector { public:
 
 ```cpp
 // declarations of <ADS/succinct/WaveletMatrix.h>
-class WaveletMatrix { public:
+class WaveletMatrix
+{
+ public:
  WaveletMatrix( void ) = default;
  explicit WaveletMatrix( std::span< const std::uint64_t > x , int w = 0 );
  template< Executor E >
  WaveletMatrix( E & ex , std::span< const std::uint64_t > x , int w = 0 );
  template< class U >
- requires( std::is_same_v< U , std::uint8_t > ||
-           std::is_same_v< U , std::uint16_t > ||
-           std::is_same_v< U , std::uint32_t > )
+  requires( std::is_same_v< U , std::uint8_t > ||
+            std::is_same_v< U , std::uint16_t > ||
+            std::is_same_v< U , std::uint32_t > )
  explicit WaveletMatrix( std::span< const U > x , int w = 0 );
  template< Executor E , class U >
- requires( std::is_same_v< U , std::uint8_t > ||
-           std::is_same_v< U , std::uint16_t > ||
-           std::is_same_v< U , std::uint32_t > )
+  requires( std::is_same_v< U , std::uint8_t > ||
+            std::is_same_v< U , std::uint16_t > ||
+            std::is_same_v< U , std::uint32_t > )
  WaveletMatrix( E & ex , std::span< const U > x , int w = 0 );
  std::size_t size( void ) const;
  bool empty( void ) const;
@@ -1929,10 +1976,9 @@ class WaveletMatrix { public:
  std::uint64_t operator[]( std::size_t i ) const;
  std::size_t rank( std::uint64_t c , std::size_t i ) const;
  std::size_t select( std::uint64_t c , std::size_t k ) const;
- std::uint64_t quantile( std::size_t i , std::size_t j ,
-     std::size_t k ) const;
+ std::uint64_t quantile( std::size_t i , std::size_t j , std::size_t k ) const;
  std::size_t countLess( std::size_t i , std::size_t j ,
-     std::uint64_t c ) const;
+                        std::uint64_t c ) const;
  std::size_t sizeInBits( void ) const;
  using const_iterator = SubscriptIterator< WaveletMatrix , std::uint64_t >;
  const_iterator begin( void ) const;
@@ -1950,16 +1996,15 @@ class WaveletMatrix { public:
 
 int main( void )
 {
- const ADS::RankSelect b( ADS::BitVector( "0110100111" ) );   // bit 0 first
+ const ADS::RankSelect b( ADS::BitVector( "0110100111" ) );  // bit 0 first
  assert( ( b.rank1( 5 ) == 3 ) && ( b.select1( 3 ) == 4 ) );
  const ADS::EliasFano ef( { 3 , 4 , 7 , 13 , 14 , 15 , 21 , 43 } );
  assert( ( ef.access( 3 ) == 13 ) && ( ef[ ef.nextGEQ( 16 ) ] == 21 ) );
  const std::vector< std::uint64_t > x = { 3 , 1 , 4 , 1 , 5 , 9 , 2 , 6 };
  const ADS::WaveletMatrix wm( x );
  assert( ( wm.rank( 1 , 4 ) == 2 ) && ( wm.quantile( 2 , 6 , 0 ) == 1 ) );
- const ADS::BPTree t( { { 1 , 2 } , { 3 } , {} , {} } );   // the children
- assert( ( t.degree( t.root() ) == 2 ) &&
-         ( t.subtreeSize( t.root() ) == 4 ) );
+ const ADS::BPTree t( { { 1 , 2 } , { 3 } , {} , {} } );  // the children
+ assert( ( t.degree( t.root() ) == 2 ) && ( t.subtreeSize( t.root() ) == 4 ) );
  }
 ```
 

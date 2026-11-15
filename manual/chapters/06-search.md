@@ -70,19 +70,19 @@ answer.
 
 The binary search of [Montresor 2025,
 §1.2](Z-bibliography.md#ref-montresor2025) (`binarySearch()`) compares $v$
-with the middle item $A[ m ]$ of the part $A[ i .. j ]$ still to examine,
-and goes on in $A[ i .. m - 1 ]$ if $v < A[ m ]$ and in
-$A[ m + 1 .. j ]$ if $v > A[ m ]$ ([Algorithm 6.1](06-search.md#alg-6-1)).
-It stops as soon as it meets $v$, at the price of two comparisons per
-step, and returns $-1$ when $v$ is not there; an overload calls a function
-`trace(i, j, m)` at each step, which prints the table of the example of the
-book. In the code, the middle is computed as $m = i + \lfloor ( j - i ) / 2 \rfloor$,
-which, unlike $\lfloor ( i + j ) / 2 \rfloor$, cannot overflow (the bug
-of `Arrays.binarySearch` of Java until 2003). In turn, `decisionTree()`
-builds the decision tree of the search as a `BinaryTree` that the caller
-owns (nil on an empty vector), whose root is the middle item of the vector
-and whose subtrees are the decision trees of the two halves
-([Figure 6.1](06-search.md#fig-6-1)).
+with the middle item $A[ m ]$ of the part $A[ i .. j ]$ still to examine, and
+goes on in $A[ i .. m - 1 ]$ if $v < A[ m ]$ and in $A[ m + 1 .. j ]$ if
+$v > A[ m ]$ ([Algorithm 6.1](06-search.md#alg-6-1)). It stops as soon as it
+meets $v$, at the price of two comparisons per step, and returns $-1$ when $v$
+is not there; an overload calls a function `trace( i , j , m )` at each step,
+which prints the table of the example of the book. In the code, the middle is
+computed as $m = i + \lfloor ( j - i ) / 2 \rfloor$, which, unlike
+$\lfloor ( i + j ) / 2 \rfloor$, cannot overflow (the bug of
+`Arrays.binarySearch` of Java until 2003). In turn, `decisionTree()` builds
+the decision tree of the search as a `BinaryTree` that the caller owns (nil on
+an empty vector), whose root is the middle item of the vector and whose
+subtrees are the decision trees of the two halves ([Figure
+6.1](06-search.md#fig-6-1)).
 
 <span id="alg-6-1"></span>**Algorithm 6.1.** The binary search
 ([Montresor 2025, §1.2](Z-bibliography.md#ref-montresor2025)), the tail
@@ -210,23 +210,23 @@ on a sequence of unknown length.
 
 --8<-- "generated/MonotoneSearch-unboundedSearch.pseudo.md"
 
-`exponentialSearch()` finds the least $i \ge \mathit{lo}$ at which a
-predicate $p$, false and then true, holds (the method $B_1$ of Bentley and
-Yao). Its binary search too leaves out the last probe, whose $p$ is known
-to be true, and hence makes at most $k - 1$ evaluations after the $k + 1$ of
-the probes, within the bound $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$
-of its header ([Lemma 6.4](06-search.md#lem-6-4)). Its probes are cut at
-the largest value of the type of the integers, which they never overflow,
-and the middle of its binary search is computed on the unsigned
-distance. `unboundedSearch()` applies it to a
-sequence read one item at a time, whose function `get(i)` gives an optional
-item, empty past the end; the typical case is the count of the items
-smaller than a value in a sorted sequence of unknown length. In the same way one searches any monotone predicate on the integers, e.g., the integer square
-root (`integerSqrt()`, [Algorithm 6.4](06-search.md#alg-6-4)), and
-`isPerfectSquare()` compares the square of that root with $n$. (Newton's
+`exponentialSearch()` finds the least $i \ge \mathit{lo}$ at which a predicate
+$p$, false and then true, holds (the method $B_1$ of Bentley and Yao). Its
+binary search too leaves out the last probe, whose $p$ is known to be true,
+and hence makes at most $k - 1$ evaluations after the $k + 1$ of the probes,
+within the bound $2 \lceil \log_2 ( i - \mathit{lo} + 1 ) \rceil + 1$ of its
+header ([Lemma 6.4](06-search.md#lem-6-4)). Its probes are cut at the largest
+value of the type of the integers, which they never overflow, and the middle
+of its binary search is computed on the unsigned distance. `unboundedSearch()`
+applies it to a sequence read one item at a time, whose function `get( i )`
+gives an optional item, empty past the end; the typical case is the count of
+the items smaller than a value in a sorted sequence of unknown length. In the
+same way one searches any monotone predicate on the integers, e.g., the
+integer square root (`integerSqrt()`, [Algorithm 6.4](06-search.md#alg-6-4)),
+and `isPerfectSquare()` compares the square of that root with $n$. (Newton's
 iteration $x \gets \lfloor ( x + \lfloor n / x \rfloor ) / 2 \rfloor$
-converges quadratically from a start above the root, in
-$O( \log \log n )$ steps from a start within a constant factor.)
+converges quadratically from a start above the root, in $O( \log \log n )$
+steps from a start within a constant factor.)
 
 <span id="lem-6-4"></span>**Lemma 6.4.** *On a sorted vector whose
 answer is $h = \mathrm{lowerBound}( v )$, `gallopSearch()` returns $h$
@@ -284,20 +284,19 @@ m = \mathit{lo} + \Big\lfloor ( \mathit{hi} - \mathit{lo} )
 \Big\rfloor , \tag{6.4}
 $$
 
-instead of the middle one, as one opens a phone book near its start to
-look for a name in C ([Algorithm 6.5](06-search.md#alg-6-5)). Roughly,
-the expected error of (6.4) on a part of length $\ell$ is of the order of
-$\sqrt{\ell}$, and each probe thus takes, in expectation, the square root
-of the length. Our search stops
-when $v$ is out of $[ A[ \mathit{lo} ] , A[ \mathit{hi} ] ]$, and probes
-$A[ \mathit{lo} ]$ when $A[ \mathit{lo} ] = A[ \mathit{hi} ]$. In the code, the
-fraction is computed in `double` and clamped to the part; when it is
+instead of the middle one, as one opens a phone book near its start to look
+for a name in C ([Algorithm 6.5](06-search.md#alg-6-5)). Roughly, the expected
+error of (6.4) on a part of length $\ell$ is of the order of $\sqrt{\ell}$,
+and each probe thus takes, in expectation, the square root of the length. Our
+search stops when $v$ is out of $[ A[ \mathit{lo} ] , A[ \mathit{hi} ] ]$, and
+probes $A[ \mathit{lo} ]$ when $A[ \mathit{lo} ] = A[ \mathit{hi} ]$. In the
+code, the fraction is computed in `double` and clamped to the part; when it is
 undefined ($0 / 0$ for distinct keys equal as doubles, i.e., integers past
 $2^{53}$, or $\infty / \infty$ for infinite keys) the probe is the middle
-place. As for `binarySearch()`, an overload reports each probe to a
-function `trace(i, j, m)`. Note that the learned indexes of
-[§6.4](06-search.md#sec-6-4) refine the same idea with a model whose error
-is guaranteed.
+place. As for `binarySearch()`, an overload reports each probe to a function
+`trace( i , j , m )`. Note that the learned indexes of
+[§6.4](06-search.md#sec-6-4) refine the same idea with a model whose error is
+guaranteed.
 
 <span id="alg-6-5"></span>**Algorithm 6.5.** The search by interpolation
 ([Montresor 2025, §12.1](Z-bibliography.md#ref-montresor2025)).
@@ -499,16 +498,16 @@ template< class T >
 BinaryTree< T > * decisionTree( const std::vector< T > & A );
 template< class T , class C = std::less<> >
 std::size_t lowerBound( const std::vector< T > & A , const T & v ,
-     std::size_t lo , std::size_t hi , C less = C() );
+                        std::size_t lo , std::size_t hi , C less = C() );
 template< class T , class C = std::less<> >
 std::size_t lowerBound( const std::vector< T > & A , const T & v ,
-     C less = C() );
+                        C less = C() );
 template< class T , class C = std::less<> >
 std::size_t upperBound( const std::vector< T > & A , const T & v ,
-     C less = C() );
+                        C less = C() );
 template< class T , class C = std::less<> >
 std::size_t gallopSearch( const std::vector< T > & A , const T & v ,
-     C less = C() );
+                          C less = C() );
 ```
 
 In `ADS/search/MonotoneSearch.h`, the functions are declared as
@@ -519,8 +518,10 @@ template< std::integral I , class P >
 I exponentialSearch( P && p , I lo = I( 0 ) );
 template< class G , class P >
 std::size_t unboundedSearch( G && get , P && pred );
-template< std::unsigned_integral U > U integerSqrt( U n );
-template< std::unsigned_integral U > bool isPerfectSquare( U n );
+template< std::unsigned_integral U >
+U integerSqrt( U n );
+template< std::unsigned_integral U >
+bool isPerfectSquare( U n );
 ```
 
 In `ADS/search/InterpolationSearch.h`, the functions are declared as
@@ -529,7 +530,7 @@ In `ADS/search/InterpolationSearch.h`, the functions are declared as
 // declarations of <ADS/search/InterpolationSearch.h>
 template< class T , class F >
 long interpolationSearch( const std::vector< T > & A , const T & v ,
-     F && trace );
+                          F && trace );
 template< class T >
 long interpolationSearch( const std::vector< T > & A , const T & v );
 ```
@@ -540,10 +541,10 @@ In `ADS/search/KnuthSearches.h`, the functions are declared as
 // declarations of <ADS/search/KnuthSearches.h>
 template< class T >
 long fibonacciSearch( const std::vector< T > & A , const T & v ,
-     long * cmp = nullptr );
+                      long * cmp = nullptr );
 template< class T >
 long uniformBinarySearch( const std::vector< T > & A , const T & v ,
-     long * cmp = nullptr );
+                          long * cmp = nullptr );
 ```
 
 In `ADS/search/SortedSearches.h`, the functions are declared as
@@ -553,15 +554,14 @@ In `ADS/search/SortedSearches.h`, the functions are declared as
 template< class T , class C = std::less<> >
 std::size_t rotatedMinimum( const std::vector< T > & A , C less = C() );
 template< class T >
-requires( std::is_arithmetic_v< T > && ! std::is_same_v< T , bool > )
+ requires( std::is_arithmetic_v< T > && ! std::is_same_v< T , bool > )
 std::size_t closestValue( const std::vector< T > & A , const T & x );
 template< class T , class S >
-std::optional< std::pair< std::size_t ,
-     std::size_t > > pairWithSum( const std::vector< T > & A ,
-     const S & x );
+std::optional< std::pair< std::size_t , std::size_t > >
+pairWithSum( const std::vector< T > & A , const S & x );
 template< class T , class C = std::less<> >
-T kthOfTwoSorted( const std::vector< T > & X ,
-     const std::vector< T > & Y , std::size_t k , C less = C() );
+T kthOfTwoSorted( const std::vector< T > & X , const std::vector< T > & Y ,
+                  std::size_t k , C less = C() );
 ```
 
 ## 6.3 Searches laid out for the memory {#sec-6-3}
@@ -604,17 +604,17 @@ $b$ or $b + 1$, with $b < n$, and the last comparison decides between
 them. $\square$
 
 The S+ tree of [Slotin 2022](Z-bibliography.md#ref-slotin2022)
-(`SPlusTree<T, Less, Bytes>`) removes the misses instead. A copy of its
-sorted items, cut into nodes of $B$ items (the items in `Bytes` bytes, 64
-by default, and at least 2), forms the leaves of a static B+-tree whose
-inner nodes have $B$ keys and $B + 1$ children, the key $j$ of a node being
-the first item under its child $j + 1$. In memory, the children of the node
-$k$ of a level are the nodes $k ( B + 1 ) , \ldots , k ( B + 1 ) + B$ of
-the next level, so that no pointer is stored, and the levels follow one
-another, the leaves last ([Figure 6.3](06-search.md#fig-6-3)). The level of
-the leaves has $s_{H-1} = \lceil n / B \rceil$ nodes and each level above
-$s_\ell = \lceil s_{\ell+1} / ( B + 1 ) \rceil$, up to the root; there
-are thus
+(`SPlusTree< T , Less , Bytes >`) removes the misses instead. A copy of its
+sorted items, cut into nodes of $B$ items (the items in `Bytes` bytes, 64 by
+default, and at least 2), forms the leaves of a static B+-tree whose inner
+nodes have $B$ keys and $B + 1$ children, the key $j$ of a node being the
+first item under its child $j + 1$. In memory, the children of the node $k$ of
+a level are the nodes $k ( B + 1 ) , \ldots , k ( B + 1 ) + B$ of the next
+level, so that no pointer is stored, and the levels follow one another, the
+leaves last ([Figure 6.3](06-search.md#fig-6-3)). The level of the leaves has
+$s_{H-1} = \lceil n / B \rceil$ nodes and each level above
+$s_\ell = \lceil s_{\ell+1} / ( B + 1 ) \rceil$, up to the root; there are
+thus
 
 $$
 H = 1 + \Big\lceil \log_{B+1} \Big\lceil \frac{n}{B} \Big\rceil
@@ -715,41 +715,43 @@ In `ADS/search/StaticSearch.h`, the declarations of the functions and of
 ```cpp
 // declarations of <ADS/search/StaticSearch.h>
 template< class T , class C = std::less<> >
-std::size_t branchlessLowerBound( const std::vector< T > & A ,
-     const T & v , C less = C() );
+std::size_t branchlessLowerBound( const std::vector< T > & A , const T & v ,
+                                  C less = C() );
 template< class T , class Less = std::less< T > , std::size_t Bytes = 64 >
-requires std::is_trivially_copyable_v< T >
-class SPlusTree {
+ requires std::is_trivially_copyable_v< T >
+class SPlusTree
+{
  public:
-  using Item = T;
-  static constexpr std::size_t B = sizeof( T ) <= Bytes ? std::max<
-       std::size_t >( Bytes / sizeof( T ) , 2 ) : 2;
-  SPlusTree( void );
-  explicit SPlusTree( const std::vector< T > & A , Less less = Less() );
-  std::size_t lowerBound( const T & v ) const;
-  std::size_t upperBound( const T & v ) const;
-  bool contains( const T & v ) const;
-  const T & operator[]( std::size_t i ) const;
-  std::size_t size( void ) const;
-  bool empty( void ) const;
-  int height( void ) const;
-  };
+ using Item = T;
+ static constexpr std::size_t B =
+   sizeof( T ) <= Bytes ? std::max< std::size_t >( Bytes / sizeof( T ) , 2 )
+                        : 2;
+ SPlusTree( void );
+ explicit SPlusTree( const std::vector< T > & A , Less less = Less() );
+ std::size_t lowerBound( const T & v ) const;
+ std::size_t upperBound( const T & v ) const;
+ bool contains( const T & v ) const;
+ const T & operator[]( std::size_t i ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ int height( void ) const;
+ };
 ```
 
 ## 6.4 The PGM-index {#sec-6-4}
 
 The PGM-index of [Ferragina and Vinciguerra
-2020](Z-bibliography.md#ref-ferragina2020) (`PGMIndex<K, E, R>`, on fewer
+2020](Z-bibliography.md#ref-ferragina2020) (`PGMIndex< K , E , R >`, on fewer
 than $2^{32}$ arithmetic keys) replaces the inner nodes of a B+-tree by a
-model of the keys. Its items $A[ 0 .. n )$ are the points $( A[ i ] , i )$
-of the plane, a repeated key standing for its first place. An
+model of the keys. Its items $A[ 0 .. n )$ are the points $( A[ i ] , i )$ of
+the plane, a repeated key standing for its first place. An
 *$\epsilon$-approximation* is a sequence of segments, each a line
 $f( x ) = a + b ( x - k_s )$ over a range of keys from its first key $k_s$,
 such that $| f( A[ i ] ) - i | \le \epsilon$ for each key of its range
-([Figure 6.4](06-search.md#fig-6-4)). In turn, the first keys of the
-segments are approximated, with error $\epsilon_r$, by the segments of a
-level above, and so on up to a single segment. By default, $\epsilon = 64$
-and $\epsilon_r = 4$.
+([Figure 6.4](06-search.md#fig-6-4)). In turn, the first keys of the segments
+are approximated, with error $\epsilon_r$, by the segments of a level above,
+and so on up to a single segment. By default, $\epsilon = 64$ and
+$\epsilon_r = 4$.
 
 ![Figure 6.4. The points $( A[ i ] , i )$ of 14 keys covered by two segments whose lines predict each place within $\epsilon = 2$ (the light bands); a search predicts the place of $v$ on the line of its segment and searches the window of the places within the error.](../figures/search-pgm.svg){#fig-6-4}
 
@@ -853,36 +855,36 @@ calls are
 ```cpp
 // declarations of <ADS/search/PGMIndex.h>
 template< class K , std::size_t E = 64 , std::size_t R = 4 >
-requires std::is_arithmetic_v< K >
-class PGMIndex {
+ requires std::is_arithmetic_v< K >
+class PGMIndex
+{
  public:
-  using Item = K;
-  PGMIndex( void );
-  explicit PGMIndex( const std::vector< K > & A );
-  std::size_t lowerBound( const K & v ) const;
-  bool contains( const K & v ) const;
-  const K & operator[]( std::size_t i ) const;
-  std::size_t size( void ) const;
-  bool empty( void ) const;
-  std::size_t segments( void ) const;
-  int height( void ) const;
-  std::size_t bytes( void ) const;
-  };
+ using Item = K;
+ PGMIndex( void );
+ explicit PGMIndex( const std::vector< K > & A );
+ std::size_t lowerBound( const K & v ) const;
+ bool contains( const K & v ) const;
+ const K & operator[]( std::size_t i ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t segments( void ) const;
+ int height( void ) const;
+ std::size_t bytes( void ) const;
+ };
 ```
 
 ## 6.5 The compressed PGM-index {#sec-6-5}
 
 The compressed PGM-index of [Ferragina and Vinciguerra
-2020](Z-bibliography.md#ref-ferragina2020) (`CompressedPGMIndex<K, E>`)
-keeps the segments in a few tens of bits each instead of 28 bytes, with
-the same search at the last level. Consider the lines that are within
-$\epsilon$ of the $k$ points of a segment, i.e., the pairs
-$( \alpha , \beta )$ with $| \beta + \alpha x_i - y_i | \le \epsilon$ for
-each of its points. They are the intersection of $2 k$ half-planes, a convex
-region, whose shadow on the axis of the slopes is the interval
-$[ \alpha^- , \alpha^+ ]$ between the two extreme lines of the algorithm of
-O'Rourke. Each slope of the interval has an intercept within the error, the
-middle of
+2020](Z-bibliography.md#ref-ferragina2020) (`CompressedPGMIndex< K , E >`)
+keeps the segments in a few tens of bits each instead of 28 bytes, with the
+same search at the last level. Consider the lines that are within $\epsilon$
+of the $k$ points of a segment, i.e., the pairs $( \alpha , \beta )$ with
+$| \beta + \alpha x_i - y_i | \le \epsilon$ for each of its points. They are
+the intersection of $2 k$ half-planes, a convex region, whose shadow on the
+axis of the slopes is the interval $[ \alpha^- , \alpha^+ ]$ between the two
+extreme lines of the algorithm of O'Rourke. Each slope of the interval has an
+intercept within the error, the middle of
 
 $$
 \Big[ \max_i ( y_i - \alpha x_i ) - \epsilon ,
@@ -953,40 +955,40 @@ In `ADS/search/CompressedPGMIndex.h`, the declarations of
 ```cpp
 // declarations of <ADS/search/CompressedPGMIndex.h>
 template< class K , std::size_t E = 64 >
-requires std::is_arithmetic_v< K >
-class CompressedPGMIndex {
+ requires std::is_arithmetic_v< K >
+class CompressedPGMIndex
+{
  public:
-  using Item = K;
-  CompressedPGMIndex( void );
-  explicit CompressedPGMIndex( std::vector< K > A );
-  std::size_t lowerBound( const K & v ) const;
-  bool contains( const K & v ) const;
-  const K & operator[]( std::size_t i ) const;
-  std::size_t size( void ) const;
-  bool empty( void ) const;
-  std::size_t segments( void ) const;
-  std::size_t slopes( void ) const;
-  std::size_t bytes( void ) const;
-  };
+ using Item = K;
+ CompressedPGMIndex( void );
+ explicit CompressedPGMIndex( std::vector< K > A );
+ std::size_t lowerBound( const K & v ) const;
+ bool contains( const K & v ) const;
+ const K & operator[]( std::size_t i ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t segments( void ) const;
+ std::size_t slopes( void ) const;
+ std::size_t bytes( void ) const;
+ };
 ```
 
 ## 6.6 The dynamic PGM-index {#sec-6-6}
 
-The dynamic PGM-index (`DynamicPGMIndex<K, V, E, B, I>`) is an ordered map
-from arithmetic keys to values, with insertions and removals, made of
+The dynamic PGM-index (`DynamicPGMIndex< K , V , E , B , I >`) is an ordered
+map from arithmetic keys to values, with insertions and removals, made of
 static PGM-indexes by the logarithmic method of [Bentley and Saxe
 1980](Z-bibliography.md#ref-bentley1980). The pairs lie in a sorted buffer
 $L_0$ of $b_0 = 128$ pairs (`kBuffer`) and in sorted levels
-$L_1 , L_2 , \ldots$ of capacities $c_t = b_0 B^t$ ($B = 8$ by default),
-each key at most once per level. A key may be in several levels, and its
-pair in the newest one (the buffer first, then by increasing $t$) is the
-one that counts; a removal (`erase()`) inserts a *tombstone*, a pair that
-marks the key as absent. When an insertion finds the buffer full, the
-buffer is merged, with the new pair and with the levels before $L_t$, into
-the first level $L_t$ that has room for them all
-([Algorithm 6.12](06-search.md#alg-6-12) and
-[Figure 6.6](06-search.md#fig-6-6)). A constructor puts a vector of pairs,
-sorted by distinct keys, into the one level that holds them.
+$L_1 , L_2 , \ldots$ of capacities $c_t = b_0 B^t$ ($B = 8$ by default), each
+key at most once per level. A key may be in several levels, and its pair in
+the newest one (the buffer first, then by increasing $t$) is the one that
+counts; a removal (`erase()`) inserts a *tombstone*, a pair that marks the key
+as absent. When an insertion finds the buffer full, the buffer is merged, with
+the new pair and with the levels before $L_t$, into the first level $L_t$ that
+has room for them all ([Algorithm 6.12](06-search.md#alg-6-12) and [Figure
+6.6](06-search.md#fig-6-6)). A constructor puts a vector of pairs, sorted by
+distinct keys, into the one level that holds them.
 
 ![Figure 6.6. A `DynamicPGMIndex` with $b_0 = 4$ and $B = 2$ (for the figure; the defaults are 128 and 8): the buffer $L_0$ and the levels $L_1$ and $L_2$, of capacities 8 and 16, before and after an insertion that finds the buffer full and merges it, with the new pair, into $L_1$, which has room for them (violet); `x` is a tombstone, kept since $L_1$ is not the last level, and the places in the faintest tint are free.](../figures/search-dynamic.svg){#fig-6-6}
 
@@ -1053,26 +1055,27 @@ that a user calls are
 // declarations of <ADS/search/DynamicPGMIndex.h>
 template< class K , class V , std::size_t E = 16 , std::size_t B = 8 ,
           std::size_t I = ( std::size_t( 1 ) << 24 ) >
-requires std::is_arithmetic_v< K >
-class DynamicPGMIndex {
+ requires std::is_arithmetic_v< K >
+class DynamicPGMIndex
+{
  public:
-  using key_type = K;
-  using mapped_type = V;
-  static constexpr std::size_t kBuffer = 128;
-  static constexpr std::size_t kIndexed = I;
-  static constexpr std::size_t kFiltered = std::size_t( 1 ) << 12;
-  DynamicPGMIndex( void );
-  explicit DynamicPGMIndex( const std::vector< std::pair< K , V > > & P );
-  void insert( const K & k , const V & v );
-  void erase( const K & k );
-  const V * find( const K & k ) const;
-  bool contains( const K & k ) const;
-  std::optional< std::pair< K , V > > lowerBound( const K & k ) const;
-  template< class F >
-  void forEach( const K & lo , const K & hi , F && f ) const;
-  std::size_t entries( void ) const;
-  std::size_t levels( void ) const;
-  };
+ using key_type = K;
+ using mapped_type = V;
+ static constexpr std::size_t kBuffer = 128;
+ static constexpr std::size_t kIndexed = I;
+ static constexpr std::size_t kFiltered = std::size_t( 1 ) << 12;
+ DynamicPGMIndex( void );
+ explicit DynamicPGMIndex( const std::vector< std::pair< K , V > > & P );
+ void insert( const K & k , const V & v );
+ void erase( const K & k );
+ const V * find( const K & k ) const;
+ bool contains( const K & k ) const;
+ std::optional< std::pair< K , V > > lowerBound( const K & k ) const;
+ template< class F >
+ void forEach( const K & lo , const K & hi , F && f ) const;
+ std::size_t entries( void ) const;
+ std::size_t levels( void ) const;
+ };
 ```
 
 ## 6.7 The minimum and the local optima {#sec-6-7}
@@ -1195,14 +1198,13 @@ In `ADS/search/Minimum.h`, the functions are declared as
 // declarations of <ADS/search/Minimum.h>
 template< class T , class C = std::less<> >
 std::size_t argmin( const std::vector< T > & A , std::size_t start ,
-     std::size_t end , C less = C() );
+                    std::size_t end , C less = C() );
 template< class T , class C = std::less<> >
 const T & min( const std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
 std::pair< T , T > minMax( const std::vector< T > & A , C less = C() );
 template< class T , class C = std::less<> >
-std::pair< T , T > minMaxDivide( const std::vector< T > & A ,
-     C less = C() );
+std::pair< T , T > minMaxDivide( const std::vector< T > & A , C less = C() );
 ```
 
 In `ADS/search/LocalOptima.h`, the functions are declared as
@@ -1719,32 +1721,35 @@ In `ADS/search/RangeMinimum.h`, the declarations of `SparseTable` and
 ```cpp
 // declarations of <ADS/search/RangeMinimum.h>
 template< class T , class Compare = std::less< T > >
-class SparseTable {
+class SparseTable
+{
  public:
-  SparseTable( void );
-  explicit SparseTable( std::vector< T > A , Compare less = {} );
-  std::size_t query( std::size_t i , std::size_t j ) const;
-  std::size_t size( void ) const;
-  const T & operator[]( std::size_t i ) const;
-  };
-class PlusMinusOneRangeMinimum {
+ SparseTable( void );
+ explicit SparseTable( std::vector< T > A , Compare less = {} );
+ std::size_t query( std::size_t i , std::size_t j ) const;
+ std::size_t size( void ) const;
+ const T & operator[]( std::size_t i ) const;
+ };
+class PlusMinusOneRangeMinimum
+{
  public:
-  PlusMinusOneRangeMinimum( void );
-  explicit PlusMinusOneRangeMinimum( std::vector< long > D );
-  std::size_t query( std::size_t i , std::size_t j ) const;
-  std::size_t size( void ) const;
-  std::size_t blockSize( void ) const;
-  };
+ PlusMinusOneRangeMinimum( void );
+ explicit PlusMinusOneRangeMinimum( std::vector< long > D );
+ std::size_t query( std::size_t i , std::size_t j ) const;
+ std::size_t size( void ) const;
+ std::size_t blockSize( void ) const;
+ };
 template< class T , class Compare = std::less< T > >
-class RangeMinimum {
+class RangeMinimum
+{
  public:
-  RangeMinimum( void );
-  explicit RangeMinimum( std::vector< T > A , Compare less = {} );
-  std::size_t query( std::size_t i , std::size_t j ) const;
-  std::size_t size( void ) const;
-  const T & operator[]( std::size_t i ) const;
-  const std::vector< std::size_t > & eulerTour( void ) const;
-  };
+ RangeMinimum( void );
+ explicit RangeMinimum( std::vector< T > A , Compare less = {} );
+ std::size_t query( std::size_t i , std::size_t j ) const;
+ std::size_t size( void ) const;
+ const T & operator[]( std::size_t i ) const;
+ const std::vector< std::size_t > & eulerTour( void ) const;
+ };
 ```
 
 In `ADS/search/WordRangeMinimum.h`, the declarations of `WordRangeMinimum`
@@ -1753,14 +1758,15 @@ that a user calls are
 ```cpp
 // declarations of <ADS/search/WordRangeMinimum.h>
 template< class T , class Compare = std::less< T > >
-class WordRangeMinimum {
+class WordRangeMinimum
+{
  public:
-  WordRangeMinimum( void );
-  explicit WordRangeMinimum( std::vector< T > A , Compare less = {} );
-  std::size_t query( std::size_t i , std::size_t j ) const;
-  std::size_t size( void ) const;
-  const T & operator[]( std::size_t i ) const;
-  };
+ WordRangeMinimum( void );
+ explicit WordRangeMinimum( std::vector< T > A , Compare less = {} );
+ std::size_t query( std::size_t i , std::size_t j ) const;
+ std::size_t size( void ) const;
+ const T & operator[]( std::size_t i ) const;
+ };
 ```
 
 ## 6.10 The searches compared {#sec-6-10}

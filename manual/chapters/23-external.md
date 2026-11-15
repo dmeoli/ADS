@@ -49,45 +49,43 @@ of the headers of `ADS/external`.
 | $\mathit{succ}[ i ]$, $r[ i ]$ | the successor of the item $i$ of a list, the tail $t$ having $\mathit{succ}[ t ] = t$, and its rank, the number of links from $i$ to the tail |
 | $\tilde O( \cdot )$ | a bound up to the factor $\log_{M / B} ( n / M )$ of a sort, i.e., $\tilde O( n / B ) = O( \mathrm{sort}( n ) )$ |
 
-`TwoLevelMemory` holds $B$ and $M$, the two counters of the I/Os
-(`reads()`, `writes()` and their sum `ios()`) and the occupation of the
-memory. Each buffer and each array that an algorithm keeps in memory is
-taken from it: `allocate(k)` and `release(k)` move $k$ items, `used()` is
-the memory in use and `peak()` its largest value since the construction or
-since `resetCounters()`, which also zeroes the counters. An allocation
-beyond $M$ violates a precondition. A `MemoryLease` takes $k$ items at its
-construction and gives them back at its destruction (its `size()` is $k$),
-and hence a buffer cannot be forgotten. Thus, a test of an algorithm checks
-at once its result, its I/Os and the memory it used, and a bound of this
-chapter is verified on the run. The function `blocks(n)` is
-$\lceil n / B \rceil$, and `countRead()` and `countWrite()` are called by
-the files only.
+`TwoLevelMemory` holds $B$ and $M$, the two counters of the I/Os (`reads()`,
+`writes()` and their sum `ios()`) and the occupation of the memory. Each
+buffer and each array that an algorithm keeps in memory is taken from it:
+`allocate( k )` and `release( k )` move $k$ items, `used()` is the memory in
+use and `peak()` its largest value since the construction or since
+`resetCounters()`, which also zeroes the counters. An allocation beyond $M$
+violates a precondition. A `MemoryLease` takes $k$ items at its construction
+and gives them back at its destruction (its `size()` is $k$), and hence a
+buffer cannot be forgotten. Thus, a test of an algorithm checks at once its
+result, its I/Os and the memory it used, and a bound of this chapter is
+verified on the run. The function `blocks( n )` is $\lceil n / B \rceil$, and
+`countRead()` and `countWrite()` are called by the files only.
 
-A `DiskFile<T>` is a file of the disk, i.e., a sequence of items laid out in
-blocks of $B$ items, the last one possibly partial. Its only accesses to
-the items are `readBlock(b, dest)`, which copies the block $b$ into a
-buffer of $B$ items, and `appendBlock(src, n)`, which appends $n \le B$
-items as a new block after full blocks; each is one I/O. A file built from
-a vector holds the input of a problem, laid out with no I/O; `contents()`
-reads the items with no I/O, for the checks of the tests and never for the
-algorithms. Also, the files cannot be copied, which would duplicate them without
-paying their I/Os, and a move assignment is a rename on the disk (between
-two files on the same memory). Note that the files are not containers with
-iterators on purpose: an iterator would read the items without paying the
-I/Os. The functions `size()`, `empty()`, `blocks()`, `clear()` and `memory()` complete
+A `DiskFile< T >` is a file of the disk, i.e., a sequence of items laid out in
+blocks of $B$ items, the last one possibly partial. Its only accesses to the
+items are `readBlock( b , dest )`, which copies the block $b$ into a buffer of
+$B$ items, and `appendBlock( src , n )`, which appends $n \le B$ items as a
+new block after full blocks; each is one I/O. A file built from a vector holds
+the input of a problem, laid out with no I/O; `contents()` reads the items
+with no I/O, for the checks of the tests and never for the algorithms. Also,
+the files cannot be copied, which would duplicate them without paying their
+I/Os, and a move assignment is a rename on the disk (between two files on the
+same memory). Note that the files are not containers with iterators on
+purpose: an iterator would read the items without paying the I/Os. The
+functions `size()`, `empty()`, `blocks()`, `clear()` and `memory()` complete
 the class, with the aliases `value_type` and `size_type` of the standard
-containers (which `RecordFile` of [§23.6](23-external.md#sec-23-6) has
-too).
+containers (which `RecordFile` of [§23.6](23-external.md#sec-23-6) has too).
 
-A `DiskReader<T>` reads a file through a buffer of one block, leased from
+A `DiskReader< T >` reads a file through a buffer of one block, leased from
 the memory of the file. The function `next()` (with `peek()`, `hasNext()` and
 `position()`) scans the file in order, $\lceil n / B \rceil$ reads for $n$
-items; `at(i)` reads any item, loading its block only when it is not the
-one in the buffer ([Algorithm 23.1](23-external.md#alg-23-1)), and the scan
-goes on from $i + 1$. Also, a `DiskWriter<T>` appends to a file through a buffer
-of one block: `push(x)` writes the buffer when it is full, and `close()`
-(or the destructor) writes the last partial block.
-[Figure 23.1](23-external.md#fig-23-1) shows a read and a write.
+items; `at( i )` reads any item, loading its block only when it is not the one
+in the buffer ([Algorithm 23.1](23-external.md#alg-23-1)), and the scan goes
+on from $i + 1$. Also, a `DiskWriter< T >` appends to a file through a buffer
+of one block: `push( x )` writes the buffer when it is full, and `close()` (or
+the destructor) writes the last partial block. [Figure
+23.1](23-external.md#fig-23-1) shows a read and a write.
 
 <span id="alg-23-1"></span>**Algorithm 23.1.** The read of an item of a
 file by `DiskReader` (chapter 1, Introduction, of
@@ -148,23 +146,22 @@ $B = 32$ for all $n \le 2^{160}$.
 ## 23.2 The block store {#sec-23-2}
 
 The devices of the external memory differ in their block size and in their
-system calls. [Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp) hides
-them behind a *block store*, a collection of blocks identified by their
-indices, with four operations: `readBlock(i)` returns the content of the
-block $i$, `writeBlock(i, b)` writes $b$ in it, `placeBlock(b)` stores $b$
-in a new block and returns its index, and `freeBlock(i)` gives the block
-back. One may picture it as a file divided into blocks, whose free blocks
-form a list. `BlockStore<T>` is this disk simulated in memory, an array of
-blocks of type `T` in which `readBlock()` and `writeBlock()` are the I/Os of
-the model, counted one each (by `reads()` and `writes()`, which
-`resetCounters()` zeroes). The function `placeBlock(b)` writes the new block where a
-block freed by `freeBlock()` was, on top of a stack of the free indices, or
-at the end when there is none ([Algorithm 23.2](23-external.md#alg-23-2)).
-Thus the array grows only when no block is free, and its length is the
-largest number of blocks ever in use at once; `blocks()` counts those in
-use now. If a `TwoLevelMemory` is given, its
-counters count the I/Os too, and the structures on the blocks share one
-count with the algorithms on the files.
+system calls. [Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp) hides them
+behind a *block store*, a collection of blocks identified by their indices,
+with four operations: `readBlock( i )` returns the content of the block $i$,
+`writeBlock( i , b )` writes $b$ in it, `placeBlock( b )` stores $b$ in a new
+block and returns its index, and `freeBlock( i )` gives the block back. One
+may picture it as a file divided into blocks, whose free blocks form a list.
+`BlockStore< T >` is this disk simulated in memory, an array of blocks of type
+`T` in which `readBlock()` and `writeBlock()` are the I/Os of the model,
+counted one each (by `reads()` and `writes()`, which `resetCounters()`
+zeroes). The function `placeBlock( b )` writes the new block where a block
+freed by `freeBlock()` was, on top of a stack of the free indices, or at the
+end when there is none ([Algorithm 23.2](23-external.md#alg-23-2)). Thus the
+array grows only when no block is free, and its length is the largest number
+of blocks ever in use at once; `blocks()` counts those in use now. If a
+`TwoLevelMemory` is given, its counters count the I/Os too, and the structures
+on the blocks share one count with the algorithms on the files.
 
 <span id="alg-23-2"></span>**Algorithm 23.2.** The placement of a new
 block ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp)).
@@ -175,14 +172,16 @@ block ([Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp)).
 
 A block is copied when it is read and when it is written, as it would be
 between the disk and the memory ([Figure 23.2](23-external.md#fig-23-2)).
-Thus, a structure keeps between two I/Os a copy of the block of its own, which a test of the internal memory can count. In three points the code of
-[Morin 2013, §14.1](Z-bibliography.md#ref-morin-cpp) differs from ours. First, its blocks are pointers to the nodes; hence a node changed
-after its read is changed on the disk with no write, which hides I/Os that
-a test of the model would count. Second, it does not count the I/Os.
-Third, its `placeBlock()` takes the free index by `remove(size())`, one
-past the last place of its stack, and does not store the block there. The function `peek(i)` reads a block with no I/O, for the checks
-of the contracts only, and a block read, written, freed or peeked must be
-in use.
+Thus, a structure keeps between two I/Os a copy of the block of its own, which
+a test of the internal memory can count. In three points the code of [Morin
+2013, §14.1](Z-bibliography.md#ref-morin-cpp) differs from ours. First, its
+blocks are pointers to the nodes; hence a node changed after its read is
+changed on the disk with no write, which hides I/Os that a test of the model
+would count. Second, it does not count the I/Os. Third, its `placeBlock()`
+takes the free index by `remove( size() )`, one past the last place of its
+stack, and does not store the block there. The function `peek( i )` reads a
+block with no I/O, for the checks of the contracts only, and a block read,
+written, freed or peeked must be in use.
 
 ## 23.3 B-trees on the blocks {#sec-23-3}
 
@@ -217,29 +216,30 @@ $\square$
 
 A node holds $O( B )$ data, and we choose $B$ so that a node fills a block;
 the cost of an operation in the external memory is then the number of nodes
-that it reads or writes. With keys and indices of 4 bytes each, for
-instance, a node of $2 B$ keys and $2 B$ indices fills a block of 4096
-bytes when $B = 256$. `BlockBTree<K>` keeps its nodes as the blocks of a
-`BlockStore`, each `Node` a vector of keys and a vector of the indices of
-its children (none for a leaf), for any key type with a total order (the aliases `Key` and `Item`). The code of [Morin 2013,
-§14.2](Z-bibliography.md#ref-morin-cpp) keeps arrays of $2 B$ keys and
-marks the empty places by a null key instead. In addition, the tree stores the index of
-its root, its parameter $B$ (`order()`) and its number of keys (`size()`,
-`empty()`). Its invariant, i.e., the order of the keys, their number in
-each node, the depth of the leaves and the count, is checked with no I/O
-at the level 3 of the contracts while $n \le 1024$.
+that it reads or writes. With keys and indices of 4 bytes each, for instance,
+a node of $2 B$ keys and $2 B$ indices fills a block of 4096 bytes when
+$B = 256$. `BlockBTree< K >` keeps its nodes as the blocks of a `BlockStore`,
+each `Node` a vector of keys and a vector of the indices of its children (none
+for a leaf), for any key type with a total order (the aliases `Key` and
+`Item`). The code of [Morin 2013, §14.2](Z-bibliography.md#ref-morin-cpp)
+keeps arrays of $2 B$ keys and marks the empty places by a null key instead.
+In addition, the tree stores the index of its root, its parameter $B$
+(`order()`) and its number of keys (`size()`, `empty()`). Its invariant, i.e.,
+the order of the keys, their number in each node, the depth of the leaves and
+the count, is checked with no I/O at the level 3 of the contracts while
+$n \le 1024$.
 
-The search for $x$ starts at the root and, at each node $u$, finds the
-first place $i$ of a key $\ge x$ by a binary search (`place()`). If that
-key is $x$ the search ends; otherwise it remembers the key, the last one
-$\ge x$ met so far, and goes on in the child $i$ of $u$. At a leaf it
-returns the key remembered, i.e., the smallest key $\ge x$, or nothing
-([Algorithm 23.3](23-external.md#alg-23-3)). This is `lowerBound(x)`, the
-`find(x)` of the SSet of [Morin 2013, §14.2.1](Z-bibliography.md#ref-morin-cpp),
-and `contains(x)` tests its result; [Figure 23.3](23-external.md#fig-23-3)
-shows a search that finds its key and one that does not. Its result is a
-copy of the key, since the blocks of the external memory are copied into
-the internal one, not pointed to.
+The search for $x$ starts at the root and, at each node $u$, finds the first
+place $i$ of a key $\ge x$ by a binary search (`place()`). If that key is $x$
+the search ends; otherwise it remembers the key, the last one $\ge x$ met so
+far, and goes on in the child $i$ of $u$. At a leaf it returns the key
+remembered, i.e., the smallest key $\ge x$, or nothing ([Algorithm
+23.3](23-external.md#alg-23-3)). This is `lowerBound( x )`, the `find( x )` of
+the SSet of [Morin 2013, §14.2.1](Z-bibliography.md#ref-morin-cpp), and
+`contains( x )` tests its result; [Figure 23.3](23-external.md#fig-23-3) shows
+a search that finds its key and one that does not. Its result is a copy of the
+key, since the blocks of the external memory are copied into the internal one,
+not pointed to.
 
 <span id="alg-23-3"></span>**Algorithm 23.3.** The search in a B-tree
 ([Morin 2013, §14.2.1](Z-bibliography.md#ref-morin-cpp)).
@@ -292,13 +292,13 @@ adopted by the new node would have to be rewritten too, i.e., $B + 3$ more
 I/Os per split instead of 3.
 
 The code of [Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp) is
-recursive, and its recursion holds a node per level while it goes back up.
-The function `insert(x)` keeps instead the path as the indices of its blocks and of the
-children taken, and reads a parent again on the way up only when a split
-reaches it ([Algorithm 23.4](23-external.md#alg-23-4)). It returns false,
-with no write, if $x$ is already there.
-[Figure 23.5](23-external.md#fig-23-5) shows the two insertions of
-[Morin 2013, exercise 14.1](Z-bibliography.md#ref-morin-cpp).
+recursive, and its recursion holds a node per level while it goes back up. The
+function `insert( x )` keeps instead the path as the indices of its blocks and
+of the children taken, and reads a parent again on the way up only when a
+split reaches it ([Algorithm 23.4](23-external.md#alg-23-4)). It returns
+false, with no write, if $x$ is already there. [Figure
+23.5](23-external.md#fig-23-5) shows the two insertions of [Morin 2013,
+exercise 14.1](Z-bibliography.md#ref-morin-cpp).
 
 <span id="alg-23-4"></span>**Algorithm 23.4.** The insertion in a B-tree
 ([Morin 2013, §14.2.2](Z-bibliography.md#ref-morin-cpp)), with the path
@@ -325,12 +325,12 @@ on up to the root; a root left with no key and one child is replaced by
 the child. Thus a removal makes zero or more merges and at most one borrow,
 which ends it.
 
-The function `remove(x)` keeps the path as `insert()` does, down to the leaf of $x$ or,
-if $x$ is in an internal node, on to the leftmost leaf of its right subtree
-([Algorithm 23.5](23-external.md#alg-23-5)). The node $t$ of $x$ gets $y$
-when the restructurings on the way up reach it, and by one more read and
-write if they stop below it. [Figure 23.6](23-external.md#fig-23-6) shows
-the two removals of [Morin 2013, exercise 14.2](Z-bibliography.md#ref-morin-cpp).
+The function `remove( x )` keeps the path as `insert()` does, down to the leaf
+of $x$ or, if $x$ is in an internal node, on to the leftmost leaf of its right
+subtree ([Algorithm 23.5](23-external.md#alg-23-5)). The node $t$ of $x$ gets
+$y$ when the restructurings on the way up reach it, and by one more read and
+write if they stop below it. [Figure 23.6](23-external.md#fig-23-6) shows the
+two removals of [Morin 2013, exercise 14.2](Z-bibliography.md#ref-morin-cpp).
 
 <span id="alg-23-5"></span>**Algorithm 23.5.** The removal from a B-tree
 ([Morin 2013, §14.2.3](Z-bibliography.md#ref-morin-cpp)), with the path
@@ -572,18 +572,18 @@ The introduction of [Morin 2013, chapter 14](Z-bibliography.md#ref-morin-cpp)
 claims an internal memory of $O( B + \log_B n )$, but the recursion of his
 code holds a node per level while it goes back up, i.e.,
 $\Theta( B \log_B n )$ words ([Morin 2013, exercise
-14.4](Z-bibliography.md#ref-morin-cpp)). `BlockBTree` keeps the path as
-pairs of indices, $O( \log_B n )$ words, and at most five nodes counted in
-memory at once: the node, its parent and the at most three children whose
-keys a restructuring gathers (the node among them). A parent is read again
-on the way up only when a restructuring or the successor of a removed key
-reaches it, which [Lemma 23.4](23-external.md#lem-23-4) keeps at $O( 1 )$
-reads per operation, amortized, beyond the descent. The function `peakNodes()` gives the
-most nodes held at once, and `peakPath()` the longest path kept, in pairs
-of indices. Finally, the other functions read the tree with no I/O, for the tests:
-`levels()` gives the keys level by level, `assign(L)` builds a tree from
-its levels (the trees of the figures of the book), `forEach(f)` visits the
-keys in increasing order, and `nodes()`, `reads()`, `writes()` and
+14.4](Z-bibliography.md#ref-morin-cpp)). `BlockBTree` keeps the path as pairs
+of indices, $O( \log_B n )$ words, and at most five nodes counted in memory at
+once: the node, its parent and the at most three children whose keys a
+restructuring gathers (the node among them). A parent is read again on the way
+up only when a restructuring or the successor of a removed key reaches it,
+which [Lemma 23.4](23-external.md#lem-23-4) keeps at $O( 1 )$ reads per
+operation, amortized, beyond the descent. The function `peakNodes()` gives the
+most nodes held at once, and `peakPath()` the longest path kept, in pairs of
+indices. Finally, the other functions read the tree with no I/O, for the
+tests: `levels()` gives the keys level by level, `assign( L )` builds a tree
+from its levels (the trees of the figures of the book), `forEach( f )` visits
+the keys in increasing order, and `nodes()`, `reads()`, `writes()` and
 `resetCounters()` read the store.
 
 ## 23.4 Sorting and permuting {#sec-23-4}
@@ -643,13 +643,13 @@ two terms of the denominator: the first dominates when $B \log( M / B ) <
 \mathrm{sort}( n ) )$ otherwise. $\square$
 
 The minimum is $n$, one I/O per item, only when $B$ is smaller than the
-logarithm of the sort. Hence on the disk the cost of a sort lies in moving the items, while
-finding their order costs no I/O. The function `sortingLowerBound(n, M, B)` computes the
-least $t$ of (23.1) plus the writes, with the logarithms of the factorials
-by the function $\Gamma$ (and never fewer than $\lceil n / B \rceil$
-reads), and `permutingLowerBound(n, M, B)` the larger of
-$2 \lceil n / B \rceil$ and the least $t$ of (23.2); a test compares them
-with the I/Os counted.
+logarithm of the sort. Hence on the disk the cost of a sort lies in moving the
+items, while finding their order costs no I/O. The function
+`sortingLowerBound( n , M , B )` computes the least $t$ of (23.1) plus the
+writes, with the logarithms of the factorials by the function $\Gamma$ (and
+never fewer than $\lceil n / B \rceil$ reads), and
+`permutingLowerBound( n , M , B )` the larger of $2 \lceil n / B \rceil$ and
+the least $t$ of (23.2); a test compares them with the I/Os counted.
 
 ### 23.4.2 Mergesort {#sec-23-4-2}
 
@@ -677,18 +677,18 @@ writes each block once, and a lone run left at the end of a pass is not
 copied; hence (23.3) is an upper bound. With $k = M / B - 1$,
 $\log_k ( n / R ) = O( \log_{M / B} ( n / M ) )$. $\square$
 
-The function `mergeSortIOs(n, M, B, k)` is the value of (23.3), usually somewhat above the I/Os counted (cf. the lone runs in the proof).
-The function `binaryMergeSort(in, out)` merges the runs two by two, with three blocks
-of memory, i.e., $O( ( n / B ) \log_2 ( n / M ) )$ I/Os, and
-`multiwayMergeSort(in, out)` merges $k = \lfloor M / B \rfloor - 1$ runs
-at a time ([Algorithm 23.7](23-external.md#alg-23-7)); both need
-$M \ge 3 B$, an empty output on the same memory, and an order `less`
-(`std::less` by default). Choosing the least head among $k$ runs
-costs no I/O, and a tree of losers (`LoserTree.h`, in
-[chapter 9](09-priority.md#ch-9)) makes it with $\lceil \log_2 k \rceil$
-comparisons, one per level on the path of the winner. Since the selector is a
-parameter, the same algorithm runs on the trees and the heaps of
-ADS and of other libraries, with the same I/Os.
+The function `mergeSortIOs( n , M , B , k )` is the value of (23.3), usually
+somewhat above the I/Os counted (cf. the lone runs in the proof). The function
+`binaryMergeSort( in , out )` merges the runs two by two, with three blocks of
+memory, i.e., $O( ( n / B ) \log_2 ( n / M ) )$ I/Os, and
+`multiwayMergeSort( in , out )` merges $k = \lfloor M / B \rfloor - 1$ runs at
+a time ([Algorithm 23.7](23-external.md#alg-23-7)); both need $M \ge 3 B$, an
+empty output on the same memory, and an order `less` (`std::less` by default).
+Choosing the least head among $k$ runs costs no I/O, and a tree of losers
+(`LoserTree.h`, in [chapter 9](09-priority.md#ch-9)) makes it with
+$\lceil \log_2 k \rceil$ comparisons, one per level on the path of the winner.
+Since the selector is a parameter, the same algorithm runs on the trees and
+the heaps of ADS and of other libraries, with the same I/Os.
 
 <span id="alg-23-7"></span>**Algorithm 23.7.** The binary and the
 multiway mergesort (chapter 5, Sorting Atomic Items, of
@@ -715,13 +715,13 @@ a sorted input is one run.
 
 ### 23.4.3 Distribution {#sec-23-4-3}
 
-The function `distributionSort(in, out, g)` is the multiway quicksort of the same
-chapter. It takes $k - 1$ pivots from a random sample drawn by `g`, and
-distributes the items by one scan into the $k$ buckets between the pivots
+The function `distributionSort( in , out , g )` is the multiway quicksort of
+the same chapter. It takes $k - 1$ pivots from a random sample drawn by `g`,
+and distributes the items by one scan into the $k$ buckets between the pivots
 and into one bucket per pivot for the items equal to it (the three-way
-partition of quicksort, so that equal keys stop the recursion). Then it
-sorts the buckets in turn, in memory once they fit
-([Algorithm 23.8](23-external.md#alg-23-8)).
+partition of quicksort, so that equal keys stop the recursion). Then it sorts
+the buckets in turn, in memory once they fit ([Algorithm
+23.8](23-external.md#alg-23-8)).
 
 <span id="lem-23-9"></span>**Lemma 23.9.** *Let the $k - 1$ pivots be the
 items of ranks $a + 1 , 2 ( a + 1 ) , \ldots$ of a sorted random sample of
@@ -780,17 +780,18 @@ functions of the area simulate one disk.
 
 ### 23.4.4 Permuting {#sec-23-4-4}
 
-The function `permuteDirect(in, pi, out)` writes $\mathit{out}[ i ] = \mathit{in}[
-\pi[ i ] ]$ by reading $\mathit{in}[ \pi[ i ] ]$ for $i = 0 , 1 , \ldots$
-and writing the output by a scan: at most $n$ reads, fewer when
-consecutive positions fall in one block. The function `permuteBySorting(in, pi, out)`
-instead sorts the triples $\langle i , \pi[ i ] , \cdot \rangle$ by
-$\pi[ i ]$, fills in $\mathit{in}[ \pi[ i ] ]$ by one scan of the input,
-which is now read in order, and sorts the triples back by $i$
-([Algorithm 23.9](23-external.md#alg-23-9)). This is two sorts and three
-scans, i.e., $O( \mathrm{sort}( n ) )$, and by (23.2) the better of the two
-is optimal, the direct one only when $B$ is below the logarithm of the
-sort. Both check, at the level of the audits, that $\pi$ is a permutation.
+The function `permuteDirect( in , pi , out )` writes
+$\mathit{out}[ i ] = \mathit{in}[ \pi[ i ] ]$ by reading
+$\mathit{in}[ \pi[ i ] ]$ for $i = 0 , 1 , \ldots$ and writing the output by a
+scan: at most $n$ reads, fewer when consecutive positions fall in one block.
+The function `permuteBySorting( in , pi , out )` instead sorts the triples
+$\langle i , \pi[ i ] , \cdot \rangle$ by $\pi[ i ]$, fills in
+$\mathit{in}[ \pi[ i ] ]$ by one scan of the input, which is now read in
+order, and sorts the triples back by $i$ ([Algorithm
+23.9](23-external.md#alg-23-9)). This is two sorts and three scans, i.e.,
+$O( \mathrm{sort}( n ) )$, and by (23.2) the better of the two is optimal, the
+direct one only when $B$ is below the logarithm of the sort. Both check, at
+the level of the audits, that $\pi$ is a permutation.
 
 <span id="alg-23-9"></span>**Algorithm 23.9.** The permutation by two
 sorts, and the direct one (chapter 5, Sorting Atomic Items, of
@@ -804,16 +805,16 @@ sorts, and the direct one (chapter 5, Sorting Atomic Items, of
 
 ### 23.5.1 Pointer jumping {#sec-23-5-1}
 
-A list of $n$ items is here the vector $\mathit{succ}$ of their
-successors, the items being $0 , \ldots , n - 1$ and the tail $t$ the only
-one with $\mathit{succ}[ t ] = t$; `isList(succ)` checks it (one tail, and
-each item reached from the only item that is no successor). The *rank* of
-an item is its distance from the tail, after chapter 4, List Ranking, of
-[Ferragina 2023](Z-bibliography.md#ref-ferragina2023). In memory a list is
-ranked in $O( n )$ time by the predecessors and a walk back from the tail
+A list of $n$ items is here the vector $\mathit{succ}$ of their successors,
+the items being $0 , \ldots , n - 1$ and the tail $t$ the only one with
+$\mathit{succ}[ t ] = t$; `isList( succ )` checks it (one tail, and each item
+reached from the only item that is no successor). The *rank* of an item is its
+distance from the tail, after chapter 4, List Ranking, of [Ferragina
+2023](Z-bibliography.md#ref-ferragina2023). In memory a list is ranked in
+$O( n )$ time by the predecessors and a walk back from the tail
 (`listRank()`), which on the disk costs up to one I/O per item, since the
-links jump anywhere. The algorithms of `ListRanking.h` avoid the walk in
-two ways, both taken from the parallel algorithms.
+links jump anywhere. The algorithms of `ListRanking.h` avoid the walk in two
+ways, both taken from the parallel algorithms.
 
 --8<-- "generated/ListRanking-listRank.pseudo.md"
 
@@ -852,13 +853,16 @@ or that are the tail, whose jumps no longer change
 
 A round of (23.4) is a *parallel step*
 $A[ a_i ] \gets \mathrm{op}( A[ a_i ] , A[ b_i ] )$, with distinct
-destinations $a_i$ and the values of $A$ read before any change. The function `parallelStep(A, ops, op, out)` makes it on the
-disk by sorting the requests by $b_i$, answering them by one scan of $A$,
-sorting them back by $a_i$ and applying them by a second scan, i.e., two
-sorts and three scans. Thus any parallel algorithm of $T$ steps on $n$
-processors costs $\tilde O( ( n / B ) T )$ I/Os ([Chiang et al. 1995](Z-bibliography.md#ref-chiang1995)). In particular, `externalPointerJumping()`,
-the algorithm of Wyllie so simulated, the rank and the successor carried
-in one record, costs $\tilde O( ( n / B ) \log n )$ I/Os.
+destinations $a_i$ and the values of $A$ read before any change. The function
+`parallelStep( A , ops , op , out )` makes it on the disk by sorting the
+requests by $b_i$, answering them by one scan of $A$, sorting them back by
+$a_i$ and applying them by a second scan, i.e., two sorts and three scans.
+Thus any parallel algorithm of $T$ steps on $n$ processors costs
+$\tilde O( ( n / B ) T )$ I/Os ([Chiang et
+al. 1995](Z-bibliography.md#ref-chiang1995)). In particular,
+`externalPointerJumping()`, the algorithm of Wyllie so simulated, the rank and
+the successor carried in one record, costs $\tilde O( ( n / B ) \log n )$
+I/Os.
 
 --8<-- "generated/ListRanking-parallelStep.pseudo.md"
 
@@ -900,13 +904,14 @@ sorts and scans cost $c \, \mathrm{sort}( ( 7 / 8 )^j n ) \le c \, ( 7 /
 $\mathrm{sort}( n ) / n$ does not decrease with $n$; the sum over $j$ is
 at most $8 c \, \mathrm{sort}( n )$. $\square$
 
-The function `randomIndependentSet(succ, g)` tosses a coin per item and takes the heads
-whose successor shows tails. The function `deterministicCoinTossing(succ)` is the technique of
-[Cole and Vishkin 1986](Z-bibliography.md#ref-cole1986). It starts from the
-colors $c[ i ] = i$, which differ on adjacent items, and replaces at each
-round $c[ i ]$ by $2 \pi + z$, with $\pi$ the lowest bit in which $c[ i ]$
-and $c[ \mathit{succ}[ i ] ]$ differ and $z$ the value of that bit in
-$c[ i ]$ (the tail compares with its bit 0).
+The function `randomIndependentSet( succ , g )` tosses a coin per item and
+takes the heads whose successor shows tails. The function
+`deterministicCoinTossing( succ )` is the technique of [Cole and Vishkin
+1986](Z-bibliography.md#ref-cole1986). It starts from the colors $c[ i ] = i$,
+which differ on adjacent items, and replaces at each round $c[ i ]$ by
+$2 \pi + z$, with $\pi$ the lowest bit in which $c[ i ]$ and
+$c[ \mathit{succ}[ i ] ]$ differ and $z$ the value of that bit in $c[ i ]$
+(the tail compares with its bit 0).
 
 <span id="lem-23-13"></span>**Lemma 23.13.** *If adjacent colors differ
 before a round, they differ after it, and colors of $b$ bits become colors
@@ -919,15 +924,15 @@ $j$ too, whose $\pi$ is 0: then $i$ has $\pi = 0$ as well, i.e., its color
 differs from that of $j$ in the bit 0. The new color is at most
 $2 ( b - 1 ) + 1$, which has $\lceil \log_2 b \rceil + 1$ bits. $\square$
 
-Hence after $O( \log^* n )$ rounds the colors are in
-$\{ 0 , \ldots , 5 \}$ (the rounds go to `*rounds`), and the items of the
-colors 5, 4 and 3 in turn take the least color of $\{ 0 , 1 , 2 \}$ that
-neither neighbour has. This keeps the colors proper, since the items of one
-color are not adjacent. The function `independentSetOfColors(succ, color)` takes the
-local minima of the three colors, the tail excluded and not counted as a
-neighbour; they are independent and at least about $n / 4$
-([Lemma 23.14](23-external.md#lem-23-14) below). [Table 23.4](23-external.md#tab-23-4) compares the two
-kinds.
+Hence after $O( \log^* n )$ rounds the colors are in $\{ 0 , \ldots , 5 \}$
+(the rounds go to `*rounds`), and the items of the colors 5, 4 and 3 in turn
+take the least color of $\{ 0 , 1 , 2 \}$ that neither neighbour has. This
+keeps the colors proper, since the items of one color are not adjacent. The
+function `independentSetOfColors( succ , color )` takes the local minima of
+the three colors, the tail excluded and not counted as a neighbour; they are
+independent and at least about $n / 4$ ([Lemma
+23.14](23-external.md#lem-23-14) below). [Table 23.4](23-external.md#tab-23-4)
+compares the two kinds.
 
 --8<-- "generated/ListRanking-randomIndependentSet.pseudo.md"
 
@@ -967,23 +972,24 @@ the same way. $\square$
 | `randomIndependentSet()`: a coin per item, the heads whose successor shows tails | $( n - 1 ) / 4$ on average, at least $n / 8$ after at most 10 attempts on average | 1 |
 | `independentSetOfColors()` on `deterministicCoinTossing()`: the local minima of three colors | at least about $n / 4$ | $O( \log^* n )$ |
 
-The function `listRankIndependentSet(succ, g, deterministic)` runs the recursion in
-memory with either set, unrolled into a loop over the levels (whose number
-goes to `*levels`). The function `externalListRank(succ, rank, g)` runs it on the disk
-with the random coins: each item is a record
-$\langle \mathit{id} , s , r \rangle$, the records are sorted by
-$\mathit{id}$, and a join pairs each record with the record of its
-successor by two sorts and two scans. Its coins are tossed again until
-$\lvert I \rvert \ge n / 8$, and the list is ranked in memory once it fits,
-and by (23.5) it costs $\tilde O( n / B )$ I/Os. On the disk the deterministic sets
-would repeat the joins of their $O( \log^* n )$ rounds at each level, and the area uses them only in memory. The optimal parallel rankings
-of [Cole and Vishkin 1986](Z-bibliography.md#ref-cole1986) and of
+The function `listRankIndependentSet( succ , g , deterministic )` runs the
+recursion in memory with either set, unrolled into a loop over the levels
+(whose number goes to `*levels`). The function
+`externalListRank( succ , rank , g )` runs it on the disk with the random
+coins: each item is a record $\langle \mathit{id} , s , r \rangle$, the
+records are sorted by $\mathit{id}$, and a join pairs each record with the
+record of its successor by two sorts and two scans. Its coins are tossed again
+until $\lvert I \rvert \ge n / 8$, and the list is ranked in memory once it
+fits, and by (23.5) it costs $\tilde O( n / B )$ I/Os. On the disk the
+deterministic sets would repeat the joins of their $O( \log^* n )$ rounds at
+each level, and the area uses them only in memory. The optimal parallel
+rankings of [Cole and Vishkin 1986](Z-bibliography.md#ref-cole1986) and of
 [Anderson and Miller 1991](Z-bibliography.md#ref-anderson1991) use the same
 sets to reach $O( n )$ operations in $O( \log n )$ time, and on the disk
-$\Theta( \mathrm{sort}( n ) )$, the bound of (23.5), is optimal
-([Chiang et al. 1995](Z-bibliography.md#ref-chiang1995)). The files of
-`externalPointerJumping()` and `externalListRank()` must share a memory of
-at least $3 B$ items (and $B + 4$ for the second, which ranks a list of
+$\Theta( \mathrm{sort}( n ) )$, the bound of (23.5), is optimal ([Chiang et
+al. 1995](Z-bibliography.md#ref-chiang1995)). The files of
+`externalPointerJumping()` and `externalListRank()` must share a memory of at
+least $3 B$ items (and $B + 4$ for the second, which ranks a list of
 $n \le ( M - B ) / 4$ items in memory), with empty outputs.
 
 --8<-- "generated/ListRanking-listRankIndependentSet.pseudo.md"
@@ -993,24 +999,25 @@ $n \le ( M - B ) / 4$ items in memory), with empty outputs.
 ## 23.6 Files on the disk of the machine {#sec-23-6}
 
 The structures of the model keep their blocks in memory and count the I/Os,
-which is the measure of the bounds of this chapter. An algorithm whose data
-do not fit in the memory of the machine needs instead files on its disk,
-e.g., the searches with delayed duplicate detection, whose open and closed
-lists are kept on the disk and are read and written by sequential scans
-only. `RecordFile.h` gives the least that such scans need. A
-`RecordFile<T>` is a file of records of a trivially copyable type `T`,
-written as their bytes, and hence readable only on a machine with the same layout of `T`. Its function `append(src, n)` adds records at its end (making the file if
-it does not exist), `forEach(f, buffer)` scans them in order through a
-buffer, `readAll()` loads them, `clear()` empties the file, `remove()`
-deletes it, and `size()`, `empty()` and `path()` describe it. A
-`RecordWriter<T>` appends to a `RecordFile` through a buffer of records,
-which it writes when it is full ([Algorithm 23.10](23-external.md#alg-23-10)
-and [Figure 23.11](23-external.md#fig-23-11)) and at `flush()` or at its
-destruction; `pending()` counts the records in the buffer and `file()`
-gives the file. A `TempDirectory` is a new directory, made in the
-temporary directory of the system (or in a given one), where the files of a
-run go: `path()` and `operator/` name them, and the directory is removed
-with all that it holds when the object is destroyed.
+which is the measure of the bounds of this chapter. An algorithm whose data do
+not fit in the memory of the machine needs instead files on its disk, e.g.,
+the searches with delayed duplicate detection, whose open and closed lists are
+kept on the disk and are read and written by sequential scans only.
+`RecordFile.h` gives the least that such scans need. A `RecordFile< T >` is a
+file of records of a trivially copyable type `T`, written as their bytes, and
+hence readable only on a machine with the same layout of `T`. Its function
+`append( src , n )` adds records at its end (making the file if it does not
+exist), `forEach( f , buffer )` scans them in order through a buffer,
+`readAll()` loads them, `clear()` empties the file, `remove()` deletes it, and
+`size()`, `empty()` and `path()` describe it. A `RecordWriter< T >` appends to
+a `RecordFile` through a buffer of records, which it writes when it is full
+([Algorithm 23.10](23-external.md#alg-23-10) and [Figure
+23.11](23-external.md#fig-23-11)) and at `flush()` or at its destruction;
+`pending()` counts the records in the buffer and `file()` gives the file. A
+`TempDirectory` is a new directory, made in the temporary directory of the
+system (or in a given one), where the files of a run go: `path()` and
+`operator/` name them, and the directory is removed with all that it holds
+when the object is destroyed.
 
 <span id="alg-23-10"></span>**Algorithm 23.10.** The insertion of a record
 by `RecordWriter`.
@@ -1056,11 +1063,14 @@ headers as it stands, and its assertions hold.
 ```cpp
 // declarations of <ADS/external/BlockBTree.h>
 enum class BTreePolicy { STANDARD , WIDE , THREE };
-template< std::totally_ordered K > class BlockBTree { public:
+template< std::totally_ordered K >
+class BlockBTree
+{
+ public:
  using Key = K;
  using Item = K;
  explicit BlockBTree( int B , BTreePolicy p = BTreePolicy::STANDARD ,
-     TwoLevelMemory * mem = nullptr );
+                      TwoLevelMemory * mem = nullptr );
  std::optional< K > lowerBound( const K & x ) const;
  bool contains( const K & x ) const;
  bool insert( const K & x );
@@ -1082,7 +1092,8 @@ template< std::totally_ordered K > class BlockBTree { public:
  std::size_t peakPath( void ) const;
  std::vector< std::vector< std::vector< K > > > levels( void ) const;
  void assign( const std::vector< std::vector< std::vector< K > > > & L );
- template< class F > void forEach( F && f ) const;
+ template< class F >
+ void forEach( F && f ) const;
  };
 ```
 
@@ -1090,7 +1101,10 @@ template< std::totally_ordered K > class BlockBTree { public:
 
 ```cpp
 // declarations of <ADS/external/BlockStore.h>
-template< class T > class BlockStore { public:
+template< class T >
+class BlockStore
+{
+ public:
  explicit BlockStore( TwoLevelMemory * mem = nullptr );
  T readBlock( std::size_t i ) const;
  void writeBlock( std::size_t i , const T & b );
@@ -1109,26 +1123,27 @@ template< class T > class BlockStore { public:
 ```cpp
 // declarations of <ADS/external/ExternalSorting.h>
 std::uint64_t mergeSortIOs( std::size_t n , std::size_t M , std::size_t B ,
-    std::size_t k );
+                            std::size_t k );
 std::uint64_t sortingLowerBound( std::size_t n , std::size_t M ,
-    std::size_t B );
+                                 std::size_t B );
 std::uint64_t permutingLowerBound( std::size_t n , std::size_t M ,
-    std::size_t B );
+                                   std::size_t B );
 template< class T , class C = std::less<> >
 void binaryMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
-    C less = C() );
+                      C less = C() );
 template< class T , class C = std::less<> , class Sel = LoserTree< T , C > >
 void multiwayMergeSort( const DiskFile< T > & in , DiskFile< T > & out ,
-    C less = C() , bool snowPlow = false );
+                        C less = C() , bool snowPlow = false );
 template< class T , class R , class C = std::less<> >
-void distributionSort( const DiskFile< T > & in , DiskFile< T > & out ,
-    R & g , C less = C() );
+void distributionSort( const DiskFile< T > & in , DiskFile< T > & out , R & g ,
+                       C less = C() );
 template< class T >
 void permuteBySorting( const DiskFile< T > & in ,
-    const DiskFile< std::size_t > & pi , DiskFile< T > & out );
+                       const DiskFile< std::size_t > & pi ,
+                       DiskFile< T > & out );
 template< class T >
 void permuteDirect( const DiskFile< T > & in ,
-    const DiskFile< std::size_t > & pi , DiskFile< T > & out );
+                    const DiskFile< std::size_t > & pi , DiskFile< T > & out );
 ```
 
 `ListRanking.h` ([§23.5](23-external.md#sec-23-5)).
@@ -1136,31 +1151,36 @@ void permuteDirect( const DiskFile< T > & in ,
 ```cpp
 // declarations of <ADS/external/ListRanking.h>
 bool isList( const std::vector< std::size_t > & succ );
-std::vector< std::size_t > listRank( const std::vector< std::size_t > &
-    succ );
-std::vector< std::size_t > listRankPointerJumping( const std::vector<
-    std::size_t > & succ , std::size_t * rounds = nullptr );
+std::vector< std::size_t > listRank( const std::vector< std::size_t > & succ );
+std::vector< std::size_t >
+listRankPointerJumping( const std::vector< std::size_t > & succ ,
+                        std::size_t * rounds = nullptr );
 template< class R >
-std::vector< bool > randomIndependentSet( const std::vector< std::size_t >
-    & succ , R & g );
-std::vector< int > deterministicCoinTossing( const std::vector< std::size_t
-    > & succ , std::size_t * rounds = nullptr );
-std::vector< bool > independentSetOfColors( const std::vector< std::size_t
-    > & succ , const std::vector< int > & color );
+std::vector< bool >
+randomIndependentSet( const std::vector< std::size_t > & succ , R & g );
+std::vector< int >
+deterministicCoinTossing( const std::vector< std::size_t > & succ ,
+                          std::size_t * rounds = nullptr );
+std::vector< bool >
+independentSetOfColors( const std::vector< std::size_t > & succ ,
+                        const std::vector< int > & color );
 template< class R >
-std::vector< std::size_t > listRankIndependentSet( const std::vector<
-    std::size_t > & succ , R & g , bool deterministic = false ,
-    std::size_t * levels = nullptr );
+std::vector< std::size_t >
+listRankIndependentSet( const std::vector< std::size_t > & succ , R & g ,
+                        bool deterministic = false ,
+                        std::size_t * levels = nullptr );
 template< class T , class Op >
-void parallelStep( const DiskFile< T > & A ,
-    const DiskFile< std::pair< std::size_t , std::size_t > > & ops ,
-    Op op , DiskFile< T > & out );
+void parallelStep(
+  const DiskFile< T > & A ,
+  const DiskFile< std::pair< std::size_t , std::size_t > > & ops , Op op ,
+  DiskFile< T > & out );
 void externalPointerJumping( const DiskFile< std::size_t > & succ ,
-    DiskFile< std::size_t > & rank , std::size_t * rounds = nullptr );
+                             DiskFile< std::size_t > & rank ,
+                             std::size_t * rounds = nullptr );
 template< class R >
 void externalListRank( const DiskFile< std::size_t > & succ ,
-    DiskFile< std::size_t > & rank , R & g ,
-    std::size_t * levels = nullptr );
+                       DiskFile< std::size_t > & rank , R & g ,
+                       std::size_t * levels = nullptr );
 ```
 
 `RecordFile.h` ([§23.6](23-external.md#sec-23-6)).
@@ -1168,9 +1188,14 @@ void externalListRank( const DiskFile< std::size_t > & succ ,
 ```cpp
 // declarations of <ADS/external/RecordFile.h>
 template< class T >
-requires std::is_trivially_copyable_v< T > class RecordFile { public:
- static constexpr std::size_t defaultBuffer = sizeof( T ) >= ( std::size_t(
-     1 ) << 20 ) ? 1 : ( std::size_t( 1 ) << 20 ) / sizeof( T );
+ requires std::is_trivially_copyable_v< T >
+class RecordFile
+{
+ public:
+ static constexpr std::size_t defaultBuffer =
+   sizeof( T ) >= ( std::size_t( 1 ) << 20 )
+     ? 1
+     : ( std::size_t( 1 ) << 20 ) / sizeof( T );
  explicit RecordFile( std::filesystem::path path );
  const std::filesystem::path & path( void ) const;
  std::size_t size( void ) const;
@@ -1183,18 +1208,23 @@ requires std::is_trivially_copyable_v< T > class RecordFile { public:
  void remove( void );
  };
 template< class T >
-requires std::is_trivially_copyable_v< T > class RecordWriter { public:
+ requires std::is_trivially_copyable_v< T >
+class RecordWriter
+{
+ public:
  explicit RecordWriter( RecordFile< T > & file ,
-     std::size_t buffer = RecordFile< T >::defaultBuffer );
+                        std::size_t buffer = RecordFile< T >::defaultBuffer );
  ~RecordWriter();
  void push( const T & x );
  void flush( void );
  std::size_t pending( void ) const;
  RecordFile< T > & file( void ) const;
  };
-class TempDirectory { public:
+class TempDirectory
+{
+ public:
  explicit TempDirectory( const std::filesystem::path & parent = {} ,
-     const std::string & prefix = "ads-" );
+                         const std::string & prefix = "ads-" );
  ~TempDirectory();
  const std::filesystem::path & path( void ) const;
  std::filesystem::path operator/( const std::string & name ) const;
@@ -1205,7 +1235,9 @@ class TempDirectory { public:
 
 ```cpp
 // declarations of <ADS/external/TwoLevelMemory.h>
-class TwoLevelMemory { public:
+class TwoLevelMemory
+{
+ public:
  TwoLevelMemory( std::size_t B , std::size_t M );
  std::size_t blockSize( void ) const;
  std::size_t memorySize( void ) const;
@@ -1221,12 +1253,17 @@ class TwoLevelMemory { public:
  void countRead( void );
  void countWrite( void );
  };
-class MemoryLease { public:
+class MemoryLease
+{
+ public:
  MemoryLease( TwoLevelMemory & mem , std::size_t k );
  ~MemoryLease();
  std::size_t size( void ) const;
  };
-template< class T > class DiskFile { public:
+template< class T >
+class DiskFile
+{
+ public:
  explicit DiskFile( TwoLevelMemory & mem );
  DiskFile( TwoLevelMemory & mem , std::vector< T > items );
  TwoLevelMemory & memory( void ) const;
@@ -1238,7 +1275,10 @@ template< class T > class DiskFile { public:
  void clear( void );
  const std::vector< T > & contents( void ) const;
  };
-template< class T > class DiskReader { public:
+template< class T >
+class DiskReader
+{
+ public:
  explicit DiskReader( const DiskFile< T > & f );
  bool hasNext( void ) const;
  const T & peek( void );
@@ -1246,7 +1286,10 @@ template< class T > class DiskReader { public:
  std::size_t position( void ) const;
  const T & at( std::size_t i );
  };
-template< class T > class DiskWriter { public:
+template< class T >
+class DiskWriter
+{
+ public:
  explicit DiskWriter( DiskFile< T > & f );
  ~DiskWriter();
  void push( const T & x );
@@ -1263,13 +1306,14 @@ template< class T > class DiskWriter { public:
 
 int main( void )
 {
- ADS::TwoLevelMemory mem( 4 , 16 );             // B = 4 , M = 16 items
+ ADS::TwoLevelMemory mem( 4 , 16 );  // B = 4 , M = 16 items
  ADS::DiskFile< int > in( mem , { 9 , 2 , 7 , 4 , 1 , 8 , 3 , 6 , 5 , 0 } );
  ADS::DiskFile< int > out( mem );
  ADS::multiwayMergeSort( in , out );
  assert( std::ranges::is_sorted( out.contents() ) && ( mem.ios() > 0 ) );
- ADS::BlockBTree< int > t( 3 );                 // B = 3 , in memory
- for( int x : { 5 , 1 , 9 , 3 , 7 } ) t.insert( x );
+ ADS::BlockBTree< int > t( 3 );  // B = 3 , in memory
+ for( int x : { 5 , 1 , 9 , 3 , 7 } )
+  t.insert( x );
  assert( ( t.lowerBound( 4 ) == 5 ) && t.remove( 5 ) && ! t.contains( 5 ) );
  }
 ```

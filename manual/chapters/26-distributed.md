@@ -49,20 +49,21 @@ distributed sort moves most items to another process: the volume of
 communication is at least about $n / P$ per process. Hence the aim is to send each item once, in one exchange, and to end with parts of about
 $n / P$ items.
 
-`sort(comm, A, less)` of `DistributedSort.h` is the parallel sort by
+`sort( comm , A , less )` of `DistributedSort.h` is the parallel sort by
 regular sampling of [Shi and Schaeffer 1992](Z-bibliography.md#ref-shi1992),
 in one round of communication ([Algorithm 26.1](26-distributed.md#alg-26-1)).
 Each process sorts its $n_i$ items and takes $P - 1$ samples at the ranks
-$\lfloor ( j + 1 ) n_i / P \rfloor$, one every $w = n_i / P$ items. The samples, gathered in all the processes by `MPI_Allgather` and sorted
-into a vector $S$, give the $P - 1$ splitters, the splitter $j$ being
-$S[ \lfloor j |S| / P \rfloor ]$ (every $( P - 1 )$-th sample when all
-the processes have items, since then $|S| = P ( P - 1 )$). Each process then cuts
-its sorted items at the splitters by binary searches, sends to the process
-$j$ its piece $j$ by one `MPI_Alltoallv` (after an `MPI_Alltoall` of the
-sizes of the pieces), and merges the $P$ sorted pieces that it receives by
+$\lfloor ( j + 1 ) n_i / P \rfloor$, one every $w = n_i / P$ items. The
+samples, gathered in all the processes by `MPI_Allgather` and sorted into a
+vector $S$, give the $P - 1$ splitters, the splitter $j$ being
+$S[ \lfloor j |S| / P \rfloor ]$ (every $( P - 1 )$-th sample when all the
+processes have items, since then $|S| = P ( P - 1 )$). Each process then cuts
+its sorted items at the splitters by binary searches, sends to the process $j$
+its piece $j$ by one `MPI_Alltoallv` (after an `MPI_Alltoall` of the sizes of
+the pieces), and merges the $P$ sorted pieces that it receives by
 `multiwayMerge()` of `ADS/sort`. Since the items travel as bytes, their type
-must be trivially copyable. [Figure 26.1](26-distributed.md#fig-26-1)
-follows the algorithm on three processes.
+must be trivially copyable. [Figure 26.1](26-distributed.md#fig-26-1) follows
+the algorithm on three processes.
 
 The sort is declared, in the namespace `ADS::distributed`, as
 
@@ -84,7 +85,8 @@ int rank;
 MPI_Comm_rank( MPI_COMM_WORLD , &rank );
 std::vector< int > A( 1000 );
 std::mt19937 g( static_cast< unsigned >( rank ) );
-for( int & x : A ) x = int( g() % 100000 );
+for( int & x : A )
+ x = int( g() % 100000 );
 ADS::ThreadPool pool;
 ADS::distributed::sort( pool , MPI_COMM_WORLD , A );
 // A is sorted, and no item of the rank r exceeds one of the rank r + 1
@@ -186,63 +188,67 @@ messages per level over $\ell$ levels; ADS does not realize them.
 
 ## 26.3 Processes as workers {#sec-26-3}
 
-`MPIEnvironment` starts MPI for the life of the object, by
-`MPI_Init_thread()` at the funneled level unless it is already started,
-and ends it by `MPI_Finalize()` if it started it; the funneled level (only
-the thread that started MPI calls it) suffices for the mailbox, and another
-level may be requested by the third argument of the constructor, `level()`
-giving the one that MPI provides (or `MPI_THREAD_SINGLE`, if the object did
-not start MPI). The object cannot be copied, since MPI ends once.
-`MPIExecutor` holds a communicator (`MPI_COMM_WORLD` by default, given back
-by `comm()`), requires MPI to be initialized when it is built, and gives
-the rank of the process and the number of the processes (`rank()` and
-`size()`), and its `run(f)` makes the call `f(rank)`,
-i.e., the worker of the process. A program written for the workers of
-`run()` of the executors of threads thus runs with one worker per process, all the processes calling `run()`; we remark that `run()` returns
+`MPIEnvironment` starts MPI for the life of the object, by `MPI_Init_thread()`
+at the funneled level unless it is already started, and ends it by
+`MPI_Finalize()` if it started it; the funneled level (only the thread that
+started MPI calls it) suffices for the mailbox, and another level may be
+requested by the third argument of the constructor, `level()` giving the one
+that MPI provides (or `MPI_THREAD_SINGLE`, if the object did not start MPI).
+The object cannot be copied, since MPI ends once. `MPIExecutor` holds a
+communicator (`MPI_COMM_WORLD` by default, given back by `comm()`), requires
+MPI to be initialized when it is built, and gives the rank of the process and
+the number of the processes (`rank()` and `size()`), and its `run( f )` makes
+the call `f( rank )`, i.e., the worker of the process. A program written for
+the workers of `run()` of the executors of threads thus runs with one worker
+per process, all the processes calling `run()`; we remark that `run()` returns
 when the worker of the calling process returns, and `barrier()` is the
 synchronization of all of them.
 
-A search in which each process improves a bound (e.g., the value of the
-best solution found so far) needs the minimum over the processes of a
-value of each. `DistributedMin` starts a reduction of the minimum that
-does not block, `MPI_Iallreduce` ([Hoefler et al.
-2007](Z-bibliography.md#ref-hoefler2007)), and tests it while the process
-works ([Algorithm 26.2](26-distributed.md#alg-26-2)); `test()` gives the
-minimum when the reduction has completed, and `wait()` waits for it.
-Hence a process learns the bounds of the others at most one reduction
-late, with no message for each improvement. While a reduction is in flight (i.e., while `inFlight()` is true), `start(v)`
-starts none and returns false. Also, `test()` gives no value when no
-reduction was started, `wait()` requires one in flight, and the destructor
-waits for it. The values are of an arithmetic type, mapped to the type of
-MPI of the same size (`MPI_FLOAT`, `MPI_DOUBLE`, `MPI_LONG_DOUBLE`, and
-the integers of 8 to 64 bits). Since a reduction is a collective operation,
-all the processes must start the same number of them, and destroy the
-object after the last one has completed, which are the preconditions of
+A search in which each process improves a bound (e.g., the value of the best
+solution found so far) needs the minimum over the processes of a value of
+each. `DistributedMin` starts a reduction of the minimum that does not block,
+`MPI_Iallreduce` ([Hoefler et al. 2007](Z-bibliography.md#ref-hoefler2007)),
+and tests it while the process works ([Algorithm
+26.2](26-distributed.md#alg-26-2)); `test()` gives the minimum when the
+reduction has completed, and `wait()` waits for it. Hence a process learns the
+bounds of the others at most one reduction late, with no message for each
+improvement. While a reduction is in flight (i.e., while `inFlight()` is
+true), `start( v )` starts none and returns false. Also, `test()` gives no
+value when no reduction was started, `wait()` requires one in flight, and the
+destructor waits for it. The values are of an arithmetic type, mapped to the
+type of MPI of the same size (`MPI_FLOAT`, `MPI_DOUBLE`, `MPI_LONG_DOUBLE`,
+and the integers of 8 to 64 bits). Since a reduction is a collective
+operation, all the processes must start the same number of them, and destroy
+the object after the last one has completed, which are the preconditions of
 the class (which, as MPI writes into it, cannot be copied).
 
 The three classes of `MPIExecutor.h` have the public members
 
 ```cpp
 // declarations of <ADS/distributed/MPIExecutor.h>
-class MPIEnvironment {
+class MPIEnvironment
+{
  public:
- MPIEnvironment( int & argc , char ** & argv ,
+ MPIEnvironment( int & argc , char **& argv ,
                  int level = MPI_THREAD_FUNNELED );
  int level( void ) const;
  };
 
-class MPIExecutor {
+class MPIExecutor
+{
  public:
  explicit MPIExecutor( MPI_Comm comm = MPI_COMM_WORLD );
  std::size_t rank( void ) const;
  std::size_t size( void ) const;
  MPI_Comm comm( void ) const;
- template< class F > void run( F && f ) const;
+ template< class F >
+ void run( F && f ) const;
  void barrier( void ) const;
  };
 
 template< class T >
-class DistributedMin {
+class DistributedMin
+{
  public:
  explicit DistributedMin( MPI_Comm comm = MPI_COMM_WORLD );
  bool start( T v );
@@ -259,27 +265,26 @@ class DistributedMin {
 
 ## 26.4 The mailbox {#sec-26-4}
 
-In a distributed computation each process typically owns a part of the
-data, e.g., the items whose keys hash to its rank (`ownerOf(k, P)` of
-`Mailbox.h` in `ADS/parallel`), and it sends to the owner what concerns
-them, as the nodes of a search that the other processes generate. Such
-messages are many, small, and sent at unpredictable times, and a message
-of MPI for each of them would pay the latency $\alpha$ each time. The
-mailbox of `MPIMailbox.h` therefore gathers the messages of a process for
-each rank into an outbox $O_{\mathit{to}}$, and sends it as one message
-of MPI when it holds `batch` messages ([Algorithm 26.3](26-distributed.md#alg-26-3)):
-$k$ messages of $b$ bytes then cost $\alpha + \beta k b$ instead of
-$k ( \alpha + \beta b )$. Its price is the latency of a single message,
-which grows by the time its batch takes to fill; `flush()` sends the
-outboxes that are not empty, and cuts it.
+In a distributed computation each process typically owns a part of the data,
+e.g., the items whose keys hash to its rank (`ownerOf( k , P )` of `Mailbox.h`
+in `ADS/parallel`), and it sends to the owner what concerns them, as the nodes
+of a search that the other processes generate. Such messages are many, small,
+and sent at unpredictable times, and a message of MPI for each of them would
+pay the latency $\alpha$ each time. The mailbox of `MPIMailbox.h` therefore
+gathers the messages of a process for each rank into an outbox
+$O_{\mathit{to}}$, and sends it as one message of MPI when it holds `batch`
+messages ([Algorithm 26.3](26-distributed.md#alg-26-3)): $k$ messages of $b$
+bytes then cost $\alpha + \beta k b$ instead of $k ( \alpha + \beta b )$. Its
+price is the latency of a single message, which grows by the time its batch
+takes to fill; `flush()` sends the outboxes that are not empty, and cuts it.
 
-The public members of `MPIMailbox<Msg>`, for a trivially copyable `Msg`,
-are
+The public members of `MPIMailbox< Msg >`, for a trivially copyable `Msg`, are
 
 ```cpp
 // declarations of <ADS/distributed/MPIMailbox.h>
 template< class Msg , bool = std::is_trivially_copyable_v< Msg > >
-class MPIMailbox {
+class MPIMailbox
+{
  public:
  explicit MPIMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
                       std::size_t batch = 256 );
@@ -287,12 +292,14 @@ class MPIMailbox {
  std::size_t size( void ) const;
  void send( std::size_t to , const Msg & x );
  void flush( void );
- template< class F > std::size_t poll( F && f );
+ template< class F >
+ std::size_t poll( F && f );
  bool quiescent( void );
  void stop( void );
  bool stopped( void ) const;
  bool terminated( void ) const;
- template< class F > std::size_t leftovers( F && f );
+ template< class F >
+ std::size_t leftovers( F && f );
  std::uint64_t sent( void ) const;
  std::uint64_t batches( void ) const;
  std::uint64_t received( void ) const;
@@ -304,14 +311,16 @@ class MPIMailbox {
 and a process works on it as a worker of `run()` does on `Mailbox`:
 
 ```cpp
-ADS::MPIMailbox< std::uint32_t > mb;        // on MPI_COMM_WORLD
+ADS::MPIMailbox< std::uint32_t > mb;  // on MPI_COMM_WORLD
 std::vector< std::uint32_t > S;
-if( mb.rank() == 0 ) S.push_back( 1 );
+if( mb.rank() == 0 )
+ S.push_back( 1 );
 long nodes = 0;
 for( ; ; ) {
  mb.poll( [ & ]( std::uint32_t v ) { S.push_back( v ); } );
  if( S.empty() ) {
-  if( mb.quiescent() ) break;               // terminated everywhere
+  if( mb.quiescent() )
+   break;  // terminated everywhere
   continue;
   }
  const std::uint32_t v = S.back();
@@ -334,54 +343,53 @@ process.
 
 --8<-- "generated/MPIMailbox-poll.pseudo.md"
 
-A batch is posted by `MPI_Isend`, which does not block: its buffer stays,
-with its request, in a list of the sends in flight until MPI has completed
-it, which `MPI_Testsome` finds at each poll ([Figure 26.2](26-distributed.md#fig-26-2)).
-Hence a process never waits for a receiver. Incoming batches are found by `MPI_Iprobe` from any source and received by `MPI_Recv`, at
-most 64 batches per poll, and `poll(f)` calls `f(x)` on each of their
-messages. The messages of a process to itself do not go through MPI: a
-post to itself moves the outbox to a list, which the next poll hands
-first. Each message is passed to $f$ as `const Msg &`, read in place in
-the buffer that `MPI_Recv` filled and that the next batch reuses; hence
-$f$ copies what it keeps. (`Mailbox::poll()` of the threads passes
-instead `Msg &&`, since there a message is an object moved out of a
-queue.) Note that the mailbox duplicates the communicator, and its messages and reductions
-therefore never meet those of the program. This is the asynchronous
-mailbox of the library YGM of [Priest et al.
-2019](Z-bibliography.md#ref-priest2019); the exchange NBX of [Hoefler et
-al. 2010](Z-bibliography.md#ref-hoefler2010) solves instead a single round
-of sparse messages, by synchronous sends and a barrier that does not
-block.
+A batch is posted by `MPI_Isend`, which does not block: its buffer stays, with
+its request, in a list of the sends in flight until MPI has completed it,
+which `MPI_Testsome` finds at each poll ([Figure
+26.2](26-distributed.md#fig-26-2)). Hence a process never waits for a
+receiver. Incoming batches are found by `MPI_Iprobe` from any source and
+received by `MPI_Recv`, at most 64 batches per poll, and `poll( f )` calls
+`f( x )` on each of their messages. The messages of a process to itself do not
+go through MPI: a post to itself moves the outbox to a list, which the next
+poll hands first. Each message is passed to $f$ as `const Msg &`, read in
+place in the buffer that `MPI_Recv` filled and that the next batch reuses;
+hence $f$ copies what it keeps. (`Mailbox::poll()` of the threads passes
+instead `Msg &&`, since there a message is an object moved out of a queue.)
+Note that the mailbox duplicates the communicator, and its messages and
+reductions therefore never meet those of the program. This is the asynchronous
+mailbox of the library YGM of [Priest et
+al. 2019](Z-bibliography.md#ref-priest2019); the exchange NBX of [Hoefler et
+al. 2010](Z-bibliography.md#ref-hoefler2010) solves instead a single round of
+sparse messages, by synchronous sends and a barrier that does not block.
 
 ![Figure 26.2. The outboxes of the process 1 of three, with `batch` = 4, before and after `send(2, z)`, which fills the outbox of the rank 2: the batch is posted by `MPI_Isend`, and its buffer stays on the list of the sends in flight until MPI completes it.](../figures/distributed-outbox.svg){#fig-26-2}
 
-**Forms of the messages.** `MPIMailbox<Msg>` of a trivially copyable
-`Msg` sends its batches as arrays of messages, which MPI copies as bytes
-(256 messages per batch by default); several kinds of such messages can
-travel as one `std::variant`, which is trivially copyable as well. Messages of other
-types, or of lengths that vary (e.g., the nodes of a search with a state
-of variable size), are the records of `MPIByteMailbox`: each one a tag of
-32 bits, a length of 32 bits and the bytes, padded to a multiple of 8,
-packed into a batch until it holds `batch` bytes (65536 by default),
-[Figure 26.3](26-distributed.md#fig-26-3) and
-[Algorithm 26.4](26-distributed.md#alg-26-4). Finally, `MPIMailbox<Msg>`
-of a type that is not trivially copyable is an `MPIByteMailbox` whose
-bytes are those of `MPICodec<Msg>`, the customization point that encodes
-a message (`encode( x , out )` appends its bytes to `out`) and decodes it
-(`decode( b )` rebuilds it from those bytes), given for `std::string` and for the vectors of
-trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The bytes $b$ that `poll(f)`
-of `MPIByteMailbox` passes to `f(t, b)` are valid during the call, at an
-offset multiple of 8 of a buffer that `new` allocated (hence aligned for
-the types of up to 8 bytes). `MPIMailbox<Msg>` of a type that is not
-trivially copyable sends its records with the tag 0, and passes to $f$ the
-message rebuilt by `decode()`, a temporary. Whatever their form, the
-messages are counted one by one, and the waves of
+**Forms of the messages.** `MPIMailbox< Msg >` of a trivially copyable `Msg`
+sends its batches as arrays of messages, which MPI copies as bytes (256
+messages per batch by default); several kinds of such messages can travel as
+one `std::variant`, which is trivially copyable as well. Messages of other
+types, or of lengths that vary (e.g., the nodes of a search with a state of
+variable size), are the records of `MPIByteMailbox`: each one a tag of 32
+bits, a length of 32 bits and the bytes, padded to a multiple of 8, packed
+into a batch until it holds `batch` bytes (65536 by default), [Figure
+26.3](26-distributed.md#fig-26-3) and [Algorithm
+26.4](26-distributed.md#alg-26-4). Finally, `MPIMailbox< Msg >` of a type that
+is not trivially copyable is an `MPIByteMailbox` whose bytes are those of
+`MPICodec< Msg >`, the customization point that encodes a message
+(`encode( x , out )` appends its bytes to `out`) and decodes it (`decode( b )`
+rebuilds it from those bytes), given for `std::string` and for the vectors of
+trivially copyable items. A record carries at most $2^{32} - 1$ bytes. The
+bytes $b$ that `poll( f )` of `MPIByteMailbox` passes to `f( t , b )` are
+valid during the call, at an offset multiple of 8 of a buffer that `new`
+allocated (hence aligned for the types of up to 8 bytes). `MPIMailbox< Msg >`
+of a type that is not trivially copyable sends its records with the tag 0, and
+passes to $f$ the message rebuilt by `decode()`, a temporary. Whatever their
+form, the messages are counted one by one, and the waves of
 [§26.5](26-distributed.md#sec-26-5) see all of them. Every form also gives
-`rank()`, `size()`, the communicator of the mailbox (`comm()`, the
-duplicate), the alias `Message` of `Msg`, and the counters `sent()`,
-`received()`, `batches()` (those posted to other processes by MPI) and
-`waves()` (those completed). None of them can be copied, since MPI holds
-their buffers.
+`rank()`, `size()`, the communicator of the mailbox (`comm()`, the duplicate),
+the alias `Message` of `Msg`, and the counters `sent()`, `received()`,
+`batches()` (those posted to other processes by MPI) and `waves()` (those
+completed). None of them can be copied, since MPI holds their buffers.
 
 ![Figure 26.3. Two records of a batch of `MPIByteMailbox`: a message of tag 7 and 5 bytes, padded to 8, and an empty message of tag 2.](../figures/distributed-records.svg){#fig-26-3}
 
@@ -390,16 +398,19 @@ send and the default batch, of 65536 bytes:
 
 ```cpp
 // declarations of <ADS/distributed/MPIMailbox.h>
-class MPIByteMailbox {
+class MPIByteMailbox
+{
  public:
  explicit MPIByteMailbox( MPI_Comm comm = MPI_COMM_WORLD ,
                           std::size_t batch = 65536 );
  void send( std::size_t to , std::uint32_t t ,
             std::span< const std::byte > b );
  void flush( void );
- template< class F > std::size_t poll( F && f );
+ template< class F >
+ std::size_t poll( F && f );
  bool quiescent( void );
- template< class F > std::size_t leftovers( F && f );
+ template< class F >
+ std::size_t leftovers( F && f );
  };
 ```
 
@@ -409,9 +420,11 @@ the vectors of trivially copyable items:
 
 ```cpp
 // declarations of <ADS/distributed/MPIMailbox.h>
-template< class Msg > struct MPICodec;
+template< class Msg >
+struct MPICodec;
 template<>
-struct MPICodec< std::string > {
+struct MPICodec< std::string >
+{
  static void encode( const std::string & x , std::vector< std::byte > & out );
  static std::string decode( std::span< const std::byte > b );
  };
@@ -534,13 +547,13 @@ completed, and they are thus the same collective operations in the same
 order on all the processes, also when the end comes from (26.2) instead
 of from $\sigma = P$. $\square$
 
-**The leftovers.** After the end, `leftovers(f)` hands to $f$ the
-messages that no poll has handed: those still on their way to the
-process, those to itself and those of its outboxes
-([Algorithm 26.6](26-distributed.md#alg-26-6)). Those on their way are known by counting. Each process keeps the messages $m_{i , q}$ and the notes
-$n_{i , q}$ that it has sent by MPI to each process $q$, and one
-reduction that scatters its sums (`MPI_Reduce_scatter_block`) gives each
-process $q$ the totals
+**The leftovers.** After the end, `leftovers( f )` hands to $f$ the messages
+that no poll has handed: those still on their way to the process, those to
+itself and those of its outboxes ([Algorithm
+26.6](26-distributed.md#alg-26-6)). Those on their way are known by counting.
+Each process keeps the messages $m_{i , q}$ and the notes $n_{i , q}$ that it
+has sent by MPI to each process $q$, and one reduction that scatters its sums
+(`MPI_Reduce_scatter_block`) gives each process $q$ the totals
 
 $$
 M_q = \sum_i m_{i , q} , \qquad N_q = \sum_i n_{i , q} \tag{26.3}
@@ -598,9 +611,9 @@ benchmarks of [appendix B](B-benchmarks.md#app-B).
 
 ## 26.7 Exercises {#sec-26-7}
 
-Each exercise names the test of the library that solves it; the tests run
-on 1 to 4 processes, as `engineered_mpi.<test>.np<P>`, and exist only when
-MPI is found (run them with `ctest -R <name>`).
+Each exercise names the test of the library that solves it; the tests run on 1
+to 4 processes, as `engineered_mpi.<test>.np< P >`, and exist only when MPI is
+found (run them with `ctest -R <name>`).
 
 1. Sort the items of $P$ processes by regular sampling, also when some
    processes are empty, when all the items are on one process, and when

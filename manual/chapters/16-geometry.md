@@ -62,7 +62,10 @@ the predicates of this section are declared as
 
 ```cpp
 // declarations of <ADS/geometry/ConvexHull.h>
-struct Point { long x , y; };
+struct Point
+{
+ long x , y;
+ };
 long long cross( const Point & a , const Point & b , const Point & c );
 bool sameSide( const Point & p1 , const Point & p2 , const Point & p ,
                const Point & q );
@@ -627,7 +630,7 @@ distance, and require $n \ge 2$ and the bounds of
 // declarations of <ADS/geometry/ClosestPair.h>
 std::int64_t squaredDistance( const Point & p , const Point & q );
 std::pair< std::pair< std::size_t , std::size_t > , std::int64_t >
-closestPair( const std::vector< Point > & P );       // and the other two
+closestPair( const std::vector< Point > & P );  // and the other two
 ```
 
 ## 16.4 Stabbing and range counting {#sec-16-4}
@@ -675,23 +678,27 @@ The public members of the two classes are then
 
 ```cpp
 // declarations of <ADS/geometry/IntervalTree.h>
-template< std::totally_ordered T > class IntervalTree {
+template< std::totally_ordered T >
+class IntervalTree
+{
  public:
- using Interval = std::pair< T , T >;                // [ a , b ]
- struct MaxEnd;                                      // the augmentation
+ using Interval = std::pair< T , T >;  // [ a , b ]
+ struct MaxEnd;                       // the augmentation
  IntervalTree( void );
  explicit IntervalTree( std::vector< Interval > I );
- template< Executor E > IntervalTree( E & ex , std::vector< Interval > I );
+ template< Executor E >
+ IntervalTree( E & ex , std::vector< Interval > I );
  void insert( const T & a , const T & b );
  void remove( const T & a , const T & b );
  std::size_t size( void ) const;
  bool stabbed( const T & x ) const;
- template< class F > void stab( const T & x , F && f ) const;
+ template< class F >
+ void stab( const T & x , F && f ) const;
  std::size_t count( const T & x ) const;
  };
 ```
 
-and, for `RangeTree<T>`, the type `Point` of the pairs $( x , y )$, the
+and, for `RangeTree< T >`, the type `Point` of the pairs $( x , y )$, the
 augmentation `Ordinates`, the same constructors, `insert( x , y )`,
 `remove( x , y )` and `size()`, and the query `count( x1 , x2 , y1 , y2 )`.
 
@@ -706,17 +713,16 @@ with their copies is `size()`.
 
 ### 16.4.1 The interval tree {#sec-16-4-1}
 
-`IntervalTree<T>` keeps a multiset of closed intervals $[ a , b ]$,
-$a \le b$ (a precondition), of a type `T` that is `std::totally_ordered`,
-with the keys $( a , b )$ (the type `Interval`, a `std::pair`) in
-lexicographic order, $g( a , b ) = b$ and $\oplus = \max$ (the
-augmentation `MaxEnd`). Its identity is no interval,
-an empty `std::optional`, which is below any end; a sentinel such as the
-least value of the type would not do for the floating types, whose
-intervals may end at $-\infty$ (cf. exercise 11). The augmentation of a
-node is thus the largest right end of its subtree
-([Figure 16.4](16-geometry.md#fig-16-4)). A *stabbing query* looks for
-the intervals that contain a point $x$.
+`IntervalTree< T >` keeps a multiset of closed intervals $[ a , b ]$,
+$a \le b$ (a precondition), of a type `T` that is `std::totally_ordered`, with
+the keys $( a , b )$ (the type `Interval`, a `std::pair`) in lexicographic
+order, $g( a , b ) = b$ and $\oplus = \max$ (the augmentation `MaxEnd`). Its
+identity is no interval, an empty `std::optional`, which is below any end; a
+sentinel such as the least value of the type would not do for the floating
+types, whose intervals may end at $-\infty$ (cf. exercise 11). The
+augmentation of a node is thus the largest right end of its subtree ([Figure
+16.4](16-geometry.md#fig-16-4)). A *stabbing query* looks for the intervals
+that contain a point $x$.
 
 <span id="lem-16-9"></span>**Lemma 16.9.** *An interval of the tree $T$
 contains $x$ if and only if*
@@ -755,10 +761,10 @@ that contain $x$ ([Sun and Blelloch 2019](Z-bibliography.md#ref-sun2019)).
 
 --8<-- "generated/IntervalTree-visit.pseudo.md"
 
-<span id="lem-16-10"></span>**Lemma 16.10.** *`stab(x,f)` calls $f$ once
+<span id="lem-16-10"></span>**Lemma 16.10.** *`stab( x , f )` calls $f$ once
 per copy of each interval that contains $x$, by increasing $( a , b )$, in
-$O( \min( n , ( k + 1 ) \log n ) )$ time plus the calls, $k$ being the
-number of distinct intervals reported.*
+$O( \min( n , ( k + 1 ) \log n ) )$ time plus the calls, $k$ being the number
+of distinct intervals reported.*
 
 *Proof.* A subtree whose augmented value is below $x$ holds no interval
 with $b \ge x$, and the nodes right of a node with $a > x$ have $a > x$
@@ -784,17 +790,16 @@ one interval that contains $x$ in $O( \log n )$ time.
 
 ### 16.4.2 The range tree {#sec-16-4-2}
 
-`RangeTree<T>` keeps a multiset of points $( x , y )$ of a type `T` that
-is totally ordered and has `std::numeric_limits` (the points are the type
-`Point` of the class, a `std::pair`, not the `Point` of `ConvexHull.h`).
-The keys are in
-lexicographic order, and $g( x , y )$ is the sequence $( y )$, with $c$
-copies of $y$ for a point of multiplicity $c$ (the augmentation
-`Ordinates`); $\oplus$ is the merge of two
-sorted sequences, whose identity is the empty one. The augmentation of a
-node is then the sorted sequence of the ordinates of its subtree, as in the
-range tree of [Bentley 1980](Z-bibliography.md#ref-bentley1980dc), while the
-map orders the points by $x$ ([Figure 16.5](16-geometry.md#fig-16-5)).
+`RangeTree< T >` keeps a multiset of points $( x , y )$ of a type `T` that is
+totally ordered and has `std::numeric_limits` (the points are the type `Point`
+of the class, a `std::pair`, not the `Point` of `ConvexHull.h`). The keys are
+in lexicographic order, and $g( x , y )$ is the sequence $( y )$, with $c$
+copies of $y$ for a point of multiplicity $c$ (the augmentation `Ordinates`);
+$\oplus$ is the merge of two sorted sequences, whose identity is the empty
+one. The augmentation of a node is then the sorted sequence of the ordinates
+of its subtree, as in the range tree of [Bentley
+1980](Z-bibliography.md#ref-bentley1980dc), while the map orders the points by
+$x$ ([Figure 16.5](16-geometry.md#fig-16-5)).
 
 <span id="lem-16-11"></span>**Lemma 16.11.** *A `RangeTree` of $n$ points
 takes $O( n \log n )$ space, $\Theta( n \log n )$ when the points are

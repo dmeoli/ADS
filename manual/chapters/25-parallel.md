@@ -121,12 +121,12 @@ of a claim, a fetch-and-add on a shared line of the cache.
 ## 25.2 Executors {#sec-25-2}
 
 An executor runs the calls $f( 0 ) , \ldots , f( n - 1 )$ on its threads and
-returns when all have returned (`bulk( n , f )`), and gives the number of
-its threads (`concurrency()`); these two operations make the concept
-`Executor` of `Executor.h`, which all the parallel algorithms of the library
-require of their first argument. An executor may also have `invoke( f , g
-)`, which runs two calls in parallel; `parallelInvoke()` uses it when it is
-there, and otherwise makes it from a `bulk()` on two indices ([Algorithm
+returns when all have returned (`bulk( n , f )`), and gives the number of its
+threads (`concurrency()`); these two operations make the concept `Executor` of
+`Executor.h`, which all the parallel algorithms of the library require of
+their first argument. An executor may also have `invoke( f , g )`, which runs
+two calls in parallel; `parallelInvoke()` uses it when it is there, and
+otherwise makes it from a `bulk()` on two indices ([Algorithm
 25.1](25-parallel.md#alg-25-1)). Of the executors, `Sequential` is the
 simplest: it makes the calls in their order on the calling thread and is the
 reference against which the others are tested. [Table
@@ -151,29 +151,36 @@ and the fork and join that the patterns build on are declared as
 ```cpp
 // declarations of <ADS/parallel/Executor.h>
 template< class E >
-concept Executor = requires( E & e , std::size_t n ,
-                             void ( & f )( std::size_t ) ) {
- { e.concurrency() } -> std::convertible_to< std::size_t >;
- e.bulk( n , f );
- };
+concept Executor =
+  requires( E & e , std::size_t n , void ( &f )( std::size_t ) )
+{
+   { e.concurrency() } -> std::convertible_to< std::size_t >;
+   e.bulk( n , f );
+   };
 
 template< class E >
-concept WorkerExecutor = Executor< E > &&
- requires( E & e , std::size_t p , void ( & f )( std::size_t ) ,
-           typename E::lock_type & l ) {
-  e.run( p , f );
-  l.lock();
-  l.unlock();
-  { l.try_lock() } -> std::convertible_to< bool >;
-  };
+concept WorkerExecutor =
+  Executor< E > && requires( E & e , std::size_t p ,
+                             void ( &f )( std::size_t ) ,
+                             typename E::lock_type & l )
+{
+   e.run( p , f );
+   l.lock();
+   l.unlock();
+   { l.try_lock() } -> std::convertible_to< bool >;
+   };
 
-class Sequential {
+class Sequential
+{
  public:
  static constexpr std::size_t concurrency( void );
- template< class F > static void bulk( std::size_t n , F && f );
- template< class F , class G > static void invoke( F && f , G && g );
+ template< class F >
+ static void bulk( std::size_t n , F && f );
+ template< class F , class G >
+ static void invoke( F && f , G && g );
  using lock_type = std::mutex;
- template< class F > static void run( std::size_t p , F && f );
+ template< class F >
+ static void run( std::size_t p , F && f );
  };
 
 template< Executor E , class F , class G >
@@ -183,19 +190,19 @@ void parallelInvoke( E & ex , F && f , G && g );
 and a recursive sum by fork and join reads, on any executor,
 
 ```cpp
-ADS::ThreadPool pool;                        // p = the processors
+ADS::ThreadPool pool;  // p = the processors
 std::vector< long > v( 1 << 20 , 1 );
 std::function< long( std::size_t , std::size_t ) > sum =
- [ & ]( std::size_t lo , std::size_t hi ) -> long {
-  if( hi - lo <= 4096 )
-   return( std::accumulate( v.begin() + lo , v.begin() + hi , 0L ) );
-  long a = 0 , b = 0;
-  const std::size_t m = lo + ( hi - lo ) / 2;
-  ADS::parallelInvoke( pool , [ & ]() { a = sum( lo , m ); } ,
-                              [ & ]() { b = sum( m , hi ); } );
-  return( a + b );
-  };
-long s = sum( 0 , v.size() );                // s is 1048576
+  [ & ]( std::size_t lo , std::size_t hi ) -> long {
+ if( hi - lo <= 4096 )
+  return( std::accumulate( v.begin() + lo , v.begin() + hi , 0L ) );
+ long a = 0 , b = 0;
+ const std::size_t m = lo + ( hi - lo ) / 2;
+ ADS::parallelInvoke(
+   pool , [ & ]() { a = sum( lo , m ); } , [ & ]() { b = sum( m , hi ); } );
+ return( a + b );
+ };
+long s = sum( 0 , v.size() );  // s is 1048576
 ```
 
 <span id="alg-25-1"></span>**Algorithm 25.1.** The fork and join of two
@@ -267,14 +274,18 @@ The public members of the pool are
 
 ```cpp
 // declarations of <ADS/parallel/ThreadPool.h>
-class ThreadPool {
+class ThreadPool
+{
  public:
  explicit ThreadPool( std::size_t p = 0 , std::int64_t spin = 2000000 );
  std::size_t concurrency( void ) const;
- template< class F > void bulk( std::size_t n , F && f );
- template< class F , class G > void invoke( F && f , G && g );
+ template< class F >
+ void bulk( std::size_t n , F && f );
+ template< class F , class G >
+ void invoke( F && f , G && g );
  using lock_type = std::mutex;
- template< class F > void run( std::size_t p , F && f );
+ template< class F >
+ void run( std::size_t p , F && f );
  };
 ```
 
@@ -601,18 +612,19 @@ These patterns, and the scans below, are declared as
 // declarations of <ADS/parallel/Executor.h>
 inline constexpr std::size_t kGrain = 1024;
 
-std::pair< std::size_t , std::size_t > blocksOf( std::size_t first ,
-                                                 std::size_t last ,
-                                                 std::size_t grain = kGrain );
+std::pair< std::size_t , std::size_t >
+blocksOf( std::size_t first , std::size_t last , std::size_t grain = kGrain );
 template< Executor E , class F >
 void parallelForBlocks( E & ex , std::size_t first , std::size_t last ,
-                        F && f , std::size_t grain = kGrain );
+                        F && f ,
+                        std::size_t grain = kGrain );
 template< Executor E , class F >
 void parallelFor( E & ex , std::size_t first , std::size_t last , F && f ,
                   std::size_t grain = kGrain );
 template< Executor E , class T , class F , class Op >
 T parallelReduce( E & ex , std::size_t first , std::size_t last , T id ,
-                  F && f , Op op , std::size_t grain = kGrain );
+                  F && f ,
+                  Op op , std::size_t grain = kGrain );
 template< Executor E , std::random_access_iterator I ,
           std::random_access_iterator O , class T , class Op = std::plus<> >
 T parallelInclusiveScan( E & ex , I in , std::size_t n , O out , T init ,
@@ -630,13 +642,16 @@ ADS::ThreadPool pool( 4 );
 std::vector< double > x( 1000000 );
 ADS::parallelFor( pool , 0 , x.size() ,
                   [ & ]( std::size_t i ) { x[ i ] = double( i % 1000 ); } );
-double s = ADS::parallelReduce( pool , 0 , x.size() , 0.0 ,
- [ & ]( std::size_t lo , std::size_t hi ) {
-  double r = 0;
-  for( std::size_t i = lo ; i < hi ; ++i ) r += x[ i ];
-  return( r ); } ,
- std::plus<>() );                           // s is 499500000
-ADS::sort( pool , x );                      // of ParallelSort.h
+double s = ADS::parallelReduce(
+  pool , 0 , x.size() , 0.0 ,
+  [ & ]( std::size_t lo , std::size_t hi ) {
+   double r = 0;
+   for( std::size_t i = lo ; i < hi ; ++i )
+    r += x[ i ];
+   return( r );
+   } ,
+  std::plus<>() );     // s is 499500000
+ADS::sort( pool , x );  // of ParallelSort.h
 ```
 
 <span id="alg-25-8"></span>**Algorithm 25.8.** The blocks of a loop, the
@@ -804,13 +819,14 @@ The two functions are declared as
 ```cpp
 // declarations of <ADS/parallel/ParallelMerge.h>
 template< std::random_access_iterator I , class C = std::less<> >
-std::vector< std::size_t > multisequenceSplit(
- const std::vector< std::pair< I , I > > & R , std::size_t r ,
- C less = C() );
+std::vector< std::size_t >
+multisequenceSplit( const std::vector< std::pair< I , I > > & R ,
+                    std::size_t r ,
+                    C less = C() );
 template< Executor E , std::random_access_iterator I ,
           std::random_access_iterator O , class C = std::less<> >
-O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R ,
-                 O out , C less = C() );
+O multiwayMerge( E & ex , const std::vector< std::pair< I , I > > & R , O out ,
+                 C less = C() );
 ```
 
 <span id="alg-25-11"></span>**Algorithm 25.11.** The multisequence selection
@@ -847,16 +863,16 @@ merge takes $O( ( N / p ) \log k )$ time plus the splits. The bound of
 al. 1991](Z-bibliography.md#ref-varman1991) up to a factor $\log k$, which
 the simpler choice of the pivot costs.
 
-**The parallel sorts.** `sort( ex , A , less )` and `stableSort( ex , A ,
-less )` of `ParallelSort.h` give the result of the sequential sorts of the
-library, which they call on the parts they cut $A$ into. With fewer than
-`kParallelSortThreads` $= 3$ threads, or fewer than `kParallelSort` $=
-2^{15}$ items, they are those sequential sorts; on 2 threads, in fact, the
-passes of the distribution cost more than the second thread saves. Their
-procedure is the samplesort of [Sanders and Winkel
+**The parallel sorts.** `sort( ex , A , less )` and
+`stableSort( ex , A , less )` of `ParallelSort.h` give the result of the
+sequential sorts of the library, which they call on the parts they cut $A$
+into. With fewer than `kParallelSortThreads` $= 3$ threads, or fewer than
+`kParallelSort` $= 2^{15}$ items, they are those sequential sorts; on 2
+threads, in fact, the passes of the distribution cost more than the second
+thread saves. Their procedure is the samplesort of [Sanders and Winkel
 2004](Z-bibliography.md#ref-sanders2004) as engineered in IPS4o ([Axtmann et
-al. 2022](Z-bibliography.md#ref-axtmann2022)), preceded by two surveys of
-the input ([Algorithm 25.12](25-parallel.md#alg-25-12)).
+al. 2022](Z-bibliography.md#ref-axtmann2022)), preceded by two surveys of the
+input ([Algorithm 25.12](25-parallel.md#alg-25-12)).
 
 The four sorts of `ParallelSort.h` are declared as
 
@@ -1019,8 +1035,7 @@ The products are declared as
 ```cpp
 // declarations of <ADS/parallel/ParallelNumeric.h>
 template< Executor E >
-void multiply( E & ex , const CsrMatrix & A , const double * x ,
-               double * y );
+void multiply( E & ex , const CsrMatrix & A , const double * x , double * y );
 template< Executor E >
 std::vector< double > multiply( E & ex , const CsrMatrix & A ,
                                 const std::vector< double > & x );
@@ -1031,9 +1046,10 @@ template< Executor E , std::size_t C >
 std::vector< double > multiply( E & ex , const SellMatrix< C > & A ,
                                 const std::vector< double > & x );
 template< Executor E , class T >
-void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k ,
-           T alpha , const T * A , std::size_t lda , const T * B ,
-           std::size_t ldb , T beta , T * C , std::size_t ldc );
+void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k , T alpha ,
+           const T * A , std::size_t lda , const T * B , std::size_t ldb ,
+           T beta ,
+           T * C , std::size_t ldc );
 template< Executor E , class T >
 DenseMatrix< T > multiply( E & ex , const DenseMatrix< T > & A ,
                            const DenseMatrix< T > & B );
@@ -1108,14 +1124,15 @@ L_0 = \{ s \} , \qquad L_{\ell + 1} = \{ v \notin L_0 \cup \cdots \cup
 L_\ell : ( u , v ) \in E \text{ for some } u \in L_\ell \} , \tag{25.7}
 $$
 
-and a node of $L_\ell$ is at distance $\ell$ from $s$. `bfsDistances( ex , g
-, s , gt )` of `ParallelGraph.h` builds each level of a `StaticGraph` by
-(25.7) in either of two directions ([Beamer, Asanović and Patterson
-2012](Z-bibliography.md#ref-beamer2012)). From the top down, the nodes of
-the frontier $L_\ell$ claim their neighbors not yet reached, by a
-compare-and-swap of the distance from $-1$ to $\ell + 1$. Then the nodes claimed by the blocks of the frontier are gathered into the next frontier,
-each block keeping in a vector of its own the nodes that it claimed and
-the sum of their degrees, which gives $m_f$ for the next level.
+and a node of $L_\ell$ is at distance $\ell$ from $s$.
+`bfsDistances( ex , g , s , gt )` of `ParallelGraph.h` builds each level of a
+`StaticGraph` by (25.7) in either of two directions ([Beamer, Asanović and
+Patterson 2012](Z-bibliography.md#ref-beamer2012)). From the top down, the
+nodes of the frontier $L_\ell$ claim their neighbors not yet reached, by a
+compare-and-swap of the distance from $-1$ to $\ell + 1$. Then the nodes
+claimed by the blocks of the frontier are gathered into the next frontier,
+each block keeping in a vector of its own the nodes that it claimed and the
+sum of their degrees, which gives $m_f$ for the next level.
 
 From the bottom up, each node not yet reached looks among the arcs into it
 for one whose tail is in the frontier, kept as a bitmap, and stops at the
@@ -1134,12 +1151,10 @@ The two algorithms on graphs are declared as
 ```cpp
 // declarations of <ADS/parallel/ParallelGraph.h>
 template< Executor E , class W >
-std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g ,
-                                 int s ,
+std::vector< int > bfsDistances( E & ex , const StaticGraph< W > & g , int s ,
                                  const StaticGraph< W > * gt = nullptr );
 template< Executor E , class W >
-std::vector< int > connectedComponents( E & ex ,
-                                        const StaticGraph< W > & g );
+std::vector< int > connectedComponents( E & ex , const StaticGraph< W > & g );
 ```
 
 <span id="alg-25-17"></span>**Algorithm 25.17.** The visit in breadth that
@@ -1322,15 +1337,16 @@ counts of a run are declared as
 ```cpp
 // declarations of <ADS/parallel/SpeculativeFor.h>
 template< class S >
-concept SpeculativeStep = requires( S & s , std::size_t i ) {
+concept SpeculativeStep = requires( S & s , std::size_t i )
+{
  { s.reserve( i ) } -> std::convertible_to< bool >;
  { s.commit( i ) } -> std::convertible_to< bool >;
  };
 
-class Reservation {
+class Reservation
+{
  public:
- static constexpr std::size_t NONE =
-  std::numeric_limits< std::size_t >::max();
+ static constexpr std::size_t NONE = std::numeric_limits< std::size_t >::max();
  void reserve( std::size_t i ) noexcept;
  bool check( std::size_t i ) const noexcept;
  bool reserved( void ) const noexcept;
@@ -1338,7 +1354,11 @@ class Reservation {
  bool checkReset( std::size_t i ) noexcept;
  };
 
-struct SpeculativeCounts { long long rounds = 0; long long tried = 0; };
+struct SpeculativeCounts
+{
+ long long rounds = 0;
+ long long tried = 0;
+ };
 
 template< Executor E , SpeculativeStep S >
 void speculativeFor( E & ex , S & step , std::size_t s , std::size_t e ,
@@ -1396,18 +1416,18 @@ node reads only the states of its neighbors of earlier places, and waits
 while one is undecided); the forests of Kruskal need a lemma of their own
 ([Lemma 25.16](25-parallel.md#lem-25-16)).
 
-As to its size, a prefix starts with $r = r_{\mathrm{max}}$. It halves when more
-than a fifth of a round fails, but not below $r_{\mathrm{max}} / 64 + 1$
-nor below the failed iterations, and it doubles, up to
-$r_{\mathrm{max}}$, when less than a tenth does; a round of fewer than 256
-iterations runs on the calling thread. Formally, the loop takes `step` as a model of
-the concept `SpeculativeStep` (the two members `reserve(i)` and
-`commit(i)`, each returning a value convertible to `bool`), and, given a
-pointer to a `SpeculativeCounts`, it adds there its rounds and the
-iterations tried, the failed ones counted again. With $W$ the work of the sequential loop and $R$ that of
-the iterations tried again, the work is $O( W + R )$, and the depth is that
-of the rounds, each of depth $O( \log r )$ for the pack of the failures. A
-violated precondition (a round in which the least iteration fails) would
+As to its size, a prefix starts with $r = r_{\mathrm{max}}$. It halves when
+more than a fifth of a round fails, but not below $r_{\mathrm{max}} / 64 + 1$
+nor below the failed iterations, and it doubles, up to $r_{\mathrm{max}}$,
+when less than a tenth does; a round of fewer than 256 iterations runs on the
+calling thread. Formally, the loop takes `step` as a model of the concept
+`SpeculativeStep` (the two members `reserve( i )` and `commit( i )`, each
+returning a value convertible to `bool`), and, given a pointer to a
+`SpeculativeCounts`, it adds there its rounds and the iterations tried, the
+failed ones counted again. With $W$ the work of the sequential loop and $R$
+that of the iterations tried again, the work is $O( W + R )$, and the depth is
+that of the rounds, each of depth $O( \log r )$ for the pack of the failures.
+A violated precondition (a round in which the least iteration fails) would
 make the loop run forever; the loop checks it by `ADS_PRE`, which throws
 `ADS::contract_violation` when the contracts are checked (from the level 1),
 and otherwise returns with the iterations of that round left undone. [Table
@@ -1470,22 +1490,23 @@ The algorithms of `ParallelGreedy.h` are declared as
 // declarations of <ADS/parallel/ParallelGreedy.h>
 std::vector< int > randomOrder( int n , unsigned long long seed );
 template< Executor E , class W >
-std::vector< int > parallelKruskal(
- E & ex , int n , const std::vector< WeightedEdge< W > > & A );
+std::vector< int >
+parallelKruskal( E & ex , int n , const std::vector< WeightedEdge< W > > & A );
 template< Executor E , class W >
-std::vector< int > filterKruskal(
- E & ex , int n , const std::vector< WeightedEdge< W > > & A );
+std::vector< int > filterKruskal( E & ex , int n ,
+                                  const std::vector< WeightedEdge< W > > & A );
 template< Executor E >
-std::vector< int > spanningForest(
- E & ex , int n , const std::vector< std::pair< int , int > > & A );
+std::vector< int >
+spanningForest( E & ex , int n ,
+                const std::vector< std::pair< int , int > > & A );
 template< Executor E , class W >
-std::vector< int > maximalIndependentSet( E & ex ,
-                                          const StaticGraph< W > & g ,
+std::vector< int > maximalIndependentSet( E & ex , const StaticGraph< W > & g ,
                                           const std::vector< int > & pi );
 template< Executor E >
-std::vector< int > maximalMatching(
- E & ex , int n , const std::vector< std::pair< int , int > > & A ,
- const std::vector< int > & pi );
+std::vector< int >
+maximalMatching( E & ex , int n ,
+                 const std::vector< std::pair< int , int > > & A ,
+                 const std::vector< int > & pi );
 ```
 
 <span id="alg-25-21"></span>**Algorithm 25.21.** The two steps of an edge in
@@ -1634,12 +1655,12 @@ The two stepping algorithms are declared as
 ```cpp
 // declarations of <ADS/parallel/ParallelShortestPaths.h>
 template< Executor E , Graph G >
-std::vector< typename G::Weight > deltaStepping( E & ex , const G & g ,
-                                                 int s ,
+std::vector< typename G::Weight > deltaStepping( E & ex , const G & g , int s ,
                                                  typename G::Weight delta );
 template< Executor E , Graph G >
-std::vector< typename G::Weight > rhoStepping(
- E & ex , const G & g , int s , std::size_t rho = std::size_t( 1 ) << 20 );
+std::vector< typename G::Weight >
+rhoStepping( E & ex , const G & g , int s ,
+             std::size_t rho = std::size_t( 1 ) << 20 );
 ```
 
 <span id="alg-25-24"></span>**Algorithm 25.24.** The $\Delta$-stepping
@@ -1766,14 +1787,16 @@ The concept and the members that the four families share, here those of
 template< class C >
 concept ChannelFamily = requires( C & c , const C & k , std::size_t i ,
                                   std::span< const typename C::Message > m ,
-                                  void ( & f )( typename C::Message && ) ) {
+                                  void ( &f )( typename C::Message && ) )
+{
  { k.size() } -> std::convertible_to< std::size_t >;
  { c.tryPush( i , i , m ) } -> std::convertible_to< std::size_t >;
  { c.drain( i , f ) } -> std::convertible_to< std::size_t >;
  };
 
 template< class Msg >
-class MeshChannels {
+class MeshChannels
+{
  public:
  using Message = Msg;
  static constexpr bool bounded = true;
@@ -1781,7 +1804,8 @@ class MeshChannels {
  std::size_t size( void ) const;
  std::size_t tryPush( std::size_t from , std::size_t to ,
                       std::span< const Msg > m );
- template< class F > std::size_t drain( std::size_t me , F && f );
+ template< class F >
+ std::size_t drain( std::size_t me , F && f );
  ChannelPort< MeshChannels > port( std::size_t i );
  };
 ```
@@ -1853,22 +1877,21 @@ what they push.
 
 A farm with feedback has a *master*, which emits tasks, and $w$ *workers*,
 which turn each task into a result that goes back to the master; the master
-may emit more tasks from each result, and decides when the farm ends. This
-is the master and workers of FastFlow, i.e., a farm whose emitter receives
-the results of its workers on a channel of feedback ([Aldinucci et al.
-2017](Z-bibliography.md#ref-aldinucci2017)). `feedbackFarm< T , R >( ex , w
-, start , onResult , work )` of `Farm.h` calls `start( emit )` once, and
-then `onResult( r , emit )` on each result $r$, which returns false to stop
-the farm. Meanwhile the workers call `work( t )` on the tasks, and the farm
-returns when all the calls have returned ([Algorithm
-25.28](25-parallel.md#alg-25-28)).
+may emit more tasks from each result, and decides when the farm ends. This is
+the master and workers of FastFlow, i.e., a farm whose emitter receives the
+results of its workers on a channel of feedback ([Aldinucci et
+al. 2017](Z-bibliography.md#ref-aldinucci2017)).
+`feedbackFarm< T , R >( ex , w , start , onResult , work )` of `Farm.h` calls
+`start( emit )` once, and then `onResult( r , emit )` on each result $r$,
+which returns false to stop the farm. Meanwhile the workers call `work( t )`
+on the tasks, and the farm returns when all the calls have returned
+([Algorithm 25.28](25-parallel.md#alg-25-28)).
 
 The farm is declared as
 
 ```cpp
 // declarations of <ADS/parallel/Farm.h>
-template< class T , class R , WorkerExecutor E , class S , class O ,
-          class W >
+template< class T , class R , WorkerExecutor E , class S , class O , class W >
 void feedbackFarm( E & ex , std::size_t w , S && start , O && onResult ,
                    W && work );
 ```
@@ -1968,26 +1991,34 @@ The public members of the mailbox, with the policies of the coalescing of
 template< class K , class H = std::hash< K > >
 std::size_t ownerOf( const K & k , std::size_t p , const H & h = H() );
 
-struct NoCoalescing {};
+struct NoCoalescing
+{ };
 template< class K , class M = void >
-struct CoalesceBy { using KeyOf = K; using Map = M; };
+struct CoalesceBy
+{
+ using KeyOf = K;
+ using Map = M;
+ };
 
 template< class Msg , ChannelFamily Ch = MeshChannels< Msg > ,
           class Co = NoCoalescing >
-class Mailbox {
+class Mailbox
+{
  public:
- template< class ... A >
- explicit Mailbox( std::size_t p , std::size_t batch = 64 , A && ... args );
+ template< class... A >
+ explicit Mailbox( std::size_t p , std::size_t batch = 64 , A &&... args );
  std::size_t size( void ) const;
  void send( std::size_t me , std::size_t to , Msg x );
  bool flush( std::size_t me );
- template< class F > std::size_t poll( std::size_t me , F && f );
+ template< class F >
+ std::size_t poll( std::size_t me , F && f );
  bool quiescent( std::size_t me );
  bool terminated( void ) const;
  void stop( void );
  bool stopped( void ) const;
  void rearm( void );
- template< class F > std::size_t leftovers( F && f );
+ template< class F >
+ std::size_t leftovers( F && f );
  std::uint64_t sent( std::size_t me ) const;
  std::uint64_t batches( std::size_t me ) const;
  std::uint64_t merged( std::size_t me ) const;
@@ -2009,11 +2040,13 @@ ADS::Mailbox< unsigned > mb( 4 );
 std::atomic< long > nodes{ 0 };
 pool.run( 4 , [ & ]( std::size_t me ) {
  std::vector< unsigned > S;
- if( ADS::ownerOf( 1u , 4 ) == me ) S.push_back( 1 );
+ if( ADS::ownerOf( 1u , 4 ) == me )
+  S.push_back( 1 );
  for( ; ; ) {
   mb.poll( me , [ & ]( unsigned && v ) { S.push_back( v ); } );
   if( S.empty() ) {
-   if( mb.quiescent( me ) ) break;          // terminated
+   if( mb.quiescent( me ) )
+    break;  // terminated
    continue;
    }
   const unsigned v = S.back();
@@ -2023,7 +2056,7 @@ pool.run( 4 , [ & ]( std::size_t me ) {
    for( unsigned c : { 2 * v , 2 * v + 1 } )
     mb.send( me , ADS::ownerOf( c , 4 ) , c );
   }
- } );                                       // nodes is 131071
+ } );  // nodes is 131071
 ```
 
 <span id="alg-25-29"></span>**Algorithm 25.29.** The operations of
@@ -2150,18 +2183,22 @@ drains the channels on the thread that called `run()`, which the end of the
 run orders after the operations of the workers, and hands each message of
 the first two places once. $\square$
 
-A mailbox also serves a sequence of computations separated by barriers,
-e.g., the phases of an episode of an incremental search, each of which ends
-by quiescence before the next one starts. `rearm( active )`, called by one
-thread at the barrier, sets the activity of each worker `me` to `active(
-me )` and $C$ to the number of the active workers, and withdraws the stop;
-`rearm()` makes them all active, as the constructor does
-([Algorithm 25.30](25-parallel.md#alg-25-30)). We keep the channels and the outboxes, i.e., the $p^2$ queues of the mesh with their buffers, so that a phase costs $O( p )$ instead of their construction. Its precondition is the quiescence of the computation before: the outboxes are
-empty, and either $C = 0$ or the mailbox has stopped and `leftovers()` has
-emptied it (an audit drains the inboxes to check it). We leave the barrier to the caller, e.g., the completion function of a `std::barrier` or the end of
-a `run()`: every worker returns from its last call of the computation
-before `rearm()`, and makes its first call of the next one after it. Also, the counts of `sent()`, `batches()`, `merged()` and `received()` go on
-across the computations.
+A mailbox also serves a sequence of computations separated by barriers, e.g.,
+the phases of an episode of an incremental search, each of which ends by
+quiescence before the next one starts. `rearm( active )`, called by one thread
+at the barrier, sets the activity of each worker `me` to `active( me )` and
+$C$ to the number of the active workers, and withdraws the stop; `rearm()`
+makes them all active, as the constructor does ([Algorithm
+25.30](25-parallel.md#alg-25-30)). We keep the channels and the outboxes,
+i.e., the $p^2$ queues of the mesh with their buffers, so that a phase costs
+$O( p )$ instead of their construction. Its precondition is the quiescence of
+the computation before: the outboxes are empty, and either $C = 0$ or the
+mailbox has stopped and `leftovers()` has emptied it (an audit drains the
+inboxes to check it). We leave the barrier to the caller, e.g., the completion
+function of a `std::barrier` or the end of a `run()`: every worker returns
+from its last call of the computation before `rearm()`, and makes its first
+call of the next one after it. Also, the counts of `sent()`, `batches()`,
+`merged()` and `received()` go on across the computations.
 
 <span id="alg-25-30"></span>**Algorithm 25.30.** `rearm()` of `Mailbox`,
 with $\mathit{active}_{\mathit{me}}$ the activity of the worker
@@ -2186,26 +2223,25 @@ that has work from the start is among them. $\square$
 
 **Coalescing.** Between two pushes a worker of a search often sends several
 messages for the same key (e.g., the relaxations of one state by its
-neighbours, each with a distance), of which the receiver usually keeps
-only the least. A mailbox of the policy `CoalesceBy< K , M >`, the third
-parameter of the template, merges them in the outbox, before they take a
-place in the channel and a call at the receiver; the default policy,
-`NoCoalescing`, adds no member and no code. `send( me , to , x , merge )`
-looks up the key `K()( x )` in a map `M` of the outbox (by default a
-`std::unordered_map`, which allocates a node per new key, or a
-`DenseHashMap` or a `FlatHashTable`, which do not, by their
-`try_emplace()` of [§7.6](07-dictionary.md#sec-7-6)), which gives the place of the last message of that
-key sent with a merge since the last push. If there is one, `merge(
-pending , x )` either merges $x$ into it and returns true, or returns
-false; in the second case, as when the key is not found, $x$ is appended
-and becomes the last of its key ([Algorithm 25.31](25-parallel.md#alg-25-31)).
-A merge with no result always merges, and one probe of the map serves both
-the search and the update. Note that a push that the channel takes $j > 0$
-messages of shifts the rest of the outbox by $j$ places, and therefore
-empties the map, while a push of which the channel takes no message (the
-full queue of a mesh) keeps it. Last, `merged( me )` counts the messages
-merged; with `sent( me )` and the messages still in the outboxes, it
-accounts for the calls of `send()`.
+neighbours, each with a distance), of which the receiver usually keeps only
+the least. A mailbox of the policy `CoalesceBy< K , M >`, the third parameter
+of the template, merges them in the outbox, before they take a place in the
+channel and a call at the receiver; the default policy, `NoCoalescing`, adds
+no member and no code. `send( me , to , x , merge )` looks up the key
+`K()( x )` in a map `M` of the outbox (by default a `std::unordered_map`,
+which allocates a node per new key, or a `DenseHashMap` or a `FlatHashTable`,
+which do not, by their `try_emplace()` of [§7.6](07-dictionary.md#sec-7-6)),
+which gives the place of the last message of that key sent with a merge since
+the last push. If there is one, `merge( pending , x )` either merges $x$ into
+it and returns true, or returns false; in the second case, as when the key is
+not found, $x$ is appended and becomes the last of its key ([Algorithm
+25.31](25-parallel.md#alg-25-31)). A merge with no result always merges, and
+one probe of the map serves both the search and the update. Note that a push
+that the channel takes $j > 0$ messages of shifts the rest of the outbox by
+$j$ places, and therefore empties the map, while a push of which the channel
+takes no message (the full queue of a mesh) keeps it. Last, `merged( me )`
+counts the messages merged; with `sent( me )` and the messages still in the
+outboxes, it accounts for the calls of `send()`.
 
 <span id="alg-25-31"></span>**Algorithm 25.31.** `send()` with a merge, with
 $S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and

@@ -23,31 +23,29 @@ realizations on what each one is meant for.
 
 An MFSET is a partition of the elements $\{ 0 , \ldots , n - 1 \}$ into
 disjoint *components*, which starts with the $n$ singletons
-$\{ 0 \} , \ldots , \{ n - 1 \}$ (the `Mfset(n)` of [Montresor 2025,
-§10.2](Z-bibliography.md#ref-montresor2025)) and changes by two
-operations. The first, $\mathrm{find}( x )$, gives the *representative* of the
-component of $x$, an element of it that stays the same until the
-component changes; hence, $x$ and $y$ are in the same component if and
-only if
+$\{ 0 \} , \ldots , \{ n - 1 \}$ (the `Mfset( n )` of [Montresor 2025,
+§10.2](Z-bibliography.md#ref-montresor2025)) and changes by two operations.
+The first, $\mathrm{find}( x )$, gives the *representative* of the component
+of $x$, an element of it that stays the same until the component changes;
+hence, $x$ and $y$ are in the same component if and only if
 
 $$
 \mathrm{find}( x ) = \mathrm{find}( y ) . \tag{11.1}
 $$
 
-The second, $\mathrm{merge}( x , y )$, replaces the components of $x$ and
-of $y$ with their union; components are never split. Some specifications require
-$x$ and $y$ to be in distinct components; all the realizations of the
-chapter relax this precondition, since a `merge()` of two elements already
-together returns false and leaves the partition as it was. Each realization
-also has `n()`, the number of the elements, and all of them but `ListMFSet`
-have `same(x, y)` (cf. (11.1)), and `count()`, the number of the
-components. Throughout the chapter $m$ is
-the number of the operations of a sequence of finds and merges and $p[ x ]$
-the parent of $x$ in a forest. Also, $\mathit{rank}[ r ]$ and
-$\mathit{size}[ r ]$ are the rank and the number of nodes of the tree of
-the root $r$, and $\alpha( m , n )$ is the inverse of the function of Ackermann,
-which is at most 4 for any $m$ and $n$ that fit in a computer ([Tarjan
-1975](Z-bibliography.md#ref-tarjan1975)).
+The second, $\mathrm{merge}( x , y )$, replaces the components of $x$ and of
+$y$ with their union; components are never split. Some specifications require
+$x$ and $y$ to be in distinct components; all the realizations of the chapter
+relax this precondition, since a `merge()` of two elements already together
+returns false and leaves the partition as it was. Each realization also has
+`n()`, the number of the elements, and all of them but `ListMFSet` have
+`same( x , y )` (cf. (11.1)), and `count()`, the number of the components.
+Throughout the chapter $m$ is the number of the operations of a sequence of
+finds and merges and $p[ x ]$ the parent of $x$ in a forest. Also,
+$\mathit{rank}[ r ]$ and $\mathit{size}[ r ]$ are the rank and the number of
+nodes of the tree of the root $r$, and $\alpha( m , n )$ is the inverse of the
+function of Ackermann, which is at most 4 for any $m$ and $n$ that fit in a
+computer ([Tarjan 1975](Z-bibliography.md#ref-tarjan1975)).
 
 <span id="tab-11-1"></span>**Table 11.1.** The realizations of the MFSET
 in `ADS/mfset` and the cost of their operations, for $m \ge n$ operations.
@@ -63,15 +61,14 @@ in `ADS/mfset` and the cost of their operations, for $m \ge n$ operations.
 
 ## 11.2 Lists {#sec-11-2}
 
-`ListMFSet` keeps a list per component, whose first element (its *head*)
-is the representative. Each element keeps the head of its list in the
-vector $\mathit{head}$, and hence `find(x)` reads $\mathit{head}[ x ]$ in
-$O( 1 )$ time. `merge(x, y)` appends the shorter of the two lists to the
-longer one and relabels its elements, i.e., writes the new head into their
-places of $\mathit{head}$ ([Algorithm 11.1](11-mfset.md#alg-11-1) and
-[Figure 11.1](11-mfset.md#fig-11-1)). In the code the lists are vectors,
-and the list of a head is empty once the head has been merged into another
-list.
+`ListMFSet` keeps a list per component, whose first element (its *head*) is
+the representative. Each element keeps the head of its list in the vector
+$\mathit{head}$, and hence `find( x )` reads $\mathit{head}[ x ]$ in $O( 1 )$
+time. `merge( x , y )` appends the shorter of the two lists to the longer one
+and relabels its elements, i.e., writes the new head into their places of
+$\mathit{head}$ ([Algorithm 11.1](11-mfset.md#alg-11-1) and [Figure
+11.1](11-mfset.md#fig-11-1)). In the code the lists are vectors, and the list
+of a head is empty once the head has been merged into another list.
 
 ![Figure 11.1. A `ListMFSet` of 6 elements with the components $\{ 0 , 3 \}$, $\{ 1 , 4 , 5 \}$ and $\{ 2 \}$, before and after `merge(3, 4)`, which appends the shorter list to the longer and relabels its elements (violet).](../figures/mfset-lists.svg){#fig-11-1}
 
@@ -94,18 +91,19 @@ Since a list has at most $n$ elements, this happens at most
 $\lfloor \log_2 n \rfloor$ times per element. Apart from the relabeling,
 each operation costs $O( 1 )$ time. $\square$
 
-For $n$ a power of 2 the bound is tight, as the merges of the pairs, then
-of the quadruples, and so on, show: each round relabels $n / 2$ elements,
-and there are $\log_2 n$ rounds. With the counter `relabels()` one can check
-[Lemma 11.1](11-mfset.md#lem-11-1) on any sequence. Also, `members(x)` gives
-the elements of the component of $x$, which a forest cannot give without
-a visit of all the elements.
+For $n$ a power of 2 the bound is tight, as the merges of the pairs, then of
+the quadruples, and so on, show: each round relabels $n / 2$ elements, and
+there are $\log_2 n$ rounds. With the counter `relabels()` one can check
+[Lemma 11.1](11-mfset.md#lem-11-1) on any sequence. Also, `members( x )` gives
+the elements of the component of $x$, which a forest cannot give without a
+visit of all the elements.
 
 The class is declared as follows, in the namespace `ADS` as all those of the chapter.
 
 ```cpp
 // declarations of <ADS/mfset/ListMFSet.h>
-class ListMFSet {
+class ListMFSet
+{
  public:
  explicit ListMFSet( int n );
  int n( void ) const;
@@ -118,20 +116,19 @@ class ListMFSet {
 
 ## 11.3 A forest of parents {#sec-11-3}
 
-`MFSet` keeps the components as a forest, a vector $p$ of parents in
-which the roots, with $p[ x ] = x$, are the representatives ([Montresor
-2025, §10.2.2](Z-bibliography.md#ref-montresor2025); [Galler and Fischer
-1964](Z-bibliography.md#ref-galler1964)). Here `find(x)` climbs from $x$ to
-the root of its tree, and `merge(x, y)` makes one of the two roots a child
-of the other, after the two finds ([Algorithm 11.2](11-mfset.md#alg-11-2)
-and [Figure 11.2](11-mfset.md#fig-11-2)). Lists and forests thus trade
-one cost for the other: on lists the finds are cheap and the merges
-expensive, on a forest the converse. With no heuristic, the root of $y$
-goes under that of $x$, and $n - 1$ merges may build a path of $n$ nodes,
-whose deepest node costs $n - 1$ steps to each find. Two heuristics bound
-the height of the trees, and may be switched off to study them (the
-argument `Union` of the constructor, `Union::NONE`, `RANK` or `SIZE`, and
-its argument `compress`).
+`MFSet` keeps the components as a forest, a vector $p$ of parents in which the
+roots, with $p[ x ] = x$, are the representatives ([Montresor 2025,
+§10.2.2](Z-bibliography.md#ref-montresor2025); [Galler and Fischer
+1964](Z-bibliography.md#ref-galler1964)). Here `find( x )` climbs from $x$ to
+the root of its tree, and `merge( x , y )` makes one of the two roots a child
+of the other, after the two finds ([Algorithm 11.2](11-mfset.md#alg-11-2) and
+[Figure 11.2](11-mfset.md#fig-11-2)). Lists and forests thus trade one cost
+for the other: on lists the finds are cheap and the merges expensive, on a
+forest the converse. With no heuristic, the root of $y$ goes under that of
+$x$, and $n - 1$ merges may build a path of $n$ nodes, whose deepest node
+costs $n - 1$ steps to each find. Two heuristics bound the height of the
+trees, and may be switched off to study them (the argument `Union` of the
+constructor, `Union::NONE`, `RANK` or `SIZE`, and its argument `compress`).
 
 * The *union by rank* ([Montresor 2025,
   §10.2.3](Z-bibliography.md#ref-montresor2025)) keeps for each root $r$ a
@@ -272,13 +269,13 @@ the amortized cost constant for any practical purpose, and (11.2) improves
 it only in theory. We remark that both bounds are amortized: a single find
 may still cost $\Theta( \log n )$ time.
 
-Finally, `components(G)` builds the MFSET of the connected components of
-an unoriented graph by merging the ends of each edge ([Montresor 2025,
-§10.2.5](Z-bibliography.md#ref-montresor2025)), after which it can follow
-new edges by more merges ([Algorithm 11.3](11-mfset.md#alg-11-3)). Its
-elements are the names $[ 0 , \mathrm{bound}() )$ of the graph; hence a
-name that is not a node (e.g., a deleted one) is a component of its own,
-counted by `count()`.
+Finally, `components( G )` builds the MFSET of the connected components of an
+unoriented graph by merging the ends of each edge ([Montresor 2025,
+§10.2.5](Z-bibliography.md#ref-montresor2025)), after which it can follow new
+edges by more merges ([Algorithm 11.3](11-mfset.md#alg-11-3)). Its elements
+are the names $[ 0 , \mathrm{bound}() )$ of the graph; hence a name that is
+not a node (e.g., a deleted one) is a component of its own, counted by
+`count()`.
 
 <span id="alg-11-3"></span>**Algorithm 11.3.** The connected components of
 an unoriented graph $G$ by an MFSET ([Montresor 2025,
@@ -286,23 +283,23 @@ an unoriented graph $G$ by an MFSET ([Montresor 2025,
 
 --8<-- "generated/MFSet-components.pseudo.md"
 
-The contracts of `MFSet` check that the parents form a forest of
-`count()` trees, that the ranks grow strictly towards the roots with the
-union by rank, and that the sizes count the nodes of their trees with the
-union by size. Its accessors `parent(x)`, `rank(x)` and `size(x)` read the
-three vectors (a size is meaningful only at a root, and with the union by
-size), and its counter `steps()` gives the steps of the climbs, on which
-the bounds above can be measured. With the compression and no union by rank or
-by size, a sequence of $m \ge n$ operations costs
-$\Theta( m \log_{1 + m / n} n )$ time in the worst case ([Tarjan and van
-Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)), between the two bounds
-of [Table 11.1](11-mfset.md#tab-11-1).
+The contracts of `MFSet` check that the parents form a forest of `count()`
+trees, that the ranks grow strictly towards the roots with the union by rank,
+and that the sizes count the nodes of their trees with the union by size. Its
+accessors `parent( x )`, `rank( x )` and `size( x )` read the three vectors (a
+size is meaningful only at a root, and with the union by size), and its
+counter `steps()` gives the steps of the climbs, on which the bounds above can
+be measured. With the compression and no union by rank or by size, a sequence
+of $m \ge n$ operations costs $\Theta( m \log_{1 + m / n} n )$ time in the
+worst case ([Tarjan and van Leeuwen 1984](Z-bibliography.md#ref-tarjan1984)),
+between the two bounds of [Table 11.1](11-mfset.md#tab-11-1).
 
 We declare `MFSet` and `components()` as follows; the example also uses the `UnionFind` of [§11.4](11-mfset.md#sec-11-4).
 
 ```cpp
 // declarations of <ADS/mfset/MFSet.h>
-class MFSet {
+class MFSet
+{
  public:
  enum class Union { NONE , RANK , SIZE };
  explicit MFSet( int n , Union u = Union::RANK , bool compress = true );
@@ -321,44 +318,43 @@ MFSet components( const G & g );
 ```
 
 ```cpp
-ADS::MFSet M( 6 );                                   // by rank, compressing
+ADS::MFSet M( 6 );  // by rank, compressing
 M.merge( 0 , 1 );
 M.merge( 2 , 3 );
 M.merge( 1 , 3 );
-const bool together = M.same( 0 , 2 );               // true
-const int k = M.count();                             // 3 components
+const bool together = M.same( 0 , 2 );  // true
+const int k = M.count();               // 3 components
 ADS::UnionFind U( 6 );
 U.merge( 4 , 5 );
-const int s = U.size( 5 );                           // 2
+const int s = U.size( 5 );  // 2
 ```
 
 ## 11.4 Engineered forests {#sec-11-4}
 
-`DisjointSets<L, C>` (and its instance `UnionFind`, i.e.,
-`DisjointSets<>`, with the union by size and the halving) keeps the forest
-in one vector of integers. A root $r$ holds $-\mathit{size}[ r ]$ (or
+`DisjointSets< L , C >` (and its instance `UnionFind`, i.e., `DisjointSets<>`,
+with the union by size and the halving) keeps the forest in one vector of
+integers. A root $r$ holds $-\mathit{size}[ r ]$ (or
 $-1 - \mathit{rank}[ r ]$, with `L` equal to `Union::RANK`) in place of a
-parent; hence the union needs no second vector, and a find touches one
-array only, of $4 n$ bytes. In either encoding the more negative root is
-the larger tree, which takes the other one under it; on a tie the root
-of $x$ goes under that of $y$ (the converse of `MFSet`). Its `find()`
-shortens the path by *halving* it: every other node on the way is made a
-child of its grandparent, in the pass that climbs ([Tarjan and van Leeuwen
-1984](Z-bibliography.md#ref-tarjan1984);
-[Figure 11.3](11-mfset.md#fig-11-3)). This shortening keeps the bound (11.2)
-of the compression, and a find still costs $O( \log n )$ in the worst
-case, by [Lemma 11.2](11-mfset.md#lem-11-2), since a tree of height $h$
-has at least $2^h$ nodes ([Algorithm 11.4](11-mfset.md#alg-11-4)). The
-full compression, in two passes, is the alternative `C` equal to
-`Compression::FULL` (the two enumerations `Union` and `Compression` of the
-namespace are distinct from the `MFSet::Union` of
-[§11.3](11-mfset.md#sec-11-3)). Besides `find()`, `merge()` and `same()`,
-the class has `reset(n)`, which returns to the $n$ singletons in $O( n )$
-time. It also has `n()`, `count()` and, with the union by size only (a
-constraint `requires` of the member), `size(x)`, the number of the elements
-of the component of $x$. At the highest level, its contracts check that the
-parents make a forest of `count()` trees whose roots hold their sizes, or
-ranks that bound their heights.
+parent; hence the union needs no second vector, and a find touches one array
+only, of $4 n$ bytes. In either encoding the more negative root is the larger
+tree, which takes the other one under it; on a tie the root of $x$ goes under
+that of $y$ (the converse of `MFSet`). Its `find()` shortens the path by
+*halving* it: every other node on the way is made a child of its grandparent,
+in the pass that climbs ([Tarjan and van Leeuwen
+1984](Z-bibliography.md#ref-tarjan1984); [Figure 11.3](11-mfset.md#fig-11-3)).
+This shortening keeps the bound (11.2) of the compression, and a find still
+costs $O( \log n )$ in the worst case, by [Lemma 11.2](11-mfset.md#lem-11-2),
+since a tree of height $h$ has at least $2^h$ nodes ([Algorithm
+11.4](11-mfset.md#alg-11-4)). The full compression, in two passes, is the
+alternative `C` equal to `Compression::FULL` (the two enumerations `Union` and
+`Compression` of the namespace are distinct from the `MFSet::Union` of
+[§11.3](11-mfset.md#sec-11-3)). Besides `find()`, `merge()` and `same()`, the
+class has `reset( n )`, which returns to the $n$ singletons in $O( n )$ time.
+It also has `n()`, `count()` and, with the union by size only (a constraint
+`requires` of the member), `size( x )`, the number of the elements of the
+component of $x$. At the highest level, its contracts check that the parents
+make a forest of `count()` trees whose roots hold their sizes, or ranks that
+bound their heights.
 
 Its declarations are the following.
 
@@ -367,7 +363,8 @@ Its declarations are the following.
 enum class Union { SIZE , RANK };
 enum class Compression { HALVING , FULL };
 template< Union L = Union::SIZE , Compression C = Compression::HALVING >
-class DisjointSets {
+class DisjointSets
+{
  public:
  explicit DisjointSets( int n = 0 );
  void reset( int n );
@@ -376,7 +373,8 @@ class DisjointSets {
  int find( int x );
  bool merge( int x , int y );
  bool same( int x , int y );
- int size( int x ) requires( L == Union::SIZE );
+ int size( int x )
+  requires( L == Union::SIZE );
  };
 using UnionFind = DisjointSets<>;
 ```
@@ -404,24 +402,25 @@ $$
 p[ x ] \ge x \quad \text{for each } x , \tag{11.3}
 $$
 
-the roots having $p[ x ] = x$; hence, a path increases strictly to its
-root. This *link by index* takes the place of the union by rank, with no
-array of ranks and no sizes. `merge(x, y)` climbs the two paths from $x$
-and $y$ together, always from the node $a$ whose parent is smaller. If $a$
-is a root, it is linked under the parent of the other node $b$, and the
-two sets are one. Otherwise, the parent of $a$ is replaced by the larger
-parent of $b$ (the splicing), and the climb goes on from the old parent of
-$a$. When the two climbs reach the same parent, $x$ and $y$ were already
-in the same set ([Algorithm 11.5](11-mfset.md#alg-11-5) and
-[Table 11.2](11-mfset.md#tab-11-2)). Its `find()` halves the path, and the
-class also has `same()`, `n()`, `count()` and `parent(x)`; the elements
-are of type `std::uint32_t`, and the constructor requires $n < 2^{32}$.
+the roots having $p[ x ] = x$; hence, a path increases strictly to its root.
+This *link by index* takes the place of the union by rank, with no array of
+ranks and no sizes. `merge( x , y )` climbs the two paths from $x$ and $y$
+together, always from the node $a$ whose parent is smaller. If $a$ is a root,
+it is linked under the parent of the other node $b$, and the two sets are one.
+Otherwise, the parent of $a$ is replaced by the larger parent of $b$ (the
+splicing), and the climb goes on from the old parent of $a$. When the two
+climbs reach the same parent, $x$ and $y$ were already in the same set
+([Algorithm 11.5](11-mfset.md#alg-11-5) and [Table
+11.2](11-mfset.md#tab-11-2)). Its `find()` halves the path, and the class also
+has `same()`, `n()`, `count()` and `parent( x )`; the elements are of type
+`std::uint32_t`, and the constructor requires $n < 2^{32}$.
 
 Its declarations are the following.
 
 ```cpp
 // declarations of <ADS/mfset/RemUnionFind.h>
-class RemUnionFind {
+class RemUnionFind
+{
  public:
  explicit RemUnionFind( std::size_t n = 0 );
  std::size_t n( void ) const;
@@ -442,10 +441,10 @@ class RemUnionFind {
 
 --8<-- "generated/RemUnionFind-merge.pseudo.md"
 
-<span id="tab-11-2"></span>**Table 11.2.** The algorithm of Rem on the
-parents $p = ( 3 , 4 , 3 , 3 , 5 , 5 )$, i.e., the sets $\{ 0 , 2 , 3 \}$
-(root 3) and $\{ 1 , 4 , 5 \}$ (root 5): `merge(0, 1)` joins them after one
-splicing, and `merge(2, 0)` then finds them together after one more.
+<span id="tab-11-2"></span>**Table 11.2.** The algorithm of Rem on the parents
+$p = ( 3 , 4 , 3 , 3 , 5 , 5 )$, i.e., the sets $\{ 0 , 2 , 3 \}$ (root 3) and
+$\{ 1 , 4 , 5 \}$ (root 5): `merge( 0 , 1 )` joins them after one splicing,
+and `merge( 2 , 0 )` then finds them together after one more.
 
 | Step | $a$, $b$ | $p[ a ]$, $p[ b ]$ | Action | $p$ after |
 |---|---|---|---|---|
@@ -454,10 +453,10 @@ splicing, and `merge(2, 0)` then finds them together after one more.
 | `merge(2, 0)` | 2, 0 | 3, 4 | splice: $p[ 2 ] \gets 4$, $a \gets 3$ | $( 4 , 4 , 4 , 4 , 5 , 5 )$ |
 | | 3, 0 | 4, 4 | the same parent: false | $( 4 , 4 , 4 , 4 , 5 , 5 )$ |
 
-<span id="lem-11-4"></span>**Lemma 11.4.** *Each operation of
-`RemUnionFind` keeps (11.3), and `merge(x, y)` joins the sets of $x$ and
-$y$ and returns true if they were distinct, and returns false otherwise,
-after at most $2 n$ steps.*
+<span id="lem-11-4"></span>**Lemma 11.4.** *Each operation of `RemUnionFind`
+keeps (11.3), and `merge( x , y )` joins the sets of $x$ and $y$ and returns
+true if they were distinct, and returns false otherwise, after at most $2 n$
+steps.*
 
 *Proof.* At each step, after the swap, $p[ a ] < p[ b ]$. A root $a$ has
 $p[ a ] = a$, and its new parent $p[ b ]$ is thus larger than $a$; a
@@ -501,28 +500,28 @@ check (11.3) and the number of the roots after each merge.
 
 ## 11.5 Undo and offline connectivity {#sec-11-5}
 
-`RollbackUnionFind` undoes its merges in the reverse of their order
-([Mannila and Ukkonen 1986](Z-bibliography.md#ref-mannila1986)). Each
-`merge()` changes at most three words, i.e., the parent of the root that it
-hangs and the size and the rank of the other root. It pushes on a stack
-$R$ a record with the root hung, the other root and whether the rank
-grew. `undo()` pops a record and puts the words back, in
-$O( 1 )$ time, and `rollback(t)` undoes the merges back to the checkpoint
-$t$, the number of merges done when `checkpoint()` gave it
-([Algorithm 11.6](11-mfset.md#alg-11-6) and
-[Figure 11.4](11-mfset.md#fig-11-4)). A merge of two elements already
-together pushes an empty record, and the checkpoints thus count the calls.
-Its space is $12 n$ bytes (the parents, the ranks and the sizes), plus 12
-bytes per record. The class also has `same()`, `size(x)` (the number of
-the elements of the component of $x$), `n()`, `count()` and `reset(n)`,
-which returns to the $n$ singletons and empties the stack; `undo(k)`
-undoes the last $k$ merges, one by default.
+`RollbackUnionFind` undoes its merges in the reverse of their order ([Mannila
+and Ukkonen 1986](Z-bibliography.md#ref-mannila1986)). Each `merge()` changes
+at most three words, i.e., the parent of the root that it hangs and the size
+and the rank of the other root. It pushes on a stack $R$ a record with the
+root hung, the other root and whether the rank grew. `undo()` pops a record
+and puts the words back, in $O( 1 )$ time, and `rollback( t )` undoes the
+merges back to the checkpoint $t$, the number of merges done when
+`checkpoint()` gave it ([Algorithm 11.6](11-mfset.md#alg-11-6) and [Figure
+11.4](11-mfset.md#fig-11-4)). A merge of two elements already together pushes
+an empty record, and the checkpoints thus count the calls. Its space is $12 n$
+bytes (the parents, the ranks and the sizes), plus 12 bytes per record. The
+class also has `same()`, `size( x )` (the number of the elements of the
+component of $x$), `n()`, `count()` and `reset( n )`, which returns to the $n$
+singletons and empties the stack; `undo( k )` undoes the last $k$ merges, one
+by default.
 
 The class, the operations of the offline connectivity and their function are declared as follows.
 
 ```cpp
 // declarations of <ADS/mfset/RollbackUnionFind.h>
-class RollbackUnionFind {
+class RollbackUnionFind
+{
  public:
  explicit RollbackUnionFind( int n = 0 );
  void reset( int n );
@@ -536,14 +535,15 @@ class RollbackUnionFind {
  void undo( int k = 1 );
  void rollback( int t );
  };
-struct ConnectivityOp {
+struct ConnectivityOp
+{
  enum Kind { INSERT , DELETE , CONNECTED , COMPONENTS };
  Kind kind;
  int u = 0;
  int v = 0;
  };
-std::vector< int > offlineConnectivity( int n ,
-                                        const std::vector< ConnectivityOp > & ops );
+std::vector< int >
+offlineConnectivity( int n , const std::vector< ConnectivityOp > & ops );
 ```
 
 ![Figure 11.4. A `RollbackUnionFind` with two roots of rank 0 and the stack $R$ of the records, before `merge(0, 1)`, after it (0 under 1, whose rank grew, and the record pushed) and after `undo()`, which pops the record and restores the forest.](../figures/mfset-rollback.svg){#fig-11-4}
@@ -597,16 +597,16 @@ amortized time per operation, and that no separable algorithm on pointers
 does better. We keep the simpler forest, whose bound
 $O( \log n )$ holds for each single operation.
 
-With the undo, `offlineConnectivity(n, ops)` answers the questions of
+With the undo, `offlineConnectivity( n , ops )` answers the questions of
 connectivity on a graph whose edges come and go, when the sequence of $k$
-insertions, deletions and questions (whether two nodes are connected, or
-how many components there are) is known in advance. Each operation is a
+insertions, deletions and questions (whether two nodes are connected, or how
+many components there are) is known in advance. Each operation is a
 `ConnectivityOp`, whose `kind` is `INSERT`, `DELETE`, `CONNECTED` or
-`COMPONENTS` and whose `u` and `v` are the two nodes, in $[ 0 , n )$ (0
-by default), which a `COMPONENTS` does not use. The edges are unoriented, i.e., $[ v , u ]$ deletes the
-edge inserted as $[ u , v ]$. The result holds the answers in the order of
-the questions, 1 or 0 for `CONNECTED` and the number of the components for
-`COMPONENTS`, as in the following use on 3 nodes:
+`COMPONENTS` and whose `u` and `v` are the two nodes, in $[ 0 , n )$ (0 by
+default), which a `COMPONENTS` does not use. The edges are unoriented, i.e.,
+$[ v , u ]$ deletes the edge inserted as $[ u , v ]$. The result holds the
+answers in the order of the questions, 1 or 0 for `CONNECTED` and the number
+of the components for `COMPONENTS`, as in the following use on 3 nodes:
 
 ```cpp
 using Op = ADS::ConnectivityOp;

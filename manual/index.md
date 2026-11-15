@@ -39,9 +39,9 @@ ADS is distributed under the
 
 ## Conventions
 
-* **Class and function names** are typeset in `monospace`, e.g.,
-  `ArrayStack`, `push(v)`; the names of the operations of an abstract
-  data type are written as in the pseudocode, e.g., $\mathrm{push}( v )$.
+* **Class and function names** are typeset in `monospace`, e.g., `ArrayStack`,
+  `push( v )`; the names of the operations of an abstract data type are
+  written as in the pseudocode, e.g., $\mathrm{push}( v )$.
 * **File-path and source-tree references** are typeset in `monospace`
   too, e.g., `ADS/stack/ArrayStack.h`, relative to `include/`.
 * **Abstract data types** are written in capitals, e.g., STACK,
