@@ -12,7 +12,13 @@
  * compared with zc_none_<workload>_ref, i.e., with the wrapper that nobody
  * listens to, since the wrapper holds a reference to the graph that the
  * plain graph does not; the array of keys holds its vector, so that its
- * functions by reference are compared with zc_plain_key_ref.
+ * functions by reference are compared with zc_plain_key_ref. The functions
+ * zc_<variant>_tree_<operation> call one operation of JoinTree, and
+ * zerocost.py compares each, and every function of the tree that the
+ * object file holds, with that of the tree with no observer, the names of
+ * the policies left out of those of the relocations; with ZC_BASE (the
+ * headers of an older revision) only those of the default policy are
+ * compiled, and they are compared with those of the present revision.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -165,6 +171,77 @@ void zc_dynamic_key_ref( KeyArray< ADS::Dynamic<> > & a , std::size_t h ,
 #endif
 
 }  // end( extern "C" )
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- JoinTree ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+#ifdef ZC_POLICIES
+
+/// the operations of the tree T, by functions zc_<tag>_tree_<operation>
+#define ZC_TREE( tag , T )                                                   \
+ void zc_##tag##_tree_insert( T & t , int k , long long v ) {                \
+  t.insert( k , v ); }                                                      \
+ void zc_##tag##_tree_remove( T & t , int k ) { t.remove( k ); }            \
+ bool zc_##tag##_tree_lookup( const T & t , int k ) {                       \
+  return( t.lookup( k ).has_value() ); }                                    \
+ int zc_##tag##_tree_lower_bound( const T & t , int k ) {                   \
+  return( t.lowerBound( k ) ? t.lowerBound( k )->first : -1 ); }            \
+ void zc_##tag##_tree_clear( T & t ) { t.clear(); }                         \
+ long long zc_##tag##_tree_range( const T & t , int lo , int hi ) {         \
+  return( t.augRange( lo , hi ) + t.augPrefix( hi ) ); }                    \
+ void zc_##tag##_tree_union( T & t , T & o ) {                              \
+  t.unionWith( std::move( o ) ); }                                          \
+ void zc_##tag##_tree_multi_insert( T & t ,                                 \
+  std::span< const std::pair< int , long long > > B ) {                     \
+  t.multiInsert( B ); }                                                     \
+ void zc_##tag##_tree_multi_remove( T & t , std::span< const int > B ) {    \
+  t.multiRemove( B ); }
+
+#define ZC_TREE_COPY( tag , T )                                              \
+ void zc_##tag##_tree_copy( T & t , const T & o ) { t = o; }               \
+ void zc_##tag##_tree_swap( T & t , T & o ) { t.swap( o ); }
+
+extern "C" {
+
+ZC_TREE( none , JT )
+ZC_TREE_COPY( none , JT )
+
+#ifndef ZC_BASE
+
+void zc_none_tree_assign( JT & t , int k , long long v )
+{
+ t.assign( k , v );
+ }
+
+ZC_TREE( static_excl , JTP< ADS::Static< TreeExcluding > > )
+ZC_TREE( static_count , JTP< ADS::Static< TreeCountDecreases > > )
+ZC_TREE( dynamic , JTP< ADS::Dynamic<> > )
+ZC_TREE_COPY( dynamic , JTP< ADS::Dynamic<> > )
+
+void zc_static_excl_tree_assign( JTP< ADS::Static< TreeExcluding > > & t ,
+                                 int k , long long v )
+{
+ t.assign( k , v );
+ }
+
+void zc_static_count_tree_assign(
+      JTP< ADS::Static< TreeCountDecreases > > & t , int k , long long v )
+{
+ t.assign( k , v );
+ }
+
+void zc_dynamic_tree_assign( JTP< ADS::Dynamic<> > & t , int k ,
+                             long long v )
+{
+ t.assign( k , v );
+ }
+
+#endif
+
+}  // end( extern "C" )
+
+#endif
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ End File zerocost_asm.cpp -----------------------*/

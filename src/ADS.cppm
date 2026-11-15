@@ -428,6 +428,7 @@ module;
 #include "ADS/tree/JoinTree.h"
 #include "ADS/tree/LeftLeaningRedBlackTree.h"
 #include "ADS/tree/LinkCutTree.h"
+#include "ADS/tree/MaterializedAggregate.h"
 #include "ADS/tree/MeasuredSearchTree.h"
 #include "ADS/tree/ParentTree.h"
 #include "ADS/tree/PartialRebuildingTree.h"
@@ -2503,6 +2504,9 @@ export namespace ADS {
 
  // ADS/tree/LinkCutTree.h
  using ADS::LinkCutTree;
+
+ // ADS/tree/MaterializedAggregate.h
+ using ADS::MaterializedAggregate;
 
  // ADS/tree/MeasuredSearchTree.h
  using ADS::MeasuredSearchTree;

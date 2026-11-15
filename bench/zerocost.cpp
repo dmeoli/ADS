@@ -12,11 +12,15 @@
  * with the workloads array-weight (`setWeight()` of ArrayGraph), list-weight
  * (`insertEdge()` of an edge of ListGraph that is there), list-edge
  * (`insertEdge()` of a new edge of ListGraph and its `deleteEdge()`) and
- * key (the array of keys of zerocost.h), and the variants plain,
+ * key (the array of keys of zerocost.h), tree-insert (`insert()` of a new
+ * key of JoinTree and its `remove()`), tree-overwrite (`insert()` of a key
+ * that is there) and tree-assign (`assign()`), and the variants plain,
  * observable (`Observable< G >`, nobody listening), observable-excl
  * (`Observable< G , O >`, O wanting only the insertions of nodes), and,
  * with Modification.h, none, static-excl, static-count and dynamic [see
- * zerocost.h]. It prints a checksum, so that no change is optimized away.
+ * zerocost.h]; the workloads of the tree have the last four only, and
+ * with ZC_BASE only none, and not tree-assign. It prints a checksum, so
+ * that no change is optimized away.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -265,6 +269,54 @@ long long keys( const std::string & var , long long n )
  std::exit( 2 );
  }
 
+/// the workload work of the tree on the variant var
+long long trees( const std::string & work , const std::string & var ,
+                 long long n )
+{
+ const auto P = weightOps();
+ auto run = [ & ]( auto & t ) {
+  for( int u = 0 ; u < N ; ++u )
+   t.insert( u , 100 );
+  if( work == "tree-insert" )
+   loop( [ & ]( const Op & o ) {
+    t.insert( N + o.u , o.w );
+    t.remove( N + o.u ); } , P , n );
+  else if( work == "tree-overwrite" )
+   loop( [ & ]( const Op & o ) { t.insert( o.u , o.w ); } , P , n );
+#ifndef ZC_BASE
+  else if( work == "tree-assign" )
+   loop( [ & ]( const Op & o ) { t.assign( o.u , o.w ); } , P , n );
+#endif
+  else {
+   std::fprintf( stderr , "no workload %s\n" , work.c_str() );
+   std::exit( 2 );
+   }
+  return( (long long)( t.augValue() ) );
+  };
+ if( var == "none" ) {
+  JT t;
+  return( run( t ) );
+  }
+#ifndef ZC_BASE
+ if( var == "static-excl" ) {
+  TreeExcluding x;
+  JTP< ADS::Static< TreeExcluding > > t( 1 , x );
+  return( run( t ) + x.n );
+  }
+ if( var == "static-count" ) {
+  TreeCountDecreases x;
+  JTP< ADS::Static< TreeCountDecreases > > t( 1 , x );
+  return( run( t ) + x.n );
+  }
+ if( var == "dynamic" ) {
+  JTP< ADS::Dynamic<> > t;
+  return( run( t ) );
+  }
+#endif
+ std::fprintf( stderr , "no variant %s\n" , var.c_str() );
+ std::exit( 2 );
+ }
+
 #endif
 
 }  // end( namespace )
@@ -285,6 +337,8 @@ int main( int argc , char ** argv )
 #ifdef ZC_POLICIES
  else if( work == "key" )
   s = keys( var , n );
+ else if( work.rfind( "tree-" , 0 ) == 0 )
+  s = trees( work , var , n );
 #endif
  else {
   std::fprintf( stderr , "no workload %s\n" , work.c_str() );

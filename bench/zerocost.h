@@ -11,9 +11,14 @@
  * dynamic subject to which nobody is attached. The structures are
  * ArrayGraph (`setWeight()`), ListGraph (`insertEdge()` of an edge that is
  * there, i.e., a change of weight, and `insertEdge()` followed by
- * `deleteEdge()`), and an array of keys written on the subject policies
- * of Modification.h with the pattern of the mutators of the library. The
- * variants on the subject policies exist only when Modification.h does.
+ * `deleteEdge()`), an array of keys written on the subject policies of
+ * Modification.h with the pattern of the mutators of the library, and
+ * JoinTree (`insert()` of a new key and its `remove()`, `insert()` of a key
+ * that is there, `assign()`). The variants on the subject policies exist
+ * only when Modification.h does; with ZC_BASE (the headers of an older
+ * revision, see the option --base of zerocost.py), only the tree with no
+ * observer, of the default policy, and only its operations of that
+ * revision.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -36,6 +41,7 @@
 #include "ADS/graph/ArrayGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Observable.h"
+#include "ADS/tree/JoinTree.h"
 
 #if __has_include( "ADS/Modification.h" )
  #include "ADS/Modification.h"
@@ -43,6 +49,9 @@
 #endif
 
 #include <cstddef>
+#include <cstdint>
+#include <span>
+#include <utility>
 #include <vector>
 
 namespace zc {
@@ -50,6 +59,10 @@ namespace zc {
 using AG = ADS::ArrayGraph< long long >;
 using LG = ADS::ListGraph< long long >;
 using Ev = ADS::GraphEvent< long long >;
+
+/// the tree of the workloads of JoinTree, of the default policy
+using JT = ADS::JoinTree< int , long long , ADS::AVLBalance ,
+                          ADS::SumAugmentation< long long > >;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- THE OBSERVERS OF Observable.h ----------------------*/
@@ -153,6 +166,34 @@ class KeyArray {
 
 static_assert( sizeof( KeyArray< ADS::NoObservers > ) ==
                sizeof( std::vector< int > ) );
+
+#ifndef ZC_BASE
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ THE JoinTree ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// an observer of the tree that wants none of the events of the workloads
+struct TreeExcluding {
+ long long n = 0;
+ void on( const ADS::mod::Cleared & ) noexcept { ++n; }
+ };
+
+/// an observer of the tree that counts the values that decrease
+struct TreeCountDecreases {
+ long long n = 0;
+ void on( const JT::Assigned & e ) { n += ( e.to < e.from ) ? 1 : 0; }
+ };
+
+/// the tree of the policy P
+template< class P >
+using JTP = ADS::JoinTree< int , long long , ADS::AVLBalance ,
+                           ADS::SumAugmentation< long long > , P >;
+
+/// with no observer, the root and the generator of the priorities alone
+static_assert( sizeof( JT ) == sizeof( void * ) + sizeof( std::uint64_t ) );
+
+#endif
 
 #endif
 

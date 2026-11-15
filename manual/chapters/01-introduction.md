@@ -1617,6 +1617,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `tree/JoinTree.h` | `AVLBalance`, `RedBlackBalance`, `WeightBalance`, `TreapBalance`, `NoAugmentation`, `SumAugmentation`, `MaxAugmentation`, `JoinTree`, `JoinAVLTree`, `JoinRedBlackTree`, `WeightBalancedTree`, `JoinTreap`, `AugmentedMap` | [8](08-tree.md#ch-8) |
 | `tree/LeftLeaningRedBlackTree.h` | `LeftLeaningRedBlackTree` | [8](08-tree.md#ch-8) |
 | `tree/LinkCutTree.h` | `LinkCutTree` | [8](08-tree.md#ch-8) |
+| `tree/MaterializedAggregate.h` | `MaterializedAggregate` | [8](08-tree.md#ch-8) |
 | `tree/MeasuredSearchTree.h` | `MeasuredSearchTree` | [8](08-tree.md#ch-8) |
 | `tree/ParentTree.h` | `ParentTree` | [8](08-tree.md#ch-8) |
 | `tree/PartialRebuildingTree.h` | `PartialRebuildingTree`, `WeightRebuildTree`, `CountdownTree`, `DynamiteTree` | [8](08-tree.md#ch-8) |
@@ -1892,7 +1893,9 @@ that sends the event is a cold function out of line. We check both claims
 with the script `bench/zerocost.py`, by the instructions that callgrind
 counts and by the code of the changes, compared byte for byte. A structure
 whose code cannot change (e.g., one of another library) is wrapped instead,
-as `ObservedGraph` wraps the graphs ([§14.13.1](14-graph.md#sec-14-13-1)).
+as `ObservedGraph` wraps the graphs ([§14.13.1](14-graph.md#sec-14-13-1));
+`JoinTree`, instead, tells its changes from inside its mutators
+([§8.12.7](08-tree.md#sec-8-12-7)).
 
 `batch(s)` opens a group of RAII on the structure $s$. Its events are
 collected until the outermost group closes (the nested ones only count the

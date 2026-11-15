@@ -19,7 +19,9 @@
  \ref theory_tree_problems), the search trees and the arguments behind their
  bounds (see \ref theory_tree_search), the algorithms by joins (see
  \ref theory_tree_join), the B-trees (see \ref theory_tree_btree), the
- dynamic trees (see \ref theory_tree_dynamic), and the trees of chapters 6
+ dynamic trees (see \ref theory_tree_dynamic), the aggregates that change
+ and the observers that keep them (see \ref theory_tree_observed), and the
+ trees of chapters 6
  to 9 of Morin, Open Data Structures, with their exercises (from
  \ref theory_tree_morin to \ref theory_tree_llrb). The
  pseudocode of each operation and of each algorithm is on the page of its
@@ -1034,6 +1036,111 @@
  red-black tree changes less; the benchmark `bench/ssets.cpp` measures the
  searches, the insertions and the removals of all the sorted sets of the
  book on random, sorted and reverse-sorted keys (exercise 9.14).
+
+ \section theory_tree_observed Aggregates that change
+
+ The augmented maps of \ref theory_tree_augmented keep an aggregate inside
+ the tree; this section is concerned with how the aggregate follows a change
+ of one value, with two queries that descend the tree by the aggregates,
+ and with the aggregate kept outside the tree by an observer of its events
+ (see \ref theory_ADS_modifications). `JoinTree` tells `Inserted`, `Erased`
+ and `Assigned` of a key, whose handle is the key itself, `Cleared` when its
+ nodes are taken out (by `clear()`, or by a bulk operation that consumes it)
+ and `Rebuilt` when a bulk operation puts its nodes back; each event is
+ sent when the tree is in the state that it describes (an erasure before
+ the removal, with the state that it leaves), so that the events of the
+ operations form a history from the pairs before to the pairs after, and
+ the net effect of a batch is one by the coalescing lemma of
+ \ref theory_ADS_modifications. With no observer the mutators are the code
+ of the tree with no policy, which `bench/zerocost.py` checks by the
+ counts of the instructions and by the code.
+
+ An augmentation may declare that \f$ \otimes \f$ commutes (`commutative`),
+ that it has the inverses \f$ a^{-1} \f$ of a group (`inverse()`), and that
+ \f$ a \otimes b \in \{ a , b \} \f$ (`selective`); a value is exact if its
+ type is not a floating one.
+
+ <em>Lemma 13 (an assignment by its difference).</em> Let the value of the
+ key \f$ k \f$, at the node \f$ u \f$, change from \f$ w \f$ to \f$ v \f$,
+ and let \f$ ( A , \otimes ) \f$ be an abelian group. Combining the value
+ of every node of the path from the root to \f$ u \f$ with
+ \f[
+   d = g( k , v ) \otimes g( k , w )^{-1} \tag{11}
+ \f]
+ keeps (5) at every node, by \f$ \delta + 2 \f$ combinations for \f$ u \f$
+ at the depth \f$ \delta \f$, against the \f$ 2 ( \delta + 1 ) \f$
+ combinations and \f$ \delta + 1 \f$ values of \f$ g \f$ of the
+ recomputation from the children.
+
+ Indeed, a node off the path keeps its subtree and its value; for a node
+ \f$ x \f$ of the path, associativity and commutativity give
+ \f$ \mathit{aug}( x ) = B \otimes g( k , w ) \f$, with \f$ B \f$ the
+ combination of the other pairs of its subtree, and the new value
+ \f$ B \otimes g( k , v ) \f$ is \f$ \mathit{aug}( x ) \otimes d \f$. The
+ lemma needs both hypotheses: without commutativity \f$ g( k , w ) \f$ sits
+ between two parts of \f$ B \f$, and the floating sums are not
+ associative, so that `assign()` recomputes in those cases.
+
+ Let \f$ \mathrm{pre}( x ) \f$ be the combination of the pairs with keys
+ not larger than \f$ x \f$. A predicate \f$ p \f$ is monotone on the
+ prefixes if \f$ p( \mathrm{pre}( x ) ) \f$ implies
+ \f$ p( \mathrm{pre}( y ) ) \f$ for \f$ x < y \f$, and a predicate \f$ q \f$
+ distributes if \f$ q( e ) \f$ is false and
+ \f$ q( a \otimes b ) = q( a ) \lor q( b ) \f$.
+
+ <em>Lemma 14 (the selection by a prefix).</em> For \f$ p \f$ monotone on
+ the prefixes, the descent that goes to the left subtree \f$ L \f$ of the
+ current node when \f$ L \f$ is not empty and \f$ p( a \otimes
+ \mathit{aug}( L ) ) \f$ holds, stops at the node when
+ \f$ p( a \otimes \mathit{aug}( L ) \otimes g( u ) ) \f$ holds, and goes
+ right otherwise, \f$ a \f$ being the combination of the pairs before the
+ subtree of the current node, finds the smallest \f$ x \f$ with
+ \f$ p( \mathrm{pre}( x ) ) \f$ in at most \f$ h + 1 \f$ rounds, or finds
+ that there is none (`augSelect()`).
+
+ The invariant is that the answer, if it exists, is in the subtree of the
+ current node: going left, \f$ \max L \f$ satisfies \f$ p \f$, hence the
+ answer is in \f$ L \f$; otherwise, by monotonicity, no key of \f$ L \f$
+ satisfies it, and either the node is the answer or the answer is to its
+ right.
+
+ <em>Lemma 15 (the filter by the aggregates).</em> For \f$ q \f$
+ distributive, \f$ q( \mathit{aug}( u ) ) \f$ holds if and only if a pair
+ of the subtree of \f$ u \f$ has \f$ q( g( x , v ) ) \f$, and the visit
+ that enters only such subtrees gives those pairs, by increasing keys; for
+ \f$ m \f$ pairs given, it enters at most \f$ m ( h + 1 ) \f$ nodes, the
+ ancestors of the pairs given, and calls \f$ q \f$ at most
+ \f$ 3 m ( h + 1 ) + 1 \f$ times (`augFilter()`).
+
+ The first claim follows from (5) by induction, and every node entered is
+ an ancestor of a pair given, or that pair. Sun, Ferizovic and Blelloch
+ build the filtered tree instead, in
+ \f$ O( m \log( n / m + 1 ) ) \f$ work for the trees balanced by weight.
+
+ <em>Lemma 16 (the aggregate of an observer).</em> If \f$ \otimes \f$ is
+ associative, commutative and selective, then \f$ x \prec y \f$, i.e.,
+ \f$ x \ne y \f$ and \f$ x \otimes y = x \f$, is a strict total order, and
+ the combination of a nonempty multiset is its least element. Hence an
+ observer of the events of a dictionary of \f$ m \f$ pairs keeps the
+ combination of their values by \f$ O( 1 ) \f$ combinations per event for
+ an abelian group (an insertion combines, an erasure combines the inverse,
+ an assignment both), by \f$ O( \log m ) \f$ comparisons per event for a
+ selective monoid (the multiset of the values in the order \f$ \prec \f$),
+ and, for any other commutative monoid, by one combination per insertion
+ and a recomputation from the structure, in \f$ O( m ) \f$, at the first
+ query after an erasure or an assignment (`MaterializedAggregate`).
+
+ For \f$ x \ne y \f$ exactly one of \f$ x \prec y \f$ and \f$ y \prec x \f$
+ holds, by selectivity and commutativity, and \f$ x \prec y \prec z \f$
+ gives \f$ x \otimes z = x \otimes ( y \otimes z ) = x \f$ by
+ associativity; since \f$ x \otimes y \f$ is then the least of the two,
+ the combination of a multiset is its least element. A commutative
+ aggregate is that of the multiset of the values, which each event changes
+ by one insertion or erasure of a value, or both. The aggregate of a group
+ of floating values drifts by the rounding of its differences; the
+ observer recomputes it from the structure every `Period` changes (1024
+ by default), and its audit compares it with the recomputation within a
+ relative tolerance.
 
  \section theory_tree_refs References
 

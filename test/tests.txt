@@ -1823,6 +1823,10 @@ join_trees  interval-tree         albero degli intervalli, query di stabbing
 join_trees  range-tree            albero di range 2D, conteggi nei rettangoli
 join_trees  infinite-bounds       punti, intervalli e valori agli infiniti
 join_trees  join-executors        Sequential e ThreadPool, risultati uguali
+join_trees  join-tree-events      eventi di JoinTree, lotti, garanzia forte
+join_trees  join-tree-assign      assign() per differenze e per ricalcolo
+join_trees  join-tree-select-filter  augSelect() e augFilter() contro la scansione
+join_trees  materialized-aggregate  aggregati materializzati sotto Shadow
 
 # the graphs that change and the union-find with rollback, beyond the book
 engineered_dynamic  observable-events      eventi del grafo osservabile, maschere

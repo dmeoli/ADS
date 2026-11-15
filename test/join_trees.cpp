@@ -15,6 +15,11 @@
  * weights, the heap order of the priorities) and the sizes of the
  * subtrees are checked after every operation by the contracts at the
  * level 3; the heights are also checked against the bound of each scheme.
+ * The events of JoinTree (to static and to dynamic observers, in batches
+ * and from the bulk operations), assign() by the differences of a group
+ * and by recomputation, augSelect() and augFilter() against brute force,
+ * and MaterializedAggregate for the four kinds of algebra, audited by a
+ * Shadow against an observer that recomputes from scratch.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -33,17 +38,21 @@
 #include "ADS/parallel/ThreadPool.h"
 #include "ADS/tree/AVLTree.h"
 #include "ADS/tree/JoinTree.h"
+#include "ADS/tree/MaterializedAggregate.h"
 #include "ADS/tree/SearchTree.h"
 #include "ADS/tree/Treap.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <limits>
 #include <map>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <string>
+#include <variant>
 #include <utility>
 #include <vector>
 
@@ -587,6 +596,267 @@ void augmented( void )
         ( e.augPrefix( 3 ) == 0 ) );
  }
 
+
+/*--------------------------------------------------------------------------*/
+/*----------------------- THE EVENTS AND THE ALGEBRA -----------------------*/
+/*--------------------------------------------------------------------------*/
+
+using Ins = mod::Inserted< int , int , int >;
+using Era = mod::Erased< int , int , int >;
+using Asg = mod::Assigned< int , int >;
+using TreeEvent = std::variant< Ins , Era , Asg , mod::Cleared ,
+                                mod::Rebuilt >;
+
+/// an observer that records the events of a tree, and on an erasure
+/// whether the key was still there, by `has`; with `throwOn`, it throws on
+/// the insertion of that key
+struct Recorder {
+ std::vector< TreeEvent > E;
+ std::function< bool( int ) > has;
+ bool before = true;
+ int throwOn = -1;
+ void on( const Ins & e ) {
+  if( e.key == throwOn )
+   throw( std::runtime_error( "refused" ) );
+  E.emplace_back( e );
+  }
+ void on( const Era & e ) noexcept {
+  if( has && ! has( e.key ) )
+   before = false;
+  E.emplace_back( e );
+  }
+ void on( const Asg & e ) { E.emplace_back( e ); }
+ void on( const mod::Cleared & e ) noexcept { E.emplace_back( e ); }
+ void on( const mod::Rebuilt & e ) noexcept { E.emplace_back( e ); }
+ };
+
+/// an observer that refuses the insertion of the key 555
+struct Refuser {
+ bool prepare( const Ins & e ) const { return( e.key != 555 ); }
+ void on( const Ins & ) {}
+ };
+
+/// the bitwise or of the values, a commutative monoid that is neither a
+/// group nor selective
+struct OrAugmentation {
+ using Value = unsigned;
+ static constexpr bool commutative = true;
+ static Value identity( void ) { return( 0 ); }
+ static Value from( const int & , const int & v ) { return( unsigned( v ) ); }
+ static Value combine( const Value & a , const Value & b ) {
+  return( a | b );
+  }
+ };
+
+/// the sums of the values as doubles, an abelian group of inexact values
+struct RealSum {
+ using Value = double;
+ static constexpr bool commutative = true;
+ static Value identity( void ) { return( 0 ); }
+ static Value from( const int & k , const int & v ) {
+  return( v / 7.0 + k * 1e-3 );
+  }
+ static Value combine( const Value & a , const Value & b ) {
+  return( a + b );
+  }
+ static Value inverse( const Value & a ) { return( -a ); }
+ };
+
+static_assert( detail::AbelianGroup< SumAugmentation< long long > > );
+static_assert( ! detail::Group< MaxAugmentation< int > > &&
+               detail::Selective< MaxAugmentation< int > > );
+static_assert( detail::CommutativeMonoid< OrAugmentation > &&
+               ! detail::Group< OrAugmentation > &&
+               ! detail::Selective< OrAugmentation > );
+static_assert( ! detail::exact_v< RealSum > );
+static_assert( MaterializedAggregate< SumAugmentation< long long > >::kind ==
+               MaterializedAggregate< SumAugmentation< long long > >::Kind::
+                Group );
+static_assert( MaterializedAggregate< MaxAugmentation< int > >::kind ==
+               MaterializedAggregate< MaxAugmentation< int > >::Kind::
+                Selective );
+static_assert( MaterializedAggregate< OrAugmentation >::kind ==
+               MaterializedAggregate< OrAugmentation >::Kind::Monoid );
+static_assert( sizeof( JoinAVLTree< int , int > ) ==
+               sizeof( void * ) + sizeof( std::uint64_t ) );
+static_assert( selectable< JoinAVLTree< int , int ,
+                                        SumAugmentation< int > > ,
+                           SumAugmentation< int > > );
+
+/// the aggregate by G of the pairs of a map
+template< class G >
+typename G::Value fold( const std::map< int , int > & m )
+{
+ typename G::Value a = G::identity();
+ for( const auto & [ k , v ] : m )
+  a = G::combine( a , G::from( k , v ) );
+ return( a );
+ }
+
+/// an observer that keeps the pairs of a tree by its events, and gives
+/// their aggregate by G from scratch; on Rebuilt it reads the tree again,
+/// by `refill`, at the next query
+template< class G >
+struct Scratch {
+ std::map< int , int > m;
+ std::function< void( std::map< int , int > & ) > refill;
+ bool redo = false;
+ void on( const Ins & e ) { m[ e.key ] = e.value; }
+ void on( const Era & e ) noexcept { m.erase( e.key ); }
+ void on( const Asg & e ) { m[ e.h ] = e.to; }
+ void on( const mod::Cleared & ) noexcept { m.clear(); redo = false; }
+ void on( const mod::Rebuilt & ) noexcept { redo = true; }
+ [[nodiscard]] typename G::Value value( void ) {
+  if( redo ) {
+   m.clear();
+   refill( m );
+   redo = false;
+   }
+  return( fold< G >( m ) );
+  }
+ };
+
+/// the same aggregates, within a tolerance for the floating values
+struct Close {
+ template< class X >
+ bool operator()( const X & a , const X & b ) const {
+  if constexpr( std::is_floating_point_v< X > )
+   return( std::abs( a - b ) <= 1e-9 * ( 1 + std::abs( b ) ) );
+  else
+   return( a == b );
+  }
+ };
+
+/// the materialized aggregates of G under test, with their shadow
+template< class G >
+struct Observers {
+ using MA = MaterializedAggregate< G , 16 >;
+ MA inc;                                   // under the shadow
+ Scratch< G > sc;
+ Shadow< MA , Scratch< G > , Close > sh{ inc , sc };
+ template< class T >
+ void bind( const T & t ) {
+  inc.bind( t );
+  sc.refill = [ & t ]( std::map< int , int > & m ) {
+   t.forEach( [ & ]( const int & k , const int & v ) { m[ k ] = v; } );
+   };
+  }
+ };
+
+/// random changes, batches, bulk operations, mutes, swaps and clearings
+/// of the tree t, against brute force; make() is a tree of the same type,
+/// check() the comparison of the aggregates with those of m
+template< class T , class Make , class Check >
+void drive( T & t , std::map< int , int > & m , std::uint64_t seed ,
+            Make && make , Check && check )
+{
+ std::mt19937_64 g( seed );
+ for( int r = 0 ; r < 1500 ; ++r ) {
+  const int k = int( g() % 200 ) , v = int( g() % 1000 );
+  const auto c = g() % 100;
+  if( c < 35 ) { t.insert( k , v ); m[ k ] = v; }
+  else if( c < 55 ) { t.remove( k ); m.erase( k ); }
+  else if( c < 75 ) {
+   const bool there = m.contains( k );
+   CHECK( t.assign( k , v ) == there );
+   if( there ) m[ k ] = v;
+   }
+  else if( c < 85 ) {                     // a batch, coalesced
+   auto b = batch( t );
+   for( int i = 0 ; i < 6 ; ++i ) {
+    const int x = int( g() % 200 ) , y = int( g() % 1000 );
+    if( g() % 3 == 0 ) { t.remove( x ); m.erase( x ); }
+    else if( g() % 2 ) { t.insert( x , y ); m[ x ] = y; }
+    else if( t.assign( x , y ) ) m[ x ] = y;
+    }
+   }
+  else if( c < 90 ) {                     // a union
+   auto o = make();
+   std::vector< std::pair< int , int > > P;
+   for( int x = int( g() % 50 ) ; x < 400 ; x += 1 + int( g() % 60 ) )
+    P.emplace_back( x , int( g() % 1000 ) );
+   o.multiInsert( P );
+   t.unionWith( std::move( o ) );
+   for( const auto & [ x , y ] : P ) m[ x ] = y;
+   }
+  else if( c < 94 ) {                     // a bulk removal
+   std::vector< int > K;
+   for( int x = int( g() % 20 ) ; x < 400 ; x += 1 + int( g() % 40 ) )
+    K.push_back( x );
+   t.multiRemove( K );
+   for( const int x : K ) m.erase( x );
+   }
+  else if( c < 96 ) {                     // a mute: Rebuilt at its end
+   auto q = quiet( t );
+   t.insert( k , v );
+   m[ k ] = v;
+   }
+  else if( c < 98 ) {                     // a swap
+   auto o = make();
+   o.insert( 7 , 7 );
+   o.insert( 300 , 1 );
+   t.swap( o );
+   m = { { 7 , 7 } , { 300 , 1 } };
+   }
+  else {
+   t.clear();
+   m.clear();
+   }
+  if( r % 7 == 0 )
+   check();
+  }
+ check();
+ }
+
+/// a MaterializedAggregate by G on the trees of the scheme B, under a
+/// Shadow against Scratch, of a tree of dynamic observers (with a second
+/// aggregate attached alone) and of one of static observers; the inexact
+/// values are recomputed every 16 changes
+template< class G , class B >
+void materialized( std::uint64_t seed )
+{
+ using MA = typename Observers< G >::MA;
+ {
+  using T = JoinTree< int , int , B , NoAugmentation , Dynamic<> >;
+  Observers< G > ob;
+  T t( seed );
+  t.subject().attach( ob.sh );
+  ob.bind( t );
+  MA alone;
+  alone.bind( t );
+  t.subject().attach( alone );
+  std::map< int , int > m;
+  drive( t , m , seed , [ & ]( void ) { return( T( seed + 1 ) ); } ,
+         [ & ]( void ) {
+          const auto a = ob.sh.query( []( auto & o ) {
+           return( o.value() ); } );
+          CHECK( Close()( a , fold< G >( m ) ) );
+          CHECK( Close()( alone.value() , fold< G >( m ) ) );
+          CHECK( pairs( t ) == pairs( m ) );
+          } );
+  CHECK( ( ob.sh.counts().mismatches == 0 ) &&
+         ( ob.sh.counts().queries > 0 ) );
+  if constexpr( MA::kind == MA::Kind::Group && ! detail::exact_v< G > )
+   CHECK( ob.inc.recomputations() > 2 );   // the periodic ones
+  }
+ {
+  using T = JoinTree< int , int , B , NoAugmentation ,
+                      Static< Shadow< MA , Scratch< G > , Close > > >;
+  Observers< G > ob , other;
+  T t( seed , ob.sh );
+  ob.bind( t );
+  std::map< int , int > m;
+  drive( t , m , seed + 3 , [ & ]( void ) {
+          return( T( seed + 1 , other.sh ) ); } ,
+         [ & ]( void ) {
+          const auto a = ob.sh.query( []( auto & o ) {
+           return( o.value() ); } );
+          CHECK( Close()( a , fold< G >( m ) ) );
+          } );
+  CHECK( ob.sh.counts().mismatches == 0 );
+  }
+ }
+
 }  // end( namespace )
 
 /*--------------------------------------------------------------------------*/
@@ -803,6 +1073,256 @@ ADS_TEST( "infinite-bounds" )
  CHECK( M.augPrefix( 1 ) == -inf );
  M.insert( 3 , std::numeric_limits< double >::lowest() );
  CHECK( M.augValue() == std::numeric_limits< double >::lowest() );
+ }
+
+ADS_TEST( "join-tree-events" )
+{
+ // the events of JoinTree to a static observer and to a dynamic one, on
+ // the four schemes: insertions, assignments, erasures told before the
+ // removal, clearings, the bulk operations, the batches coalesced, copies,
+ // moves and swaps, the strong guarantee and the refusals
+ auto run = []< class B >( B * ) {
+  using S = JoinTree< int , int , B , SumAugmentation< long long > ,
+                      Static< Recorder > >;
+  using D = JoinTree< int , int , B , SumAugmentation< long long > ,
+                      Dynamic<> >;
+  Recorder rs;
+  S s( 1 , rs );
+  s.insert( 1 , 10 );
+  s.insert( 1 , 11 );                       // there: an assignment
+  CHECK( s.assign( 1 , 12 ) && ! s.assign( 2 , 0 ) );
+  s.remove( 2 );                            // not there: nothing
+  s.remove( 1 );
+  s.clear();                                // empty: nothing
+  s.insert( 3 , 30 );
+  s.clear();
+  CHECK( rs.E.size() == 6 );
+  CHECK( std::get< Ins >( rs.E[ 0 ] ) == ( Ins{ 1 , 1 , 10 } ) );
+  CHECK( std::get< Asg >( rs.E[ 1 ] ) == ( Asg{ 1 , 10 , 11 } ) );
+  CHECK( std::get< Asg >( rs.E[ 2 ] ) == ( Asg{ 1 , 11 , 12 } ) );
+  CHECK( std::get< Era >( rs.E[ 3 ] ) == ( Era{ 1 , 1 , 12 } ) );
+  CHECK( std::holds_alternative< Ins >( rs.E[ 4 ] ) &&
+         std::holds_alternative< mod::Cleared >( rs.E[ 5 ] ) );
+  Recorder rd;
+  D d;
+  rd.has = [ & ]( int k ) { return( d.contains( k ) ); };
+  const int id = d.subject().attach( rd );
+  for( int k = 0 ; k < 20 ; ++k )
+   d.insert( k , k );
+  d.remove( 5 );
+  CHECK( rd.before && ( rd.E.size() == 21 ) );   // told before
+  rd.E.clear();
+  {                                         // a batch: the net effect
+   auto b = batch( d );
+   d.insert( 100 , 1 );
+   d.remove( 100 );                         // cancels
+   d.remove( 6 );
+   d.insert( 6 , 60 );                      // an assignment
+   d.assign( 7 , 70 );
+   d.assign( 7 , 71 );                      // composed
+   d.assign( 8 , 8 );                       // a touch
+   CHECK( rd.E.empty() );
+   }
+  CHECK( rd.E.size() == 2 );
+  CHECK( std::get< Asg >( rd.E[ 0 ] ) == ( Asg{ 6 , 6 , 60 } ) );
+  CHECK( std::get< Asg >( rd.E[ 1 ] ) == ( Asg{ 7 , 7 , 71 } ) );
+  rd.E.clear();
+  D o;                                      // a union: Cleared, Rebuilt
+  Recorder ro;
+  o.subject().attach( ro );
+  o.insert( 50 , 5 );
+  ro.E.clear();
+  d.unionWith( std::move( o ) );
+  CHECK( ( ro.E.size() == 1 ) &&
+         std::holds_alternative< mod::Cleared >( ro.E[ 0 ] ) );
+  CHECK( ( rd.E.size() == 2 ) &&
+         std::holds_alternative< mod::Cleared >( rd.E[ 0 ] ) &&
+         std::holds_alternative< mod::Rebuilt >( rd.E[ 1 ] ) );
+  rd.E.clear();
+  {                                         // in a batch, Rebuilt alone
+   auto b = batch( d );
+   d.insert( 200 , 2 );
+   const std::pair< int , int > P[] = { { 300 , 3 } , { 301 , 4 } };
+   d.multiInsert( P );
+   d.insert( 302 , 5 );
+   }
+  CHECK( ( rd.E.size() == 2 ) &&
+         std::holds_alternative< mod::Rebuilt >( rd.E[ 0 ] ) &&
+         ( std::get< Ins >( rd.E[ 1 ] ) == ( Ins{ 302 , 302 , 5 } ) ) );
+  rd.E.clear();
+  D c( d );                                 // a copy: no observer
+  c.insert( 999 , 9 );
+  CHECK( rd.E.empty() && ( c.size() == d.size() + 1 ) );
+  D e( std::move( c ) );                    // a move: nothing to tell
+  CHECK( rd.E.empty() && c.empty() && ( e.size() == d.size() + 1 ) );
+  d.swap( e );                              // a swap: Rebuilt
+  CHECK( ( rd.E.size() == 1 ) &&
+         std::holds_alternative< mod::Rebuilt >( rd.E[ 0 ] ) );
+  CHECK( d.contains( 999 ) );
+  rd.E.clear();
+  // the strong guarantee: an observer that throws, the change undone
+  rd.throwOn = 77;
+  const auto before = pairs( d );
+  const long long sum = d.augValue();
+  CHECK_THROWS( d.insert( 77 , 1 ) , std::runtime_error );
+  CHECK( ( pairs( d ) == before ) && ( d.augValue() == sum ) );
+  rd.throwOn = -1;
+  // a refusal before the change
+  Refuser no;
+  d.subject().attach( no );
+  CHECK( ! d.contains( 555 ) );
+  CHECK_THROWS( d.insert( 555 , 1 ) , Refused );
+  CHECK( ( pairs( d ) == before ) && rd.E.empty() );
+  d.subject().detach( id );
+  d.insert( 14 , 1 );
+  CHECK( rd.E.empty() );
+  };
+ run( ( AVLBalance * ) nullptr );
+ run( ( RedBlackBalance * ) nullptr );
+ run( ( WeightBalance * ) nullptr );
+ run( ( TreapBalance * ) nullptr );
+ }
+
+ADS_TEST( "join-tree-assign" )
+{
+ // assign() against brute force: by the differences of an abelian group
+ // of exact values (the sums), by recomputation for a selective monoid
+ // (the maxima), a monoid that does not commute (a hash of the sequence)
+ // and a group of inexact values (sums of doubles); after every
+ // assignment the contracts check the augmented values of all the nodes
+ auto run = []< class B >( B * ) {
+  using SumMap = JoinTree< int , int , B , SumAugmentation< long long > >;
+  using MaxMap = JoinTree< int , int , B , MaxAugmentation< int > >;
+  using SeqMap = JoinTree< int , int , B , SequenceHash >;
+  using RealMap = JoinTree< int , int , B , RealSum >;
+  using NoMap = JoinTree< int , int , B >;
+  std::mt19937_64 g( 41 );
+  auto a = randomMap( g , 400 , 600 );
+  SumMap s = make< SumMap >( a );
+  MaxMap x = make< MaxMap >( a );
+  SeqMap q = make< SeqMap >( a );
+  RealMap f = make< RealMap >( a );
+  NoMap n = make< NoMap >( a );
+  for( int r = 0 ; r < 600 ; ++r ) {
+   const int k = int( g() % 650 ) , v = int( g() % 2000 ) - 1000;
+   const bool there = a.contains( k );
+   CHECK( s.assign( k , v ) == there );
+   CHECK( x.assign( k , v ) == there );
+   CHECK( q.assign( k , v ) == there );
+   CHECK( f.assign( k , v ) == there );
+   CHECK( n.assign( k , v ) == there );
+   if( there )
+    a[ k ] = v;
+   if( r % 50 == 0 ) {
+    CHECK( ( pairs( s ) == pairs( a ) ) && ( pairs( n ) == pairs( a ) ) );
+    CHECK( s.augValue() == fold< SumAugmentation< long long > >( a ) );
+    CHECK( x.augValue() == fold< MaxAugmentation< int > >( a ) );
+    CHECK( q.augValue() == fold< SequenceHash >( a ) );
+    const int lo = int( g() % 600 ) , hi = lo + int( g() % 100 );
+    long long sum = 0;
+    for( const auto & [ y , w ] : a )
+     if( ( lo <= y ) && ( y <= hi ) ) sum += w;
+    CHECK( s.augRange( lo , hi ) == sum );
+    }
+   }
+  SumMap e;
+  CHECK( ! e.assign( 1 , 1 ) && e.empty() );
+  };
+ run( ( AVLBalance * ) nullptr );
+ run( ( RedBlackBalance * ) nullptr );
+ run( ( WeightBalance * ) nullptr );
+ run( ( TreapBalance * ) nullptr );
+ }
+
+ADS_TEST( "join-tree-select-filter" )
+{
+ // augSelect() against the scan of the prefixes, on the sums of positive
+ // values (the first prefix that reaches a threshold), on the counts (the
+ // i-th key) and on the maxima; augFilter() against the scan of the
+ // pairs, with the count of the calls of its predicate within the bound
+ auto run = []< class B >( B * ) {
+  using SumMap = JoinTree< int , int , B , SumAugmentation< long long > >;
+  using MaxMap = JoinTree< int , int , B , MaxAugmentation< int > >;
+  std::mt19937_64 g( 43 );
+  for( int it = 0 ; it < 8 ; ++it ) {
+   std::map< int , int > a;
+   const std::size_t n = it == 0 ? 0 : g() % 700;
+   for( std::size_t i = 0 ; i < n ; ++i )
+    a[ int( g() % 3000 ) ] = 1 + int( g() % 50 );
+   SumMap s = make< SumMap >( a );
+   MaxMap x = make< MaxMap >( a );
+   std::map< int , int > ones;
+   for( const auto & kv : a ) ones[ kv.first ] = 1;
+   SumMap c = make< SumMap >( ones );
+   const long long total = fold< SumAugmentation< long long > >( a );
+   for( long long th = 0 ; th <= total + 60 ; th += 1 + total / 97 ) {
+    std::optional< std::pair< int , int > > want;
+    long long pre = 0;
+    for( const auto & kv : a ) {
+     pre += kv.second;
+     if( pre >= th ) { want = kv; break; }
+     }
+    if( th == 0 && ! a.empty() )
+     want = *a.begin();
+    const auto got = s.augSelect( [ th ]( long long p ) {
+     return( p >= th ); } );
+    CHECK( got == want );
+    }
+   for( std::size_t i = 1 ; i <= a.size() + 1 ; i += 1 + a.size() / 50 ) {
+    const auto got = c.augSelect( [ i ]( long long p ) {
+     return( p >= (long long)( i ) ); } );
+    if( i > a.size() )
+     CHECK( ! got );
+    else
+     CHECK( got && ( got->first == std::next( a.begin() ,
+                                    std::ptrdiff_t( i - 1 ) )->first ) );
+    }
+   const int h = x.height();
+   for( int th = 0 ; th <= 52 ; ++th ) {
+    std::optional< std::pair< int , int > > first;
+    Pairs want , got;
+    for( const auto & kv : a )
+     if( kv.second >= th ) {
+      if( ! first ) first = kv;
+      want.push_back( kv );
+      }
+    CHECK( x.augSelect( [ th ]( int p ) { return( p >= th ); } ) == first );
+    std::size_t calls = 0;
+    x.augFilter( [ & ]( int p ) { ++calls; return( p >= th ); } ,
+                 [ & ]( const int & k , const int & v ) {
+                  got.emplace_back( k , v ); } );
+    CHECK( got == want );
+    CHECK( calls <= 3 * want.size() * std::size_t( h + 1 ) + 1 );
+    }
+   }
+  };
+ run( ( AVLBalance * ) nullptr );
+ run( ( RedBlackBalance * ) nullptr );
+ run( ( WeightBalance * ) nullptr );
+ run( ( TreapBalance * ) nullptr );
+ }
+
+ADS_TEST( "materialized-aggregate" )
+{
+ // MaterializedAggregate of a group (sums), of a selective monoid
+ // (maxima), of a commutative monoid (bitwise or) and of a group of
+ // inexact values (sums of doubles, recomputed every 16 changes), under a
+ // Shadow against an observer that computes from scratch, on the four
+ // schemes; at the level of the audits the subject audits them against
+ // the tree after every event
+ materialized< SumAugmentation< long long > , AVLBalance >( 51 );
+ materialized< MaxAugmentation< int > , RedBlackBalance >( 52 );
+ materialized< OrAugmentation , WeightBalance >( 53 );
+ materialized< RealSum , TreapBalance >( 54 );
+ materialized< SumAugmentation< long long > , TreapBalance >( 55 );
+ materialized< MaxAugmentation< int > , AVLBalance >( 56 );
+ // the stale aggregate needs a structure bound
+ MaterializedAggregate< OrAugmentation > lone;
+ lone.on( Ins{ 1 , 1 , 6 } );
+ CHECK( lone.value() == 6u );
+ lone.on( Era{ 1 , 1 , 6 } );
+ CHECK( lone.stale() && ! lone.bound() );
+ CHECK_THROWS( (void)lone.value() , contract_violation );
  }
 
 ADS_TEST( "join-executors" )
