@@ -566,8 +566,6 @@ using ADS::hasCycle;
 using ADS::isTopologicalOrder;
 using ADS::path;
 using ADS::scc;
-using ADS::sccPearce;
-using ADS::sccTarjan;
 using ADS::topsort;
 using ADS::topsortKahn;
 using ADS::transpose;

@@ -206,7 +206,7 @@ file does not allow.
 
 <!-- sets: written by cmake/ads_sets.py -->
 
-419 headers: 242 base, 150 advanced, 11 core, 13 interop and 3 in both sets until they are split.
+420 headers: 243 base, 151 advanced, 11 core, 13 interop and 2 in both sets until they are split.
 
 | Folder | Base | Advanced | Core | Interop | Both |
 |---|---|---|---|---|---|
@@ -221,7 +221,7 @@ file does not allow.
 | `distributed/` |  | `DistributedSort`, `MPIExecutor`, `MPIMailbox` |  |  |  |
 | `external/` | `BlockBTree`, `BlockStore`, `ExternalSorting`, `ListRanking`, `TwoLevelMemory` |  | `RecordFile` |  |  |
 | `geometry/` | `ClosestPair`, `ConvexHull` | `IntervalTree`, `RangeTree` |  |  |  |
-| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph` |  |  | `Visit` |
+| `graph/` | `AllPairsShortestPaths`, `ArrayGraph`, `EulerianCycle`, `FlowApplications`, `Graph`, `Grid`, `IncidenceGraph`, `ListGraph`, `Matching`, `MatrixGraph`, `MaxFlow`, `MinimumSpanningTree`, `Paths`, `Properties`, `ShortestPaths`, `Visit` | `Assignment`, `BlossomMatching`, `GraphBuilder`, `GridGraph`, `Observable`, `PointerGraph`, `PushRelabel`, `Reoptimization`, `StaticGraph`, `StrongComponents` |  |  |  |
 | `interop/boost/` |  |  |  | `Dijkstra`, `FromBGL`, `Graph`, `Heap`, `Iterator` |  |
 | `interop/lemon/` |  |  |  | `Digraphs`, `Heaps`, `Maps`, `Observers`, `Parallel`, `Warm` |  |
 | `interop/std/` |  |  |  | `FlatMap`, `Pmr` |  |
@@ -300,7 +300,7 @@ the abstract data types and of each algorithm.
 | [9](https://algoritmicamente.it/materiali/libro/capitoli/cap09.pdf) | 9.1 | definitions, the case of the duke McPollock | [`test/ch09.cpp`](test/ch09.cpp) | `ch09.sec9.1.*` |
 | | 9.2, 9.4 | GRAPH, lists and vectors of adjacency | [`graph/Graph.h`](include/ADS/graph/Graph.h), [`graph/ListGraph.h`](include/ADS/graph/ListGraph.h), [`graph/ArrayGraph.h`](include/ADS/graph/ArrayGraph.h) | `ch09.spec.ListGraph`, `ch09.sec9.3.matrices` |
 | | 9.3 | adjacency matrix, incidence matrix | [`graph/MatrixGraph.h`](include/ADS/graph/MatrixGraph.h) | `ch09.spec.MatrixGraph`, `ch09.sec9.3.matrices` |
-| | 9.5 | bfs, distances, dfs, components, dfs schema, cycles, topological order, strong components | [`graph/Visit.h`](include/ADS/graph/Visit.h) | `ch09.sec9.5.*` |
+| | 9.5 | bfs, distances, dfs, components, dfs schema, cycles, topological order, strong components | [`graph/Visit.h`](include/ADS/graph/Visit.h), [`graph/StrongComponents.h`](include/ADS/graph/StrongComponents.h) | `ch09.sec9.5.*` |
 | | 9.7 | exercises 9.1–9.11 | [`test/ch09.cpp`](test/ch09.cpp) | `ch09.ex9.*` |
 | [10](https://algoritmicamente.it/materiali/libro/capitoli/cap10.pdf) | 10.1 | PRIORITYQUEUE on a d-ary heap, on lists, on a Red-Black tree | [`priority/`](include/ADS/priority) | `ch10.spec.*PriorityQueue`, `ch10.sec10.1.3.heap` |
 | | 10.1.4 | heapBuild(), heapsort() | [`sort/Heapsort.h`](include/ADS/sort/Heapsort.h) | `ch10.sec10.1.4.heapsort` |

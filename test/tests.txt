@@ -1963,6 +1963,8 @@ split_maxflow      maxflow-old-include      MaxFlow.h dà anche il push-relabel
 split_pushrelabel  pushrelabel-alone        PushRelabel.h da solo
 split_matching     matching-old-include     Matching.h dà anche i blossom
 split_blossommatching  blossommatching-alone  BlossomMatching.h da solo
+split_visit        visit-old-include        Visit.h dà anche Tarjan e Pearce
+split_strongcomponents  strongcomponents-alone  StrongComponents.h da solo
 
 # Open Data Structures (Morin), chapters 1, 2 and 3
 ods_lists  ods-1.2.interfaces           List, Deque, USet, SSet come concetti

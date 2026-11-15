@@ -96,7 +96,7 @@
 #include "ADS/graph/PushRelabel.h"
 #include "ADS/graph/Reoptimization.h"
 #include "ADS/graph/StaticGraph.h"
-#include "ADS/graph/Visit.h"
+#include "ADS/graph/StrongComponents.h"
 #include "ADS/memory/Arena.h"
 #include "ADS/memory/ConcurrentPool.h"
 #include "ADS/memory/PageHeap.h"

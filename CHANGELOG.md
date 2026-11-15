@@ -2103,6 +2103,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The strongly connected components by one visit in depth, sccTarjan()
+  and sccPearce(), moved from Visit.h to the new advanced header
+  graph/StrongComponents.h, which Visit.h, now base with the visits of the
+  book and the components of Kosaraju, includes; the module ads.base no
+  longer exports the two, which ads.advanced and ads export; the test
+  programs split_visit and split_strongcomponents include each header
+  alone
+
 - The matchings of a general graph by the blossoms of Edmonds,
   maxCardinalityMatching() and maxWeightMatching() with their delegation to
   LEMON, moved from Matching.h to the new advanced header

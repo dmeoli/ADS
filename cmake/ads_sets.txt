@@ -189,8 +189,9 @@ graph/Reoptimization.h                advanced
 graph/ShortestPaths.h                 base
 graph/StaticGraph.h                   advanced the CSR of ArrayGraph written
                                                for speed
-graph/Visit.h                         both     TODO split: the visits of the
-                                               book and the one-pass SCC
+graph/StrongComponents.h              advanced the components of
+                                               Visit.h by one visit
+graph/Visit.h                         base
 
 intractable/Approximation.h           base
 intractable/BranchAndBound.h          base
@@ -529,6 +530,8 @@ graph/Matching.h                      uses graph/BlossomMatching.h
                                            the matchings of Edmonds
 graph/MaxFlow.h                       uses graph/PushRelabel.h
                                            the way PUSH_RELABEL
+graph/Visit.h                         uses graph/StrongComponents.h
+                                           the components by one visit
 numeric/RandomSampling.h              uses priority/DaryHeap.h
                                            the weighted sample of the keys
 sequence/Treque.h                     uses queue/RingDeque.h

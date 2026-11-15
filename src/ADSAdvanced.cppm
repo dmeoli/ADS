@@ -302,28 +302,9 @@ using ADS::StaticGraph;
 using ADS::WeightedArc;
 using ADS::bfsOrder;
 
-// graph/Visit.h
-using ADS::Choice;
-using ADS::DfsSchema;
-using ADS::EdgeKind;
-using ADS::INF;
-using ADS::NIL;
-using ADS::VisitCounts;
-using ADS::bfs;
-using ADS::cc;
-using ADS::dfs;
-using ADS::distance;
-using ADS::genericVisit;
-using ADS::hasCycle;
-using ADS::isTopologicalOrder;
-using ADS::path;
-using ADS::scc;
+// graph/StrongComponents.h
 using ADS::sccPearce;
 using ADS::sccTarjan;
-using ADS::topsort;
-using ADS::topsortKahn;
-using ADS::transpose;
-using ADS::unilaterallyConnected;
 
 // memory/Arena.h
 using ADS::Arena;
@@ -361,6 +342,7 @@ using ADS::gemm;
 using ADS::kGemmBlock;
 using ADS::multiply;
 using ADS::multiplyStrassen;
+using ADS::transpose;
 
 // numeric/DynamicCsr.h
 using ADS::DynamicCsc;

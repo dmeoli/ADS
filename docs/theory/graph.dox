@@ -261,7 +261,7 @@
  closed, and a descendant in another component would have a root between
  \f$ u \f$ and itself, which has closed it before. The test of
  \f$ y \in S \f$ is that \f$ y \f$ has no component yet, so that the
- visit costs \f$ \Theta( n + m ) \f$ (`sccTarjan()` of `Visit.h`): each
+ visit costs \f$ \Theta( n + m ) \f$ (`sccTarjan()` of `StrongComponents.h`): each
  node is pushed and popped once, and each edge examined once. When a
  component closes, every component that it reaches is closed already;
  hence the components close in the reverse of a topological order of their

@@ -2,12 +2,13 @@
 
 [Source: `include/ADS/graph/Graph.h`, `MatrixGraph.h`, `ListGraph.h`,
 `ArrayGraph.h`, `StaticGraph.h`, `GraphBuilder.h`, `PointerGraph.h`,
-`IncidenceGraph.h`, `Visit.h`, `Grid.h`, `GridGraph.h`, `Paths.h`,
-`Properties.h`, `ShortestPaths.h`, `AllPairsShortestPaths.h`,
-`MinimumSpanningTree.h`, `MaxFlow.h`, `PushRelabel.h`, `FlowApplications.h`,
-`Matching.h`, `BlossomMatching.h`, `Assignment.h`, `EulerianCycle.h`,
-`Observable.h`, `Reoptimization.h`, and `include/ADS/interop/lemon/Heaps.h`,
-`Maps.h`, `Digraphs.h`, `Observers.h`, `Parallel.h`]
+`IncidenceGraph.h`, `Visit.h`, `StrongComponents.h`, `Grid.h`,
+`GridGraph.h`, `Paths.h`, `Properties.h`, `ShortestPaths.h`,
+`AllPairsShortestPaths.h`, `MinimumSpanningTree.h`, `MaxFlow.h`,
+`PushRelabel.h`, `FlowApplications.h`, `Matching.h`, `BlossomMatching.h`,
+`Assignment.h`, `EulerianCycle.h`, `Observable.h`, `Reoptimization.h`, and
+`include/ADS/interop/lemon/Heaps.h`, `Maps.h`, `Digraphs.h`, `Observers.h`,
+`Parallel.h`]
 
 We are concerned in this chapter with the *graph*, i.e., a set of nodes
 together with a set of pairs of nodes (the edges). A graph models any binary
@@ -40,10 +41,10 @@ are all here, with each of his exercises solved on the code of the library
 (the blossoms of `Matching.h`, which includes it), `GraphBuilder.h`,
 `GridGraph.h`, `Observable.h`, `PointerGraph.h`, `PushRelabel.h` (the
 push-relabel of `MaxFlow.h`, which includes it), `Reoptimization.h` and
-`StaticGraph.h` are advanced and the other headers of this chapter are
-base, while `Visit.h` holds a part of each until it is split; the headers
-of `interop/lemon/` ([§14.14](14-graph.md#sec-14-14)) are of the set
-interop.
+`StaticGraph.h` and `StrongComponents.h` (the components of `Visit.h` by
+one visit, which `Visit.h` includes) are advanced and the other headers of
+this chapter are base; the headers of `interop/lemon/`
+([§14.14](14-graph.md#sec-14-14)) are of the set interop.
 
 ## 14.1 Definitions and the interface {#sec-14-1}
 
@@ -1258,7 +1259,7 @@ $H$. $\square$
 
 One visit in depth suffices, if the components are recognized as the visit
 finishes them ([Tarjan 1972](Z-bibliography.md#ref-tarjan1972); beyond the
-book). We call *root* of a component $C$ its node $r_C$ discovered first. By
+book, in `StrongComponents.h`). We call *root* of a component $C$ its node $r_C$ discovered first. By
 [Lemma 14.5](14-graph.md#lem-14-5) each node of $C$ descends from $r_C$, since
 all of them are undiscovered when $r_C$ is discovered and reachable from it.
 The visit of `sccTarjan( g )` pushes each node it discovers on a stack $S$,
@@ -1308,11 +1309,17 @@ ListGraph<> transpose( const G & g );
 template< Graph G >
 std::vector< int > scc( const G & g );
 template< Graph G >
+bool unilaterallyConnected( const G & g );
+```
+
+in `Visit.h`, and those of `StrongComponents.h`, which `Visit.h` includes:
+
+```cpp
+// declarations of <ADS/graph/StrongComponents.h>
+template< Graph G >
 std::vector< int > sccTarjan( const G & g );
 template< Graph G >
 std::vector< int > sccPearce( const G & g );
-template< Graph G >
-bool unilaterallyConnected( const G & g );
 ```
 
 where the three functions of the components give the number of the
@@ -1322,9 +1329,9 @@ component of each name, from 1, as `cc()` does.
 components in one visit (Tarjan's algorithm and Pearce's variant, beyond
 the book).
 
---8<-- "generated/Visit-sccTarjan.pseudo.md"
+--8<-- "generated/StrongComponents-sccTarjan.pseudo.md"
 
---8<-- "generated/Visit-sccPearce.pseudo.md"
+--8<-- "generated/StrongComponents-sccPearce.pseudo.md"
 
 ![Figure 14.10. The visit of `sccTarjan()` from 0: by each node its order of discovery $\mathit{dt}$ and its $\mathit{low}$ when it finishes, the edges of the tree of the visit in violet, and the roots 0, 4 and 6 of the three components in violet; $\{ 6 , 7 \}$ closes first, then $\{ 3 , 4 , 5 \}$ (the edge $( 1 , 3 )$, examined later, finds 3 closed) and $\{ 0 , 1 , 2 \}$, which are numbered 3, 2 and 1.](../figures/graph-tarjan.svg){#fig-14-10}
 
