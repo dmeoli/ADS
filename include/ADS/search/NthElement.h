@@ -55,7 +55,9 @@
  * items, which a random order hardly ever exhausts; a round whose part the
  * rest of the budget does not cover takes as its pivot the median of the
  * medians of the groups of 5, which has at least \f$ 3 n / 10 \f$ items on
- * each side, so that what is left costs
+ * each side, and when the part on its right is larger than
+ * \f$ 7 n / 10 + 2 \f$, which happens only if many items are equal to it,
+ * a second partition takes them away too, so that what is left costs
  * \f$ T( n ) \le T( n / 5 ) + T( 7 n / 10 ) + O( n ) = O( n ) \f$. The
  * other rounds partition at most \f$ 4 n \f$ items in all, and their
  * samples, selected recursively within their own budgets, hold
@@ -162,7 +164,11 @@ namespace ADS {
 /// where the partition is that of Lomuto with no branch on a part with
 /// many turns, that of Hoare on a part in some order, and puts the items
 /// equal to the pivot on its left when the pivot is the smallest item of
-/// the part. The partition of Lomuto with no branch, the pivot \f$ p \f$
+/// the part; after the median of the medians, if \f$ k > m \f$ and the
+/// items after \f$ m \f$ are more than \f$ 7 ( j - i + 1 ) / 10 + 2 \f$,
+/// a second partition of \f$ A[ m .. j ] \f$ puts the items equal to the
+/// pivot on its left too, and \f$ m \f$ becomes the place of the last of
+/// them. The partition of Lomuto with no branch, the pivot \f$ p \f$
 /// in \f$ A[ 0 ] \f$ and \f$ [ \cdot ] \f$ 1 when its condition holds
 /// and 0 otherwise, is
 /// \f[

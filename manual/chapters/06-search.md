@@ -1342,40 +1342,67 @@ items, which a random order hardly ever exhausts (by (6.12), the rounds of
 a random range of more than 600 items partition about $1.5 n$ items at
 most). A round whose part the rest of the budget does not cover takes as its
 pivot the median of the medians, as the selection of [Musser
-1997](Z-bibliography.md#ref-musser1997) does by the same device.
+1997](Z-bibliography.md#ref-musser1997) does by the same device; when the
+part such a round leaves on the right of its pivot holds more than $7 m /
+10 + 2$ of its $m$ items, which on distinct items never happens, a second
+partition of that part puts the items equal to the pivot on its left as
+well, and the part kept holds the larger items only.
 
-<span id="lem-6-20"></span>**Lemma 6.20.** *On $n$ distinct items,
-`nthElement()` takes $O( n )$ time in the worst case.*
+<span id="lem-6-20"></span>**Lemma 6.20.** *On $n$ items, distinct or
+not, `nthElement()` takes $O( n )$ time in the worst case.*
 
 *Proof.* Let $S( n )$ be the worst-case time of `select()` on a part of $n$
-items, which has its own budget of $4 n$. In a call, the rounds act on nested parts, each smaller than the one before, since the pivot is left
-out. Those charged to the budget partition at most $4 n$ items in all.
-A round with $m > 600$ selects recursively a sample of $\mathit{hi} -
-\mathit{lo} + 1 \le s + | d | + 2$ items, with $s = m^{2/3} / 2$ and $| d
-| \le \sqrt{s \ln m} / 2$; the three ratios to $m$ decrease for $m \ge
-601$, and there they sum to less than $0.0592 + 0.0126 + 0.0034 < 0.076$,
-so that the samples hold fewer than $0.076 \cdot 4 n < 0.31 n$ items in all.
-As for the rounds of the median of the medians, on the parts $m_1 > m_2 > \cdots$
-(all above 24), select recursively the $\lfloor m_j / 5 \rfloor$ medians of the groups. On distinct items the part kept after such a round has at
-most $7 m_j / 10 + 2$ items, by the argument of
-[Lemma 6.18](06-search.md#lem-6-18); hence $m_{j+1} + 20 / 3 \le 0.7 (
-m_j + 20 / 3 )$, $\sum_j m_j \le ( n + 20 / 3 ) / 0.3$, and the medians
-hold at most $( n + 20 / 3 ) / 1.5 < 0.67 n + 5$ items in all. Besides the
-recursive calls, a call spends $O( 1 )$ per round (at most $n$ rounds) and
-$O( m )$ per partition, per sort of the groups and per test of an order
-in a round on $m$ items, i.e., at most $a n + a'$ for two constants. The recursive calls are on fewer than $0.98 n + 5$ items in all. By induction, therefore, $S( n ) \le a n + a' + c ( 0.98 n + 5 ) \le c n$ for $n \ge
-n_0$, with $c$ large enough for $n < n_0$ as well. The scan of
-`nthElement()` for a range in order adds $O( n )$. $\square$
+items, which has its own budget of $4 n$. In a call, the rounds act on
+nested parts, each smaller than the one before, since the pivot is left
+out; there are therefore at most $n$ of them, and those charged to the
+budget partition at most $4 n$ items in all. A round with $m > 600$
+selects recursively a sample of $\mathit{hi} - \mathit{lo} + 1 \le s + | d
+| + 2$ items, with $s = m^{2/3} / 2$ and $| d | \le \sqrt{s \ln m} / 2$;
+the three ratios to $m$ decrease for $m \ge 601$, and there they sum to
+less than $0.0592 + 0.0126 + 0.0034 < 0.076$, so that the samples hold
+fewer than $0.076 \cdot 4 n < 0.31 n$ items in all.
 
-On repeated items the rounds of the median of the medians are not covered
-by the argument, since a partition in two ways may put all the items equal
-to the pivot on one side, and we have no proof of a linear worst case
-there.
-Against the adversary of [McIlroy 1999](Z-bibliography.md#ref-mcilroy1999),
-which fixes the order of the items while they are compared, the
-comparisons stay below $16 n$ from $n = 2^{12}$ to $2^{18}$ (the test
-`ordered.nth-element-adversary`), where a budget counted in rounds let them
-grow with $\log n$.
+Let $m_1 > m_2 > \cdots > m_J$ (all above 24) be the parts of the rounds of
+the median of the medians. Such a round on $m$ items sorts $g = \lfloor m /
+5 \rfloor \ge ( m - 4 ) / 5$ disjoint groups of 5 (the exchange that moves
+the median of a group to the front touches only places of the groups
+already sorted), and its pivot $p$ is the item of rank $\lfloor g / 2
+\rfloor$, from 0, of their medians. Hence $\lfloor g / 2 \rfloor + 1$
+medians are not larger than $p$ and $\lceil g / 2 \rceil$ are not smaller,
+each with two more items of its group on the same side, so that at least
+$3 ( \lfloor g / 2 \rfloor + 1 ) \ge 3 ( m + 1 ) / 10$ items are not larger
+than $p$ and at least $3 \lceil g / 2 \rceil \ge 3 ( m - 4 ) / 10$ are not
+smaller. The part kept is one of three: the items smaller than $p$, at most
+$m - 3 ( m - 4 ) / 10 = 7 m / 10 + 6 / 5$; the items after $p$ when the
+first partition puts them on the right, kept only if they are at most $7 m
+/ 10 + 2$; or the items larger than $p$ (after the second partition, or
+when the items equal to $p$ go left at once), at most $m - 3 ( m + 1 ) / 10
+< 7 m / 10$. Therefore $m_{j+1} \le 7 m_j / 10 + 2$, i.e., $m_{j+1} - 20 /
+3 \le 0.7 ( m_j - 20 / 3 )$, whence $m_j - 20 / 3 \le 0.7^{j-1} n$; since
+$m_j > 24$, this gives $J \le 1 + \log_{10/7}( n / 17 )$, and $\sum_j m_j
+\le n / 0.3 + 20 J / 3$, so that the medians hold at most $\sum_j \lfloor
+m_j / 5 \rfloor \le n / 1.5 + 4 J / 3 < 0.67 n + 4 J / 3$ items in all.
+
+Besides the recursive calls, a call spends $O( 1 )$ per round and $O( m )$
+per partition (at most two), per sort of the groups and per test of an
+order in a round on $m$ items; by the two sums above, this is at most $a n$
+for a constant $a$. The recursive calls are on fewer than $0.31 n + 0.67 n
++ 4 J / 3 < 0.98 n$ items in all for $n \ge n_0$, since $J = O( \log n )$.
+By induction, therefore, $S( n ) \le a n + 0.98 c n \le c n$ for $n \ge
+n_0$ and $c \ge 50 a$, with $c$ large enough for $n < n_0$ as well. The
+scan of `nthElement()` for a range in order adds $O( n )$. $\square$
+
+On distinct items the part on the right of a pivot of the median of the
+medians never exceeds $7 m / 10$, so that the second partition never runs
+and the comparisons are, one by one, those of the selection without it;
+without it, on the other hand, a first partition that leaves on the right
+all the items equal to the pivot may keep almost the whole part, and the
+argument above would fail. Against the adversary of [McIlroy
+1999](Z-bibliography.md#ref-mcilroy1999), which fixes the order of the
+items while they are compared, the comparisons stay below $16 n$ from $n
+= 2^{12}$ to $2^{18}$, where a budget counted in rounds let them grow with
+$\log n$, and they stay there when the adversary gives each value to 2, 10
+or 100 items (the test `ordered.nth-element-adversary`).
 [Table 6.2](06-search.md#tab-6-2) compares the three selections.
 
 <span id="tab-6-2"></span>**Table 6.2.** The selections of the item of
@@ -1385,7 +1412,7 @@ rank $k$ in `ADS/search`.
 |---|---|---|
 | `selection()` | at random, or the first item | $O( n )$ expected by (6.10), $\Theta( n^2 )$ in the worst case |
 | `medianOfMedians()` | the median of the medians of the groups of 5 | $O( n )$ in the worst case, by (6.11) |
-| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case on distinct items |
+| `nthElement()` | the sample of Floyd and Rivest, the median of three on short parts | (6.12) expected, $O( n )$ in the worst case |
 
 In `ADS/search/Selection.h`, the functions are declared as
 
