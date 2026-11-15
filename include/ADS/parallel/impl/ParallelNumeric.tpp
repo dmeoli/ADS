@@ -123,17 +123,9 @@ void gemm( E & ex , std::size_t m , std::size_t n , std::size_t k , T alpha ,
 	   T beta ,
 	   T * C , std::size_t ldc )
 {
- ADS_PRE( ( lda >= k ) && ( ldb >= n ) && ( ldc >= n ) );
- if( ( m == 0 ) || ( n == 0 ) )
-  return;
-#if ADS_GEMM_BLAS
- // one call of the CBLAS, which runs on its own threads [see
- // DenseMatrix.h]
- if( detail::gemmOnCblas< T >( m , n , k , lda , ldb , ldc ) ) {
-  detail::gemmCblas( m , n , k , alpha , A , lda , B , ldb , beta , C , ldc );
-  return;
-  }
-#endif
+ if( detail::gemmDone( m , n , k , alpha , A , lda , B , ldb , beta , C ,
+		       ldc ) )
+  return;  // empty, or by the CBLAS [see DenseMatrix.h]
  // a range of rows of C per thread, as evenly as they go
  const std::size_t t = std::min( ex.concurrency() , m );
  ex.bulk( t , [ & ]( std::size_t u ) {

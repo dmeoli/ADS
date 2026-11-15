@@ -82,12 +82,15 @@ WordRangeMinimum< T , Compare >::WordRangeMinimum( std::vector< T > A ,
    }
   f_S[ b / 64 ] = Min{ f_P[ b ].suf , std::uint32_t( b + f_P[ b ].si ) };
   }
+ auto best = [ this ]( const Min & a , const Min & b ) {
+  return( better( a , b ) );
+  };
  for( std::size_t l = 1 ; l < levels ; ++l ) {  // the table of the blocks
   const std::size_t h = std::size_t( 1 ) << ( l - 1 );
-  const Min * p = f_S.data() + ( l - 1 ) * f_blocks;
-  Min * q = f_S.data() + l * f_blocks;
-  for( std::size_t b = 0 ; b + 2 * h <= f_blocks ; ++b )
-   q[ b ] = better( p[ b ] , p[ b + h ] );
+  if( f_blocks >= 2 * h )
+   detail::sparseRow( f_S.data() + ( l - 1 ) * f_blocks ,
+		      f_S.data() + l * f_blocks , f_blocks - 2 * h + 1 , h ,
+		      best );
   }
  }
 
@@ -107,21 +110,17 @@ WordRangeMinimum< T , Compare >::query( std::size_t i , std::size_t j ) const
    bi * 64 + std::size_t( std::countr_zero(
 	       f_M[ j ] & ( ~std::uint64_t( 0 ) << ( i % 64 ) ) ) );
  Min m{ a.suf , std::uint32_t( bi * 64 + a.si ) };
- if( bj > bi + 1 ) {  // the blocks in between
-  const std::size_t f = bi + 1 , k = bj - f;
-  const std::size_t l = std::size_t( std::bit_width( k ) ) - 1;
-  const Min * p = f_S.data() + l * f_blocks;
-  m = better( m , better( p[ f ] , p[ bj - ( std::size_t( 1 ) << l ) ] ) );
-  }
+ if( bj > bi + 1 )  // the blocks in between, by the sparse table
+  m = better(
+    m , detail::sparseCover(
+	 [ this ]( std::size_t l ) { return( f_S.data() + l * f_blocks ); } ,
+	 bi + 1 , bj ,
+	 [ this ]( const Min & x , const Min & y ) {
+	  return( better( x , y ) );
+	  } ) );
  m = better( m , Min{ c.pre , std::uint32_t( bj * 64 + c.pi ) } );
  const std::size_t r = bi == bj ? in : std::size_t( m.i );
- ADS_AUDIT( [ & ]( void ) {
-  for( std::size_t t = i ; t <= j ; ++t )
-   if( f_less( f_A[ t ] , f_A[ r ] ) ||
-       ( ( t < r ) && ! f_less( f_A[ r ] , f_A[ t ] ) ) )
-    return( false );
-  return( true );
-  }() );
+ ADS_AUDIT( detail::leftmostMinimum( f_A , i , j , r , f_less ) );
  return( r );
  }
 

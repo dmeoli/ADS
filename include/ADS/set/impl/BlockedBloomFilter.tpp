@@ -77,6 +77,24 @@ struct BlockMask
 #endif
  };
 
+/// the hash of x by h, mixed by hashWord() [see FastHash.h] unless H
+/// declares it avalanching: the hash of the filters on blocks
+template< class H , class T >
+inline std::uint64_t filterHash( const H & h , const T & x )
+{
+ if constexpr( requires { typename H::is_avalanching; } )
+  return( std::uint64_t( h( x ) ) );
+ else
+  return( hashWord( std::uint64_t( h( x ) ) ) );
+ }
+
+/// the block of the hash h among n, by its high 32 bits, a product and a
+/// shift (the reduction of Lemire, with no division)
+inline std::size_t highRange( std::uint64_t h , std::size_t n )
+{
+ return( std::size_t( ( ( h >> 32 ) * std::uint64_t( n ) ) >> 32 ) );
+ }
+
 }  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
@@ -94,16 +112,13 @@ BlockedBloomFilter< T , H >::BlockedBloomFilter( std::size_t n ,
 template< class T , class H >
 std::uint64_t BlockedBloomFilter< T , H >::hash( const T & x ) const
 {
- if constexpr( requires { typename H::is_avalanching; } )
-  return( std::uint64_t( f_h( x ) ) );
- else
-  return( hashWord( std::uint64_t( f_h( x ) ) ) );
+ return( detail::filterHash( f_h , x ) );
  }
 
 template< class T , class H >
 std::size_t BlockedBloomFilter< T , H >::block( std::uint64_t h ) const
 {
- return( std::size_t( ( ( h >> 32 ) * std::uint64_t( f_B.size() ) ) >> 32 ) );
+ return( detail::highRange( h , f_B.size() ) );
  }
 
 template< class T , class H >

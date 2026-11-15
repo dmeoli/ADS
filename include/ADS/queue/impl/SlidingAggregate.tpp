@@ -95,8 +95,8 @@ auto StacksWindow< G >::pop( void ) -> Value
 /*-------------------------------- REAL TIME -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class G >
-void RealTimeWindow< G >::swap( RealTimeWindow & o ) noexcept
+template< class Link >
+void RealTimeRotation< Link >::swap( RealTimeRotation & o ) noexcept
 {
  f_F.swap( o.f_F );
  f_R.swap( o.f_R );
@@ -106,43 +106,45 @@ void RealTimeWindow< G >::swap( RealTimeWindow & o ) noexcept
  std::swap( f_i , o.f_i );
  std::swap( f_n , o.f_n );
  std::swap( f_rot , o.f_rot );
+ std::swap( f_link , o.f_link );
  }
 
 template< class G >
-auto RealTimeWindow< G >::aggregate( void ) const -> Value
+template< class Q >
+auto AggLink< G >::aggregate( const Q & q ) -> Item
 {
  // the front with its moves, the frozen back, its moves at the bottom of
  // the new front, the back: in the order of the window
- Value x = G::identity();
- if( f_F.size() > 0 )
-  x = f_F.agg( f_F.hi() - 1 );
- if( f_Rf.size() > 0 )
-  x = G::combine( x , f_Rf.agg( f_Rf.hi() - 1 ) );
- if( f_rot ) {
-  const std::size_t k = std::min( f_r0 , f_N.hi() );
+ Item x = G::identity();
+ if( q.f_F.size() > 0 )
+  x = q.f_F.summary( q.f_F.hi() - 1 );
+ if( q.f_Rf.size() > 0 )
+  x = G::combine( x , q.f_Rf.summary( q.f_Rf.hi() - 1 ) );
+ if( q.f_rot ) {
+  const std::size_t k = std::min( q.f_r0 , q.f_N.hi() );
   if( k > 0 )
-   x = G::combine( x , f_N.agg( k - 1 ) );
+   x = G::combine( x , q.f_N.summary( k - 1 ) );
   }
- if( f_R.size() > 0 )
-  x = G::combine( x , f_R.agg( f_R.hi() - 1 ) );
+ if( q.f_R.size() > 0 )
+  x = G::combine( x , q.f_R.summary( q.f_R.hi() - 1 ) );
  return( x );
  }
 
-template< class G >
-void RealTimeWindow< G >::push( const Value & x )
+template< class Link >
+void RealTimeRotation< Link >::push( const Item & x )
 {
- f_R.push( x );
+ f_link.pushBack( f_R , x );
  ++f_n;
  if( f_rot )
   steps( 3 );
  startIfDue();  // also at the end of one
  }
 
-template< class G >
-auto RealTimeWindow< G >::pop( void ) -> Value
+template< class Link >
+auto RealTimeRotation< Link >::pop( void ) -> Item
 {
  ADS_INVARIANT( f_F.size() > 0 );  // the front never empties first
- Value x = std::move( f_F.at( f_F.hi() - 1 ) );
+ Item x = std::move( f_F.at( f_F.hi() - 1 ) );
  f_F.pop();
  --f_n;
  if( f_rot )
@@ -151,50 +153,50 @@ auto RealTimeWindow< G >::pop( void ) -> Value
  return( x );
  }
 
-template< class G >
-void RealTimeWindow< G >::startIfDue( void )
+template< class Link >
+void RealTimeRotation< Link >::startIfDue( void )
 {
  while( ! f_rot && ( f_R.size() > f_F.size() ) ) {  // |R| = |F| + 1
   f_r0 = f_R.size();
   f_Rf = std::move( f_R );
-  f_R = Bk( f_F.size() + f_r0 + 2 );  // room until the next one
-  f_N = Fr( f_F.size() + f_r0 );
+  f_R = Array( f_F.size() + f_r0 + 2 );  // room until the next one
+  f_N = Array( f_F.size() + f_r0 );
   f_i = 0;
   f_rot = true;
   steps( 3 );
   }
  }
 
-template< class G >
-void RealTimeWindow< G >::steps( int k )
+template< class Link >
+void RealTimeRotation< Link >::steps( int k )
 {
  for( ; ; --k ) {
   if( f_Rf.size() > 0 ) {  // the frozen back, from its top
    if( k == 0 )
     return;
-   f_N.push( std::move( f_Rf.at( f_Rf.hi() - 1 ) ) );
+   f_link.pushFront( f_N , std::move( f_Rf.at( f_Rf.hi() - 1 ) ) );
    f_Rf.pop();
    }
   else if( f_i < f_F.hi() ) {  // the front from its bottom
    if( k == 0 )
     return;
-   f_N.push( std::move( f_F.at( f_i ) ) );
+   f_link.pushFront( f_N , std::move( f_F.at( f_i ) ) );
    f_F.popBottom();
    ++f_i;
    }
   else {  // the moves met the top
    f_F = std::move( f_N );
-   f_N = Fr();
-   f_Rf = Bk();
+   f_N = Array();
+   f_Rf = Array();
    f_rot = false;
    return;
    }
   }
  }
 
-template< class G >
+template< class Link >
 template< class F >
-void RealTimeWindow< G >::forEach( F && f ) const
+void RealTimeRotation< Link >::forEach( F && f ) const
 {
  // the front from its top down to the first place not moved, then the
  // moves of the front in the new one, the frozen back from its bottom,

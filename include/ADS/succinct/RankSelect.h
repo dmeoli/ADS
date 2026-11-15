@@ -441,6 +441,11 @@ class BasicRankSelect : public RankSelectOptions
  /// the bits b before the block t
  [[nodiscard]] std::size_t before( std::size_t t , bool b ) const;
 
+ /// the entry of the block of the words x0 to x3, with c 1s before it
+ /// and top of them before its top block: c then counts its 1s too
+ static Word entry( Word x0 , Word x1 , Word x2 , Word x3 , std::uint64_t & c ,
+		    std::uint64_t top );
+
  /// the selects s asked for, and the directory of the bits, the words
  /// first copied from w where w is not null
  void directory( Selects s , const Word * w );

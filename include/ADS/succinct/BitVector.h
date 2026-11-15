@@ -31,6 +31,12 @@
  * instructions BMI2, a single deposit of the bit \f$ 2^k \f$ on the 1s of
  * the word). It is the last step of every select in ADS, in place of the
  * tables of the small blocks of the classical analysis (Jacobson, Clark).
+ * The kernels that the directories of rank and select share are here too,
+ * in `detail`: the 1s of a prefix of a line of 512 bits, one kernel with a
+ * variant for AVX2 and a scalar one (with BMI2 or not); the copy and the
+ * count of the words of a chunk and the size of the chunks of a parallel
+ * construction; and the checks of a select and of the ranks on the concept
+ * `detail::RankSelectBits`.
  * `SubscriptIterator` is the random-access constant iterator of a structure
  * read by its `operator[]`, the bits of a `BitVector` or the items of a
  * compressed sequence [see `EliasFano.h`].
@@ -79,6 +85,7 @@
 #include <atomic>
 #include <bit>
 #include <compare>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -88,7 +95,7 @@
 #include <utility>
 #include <vector>
 
-#ifdef __BMI2__
+#if defined( __BMI2__ ) || defined( __AVX2__ )
  #include <immintrin.h>
 #endif
 
@@ -259,6 +266,62 @@ using Words = std::vector< Word , detail::LineAllocator< Word > >;
 /// \f]
 /// \pre \f$ k < \f$ `sidewaysSum( x )`
 [[nodiscard]] constexpr int selectInWord( Word x , int k );
+
+namespace detail
+{
+
+/// the structures that answer rank and select on bits, read by the
+/// kernels below: the bits, their 1s and their ranks
+template< class R >
+concept RankSelectBits = requires( const R & r , std::size_t i )
+{
+ { r.size() } -> std::convertible_to< std::size_t >;
+ { r.ones() } -> std::convertible_to< std::size_t >;
+ { r[ i ] } -> std::convertible_to< bool >;
+ { r.rank1( i ) } -> std::convertible_to< std::size_t >;
+ };
+
+/// the 1s among the first \f$ p < 512 \f$ bits of the line of 8 words at
+/// \f$ w \f$, aligned to 32 bytes: one kernel, its variant chosen by the
+/// instruction set (`Scalar` asks for the scalar one)
+///
+/// With AVX2, the bytes of the line before the one of the bit \f$ p \f$
+/// are counted 32 at a time by a table of the 16 nibbles and summed by the
+/// absolute differences with 0, and then the bits of the byte of \f$ p \f$
+/// before it; else each word is cut at \f$ p \f$, with no branch (by
+/// `_bzhi_u64` with BMI2). The words may lie past the size of the bits,
+/// which is why they are read whole [see `BitVector`].
+/// \pre \f$ p < 512 \f$
+template< bool Scalar = false >
+[[nodiscard]] std::size_t lineRank( const Word * w , unsigned p );
+
+/// the words \f$ [ w_0 , w_1 ) \f$ of the bits of a directory at \f$ P \f$,
+/// copied first from \f$ w \f$ of \f$ n \f$ bits if \f$ w \f$ is not null
+/// (the last word cut at \f$ n \f$, 0s past it), and their 1s: the pass
+/// on a chunk of the words of a directory built in parallel
+std::uint64_t copyCount( Word * P , const Word * w , std::size_t n ,
+			 std::size_t w0 , std::size_t w1 );
+
+/// the units (blocks or superblocks) of a chunk of a directory of
+/// \f$ u \f$ units built in parallel, at least `chunk` and about
+/// \f$ u / \mathit{chunks} \f$: a power of 2 below the units of a top
+/// region, `top`, else a multiple of it, so that a top region either starts
+/// a chunk or lies in one
+[[nodiscard]] std::size_t chunkUnits( std::size_t u , std::size_t chunk ,
+				      std::size_t chunks , std::size_t top );
+
+/// \f$ p \f$, the place that `select1( k )` (if \f$ b \f$) or
+/// `select0( k )` of \f$ r \f$ found, checked: the bit \f$ b \f$ of rank
+/// \f$ k - 1 \f$
+/// \post \f$ r[ p ] = b \f$ and its rank is \f$ k - 1 \f$
+template< RankSelectBits R >
+std::size_t selected( const R & r , std::size_t k , bool b , std::size_t p );
+
+/// the ranks of \f$ r \f$ agree with a scan of its bits
+template< RankSelectBits R >
+[[nodiscard]] bool rankConsistent( const R & r );
+
+}  // end( namespace detail )
 
 /*--------------------------------------------------------------------------*/
 /*------------------------ CLASS SubscriptIterator -------------------------*/

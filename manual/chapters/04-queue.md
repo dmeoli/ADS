@@ -1058,10 +1058,12 @@ rebuilding* of [Overmars 1983](Z-bibliography.md#ref-overmars1983), as
 the deques with heap order.
 
 **Arrays with the minimum.** Both classes keep their stacks in arrays of
-fixed capacity (`detail::MinArray`), allocated with their final size when
-the work that fills them starts. Its live cells are the range
-$[ \mathit{lo} , \mathit{hi} )$, and a cell holds an item and the place of
-the least item among those of the places from 0 up to it. Hence the minimum of
+fixed capacity (`detail::CellArray`, the arrays of the real-time windows
+of `SlidingAggregate`, here with the least places that `detail::MinCells`
+pushes), allocated with their final size when the work that fills them
+starts. Its live cells are the range
+$[ \mathit{lo} , \mathit{hi} )$, and a cell holds an item and the place of the
+least item among those of the places from 0 up to it. Hence the minimum of
 the array is read at the cell of its top, and a push builds a cell on
 top with its least place, that of the cell below unless the new item is
 less than the item there (the function `push()` of
@@ -1105,7 +1107,12 @@ its bottom, while the removals still take the top of $F$. When the moves of
 $F$ meet its top the rotation ends, and $N$ becomes the front ([Algorithm
 4.12](04-queue.md#alg-4-12) and [Figure 4.10](04-queue.md#fig-4-10)). Here
 the items are moved, not copied, since an item is in only one of the arrays
-at a time.
+at a time. We write the rotation once, in `detail::RealTimeRotation`, on
+the arrays of a policy of cells; the queue gives it the cells with the
+least place, and `SlidingAggregate< G , WorstCase >` the cells with the
+aggregate of $G$ (pushed on a front with the new item first, and on a back
+with it last), so that the two differ only in what a cell keeps and in how
+the summary of the queue is read from its parts.
 
 ![Figure 4.10. A rotation of `RealTimeMinQueue` (the queue `a`, ..., `f` before, `a` the front), each array drawn from its bottom (left) to its top: `enqueue(g)` makes $|R| = |F| + 1$, freezes $R$ as $R'$ and moves three items of it to the new front $N$ (in orange); the next `dequeue()` returns `a`, moves `d`, `c`, `b` and finds the moves of $F$ at its top, so that $N$ becomes the front.](../figures/queue-rtqueue.svg){#fig-4-10}
 
@@ -1115,7 +1122,7 @@ rotation ([Hood and Melville 1981](Z-bibliography.md#ref-hood1981)), and
 the minimum of the queue; $r_0$ is the size of $R'$ when the rotation
 started.
 
---8<-- "generated/RealTimeMinQueue-MinArray-push.pseudo.md"
+--8<-- "generated/RealTimeMinQueue-MinCells-push.pseudo.md"
 
 --8<-- "generated/RealTimeMinQueue-dequeue.pseudo.md"
 

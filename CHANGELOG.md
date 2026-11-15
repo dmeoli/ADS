@@ -2013,6 +2013,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The code that the engineered structures repeated of the base ones is
+  written once: the rank in a line of 512 bits is one kernel of BitVector.h
+  (detail::lineRank(), its AVX2 and scalar variants chosen by the
+  instruction set) for CompactRankSelect and InterleavedRankSelect, the
+  copy and the count of the words of a chunk and the size of the chunks
+  for the parallel constructions of RankSelect and CompactRankSelect, the
+  checks of select on the concept RankSelectBits for the four directories,
+  and the entries of the blocks for the sequential and the parallel
+  constructions; RealTimeMinQueue and the
+  real-time windows of SlidingAggregate are one rotation of Hood and
+  Melville (detail::RealTimeRotation) on the arrays of CellArray, which
+  RealTimeMinDeque uses too; twoWay() and StringSearcher share
+  criticalFactorization(), SparseTable and WordRangeMinimum the rows and
+  the cover of the sparse table, partition() and partitionDP() the
+  reduction to SUBSET SUM, the two gemm() the empty and the CBLAS cases,
+  FMIndex and HuffmanFMIndex the sorted places of locate(), RIndex and
+  MoveRIndex the last column from the suffix array, BlockedBloomFilter and
+  PrefixFilter the hash and the reduction to a range, with no inheritance;
+  the instructions of each operation are the same or fewer (sections 4.9,
+  6.9, 15.2, 22.4 and 22.11 of the manual), and the test
+  engineered_succinct.rank-kernels checks the kernels
+
 - the memoization of the 0-1 knapsack is knapsackMemo(), an English name
   like the rest of the interface, and zaino(), the name of the book, is kept
   as an alias of it

@@ -31,6 +31,38 @@ inline std::vector< std::size_t > sentinelSuffixArray( std::string_view s )
  return( sa );
  }
 
+/// the symbol of the row i of the last column of the matrix of s$, from
+/// the suffix array sa of s$ [see sentinelSuffixArray()]: 0 for the $,
+/// the byte + 1 otherwise
+inline std::uint32_t lastSymbol( const std::vector< std::size_t > & sa ,
+				 std::string_view s , std::size_t i )
+{
+ return(
+   sa[ i ] == 0
+     ? 0u
+     : std::uint32_t( static_cast< unsigned char >( s[ sa[ i ] - 1 ] ) ) + 1 );
+ }
+
+/// the places of the rows [ first , last ) of the suffix array of a text
+/// of n symbols, each by place( r ), in increasing order; each is an
+/// occurrence of P, extract( p , q ) the symbols [ p , q ) of the text
+/// (audit): the locate of an FM-index on its sampled suffix array
+template< class F , class X >
+inline std::vector< std::size_t > sortedPlaces(
+  std::size_t first , std::size_t last , [[maybe_unused]] std::string_view P ,
+  [[maybe_unused]] std::size_t n , F && place , [[maybe_unused]] X && extract )
+{
+ std::vector< std::size_t > R;
+ R.reserve( last - first );
+ for( std::size_t r = first ; r < last ; ++r )
+  R.push_back( place( r ) );
+ std::sort( R.begin() , R.end() );
+ ADS_AUDIT( std::all_of( R.begin() , R.end() , [ & ]( std::size_t p ) {
+  return( ( p + P.size() <= n ) && ( extract( p , p + P.size() ) == P ) );
+  } ) );
+ return( R );
+ }
+
 /// the 256 bytes in their order
 inline std::string allBytes( void )
 {

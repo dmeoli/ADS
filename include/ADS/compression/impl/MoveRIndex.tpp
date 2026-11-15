@@ -27,10 +27,7 @@ inline MoveRIndex::MoveRIndex( std::string_view s ) : f_n( s.size() )
  const std::size_t rows = f_n + 1;
  f_w = std::max( 1 , int( std::bit_width( rows ) ) );
  auto sym = [ & ]( std::size_t i ) {  // L[ i ], the $ as 0
-  return( sa[ i ] == 0 ? 0u
-			: std::uint32_t( static_cast< unsigned char >(
-			    s[ sa[ i ] - 1 ] ) ) +
-			    1 );
+  return( detail::lastSymbol( sa , s , i ) );
   };
  // the runs of L and their images by LF: C[ c ] plus the c before them
  std::array< std::uint64_t , 258 > C{};

@@ -25,7 +25,9 @@
  * place has moved there. The arrays are allocated with their final size
  * when a rotation starts and emptied by the moves, so that no operation
  * copies or frees more than \f$ O( 1 ) \f$ items (the allocation counted as
- * \f$ O( 1 ) \f$). See \ref theory_queue_minimum.
+ * \f$ O( 1 ) \f$). The rotation is that of the real-time windows of
+ * `SlidingAggregate` [see `SlidingAggregate.h`], on the cells with the
+ * least place of `detail::MinCells`. See \ref theory_queue_minimum.
  *
  * The contracts [see `Contract.h`]: `top()`, `dequeue()` and `min()` need a
  * queue that is not empty; `enqueue()` ensures one item more, `dequeue()`
@@ -58,6 +60,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Portable.h"
+#include "ADS/queue/SlidingAggregate.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -75,77 +78,21 @@ namespace ADS
 namespace detail
 {
 
-/// an array of fixed capacity whose live cells are \f$ [ lo , hi ) \f$,
-/// each with the place of the least item among those from 0 to it, built
-/// and emptied one cell at a time
+/// the cells of the stacks with the minimum [see `CellArray` in
+/// `SlidingAggregate.h`]: each holds an item and the place of the least
+/// item from the place 0 up to it, by the order `less`, the same on a
+/// front and on a back
 template< class T , class C >
-class MinArray
+struct MinCells
 {
- public:
- /// no cell
- MinArray( void ) = default;
+ using Item = T;               ///< the items
+ using Summary = std::size_t;  ///< the place of the least item up to a cell
 
- /// room for \f$ c \f$ cells, none built
- explicit MinArray( std::size_t c )
-     : f_a( c ? std::allocator< Cell >().allocate( c ) : nullptr ) ,
-       f_cap( c ) { }
+ /// the cells of the order `l`
+ explicit MinCells( C l = C() ) : less( std::move( l ) ) { }
 
- /// the cells of `o`, which is left with none
- MinArray( MinArray && o ) noexcept { swap( o ); }
-
- /// the cells of `o`, its own given back through it
- MinArray & operator=( MinArray && o ) noexcept {
-  swap( o );
-  return( *this );
-  }
-
- /// the live cells destroyed, the room freed
- ~MinArray() {
-  for( std::size_t i = f_lo ; i < f_hi ; ++i )
-   std::destroy_at( f_a + i );
-  if( f_a )
-   std::allocator< Cell >().deallocate( f_a , f_cap );
-  }
-
- /// exchanges the cells with `o`
- void swap( MinArray & o ) noexcept {
-  std::swap( f_a , o.f_a );
-  std::swap( f_cap , o.f_cap );
-  std::swap( f_lo , o.f_lo );
-  std::swap( f_hi , o.f_hi );
-  }
-
- /// the live cells
- [[nodiscard]] std::size_t size( void ) const { return( f_hi - f_lo ); }
-
- /// the room
- [[nodiscard]] std::size_t capacity( void ) const { return( f_cap ); }
-
- /// the first live place
- [[nodiscard]] std::size_t lo( void ) const { return( f_lo ); }
-
- /// the place after the last live one
- [[nodiscard]] std::size_t hi( void ) const { return( f_hi ); }
-
- /// the item of the place \f$ i \f$
- [[nodiscard]] T & at( std::size_t i ) { return( f_a[ i ].item ); }
-
- /// the item of the place \f$ i \f$
- [[nodiscard]] const T & at( std::size_t i ) const {
-  return( f_a[ i ].item );
-  }
-
- /// the place of the least item from 0 to \f$ i \f$
- [[nodiscard]] std::size_t least( std::size_t i ) const {
-  return( f_a[ i ].m );
-  }
-
- /// the least item of all the cells, those from 0 to the top
- [[nodiscard]] const T & min( void ) const {
-  return( at( least( f_hi - 1 ) ) );
-  }
-
- /// \f$ x \f$ in a new cell on top, with the least place by `less`
+ /// \f$ x \f$ in a new cell on top of \f$ a \f$, with the least place by
+ /// `less`
  ///
  /// In pseudocode, \f$ \mu( i ) \f$ the least place of the cell
  /// \f$ i \f$, on an array whose cells are live from the place 0:
@@ -160,39 +107,35 @@ class MinArray
  /// 4 & \quad \mathit{hi} \gets \mathit{hi} + 1
  /// \end{array}}
  /// \f]
- template< class U >
- void push( U && x , const C & less ) {
-  ADS_PRE( f_hi < f_cap );
-  std::construct_at( f_a + f_hi , Cell{ T( std::forward< U >( x ) ) , f_hi } );
-  if( ( f_hi > f_lo ) && ! less( f_a[ f_hi ].item , at( least( f_hi - 1 ) ) ) )
-   f_a[ f_hi ].m = least( f_hi - 1 );
-  ++f_hi;
+ template< class A , class U >
+ void push( A & a , U && x ) const {
+  const std::size_t h = a.hi();
+  const std::size_t m =
+    ( h > a.lo() ) && ! less( x , a.at( a.summary( h - 1 ) ) )
+      ? a.summary( h - 1 )
+      : h;
+  a.push( std::forward< U >( x ) , m );
   }
 
- /// the top cell destroyed
- void pop( void ) {
-  ADS_PRE( f_hi > f_lo );
-  std::destroy_at( f_a + --f_hi );
+ /// \f$ x \f$ on top of a front, by `push()`
+ template< class A , class U >
+ void pushFront( A & a , U && x ) const {
+  push( a , std::forward< U >( x ) );
   }
 
- /// the bottom cell destroyed
- void popBottom( void ) {
-  ADS_PRE( f_hi > f_lo );
-  std::destroy_at( f_a + f_lo++ );
+ /// \f$ x \f$ on top of a back, by `push()`
+ template< class A , class U >
+ void pushBack( A & a , U && x ) const {
+  push( a , std::forward< U >( x ) );
   }
 
- private:
- /// a cell, an item and the least place up to it
- struct Cell
- {
-  T item;         ///< the item
-  std::size_t m;  ///< the place of the least item from 0 to here
-  };
+ /// the least item of all the cells of \f$ a \f$, those from 0 to the top
+ template< class A >
+ [[nodiscard]] const T & min( const A & a ) const {
+  return( a.at( a.summary( a.hi() - 1 ) ) );
+  }
 
- Cell * f_a = nullptr;   ///< the room
- std::size_t f_cap = 0;  ///< its cells
- std::size_t f_lo = 0;   ///< the first live cell
- std::size_t f_hi = 0;   ///< after the last live cell
+ ADS_NO_UNIQUE_ADDRESS C less;  ///< the order
  };
 
 }  // end( namespace detail )
@@ -213,34 +156,28 @@ class RealTimeMinQueue
 
  /// the empty queue, ordered by `less`
  explicit RealTimeMinQueue( C less = C() )
-     : f_R( 1 ) , f_less( std::move( less ) ) { }
+     : f_q( Cells( std::move( less ) ) ) { }
 
  /// a copy, item by item, in \f$ O( n ) \f$ time
- RealTimeMinQueue( const RealTimeMinQueue & o );
+ RealTimeMinQueue( const RealTimeMinQueue & o ) = default;
 
  /// the items of `o`, which is left empty
- RealTimeMinQueue( RealTimeMinQueue && o ) noexcept
-     : f_R( 1 ) , f_less( o.f_less ) {
-  swap( o );
-  }
+ RealTimeMinQueue( RealTimeMinQueue && o ) noexcept = default;
 
  /// the items of `o`, by copy and swap
- RealTimeMinQueue & operator=( const RealTimeMinQueue & o );
+ RealTimeMinQueue & operator=( const RealTimeMinQueue & o ) = default;
 
  /// the items of `o`, exchanged with those of this queue
- RealTimeMinQueue & operator=( RealTimeMinQueue && o ) noexcept {
-  swap( o );
-  return( *this );
-  }
+ RealTimeMinQueue & operator=( RealTimeMinQueue && o ) noexcept = default;
 
  /// exchanges the items with `o`
- void swap( RealTimeMinQueue & o ) noexcept;
+ void swap( RealTimeMinQueue & o ) noexcept { f_q.swap( o.f_q ); }
 
  /// true if there is no item
- [[nodiscard]] bool empty( void ) const { return( f_n == 0 ); }
+ [[nodiscard]] bool empty( void ) const { return( f_q.size() == 0 ); }
 
  /// the number \f$ n \f$ of items
- [[nodiscard]] std::size_t size( void ) const { return( f_n ); }
+ [[nodiscard]] std::size_t size( void ) const { return( f_q.size() ); }
 
  /// \f$ x \f$ at the back, on the stack \f$ R \f$, and three moves of a
  /// rotation if one is going on
@@ -313,24 +250,11 @@ class RealTimeMinQueue
 
 /*--------------------------------------------------------------------------*/
  private:
- using Array = detail::MinArray< T , C >;  ///< a stack with the minimum
+ using Cells = detail::MinCells< T , C >;  ///< the cells with the minimum
 
- /// a rotation started if \f$ |R| > |F| \f$, while none is going on
- void startIfDue( void );
-
- /// \f$ k \f$ moves of the rotation, which ends when the moves of
- /// \f$ F \f$ meet its top
- void steps( int k );
-
- Array f_F;                       ///< the front, the first item on top
- Array f_R;                       ///< the back, the last item on top
- Array f_Rf;                      ///< the frozen back of a rotation
- Array f_N;                       ///< the new front of a rotation
- std::size_t f_r0 = 0;            ///< the items of the frozen back
- std::size_t f_i = 0;             ///< the places of \f$ F \f$ moved
- std::size_t f_n = 0;             ///< the items
- bool f_rot = false;              ///< a rotation is going on
- ADS_NO_UNIQUE_ADDRESS C f_less;  ///< the order
+ /// the rotation of Hood and Melville on the stacks with the minimum [see
+ /// `SlidingAggregate.h`]
+ detail::RealTimeRotation< Cells > f_q;
 
  };  // end( class RealTimeMinQueue )
 

@@ -17,8 +17,9 @@
  * memory of the vector, the line, against two of the directories kept apart
  * [see `RankSelect.h`, `CompactRankSelect.h`] (the array of the
  * superblocks, 1 word per 63488 bits, stays in the caches); the sum of the
- * line is that of `CompactRankSelect`, 32 bytes at a time by a table of the
- * nibbles with AVX2. The counts take \f$ 16 / 512 = 3.125 \% \f$ of the
+ * line is that of `CompactRankSelect`, the kernel `detail::lineRank()` of
+ * `BitVector.h` (32 bytes at a time by a table of the nibbles with AVX2).
+ * The counts take \f$ 16 / 512 = 3.125 \% \f$ of the
  * line.
  *
  * The select keeps the line of every 8192-th bit \f$ b \f$ with the bits
@@ -79,10 +80,6 @@
 #include <cstdint>
 #include <span>
 #include <vector>
-
-#if defined( __AVX2__ )
- #include <immintrin.h>
-#endif
 
 /*--------------------------------------------------------------------------*/
 /*--------------------------- NAMESPACE ------------------------------------*/

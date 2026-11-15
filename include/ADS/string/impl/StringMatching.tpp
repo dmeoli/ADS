@@ -151,6 +151,31 @@ inline long maximalSuffix( const unsigned char * P , long m , bool reverse ,
  return( ms );
  }
 
+/// a critical factorization P = u v of P (m > 0 bytes), u = P[ 0 .. ell ]
+/// by the larger of the two maximal suffixes, and the shift of a window
+/// after the match of v: the period of P if P is periodic (u a suffix of
+/// its first period), else the larger of | u | and | v |, plus 1
+struct Factorization
+{
+ long ell;            ///< the last place of u
+ std::size_t period;  ///< the shift after the match of v
+ bool periodic;       ///< u is a suffix of the first period of P
+ };
+
+/// the critical factorization of P (m > 0 bytes) [see Factorization]
+inline Factorization criticalFactorization( const unsigned char * P , long m )
+{
+ std::size_t p1 , p2;
+ const long i1 = maximalSuffix( P , m , false , &p1 );
+ const long i2 = maximalSuffix( P , m , true , &p2 );
+ const long ell = std::max( i1 , i2 );
+ const std::size_t period = i1 > i2 ? p1 : p2;
+ if( std::memcmp( P , P + period , std::size_t( ell + 1 ) ) == 0 )
+  return( Factorization{ ell , period , true } );
+ return( Factorization{
+   ell , std::size_t( std::max( ell + 1 , m - ell - 1 ) + 1 ) , false } );
+ }
+
 /// the Two-Way algorithm: the occurrences of P (m > 0 bytes) in T at or
 /// after from, each given to report(), which returns true to stop; the
 /// place where it stopped, or npos
@@ -165,15 +190,7 @@ std::size_t twoWayScan( const unsigned char * T , std::size_t n ,
   return( npos );
  const std::size_t last = n - mm;
  // the critical factorization P = u v, u = P[ 0 .. ell ]
- std::size_t p1 , p2;
- const long i1 = maximalSuffix( P , m , false , &p1 );
- const long i2 = maximalSuffix( P , m , true , &p2 );
- const long ell = std::max( i1 , i2 );
- std::size_t period = i1 > i2 ? p1 : p2;
- const bool periodic =
-   std::memcmp( P , P + period , std::size_t( ell + 1 ) ) == 0;
- if( ! periodic )
-  period = std::size_t( std::max( ell + 1 , m - ell - 1 ) + 1 );
+ const auto [ ell , period , periodic ] = criticalFactorization( P , m );
  if( periodic ) {
   long memory = -1;  // P[ 0 .. memory ] known to match
   for( std::size_t j = from ; j <= last ; ) {
