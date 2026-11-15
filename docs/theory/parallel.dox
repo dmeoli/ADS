@@ -929,17 +929,24 @@
  last push; if there is one, `merge( pending , x )` merges \f$ x \f$ into
  it, or refuses, and \f$ x \f$ is then appended and becomes the last of
  its key, as it does when there is none. One probe of the map does both
- the search and the update. A push that the channel takes \f$ j > 0 \f$
+ the search and the update. A plain `send( me , to , x )` closes the run of
+ the key of \f$ x \f$: by one probe it marks the key \f$ \bot \f$ in the
+ map, and the next send of that key with a merge finds \f$ \bot \f$,
+ merges into nothing and is appended after \f$ x \f$; with `NoCoalescing`
+ the plain send makes no probe. A push that the channel takes \f$ j > 0 \f$
  messages of removes the first \f$ j \f$ of the outbox and shifts the
  others by \f$ j \f$ places, so it empties the map; a push refused whole
  moves nothing, and keeps it.
 
  <em>Lemma 12 (the coalescing).</em> Let each merge be made by `send()`
  with a merge, with a function that does not throw and does not change
- the key of the message pending. Then (i) the map gives, for each key, the
- place in the outbox of the last message of that key sent with a merge
- since the last push that took a message, if that message is still there,
- and no other place; (ii) Lemmas 8, 9 and 11 hold as they are, and Lemma
+ the key of the message pending. Then (i) the map gives, for each key,
+ either the place in the outbox of the last message of that key sent with
+ a merge since the last push that took a message, if that message is still
+ there and no message of that key was sent without a merge after it, or
+ \f$ \bot \f$ if one was, and no other place, so that no message of a key
+ is merged into one sent before a message of that key sent without a
+ merge; (ii) Lemmas 8, 9 and 11 hold as they are, and Lemma
  10 holds with each message given to `send()` either handed once or
  merged, by a merge counted by `merged()`, into a message handed once;
  (iii) a message \f$ x \f$ merged into a pending message \f$ y \f$ reaches
@@ -952,7 +959,9 @@
  with a merge either merges into the place it finds, which removes the new
  message and changes neither the places nor the keys, or appends at the
  end and records that place for its key, the last one of that key; a send
- without a merge appends past every place recorded; a push that takes
+ without a merge appends past every place recorded and marks its key
+ \f$ \bot \f$, so that the next send of that key with a merge, finding
+ \f$ \bot \f$, merges into nothing and records a place past it; a push that takes
  \f$ j > 0 \f$ messages empties the map, so that no place survives the
  shift, and one that takes none changes neither; `leftovers()` empties the
  outbox and the map together. For (ii), a merge acts only on the outbox of
@@ -974,16 +983,17 @@
  the drain gives the order of the writes, as for a message not merged.
 
  The merged message keeps the place of \f$ y \f$, so that \f$ x \f$
- overtakes the messages of other keys sent between them, and those of its
- own key sent without a merge (a message that the map does not know). The
- order among the messages of one key is that of the runs that a refused
- merge closes: a merge refused for \f$ x \f$ appends it as the last of its
+ overtakes the messages of other keys sent between them, but by (i)
+ never one of its own key sent without a merge. The order among the
+ messages of one key is that of the runs that a refused merge or a plain
+ send closes: a merge refused for \f$ x \f$ appends it as the last of its
  key, and the messages of that key sent later merge into it, or after it,
  never into one before it. Whether the receiver may see the merged message
  in place of the two is the consumer's to prove, e.g., for the relaxations
  of a search by the least distance (a dominated relaxation changes
  nothing), and for an invalidation between two relaxations of a state,
- which the merge refuses so that it stays between them.
+ which is sent without a merge, or refused by the merge, so that it stays
+ between them.
 
  An incremental computation by messages (the repair of a search after the
  costs of some arcs changed) keeps a state that must equal what a

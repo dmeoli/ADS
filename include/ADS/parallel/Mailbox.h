@@ -69,10 +69,13 @@
  * the termination, the stop and `leftovers()` stay as they are, with each
  * message sent either handed once or merged into one that is (see \ref
  * theory_parallel_quiescence); `merged()` counts the messages merged. A
- * message sent by `send( me , to , x )` is unknown to the map, so that a
- * later merge may move a message of its key ahead of it: a message whose
- * order with those of its key matters is sent with a merge that refuses
- * it (e.g., an invalidation between two relaxations of a search).
+ * message sent by `send( me , to , x )` closes the run of its key, as a
+ * refused merge does: the map marks the key closed, by the same one probe,
+ * so that a later merge appends after it and never moves a message of its
+ * key ahead of it (e.g., an invalidation between two relaxations of a
+ * state of a search), and the later messages of the key merge into the
+ * first of them; with `NoCoalescing` the plain send has no probe and the
+ * same instructions as before.
  *
  * At the level of the audits of `Contract.h`, `audit( pred )`, called by
  * one thread where `rearm()` may be called (the computation ended, or
@@ -334,7 +337,9 @@ class Mailbox
 
  /// \f$ x \f$ appended to the outbox of `me` for `to`, which is pushed when
  /// it holds a batch more than a push left in it; never waits, and after
- /// `stop()` only appends
+ /// `stop()` only appends; with a policy that merges, the run of the key of
+ /// \f$ x \f$ closed by one probe of the map, so that no later merge moves
+ /// a message of that key ahead of \f$ x \f$
  ///
  /// In pseudocode (beyond the book), \f$ O_{\mathit{to}} \f$ the outbox and
  /// \f$ N_{\mathit{to}} \f$ its threshold, at first \f$ \mathit{batch} \f$:
@@ -343,7 +348,10 @@ class Mailbox
  /// 1 & \textbf{procedure}\ \mathrm{send}( \mathit{me} , \mathit{to} , x )
  ///     \cr
  /// 2 & \quad \text{append } x \text{ to } O_{\mathit{to}} \cr
- /// 3 & \quad \textbf{if}\ |O_{\mathit{to}}| \ge N_{\mathit{to}}
+ /// 3 & \quad \textbf{if}\ \text{the policy merges}\ \textbf{then}
+ ///     \ S_{\mathit{to}}[ \kappa( x ) ] \gets \bot\quad
+ ///     \triangleright\ \text{the run of the key closed} \cr
+ /// 4 & \quad \textbf{if}\ |O_{\mathit{to}}| \ge N_{\mathit{to}}
  ///     \ \textbf{and not stopped then}\ \mathrm{push}( \mathit{me} ,
  ///     \mathit{to} )
  /// \end{array}}
@@ -359,25 +367,31 @@ class Mailbox
    w.dirty.push_back( to );
    }
   o.push_back( std::move( x ) );
+  if constexpr( coalescing )  // no merge into a place before x
+   detail::mappedOf(
+     w.slots[ to ]
+       .try_emplace( typename Coalesce::KeyOf()( o.back() ) , kClosed )
+       .first ) = kClosed;
   if( ( o.size() >= w.next[ to ] ) && ! stopped() )
    push( me , to );
   }
 
  /// `send( me , to , x )` with the coalescing of the policy: \f$ x \f$
  /// merged into the last message of its key in the outbox sent with a
- /// merge since the last push, if there is one and `merge( pending , x )`
- /// returns true (or nothing), appended otherwise; one probe of the map of
- /// the outbox
+ /// merge since the last push, if there is one, no message of its key was
+ /// sent without a merge after it and `merge( pending , x )` returns true
+ /// (or nothing), appended otherwise; one probe of the map of the outbox
  ///
  /// In pseudocode (beyond the book), \f$ S_{\mathit{to}} \f$ the map of the
- /// outbox, from a key to a place in it, and \f$ \kappa \f$ the key:
+ /// outbox, from a key to a place in it or to \f$ \bot \f$ for a run
+ /// closed by a plain send, and \f$ \kappa \f$ the key:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
  /// 1 & \textbf{procedure}\ \mathrm{send}( \mathit{me} , \mathit{to} , x ,
  ///     \mathit{merge} ) \cr
  /// 2 & \quad \text{append } x \text{ to } O_{\mathit{to}};\ i \gets
  ///     |O_{\mathit{to}}| \cr
- /// 3 & \quad \textbf{if}\ S_{\mathit{to}}[ \kappa( x ) ] = j
+ /// 3 & \quad \textbf{if}\ S_{\mathit{to}}[ \kappa( x ) ] = j \ne \bot
  ///     \ \textbf{then} \cr
  /// 4 & \qquad \textbf{if}\ \mathit{merge}( O_{\mathit{to}}[ j ] , x )
  ///     \ \textbf{then}\ \text{remove } x \text{ from } O_{\mathit{to}};
@@ -409,8 +423,9 @@ class Mailbox
   auto [ it , fresh ] =
     w.slots[ to ].try_emplace( typename Coalesce::KeyOf()( o.back() ) , i );
   if( ! fresh ) {
-   ADS_INVARIANT( detail::mappedOf( it ) < i );
-   if( absorb( merge , o[ detail::mappedOf( it ) ] , o.back() ) ) {
+   const std::size_t j = detail::mappedOf( it );
+   ADS_INVARIANT( ( j < i ) || ( j == kClosed ) );
+   if( ( j != kClosed ) && absorb( merge , o[ j ] , o.back() ) ) {
     o.pop_back();  // never counted, never pushed
     ++w.merged;
     return;
@@ -712,6 +727,9 @@ class Mailbox
 
 /*--------------------------------------------------------------------------*/
  private:
+ /// the place of a key whose run a plain send closed, past every place
+ static constexpr std::size_t kClosed = std::size_t( -1 );
+
  /// the state of a worker, which only the worker touches
  struct alignas( 128 ) Worker
  {

@@ -1432,7 +1432,7 @@ void auditedPhases( std::size_t p , std::size_t b , A... args )
 // on a mesh of capacity 2, a push that takes part of the outbox empties
 // the map, so that no merge reaches a place shifted, and one that takes
 // nothing keeps it; a merge after a stop, the counts of merged() and
-// sent(), and the plain send() unknown to the map
+// sent(), and the plain send(), which closes the run of its key
 /// the coalescing of one worker in an outbox by the map M (void for the
 /// default)
 template< class M >
@@ -1511,6 +1511,22 @@ void coalescedUnit( void )
 	 is( 3 , 4 , 40 , 0 ) && is( 4 , 3 , 4 , 0 ) && is( 5 , 5 , 1 , 0 ) &&
 	 is( 6 , 6 , 60 , 0 ) && is( 7 , 7 , 70 , 0 ) );
   CHECK( ( mb.sent( 0 ) == 8 ) && ( mb.received( 1 ) == 8 ) );
+  }
+ {
+  // a plain send closes the run of its key: the relaxation after an
+  // invalidation stays after it, and merges with the next ones
+  LabelBox< LockedChannels< Label > , M > mb( 2 , 64 );
+  mb.send( 0 , 1 , Label{ 6 , 8 , 0 } , lowest );
+  mb.send( 0 , 1 , Label{ 6 , 0 , 1 } );          // the invalidation
+  mb.send( 0 , 1 , Label{ 6 , 4 , 0 } , lowest );  // not into 8
+  mb.send( 0 , 1 , Label{ 6 , 2 , 0 } , lowest );  // into 4
+  mb.send( 0 , 1 , Label{ 7 , 5 , 1 } );          // a key never merged
+  mb.send( 0 , 1 , Label{ 7 , 3 , 0 } , lowest );
+  CHECK( mb.merged( 0 ) == 1 );
+  got.clear();
+  CHECK( mb.flush( 0 ) && ( mb.poll( 1 , take ) == 5 ) );
+  CHECK( is( 0 , 6 , 8 , 0 ) && is( 1 , 6 , 0 , 1 ) && is( 2 , 6 , 2 , 0 ) &&
+	 is( 3 , 7 , 5 , 1 ) && is( 4 , 7 , 3 , 0 ) );
   }
  }
 

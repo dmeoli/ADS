@@ -2244,7 +2244,13 @@ that the channel takes $j > 0$ messages of shifts the rest of the outbox by
 $j$ places, and therefore empties the map, while a push of which the channel
 takes no message (the full queue of a mesh) keeps it. Last, `merged( me )`
 counts the messages merged; with `sent( me )` and the messages still in the
-outboxes, it accounts for the calls of `send()`.
+outboxes, it accounts for the calls of `send()`. A plain `send( me , to ,
+x )` of a mailbox that merges closes the run of the key of $x$: by one probe
+of the same map it marks the key closed ($\bot$), and the next message of
+that key sent with a merge is then appended after $x$ (and recorded), so
+that no merge moves a message of the key ahead of $x$; with `NoCoalescing`
+the plain `send()` makes no probe, and its instructions are those it had
+before the policies existed.
 
 <span id="alg-25-31"></span>**Algorithm 25.31.** `send()` with a merge, with
 $S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and
@@ -2256,9 +2262,12 @@ $S_{\mathit{to}}$ the map of the outbox for `to` and $\kappa$ the key, and
 
 <span id="lem-25-24"></span>**Lemma 25.24.** *Let the merges be made by
 `send()` with a merge whose function does not throw and does not change the
-key of the message pending. Then (i) the map gives, for each key, the place
-of the last message of that key sent with a merge since the last push that
-took a message, if it is still in the outbox, and no other place. (ii)
+key of the message pending. Then (i) the map gives, for each key, either
+the place of the last message of that key sent with a merge since the last
+push that took a message, if it is still in the outbox and no message of
+that key was sent without a merge after it, or $\bot$ if one was, and no
+other place; hence, a message of a key is never merged into one sent before
+a message of the same key sent without a merge. (ii)
 [Lemma 25.20](25-parallel.md#lem-25-20), [Lemma
 25.21](25-parallel.md#lem-25-21) and [Lemma 25.23](25-parallel.md#lem-25-23)
 hold as they are, and [Lemma 25.22](25-parallel.md#lem-25-22) holds with
@@ -2268,9 +2277,11 @@ the receiver with $y$, in a batch pushed after the call that sent $x$.*
 
 *Proof.* Only the owner touches the outbox and its map, and (i) holds at
 the start, when both are empty. A merge removes the new message and moves
-no place; an append records the last place of its key, or, without a
-merge, lies past the places recorded. A push that takes $j > 0$ messages
-empties the map before a shifted place can be read, one that takes none
+no place; an append with a merge records the last place of its key, past
+every place recorded, and one without a merge also lies past them and marks
+its key $\bot$, so that the next append with a merge of that key, which
+finds $\bot$ and merges into nothing, lies past it. A push that takes
+$j > 0$ messages empties the map before a shifted place can be read, one that takes none
 moves no message, and `leftovers()` empties the outbox and the map
 together; hence, (i) is kept. For (ii), recall that the counter $C$ counts
 a message only from the addition before its push, so that the messages of
@@ -2287,15 +2298,17 @@ call; the release of the push and the acquire of the drain then order the
 writes made before the call with the handling of $y$. $\square$
 
 The merged message keeps the place of $y$, and $x$ therefore overtakes the
-messages of other keys sent between the two, as well as those of its
-key sent without a merge, which the map does not know. Among the messages
-of one key the order is that of the runs closed by a refused merge: once
+messages of other keys sent between the two, but by (i) never a message of
+its own key sent without a merge. Among the messages of one key the order
+is that of the runs closed by a refused merge or by a plain send: once
 refused, $x$ is the last of its key, and the later ones are merged into it
-or placed after it. Whether the receiver may see one message in place of
+or placed after it, while after a plain send of that key they all go past
+it. Whether the receiver may see one message in place of
 two is a property of the consumer, which we do not check (it holds, e.g.,
 for the relaxations of a search by the least distance, since a dominated
 relaxation changes no distance; an invalidation between two relaxations of
-a state, instead, is refused by the merge, and stays between them).
+a state, instead, is sent without a merge, or refused by the merge, and in
+both cases stays between them).
 
 **Audits at a quiescent point.** An incremental computation by messages
 keeps a state that should equal the one we would compute from scratch. However,

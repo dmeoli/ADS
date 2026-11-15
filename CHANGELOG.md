@@ -1958,6 +1958,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- In a Mailbox that merges (CoalesceBy), a plain send( me , to , x ) closes
+  the run of the key of x, marking it in the map of the outbox by the same
+  one probe, so that the next merged send of that key is appended after x
+  and no merge moves a message of the key ahead of it (an invalidation
+  between two relaxations of one state), where the plain message was
+  unknown to the map; with NoCoalescing the plain send() is unchanged, the
+  objects of g++ and clang++ at -O2 identical and the instructions counted
+  by callgrind equal; Lemma 12 of the theory, Lemma 25.24 of the manual and
+  the test engineered_runtime.mailbox-coalesce
+
 - The contracts of make() of Arena and of ObjectPool state that a call with
   no arguments value-initializes the object in every epoch, on a place of
   an old epoch as on a freed slot, which the parallel search asks of the
