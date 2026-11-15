@@ -26,6 +26,7 @@
 #include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
+#include "ADS/concurrent/MinBoard.h"
 #include "ADS/concurrent/MultiQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
 #include "ADS/concurrent/StealablePriorityQueue.h"
@@ -1851,6 +1852,85 @@ ADS_TEST( "lockfree-pq-linearizable" )
    std::vector< char > failed( std::size_t( 1 ) << h.size() , 0 );
    CHECK( linearizable( h , 0 , failed ) && Q.consistent() );
    }
+ }
+
+
+// the board of least keys on one thread: the slots on lines of their own,
+// the initial key, publish() of a key equal to the slot, at(), min() and
+// reset(); a board of one slot and one of signed keys
+ADS_TEST( "min-board" )
+{
+ MinBoard< std::uint64_t > B( 5 );
+ CHECK( B.size() == 5 &&
+	B.min() == std::numeric_limits< std::uint64_t >::max() );
+ B.publish( 3 , 40 );
+ B.publish( 1 , 70 );
+ CHECK( B.min() == 40 && B.at( 3 ) == 40 && B.at( 1 ) == 70 );
+ B.publish( 3 , 90 );  // a key may grow
+ CHECK( B.min() == 70 );
+ B.publish( 3 , 90 );  // unchanged, no store
+ B.publish( 0 , 5 );
+ CHECK( B.min() == 5 &&
+	B.at( 4 ) == std::numeric_limits< std::uint64_t >::max() );
+ B.reset( 100 );
+ CHECK( B.min() == 100 && B.at( 0 ) == 100 );
+ MinBoard< int > S( 1 , 0 );
+ S.publish( 0 , -7 );
+ CHECK( S.min() == -7 && S.size() == 1 );
+ CHECK_THROWS( S.publish( 1 , 3 ) , contract_violation );
+ CHECK_THROWS( ( void )S.at( 1 ) , contract_violation );
+ CHECK_THROWS( MinBoard< int >( 0 ) , contract_violation );
+ }
+
+// the board on p = 2, 4, 8 writers, each publishing keys that never grow,
+// and 2 readers: the values that min() returns to a reader never grow, lie
+// between the least key at the end and the initial one, and each slot read
+// by at() never grows either; at the end min() is the least key published
+ADS_TEST( "min-board-threads" )
+{
+ for( int p : { 2 , 4 , 8 } ) {
+  const std::uint64_t start = 1u << 20;
+  MinBoard< std::uint64_t > B( std::size_t( p ) , start );
+  std::atomic< bool > done{ false };
+  std::atomic< int > bad{ 0 };
+  std::vector< std::thread > T;
+  for( int t = 0 ; t < p ; ++t )
+   T.emplace_back( [ & , t ] {
+    std::mt19937_64 g( 11 + std::uint64_t( t ) );
+    std::uint64_t k = start;
+    for( int r = 0 ; r < 20000 ; ++r ) {
+     if( g() % 3 == 0 )  // else the same key again, skipped
+      k -= std::min< std::uint64_t >( k - std::uint64_t( t ) , g() % 64 );
+     B.publish( std::size_t( t ) , k );
+     }
+    } );
+  std::vector< std::thread > R;
+  for( int r = 0 ; r < 2 ; ++r )
+   R.emplace_back( [ & ] {
+    std::uint64_t last = start;
+    std::vector< std::uint64_t > slot( std::size_t( p ) , start );
+    for( bool end = false ; ! end ; ) {
+     end = done.load();
+     const std::uint64_t m = B.min();
+     bad += m > last;
+     last = m;
+     for( int i = 0 ; i < p ; ++i ) {
+      const std::uint64_t x = B.at( std::size_t( i ) );
+      bad += x > slot[ std::size_t( i ) ];
+      slot[ std::size_t( i ) ] = x;
+      }
+     }
+    } );
+  for( auto & t : T )
+   t.join();
+  done = true;
+  for( auto & r : R )
+   r.join();
+  std::uint64_t least = start;
+  for( int i = 0 ; i < p ; ++i )
+   least = std::min( least , B.at( std::size_t( i ) ) );
+  CHECK( bad == 0 && B.min() == least && least < start );
+  }
  }
 
 }  // end( namespace )

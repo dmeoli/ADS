@@ -311,9 +311,12 @@ jobs:
           ./tsanq stealable-pq-bound-threads
           ./tsanq lockfree-pq-threads
           ./tsanq lockfree-pq-linearizable
+          ./tsanq min-board-threads
           g++ -std=c++20 -O1 -g -fsanitize=thread -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsan test/engineered.cpp -pthread
           ./tsan concurrent-flat-table-threads
+          ./tsan concurrent-flat-table-find-key
+          ./tsan single-writer-flat-table-threads
           ./tsan concurrent-cuckoo-threads
           g++ -std=c++20 -O1 -g -fsanitize=thread -mcx16 -Iinclude -Itest \
               -DADS_CONTRACTS=3 -o tsan16 test/engineered.cpp -pthread

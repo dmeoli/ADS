@@ -9,6 +9,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- SingleWriterFlatTable.h, the linear probing of ConcurrentFlatTable for a
+  table that one thread fills while any number of threads read it, the
+  CLOSED set of a worker that the others look up: the pairs in the words
+  (one word for a set, two for a key and a value of at most 8 bytes each),
+  an insertion that stores the value and then the key with release, with
+  no read-modify-write and no counter of the threads, a growth that fills
+  the new vector before it publishes it with release while the readers read
+  on in the old one, find(), findKey(), contains(), findOrInsertKey() of a
+  set, update() by the writer, and EpochClear as in ConcurrentFlatTable;
+  Lemma 18 of the theory and Lemma 24.35 of the manual prove the order of
+  memory, and the tests engineered.single-writer-flat-table and
+  single-writer-flat-table-threads, also under ThreadSanitizer in the CI
+
+- MinBoard.h, the least of the keys of p threads: one slot per thread on a
+  line of cache of its own, publish( i , k ) a relaxed store skipped when
+  the slot already holds k, min() the least of p relaxed loads, with
+  coherence only, which Lemma 19 of the theory and Lemma 24.36 of the
+  manual state exactly (a value of each slot not older than what happens
+  before the call, not a snapshot; between the least key at the end and at
+  the start when the keys only decrease); section 24.13 of the manual and
+  the tests engineered_queues.min-board and min-board-threads
+
+- ConcurrentFlatTable::findKey( k , h ), the key held equal to k by Eq or
+  nothing, by the lookup of find() and with its progress, so that a set of
+  pointers compared by their states is read by the other threads while its
+  owner inserts; the test engineered.concurrent-flat-table-find-key
+
+- BucketQueue::topEntry(), the top with its keys f and g found once, the
+  item a reference into the queue; section 9.9 of the manual and the tests
+  engineered.bucket-queue and bucket-queue-sparse
+
 - the first structures that tell their changes, and the aggregates that
   their events feed: Algebra.h, the algebra of the aggregates as concepts
   on static members (Monoid, CommutativeMonoid, Group, AbelianGroup,

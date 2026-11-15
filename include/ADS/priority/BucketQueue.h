@@ -270,6 +270,20 @@ class BucketQueue
  /// \pre the queue is not empty
  Entry popEntry( void );
 
+ /// the item of `top()` with its keys, read in place
+ struct TopEntry
+ {
+  const T & item;  ///< the item, valid up to the next change of the queue
+  K f ,             ///< its first key
+    g;             ///< its second key
+  };
+
+ /// `top()` with its keys \f$ f \f$ and \f$ g \f$, finding the top once
+ /// instead of three times through `top()`, `topF()` and `topG()`; the
+ /// queue is unchanged
+ /// \pre the queue is not empty
+ [[nodiscard]] TopEntry topEntry( void );
+
  /// whether the queue has no item
  [[nodiscard]] bool empty( void ) const;
 

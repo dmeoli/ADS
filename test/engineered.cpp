@@ -26,6 +26,7 @@
 #include "ADS/concurrent/ConcurrentFlatTable.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/concurrent/SingleWriterFlatTable.h"
 #include "ADS/ADT.h"
 #include "ADS/dictionary/FlatHashTable.h"
 #include "ADS/dictionary/OpenHashTable.h"
@@ -81,6 +82,7 @@ ADS_TEST( "bucket-queue" )
  CHECK_THROWS( ( void )Q.top() , contract_violation );
  CHECK_THROWS( Q.pop() , contract_violation );
  CHECK_THROWS( Q.popEntry() , contract_violation );
+ CHECK_THROWS( ( void )Q.topEntry() , contract_violation );
  CHECK_THROWS( Q.push( 0 , -1 , 0 ) , contract_violation );
  std::mt19937 g( 1 );
  std::set< std::tuple< int , int , int , int > > R;  // f , -g , -t , x
@@ -92,8 +94,10 @@ ADS_TEST( "bucket-queue" )
    }
   else {
    const auto [ f , mg , mt , x ] = *R.begin();
-   if( t % 2 ) {  // by top(), and by popEntry()
+   if( t % 2 ) {  // by top() and topEntry(), and by popEntry()
     CHECK( Q.topF() == f && Q.topG() == -mg && Q.top() == x );
+    const auto e = Q.topEntry();
+    CHECK( &e.item == &Q.top() && e.item == x && e.f == f && e.g == -mg );
     CHECK( Q.pop() == x );
     }
    else {
@@ -244,7 +248,15 @@ ADS_TEST( "bucket-queue-sparse" )
   BucketQueue< int , long long > L;
   L.push( 1 , 2 , 1LL << 40 );
   L.push( 2 , 2 , 7 );
-  CHECK( L.topG() == ( 1LL << 40 ) && L.pop() == 1 && L.topG() == 7 );
+  CHECK( L.topG() == ( 1LL << 40 ) && L.topEntry().g == ( 1LL << 40 ) &&
+	 L.pop() == 1 && L.topG() == 7 );
+  const auto e = L.topEntry();  // a sparse layer, of a run
+  CHECK( e.item == 2 && e.f == 2 && e.g == 7 && L.size() == 1 );
+  BucketQueue< int , int , LeastSecondKey > S;
+  S.push( 4 , 1 , 1 << 20 );
+  S.push( 5 , 1 , 3 );
+  const auto s = S.topEntry();
+  CHECK( s.item == 5 && s.f == 1 && s.g == 3 && S.size() == 2 );
   }
  {
   BucketReference B;  // around D, with ties
@@ -2471,6 +2483,261 @@ ADS_TEST( "concurrent-flat-table-words" )
    for( int t = 0 ; t < p ; ++t )
     CHECK( T.find( ( n + std::uint64_t( t ) ) * 0x9E3779B97F4A7C15ULL ) ==
 	   ( n - 1 ) / 4 );
+  }
+ }
+
+
+// findKey() of the concurrent flat table: a set of pointers compared by
+// the objects, which one thread fills while 3 others look up pointers to
+// equal objects of their own, each getting nothing or the pointer held,
+// and the key found staying found; then the words of 64 bits (inlined or
+// in nodes) and the strings in nodes, the key 0 kept apart, and no
+// insertion by findKey()
+ADS_TEST( "concurrent-flat-table-find-key" )
+{
+ struct ByValue
+ {
+  std::uint64_t operator()( const std::uint64_t * p ) const { return( *p ); }
+  };
+ struct SameValue
+ {
+  bool operator()( const std::uint64_t * a , const std::uint64_t * b ) const {
+   return( *a == *b );
+   }
+  };
+ using S = ConcurrentFlatTable< const std::uint64_t * , std::monostate ,
+				ByValue ,
+				SameValue >;
+ static_assert( S::packed );
+ constexpr std::uint64_t n = 1 << 14;
+ constexpr int readers = 3;
+ S T;
+ std::vector< std::uint64_t > O( n );
+ std::vector< std::vector< std::uint64_t > > R(
+   readers , std::vector< std::uint64_t >( n ) );
+ for( std::uint64_t i = 0 ; i < n ; ++i ) {
+  for( auto & r : R )
+   r[ i ] = ( i + 1 ) * 0x9E3779B97F4A7C15ULL;
+  }
+ std::atomic< bool > done{ false };
+ std::atomic< int > bad{ 0 };
+ std::vector< std::thread > W;
+ W.emplace_back( [ & ] {
+  for( std::uint64_t i = 0 ; i < n ; ++i ) {
+   O[ i ] = ( i + 1 ) * 0x9E3779B97F4A7C15ULL;
+   if( ! T.findOrInsertKey( &O[ i ] , T.hash( &O[ i ] ) ).second )
+    ++bad;
+   }
+  } );
+ for( int t = 0 ; t < readers ; ++t )
+  W.emplace_back( [ & , t ] {
+   std::vector< char > seen( n , 0 );
+   std::mt19937_64 g( 91 + t );
+   for( bool last = false ; ! last ; ) {
+    last = done.load();
+    for( int r = 0 ; r < 4096 ; ++r ) {
+     const std::uint64_t i = g() % n;
+     const auto q = T.findKey( &R[ t ][ i ] );
+     if( q ? ( *q != &O[ i ] ) : ( seen[ i ] != 0 ) )
+      ++bad;
+     seen[ i ] = q.has_value();
+     }
+    }
+   for( std::uint64_t i = 0 ; i < n ; ++i )
+    bad += T.findKey( &R[ t ][ i ] ) != &O[ i ];
+   } );
+ W[ 0 ].join();
+ done = true;
+ for( std::size_t t = 1 ; t < W.size() ; ++t )
+  W[ t ].join();
+ CHECK( bad == 0 && T.size() == n && T.rehashes() >= 8 && T.consistent() );
+ {
+  ConcurrentFlatTable< std::uint64_t , std::uint64_t > U;
+  CHECK( ! U.findKey( 0 ) && ! U.findKey( 7 ) && U.empty() );
+  U.insert( 0 , 3 );
+  U.insert( 7 , 4 );
+  CHECK( U.findKey( 0 ) == 0u && U.findKey( 7 ) == 7u && ! U.findKey( 8 ) &&
+	 U.size() == 2 );
+  ConcurrentFlatTable< std::string , int > N;
+  static_assert( ! decltype( N )::packed && ! decltype( N )::inlined );
+  N.insert( "state" , 1 );
+  CHECK( N.findKey( "state" ) == std::string( "state" ) &&
+	 ! N.findKey( "other" ) && N.size() == 1 );
+  }
+ }
+
+/// the table of one writer W against std::unordered_map on random
+/// operations of the keys made by key(), from an empty table that grows
+/// many times, the key 0 included, cleared every 3000 operations
+template< class W , class Key >
+void singleWriterUnit( Key && key )
+{
+ W T;
+ std::unordered_map< std::uint64_t , std::uint64_t > M;
+ std::mt19937_64 g( 17 );
+ for( int r = 0 ; r < 30000 ; ++r ) {
+  const std::uint64_t k = key( g() % 5000 );
+  switch( g() % 4 ) {
+   case( 0 ):
+   case( 1 ): {
+    const auto [ v , in ] = T.findOrInsert( k , r );
+    const auto [ it , in2 ] = M.try_emplace( k , std::uint64_t( r ) );
+    CHECK( in == in2 && v == it->second );
+    break;
+    }
+   case( 2 ): {
+    const bool u = T.update( k , []( std::uint64_t x ) { return( x + 1 ); } );
+    const auto it = M.find( k );
+    CHECK( u == ( it != M.end() ) );
+    if( u )
+     ++it->second;
+    break;
+    }
+   default: {
+    const auto it = M.find( k );
+    const auto f = T.find( k );
+    CHECK( f.has_value() == ( it != M.end() ) &&
+	   T.contains( k ) == f.has_value() );
+    if( f )
+     CHECK( *f == it->second && T.findKey( k ) == k );
+    }
+   }
+  if( r % 3000 == 2999 ) {
+   CHECK( T.size() == M.size() && T.consistent() );
+   std::size_t c = 0;
+   T.forEach( [ & ]( std::uint64_t a , std::uint64_t b ) {
+    c += ( M.count( a ) == 1 ) && ( M[ a ] == b );
+    } );
+   CHECK( c == M.size() );
+   T.clear();
+   M.clear();
+   CHECK( T.empty() && ! T.contains( key( 0 ) ) );
+   }
+  }
+ CHECK( T.rehashes() >= 6 && T.consistent() );
+ }
+
+// the table of one writer on one thread: the pairs in two words against
+// std::unordered_map, with ZeroingClear and with EpochClear of 8 bits,
+// whose epochs wrap many times; the key 0 kept apart; a set of pointers
+// compared by the objects, the pointer held returned; reserve()
+ADS_TEST( "single-writer-flat-table" )
+{
+ auto mix = []( std::uint64_t i ) { return( i * 0x9E3779B97F4A7C15ULL ); };
+ auto low = []( std::uint64_t i ) { return( i ); };
+ using Z = SingleWriterFlatTable< std::uint64_t , std::uint64_t >;
+ using E = SingleWriterFlatTable<
+   std::uint64_t , std::uint64_t , DefaultHash< std::uint64_t > ,
+   std::equal_to< std::uint64_t > , EpochClear< std::uint8_t > >;
+ static_assert( ! Z::epochs && E::epochs );
+ singleWriterUnit< Z >( mix );
+ singleWriterUnit< Z >( low );
+ singleWriterUnit< E >( mix );
+ singleWriterUnit< E >( low );
+ {
+  E T;
+  for( int c = 0 ; c < 600 ; ++c ) {  // the 8-bit epoch wraps twice
+   for( std::uint64_t i = 0 ; i < 20 ; ++i )
+    CHECK( T.insert( mix( i + std::uint64_t( c ) ) , i ) );
+   CHECK( T.size() == 20 && T.consistent() &&
+	  T.find( mix( std::uint64_t( c ) + 19 ) ) == 19u );
+   T.clear();
+   CHECK( ! T.contains( mix( std::uint64_t( c ) ) ) && T.empty() );
+   }
+  CHECK( T.epoch() >= 1 && T.epoch() < 255 );
+  }
+ {
+  struct ByValue
+  {
+   std::uint64_t operator()( const std::uint64_t * p ) const { return( *p ); }
+   };
+  struct SameValue
+  {
+   bool operator()( const std::uint64_t * a , const std::uint64_t * b ) const {
+    return( *a == *b );
+    }
+   };
+  SingleWriterFlatTable< const std::uint64_t * , std::monostate , ByValue ,
+			 SameValue >
+    S( 1000 );
+  const std::size_t cap = S.capacity();
+  std::vector< std::uint64_t > a( 1000 ) , b( 1000 );
+  for( std::uint64_t i = 0 ; i < 1000 ; ++i ) {
+   a[ i ] = b[ i ] = mix( i + 1 );
+   CHECK( S.findOrInsertKey( &a[ i ] , S.hash( &a[ i ] ) ).second );
+   }
+  for( std::uint64_t i = 0 ; i < 1000 ; ++i ) {
+   const auto [ q , in ] = S.findOrInsertKey( &b[ i ] , S.hash( &b[ i ] ) );
+   CHECK( ! in && q == &a[ i ] && S.findKey( &b[ i ] ) == &a[ i ] );
+   }
+  CHECK( S.size() == 1000 && S.capacity() == cap && S.rehashes() == 0 );
+  S.reserve( 5000 );
+  CHECK( S.capacity() >= 10000 && S.rehashes() == 1 && S.consistent() &&
+	 S.findKey( &b[ 7 ] ) == &a[ 7 ] );
+  }
+ }
+
+/// one writer that inserts n keys into T and raises their values, and p
+/// readers that look them up meanwhile: a key found stays found, with the
+/// value of its insertion or a later one, never less than one seen before
+template< class T >
+void singleWriterThreads( int p , T & tab , std::uint64_t n )
+{
+ auto key = []( std::uint64_t i ) { return( i * 0x9E3779B97F4A7C15ULL ); };
+ std::atomic< bool > done{ false };
+ std::atomic< int > bad{ 0 };
+ std::vector< std::thread > R;
+ for( int t = 0 ; t < p ; ++t )
+  R.emplace_back( [ & , t ] {
+   std::vector< std::uint64_t > seen( n , 0 );  // the value seen, plus 1
+   std::mt19937_64 g( 5 + t );
+   for( bool last = false ; ! last ; ) {
+    last = done.load();
+    for( int r = 0 ; r < 4096 ; ++r ) {
+     const std::uint64_t i = g() % n;
+     const auto f = tab.find( key( i ) );
+     if( ! f ) {
+      bad += seen[ i ] != 0;
+      continue;
+      }
+     // the value of i is i at its insertion, raised by n at each round
+     bad += ( *f % n != i ) || ( *f + 1 < seen[ i ] );
+     seen[ i ] = *f + 1;
+     }
+    }
+   } );
+ for( std::uint64_t i = 0 ; i < n ; ++i )
+  bad += ! tab.insert( key( i ) , i );
+ for( int round = 0 ; round < 3 ; ++round )
+  for( std::uint64_t i = 0 ; i < n ; ++i )
+   tab.update( key( i ) , [ n ]( std::uint64_t x ) { return( x + n ); } );
+ done = true;
+ for( auto & r : R )
+  r.join();
+ CHECK( bad == 0 && tab.size() == n && tab.consistent() &&
+	tab.rehashes() >= 8 );
+ for( std::uint64_t i = 0 ; i < n ; ++i )
+  bad += tab.find( key( i ) ) != i + 3 * n;
+ CHECK( bad == 0 );
+ }
+
+// the table of one writer on 1 + p threads, p = 1, 3, 7: the writer grows
+// the table from the least vector while the readers read on, and raises
+// the values; with EpochClear, several rounds separated by clear()
+ADS_TEST( "single-writer-flat-table-threads" )
+{
+ for( int p : { 1 , 3 , 7 } ) {
+  SingleWriterFlatTable< std::uint64_t , std::uint64_t > T;
+  singleWriterThreads( p , T , 30000 );
+  SingleWriterFlatTable< std::uint64_t , std::uint64_t ,
+			 DefaultHash< std::uint64_t > ,
+			 std::equal_to< std::uint64_t > , EpochClear<> >
+    E;
+  for( int round = 0 ; round < 3 ; ++round ) {
+   singleWriterThreads( p , E , 20000 );
+   E.clear();
+   CHECK( E.empty() && E.epoch() == std::uint64_t( round + 2 ) );
+   }
   }
  }
 

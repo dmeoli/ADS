@@ -11,13 +11,14 @@
  work stealing, the union-find and the hash tables shared by threads, the
  relaxed priority queue, the event count on which a thread sleeps until a
  condition holds, the priority queues of the workers of a search that the
- idle workers steal from, and an exact priority queue without locks. This
+ idle workers steal from, an exact priority queue without locks, the
+ table of one writer and the board of the least keys of the workers. This
  page collects what the headers take for granted: the model of the threads
  and of the memory and the meaning of correct and of nonblocking (see
  \ref theory_concurrent_notation), the structures and the cost of their
  operations (see \ref theory_concurrent_real), and, for each family, the
  property on which its correctness rests and the argument behind its cost
- (from \ref theory_concurrent_queues to \ref theory_concurrent_lfpq). The
+ (from \ref theory_concurrent_queues to \ref theory_concurrent_board). The
  pseudocode of each operation is instead on the page of its header, in the
  comment of its function, together with the paper that it follows, and with
  the order of memory of each access to a shared word written as a comment.
@@ -897,6 +898,106 @@
  prefix then grows with the deletions; the epochs are blocking in the same
  way, since a thread stopped inside an operation keeps the nodes cut off
  afterwards from being freed.
+
+ \section theory_concurrent_single One writer and many readers
+
+ A table that only its owner fills, while the others read it (the CLOSED
+ set of a worker of a search, read by the others to prune their states),
+ needs none of the protocol of Lemma 6: `SingleWriterFlatTable` keeps the
+ linear probing of `ConcurrentFlatTable` with the pairs in the words, one
+ word for a set and two for a key and a value, and makes every write by
+ the one writer, by loads and stores and no read-modify-write. An insertion
+ reads the words from the place of its key, stores at the first free one
+ the value (relaxed) and then the key with release; a growth fills a
+ vector twice as large while no reader can see it and then stores it as
+ the vector in use with release; a lookup reads the vector in use and the
+ words with acquire, and, if it ends at a free place, reads the vector in
+ use again, starting over on the new one if it changed.
+
+ <em>Lemma 18 (one writer).</em> Let one thread make all the insertions,
+ the updates and the growths of the table, the writes as above, and let
+ any thread make lookups. Then (i) a lookup that reads a key word
+ \f$ w \ne 0 \f$ reads with it the value stored at its insertion or a later
+ one, and everything that the writer wrote before the insertion; (ii) a
+ lookup of \f$ k \f$ that reads a free place in the vector \f$ T \f$ (or a
+ group out of use, with `EpochClear`) and then \f$ T \f$ again as the
+ vector in use is linearized at the read of that place, which no insertion
+ of \f$ k \f$ happens before; (iii) a vector replaced is no longer written,
+ and holds every pair inserted before it was replaced, so that a lookup on
+ it reads a table that only lacks the later pairs.
+
+ For (i), the store of the value and every write of the writer before the
+ insertion are sequenced before the store of the key with release, which
+ the read with acquire of the key synchronizes with; an update stores the
+ value with release, so that the value read is that of the insertion or
+ of an update, whole, since each is one atomic word. For (ii), let the
+ insertion of \f$ k \f$ into \f$ T \f$ write the place \f$ j \f$: the writer
+ found the places from that of \f$ k \f$ up to \f$ j - 1 \f$ full (renewing,
+ with `EpochClear`, each group out of use among them, i.e., writing its
+ words 0 and then its stamp with release), so that their writes are
+ sequenced before the store of \f$ k \f$. Were that store to happen before
+ the lookup's read of the place \f$ i < j \f$ of the sequence, the write of
+ \f$ i \f$ (or of the stamp of its group) would happen before it too, and
+ by the coherence of the reads the lookup would read it, not the free
+ place; were \f$ k \f$ inserted instead into a later vector, its store would
+ follow the publication of that vector, and if it happened before the read
+ of \f$ i \f$ it would happen before the second read of the vector in use,
+ which would then not read \f$ T \f$. For (iii), the writer writes only the
+ vector in use, the new one before it is published, and the copy reads
+ every pair of the old one; the vectors replaced are freed only by
+ `clear()` or the destruction, with no reader. Hence the lookups never
+ wait, start over at most once per growth, and are wait-free between two
+ growths, while an insertion costs the loads of its probe, one or two
+ stores and no read-modify-write, against the two sequentially consistent
+ ones of the counter of a thread in `ConcurrentFlatTable`.
+
+ The single writer may hand its role over to another thread by any
+ synchronization (a join, a barrier, a release with an acquire), since
+ the writes are then ordered as those of one thread; `clear()`, which
+ frees the vectors replaced, needs every reader gone, as in
+ `ConcurrentFlatTable`.
+
+ \section theory_concurrent_board A board of least keys
+
+ `MinBoard` keeps \f$ p \f$ keys, one per thread, each in an atomic word on
+ a line of cache of its own, written only by its owner by `publish( i , k )`
+ and read by all by `min()`, the least of the slots; every access is
+ relaxed. The board orders nothing but each slot by itself, and this is
+ what it guarantees.
+
+ <em>Lemma 19 (the coherence of the board).</em> Let each slot be written
+ by its owner only. Then (i) a read of the slot \f$ i \f$ reads one of the
+ keys published there (or the initial one), not older in the order of the
+ publishes of \f$ i \f$ than any publish of \f$ i \f$ that happens before the
+ read, and two reads of \f$ i \f$ by one thread read the second no older
+ than the first; (ii) `min()` returns \f$ \min_i x_i \f$ of keys
+ \f$ x_i \f$ so read, one per slot; (iii) if the keys published in each
+ slot never increase, the value returned lies between the least key of
+ the board after the last publish that happens before the call and the
+ least of the keys that the slots hold at the end of the call, and the
+ values returned to one thread never increase (and the converse if the
+ keys never decrease).
+
+ Indeed, (i) is the coherence of the atomic objects of C++ (the
+ write-read, read-read and write-write coherence on one object), which
+ holds for relaxed accesses, and the publishes of one slot, made by one
+ thread, follow its program order; a publish that skips its store finds
+ the key already there, so that the slot holds the same value as if it
+ had stored it. (ii) is the code, which reads each slot once, at different
+ times, so that no instant need exist at which the board held the value
+ returned. For (iii), with the keys of a slot never increasing, a value
+ read is at most the last one published before the call and at least the
+ value of the slot at the end of the call; the minimum over the slots
+ keeps both bounds, and two calls of one thread read each slot in the
+ order of its publishes. Since the accesses are relaxed, a thread that
+ reads \f$ k \f$ in a slot learns nothing of the writes that the owner made
+ before publishing \f$ k \f$: a consumer that needs them (e.g., the node
+ whose key is \f$ k \f$) synchronizes otherwise, and uses the board only as
+ a bound, which is the use of a search that prunes by the least \f$ f \f$ of
+ its workers. A publish costs a load of a line that the owner keeps, and a
+ store only when the key changes, which leaves the line shared in the
+ caches of the readers otherwise; `min()` costs \f$ p \f$ loads, of lines
+ that only their owners write.
 
  \section theory_concurrent_refs References
 

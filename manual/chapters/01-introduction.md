@@ -1793,8 +1793,10 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `concurrent/MPMCQueue.h` | `MPMCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCInbox.h` | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCQueue.h` | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MinBoard.h` | `MinBoard` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MultiQueue.h` | `MultiQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SPSCQueue.h` | `SPSCQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/SingleWriterFlatTable.h` | `SingleWriterFlatTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/StealablePriorityQueue.h` | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |
 | `concurrent/WorkStealingDeque.h` | `WorkStealingDeque` | [24](24-concurrent.md#ch-24) |
 | `parallel/Channels.h` | `ChannelPort`, `LockedChannels`, `InboxChannels`, `LaneChannels`, `MeshChannels`, `ChannelsOf` | [25](25-parallel.md#ch-25) |

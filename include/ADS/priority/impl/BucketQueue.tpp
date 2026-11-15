@@ -204,6 +204,13 @@ auto BucketQueue< T , K , Tie >::popEntry( void ) -> Entry
  }
 
 template< class T , std::integral K , BucketTie Tie >
+auto BucketQueue< T , K , Tie >::topEntry( void ) -> TopEntry
+{
+ Layer & l = front();
+ return( TopEntry{ f_cells[ top( l ) ].item , K( f_minF ) , topKey( l ) } );
+ }
+
+template< class T , std::integral K , BucketTie Tie >
 inline K BucketQueue< T , K , Tie >::topG( void )
 {
  return( topKey( front() ) );

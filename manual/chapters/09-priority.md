@@ -1478,6 +1478,12 @@ class BucketQueue
  K topG( void );
  T pop( void );
  Entry popEntry( void );
+ struct TopEntry
+ {
+  const T & item;
+  K f , g;
+  };
+ TopEntry topEntry( void );
  bool empty( void ) const;
  std::size_t size( void ) const;
  void clear( void );
@@ -1545,8 +1551,10 @@ $$
 $F$ the largest $f$ pushed, $H_f$ the heads of the layer $f$ while it is in
 use (at most $D$ if it is sparse, its largest $g$ if it is dense) and $L$
 the most layers that had runs at the same time. `topF()` and `topG()` read
-the keys of the top, and `popEntry()` removes the top and returns it with
-both keys as an `Entry`, finding the top once instead of three times (tests
+the keys of the top, `topEntry()` returns the top with both keys as a
+`TopEntry`, whose item is a reference into the queue valid up to its next
+change, and `popEntry()` removes the top and returns it with both keys as
+an `Entry`; both find the top once instead of three times (tests
 `engineered.bucket-queue`, `engineered.bucket-queue-sparse` and
 `heaps.bucket-queue-cells`).
 

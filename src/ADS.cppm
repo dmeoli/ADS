@@ -92,8 +92,10 @@ module;
 #include "ADS/concurrent/MPMCQueue.h"
 #include "ADS/concurrent/MPSCInbox.h"
 #include "ADS/concurrent/MPSCQueue.h"
+#include "ADS/concurrent/MinBoard.h"
 #include "ADS/concurrent/MultiQueue.h"
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/concurrent/SingleWriterFlatTable.h"
 #include "ADS/concurrent/StealablePriorityQueue.h"
 #include "ADS/concurrent/WorkStealingDeque.h"
 #include "ADS/dictionary/AdaptiveRadixTree.h"
@@ -535,6 +537,7 @@ using ADS::IndexIterator;
 using ADS::IndirectIterator;
 using ADS::KeyIterator;
 using ADS::LinkedIterator;
+using ADS::PairRef;
 using ADS::PathIterator;
 using ADS::RankIterator;
 using ADS::SlotIterator;
@@ -917,11 +920,17 @@ using ADS::MPSCInbox;
 // ADS/concurrent/MPSCQueue.h
 using ADS::MPSCQueue;
 
+// ADS/concurrent/MinBoard.h
+using ADS::MinBoard;
+
 // ADS/concurrent/MultiQueue.h
 using ADS::MultiQueue;
 
 // ADS/concurrent/SPSCQueue.h
 using ADS::SPSCQueue;
+
+// ADS/concurrent/SingleWriterFlatTable.h
+using ADS::SingleWriterFlatTable;
 
 // ADS/concurrent/StealablePriorityQueue.h
 using ADS::StealablePriorityQueue;

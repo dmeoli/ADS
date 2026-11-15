@@ -150,6 +150,8 @@ MultiQueue, and $k$ that of the messages taken at once.
 | `StealablePriorityQueue` | one owner, many thieves | wait-free for the owner, lock-free steal | $O( \log m )$ for the owner, no read-modify-write; one exchange per steal |
 | `LockFreePriorityQueue` | any, by a handle each | lock-free but for the allocation of a node; reclamation blocking | $O( \log m )$ expected insertion, two CAS on average; one FAO per DeleteMin, plus the prefix walked; exact |
 | `EventCount` | any | a waiter sleeps, a notifier never waits | a fence and a read when nobody waits |
+| `SingleWriterFlatTable` | one writer, many readers | wait-free for the writer but for the allocation of a growth, wait-free lookups but across a growth | $O( 1 )$ expected, no read-modify-write; $O( 1 )$ amortized for the growths |
+| `MinBoard` | one writer per slot, many readers | wait-free | a load and at most a store per publish, $p$ loads per `min()`; coherence only |
 
 We remark that the queues of one producer or of one consumer are cheaper than the general
 one because each of their indices has a single writer. Such an index is
@@ -1226,6 +1228,7 @@ class ConcurrentFlatTable
  std::pair< Ref , bool > findOrInsert( const K & k , const V & v );
  bool insert( const K & k , const V & v );
  std::optional< V > find( const K & k ) const;
+ std::optional< K > findKey( const K & k ) const;
  bool contains( const K & k ) const;
  void prefetch( std::uint64_t h ) const;
  template< class F >
@@ -1245,7 +1248,14 @@ class ConcurrentFlatTable
 ```
 
 besides `findOrInsertKey( k , h )` of a `packed` set and `entry( k , h )`,
-the node of a key of a table that is neither `packed` nor `inlined`.
+the node of a key of a table that is neither `packed` nor `inlined`. The
+lookup `findKey( k )` returns a copy of the key that the table holds equal
+to $k$ by `Eq`, or nothing, and inserts nothing; in a set of pointers to
+nodes compared by the states they hold, a thread thus reads the pointer
+stored for a state equal to that of its own node, while the owner inserts,
+with no second copy of the pointer in the value. It is the lookup of
+`find()`, with its progress and its point of linearization, and it reads
+the key of a node as `find()` reads its value.
 
 <span id="alg-24-8"></span>**Algorithm 24.8.** The insertion and the
 lookup of `ConcurrentFlatTable` (the folklore table of [Maier et al.
@@ -2558,7 +2568,177 @@ deletion. With many threads the queue therefore (typically)
 serves the DeleteMin one at a time at that word, which the relaxed queue of
 [§24.9](24-concurrent.md#sec-24-9) avoids at the price of the order.
 
-## 24.13 Discussion and references {#sec-24-13}
+## 24.13 Structures of one writer {#sec-24-13}
+
+A worker of a parallel search keeps state that only it changes and that
+the others read: its CLOSED set, which the others look up to prune the
+states they reach, and the least $f$ of its OPEN list, which bounds the
+work of all. A structure of one writer needs no read-modify-write, since
+no two threads may want to write the same word (cf.
+[§24.2](24-concurrent.md#sec-24-2)), and the two of this section are
+built on that remark.
+
+**One writer and many readers.** `SingleWriterFlatTable` is the linear
+probing of [§24.8](24-concurrent.md#sec-24-8) with the pairs in the words
+(one word for a set, two for a key and a value, each trivially copyable
+and of at most 8 bytes), filled by one thread. An insertion reads the
+words from the place of its key and, at the first free one, stores the
+value and then the key, the key by a store with release. A growth fills a
+vector twice as large while no reader can see it, and then stores it as
+the vector in use with release; the old one is kept for the readers still
+on it. A lookup is that of `ConcurrentFlatTable`: it reads the vector in
+use and the words with acquire, and, when it ends at a free place, reads
+the vector in use again and starts over if the table grew meanwhile. The
+counters of the threads and the protocol of Dekker of Lemma 6 of the
+theory, i.e., two sequentially consistent read-modify-writes per
+insertion, are thus gone, and an insertion is made of plain loads and
+stores on x86-64. With `EpochClear` the writer renews a group out of use
+when an insertion first reaches it, writing 0 to its words and then its
+stamp with release, so that `clear()` takes $O( 1 )$ as in
+[§24.8](24-concurrent.md#sec-24-8). Its public members, but for the
+variants that take the hash already computed, are
+
+```cpp
+// declarations of <ADS/concurrent/SingleWriterFlatTable.h>
+template< class K , class V , class H = DefaultHash< K > ,
+          class Eq = std::equal_to< K > , class C = ZeroingClear >
+class SingleWriterFlatTable
+{
+ public:
+ explicit SingleWriterFlatTable( std::size_t n = 0 , H h = H() ,
+                                 Eq eq = Eq() );
+ std::uint64_t hash( const K & k ) const;
+ std::pair< V , bool > findOrInsert( const K & k , const V & v );
+ bool insert( const K & k , const V & v );
+ template< class F >
+ bool update( const K & k , F && f )
+  requires( valueBytes() > 0 );
+ std::optional< V > find( const K & k ) const;
+ std::optional< K > findKey( const K & k ) const;
+ bool contains( const K & k ) const;
+ std::size_t size( void ) const;
+ bool empty( void ) const;
+ std::size_t capacity( void ) const;
+ std::size_t rehashes( void ) const;
+ void reserve( std::size_t n );
+ void clear( void );
+ std::uint64_t epoch( void ) const;
+ template< class F >
+ void forEach( F && f ) const;
+ bool consistent( void ) const;
+ };
+```
+
+besides `findOrInsertKey( k , h )` of a set, which returns the key held
+equal to $k$. One thread at a time, the writer, calls `findOrInsert()`,
+`findOrInsertKey()`, `insert()`, `update()`, `reserve()` and `clear()`,
+and the role may pass to another thread by any synchronization. Any thread
+calls the lookups; `size()` gives the writer its exact count, and the
+others a count that the table had since the last `clear()`.
+
+<span id="alg-24-14"></span>**Algorithm 24.14.** The insertion, with the
+growth, and the lookup of `SingleWriterFlatTable`; $W$ is the vector in
+use, of $2^l$ places, and $n$ the number of the pairs.
+
+--8<-- "generated/SingleWriterFlatTable-findOrInsert.pseudo.md"
+
+--8<-- "generated/SingleWriterFlatTable-find.pseudo.md"
+
+<span id="lem-24-35"></span>**Lemma 24.35.** *Let one thread make all the
+insertions, the updates and the growths of a `SingleWriterFlatTable`, and
+let any thread make lookups. Then (i) a lookup that reads a key word
+$w \ne 0$ reads with it the value stored at its insertion or by a later
+update, and everything that the writer wrote before the insertion; (ii) a
+lookup of $k$ that reads a free place of the vector $T$ (or a group out of
+use) and then $T$ again as the vector in use is linearized at that read,
+which no insertion of $k$ happens before; (iii) a vector replaced by a
+growth is no longer written, and holds every pair inserted before the
+growth. Hence the lookups are wait-free between two growths and start over
+at most once per growth.*
+
+*Proof.* For (i), the store of the value and every earlier write of the
+writer are sequenced before the store of the key with release, which the
+load of the key with acquire synchronizes with; an update stores one
+atomic word with release, so that the value read is whole. For (ii), let
+the insertion of $k$ into $T$ write the place $j$. The writer found full
+the places from that of $k$ to $j - 1$, renewing with `EpochClear` each
+group out of use among them (its words, then its stamp with release), and
+these writes are sequenced before the store of $k$. If that store happened
+before the read of a place $i < j$ of the sequence, the write of $i$ (or of
+the stamp of its group) would happen before the read as well, and the
+coherence of the reads would forbid reading the free place. If $k$ was
+inserted into a later vector, its store follows the store of that vector
+as the one in use, and if it happened before the read of $i$, it would
+happen before the second read of the vector in use, which then could not
+read $T$. For (iii), the writer writes only the vector in use, and the new
+one before it is published, after the copy has read every pair of the old
+one; the vectors replaced are freed only by `clear()` or by the
+destruction, which run with no reader. A lookup restarts only when it
+reads a vector other than the one it searched, i.e., once per growth.
+$\square$
+
+The insertions of one writer thus cost the loads of their probe and one or
+two stores, against the two sequentially consistent read-modify-writes on
+the counter of a thread of `ConcurrentFlatTable`, which several writers
+need (Lemma 6 of the theory). The price is that the table has one writer:
+the threads of a search keep one table each, and a thread that looks for
+a state reads the table of the worker that may hold it.
+
+**A board of least keys.** `MinBoard< K >` keeps $p$ keys, one per thread,
+each in an atomic word on a line of cache of its own. `publish( i , k )`,
+called by the owner of the slot $i$ only, reads the slot and stores $k$
+only if it differs, both relaxed; a worker whose key stays thus leaves
+its line shared in the caches of the readers. `min()` reads the $p$
+slots, relaxed, and returns the least key read. Its public members are
+
+```cpp
+// declarations of <ADS/concurrent/MinBoard.h>
+template< class K >
+ requires( std::totally_ordered< K > && std::is_trivially_copyable_v< K > )
+class MinBoard
+{
+ public:
+ explicit MinBoard( std::size_t p , K k = std::numeric_limits< K >::max() );
+ std::size_t size( void ) const;
+ void publish( std::size_t i , K k );
+ K at( std::size_t i ) const;
+ K min( void ) const;
+ void reset( K k = std::numeric_limits< K >::max() );
+ };
+```
+
+<span id="lem-24-36"></span>**Lemma 24.36.** *Let each slot of a
+`MinBoard` be written by its owner only. Then (i) a read of the slot $i$
+reads a key published there (or the initial one), not older in the order
+of the publishes of $i$ than any publish of $i$ that happens before the
+read, and two reads of $i$ by one thread never read the second older than
+the first; (ii) `min()` returns $\min_i x_i$ of keys $x_i$ so read, one
+per slot, which need not be the least key of the board at any instant;
+(iii) if the keys published in each slot never increase, the value
+returned lies between the least key of the board at the end of the call
+and the least of the keys published before the call (those whose publish
+happens before it), and the values returned to one thread never increase.*
+
+*Proof.* (i) is the coherence of the atomic objects of C++, which holds
+for relaxed accesses, with the publishes of a slot made in the program
+order of its owner; a publish that skips its store finds the key already
+there, and leaves the slot as if it had stored it. (ii) holds since
+`min()` reads each slot once, at different times. For (iii), with the keys
+of each slot never increasing, a key read is at most the last one
+published before the call, by (i), and at least the key that the slot
+holds at the end of the call; the minimum over the slots keeps both
+bounds, and two calls by one thread read each slot in the order of its
+publishes. $\square$
+
+The board orders nothing else: a thread that reads $k$ in a slot learns
+nothing of the writes that the owner made before publishing $k$, which
+need their own synchronization, and it uses the board as a bound only,
+e.g., the least $f$ of the workers below which a search may prune. A
+publish costs a load of a line that the owner holds, and a store only
+when the key changes; `min()` costs $p$ loads of lines that only their
+owners write.
+
+## 24.14 Discussion and references {#sec-24-14}
 
 We follow the model of [Herlihy and Shavit
 2008](Z-bibliography.md#ref-herlihy2008), whose book covers
@@ -2640,7 +2820,7 @@ libraries (e.g., oneTBB, Folly, the queues of FastFlow) belongs to the
 benchmarks of appendix B, made on an idle machine, and it is not reported
 here.
 
-## 24.14 Exercises {#sec-24-14}
+## 24.15 Exercises {#sec-24-15}
 
 Each exercise names the test of the library that solves it (run it with
 `ctest -R <name>`).

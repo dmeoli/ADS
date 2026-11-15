@@ -449,6 +449,25 @@ class ConcurrentFlatTable
  /// `find()` above, with the hash computed
  [[nodiscard]] std::optional< V > find( const K & k ) const;
 
+ /// a copy of the key held equal to \f$ k \f$ by `Eq`, of hash \f$ h \f$, or
+ /// nothing; never inserts
+ ///
+ /// The lookup of `find()`, which returns the key of the word found
+ /// instead of its value: in a set of pointers to objects compared by `Eq`
+ /// as the objects themselves, a thread reads the pointer that the table
+ /// holds for a state equal to that of \f$ k \f$, so that the set keeps
+ /// one word per pointer and no copy of it in the value. As `find()`, it
+ /// may run with insertions and growths of any thread, takes no lock and
+ /// writes nothing, is wait-free while the table does not grow, and
+ /// linearizable at the read of the word that holds the key or of the free
+ /// place; the key returned was inserted, whole, before that read.
+ /// \pre `hash( k )` is \f$ h \f$ (audit)
+ [[nodiscard]] std::optional< K > findKey( const K & k ,
+					   std::uint64_t h ) const;
+
+ /// `findKey()` above, with the hash computed
+ [[nodiscard]] std::optional< K > findKey( const K & k ) const;
+
  /// whether the key \f$ k \f$ of hash \f$ h \f$ is there, as `find()`
  /// \pre `hash( k )` is \f$ h \f$ (audit)
  [[nodiscard]] bool contains( const K & k , std::uint64_t h ) const;

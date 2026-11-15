@@ -658,6 +658,31 @@ ConcurrentFlatTable< K , V , H , Eq , C >::find( const K & k ) const
  }
 
 template< class K , class V , class H , class Eq , class C >
+std::optional< K >
+ConcurrentFlatTable< K , V , H , Eq , C >::findKey( const K & k ,
+						std::uint64_t h ) const
+{
+ const auto * p = locate( k , h );
+ if( ! p )
+  return( std::nullopt );
+ if( zeroKey( k ) )  // kept apart, the bytes of k
+  return( std::optional< K >( k ) );
+ const std::uint64_t w = p->load( std::memory_order_acquire );
+ if constexpr( packed || inlined )
+  return( std::optional< K >( keyOf( w ) ) );
+ else
+  return( std::optional< K >(
+    node( ( w & ( ( std::uint64_t( 1 ) << kFp ) - 1 ) ) - 1 )->e.key ) );
+ }
+
+template< class K , class V , class H , class Eq , class C >
+std::optional< K >
+ConcurrentFlatTable< K , V , H , Eq , C >::findKey( const K & k ) const
+{
+ return( findKey( k , hash( k ) ) );
+ }
+
+template< class K , class V , class H , class Eq , class C >
 bool ConcurrentFlatTable< K , V , H , Eq , C >::contains( const K & k ,
 						      std::uint64_t h ) const
 {
