@@ -111,9 +111,9 @@ enum class TspBound {
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{spanningTreeWeight}( D , V ) \cr
-/// 2 & \quad T \gets \mathrm{kruskal}( \text{the complete graph on } V
-///     \text{ of the weights } D ) \cr
-/// 3 & \quad \textbf{return}\ \sum_{e \in T} w( e )
+/// 2 & \quad \textbf{return}\ \text{the weight of the tree that }
+///     \mathrm{kruskal} \text{ finds on the complete graph on } V
+///     \text{ weighted by } D
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square and symmetric, and \f$ V \f$ has distinct cities
@@ -128,11 +128,10 @@ T spanningTreeWeight( const std::vector< std::vector< T > > & D ,
 /// In pseudocode (exercise 19.10, after Held and Karp):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{oneTree}( D , r ) \cr
-/// 2 & \quad w \gets \mathrm{spanningTreeWeight}( D , V \setminus \{ r \} )
-///     \cr
-/// 3 & \quad \textbf{return}\ w + \text{the two least of } D[ r ][ h ]
-///     \text{, } h \ne r
+/// 1 & \textbf{function}\ \mathrm{oneTree}( D , r )\quad \triangleright
+///     \ \text{a tree on the rest, and two edges of } r \cr
+/// 2 & \quad \textbf{return}\ \mathrm{spanningTreeWeight}( D , V \setminus
+///     \{ r \} ) + \text{the two least } D[ r ][ h ] \text{, } h \ne r
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square and symmetric, and \f$ r \f$ is a city
@@ -149,19 +148,22 @@ T oneTree( const std::vector< std::vector< T > > & D , int r );
 /// \f$ R \f$ bounds what is left:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{tspLowerBound}( D , S , \mathit{how} ) \cr
-/// 2 & \quad C \gets \sum_{k < i} D[ S[ k ] ][ S[ k + 1 ] ] \cr
+/// 1 & \textbf{function}\ \mathrm{tspLowerBound}( D , S , \mathit{how}
+///     )\quad \triangleright\ S = ( S[ 0 ] , \ldots , S[ i ] ) \text{, } R
+///     \text{ the cities left} \cr
+/// 2 & \quad C \gets \text{the cost of the path } S \cr
 /// 3 & \quad \textbf{if}\ R = \emptyset\ \textbf{then return}\ C + D[ S[ i ]
-///     ][ S[ 0 ] ] \cr
-/// 4 & \quad A \gets \min_{h \in R} D[ h ][ S[ 0 ] ];\ B \gets \min_{h \in R}
-///     D[ S[ i ] ][ h ] \cr
+///     ][ S[ 0 ] ]\quad \triangleright\ \text{the circuit closed} \cr
+/// 4 & \quad A \gets \text{the least } D[ h ][ S[ 0 ] ] \text{, } B \gets
+///     \text{the least } D[ S[ i ] ][ h ] \text{, over } h \in R \cr
 /// 5 & \quad \textbf{if}\ \mathit{how} = \text{ONE\_TREE}
-///     \ \textbf{then return}\ C + A + B + \mathrm{spanningTreeWeight}( D , R
-///     ) \cr
-/// 6 & \quad \textbf{foreach}\ h \in R\ \textbf{do}\ D_h \gets \min_{p \ne q ,
-///     \, p , q \ne h} ( D[ p ][ h ] + D[ h ][ q ] ) \cr
-/// 7 & \quad \textbf{return}\ C + \lceil ( A + B + \sum_{h \in R} D_h ) / 2
-///     \rceil
+///     \ \textbf{then return}\ C + A + B + \mathrm{spanningTreeWeight}( D ,
+///     R ) \cr
+/// 6 & \quad D_h \gets \text{the least } D[ p ][ h ] + D[ h ][ q ]
+///     \text{ over } p \ne q \text{, both } \ne h \text{, for each } h \in
+///     R\quad \triangleright\ \text{the two edges of } h \cr
+/// 7 & \quad \textbf{return}\ C + \lceil ( A + B + \textstyle\sum_{h \in R}
+///     D_h ) / 2 \rceil
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square, \f$ S \f$ has distinct cities and is not empty,
@@ -182,23 +184,23 @@ T tspLowerBound( const std::vector< std::vector< T > > & D , const Nodes & S ,
 /// city not in \f$ S \f$ and visited only if its bound is below the best:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{bb}( S )\quad \triangleright
-///     \ \text{started with } S = ( 0 ) \cr
-/// 2 & \quad \textbf{foreach}\ c \notin S \text{, in increasing order}
+/// 1 & \textbf{procedure}\ \mathrm{bb}( S )\quad \triangleright\ S
+///     \text{ a path from the city } 0 \cr
+/// 2 & \quad \textbf{foreach}\ c \notin S \text{, by increasing name}
 ///     \ \textbf{do} \cr
 /// 3 & \qquad \mathit{lb} \gets \mathrm{tspLowerBound}( D , S \cdot ( c ) ,
-///     \mathit{how} ) \cr
-/// 4 & \qquad \textbf{if}\ \mathit{lb} < \mathit{minCost}\ \textbf{then} \cr
-/// 5 & \qquad\quad \textbf{if}\ |S| + 1 < n\ \textbf{then}\ \mathrm{bb}( S
-///     \cdot ( c ) ) \cr
-/// 6 & \qquad\quad \textbf{else}\ \mathit{minSol} \gets S \cdot ( c );
-///     \ \mathit{minCost} \gets \mathit{lb}\quad \triangleright
-///     \ \text{the cost} \cr
-/// 7 & \textbf{function}\ \mathrm{bbTsp}( D , \mathit{start} ) \cr
-/// 8 & \quad \mathit{minSol} \gets \mathit{start};\ \mathit{minCost} \gets
-///     \text{its cost, } \infty \text{ if empty} \cr
-/// 9 & \quad \mathrm{bb}( ( 0 ) ) \cr
-/// 10 & \quad \textbf{return}\ ( \mathit{minCost} , \mathit{minSol} )
+///     \mathit{how} );\ \textbf{if}\ \mathit{minCost} \le \mathit{lb}
+///     \ \textbf{then continue}\quad \triangleright\ \text{pruned} \cr
+/// 4 & \qquad \textbf{if}\ |S| + 1 = n\ \textbf{then}\ ( \mathit{minSol} ,
+///     \mathit{minCost} ) \gets ( S \cdot ( c ) , \mathit{lb} )\quad
+///     \triangleright\ \text{a circuit: the bound is its cost} \cr
+/// 5 & \qquad \textbf{else}\ \mathrm{bb}( S \cdot ( c ) ) \cr
+/// 6 & \textbf{function}\ \mathrm{bbTsp}( D , \mathit{start} ) \cr
+/// 7 & \quad \mathit{minSol} \gets \mathit{start};\ \mathit{minCost} \gets
+///     \text{the cost of } \mathit{start} \text{, or } \infty
+///     \text{ if it is empty} \cr
+/// 8 & \quad \mathrm{bb}( ( 0 ) );\ \textbf{return}\ ( \mathit{minCost} ,
+///     \mathit{minSol} )
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square, `start` empty or a permutation, \f$ D \f$
@@ -222,31 +224,34 @@ bbTsp( const std::vector< std::vector< T > > & D , const Nodes & start = {} ,
 /// subtracted, which no circuit of the subtree can avoid:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{littleTsp}( D ) \cr
-/// 2 & \quad x \gets \text{the root, } M_x = D \text{ with } \infty
+/// 1 & \textbf{function}\ \mathrm{littleTsp}( D )\quad \triangleright
+///     \ \text{a node } x \text{: the edges chosen, a reduced matrix } M_x
+///     \text{, a bound } \mathit{lb}_x \cr
+/// 2 & \quad x \gets \text{the root, with } M_x = D \text{ and } \infty
 ///     \text{ on the diagonal};\ \mathrm{reduce}( x ) \cr
-/// 3 & \quad Q \gets \text{a priority queue};\ \mathrm{insert}( Q , x ,
-///     \mathit{lb}_x ) \cr
+/// 3 & \quad Q \gets \text{a priority queue holding } x
+///     \text{ with priority } \mathit{lb}_x \cr
 /// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 5 & \qquad x \gets \mathrm{deleteMin}( Q ) \cr
-/// 6 & \qquad \textbf{if}\ x \text{ has } n \text{ edges}
-///     \ \textbf{then return}\ \text{its circuit and its cost} \cr
-/// 7 & \qquad ( i , j ) \gets \text{the entry } 0 \text{ of } M_x
-///     \text{ with the largest}\ \min_{h \ne j} M_x[ i ][ h ] + \min_{h \ne
-///     i} M_x[ h ][ j ] \cr
-/// 8 & \qquad y \gets x \text{ with } ( i , j ) \text{, its row and column}
-///     \ \text{done, the edge that would close a subcircuit set to } \infty
-///     \cr
-/// 9 & \qquad z \gets x \text{ with } M_z[ i ][ j ] = \infty \cr
-/// 10 & \qquad \textbf{foreach}\ c \in \{ y , z \}\ \textbf{do} \cr
-/// 11 & \qquad\quad \textbf{if}\ c \text{ has } n \text{ edges or }
-///     \mathrm{reduce}( c )\ \textbf{then}\ \mathrm{insert}( Q , c ,
-///     \mathit{lb}_c ) \cr
-/// 12 & \textbf{function}\ \mathrm{reduce}( x )\quad \triangleright
-///     \ \text{false if a row or column has no finite entry} \cr
-/// 13 & \quad \textbf{foreach}\ \text{row, then column, not done}
-///     \ \textbf{do}\ \text{subtract its minimum } \mu \text{, and add } \mu
-///     \text{ to } \mathit{lb}_x
+/// 5 & \qquad x \gets \mathrm{deleteMin}( Q );\ \textbf{if}\ x \text{ has }
+///     n \text{ edges}\ \textbf{then return}
+///     \ \text{its circuit and its cost} \cr
+/// 6 & \qquad ( i , j ) \gets \text{the zero of } M_x
+///     \text{ whose exclusion costs most, } \min_{h \ne j} M_x[ i ][ h ] +
+///     \min_{h \ne i} M_x[ h ][ j ] \cr
+/// 7 & \qquad y \gets x \text{ with the edge } ( i , j )
+///     \text{: its row and column done, } \infty
+///     \text{ on the edge that would close a subcircuit} \cr
+/// 8 & \qquad z \gets x \text{ without the edge } ( i , j ) \text{: } M_z[ i
+///     ][ j ] = \infty \cr
+/// 9 & \qquad \textbf{foreach}\ c \in \{ y , z \} \text{ that has } n
+///     \text{ edges or for which } \mathrm{reduce}( c ) \text{ succeeds}
+///     \ \textbf{do}\ \mathrm{insert}( Q , c , \mathit{lb}_c ) \cr
+/// 10 & \textbf{function}\ \mathrm{reduce}( x )\quad \triangleright
+///     \ \text{false if a row or a column not done has no finite entry} \cr
+/// 11 & \quad
+///     \text{subtract from each row not done, then from each column not }
+///     \text{done, its least entry } \mu \text{, adding } \mu \text{ to }
+///     \mathit{lb}_x
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square
@@ -269,16 +274,18 @@ std::pair< T , Nodes > littleTsp( const std::vector< std::vector< T > > & D ,
 /// \f$ S = \emptyset \f$ and \f$ K = V \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{extend}( S , K , \mathit{weight} ) \cr
-/// 2 & \quad \textbf{if}\ \mathit{weight} > \mathit{best}\ \textbf{then}
-///     \ \mathit{best} \gets \mathit{weight};\ \mathit{bestSet} \gets S \cr
-/// 3 & \quad \mathit{rest} \gets \sum_{v \in K} w( v ) \cr
-/// 4 & \quad \textbf{for}\ a \gets 1\ \textbf{to}\ |K|\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ \mathit{weight} + \mathit{rest} \le \mathit{best}
-///     \ \textbf{then return}\quad \triangleright\ \text{the bound} \cr
-/// 6 & \qquad v \gets K[ a ];\ \mathit{rest} \gets \mathit{rest} - w( v ) \cr
-/// 7 & \qquad \mathrm{extend}( S \cup \{ v \} , \{ K[ b ] : b > a , G[ v ][
-///     K[ b ] ] \} , \mathit{weight} + w( v ) )
+/// 1 & \textbf{procedure}\ \mathrm{extend}( S , K , \mathit{weight} )\quad
+///     \triangleright\ K \text{ the candidates adjacent to all of } S \cr
+/// 2 & \quad \textbf{if}\ \mathit{best} < \mathit{weight}\ \textbf{then}\ (
+///     \mathit{best} , \mathit{bestSet} ) \gets ( \mathit{weight} , S ) \cr
+/// 3 & \quad \mathit{rest} \gets \text{the weight of the nodes of } K \cr
+/// 4 & \quad \textbf{foreach}\ v = K[ a ] \text{, in order}\ \textbf{do} \cr
+/// 5 & \qquad \textbf{if}\ \mathit{weight} + \mathit{rest} \le
+///     \mathit{best}\ \textbf{then return}\quad \triangleright
+///     \ \text{even all of them would not do better} \cr
+/// 6 & \qquad \mathit{rest} \gets \mathit{rest} - w( v ) \cr
+/// 7 & \qquad \mathrm{extend}( S \cup \{ v \} , \text{the } K[ b ] \text{, }
+///     b > a \text{, adjacent to } v , \mathit{weight} + w( v ) )
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric, \f$ w \f$ of
@@ -300,13 +307,16 @@ inline std::pair< long , Nodes > maxWeightClique( const Adjacency & G ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{procedure}\ \mathrm{bb}( S , i , c , \mathit{profit} )\quad
-///     \triangleright\ \text{started with } S = \emptyset ,\ 0 ,\ C ,\ 0 \cr
-/// 2 & \quad \textbf{if}\ \mathit{profit} > \mathit{best}\ \textbf{then}
-///     \ \mathit{best} \gets \mathit{profit};\ \mathit{bestSet} \gets S \cr
-/// 3 & \quad \textbf{if}\ i = n \text{ or } \mathit{profit} +
-///     \mathit{frac}( i , c ) \le \mathit{best}\ \textbf{then return} \cr
+///     \triangleright\ \text{the objects } i , \ldots , n - 1
+///     \text{ still to decide} \cr
+/// 2 & \quad \textbf{if}\ \mathit{best} < \mathit{profit}\ \textbf{then}\ (
+///     \mathit{best} , \mathit{bestSet} ) \gets ( \mathit{profit} , S ) \cr
+/// 3 & \quad \textbf{if}\ i = n\ \textbf{or}\ \mathit{profit} +
+///     \mathit{frac}( i , c ) \le \mathit{best}\ \textbf{then return}\quad
+///     \triangleright\ \text{the fractional bound} \cr
 /// 4 & \quad \textbf{if}\ v_i \le c\ \textbf{then}\ \mathrm{bb}( S \cup \{ i
-///     \} , i + 1 , c - v_i , \mathit{profit} + p_i ) \cr
+///     \} , i + 1 , c - v_i , \mathit{profit} + p_i )\quad \triangleright
+///     \ \text{with } i \text{ first} \cr
 /// 5 & \quad \mathrm{bb}( S , i + 1 , c , \mathit{profit} )
 /// \end{array}}
 /// \f]
@@ -329,11 +339,14 @@ inline std::pair< long , Nodes > knapsackBB( const std::vector< long > & p ,
 /// \f$ \mathit{frac}( i , c ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{procedure}\ \mathrm{bt}( S , i , c , \mathit{profit} ) \cr
-/// 2 & \quad \textbf{if}\ \mathit{profit} > \mathit{best}\ \textbf{then}
-///     \ \mathit{best} \gets \mathit{profit};\ \mathit{bestSet} \gets S \cr
-/// 3 & \quad \textbf{if}\ i = n \text{ or } \mathit{profit} + \sum_{j \ge i}
-///     p_j \le \mathit{best}\ \textbf{then return} \cr
+/// 1 & \textbf{procedure}\ \mathrm{bt}( S , i , c , \mathit{profit} )\quad
+///     \triangleright\ \text{as } \mathrm{bb} \text{, with a weaker bound}
+///     \cr
+/// 2 & \quad \textbf{if}\ \mathit{best} < \mathit{profit}\ \textbf{then}\ (
+///     \mathit{best} , \mathit{bestSet} ) \gets ( \mathit{profit} , S ) \cr
+/// 3 & \quad \textbf{if}\ i = n\ \textbf{or}\ \mathit{profit} +
+///     \textstyle\sum_{j \ge i} p_j \le \mathit{best}\ \textbf{then return}
+///     \cr
 /// 4 & \quad \textbf{if}\ v_i \le c\ \textbf{then}\ \mathrm{bt}( S \cup \{ i
 ///     \} , i + 1 , c - v_i , \mathit{profit} + p_i ) \cr
 /// 5 & \quad \mathrm{bt}( S , i + 1 , c , \mathit{profit} )
@@ -353,13 +366,13 @@ knapsackBacktrack( const std::vector< long > & p ,
 /// In pseudocode (exercise 19.12):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{knapsackGreedy}( p , v , C ) \cr
+/// 1 & \textbf{function}\ \mathrm{knapsackGreedy}( p , v , C )\quad
+///     \triangleright\ \text{no bound on its ratio to the optimum} \cr
 /// 2 & \quad S \gets \emptyset \cr
-/// 3 & \quad \textbf{foreach}\ i \text{ by decreasing } p_i / v_i
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ v_i \le C\ \textbf{then}\ C \gets C - v_i;\ S
-///     \gets S \cup \{ i \} \cr
-/// 5 & \quad \textbf{return}\ ( \sum_{i \in S} p_i , S )
+/// 3 & \quad \textbf{foreach}\ i \text{, by decreasing } p_i / v_i
+///     \text{, that fits in the room left}\ \textbf{do}\ S \gets S \cup \{ i
+///     \};\ C \gets C - v_i \cr
+/// 4 & \quad \textbf{return}\ ( \textstyle\sum_{i \in S} p_i , S )
 /// \end{array}}
 /// \f]
 /// \pre \f$ p \f$ and \f$ v \f$ of the same size, \f$ p \f$ not negative,

@@ -168,13 +168,13 @@ puzzleDFS( const Board & B , const Board & goal , int n , int nmax );
 /// and never otherwise:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{solvable}( B , n ) \cr
-/// 2 & \quad \mathit{inv} \gets |\{ p < q : B[ q ] \ne 0 \text{ and } B[ q ]
-///     < B[ p ] \}| \cr
-/// 3 & \quad \textbf{if}\ n \text{ is odd}\ \textbf{then return}
-///     \ \mathit{inv} \text{ is even} \cr
-/// 4 & \quad \textbf{return}\ \mathit{inv} + n - 1 - r \text{ is even}\quad
-///     \triangleright\ r \text{ the row of the hole}
+/// 1 & \textbf{function}\ \mathrm{solvable}( B , n )\quad \triangleright
+///     \ \text{a move keeps the parity of the quantity below} \cr
+/// 2 & \quad \mathit{inv} \gets \text{the pairs } p < q
+///     \text{ of tiles, the hole left out, with } B[ q ] < B[ p ] \cr
+/// 3 & \quad \textbf{return}\ \mathit{inv} \text{ even if } n
+///     \text{ is odd, else } \mathit{inv} + n - 1 - r \text{ even, } r
+///     \text{ the row of the hole}
 /// \end{array}}
 /// \f]
 /// \pre \f$ B \f$ is a configuration of \f$ n \times n \f$ squares
@@ -191,24 +191,25 @@ inline bool solvable( const Board & B , int n );
 /// configuration, an entry of the queue with a larger one being stale:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{solvePuzzle}( B , n ) \cr
-/// 2 & \quad \textbf{if not}\ \mathrm{solvable}( B , n )
+/// 1 & \textbf{function}\ \mathrm{solvePuzzle}( B , n )\quad \triangleright
+///     \ \text{A* with the Manhattan distance} \cr
+/// 2 & \quad \textbf{if}\ \textbf{not}\ \mathrm{solvable}( B , n )
 ///     \ \textbf{then return nil} \cr
-/// 3 & \quad \mathit{best}[ B ] \gets 0;\ \mathrm{insert}( Q , B ,
-///     \mathrm{manhattan}( B ) ) \cr
+/// 3 & \quad \mathit{best}[ B ] \gets 0;\ Q \gets \text{a min-heap holding }
+///     B \text{ with priority } \mathrm{manhattan}( B ) \cr
 /// 4 & \quad \textbf{while}\ Q \ne \emptyset\ \textbf{do} \cr
-/// 5 & \qquad x \gets \mathrm{deleteMin}( Q ) \cr
-/// 6 & \qquad \textbf{if}\ g( x ) > \mathit{best}[ x ]
-///     \ \textbf{then continue}\quad \triangleright\ \text{a stale entry} \cr
-/// 7 & \qquad \textbf{if}\ x \text{ is the goal}\ \textbf{then return}
-///     \ \text{the path from } B \text{ to } x \cr
-/// 8 & \qquad \textbf{foreach}\ y \in \mathrm{puzzleMoves}( x )\ \textbf{do}
+/// 5 & \qquad x \gets \mathrm{deleteMin}( Q );\ \textbf{if}\ \mathit{best}[
+///     x ] < g( x )\ \textbf{then continue}\quad \triangleright
+///     \ \text{an older copy of } x \cr
+/// 6 & \qquad \textbf{if}\ x \text{ is the goal}\ \textbf{then return}
+///     \ \text{the moves from } B \text{ to } x \cr
+/// 7 & \qquad \textbf{foreach}\ y \in \mathrm{puzzleMoves}( x )
+///     \text{ with } g( x ) + 1 < \mathit{best}[ y ]\ \textbf{do}\quad
+///     \triangleright\ \mathit{best} \text{ is } \infty \text{ where unset}
 ///     \cr
-/// 9 & \qquad\quad \textbf{if}\ \mathit{best}[ y ] \le g( x ) + 1
-///     \ \textbf{then continue} \cr
-/// 10 & \qquad\quad \mathit{best}[ y ] \gets g( x ) + 1;\ \mathrm{insert}( Q ,
-///     y , g( x ) + 1 + \mathrm{manhattan}( y ) ) \cr
-/// 11 & \quad \textbf{return nil}
+/// 8 & \qquad\quad \mathit{best}[ y ] \gets g( x ) + 1;\ \mathrm{insert}( Q
+///     , y , \mathit{best}[ y ] + \mathrm{manhattan}( y ) ) \cr
+/// 9 & \quad \textbf{return nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ B \f$ is a configuration of \f$ n \times n \f$ squares

@@ -99,15 +99,16 @@ namespace ADS
 /// In pseudocode (section 19.2.1), \f$ F \f$ the room left in each box open:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{firstFit}( A , k , \mathit{decreasing} ) \cr
-/// 2 & \quad O \gets ( 0 , \ldots , n - 1 ) \text{, by decreasing } A
-///     \text{ if }\ \mathit{decreasing} \cr
-/// 3 & \quad F \gets \text{the empty sequence} \cr
-/// 4 & \quad \textbf{foreach}\ i \in O\ \textbf{do} \cr
-/// 5 & \qquad b \gets \text{the first box with } F[ b ] \ge A[ i ]
-///     \text{; a}\ \text{new one with } F[ b ] = k \text{ if none} \cr
-/// 6 & \qquad F[ b ] \gets F[ b ] - A[ i ];\ \mathit{box}[ i ] \gets b \cr
-/// 7 & \quad \textbf{return}\ \mathit{box}
+/// 1 & \textbf{function}\ \mathrm{firstFit}( A , k , \mathit{decreasing}
+///     )\quad \triangleright\ F[ b ] \text{ the room left in the box } b \cr
+/// 2 & \quad F \gets () \cr
+/// 3 & \quad \textbf{foreach}\ i \in [ 0 , n ) \text{, by decreasing } A[ i
+///     ] \text{ if } \mathit{decreasing} \text{, else by index}\ \textbf{do}
+///     \cr
+/// 4 & \qquad b \gets \text{the first box with } A[ i ] \le F[ b ]
+///     \text{, or a new last box with } F[ b ] = k \cr
+/// 5 & \qquad \mathit{box}[ i ] \gets b;\ F[ b ] \gets F[ b ] - A[ i ] \cr
+/// 6 & \quad \textbf{return}\ \mathit{box}
 /// \end{array}}
 /// \f]
 /// \pre each volume is in \f$ [ 0 , k ] \f$
@@ -136,11 +137,13 @@ T tourCost( const std::vector< std::vector< T > > & D , const Nodes & S );
 /// costs no more:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{deltaTsp}( D ) \cr
-/// 2 & \quad T \gets \mathrm{kruskal}( \text{the complete graph of the }
-///     \text{weights } D ) \cr
-/// 3 & \quad \textbf{return}\ \text{the nodes of } T \text{ in preorder from}
-///     \ 0 \text{, the children by increasing name}
+/// 1 & \textbf{function}\ \mathrm{deltaTsp}( D )\quad \triangleright
+///     \ \text{at most twice the optimum under the triangle inequality} \cr
+/// 2 & \quad T \gets \text{the minimum spanning tree by } \mathrm{kruskal}
+///     \text{ of the complete graph weighted by } D \cr
+/// 3 & \quad \textbf{return}\ \text{the previsit of } T \text{ from } 0
+///     \text{, the children by increasing name}\quad \triangleright
+///     \ \text{shortcuts of the walk}
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square and symmetric, and triangular (an audit,
@@ -156,11 +159,12 @@ Nodes deltaTsp( const std::vector< std::vector< T > > & D );
 /// In pseudocode (section 19.2.2):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{tspGap}( G , s ) \cr
-/// 2 & \quad \textbf{foreach}\ u \ne v\ \textbf{do}\ D[ u ][ v ] \gets ( 1
-///     \text{ if } G[ u ][ v ] \text{, else } s n );\quad D[ u ][ u ] \gets
-///     0 \cr
-/// 3 & \quad \textbf{return}\ D
+/// 1 & \textbf{function}\ \mathrm{tspGap}( G , s )\quad \triangleright
+///     \ \text{a circuit of cost } n \text{ iff } G \text{ is Hamiltonian}
+///     \cr
+/// 2 & \quad \textbf{return}\ D \text{ with } D[ u ][ u ] = 0 \text{, and }
+///     D[ u ][ v ] = 1 \text{ on the edges of } G \text{, } s n
+///     \text{ elsewhere}
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric, and
@@ -182,19 +186,19 @@ inline std::vector< std::vector< long > > tspGap( const Adjacency & G ,
 /// \f$ A[ 1 ] \ge \cdots \ge A[ n ] \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{apSubsetSum}( A , k , h ) \cr
-/// 2 & \quad \mathit{max} \gets 0;\ \mathit{maxSol} \gets \emptyset \cr
+/// 1 & \textbf{function}\ \mathrm{apSubsetSum}( A , k , h )\quad
+///     \triangleright\ \text{each seed of } h
+///     \text{ items at most, then a greedy completion} \cr
+/// 2 & \quad ( \mathit{max} , \mathit{maxSol} ) \gets ( 0 , \emptyset ) \cr
 /// 3 & \quad \textbf{foreach}\ S \subseteq \{ 1 , \ldots , n \}
-///     \text{ with } |S| \le h\ \textbf{do}\quad \triangleright\ (1) \cr
-/// 4 & \qquad z \gets \sum_{j \in S} A[ j ] \cr
-/// 5 & \qquad \textbf{if}\ z > k\ \textbf{then continue} \cr
-/// 6 & \qquad \textbf{for}\ j \gets 1\ \textbf{to}\ n\ \textbf{do}\quad
-///     \triangleright\ (2) \cr
-/// 7 & \qquad\quad \textbf{if}\ j \notin S \text{ and } z + A[ j ] \le k
-///     \ \textbf{then}\ S \gets S \cup \{ j \};\ z \gets z + A[ j ] \cr
-/// 8 & \qquad \textbf{if}\ z \ge \mathit{max}\ \textbf{then}\ \mathit{max}
-///     \gets z;\ \mathit{maxSol} \gets S \cr
-/// 9 & \quad \textbf{return}\ ( \mathit{max} , \mathit{maxSol} )
+///     \text{ with } |S| \le h \text{ and } z = \textstyle\sum_{j \in S} A[
+///     j ] \le k\ \textbf{do} \cr
+/// 4 & \qquad \textbf{foreach}\ j \notin S \text{, from } 1 \text{ to } n
+///     \ \textbf{do}\ \textbf{if}\ z + A[ j ] \le k\ \textbf{then}\ S \gets
+///     S \cup \{ j \};\ z \gets z + A[ j ] \cr
+/// 5 & \qquad \textbf{if}\ \mathit{max} \le z\ \textbf{then}\ ( \mathit{max}
+///     , \mathit{maxSol} ) \gets ( z , S ) \cr
+/// 6 & \quad \textbf{return}\ ( \mathit{max} , \mathit{maxSol} )
 /// \end{array}}
 /// \f]
 /// \pre \f$ k , h \ge 0 \f$ and \f$ A \f$ is not negative
@@ -213,20 +217,21 @@ inline std::pair< long , Nodes > apSubsetSum( const std::vector< long > & A ,
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{knapsackApprox}( p , v , C , \epsilon ) \cr
-/// 2 & \quad I \gets \text{the objects with } v_i \le C;\ \textbf{if}\ I =
+/// 2 & \quad I \gets \text{the objects that fit alone};\ \textbf{if}\ I =
 ///     \emptyset\ \textbf{then return}\ ( 0 , \emptyset ) \cr
 /// 3 & \quad K \gets \max\{ 1 , \epsilon p_{\max} / |I| \};\ q_i \gets
-///     \lfloor p_i / K \rfloor \text{ for } i \in I \cr
-/// 4 & \quad V[ 0 ][ 0 ] \gets 0;\ V[ 0 ][ s ] \gets \infty \text{ for } s > 0
-///     \cr
-/// 5 & \quad \textbf{foreach}\ i \in I \text{, in order, and } s \in [ 0 ,
-///     \sum q ]\ \textbf{do} \cr
+///     \lfloor p_i / K \rfloor \text{ for } i \in I\quad \triangleright
+///     \ \text{the profits scaled down} \cr
+/// 4 & \quad V[ 0 ][ s ] \gets 0 \text{ if } s = 0 \text{, else } \infty \cr
+/// 5 & \quad \textbf{foreach}\ \text{the } i \text{-th object of } I
+///     \text{ and } s \in [ 0 , \textstyle\sum q ]\ \textbf{do}\quad
+///     \triangleright\ \text{without it, or with it if } q_i \le s \cr
 /// 6 & \qquad V[ i + 1 ][ s ] \gets \min\{ V[ i ][ s ] , V[ i ][ s - q_i ] +
-///     v_i \}\quad \triangleright\ \text{the second if } s \ge q_i \cr
+///     v_i \} \cr
 /// 7 & \quad s \gets \text{the largest } s \text{ with } V[ |I| ][ s ] \le C
 ///     \cr
 /// 8 & \quad \textbf{return}\ \text{the objects of } V[ |I| ][ s ]
-///     \text{, read}\ \text{backwards, and their profit}
+///     \text{, read back from the table, and their profit}
 /// \end{array}}
 /// \f]
 /// \pre \f$ p \f$ and \f$ v \f$ of the same size and not negative,
@@ -249,13 +254,14 @@ inline std::pair< long ,
 /// cover has an end of each of them:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{vertexCoverApprox}( G ) \cr
+/// 1 & \textbf{function}\ \mathrm{vertexCoverApprox}( G )\quad
+///     \triangleright
+///     \ \text{the ends of a maximal matching: twice the optimum} \cr
 /// 2 & \quad S \gets \emptyset \cr
-/// 3 & \quad \textbf{foreach}\ [ u , v ] \in E \text{ with } u < v
-///     \text{, in lexicographic order}\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ u \notin S \text{ and } v \notin S\ \textbf{then}
-///     \ S \gets S \cup \{ u , v \} \cr
-/// 5 & \quad \textbf{return}\ S
+/// 3 & \quad \textbf{foreach}\ [ u , v ] \in E \text{, } u < v
+///     \text{, in lexicographic order, with } u , v \notin S\ \textbf{do}\ S
+///     \gets S \cup \{ u , v \} \cr
+/// 4 & \quad \textbf{return}\ S
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric

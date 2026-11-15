@@ -85,14 +85,15 @@ namespace ADS
 /// right so that each element is used once:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{subsetSumDP}( A , k ) \cr
+/// 1 & \textbf{function}\ \mathrm{subsetSumDP}( A , k )\quad \triangleright
+///     \ M[ j ] \text{: some subset of the items seen sums to } j \cr
 /// 2 & \quad \textbf{if}\ k < 0\ \textbf{then return false} \cr
-/// 3 & \quad M[ 0 ] \gets \textbf{true};\ M[ j ] \gets \textbf{false}
-///     \text{ for } 0 < j \le k \cr
-/// 4 & \quad \textbf{foreach}\ a \in A\ \textbf{do} \cr
-/// 5 & \qquad \textbf{for}\ j \gets k\ \textbf{downto}\ a\ \textbf{do}\ M[ j
-///     ] \gets M[ j ]\ \textbf{or}\ M[ j - a ] \cr
-/// 6 & \quad \textbf{return}\ M[ k ]
+/// 3 & \quad M \gets ( \textbf{true} , \textbf{false} , \ldots ,
+///     \textbf{false} ) \text{, of } k + 1 \text{ entries} \cr
+/// 4 & \quad \textbf{foreach}\ a \in A\ \textbf{do}\ M[ j ] \gets M[ j ]
+///     \text{ or } M[ j - a ] \text{ for } j = k , k - 1 , \ldots , a\quad
+///     \triangleright\ \text{downwards: } a \text{ once} \cr
+/// 5 & \quad \textbf{return}\ M[ k ]
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not negative
@@ -108,20 +109,22 @@ bool subsetSumDP( const std::vector< long > & A , long k ,
 /// an element needed when the row above has not the sum:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{subsetSumSet}( A , k ) \cr
+/// 1 & \textbf{function}\ \mathrm{subsetSumSet}( A , k )\quad
+///     \triangleright\ M[ i ][ j ] \text{ for the first } i \text{ items} \cr
 /// 2 & \quad \textbf{if}\ k < 0\ \textbf{then return nil} \cr
-/// 3 & \quad M[ 0 ][ 0 ] \gets \textbf{true};\ M[ 0 ][ j ] \gets
-///     \textbf{false} \text{ for } j > 0 \cr
-/// 4 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 5 & \qquad \textbf{for}\ j \gets 0\ \textbf{to}\ k\ \textbf{do}\ M[ i + 1
-///     ][ j ] \gets M[ i ][ j ]\ \textbf{or}\ ( j \ge A[ i ]\ \textbf{and}
-///     \ M[ i ][ j - A[ i ] ] ) \cr
-/// 6 & \quad \textbf{if not}\ M[ n ][ k ]\ \textbf{then return nil} \cr
-/// 7 & \quad S \gets \emptyset;\ j \gets k \cr
-/// 8 & \quad \textbf{for}\ i \gets n\ \textbf{downto}\ 1\ \textbf{do} \cr
-/// 9 & \qquad \textbf{if not}\ M[ i - 1 ][ j ]\ \textbf{then}\ S \gets S
-///     \cup \{ i - 1 \};\ j \gets j - A[ i - 1 ] \cr
-/// 10 & \quad \textbf{return}\ S
+/// 3 & \quad M[ 0 ][ j ] \gets ( j = 0 ) \text{ for every } j \cr
+/// 4 & \quad M[ i + 1 ][ j ] \gets M[ i ][ j ] \text{ or } ( A[ i ] \le j
+///     \text{ and } M[ i ][ j - A[ i ] ] ) \text{, for } i < n \text{ and }
+///     j \le k \cr
+/// 5 & \quad \textbf{if}\ \textbf{not}\ M[ n ][ k ]
+///     \ \textbf{then return nil} \cr
+/// 6 & \quad S \gets \emptyset;\ j \gets k \cr
+/// 7 & \quad \textbf{for}\ i \gets n\ \textbf{downto}\ 1\ \textbf{do}\quad
+///     \triangleright\ \text{the item } i - 1 \text{ is needed iff } j
+///     \text{ was not reachable without it} \cr
+/// 8 & \qquad \textbf{if}\ \textbf{not}\ M[ i - 1 ][ j ]\ \textbf{then}\ S
+///     \gets S \cup \{ i - 1 \};\ j \gets j - A[ i - 1 ] \cr
+/// 9 & \quad \textbf{return}\ S
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not negative
@@ -135,10 +138,11 @@ inline std::optional< Nodes > subsetSumSet( const std::vector< long > & A ,
 /// In pseudocode (exercise 19.1):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{partitionDP}( A ) \cr
-/// 2 & \quad s \gets \sum_i A[ i ] \cr
-/// 3 & \quad \textbf{if}\ s \text{ is odd}\ \textbf{then return nil} \cr
-/// 4 & \quad \textbf{return}\ \mathrm{subsetSumSet}( A , s / 2 )
+/// 1 & \textbf{function}\ \mathrm{partitionDP}( A )\quad \triangleright
+///     \ \text{two halves of equal sum} \cr
+/// 2 & \quad s \gets \textstyle\sum_i A[ i ] \cr
+/// 3 & \quad \textbf{return}\ \textbf{nil} \text{ if } s
+///     \text{ is odd, else } \mathrm{subsetSumSet}( A , s / 2 )
 /// \end{array}}
 /// \f]
 /// \pre \f$ A \f$ is not negative
@@ -160,15 +164,17 @@ inline std::optional< Nodes > partitionDP( const std::vector< long > & A );
 /// comes from and the processor of the \f$ i \f$-th program:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{schedulingDP}( t , m , d ) \cr
+/// 1 & \textbf{function}\ \mathrm{schedulingDP}( t , m , d )\quad
+///     \triangleright\ L_i \text{ the loads of the } m
+///     \text{ processors after } i \text{ jobs} \cr
 /// 2 & \quad \textbf{if}\ d < 0\ \textbf{then return nil} \cr
 /// 3 & \quad L_0 \gets \{ ( 0 , \ldots , 0 ) \} \cr
-/// 4 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
-/// 5 & \qquad \textbf{foreach}\ x \in L_i \text{ and } q \text{ with } x_q +
-///     t_i \le d\ \textbf{do}\ \text{add } x + t_i e_q \text{ to } L_{i+1} \cr
-/// 6 & \quad \textbf{if}\ L_n = \emptyset\ \textbf{then return nil} \cr
-/// 7 & \quad \textbf{return}
-///     \ \text{the processors read back from a vector of}\ L_n
+/// 4 & \quad L_{i+1} \gets \{ x + t_i e_q : x \in L_i \text{, } x_q + t_i
+///     \le d \} \text{ for } i = 0 , \ldots , n - 1\quad \triangleright
+///     \ \text{a set: no copies} \cr
+/// 5 & \quad \textbf{return}\ \textbf{nil} \text{ if } L_n = \emptyset
+///     \text{, else the processor of each job, read back from a vector of }
+///     L_n
 /// \end{array}}
 /// \f]
 /// \pre \f$ m \ge 1 \f$ and \f$ t \f$ is not negative
@@ -196,19 +202,24 @@ struct Piece
 /// than in \f$ \sum_i t_i / m \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{mcNaughton}( t , m ) \cr
-/// 2 & \quad d \gets \max\{ \max_i t_i , \sum_i t_i / m \};\ q \gets 0;
-///     \ \mathit{now} \gets 0 \cr
-/// 3 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1\ \textbf{do} \cr
+/// 1 & \textbf{function}\ \mathrm{mcNaughton}( t , m )\quad \triangleright
+///     \ d \text{ the optimum, a lower bound met} \cr
+/// 2 & \quad d \gets \max\{ \max_i t_i , \textstyle\sum_i t_i / m \};\ q
+///     \gets 0;\ \mathit{now} \gets 0\quad \triangleright
+///     \ \text{the processor and the time filled} \cr
+/// 3 & \quad \textbf{foreach}\ \text{job } i \text{, in order}\ \textbf{do}
+///     \cr
 /// 4 & \qquad r \gets t_i \cr
-/// 5 & \qquad \textbf{while}\ r > 0 \text{ and } q < m\ \textbf{do} \cr
-/// 6 & \qquad\quad s \gets \min\{ r , d - \mathit{now} \} \cr
-/// 7 & \qquad\quad \text{give } i \text{ the piece } [ \mathit{now} ,
-///     \mathit{now} + s ) \text{ of } q;\ \mathit{now} \gets \mathit{now} +
-///     s;\ r \gets r - s \cr
-/// 8 & \qquad\quad \textbf{if}\ \mathit{now} = d\ \textbf{then}\ q \gets q +
-///     1;\ \mathit{now} \gets 0 \cr
-/// 9 & \quad \textbf{return}\ ( d , \text{the pieces} )
+/// 5 & \qquad \textbf{while}\ r > 0 \text{ and } q < m\ \textbf{do}\quad
+///     \triangleright\ \text{a job split ends on } q
+///     \text{ and restarts on } q + 1 \cr
+/// 6 & \qquad\quad s \gets \min\{ r , d - \mathit{now} \};\ \text{give } i
+///     \text{ the time } [ \mathit{now} , \mathit{now} + s ) \text{ of } q
+///     \cr
+/// 7 & \qquad\quad r \gets r - s;\ \mathit{now} \gets \mathit{now} + s;
+///     \ \textbf{if}\ \mathit{now} = d\ \textbf{then}\ ( q , \mathit{now} )
+///     \gets ( q + 1 , 0 ) \cr
+/// 8 & \quad \textbf{return}\ ( d , \text{the pieces} )
 /// \end{array}}
 /// \f]
 /// \pre \f$ m \ge 1 \f$ and \f$ t \f$ is not negative
@@ -226,11 +237,12 @@ mcNaughton( const std::vector< double > & t , int m );
 /// In pseudocode (exercise 19.4):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{realTimeScheduling}( C , T , m ) \cr
+/// 1 & \textbf{function}\ \mathrm{realTimeScheduling}( C , T , m )\quad
+///     \triangleright\ \text{the utilizations as the lengths of the jobs} \cr
 /// 2 & \quad ( d , P ) \gets \mathrm{mcNaughton}( ( C_i / T_i : i = 1 ,
 ///     \ldots , n ) , m ) \cr
-/// 3 & \quad \textbf{return}\ ( P \text{ if } d \le 1 \text{, else }
-///     \textbf{nil} )
+/// 3 & \quad \textbf{return}\ P \text{ if } d \le 1 \text{, else }
+///     \textbf{nil}
 /// \end{array}}
 /// \f]
 /// \pre \f$ m \ge 1 \f$, \f$ C \f$ and \f$ T \f$ of the same size,
@@ -250,19 +262,19 @@ realTimeScheduling( const std::vector< double > & C ,
 /// In pseudocode (exercise 19.5), the third thief taking what is left:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{bottino}( P ) \cr
-/// 2 & \quad m \gets \sum_i P[ i ];\ \textbf{if}\ m \bmod 3 \ne 0
+/// 1 & \textbf{function}\ \mathrm{bottino}( P )\quad \triangleright\ S[ i ][
+///     j ][ h ] \text{: the first } i \text{ items give } j
+///     \text{ to one thief and } h \text{ to another} \cr
+/// 2 & \quad m \gets \textstyle\sum_i P[ i ];\ \textbf{if}\ 3 \nmid m
 ///     \ \textbf{then return nil} \cr
-/// 3 & \quad S[ 0 ][ 0 ][ 0 ] \gets \textbf{true}
-///     \text{, the other entries of } S[ 0 ]\ \textbf{false} \cr
-/// 4 & \quad \textbf{for}\ i \gets 0\ \textbf{to}\ n - 1 \text{, }\ j , h
-///     \gets 0\ \textbf{to}\ m / 3\ \textbf{do} \cr
-/// 5 & \qquad S[ i + 1 ][ j ][ h ] \gets S[ i ][ j ][ h ]\ \textbf{or}\ S[ i
-///     ][ j - P[ i ] ][ h ]\ \textbf{or}\ S[ i ][ j ][ h - P[ i ] ] \cr
-/// 6 & \quad \textbf{if not}\ S[ n ][ m / 3 ][ m / 3 ]
-///     \ \textbf{then return nil} \cr
-/// 7 & \quad \textbf{return}\ \text{the thieves read backwards from } S[ n
-///     ][ m / 3 ][ m / 3 ]
+/// 3 & \quad S[ 0 ][ j ][ h ] \gets ( j = h = 0 ) \cr
+/// 4 & \quad \textbf{foreach}\ i \in [ 0 , n ) \text{ and } j , h \in [ 0 ,
+///     m / 3 ]\ \textbf{do}\quad \triangleright\ \text{the item } i
+///     \text{ to the third thief, the first or the second} \cr
+/// 5 & \qquad S[ i + 1 ][ j ][ h ] \gets S[ i ][ j ][ h ] \text{ or } S[ i
+///     ][ j - P[ i ] ][ h ] \text{ or } S[ i ][ j ][ h - P[ i ] ] \cr
+/// 6 & \quad \textbf{return}\ \textbf{nil} \text{ if not } S[ n ][ m / 3 ][
+///     m / 3 ] \text{, else the thief of each item, read back from it}
 /// \end{array}}
 /// \f]
 /// \pre the prices are not negative

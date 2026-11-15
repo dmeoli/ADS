@@ -103,19 +103,21 @@ namespace ADS
 /// cities:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{greedyTsp}( D ) \cr
-/// 2 & \quad S \gets \emptyset;\ M \gets \text{an MFSET of the } n
+/// 1 & \textbf{function}\ \mathrm{greedyTsp}( D )\quad \triangleright
+///     \ \text{a Hamiltonian path grown by the shortest edges} \cr
+/// 2 & \quad S \gets \emptyset;\ M \gets \text{the MFSET of the } n
 ///     \text{ cities} \cr
-/// 3 & \quad \textbf{foreach}\ [ u , v ] \text{ by increasing } D[ u ][ v ]
-///     \text{, while } |S| < n - 1\ \textbf{do} \cr
-/// 4 & \qquad \textbf{if}\ d_S( u ) < 2 \text{, } d_S( v ) < 2 \text{ and }
-///     \mathrm{find}( M , u ) \ne \mathrm{find}( M , v )\ \textbf{then} \cr
+/// 3 & \quad \textbf{foreach}\ [ u , v ] \text{, by increasing } D[ u ][ v ]
+///     \text{, until } |S| = n - 1\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ u \text{ and } v \text{ have degree } < 2
+///     \text{ in } S \text{ and } \mathrm{find}( M , u ) \ne \mathrm{find}(
+///     M , v )\ \textbf{then} \cr
 /// 5 & \qquad\quad S \gets S \cup \{ [ u , v ] \};\ \mathrm{merge}( M , u ,
 ///     v ) \cr
-/// 6 & \quad S \gets S \cup \{ [ a , b ] \}\quad \triangleright\ a , b
-///     \text{ the two ends of the chain} \cr
-/// 7 & \quad \textbf{return}\ ( S , \text{the circuit of } S \text{ from }
-///     0 )
+/// 6 & \quad \text{add to } S
+///     \text{ the edge between the two ends of the path} \cr
+/// 7 & \quad \textbf{return}\ ( S , \text{the circuit of } S \text{ from } 0
+///     )
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square and symmetric, and \f$ n \ge 3 \f$
@@ -145,17 +147,20 @@ inline Nodes twoOptMove( Nodes pi , int i , int j );
 /// \f$ O( n^2 ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{twoOpt}( D , \pi ) \cr
+/// 1 & \textbf{function}\ \mathrm{twoOpt}( D , \pi )\quad \triangleright
+///     \ \text{the best improvement, until there is none} \cr
 /// 2 & \quad c \gets \mathrm{tourCost}( D , \pi ) \cr
 /// 3 & \quad \textbf{loop} \cr
-/// 4 & \qquad ( b_i , b_j ) \gets \text{the } i < j \text{, not consecutive,}
-///     \ \text{of least } c' = c - D[ a ][ b ] - D[ x ][ y ] + D[ a ][ x ] +
-///     D[ b ][ y ] \text{,} \cr
-///   & \qquad\quad \text{with } a = \pi[ i ] \text{, } b = \pi[ i + 1 ]
-///     \text{, } x = \pi[ j ] \text{, } y = \pi[ ( j + 1 ) \bmod n ] \cr
-/// 5 & \qquad \textbf{if}\ c' \ge c\ \textbf{then return}\ \pi\quad
-///     \triangleright\ \text{a local optimum} \cr
-/// 6 & \qquad \pi \gets \mathrm{twoOptMove}( \pi , b_i , b_j );\ c \gets c'
+/// 4 & \qquad \text{for each } i < j \text{ with } ( \pi[ i ] , \pi[ i + 1 ]
+///     ) \text{ and } ( \pi[ j ] , \pi[ ( j + 1 ) \bmod n ] )
+///     \text{ not adjacent,} \cr
+///   & \qquad\quad \text{let } c_{ij}
+///     \text{ be the cost after replacing them by } ( \pi[ i ] , \pi[ j ] )
+///     \text{ and } ( \pi[ i + 1 ] , \pi[ ( j + 1 ) \bmod n ] ) \cr
+/// 5 & \qquad ( b_i , b_j ) \gets \text{the first pair of least } c' =
+///     c_{b_i b_j} \cr
+/// 6 & \qquad \textbf{if}\ c \le c'\ \textbf{then return}\ \pi \cr
+/// 7 & \qquad \pi \gets \mathrm{twoOptMove}( \pi , b_i , b_j );\ c \gets c'
 /// \end{array}}
 /// \f]
 /// \pre \f$ D \f$ is square and symmetric, and \f$ \pi \f$ a permutation
@@ -172,14 +177,15 @@ Nodes twoOpt( const std::vector< std::vector< T > > & D , Nodes pi ,
 /// direction:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{kOptNeighbours}( n , k ) \cr
-/// 2 & \quad E \gets \text{the edges of } \pi = ( 0 , 1 , \ldots , n - 1 ) \cr
-/// 3 & \quad c \gets 0 \cr
-/// 4 & \quad \textbf{foreach}\ \text{permutation } s \text{ of } 1 , \ldots ,
-///     n - 1\ \textbf{do} \cr
-/// 5 & \qquad \textbf{if}\ \text{the circuit } ( 0 ) \cdot s \text{ has }
-///     n - k\ \text{edges in } E\ \textbf{then}\ c \gets c + 1 \cr
-/// 6 & \quad \textbf{return}\ c / 2
+/// 1 & \textbf{function}\ \mathrm{kOptNeighbours}( n , k )\quad
+///     \triangleright\ \text{by enumeration, for the small } n \cr
+/// 2 & \quad E \gets \text{the edges of the circuit } ( 0 , 1 , \ldots , n -
+///     1 ) \cr
+/// 3 & \quad c \gets \text{the permutations } s \text{ of } 1 , \ldots , n -
+///     1 \text{ whose circuit } ( 0 ) \cdot s \text{ keeps exactly } n - k
+///     \text{ edges of } E \cr
+/// 4 & \quad \textbf{return}\ c / 2\quad \triangleright
+///     \ \text{each circuit is met in both directions}
 /// \end{array}}
 /// \f]
 /// \pre \f$ n \ge 3 \f$ and \f$ 0 \le k \le n \f$
@@ -194,13 +200,16 @@ inline long kOptNeighbours( int n , int k );
 /// \f$ \pm 2 A[ i ] \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{partitionLocalSearch}( A , \mathit{side} )
+/// 1 & \textbf{function}\ \mathrm{partitionLocalSearch}( A , \mathit{side}
+///     )\quad \triangleright\ \Delta \text{ the difference of the two sums}
 ///     \cr
 /// 2 & \quad \textbf{loop} \cr
-/// 3 & \qquad M \gets \text{the move of one } i \text{, or the swap of } i , j
-///     \text{ on two sides,}\ \text{of least } | \Delta' | \cr
-/// 4 & \qquad \textbf{if}\ | \Delta' | \ge | \Delta |
-///     \ \textbf{then return}\ \mathit{side} \cr
+/// 3 & \qquad M \gets
+///     \text{among the moves of one item and the swaps of two items on }
+///     \text{opposite sides,} \cr
+///   & \qquad\quad \text{the one that leaves the least } | \Delta' | \cr
+/// 4 & \qquad \textbf{if}\ | \Delta | \le | \Delta' |\ \textbf{then return}
+///     \ \mathit{side}\quad \triangleright\ \text{a local optimum} \cr
 /// 5 & \qquad \text{apply } M;\ \Delta \gets \Delta'
 /// \end{array}}
 /// \f]
@@ -240,23 +249,19 @@ class Buckets
  /// 1 \f$ and the append of \f$ u \f$ to the bucket of \f$ h_k[ u ] \f$:
  /// \f[
  /// \class{pseudocode}{\begin{array}{r@{\quad}l}
- /// 1 & \textbf{procedure}\ \mathrm{remove}( u ) \cr
+ /// 1 & \textbf{procedure}\ \mathrm{remove}( u )\quad \triangleright\ u
+ ///     \text{ leaves both families of buckets} \cr
  /// 2 & \quad \mathrm{take}( 0 , u );\ \mathrm{take}( 1 , u ) \cr
- /// 3 & \textbf{procedure}\ \mathrm{take}( k , u ) \cr
- /// 4 & \quad h \gets h_k[ u ];\ B \gets \mathrm{bucket}( k , h );\ p \gets
- ///     p_k[ u ] \cr
- /// 5 & \quad B[ p ] \gets \text{the last node of } B;\ p_k[ B[ p ] ] \gets
- ///     p;\ \text{drop the last node of } B \cr
- /// 6 & \quad \textbf{if}\ B = \emptyset\ \textbf{and}\ \mathit{min}( k ) =
- ///     h\ \textbf{then} \cr
- /// 7 & \qquad \textbf{while}\ \mathit{min}( k ) \le n \textbf{ and }
- ///     \mathrm{bucket}( k , \mathit{min}( k ) ) = \emptyset\ \textbf{do}
- ///     \ \mathit{min}( k ) \gets \mathit{min}( k ) + 1 \cr
- /// 8 & \quad \textbf{if}\ B = \emptyset\ \textbf{and}\ \mathit{max}( k ) =
- ///     h\ \textbf{then} \cr
- /// 9 & \qquad \textbf{while}\ \mathit{max}( k ) \ge 0 \textbf{ and }
- ///     \mathrm{bucket}( k , \mathit{max}( k ) ) = \emptyset\ \textbf{do}
- ///     \ \mathit{max}( k ) \gets \mathit{max}( k ) - 1
+ /// 3 & \textbf{procedure}\ \mathrm{take}( k , u )\quad \triangleright\ h_k[
+ ///     u ] \text{ its bucket, } p_k[ u ] \text{ its place there} \cr
+ /// 4 & \quad B \gets \mathrm{bucket}( k , h_k[ u ] );\ p \gets p_k[ u ] \cr
+ /// 5 & \quad \text{move the last node } x \text{ of } B \text{ to } B[ p ]
+ ///     \text{, set } p_k[ x ] \gets p \text{, and shorten } B
+ ///     \text{ by one}\quad \triangleright\ O( 1 ) \cr
+ /// 6 & \quad \textbf{if}\ B = \emptyset\ \textbf{then}\ \text{move }
+ ///     \mathit{min}( k ) \text{ up and } \mathit{max}( k )
+ ///     \text{ down past the empty buckets,} \cr
+ ///   & \qquad \text{if they were at } h_k[ u ] \text{, within } [ 0 , n ]
  /// \end{array}}
  /// \f]
  /// \pre \f$ u \f$ is in the structure
@@ -323,17 +328,18 @@ class Buckets
 /// the node out of them that adds the fewest edges to the cut:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{minMaxGreedy}( G , a , b ) \cr
-/// 2 & \quad B \gets \text{a structure with buckets holding all the nodes} \cr
-/// 3 & \quad \mathrm{add}( a , 0 );\ \mathrm{add}( b , 1 );\ k \gets 0 \cr
-/// 4 & \quad \textbf{for}\ \mathit{left} \gets n - 2\ \textbf{downto}\ 1
-///     \ \textbf{do}\ \mathrm{add}( B.\mathrm{choose}( k ) , k );\ k \gets 1 -
-///     k \cr
-/// 5 & \quad \textbf{return}\ \mathit{side} \cr
-/// 6 & \textbf{procedure}\ \mathrm{add}( u , k ) \cr
-/// 7 & \quad \mathit{side}[ u ] \gets k;\ B.\mathrm{remove}( u ) \cr
-/// 8 & \quad \textbf{foreach}\ v \text{ with } G[ u ][ v ] \text{ in } B
-///     \ \textbf{do}\ B.\mathrm{inc}( k , v )
+/// 1 & \textbf{function}\ \mathrm{minMaxGreedy}( G , a , b )\quad
+///     \triangleright\ \text{the two sides grow in turn} \cr
+/// 2 & \quad B \gets \text{the buckets of all the nodes};\ \mathrm{add}( a ,
+///     0 );\ \mathrm{add}( b , 1 );\ k \gets 0 \cr
+/// 3 & \quad \textbf{repeat}\ n - 2 \text{ times}\ \mathrm{add}(
+///     B.\mathrm{choose}( k ) , k );\ k \gets 1 - k \cr
+/// 4 & \quad \textbf{return}\ \mathit{side} \cr
+/// 5 & \textbf{procedure}\ \mathrm{add}( u , k )\quad \triangleright\ u
+///     \text{ on the side } k \cr
+/// 6 & \quad \mathit{side}[ u ] \gets k;\ B.\mathrm{remove}( u ) \cr
+/// 7 & \quad \textbf{foreach}\ \text{neighbor } v \text{ of } u
+///     \text{ still in } B\ \textbf{do}\ B.\mathrm{inc}( k , v )
 /// \end{array}}
 /// \f]
 /// \pre \f$ G \f$ is unoriented, i.e., square and symmetric, \f$ n \f$ even,
@@ -356,12 +362,11 @@ inline int cutSize( const Adjacency & G , const std::vector< int > & side );
 /// In pseudocode (exercise 19.13), \f$ O( \min\{ |a| , |b| \}^2 ) \f$:
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{overlap}( a , b ) \cr
-/// 2 & \quad \textbf{for}\ \ell \gets \min\{ |a| , |b| \}\ \textbf{downto}
-///     \ 1\ \textbf{do} \cr
-/// 3 & \qquad \textbf{if}\ a[ |a| - \ell .. |a| - 1 ] = b[ 0 .. \ell - 1 ]
-///     \ \textbf{then return}\ \ell \cr
-/// 4 & \quad \textbf{return}\ 0
+/// 1 & \textbf{function}\ \mathrm{overlap}( a , b )\quad \triangleright
+///     \ \text{the longest suffix of } a \text{ that is a prefix of } b \cr
+/// 2 & \quad \textbf{return}\ \text{the largest } \ell \le \min\{ |a| , |b|
+///     \} \text{ with } a[ |a| - \ell .. |a| - 1 ] = b[ 0 .. \ell - 1 ]
+///     \text{, or } 0
 /// \end{array}}
 /// \f]
 inline int overlap( const std::string & a , const std::string & b );
@@ -378,18 +383,19 @@ inline int overlap( const std::string & a , const std::string & b );
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
 /// 1 & \textbf{function}\ \mathrm{greedySuperstring}( P ) \cr
-/// 2 & \quad Q \gets P \text{ without the strings contained in another}
-///     \ \text{(and the repeated ones)} \cr
-/// 3 & \quad \textbf{foreach}\ ( i , j ) \text{, } i \ne j
-///     \text{, by decreasing}\ \mathrm{overlap}( Q[ i ] , Q[ j ] )
-///     \ \textbf{do} \cr
-/// 4 & \qquad \textbf{if not}\ \mathit{out}[ i ] \text{, not }
-///     \mathit{in}[ j ] \text{ and }\ \mathrm{find}( i ) \ne \mathrm{find}( j
+/// 2 & \quad Q \gets P
+///     \text{ less its copies and the strings inside another one} \cr
+/// 3 & \quad \textbf{foreach}\ \text{pair } i \ne j \text{, by decreasing }
+///     \mathrm{overlap}( Q[ i ] , Q[ j ] )\ \textbf{do}\quad \triangleright
+///     \ \text{the strongest merge first} \cr
+/// 4 & \qquad \textbf{if}\ i \text{ has no successor, } j
+///     \text{ no predecessor, and } \mathrm{find}( i ) \ne \mathrm{find}( j
 ///     )\ \textbf{then} \cr
 /// 5 & \qquad\quad \mathit{next}[ i ] \gets j;\ \mathit{out}[ i ] \gets
-///     \mathit{in}[ j ] \gets \textbf{true};\ \mathrm{merge}( i , j ) \cr
-/// 6 & \quad \textbf{return}\ \text{the concatenation along } \mathit{next}
-///     \text{ from each}\ \text{start, overlaps written once}
+///     \textbf{true};\ \mathit{in}[ j ] \gets \textbf{true};
+///     \ \mathrm{merge}( i , j ) \cr
+/// 6 & \quad \textbf{return}\ \text{the strings chained by } \mathit{next}
+///     \text{ from each start, each overlap written once}
 /// \end{array}}
 /// \f]
 /// \post a string that contains each string of \f$ P \f$
@@ -403,11 +409,12 @@ inline std::string greedySuperstring( const std::vector< std::string > & P );
 /// In pseudocode (exercise 19.18, after Gusfield):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{starAlignment}( P ) \cr
-/// 2 & \quad h \gets \text{the first } i \text{ of largest } \sum_{j \ne i}
-///     \mathrm{score}( P[ i ] , P[ j ] ) \cr
-/// 3 & \quad \textbf{return}\ ( h , ( \mathrm{globalAlignment}( P[ h ] , P[ j
-///     ] ) : j = 1 , \ldots , k ) )
+/// 1 & \textbf{function}\ \mathrm{starAlignment}( P )\quad \triangleright
+///     \ \text{the centre aligned with every other string} \cr
+/// 2 & \quad h \gets \text{the first } i \text{ that maximizes }
+///     \textstyle\sum_{j \ne i} \mathrm{score}( P[ i ] , P[ j ] ) \cr
+/// 3 & \quad \textbf{return}\ ( h , ( \mathrm{globalAlignment}( P[ h ] , P[
+///     j ] ) : j = 1 , \ldots , k ) )
 /// \end{array}}
 /// \f]
 /// \pre \f$ P \f$ is not empty
@@ -428,15 +435,17 @@ starAlignment( const std::vector< std::string > & P );
 /// In pseudocode (exercise 19.19, the algorithm of Brelaz):
 /// \f[
 /// \class{pseudocode}{\begin{array}{r@{\quad}l}
-/// 1 & \textbf{function}\ \mathrm{dsatur}( G ) \cr
-/// 2 & \quad \textbf{foreach}\ v \in V\ \textbf{do}\ c[ v ] \gets
-///     \textbf{nil} \cr
-/// 3 & \quad \textbf{repeat}\ n\ \text{times} \cr
-/// 4 & \qquad u \gets \text{the node not colored of most distinct colors}
-///     \ \text{among its neighbors,} \cr
-///   & \qquad\quad \text{then of most neighbors colored, then the first}
+/// 1 & \textbf{function}\ \mathrm{dsatur}( G )\quad \triangleright
+///     \ \text{the saturation of } u \text{: the colors among its neighbors}
 ///     \cr
-/// 5 & \qquad c[ u ] \gets \text{the least color not on a neighbor of } u \cr
+/// 2 & \quad c[ v ] \gets \textbf{nil} \text{ for every node } v \cr
+/// 3 & \quad \textbf{repeat}\ n \text{ times} \cr
+/// 4 & \qquad u \gets
+///     \text{the uncolored node of the largest saturation; on a tie, of the }
+///     \text{most colored neighbors,} \cr
+///   & \qquad\quad \text{then the first} \cr
+/// 5 & \qquad c[ u ] \gets
+///     \text{the least color absent from the neighbors of } u \cr
 /// 6 & \quad \textbf{return}\ c
 /// \end{array}}
 /// \f]
