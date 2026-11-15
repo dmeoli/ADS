@@ -162,6 +162,7 @@ bool SplayTree< K , V >::contains( const K & k )
 template< std::totally_ordered K , class V >
 auto SplayTree< K , V >::lowerBoundNode( const K & k ) -> Node *
 {
+ // it splays as it descends: not searchTreeLowerBound()
  if( ! f_root )
   return( nullptr );
  f_root = splay( f_root , k );

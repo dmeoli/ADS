@@ -234,10 +234,14 @@
  left turns decrease along the path, each in the left subtree of the
  previous one; hence the last of them is the least key not smaller than
  \f$ x \f$. `lowerBoundNode()` of `SearchTree` gives the node, in
- \f$ O( h ) \f$ like the search, and every ordered dictionary of the
- library gives the same answer by `lowerBound()`, as a pair, and by
- `lowerBoundKey()`, as the address of the key, which makes
- `DictionarySet` over it a sorted set [see \ref theory_set_morin].
+ \f$ O( h ) \f$ like the search, on the sentinel nil of the book; the
+ other binary search trees of the area, but the splay tree, reach it by
+ `searchTreeLowerBound()` of `BinaryTreeAlgorithms.h`, the same descent
+ written once on their nodes (as are the search, the access by rank and the
+ rank of a key), and every ordered dictionary of the library gives the same
+ answer by `lowerBound()`, as a pair, and by `lowerBoundKey()`, as the
+ address of the key, which makes `DictionarySet` over it a sorted set [see
+ \ref theory_set_morin].
 
  <table>
  <caption>The binary search trees of the area and the cost of their

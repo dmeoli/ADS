@@ -259,14 +259,7 @@ template< std::totally_ordered K , class V , class B , class G , class Policy >
 std::optional< V >
 JoinTree< K , V , B , G , Policy >::lookup( const K & k ) const
 {
- for( const Node * t = f_root ; t ; )
-  if( k < t->key )
-   t = t->left;
-  else if( t->key < k )
-   t = t->right;
-  else
-   return( t->value );
- return( std::nullopt );
+ return( searchTreeLookup( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V , class B , class G , class Policy >
@@ -726,39 +719,17 @@ bool JoinTree< K , V , B , G , Policy >::valid( void ) const
 
 template< std::totally_ordered K , class V , class B , class G , class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G , Policy >::lowerBoundNode( const K & k ) const
-  -> const Node *
-{
- const Node * best = nullptr;
- for( const Node * t = f_root ; t ; )
-  if( t->key < k )
-   t = t->right;
-  else {
-   best = t;
-   if( ! ( k < t->key ) )
-    break;
-   t = t->left;
-   }
- return( best );
- }
-
-template< std::totally_ordered K , class V , class B , class G , class Policy >
- requires Augmentation< G , K , V >
 auto JoinTree< K , V , B , G , Policy >::lowerBound( const K & k ) const
   -> std::optional< std::pair< K , V > >
 {
- const Node * b = lowerBoundNode( k );
- return( b ? std::optional< std::pair< K , V > >(
-		std::pair< K , V >( b->key , b->value ) )
-	    : std::nullopt );
+ return( searchTreeLowerBoundEntry( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V , class B , class G , class Policy >
  requires Augmentation< G , K , V >
 const K * JoinTree< K , V , B , G , Policy >::findKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( ( b && ! ( k < b->key ) ) ? &b->key : nullptr );
+ return( searchTreeFindKey( f_root , k ) );
  }
 
 template< std::totally_ordered K , class V , class B , class G , class Policy >
@@ -766,8 +737,7 @@ template< std::totally_ordered K , class V , class B , class G , class Policy >
 const K * JoinTree< K , V , B , G ,
 		    Policy >::lowerBoundKey( const K & k ) const
 {
- const Node * b = lowerBoundNode( k );
- return( b ? &b->key : nullptr );
+ return( searchTreeLowerBoundKey( f_root , k ) );
  }
 
 /*--------------------------------------------------------------------------*/

@@ -144,6 +144,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -162,22 +163,28 @@ namespace ADS
 namespace detail
 {
 
-/// the left child of \f$ n \f$, by `left()` or by the field `left`
+/// the left child of \f$ n \f$, by `left()` or by the field `left`, a
+/// pointer or a `std::unique_ptr`
 template< class N >
 auto nodeLeft( N * n )
 {
  if constexpr( requires { n->left(); } )
   return( n->left() );
+ else if constexpr( requires { n->left.get(); } )
+  return( n->left.get() );
  else
   return( n->left );
  }
 
-/// the right child of \f$ n \f$, by `right()` or by the field `right`
+/// the right child of \f$ n \f$, by `right()` or by the field `right`, a
+/// pointer or a `std::unique_ptr`
 template< class N >
 auto nodeRight( N * n )
 {
  if constexpr( requires { n->right(); } )
   return( n->right() );
+ else if constexpr( requires { n->right.get(); } )
+  return( n->right.get() );
  else
   return( n->right );
  }
@@ -202,6 +209,41 @@ decltype( auto ) nodeKey( N * n )
   return( ( n->key ) );
  }
 
+/// the value of \f$ n \f$, the field `value`
+template< class N >
+decltype( auto ) nodeValue( N * n )
+{
+ return( ( n->value ) );
+ }
+
+/// whether the nodes \f$ n \f$ store the size of their subtree in the
+/// field `s`
+template< class N >
+concept SizedByS = requires( N n )
+{ std::size_t( n->s ); };
+
+/// whether the nodes \f$ n \f$ store the size of their subtree in the
+/// field `size`
+template< class N >
+concept SizedBySize = requires( N n )
+{ std::size_t( n->size ); };
+
+/// whether the nodes \f$ n \f$ store the size of their subtree
+template< class N >
+concept SizedNode = SizedByS< N > || SizedBySize< N >;
+
+/// the number of the nodes of the subtree of \f$ n \f$, 0 if nil
+template< SizedNode N >
+std::size_t nodeSize( N n )
+{
+ if( ! n )
+  return( 0 );
+ if constexpr( SizedByS< N > )
+  return( n->s );
+ else
+  return( n->size );
+ }
+
 }  // end( namespace detail )
 
 /// a node of a binary tree: a pointer to a struct whose children are read
@@ -224,6 +266,10 @@ template< class N >
 concept KeyedBinaryNode =
   BinaryNode< N > && requires( N n )
 { detail::nodeKey( n ); };
+
+/// a node of a binary tree with a key and the size of its subtree
+template< class N >
+concept SizedBinaryNode = KeyedBinaryNode< N > && detail::SizedNode< N >;
 
 /*--------------------------------------------------------------------------*/
 /*---------------------------- THE ANCESTORS -------------------------------*/
@@ -358,6 +404,135 @@ template< KeyedBinaryNode N , class K , class F , class Compare = std::less<> >
 std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
 			     Compare less = {} );
 
+/// the node of the key \f$ k \f$ in the binary search tree \f$ t \f$, nil if
+/// absent; \f$ O( h ) \f$ time
+///
+/// In pseudocode (section 6.1):
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{find}( t , k ) \cr
+/// 2 & \quad \textbf{while}\ t \ne \textbf{nil}\ \textbf{and}\ k \ne
+///     t.\mathit{key}\ \textbf{do} \cr
+/// 3 & \qquad \textbf{if}\ k < t.\mathit{key}\ \textbf{then}\ t \gets
+///     t.\mathit{left}\ \textbf{else}\ t \gets t.\mathit{right} \cr
+/// 4 & \quad \textbf{return}\ t
+/// \end{array}}
+/// \f]
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] N searchTreeFind( N t , const K & k , Compare less = {} );
+
+/// the value of the key \f$ k \f$ in the binary search tree \f$ t \f$,
+/// nothing if absent, by `searchTreeFind()`; \f$ O( h ) \f$ time
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeLookup( N t , const K & k , Compare less = {} );
+
+/// the node of the smallest key not smaller than \f$ k \f$ in the binary
+/// search tree \f$ t \f$, nil if none (the `find(x)` of an SSet of Morin);
+/// \f$ O( h ) \f$ time
+///
+/// In pseudocode (section 6.2.2 of Morin), \f$ b \f$ the last node passed
+/// on the left, the search stopping at \f$ k \f$:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{lowerBound}( t , k ) \cr
+/// 2 & \quad b \gets \textbf{nil} \cr
+/// 3 & \quad \textbf{while}\ t \ne \textbf{nil}\ \textbf{do} \cr
+/// 4 & \qquad \textbf{if}\ t.\mathit{key} < k\ \textbf{then}\ t \gets
+///     t.\mathit{right} \cr
+/// 5 & \qquad \textbf{else if}\ k < t.\mathit{key}\ \textbf{then}\ b \gets
+///     t;\ t \gets t.\mathit{left} \cr
+/// 6 & \qquad \textbf{else return}\ t \cr
+/// 7 & \quad \textbf{return}\ b
+/// \end{array}}
+/// \f]
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] N searchTreeLowerBound( N t , const K & k , Compare less = {} );
+
+/// the address of the key \f$ k \f$ in the binary search tree \f$ t \f$,
+/// nil if absent (the `find(x)` of a USet of Morin), by
+/// `searchTreeLowerBound()` and one more comparison; \f$ O( h ) \f$ time
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeFindKey( N t , const K & k , Compare less = {} );
+
+/// the address of the smallest key not smaller than \f$ k \f$ in the binary
+/// search tree \f$ t \f$, nil if none, by `searchTreeLowerBound()`;
+/// \f$ O( h ) \f$ time
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeLowerBoundKey( N t , const K & k ,
+					    Compare less = {} );
+
+/// the key and the value of the smallest key not smaller than \f$ k \f$ in
+/// the binary search tree \f$ t \f$ as a pair, nothing if none, by
+/// `searchTreeLowerBound()`; \f$ O( h ) \f$ time
+template< KeyedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] auto searchTreeLowerBoundEntry( N t , const K & k ,
+					      Compare less = {} );
+
+/// the node of rank \f$ i \f$ of the binary search tree \f$ t \f$, i.e.,
+/// with \f$ i \f$ smaller keys, by the sizes of the left subtrees;
+/// \f$ O( h ) \f$ time
+///
+/// In pseudocode (exercise 7.10 of Morin), \f$ s \f$ the sizes:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{select}( t , i ) \cr
+/// 2 & \quad \textbf{loop} \cr
+/// 3 & \qquad \textbf{if}\ i < s( t.\mathit{left} )\ \textbf{then}\ t
+///     \gets t.\mathit{left} \cr
+/// 4 & \qquad \textbf{else if}\ i = s( t.\mathit{left} )\ \textbf{then
+///     return}\ t \cr
+/// 5 & \qquad \textbf{else}\ i \gets i - s( t.\mathit{left} ) - 1;\ t
+///     \gets t.\mathit{right}
+/// \end{array}}
+/// \f]
+/// \pre \f$ i \f$ is smaller than the size of \f$ t \f$
+template< SizedBinaryNode N >
+[[nodiscard]] N searchTreeSelect( N t , std::size_t i );
+
+/// the number of the keys smaller than \f$ k \f$ in the binary search tree
+/// \f$ t \f$, the sizes of the left subtrees passed on the right along the
+/// search of \f$ k \f$, plus one for each node so passed; \f$ O( h ) \f$
+/// time
+template< SizedBinaryNode N , class K , class Compare = std::less<> >
+[[nodiscard]] std::size_t searchTreeRank( N t , const K & k ,
+					  Compare less = {} );
+
+/// the link at which the key \f$ k \f$ is, or would be inserted, in the
+/// binary search tree whose root is `*link`, i.e., the address of the root
+/// or of the field `left` or `right` of the parent, the nodes passed above
+/// it pushed on \f$ P \f$ from the root down; the key is there if and only
+/// if the node at the link returned is not nil; \f$ O( h ) \f$ time
+template< class N , class K , class Compare = std::less<> >
+ requires KeyedBinaryNode< N * > && std::is_pointer_v< decltype( N::left ) >
+[[nodiscard]] N ** searchTreeLink( N ** link , const K & k ,
+				   std::vector< N * > & P ,
+				   Compare less = {} );
+
+/// the node at `link` (as given by `searchTreeLink()`) taken out of its
+/// binary search tree: if it has two children, its key and its value are
+/// replaced by those of its successor, which is taken out instead, and the
+/// nodes down to the successor are pushed on \f$ P \f$; the node taken out
+/// is returned, to be freed, and its parent (the last node of \f$ P \f$)
+/// links its only child; \f$ O( h ) \f$ time
+///
+/// In pseudocode (section 6.2.3 of Morin), \f$ u \f$ the node at the link:
+/// \f[
+/// \class{pseudocode}{\begin{array}{r@{\quad}l}
+/// 1 & \textbf{function}\ \mathrm{splice}( u ) \cr
+/// 2 & \quad \textbf{if}\ u.\mathit{left} \ne \textbf{nil}\ \textbf{and}
+///     \ u.\mathit{right} \ne \textbf{nil}\ \textbf{then} \cr
+/// 3 & \qquad w \gets \text{the leftmost node of } u.\mathit{right};
+///     \ u.\mathit{key} \gets w.\mathit{key};\ u \gets w \cr
+/// 4 & \quad \text{the link to } u \gets \text{its only child, or}
+///     \ \textbf{nil} \cr
+/// 5 & \quad \textbf{return}\ u
+/// \end{array}}
+/// \f]
+/// \pre the node at `link` is not nil
+template< class N >
+ requires BinaryNode< N * > && std::is_pointer_v< decltype( N::left ) >
+[[nodiscard]] N * searchTreeSplice( N ** link , std::vector< N * > & P );
+
 /*--------------------------------------------------------------------------*/
 /*--------------------- THE TRAVERSALS WITH NO STACK -----------------------*/
 /*--------------------------------------------------------------------------*/
@@ -440,6 +615,12 @@ template< BinaryNode N >
 /// \pre \f$ u \f$ is not nil
 template< BinaryNode N >
 [[nodiscard]] N firstPostorder( N u );
+
+/// the height of the tree \f$ t \f$, \f$ -1 \f$ if empty, by levels with no
+/// recursion: \f$ O( n ) \f$ time and \f$ O( w ) \f$ space for a tree of
+/// width \f$ w \f$, on a degenerate tree of any height
+template< BinaryNode N >
+[[nodiscard]] long treeHeight( N t );
 
 /// the number of nodes of the subtree of \f$ u \f$, by a walk along the
 /// links to the parents that never leaves the subtree, with no recursion

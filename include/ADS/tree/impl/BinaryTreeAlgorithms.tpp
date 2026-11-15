@@ -122,24 +122,6 @@ long blackHeight( N t , Red & red )
  return( h );
  }
 
-/// the height of t, -1 if empty
-template< class N >
-long nodeHeight( N t )
-{
- long h = -1;  // by levels, with no recursion
- for( std::vector< N > L = { t } ; ; ++h ) {
-  std::vector< N > M;
-  for( N u : L )
-   if( u ) {
-    M.push_back( nodeLeft( u ) );
-    M.push_back( nodeRight( u ) );
-    }
-  if( M.empty() )
-   return( h );
-  L = std::move( M );
-  }
- }
-
 /// the range search below t, the nodes examined added to *seen
 template< class N , class K , class F , class Compare >
 void rangeVisit( N t , const K & lo , const K & hi , F & f , Compare & less ,
@@ -261,6 +243,141 @@ std::size_t searchTreeRange( N t , const K & lo , const K & hi , F && f ,
  return( seen );
  }
 
+template< KeyedBinaryNode N , class K , class Compare >
+N searchTreeFind( N t , const K & k , Compare less )
+{
+ while( t )
+  if( less( k , detail::nodeKey( t ) ) )
+   t = static_cast< N >( detail::nodeLeft( t ) );
+  else if( less( detail::nodeKey( t ) , k ) )
+   t = static_cast< N >( detail::nodeRight( t ) );
+  else
+   break;
+ return( t );
+ }
+
+template< KeyedBinaryNode N , class K , class Compare >
+auto searchTreeLookup( N t , const K & k , Compare less )
+{
+ using V = std::remove_cvref_t< decltype( detail::nodeValue( t ) ) >;
+ const N u = searchTreeFind( t , k , less );
+ return( u ? std::optional< V >( detail::nodeValue( u ) ) : std::nullopt );
+ }
+
+template< KeyedBinaryNode N , class K , class Compare >
+N searchTreeLowerBound( N t , const K & k , Compare less )
+{
+ N best = nullptr;
+ while( t )
+  if( less( detail::nodeKey( t ) , k ) )
+   t = static_cast< N >( detail::nodeRight( t ) );
+  else {
+   best = t;
+   if( ! less( k , detail::nodeKey( t ) ) )
+    break;
+   t = static_cast< N >( detail::nodeLeft( t ) );
+   }
+ return( best );
+ }
+
+template< KeyedBinaryNode N , class K , class Compare >
+auto searchTreeFindKey( N t , const K & k , Compare less )
+{
+ const N b = searchTreeLowerBound( t , k , less );
+ return( ( b && ! less( k , detail::nodeKey( b ) ) ) ? &detail::nodeKey( b )
+						     : nullptr );
+ }
+
+template< KeyedBinaryNode N , class K , class Compare >
+auto searchTreeLowerBoundKey( N t , const K & k , Compare less )
+{
+ const N b = searchTreeLowerBound( t , k , less );
+ return( b ? &detail::nodeKey( b ) : nullptr );
+ }
+
+template< KeyedBinaryNode N , class K , class Compare >
+auto searchTreeLowerBoundEntry( N t , const K & k , Compare less )
+{
+ using P =
+   std::pair< std::remove_cvref_t< decltype( detail::nodeKey( t ) ) > ,
+	      std::remove_cvref_t< decltype( detail::nodeValue( t ) ) > >;
+ const N b = searchTreeLowerBound( t , k , less );
+ return(
+   b ? std::optional< P >( P( detail::nodeKey( b ) , detail::nodeValue( b ) ) )
+     : std::nullopt );
+ }
+
+template< SizedBinaryNode N >
+N searchTreeSelect( N t , std::size_t i )
+{
+ ADS_PRE( i < detail::nodeSize( t ) );
+ for( ; ; ) {
+  const std::size_t l = detail::nodeSize( detail::nodeLeft( t ) );
+  if( i < l )
+   t = static_cast< N >( detail::nodeLeft( t ) );
+  else if( i == l )
+   return( t );
+  else {
+   i -= l + 1;
+   t = static_cast< N >( detail::nodeRight( t ) );
+   }
+  }
+ }
+
+template< SizedBinaryNode N , class K , class Compare >
+std::size_t searchTreeRank( N t , const K & k , Compare less )
+{
+ std::size_t r = 0;
+ while( t )
+  if( less( detail::nodeKey( t ) , k ) ) {
+   r += detail::nodeSize( detail::nodeLeft( t ) ) + 1;
+   t = static_cast< N >( detail::nodeRight( t ) );
+   }
+  else
+   t = static_cast< N >( detail::nodeLeft( t ) );
+ return( r );
+ }
+
+template< class N , class K , class Compare >
+ requires KeyedBinaryNode< N * > && std::is_pointer_v< decltype( N::left ) >
+N ** searchTreeLink( N ** link , const K & k , std::vector< N * > & P ,
+		     Compare less )
+{
+ while( N * w = *link ) {
+  if( less( k , w->key ) )
+   link = &w->left;
+  else if( less( w->key , k ) )
+   link = &w->right;
+  else
+   break;
+  P.push_back( w );
+  }
+ return( link );
+ }
+
+template< class N >
+ requires BinaryNode< N * > && std::is_pointer_v< decltype( N::left ) >
+N * searchTreeSplice( N ** link , std::vector< N * > & P )
+{
+ ADS_PRE( *link != nullptr );
+ N * u = *link;
+ if( u->left && u->right ) {  // the successor takes its place
+  P.push_back( u );
+  N ** sl = &u->right;
+  while( ( *sl )->left ) {
+   P.push_back( *sl );
+   sl = &( *sl )->left;
+   }
+  N * w = *sl;
+  u->key = std::move( w->key );
+  u->value = std::move( w->value );
+  link = sl;
+  u = w;
+  }
+ *link = u->left ? u->left : u->right;
+ return( u );
+ }
+
 template< class T , class Make , class Compare >
 auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
 			      Compare less )
@@ -273,8 +390,7 @@ auto minimumHeightSearchTree( const std::vector< T > & A , Make make ,
  for( std::size_t i = 1 ; i < A.size() ; ++i )
   ADS_PRE( less( A[ i - 1 ] , A[ i ] ) );
  R t = detail::minHeightRec< R >( A , 0 , A.size() , make );
- ADS_AUDIT( detail::nodeHeight( t ) ==
-	    long( std::bit_width( A.size() ) ) - 1 );
+ ADS_AUDIT( treeHeight( t ) == long( std::bit_width( A.size() ) ) - 1 );
  return( t );
  }
 
@@ -408,6 +524,25 @@ N firstPostorder( N u )
   else
    return( u );
   }
+ }
+
+template< BinaryNode N >
+long treeHeight( N t )
+{
+ long h = -1;  // by levels, with no recursion
+ std::vector< N > L , M;
+ if( t )
+  L.push_back( t );
+ for( ; ! L.empty() ; ++h , L.swap( M ) ) {
+  M.clear();
+  for( N u : L ) {
+   if( detail::nodeLeft( u ) )
+    M.push_back( static_cast< N >( detail::nodeLeft( u ) ) );
+   if( detail::nodeRight( u ) )
+    M.push_back( static_cast< N >( detail::nodeRight( u ) ) );
+   }
+  }
+ return( h );
  }
 
 template< ParentBinaryNode N >

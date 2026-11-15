@@ -8,7 +8,8 @@
  * BinaryTree [see BinaryTree.h]: each one against an independent oracle (a
  * brute force on small random trees, the recursive definition, the
  * standard library), at the level 3 of the contracts, on BinaryTree and on
- * the nodes of a plain struct, with the edge cases; and the operations of
+ * the nodes of a plain struct, with the edge cases, and the descents of the
+ * search trees on three representations of the nodes; and the operations of
  * the trees with links and with cursors [see Tree.h, BinaryTree.h,
  * CursorTree.h, ChildListTree.h, CursorBinaryTree.h, ExpressionTree.h] on
  * paths of a million nodes, which a recursion would pay with as many frames
@@ -583,6 +584,113 @@ ADS_TEST( "search-tree-range" )
 			 []( BT * ) { } ) == 0 );
  CHECK_THROWS( searchTreeRange( T.get() , 2 , 1 , []( BT * ) { } ) ,
 	       contract_violation );
+ }
+
+/// a node with its value and the size of its subtree, owning its children
+struct SizedNode
+{
+ int key = 0;                        ///< the key
+ int value = 0;                      ///< the value
+ std::size_t s = 1;                  ///< the nodes of the subtree
+ std::unique_ptr< SizedNode > left ,  ///< the left child
+   right;                            ///< the right child
+ };
+
+/// the insertion of k into the search tree t of SizedNode, the sizes kept
+void sizedInsert( std::unique_ptr< SizedNode > & t , int k )
+{
+ if( ! t ) {
+  t.reset( new SizedNode{ k , 10 * k , 1 , nullptr , nullptr } );
+  return;
+  }
+ ++t->s;
+ sizedInsert( k < t->key ? t->left : t->right , k );
+ }
+
+/// a node of a plain struct with a value
+struct ValueNode
+{
+ int key = 0;                  ///< the key
+ int value = 0;                ///< the value
+ ValueNode * left = nullptr;   ///< the left child
+ ValueNode * right = nullptr;  ///< the right child
+ };
+
+// the descents of the search trees on three representations of the nodes,
+// BinaryTree, owned children with the sizes and plain links, against a
+// std::set: searchTreeFind(), searchTreeLookup(), searchTreeLowerBound()
+// and the addresses and the pairs it gives, searchTreeSelect(),
+// searchTreeRank() and treeHeight(); then the removals by searchTreeLink()
+// and searchTreeSplice(), the tree checked after each one
+ADS_TEST( "search-tree-descents" )
+{
+ std::mt19937 g( 11 );
+ for( int t = 0 ; t < 300 ; ++t ) {
+  Owner R;
+  std::unique_ptr< SizedNode > Z;
+  std::deque< ValueNode > P;
+  ValueNode * W = nullptr;
+  std::set< int > S;
+  for( int i = rnd( g , 0 , 60 ) ; i > 0 ; --i )
+   if( int x = rnd( g , 0 , 199 ); S.insert( x ).second ) {
+    bstInsert( R , x );
+    sizedInsert( Z , x );
+    std::vector< ValueNode * > path;
+    ValueNode ** l = searchTreeLink( &W , x , path );
+    CHECK( ! *l );
+    *l = &P.emplace_back( ValueNode{ x , 10 * x , nullptr , nullptr } );
+    }
+  CHECK( treeHeight( R.get() ) == heightOf( R.get() ) &&
+	 treeHeight( Z.get() ) == heightOf( R.get() ) &&
+	 treeHeight( W ) == heightOf( R.get() ) );
+  const Ints K( S.begin() , S.end() );
+  for( int x = -1 ; x <= 201 ; ++x ) {
+   const auto lb = S.lower_bound( x );
+   const bool in = S.count( x ) > 0;
+   BT * f = searchTreeFind( R.get() , x );
+   CHECK( in ? ( f && f->read() == x ) : ! f );
+   const SizedNode * u = searchTreeLowerBound( Z.get() , x );
+   CHECK( ( lb == S.end() ) ? ! u : ( u && u->key == *lb ) );
+   const auto v = searchTreeLookup( Z.get() , x );
+   CHECK( in ? ( v && *v == 10 * x ) : ! v );
+   const int * fk = searchTreeFindKey( W , x );
+   CHECK( in ? ( fk && *fk == x ) : ! fk );
+   const int * lk = searchTreeLowerBoundKey( R.get() , x );
+   CHECK( ( lb == S.end() ) ? ! lk : ( lk && *lk == *lb ) );
+   const auto e = searchTreeLowerBoundEntry( W , x );
+   CHECK( ( lb == S.end() )
+	    ? ! e
+	    : ( e && e->first == *lb && e->second == 10 * *lb ) );
+   CHECK( searchTreeRank( Z.get() , x ) ==
+	  std::size_t( std::distance( S.begin() , lb ) ) );
+   }
+  for( std::size_t i = 0 ; i < K.size() ; ++i )
+   CHECK( searchTreeSelect( Z.get() , i )->key == K[ i ] );
+  if( ! K.empty() )
+   CHECK_THROWS( ( void )searchTreeSelect( Z.get() , K.size() ) ,
+		 contract_violation );
+  for( int x : K )
+   if( rnd( g , 0 , 1 ) ) {
+    std::vector< ValueNode * > path;
+    ValueNode ** l = searchTreeLink( &W , x , path );
+    CHECK( *l && ( *l )->key == x &&
+	   ( path.empty() ? ( l == &W ) : ( path.front() == W ) ) );
+    ValueNode * out = searchTreeSplice( l , path );
+    CHECK( ! out->left || ! out->right );
+    S.erase( x );
+    CHECK( isSearchTree( W ) && ! searchTreeFind( W , x ) );
+    std::vector< int > rest;
+    lessOrEqual( W , 1000 , [ & ]( ValueNode * w ) {
+     rest.push_back( w->key );
+     CHECK( w->value == 10 * w->key );
+     } );
+    CHECK( rest == Ints( S.begin() , S.end() ) );
+    }
+  }
+ CHECK( ! searchTreeFind( static_cast< BT * >( nullptr ) , 0 ) &&
+	! searchTreeLowerBound( static_cast< SizedNode * >( nullptr ) , 0 ) &&
+	searchTreeRank( static_cast< SizedNode * >( nullptr ) , 0 ) == 0 &&
+	treeHeight( static_cast< ValueNode * >( nullptr ) ) == -1 );
  }
 
 // minimumHeightSearchTree() for n = 0 to 1000: a search tree whose invisit

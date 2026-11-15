@@ -182,6 +182,7 @@ auto SearchTree< K , V , RB >::lookupNode( const K & x ) const -> Link *
 template< std::totally_ordered K , class V , bool RB >
 auto SearchTree< K , V , RB >::lowerBoundNode( const K & x ) const -> Link *
 {
+ // the sentinel nil of the book: not searchTreeLowerBound()
  Link * b = nil();
  for( Link * T = f_root ; T != nil() ; )
   if( key( T ) < x )
