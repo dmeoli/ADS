@@ -1419,36 +1419,38 @@ exports all the names that the headers declare in the namespace `ADS`, and
 as one module for each of the sets that we describe next.
 
 The two levels are also two sets of headers, which a program may take
-apart, and we divide them by the origin of the code, whatever its speed.
-The *base* set holds what follows a textbook or an academic source, i.e.,
-[Montresor 2025](Z-bibliography.md#ref-montresor2025), [Knuth
+apart; we divide them by the origin of the code, whatever its speed. In
+the *base* set lies what follows a textbook or an academic source
+([Montresor 2025](Z-bibliography.md#ref-montresor2025), [Knuth
 1997](Z-bibliography.md#ref-knuth1997), [Morin
-2013](Z-bibliography.md#ref-morin-cpp) and the book and the notes of
-[Ferragina 2023](Z-bibliography.md#ref-ferragina2023), even when the result
-is fast. For instance, the Red-Black tree of `SearchTree.h`, the B+-tree of
-`BPlusTree.h`, the hash tables of the book, `BigInteger` and `Rational`
-(which run on GMP where it is found), the rank and select of `RankSelect.h`
-and the PGM-index are all base. In turn, the *advanced* set holds what is written
-for speed beyond those sources (e.g., `UnionFind`, `DaryHeap`,
-`StaticGraph`, `CompactRankSelect`, `FastBitwise` and `MultiwayMerge`),
-together with the concurrent and parallel structures, the executors, the
-distributed layer, the typed modifications and the observers. Hence a
-structure of a textbook and its engineered counterpart lie in different
-sets (e.g., `MFSet` and `UnionFind`, `HeapPriorityQueue` and `DaryHeap`,
-`ArrayGraph` and `StaticGraph`, `DancingLinks` and `FastExactCover`). An
-advanced structure extends a base one through the same concepts and by
-composition, i.e., by algorithms written once on a concept and by members
-of the base types; we do not derive one from the other, as a hierarchy of
-classes with virtual calls would cost the speed for which the advanced set
-exists.
+2013](Z-bibliography.md#ref-morin-cpp), and the book and the notes of
+[Ferragina 2023](Z-bibliography.md#ref-ferragina2023)), even when the
+result is fast. For instance, the Red-Black tree of `SearchTree.h`, the
+B+-tree of `BPlusTree.h` and the hash tables of the book are base, and so
+are `BigInteger` and `Rational` (which run on GMP where it is found), the
+rank and select of `RankSelect.h` and the PGM-index. In the *advanced* set
+lies what is written for speed beyond those sources (e.g., `UnionFind`,
+`DaryHeap`, `StaticGraph`, `CompactRankSelect`, `FastBitwise` and
+`MultiwayMerge`), with the concurrent and parallel structures, the
+executors and the distributed layer. It also holds the typed modifications
+and the observers (cf. [§1.13](01-introduction.md#sec-1-13)), which no
+textbook treats. Hence a structure of a textbook and its engineered counterpart lie
+in different sets (e.g., `MFSet` and `UnionFind`, `HeapPriorityQueue` and
+`DaryHeap`, `ArrayGraph` and `StaticGraph`, `DancingLinks` and
+`FastExactCover`). An advanced structure extends a base one through the
+same concepts and by composition, i.e., by algorithms written once on a
+concept and by members of the base types. We do not derive one from the
+other, since a hierarchy of classes with virtual calls would cost the speed
+for which the advanced set exists.
 
 A third set, the *core*, holds the infrastructure that both sets include
 (the contracts, the iterators, the primitives of `Portable.h`, the
-capabilities, the concept of the executors, the pool of the nodes with its
-huge pages, the random hashing of the randomized structures, the checks of
-the sorts, the bits of the coders and the files of records). A base header
-may also use an advanced one inside, as `SuffixArray.h` sorts the ranks by
-`RadixSort.h` and `ExternalSort.h` merges its runs on a `DaryHeap`. We
+capabilities and the concept of the executors). It also holds a few
+helpers of both levels, i.e., the pool of the nodes with its huge pages,
+the random hashing of the randomized structures, the checks of the sorts,
+the bits of the coders and the files of records. A base header may also
+use an advanced one inside (e.g., `SuffixArray.h` sorts the ranks by
+`RadixSort.h`, and `ExternalSort.h` merges its runs on a `DaryHeap`). We
 list each use of this kind, with its reason, in the file of the sets; the
 advanced header is then compiled with the base one, but its names are not
 part of the base set. Five headers still hold a part of each set
@@ -1457,22 +1459,23 @@ part of the base set. Five headers still hold a part of each set
 engineered parts to new headers.
 
 Each set has an *entry point*, a header that includes all the headers of
-the set and the core: `#include "ADS/base.h"` gives the base set,
+the set and the core. Thus `#include "ADS/base.h"` gives the base set,
 `ADS/advanced.h` the advanced one, `ADS/core.h` the core and `ADS/ADS.h`
-the three, while each header keeps its path and can still be included as
-before. The modules follow the same division, since `ads.core`,
-`ads.base` and `ads.advanced` export the names of the headers of their sets
-(the last two also export `ads.core`), and `ads` exports the three. Thus
-`import ads;` gives all the names as before, whereas a program that writes
+the three. Also, each header keeps its path, and one can still include it
+alone as before. The modules follow the same division: `ads.core`, `ads.base` and
+`ads.advanced` export the names of the headers of their sets (the last two
+also export `ads.core`), and `ads` exports the three. A program that
+writes `import ads;` gets all the names as before, whereas one that writes
 `import ads.base;` compiles neither the concurrent structures nor the
 executors of OpenMP, oneTBB and MPI. The file `cmake/ads_sets.txt` gives
-the set of each header, and the script `cmake/ads_sets.py` writes from it
+the set of each header, and from it the script `cmake/ads_sets.py` writes
 the entry points and the table of the sets in the README. CMake, the
 makefile and the continuous integration run the script, so a new header
 with no set (or an include across the sets that the file does not allow)
-stops the build. In [Table 1.5](01-introduction.md#tab-1-5) the column Set
-gives the set of each header with classes, and the opening paragraph of
-each chapter lists which of its headers are base and which are advanced.
+stops the build. Finally, in [Table 1.5](01-introduction.md#tab-1-5) the
+column Set gives the set of each header with classes, and the opening
+paragraph of each chapter lists which of its headers are base and which
+are advanced.
 
 ## 1.10 Building, testing and using the library {#sec-1-10}
 

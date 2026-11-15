@@ -2,7 +2,8 @@
 
 [Source: `include/ADS/stack/MinStack.h`, `stack/impl/MinStack.tpp`,
 `ADT.h`, `Contract.h`, `docs/STYLE.md`, `docs/theory/stack.dox`,
-`test/ods_lists.cpp`, `test/tests.txt`, `bench/queues.cpp`, `src/ADS.cppm`]
+`test/ods_lists.cpp`, `test/tests.txt`, `bench/queues.cpp`,
+`cmake/ads_sets.txt`, `src/ADSBase.cppm`]
 
 We are concerned in this appendix with the steps by which a structure
 enters ADS, from its header to the pages of this manual, in the order in
@@ -385,19 +386,28 @@ run.
 
 The C++20 module `ads` exports all the names that the headers declare in
 the namespace `ADS` and in those nested in it, but for the namespaces
-`detail`. Its interface, `src/ADS.cppm`, is not written by hand. Instead,
-the script `cmake/ads_module_exports.py` reads the AST of all the headers,
-as `clang` dumps it, and writes for each header an `#include` in the
-global module fragment and a block of using-declarations, e.g.,
+`detail`, through the modules of the three sets of
+[§1.9](01-introduction.md#sec-1-9), `ads.core`, `ads.base` and
+`ads.advanced`. Their interfaces (`src/ADSCore.cppm`, `src/ADSBase.cppm`,
+`src/ADSAdvanced.cppm` and `src/ADS.cppm`) are not written by hand.
+Instead, the script `cmake/ads_module_exports.py` reads the AST of all the
+headers, as `clang` dumps it, and writes in the module of the set of each
+header a block of using-declarations, e.g.,
 
-    // ADS/stack/MinStack.h
+    // stack/MinStack.h
     using ADS::MinStack;
 
-Hence a new header, or one that gains or loses a public name, needs the
-script to be run again (`python3 cmake/ads_module_exports.py`, with the
-flags of the optional executors when their names are to be exported). We
-build the module by `-DADS_BUILD_MODULE=ON` with CMake, or by `make test
-ADSMOD=1`, and the test `module` imports it in place of the headers; a
+A new header is first given its set by a line of `cmake/ads_sets.txt`
+(e.g., `stack/MinStack.h base`), with a line `uses` if it is a base header
+that includes an advanced one. Otherwise `cmake/ads_sets.py` stops the
+configuration and the make, and the job `sets` of the continuous
+integration fails. Then a new header, or one that gains or
+loses a public name, needs the module script to be run again (`python3
+cmake/ads_module_exports.py`, with the flags of the optional executors
+when their names are to be exported). We build the modules by
+`-DADS_BUILD_MODULE=ON` with CMake, or by `make test ADSMOD=1`, and the
+tests `module`, `module.core`, `module.base` and `module.advanced` import
+them in place of the headers; a
 name that the script missed shows as a program that does not compile.
 
 ## A.9 The changelog {#sec-A-9}
@@ -510,6 +520,6 @@ corresponding file or entry of `MinStack`.
 | theory | `docs/theory/<area>.dox` | `docs/build.sh` | Lemma 3 of `stack.dox` |
 | test | `test/<source>.cpp`, `test/tests.txt` | `<program>.registry` | `ods_lists.ods-ex3.14.min-stack` |
 | benchmark | `bench/<family>.cpp`, `bench/run.sh`, `bench/summary.py` | a campaign (Appendix B) | none |
-| module | `src/ADS.cppm` | the test `module` | `using ADS::MinStack;` |
+| set and module | `cmake/ads_sets.txt`, `src/ADSBase.cppm` | the tests `sets.*` and `module.*` | `stack/MinStack.h base`, `using ADS::MinStack;` |
 | changelog | `CHANGELOG.md` | under `[Unreleased]` | exercises 3.14 to 3.16 |
 | manual | `manual/chapters/NN-<area>.md`, `manual/figures` | `make check`, `make pdf` | `stack-min.tex`, two pseudocodes |
