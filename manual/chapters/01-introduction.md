@@ -1890,7 +1890,9 @@ the code of the plain structure. With `Dynamic<>` and nobody attached, the
 change costs a load and a test of the union of the masks, since the path
 that sends the event is a cold function out of line. We check both claims
 with the script `bench/zerocost.py`, by the instructions that callgrind
-counts and by the code of the changes, compared byte for byte. A structure
+counts and by the code of the changes, compared byte for byte. `GridGraph`
+takes the subject as a parameter of its own, for the changes of the costs of
+its cells ([§14.13.3](14-graph.md#sec-14-13-3)). A structure
 whose code cannot change (e.g., one of another library) is wrapped instead,
 as `ObservedGraph` wraps the graphs ([§14.13.1](14-graph.md#sec-14-13-1)).
 

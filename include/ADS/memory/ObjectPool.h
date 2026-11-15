@@ -12,7 +12,7 @@
  * one twice the last up to \f$ n \f$ slots, so that a small structure takes
  * no more than it holds (at most twice its largest size, plus one block of
  * \f$ n \f$); a block begins with a header that links it to the one before,
- * so that the pool is six words and allocates nothing but its blocks,
+ * so that the pool is seven words and allocates nothing but its blocks,
  * which go back to `A` only with the pool: a structure that shrinks keeps
  * the memory of its largest size. The default allocator gives the blocks
  * of 2 MB or more on huge pages [see `HugePageAllocator.h`], which the
@@ -26,10 +26,33 @@
  * `allocate()` and `deallocate()` give and take back the raw slots, the
  * objects built and destroyed by the caller, as with `std::allocator`.
  *
+ * `clear()` drops all the objects at once in \f$ O( 1 ) \f$ time, with no
+ * destructor called (as at the death of the pool), and keeps the blocks,
+ * which the next objects take again from the last one down, before a new
+ * block is taken: a worker of a parallel search, which owns a pool, drops
+ * its nodes at a restart without freeing them one by one. We call an epoch
+ * the time from one `clear()` (or from the construction) to the next one:
+ * nothing survives a new epoch, neither an object nor a free slot, and a
+ * pointer of an old epoch is stale, its slot given again by the `make()` of
+ * the new one. Using a stale pointer, `free()` included, violates the
+ * contract; `fresh( p )` says whether \f$ p \f$ is a slot given in the
+ * current epoch, which `free()` and `deallocate()` check at the level of
+ * the audits (a stale pointer passes only when its slot has been given
+ * again), and under the sanitizer of addresses the slots dropped by
+ * `clear()` stay forbidden until they are given again (see
+ * \ref theory_memory_epochs). A pool belongs to one thread: an object is
+ * freed by the thread that made it, and an object that another thread
+ * wants to drop goes back to the owner by a message, to be freed there (or
+ * is dropped by the next `clear()`); other threads may read the objects,
+ * each access happening before the `clear()` of the owner (e.g., by a
+ * barrier). `ConcurrentPoolResource` [see `ConcurrentPool.h`] takes the
+ * frees of any thread instead. With `clear()` never called, `make()` and
+ * `free()` are the same as before.
+ *
  * The contracts [see `Contract.h`]: a block holds at least one slot,
- * `free()` and `deallocate()` need an object (a slot) of the pool; the
- * invariant is that `size()` objects are alive. The operations are defined
- * in `ObjectPool.tpp`.
+ * `free()` and `deallocate()` need an object (a slot) of the pool given in
+ * the epoch (audit); the invariant is that `size()` objects are alive. The
+ * operations are defined in `ObjectPool.tpp`.
  *
  * \see D. E. Knuth, The Art of Computer Programming, vol. 1, 3rd ed.,
  *      Addison-Wesley, 1997, section 2.2.3 (the list AVAIL)
@@ -58,6 +81,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <functional>
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -113,8 +137,10 @@ class ObjectPool {
  /// pool has no block, it takes the blocks and the free slots of `other`,
  /// as `swap( other )` does, else the block chain of `other` goes under the
  /// first block of this pool, in time linear in the blocks of this pool for
- /// the walk to it, and the free slots of `other` and those it never used
- /// are no longer given, until the pool dies
+ /// the walk to it (over its last block, in time linear in the blocks of
+ /// `other`, when this pool has blocks kept by `clear()` not yet used
+ /// again), and the free slots of `other` and those it never used are no
+ /// longer given, until the pool dies or is cleared
  /// \pre the two allocators are equal
  void adopt( ObjectPool & other ) noexcept;
 
@@ -167,6 +193,34 @@ class ObjectPool {
  /// \pre \f$ x \f$ was given by this pool
  void deallocate( T * x );
 
+ /// all the objects and the free slots dropped, with no destructor called,
+ /// and the blocks kept for the next objects, from the last block down: a
+ /// new epoch, in which nothing of the old ones survives
+ ///
+ /// In pseudocode (beyond the book), \f$ R \f$ the blocks kept and not yet
+ /// used again in the epoch, linked from the last one to the first:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{clear}() \cr
+ /// 2 & \quad F \gets \textbf{nil};\ \mathit{size} \gets 0 \cr
+ /// 3 & \quad \textbf{if}\ \text{there is a block}\ \textbf{then}
+ ///     \ [ \mathit{next} , \mathit{end} ) \gets \text{the slots of the}
+ ///     \text{ last block};\ R \gets \text{the block before it}
+ /// \end{array}}
+ /// \f]
+ /// and `make()` takes, when \f$ F \f$ is empty and
+ /// \f$ \mathit{next} = \mathit{end} \f$, the slots of the block
+ /// \f$ R \f$ (and \f$ R \f$ moves to the block before it) while
+ /// \f$ R \ne \textbf{nil} \f$, a new block otherwise
+ /// \pre no other thread accesses an object of the pool: each of its
+ ///      accesses happens before the call
+ void clear( void ) noexcept;
+
+ /// whether \f$ p \f$ is a slot given in the current epoch, alive or
+ /// freed, in time linear in the blocks: false for a pointer of an old
+ /// epoch whose slot has not been given again, true for one whose slot has
+ [[nodiscard]] bool fresh( const T * p ) const;
+
  /// the number of objects alive
  [[nodiscard]] std::size_t size( void ) const;
 
@@ -202,10 +256,14 @@ class ObjectPool {
  /// the slot freed last, or the next one never used, a new block if none
  Slot * slot( void );
 
+ /// the slots of the next block kept by clear(), or of a new block
+ void refill( void );
+
  Slot * f_free = nullptr;   ///< the free slots, the last one freed first
  Slot * f_next = nullptr;   ///< the first slot never used of the last block
  Slot * f_end = nullptr;    ///< the end of the last block
  Block * f_last = nullptr;  ///< the last block, which leads to the others
+ Block * f_reuse = nullptr; ///< the next block kept by clear(), if any
  std::size_t f_n;           ///< the slots of the largest block
  std::size_t f_size = 0;    ///< the objects alive
  ADS_NO_UNIQUE_ADDRESS SlotAlloc f_alloc;   ///< the allocator of the blocks

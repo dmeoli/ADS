@@ -162,6 +162,26 @@ void zc_dynamic_key_ref( KeyArray< ADS::Dynamic<> > & a , std::size_t h ,
  a.set( h , k );
  }
 
+/*--------------------------------------------------------------------------*/
+/*-------------------------------- THE GRID --------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+void zc_none_grid_cost_ref( Grid< ADS::NoObservers > & g , int u , int c )
+{
+ g.setCost( u , c );
+ }
+
+void zc_static_count_grid_cost_ref(
+      Grid< ADS::Static< GridCountDecreases > > & g , int u , int c )
+{
+ g.setCost( u , c );
+ }
+
+void zc_dynamic_grid_cost_ref( Grid< ADS::Dynamic<> > & g , int u , int c )
+{
+ g.setCost( u , c );
+ }
+
 #endif
 
 }  // end( extern "C" )

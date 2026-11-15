@@ -58,6 +58,8 @@
 #include <climits>
 #include <cmath>
 #include <functional>
+#include <iterator>
+#include <map>
 #include <queue>
 #include <random>
 #include <set>
@@ -1560,6 +1562,189 @@ ADS_TEST( "weighted-blossom" )
  CHECK_THROWS( maxWeightMatching( 2 , WE{ { 0 , 2 , 1 } } ) ,
                contract_violation );
  CHECK_THROWS( maxWeightMatching( 2 , WE{ { 1 , 1 , 1 } } ) ,
+               contract_violation );
+ }
+
+/// the moves of g as ( tail , head , weight ), sorted
+template< class G >
+std::vector< std::tuple< int , int , long long > > arcsOf( const G & g )
+{
+ std::vector< std::tuple< int , int , long long > > X;
+ for( int u : g.V() )
+  g.forEachEdge( u , [ & ]( int v , auto w ) {
+   X.emplace_back( u , v , (long long)( w ) ); } );
+ std::sort( X.begin() , X.end() );
+ return( X );
+ }
+
+/// the heads of the arcs in one of A and B and not in the other, or with
+/// another weight
+std::set< int > changedHeads(
+                 const std::vector< std::tuple< int , int , long long > > & A ,
+                 const std::vector< std::tuple< int , int , long long > > & B )
+{
+ std::vector< std::tuple< int , int , long long > > D;
+ std::set_symmetric_difference( A.begin() , A.end() , B.begin() , B.end() ,
+                                std::back_inserter( D ) );
+ std::set< int > H;
+ for( const auto & [ u , v , w ] : D )
+  H.insert( v );
+ return( H );
+ }
+
+/// an observer of the changes of the costs of a grid of int costs
+struct CostLog {
+ std::vector< mod::Changed< mod::Value , int , int > > E;
+ int batches = 0;
+ void on( const mod::Changed< mod::Value , int , int > & e ) {
+  E.push_back( e ); }
+ void group_begin( void ) { ++batches; }
+ void group_end( void ) {}
+ };
+
+// GridGraph::setCost(): the counts of the free cells and of the least cost
+// and the orientation against a grid built from the same costs, after
+// each change of random grids of both models of the costs, with and
+// without a vector at the start, and the moves of every node; the events
+// of a static and of a dynamic observer, one per change that changes the
+// cost, coalesced per cell in a batch; no event and no member with
+// NoObservers
+ADS_TEST( "grid-graph-set-cost" )
+{
+ static_assert( std::is_empty_v< GridGraph< int , int >::Subject > );
+ static_assert( std::same_as< GridGraph< int , int >::CellChanged ,
+                              mod::Changed< mod::Value , int , int > > );
+ std::mt19937 g( 23 );
+ for( int t = 0 ; t < 40 ; ++t ) {
+  const int R = 1 + int( g() % 7 ) , Cc = 1 + int( g() % 8 );
+  const GridMoves m = t % 2 ? GridMoves::EIGHT : GridMoves::FOUR;
+  const Corners k = Corners( t % 3 );
+  const MoveCost model = ( t / 2 ) % 2 ? MoveCost::LEFT : MoveCost::ENTERED;
+  const bool vec = t % 5 != 0;
+  std::vector< int > cost( std::size_t( R ) * Cc , 1 );
+  if( vec )
+   for( auto & c : cost )
+    c = int( g() % 4 );
+  CostLog st;
+  GridGraph< int , int , Static< CostLog > > G( R , Cc ,
+   vec ? cost : std::vector< int >() , m , k , 2 , 3 , model , st );
+  std::size_t told = 0;
+  for( int s = 0 ; s < 30 ; ++s ) {
+   const int u = int( g() % std::size_t( R * Cc ) );
+   const int c = int( g() % 4 );
+   const int a = cost[ u ];
+   G.setCost( u , c );
+   cost[ u ] = c;
+   if( a != c ) {
+    ++told;
+    CHECK( ( st.E.size() == told ) && ( st.E.back().h == u ) &&
+           ( st.E.back().from == a ) && ( st.E.back().to == c ) );
+    }
+   CHECK( st.E.size() == told );
+   const GridGraph< int , int > F( R , Cc , cost , m , k , 2 , 3 , model );
+   CHECK( ( G.n() == F.n() ) && ( G.minCost() == F.minCost() ) &&
+          ( G.directed() == F.directed() ) && ( G.cost( u ) == c ) );
+   CHECK( arcsOf( G ) == arcsOf( F ) );
+   }
+  }
+ // a grid with no vector takes one only for a cost other than 1
+ GridGraph< int , int > Z( 3 , 3 );
+ Z.setCost( 4 , 1 );
+ CHECK( Z.n() == 9 && ! Z.directed() );
+ Z.setCost( 4 , 0 );
+ CHECK( Z.n() == 8 && Z.minCost() == 1 && ! Z.directed() );
+ for( int u = 0 ; u < 9 ; ++u )
+  Z.setCost( u , 0 );
+ CHECK( Z.n() == 0 && Z.minCost() == 1 && ! Z.directed() );
+ Z.setCost( 8 , 5 );
+ CHECK( Z.n() == 1 && Z.minCost() == 5 && ! Z.directed() );
+ // the last cell of the least cost raised: the least cost counted again
+ GridGraph< int , int > Y( 1 , 3 , std::vector< int >{ 1 , 4 , 4 } );
+ Y.setCost( 0 , 6 );
+ CHECK( Y.minCost() == 4 && Y.directed() );
+ Y.setCost( 0 , 4 );
+ CHECK( Y.minCost() == 4 && ! Y.directed() );
+ // a dynamic observer, and a batch: one event per cell, from the first
+ // cost to the last one
+ GridGraph< int , int , Dynamic<> > D( 2 , 3 , std::vector< int >( 6 , 1 ) );
+ CostLog dy;
+ const int id = D.attach( dy );
+ D.setCost( 1 , 2 );
+ CHECK( dy.E.size() == 1 && dy.E[ 0 ].direction() == mod::effect::up );
+ {
+  auto b = D.batch();
+  D.setCost( 0 , 3 );
+  D.setCost( 0 , 0 );
+  D.setCost( 5 , 7 );
+  D.setCost( 1 , 1 );
+  CHECK( dy.E.size() == 1 && D.subject().depth() == 1 );
+  }
+ CHECK( dy.batches == 1 && dy.E.size() == 4 );
+ std::map< int , std::pair< int , int > > net;
+ for( std::size_t i = 1 ; i < dy.E.size() ; ++i )
+  net[ dy.E[ i ].h ] = { dy.E[ i ].from , dy.E[ i ].to };
+ CHECK( ( net[ 0 ] == std::pair< int , int >( 1 , 0 ) ) &&
+        ( net[ 5 ] == std::pair< int , int >( 1 , 7 ) ) &&
+        ( net[ 1 ] == std::pair< int , int >( 2 , 1 ) ) );
+ D.detach( id );
+ D.setCost( 2 , 9 );
+ CHECK( dy.E.size() == 4 );
+ CHECK_THROWS( D.setCost( 6 , 1 ) , contract_violation );
+ CHECK_THROWS( D.setCost( -1 , 1 ) , contract_violation );
+ }
+
+// GridGraph::forEachAffected(): the heads that it gives, in increasing
+// order, hold every head of an arc that a change created, removed or
+// weighed differently, for one change and for a batch of changes read
+// after it, on random grids of every rule of the corners, of both models of
+// the costs and of four and eight moves; the cell alone under ENTERED and
+// no head for a cell blocked before and after
+ADS_TEST( "grid-graph-affected" )
+{
+ std::mt19937 g( 29 );
+ std::size_t seen = 0;                      // the heads changed, in all
+ for( int t = 0 ; t < 120 ; ++t ) {
+  const int R = 1 + int( g() % 6 ) , Cc = 1 + int( g() % 6 );
+  const GridMoves m = t % 2 ? GridMoves::EIGHT : GridMoves::FOUR;
+  const Corners k = Corners( ( t / 2 ) % 3 );
+  const MoveCost model = ( t / 6 ) % 2 ? MoveCost::LEFT : MoveCost::ENTERED;
+  std::vector< int > cost( std::size_t( R ) * Cc );
+  for( auto & c : cost )
+   c = int( g() % 4 );
+  CostLog log;
+  GridGraph< int , int , Static< CostLog > > G( R , Cc , cost , m , k , 2 ,
+                                                3 , model , log );
+  for( int s = 0 ; s < 20 ; ++s ) {
+   const auto before = arcsOf( G );
+   log.E.clear();
+   const bool many = s % 3 == 0;
+   {
+    auto b = G.batch();
+    for( int j = 0 ; j < ( many ? 4 : 1 ) ; ++j )
+     G.setCost( int( g() % std::size_t( R * Cc ) ) , int( g() % 4 ) );
+    }
+   std::set< int > H;
+   for( const auto & e : log.E ) {
+    std::vector< int > hs;
+    G.forEachAffected( e.h , e.from , e.to , [ & ]( int v ) {
+     hs.push_back( v ); } );
+    CHECK( std::is_sorted( hs.begin() , hs.end() ) &&
+           std::adjacent_find( hs.begin() , hs.end() ) == hs.end() &&
+           hs.size() <= 9 );
+    if( ( e.from <= 0 ) && ( e.to <= 0 ) )
+     CHECK( hs.empty() );
+    if( ( e.from > 0 ) && ( e.to > 0 ) && ( model == MoveCost::ENTERED ) )
+     CHECK( hs == std::vector< int >{ e.h } );
+    H.insert( hs.begin() , hs.end() );
+    }
+   const auto ch = changedHeads( before , arcsOf( G ) );
+   CHECK( std::includes( H.begin() , H.end() , ch.begin() , ch.end() ) );
+   seen += ch.size();
+   }
+  }
+ CHECK( seen > 1000 );
+ GridGraph< int , int > F( 2 , 2 );
+ CHECK_THROWS( F.forEachAffected( 4 , 1 , 0 , []( int ) {} ) ,
                contract_violation );
  }
 

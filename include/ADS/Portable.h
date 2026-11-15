@@ -26,6 +26,11 @@
  * laid out away from the hot code (`[[gnu::cold, gnu::noinline]]`, the
  * `noinline` of MSVC), which keeps the rare path of an operation, e.g.,
  * the notification of its observers, out of the code of the common one.
+ * Under the sanitizer of addresses, `ADS_POISON( p , n )` and
+ * `ADS_UNPOISON( p , n )` mark the \f$ n \f$ bytes from \f$ p \f$ as
+ * forbidden and allowed again, so that a pool which drops its objects at
+ * once (the `clear()` of `Arena` and `ObjectPool`) makes the sanitizer stop
+ * a stale pointer at its first access; elsewhere they are no code.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -71,6 +76,30 @@
  #define ADS_COLD_PATH __declspec( noinline )
 #else
  #define ADS_COLD_PATH
+#endif
+
+/// the sanitizer of addresses, by the macro of GCC and MSVC or the feature
+/// of Clang
+#if defined( __SANITIZE_ADDRESS__ )
+ #define ADS_ASAN 1
+#elif defined( __has_feature )
+ #if __has_feature( address_sanitizer )
+  #define ADS_ASAN 1
+ #endif
+#endif
+#ifndef ADS_ASAN
+ #define ADS_ASAN 0
+#endif
+
+/// the \f$ n \f$ bytes from \f$ p \f$ forbidden, and allowed again, under
+/// the sanitizer of addresses; no code elsewhere
+#if ADS_ASAN
+ #include <sanitizer/asan_interface.h>
+ #define ADS_POISON( p , n ) ASAN_POISON_MEMORY_REGION( ( p ) , ( n ) )
+ #define ADS_UNPOISON( p , n ) ASAN_UNPOISON_MEMORY_REGION( ( p ) , ( n ) )
+#else
+ #define ADS_POISON( p , n ) ( ( void ) 0 )
+ #define ADS_UNPOISON( p , n ) ( ( void ) 0 )
 #endif
 
 /*--------------------------------------------------------------------------*/

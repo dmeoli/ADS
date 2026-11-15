@@ -11,9 +11,13 @@
  * dynamic subject to which nobody is attached. The structures are
  * ArrayGraph (`setWeight()`), ListGraph (`insertEdge()` of an edge that is
  * there, i.e., a change of weight, and `insertEdge()` followed by
- * `deleteEdge()`), and an array of keys written on the subject policies
- * of Modification.h with the pattern of the mutators of the library. The
+ * `deleteEdge()`), an array of keys written on the subject policies of
+ * Modification.h with the pattern of the mutators of the library, and
+ * GridGraph (`setCost()`), whose plain variant is the grid with
+ * `NoObservers`, since the grid had no change before its subject. The
  * variants on the subject policies exist only when Modification.h does.
+ * The allocation paths of Arena and ObjectPool, with and without their
+ * epochs, are counted by zerocost.cpp alone.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -34,8 +38,11 @@
 #endif
 
 #include "ADS/graph/ArrayGraph.h"
+#include "ADS/graph/GridGraph.h"
 #include "ADS/graph/ListGraph.h"
 #include "ADS/graph/Observable.h"
+#include "ADS/memory/Arena.h"
+#include "ADS/memory/ObjectPool.h"
 
 #if __has_include( "ADS/Modification.h" )
  #include "ADS/Modification.h"
@@ -153,6 +160,23 @@ class KeyArray {
 
 static_assert( sizeof( KeyArray< ADS::NoObservers > ) ==
                sizeof( std::vector< int > ) );
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------- THE GRID ---------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// the change of the cost of a cell of the grid
+using CellSet = ADS::mod::Changed< ADS::mod::Value , int , int >;
+
+/// the grid with the subject policy `Policy`
+template< class Policy >
+using Grid = ADS::GridGraph< int , int , Policy >;
+
+/// an observer of the grid that counts the costs that decrease
+struct GridCountDecreases {
+ long long n = 0;
+ void on( const CellSet & e ) { n += ( e.to < e.from ) ? 1 : 0; }
+ };
 
 #endif
 

@@ -10,7 +10,10 @@
 # twice for the plain variant (the two counts must be equal), disassembles    #
 # the functions of zerocost_asm.cpp by objdump and compares each with its     #
 # reference byte by byte, relocations included, and prints the table in       #
-# Markdown. The counts do not depend on the load of the machine.              #
+# Markdown; the allocation paths of Arena and ObjectPool are counted with no  #
+# clear() and with one per 4096 objects, the plain variant to be compared     #
+# with the same count on the headers before the epochs. The counts do not     #
+# depend on the load of the machine.                                          #
 #                                                                             #
 #   python3 bench/zerocost.py [ --cxx g++ clang++ ] [ -n 100000 ]             #
 #                             [ --out build-zerocost ]                        #
@@ -25,11 +28,18 @@ import subprocess
 import sys
 
 ROOT = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
-WORKLOADS = [ "array-weight" , "list-weight" , "list-edge" , "key" ]
+WORKLOADS = [ "array-weight" , "list-weight" , "list-edge" , "key" ,
+              "grid-cost" , "arena-make" , "pool-make" ]
 LEGACY = [ "plain" , "observable" , "observable-excl" ]
 POLICIES = [ "none" , "static-excl" , "static-count" , "dynamic" ]
-# the variants of the array of keys, which has no Observable
+# the variants of the array of keys, which has no Observable, and of the
+# grid, whose plain variant is that with NoObservers and which has no
+# observer that excludes its only event
 KEY = [ "plain" , "none" , "static-excl" , "static-count" , "dynamic" ]
+GRID = [ "plain" , "none" , "static-count" , "dynamic" ]
+# the variants of the allocation paths: no clear(), and a clear() per 4096
+# objects
+ALLOCATION = [ "plain" , "epochs" ]
 # the functions of zerocost_asm.cpp by workload: ( function , reference )
 ASM = {
     "array-weight": [
@@ -48,7 +58,10 @@ ASM = {
         ( "zc_none_key_ref" , "zc_plain_key_ref" ) ,
         ( "zc_static_excl_key_ref" , "zc_plain_key_ref" ) ,
         ( "zc_static_count_key_ref" , "zc_plain_key_ref" ) ,
-        ( "zc_dynamic_key_ref" , "zc_plain_key_ref" ) ] }
+        ( "zc_dynamic_key_ref" , "zc_plain_key_ref" ) ] ,
+    "grid-cost": [
+        ( "zc_static_count_grid_cost_ref" , "zc_none_grid_cost_ref" ) ,
+        ( "zc_dynamic_grid_cost_ref" , "zc_none_grid_cost_ref" ) ] }
 
 
 def run( cmd , **kw ):
@@ -173,10 +186,12 @@ def main():
            " | ".join( "Ir/change " + t for t in tags ) + " |" )
     print( "|---|---|" + "---|" * len( tags ) )
     for work in WORKLOADS:
-        if work == "key":
+        if work in ( "key" , "grid-cost" ):
             if not policies:
                 continue
-            variants = KEY
+            variants = KEY if work == "key" else GRID
+        elif work in ( "arena-make" , "pool-make" ):
+            variants = ALLOCATION
         else:
             variants = LEGACY + ( POLICIES if policies else [] )
         for var in variants:

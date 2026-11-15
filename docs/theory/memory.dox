@@ -218,6 +218,43 @@
  excludes the ABA problem); the frees of one thread to another thus cost one
  atomic operation per batch (snmalloc).
 
+ \section theory_memory_epochs Epochs of the arenas and of the pools
+
+ A search restarted many times (an incremental search that gives up the
+ repair of its solution) drops all its nodes at each restart. Freeing them
+ one by one costs a free per node, and giving the blocks back to the
+ allocator costs their faults again in the next run; `clear()` of `Arena`
+ and of `ObjectPool` ends instead an <em>epoch</em>, the time from the
+ construction or from the last `clear()`, and keeps the blocks. The arena
+ goes back to the first place of its first block, and moves to the next
+ block kept when the block in use is full, appending a block only past the
+ last one; the pool empties its free list, takes the slots of its last
+ block, and then those of the blocks before it, one block at a time, from a
+ pointer \f$ R \f$ to the first block not yet used again, taking a new
+ block only when \f$ R \f$ is nil. Hence an epoch takes a block from the
+ allocator only when every place of the blocks kept has been given in it,
+ and the memory of a sequence of epochs is that of the largest one (for the
+ pool, the bound \f$ 2 k + n \f$ above with \f$ k \f$ the most objects
+ alive at once in any epoch). The call writes a few words, i.e.,
+ \f$ O( 1 ) \f$ time, but for the destructors of the objects of an arena
+ when they are not trivial; the allocation path is the same as without
+ epochs, since the test of a block kept sits where a block was allocated.
+
+ Nothing survives an epoch: the objects are destroyed or dropped, and the
+ free slots forgotten. A pointer of an old epoch is stale, and using it is
+ a violation of the contract, since its place may hold an object of the new
+ epoch. `fresh( p )` tells, in time linear in the blocks, whether
+ \f$ p \f$ is a place given in the current epoch, which a stale pointer is
+ only once its place is given again; the frees of the pool check it at the
+ level of the audits, and under the sanitizer of addresses the places of an
+ epoch are forbidden at its end and allowed again one at a time as they are
+ given. Each structure belongs to one thread, which alone calls `make()`,
+ `free()` and `clear()`; another thread may read the objects, and gives
+ back to the owner an object that it drops, by a message, but each of its
+ accesses must happen before the `clear()` of the owner (e.g., through a
+ barrier), and then every write of the owner in the next epochs follows it
+ in the order of happens-before, so that no data race can occur.
+
  \section theory_memory_huge Huge pages
 
  A structure whose nodes are reached in no useful order, e.g., the trees of

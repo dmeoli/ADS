@@ -474,6 +474,31 @@
  \f$ u \f$ are computed from its row and its column before any offset is
  added, so that no sum leaves \f$ [ 0 , R C ) \f$.
 
+ The costs of the cells change by `setCost()`, which tells each change as
+ the event `Changed< Value , int , C >` through the subject policy of the
+ grid (no code with `NoObservers`). It keeps \f$ n \f$, the least cost
+ \f$ \gamma_{\mathrm{min}} \f$ of a free cell and the number \f$ m \f$ of
+ the free cells of that cost: taking the cell out and putting it back with
+ its new cost keeps all three in \f$ O( 1 ) \f$ time, but when the cell
+ was the last one of the least cost and its new cost is larger, which
+ needs a new count of the grid; the grid is unoriented exactly when
+ \f$ m = n \f$. An arc \f$ ( x , v ) \f$ exists when \f$ x \f$, \f$ v \f$
+ and, for a corner, its sides allow it, and it weighs the cost of
+ \f$ v \f$ or of \f$ x \f$; hence a change of the cell \f$ u \f$ touches
+ only the arcs into \f$ u \f$ (the cell entered pays) or out of \f$ u \f$
+ (the cell left pays) when \f$ u \f$ stays free, and only arcs whose head is
+ \f$ u \f$ or a free cell at a move of \f$ u \f$ when it is blocked or
+ freed, since \f$ u \f$ is a side of the corners between two of its
+ neighbours. `forEachAffected()` gives these heads, at most nine, and for a
+ batch the union of its calls on the coalesced events, read after the
+ batch, holds every head of a changed arc: an arc that changed has one of
+ its at most four cells changed, and a case analysis on which one (the
+ cell that pays, an end blocked or freed, or a side) finds an event whose
+ call gives the head. An incremental search (LPA*, D* Lite) thus repairs
+ the right-hand sides of those heads only. The heuristic of the grid reads
+ \f$ \gamma_{\mathrm{min}} \f$, which may change; such a search takes a
+ lower bound of the costs that the changes may give instead.
+
  \section theory_graph_mst Minimum spanning trees
 
  On an unoriented connected graph a spanning tree has \f$ n - 1 \f$ edges,

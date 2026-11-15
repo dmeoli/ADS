@@ -64,8 +64,8 @@ objects that a pool has held at once.
 |---------------------------|---------------|-------------|----------------|-------------------|
 | `BoundaryTagAllocator` | any size | $O( f )$ | $O( 1 )$, merging both neighbors | 2 words of tags, external fragmentation |
 | `BuddyAllocator` | powers of 2 | $O( m )$ splits | $O( m )$ merges | less than half of each block |
-| `Arena` | objects of one type | $O( 1 )$, a pointer bump | only all at once | part of the last block |
-| `ObjectPool` | objects of one type | $O( 1 )$, but for a new block | $O( 1 )$ | at most $2 k + n$ slots |
+| `Arena` | objects of one type | $O( 1 )$, a pointer bump | only all at once, by `clear()` in $O( 1 )$ for a trivial destructor | part of the last block |
+| `ObjectPool` | objects of one type | $O( 1 )$, but for a new block | $O( 1 )$, and all at once by `clear()` in $O( 1 )$ | at most $2 k + n$ slots |
 | `SizeClassAllocator` | 41 classes up to 32768 bytes | $O( 1 )$ | $O( 1 )$, sized | below 20% of a block past 128 bytes |
 | `PoolResource` | classes of 8 bytes up to $M$ | $O( 1 )$ | $O( 1 )$ | below $\max( a , g )$ bytes a slot |
 | `ConcurrentPoolResource` | as above, any thread | $O( 1 )$ amortized | $O( 1 )$, a CAS per batch of remote frees | as above, and 31 slots per class and thread in transit |
@@ -285,47 +285,63 @@ the arena ([Hanson 1990](Z-bibliography.md#ref-hanson1990)). `Arena<T,
 A>` keeps the vector of its blocks, each of $n$ places for objects of type
 `T` taken from the allocator `A` (by default $n = 2^{12}$ and `A` is
 `std::allocator<T>`), and the number $\mathit{used}$ of the places used in
-the last block. Then `make(args)` builds the object in the
+the block in use. Then `make(args)` builds the object in the
 next place, after appending a new block when the last one is full
 ([Algorithm 5.3](05-memory.md#alg-5-3) and
-[Figure 5.3](05-memory.md#fig-5-3)).
+[Figure 5.3](05-memory.md#fig-5-3)), or after moving to the next block
+kept by `clear()`, if there is one (see below).
 
 ![Figure 5.3. An `Arena` of blocks of $n = 4$ objects: the vector of the blocks, the first block full and the second one with $\mathit{used} = 2$ before `make(g)` and $\mathit{used} = 3$ after it; the orange place is the one built.](../figures/memory-arena.svg){#fig-5-3}
 
 <span id="alg-5-3"></span>**Algorithm 5.3.** The construction of an object
-in an `Arena` ([Hanson 1990](Z-bibliography.md#ref-hanson1990)).
+in an `Arena` ([Hanson 1990](Z-bibliography.md#ref-hanson1990)), and the
+start of a new epoch by `clear()`; $c$ is the index of the block in use and
+$\beta$ the number of the blocks.
 
 --8<-- "generated/Arena-make.pseudo.md"
 
+--8<-- "generated/Arena-clear.pseudo.md"
+
+We call an *epoch* of the arena the time from its construction, or from a
+call of `clear()`, to the next call of `clear()` (or to the destruction).
+
 <span id="lem-5-4"></span>**Lemma 5.4.** *After $z$ calls of `make()`
-that return an object, and any number of calls that throw, an `Arena` of
-blocks of $n$ objects with $\beta \ge 1$ blocks satisfies $z = ( \beta - 1 )
-n + \mathit{used}$, with $0 \le \mathit{used} \le n$; the object made by the
-$j$-th of these calls (from $j = 0$) is at the place $j \bmod n$ of the
-block $\lfloor j / n \rfloor$ and keeps that address until the arena is
-destroyed. Hence the arena holds $\lceil z / n \rceil$ blocks, or one more
-with no object in it, and at most $n$ places not used. Each `make()` costs
-$O( 1 )$ time, but for the allocation of a block and the amortized append
-to the vector of the blocks.*
+in an epoch that return an object, and any number of calls that throw, an
+`Arena` of blocks of $n$ objects whose block in use has the index $c$
+satisfies $z = c n + \mathit{used}$, with $0 \le \mathit{used} \le n$
+(and $z = 0$ while it has no block); the object made by the $j$-th of these
+calls (from $j = 0$) is at the place $j \bmod n$ of the block
+$\lfloor j / n \rfloor$ and keeps that address until the epoch ends.
+Hence the epoch uses $\lceil z / n \rceil$ blocks, or one more with no
+object in it, and the arena takes a new block from `A` only when all the
+blocks it has are in use in the epoch. Each `make()` costs $O( 1 )$ time,
+but for the allocation of a block and the amortized append to the vector of
+the blocks.*
 
-*Proof.* By induction on the calls. A call that finds no block, or the
-last block full ($\mathit{used} = n$), appends a block and sets
-$\mathit{used} = 0$, which keeps the equation; if the allocation or the
-append throws, the block is given back to `A` and nothing changes. Then the call builds the object at the place $\mathit{used}$ of the last
-block, and increments $\mathit{used}$ and $z$; if the constructor throws,
-neither is incremented, and the block appended (if any) stays with
-$\mathit{used} = 0$. An object made when $z = j$ thus goes to the place
-$\mathit{used} = j - ( \beta - 1 ) n < n$ of the block $\beta - 1 =
-\lfloor j / n \rfloor$. Only the last block has places not used, and it is
-empty only if the calls after its append have all thrown. The vector holds
-pointers to the blocks; hence, no block is moved or freed while the arena
-lives, although the vector of the pointers may be moved by an append.
+*Proof.* By induction on the calls of the epoch, which starts with $c = 0$
+and $\mathit{used} = 0$ (by line 3 of `clear()`, or with no block at the
+construction). A call that finds no block, or the block in use full
+($\mathit{used} = n$), moves to the block $c + 1$ if the arena has it,
+i.e., a block kept from an earlier epoch, and otherwise appends a block and
+takes it as the block $c + 1$ (the block 0 if there was none); then it sets
+$\mathit{used} = 0$, which keeps the equation. If the allocation or the
+append throws, the block is given back to `A` and nothing changes. Then the
+call builds the object at the place $\mathit{used}$ of the block $c$, and
+increments $\mathit{used}$ and $z$; if the constructor throws, neither is
+incremented, and the block taken (if any) stays with $\mathit{used} = 0$.
+An object made when $z = j$ thus goes to the place $\mathit{used} = j - c n
+< n$ of the block $c = \lfloor j / n \rfloor$. Only the block in use has
+places not used in the epoch, besides the blocks after it, and it is empty
+only if the calls after it was taken have all thrown. A block is appended
+only when $c + 1$ equals the number of the blocks. The vector
+holds pointers to the blocks; hence, no block is moved or freed while the
+arena lives, although the vector of the pointers may be moved by an append.
 Besides the allocation and the append, the work of `make()` is a placement
-`new` and two increments. $\square$
+`new`, an increment of the place and one of $z$. $\square$
 
-The destructor thus destroys exactly the objects built, $n$ in each block
-but the last one and $\mathit{used}$ in the last one, and the invariant
-checked after each `make()` is the equation of
+The destructor thus destroys exactly the objects built in the last epoch,
+$n$ in each block before the block in use and $\mathit{used}$ in the block
+in use, and the invariant checked after each `make()` is the equation of
 [Lemma 5.4](05-memory.md#lem-5-4).
 
 An object of an arena costs no header and no search, and the objects made
@@ -351,6 +367,32 @@ objects, built also from the first), and the functions `begin()`, `end()`,
 its objects are reached by their addresses. All this has a price: an object cannot be freed apart from the others: the destructor of the arena destroys
 all the objects and frees the blocks.
 
+The objects may also die all together before the arena, by `clear()`
+([Algorithm 5.3](05-memory.md#alg-5-3)), which destroys the objects of the
+epoch and keeps the blocks, so that the next objects take the same places
+in the same order. A search restarted many times needs this (e.g., an
+incremental search that gives up the repair of its solution and starts
+again from scratch). It drops its nodes in $O( 1 )$ time when they have a
+trivial destructor, instead of giving the blocks back to `A` and taking
+them again (cf. [Lemma 5.6](05-memory.md#lem-5-6)). Nothing of an
+epoch survives the next one; a pointer to an object of an old epoch is
+*stale*, and its use violates the contract, since its place may already
+hold an object of the new epoch. In time linear in the blocks, `fresh(p)` is
+true if $p$ is the address of an object made in the current epoch. It is
+false for a stale pointer until its place is given again, and true
+afterwards; hence it is a necessary condition only, since no test on an
+address can distinguish a stale pointer from a pointer to the new object at
+the same place. When the program is built with the sanitizer of addresses,
+`clear()` also marks as forbidden the places of the epoch, and `make()`
+allows again only the place it gives; the first access through a stale
+pointer to a place not given again thus stops the program there. An arena
+belongs to one thread. Other threads may read its objects, but each of
+their accesses must happen before the `clear()` of the owner (e.g., by a
+barrier between the phases of a parallel search), since the arena takes
+no lock and has no atomic. The iterators and `size()` cover the objects of
+the current epoch, while `bytes()` counts all the blocks, those kept
+included.
+
 In `ADS/memory/Arena.h`, the declarations of `Arena` that a user calls are
 
 ```cpp
@@ -361,6 +403,8 @@ class Arena {
   explicit Arena( std::size_t n = std::size_t( 1 ) << 12 ,
        const A & alloc = A() );
   template< class... Args > T * make( Args &&... args );
+  void clear( void ) noexcept;
+  bool fresh( const T * p ) const;
   std::size_t size( void ) const;
   std::size_t bytes( void ) const;
   };
@@ -388,9 +432,10 @@ and the address of the block before it. It takes the first
 $H = \lceil 2 \, \mathrm{sizeof}( \mathrm{void} * ) / \mathrm{sizeof}(
 \mathit{slot} ) \rceil$ slots of the block (on a machine of 64 bits, two
 slots of 8 bytes, or one of 16 or more); the pool reaches all its blocks
-from the last one, and needs no vector for them. In fact, the pool is six
-words (the free list, the place $\mathit{next}$ and the end of the last
-block, the last block, $n$ and the number of objects alive), besides its
+from the last one, and needs no vector for them. In fact, the pool is seven
+words (the free list, the place $\mathit{next}$ and the end of the block in
+use, the last block, the first block kept by `clear()` and not yet used
+again, $n$ and the number of objects alive), besides its
 allocator, which takes no room when it has no state (as
 `HugePageAllocator`); it allocates only its blocks
 ([Figure 5.4](05-memory.md#fig-5-4)).
@@ -401,11 +446,14 @@ allocator, which takes no room when it has no state (as
 `ObjectPool` (the list AVAIL of [Knuth 1997,
 §2.2.3](Z-bibliography.md#ref-knuth1997)); $F$ is the list of the free
 slots and $[ \mathit{next} , \mathit{end} )$ the slots never used of the
-last block, of $k$ slots.
+last block, of $k$ slots; $R$ is the first of the blocks kept by
+`clear()` that the epoch has not yet used again.
 
 --8<-- "generated/ObjectPool-make.pseudo.md"
 
 --8<-- "generated/ObjectPool-free.pseudo.md"
+
+--8<-- "generated/ObjectPool-clear.pseudo.md"
 
 The slot of `make()` (lines 2 to 5) comes from one function, which also doubles the
 blocks; `allocate()` gives a raw slot from the same function, for an
@@ -471,6 +519,85 @@ and those it never used, are no longer given until the pool dies. In `adopt()` t
 `size()` is the number of the objects alive, and `bytes()` the memory of
 the blocks, headers included, computed by a walk of the chain.
 
+As the arena, the pool has epochs: `clear()` drops all the objects and the
+free slots in $O( 1 )$ time, with no destructor called (as at the death of
+the pool), and keeps the blocks. The next epoch takes the slots of the last
+block first and then those of the blocks before it, one block at a time,
+from the block $R$ that `clear()` sets to the block before the last one.
+Only when $R$ is nil does it take a new block from `A`
+([Algorithm 5.4](05-memory.md#alg-5-4)). Hence a worker of a parallel
+search, which owns its pool, drops its nodes at a restart without freeing
+them one by one, and a sequence of epochs keeps the memory of the largest
+of them. A pointer of an old epoch is stale, as in the arena, and `fresh(p)`
+is true if $p$ is a slot given in the current epoch (alive or freed since).
+`free()` and `deallocate()` check it at the level of the audits, which stops
+the free of a stale pointer whose slot has not been given again. With the sanitizer of addresses the slots dropped are forbidden
+until `make()` gives them again. While some blocks kept wait to be used
+again, `adopt(other)` cannot hang the blocks of `other` under the first
+block, where $R$ would give their slots again over the objects alive in
+them. It puts them over the last block instead, after a walk of the chain
+of `other`. A pool belongs to one thread, and an object is freed by the
+thread that made it. An object that another thread wants to drop goes back
+to its owner by a message (e.g., through the mailboxes of
+[§25](25-parallel.md#ch-25)), to be freed there after the next
+synchronization, or is dropped by the next `clear()`. Other threads may read
+the objects, each of their accesses happening before the `clear()` of the
+owner; a pool shared by threads that free each other's objects is
+`ConcurrentPoolResource` ([§5.8](05-memory.md#sec-5-8)). We now state what
+an epoch guarantees for both structures.
+
+<span id="lem-5-6"></span>**Lemma 5.6.** *Let `clear()` be called on an
+`Arena` or on an `ObjectPool`. (i) After the call no object of the earlier
+epochs is alive (those of the arena destroyed, those of the pool dropped),
+`size()` is 0, the pool has no free slot, and `fresh(p)` is false for every
+pointer $p$ given before the call, until its place or slot is given again.
+(ii) The blocks are kept, and the new epoch takes a block from `A` only
+when it has given all the places (the slots) of the blocks kept. Hence, for
+the pool the bound of [Lemma 5.5](05-memory.md#lem-5-5) holds with $k$ the
+largest number of objects held at once in any epoch, and a slot never holds
+two objects alive. (iii) The call costs $O( 1 )$ time for the pool, and for
+the arena $O( 1 )$ when the destructor of `T` is trivial and $O( z )$
+otherwise, $z$ the objects of the epoch, besides one call of the sanitizer
+per block when it is on. (iv) If each access of another thread to the
+objects happens before the call, no write of the call or of the next
+epochs races with those accesses.*
+
+*Proof.* (i) In the arena, `clear()` destroys the objects of the blocks
+$0 , \ldots , c$ (the $z$ objects of the epoch, by
+[Lemma 5.4](05-memory.md#lem-5-4)), skipped when the destructor is trivial,
+and sets $c = 0$, $\mathit{used} = 0$ and $z = 0$. Then `fresh(p)` looks for $p$
+in the blocks up to $c$ and accepts in the block $c$ only the places before
+$\mathit{used}$, i.e., none, and afterwards only the places that `make()`
+has given. In the pool, `clear()` sets $F$ to nil and the count to 0, and
+makes $[ \mathit{next} , \mathit{end} )$ all the slots of the last block,
+with $R$ the block before it. Then `fresh(p)` walks the blocks from the last one
+down to $R$ excluded, and in the block in use accepts only the slots before
+$\mathit{next}$, i.e., none right after the call. (ii) A block is taken by
+the arena only when $c + 1$ is the number of the blocks (by
+[Lemma 5.4](05-memory.md#lem-5-4)), and by the pool only when $F$ is nil,
+$\mathit{next} = \mathit{end}$ and $R$ is nil, i.e., when the epoch has
+passed all the blocks and given all their slots. Since a slot freed in the
+epoch is on $F$, all the slots then hold objects alive, which is the
+condition of the proof of [Lemma 5.5](05-memory.md#lem-5-5). A slot is
+given by the bump of $\mathit{next}$ only once in an epoch, since the
+blocks under $R$ are reached only through $R$, which moves down. An
+adoption during the epoch puts the blocks of `other` above the last block,
+out of that path, and thus no slot with an object alive is given again.
+(iii) The pool writes four of its words; the arena writes four words and,
+when the destructor is not trivial, destroys $z$ objects, and the sanitizer
+marks each block once. (iv) The call and the later calls of `make()` write
+the places and the members of the structure in the owner's thread alone,
+after the call in its program order. Since each access of another thread
+happens before the call, it happens before each such write by transitivity,
+and two accesses ordered by happens-before do not race (by the definition
+of a data race in the memory model of C++). $\square$
+
+We remark that (iv) does not cover the objects of the new epoch read by
+another thread. These must reach that thread through a synchronization
+after their `make()`, as any object written by one thread and read by
+another; in a parallel search this is usually the release and the acquire
+of the mailbox that carries the message, or the next barrier.
+
 In `ADS/memory/ObjectPool.h`, the declarations of `ObjectPool` that a user
 calls are
 
@@ -486,6 +613,8 @@ class ObjectPool {
   void free( T * x );
   T * allocate( void );
   void deallocate( T * x );
+  void clear( void ) noexcept;
+  bool fresh( const T * p ) const;
   std::size_t size( void ) const;
   std::size_t bytes( void ) const;
   };
@@ -526,7 +655,7 @@ as it does on the usual platforms of 64 bits).
 §2.5](Z-bibliography.md#ref-knuth1997), by size class); $F_c$ holds the
 blocks given back of the class $c$ and $[ \mathit{next}_c ,
 \mathit{end}_c )$ is the rest of its page; `sizeClass()` gives the class
-of a request ([Lemma 5.6](05-memory.md#lem-5-6)).
+of a request ([Lemma 5.7](05-memory.md#lem-5-7)).
 
 --8<-- "generated/SizeClassAllocator-allocate.pseudo.md"
 
@@ -534,7 +663,7 @@ of a request ([Lemma 5.6](05-memory.md#lem-5-6)).
 
 ![Figure 5.5. The page of the class 2 (blocks of 32 bytes) of a `SizeClassAllocator`, after its header: before, the block 1 is on $F_2$ and the blocks from 3 on were never given; `allocate(20)` pops the block 1, and `allocate(25)` cuts the block 3 from the page. The violet cell is the block given, those in the faintest tint are free.](../figures/memory-sizeclass.svg){#fig-5-5}
 
-<span id="lem-5-6"></span>**Lemma 5.6.** *A request of $n > 128$ bytes
+<span id="lem-5-7"></span>**Lemma 5.7.** *A request of $n > 128$ bytes
 to `SizeClassAllocator` wastes less than 20% of its block, and less than
 25% of the request; one of $n \le 128$ bytes wastes less than 16 bytes.
 The class of $n$ is computed in $O( 1 )$ time with no table and no loop,
@@ -654,7 +783,7 @@ class $c$ and $A_c$ the list of its other pages with free slots.
 
 --8<-- "generated/PageHeap-give.pseudo.md"
 
-<span id="lem-5-7"></span>**Lemma 5.7.** *A page on the list $A_c$ has at
+<span id="lem-5-8"></span>**Lemma 5.8.** *A page on the list $A_c$ has at
 least one free slot. Hence `more()` makes at most two rounds, and each
 operation of `PageHeap` costs $O( 1 )$ time in the worst case, but for
 the allocation of a segment (one every 32 pages), which also appends it to the
@@ -681,7 +810,7 @@ the segment is allocated, so that the append that follows cannot fail and
 lose it; when the vector is full, its room doubles. Thus $s$ segments copy
 fewer than $2 s$ addresses in all, i.e., $O( 1 )$ amortized time per
 segment, a cost that belongs to the allocation of a segment (cf. [Lemma
-5.7](05-memory.md#lem-5-7)) and is negligible next to the 32 pages that
+5.7](05-memory.md#lem-5-8)) and is negligible next to the 32 pages that
 each segment serves.
 
 `PoolResource<M>` serves the requests of $1 \le b \le M$ bytes aligned to
@@ -696,7 +825,7 @@ $2^{16}$). Any other request, larger or more aligned, goes to `operator
 new` ([Algorithm 5.7](05-memory.md#alg-5-7)), with the alignment $a$ when
 it exceeds that of a plain `operator new`.
 
-<span id="lem-5-8"></span>**Lemma 5.8.** *A request of $b \le M$ bytes
+<span id="lem-5-9"></span>**Lemma 5.9.** *A request of $b \le M$ bytes
 aligned to $a \le 16$, $a$ a power of 2, gets from `PoolResource` a slot
 aligned to $a$, whose waste is less than $\max( a , g )$ bytes, i.e., less
 than 8 for $a \le 8$ and less than 16 for $a = 16$, and none when $b$ is a
@@ -870,7 +999,7 @@ written into the slots of the batch are visible to the owner, which takes
 the stack with the order *acquire*. In the code, the test of line 3 of
 `deallocate()` is the branch marked as likely.
 
-<span id="lem-5-9"></span>**Lemma 5.9.** *In `ConcurrentPoolResource`,
+<span id="lem-5-10"></span>**Lemma 5.10.** *In `ConcurrentPoolResource`,
 (i) a free by the owner of the slot makes no atomic operation, and the
 frees by the other threads make one successful CAS per batch; (ii) each
 thread holds at most 31 slots per class that it has freed and that are
@@ -892,7 +1021,7 @@ resource, the heap is found by one comparison. Slots taken from a stack are push
 number, and each slot is taken from a stack at most once per free; we
 thus charge this work to the frees. Apart from this, there remain a send in $O( 1 )$ time and
 at most one call of `more()`, which costs $O( 1 )$ time but for a segment
-by [Lemma 5.7](05-memory.md#lem-5-7). $\square$
+by [Lemma 5.8](05-memory.md#lem-5-8). $\square$
 
 The memory orders complete (iii). A sender writes the links of its batch
 with plain stores, before its CAS with the order *release*; a CAS that
@@ -1004,7 +1133,7 @@ system at once (the objects of static storage may die later than the
 cache). As any memory of an allocator, a block given again holds what its
 last owner left in it.
 
-<span id="lem-5-10"></span>**Lemma 5.10.** *A block of `HugePageAllocator`
+<span id="lem-5-11"></span>**Lemma 5.11.** *A block of `HugePageAllocator`
 of $b \ge P$ bytes takes less than $P$ bytes of address space beyond
 $b$, none of which is touched by the allocator, and each thread keeps at
 most 16 blocks and 64 MB given back.*
@@ -1086,7 +1215,7 @@ reversed pointer of the cell $x$ is in its `cdr`.
 
 --8<-- "generated/CellHeap-collect.pseudo.md"
 
-<span id="lem-5-11"></span>**Lemma 5.11.** *During the marking by pointer
+<span id="lem-5-12"></span>**Lemma 5.12.** *During the marking by pointer
 reversal, let $\mathrm{back}( x )$ be the field of the cell $x$ named by
 $\mathit{side}( x )$. Then the sequence*
 
@@ -1123,7 +1252,7 @@ with no space besides one mark bit and one side bit per cell, and a
 collection costs $O( n + r )$ time on a heap of $n$ cells with $r$
 occurrences of roots.*
 
-*Proof.* By [Lemma 5.11](05-memory.md#lem-5-11), the marking of a root
+*Proof.* By [Lemma 5.12](05-memory.md#lem-5-12), the marking of a root
 ends when $p$ is nil, i.e., with an empty path, and hence with all the
 fields restored. A cell is marked when the visit enters it, and a marked
 cell is never entered again; hence, only reachable cells are marked, since
@@ -1145,7 +1274,7 @@ The code of the marking is made of three loops, one for each move of the
 induction, i.e., the loops of lines 10 and 13 and the move of line 17 of
 `mark()` in [Algorithm 5.10](05-memory.md#alg-5-10).
 
-<span id="lem-5-12"></span>**Lemma 5.12.** *A `cons()` costs $O( 1 )$
+<span id="lem-5-13"></span>**Lemma 5.13.** *A `cons()` costs $O( 1 )$
 time, but for the collection. If each collection frees at least $\alpha n$
 cells, for a constant $0 < \alpha \le 1$, and the roots are $O( n )$, then
 any sequence of $s$ calls of `cons()` costs $O( s / \alpha + n )$ time,

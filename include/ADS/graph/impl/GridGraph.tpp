@@ -26,8 +26,8 @@ namespace ADS {
 /*------------------------------ CONSTRUCTION ------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class W , class C >
-GridGraph< W , C >::GridGraph( int rows , int cols , GridMoves moves ,
+template< class W , class C , class P >
+GridGraph< W , C , P >::GridGraph( int rows , int cols , GridMoves moves ,
                                Corners corners , W straight ,
                                std::optional< W > diagonal ,
                                MoveCost model )
@@ -38,11 +38,12 @@ GridGraph< W , C >::GridGraph( int rows , int cols , GridMoves moves ,
  init( diagonal );
  }
 
-template< class W , class C >
-GridGraph< W , C >::GridGraph( int rows , int cols , std::vector< C > cost ,
-                               GridMoves moves , Corners corners ,
-                               W straight , std::optional< W > diagonal ,
-                               MoveCost model )
+template< class W , class C , class P >
+GridGraph< W , C , P >::GridGraph( int rows , int cols ,
+                                   std::vector< C > cost ,
+                                   GridMoves moves , Corners corners ,
+                                   W straight , std::optional< W > diagonal ,
+                                   MoveCost model )
  : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
    f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
    f_diagonal( straight ) , f_cost( std::move( cost ) )
@@ -50,8 +51,22 @@ GridGraph< W , C >::GridGraph( int rows , int cols , std::vector< C > cost ,
  init( diagonal );
  }
 
-template< class W , class C >
-void GridGraph< W , C >::init( std::optional< W > diagonal )
+template< class W , class C , class P >
+template< class ... O > requires( sizeof...( O ) > 0 )
+GridGraph< W , C , P >::GridGraph( int rows , int cols ,
+                                   std::vector< C > cost , GridMoves moves ,
+                                   Corners corners , W straight ,
+                                   std::optional< W > diagonal ,
+                                   MoveCost model , O & ... o )
+ : f_rows( rows ) , f_cols( cols ) , f_moves( moves ) ,
+   f_corners( corners ) , f_model( model ) , f_straight( straight ) ,
+   f_diagonal( straight ) , f_cost( std::move( cost ) ) , f_sub( o... )
+{
+ init( diagonal );
+ }
+
+template< class W , class C , class P >
+void GridGraph< W , C , P >::init( std::optional< W > diagonal )
 {
  ADS_PRE( ( f_rows >= 0 ) && ( f_cols >= 0 ) );
  // the product in 64 bits: rows * cols may not fit an int
@@ -67,51 +82,136 @@ void GridGraph< W , C >::init( std::optional< W > diagonal )
   ADS_PRE( f_moves == GridMoves::FOUR );
  ADS_PRE( f_diagonal > W( 0 ) );
  if( f_cost.empty() ) {
-  f_n = int( cells );
+  f_n = f_atmin = int( cells );
   return;
   }
- // the graph is oriented if a free cell costs other than the first one
- bool first = true;
- C c0 = C( 1 );
+ recount();
+ ADS_INVARIANT( counted() );
+ }
+
+template< class W , class C , class P >
+void GridGraph< W , C , P >::recount( void )
+{
+ // the graph is oriented if a free cell costs other than the least cost
+ f_n = f_atmin = 0;
+ f_min = C( 1 );
  for( const C & c : f_cost )
   if( c > C( 0 ) ) {
-   ++f_n;
-   if( first )
-    c0 = f_min = c;
-   f_directed = f_directed || ( c != c0 );
-   f_min = std::min( f_min , c );
-   first = false;
+   if( ( ++f_n == 1 ) || ( c < f_min ) ) {
+    f_min = c;
+    f_atmin = 1;
+    }
+   else if( c == f_min )
+    ++f_atmin;
    }
- ADS_INVARIANT( counted() );
+ f_directed = ( f_n > 0 ) && ( f_atmin != f_n );
  }
 
 /*--------------------------------------------------------------------------*/
 /*----------------------------- THE OPERATIONS -----------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< class W , class C >
-int GridGraph< W , C >::node( int r , int c ) const
+template< class W , class C , class P >
+int GridGraph< W , C , P >::node( int r , int c ) const
 {
  ADS_PRE( insideGrid( f_rows , f_cols , GridCell( r , c ) ) );
  return( r * f_cols + c );
  }
 
-template< class W , class C >
-GridCell GridGraph< W , C >::cell( int u ) const
+template< class W , class C , class P >
+GridCell GridGraph< W , C , P >::cell( int u ) const
 {
  ADS_PRE( ( u >= 0 ) && ( u < bound() ) );
  return( GridCell( u / f_cols , u % f_cols ) );
  }
 
-template< class W , class C >
-C GridGraph< W , C >::cost( int u ) const
+template< class W , class C , class P >
+C GridGraph< W , C , P >::cost( int u ) const
 {
  ADS_PRE( ( u >= 0 ) && ( u < bound() ) );
  return( f_cost.empty() ? C( 1 ) : f_cost[ u ] );
  }
 
-template< class W , class C >
-std::vector< int > GridGraph< W , C >::V( void ) const
+template< class W , class C , class P >
+void GridGraph< W , C , P >::setCost( int u , const C & c )
+{
+ ADS_PRE( ( u >= 0 ) && ( u < bound() ) );
+ if( f_cost.empty() ) {                     // all free, of cost 1
+  if( c == C( 1 ) )
+   return;
+  f_cost.assign( std::size_t( bound() ) , C( 1 ) );
+  }
+ const C a = f_cost[ u ];
+ if( a == c )
+  return;
+ f_cost[ u ] = c;
+ if( a > C( 0 ) ) {
+  --f_n;
+  if( a == f_min )
+   --f_atmin;
+  }
+ if( c > C( 0 ) ) {
+  if( ( ++f_n == 1 ) || ( c < f_min ) ) {
+   f_min = c;
+   f_atmin = 1;
+   }
+  else if( c == f_min )
+   ++f_atmin;
+  }
+ if( f_n == 0 ) {
+  f_min = C( 1 );
+  f_atmin = 0;
+  }
+ else if( f_atmin == 0 )                    // the least cost left
+  recount();
+ f_directed = ( f_n > 0 ) && ( f_atmin != f_n );
+ ADS_INVARIANT( counted() );
+ if constexpr( Subject::template listened< CellChanged > )
+  if( f_sub.template live< CellChanged >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    tellCold( CellChanged{ u , a , c } );
+   else {
+    f_sub.emit( CellChanged{ u , a , c } );
+    f_sub.audit( *this );
+    }
+   }
+ }
+
+template< class W , class C , class P >
+template< class F >
+void GridGraph< W , C , P >::forEachAffected( int u , const C & from ,
+                                              const C & to , F && f ) const
+{
+ ADS_PRE( ( u >= 0 ) && ( u < bound() ) );
+ const bool a = from > C( 0 ) , b = to > C( 0 );
+ if( ! a && ! b )                           // blocked before and after
+  return;
+ if( a && b ) {                             // free before and after
+  if( f_model == MoveCost::ENTERED )
+   f( u );
+  else
+   scan( u , [ & ]( int v , bool ) { f( v ); } );
+  return;
+  }
+ // freed or blocked: u and the free cells at a move from it, in order
+ const int k = f_cols;
+ const int r = u / k , c = u - r * k;
+ const bool eight = f_moves == GridMoves::EIGHT;
+ for( int dr = -1 ; dr <= 1 ; ++dr )
+  for( int dc = -1 ; dc <= 1 ; ++dc ) {
+   if( ! eight && ( dr != 0 ) && ( dc != 0 ) )
+    continue;
+   const int y = r + dr , x = c + dc;
+   if( ( y < 0 ) || ( y >= f_rows ) || ( x < 0 ) || ( x >= k ) )
+    continue;
+   const int v = u + dr * k + dc;
+   if( ( v == u ) || open( v ) )
+    f( v );
+   }
+ }
+
+template< class W , class C , class P >
+std::vector< int > GridGraph< W , C , P >::V( void ) const
 {
  std::vector< int > out;
  out.reserve( std::size_t( f_n ) );
@@ -121,8 +221,8 @@ std::vector< int > GridGraph< W , C >::V( void ) const
  return( out );
  }
 
-template< class W , class C >
-std::vector< int > GridGraph< W , C >::adj( int u ) const
+template< class W , class C , class P >
+std::vector< int > GridGraph< W , C , P >::adj( int u ) const
 {
  ADS_PRE( hasNode( u ) );
  std::vector< int > out;
@@ -130,17 +230,17 @@ std::vector< int > GridGraph< W , C >::adj( int u ) const
  return( out );
  }
 
-template< class W , class C >
+template< class W , class C , class P >
 template< class F >
-void GridGraph< W , C >::forEachMove( int u , F && f ) const
+void GridGraph< W , C , P >::forEachMove( int u , F && f ) const
 {
  ADS_PRE( hasNode( u ) );
  scan( u , f );
  }
 
-template< class W , class C >
+template< class W , class C , class P >
 template< class G >
-void GridGraph< W , C >::scan( int u , G && g ) const
+void GridGraph< W , C , P >::scan( int u , G && g ) const
 {
  // the row and the column of u, so that no name out of the grid is ever
  // computed: u + cols only when u is not in the last row, and so on
@@ -172,17 +272,17 @@ void GridGraph< W , C >::scan( int u , G && g ) const
   g( u + k + 1 , true );
  }
 
-template< class W , class C >
+template< class W , class C , class P >
 template< class F >
-void GridGraph< W , C >::forEachAdj( int u , F && f ) const
+void GridGraph< W , C , P >::forEachAdj( int u , F && f ) const
 {
  ADS_PRE( hasNode( u ) );
  scan( u , [ & ]( int v , bool ) { f( v ); } );
  }
 
-template< class W , class C >
+template< class W , class C , class P >
 template< class F >
-void GridGraph< W , C >::forEachEdge( int u , F && f ) const
+void GridGraph< W , C , P >::forEachEdge( int u , F && f ) const
 {
  ADS_PRE( hasNode( u ) );
  if( f_cost.empty() || ! f_directed || ( f_model == MoveCost::LEFT ) ) {
@@ -198,13 +298,21 @@ void GridGraph< W , C >::forEachEdge( int u , F && f ) const
    f( v , W( f_cost[ v ] ) * ( d ? f_diagonal : f_straight ) ); } );
  }
 
-template< class W , class C >
-bool GridGraph< W , C >::counted( void ) const
+template< class W , class C , class P >
+bool GridGraph< W , C , P >::counted( void ) const
 {
- long long k = 0;
+ if( f_cost.empty() )
+  return( ( f_n == bound() ) && ( f_atmin == f_n ) );
+ long long k = 0 , m = 0;
  for( const C & c : f_cost )
-  k += ( c > C( 0 ) );
- return( k == f_n );
+  if( c > C( 0 ) ) {
+   ++k;
+   m += ( c == f_min );
+   if( c < f_min )
+    return( false );
+   }
+ return( ( k == f_n ) && ( m == f_atmin ) && ( ( k > 0 ) == ( m > 0 ) ) &&
+         ( f_directed == ( m != k ) ) );
  }
 
 /*--------------------------------------------------------------------------*/
@@ -217,8 +325,8 @@ namespace detail {
 /// sources, INF on the blocked cells, each other cell at INF or one move
 /// farther than a neighbour, and no move from a reached cell to a cell
 /// more than one move farther
-template< class W , class C >
-bool gridGraphBfs( const GridGraph< W , C > & g ,
+template< class W , class C , class P >
+bool gridGraphBfs( const GridGraph< W , C , P > & g ,
                    const std::vector< int > & S ,
                    const std::vector< int > & D )
 {
@@ -256,8 +364,8 @@ inline long long gap( int x , int y )
 
 }  // end( namespace detail )
 
-template< class W , class C >
-std::vector< int > gridDistances( const GridGraph< W , C > & g ,
+template< class W , class C , class P >
+std::vector< int > gridDistances( const GridGraph< W , C , P > & g ,
                                   const std::vector< int > & S )
 {
  std::vector< int > D( std::size_t( g.bound() ) , INF );
@@ -310,8 +418,8 @@ W chebyshev( GridCell a , GridCell b , W straight )
                                  detail::gap( a.second , b.second ) ) ) );
  }
 
-template< class W , class C >
-W gridHeuristic( const GridGraph< W , C > & g , int u , int t )
+template< class W , class C , class P >
+W gridHeuristic( const GridGraph< W , C , P > & g , int u , int t )
 {
  const GridCell a = g.cell( u ) , b = g.cell( t );
  const W k( g.minCost() );

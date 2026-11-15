@@ -79,6 +79,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that no key of the round before is found), a paragraph of the theory of
   the concurrent structures and section 24.8 of the manual
 
+- clear() and fresh() in memory/Arena.h and memory/ObjectPool.h, the
+  epochs of the pools of the nodes of a search restarted many times: clear()
+  drops every object (destroyed by the arena, dropped with no destructor by
+  the pool) and every free slot, keeps the blocks and gives them again in
+  their order, the arena from its first block and the pool from its last
+  one down, taking a new block only when every place kept has been given,
+  in O( 1 ) time (O( z ) for an arena of objects with a destructor);
+  fresh( p ), in time linear in the blocks, whether p is a place given in
+  the current epoch, checked by the frees of the pool at the level of the
+  audits, and the places of an ended epoch forbidden to the sanitizer of
+  addresses until they are given again (ADS_POISON and ADS_UNPOISON of
+  Portable.h); one owner thread per pool, the accesses of the others
+  before its clear(); make() and free() with no clear() the same as
+  before, but for the arena, whose make() tests one pointer where it
+  tested two counts; Lemmas 5.4 and 5.6 of the manual (the lemmas of
+  chapter 5 from 5.6 on renumbered), a section of the theory of the memory,
+  the tests engineered_memory arena-epochs, object-pool-epochs and
+  pool-epochs-threads (4 workers with deferred returns, under the sanitizer
+  of threads), and the workloads arena-make and pool-make of
+  bench/zerocost.py
+
+- setCost() and forEachAffected() in graph/GridGraph.h, whose subject
+  policy is the new third template parameter (NoObservers by default, with
+  which a change compiles to the code of the grid alone): setCost( u , c )
+  blocks, frees or reweighs a cell and tells CellChanged, i.e.,
+  Changed< Value , int , C >, keeping n(), minCost() and directed() by the
+  count of the free cells of the least cost, in O( 1 ) time but when the
+  last of them leaves it; forEachAffected( u , from , to , f ) gives the at
+  most nine heads whose arcs a change may have touched, a superset also for
+  the events of a batch, so that an incremental search patches its keys
+  with no rebuilding of the grid; attach(), detach(), batch() and a
+  constructor with the static observers; Lemmas 14.52 and 14.53 and section
+  14.13.3 of the manual, a paragraph of the theory of the graphs, the tests
+  engineered_graph grid-graph-set-cost and grid-graph-affected, and the
+  workload grid-cost of bench/zerocost.py
+
 - the policy of the ties of priority/BucketQueue.h, its third template
   parameter: LargestSecondKey, the default, the least f and then the
   largest g first as before (the same code, function by function), and

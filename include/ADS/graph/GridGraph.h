@@ -52,12 +52,41 @@
  * Raphael takes as heuristics, `gridHeuristic()` the one of the moves and of
  * the costs of a grid.
  *
+ * `setCost( u , c )` changes the cost of the cell \f$ u \f$, blocking it
+ * when \f$ c \f$ is not positive and freeing it otherwise, and tells the
+ * change, if the cost is not already \f$ c \f$, as the event
+ * `Changed< Value , int , C >` of `Modification.h` (the type
+ * `CellChanged`, with the cell and its two costs), through the subject
+ * policy `Policy`: `NoObservers` by default, with which the change compiles
+ * to the code of the grid alone, and `Static< O... >`, `Dynamic<>` or
+ * `Both< ... >` otherwise, as for `ObservedGraph` [see `Observable.h`],
+ * a `batch()` sending the changes of one cell coalesced into the first
+ * cost and the last one. `forEachAffected( u , from , to , f )` calls
+ * \f$ f \f$ on the heads of the moves that such a change may create,
+ * remove or weigh differently, which depend on the model of the costs and
+ * on whether the cell changes between free and blocked: the cell itself
+ * with `ENTERED` and its free neighbours with `LEFT`, when it stays free,
+ * and the cell with all its free neighbours (those of the four or the eight
+ * moves, since the cell is a side of the corners that the moves between two
+ * of its neighbours cut), when it is blocked or freed; nothing when it
+ * stays blocked. An incremental search on the grid (LPA*, D* Lite) thus
+ * recomputes the right-hand sides of at most nine cells per change, with no
+ * rebuilding of the grid, and the union of the heads of the events of a
+ * batch, read after it, holds every head whose arcs the batch changed (see
+ * \ref theory_graph_grids). A grid with no vector of the costs takes one at
+ * its first `setCost()` of a cost other than 1, of
+ * \f$ \mathit{rows} \cdot \mathit{cols} \f$ places; `minCost()` and
+ * `directed()` follow the changes by the number of the free cells of the
+ * least cost, in \f$ O( 1 ) \f$ time, and in time linear in the cells when
+ * the last cell of the least cost leaves it.
+ *
  * The contracts [see `Contract.h`]: the grid has rows, cols >= 0 and at most
  * \f$ 2^{31} - 1 \f$ cells, so that the name of each cell is an int and no
  * sum in the moves overflows; the vector of the costs has a place per cell,
  * or none; the costs of the moves are positive, and a diagonal one is given
  * for an integral type of the weights; the operations on a node need a free
- * cell. The invariant is that `n()` counts the free cells. The operations are
+ * cell, and those on a cell a cell of the grid. The invariant is that `n()`
+ * counts the free cells and the cells of the least cost. The operations are
  * defined in `GridGraph.tpp`.
  *
  * \see N. R. Sturtevant, Benchmarks for grid-based pathfinding, IEEE
@@ -96,6 +125,8 @@
 /*--------------------------------------------------------------------------*/
 
 #include "ADS/Contract.h"
+#include "ADS/Modification.h"
+#include "ADS/Portable.h"
 #include "ADS/graph/Graph.h"
 #include "ADS/graph/Grid.h"
 
@@ -140,8 +171,9 @@ enum class MoveCost {
 /*--------------------------------------------------------------------------*/
 
 /// the implicit graph of a grid map, the cells of cost \f$ C \f$ and the
-/// weights of the moves of type \f$ W \f$
-template< class W = int , class C = W >
+/// weights of the moves of type \f$ W \f$, whose changes of the costs are
+/// told through the subject policy `Policy` [see Modification.h]
+template< class W = int , class C = W , class Policy = NoObservers >
 class GridGraph {
 
 /*--------------------------------------------------------------------------*/
@@ -149,6 +181,14 @@ class GridGraph {
 
  using Weight = W;   ///< the type of the weights
  using Cost = C;     ///< the type of the costs of the cells
+ /// the event of a change of the cost of a cell, the cell its handle
+ using CellChanged = mod::Changed< mod::Value , int , C >;
+ /// the events
+ using modifications = mod::list< CellChanged >;
+ /// the subject
+ using Subject = typename Policy::template bind< modifications >;
+ /// the channel of a batch, open while it lives [see batch()]
+ using Batch = ADS::Batch< GridGraph >;
 
  /// the grid of \f$ \mathit{rows} \times \mathit{cols} \f$ free cells of
  /// cost 1, with no vector; the diagonal cost \f$ \sqrt{2} \f$ times the
@@ -173,6 +213,14 @@ class GridGraph {
             Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
             std::optional< W > diagonal = std::nullopt ,
             MoveCost model = MoveCost::ENTERED );
+
+ /// the grid of the given costs as above, every parameter given, and the
+ /// static observers `o...` of `Policy`, which must outlive it
+ /// \pre as above
+ template< class ... O > requires( sizeof...( O ) > 0 )
+ GridGraph( int rows , int cols , std::vector< C > cost , GridMoves moves ,
+            Corners corners , W straight , std::optional< W > diagonal ,
+            MoveCost model , O & ... o );
 
  /// the number of rows
  [[nodiscard]] int rows( void ) const { return( f_rows ); }
@@ -226,6 +274,73 @@ class GridGraph {
  /// no free cell
  [[nodiscard]] C minCost( void ) const { return( f_min ); }
 
+ /// the cost of the cell \f$ u \f$ set to \f$ c \f$, the cell blocked if
+ /// \f$ c \f$ is not positive and free otherwise, and `CellChanged` told
+ /// with the cost before and \f$ c \f$; nothing if the cost is already
+ /// \f$ c \f$
+ ///
+ /// In pseudocode (beyond the book), \f$ \gamma \f$ the vector of the
+ /// costs, \f$ n \f$ the free cells, \f$ \gamma_{\mathrm{min}} \f$ their
+ /// least cost and \f$ m \f$ the free cells of that cost:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{setCost}( u , c ) \cr
+ /// 2 & \quad a \gets \gamma[ u ];\ \textbf{if}\ a = c\ \textbf{then}
+ ///     \ \textbf{return} \cr
+ /// 3 & \quad \gamma[ u ] \gets c \cr
+ /// 4 & \quad \textbf{if}\ a > 0\ \textbf{then}\ n \gets n - 1;
+ ///     \ \textbf{if}\ a = \gamma_{\mathrm{min}}\ \textbf{then}\ m
+ ///     \gets m - 1 \cr
+ /// 5 & \quad \textbf{if}\ c > 0\ \textbf{then}\ n \gets n + 1;
+ ///     \ \textbf{if}\ n = 1\ \textbf{or}\ c < \gamma_{\mathrm{min}}
+ ///     \ \textbf{then}\ ( \gamma_{\mathrm{min}} , m ) \gets ( c , 1 ) \cr
+ /// 6 & \qquad \textbf{else if}\ c = \gamma_{\mathrm{min}}\ \textbf{then}
+ ///     \ m \gets m + 1 \cr
+ /// 7 & \quad \textbf{if}\ n > 0\ \textbf{and}\ m = 0\ \textbf{then}
+ ///     \ \text{count again } \gamma_{\mathrm{min}} \text{ and } m
+ ///     \text{ on the free cells} \cr
+ /// 8 & \quad \mathit{directed} \gets n > 0\ \textbf{and}\ m \ne n \cr
+ /// 9 & \quad \textbf{if}\ \text{someone wants the event}\ \textbf{then}
+ ///     \ \text{tell } \mathrm{CellChanged}( u , a , c )
+ /// \end{array}}
+ /// \f]
+ /// The test of line 9 is false at compile time with `NoObservers`, and
+ /// the change is then the code of the grid alone.
+ /// \pre \f$ 0 \le u < \mathrm{bound}() \f$
+ void setCost( int u , const C & c );
+
+ /// \f$ f( v ) \f$, in increasing order of \f$ v \f$, on each cell
+ /// \f$ v \f$ whose moves in may have been created, removed or weighed
+ /// differently by a change of the cost of the cell \f$ u \f$ from
+ /// \f$ \mathit{from} \f$ to \f$ \mathit{to} \f$, i.e., on a superset of
+ /// the heads of the arcs that the change touched: none if the cell is
+ /// blocked before and after, \f$ u \f$ (under `ENTERED`) or its free
+ /// neighbours (under `LEFT`) if it is free before and after, \f$ u \f$
+ /// and its free neighbours of the four or the eight moves if it changes
+ /// between free and blocked; at most nine calls, read on the grid after
+ /// the change
+ ///
+ /// In pseudocode (beyond the book), \f$ N( u ) \f$ the cells at a move
+ /// of \f$ u \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{forEachAffected}( u , a , c , f ) \cr
+ /// 2 & \quad \textbf{if}\ a \le 0\ \textbf{and}\ c \le 0
+ ///     \ \textbf{then}\ \textbf{return} \cr
+ /// 3 & \quad \textbf{if}\ a > 0\ \textbf{and}\ c > 0\ \textbf{then} \cr
+ /// 4 & \qquad \textbf{if}\ \text{the cell entered pays}\ \textbf{then}
+ ///     \ f( u )\ \textbf{else foreach}\ v \in \mathrm{adj}( u )
+ ///     \ \textbf{do}\ f( v ) \cr
+ /// 5 & \quad \textbf{else foreach}\ v \in \{ u \} \cup \{ x \in
+ ///     N( u ) : x \text{ free} \}\ \text{in increasing order}
+ ///     \ \textbf{do}\ f( v )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ 0 \le u < \mathrm{bound}() \f$
+ template< class F >
+ void forEachAffected( int u , const C & from , const C & to ,
+                       F && f ) const;
+
  /// the set of the nodes, in increasing order
  [[nodiscard]] std::vector< int > V( void ) const;
 
@@ -253,6 +368,29 @@ class GridGraph {
  /// \pre \f$ u \f$ is a node
  template< class F >
  void forEachMove( int u , F && f ) const;
+
+/*--------------------------- THE OBSERVERS --------------------------------*/
+
+ /// attaches the observer \f$ o \f$ and gives its number
+ /// \pre no batch is open
+ template< class D >
+ int attach( D & o ) requires( Subject::dynamic ) {
+  return( f_sub.attach( o ) );
+  }
+
+ /// detaches the observer number \f$ \mathit{id} \f$
+ /// \pre \f$ \mathit{id} \f$ was given by `attach()` and not yet
+ ///      detached, no batch is open
+ void detach( int id ) requires( Subject::dynamic ) { f_sub.detach( id ); }
+
+ /// opens a batch: the events are collected until it is closed, and sent
+ /// coalesced
+ [[nodiscard]] Batch batch( void ) { return( Batch( *this ) ); }
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
 
 /*------------------------- THE STANDARD INTERFACE -------------------------*/
 
@@ -285,8 +423,17 @@ class GridGraph {
  template< class G >
  void scan( int u , G && g ) const;
 
- /// `n()` counts the free cells
+ /// `n()` counts the free cells, `f_atmin` those of the least cost
  [[nodiscard]] bool counted( void ) const;
+
+ /// the least cost of a free cell and their number at it, counted again
+ void recount( void );
+
+ /// setCost() when someone listens, out of the hot code
+ ADS_COLD_PATH void tellCold( const CellChanged & e ) {
+  f_sub.emit( e );
+  f_sub.audit( *this );
+  }
 
  int f_rows;                ///< the number of rows
  int f_cols;                ///< the number of columns
@@ -297,8 +444,10 @@ class GridGraph {
  W f_diagonal;              ///< the cost of a move to a corner
  std::vector< C > f_cost;   ///< the costs of the cells, or none
  int f_n = 0;               ///< the number of free cells
+ int f_atmin = 0;           ///< the number of free cells of cost f_min
  C f_min = C( 1 );          ///< the least cost of a free cell
  bool f_directed = false;   ///< whether two free cells cost differently
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;   ///< the observers
 
  };  // end( class GridGraph )
 
@@ -331,8 +480,8 @@ class GridGraph {
 /// \pre each node of \f$ S \f$ is a free cell
 /// \post 0 on the sources, and each other reached cell one move farther
 ///       than a neighbour from which it is reached (audit)
-template< class W , class C >
-std::vector< int > gridDistances( const GridGraph< W , C > & g ,
+template< class W , class C , class P >
+std::vector< int > gridDistances( const GridGraph< W , C , P > & g ,
                                   const std::vector< int > & S );
 
 /// the distance of Manhattan between the cells \f$ a \f$ and \f$ b \f$,
@@ -384,8 +533,8 @@ W chebyshev( GridCell a , GridCell b , W straight = W( 1 ) );
 /// \f]
 /// \pre \f$ u \f$ and \f$ t \f$ are cells of the grid; for eight moves,
 ///      \f$ \mathit{diagonal} \ge \mathit{straight} \f$
-template< class W , class C >
-W gridHeuristic( const GridGraph< W , C > & g , int u , int t );
+template< class W , class C , class P >
+W gridHeuristic( const GridGraph< W , C , P > & g , int u , int t );
 
 /// the grid of a map in the format of the benchmarks of Sturtevant: the
 /// lines `type octile`, `height` \f$ h \f$, `width` \f$ w \f$ and `map`,

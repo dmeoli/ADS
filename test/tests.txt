@@ -1747,6 +1747,8 @@ engineered_graph  grid-graph-paths    visite e cammini su griglia contro CSR
 engineered_graph  grid-graph-huge     griglie di 2^31 - 1 celle senza overflow
 engineered_graph  grid-graph-cost-models  costo della cella entrata o lasciata
 engineered_graph  grid-map            mappe nel formato dei benchmark
+engineered_graph  grid-graph-set-cost costi delle celle cambiati, con eventi
+engineered_graph  grid-graph-affected teste toccate da un cambio di costo
 engineered_graph  graph-builder       grafo costruito per archi e congelato
 engineered_graph  scc-one-pass        componenti forti in una visita
 engineered_graph  euler-trails        cammini e cicli euleriani, orientati e no
@@ -1769,6 +1771,9 @@ engineered_memory  pool-allocator-propagation copie, spostamenti e scambi
 engineered_memory  pool-allocate-shared       allocate_shared in un posto solo
 engineered_memory  concurrent-pool            heap per thread, un thread solo
 engineered_memory  concurrent-pool-threads    liberazioni da altri thread
+engineered_memory  arena-epochs               clear() di Arena, blocchi riusati
+engineered_memory  object-pool-epochs         clear() di ObjectPool, blocchi
+engineered_memory  pool-epochs-threads        epoche dei pool di più lavoratori
 
 # the engineered structures of the rows of a model, beyond the book
 engineered_sparse  position-index             indice delle posizioni, Robin Hood

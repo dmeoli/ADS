@@ -11,8 +11,12 @@
  *
  * with the workloads array-weight (`setWeight()` of ArrayGraph), list-weight
  * (`insertEdge()` of an edge of ListGraph that is there), list-edge
- * (`insertEdge()` of a new edge of ListGraph and its `deleteEdge()`) and
- * key (the array of keys of zerocost.h), and the variants plain,
+ * (`insertEdge()` of a new edge of ListGraph and its `deleteEdge()`), key
+ * (the array of keys of zerocost.h), grid-cost (`setCost()` of GridGraph),
+ * arena-make (`make()` of Arena) and pool-make (`make()` of ObjectPool,
+ * each second object freed), the last two with the variants plain (no
+ * `clear()`) and epochs (a `clear()` per 4096 objects), and the variants
+ * plain,
  * observable (`Observable< G >`, nobody listening), observable-excl
  * (`Observable< G , O >`, O wanting only the insertions of nodes), and,
  * with Modification.h, none, static-excl, static-count and dynamic [see
@@ -30,8 +34,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <string>
 #include <tuple>
+#include <utility>
 
 using namespace zc;
 
@@ -265,7 +271,76 @@ long long keys( const std::string & var , long long n )
  std::exit( 2 );
  }
 
+/// the workload grid-cost on the variant var: the cells of a grid of
+/// N x 8, set to costs from 0 to 9
+long long grid( const std::string & var , long long n )
+{
+ const auto P = weightOps();
+ auto run = [ & ]( auto & g ) {
+  loop( [ & ]( const Op & o ) {
+   g.setCost( o.u * 8 + int( o.w & 7 ) , int( o.w % 10 ) ); } , P , n );
+  return( (long long)( g.n() ) + g.minCost() );
+  };
+ const std::vector< int > cost( std::size_t( N ) * 8 , 1 );
+ if( ( var == "plain" ) || ( var == "none" ) ) {
+  Grid< ADS::NoObservers > g( N , 8 , cost );
+  return( run( g ) );
+  }
+ if( var == "static-count" ) {
+  GridCountDecreases x;
+  Grid< ADS::Static< GridCountDecreases > > g( N , 8 , cost ,
+                                               ADS::GridMoves::FOUR ,
+                                               ADS::Corners::NO_CUT , 1 ,
+                                               std::nullopt ,
+                                               ADS::MoveCost::ENTERED , x );
+  return( run( g ) + x.n );
+  }
+ if( var == "dynamic" ) {
+  Grid< ADS::Dynamic<> > g( N , 8 , cost );
+  return( run( g ) );
+  }
+ std::fprintf( stderr , "no variant %s\n" , var.c_str() );
+ std::exit( 2 );
+ }
+
 #endif
+
+/// the workloads arena-make and pool-make on the variant var (plain or
+/// epochs): n objects made, each second one freed in the pool, and with
+/// epochs a clear() per OPS objects
+long long allocation( const std::string & work , const std::string & var ,
+                      long long n )
+{
+ const bool epochs = var == "epochs";
+ if( ! epochs && ( var != "plain" ) ) {
+  std::fprintf( stderr , "no variant %s\n" , var.c_str() );
+  std::exit( 2 );
+  }
+ long long s = 0;
+ if( work == "arena-make" ) {
+  ADS::Arena< Op > a;
+  loop( [ & ]( const Op & o ) {
+   s += a.make( o )->u;
+   if( epochs && ( a.size() == OPS ) )
+    a.clear(); } , weightOps() , n );
+  return( s + (long long)( a.size() ) );
+  }
+ ADS::ObjectPool< Op > p;
+ Op * last = nullptr;
+ std::size_t made = 0;
+ loop( [ & ]( const Op & o ) {
+  Op * x = p.make( o );
+  s += x->u;
+  if( ( ++made & 1 ) == 0 )
+   p.free( std::exchange( last , nullptr ) );
+  else
+   last = x;
+  if( epochs && ( made % OPS == 0 ) ) {
+   p.clear();
+   last = nullptr;
+   } } , weightOps() , n );
+ return( s + (long long)( p.size() ) );
+ }
 
 }  // end( namespace )
 
@@ -285,7 +360,11 @@ int main( int argc , char ** argv )
 #ifdef ZC_POLICIES
  else if( work == "key" )
   s = keys( var , n );
+ else if( work == "grid-cost" )
+  s = grid( var , n );
 #endif
+ else if( ( work == "arena-make" ) || ( work == "pool-make" ) )
+  s = allocation( work , var , n );
  else {
   std::fprintf( stderr , "no workload %s\n" , work.c_str() );
   return( 2 );

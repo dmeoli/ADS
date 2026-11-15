@@ -6,8 +6,9 @@
  * PoolResource and of ConcurrentPoolResource at their limits, PoolAllocator
  * in the node containers of the standard library and in
  * std::allocate_shared against the same containers on std::allocator, the
- * propagation of the allocators by copies, moves and swaps, and the frees
- * from other threads, at the level 3 of the contracts.
+ * propagation of the allocators by copies, moves and swaps, the frees
+ * from other threads, and the epochs of Arena and ObjectPool, by one
+ * thread and by the workers of a search, at the level 3 of the contracts.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -22,11 +23,14 @@
 #include "ADSTest.h"
 
 #include "ADS/concurrent/SPSCQueue.h"
+#include "ADS/memory/Arena.h"
 #include "ADS/memory/ConcurrentPool.h"
+#include "ADS/memory/ObjectPool.h"
 #include "ADS/memory/PoolAllocator.h"
 
 #include <algorithm>
 #include <atomic>
+#include <barrier>
 #include <cstdint>
 #include <cstring>
 #include <list>
@@ -34,6 +38,7 @@
 #include <memory>
 #include <random>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <unordered_map>
@@ -385,6 +390,266 @@ ADS_TEST( "concurrent-pool-threads" )
   L.push_back( i );
  std::thread( [ & ]() { L.clear(); } ).join();
  CHECK( L.empty() );
+ }
+
+// Arena::clear(): the objects of an epoch destroyed at once, the blocks
+// kept and given again in their order, so that the places of the new
+// epoch are those of the old one and the memory does not grow; fresh() of
+// the pointers of the old epoch, the iterators of the new one, a
+// constructor that throws after a clear(), and the places of the old epoch
+// forbidden to the sanitizer of addresses until they are given again
+ADS_TEST( "arena-epochs" )
+{
+ Arena< long > E( 4 );
+ E.clear();                                 // no block: nothing to do
+ CHECK( E.size() == 0 && E.bytes() == 0 );
+ std::vector< long * > P;
+ for( long i = 0 ; i < 10 ; ++i )
+  P.push_back( E.make( i ) );
+ const std::size_t b = E.bytes();
+ CHECK( b == 3 * 4 * sizeof( long ) );
+ for( long * p : P )
+  CHECK( E.fresh( p ) );
+ for( int e = 1 ; e <= 5 ; ++e ) {
+  E.clear();
+  CHECK( E.size() == 0 && E.begin() == E.end() && E.bytes() == b );
+  for( long * p : P )
+   CHECK( ! E.fresh( p ) );
+#if ADS_ASAN
+  for( long * p : P )
+   CHECK( __asan_address_is_poisoned( p ) );
+#endif
+  for( long i = 0 ; i < 10 ; ++i ) {
+   CHECK( E.make( 100 * e + i ) == P[ i ] );
+   CHECK( E.fresh( P[ i ] ) );
+   CHECK( ( i == 9 ) || ! E.fresh( P[ i + 1 ] ) );
+   }
+  CHECK( E.bytes() == b && E.size() == 10 );
+  long s = 0;
+  for( long x : E )
+   s += x;
+  CHECK( s == 1000 * e + 45 );
+  }
+ for( long i = 0 ; i < 3 ; ++i )            // past the blocks kept
+  E.make( i );
+ CHECK( E.bytes() == b + 4 * sizeof( long ) && E.size() == 13 );
+ CHECK( ! E.fresh( nullptr ) );
+ // the objects with a destructor: destroyed by clear()
+ {
+  Arena< Counted > C( 3 );
+  for( int i = 0 ; i < 8 ; ++i )
+   C.make( std::string( 40 , char( 'a' + i ) ) );
+  CHECK( Counted::alive == 8 );
+  C.clear();
+  CHECK( Counted::alive == 0 && C.size() == 0 );
+  for( int i = 0 ; i < 4 ; ++i )
+   C.make( "again" );
+  CHECK( Counted::alive == 4 );
+  }
+ CHECK( Counted::alive == 0 );
+ // a constructor that throws in a block kept: the arena as before it
+ struct Thrower {
+  long x;
+  explicit Thrower( long v ) : x( v ) {
+   if( v < 0 )
+    throw std::runtime_error( "no" );
+   }
+  };
+ Arena< Thrower > T( 2 );
+ for( long i = 0 ; i < 5 ; ++i )
+  T.make( i );
+ T.clear();
+ T.make( 1L );
+ T.make( 2L );
+ CHECK_THROWS( T.make( -1L ) , std::runtime_error );
+ CHECK( T.size() == 2 );
+ const Thrower * t = T.make( 3L );
+ CHECK( t->x == 3 && T.size() == 3 && T.fresh( t ) );
+ }
+
+// ObjectPool::clear(): the objects and the free slots of an epoch dropped
+// at once, the blocks kept and given again from the last one down before a
+// new block is taken, so that a pool cleared at each restart keeps the
+// memory of its largest epoch; fresh() and the audit of free() on a stale
+// pointer, adopt() while blocks kept wait to be used again, the moves and
+// the swaps with blocks kept, and the slots dropped forbidden to the
+// sanitizer of addresses
+ADS_TEST( "object-pool-epochs" )
+{
+ using Pool = ObjectPool< long , std::allocator< long > >;
+ Pool Q( 8 );
+ Q.clear();
+ CHECK( Q.size() == 0 && Q.bytes() == 0 );
+ std::vector< long * > P;
+ for( long i = 0 ; i < 23 ; ++i )          // blocks of 1, 2, 4, 8 and 8
+  P.push_back( Q.make( i ) );
+ const std::size_t b = Q.bytes();
+ for( int i = 0 ; i < 23 ; i += 2 )
+  Q.free( P[ i ] );
+ for( int e = 1 ; e <= 4 ; ++e ) {
+  Q.clear();
+  CHECK( Q.size() == 0 && Q.bytes() == b );
+  for( long * p : P )
+   CHECK( ! Q.fresh( p ) );
+#if ADS_ASAN
+  for( long * p : P )
+   CHECK( __asan_address_is_poisoned( p ) );
+#endif
+  // a stale pointer whose slot has not been given again: the audit
+  std::set< long * > S{ Q.make( 0L ) };
+  CHECK_THROWS( Q.free( P[ 0 ] ) , contract_violation );
+  CHECK( Q.size() == 1 );
+  for( long i = 1 ; i < 23 ; ++i ) {
+   long * p = Q.make( i );
+   CHECK( Q.fresh( p ) );
+   S.insert( p );
+   }
+  CHECK( S == std::set< long * >( P.begin() , P.end() ) );
+  CHECK( Q.bytes() == b && Q.size() == 23 );
+  // the frees of the epoch, and the slots taken again
+  std::vector< long * > F( S.begin() , S.end() );
+  for( int i = 0 ; i < 10 ; ++i )
+   Q.free( F[ i ] );
+  for( int i = 0 ; i < 10 ; ++i )
+   Q.make( 0L );
+  CHECK( Q.bytes() == b );
+  }
+ Q.make( 1L );                              // a new block, past the kept
+ CHECK( Q.bytes() > b && Q.size() == 24 );
+ // adopt() while blocks kept wait: the objects of the other pool alive
+ // and never overwritten by the slots given again
+ Pool A( 4 ) , B( 4 );
+ for( long i = 0 ; i < 15 ; ++i )
+  A.make( i );
+ A.clear();
+ A.make( -1L );                             // blocks kept still waiting
+ std::vector< long * > Bp;
+ for( long i = 0 ; i < 9 ; ++i )
+  Bp.push_back( B.make( 1000 + i ) );
+ A.adopt( B );
+ CHECK( A.size() == 10 && B.size() == 0 && B.bytes() == 0 );
+ for( long i = 0 ; i < 30 ; ++i )
+  *A.make( i ) = -7;
+ for( long i = 0 ; i < 9 ; ++i )
+  CHECK( *Bp[ i ] == 1000 + i && A.fresh( Bp[ i ] ) );
+ for( long * p : Bp )
+  A.free( p );
+ A.clear();
+ const std::size_t a = A.bytes();
+ for( long i = 0 ; i < 42 ; ++i )           // all the slots, the adopted
+  A.make( i );                              // ones too: 15 + 11 + 16
+ CHECK( A.bytes() == a );
+ A.make( 0L );
+ CHECK( A.bytes() > a );
+ // the moves and the swaps carry the blocks kept
+ Pool M( 4 );
+ for( long i = 0 ; i < 15 ; ++i )
+  M.make( i );
+ M.clear();
+ Pool N( std::move( M ) );
+ CHECK( M.bytes() == 0 && N.size() == 0 );
+ const std::size_t n = N.bytes();
+ for( long i = 0 ; i < 15 ; ++i )
+  N.make( i );
+ CHECK( N.bytes() == n );
+ N.clear();
+ Pool O( 4 );
+ O.swap( N );
+ for( long i = 0 ; i < 15 ; ++i )
+  O.make( i );
+ CHECK( O.bytes() == n && N.bytes() == 0 );
+ }
+
+// the epochs of the pools of the workers of a parallel search: each of 4
+// threads owns an Arena and an ObjectPool, makes nodes whose parents are
+// nodes of the other workers, reads the nodes of the others after a
+// barrier, gives back to their owners some nodes of the others (the
+// deferred return: each node by one worker, the owner freeing it after
+// the next barrier) and clears its pools after the last barrier of the
+// epoch; the nodes intact, the memory of the later epochs that of the
+// first one, and no race (the test runs under the sanitizer of threads)
+ADS_TEST( "pool-epochs-threads" )
+{
+ struct Node {
+  int owner , epoch;
+  long value;
+  const Node * parent;
+  };
+ constexpr int P = 4 , EPOCHS = 12 , M = 3000;
+ std::vector< std::vector< Node * > > pub( P ) , pooled( P );
+ // ret[ o ][ w ]: the nodes of the owner o that the worker w gives back
+ std::vector< std::vector< std::vector< Node * > > > ret(
+  P , std::vector< std::vector< Node * > >( P ) );
+ std::vector< std::size_t > bytes( P , 0 );
+ std::atomic< long > bad{ 0 };
+ std::barrier sync( P );
+ auto work = [ & ]( int w ) {
+  Arena< Node > ar( 256 );
+  ObjectPool< Node > pool( 512 );
+  for( int e = 0 ; e < EPOCHS ; ++e ) {
+   // phase 1: the own nodes, published
+   pub[ w ].clear();
+   for( int i = 0 ; i < M ; ++i )
+    pub[ w ].push_back( ar.make( Node{ w , e , long( w ) * M + i ,
+                                       nullptr } ) );
+   sync.arrive_and_wait();
+   // phase 2: the nodes of the others read, and pooled nodes whose
+   // parents are theirs; a third of the pooled nodes freed by the owner,
+   // a third of those of the others given back to their owner
+   pooled[ w ].clear();
+   for( int o = 0 ; o < P ; ++o )
+    for( int i = w ; i < M ; i += 7 ) {
+     const Node * x = pub[ o ][ i ];
+     if( ( x->owner != o ) || ( x->epoch != e ) ||
+         ( x->value != long( o ) * M + i ) || x->parent )
+      ++bad;
+     Node * y = pool.make( Node{ w , e , x->value , x } );
+     if( i % 3 == 0 )
+      pool.free( y );
+     else
+      pooled[ w ].push_back( y );
+     }
+   sync.arrive_and_wait();
+   for( int o = 0 ; o < P ; ++o )
+    if( o != w ) {
+     for( std::size_t i = std::size_t( w ) ; i < pooled[ o ].size() ;
+          i += 2 * P ) {
+      const Node * y = pooled[ o ][ i ];
+      if( ( y->owner != o ) || ( y->epoch != e ) ||
+          ( y->parent->value != y->value ) )
+       ++bad;
+      ret[ o ][ w ].push_back( pooled[ o ][ i ] );
+      }
+     }
+   sync.arrive_and_wait();
+   // phase 3: the deferred returns freed by their owner, then the epoch
+   // closed; nobody reads a node of w after the barrier above
+   for( int x = 0 ; x < P ; ++x ) {
+    for( Node * y : ret[ w ][ x ] ) {
+     if( ! pool.fresh( y ) )
+      ++bad;
+     pool.free( y );
+     }
+    ret[ w ][ x ].clear();
+    }
+   ar.clear();
+   pool.clear();
+   if( ( ar.size() != 0 ) || ( pool.size() != 0 ) ||
+       ar.fresh( pub[ w ].front() ) )
+    ++bad;
+   if( e == 0 )
+    bytes[ w ] = ar.bytes() + pool.bytes();
+   else if( ar.bytes() + pool.bytes() != bytes[ w ] )
+    ++bad;
+   sync.arrive_and_wait();
+   }
+  };
+ std::vector< std::thread > T;
+ for( int w = 0 ; w < P ; ++w )
+  T.emplace_back( work , w );
+ for( auto & t : T )
+  t.join();
+ CHECK( bad == 0 );
  }
 
 /*--------------------------------------------------------------------------*/

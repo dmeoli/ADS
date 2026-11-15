@@ -1504,7 +1504,11 @@ the visit in breadth from the set $S$ on such a grid, with its distances in
 a vector indexed by the names. Finally, `readGridMap(in)` reads a map in the
 format of the benchmarks (the lines `type octile`, `height`, `width` and
 `map`, then one character per cell, of which the dot, `G` and `S` are free
-cells of cost 1 and the others blocked).
+cells of cost 1 and the others blocked). The costs of the cells may change
+afterwards by `setCost(u, c)`, whose events go to the observers of the
+subject policy `Policy`, the third parameter of the class (`NoObservers` by
+default); we describe it in [§14.13.3](14-graph.md#sec-14-13-3), together
+with `forEachAffected()`.
 
 In all, the class and the functions of `GridGraph.h` are
 
@@ -1524,11 +1528,15 @@ enum class MoveCost {
  LEFT
  };
 
-template< class W = int , class C = W >
+template< class W = int , class C = W , class Policy = NoObservers >
 class GridGraph {
  public:
  using Weight = W;
  using Cost = C;
+ using CellChanged = mod::Changed< mod::Value , int , C >;
+ using modifications = mod::list< CellChanged >;
+ using Subject = typename Policy::template bind< modifications >;
+ using Batch = ADS::Batch< GridGraph >;
  GridGraph( int rows , int cols , GridMoves moves = GridMoves::FOUR ,
             Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
             std::optional< W > diagonal = std::nullopt ,
@@ -1538,6 +1546,10 @@ class GridGraph {
             Corners corners = Corners::NO_CUT , W straight = W( 1 ) ,
             std::optional< W > diagonal = std::nullopt ,
             MoveCost model = MoveCost::ENTERED );
+ template< class ... O > requires( sizeof...( O ) > 0 )
+ GridGraph( int rows , int cols , std::vector< C > cost , GridMoves moves ,
+            Corners corners , W straight , std::optional< W > diagonal ,
+            MoveCost model , O & ... o );
  [[nodiscard]] int rows( void ) const;
  [[nodiscard]] int cols( void ) const;
  [[nodiscard]] GridMoves moves( void ) const;
@@ -1549,15 +1561,24 @@ class GridGraph {
  [[nodiscard]] GridCell cell( int u ) const;
  [[nodiscard]] C cost( int u ) const;
  [[nodiscard]] C minCost( void ) const;
+ void setCost( int u , const C & c );
+ template< class F >
+ void forEachAffected( int u , const C & from , const C & to ,
+                       F && f ) const;
  template< class F >
  void forEachEdge( int u , F && f ) const;
  template< class F >
  void forEachMove( int u , F && f ) const;
+ template< class D >
+ int attach( D & o ) requires( Subject::dynamic );
+ void detach( int id ) requires( Subject::dynamic );
+ [[nodiscard]] Batch batch( void );
+ [[nodiscard]] Subject & subject( void );
  [[nodiscard]] auto nodes( void ) const;
  };
 
-template< class W , class C >
-std::vector< int > gridDistances( const GridGraph< W , C > & g ,
+template< class W , class C , class P >
+std::vector< int > gridDistances( const GridGraph< W , C , P > & g ,
                                   const std::vector< int > & S );
 template< class W = int >
 W manhattan( GridCell a , GridCell b , W straight = W( 1 ) );
@@ -1565,8 +1586,8 @@ template< class W >
 W octile( GridCell a , GridCell b , W straight , W diagonal );
 template< class W = int >
 W chebyshev( GridCell a , GridCell b , W straight = W( 1 ) );
-template< class W , class C >
-W gridHeuristic( const GridGraph< W , C > & g , int u , int t );
+template< class W , class C , class P >
+W gridHeuristic( const GridGraph< W , C , P > & g , int u , int t );
 template< class W = double , class C = unsigned char >
 GridGraph< W , C > readGridMap( std::istream & in ,
                                 GridMoves moves = GridMoves::EIGHT ,
@@ -4146,6 +4167,142 @@ change of the edge $( u , v )$, and the work of each outcome.
 | `SpanningForestObserver` | (14.13) still true, $O( \log n )$ | a swap on a cycle, $O( \log n )$; an edge of $F$ raised or deleted, the lightest edge out of the smaller part | more than $\rho m$ events |
 | `MaxFlowObserver` | $c' \ge f( u , v )$ off the cut, $O( 1 )$ | an edge of the cut raised, the maximum from $f$; $c' < f( u , v )$, the excess and the deficit routed first | more than $\rho m$ events |
 | `AssignmentObserver` | a cost off the assignment with reduced cost still $\ge 0$, $O( 1 )$ | a row or a column changed, one augmentation | more than $n / 2$ rows and columns changed |
+
+### 14.13.3 A grid map that tells its changes {#sec-14-13-3}
+
+The incremental searches on grid maps (e.g., LPA* and D* Lite) repair a
+shortest path when some cells are blocked, freed or change their cost. They
+need to know which cells changed, and which nodes have arcs into them that
+the change created, removed or weighed differently, since they recompute
+the right-hand side of each such head. `GridGraph`
+([§14.6](14-graph.md#sec-14-6)) holds the subject of the typed
+modifications of [§1.13](01-introduction.md#sec-1-13) as its third
+parameter `Policy`, and its member `setCost(u, c)` sets the cost of the cell $u$ to
+$c$, blocking the cell when $c$ is not positive and freeing it otherwise.
+If the cost was not already $c$, it sends the event `CellChanged`, i.e.,
+`Changed<Value, int, C>` with the cell as its handle and the two costs as
+`from` and `to`. With `NoObservers` the test of the event is false at
+compile time, and the change is the code of the grid alone. With
+`Static<O...>` the observers are given to a constructor that takes every
+parameter of the grid before them, and with `Dynamic<>` they come and go
+by `attach()` and `detach()`. A `batch()` collects the changes and sends
+them coalesced, one event per cell with its first cost and its last one,
+by the default rule of [§1.13](01-introduction.md#sec-1-13). A grid with no
+vector of the costs takes one, of $R C$ places of cost 1, at its first
+change to a cost other than 1. Since `n()`, `minCost()` and `directed()`
+must stay true after a change (the last two decide the weights that
+`forEachEdge()` gives, cf. [§14.6](14-graph.md#sec-14-6)), the grid keeps
+also the number $m$ of the free cells of the least cost
+$\gamma_{\mathrm{min}}$ (the invariant checked after each change), with
+which `setCost()` follows them as follows.
+
+--8<-- "generated/GridGraph-setCost.pseudo.md"
+
+<span id="lem-14-52"></span>**Lemma 14.52.** *After each `setCost(u, c)`,
+$n$ is the number of the free cells, $\gamma_{\mathrm{min}}$ their least
+cost (1 if there is none), $m$ the number of the free cells of cost
+$\gamma_{\mathrm{min}}$, and `directed()` is true exactly when two free cells
+cost differently. The call costs $O( 1 )$ time when the cell $u$ is not the
+last free cell of the least cost to leave it, and $O( R C )$ otherwise,
+besides the first change of a grid with no vector and the observers.*
+
+*Proof.* By induction on the calls, the base being the count of the
+constructor, which line 7 repeats. Line 4 takes the cell out of the counts
+as it was: it was counted in $n$ if its old cost $a$ was positive, and in
+$m$ if moreover $a = \gamma_{\mathrm{min}}$. After it, if $m > 0$ then
+$\gamma_{\mathrm{min}}$ is still the least cost of the other free cells,
+and if $m = 0$ (but $n > 0$) every other free cell costs more than
+$\gamma_{\mathrm{min}}$. Lines 5 and 6 put the cell back with its new cost $c$:
+if it is the only free cell, or $c < \gamma_{\mathrm{min}}$, then $c$ is
+the least cost (in the second case, the others cost at least
+$\gamma_{\mathrm{min}} > c$), with $m = 1$. If $c = \gamma_{\mathrm{min}}$
+it joins the cells of the least cost; otherwise the counts stay right
+whenever $m > 0$. The only case left, $m = 0$ with $n > 0$, is that in which
+the cell was the last one of the least cost and its new cost is larger, and
+line 7 counts both again on the whole grid in $O( R C )$ time. With no free
+cell, the least cost is set to 1, as in the constructor. Finally, all the
+free cells cost the same exactly when those of the least cost are all of
+them, i.e., $m = n$, which line 8 tests. Lines 2 to 6 and 8 take $O( 1 )$
+time. $\square$
+
+We remark that `gridHeuristic()` reads $\gamma_{\mathrm{min}}$, and hence it
+changes when the least cost does. An incremental search, whose keys must
+stay those of one consistent heuristic across the changes, takes a lower
+bound of the costs that the cells may receive instead (e.g., the least cost
+of the model of the changes).
+
+`forEachAffected(u, from, to, f)` calls $f$, in increasing order and at
+most nine times, on the heads of the moves that the change of the cell $u$
+from the cost `from` to the cost `to` may have touched. They depend on the
+model of the costs and on whether the cell changes between free and
+blocked. There is none if the cell is blocked before and after, and there
+is the cell itself when it stays free and the cell entered pays, or its
+neighbours when it stays free and the cell left pays. When the cell is
+blocked or freed, they are the cell and its free neighbours at a move,
+since a cell is also a side of the corners that the diagonal moves between
+two of its neighbours cut (which the rules `NO_SQUEEZE` and `NO_CUT` allow or forbid by the side). The function reads
+the grid after the change; on the events of a batch, read after the batch,
+the union of its calls is still a superset of the heads of the arcs that
+the batch changed, as we now show.
+
+--8<-- "generated/GridGraph-forEachAffected.pseudo.md"
+
+<span id="lem-14-53"></span>**Lemma 14.53.** *Let a sequence of changes of
+the costs of a `GridGraph` turn its arcs $A$ (each with its weight) into
+the arcs $A'$, and let $E$ be its events coalesced, one per cell whose cost
+differs at the end, with the first cost and the last one. Then every head
+$v$ of an arc in the symmetric difference of $A$ and $A'$ (an arc created,
+removed, or of another weight) is given by `forEachAffected()` called on
+some event of $E$ on the grid after the changes. With one change, $E$ is
+that change.*
+
+*Proof.* An arc $( x , v )$ exists when $x$ and $v$ are free and, for a
+move to a corner, the rule on the corners holds on its two sides, and it
+weighs the cost of $v$ (`ENTERED`) or of $x$ (`LEFT`) times its unit cost.
+Its existence and its weight are thus functions of the final costs of at
+most four cells, $x$, $v$ and the two sides, and if the arc changed, then
+one of them changed its cost, i.e., has an event in $E$. Suppose first that
+the arc exists both before and after, with another weight. Then $x$ and
+$v$ are free in both, and the cell that pays has an event. Under `ENTERED`
+this is $v$, which stays free, and its call gives $v$; under `LEFT` it is
+$x$, which stays free, and its call gives the neighbours of $x$ in the grid
+after the changes, among which is $v$, since the arc exists then. Suppose
+now that the arc exists only on one side. Then one of its cells changed
+between free and blocked, and if $v$ did, its call gives $v$ itself.
+Otherwise $v$ is free both before and after, since it is free on the side
+where the arc exists and did not change. The cell that changed is then $x$
+or a side of the corner, both at a move of $v$ (a side of a corner is at a
+side of both
+ends); its call gives the free neighbours at a move, among which is $v$.
+$\square$
+
+Of course, a head given need not have changed; for instance, a cell
+blocked or freed under the rule `NO_CUT` gives a free diagonal neighbour
+also when a blocked side forbids the move between the two before and
+after. An observer that patches the keys of a search on the grid
+(e.g., the right-hand sides of LPA*) thus recomputes at most nine of them per
+event, with no rebuilding of the adjacency, and needs the grid only after
+the change, as the events arrive. With the headers `ADS/graph/GridGraph.h`
+and `ADS/Modification.h`,
+
+```cpp
+using G = ADS::GridGraph< int , int , ADS::Dynamic<> >;
+struct Heads {                             // the heads to repair
+ const G * g = nullptr;
+ std::vector< int > h;
+ void on( const G::CellChanged & e ) {
+  g->forEachAffected( e.h , e.from , e.to , [ & ]( int v ) {
+   h.push_back( v ); } );
+  }
+ };
+G g( 3 , 3 , std::vector< int >( 9 , 1 ) );
+Heads o{ & g };
+g.attach( o );
+g.setCost( 4 , 0 );                        // the centre blocked: o.h is
+                                           // 1 3 4 5 7, the cell and its
+                                           // free neighbours
+g.setCost( 0 , 5 );                        // a cost raised: o.h adds 0
+```
 
 ## 14.14 Discussion and references {#sec-14-14}
 
