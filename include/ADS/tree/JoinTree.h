@@ -37,18 +37,52 @@
  * \f$ \mathit{hi} \f$; `augPrefix( k )` does the same on the path to
  * \f$ k \f$ alone, and `augVisit()` gives the pieces themselves, in order,
  * to a function (the range tree counts on them [see `RangeTree.h`]).
+ * `augSelect( p )` descends to the first pair whose prefix satisfies a
+ * monotone predicate (the \f$ i \f$-th key on the counts, the first prefix
+ * whose sum reaches a threshold), and `augFilter( q , f )` gives the pairs
+ * whose value satisfies a predicate that distributes over the combination,
+ * entering only the subtrees whose augmented value satisfies it, in time
+ * proportional to the pairs given (see \ref theory_tree_observed).
  * `SumAugmentation` and `MaxAugmentation` are the sums and the maxima of
  * the values, and `AugmentedMap` the map augmented by `G` and balanced by
  * weight, as in PAM; the interval tree [see `IntervalTree.h`] and the range
  * tree are augmented maps.
  *
+ * An augmentation may declare its algebra by static members, which refine
+ * `Augmentation`: `commutative`, `inverse( a )` (a group), `selective`
+ * (the combination of two values is one of them), as `SumAugmentation` (an
+ * abelian group when its values have opposites) and `MaxAugmentation`
+ * (commutative and selective) do. `assign( k , v )` changes the value of a
+ * key that is there and keeps the shape: when `G` is an abelian group of
+ * exact values, it combines each augmented value of the path to \f$ k \f$
+ * with the difference of the new and the old value, otherwise it
+ * recomputes them from the children, from \f$ k \f$ up.
+ *
+ * The changes go to the observers of the subject policy `Policy` [see
+ * `Modification.h`], `NoObservers` by default, which adds neither a member
+ * nor an instruction: `Inserted`, `Erased` (told before the removal) and
+ * `Assigned` of the key, whose handle is the key itself, by `insert()`,
+ * `remove()` and `assign()` (an insertion of a key that is there is an
+ * assignment), `Cleared` by `clear()` and on a tree whose nodes a bulk
+ * operation takes (the second tree of a union, a tree moved from), and
+ * `Rebuilt` on a tree whose nodes it puts back (the first tree of a union,
+ * the trees of a split, both trees of a swap). With someone listening, an
+ * insertion and a removal make one more descent, to read the old value;
+ * an observer that throws from `on()` of `Inserted` or `Assigned` gets the
+ * change undone (the strong guarantee). A tree of static observers is not
+ * copied nor moved, and has no split; a copy or a move of the others has
+ * no observer.
+ *
  * The contracts [see `Contract.h`]: `insert()` ensures that the key is
- * there and `remove()` that it is not; the invariant is the order of the
- * keys, the sizes, the augmented values (when `G::Value` is comparable) and
- * the balance of the scheme (the heights of AVL; no red node with a red
- * child and the same black height on every path, the root black, for
- * Red-Black; \f$ \alpha ( w_l + w_r ) \le \min( w_l , w_r ) \f$ for the
- * weights of the two children of every node; the heap order of the
+ * there, `remove()` that it is not and `assign()` that the key has its new
+ * value; the predicate of `augSelect()` is monotone on the prefixes, that
+ * of `augFilter()` false on the identity and distributive (not checked);
+ * the operations of a group are total on the values; the invariant is the
+ * order of the keys, the sizes, the augmented values (when `G::Value` is
+ * comparable) and the balance of the scheme (the heights of AVL; no red
+ * node with a red child and the same black height on every path, the root
+ * black, for Red-Black; \f$ \alpha ( w_l + w_r ) \le \min( w_l , w_r ) \f$
+ * for the weights of the two children of every node; the heap order of the
  * priorities of the treap), an \f$ O( n ) \f$ check at the level 3. The
  * operations are defined in `JoinTree.tpp`.
  *
@@ -86,6 +120,7 @@
 
 #include "ADS/Contract.h"
 #include "ADS/Iterators.h"
+#include "ADS/Modification.h"
 #include "ADS/Portable.h"
 #include "ADS/dictionary/RandomHashing.h"
 #include "ADS/tree/JoinAlgorithms.h"
@@ -95,6 +130,7 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 /*--------------------------------------------------------------------------*/
@@ -125,6 +161,48 @@ concept Augmentation = requires( const K & k , const V & v ,
  { G::combine( a , a ) } -> std::convertible_to< typename G::Value >;
  };
 
+/// \cond
+namespace detail {
+
+/// the refinements of a monoid by its algebra, read from the static
+/// members of `G`: `commutative`, `inverse( a )`, `selective` (the
+/// combination of two values is one of them); a value is exact unless of a
+/// floating type
+template< class G >
+concept Monoid = requires( const typename G::Value & a ) {
+ { G::identity() } -> std::convertible_to< typename G::Value >;
+ { G::combine( a , a ) } -> std::convertible_to< typename G::Value >;
+ };
+
+template< class G >
+concept CommutativeMonoid = Monoid< G > && G::commutative;
+
+template< class G >
+concept Group = Monoid< G > && requires( const typename G::Value & a ) {
+ { G::inverse( a ) } -> std::convertible_to< typename G::Value >;
+ };
+
+template< class G >
+concept AbelianGroup = Group< G > && CommutativeMonoid< G >;
+
+template< class G >
+concept Selective = Monoid< G > && G::selective;
+
+template< class G >
+inline constexpr bool exact_v =
+ ! std::is_floating_point_v< typename G::Value >;
+
+/// whether a tree of the subject policy `P` can be made with no observer
+/// (a copy, a move, the second tree of a split)
+template< class P >
+inline constexpr bool unbound_v = std::is_same_v< P , NoObservers >;
+
+template< class L >
+inline constexpr bool unbound_v< Dynamic< L > > = true;
+
+}  // end( namespace detail )
+/// \endcond
+
 /// no augmentation: nothing is kept, nothing computed
 struct NoAugmentation {
  /// the empty value
@@ -141,10 +219,11 @@ struct NoAugmentation {
  static Value combine( const Value & , const Value & ) { return( Value() ); }
  };
 
-/// the sum of the values
+/// the sum of the values, an abelian group when `V` has the opposites
 template< class V >
 struct SumAugmentation {
  using Value = V;   ///< the sums, of the type of the values
+ static constexpr bool commutative = true;   ///< \f$ a + b = b + a \f$
  /// 0, the value made by `V()`
  static Value identity( void ) { return( V() ); }
  /// the value \f$ v \f$ of the pair
@@ -154,13 +233,20 @@ struct SumAugmentation {
  static Value combine( const Value & a , const Value & b ) {
   return( a + b );
   }
+ /// \f$ -a \f$
+ static Value inverse( const Value & a ) requires requires { -a; } {
+  return( -a );
+  }
  };
 
 /// the largest of the values, whose identity is \f$ -\infty \f$ if `V`
-/// has it, its smallest value otherwise
+/// has it, its smallest value otherwise: a commutative and selective
+/// monoid
 template< class V >
 struct MaxAugmentation {
  using Value = V;   ///< the maxima, of the type of the values
+ static constexpr bool commutative = true;   ///< the order does not count
+ static constexpr bool selective = true;     ///< the maximum is one of two
  /// the smallest value of the type
  static Value identity( void ) {
   if constexpr( std::numeric_limits< V >::has_infinity )
@@ -182,24 +268,27 @@ struct MaxAugmentation {
 /*--------------------------------------------------------------------------*/
 
 /// a DICTIONARY on a binary search tree balanced by the join of `B` alone,
-/// augmented by `G`
+/// augmented by `G`, whose changes go to the observers of the subject
+/// policy `Policy` [see `Modification.h`]
 template< std::totally_ordered K , class V , class B = AVLBalance ,
-          class G = NoAugmentation >
+          class G = NoAugmentation , class Policy = NoObservers >
  requires Augmentation< G , K , V >
 class JoinTree;
 
 /// the adaptor of the nodes of a `JoinTree` [see `JoinAdaptor`]
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
 struct JoinTreeNodes;
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
 class JoinTree
- : public Joinable< JoinTree< K , V , B , G > ,
-                    JoinTreeNodes< K , V , B , G > , K , V > {
+ : public Joinable< JoinTree< K , V , B , G , Policy > ,
+                    JoinTreeNodes< K , V , B , G , Policy > , K , V > {
 
- friend struct JoinTreeNodes< K , V , B , G >;
- using Nodes = JoinTreeNodes< K , V , B , G >;
+ friend struct JoinTreeNodes< K , V , B , G , Policy >;
+ using Nodes = JoinTreeNodes< K , V , B , G , Policy >;
 
 /*--------------------------------------------------------------------------*/
  public:
@@ -208,6 +297,19 @@ class JoinTree
  using Value = V;   ///< the type of the values
  using AugValue = typename G::Value;   ///< the type of the augmentation
  using Augmented = G;                  ///< the augmentation
+
+ /// the insertion of a key, whose handle is the key itself
+ using Inserted = mod::Inserted< K , K , V >;
+ /// the removal of a key, told before it is made outside a batch
+ using Erased = mod::Erased< K , K , V >;
+ /// the value of a key that is there changed
+ using Assigned = mod::Assigned< K , V >;
+ /// the events: `Cleared` by `clear()` and on the trees that a bulk
+ /// operation consumes, `Rebuilt` on the tree that it leaves
+ using modifications = mod::list< Inserted , Erased , Assigned ,
+                                  mod::Cleared , mod::Rebuilt >;
+ /// the subject [see `Modification.h`]
+ using Subject = typename Policy::template bind< modifications , JoinTree >;
 
  /// a node: what the navigation below reads
  struct Node {
@@ -223,22 +325,39 @@ class JoinTree
   };
 
  /// an empty tree; the seed of the priorities, for a treap
- explicit JoinTree( std::uint64_t seed = 1 );
+ explicit JoinTree( std::uint64_t seed = 1 )
+  requires detail::unbound_v< Policy >;
 
- /// a copy, node by node with the same shape, in \f$ O( n ) \f$ time
+ /// an empty tree whose changes go to the static observers `o...` of the
+ /// policy; the seed of the priorities, for a treap
+ template< class ... O >
+  requires( sizeof...( O ) > 0 )
+ JoinTree( std::uint64_t seed , O & ... o );
+
+ /// a copy, node by node with the same shape, in \f$ O( n ) \f$ time,
+ /// with no observer (none of a policy with static observers, by a static
+ /// assertion)
  JoinTree( const JoinTree & o );
 
- /// the nodes of `o`, which is left empty, in \f$ O( 1 ) \f$ time
- JoinTree( JoinTree && o ) noexcept;
+ /// the nodes of `o`, which is left empty (and tells `Cleared`), in
+ /// \f$ O( 1 ) \f$ time, with no observer
+ JoinTree( JoinTree && o ) noexcept requires detail::unbound_v< Policy >;
 
  /// the nodes of `o`, by copy and swap
- JoinTree & operator=( JoinTree o ) noexcept;
+ JoinTree & operator=( JoinTree o ) noexcept
+  requires detail::unbound_v< Policy >;
 
  /// frees the nodes
  ~JoinTree();
 
- /// exchanges the nodes with `o`
+ /// exchanges the nodes with `o`; the observers of both get `Rebuilt`
  void swap( JoinTree & o ) noexcept;
+
+ /// the subject, for `ADS::batch()` and `ADS::quiet()`
+ [[nodiscard]] Subject & subject( void ) { return( f_sub ); }
+
+ /// the subject
+ [[nodiscard]] const Subject & subject( void ) const { return( f_sub ); }
 
 /*--------------------------------------------------------------------------*/
 /*------------------------- DICTIONARY OPERATIONS --------------------------*/
@@ -248,7 +367,9 @@ class JoinTree
  /// tree, in \f$ O( \log n ) \f$ time
  [[nodiscard]] std::optional< V > lookup( const K & k ) const;
 
- /// associates \f$ v \f$ to \f$ k \f$, in \f$ O( \log n ) \f$ time
+ /// associates \f$ v \f$ to \f$ k \f$, in \f$ O( \log n ) \f$ time; tells
+ /// `Inserted`, or `Assigned` if \f$ k \f$ was there (by one more descent,
+ /// only when someone listens)
  ///
  /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book), the
  /// insertion by joins of `JoinAlgorithms::insert()`:
@@ -262,7 +383,8 @@ class JoinTree
  /// \post \f$ k \f$ has the value \f$ v \f$
  void insert( const K & k , const V & v );
 
- /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ time
+ /// removes \f$ k \f$, if it is there, in \f$ O( \log n ) \f$ time; tells
+ /// `Erased` (by one more descent, only when someone listens)
  ///
  /// In pseudocode (Blelloch, Ferizovic and Sun, beyond the book), the
  /// removal by joins of `JoinAlgorithms::remove()`:
@@ -274,6 +396,42 @@ class JoinTree
  /// \f]
  /// \post \f$ k \f$ is not there
  void remove( const K & k );
+
+ /// the value of \f$ k \f$ set to \f$ v \f$, and true, if \f$ k \f$ is
+ /// there, nothing and false otherwise, in \f$ O( \log n ) \f$ time; the
+ /// shape stays, and the augmented values of the path to \f$ k \f$ change
+ /// by one combination each with the difference of the old and the new
+ /// value when `G` is an abelian group of exact values (`commutative` and
+ /// `inverse()`), by the recomputation of the value of each node from its
+ /// children otherwise; tells `Assigned`
+ ///
+ /// In pseudocode (beyond the book), \f$ \otimes \f$ the operation of
+ /// `G` and \f$ T \f$ the root:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{assign}( k , v ) \cr
+ /// 2 & \quad u \gets \text{the node of } k \text{, by the descent from }
+ ///     T;\ \textbf{if}\ u = \textbf{nil}\ \textbf{then return}
+ ///     \ \mathit{false} \cr
+ /// 3 & \quad \textbf{if}\ G \text{ is an abelian group of exact values}
+ ///     \ \textbf{then} \cr
+ /// 4 & \qquad d \gets \mathrm{from}( k , v ) \otimes \mathrm{from}( k ,
+ ///     u.v )^{-1} \cr
+ /// 5 & \qquad \textbf{foreach}\ x \text{ on the path from } T \text{ to }
+ ///     u\ \textbf{do}\ \mathit{aug}( x ) \gets \mathit{aug}( x ) \otimes
+ ///     d \cr
+ /// 6 & \qquad u.v \gets v \cr
+ /// 7 & \quad \textbf{else} \cr
+ /// 8 & \qquad u.v \gets v \cr
+ /// 9 & \qquad \textbf{foreach}\ x \text{ on the path from } u \text{ to }
+ ///     T\ \textbf{do}\ \mathit{aug}( x ) \gets \mathit{aug}(
+ ///     x.\mathit{left} ) \otimes \mathrm{from}( x ) \otimes \mathit{aug}(
+ ///     x.\mathit{right} ) \cr
+ /// 10 & \quad \textbf{return}\ \mathit{true}
+ /// \end{array}}
+ /// \f]
+ /// \post if true, \f$ k \f$ has the value \f$ v \f$
+ bool assign( const K & k , const V & v );
 
  /// true if \f$ k \f$ is there
  [[nodiscard]] bool contains( const K & k ) const;
@@ -299,7 +457,7 @@ class JoinTree
  /// true if there is no key
  [[nodiscard]] bool empty( void ) const;
 
- /// removes all the pairs
+ /// removes all the pairs; tells `Cleared` if there was one
  void clear( void );
 
  /// the height of the tree, -1 if empty, in \f$ O( n ) \f$ time
@@ -371,6 +529,60 @@ class JoinTree
  template< class F >
  void augVisit( const K & lo , const K & hi , F && f ) const;
 
+ /// the first pair, by increasing keys, whose prefix (the augmented value
+ /// of the pairs up to it) satisfies \f$ p \f$, or nothing, in
+ /// \f$ O( \log n ) \f$ calls of `combine()` and of \f$ p \f$: e.g., the
+ /// \f$ i \f$-th key, \f$ p( a ) = a \ge i \f$ on the sums of values 1,
+ /// and the first prefix whose sum reaches a threshold
+ ///
+ /// In pseudocode (beyond the book), on one descent:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{function}\ \mathrm{augSelect}( p ) \cr
+ /// 2 & \quad a \gets \mathrm{identity}();\ u \gets T \cr
+ /// 3 & \quad \textbf{while}\ u \ne \textbf{nil}\ \textbf{do} \cr
+ /// 4 & \qquad b \gets a \otimes \mathit{aug}( u.\mathit{left} ) \cr
+ /// 5 & \qquad \textbf{if}\ u.\mathit{left} \ne \textbf{nil}\ \textbf{and}
+ ///     \ p( b )\ \textbf{then}\ u \gets u.\mathit{left};
+ ///     \ \textbf{continue} \cr
+ /// 6 & \qquad b \gets b \otimes \mathrm{from}( u ) \cr
+ /// 7 & \qquad \textbf{if}\ p( b )\ \textbf{then return}\ ( u.\mathit{key}
+ ///     , u.v ) \cr
+ /// 8 & \qquad a \gets b;\ u \gets u.\mathit{right} \cr
+ /// 9 & \quad \textbf{return}\ \textbf{nil}
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ p \f$ is monotone on the prefixes: if it holds on the prefix
+ ///      up to a key, it holds on the prefix up to any larger key
+ template< class P >
+ [[nodiscard]] std::optional< std::pair< K , V > > augSelect( P && p ) const;
+
+ /// `f( k , v )` on the pairs \f$ ( k , v ) \f$ with
+ /// \f$ q( \mathrm{from}( k , v ) ) \f$, by increasing keys, entering only
+ /// the subtrees whose augmented value satisfies \f$ q \f$: for \f$ m \f$
+ /// such pairs on a tree of height \f$ h \f$, at most
+ /// \f$ 3 m ( h + 1 ) + 1 \f$ calls of \f$ q \f$, i.e.,
+ /// \f$ O( 1 + m \log n ) \f$
+ ///
+ /// In pseudocode (Sun, Ferizovic and Blelloch, beyond the book), from
+ /// \f$ u = T \f$:
+ /// \f[
+ /// \class{pseudocode}{\begin{array}{r@{\quad}l}
+ /// 1 & \textbf{procedure}\ \mathrm{augFilter}( u , q , f ) \cr
+ /// 2 & \quad \textbf{if}\ u = \textbf{nil}\ \textbf{or not}\ q(
+ ///     \mathit{aug}( u ) )\ \textbf{then return} \cr
+ /// 3 & \quad \mathrm{augFilter}( u.\mathit{left} , q , f ) \cr
+ /// 4 & \quad \textbf{if}\ q( \mathrm{from}( u ) )\ \textbf{then}\ f(
+ ///     u.\mathit{key} , u.v ) \cr
+ /// 5 & \quad \mathrm{augFilter}( u.\mathit{right} , q , f )
+ /// \end{array}}
+ /// \f]
+ /// \pre \f$ q \f$ is false on the identity and
+ ///      \f$ q( a \otimes b ) = q( a ) \lor q( b ) \f$ (e.g.,
+ ///      \f$ q( a ) = a \ge \theta \f$ on the maxima)
+ template< class Q , class F >
+ void augFilter( Q && q , F && f ) const;
+
 /*--------------------------------------------------------------------------*/
 /*---------------------------- NAVIGATION ----------------------------------*/
 /*--------------------------------------------------------------------------*/
@@ -427,32 +639,79 @@ class JoinTree
  /// the node of the smallest key not smaller than \f$ k \f$, nil if none
  [[nodiscard]] const Node * lowerBoundNode( const K & k ) const;
 
+ /// the node of \f$ k \f$, nil if absent
+ [[nodiscard]] Node * findNode( const K & k ) const;
+
+ /// whether `G` updates the path of an assignment by a difference
+ static constexpr bool kDelta = detail::AbelianGroup< G > &&
+                                detail::exact_v< G >;
+
+/*------------------------ THE CHANGES, UNOBSERVED -------------------------*/
+
+ /// insert() with no event
+ void insertPlain( const K & k , const V & v );
+ /// remove() with no event
+ void removePlain( const K & k );
+ /// assign() with no event
+ bool assignPlain( const K & k , const V & v );
+
+/*------------------------- THE CHANGES, OBSERVED --------------------------*/
+
+ /// insert() when someone listens
+ void insertTold( const K & k , const V & v );
+ /// insert() when someone listens, out of the hot code
+ ADS_COLD_PATH void insertCold( const K & k , const V & v ) {
+  insertTold( k , v );
+  }
+ /// remove() when someone listens
+ void removeTold( const K & k );
+ /// remove() when someone listens, out of the hot code
+ ADS_COLD_PATH void removeCold( const K & k ) { removeTold( k ); }
+ /// assign() when someone listens
+ bool assignTold( const K & k , const V & v );
+ /// assign() when someone listens, out of the hot code
+ ADS_COLD_PATH bool assignCold( const K & k , const V & v ) {
+  return( assignTold( k , v ) );
+  }
+ /// clear() when someone listens
+ ADS_COLD_PATH void clearTold( void );
+ /// `Cleared`, if someone listens: the nodes were taken out of the tree
+ void tellCleared( void ) noexcept;
+ /// `Rebuilt`, if someone listens: the nodes were put in the tree
+ void tellRebuilt( void ) noexcept;
+
  Node * f_root = nullptr;   ///< the root
  SplitMix64 f_g;            ///< the priorities of a treap
+ ADS_NO_UNIQUE_ADDRESS Subject f_sub;   ///< the observers
 
  };  // end( class JoinTree )
 
 /*--------------------------------------------------------------------------*/
 
 /// the AVL tree whose balance is in join alone
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-using JoinAVLTree = JoinTree< K , V , AVLBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+          class Policy = NoObservers >
+using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
 
 /// the Red-Black tree whose balance is in join alone
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+          class Policy = NoObservers >
+using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G , Policy >;
 
 /// the tree balanced by weight, in join alone
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-using WeightBalancedTree = JoinTree< K , V , WeightBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+          class Policy = NoObservers >
+using WeightBalancedTree = JoinTree< K , V , WeightBalance , G , Policy >;
 
 /// the treap whose balance is in join alone
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-using JoinTreap = JoinTree< K , V , TreapBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+          class Policy = NoObservers >
+using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
 
 /// the map augmented by G, balanced by weight as in PAM
-template< std::totally_ordered K , class V , class G >
-using AugmentedMap = JoinTree< K , V , WeightBalance , G >;
+template< std::totally_ordered K , class V , class G ,
+          class Policy = NoObservers >
+using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
 
 /*--------------------------------------------------------------------------*/
 

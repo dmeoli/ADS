@@ -14,14 +14,18 @@
  * (`insertEdge()` of a new edge of ListGraph and its `deleteEdge()`), key
  * (the array of keys of zerocost.h), grid-cost (`setCost()` of GridGraph),
  * oarray (`set()` of ObservableArray), heap (`update()`, `pop()` and
- * `push()` of IndexedDaryHeap, one change being the three), arena-make
+ * `push()` of IndexedDaryHeap, one change being the three), tree-insert
+ * (`insert()` of a new key of JoinTree and its `remove()`), tree-overwrite
+ * (`insert()` of a key that is there), tree-assign (`assign()`), arena-make
  * (`make()` of Arena) and pool-make (`make()` of ObjectPool, each second
  * object freed), the last two with the variants plain (no `clear()`) and
  * epochs (a `clear()` per 4096 objects), and the variants plain,
  * observable (`Observable< G >`, nobody listening), observable-excl
  * (`Observable< G , O >`, O wanting only the insertions of nodes), and,
  * with Modification.h, none, static-excl, static-count and dynamic [see
- * zerocost.h]. It prints a checksum, so that no change is optimized away.
+ * zerocost.h]; the workloads of the tree have the last four only, and
+ * with `ZC_BEFORE` only none, and not tree-assign. It prints a checksum,
+ * so that no change is optimized away.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -304,6 +308,54 @@ long long grid( const std::string & var , long long n )
  std::exit( 2 );
  }
 
+/// the workload work of the tree on the variant var
+long long trees( const std::string & work , const std::string & var ,
+                 long long n )
+{
+ const auto P = weightOps();
+ auto run = [ & ]( auto & t ) {
+  for( int u = 0 ; u < N ; ++u )
+   t.insert( u , 100 );
+  if( work == "tree-insert" )
+   loop( [ & ]( const Op & o ) {
+    t.insert( N + o.u , o.w );
+    t.remove( N + o.u ); } , P , n );
+  else if( work == "tree-overwrite" )
+   loop( [ & ]( const Op & o ) { t.insert( o.u , o.w ); } , P , n );
+#ifndef ZC_BEFORE
+  else if( work == "tree-assign" )
+   loop( [ & ]( const Op & o ) { t.assign( o.u , o.w ); } , P , n );
+#endif
+  else {
+   std::fprintf( stderr , "no workload %s\n" , work.c_str() );
+   std::exit( 2 );
+   }
+  return( (long long)( t.augValue() ) );
+  };
+ if( var == "none" ) {
+  JT t;
+  return( run( t ) );
+  }
+#ifndef ZC_BEFORE
+ if( var == "static-excl" ) {
+  TreeExcluding x;
+  JTP< ADS::Static< TreeExcluding > > t( 1 , x );
+  return( run( t ) + x.n );
+  }
+ if( var == "static-count" ) {
+  TreeCountDecreases x;
+  JTP< ADS::Static< TreeCountDecreases > > t( 1 , x );
+  return( run( t ) + x.n );
+  }
+ if( var == "dynamic" ) {
+  JTP< ADS::Dynamic<> > t;
+  return( run( t ) );
+  }
+#endif
+ std::fprintf( stderr , "no variant %s\n" , var.c_str() );
+ std::exit( 2 );
+ }
+
 #endif
 
 /// the workloads arena-make and pool-make on the variant var (plain or
@@ -453,6 +505,8 @@ int main( int argc , char ** argv )
   s = keys( var , n );
  else if( work == "grid-cost" )
   s = grid( var , n );
+ else if( work.rfind( "tree-" , 0 ) == 0 )
+  s = trees( work , var , n );
 #endif
  else if( ( work == "arena-make" ) || ( work == "pool-make" ) )
   s = allocation( work , var , n );

@@ -21,9 +21,10 @@ namespace ADS {
 /*---------------------------- JoinTreeNodes -------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
 struct JoinTreeNodes {
- using T = JoinTree< K , V , B , G >;
+ using T = JoinTree< K , V , B , G , Policy >;
  using Node = typename T::Node;
  using Key = K;
  using Value = V;
@@ -114,10 +115,14 @@ struct JoinTreeNodes {
    return( Result( TreapJoin< JoinTreeNodes >::join( l , m , r ) , 0 ) );
   }
 
- /// the tree side, for Joinable
+ /// the tree side, for Joinable: the observers of a tree whose nodes are
+ /// taken get `Cleared`, those of a tree whose nodes are put `Rebuilt`
  static Node * take( T & t ) {
   Node * r = t.f_root;
   t.f_root = nullptr;
+  if constexpr( ! T::Subject::none )
+   if( r )
+    t.tellCleared();
   return( r );
   }
  static void put( T & t , Node * r ) {
@@ -126,6 +131,22 @@ struct JoinTreeNodes {
     paint( r , false );
   dispose( t.f_root );
   t.f_root = r;
+  if constexpr( ! T::Subject::none )
+   if( r )
+    t.tellRebuilt();
+  }
+ /// the root of a Red-Black tree painted black after a change, with no
+ /// event
+ static void settle( T & t ) {
+  if constexpr( kRB )
+   if( red( t.f_root ) )
+    paint( t.f_root , false );
+  }
+ /// the augmented value of \f$ t \f$ recomputed from its children
+ static void reaug( Node * t ) {
+  t->aug = G::combine( G::combine( aug( t->left ) , G::from( t->key ,
+                                                             t->value ) ) ,
+                       aug( t->right ) );
   }
  static Node * peek( const T & t ) { return( t.f_root ); }
  static T fresh( T & t ) { return( T( t.f_g() ) ); }
@@ -149,16 +170,34 @@ struct JoinTreeNodes {
 /*------------------------------ JoinTree ----------------------------------*/
 /*--------------------------------------------------------------------------*/
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-JoinTree< K , V , B , G >::JoinTree( std::uint64_t seed ) : f_g( seed )
+JoinTree< K , V , B , G , Policy >::JoinTree( std::uint64_t seed )
+ requires detail::unbound_v< Policy >
+ : f_g( seed )
 {
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-JoinTree< K , V , B , G >::JoinTree( const JoinTree & o ) : f_g( o.f_g )
+template< class ... O >
+ requires( sizeof...( O ) > 0 )
+JoinTree< K , V , B , G , Policy >::JoinTree( std::uint64_t seed ,
+                                              O & ... o )
+ : f_g( seed ) , f_sub( o... )
 {
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+JoinTree< K , V , B , G , Policy >::JoinTree( const JoinTree & o )
+ : f_g( o.f_g )
+{
+ static_assert( detail::unbound_v< Policy > ,
+                "ADS: a tree of static observers is not copied" );
  auto copy = [ & ]( auto & self , const Node * u ) -> Node * {
   if( ! u ) return( nullptr );
   Node * c = new Node( *u );
@@ -170,41 +209,55 @@ JoinTree< K , V , B , G >::JoinTree( const JoinTree & o ) : f_g( o.f_g )
  f_root = copy( copy , o.f_root );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-JoinTree< K , V , B , G >::JoinTree( JoinTree && o ) noexcept
+JoinTree< K , V , B , G , Policy >::JoinTree( JoinTree && o ) noexcept
+ requires detail::unbound_v< Policy >
  : f_root( o.f_root ) , f_g( o.f_g )
 {
  o.f_root = nullptr;
+ if constexpr( ! Subject::none )
+  if( f_root )
+   o.tellCleared();
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G >::operator=( JoinTree o ) noexcept
- -> JoinTree &
+auto JoinTree< K , V , B , G , Policy >::operator=( JoinTree o ) noexcept
+ -> JoinTree & requires detail::unbound_v< Policy >
 {
  swap( o );
  return( *this );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-JoinTree< K , V , B , G >::~JoinTree()
+JoinTree< K , V , B , G , Policy >::~JoinTree()
 {
  Nodes::dispose( f_root );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-void JoinTree< K , V , B , G >::swap( JoinTree & o ) noexcept
+void JoinTree< K , V , B , G , Policy >::swap( JoinTree & o ) noexcept
 {
  std::swap( f_root , o.f_root );
  std::swap( f_g , o.f_g );
+ if constexpr( ! Subject::none ) {
+  tellRebuilt();
+  o.tellRebuilt();
+  }
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-std::optional< V > JoinTree< K , V , B , G >::lookup( const K & k ) const
+std::optional< V > JoinTree< K , V , B , G , Policy >::lookup(
+                                                     const K & k ) const
 {
  for( const Node * t = f_root ; t ; )
   if( k < t->key ) t = t->left;
@@ -213,63 +266,274 @@ std::optional< V > JoinTree< K , V , B , G >::lookup( const K & k ) const
  return( std::nullopt );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-void JoinTree< K , V , B , G >::insert( const K & k , const V & v )
+void JoinTree< K , V , B , G , Policy >::insert( const K & k , const V & v )
+{
+ if constexpr( Subject::template listened< Inserted > ||
+               Subject::template listened< Assigned > )
+  if( f_sub.template live< Inserted >() ||
+      f_sub.template live< Assigned >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    insertCold( k , v );
+   else
+    insertTold( k , v );
+   return;
+   }
+ // the body of insertPlain(), which the compiler would not inline
+ Node * n = Nodes::make( k , v , f_g() , 0 );
+ using J = JoinAlgorithms< Nodes >;
+ bool fresh = false;
+ f_root = J::insert( J::whole( f_root ) , n , fresh ).t;
+ Nodes::settle( *this );
+ ADS_POST( contains( k ) );
+ ADS_INVARIANT( valid() );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::remove( const K & k )
+{
+ if constexpr( Subject::template listened< Erased > )
+  if( f_sub.template live< Erased >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    removeCold( k );
+   else
+    removeTold( k );
+   return;
+   }
+ removePlain( k );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+bool JoinTree< K , V , B , G , Policy >::assign( const K & k , const V & v )
+{
+ if constexpr( Subject::template listened< Assigned > )
+  if( f_sub.template live< Assigned >() ) [[unlikely]] {
+   if constexpr( Subject::dynamic )
+    return( assignCold( k , v ) );
+   else
+    return( assignTold( k , v ) );
+   }
+ return( assignPlain( k , v ) );
+ }
+
+/*------------------------ THE CHANGES, UNOBSERVED -------------------------*/
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::insertPlain( const K & k ,
+                                                      const V & v )
 {
  Node * n = Nodes::make( k , v , f_g() , 0 );
  using J = JoinAlgorithms< Nodes >;
  bool fresh = false;
  f_root = J::insert( J::whole( f_root ) , n , fresh ).t;
- Nodes::put( *this , Nodes::take( *this ) );
+ Nodes::settle( *this );
  ADS_POST( contains( k ) );
  ADS_INVARIANT( valid() );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-void JoinTree< K , V , B , G >::remove( const K & k )
+void JoinTree< K , V , B , G , Policy >::removePlain( const K & k )
 {
  using J = JoinAlgorithms< Nodes >;
  bool gone = false;
  f_root = J::remove( J::whole( f_root ) , k , gone ).t;
- Nodes::put( *this , Nodes::take( *this ) );
+ Nodes::settle( *this );
  ADS_POST( ! contains( k ) );
  ADS_INVARIANT( valid() );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-bool JoinTree< K , V , B , G >::contains( const K & k ) const
+bool JoinTree< K , V , B , G , Policy >::assignPlain( const K & k ,
+                                                      const V & v )
+{
+ if constexpr( ! Nodes::kAug ) {
+  Node * u = findNode( k );
+  if( ! u )
+   return( false );
+  u->value = v;
+  }
+ else if constexpr( kDelta ) {
+  // the difference of the values applied on the path, from the root
+  Node * u = findNode( k );
+  if( ! u )
+   return( false );
+  const AugValue d = G::combine( G::from( k , v ) ,
+                                 G::inverse( G::from( k , u->value ) ) );
+  for( Node * x = f_root ; x != u ; x = k < x->key ? x->left : x->right )
+   x->aug = G::combine( x->aug , d );
+  u->aug = G::combine( u->aug , d );
+  u->value = v;
+  }
+ else {
+  // the values of the path recomputed, from the node up
+  auto rec = [ & ]( auto & self , Node * x ) -> bool {
+   if( ! x )
+    return( false );
+   if( k < x->key ) {
+    if( ! self( self , x->left ) )
+     return( false );
+    }
+   else if( x->key < k ) {
+    if( ! self( self , x->right ) )
+     return( false );
+    }
+   else
+    x->value = v;
+   Nodes::reaug( x );
+   return( true );
+   };
+  if( ! rec( rec , f_root ) )
+   return( false );
+  }
+ if constexpr( std::equality_comparable< V > )
+  ADS_POST( lookup( k ) == std::optional< V >( v ) );
+ ADS_INVARIANT( valid() );
+ return( true );
+ }
+
+/*------------------------- THE CHANGES, OBSERVED --------------------------*/
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::insertTold( const K & k ,
+                                                     const V & v )
+{
+ if( const Node * u = findNode( k ) ) {
+  const Assigned e{ k , u->value , v };
+  f_sub.prepare( e );
+  assignPlain( k , v );
+  f_sub.emit( e , [ & ]() noexcept { assignPlain( k , e.from ); } );
+  }
+ else {
+  const Inserted e{ k , k , v };
+  f_sub.prepare( e );
+  insertPlain( k , v );
+  f_sub.emit( e , [ & ]() noexcept { removePlain( k ); } );
+  }
+ f_sub.audit( *this );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::removeTold( const K & k )
+{
+ const Node * u = findNode( k );
+ if( ! u )
+  return;
+ const Erased e{ k , k , u->value };
+ f_sub.prepare( e );
+ f_sub.emit( e );                       // before
+ removePlain( k );
+ f_sub.audit( *this );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+bool JoinTree< K , V , B , G , Policy >::assignTold( const K & k ,
+                                                     const V & v )
+{
+ const Node * u = findNode( k );
+ if( ! u )
+  return( false );
+ const Assigned e{ k , u->value , v };
+ f_sub.prepare( e );
+ assignPlain( k , v );
+ f_sub.emit( e , [ & ]() noexcept { assignPlain( k , e.from ); } );
+ f_sub.audit( *this );
+ return( true );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::clearTold( void )
+{
+ const bool some = f_root != nullptr;
+ Nodes::dispose( f_root );
+ f_root = nullptr;
+ if( some ) {
+  f_sub.emit( mod::Cleared{} );
+  f_sub.audit( *this );
+  }
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::tellCleared( void ) noexcept
+{
+ if constexpr( Subject::template listened< mod::Cleared > )
+  if( f_sub.template live< mod::Cleared >() )
+   f_sub.emit( mod::Cleared{} );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+void JoinTree< K , V , B , G , Policy >::tellRebuilt( void ) noexcept
+{
+ if constexpr( Subject::template listened< mod::Rebuilt > )
+  if( f_sub.template live< mod::Rebuilt >() )
+   f_sub.emit( mod::Rebuilt{} );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+bool JoinTree< K , V , B , G , Policy >::contains( const K & k ) const
 {
  return( lookup( k ).has_value() );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-std::size_t JoinTree< K , V , B , G >::size( void ) const
+std::size_t JoinTree< K , V , B , G , Policy >::size( void ) const
 {
  return( Nodes::size( f_root ) );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-bool JoinTree< K , V , B , G >::empty( void ) const
+bool JoinTree< K , V , B , G , Policy >::empty( void ) const
 {
  return( f_root == nullptr );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-void JoinTree< K , V , B , G >::clear( void )
+void JoinTree< K , V , B , G , Policy >::clear( void )
 {
+ if constexpr( Subject::template listened< mod::Cleared > )
+  if( f_sub.template live< mod::Cleared >() ) [[unlikely]] {
+   clearTold();
+   return;
+   }
  Nodes::dispose( f_root );
  f_root = nullptr;
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-int JoinTree< K , V , B , G >::height( void ) const
+int JoinTree< K , V , B , G , Policy >::height( void ) const
 {
  auto h = [ & ]( auto & self , const Node * t ) -> int {
   return( t ? 1 + std::max( self( self , t->left ) ,
@@ -278,10 +542,11 @@ int JoinTree< K , V , B , G >::height( void ) const
  return( h( h , f_root ) );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
 template< class F >
-void JoinTree< K , V , B , G >::forEach( F && f ) const
+void JoinTree< K , V , B , G , Policy >::forEach( F && f ) const
 {
  auto visit = [ & ]( auto & self , const Node * t ) -> void {
   if( ! t ) return;
@@ -292,18 +557,21 @@ void JoinTree< K , V , B , G >::forEach( F && f ) const
  visit( visit , f_root );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G >::augValue( void ) const -> AugValue
+auto JoinTree< K , V , B , G , Policy >::augValue( void ) const -> AugValue
 {
  return( Nodes::aug( f_root ) );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
 template< class F >
-void JoinTree< K , V , B , G >::augVisit( const K & lo , const K & hi ,
-                                          F && f ) const
+void JoinTree< K , V , B , G , Policy >::augVisit( const K & lo ,
+                                                  const K & hi ,
+                                                  F && f ) const
 {
  if( hi < lo )
   return;
@@ -337,9 +605,10 @@ void JoinTree< K , V , B , G >::augVisit( const K & lo , const K & hi ,
    }
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G >::augRange( const K & lo ,
+auto JoinTree< K , V , B , G , Policy >::augRange( const K & lo ,
                                           const K & hi ) const -> AugValue
 {
  AugValue a = G::identity();
@@ -348,9 +617,11 @@ auto JoinTree< K , V , B , G >::augRange( const K & lo ,
  return( a );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G >::augPrefix( const K & k ) const -> AugValue
+auto JoinTree< K , V , B , G , Policy >::augPrefix( const K & k ) const
+ -> AugValue
 {
  AugValue a = G::identity();
  for( const Node * u = f_root ; u ; )
@@ -363,9 +634,63 @@ auto JoinTree< K , V , B , G >::augPrefix( const K & k ) const -> AugValue
  return( a );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-bool JoinTree< K , V , B , G >::valid( void ) const
+template< class P >
+auto JoinTree< K , V , B , G , Policy >::augSelect( P && p ) const
+ -> std::optional< std::pair< K , V > >
+{
+ AugValue a = G::identity();
+ for( const Node * u = f_root ; u ; ) {
+  AugValue b = G::combine( a , Nodes::aug( u->left ) );
+  if( u->left && p( std::as_const( b ) ) ) {
+   u = u->left;
+   continue;
+   }
+  b = G::combine( b , G::from( u->key , u->value ) );
+  if( p( std::as_const( b ) ) )
+   return( std::pair< K , V >( u->key , u->value ) );
+  a = std::move( b );
+  u = u->right;
+  }
+ return( std::nullopt );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+template< class Q , class F >
+void JoinTree< K , V , B , G , Policy >::augFilter( Q && q , F && f ) const
+{
+ auto visit = [ & ]( auto & self , const Node * u ) -> void {
+  if( ( ! u ) || ! q( std::as_const( u->aug ) ) )
+   return;
+  self( self , u->left );
+  if( q( G::from( u->key , u->value ) ) )
+   f( u->key , u->value );
+  self( self , u->right );
+  };
+ visit( visit , f_root );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+auto JoinTree< K , V , B , G , Policy >::findNode( const K & k ) const
+ -> Node *
+{
+ for( Node * t = f_root ; t ; )
+  if( k < t->key ) t = t->left;
+  else if( t->key < k ) t = t->right;
+  else return( t );
+ return( nullptr );
+ }
+
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
+ requires Augmentation< G , K , V >
+bool JoinTree< K , V , B , G , Policy >::valid( void ) const
 {
  using W = WeightBalancedJoin< Nodes >;
  bool ok = true;
@@ -414,9 +739,10 @@ bool JoinTree< K , V , B , G >::valid( void ) const
  return( ok );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G >::lowerBoundNode( const K & k ) const
+auto JoinTree< K , V , B , G , Policy >::lowerBoundNode( const K & k ) const
  -> const Node *
 {
  const Node * best = nullptr;
@@ -430,9 +756,10 @@ auto JoinTree< K , V , B , G >::lowerBoundNode( const K & k ) const
  return( best );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-auto JoinTree< K , V , B , G >::lowerBound( const K & k ) const
+auto JoinTree< K , V , B , G , Policy >::lowerBound( const K & k ) const
  -> std::optional< std::pair< K , V > >
 {
  const Node * b = lowerBoundNode( k );
@@ -441,17 +768,20 @@ auto JoinTree< K , V , B , G >::lowerBound( const K & k ) const
            : std::nullopt );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-const K * JoinTree< K , V , B , G >::findKey( const K & k ) const
+const K * JoinTree< K , V , B , G , Policy >::findKey( const K & k ) const
 {
  const Node * b = lowerBoundNode( k );
  return( ( b && !( k < b->key ) ) ? &b->key : nullptr );
  }
 
-template< std::totally_ordered K , class V , class B , class G >
+template< std::totally_ordered K , class V , class B , class G ,
+          class Policy >
  requires Augmentation< G , K , V >
-const K * JoinTree< K , V , B , G >::lowerBoundKey( const K & k ) const
+const K * JoinTree< K , V , B , G , Policy >::lowerBoundKey(
+                                                     const K & k ) const
 {
  const Node * b = lowerBoundNode( k );
  return( b ? &b->key : nullptr );

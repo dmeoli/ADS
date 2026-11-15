@@ -37,8 +37,10 @@ a structure that publishes its changes, and compares the machine code of each
 change with that of the plain structure byte by byte, so that the claim of
 [§1.13](01-introduction.md#sec-1-13) that a change nobody listens to costs no instruction is checked by counts and by code, which do not depend on the load
 of the machine. With `--before REV` the script also compiles them on the
-headers of an earlier revision and compares the changes of
-`IndexedDaryHeap` there and here ([§1.15.1](01-introduction.md#sec-1-15-1)).
+headers of an earlier revision, and compares there and here the count of
+each workload with no observer and the code of every function, e.g., of
+`IndexedDaryHeap` ([§1.15.1](01-introduction.md#sec-1-15-1)) and of
+`JoinTree` ([§8.12.7](08-tree.md#sec-8-12-7)).
 
 Two auxiliary headers serve the programs. One is `bench/Bench.h`, with the
 timing, the options and the output that all of them share

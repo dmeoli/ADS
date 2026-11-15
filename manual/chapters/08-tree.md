@@ -5586,7 +5586,8 @@ m.forRange( 10 , 20 ,                          // the keys in [10, 20)
 
 ## 8.12 Join-based trees and the parallel set operations {#sec-8-12}
 
-[Source: `include/ADS/tree/JoinAlgorithms.h`, `JoinTree.h`]
+[Source: `include/ADS/tree/JoinAlgorithms.h`, `JoinTree.h`,
+`MaterializedAggregate.h`]
 
 We have seen that the balanced trees of the previous sections restore their
 balance inside each insertion and each removal, by rotations whose rules
@@ -5605,7 +5606,9 @@ run them in parallel. In `JoinAlgorithms.h` are the joins of four schemes
 treaps) with the algorithms written on them. In `JoinTree.h` is a
 dictionary balanced by any of the four joins, whose nodes may keep the
 value of a monoid over their subtree (the augmented maps of [Sun,
-Ferizovic and Blelloch 2018](Z-bibliography.md#ref-sun2018)). Through an
+Ferizovic and Blelloch 2018](Z-bibliography.md#ref-sun2018)), which tells
+its changes to observers and whose aggregates an observer may also keep
+outside of it ([§8.12.7](08-tree.md#sec-8-12-7)). Through an
 adaptor of their nodes, the same algorithms run on `AVLTree`
 ([§8.7](08-tree.md#sec-8-7)), on the `RedBlackTree` of `SearchTree`
 ([§8.5](08-tree.md#sec-8-5)) and on `Treap` ([§8.6](08-tree.md#sec-8-6)).
@@ -6422,6 +6425,275 @@ const int all = m.augValue();                  // 5050
 const int part = m.augRange( 10 , 20 );        // 10 + ... + 20 = 165
 ```
 
+### 8.12.7 Observers, assignments and selections on the aggregates {#sec-8-12-7}
+
+The last parameter of `JoinTree< K , V , B , G , Policy >` is its subject
+policy (cf. [§1.13](01-introduction.md#sec-1-13)), `NoObservers` by default.
+The tree sends its changes from inside its mutators, by the events
+`Inserted`, `Erased` and `Assigned` of a key (whose handle is the key
+itself), `Cleared` and `Rebuilt`, which its type lists as `modifications`.
+Thus, `insert()` sends `Inserted` when the key is new and `Assigned`, with
+the old and the new value, when it is there, while `remove()` sends `Erased`
+before the removal (if the key is there) and `clear()` sends `Cleared` if
+the tree was not empty. The operations of `Joinable` take the nodes out of
+the trees they read and put the result back, by the functions `take()` and
+`put()` of the adaptor. Hence, the observers of a tree whose nodes are taken
+(e.g., the second tree of a union, or a tree moved from) get `Cleared`, and
+those of a tree whose nodes are put back (the first tree of a union, the
+tree left by a split, both trees of a swap) get `Rebuilt`, which a batch
+reduces to the net effect of Lemma [1.14](01-introduction.md#lem-1-14).
+With someone listening, `insert()` and `remove()` make one more descent, to
+read the old value. Since the mutators follow the pattern of
+[§1.13](01-introduction.md#sec-1-13), with `NoObservers` (and with static
+observers that want none of their events) they compile to the code of the
+tree with no policy. We check it by `bench/zerocost.py --before <revision>`,
+which compares the instructions that callgrind counts for an insertion and
+a removal, and the code of the functions of the tree byte for byte, with
+those of the revision before the policy. Note that a copy (or a move) of a
+tree has no observer; hence, a tree of static observers is neither copied
+(by a static assertion) nor moved, nor split. Furthermore, an observer that
+throws from `on()` of `Inserted` or `Assigned` gets the change undone, by
+the strong guarantee of `emit( e , undo )`.
+
+<span id="lem-8-89"></span>**Lemma 8.89.** *Let $P$ be the set of the pairs
+of a `JoinTree` before one of its operations and $P'$ the set after it.
+Outside a batch, the events that the observers of the tree receive form a
+history (in the sense of Lemma [1.14](01-introduction.md#lem-1-14)) that
+leads from $P$ to $P'$, and the same holds for a batch, whose net effect is
+sent at its close.*
+
+*Proof.* When $k$ is absent, `insert( k , v )` turns $P$ into $P \cup \{
+( k , v ) \}$, i.e., `Inserted`; otherwise it replaces the value $w$ of $k$
+by $v$, i.e., `Assigned` from $w$ to $v$. In turn, `assign()` is the second
+case (or no change), `remove()` the converse of the first (or no change),
+and `clear()` leads to the empty set, as `Cleared` does. An operation of
+`Joinable` first takes the nodes of a tree, which is then empty, as
+`Cleared` states, and then possibly puts back a root, after which anything
+may have changed, as `Rebuilt` states. A swap may change both sets, and
+both trees get `Rebuilt`. Since an event is sent when the tree is in the
+state that it describes (an erasure before the removal, with the state
+after it), the events of a sequence of operations compose, and Lemma
+[1.14](01-introduction.md#lem-1-14) gives the claim for a batch. $\square$
+
+An augmentation may declare its algebra by static members, which refine the
+concept `Augmentation` without changing it: `commutative`, for a
+commutative $\otimes$, `inverse( a )`, the inverse $a^{-1}$ of a group, and
+`selective`, for an operation such that $a \otimes b$ is $a$ or $b$.
+`SumAugmentation` is an abelian group when its values have the opposites,
+and `MaxAugmentation` is commutative and selective (the concepts that read
+these members are, for the time being, in the namespace `detail` of
+`JoinTree.h`). We call a value *exact* when its type is not a floating one.
+`assign( k , v )` changes the value of a key that is there, and keeps the
+shape of the tree, since it makes no join. When `G` is an abelian group of
+exact values, it combines the augmented value of each node of the path to
+$k$ with the difference $d$ of the new value and the old one; otherwise, it
+recomputes the values of the path from the children, from $k$ up, as
+`connect()` does ([Algorithm 8.67](08-tree.md#alg-8-67)).
+
+<span id="lem-8-90"></span>**Lemma 8.90.** *Let $u$ be the node of the key
+$k$, at the depth $\delta \le h$ of a tree of height $h$, with the value $w$,
+and let $v$ be its new value. Both forms of `assign( k , v )` keep (8.12) at
+all the nodes. With an abelian group, `assign()` walks the path twice and
+makes two evaluations of $\mathrm{from}$, one inverse and $\delta + 2$
+combinations; by recomputation, it walks the path once and makes
+$\delta + 1$ evaluations of $\mathrm{from}$ and $2 ( \delta + 1 )$
+combinations. Both forms take $O( \log n )$ time on the four schemes.*
+
+*Proof.* A node $x$ off the path from the root to $u$ has a subtree without
+$u$, whose pairs and whose shape do not change; hence, its value stays
+right. For the recomputation, the nodes of the path are recomputed by (8.12)
+from the bottom up, each after its children, which are right either because
+they are off the path or because they were recomputed before. For a node $x$
+of the path, the subtree $T_x$ holds $u$; since $\otimes$ is associative and
+commutative, $\mathit{aug}( x )$ is the combination of the values of the
+pairs of $T_x$ in any order, i.e., $\mathit{aug}( x ) = A \otimes
+\mathrm{from}( k , w )$, where $A$ combines the values of the other pairs of
+$T_x$. The new value must be $A \otimes \mathrm{from}( k , v ) = A \otimes
+\mathrm{from}( k , w ) \otimes \mathrm{from}( k , w )^{-1} \otimes
+\mathrm{from}( k , v ) = \mathit{aug}( x ) \otimes d$, which is what the
+first form writes. As for the counts, the first descent finds $u$, the
+second walks the same $\delta + 1$ nodes with one combination each, and $d$
+takes one more; the recomputation takes two combinations and one
+$\mathrm{from}$ per node of the path, as in [Lemma 8.88](08-tree.md#lem-8-88),
+whose bounds on the heights give $\delta = O( \log n )$. $\square$
+
+The difference saves a constant factor (about one half of the
+combinations, and all the evaluations of $\mathrm{from}$ but two), and it
+needs both hypotheses. In a group that does not commute (e.g., the hash of a
+sequence of `test/join_trees.cpp`), $\mathrm{from}( k , w )$ lies between
+two parts of $A$ instead of at its end; furthermore, the floating sums are
+not associative, and the differences would drift away from the
+recomputation, which the invariant of the level 3 compares by equality. In
+both cases `assign()` therefore recomputes. We remark that the operations of
+the group must be total on the values (e.g., the opposite of the least
+`int` overflows).
+
+Two queries descend the tree by its augmented values (the second is in
+[Sun, Ferizovic and Blelloch 2018](Z-bibliography.md#ref-sun2018)). Let
+$\mathrm{pre}( x )$ be the combination of the values of the pairs with keys
+not larger than $x$. `augSelect( p )` gives the first pair $( x , v )$ for
+which $p( \mathrm{pre}( x ) )$ holds, or nothing, provided that $p$ is
+*monotone* on the prefixes, i.e., that $p( \mathrm{pre}( x ) )$ implies
+$p( \mathrm{pre}( y ) )$ for $x < y$. Typical uses are the $i$-th key, by
+$p( a ) = a \ge i$ on the counts of the pairs (the sums of values 1), the
+first prefix whose sum of positive values reaches a threshold, and, on the
+maxima, the first value not smaller than a threshold. The descent keeps the
+combination $a$ of the pairs before the subtree of the current node, and
+goes left as soon as $a$ combined with the left subtree satisfies $p$. In
+turn, `augFilter( q , f )` gives to $f$, by increasing keys, the pairs $(
+x , v )$ for which $q( \mathrm{from}( x , v ) )$ holds, and enters only the
+subtrees whose augmented value satisfies $q$. This is correct when $q$ is
+false on the identity and *distributes* over the combination, i.e., $q( a
+\otimes b ) = q( a ) \lor q( b )$, as $q( a ) = a \ge \theta$ does on the
+maxima and $q( a ) = a > 0$ on the sums of values that are not negative.
+
+<span id="alg-8-67"></span>**Algorithm 8.67.** The assignment, by the
+difference of a group or by recomputation, and the two descents by the
+augmented values of `JoinTree`.
+
+--8<-- "generated/JoinTree-assign.pseudo.md"
+
+--8<-- "generated/JoinTree-augSelect.pseudo.md"
+
+--8<-- "generated/JoinTree-augFilter.pseudo.md"
+
+<span id="lem-8-91"></span>**Lemma 8.91.** *If $p$ is monotone on the
+prefixes, `augSelect( p )` gives the pair of the smallest key $x$ with
+$p( \mathrm{pre}( x ) )$, or finds that there is none, after at most $h + 1$
+rounds of a tree of height $h$, each with at most two combinations, one
+evaluation of $\mathrm{from}$ and two calls of $p$.*
+
+*Proof.* The keys of a subtree $T_u$ are an interval of the sorted keys of
+the tree. We claim that at the start of each round (i) $a$ combines the
+pairs before that interval, and (ii) if the answer $x^\ast$ exists, it is in
+$T_u$. Both hold at the root, with $a$ the identity. If the left subtree
+$L$ of $u$ is not empty and $p( a \otimes \mathit{aug}( L ) )$ holds, then
+$a \otimes \mathit{aug}( L ) = \mathrm{pre}( \max L )$ by (i), the answer
+exists and is not larger than $\max L$, and by (ii) it is in $L$; the round
+goes to $L$, with the same $a$. Otherwise, no key of $L$ satisfies $p$,
+since by monotonicity a key $y \le \max L$ with $p( \mathrm{pre}( y ) )$
+would give $p( \mathrm{pre}( \max L ) )$. If $p$ holds on $b = a \otimes
+\mathit{aug}( L ) \otimes \mathrm{from}( u ) = \mathrm{pre}( u.k )$, then
+$u.k$ is the answer, since a smaller key is before $T_u$ (where, by (ii),
+no key satisfies $p$) or in $L$; if not, the answer is in the right subtree,
+and $b$ combines the pairs before it. Each round goes one level down, and
+when $u$ is nil the subtree is empty, so that by (ii) there is no answer.
+$\square$
+
+<span id="lem-8-92"></span>**Lemma 8.92.** *Let $q$ be false on the identity
+and distributive. Then $q( \mathit{aug}( u ) )$ holds if and only if a pair
+$( x , v )$ of $T_u$ has $q( \mathrm{from}( x , v ) )$, and `augFilter( q ,
+f )` gives exactly those pairs of the tree, by increasing keys. If it gives
+$m$ pairs on a tree of height $h$, it enters at most $m ( h + 1 )$ nodes
+and calls $q$ at most $3 m ( h + 1 ) + 1$ times, i.e., it takes
+$O( 1 + m \log n )$ on the four schemes.*
+
+*Proof.* The first claim is by induction on (8.12): a nil subtree has the
+identity, on which $q$ is false, and $q( \mathit{aug}( u ) ) = q(
+\mathit{aug}( u.\mathit{left} ) ) \lor q( \mathrm{from}( u ) ) \lor q(
+\mathit{aug}( u.\mathit{right} ) )$ by distributivity. Hence, a subtree that
+the visit skips has no pair to give, and the visit in symmetric order of the
+others gives the pairs by increasing keys. A node is entered only if its
+subtree holds a pair that is given, i.e., if it is that pair or one of its
+ancestors; each of the $m$ pairs has at most $h + 1$ such nodes. The calls
+of $q$ are one on the value of each entered node, one on the value of the
+root, and at most two on the subtrees of the children of each entered node,
+at most $1 + 3 m ( h + 1 )$ in all. $\square$
+
+PAM builds the result of its filter by the augmented values as a new
+tree, in $O( m \log( n / m + 1 ) )$ work for the trees balanced by weight.
+Our visit gives the pairs to a function and keeps the tree, at the weaker
+cost $O( 1 + m \log n )$ of Lemma [8.92](08-tree.md#lem-8-92), which holds
+on the four schemes alike.
+
+The aggregate of a structure may also be kept outside of it, by an
+observer, e.g., when the structure has no augmentation (or a different
+one). `MaterializedAggregate< G , Period >` (`MaterializedAggregate.h`) is
+an observer of a dictionary whose handles are its keys, as those of
+`JoinTree`. It keeps the combination by a commutative monoid `G` of the
+values $\mathrm{from}( k , v )$ of the pairs, and gives it by `value()`.
+How an event updates it depends on the algebra of `G`, which `kind` reads
+at compile time. With an abelian group (`Kind::Group`), an insertion
+combines the aggregate with the new value, an erasure with the inverse of
+the old one, and an assignment with both. With a selective monoid
+(`Kind::Selective`, when the values can be compared), the observer keeps
+the multiset of the values in the order of Lemma
+[8.93](08-tree.md#lem-8-93), whose first element is the aggregate; this is
+the state that an aggregate without an inverse, such as the maximum,
+usually needs. Otherwise (`Kind::Monoid`), an insertion combines, and an
+erasure or an assignment makes the aggregate *stale*, i.e., to be
+recomputed at the next `value()` from the structure given to `bind()`.
+Also, `Rebuilt` makes it stale, and `Cleared` makes it the identity. For
+an abelian group of floating values the differences accumulate their
+rounding errors, and the aggregate is made stale every `Period` changes
+(1024 by default, never if 0), so that the next `value()` recomputes it.
+Finally, `audit( s )` compares the aggregate with the one recomputed from
+$s$, by equality for exact values and within a relative tolerance of
+$10^{-9}$ for floating ones. At the level 3 of the contracts the subject
+calls it after each event; the test `join_trees.materialized-aggregate`
+also audits the observer of each kind by a `Shadow` against one that keeps
+the pairs and recomputes from scratch.
+
+<span id="lem-8-93"></span>**Lemma 8.93.** *(i) If $\otimes$ is
+associative, commutative and selective, the relation $x \prec y$ defined by
+$x \ne y$ and $x \otimes y = x$ is a strict total order of the values, and
+the combination of a multiset $S \ne \emptyset$ of values is its least
+element by $\prec$. (ii) Let the events of a dictionary of $m$ pairs reach
+a `MaterializedAggregate` as Lemma [8.89](08-tree.md#lem-8-89) states.
+Then, after each event outside a batch and after each batch, `value()` is
+the combination of the values of the pairs, provided that a structure is
+bound when the aggregate is stale. An event costs $O( 1 )$ combinations for
+a group and $O( \log m )$ comparisons for a selective monoid; for a monoid,
+an insertion costs one combination, and the first `value()` after an
+erasure or an assignment $O( m )$ combinations.*
+
+*Proof.* (i) The relation is irreflexive by definition. For $x \ne y$, the
+selectivity gives $x \otimes y \in \{ x , y \}$, and by commutativity
+$x \otimes y = y \otimes x$; hence, exactly one of $x \prec y$ and
+$y \prec x$ holds. If $x \prec y$ and $y \prec z$, then $x \otimes z = ( x
+\otimes y ) \otimes z = x \otimes ( y \otimes z ) = x \otimes y = x$, and
+$x \ne z$, since $x = z$ would give both $x \prec y$ and $y \prec x$. Thus
+$\prec$ is a strict total order, and, since selectivity also gives
+$x \otimes x = x$, one has $x \otimes y = \min_\prec \{ x , y \}$ for all
+$x$ and $y$; the combination of $S$ is then its least element, by
+induction on $\lvert S \rvert$. The equivalence of $\prec$ in a
+`std::multiset` is thus the equality, and an erasure removes one copy of
+the value erased. (ii) By Lemma [8.89](08-tree.md#lem-8-89), it suffices
+that each event turn the aggregate of the pairs before it into that of the
+pairs after it. Since $\otimes$ commutes, the aggregate is that of the
+multiset of the values, whatever their order; an insertion adds a value,
+an erasure removes one, and an assignment does both, which the inverse of a
+group undoes as in the proof of Lemma [8.90](08-tree.md#lem-8-90), and
+which the multiset of (i) follows in $O( \log m )$. `Cleared` leaves the
+empty multiset, whose combination is the identity; a stale aggregate is
+recomputed from the structure, in $O( m )$, and the events are ignored by
+the stale aggregate of a group or a monoid, since the recomputation will
+read the state after it. $\square$
+
+For instance, a tree of dynamic observers with no augmentation keeps the
+sum of its values in an observer attached to it, and a tree of the sums
+selects by its prefixes:
+
+```cpp
+#include "ADS/tree/MaterializedAggregate.h"
+
+using Tree = ADS::JoinAVLTree< int , int , ADS::NoAugmentation ,
+                               ADS::Dynamic<> >;
+Tree t;
+ADS::MaterializedAggregate< ADS::SumAugmentation< int > > sum( t );
+t.subject().attach( sum );
+for( int k = 1 ; k <= 10 ; ++k )
+ t.insert( k , k );
+t.assign( 3 , 30 );
+t.remove( 10 );
+const int s = sum.value();                     // 1 + ... + 9 + 27 = 72
+ADS::AugmentedMap< int , int , ADS::SumAugmentation< int > > m;
+for( int k = 1 ; k <= 10 ; ++k )
+ m.insert( k , k );
+const auto first = m.augSelect( []( int a ) { return( a >= 20 ); } );
+                                               // ( 6 , 6 ), 21 >= 20
+```
+
 ## 8.13 Dynamic trees {#sec-8-13}
 
 [Source: `include/ADS/tree/LinkCutTree.h`]
@@ -6484,7 +6756,7 @@ trees form the *virtual tree*, which represents the forest.
 The operation $\mathrm{access}( v )$ makes the path from the root of the tree
 of $v$ to $v$ preferred, with $v$ at the root of its splay tree and no deeper
 node on its path ([Algorithm
-8.67](08-tree.md#alg-8-67)). It splays $v$ and drops
+8.68](08-tree.md#alg-8-68)). It splays $v$ and drops
 the deeper part of its path, which becomes a separate path whose path-parent is
 $v$. Then it climbs, and at each path-parent $x$ it splays $x$ in its splay
 tree and replaces the path below $x$ by the one just built, i.e., it makes the
@@ -6494,7 +6766,7 @@ It returns the last node at which the climb entered a new path, as `lca()`
 needs. [Figure 8.65](08-tree.md#fig-8-65) follows an access on a
 tree of 10 nodes, with the splay trees that the class leaves after it.
 
-<span id="alg-8-67"></span>**Algorithm 8.67.** The
+<span id="alg-8-68"></span>**Algorithm 8.68.** The
 access of a link-cut tree and the splay of a node in its splay tree ([Sleator
 and Tarjan 1983](Z-bibliography.md#ref-sleator1983);
 [1985](Z-bibliography.md#ref-sleator1985)).
@@ -6516,7 +6788,7 @@ parent has the node as a child (`isRoot()`).
 ### 8.13.3 The operations {#sec-8-13-3}
 
 Each other operation is one or two accesses and a few pointers ([Algorithm
-8.68](08-tree.md#alg-8-68)). `evert( v )` makes $v$ the root of its
+8.69](08-tree.md#alg-8-69)). `evert( v )` makes $v$ the root of its
 tree by reversing the path from the root to $v$ after its access, with a flag
 on the root of the splay tree that the next splays push down lazily (`push()`
 swaps the children and passes the flag on). In this way the trees are unrooted
@@ -6543,7 +6815,7 @@ associative. `setValue( v , x )` accesses $v$, after which no aggregate above
 $v$ needs to change, and recomputes that of $v$; `value()`, `addNode()` (a new
 isolated node, with its number) and `n()` complete the class.
 
-<span id="alg-8-68"></span>**Algorithm 8.68.** The operations of a
+<span id="alg-8-69"></span>**Algorithm 8.69.** The operations of a
 link-cut tree on the access ([Sleator and Tarjan
 1983](Z-bibliography.md#ref-sleator1983)).
 
@@ -6569,7 +6841,7 @@ the virtual tree of a tree of the forest is the only node of it whose
 parent field is empty; the path-parent of the root of a splay tree is
 the parent, in the forest, of the shallowest node of its path.
 
-<span id="lem-8-89"></span>**Lemma 8.89.** *After $\mathrm{access}( v )$, the
+<span id="lem-8-94"></span>**Lemma 8.94.** *After $\mathrm{access}( v )$, the
 splay tree of $v$ holds exactly the path from the root of the tree of $v$
 to $v$, with $v$ at its root and no parent field set at $v$, and the access
 returns the deepest node of that path that was on the preferred path of the
@@ -6641,7 +6913,7 @@ An access costs its splays plus the changes of the preferred children that it
 makes, and the analysis bounds the two parts separately, on the potential of
 the access lemma of [§8.8](08-tree.md#sec-8-8) taken over the virtual tree.
 
-<span id="lem-8-90"></span>**Lemma 8.90.** *([Sleator and
+<span id="lem-8-95"></span>**Lemma 8.95.** *([Sleator and
 Tarjan 1983](Z-bibliography.md#ref-sleator1983); [Tarjan 1983, chapter
 5](Z-bibliography.md#ref-tarjan1983).) Let the weight of each node be the
 number of its descendants in the forest plus 1, i.e., the size of its subtree
@@ -6731,7 +7003,7 @@ path-parent is its parent, which is a valid virtual tree with no preferred
 child. The operations `cutParent()` and `setValue()` take $O( 1 )$ on the
 vector and are not counted.
 
-<span id="lem-8-91"></span>**Lemma 8.91.** *Starting from $n$ isolated nodes,
+<span id="lem-8-96"></span>**Lemma 8.96.** *Starting from $n$ isolated nodes,
 any sequence of $m$ operations of `LinkCutTree` takes $O( ( m + n ) \log n
 )$ time, whether and whenever the change of form happens. Before the
 change, each group of 16 counted operations but the first three and the
@@ -6748,7 +7020,7 @@ operations, each of $O( n )$ steps. Indeed, a walk visits each node once at
 most, and an operation makes at most four walks. Hence the operations on the vector take $O( m + n )$ time, and
 the change $O( n )$. After it, the virtual tree of single nodes has the
 potential $\Phi = \sum_x \log_2 s( x ) \le n \log_2 n$ of the proof of
-[Lemma 8.90](08-tree.md#lem-8-90) and no preferred child, and that lemma
+[Lemma 8.95](08-tree.md#lem-8-95) and no preferred child, and that lemma
 bounds the rest by $O( ( m + n ) \log n )$. $\square$
 
 Its test `engineered_dynamic.link-cut-tree` runs the same random links,
@@ -7978,34 +8250,51 @@ struct NoAugmentation {
 template< class V > struct SumAugmentation {
  public:
   using Value = V;
+  static constexpr bool commutative = true;
   static Value identity( void );
   template< class K > static Value from( const K & , const V & v );
   static Value combine( const Value & a , const Value & b );
+  static Value inverse( const Value & a ) requires requires { -a; };
  };
 template< class V > struct MaxAugmentation {
  public:
   using Value = V;
+  static constexpr bool commutative = true;
+  static constexpr bool selective = true;
   static Value identity( void );
   template< class K > static Value from( const K & , const V & v );
   static Value combine( const Value & a , const Value & b );
  };
-template< std::totally_ordered K , class V , class B , class G >
-    requires Augmentation< G , K , V >
-    class JoinTree : public Joinable< JoinTree< K , V , B , G > ,
-    JoinTreeNodes< K , V , B , G > , K , V > {
+template< std::totally_ordered K , class V , class B , class G ,
+    class Policy > requires Augmentation< G , K , V >
+    class JoinTree : public Joinable< JoinTree< K , V , B , G , Policy > ,
+    JoinTreeNodes< K , V , B , G , Policy > , K , V > {
  public:
   using Key = K;
   using Value = V;
   using AugValue = typename G::Value;
   using Augmented = G;
-  explicit JoinTree( std::uint64_t seed = 1 );
+  using Inserted = mod::Inserted< K , K , V >;
+  using Erased = mod::Erased< K , K , V >;
+  using Assigned = mod::Assigned< K , V >;
+  using modifications = mod::list< Inserted , Erased , Assigned ,
+      mod::Cleared , mod::Rebuilt >;
+  using Subject = typename Policy::template bind< modifications ,
+      JoinTree >;
+  explicit JoinTree( std::uint64_t seed = 1 )
+      requires detail::unbound_v< Policy >;
+  template< class ... O > requires( sizeof...( O ) > 0 )
+      JoinTree( std::uint64_t seed , O & ... o );
   JoinTree( const JoinTree & o );
-  JoinTree( JoinTree && o ) noexcept;
-  JoinTree & operator=( JoinTree o ) noexcept;
+  JoinTree( JoinTree && o ) noexcept requires detail::unbound_v< Policy >;
+  JoinTree & operator=( JoinTree o ) noexcept
+      requires detail::unbound_v< Policy >;
   void swap( JoinTree & o ) noexcept;
+  [[nodiscard]] Subject & subject( void );
   [[nodiscard]] std::optional< V > lookup( const K & k ) const;
   void insert( const K & k , const V & v );
   void remove( const K & k );
+  bool assign( const K & k , const V & v );
   [[nodiscard]] bool contains( const K & k ) const;
   [[nodiscard]] std::optional< std::pair< K , V > > lowerBound(
       const K & k ) const;
@@ -8021,22 +8310,63 @@ template< std::totally_ordered K , class V , class B , class G >
   [[nodiscard]] AugValue augPrefix( const K & k ) const;
   template< class F > void augVisit( const K & lo , const K & hi ,
       F && f ) const;
+  template< class P > [[nodiscard]] std::optional< std::pair< K , V > >
+      augSelect( P && p ) const;
+  template< class Q , class F > void augFilter( Q && q , F && f ) const;
   [[nodiscard]] const Node * root( void ) const;
   using value_type = std::pair< const K & , const V & >;
   using const_iterator = PathIterator< JoinTree , Shape >;
   [[nodiscard]] const_iterator begin( void ) const;
   [[nodiscard]] const_iterator end( void ) const;
  };
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-    using JoinAVLTree = JoinTree< K , V , AVLBalance , G >;
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-    using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G >;
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-    using WeightBalancedTree = JoinTree< K , V , WeightBalance , G >;
-template< std::totally_ordered K , class V , class G = NoAugmentation >
-    using JoinTreap = JoinTree< K , V , TreapBalance , G >;
-template< std::totally_ordered K , class V , class G >
-    using AugmentedMap = JoinTree< K , V , WeightBalance , G >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+    class Policy = NoObservers >
+    using JoinAVLTree = JoinTree< K , V , AVLBalance , G , Policy >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+    class Policy = NoObservers >
+    using JoinRedBlackTree = JoinTree< K , V , RedBlackBalance , G ,
+    Policy >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+    class Policy = NoObservers >
+    using WeightBalancedTree = JoinTree< K , V , WeightBalance , G ,
+    Policy >;
+template< std::totally_ordered K , class V , class G = NoAugmentation ,
+    class Policy = NoObservers >
+    using JoinTreap = JoinTree< K , V , TreapBalance , G , Policy >;
+template< std::totally_ordered K , class V , class G ,
+    class Policy = NoObservers >
+    using AugmentedMap = JoinTree< K , V , WeightBalance , G , Policy >;
+```
+
+```cpp
+// declarations of <ADS/tree/MaterializedAggregate.h>
+template< class G , std::size_t Period = 1024 >
+    requires detail::CommutativeMonoid< G >
+    class MaterializedAggregate {
+ public:
+  using Value = typename G::Value;
+  enum class Kind { Group , Selective , Monoid };
+  static constexpr Kind kind = detail::AbelianGroup< G > ? Kind::Group
+      : ( detail::Selective< G > && std::equality_comparable< Value > )
+      ? Kind::Selective : Kind::Monoid;
+  MaterializedAggregate( void ) = default;
+  template< detail::pair_visitable S > explicit MaterializedAggregate(
+      const S & s );
+  template< detail::pair_visitable S > void bind( const S & s );
+  template< class H , class K , class V > void on(
+      const mod::Inserted< H , K , V > & e );
+  template< class H , class K , class V > void on(
+      const mod::Erased< H , K , V > & e ) noexcept;
+  template< class H , class V > void on( const mod::Assigned< H , V > & e );
+  void on( const mod::Cleared & ) noexcept;
+  void on( const mod::Rebuilt & ) noexcept;
+  [[nodiscard]] Value value( void ) const;
+  [[nodiscard]] bool stale( void ) const;
+  [[nodiscard]] bool bound( void ) const;
+  [[nodiscard]] std::size_t recomputations( void ) const;
+  template< detail::pair_visitable S > [[nodiscard]] bool audit(
+      const S & s ) const;
+ };
 ```
 
 ```cpp

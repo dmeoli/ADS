@@ -13,11 +13,12 @@
 # out), and prints the table in Markdown; the allocation paths of Arena and   #
 # ObjectPool are counted with no clear() and with one per 4096 objects. The   #
 # counts do not depend on the load of the machine. With --before REV it also  #
-# builds both files on the headers of the revision REV of the repository (git #
-# archive), or of the tree in the directory REV, with ZC_BEFORE, and compares #
-# the changes of IndexedDaryHeap there and here, by counts and by code (the   #
-# bytes and the kinds of the relocations, whose names carry the template      #
-# arguments).                                                                 #
+# builds the two files on the headers of the revision REV of git (or of a     #
+# directory holding its include/) and on the present ones, both with          #
+# ZC_BEFORE (so that the two translation units hold the same code), and       #
+# compares the counts of every workload with no observer and the code of      #
+# every function, the names of the subject policies left out. REV must have   #
+# the subject policies of the grid (feature/manual from a3da60a on).          #
 #                                                                             #
 #   python3 bench/zerocost.py [ --cxx g++ clang++ ] [ -n 100000 ]             #
 #                             [ --out build-zerocost ] [ --before REV ]       #
@@ -33,7 +34,8 @@ import sys
 
 ROOT = os.path.dirname( os.path.dirname( os.path.abspath( __file__ ) ) )
 WORKLOADS = [ "array-weight" , "list-weight" , "list-edge" , "key" ,
-              "grid-cost" , "oarray" , "heap" , "arena-make" , "pool-make" ]
+              "grid-cost" , "oarray" , "heap" , "tree-insert" ,
+              "tree-overwrite" , "tree-assign" , "arena-make" , "pool-make" ]
 LEGACY = [ "plain" , "observable" , "observable-excl" ]
 POLICIES = [ "none" , "static-excl" , "static-count" , "dynamic" ]
 # the variants of the array of keys, which has no Observable, and of the
@@ -46,9 +48,19 @@ GRID = [ "plain" , "none" , "static-count" , "dynamic" ]
 ALLOCATION = [ "plain" , "epochs" ]
 # the variants of the heap, whose plain variant has NoObservers
 HEAP = [ "plain" , "static-excl" , "static-count" , "dynamic" ]
-# the functions of the heap compared with those of the tree before
-HEAP_ASM = [ "zc_heap_push" , "zc_heap_decrease" , "zc_heap_increase" ,
-             "zc_heap_erase" , "zc_heap_pop" ]
+# the variants of JoinTree, whose variant none is the default policy
+TREE = [ "none" , "static-excl" , "static-count" , "dynamic" ]
+# the operations of JoinTree in zerocost_asm.cpp, compared by policy
+TREE_OPS = [ "insert" , "remove" , "lookup" , "lower_bound" , "clear" ,
+             "range" , "union" , "multi_insert" , "multi_remove" , "assign" ]
+TREE_TAGS = [ "static_excl" , "static_count" , "dynamic" ]
+# the workloads and the variants with no observer that --before compares
+BEFORE = [ ( "array-weight" , "plain" ) , ( "list-weight" , "plain" ) ,
+           ( "list-edge" , "plain" ) , ( "key" , "plain" ) ,
+           ( "grid-cost" , "plain" ) , ( "heap" , "plain" ) ,
+           ( "tree-insert" , "none" ) , ( "tree-overwrite" , "none" ) ,
+           ( "arena-make" , "plain" ) , ( "arena-make" , "epochs" ) ,
+           ( "pool-make" , "plain" ) , ( "pool-make" , "epochs" ) ]
 # the functions of zerocost_asm.cpp by workload: ( function , reference )
 ASM = {
     "array-weight": [
@@ -134,23 +146,28 @@ def per_change( exe , work , var , n ):
     return( ( b - a ) / n )
 
 
-def functions( obj ):
+def functions( obj , demangle = False ):
     """The code of each function of obj: its instructions as bytes and its
-    relocations, without the addresses."""
-    r = run( [ "objdump" , "-d" , "-r" , "-w" , obj ] )
+    relocations, without the addresses; with demangle, by the demangled
+    names, normalized by plain()."""
+    r = run( [ "objdump" , "-d" , "-r" , "-w" ] +
+             ( [ "-C" ] if demangle else [] ) + [ obj ] )
     code , name = {} , None
     for line in r.stdout.splitlines():
-        m = re.match( r"^[0-9a-f]+ <([^>]+)>:$" , line )
+        m = re.match( r"^[0-9a-f]+ <(.+)>:$" if demangle else
+                      r"^[0-9a-f]+ <([^>]+)>:$" , line )
         if m:
-            name = m.group( 1 )
+            name = plain( m.group( 1 ) ) if demangle else m.group( 1 )
             code[ name ] = { "bytes": [] , "relocs": [] , "count": 0 }
             continue
         if name is None:
             continue
-        m = re.match( r"^\s*[0-9a-f]+:\s+(R_\S+)\s+(\S+)" , line )
+        m = re.match( r"^\s*[0-9a-f]+:\s+(R_\S+)\s+(.+)$" if demangle else
+                      r"^\s*[0-9a-f]+:\s+(R_\S+)\s+(\S+)" , line )
         if m:
             code[ name ][ "relocs" ].append( ( m.group( 1 ) ,
-                                               m.group( 2 ) ) )
+                plain( m.group( 2 ).strip() ) if demangle else
+                m.group( 2 ) ) )
             continue
         m = re.match( r"^\s*[0-9a-f]+:\t((?:[0-9a-f]{2} )+)\s*(.*)$" , line )
         if m:
@@ -171,17 +188,23 @@ def functions( obj ):
     return( code )
 
 
-def compare( code , f , ref , other = None , kinds = False ):
-    """The cell of the comparison of the function f with ref (of the code
-    other, if given); with kinds, the relocations by their kinds only."""
-    other = code if other is None else other
-    if f not in code or ref not in other:
+def plain( name ):
+    """A demangled name with the subject policies left out, as in a
+    revision with no policy, and with the closing brackets written alike by
+    the two forms of the demangler."""
+    name = re.sub( r", ADS::(NoObservers|Static<zc::\w+>|Dynamic<void>)" ,
+                   "" , name )
+    while "> >" in name:
+        name = name.replace( "> >" , ">>" )
+    return( name )
+
+
+def compare( code , f , ref ):
+    """The cell of the comparison of the function f with ref."""
+    if f not in code or ref not in code:
         return( "-" )
-    a , b = code[ f ] , other[ ref ]
-    ra , rb = a[ "relocs" ] , b[ "relocs" ]
-    if kinds:
-        ra , rb = [ r[ 0 ] for r in ra ] , [ r[ 0 ] for r in rb ]
-    if a[ "bytes" ] == b[ "bytes" ] and ra == rb:
+    a , b = code[ f ] , code[ ref ]
+    if a[ "bytes" ] == b[ "bytes" ] and a[ "relocs" ] == b[ "relocs" ]:
         return( "identical (%d)" % a[ "count" ] )
     return( "%d vs %d" % ( a[ "count" ] , b[ "count" ] ) )
 
@@ -238,10 +261,12 @@ def main():
            " | ".join( "Ir/change " + t for t in tags ) + " |" )
     print( "|---|---|" + "---|" * len( tags ) )
     for work in WORKLOADS:
-        if work in ( "key" , "grid-cost" , "oarray" ):
+        if work in ( "key" , "grid-cost" , "oarray" ) or \
+           work.startswith( "tree-" ):
             if not policies:
                 continue
-            variants = GRID if work == "grid-cost" else KEY
+            variants = GRID if work == "grid-cost" else \
+                       TREE if work.startswith( "tree-" ) else KEY
         elif work in ( "arena-make" , "pool-make" ):
             variants = ALLOCATION
         elif work == "heap":
@@ -256,12 +281,13 @@ def main():
             print( "| %s | %s | %s |" % ( work , var , " | ".join( cells ) ) )
         # the A/A row: the plain variant counted twice, equal counts
         cells = []
+        first = variants[ 0 ]
         for c in a.cxx:
-            x = collected( built[ c ][ 0 ] , work , "plain" , a.n )
-            y = collected( built[ c ][ 0 ] , work , "plain" , a.n )
+            x = collected( built[ c ][ 0 ] , work , first , a.n )
+            y = collected( built[ c ][ 0 ] , work , first , a.n )
             cells.append( "equal" if x == y else "%d vs %d" % ( x , y ) )
-        print( "| %s | A/A (plain twice) | %s |" % ( work ,
-                                                     " | ".join( cells ) ) )
+        print( "| %s | A/A (%s twice) | %s |" % ( work , first ,
+                                                  " | ".join( cells ) ) )
     print()
 
     # the code of the functions against their references
@@ -277,32 +303,58 @@ def main():
             cells = [ compare( codes[ c ] , f , ref ) for c in a.cxx ]
             print( "| %s | %s | %s | %s |" % ( work , f , ref ,
                                                " | ".join( cells ) ) )
+    if policies:
+        # JoinTree by policy, the names of the policies left out
+        trees = { c: functions( built[ c ][ 1 ] , True ) for c in a.cxx }
+        for t in TREE_TAGS:
+            for op in TREE_OPS:
+                f , ref = "zc_%s_tree_%s" % ( t , op ) , \
+                          "zc_none_tree_%s" % op
+                cells = [ compare( trees[ c ] , f , ref ) for c in a.cxx ]
+                print( "| tree | %s | %s | %s |" % ( f , ref ,
+                                                     " | ".join( cells ) ) )
 
-    # the heap here against the heap of the tree before
     if a.before:
-        inc = before( a.before , a.out )
-        old = { c: build( c , a.out , policies , inc , "-before" ,
-                          [ "-DZC_BEFORE" ] ) for c in a.cxx }
-        print()
-        print( "| heap, before %s | " % a.before +
-               " | ".join( "before " + t + " | here " + t for t in tags ) +
-               " |" )
-        print( "|---|" + "---|---|" * len( tags ) )
+        against( a , tags )
+
+
+def against( a , tags ):
+    """The counts of the workloads with no observer and the code of every
+    function on the headers of the revision a.before and on the present
+    ones, both compiled with ZC_BEFORE."""
+    inc = before( a.before , a.out )
+    old = { c: build( c , a.out , True , inc , "-before" ,
+                      [ "-DZC_BEFORE" ] ) for c in a.cxx }
+    new = { c: build( c , a.out , True , None , "-now" , [ "-DZC_BEFORE" ] )
+            for c in a.cxx }
+    print()
+    print( "| workload | variant | " +
+           " | ".join( "Ir/change %s, %s / now" % ( t , a.before )
+                       for t in tags ) + " |" )
+    print( "|---|---|" + "---|" * len( tags ) )
+    for work , var in BEFORE:
         cells = []
         for c in a.cxx:
-            x = per_change( old[ c ][ 0 ] , "heap" , "plain" , a.n )
-            y = per_change( built[ c ][ 0 ] , "heap" , "plain" , a.n )
-            cells += [ "-" if x is None else "%.2f" % x ,
-                       "-" if y is None else "%.2f" % y ]
-        print( "| Ir/change | %s |" % " | ".join( cells ) )
-        prev = { c: functions( old[ c ][ 1 ] ) for c in a.cxx }
-        for f in HEAP_ASM:
-            cells = []
-            for c in a.cxx:
-                cells += [ "-" , compare( codes[ c ] , f , f , prev[ c ] ,
-                                          True ) ]
-            print( "| %s | %s |" % ( f , " | ".join( cells ) ) )
-
+            x = per_change( old[ c ][ 0 ] , work , var , a.n )
+            y = per_change( new[ c ][ 0 ] , work , var , a.n )
+            cells.append( "-" if x is None or y is None else
+                          "%.2f / %.2f" % ( x , y ) )
+        print( "| %s | %s | %s |" % ( work , var , " | ".join( cells ) ) )
+    print()
+    print( "| compiler | functions | identical | differing |" )
+    print( "|---|---|---|---|" )
+    for c in a.cxx:
+        x = functions( old[ c ][ 1 ] , True )
+        y = functions( new[ c ][ 1 ] , True )
+        both = sorted( n for n in x if n in y )
+        diff = [ "%s (%d now, %d before)" % ( n , y[ n ][ "count" ] ,
+                                              x[ n ][ "count" ] )
+                 for n in both if ( x[ n ][ "bytes" ] , x[ n ][ "relocs" ] )
+                 != ( y[ n ][ "bytes" ] , y[ n ][ "relocs" ] ) ]
+        print( "| %s | %d | %d | %s |" % ( os.path.basename( c ) ,
+                                           len( both ) ,
+                                           len( both ) - len( diff ) ,
+                                           ", ".join( diff ) or "none" ) )
 
 if __name__ == "__main__":
     main()

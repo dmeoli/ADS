@@ -185,7 +185,8 @@ static_assert( joinable< Sum > && ! joinable< DaryHeap< int > > );
 static_assert( rankable< RoaringBitmap > && ! rankable< DaryHeap< int > > );
 static_assert( selectable< RoaringBitmap > &&
                ! selectable< DaryHeap< int > > &&
-               ! selectable< Sum , SumAugmentation< int > > );
+               selectable< Sum , SumAugmentation< int > > &&
+               ! selectable< DaryHeap< int > , SumAugmentation< int > > );
 static_assert( prefetchable< Zeroing > && ! prefetchable< DaryHeap< int > > );
 static_assert( reservable< DaryHeap< int > > &&
                ! reservable< ListPriorityQueue< int > > );

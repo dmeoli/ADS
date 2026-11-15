@@ -78,6 +78,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the contracts; the coalescing and its lemma in the theory of the
   foundations, section 1.13 of the manual, the test engineered_modification
   (11 cases) and the compile-time checks modification-attach.1 to 4
+- the typed modifications of tree/JoinTree.h, its fifth template parameter
+  Policy, NoObservers by default (the same instructions and, with clang,
+  the same code as before): Inserted, Erased (told before the removal) and
+  Assigned of a key, whose handle is the key, Cleared from clear() and on
+  the trees whose nodes a bulk operation takes, Rebuilt on those whose
+  nodes it puts back and on both trees of a swap, the strong guarantee
+  against an observer that throws, subject(); a tree of static observers
+  is built with them and is neither copied nor moved; the aliases take
+  the policy too
+- JoinTree::assign( k , v ), the value of a key that is there changed with
+  the shape kept: by the difference of the new and the old value on each
+  augmented value of the path when the augmentation is an abelian group of
+  exact values, by recomputation from the children otherwise;
+  augSelect( p ), the first pair whose prefix satisfies a monotone
+  predicate (the i-th key, the first prefix reaching a threshold), in
+  O( log n ); augFilter( q , f ), the pairs whose value satisfies a
+  distributive predicate, entering only the subtrees whose aggregate
+  satisfies it, in O( 1 + m log n ) for m pairs given; the static members
+  commutative and inverse() of SumAugmentation, commutative and selective
+  of MaxAugmentation, read by the concepts Monoid, CommutativeMonoid,
+  Group, AbelianGroup, Selective and exact_v of the namespace detail of
+  JoinTree.h until the header of the algebraic concepts
+- tree/MaterializedAggregate.h, the aggregate by a commutative monoid of
+  the values of a dictionary kept by an observer of its events: by the
+  inverse for a group, by the multiset of the values for a selective
+  monoid, by a recomputation from the structure bound after an erasure
+  otherwise; Rebuilt makes it stale, an abelian group of floating values is
+  recomputed every Period changes, audit() against the structure
+- the lemmas of the events, of the assignment by differences, of
+  augSelect(), of augFilter() and of the aggregate of an observer, in the
+  theory of the trees and in section 8.12.7 of the manual (Lemmas 8.89 to
+  8.93, Algorithm 8.67; the Lemmas 8.89 to 8.91 and the Algorithms 8.67
+  and 8.68 that followed are now 8.94 to 8.96 and 8.68 and 8.69), and the
+  tests join_trees.join-tree-events, join-tree-assign,
+  join-tree-select-filter and materialized-aggregate
+- bench/zerocost.py: the workloads tree-insert, tree-overwrite and
+  tree-assign of JoinTree, the comparison of its functions by policy, and,
+  with --before, the counts and the code of the tree with no observer
+  against those of an older revision
 - ADS_NO_UNIQUE_ADDRESS and ADS_COLD_PATH in Portable.h
 - bench/zerocost.py, the check of zero cost by counts and by code: the
   instructions of one change counted by callgrind and the code of the

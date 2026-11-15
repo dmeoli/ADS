@@ -15,14 +15,17 @@
  * Modification.h with the pattern of the mutators of the library, GridGraph
  * (`setCost()`), whose plain variant is the grid with `NoObservers`, since
  * the grid had no change before its subject, ObservableArray (`set()`)
- * against a plain vector, and IndexedDaryHeap (`update()`, `pop()` and
- * `push()`), whose plain variant is the heap with `NoObservers`. The
- * variants on the subject policies exist only when Modification.h does,
- * and those of the heap and of the array only when their headers have them
- * (not with `ZC_BEFORE`, the build on the headers of an older revision, see
- * the option --before of zerocost.py). The allocation paths of Arena and
- * ObjectPool, with and without their epochs, are counted by zerocost.cpp
- * alone.
+ * against a plain vector, IndexedDaryHeap (`update()`, `pop()` and
+ * `push()`), whose plain variant is the heap with `NoObservers`, and
+ * JoinTree (`insert()` of a new key and its `remove()`, `insert()` of a key
+ * that is there, `assign()`), whose variant none is the tree of the default
+ * policy. The variants on the subject policies exist only when
+ * Modification.h does, and those of the heap, of the array and of the tree
+ * only when their headers have them: with `ZC_BEFORE` (the build on the
+ * headers of an older revision, see the option --before of zerocost.py)
+ * only the heap and the tree with no observer, and only the operations of
+ * that revision. The allocation paths of Arena and ObjectPool, with and
+ * without their epochs, are counted by zerocost.cpp alone.
  *
  * \author Donato Meoli \n
  *         Dipartimento di Informatica \n
@@ -48,6 +51,7 @@
 #include "ADS/graph/Observable.h"
 #include "ADS/memory/Arena.h"
 #include "ADS/memory/ObjectPool.h"
+#include "ADS/tree/JoinTree.h"
 
 #if __has_include( "ADS/Modification.h" )
  #include "ADS/Modification.h"
@@ -63,6 +67,9 @@
 #endif
 
 #include <cstddef>
+#include <cstdint>
+#include <span>
+#include <utility>
 #include <vector>
 
 namespace zc {
@@ -73,6 +80,10 @@ using Heap = ADS::IndexedDaryHeap< int >;
 using AG = ADS::ArrayGraph< long long >;
 using LG = ADS::ListGraph< long long >;
 using Ev = ADS::GraphEvent< long long >;
+
+/// the tree of the workloads of JoinTree, of the default policy
+using JT = ADS::JoinTree< int , long long , ADS::AVLBalance ,
+                          ADS::SumAugmentation< long long > >;
 
 /*--------------------------------------------------------------------------*/
 /*--------------------- THE OBSERVERS OF Observable.h ----------------------*/
@@ -237,6 +248,34 @@ struct ArrayCountDecreases {
 static_assert( sizeof( OArray< ADS::NoObservers > ) ==
                sizeof( std::vector< int > ) );
 static_assert( sizeof( Heap ) == 2 * sizeof( std::vector< int > ) );
+
+#ifndef ZC_BEFORE
+
+/*--------------------------------------------------------------------------*/
+/*------------------------------ THE JoinTree ------------------------------*/
+/*--------------------------------------------------------------------------*/
+
+/// an observer of the tree that wants none of the events of the workloads
+struct TreeExcluding {
+ long long n = 0;
+ void on( const ADS::mod::Cleared & ) noexcept { ++n; }
+ };
+
+/// an observer of the tree that counts the values that decrease
+struct TreeCountDecreases {
+ long long n = 0;
+ void on( const JT::Assigned & e ) { n += ( e.to < e.from ) ? 1 : 0; }
+ };
+
+/// the tree of the policy P
+template< class P >
+using JTP = ADS::JoinTree< int , long long , ADS::AVLBalance ,
+                           ADS::SumAugmentation< long long > , P >;
+
+/// with no observer, the root and the generator of the priorities alone
+static_assert( sizeof( JT ) == sizeof( void * ) + sizeof( std::uint64_t ) );
+
+#endif
 
 #endif
 
