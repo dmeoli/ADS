@@ -1496,7 +1496,8 @@ Its public members, and those of the handle of a thread, are
 
 ```cpp
 // declarations of <ADS/concurrent/MultiQueue.h>
-template< class K , class T , class Less = std::less< K > >
+template< class K , class T , class Less = std::less< K > ,
+          template< class , class > class H = MultiQueueHeap >
 class MultiQueue
 {
  public:
@@ -1663,6 +1664,18 @@ Each queue is therefore exact, the relaxation is only in the choice of the
 queue, and [Theorem 24.1](24-concurrent.md#thm-24-1) applies unchanged. Its heap is touched by batches
 of 16 pairs, and the lines of $D$ and $I$ usually stay in the cache of the
 thread.
+The lemma asks of $H$ only an exact queue, and `MultiQueue` takes it as its
+template parameter `H`, given the type of the pairs and their order, by
+default `MultiQueueHeap`, the 8-ary heap: with the keys of `packFG()`, the
+pairs $( f , g )$ of a best-first search with integer costs, $H$ can be the
+bucket queue of `BucketHeap` ([§9.9](09-priority.md#sec-9-9)), whose pushes
+and pops take $O( 1 )$ amortized time with bounded keys, so that the cost of
+an operation no longer grows with $m$ (test
+`engineered_queues.multi-queue-buckets`). The Multi Bucket Queue of [Zhang,
+Posluns and Jeffrey 2024](Z-bibliography.md#ref-zhang2024) shares the
+buckets among the threads, each bucket a MultiQueue of its own; here each
+queue keeps its buckets under its lock, and the choice of the queue is the
+one of [Theorem 24.1](24-concurrent.md#thm-24-1).
 We know of no theory of the stickiness yet: the measures of [Williams et al.
 2021](Z-bibliography.md#ref-williams2021) show rank errors that grow about
 linearly in $s$, which is why $s$ is a parameter of the constructor (16 by default, given

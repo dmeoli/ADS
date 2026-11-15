@@ -3938,33 +3938,39 @@ its DOI when it has one.
      Code Generation and Optimization (CGO) (2020), 158–170,
      <https://doi.org/10.1145/3368826.3377909>.
 
-843. <span id="ref-zhou2013"></span>D. Zhou, D. G. Andersen, M. Kaminsky.
+843. <span id="ref-zhang2024"></span>G. Zhang, G. Posluns, M. C. Jeffrey.
+     *Multi bucket queues: efficient concurrent priority scheduling.*
+     Proceedings of the 36th ACM Symposium on Parallelism in Algorithms and
+     Architectures (SPAA), 2024,
+     <https://doi.org/10.1145/3626183.3659962>.
+
+844. <span id="ref-zhou2013"></span>D. Zhou, D. G. Andersen, M. Kaminsky.
      *Space-efficient, high-performance rank and select structures on
      uncompressed bit sequences.* Proceedings of the 12th Symposium on
      Experimental Algorithms (SEA 2013), LNCS **7933**, 151–163, 2013,
      <https://doi.org/10.1007/978-3-642-38527-8_15>.
 
-844. <span id="ref-zippel1979"></span>R. Zippel. *Probabilistic algorithms
+845. <span id="ref-zippel1979"></span>R. Zippel. *Probabilistic algorithms
      for sparse polynomials.* Proceedings of EUROSAM 1979, LNCS 72 (1979),
      216–226, <https://doi.org/10.1007/3-540-09519-5_73>.
 
-845. <span id="ref-ziv1977"></span>J. Ziv, A. Lempel. *A universal
+846. <span id="ref-ziv1977"></span>J. Ziv, A. Lempel. *A universal
      algorithm for sequential data compression.* IEEE Transactions on
      Information Theory **23**(3) (1977), 337–343,
      <https://doi.org/10.1109/TIT.1977.1055714>.
 
-846. <span id="ref-ziv1978"></span>J. Ziv, A. Lempel. *Compression of
+847. <span id="ref-ziv1978"></span>J. Ziv, A. Lempel. *Compression of
      individual sequences via variable-rate coding.* IEEE Transactions on
      Information Theory **24**(5) (1978), 530–536,
      <https://doi.org/10.1109/TIT.1978.1055934>.
 
-847. <span id="ref-zobrist1970"></span>A. L. Zobrist. *A new hashing method
+848. <span id="ref-zobrist1970"></span>A. L. Zobrist. *A new hashing method
      with application for game playing.* Technical Report 88, Computer
      Sciences Department, University of Wisconsin, 1970; reprinted in ICGA
      Journal **13**(2) (1990), 69–73,
      <https://doi.org/10.3233/ICG-1990-13203>.
 
-848. <span id="ref-zukowski2006"></span>M. Zukowski, S. Heman, N. Nes, P.
+849. <span id="ref-zukowski2006"></span>M. Zukowski, S. Heman, N. Nes, P.
      Boncz. *Super-scalar RAM-CPU cache compression.* Proceedings of the
      22nd International Conference on Data Engineering (ICDE 2006), 59,
      2006, <https://doi.org/10.1109/ICDE.2006.150>.

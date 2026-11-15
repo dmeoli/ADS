@@ -1585,6 +1585,18 @@ nondecreasing $f$ and whose pushes are not below the $f$ of the node
 expanded, the outer level thus costs $O( F )$ in all, i.e., $O( 1 )$
 amortized per operation when the operations are $\Omega( F )$.
 
+`BucketHeap< E , C >` puts a `BucketQueue` behind the interface of a heap
+of pairs $( k , x )$, whose key $k$ of 64 bits is made by `packFG( f , g )`
+from two keys of 32 bits: $f$ in the high half and the complement of $g$ in
+the low one, so that the keys under `std::less` come by least $f$ and then
+by largest $g$, the order of `LargestSecondKey`, and `keyF()` and `keyG()`
+give the two keys back. The queue keeps the items with their $f$ and $g$,
+and the pair is made again when it comes out. It is the inner queue of a
+`MultiQueue` over such keys ([§24.9](24-concurrent.md#sec-24-9)), whose
+pushes and pops then take $O( 1 )$ amortized time with bounded keys, where
+those of a heap take $O( \log m )$ (test
+`engineered_queues.multi-queue-buckets`).
+
 ## 9.10 Double-ended queues {#sec-9-10}
 
 A double-ended priority queue has both the best and the worst item at hand,

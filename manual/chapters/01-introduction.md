@@ -1651,7 +1651,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `tree/ThreadedTree.h` | `ThreadedTree` | [8](08-tree.md#ch-8) |
 | `tree/Treap.h` | `Treap` | [8](08-tree.md#ch-8) |
 | `tree/Tree.h` | `Tree` | [8](08-tree.md#ch-8) |
-| `priority/BucketQueue.h` | `BucketQueue`, `LargestSecondKey`, `LeastSecondKey` | [9](09-priority.md#ch-9) |
+| `priority/BucketQueue.h` | `BucketQueue`, `BucketHeap`, `LargestSecondKey`, `LeastSecondKey` | [9](09-priority.md#ch-9) |
 | `priority/DaryHeap.h` | `DaryHeap` | [9](09-priority.md#ch-9) |
 | `priority/DialQueue.h` | `DialQueue` | [9](09-priority.md#ch-9) |
 | `priority/FibonacciHeapPriorityQueue.h` | `FibonacciHeapPriorityQueue` | [9](09-priority.md#ch-9) |
@@ -1794,7 +1794,7 @@ header (relative to `include/ADS`), and the chapter that describes it.
 | `concurrent/MPSCInbox.h` | `MPSCInbox` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MPSCQueue.h` | `MPSCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/MinBoard.h` | `MinBoard` | [24](24-concurrent.md#ch-24) |
-| `concurrent/MultiQueue.h` | `MultiQueue` | [24](24-concurrent.md#ch-24) |
+| `concurrent/MultiQueue.h` | `MultiQueue`, `MultiQueueHeap` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SPSCQueue.h` | `SPSCQueue` | [24](24-concurrent.md#ch-24) |
 | `concurrent/SingleWriterFlatTable.h` | `SingleWriterFlatTable` | [24](24-concurrent.md#ch-24) |
 | `concurrent/StealablePriorityQueue.h` | `StealablePriorityQueue`, `StealingFrontier` | [24](24-concurrent.md#ch-24) |

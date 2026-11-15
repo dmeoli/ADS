@@ -128,6 +128,9 @@ def classes(path):
                 depth += toks[k] == '('
                 depth -= toks[k] == ')'
                 k += 1
+            if toks[j + 1] in ('=', ',', '>'):   # a template parameter
+                i += 1
+                continue
             if k < len(toks) and toks[k] == '{':
                 if public and re.match(r'[A-Za-z]', name) and \
                         name not in ('final',):
