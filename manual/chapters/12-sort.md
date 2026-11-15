@@ -174,9 +174,9 @@ $\square$
 $k \ge 1$ leaves is drawn uniformly at random, its expected depth is at
 least $\log_2 k$.*
 
-*Proof.* By induction on the height of the tree (not on $k$, since a
-root with one child has a subtree with all the $k$ leaves). For height 0
-the tree is a leaf and the bound is 0. Otherwise let the subtrees of the
+*Proof.* We argue by induction on the height of the tree (not on $k$,
+since a root with one child has a subtree with all the $k$ leaves). For height
+0 the tree is a leaf and the bound is 0. Otherwise let the subtrees of the
 root, of smaller height, have $k_1$ and $k_2$ leaves, $k_1 + k_2 = k$
 (one of them possibly empty). The leaf drawn lies in the first one with
 probability $k_1 / k$, and is then a leaf drawn uniformly from it. Hence,
@@ -233,7 +233,7 @@ deterministic or randomized, and any $n \ge 1$, the expected number of
 comparisons on a random permutation of $n$ distinct items is at least
 $\log_2 n! = n \log_2 n - O( n )$.*
 
-*Proof.* Fix the random choices $b$. A random permutation of the items
+*Proof.* We fix the random choices $b$. A random permutation of the items
 reaches each of the $n!$ leaves of $\mathcal{T}( b )$ with probability
 $1 / n!$, i.e., it draws a leaf uniformly, whose expected depth is at least
 $\log_2 n!$ by [Lemma 12.2](12-sort.md#lem-12-2). Since this holds for each
@@ -1186,8 +1186,8 @@ equal to and larger than the pivot), counting one comparison for the test
 of an item against the pivot, makes in expectation at most $n + 2 n \ln k
 \le n + 2 n \ln n$ comparisons on $n$ items with $k$ distinct keys.*
 
-*Proof.* Let the distinct keys be $1 , \ldots , k$, of multiplicities
-$m_1 , \ldots , m_k$, and let $M[ a , b ]$ be the items of keys from $a$
+*Proof.* We number the distinct keys $1 , \ldots , k$, of multiplicities
+$m_1 , \ldots , m_k$, and we let $M[ a , b ]$ be the items of keys from $a$
 to $b$. An item $x$ of key $a$ is compared only with pivots, at most once
 with each, and with at most one pivot of each key, since a pivot takes out
 of the recursion all the items equal to it. The items of keys from $a$ to
