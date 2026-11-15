@@ -1461,10 +1461,10 @@ engineered parts to new headers.
 Each set has an *entry point*, a header that includes all the headers of
 the set and the core. Thus `#include "ADS/base.h"` gives the base set,
 `ADS/advanced.h` the advanced one, `ADS/core.h` the core and `ADS/ADS.h`
-the three. Also, each header keeps its path, and one can still include it
-alone as before. The modules follow the same division: `ads.core`, `ads.base` and
-`ads.advanced` export the names of the headers of their sets (the last two
-also export `ads.core`), and `ads` exports the three. A program that
+the three. Also, each header keeps its path, and one can still include
+any of them as before. The modules follow the same division: `ads.core`,
+`ads.base` and `ads.advanced` export the names of the headers of their sets
+(the last two also export `ads.core`), and `ads` exports the three. A program that
 writes `import ads;` gets all the names as before, whereas one that writes
 `import ads.base;` compiles neither the concurrent structures nor the
 executors of OpenMP, oneTBB and MPI. The file `cmake/ads_sets.txt` gives
